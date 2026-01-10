@@ -13,3 +13,8 @@ tasks:
       - dotnet pack -c Release -o ./nupkg
       - dotnet tool uninstall -g CodeXPath || true
       - dotnet tool install -g CodeXPath --add-source ./nupkg
+
+  run:
+    desc: Run the CLI with arguments
+    cmds:
+      - dotnet run --project CodeXPath.csproj -- {{.CLI_ARGS}}

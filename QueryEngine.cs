@@ -33,7 +33,8 @@ public static class QueryEngine
         if (xpath == null)
         {
             using var reader = new StreamReader(memStream);
-            matches.Add(new Match(filePath, 1, 1, 1, 1, reader.ReadToEnd(), sourceLines, null));
+            var xml = reader.ReadToEnd();
+            matches.Add(new Match(filePath, 1, 1, 1, 1, StripLocationMetadata(xml), sourceLines, null));
         }
         else
         {
@@ -99,6 +100,55 @@ public static class QueryEngine
 
         return (line, col, endLine, endCol);
     }
+
+    private static string StripLocationMetadata(string xml)
+    {
+        var doc = new XmlDocument { PreserveWhitespace = true };
+        doc.LoadXml(xml);
+        RemoveLocationAttributes(doc.DocumentElement);
+
+        using var stringWriter = new StringWriter();
+        using (var xmlWriter = XmlWriter.Create(stringWriter, new XmlWriterSettings
+        {
+            Indent = true,
+            IndentChars = "  ",
+            OmitXmlDeclaration = false
+        }))
+        {
+            doc.Save(xmlWriter);
+        }
+
+        return stringWriter.ToString();
+    }
+
+    private static void RemoveLocationAttributes(XmlNode? node)
+    {
+        if (node == null)
+            return;
+
+        if (node.NodeType == XmlNodeType.Element && node.Attributes != null)
+        {
+            foreach (var attrName in LocationAttributeNames)
+            {
+                var attr = node.Attributes[attrName];
+                if (attr != null)
+                    node.Attributes.Remove(attr);
+            }
+        }
+
+        foreach (XmlNode child in node.ChildNodes)
+        {
+            RemoveLocationAttributes(child);
+        }
+    }
+
+    private static readonly string[] LocationAttributeNames =
+    {
+        "startLine",
+        "startCol",
+        "endLine",
+        "endCol"
+    };
 
     public static IEnumerable<string> ExpandGlob(string pattern)
     {
