@@ -8,8 +8,9 @@
         :root {
             --bg: #0d1117;
             --fg: #c9d1d9;
-            --accent: #58a6ff;
-            --accent2: #f0883e;
+            --accent: #00AA00;      /* Fresh Green - primary brand color */
+            --accent2: #AAAA00;     /* Harvest Yellow - highlights */
+            --accent-cyan: #00AAAA; /* Cyan - secondary */
             --code-bg: #161b22;
             --border: #30363d;
         }
@@ -127,7 +128,7 @@
         }
 
         .string {
-            color: #a5d6ff;
+            color: #AAAA00;  /* Harvest Yellow - string values */
         }
 
         .keyword {
@@ -135,11 +136,11 @@
         }
 
         .element {
-            color: #7ee787;
+            color: #00AA00;  /* Fresh Green - element names */
         }
 
         .attr {
-            color: #79c0ff;
+            color: #00AAAA;  /* Cyan - attribute names */
         }
 
         a {
@@ -299,16 +300,16 @@
         .cs-method { color: #d2a8ff; }
         .cs-param { color: #ffa657; }
 
-        /* Syntax highlighting for XML */
-        .xml-tag { color: #7ee787; }
-        .xml-attr { color: #79c0ff; }
-        .xml-value { color: #a5d6ff; }
-        .xml-punct { color: #8b949e; }
+        /* Syntax highlighting for XML - Brand colors */
+        .xml-tag { color: #00AA00; }    /* Fresh Green - elements */
+        .xml-attr { color: #00AAAA; }   /* Cyan - attributes */
+        .xml-value { color: #AAAA00; }  /* Harvest Yellow - values */
+        .xml-punct { color: #555555; }  /* Gray - punctuation */
 
-        /* Result highlighting */
-        .result-match { color: #7ee787; }
+        /* Result highlighting - Brand colors */
+        .result-match { color: #00AA00; }  /* Fresh Green */
         .result-file { color: #8b949e; }
-        .result-line { color: #ffa657; }
+        .result-line { color: #AAAA00; }   /* Harvest Yellow */
     </style>
 </head>
 <body>
