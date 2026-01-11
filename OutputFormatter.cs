@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 using System.Xml.XPath;
 using Wmhelp.XPath2;
 
-namespace CodeXPath;
+namespace CodeXTractor;
 
 public static class OutputFormatter
 {
@@ -125,5 +125,47 @@ public static class OutputFormatter
         if (string.IsNullOrEmpty(s)) return s;
         s = Regex.Replace(s, @"\s+", " ").Trim();
         return s.Length <= maxLen ? s : s[..(maxLen - 3)] + "...";
+    }
+
+    // ANSI color codes
+    private const string Reset = "\x1b[0m";
+    private const string Dim = "\x1b[2m";
+    private const string Blue = "\x1b[34m";
+    private const string Cyan = "\x1b[36m";
+    private const string Yellow = "\x1b[33m";
+    private const string Green = "\x1b[32m";
+    private const string Gray = "\x1b[90m";
+
+    public static string ColorizeXml(string xml)
+    {
+        if (string.IsNullOrEmpty(xml))
+            return xml;
+
+        // XML declaration: <?xml ... ?>
+        xml = Regex.Replace(xml, @"(<\?)(xml)([^?]*)(\?>)",
+            m => $"{Dim}{m.Groups[1].Value}{m.Groups[2].Value}{m.Groups[3].Value}{m.Groups[4].Value}{Reset}");
+
+        // CDATA sections: <![CDATA[...]]>
+        xml = Regex.Replace(xml, @"(<!\[CDATA\[)(.*?)(\]\]>)",
+            m => $"{Dim}{m.Groups[1].Value}{Reset}{Green}{m.Groups[2].Value}{Reset}{Dim}{m.Groups[3].Value}{Reset}",
+            RegexOptions.Singleline);
+
+        // Comments: <!-- ... -->
+        xml = Regex.Replace(xml, @"(<!--)(.*?)(-->)",
+            m => $"{Dim}{m.Groups[1].Value}{m.Groups[2].Value}{m.Groups[3].Value}{Reset}",
+            RegexOptions.Singleline);
+
+        // Attributes: name="value" or name='value'
+        xml = Regex.Replace(xml, @"(\s)([a-zA-Z_][\w\-]*)(\s*=\s*)([""'])([^""']*)\4",
+            m => $"{m.Groups[1].Value}{Cyan}{m.Groups[2].Value}{Reset}{Dim}{m.Groups[3].Value}{m.Groups[4].Value}{Reset}{Yellow}{m.Groups[5].Value}{Reset}{Dim}{m.Groups[4].Value}{Reset}");
+
+        // Opening tags: <elementName (but not attributes)
+        xml = Regex.Replace(xml, @"(<)(/?)([\w][\w\-\.]*)",
+            m => $"{Dim}{m.Groups[1].Value}{m.Groups[2].Value}{Reset}{Blue}{m.Groups[3].Value}{Reset}");
+
+        // Closing brackets: > and />
+        xml = Regex.Replace(xml, @"(\s*/?>)", $"{Dim}$1{Reset}");
+
+        return xml;
     }
 }

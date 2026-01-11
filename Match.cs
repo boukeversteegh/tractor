@@ -1,6 +1,6 @@
 using System.Xml.XPath;
 
-namespace CodeXPath;
+namespace CodeXTractor;
 
 public record Match(
     string File,

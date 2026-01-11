@@ -4,17 +4,17 @@ tasks:
   build:
     desc: Build the project
     cmds:
-      - dotnet build -c Release
+      - dotnet build CodeXTractor.csproj -c Release
 
   install:
     desc: Build and install as global tool
     deps: [build]
     cmds:
-      - dotnet pack -c Release -o ./nupkg
-      - dotnet tool uninstall -g CodeXPath || true
-      - dotnet tool install -g CodeXPath --add-source ./nupkg
+      - dotnet pack CodeXTractor.csproj -c Release -o ./nupkg
+      - dotnet tool uninstall -g CodeXTractor || true
+      - dotnet tool install -g CodeXTractor --add-source ./nupkg
 
   run:
     desc: Run the CLI with arguments
     cmds:
-      - dotnet run --project CodeXPath.csproj -- {{.CLI_ARGS}}
+      - dotnet run --project CodeXTractor.csproj -- {{.CLI_ARGS}}

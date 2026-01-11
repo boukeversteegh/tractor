@@ -8,10 +8,10 @@
 
     <!-- Global tool settings -->
     <PackAsTool>true</PackAsTool>
-    <ToolCommandName>codexpath</ToolCommandName>
-    <PackageId>CodeXPath</PackageId>
+    <ToolCommandName>tractor</ToolCommandName>
+    <PackageId>CodeXTractor</PackageId>
     <Version>1.0.0</Version>
-    <Description>Query C# code with XPath expressions</Description>
+    <Description>Extract patterns from source code using XPath queries</Description>
   </PropertyGroup>
 
   <ItemGroup>

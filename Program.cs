@@ -1,4 +1,5 @@
-using CodeXPath;
+using System.Xml.XPath;
+using CodeXTractor;
 
 var files = new List<string>();
 string? xpathExpr = null;
@@ -6,6 +7,9 @@ string? expectation = null;
 string format = "lines";
 string? message = null;
 bool fromStdin = false;
+bool stripLocationAttributes = true;
+bool verbose = false;
+string colorMode = "auto"; // auto, always, never
 
 for (int i = 0; i < args.Length; i++)
 {
@@ -26,6 +30,18 @@ for (int i = 0; i < args.Length; i++)
         case "--message" or "-m":
             message = args[++i];
             break;
+        case "--keep-locations":
+            stripLocationAttributes = false;
+            break;
+        case "--verbose" or "-v":
+            verbose = true;
+            break;
+        case "--color":
+            colorMode = args[++i];
+            break;
+        case "--no-color":
+            colorMode = "never";
+            break;
         case "--help" or "-h":
             PrintHelp();
             return 0;
@@ -42,6 +58,22 @@ if (files.Count == 0 && !fromStdin)
     return 1;
 }
 
+// Verbose output
+if (verbose)
+{
+    Console.Error.WriteLine($"[verbose] files: {string.Join(", ", files)}");
+    Console.Error.WriteLine($"[verbose] xpath: {xpathExpr ?? "(none)"}");
+    Console.Error.WriteLine($"[verbose] format: {format}");
+}
+
+// Determine if we should use color
+bool useColor = colorMode switch
+{
+    "always" => true,
+    "never" => false,
+    _ => !Console.IsOutputRedirected && Environment.GetEnvironmentVariable("NO_COLOR") == null
+};
+
 // Collect all matches across files
 var allMatches = new List<Match>();
 var filesToProcess = fromStdin
@@ -50,7 +82,7 @@ var filesToProcess = fromStdin
 
 foreach (var (filePath, code) in filesToProcess)
 {
-    var matches = QueryEngine.ProcessFile(filePath, code, xpathExpr);
+    var matches = QueryEngine.ProcessFile(filePath, code, xpathExpr, stripLocationAttributes, verbose);
     allMatches.AddRange(matches);
 }
 
@@ -70,12 +102,31 @@ switch (format)
         break;
     case "xml":
         foreach (var match in allMatches)
-            Console.WriteLine(match.Navigator.OuterXml);
+        {
+            if (match.Navigator != null)
+            {
+                var xml = match.Navigator.OuterXml;
+                if (stripLocationAttributes && match.Navigator.NodeType == XPathNodeType.Element)
+                    xml = QueryEngine.StripLocationMetadata(xml);
+                Console.WriteLine(useColor ? OutputFormatter.ColorizeXml(xml) : xml);
+            }
+            else
+            {
+                var output = useColor ? OutputFormatter.ColorizeXml(match.Value) : match.Value;
+                Console.WriteLine(output);
+            }
+        }
         break;
     case "lines":
     default:
         foreach (var match in allMatches)
-            Console.WriteLine(match.Value);
+        {
+            // When no xpath is specified, output is XML - colorize it
+            var output = (xpathExpr == null && useColor)
+                ? OutputFormatter.ColorizeXml(match.Value)
+                : match.Value;
+            Console.WriteLine(output);
+        }
         break;
 }
 
@@ -111,35 +162,41 @@ return 0;
 void PrintHelp()
 {
     Console.WriteLine("""
-        Usage: codexpath <files...> [options]
-               codexpath --stdin [options]
+        CodeXTractor - Extract patterns from source code using XPath queries
+
+        Usage: tractor <files...> [options]
+               tractor --stdin [options]
 
         Options:
-          -x, --xpath <expr>     XPath 2.0 query (without: outputs full XML)
+          -x, --xpath <expr>     XPath 2.0 query (without: outputs full XML AST)
           -e, --expect <value>   Expected result: none, some, or a number
-          -f, --format <fmt>     Output format: lines, gcc, json, count
+          -f, --format <fmt>     Output format: lines, gcc, json, count, xml
           -m, --message <msg>    Custom message (supports {value}, {line}, {xpath})
+          --keep-locations       Include start/end line+col attributes in XML output
+          --color <mode>         Color output: auto (default), always, never
+          --no-color             Disable colored output (same as --color never)
+          -v, --verbose          Show parsed arguments (helps debug shell escaping)
           -h, --help             Show this help
 
-        Element names:
+        Element names (C#):
           Keywords (lowercase):  if, else, for, foreach, while, class, struct, etc.
           Structural (Pascal):   Method, Property, Field, Call, Block, Param, etc.
 
         Examples:
           # Output full XML AST
-          codexpath Program.cs
+          tractor Program.cs
 
           # Find all method names
-          codexpath Program.cs -x "//Method/@name"
+          tractor Program.cs -x "//Method/@name"
 
           # Find all classes
-          codexpath Program.cs -x "//class/@name"
+          tractor Program.cs -x "//class/@name"
 
           # Find if statements inside methods
-          codexpath Program.cs -x "//Method//if"
+          tractor Program.cs -x "//Method//if"
 
           # CI check - fail if any SQL missing semicolons
-          codexpath "Migrations/*.cs" -x "//String[not(ends-with(@textValue, ';'))]" \
+          tractor "Migrations/*.cs" -x "//String[not(ends-with(@textValue, ';'))]" \
               --expect none --format gcc --message "SQL must end with semicolon"
         """);
 }

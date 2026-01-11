@@ -1,11 +1,11 @@
 using System.Diagnostics;
 
-namespace CodeXPath.Tests;
+namespace CodeXTractor.Tests;
 
 public class IntegrationTests : IDisposable
 {
     private readonly string _testDir;
-    private readonly string _codexpath;
+    private readonly string _tractor;
 
     public IntegrationTests()
     {
@@ -13,7 +13,7 @@ public class IntegrationTests : IDisposable
         Directory.CreateDirectory(_testDir);
 
         // Use the global tool
-        _codexpath = "codexpath";
+        _tractor = "tractor";
     }
 
     public void Dispose()
@@ -26,7 +26,7 @@ public class IntegrationTests : IDisposable
     {
         var psi = new ProcessStartInfo
         {
-            FileName = _codexpath,
+            FileName = _tractor,
             Arguments = args,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -66,7 +66,7 @@ public class IntegrationTests : IDisposable
         var (exit, stdout, _) = Run($"\"{file}\"");
 
         Assert.Equal(0, exit);
-        Assert.Contains("<ClassDecl", stdout);
+        Assert.Contains("<class", stdout);
         Assert.Contains("name=\"Foo\"", stdout);
     }
 
@@ -77,15 +77,28 @@ public class IntegrationTests : IDisposable
         var (exit, stdout, _) = Run($"\"{file}\"");
 
         Assert.Equal(0, exit);
-        Assert.Contains("<MethodDecl", stdout);
+        Assert.Contains("<Method", stdout);
         Assert.Contains("name=\"M\"", stdout);
     }
 
     [Fact]
-    public void IncludesLineAndColumnAttributes()
+    public void StripsLineAndColumnAttributesByDefault()
     {
         var file = CreateTestFile("test.cs", "class C { }");
         var (exit, stdout, _) = Run($"\"{file}\"");
+
+        Assert.Equal(0, exit);
+        Assert.DoesNotContain("startLine=", stdout);
+        Assert.DoesNotContain("startCol=", stdout);
+        Assert.DoesNotContain("endLine=", stdout);
+        Assert.DoesNotContain("endCol=", stdout);
+    }
+
+    [Fact]
+    public void KeepLocationsIncludesLineAndColumnAttributes()
+    {
+        var file = CreateTestFile("test.cs", "class C { }");
+        var (exit, stdout, _) = Run($"\"{file}\" --keep-locations");
 
         Assert.Equal(0, exit);
         Assert.Contains("startLine=\"1\"", stdout);
@@ -123,7 +136,7 @@ public class IntegrationTests : IDisposable
     public void XPathQueryReturnsMethodNames()
     {
         var file = CreateTestFile("test.cs", "class C { void A() { } void B() { } }");
-        var (exit, stdout, _) = Run($"\"{file}\" -x \"//MethodDecl/@name\"");
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"//Method/@name\"");
 
         Assert.Equal(0, exit);
         Assert.Contains("A", stdout);
@@ -134,7 +147,7 @@ public class IntegrationTests : IDisposable
     public void XPathQueryReturnsClassName()
     {
         var file = CreateTestFile("test.cs", "class MyClass { }");
-        var (exit, stdout, _) = Run($"\"{file}\" -x \"//ClassDecl/@name\"");
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"//class/@name\"");
 
         Assert.Equal(0, exit);
         Assert.Equal("MyClass\n", stdout.Replace("\r\n", "\n"));
@@ -144,7 +157,7 @@ public class IntegrationTests : IDisposable
     public void XPathCountFunction()
     {
         var file = CreateTestFile("test.cs", "class C { void A() { } void B() { } void C() { } }");
-        var (exit, stdout, _) = Run($"\"{file}\" -x \"count(//MethodDecl)\"");
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"count(//Method)\"");
 
         Assert.Equal(0, exit);
         Assert.Equal("3\n", stdout.Replace("\r\n", "\n"));
@@ -158,7 +171,7 @@ public class IntegrationTests : IDisposable
                 public void Pub() { }
                 private void Priv() { }
             }");
-        var (exit, stdout, _) = Run($"\"{file}\" -x \"//MethodDecl[@modifiers='public']/@name\"");
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"//Method[@modifiers='public']/@name\"");
 
         Assert.Equal(0, exit);
         Assert.Contains("Pub", stdout);
@@ -171,7 +184,7 @@ public class IntegrationTests : IDisposable
     public void FormatCount()
     {
         var file = CreateTestFile("test.cs", "class C { void A() { } void B() { } }");
-        var (exit, stdout, _) = Run($"\"{file}\" -x \"//MethodDecl\" -f count");
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"//Method\" -f count");
 
         Assert.Equal(0, exit);
         Assert.Equal("2\n", stdout.Replace("\r\n", "\n"));
@@ -181,7 +194,7 @@ public class IntegrationTests : IDisposable
     public void FormatJson()
     {
         var file = CreateTestFile("test.cs", "class C { void M() { } }");
-        var (exit, stdout, _) = Run($"\"{file}\" -x \"//MethodDecl/@name\" -f json");
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"//Method/@name\" -f json");
 
         Assert.Equal(0, exit);
         Assert.Contains("\"value\": \"M\"", stdout);
@@ -192,11 +205,53 @@ public class IntegrationTests : IDisposable
     public void FormatGccShowsFileAndLine()
     {
         var file = CreateTestFile("test.cs", "class C { void M() { } }");
-        var (exit, stdout, _) = Run($"\"{file}\" -x \"//MethodDecl\" -f gcc -m \"found method\"");
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"//Method\" -f gcc -m \"found method\"");
 
         Assert.Equal(0, exit);
         Assert.Contains("test.cs:", stdout);
         Assert.Contains(": error: found method", stdout);
+    }
+
+    [Fact]
+    public void FormatLinesShowsSourceSnippet()
+    {
+        var file = CreateTestFile("test.cs", @"
+namespace Sample
+{
+    class C
+    {
+        void M()
+        {
+            if (true) Console.WriteLine();
+        }
+    }
+}");
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"//if\"");
+
+        Assert.Equal(0, exit);
+        Assert.Contains("if (true) Console.WriteLine()", stdout.Replace("\r\n", "\n"));
+    }
+
+    [Fact]
+    public void FormatLinesHandlesMultiLineNodes()
+    {
+        var file = CreateTestFile("test.cs", @"
+namespace Sample
+{
+    class C
+    {
+        void M()
+        {
+            if (true) Console.WriteLine();
+        }
+    }
+}");
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"//namespace\"");
+
+        Assert.Equal(0, exit);
+        var normalized = stdout.Replace("\r\n", "\n");
+        Assert.Contains("namespace Sample", normalized);
+        Assert.Contains("class C", normalized);
     }
 
     // ========== Expect Mode Tests ==========
@@ -205,7 +260,7 @@ public class IntegrationTests : IDisposable
     public void ExpectNonePassesWhenNoMatches()
     {
         var file = CreateTestFile("test.cs", "class C { }");
-        var (exit, _, _) = Run($"\"{file}\" -x \"//MethodDecl\" -e none");
+        var (exit, _, _) = Run($"\"{file}\" -x \"//Method\" -e none");
 
         Assert.Equal(0, exit);
     }
@@ -214,7 +269,7 @@ public class IntegrationTests : IDisposable
     public void ExpectNoneFailsWhenMatches()
     {
         var file = CreateTestFile("test.cs", "class C { void M() { } }");
-        var (exit, _, stderr) = Run($"\"{file}\" -x \"//MethodDecl\" -e none");
+        var (exit, _, stderr) = Run($"\"{file}\" -x \"//Method\" -e none");
 
         Assert.Equal(1, exit);
     }
@@ -223,7 +278,7 @@ public class IntegrationTests : IDisposable
     public void ExpectSomePassesWhenMatches()
     {
         var file = CreateTestFile("test.cs", "class C { void M() { } }");
-        var (exit, _, _) = Run($"\"{file}\" -x \"//MethodDecl\" -e some");
+        var (exit, _, _) = Run($"\"{file}\" -x \"//Method\" -e some");
 
         Assert.Equal(0, exit);
     }
@@ -232,7 +287,7 @@ public class IntegrationTests : IDisposable
     public void ExpectSomeFailsWhenNoMatches()
     {
         var file = CreateTestFile("test.cs", "class C { }");
-        var (exit, _, _) = Run($"\"{file}\" -x \"//MethodDecl\" -e some");
+        var (exit, _, _) = Run($"\"{file}\" -x \"//Method\" -e some");
 
         Assert.Equal(1, exit);
     }
@@ -241,7 +296,7 @@ public class IntegrationTests : IDisposable
     public void ExpectCountPasses()
     {
         var file = CreateTestFile("test.cs", "class C { void A() { } void B() { } }");
-        var (exit, _, _) = Run($"\"{file}\" -x \"//MethodDecl\" -e 2");
+        var (exit, _, _) = Run($"\"{file}\" -x \"//Method\" -e 2");
 
         Assert.Equal(0, exit);
     }
@@ -250,7 +305,7 @@ public class IntegrationTests : IDisposable
     public void ExpectCountFails()
     {
         var file = CreateTestFile("test.cs", "class C { void A() { } void B() { } }");
-        var (exit, _, _) = Run($"\"{file}\" -x \"//MethodDecl\" -e 3");
+        var (exit, _, _) = Run($"\"{file}\" -x \"//Method\" -e 3");
 
         Assert.Equal(1, exit);
     }
@@ -261,7 +316,7 @@ public class IntegrationTests : IDisposable
     public void MessagePlaceholderValue()
     {
         var file = CreateTestFile("test.cs", "class C { void MyMethod() { } }");
-        var (exit, stdout, _) = Run($"\"{file}\" -x \"//MethodDecl/@name\" -f gcc -m \"name is {{value}}\"");
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"//Method/@name\" -f gcc -m \"name is {{value}}\"");
 
         Assert.Equal(0, exit);
         Assert.Contains("name is MyMethod", stdout);
@@ -271,7 +326,7 @@ public class IntegrationTests : IDisposable
     public void MessagePlaceholderXPath()
     {
         var file = CreateTestFile("test.cs", "class Outer { void Inner() { } }");
-        var (exit, stdout, _) = Run($"\"{file}\" -x \"//MethodDecl\" -f gcc -m \"method in {{ancestor::ClassDecl/@name}}\"");
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"//Method\" -f gcc -m \"method in {{ancestor::class/@name}}\"");
 
         Assert.Equal(0, exit);
         Assert.Contains("method in Outer", stdout);
@@ -282,7 +337,7 @@ public class IntegrationTests : IDisposable
     [Fact]
     public void ReadsFromStdin()
     {
-        var (exit, stdout, _) = Run("--stdin -x \"//ClassDecl/@name\"", "class FromStdin { }");
+        var (exit, stdout, _) = Run("--stdin -x \"//class/@name\"", "class FromStdin { }");
 
         Assert.Equal(0, exit);
         Assert.Contains("FromStdin", stdout);
