@@ -2,15 +2,11 @@ use clap::Parser;
 use std::io::{self, BufRead, Read, Write};
 use std::fs;
 
-// Modern Agri-Tech color palette (ANSI escape codes)
-mod colors {
-    pub const RESET: &str = "\x1b[0m";
-    pub const DIM: &str = "\x1b[2;37m";        // Punctuation: < > = / (dim white)
-    pub const GREEN: &str = "\x1b[32m";        // Element names (fresh/growth)
-    pub const CYAN: &str = "\x1b[36m";         // Attribute names (tech accent)
-    pub const YELLOW: &str = "\x1b[33m";       // Attribute values (harvest gold)
-    pub const WHITE: &str = "\x1b[97m";        // Text content (clean)
-}
+mod output;
+mod raw;
+mod semantic;
+
+use output::{write_tag_open, write_tag_close, write_file_tag_open};
 
 /// TreeSitter-based multi-language parser for tractor toolchain.
 /// Outputs XML AST to stdout.
@@ -34,6 +30,10 @@ struct Args {
     /// List supported languages
     #[arg(long)]
     list_languages: bool,
+
+    /// Output raw TreeSitter XML (default is semantic XML)
+    #[arg(long)]
+    raw: bool,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -111,12 +111,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if stdin_source {
         let mut source = String::new();
         io::stdin().read_to_string(&mut source)?;
-        parse_source(&mut out, "<stdin>", &source, args.lang.as_deref().unwrap(), use_color)?;
+        parse_source(&mut out, "<stdin>", &source, args.lang.as_deref().unwrap(), use_color, args.raw)?;
     }
 
     // Process file paths
     for file_path in &files {
-        parse_file(&mut out, file_path, args.lang.as_deref(), use_color)?;
+        parse_file(&mut out, file_path, args.lang.as_deref(), use_color, args.raw)?;
     }
 
     write_tag_close(&mut out, "Files", 0, use_color)?;
@@ -124,13 +124,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn parse_file(out: &mut impl Write, file_path: &str, lang_override: Option<&str>, use_color: bool) -> Result<(), Box<dyn std::error::Error>> {
+fn parse_file(out: &mut impl Write, file_path: &str, lang_override: Option<&str>, use_color: bool, raw_mode: bool) -> Result<(), Box<dyn std::error::Error>> {
     let source = fs::read_to_string(file_path)?;
     let lang = lang_override.unwrap_or_else(|| detect_language(file_path));
-    parse_source(out, file_path, &source, lang, use_color)
+    parse_source(out, file_path, &source, lang, use_color, raw_mode)
 }
 
-fn parse_source(out: &mut impl Write, path: &str, source: &str, lang: &str, use_color: bool) -> Result<(), Box<dyn std::error::Error>> {
+fn parse_source(out: &mut impl Write, path: &str, source: &str, lang: &str, use_color: bool, raw_mode: bool) -> Result<(), Box<dyn std::error::Error>> {
     let mut parser = tree_sitter::Parser::new();
 
     // Set language based on detection
@@ -170,7 +170,16 @@ fn parse_source(out: &mut impl Write, path: &str, source: &str, lang: &str, use_
         .ok_or("Failed to parse")?;
 
     write_file_tag_open(out, path, use_color)?;
-    write_node(out, tree.root_node(), source, 2, use_color)?;
+
+    if raw_mode {
+        // Raw TreeSitter output
+        raw::write_node(out, tree.root_node(), source, 2, use_color)?;
+    } else {
+        // Semantic transformed output
+        let config = semantic::get_config(lang);
+        semantic::write_semantic_node(out, tree.root_node(), source, 2, use_color, config)?;
+    }
+
     write_tag_close(out, "File", 1, use_color)?;
 
     Ok(())
@@ -226,150 +235,4 @@ fn detect_language(path: &str) -> &'static str {
         // Unknown
         _ => "unknown"
     }
-}
-
-fn write_node(out: &mut impl Write, node: tree_sitter::Node, source: &str, indent: usize, use_color: bool) -> Result<(), Box<dyn std::error::Error>> {
-    let indent_str = "  ".repeat(indent);
-    let kind = node.kind();
-
-    // Skip anonymous nodes (punctuation, etc.) - focus on named nodes
-    if !node.is_named() {
-        return Ok(());
-    }
-
-    let start = node.start_position();
-    let end = node.end_position();
-
-    // Check if this is a leaf node (no named children)
-    let named_child_count = node.named_child_count();
-
-    if named_child_count == 0 {
-        // Leaf node - include text content
-        let text = node.utf8_text(source.as_bytes()).unwrap_or("");
-        write!(out, "{}", indent_str)?;
-        write_element_with_attrs_and_text(
-            out, kind,
-            &[
-                ("startLine", &(start.row + 1).to_string()),
-                ("startCol", &(start.column + 1).to_string()),
-                ("endLine", &(end.row + 1).to_string()),
-                ("endCol", &(end.column + 1).to_string()),
-            ],
-            Some(text),
-            use_color,
-        )?;
-        writeln!(out)?;
-    } else {
-        // Node with children
-        write!(out, "{}", indent_str)?;
-        write_element_open_with_attrs(
-            out, kind,
-            &[
-                ("startLine", &(start.row + 1).to_string()),
-                ("startCol", &(start.column + 1).to_string()),
-                ("endLine", &(end.row + 1).to_string()),
-                ("endCol", &(end.column + 1).to_string()),
-            ],
-            use_color,
-        )?;
-        writeln!(out)?;
-
-        // Recurse into children
-        let mut cursor = node.walk();
-        for child in node.named_children(&mut cursor) {
-            write_node(out, child, source, indent + 1, use_color)?;
-        }
-
-        write_tag_close(out, kind, indent, use_color)?;
-    }
-
-    Ok(())
-}
-
-// Color helper functions for Modern Agri-Tech palette
-
-fn write_tag_open(out: &mut impl Write, name: &str, use_color: bool) -> io::Result<()> {
-    if use_color {
-        // DIM for <, then RESET before GREEN element name, then DIM for >, then RESET
-        write!(out, "{}<{}{}{}{}>{}",
-            colors::DIM, colors::RESET, colors::GREEN, name, colors::DIM, colors::RESET)
-    } else {
-        write!(out, "<{}>", name)
-    }
-}
-
-fn write_tag_close(out: &mut impl Write, name: &str, indent: usize, use_color: bool) -> io::Result<()> {
-    let indent_str = "  ".repeat(indent);
-    if use_color {
-        writeln!(out, "{}{}<{}/{}{}{}>{}",
-            indent_str, colors::DIM, colors::RESET, colors::GREEN, name, colors::DIM, colors::RESET)
-    } else {
-        writeln!(out, "{}</{}>", indent_str, name)
-    }
-}
-
-fn write_file_tag_open(out: &mut impl Write, path: &str, use_color: bool) -> io::Result<()> {
-    if use_color {
-        // Format: <File path="value">
-        // Colors: DIM< RESET GREEN(File) RESET CYAN(path) DIM(=) RESET YELLOW("value") DIM(>) RESET
-        writeln!(out, "  {}<{}{}File{} {}path{}={}{}\"{}\"{}>{}",
-            colors::DIM, colors::RESET, colors::GREEN, colors::RESET,
-            colors::CYAN, colors::DIM, colors::RESET, colors::YELLOW, escape_xml(path),
-            colors::DIM, colors::RESET)
-    } else {
-        writeln!(out, "  <File path=\"{}\">", escape_xml(path))
-    }
-}
-
-fn write_element_open_with_attrs(out: &mut impl Write, name: &str, attrs: &[(&str, &str)], use_color: bool) -> io::Result<()> {
-    if use_color {
-        write!(out, "{}<{}{}{}", colors::DIM, colors::RESET, colors::GREEN, escape_xml(name))?;
-        for (attr_name, attr_value) in attrs {
-            write!(out, "{} {}{}{}={}{}\"{}\"",
-                colors::RESET, colors::CYAN, attr_name, colors::DIM, colors::RESET, colors::YELLOW, attr_value)?;
-        }
-        write!(out, "{}>{}",  colors::DIM, colors::RESET)?;
-    } else {
-        write!(out, "<{}", escape_xml(name))?;
-        for (attr_name, attr_value) in attrs {
-            write!(out, " {}=\"{}\"", attr_name, attr_value)?;
-        }
-        write!(out, ">")?;
-    }
-    Ok(())
-}
-
-fn write_element_with_attrs_and_text(out: &mut impl Write, name: &str, attrs: &[(&str, &str)], text: Option<&str>, use_color: bool) -> io::Result<()> {
-    let escaped_name = escape_xml(name);
-    if use_color {
-        write!(out, "{}<{}{}{}", colors::DIM, colors::RESET, colors::GREEN, escaped_name)?;
-        for (attr_name, attr_value) in attrs {
-            write!(out, "{} {}{}{}={}{}\"{}\"",
-                colors::RESET, colors::CYAN, attr_name, colors::DIM, colors::RESET, colors::YELLOW, attr_value)?;
-        }
-        write!(out, "{}>{}",  colors::DIM, colors::RESET)?;
-        if let Some(t) = text {
-            write!(out, "{}{}{}", colors::WHITE, escape_xml(t), colors::RESET)?;
-        }
-        write!(out, "{}<{}/{}{}{}>{}",
-            colors::DIM, colors::RESET, colors::GREEN, escaped_name, colors::DIM, colors::RESET)?;
-    } else {
-        write!(out, "<{}", escaped_name)?;
-        for (attr_name, attr_value) in attrs {
-            write!(out, " {}=\"{}\"", attr_name, attr_value)?;
-        }
-        write!(out, ">")?;
-        if let Some(t) = text {
-            write!(out, "{}", escape_xml(t))?;
-        }
-        write!(out, "</{}>", escaped_name)?;
-    }
-    Ok(())
-}
-
-fn escape_xml(s: &str) -> String {
-    s.replace('&', "&amp;")
-     .replace('<', "&lt;")
-     .replace('>', "&gt;")
-     .replace('"', "&quot;")
 }
