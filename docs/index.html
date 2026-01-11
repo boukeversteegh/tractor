@@ -351,42 +351,6 @@
             </div>
         </section>
 
-        <section>
-            <h2>Why XPath?</h2>
-            <p>
-                Other code search tools introduce custom query languages that are powerful but opaque.
-                When your query doesn't match, you're left guessing why.
-            </p>
-
-            <div class="feature-grid">
-                <div class="feature">
-                    <h3>See What You're Querying</h3>
-                    <p>Run <code>tractor file.cs</code> without any query to see the full XML AST.
-                    No hidden structure—just look at the output and write your XPath.</p>
-                </div>
-                <div class="feature">
-                    <h3>Debug With Any XPath Tool</h3>
-                    <p>Copy the XML into browser DevTools, an online XPath tester, or VS Code.
-                    Test and refine your query with instant feedback.</p>
-                </div>
-                <div class="feature">
-                    <h3>No New Syntax to Learn</h3>
-                    <p>XPath is a W3C standard from 1999. Millions of developers already know it.
-                    Stack Overflow has 50k+ XPath questions with answers.</p>
-                </div>
-                <div class="feature">
-                    <h3>Predicates That Make Sense</h3>
-                    <p><code>[@modifiers='public']</code> reads like English.
-                    No magic symbols or pattern-matching DSLs to memorize.</p>
-                </div>
-            </div>
-
-            <p style="margin-top: 1.5rem;">
-                <strong>The workflow:</strong> Run <code>tractor file.cs</code> → see the XML →
-                write your XPath → test in any XPath tool → run with <code>-x "..."</code> → done.
-            </p>
-        </section>
-
     </div><!-- close container for wide demo -->
 
     <div class="container-wide">
@@ -470,9 +434,9 @@
                         <button class="query-btn active" data-query="methods">//Method/@name</button>
                         <button class="query-btn" data-query="async">//Method[contains(@modifiers,'async')]/@name</button>
                         <button class="query-btn" data-query="if">//if</button>
-                        <button class="query-btn" data-query="params">//Method/Param/@name</button>
                         <button class="query-btn" data-query="throws">//throw</button>
                         <button class="query-btn" data-query="count">count(//Method)</button>
+                        <button class="query-btn" data-query="ci" style="border-color: #f85149;">--expect none //throw</button>
                     </div>
                 </div>
 
@@ -482,6 +446,7 @@
                         <span class="icon">📋</span> Results
                         <div class="output-tabs" style="margin-left: auto;">
                             <button class="output-tab active" data-format="lines">lines</button>
+                            <button class="output-tab" data-format="xml">xml</button>
                             <button class="output-tab" data-format="json">json</button>
                             <button class="output-tab" data-format="gcc">gcc</button>
                         </div>
@@ -494,6 +459,68 @@ DeleteUser</div>
     </div><!-- close wide container -->
 
     <div class="container">
+        <section>
+            <h2>Why XPath?</h2>
+            <p>
+                Other code search tools introduce custom query languages that are powerful but opaque.
+                When your query doesn't match, you're left guessing why.
+            </p>
+
+            <div class="feature-grid">
+                <div class="feature">
+                    <h3>See What You're Querying</h3>
+                    <p>Run <code>tractor file.cs</code> without any query to see the full XML AST.
+                    No hidden structure—just look at the output and write your XPath.</p>
+                </div>
+                <div class="feature">
+                    <h3>Debug With Any XPath Tool</h3>
+                    <p>Copy the XML into browser DevTools, an online XPath tester, or VS Code.
+                    Test and refine your query with instant feedback.</p>
+                </div>
+                <div class="feature">
+                    <h3>No New Syntax to Learn</h3>
+                    <p>XPath is a W3C standard from 1999. Millions of developers already know it.
+                    Stack Overflow has 50k+ XPath questions with answers.</p>
+                </div>
+                <div class="feature">
+                    <h3>Predicates That Make Sense</h3>
+                    <p><code>[@modifiers='public']</code> reads like English.
+                    No magic symbols or pattern-matching DSLs to memorize.</p>
+                </div>
+            </div>
+
+            <p style="margin-top: 1.5rem;">
+                <strong>The workflow:</strong> Run <code>tractor file.cs</code> → see the XML →
+                write your XPath → test in any XPath tool → run with <code>-x "..."</code> → done.
+            </p>
+        </section>
+
+        <section>
+            <h2>Use Cases</h2>
+            <div class="feature-grid">
+                <div class="feature">
+                    <h3>Code Search</h3>
+                    <p>Find specific patterns across your codebase. Search for method names, find TODO comments,
+                    locate extension methods, or identify all async functions.</p>
+                </div>
+                <div class="feature">
+                    <h3>CI Policy Enforcement</h3>
+                    <p>Enforce coding standards in your pipeline. Require SQL to end with semicolons,
+                    ban certain patterns, or ensure test files have at least one test.</p>
+                </div>
+                <div class="feature">
+                    <h3>AST Inspection</h3>
+                    <p>Understand how your code is parsed. Debug syntax issues, explore the structure
+                    of unfamiliar code, or learn how Roslyn represents different constructs.</p>
+                </div>
+                <div class="feature">
+                    <h3>Refactoring Support</h3>
+                    <p>Identify refactoring candidates. Find similar patterns, locate code smells,
+                    or discover all usages before making breaking changes.</p>
+                </div>
+            </div>
+        </section>
+
         <section id="install">
             <h2>Installation</h2>
             <div class="install-cmd">
@@ -579,6 +606,7 @@ Options:
         const results = {
             methods: {
                 lines: 'GetUserAsync\nDeleteUser',
+                xml: '<Method name="GetUserAsync" type="Task&lt;User&gt;" modifiers="public async">...</Method>\n<Method name="DeleteUser" type="void" modifiers="public">...</Method>',
                 json: `[
   {"file": "UserService.cs", "line": 10, "value": "GetUserAsync"},
   {"file": "UserService.cs", "line": 17, "value": "DeleteUser"}
@@ -587,6 +615,7 @@ Options:
             },
             async: {
                 lines: 'GetUserAsync',
+                xml: '<Method name="GetUserAsync" type="Task&lt;User&gt;" modifiers="public async">\n  <Param name="id" type="int"/>\n  <Block>...</Block>\n</Method>',
                 json: `[
   {"file": "UserService.cs", "line": 10, "value": "GetUserAsync"}
 ]`,
@@ -594,22 +623,16 @@ Options:
             },
             if: {
                 lines: 'if (id <= 0)\n    throw new ArgumentException("Invalid ID");\n\nif (id <= 0)\n    return;',
+                xml: '<if>\n  <throw>...</throw>\n</if>\n\n<if>\n  <return/>\n</if>',
                 json: `[
   {"file": "UserService.cs", "line": 12, "value": "<if>...</if>"},
   {"file": "UserService.cs", "line": 19, "value": "<if>...</if>"}
 ]`,
                 gcc: 'UserService.cs:12:9: note: if statement\nUserService.cs:19:9: note: if statement'
             },
-            params: {
-                lines: 'id\nid',
-                json: `[
-  {"file": "UserService.cs", "line": 10, "value": "id"},
-  {"file": "UserService.cs", "line": 17, "value": "id"}
-]`,
-                gcc: 'UserService.cs:10:35: note: id\nUserService.cs:17:28: note: id'
-            },
             throws: {
                 lines: 'throw new ArgumentException("Invalid ID");',
+                xml: '<throw>\n  <new type="ArgumentException">\n    <Arg><String value="Invalid ID"/></Arg>\n  </new>\n</throw>',
                 json: `[
   {"file": "UserService.cs", "line": 13, "value": "<throw>...</throw>"}
 ]`,
@@ -617,8 +640,15 @@ Options:
             },
             count: {
                 lines: '2',
+                xml: '2',
                 json: '2',
                 gcc: '2'
+            },
+            ci: {
+                lines: 'error: Expected no matches but found 1\nexit code: 1',
+                xml: 'error: Expected no matches but found 1\nexit code: 1',
+                json: 'error: Expected no matches but found 1\nexit code: 1',
+                gcc: 'UserService.cs:13:13: error: throw statements not allowed\nerror: Expected no matches but found 1\nexit code: 1'
             }
         };
 
