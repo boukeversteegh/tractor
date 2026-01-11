@@ -33,6 +33,12 @@
             padding: 2rem;
         }
 
+        .container-wide {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
         header {
             text-align: center;
             padding: 3rem 0;
@@ -173,6 +179,136 @@
             color: var(--fg);
             border: 1px solid var(--border);
         }
+
+        /* Demo section */
+        .demo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto;
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        @media (max-width: 800px) {
+            .demo-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .demo-panel {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .demo-panel-header {
+            background: #21262d;
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+            color: #8b949e;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .demo-panel-header .icon {
+            font-size: 1rem;
+        }
+
+        .demo-panel pre {
+            margin: 0;
+            border: none;
+            border-radius: 0;
+            font-size: 0.8rem;
+            line-height: 1.5;
+        }
+
+        .query-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 1rem;
+        }
+
+        .query-btn {
+            background: #21262d;
+            border: 1px solid var(--border);
+            color: var(--fg);
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'SFMono-Regular', Consolas, monospace;
+            font-size: 0.8rem;
+            transition: all 0.15s;
+        }
+
+        .query-btn:hover {
+            border-color: var(--accent);
+            background: #30363d;
+        }
+
+        .query-btn.active {
+            background: var(--accent);
+            color: var(--bg);
+            border-color: var(--accent);
+        }
+
+        .output-tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .output-tab {
+            background: transparent;
+            border: none;
+            color: #8b949e;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+        }
+
+        .output-tab:hover {
+            color: var(--fg);
+        }
+
+        .output-tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .result-content {
+            padding: 1rem;
+            font-family: 'SFMono-Regular', Consolas, monospace;
+            font-size: 0.8rem;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow: auto;
+        }
+
+        /* Syntax highlighting for C# */
+        .cs-keyword { color: #ff7b72; }
+        .cs-type { color: #79c0ff; }
+        .cs-string { color: #a5d6ff; }
+        .cs-comment { color: #8b949e; }
+        .cs-number { color: #79c0ff; }
+        .cs-method { color: #d2a8ff; }
+        .cs-param { color: #ffa657; }
+
+        /* Syntax highlighting for XML */
+        .xml-tag { color: #7ee787; }
+        .xml-attr { color: #79c0ff; }
+        .xml-value { color: #a5d6ff; }
+        .xml-punct { color: #8b949e; }
+
+        /* Result highlighting */
+        .result-match { color: #7ee787; }
+        .result-file { color: #8b949e; }
+        .result-line { color: #ffa657; }
     </style>
 </head>
 <body>
@@ -215,6 +351,149 @@
             </div>
         </section>
 
+        <section>
+            <h2>Why XPath?</h2>
+            <p>
+                Other code search tools introduce custom query languages that are powerful but opaque.
+                When your query doesn't match, you're left guessing why.
+            </p>
+
+            <div class="feature-grid">
+                <div class="feature">
+                    <h3>See What You're Querying</h3>
+                    <p>Run <code>tractor file.cs</code> without any query to see the full XML AST.
+                    No hidden structure—just look at the output and write your XPath.</p>
+                </div>
+                <div class="feature">
+                    <h3>Debug With Any XPath Tool</h3>
+                    <p>Copy the XML into browser DevTools, an online XPath tester, or VS Code.
+                    Test and refine your query with instant feedback.</p>
+                </div>
+                <div class="feature">
+                    <h3>No New Syntax to Learn</h3>
+                    <p>XPath is a W3C standard from 1999. Millions of developers already know it.
+                    Stack Overflow has 50k+ XPath questions with answers.</p>
+                </div>
+                <div class="feature">
+                    <h3>Predicates That Make Sense</h3>
+                    <p><code>[@modifiers='public']</code> reads like English.
+                    No magic symbols or pattern-matching DSLs to memorize.</p>
+                </div>
+            </div>
+
+            <p style="margin-top: 1.5rem;">
+                <strong>The workflow:</strong> Run <code>tractor file.cs</code> → see the XML →
+                write your XPath → test in any XPath tool → run with <code>-x "..."</code> → done.
+            </p>
+        </section>
+
+    </div><!-- close container for wide demo -->
+
+    <div class="container-wide">
+        <section id="demo">
+            <h2>Interactive Demo</h2>
+            <p>Click a query to see how tractor extracts code patterns:</p>
+
+            <div class="demo-grid">
+                <!-- Top Left: Source Code -->
+                <div class="demo-panel">
+                    <div class="demo-panel-header">
+                        <span class="icon">📄</span> UserService.cs
+                    </div>
+                    <pre><code id="source-code"><span class="cs-keyword">public class</span> <span class="cs-type">UserService</span>
+{
+    <span class="cs-keyword">private readonly</span> <span class="cs-type">ILogger</span> _logger;
+
+    <span class="cs-keyword">public</span> <span class="cs-type">UserService</span>(<span class="cs-type">ILogger</span> <span class="cs-param">logger</span>)
+    {
+        _logger = logger;
+    }
+
+    <span class="cs-keyword">public async</span> <span class="cs-type">Task</span>&lt;<span class="cs-type">User</span>&gt; <span class="cs-method">GetUserAsync</span>(<span class="cs-type">int</span> <span class="cs-param">id</span>)
+    {
+        <span class="cs-keyword">if</span> (id &lt;= <span class="cs-number">0</span>)
+            <span class="cs-keyword">throw new</span> <span class="cs-type">ArgumentException</span>(<span class="cs-string">"Invalid ID"</span>);
+
+        <span class="cs-keyword">return await</span> _db.FindAsync(id);
+    }
+
+    <span class="cs-keyword">public void</span> <span class="cs-method">DeleteUser</span>(<span class="cs-type">int</span> <span class="cs-param">id</span>)
+    {
+        <span class="cs-keyword">if</span> (id &lt;= <span class="cs-number">0</span>)
+            <span class="cs-keyword">return</span>;
+
+        _db.Delete(id);
+        _logger.Log(<span class="cs-string">"Deleted user"</span>);
+    }
+}</code></pre>
+                </div>
+
+                <!-- Top Right: XML AST -->
+                <div class="demo-panel">
+                    <div class="demo-panel-header">
+                        <span class="icon">🌳</span> XML AST
+                    </div>
+                    <pre><code id="xml-ast"><span class="xml-punct">&lt;</span><span class="xml-tag">File</span><span class="xml-punct">&gt;</span>
+  <span class="xml-punct">&lt;</span><span class="xml-tag">class</span> <span class="xml-attr">name</span><span class="xml-punct">=</span><span class="xml-value">"UserService"</span> <span class="xml-attr">modifiers</span><span class="xml-punct">=</span><span class="xml-value">"public"</span><span class="xml-punct">&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">Field</span> <span class="xml-attr">name</span><span class="xml-punct">=</span><span class="xml-value">"_logger"</span> <span class="xml-attr">type</span><span class="xml-punct">=</span><span class="xml-value">"ILogger"</span> <span class="xml-attr">modifiers</span><span class="xml-punct">=</span><span class="xml-value">"private readonly"</span><span class="xml-punct">/&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">Constructor</span> <span class="xml-attr">modifiers</span><span class="xml-punct">=</span><span class="xml-value">"public"</span><span class="xml-punct">&gt;</span>
+      <span class="xml-punct">&lt;</span><span class="xml-tag">Param</span> <span class="xml-attr">name</span><span class="xml-punct">=</span><span class="xml-value">"logger"</span> <span class="xml-attr">type</span><span class="xml-punct">=</span><span class="xml-value">"ILogger"</span><span class="xml-punct">/&gt;</span>
+      <span class="xml-punct">&lt;</span><span class="xml-tag">Block</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">Block</span><span class="xml-punct">&gt;</span>
+    <span class="xml-punct">&lt;/</span><span class="xml-tag">Constructor</span><span class="xml-punct">&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">Method</span> <span class="xml-attr">name</span><span class="xml-punct">=</span><span class="xml-value">"GetUserAsync"</span> <span class="xml-attr">type</span><span class="xml-punct">=</span><span class="xml-value">"Task&lt;User&gt;"</span> <span class="xml-attr">modifiers</span><span class="xml-punct">=</span><span class="xml-value">"public async"</span><span class="xml-punct">&gt;</span>
+      <span class="xml-punct">&lt;</span><span class="xml-tag">Param</span> <span class="xml-attr">name</span><span class="xml-punct">=</span><span class="xml-value">"id"</span> <span class="xml-attr">type</span><span class="xml-punct">=</span><span class="xml-value">"int"</span><span class="xml-punct">/&gt;</span>
+      <span class="xml-punct">&lt;</span><span class="xml-tag">Block</span><span class="xml-punct">&gt;</span>
+        <span class="xml-punct">&lt;</span><span class="xml-tag">if</span><span class="xml-punct">&gt;</span>
+          <span class="xml-punct">&lt;</span><span class="xml-tag">throw</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">throw</span><span class="xml-punct">&gt;</span>
+        <span class="xml-punct">&lt;/</span><span class="xml-tag">if</span><span class="xml-punct">&gt;</span>
+        <span class="xml-punct">&lt;</span><span class="xml-tag">return</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">return</span><span class="xml-punct">&gt;</span>
+      <span class="xml-punct">&lt;/</span><span class="xml-tag">Block</span><span class="xml-punct">&gt;</span>
+    <span class="xml-punct">&lt;/</span><span class="xml-tag">Method</span><span class="xml-punct">&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">Method</span> <span class="xml-attr">name</span><span class="xml-punct">=</span><span class="xml-value">"DeleteUser"</span> <span class="xml-attr">type</span><span class="xml-punct">=</span><span class="xml-value">"void"</span> <span class="xml-attr">modifiers</span><span class="xml-punct">=</span><span class="xml-value">"public"</span><span class="xml-punct">&gt;</span>
+      <span class="xml-punct">&lt;</span><span class="xml-tag">Param</span> <span class="xml-attr">name</span><span class="xml-punct">=</span><span class="xml-value">"id"</span> <span class="xml-attr">type</span><span class="xml-punct">=</span><span class="xml-value">"int"</span><span class="xml-punct">/&gt;</span>
+      <span class="xml-punct">&lt;</span><span class="xml-tag">Block</span><span class="xml-punct">&gt;</span>
+        <span class="xml-punct">&lt;</span><span class="xml-tag">if</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">if</span><span class="xml-punct">&gt;</span>
+        <span class="xml-punct">&lt;</span><span class="xml-tag">Call</span> <span class="xml-attr">target</span><span class="xml-punct">=</span><span class="xml-value">"_db.Delete"</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">Call</span><span class="xml-punct">&gt;</span>
+        <span class="xml-punct">&lt;</span><span class="xml-tag">Call</span> <span class="xml-attr">target</span><span class="xml-punct">=</span><span class="xml-value">"_logger.Log"</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">Call</span><span class="xml-punct">&gt;</span>
+      <span class="xml-punct">&lt;/</span><span class="xml-tag">Block</span><span class="xml-punct">&gt;</span>
+    <span class="xml-punct">&lt;/</span><span class="xml-tag">Method</span><span class="xml-punct">&gt;</span>
+  <span class="xml-punct">&lt;/</span><span class="xml-tag">class</span><span class="xml-punct">&gt;</span>
+<span class="xml-punct">&lt;/</span><span class="xml-tag">File</span><span class="xml-punct">&gt;</span></code></pre>
+                </div>
+
+                <!-- Bottom Left: Query Buttons -->
+                <div class="demo-panel">
+                    <div class="demo-panel-header">
+                        <span class="icon">🔍</span> XPath Queries
+                    </div>
+                    <div class="query-buttons">
+                        <button class="query-btn active" data-query="methods">//Method/@name</button>
+                        <button class="query-btn" data-query="async">//Method[contains(@modifiers,'async')]/@name</button>
+                        <button class="query-btn" data-query="if">//if</button>
+                        <button class="query-btn" data-query="params">//Method/Param/@name</button>
+                        <button class="query-btn" data-query="throws">//throw</button>
+                        <button class="query-btn" data-query="count">count(//Method)</button>
+                    </div>
+                </div>
+
+                <!-- Bottom Right: Results -->
+                <div class="demo-panel">
+                    <div class="demo-panel-header">
+                        <span class="icon">📋</span> Results
+                        <div class="output-tabs" style="margin-left: auto;">
+                            <button class="output-tab active" data-format="lines">lines</button>
+                            <button class="output-tab" data-format="json">json</button>
+                            <button class="output-tab" data-format="gcc">gcc</button>
+                        </div>
+                    </div>
+                    <div class="result-content" id="result-content">GetUserAsync
+DeleteUser</div>
+                </div>
+            </div>
+        </section>
+    </div><!-- close wide container -->
+
+    <div class="container">
         <section id="install">
             <h2>Installation</h2>
             <div class="install-cmd">
@@ -294,5 +573,82 @@ Options:
             </p>
         </footer>
     </div>
+
+    <script>
+        // Demo data - results for each query in each format
+        const results = {
+            methods: {
+                lines: 'GetUserAsync\nDeleteUser',
+                json: `[
+  {"file": "UserService.cs", "line": 10, "value": "GetUserAsync"},
+  {"file": "UserService.cs", "line": 17, "value": "DeleteUser"}
+]`,
+                gcc: 'UserService.cs:10:5: note: GetUserAsync\nUserService.cs:17:5: note: DeleteUser'
+            },
+            async: {
+                lines: 'GetUserAsync',
+                json: `[
+  {"file": "UserService.cs", "line": 10, "value": "GetUserAsync"}
+]`,
+                gcc: 'UserService.cs:10:5: note: GetUserAsync'
+            },
+            if: {
+                lines: 'if (id <= 0)\n    throw new ArgumentException("Invalid ID");\n\nif (id <= 0)\n    return;',
+                json: `[
+  {"file": "UserService.cs", "line": 12, "value": "<if>...</if>"},
+  {"file": "UserService.cs", "line": 19, "value": "<if>...</if>"}
+]`,
+                gcc: 'UserService.cs:12:9: note: if statement\nUserService.cs:19:9: note: if statement'
+            },
+            params: {
+                lines: 'id\nid',
+                json: `[
+  {"file": "UserService.cs", "line": 10, "value": "id"},
+  {"file": "UserService.cs", "line": 17, "value": "id"}
+]`,
+                gcc: 'UserService.cs:10:35: note: id\nUserService.cs:17:28: note: id'
+            },
+            throws: {
+                lines: 'throw new ArgumentException("Invalid ID");',
+                json: `[
+  {"file": "UserService.cs", "line": 13, "value": "<throw>...</throw>"}
+]`,
+                gcc: 'UserService.cs:13:13: note: throw statement'
+            },
+            count: {
+                lines: '2',
+                json: '2',
+                gcc: '2'
+            }
+        };
+
+        let currentQuery = 'methods';
+        let currentFormat = 'lines';
+
+        function updateResult() {
+            const content = document.getElementById('result-content');
+            content.textContent = results[currentQuery][currentFormat];
+        }
+
+        // Query button handlers
+        document.querySelectorAll('.query-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.query-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentQuery = btn.dataset.query;
+                updateResult();
+            });
+        });
+
+        // Format tab handlers
+        document.querySelectorAll('.output-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.output-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentFormat = tab.dataset.format;
+                updateResult();
+            });
+        });
+    </script>
 </body>
 </html>
