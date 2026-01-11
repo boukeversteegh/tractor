@@ -169,11 +169,12 @@ public static class OutputFormatter
         return xml;
     }
 
-    // Highlight color for matched elements
-    private const string BgGreen = "\x1b[42m";
+    // Highlight colors for matched elements
     private const string BgYellow = "\x1b[43m";
+    private const string BgGreen = "\x1b[42m";
     private const string Bold = "\x1b[1m";
     private const string Magenta = "\x1b[35m";
+    private const string Black = "\x1b[30m";
 
     /// <summary>
     /// Colorize XML and highlight matched elements with a distinct background/style
@@ -183,14 +184,13 @@ public static class OutputFormatter
         if (string.IsNullOrEmpty(xml))
             return xml;
 
-        if (!useColor)
-            return xml;
-
-        // Build a set of line:col positions that are matches
-        var matchPositions = new HashSet<(int line, int col)>();
+        // Build a set of (elementName, line, col) tuples for precise matching
+        var matchPositions = new HashSet<(string elem, int line, int col)>();
         foreach (var match in matches)
         {
-            matchPositions.Add((match.Line, match.Column));
+            // Extract element name from the navigator if available
+            var elemName = match.Navigator?.Name ?? "";
+            matchPositions.Add((elemName, match.Line, match.Column));
         }
 
         // Process line by line to highlight matched elements
@@ -200,34 +200,77 @@ public static class OutputFormatter
         foreach (var originalLine in lines)
         {
             var line = originalLine;
+            bool lineHasMatch = false;
 
             // Check if this line contains any match start positions
             // Look for elements with startLine="N" startCol="M" and check if (N,M) is in matchPositions
             var highlighted = Regex.Replace(line,
-                @"<(\w+)(\s+[^>]*?startLine=""(\d+)""[^>]*?startCol=""(\d+)""[^>]*)>",
+                @"<(\w+)(\s+[^>]*?startLine=""(\d+)""[^>]*?startCol=""(\d+)""[^>]*)(>|/>)",
                 m =>
                 {
                     var elementName = m.Groups[1].Value;
                     var attrs = m.Groups[2].Value;
+                    var closeBracket = m.Groups[5].Value;
                     var startLine = int.Parse(m.Groups[3].Value);
                     var startCol = int.Parse(m.Groups[4].Value);
 
-                    if (matchPositions.Contains((startLine, startCol)))
+                    if (matchPositions.Contains((elementName, startLine, startCol)))
                     {
-                        // This element is a match - highlight it
-                        return $"{Bold}{Magenta}<{elementName}{Reset}{attrs}{Bold}{Magenta}>{Reset}";
+                        lineHasMatch = true;
+                        if (useColor)
+                        {
+                            // Highlight with yellow background and black text for visibility
+                            return $"{BgYellow}{Black}{Bold}<{elementName}{attrs}{closeBracket}{Reset}";
+                        }
+                        else
+                        {
+                            // No color - add marker
+                            return $"<{elementName}{attrs}{closeBracket}  <<<MATCH";
+                        }
                     }
                     return m.Value;
                 });
 
-            // Also highlight closing tags for matched elements by checking the same line pattern
-            // (This is a simplification - ideally we'd track element depth)
+            // Add line marker for matched lines (replace leading spaces to preserve alignment)
+            if (lineHasMatch)
+            {
+                const string marker = ">> ";
+                var leadingSpaces = highlighted.Length - highlighted.TrimStart().Length;
+                if (leadingSpaces >= marker.Length)
+                {
+                    // Replace leading spaces with marker
+                    var trimmed = highlighted.Substring(marker.Length);
+                    highlighted = useColor
+                        ? $"{BgYellow}{Black}{marker}{Reset}{trimmed}"
+                        : marker + trimmed;
+                }
+                else
+                {
+                    // Not enough leading space, prepend marker
+                    highlighted = useColor
+                        ? $"{BgYellow}{Black}{marker}{Reset}{highlighted}"
+                        : marker + highlighted;
+                }
+            }
 
             result.Add(highlighted);
         }
 
-        // Now colorize the whole thing
+        // Apply syntax coloring to the whole thing (but not to already-highlighted parts)
         var combined = string.Join('\n', result);
-        return ColorizeXml(combined);
+        if (useColor)
+        {
+            // Only colorize non-highlighted lines
+            var finalLines = combined.Split('\n');
+            for (int i = 0; i < finalLines.Length; i++)
+            {
+                if (!finalLines[i].Contains(BgYellow))
+                {
+                    finalLines[i] = ColorizeXml(finalLines[i]);
+                }
+            }
+            return string.Join('\n', finalLines);
+        }
+        return combined;
     }
 }

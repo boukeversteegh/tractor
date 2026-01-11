@@ -296,7 +296,7 @@ public static class XmlGenerator
             SyntaxKind.BaseList => "BaseList",
             SyntaxKind.SimpleBaseType => "BaseType",
             SyntaxKind.EnumMemberDeclaration => "EnumMember",
-            SyntaxKind.CompilationUnit => "File",
+            SyntaxKind.CompilationUnit => "CompilationUnit",
             SyntaxKind.GlobalStatement => "Global",
 
             _ => DeriveElementName(node.Kind().ToString())

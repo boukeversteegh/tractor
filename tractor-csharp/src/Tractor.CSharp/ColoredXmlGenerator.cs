@@ -285,7 +285,7 @@ public static class ColoredXmlGenerator
             SyntaxKind.IdentifierName => "Id",
             SyntaxKind.StringLiteralExpression => "String",
             SyntaxKind.NumericLiteralExpression => "Number",
-            SyntaxKind.CompilationUnit => "File",
+            SyntaxKind.CompilationUnit => "CompilationUnit",
             _ => DeriveElementName(node.Kind().ToString())
         };
     }
