@@ -77,6 +77,93 @@ public static class QueryEngine
         return matches;
     }
 
+    /// <summary>
+    /// v2 mode: Process pre-parsed XML directly (from tractor-parse output)
+    /// </summary>
+    public static List<Match> ProcessXml(string xml, string? xpath, bool stripFullXmlLocations, bool verbose = false)
+    {
+        var matches = new List<Match>();
+
+        using var stringReader = new StringReader(xml);
+        var doc = new XPathDocument(stringReader);
+        var nav = doc.CreateNavigator();
+
+        if (xpath == null)
+        {
+            // No query - just output the XML
+            var formatted = stripFullXmlLocations ? StripLocationMetadata(xml) : xml;
+            matches.Add(new Match("xml", 1, 1, 1, 1, formatted, Array.Empty<string>(), null));
+        }
+        else
+        {
+            var result = nav.XPath2Evaluate(xpath);
+
+            if (verbose)
+                Console.Error.WriteLine($"[verbose] result type: {result?.GetType().FullName ?? "null"}");
+
+            IEnumerable<object> items = result switch
+            {
+                XPathNavigator singleNav => new object[] { singleNav },
+                IEnumerable<object> seq => seq,
+                XPathNodeIterator iter => IteratorToObjects(iter),
+                _ => new object[] { result! }
+            };
+
+            foreach (var item in items)
+            {
+                if (item is XPathNavigator current)
+                {
+                    var (line, col, endLine, endCol) = GetLocation(current);
+                    var filePath = GetFilePathFromContext(current);
+
+                    if (verbose)
+                        Console.Error.WriteLine($"[verbose] file: {filePath}, location: {line}:{col} - {endLine}:{endCol}");
+
+                    // For XML mode, use the node's text content or outer XML
+                    var value = current.NodeType switch
+                    {
+                        XPathNodeType.Attribute => current.Value,
+                        XPathNodeType.Text => current.Value,
+                        XPathNodeType.Element => current.Value,  // Inner text
+                        _ => current.OuterXml
+                    };
+
+                    matches.Add(new Match(filePath, line, col, endLine, endCol, value, Array.Empty<string>(), current.Clone()));
+                }
+                else
+                {
+                    matches.Add(new Match("xml", 1, 1, 1, 1, item?.ToString() ?? "", Array.Empty<string>(), null));
+                }
+            }
+        }
+
+        return matches;
+    }
+
+    /// <summary>
+    /// Find the containing File element and get its path attribute
+    /// </summary>
+    private static string GetFilePathFromContext(XPathNavigator nav)
+    {
+        var current = nav.Clone();
+
+        // Walk up to find File element with path attribute
+        while (true)
+        {
+            if (current.LocalName == "File")
+            {
+                var path = current.GetAttribute("path", "");
+                if (!string.IsNullOrEmpty(path))
+                    return path;
+            }
+
+            if (!current.MoveToParent())
+                break;
+        }
+
+        return "unknown";
+    }
+
     private static IEnumerable<object> IteratorToObjects(XPathNodeIterator iter)
     {
         while (iter.MoveNext())
@@ -100,7 +187,9 @@ public static class QueryEngine
         var endLineAttr = nav.GetAttribute("endLine", "");
         var endColAttr = nav.GetAttribute("endCol", "");
 
-        if (string.IsNullOrEmpty(lineAttr) && current.NodeType == XPathNodeType.Attribute)
+        // For attributes, text nodes, and comments, get location from parent element
+        if (string.IsNullOrEmpty(lineAttr) &&
+            current.NodeType is XPathNodeType.Attribute or XPathNodeType.Text or XPathNodeType.Comment)
         {
             var parent = current.Clone();
             parent.MoveToParent();
@@ -161,7 +250,7 @@ public static class QueryEngine
         return builder.ToString();
     }
 
-    internal static string StripLocationMetadata(string xml)
+    public static string StripLocationMetadata(string xml)
     {
         var doc = new XmlDocument { PreserveWhitespace = true };
         doc.LoadXml(xml);

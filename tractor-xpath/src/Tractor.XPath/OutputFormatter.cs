@@ -168,4 +168,66 @@ public static class OutputFormatter
 
         return xml;
     }
+
+    // Highlight color for matched elements
+    private const string BgGreen = "\x1b[42m";
+    private const string BgYellow = "\x1b[43m";
+    private const string Bold = "\x1b[1m";
+    private const string Magenta = "\x1b[35m";
+
+    /// <summary>
+    /// Colorize XML and highlight matched elements with a distinct background/style
+    /// </summary>
+    public static string ColorizeXmlWithHighlights(string xml, List<Match> matches, bool useColor)
+    {
+        if (string.IsNullOrEmpty(xml))
+            return xml;
+
+        if (!useColor)
+            return xml;
+
+        // Build a set of line:col positions that are matches
+        var matchPositions = new HashSet<(int line, int col)>();
+        foreach (var match in matches)
+        {
+            matchPositions.Add((match.Line, match.Column));
+        }
+
+        // Process line by line to highlight matched elements
+        var lines = xml.Split('\n');
+        var result = new List<string>();
+
+        foreach (var originalLine in lines)
+        {
+            var line = originalLine;
+
+            // Check if this line contains any match start positions
+            // Look for elements with startLine="N" startCol="M" and check if (N,M) is in matchPositions
+            var highlighted = Regex.Replace(line,
+                @"<(\w+)(\s+[^>]*?startLine=""(\d+)""[^>]*?startCol=""(\d+)""[^>]*)>",
+                m =>
+                {
+                    var elementName = m.Groups[1].Value;
+                    var attrs = m.Groups[2].Value;
+                    var startLine = int.Parse(m.Groups[3].Value);
+                    var startCol = int.Parse(m.Groups[4].Value);
+
+                    if (matchPositions.Contains((startLine, startCol)))
+                    {
+                        // This element is a match - highlight it
+                        return $"{Bold}{Magenta}<{elementName}{Reset}{attrs}{Bold}{Magenta}>{Reset}";
+                    }
+                    return m.Value;
+                });
+
+            // Also highlight closing tags for matched elements by checking the same line pattern
+            // (This is a simplification - ideally we'd track element depth)
+
+            result.Add(highlighted);
+        }
+
+        // Now colorize the whole thing
+        var combined = string.Join('\n', result);
+        return ColorizeXml(combined);
+    }
 }

@@ -488,3 +488,6 @@ nupkg/
 
 # Rust
 target/
+
+# Distribution
+dist/

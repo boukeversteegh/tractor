@@ -7,13 +7,29 @@ description = "TreeSitter-based multi-language parser for tractor toolchain"
 [dependencies]
 tree-sitter = "0.24"
 
-# Language grammars - uncomment as needed
+# Language grammars - core languages
 tree-sitter-c-sharp = "0.23"
-# tree-sitter-javascript = "0.23"
-# tree-sitter-typescript = "0.23"
-# tree-sitter-python = "0.23"
-# tree-sitter-go = "0.23"
-# tree-sitter-rust = "0.23"
+tree-sitter-rust = "0.23"
+tree-sitter-javascript = "0.23"
+tree-sitter-typescript = "0.23"
+tree-sitter-python = "0.23"
+tree-sitter-go = "0.23"
+tree-sitter-java = "0.23"
+tree-sitter-ruby = "0.23"
+tree-sitter-cpp = "0.23"
+tree-sitter-c = "0.23"
+tree-sitter-json = "0.24"
+tree-sitter-html = "0.23"
+tree-sitter-css = "0.23"
+tree-sitter-bash = "0.23"
+tree-sitter-yaml = "0.7"
+tree-sitter-php = "0.23"
+tree-sitter-scala = "0.23"
+tree-sitter-lua = "0.4"
+tree-sitter-haskell = "0.23"
+tree-sitter-ocaml = "0.24"
+tree-sitter-r = "1.0"
+tree-sitter-julia = "0.23"
 
 # CLI and XML
 clap = { version = "4", features = ["derive"] }

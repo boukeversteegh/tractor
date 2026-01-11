@@ -1,5 +1,8 @@
 version: '3'
 
+vars:
+  DIST_DIR: ./dist
+
 tasks:
   # === tractor-xpath (C# XPath query engine) ===
 
@@ -30,33 +33,143 @@ tasks:
     cmds:
       - dotnet run --project src/Tractor.XPath/Tractor.XPath.csproj -- {{.CLI_ARGS}}
 
+  xpath:dist:
+    desc: Build tractor-xpath for distribution
+    dir: tractor-xpath
+    cmds:
+      - dotnet publish src/Tractor.XPath/Tractor.XPath.csproj -c Release -o ../dist/dotnet
+
+  # === tractor-csharp (Roslyn C# parser) ===
+
+  csharp:build:
+    desc: Build tractor-csharp
+    dir: tractor-csharp
+    cmds:
+      - dotnet build src/Tractor.CSharp/Tractor.CSharp.csproj -c Release
+
+  csharp:install:
+    desc: Build and install tractor-csharp as global tool
+    dir: tractor-csharp
+    deps: [csharp:build]
+    cmds:
+      - dotnet pack src/Tractor.CSharp/Tractor.CSharp.csproj -c Release -o ./nupkg
+      - dotnet tool uninstall -g Tractor.CSharp || true
+      - dotnet tool install -g Tractor.CSharp --add-source ./nupkg
+
   # === tractor-parse (Rust TreeSitter parser) ===
 
   parse:build:
-    desc: Build tractor-parse
+    desc: Build tractor-parse for current platform
     dir: tractor-parse
     cmds:
       - cargo build --release
 
-  parse:test:
-    desc: Run tractor-parse tests
+  parse:install:
+    desc: Build and install tractor-parse to dotnet tools directory
+    dir: tractor-parse
+    deps: [parse:build]
+    cmds:
+      - cmd: cp target/release/tractor-parse ~/.dotnet/tools/
+        platforms: [linux, darwin]
+      - cmd: cp target/x86_64-pc-windows-msvc/release/tractor-parse.exe ~/.dotnet/tools/
+        platforms: [windows]
+
+  parse:docker-build:
+    desc: Build Docker image for tractor-parse
     dir: tractor-parse
     cmds:
-      - cargo test
+      - docker build -t tractor-parse-builder .
+
+  parse:linux:
+    desc: Build tractor-parse for Linux (via Docker)
+    deps: [parse:docker-build]
+    cmds:
+      - mkdir -p {{.DIST_DIR}}/linux-x64
+      - docker run --rm -v "{{.PWD}}/tractor-parse:/src" tractor-parse-builder
+          cargo build --release --target x86_64-unknown-linux-gnu
+      - cp tractor-parse/target/x86_64-unknown-linux-gnu/release/tractor-parse {{.DIST_DIR}}/linux-x64/
+    vars:
+      PWD:
+        sh: pwd
+
+  parse:windows:
+    desc: Build tractor-parse for Windows (via Docker cross-compile)
+    deps: [parse:docker-build]
+    cmds:
+      - mkdir -p {{.DIST_DIR}}/windows-x64
+      - docker run --rm -v "{{.PWD}}/tractor-parse:/src" tractor-parse-builder
+          cargo build --release --target x86_64-pc-windows-gnu
+      - cp tractor-parse/target/x86_64-pc-windows-gnu/release/tractor-parse.exe {{.DIST_DIR}}/windows-x64/
+    vars:
+      PWD:
+        sh: pwd
+
+  parse:all:
+    desc: Build tractor-parse for all platforms
+    cmds:
+      - task: parse:linux
+      - task: parse:windows
+
+  # === tractor-cli (unified CLI) ===
+
+  cli:build:
+    desc: Build tractor CLI
+    dir: tractor-cli
+    deps: [xpath:build]
+    cmds:
+      - dotnet build src/Tractor.Cli/Tractor.Cli.csproj -c Release
+
+  cli:install:
+    desc: Build and install tractor as global tool
+    dir: tractor-cli
+    deps: [cli:build]
+    cmds:
+      - dotnet pack src/Tractor.Cli/Tractor.Cli.csproj -c Release -o ./nupkg
+      - dotnet tool uninstall -g Tractor || true
+      - dotnet tool install -g Tractor --add-source ./nupkg
+
+  cli:run:
+    desc: Run tractor with arguments
+    dir: tractor-cli
+    cmds:
+      - dotnet run --project src/Tractor.Cli/Tractor.Cli.csproj -- {{.CLI_ARGS}}
+
+  cli:dist:
+    desc: Build tractor CLI for distribution
+    dir: tractor-cli
+    cmds:
+      - dotnet publish src/Tractor.Cli/Tractor.Cli.csproj -c Release -o ../dist/dotnet
 
   # === Combined tasks ===
 
   build:
     desc: Build all components
-    deps: [xpath:build]
-    # deps: [xpath:build, parse:build]  # Uncomment when parse is ready
+    deps: [xpath:build, csharp:build, cli:build, parse:build]
 
   test:
     desc: Run all tests
     deps: [xpath:test]
-    # deps: [xpath:test, parse:test]  # Uncomment when parse is ready
 
   install:
-    desc: Install all components
-    deps: [xpath:install]
-    # deps: [xpath:install, parse:install]  # Uncomment when parse is ready
+    desc: Install all tools globally
+    cmds:
+      - task: xpath:install
+      - task: csharp:install
+      - task: cli:install
+      - task: parse:install
+
+  dist:
+    desc: Build all components for distribution
+    cmds:
+      - task: cli:dist
+      - task: parse:all
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -rf dist/
+      - rm -rf tractor-parse/target/
+      - rm -rf tractor-xpath/src/Tractor.XPath/bin/
+      - rm -rf tractor-xpath/src/Tractor.XPath/obj/
+      - rm -rf tractor-cli/src/Tractor.Cli/bin/
+      - rm -rf tractor-cli/src/Tractor.Cli/obj/

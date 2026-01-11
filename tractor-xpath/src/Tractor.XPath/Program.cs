@@ -1,23 +1,18 @@
 using System.Xml.XPath;
 using Tractor.XPath;
 
-var files = new List<string>();
 string? xpathExpr = null;
 string? expectation = null;
 string format = "lines";
 string? message = null;
-bool fromStdin = false;
 bool stripLocationAttributes = true;
 bool verbose = false;
-string colorMode = "auto"; // auto, always, never
+string colorMode = "auto";
 
 for (int i = 0; i < args.Length; i++)
 {
     switch (args[i])
     {
-        case "--stdin":
-            fromStdin = true;
-            break;
         case "--xpath" or "-x":
             xpathExpr = args[++i];
             break;
@@ -46,24 +41,25 @@ for (int i = 0; i < args.Length; i++)
             PrintHelp();
             return 0;
         default:
-            if (!args[i].StartsWith("-"))
-                files.Add(args[i]);
             break;
     }
 }
 
-if (files.Count == 0 && !fromStdin)
+// Read XML from stdin
+var xml = Console.In.ReadToEnd();
+
+if (string.IsNullOrWhiteSpace(xml))
 {
-    PrintHelp();
+    Console.Error.WriteLine("error: no XML input received on stdin");
+    Console.Error.WriteLine("Usage: tractor-parse file.rs | tractor-xpath -x \"//query\"");
     return 1;
 }
 
-// Verbose output
 if (verbose)
 {
-    Console.Error.WriteLine($"[verbose] files: {string.Join(", ", files)}");
     Console.Error.WriteLine($"[verbose] xpath: {xpathExpr ?? "(none)"}");
     Console.Error.WriteLine($"[verbose] format: {format}");
+    Console.Error.WriteLine($"[verbose] xml length: {xml.Length}");
 }
 
 // Determine if we should use color
@@ -74,17 +70,8 @@ bool useColor = colorMode switch
     _ => !Console.IsOutputRedirected && Environment.GetEnvironmentVariable("NO_COLOR") == null
 };
 
-// Collect all matches across files
-var allMatches = new List<Match>();
-var filesToProcess = fromStdin
-    ? new[] { ("stdin", Console.In.ReadToEnd()) }
-    : files.SelectMany(QueryEngine.ExpandGlob).Select(f => (f, File.ReadAllText(f)));
-
-foreach (var (filePath, code) in filesToProcess)
-{
-    var matches = QueryEngine.ProcessFile(filePath, code, xpathExpr, stripLocationAttributes, verbose);
-    allMatches.AddRange(matches);
-}
+// Process XML with XPath
+var allMatches = QueryEngine.ProcessXml(xml, xpathExpr, stripLocationAttributes, verbose);
 
 // Output results
 int matchCount = allMatches.Count;
@@ -105,10 +92,10 @@ switch (format)
         {
             if (match.Navigator != null)
             {
-                var xml = match.Navigator.OuterXml;
+                var outputXml = match.Navigator.OuterXml;
                 if (stripLocationAttributes && match.Navigator.NodeType == XPathNodeType.Element)
-                    xml = QueryEngine.StripLocationMetadata(xml);
-                Console.WriteLine(useColor ? OutputFormatter.ColorizeXml(xml) : xml);
+                    outputXml = QueryEngine.StripLocationMetadata(outputXml);
+                Console.WriteLine(useColor ? OutputFormatter.ColorizeXml(outputXml) : outputXml);
             }
             else
             {
@@ -121,7 +108,6 @@ switch (format)
     default:
         foreach (var match in allMatches)
         {
-            // When no xpath is specified, output is XML - colorize it
             var output = (xpathExpr == null && useColor)
                 ? OutputFormatter.ColorizeXml(match.Value)
                 : match.Value;
@@ -162,41 +148,33 @@ return 0;
 void PrintHelp()
 {
     Console.WriteLine("""
-        CodeXTractor - Extract patterns from source code using XPath queries
+        tractor-xpath - XPath 2.0 query engine for XML AST (reads from stdin)
 
-        Usage: tractor <files...> [options]
-               tractor --stdin [options]
+        Usage: tractor-parse <files> | tractor-xpath -x <query> [options]
+               cat file.xml | tractor-xpath -x <query> [options]
 
         Options:
-          -x, --xpath <expr>     XPath 2.0 query (without: outputs full XML AST)
+          -x, --xpath <expr>     XPath 2.0 query (without: outputs full XML)
           -e, --expect <value>   Expected result: none, some, or a number
           -f, --format <fmt>     Output format: lines, gcc, json, count, xml
           -m, --message <msg>    Custom message (supports {value}, {line}, {xpath})
-          --keep-locations       Include start/end line+col attributes in XML output
+          --keep-locations       Include startLine/startCol/endLine/endCol attributes
           --color <mode>         Color output: auto (default), always, never
-          --no-color             Disable colored output (same as --color never)
-          -v, --verbose          Show parsed arguments (helps debug shell escaping)
+          --no-color             Disable colored output
+          -v, --verbose          Show verbose output
           -h, --help             Show this help
 
-        Element names (C#):
-          Keywords (lowercase):  if, else, for, foreach, while, class, struct, etc.
-          Structural (Pascal):   Method, Property, Field, Call, Block, Param, etc.
-
         Examples:
-          # Output full XML AST
-          tractor Program.cs
+          # Query Rust functions
+          tractor-parse src/*.rs | tractor-xpath -x "//function_item/identifier"
 
-          # Find all method names
-          tractor Program.cs -x "//Method/@name"
+          # Query Python from stdin
+          echo "def foo(): pass" | tractor-parse - --lang python | tractor-xpath -x "//function_definition"
 
-          # Find all classes
-          tractor Program.cs -x "//class/@name"
+          # CI check - expect no matches
+          tractor-parse *.cs | tractor-xpath -x "//TODO" --expect none -f gcc
 
-          # Find if statements inside methods
-          tractor Program.cs -x "//Method//if"
-
-          # CI check - fail if any SQL missing semicolons
-          tractor "Migrations/*.cs" -x "//String[not(ends-with(@textValue, ';'))]" \
-              --expect none --format gcc --message "SQL must end with semicolon"
+          # Output as XML with colors
+          tractor-parse main.go | tractor-xpath -x "//function_declaration" -f xml
         """);
 }

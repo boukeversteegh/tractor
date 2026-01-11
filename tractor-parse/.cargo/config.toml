@@ -1,0 +1,7 @@
+[target.x86_64-pc-windows-msvc]
+# Rust will find MSVC tools via the VS installation
+# This config ensures we use the MSVC target by default
+
+[build]
+# Use MSVC target on Windows
+target = "x86_64-pc-windows-msvc"
