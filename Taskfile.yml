@@ -1,20 +1,62 @@
 version: '3'
 
 tasks:
-  build:
-    desc: Build the project
+  # === tractor-xpath (C# XPath query engine) ===
+
+  xpath:build:
+    desc: Build tractor-xpath
+    dir: tractor-xpath
     cmds:
-      - dotnet build CodeXTractor.csproj -c Release
+      - dotnet build src/Tractor.XPath/Tractor.XPath.csproj -c Release
+
+  xpath:test:
+    desc: Run tractor-xpath tests
+    dir: tractor-xpath
+    cmds:
+      - dotnet test tests/Tractor.XPath.Tests/Tractor.XPath.Tests.csproj
+
+  xpath:install:
+    desc: Build and install tractor-xpath as global tool
+    dir: tractor-xpath
+    deps: [xpath:build]
+    cmds:
+      - dotnet pack src/Tractor.XPath/Tractor.XPath.csproj -c Release -o ./nupkg
+      - dotnet tool uninstall -g Tractor.XPath || true
+      - dotnet tool install -g Tractor.XPath --add-source ./nupkg
+
+  xpath:run:
+    desc: Run tractor-xpath with arguments
+    dir: tractor-xpath
+    cmds:
+      - dotnet run --project src/Tractor.XPath/Tractor.XPath.csproj -- {{.CLI_ARGS}}
+
+  # === tractor-parse (Rust TreeSitter parser) ===
+
+  parse:build:
+    desc: Build tractor-parse
+    dir: tractor-parse
+    cmds:
+      - cargo build --release
+
+  parse:test:
+    desc: Run tractor-parse tests
+    dir: tractor-parse
+    cmds:
+      - cargo test
+
+  # === Combined tasks ===
+
+  build:
+    desc: Build all components
+    deps: [xpath:build]
+    # deps: [xpath:build, parse:build]  # Uncomment when parse is ready
+
+  test:
+    desc: Run all tests
+    deps: [xpath:test]
+    # deps: [xpath:test, parse:test]  # Uncomment when parse is ready
 
   install:
-    desc: Build and install as global tool
-    deps: [build]
-    cmds:
-      - dotnet pack CodeXTractor.csproj -c Release -o ./nupkg
-      - dotnet tool uninstall -g CodeXTractor || true
-      - dotnet tool install -g CodeXTractor --add-source ./nupkg
-
-  run:
-    desc: Run the CLI with arguments
-    cmds:
-      - dotnet run --project CodeXTractor.csproj -- {{.CLI_ARGS}}
+    desc: Install all components
+    deps: [xpath:install]
+    # deps: [xpath:install, parse:install]  # Uncomment when parse is ready

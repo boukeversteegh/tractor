@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace CodeXTractor.Tests;
+namespace Tractor.XPath.Tests;
 
 public class IntegrationTests : IDisposable
 {
@@ -13,7 +13,7 @@ public class IntegrationTests : IDisposable
         Directory.CreateDirectory(_testDir);
 
         // Use the global tool
-        _tractor = "tractor";
+        _tractor = "tractor-xpath";
     }
 
     public void Dispose()

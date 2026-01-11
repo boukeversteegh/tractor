@@ -4,7 +4,7 @@ using System.Xml.XPath;
 using Microsoft.CodeAnalysis.CSharp;
 using Wmhelp.XPath2;
 
-namespace CodeXTractor;
+namespace Tractor.XPath;
 
 public static class QueryEngine
 {

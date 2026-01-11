@@ -1,4 +1,4 @@
-﻿namespace CodeXTractor.Tests;
+﻿namespace Tractor.XPath.Tests;
 
 public class UnitTest1
 {

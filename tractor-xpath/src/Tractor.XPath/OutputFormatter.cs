@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 using System.Xml.XPath;
 using Wmhelp.XPath2;
 
-namespace CodeXTractor;
+namespace Tractor.XPath;
 
 public static class OutputFormatter
 {
