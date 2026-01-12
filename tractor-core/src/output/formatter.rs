@@ -1,7 +1,7 @@
 //! Output formatters for different output modes
 
 use crate::xpath::Match;
-use crate::output::colors::colorize_xml;
+use crate::output::xml_renderer::{render_xml_string, RenderOptions};
 use regex::Regex;
 use serde::Serialize;
 
@@ -82,21 +82,19 @@ pub fn format_matches(matches: &[Match], format: OutputFormat, options: &OutputO
 
 fn format_xml(matches: &[Match], options: &OutputOptions) -> String {
     let mut output = String::new();
+    let render_opts = RenderOptions::new()
+        .with_color(options.use_color)
+        .with_locations(!options.strip_locations);
+
     for m in matches {
         if let Some(ref xml) = m.xml_fragment {
-            let fragment = if options.strip_locations {
-                strip_location_attrs(xml)
-            } else {
-                xml.clone()
-            };
-            // Apply color if enabled
-            let colored = if options.use_color {
-                colorize_xml(&fragment)
-            } else {
-                fragment
-            };
-            output.push_str(&colored);
-            output.push('\n');
+            // Use proper tree-walking renderer for colorization
+            let rendered = render_xml_string(xml, &render_opts);
+            output.push_str(&rendered);
+            // render_xml_string adds newlines, so check if we need to add one
+            if !rendered.ends_with('\n') {
+                output.push('\n');
+            }
         } else {
             // Fallback to value if no XML fragment
             output.push_str(&m.value);
@@ -271,10 +269,6 @@ fn truncate(s: &str, max_len: usize) -> String {
     }
 }
 
-fn strip_location_attrs(xml: &str) -> String {
-    let re = Regex::new(r#"\s*(start|end|startLine|startCol|endLine|endCol)="[^"]*""#).unwrap();
-    re.replace_all(xml, "").to_string()
-}
 
 #[cfg(test)]
 mod tests {

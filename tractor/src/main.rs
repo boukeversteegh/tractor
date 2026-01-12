@@ -14,6 +14,7 @@ use tractor_core::{
     OutputFormat, format_matches, OutputOptions,
     expand_globs, filter_supported_files,
     output::should_use_color,
+    output::{render_xml_string, RenderOptions},
 };
 
 use cli::Args;
@@ -143,7 +144,69 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
             strip_locations: !args.keep_locations,
         };
 
-        // Process files in exponentially growing batches for streaming output
+        // Debug mode: show full XML with highlighted matches for each file
+        if args.debug {
+            let mut total_matches = 0usize;
+            let mut remaining_limit = args.limit;
+
+            for file_path in &files {
+                if remaining_limit == Some(0) {
+                    break;
+                }
+
+                let result = match parse_file(std::path::Path::new(file_path), lang_override.as_deref(), raw) {
+                    Ok(r) => r,
+                    Err(e) => {
+                        if verbose {
+                            eprintln!("warning: {}: {}", file_path, e);
+                        }
+                        continue;
+                    }
+                };
+
+                let xml = generate_xml_document(&[result.clone()]);
+                let engine = XPathEngine::new().with_verbose(verbose);
+
+                match engine.query(&xml, xpath_expr, &result.source_lines, &result.file_path) {
+                    Ok(matches) if !matches.is_empty() => {
+                        // Apply limit
+                        let matches: Vec<_> = if let Some(limit) = remaining_limit {
+                            let take = limit.min(matches.len());
+                            remaining_limit = Some(limit - take);
+                            matches.into_iter().take(take).collect()
+                        } else {
+                            matches
+                        };
+
+                        total_matches += matches.len();
+
+                        // Collect match positions for highlighting
+                        let match_positions: Vec<(String, u32, u32)> = matches
+                            .iter()
+                            .map(|m| (String::new(), m.line, m.column))
+                            .collect();
+
+                        // Show full XML with highlights
+                        let highlighted = tractor_core::output::colorize_xml_with_highlights(
+                            &xml,
+                            &match_positions,
+                            use_color,
+                        );
+                        println!("{}", highlighted);
+                    }
+                    Ok(_) => {} // No matches in this file
+                    Err(e) => {
+                        if verbose {
+                            eprintln!("warning: {}: query error: {}", file_path, e);
+                        }
+                    }
+                }
+            }
+
+            return check_expectation_count(total_matches, &args);
+        }
+
+        // Normal mode: process files in exponentially growing batches for streaming output
         let batches = exponential_batches(&files, concurrency);
         let mut total_matches = 0usize;
         let mut remaining_limit = args.limit;
@@ -244,26 +307,13 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
 
     let xml = generate_xml_document(&parse_results);
 
-    let output = if args.debug {
-        if use_color {
-            tractor_core::output::colorize_xml(&xml)
-        } else {
-            xml.clone()
-        }
-    } else {
-        let xml_output = if args.keep_locations {
-            xml.clone()
-        } else {
-            XPathEngine::strip_location_metadata(&xml)
-        };
-        // Apply colorization if enabled
-        if use_color {
-            tractor_core::output::colorize_xml(&xml_output)
-        } else {
-            xml_output
-        }
-    };
-    println!("{}", output);
+    // Create render options based on CLI flags
+    let render_opts = RenderOptions::new()
+        .with_color(use_color)
+        .with_locations(args.keep_locations || args.debug);
+
+    let output = render_xml_string(&xml, &render_opts);
+    print!("{}", output);
 
     Ok(())
 }
@@ -308,26 +358,13 @@ fn process_single_result(
 
         check_expectation(&matches, args)
     } else {
-        let output = if args.debug {
-            if use_color {
-                tractor_core::output::colorize_xml(&xml)
-            } else {
-                xml.clone()
-            }
-        } else {
-            let xml_output = if args.keep_locations {
-                xml.clone()
-            } else {
-                XPathEngine::strip_location_metadata(&xml)
-            };
-            // Apply colorization if enabled
-            if use_color {
-                tractor_core::output::colorize_xml(&xml_output)
-            } else {
-                xml_output
-            }
-        };
-        println!("{}", output);
+        // Create render options based on CLI flags
+        let render_opts = RenderOptions::new()
+            .with_color(use_color)
+            .with_locations(args.keep_locations || args.debug);
+
+        let output = render_xml_string(&xml, &render_opts);
+        print!("{}", output);
         Ok(())
     }
 }

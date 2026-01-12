@@ -325,6 +325,38 @@ fn escape_xml(s: &str) -> String {
         .replace('"', "&quot;")
 }
 
+/// Render an XML string with colors using proper tree-walking
+/// This is a drop-in replacement for the regex-based colorize_xml
+pub fn render_xml_string(xml: &str, options: &RenderOptions) -> String {
+    if xml.is_empty() {
+        return xml.to_string();
+    }
+
+    // Try to parse as a complete document
+    let mut xot = Xot::new();
+
+    // Try parsing as-is first
+    if let Ok(doc) = xot.parse(xml) {
+        return render_node(&xot, doc, options);
+    }
+
+    // If that fails, try wrapping in a root element (for fragments)
+    let wrapped = format!("<_root_>{}</_root_>", xml);
+    if let Ok(doc) = xot.parse(&wrapped) {
+        // Render children of _root_, not the wrapper itself
+        if let Ok(doc_el) = xot.document_element(doc) {
+            let mut output = String::new();
+            for child in xot.children(doc_el) {
+                render_node_recursive(&xot, child, options, 0, &mut output);
+            }
+            return output;
+        }
+    }
+
+    // If all else fails, return original string (maybe add warning?)
+    xml.to_string()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

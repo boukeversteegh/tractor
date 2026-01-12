@@ -15,7 +15,7 @@ pub mod xml_renderer;
 
 pub use formatter::{OutputFormat, format_matches, OutputOptions};
 pub use colors::{should_use_color, colorize_xml, colorize_xml_with_highlights};
-pub use xml_renderer::{render_node, render_document, RenderOptions};
+pub use xml_renderer::{render_node, render_document, render_xml_string, RenderOptions};
 
 use crate::xpath::Match;
 

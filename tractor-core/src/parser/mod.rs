@@ -41,11 +41,25 @@ pub static SUPPORTED_LANGUAGES: &[(&str, &[&str])] = &[
     ("julia", &["jl"]),
 ];
 
-/// Parse result containing the XML AST and source information
+/// Parse result containing the AST and source information
 #[derive(Debug, Clone)]
 pub struct ParseResult {
-    /// The XML AST as a string
+    /// The XML AST as a string (legacy, for compatibility)
     pub xml: String,
+    /// Original source lines for location-based output
+    pub source_lines: Vec<String>,
+    /// File path or "<stdin>"
+    pub file_path: String,
+    /// Language used for parsing
+    pub language: String,
+}
+
+/// Parse result with xot document for the new unified pipeline
+pub struct XotParseResult {
+    /// The xot document containing the AST
+    pub xot: xot::Xot,
+    /// Root node of the document
+    pub root: xot::Node,
     /// Original source lines for location-based output
     pub source_lines: Vec<String>,
     /// File path or "<stdin>"
@@ -189,6 +203,52 @@ pub fn generate_xml_document(results: &[ParseResult]) -> String {
 
     output.push_str("</Files>\n");
     output
+}
+
+// ============================================================================
+// New xot-based pipeline
+// ============================================================================
+
+use crate::xot_builder::XotBuilder;
+
+/// Parse a file and return an xot document (new pipeline)
+pub fn parse_file_to_xot(path: &Path, lang_override: Option<&str>, raw_mode: bool) -> Result<XotParseResult, ParseError> {
+    let source = fs::read_to_string(path)?;
+    let lang = lang_override.unwrap_or_else(|| detect_language(path.to_str().unwrap_or("")));
+    parse_string_to_xot(&source, lang, path.to_string_lossy().to_string(), raw_mode)
+}
+
+/// Parse a source string and return an xot document (new pipeline)
+pub fn parse_string_to_xot(source: &str, lang: &str, file_path: String, raw_mode: bool) -> Result<XotParseResult, ParseError> {
+    let language = get_tree_sitter_language(lang)?;
+
+    let mut parser = tree_sitter::Parser::new();
+    parser.set_language(&language)
+        .map_err(|e| ParseError::TreeSitter(e.to_string()))?;
+
+    let tree = parser.parse(source, None)
+        .ok_or_else(|| ParseError::Parse("Failed to parse source".to_string()))?;
+
+    // Build xot document
+    let mut builder = XotBuilder::new();
+
+    let root = if raw_mode {
+        builder.build_raw(tree.root_node(), source, &file_path)
+            .map_err(|e| ParseError::Parse(e.to_string()))?
+    } else {
+        // TODO: Implement semantic mode for xot builder
+        // For now, fall back to raw mode
+        builder.build_raw(tree.root_node(), source, &file_path)
+            .map_err(|e| ParseError::Parse(e.to_string()))?
+    };
+
+    Ok(XotParseResult {
+        xot: builder.into_xot(),
+        root,
+        source_lines: source.lines().map(|s| s.to_string()).collect(),
+        file_path,
+        language: lang.to_string(),
+    })
 }
 
 /// Escape XML special characters

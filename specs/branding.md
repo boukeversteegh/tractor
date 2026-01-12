@@ -7,11 +7,13 @@ of "tractor" with clean, modern developer tooling sensibilities.
 
 ## Color Palette
 
+Based on the Solarized color scheme for better readability and consistency.
+
 | Role             | Color       | ANSI Code | Hex       | Usage                          |
 |------------------|-------------|-----------|-----------|--------------------------------|
-| **Primary**      | Blue        | 34        | `#0000AA` | Element/tag names              |
-| **Secondary**    | Cyan        | 36        | `#00AAAA` | Attribute names                |
-| **Accent**       | Yellow      | 33        | `#AAAA00` | Attribute values, highlights   |
+| **Primary**      | Blue        | 34        | `#268bd2` | Element/tag names              |
+| **Secondary**    | Cyan        | 36        | `#2aa198` | Attribute names                |
+| **Accent**       | Yellow      | 33        | `#b58900` | Attribute values, highlights   |
 | **Content**      | White       | 97        | `#FFFFFF` | Text content, user data        |
 | **Punctuation**  | Dim White   | 2;37      | `#AAAAAA` | Brackets `< > = /`, structure  |
 

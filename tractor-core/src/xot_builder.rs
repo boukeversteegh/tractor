@@ -2,6 +2,10 @@
 //!
 //! This module provides a unified pipeline:
 //! TreeSitter AST -> xot::Xot document -> colored string output
+//!
+//! There are two builders:
+//! - XotBuilder: Builds into a standalone xot::Xot instance
+//! - XeeBuilder: Builds into xee-xpath's Documents for direct XPath querying
 
 use tree_sitter::Node as TsNode;
 use xot::{Xot, Node as XotNode, NameId};
@@ -143,6 +147,11 @@ impl XotBuilder {
     /// Get a mutable reference to the xot instance
     pub fn xot_mut(&mut self) -> &mut Xot {
         &mut self.xot
+    }
+
+    /// Render the document to a string with optional colors
+    pub fn render(&self, node: XotNode, options: &crate::output::RenderOptions) -> String {
+        crate::output::render_document(&self.xot, node, options)
     }
 }
 

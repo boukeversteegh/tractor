@@ -10,7 +10,6 @@ pub mod ansi {
     pub const BLUE: &str = "\x1b[34m";   // Primary: element/tag names
     pub const CYAN: &str = "\x1b[36m";   // Secondary: attribute names
     pub const YELLOW: &str = "\x1b[33m"; // Accent: attribute values
-    pub const WHITE: &str = "\x1b[97m";  // Content: text content
     pub const BLACK: &str = "\x1b[30m";  // For highlight backgrounds
     pub const BG_YELLOW: &str = "\x1b[43m"; // For match highlights
 }
@@ -127,8 +126,9 @@ pub fn colorize_xml_with_highlights(xml: &str, match_positions: &[(String, u32, 
             let start_line: u32 = caps[3].parse().unwrap_or(0);
             let start_col: u32 = caps[4].parse().unwrap_or(0);
 
-            let is_match = match_positions.iter().any(|(name, l, c)| {
-                name == element_name && *l == start_line && *c == start_col
+            let is_match = match_positions.iter().any(|(_name, l, c)| {
+                // Match by position only - line:col is unique
+                *l == start_line && *c == start_col
             });
 
             if is_match {
