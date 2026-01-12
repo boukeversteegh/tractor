@@ -182,27 +182,65 @@ public static class QueryEngine
             nav.MoveToFirstChild();
         }
 
-        var lineAttr = nav.GetAttribute("startLine", "");
-        var colAttr = nav.GetAttribute("startCol", "");
-        var endLineAttr = nav.GetAttribute("endLine", "");
-        var endColAttr = nav.GetAttribute("endCol", "");
+        // Try new compact format first: start="line:col" end="line:col"
+        var startAttr = nav.GetAttribute("start", "");
+        var endAttr = nav.GetAttribute("end", "");
 
         // For attributes, text nodes, and comments, get location from parent element
-        if (string.IsNullOrEmpty(lineAttr) &&
+        if (string.IsNullOrEmpty(startAttr) &&
             current.NodeType is XPathNodeType.Attribute or XPathNodeType.Text or XPathNodeType.Comment)
         {
             var parent = current.Clone();
             parent.MoveToParent();
-            lineAttr = parent.GetAttribute("startLine", "");
-            colAttr = parent.GetAttribute("startCol", "");
-            endLineAttr = parent.GetAttribute("endLine", "");
-            endColAttr = parent.GetAttribute("endCol", "");
+            startAttr = parent.GetAttribute("start", "");
+            endAttr = parent.GetAttribute("end", "");
         }
 
-        if (!string.IsNullOrEmpty(lineAttr)) int.TryParse(lineAttr, out line);
-        if (!string.IsNullOrEmpty(colAttr)) int.TryParse(colAttr, out col);
-        if (!string.IsNullOrEmpty(endLineAttr)) int.TryParse(endLineAttr, out endLine);
-        if (!string.IsNullOrEmpty(endColAttr)) int.TryParse(endColAttr, out endCol);
+        if (!string.IsNullOrEmpty(startAttr) && startAttr.Contains(':'))
+        {
+            // Parse "line:col" format
+            var parts = startAttr.Split(':');
+            if (parts.Length == 2)
+            {
+                int.TryParse(parts[0], out line);
+                int.TryParse(parts[1], out col);
+            }
+        }
+
+        if (!string.IsNullOrEmpty(endAttr) && endAttr.Contains(':'))
+        {
+            var parts = endAttr.Split(':');
+            if (parts.Length == 2)
+            {
+                int.TryParse(parts[0], out endLine);
+                int.TryParse(parts[1], out endCol);
+            }
+        }
+
+        // Fallback to legacy format: startLine, startCol, endLine, endCol
+        if (line == 1 && col == 1)
+        {
+            var lineAttr = nav.GetAttribute("startLine", "");
+            var colAttr = nav.GetAttribute("startCol", "");
+            var endLineAttr = nav.GetAttribute("endLine", "");
+            var endColAttr = nav.GetAttribute("endCol", "");
+
+            if (string.IsNullOrEmpty(lineAttr) &&
+                current.NodeType is XPathNodeType.Attribute or XPathNodeType.Text or XPathNodeType.Comment)
+            {
+                var parent = current.Clone();
+                parent.MoveToParent();
+                lineAttr = parent.GetAttribute("startLine", "");
+                colAttr = parent.GetAttribute("startCol", "");
+                endLineAttr = parent.GetAttribute("endLine", "");
+                endColAttr = parent.GetAttribute("endCol", "");
+            }
+
+            if (!string.IsNullOrEmpty(lineAttr)) int.TryParse(lineAttr, out line);
+            if (!string.IsNullOrEmpty(colAttr)) int.TryParse(colAttr, out col);
+            if (!string.IsNullOrEmpty(endLineAttr)) int.TryParse(endLineAttr, out endLine);
+            if (!string.IsNullOrEmpty(endColAttr)) int.TryParse(endColAttr, out endCol);
+        }
 
         return (line, col, endLine, endCol);
     }

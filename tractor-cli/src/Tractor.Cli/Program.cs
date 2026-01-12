@@ -441,6 +441,65 @@ switch (format)
             Console.WriteLine(output);
         }
         break;
+    case "source":
+        // Output exact source snippet using line:col positions
+        var srcCache = new Dictionary<string, string[]>();
+        foreach (var match in allMatches)
+        {
+            string[] srcLines;
+
+            if (match.SourceLines.Length > 0)
+            {
+                srcLines = match.SourceLines;
+            }
+            else if (match.File != "<stdin>" && File.Exists(match.File))
+            {
+                if (!srcCache.TryGetValue(match.File, out srcLines!))
+                {
+                    srcLines = File.ReadAllLines(match.File);
+                    srcCache[match.File] = srcLines;
+                }
+            }
+            else
+            {
+                Console.WriteLine(match.Value);
+                continue;
+            }
+
+            // Extract exact snippet using column positions
+            if (srcLines.Length >= match.EndLine && match.Line > 0)
+            {
+                if (match.Line == match.EndLine)
+                {
+                    // Single line - extract from startCol to endCol
+                    var line = srcLines[match.Line - 1];
+                    var startIdx = Math.Min(match.Column - 1, line.Length);
+                    var endIdx = Math.Min(match.EndColumn - 1, line.Length);
+                    Console.WriteLine(line[startIdx..endIdx]);
+                }
+                else
+                {
+                    // Multi-line - first line from startCol, middle lines full, last line to endCol
+                    var firstLine = srcLines[match.Line - 1];
+                    var startIdx = Math.Min(match.Column - 1, firstLine.Length);
+                    Console.WriteLine(firstLine[startIdx..].TrimEnd('\r'));
+
+                    for (int i = match.Line + 1; i < match.EndLine; i++)
+                    {
+                        Console.WriteLine(srcLines[i - 1].TrimEnd('\r'));
+                    }
+
+                    var lastLine = srcLines[match.EndLine - 1];
+                    var endIdx = Math.Min(match.EndColumn - 1, lastLine.Length);
+                    Console.WriteLine(lastLine[..endIdx]);
+                }
+            }
+            else
+            {
+                Console.WriteLine(match.Value);
+            }
+        }
+        break;
     case "lines":
     default:
         // Output full source code lines from the original file
@@ -464,8 +523,11 @@ switch (format)
             }
             else
             {
-                // No source available - fall back to value
-                Console.WriteLine(match.Value);
+                // No source available - fall back to value (colorize if XML output)
+                var output = (xpathExpr == null && useColor)
+                    ? OutputFormatter.ColorizeXml(match.Value)
+                    : match.Value;
+                Console.WriteLine(output);
                 continue;
             }
 
@@ -479,7 +541,10 @@ switch (format)
             }
             else
             {
-                Console.WriteLine(match.Value);
+                var output = (xpathExpr == null && useColor)
+                    ? OutputFormatter.ColorizeXml(match.Value)
+                    : match.Value;
+                Console.WriteLine(output);
             }
         }
         break;
@@ -588,9 +653,10 @@ void PrintHelp()
           -l, --lang <language>    Parse source from stdin as this language
           --debug                  Show full XML with matches highlighted (for debugging XPath)
           -e, --expect <value>     Expected result: none, some, or a number
-          -f, --format <fmt>       Output format: lines (default), value, gcc, json, count, xml
-                                     lines: full source code lines from original file
-                                     value: matched node text content
+          -f, --format <fmt>       Output format: lines (default), source, value, gcc, json, count, xml
+                                     lines: full source lines containing the match
+                                     source: exact matched source (column-precise)
+                                     value: XML text content of matched node
           -m, --message <msg>      Custom message (supports {value}, {line}, {xpath})
           --keep-locations         Include start/end line+col attributes in XML output
           --color <mode>           Color output: auto (default), always, never
