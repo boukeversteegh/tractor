@@ -15,6 +15,8 @@ string colorMode = "auto";
 string? tractorParsePath = null;
 string? tractorCsharpPath = null;
 string? stdinLang = null;
+bool useRoslyn = false;
+int? concurrency = null;
 
 for (int i = 0; i < args.Length; i++)
 {
@@ -56,6 +58,12 @@ for (int i = 0; i < args.Length; i++)
         case "--csharp-parser":
             tractorCsharpPath = args[++i];
             break;
+        case "--roslyn":
+            useRoslyn = true;
+            break;
+        case "--concurrency" or "-c":
+            concurrency = int.Parse(args[++i]);
+            break;
         case "--help" or "-h":
             PrintHelp();
             return 0;
@@ -68,17 +76,20 @@ for (int i = 0; i < args.Length; i++)
 
 // Handle stdin source input when --lang is specified
 string? stdinXml = null;
+string[]? stdinSourceLines = null;
 if (stdinLang != null && files.Count == 0 && Console.IsInputRedirected)
 {
     var source = Console.In.ReadToEnd();
+    stdinSourceLines = source.Split('\n');
     if (string.IsNullOrWhiteSpace(source))
     {
         Console.Error.WriteLine("error: no source code received on stdin");
         return 1;
     }
 
-    // Call appropriate parser based on language
-    var parserPath = stdinLang == "csharp" || stdinLang == "cs"
+    // Use Roslyn for C# when --roslyn flag is set, otherwise TreeSitter for all
+    var isCsharp = stdinLang == "csharp" || stdinLang == "cs";
+    var parserPath = (useRoslyn && isCsharp)
         ? FindParser("tractor-csharp", tractorCsharpPath)
         : FindParser("tractor-parse", tractorParsePath);
 
@@ -98,16 +109,15 @@ if (stdinLang != null && files.Count == 0 && Console.IsInputRedirected)
         CreateNoWindow = true
     };
 
-    // For tractor-parse, add --lang argument
-    if (stdinLang != "csharp" && stdinLang != "cs")
+    // Add arguments based on parser type
+    if (useRoslyn && isCsharp)
+    {
+        psi.ArgumentList.Add("-");
+    }
+    else
     {
         psi.ArgumentList.Add("--lang");
         psi.ArgumentList.Add(stdinLang);
-    }
-    // For tractor-csharp, use "-" to indicate stdin
-    else
-    {
-        psi.ArgumentList.Add("-");
     }
 
     using var process = Process.Start(psi);
@@ -141,7 +151,7 @@ else if (files.Count == 0 && stdinLang == null)
     return 1;
 }
 
-// Expand globs and group by language
+// Expand globs and group files
 var allFiles = files.SelectMany(QueryEngine.ExpandGlob).ToList();
 var csharpFiles = new List<string>();
 var otherFiles = new List<string>();
@@ -149,7 +159,7 @@ var otherFiles = new List<string>();
 foreach (var file in allFiles)
 {
     var lang = DetectLanguage(file);
-    if (lang == "csharp")
+    if (lang == "csharp" && useRoslyn)
         csharpFiles.Add(file);
     else if (lang != "unknown")
         otherFiles.Add(file);
@@ -159,8 +169,9 @@ foreach (var file in allFiles)
 
 if (verbose)
 {
-    Console.Error.WriteLine($"[verbose] C# files: {csharpFiles.Count}");
-    Console.Error.WriteLine($"[verbose] Other files: {otherFiles.Count}");
+    if (useRoslyn)
+        Console.Error.WriteLine($"[verbose] C# files (Roslyn): {csharpFiles.Count}");
+    Console.Error.WriteLine($"[verbose] files (TreeSitter): {otherFiles.Count}");
     Console.Error.WriteLine($"[verbose] xpath: {xpathExpr ?? "(none)"}");
 }
 
@@ -187,10 +198,15 @@ if (stdinXml != null)
         allXml.Add(stdinXml);
     }
     var matches = QueryEngine.ProcessXml(stdinXml, xpathExpr, stripLocationAttributes, verbose);
+    // Attach source lines to matches for --format lines support
+    if (stdinSourceLines != null)
+    {
+        matches = matches.Select(m => m with { SourceLines = stdinSourceLines }).ToList();
+    }
     allMatches.AddRange(matches);
 }
 
-// Task 1: Process C# files via tractor-csharp
+// Task 1: Process C# files via tractor-csharp (Roslyn) when --roslyn is set
 if (csharpFiles.Count > 0)
 {
     tasks.Add(Task.Run(() =>
@@ -205,7 +221,7 @@ if (csharpFiles.Count > 0)
             }
 
             if (verbose)
-                Console.Error.WriteLine($"[verbose] using C# parser: {parserPath}");
+                Console.Error.WriteLine($"[verbose] using C# parser (Roslyn): {parserPath}");
 
             var psi = new ProcessStartInfo
             {
@@ -260,72 +276,89 @@ if (csharpFiles.Count > 0)
     }));
 }
 
-// Task 2: Process other files via tractor-parse
+// Task 2: Process all other files via tractor-parse (TreeSitter) in parallel batches
 if (otherFiles.Count > 0)
 {
-    tasks.Add(Task.Run(() =>
+    var parserPath = FindParser("tractor-parse", tractorParsePath);
+    if (parserPath == null)
     {
-        try
+        Console.Error.WriteLine("error: tractor-parse not found. Install it or use --parser to specify path.");
+    }
+    else
+    {
+        if (verbose)
+            Console.Error.WriteLine($"[verbose] using parser (TreeSitter): {parserPath}");
+
+        // Split files into batches for parallel processing
+        int parallelism = concurrency ?? Math.Max(1, Environment.ProcessorCount / 2);
+        int batchSize = Math.Max(1, (otherFiles.Count + parallelism - 1) / parallelism);
+        var batches = otherFiles
+            .Select((file, index) => (file, index))
+            .GroupBy(x => x.index / batchSize)
+            .Select(g => g.Select(x => x.file).ToList())
+            .ToList();
+
+        if (verbose)
+            Console.Error.WriteLine($"[verbose] processing {otherFiles.Count} files in {batches.Count} parallel batches (batch size ~{batchSize})");
+
+        foreach (var batch in batches)
         {
-            var parserPath = FindParser("tractor-parse", tractorParsePath);
-            if (parserPath == null)
+            var batchFiles = batch; // Capture for closure
+            tasks.Add(Task.Run(() =>
             {
-                Console.Error.WriteLine("error: tractor-parse not found. Install it or use --parser to specify path.");
-                return;
-            }
+                try
+                {
+                    var psi = new ProcessStartInfo
+                    {
+                        FileName = parserPath,
+                        RedirectStandardInput = true,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    };
 
-            if (verbose)
-                Console.Error.WriteLine($"[verbose] using parser: {parserPath}");
+                    using var process = Process.Start(psi);
+                    if (process == null)
+                    {
+                        Console.Error.WriteLine("error: failed to start tractor-parse");
+                        return;
+                    }
 
-            var psi = new ProcessStartInfo
-            {
-                FileName = parserPath,
-                RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
+                    foreach (var file in batchFiles)
+                        process.StandardInput.WriteLine(file);
+                    process.StandardInput.Close();
 
-            using var process = Process.Start(psi);
-            if (process == null)
-            {
-                Console.Error.WriteLine("error: failed to start tractor-parse");
-                return;
-            }
+                    var xml = process.StandardOutput.ReadToEnd();
+                    var stderr = process.StandardError.ReadToEnd();
+                    process.WaitForExit();
 
-            foreach (var file in otherFiles)
-                process.StandardInput.WriteLine(file);
-            process.StandardInput.Close();
+                    if (!string.IsNullOrEmpty(stderr) && verbose)
+                        Console.Error.WriteLine($"[verbose] tractor-parse stderr: {stderr}");
 
-            var xml = process.StandardOutput.ReadToEnd();
-            var stderr = process.StandardError.ReadToEnd();
-            process.WaitForExit();
+                    if (process.ExitCode != 0)
+                    {
+                        Console.Error.WriteLine($"error: tractor-parse exited with code {process.ExitCode}");
+                        return;
+                    }
 
-            if (!string.IsNullOrEmpty(stderr) && verbose)
-                Console.Error.WriteLine($"[verbose] tractor-parse stderr: {stderr}");
-
-            if (process.ExitCode != 0)
-            {
-                Console.Error.WriteLine($"error: tractor-parse exited with code {process.ExitCode}");
-                return;
-            }
-
-            lock (lockObj)
-            {
-                allXml.Add(xml);
-            }
-            var matches = QueryEngine.ProcessXml(xml, xpathExpr, stripLocationAttributes, verbose);
-            lock (lockObj)
-            {
-                allMatches.AddRange(matches);
-            }
+                    lock (lockObj)
+                    {
+                        allXml.Add(xml);
+                    }
+                    var matches = QueryEngine.ProcessXml(xml, xpathExpr, stripLocationAttributes, verbose);
+                    lock (lockObj)
+                    {
+                        allMatches.AddRange(matches);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"error: failed to process batch: {ex.Message}");
+                }
+            }));
         }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"error: failed to process non-C# files: {ex.Message}");
-        }
-    }));
+    }
 }
 
 // Wait for all tasks
@@ -399,14 +432,55 @@ switch (format)
             }
         }
         break;
-    case "lines":
-    default:
+    case "value":
         foreach (var match in allMatches)
         {
             var output = (xpathExpr == null && useColor)
                 ? OutputFormatter.ColorizeXml(match.Value)
                 : match.Value;
             Console.WriteLine(output);
+        }
+        break;
+    case "lines":
+    default:
+        // Output full source code lines from the original file
+        var fileCache = new Dictionary<string, string[]>();
+        foreach (var match in allMatches)
+        {
+            string[] sourceLines;
+
+            // Get source lines - from match, cache, or read file
+            if (match.SourceLines.Length > 0)
+            {
+                sourceLines = match.SourceLines;
+            }
+            else if (match.File != "<stdin>" && File.Exists(match.File))
+            {
+                if (!fileCache.TryGetValue(match.File, out sourceLines!))
+                {
+                    sourceLines = File.ReadAllLines(match.File);
+                    fileCache[match.File] = sourceLines;
+                }
+            }
+            else
+            {
+                // No source available - fall back to value
+                Console.WriteLine(match.Value);
+                continue;
+            }
+
+            // Output source lines from Line to EndLine
+            if (sourceLines.Length >= match.EndLine && match.Line > 0)
+            {
+                for (int i = match.Line; i <= match.EndLine; i++)
+                {
+                    Console.WriteLine(sourceLines[i - 1].TrimEnd('\r'));
+                }
+            }
+            else
+            {
+                Console.WriteLine(match.Value);
+            }
         }
         break;
 }
@@ -514,38 +588,42 @@ void PrintHelp()
           -l, --lang <language>    Parse source from stdin as this language
           --debug                  Show full XML with matches highlighted (for debugging XPath)
           -e, --expect <value>     Expected result: none, some, or a number
-          -f, --format <fmt>       Output format: lines, gcc, json, count, xml
+          -f, --format <fmt>       Output format: lines (default), value, gcc, json, count, xml
+                                     lines: full source code lines from original file
+                                     value: matched node text content
           -m, --message <msg>      Custom message (supports {value}, {line}, {xpath})
           --keep-locations         Include start/end line+col attributes in XML output
           --color <mode>           Color output: auto (default), always, never
           --no-color               Disable colored output
+          -c, --concurrency <n>    Number of parallel batches (default: CPU count / 2)
+          --roslyn                 Use Roslyn parser for C# instead of TreeSitter
           --parser <path>          Path to tractor-parse (auto-detected)
           --csharp-parser <path>   Path to tractor-csharp (auto-detected)
           -v, --verbose            Show verbose output
           -h, --help               Show this help
 
         Supported languages (22):
-          C# (via Roslyn):    cs, csharp
-          Via TreeSitter:     rust, javascript, typescript, python, go, java, ruby,
-                              cpp, c, json, html, css, bash, yaml, php, scala, lua,
-                              haskell, ocaml, r, julia
+          Via TreeSitter:     csharp, rust, javascript, typescript, python, go, java,
+                              ruby, cpp, c, json, html, css, bash, yaml, php, scala,
+                              lua, haskell, ocaml, r, julia
+          Legacy (--roslyn):  csharp (via Roslyn, different AST structure)
 
         Examples:
-          tractor "src/**/*.cs" -x "//Method/@name"
-          tractor "src/**/*.rs" -x "//function_item/identifier"
+          tractor "src/**/*.cs" -x "//method/name"
+          tractor "src/**/*.cs" -x "//class[public][static]/method[not(params/param[this])]/name"
 
           # Pipe source directly
-          echo "fn main() {}" | tractor --lang rust -x "//function_item"
+          echo "public class Foo { }" | tractor --lang csharp -x "//class/name"
 
           # Debug mode: see XML structure and what matched
-          echo "fn main() {}" | tractor --lang rust -x "//function_item" --debug
+          echo "public class Foo { }" | tractor --lang csharp -x "//class" --debug
 
-          # CI/linting: fail if TODO comments found
-          tractor "src/**/*.cs" -x "//TODO" --expect none -f gcc
+          # CI/linting: fail if methods without OrderBy in Repository
+          tractor "src/**/*.cs" -x "//class[name[contains(.,'Repository')]]/method[not(contains(.,'OrderBy'))]" --expect none -f gcc
 
         Low-level tools:
-          tractor-csharp    Roslyn C# parser (files → XML AST)
-          tractor-parse     TreeSitter parser (files → XML AST)
+          tractor-parse     TreeSitter parser (files → XML AST) - all languages
+          tractor-csharp    Roslyn C# parser (files → XML AST) - legacy, use --roslyn
           tractor-xpath     XPath 2.0 engine (XML stdin → query results)
         """);
 }
