@@ -58,6 +58,10 @@ pub struct Args {
     #[arg(short = 'n', long = "limit")]
     pub limit: Option<usize>,
 
+    /// Limit XML output depth (useful for large ASTs)
+    #[arg(short = 'd', long = "depth")]
+    pub depth: Option<usize>,
+
     /// Include start/end location attributes in XML output
     #[arg(long = "keep-locations")]
     pub keep_locations: bool,

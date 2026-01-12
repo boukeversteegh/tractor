@@ -191,6 +191,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                         let render_opts = RenderOptions::new()
                             .with_color(use_color)
                             .with_locations(true)
+                            .with_max_depth(args.depth)
                             .with_highlights(highlights);
                         let output = render_xml_string(&xml, &render_opts);
                         print!("{}", output);
@@ -311,7 +312,8 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
     // Create render options based on CLI flags
     let render_opts = RenderOptions::new()
         .with_color(use_color)
-        .with_locations(args.keep_locations || args.debug);
+        .with_locations(args.keep_locations || args.debug)
+        .with_max_depth(args.depth);
 
     let output = render_xml_string(&xml, &render_opts);
     print!("{}", output);
@@ -346,6 +348,7 @@ fn process_single_result(
             let render_opts = RenderOptions::new()
                 .with_color(use_color)
                 .with_locations(true)
+                .with_max_depth(args.depth)
                 .with_highlights(highlights);
             let output = render_xml_string(&xml, &render_opts);
             print!("{}", output);
@@ -366,7 +369,8 @@ fn process_single_result(
         // Create render options based on CLI flags
         let render_opts = RenderOptions::new()
             .with_color(use_color)
-            .with_locations(args.keep_locations || args.debug);
+            .with_locations(args.keep_locations || args.debug)
+            .with_max_depth(args.depth);
 
         let output = render_xml_string(&xml, &render_opts);
         print!("{}", output);
