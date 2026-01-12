@@ -244,21 +244,26 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
 
     let xml = generate_xml_document(&parse_results);
 
-    if args.debug {
-        let output = if use_color {
+    let output = if args.debug {
+        if use_color {
             tractor_core::output::colorize_xml(&xml)
         } else {
             xml.clone()
-        };
-        println!("{}", output);
+        }
     } else {
-        let output = if args.keep_locations {
+        let xml_output = if args.keep_locations {
             xml.clone()
         } else {
             XPathEngine::strip_location_metadata(&xml)
         };
-        println!("{}", output);
-    }
+        // Apply colorization if enabled
+        if use_color {
+            tractor_core::output::colorize_xml(&xml_output)
+        } else {
+            xml_output
+        }
+    };
+    println!("{}", output);
 
     Ok(())
 }
@@ -303,21 +308,26 @@ fn process_single_result(
 
         check_expectation(&matches, args)
     } else {
-        if args.debug {
-            let output = if use_color {
+        let output = if args.debug {
+            if use_color {
                 tractor_core::output::colorize_xml(&xml)
             } else {
                 xml.clone()
-            };
-            println!("{}", output);
+            }
         } else {
-            let output = if args.keep_locations {
+            let xml_output = if args.keep_locations {
                 xml.clone()
             } else {
                 XPathEngine::strip_location_metadata(&xml)
             };
-            println!("{}", output);
-        }
+            // Apply colorization if enabled
+            if use_color {
+                tractor_core::output::colorize_xml(&xml_output)
+            } else {
+                xml_output
+            }
+        };
+        println!("{}", output);
         Ok(())
     }
 }
