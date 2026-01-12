@@ -4,6 +4,7 @@
 //! This replaces the regex-based colorization hack.
 
 use xot::{Xot, Node, Value};
+use std::collections::HashSet;
 
 /// ANSI color codes (following tractor brand guidelines)
 pub mod ansi {
@@ -26,6 +27,10 @@ pub struct RenderOptions {
     pub include_locations: bool,
     /// Indentation string (default: 2 spaces)
     pub indent: String,
+    /// Maximum depth to render (None = unlimited)
+    pub max_depth: Option<usize>,
+    /// Positions (line, col) to highlight as matches
+    pub highlights: Option<HashSet<(u32, u32)>>,
 }
 
 impl RenderOptions {
@@ -34,6 +39,8 @@ impl RenderOptions {
             use_color: false,
             include_locations: true,
             indent: "  ".to_string(),
+            max_depth: None,
+            highlights: None,
         }
     }
 
@@ -44,6 +51,16 @@ impl RenderOptions {
 
     pub fn with_locations(mut self, include: bool) -> Self {
         self.include_locations = include;
+        self
+    }
+
+    pub fn with_max_depth(mut self, depth: Option<usize>) -> Self {
+        self.max_depth = depth;
+        self
+    }
+
+    pub fn with_highlights(mut self, highlights: HashSet<(u32, u32)>) -> Self {
+        self.highlights = Some(highlights);
         self
     }
 }
@@ -82,6 +99,22 @@ pub fn render_document(xot: &Xot, node: Node, options: &RenderOptions) -> String
     output
 }
 
+/// Extract (line, col) from "start" attribute value like "5:10"
+fn extract_position(xot: &Xot, node: Node) -> Option<(u32, u32)> {
+    let attrs = xot.attributes(node);
+    for (attr_name_id, attr_value) in attrs.iter() {
+        if xot.local_name_str(attr_name_id) == "start" {
+            let parts: Vec<&str> = attr_value.split(':').collect();
+            if parts.len() == 2 {
+                if let (Ok(line), Ok(col)) = (parts[0].parse(), parts[1].parse()) {
+                    return Some((line, col));
+                }
+            }
+        }
+    }
+    None
+}
+
 fn render_node_recursive(
     xot: &Xot,
     node: Node,
@@ -101,16 +134,45 @@ fn render_node_recursive(
         Value::Element(element) => {
             let name = xot.local_name_str(element.name());
 
+            // Check depth limit
+            if let Some(max) = options.max_depth {
+                if depth > max {
+                    output.push_str(&indent);
+                    if options.use_color {
+                        output.push_str(ansi::DIM);
+                    }
+                    output.push_str("<!--...-->\n");
+                    if options.use_color {
+                        output.push_str(ansi::RESET);
+                    }
+                    return;
+                }
+            }
+
+            // Check if this element should be highlighted
+            let is_highlighted = options.highlights.as_ref().map_or(false, |highlights| {
+                extract_position(xot, node)
+                    .map_or(false, |pos| highlights.contains(&pos))
+            });
+
             // Opening tag
             output.push_str(&indent);
-            render_open_tag(xot, node, name, options, output);
+
+            // Start highlight
+            if is_highlighted && options.use_color {
+                output.push_str(ansi::BG_YELLOW);
+                output.push_str(ansi::BLACK);
+                output.push_str(ansi::BOLD);
+            }
+
+            render_open_tag(xot, node, name, options, is_highlighted, output);
 
             // Check if element has children
             let children: Vec<_> = xot.children(node).collect();
 
             if children.is_empty() {
                 // Self-closing tag
-                if options.use_color {
+                if !is_highlighted && options.use_color {
                     output.push_str(ansi::DIM);
                 }
                 output.push_str("/>");
@@ -120,11 +182,11 @@ fn render_node_recursive(
                 output.push('\n');
             } else if children.len() == 1 && matches!(xot.value(children[0]), Value::Text(_)) {
                 // Single text child - render inline
-                if options.use_color {
+                if !is_highlighted && options.use_color {
                     output.push_str(ansi::DIM);
                 }
                 output.push('>');
-                if options.use_color {
+                if is_highlighted && options.use_color {
                     output.push_str(ansi::RESET);
                 }
 
@@ -134,16 +196,20 @@ fn render_node_recursive(
                 }
 
                 // Closing tag
-                if options.use_color {
+                if is_highlighted && options.use_color {
+                    output.push_str(ansi::BG_YELLOW);
+                    output.push_str(ansi::BLACK);
+                    output.push_str(ansi::BOLD);
+                } else if options.use_color {
                     output.push_str(ansi::DIM);
                 }
                 output.push_str("</");
-                if options.use_color {
+                if !is_highlighted && options.use_color {
                     output.push_str(ansi::RESET);
                     output.push_str(ansi::BLUE);
                 }
                 output.push_str(name);
-                if options.use_color {
+                if !is_highlighted && options.use_color {
                     output.push_str(ansi::RESET);
                     output.push_str(ansi::DIM);
                 }
@@ -154,7 +220,7 @@ fn render_node_recursive(
                 output.push('\n');
             } else {
                 // Multiple children or element children
-                if options.use_color {
+                if !is_highlighted && options.use_color {
                     output.push_str(ansi::DIM);
                 }
                 output.push('>');
@@ -170,16 +236,20 @@ fn render_node_recursive(
 
                 // Closing tag
                 output.push_str(&indent);
-                if options.use_color {
+                if is_highlighted && options.use_color {
+                    output.push_str(ansi::BG_YELLOW);
+                    output.push_str(ansi::BLACK);
+                    output.push_str(ansi::BOLD);
+                } else if options.use_color {
                     output.push_str(ansi::DIM);
                 }
                 output.push_str("</");
-                if options.use_color {
+                if !is_highlighted && options.use_color {
                     output.push_str(ansi::RESET);
                     output.push_str(ansi::BLUE);
                 }
                 output.push_str(name);
-                if options.use_color {
+                if !is_highlighted && options.use_color {
                     output.push_str(ansi::RESET);
                     output.push_str(ansi::DIM);
                 }
@@ -242,23 +312,24 @@ fn render_open_tag(
     node: Node,
     name: &str,
     options: &RenderOptions,
+    is_highlighted: bool,
     output: &mut String,
 ) {
-    // Opening bracket
-    if options.use_color {
+    // Opening bracket (skip color if highlighted - already has background)
+    if !is_highlighted && options.use_color {
         output.push_str(ansi::DIM);
     }
     output.push('<');
-    if options.use_color {
+    if !is_highlighted && options.use_color {
         output.push_str(ansi::RESET);
     }
 
     // Element name
-    if options.use_color {
+    if !is_highlighted && options.use_color {
         output.push_str(ansi::BLUE);
     }
     output.push_str(name);
-    if options.use_color {
+    if !is_highlighted && options.use_color {
         output.push_str(ansi::RESET);
     }
 
@@ -280,38 +351,38 @@ fn render_open_tag(
         output.push(' ');
 
         // Attribute name
-        if options.use_color {
+        if !is_highlighted && options.use_color {
             output.push_str(ansi::CYAN);
         }
         output.push_str(attr_name);
-        if options.use_color {
+        if !is_highlighted && options.use_color {
             output.push_str(ansi::RESET);
         }
 
         // Equals and opening quote
-        if options.use_color {
+        if !is_highlighted && options.use_color {
             output.push_str(ansi::DIM);
         }
         output.push_str("=\"");
-        if options.use_color {
+        if !is_highlighted && options.use_color {
             output.push_str(ansi::RESET);
         }
 
         // Attribute value
-        if options.use_color {
+        if !is_highlighted && options.use_color {
             output.push_str(ansi::YELLOW);
         }
         output.push_str(&escape_xml(attr_value));
-        if options.use_color {
+        if !is_highlighted && options.use_color {
             output.push_str(ansi::RESET);
         }
 
         // Closing quote
-        if options.use_color {
+        if !is_highlighted && options.use_color {
             output.push_str(ansi::DIM);
         }
         output.push('"');
-        if options.use_color {
+        if !is_highlighted && options.use_color {
             output.push_str(ansi::RESET);
         }
     }

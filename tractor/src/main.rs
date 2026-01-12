@@ -4,6 +4,7 @@
 
 mod cli;
 
+use std::collections::HashSet;
 use std::io::{self, BufRead, Read, Write};
 use std::process::ExitCode;
 
@@ -181,18 +182,18 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                         total_matches += matches.len();
 
                         // Collect match positions for highlighting
-                        let match_positions: Vec<(String, u32, u32)> = matches
+                        let highlights: HashSet<(u32, u32)> = matches
                             .iter()
-                            .map(|m| (String::new(), m.line, m.column))
+                            .map(|m| (m.line, m.column))
                             .collect();
 
                         // Show full XML with highlights
-                        let highlighted = tractor_core::output::colorize_xml_with_highlights(
-                            &xml,
-                            &match_positions,
-                            use_color,
-                        );
-                        println!("{}", highlighted);
+                        let render_opts = RenderOptions::new()
+                            .with_color(use_color)
+                            .with_locations(true)
+                            .with_highlights(highlights);
+                        let output = render_xml_string(&xml, &render_opts);
+                        print!("{}", output);
                     }
                     Ok(_) => {} // No matches in this file
                     Err(e) => {
@@ -338,12 +339,16 @@ fn process_single_result(
         };
 
         if args.debug {
-            let match_positions: Vec<(String, u32, u32)> = matches
+            let highlights: HashSet<(u32, u32)> = matches
                 .iter()
-                .map(|m| (String::new(), m.line, m.column))
+                .map(|m| (m.line, m.column))
                 .collect();
-            let highlighted = tractor_core::output::colorize_xml_with_highlights(&xml, &match_positions, use_color);
-            println!("{}", highlighted);
+            let render_opts = RenderOptions::new()
+                .with_color(use_color)
+                .with_locations(true)
+                .with_highlights(highlights);
+            let output = render_xml_string(&xml, &render_opts);
+            print!("{}", output);
             return check_expectation(&matches, args);
         }
 
