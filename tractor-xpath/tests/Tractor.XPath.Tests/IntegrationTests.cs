@@ -12,8 +12,8 @@ public class IntegrationTests : IDisposable
         _testDir = Path.Combine(Path.GetTempPath(), $"codexpath-tests-{Guid.NewGuid():N}");
         Directory.CreateDirectory(_testDir);
 
-        // Use the global tool
-        _tractor = "tractor-xpath";
+        // Use the main tractor CLI (which delegates to parsers)
+        _tractor = "tractor";
     }
 
     public void Dispose()
@@ -63,58 +63,63 @@ public class IntegrationTests : IDisposable
     public void GeneratesXmlForSimpleClass()
     {
         var file = CreateTestFile("test.cs", "public class Foo { }");
-        var (exit, stdout, _) = Run($"\"{file}\"");
+        var (exit, stdout, _) = Run($"\"{file}\" -f xml");
 
         Assert.Equal(0, exit);
+        // /specs/tractor-parse/semantic-tree/transform-rules/rename-element.md: Rename Element
         Assert.Contains("<class", stdout);
-        Assert.Contains("name=\"Foo\"", stdout);
+        // /specs/tractor-parse/semantic-tree/transform-rules/rename-identifier.md: Rename Identifier to Name
+        Assert.Contains("<name", stdout);
+        Assert.Contains(">Foo<", stdout);
     }
 
     [Fact]
     public void GeneratesXmlForMethod()
     {
         var file = CreateTestFile("test.cs", "class C { void M() { } }");
-        var (exit, stdout, _) = Run($"\"{file}\"");
+        var (exit, stdout, _) = Run($"\"{file}\" -f xml");
 
         Assert.Equal(0, exit);
-        Assert.Contains("<Method", stdout);
-        Assert.Contains("name=\"M\"", stdout);
+        // /specs/tractor-parse/semantic-tree/transform-rules/rename-element.md: Rename Element
+        Assert.Contains("<method", stdout);
+        // /specs/tractor-parse/semantic-tree/transform-rules/rename-identifier.md: Rename Identifier to Name
+        Assert.Contains(">M<", stdout);
     }
 
     [Fact]
-    public void StripsLineAndColumnAttributesByDefault()
+    public void XmlOutputIncludesLocations()
     {
         var file = CreateTestFile("test.cs", "class C { }");
-        var (exit, stdout, _) = Run($"\"{file}\"");
+        var (exit, stdout, _) = Run($"\"{file}\" -f xml");
 
         Assert.Equal(0, exit);
-        Assert.DoesNotContain("startLine=", stdout);
-        Assert.DoesNotContain("startCol=", stdout);
-        Assert.DoesNotContain("endLine=", stdout);
-        Assert.DoesNotContain("endCol=", stdout);
+        // /specs/tractor-parse/semantic-tree/transform-rules/compact-location.md: Compact Location
+        Assert.Contains("start=", stdout);
+        Assert.Contains("end=", stdout);
     }
 
     [Fact]
     public void KeepLocationsIncludesLineAndColumnAttributes()
     {
         var file = CreateTestFile("test.cs", "class C { }");
-        var (exit, stdout, _) = Run($"\"{file}\" --keep-locations");
+        var (exit, stdout, _) = Run($"\"{file}\" --keep-locations -f xml");
 
         Assert.Equal(0, exit);
-        Assert.Contains("startLine=\"1\"", stdout);
-        Assert.Contains("startCol=\"1\"", stdout);
-        Assert.Contains("endLine=", stdout);
-        Assert.Contains("endCol=", stdout);
+        // /specs/tractor-parse/semantic-tree/transform-rules/compact-location.md: Compact Location
+        Assert.Contains("start=\"1:1\"", stdout);
+        Assert.Contains("end=", stdout);
     }
 
     [Fact]
-    public void IncludesModifiersAttribute()
+    public void IncludesModifiers()
     {
         var file = CreateTestFile("test.cs", "public static class Foo { }");
-        var (exit, stdout, _) = Run($"\"{file}\"");
+        var (exit, stdout, _) = Run($"\"{file}\" -f xml");
 
         Assert.Equal(0, exit);
-        Assert.Contains("modifiers=\"public static\"", stdout);
+        // /specs/tractor-parse/semantic-tree/transform-rules/lift-modifiers.md: Lift Modifiers
+        Assert.Contains("<public", stdout);
+        Assert.Contains("<static", stdout);
     }
 
     [Fact]
@@ -124,10 +129,11 @@ public class IntegrationTests : IDisposable
             public static class Ext {
                 public static void M(this string s) { }
             }");
-        var (exit, stdout, _) = Run($"\"{file}\"");
+        var (exit, stdout, _) = Run($"\"{file}\" -f xml");
 
         Assert.Equal(0, exit);
-        Assert.Contains("this=\"true\"", stdout);
+        // /specs/tractor-parse/semantic-tree/transform-rules/lift-modifiers.md: Lift Modifiers
+        Assert.Contains("<this", stdout);
     }
 
     // ========== XPath Query Tests ==========
@@ -136,7 +142,8 @@ public class IntegrationTests : IDisposable
     public void XPathQueryReturnsMethodNames()
     {
         var file = CreateTestFile("test.cs", "class C { void A() { } void B() { } }");
-        var (exit, stdout, _) = Run($"\"{file}\" -x \"//Method/@name\"");
+        // /specs/tractor-parse/semantic-tree/transform-rules/rename-identifier.md: Rename Identifier to Name
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"//method/name\"");
 
         Assert.Equal(0, exit);
         Assert.Contains("A", stdout);
@@ -147,7 +154,9 @@ public class IntegrationTests : IDisposable
     public void XPathQueryReturnsClassName()
     {
         var file = CreateTestFile("test.cs", "class MyClass { }");
-        var (exit, stdout, _) = Run($"\"{file}\" -x \"//class/@name\"");
+        // /specs/tractor-parse/semantic-tree/transform-rules/rename-identifier.md: Rename Identifier to Name
+        // Use -f value to get just the text content (default is lines which shows full source line)
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"//class/name\" -f value");
 
         Assert.Equal(0, exit);
         Assert.Equal("MyClass\n", stdout.Replace("\r\n", "\n"));
@@ -157,7 +166,7 @@ public class IntegrationTests : IDisposable
     public void XPathCountFunction()
     {
         var file = CreateTestFile("test.cs", "class C { void A() { } void B() { } void C() { } }");
-        var (exit, stdout, _) = Run($"\"{file}\" -x \"count(//Method)\"");
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"count(//method)\"");
 
         Assert.Equal(0, exit);
         Assert.Equal("3\n", stdout.Replace("\r\n", "\n"));
@@ -171,7 +180,8 @@ public class IntegrationTests : IDisposable
                 public void Pub() { }
                 private void Priv() { }
             }");
-        var (exit, stdout, _) = Run($"\"{file}\" -x \"//Method[@modifiers='public']/@name\"");
+        // /specs/tractor-parse/semantic-tree/transform-rules/lift-modifiers.md: Lift Modifiers
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"//method[public]/name\"");
 
         Assert.Equal(0, exit);
         Assert.Contains("Pub", stdout);
@@ -184,7 +194,7 @@ public class IntegrationTests : IDisposable
     public void FormatCount()
     {
         var file = CreateTestFile("test.cs", "class C { void A() { } void B() { } }");
-        var (exit, stdout, _) = Run($"\"{file}\" -x \"//Method\" -f count");
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"//method\" -f count");
 
         Assert.Equal(0, exit);
         Assert.Equal("2\n", stdout.Replace("\r\n", "\n"));
@@ -194,7 +204,8 @@ public class IntegrationTests : IDisposable
     public void FormatJson()
     {
         var file = CreateTestFile("test.cs", "class C { void M() { } }");
-        var (exit, stdout, _) = Run($"\"{file}\" -x \"//Method/@name\" -f json");
+        // /specs/tractor-parse/semantic-tree/transform-rules/rename-identifier.md: Rename Identifier to Name
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"//method/name\" -f json");
 
         Assert.Equal(0, exit);
         Assert.Contains("\"value\": \"M\"", stdout);
@@ -205,11 +216,11 @@ public class IntegrationTests : IDisposable
     public void FormatGccShowsFileAndLine()
     {
         var file = CreateTestFile("test.cs", "class C { void M() { } }");
-        var (exit, stdout, _) = Run($"\"{file}\" -x \"//Method\" -f gcc -m \"found method\"");
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"//method\" -f gcc -m \"found method\"");
 
         Assert.Equal(0, exit);
         Assert.Contains("test.cs:", stdout);
-        Assert.Contains(": error: found method", stdout);
+        Assert.Contains("found method", stdout);
     }
 
     [Fact]
@@ -260,7 +271,7 @@ namespace Sample
     public void ExpectNonePassesWhenNoMatches()
     {
         var file = CreateTestFile("test.cs", "class C { }");
-        var (exit, _, _) = Run($"\"{file}\" -x \"//Method\" -e none");
+        var (exit, _, _) = Run($"\"{file}\" -x \"//method\" -e none");
 
         Assert.Equal(0, exit);
     }
@@ -269,7 +280,7 @@ namespace Sample
     public void ExpectNoneFailsWhenMatches()
     {
         var file = CreateTestFile("test.cs", "class C { void M() { } }");
-        var (exit, _, stderr) = Run($"\"{file}\" -x \"//Method\" -e none");
+        var (exit, _, stderr) = Run($"\"{file}\" -x \"//method\" -e none");
 
         Assert.Equal(1, exit);
     }
@@ -278,7 +289,7 @@ namespace Sample
     public void ExpectSomePassesWhenMatches()
     {
         var file = CreateTestFile("test.cs", "class C { void M() { } }");
-        var (exit, _, _) = Run($"\"{file}\" -x \"//Method\" -e some");
+        var (exit, _, stderr) = Run($"\"{file}\" -x \"//method\" -e some");
 
         Assert.Equal(0, exit);
     }
@@ -287,7 +298,7 @@ namespace Sample
     public void ExpectSomeFailsWhenNoMatches()
     {
         var file = CreateTestFile("test.cs", "class C { }");
-        var (exit, _, _) = Run($"\"{file}\" -x \"//Method\" -e some");
+        var (exit, _, _) = Run($"\"{file}\" -x \"//method\" -e some");
 
         Assert.Equal(1, exit);
     }
@@ -296,7 +307,7 @@ namespace Sample
     public void ExpectCountPasses()
     {
         var file = CreateTestFile("test.cs", "class C { void A() { } void B() { } }");
-        var (exit, _, _) = Run($"\"{file}\" -x \"//Method\" -e 2");
+        var (exit, _, _) = Run($"\"{file}\" -x \"//method\" -e 2");
 
         Assert.Equal(0, exit);
     }
@@ -305,7 +316,7 @@ namespace Sample
     public void ExpectCountFails()
     {
         var file = CreateTestFile("test.cs", "class C { void A() { } void B() { } }");
-        var (exit, _, _) = Run($"\"{file}\" -x \"//Method\" -e 3");
+        var (exit, _, _) = Run($"\"{file}\" -x \"//method\" -e 3");
 
         Assert.Equal(1, exit);
     }
@@ -316,7 +327,8 @@ namespace Sample
     public void MessagePlaceholderValue()
     {
         var file = CreateTestFile("test.cs", "class C { void MyMethod() { } }");
-        var (exit, stdout, _) = Run($"\"{file}\" -x \"//Method/@name\" -f gcc -m \"name is {{value}}\"");
+        // /specs/tractor-parse/semantic-tree/transform-rules/rename-identifier.md: Rename Identifier to Name
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"//method/name\" -f gcc -m \"name is {{value}}\"");
 
         Assert.Equal(0, exit);
         Assert.Contains("name is MyMethod", stdout);
@@ -326,7 +338,8 @@ namespace Sample
     public void MessagePlaceholderXPath()
     {
         var file = CreateTestFile("test.cs", "class Outer { void Inner() { } }");
-        var (exit, stdout, _) = Run($"\"{file}\" -x \"//Method\" -f gcc -m \"method in {{ancestor::class/@name}}\"");
+        // /specs/tractor-parse/semantic-tree/transform-rules/rename-identifier.md: Rename Identifier to Name
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"//method\" -f gcc -m \"method in {{ancestor::class/name}}\"");
 
         Assert.Equal(0, exit);
         Assert.Contains("method in Outer", stdout);
@@ -337,7 +350,8 @@ namespace Sample
     [Fact]
     public void ReadsFromStdin()
     {
-        var (exit, stdout, _) = Run("--stdin -x \"//class/@name\"", "class FromStdin { }");
+        // /specs/tractor-parse/semantic-tree/transform-rules/rename-identifier.md: Rename Identifier to Name
+        var (exit, stdout, _) = Run("--lang csharp -x \"//class/name\"", "class FromStdin { }");
 
         Assert.Equal(0, exit);
         Assert.Contains("FromStdin", stdout);

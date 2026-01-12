@@ -2,6 +2,7 @@ use super::config::LanguageConfig;
 
 /// C# language configuration for semantic tree transformation
 pub static CSHARP_CONFIG: LanguageConfig = LanguageConfig {
+    // /specs/tractor-parse/semantic-tree/transform-rules/rename-element.md: Rename Element
     element_mappings: &[
         // Declarations
         ("compilation_unit", "unit"),
@@ -27,7 +28,7 @@ pub static CSHARP_CONFIG: LanguageConfig = LanguageConfig {
         ("type_parameter", "typeparam"),
         ("type_argument_list", "typeargs"),
 
-        // Types
+        // /specs/tractor-parse/semantic-tree/transform-rules/wrap-types.md: Wrap Types
         ("generic_name", "generic"),
         ("predefined_type", "type"),
         ("nullable_type", "nullable"),
@@ -94,6 +95,7 @@ pub static CSHARP_CONFIG: LanguageConfig = LanguageConfig {
 
     modifier_kinds: &["modifier"],
 
+    // /specs/tractor-parse/semantic-tree/transform-rules/lift-modifiers.md: Lift Modifiers
     known_modifiers: &[
         // Access modifiers
         "public", "private", "protected", "internal",
@@ -105,6 +107,7 @@ pub static CSHARP_CONFIG: LanguageConfig = LanguageConfig {
         "this",
     ],
 
+    // /specs/tractor-parse/semantic-tree/transform-rules/flatten-declaration-lists.md: Flatten Declaration Lists
     flatten_kinds: &[
         "declaration_list",  // Class body wrapper
     ],

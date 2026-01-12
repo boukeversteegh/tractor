@@ -79,7 +79,7 @@ fn write_semantic_node_with_field(
         return Ok(());
     }
 
-    // Rule: Flatten certain wrapper nodes (process children at current level)
+    // /specs/tractor-parse/semantic-tree/transform-rules/flatten-declaration-lists.md: Flatten Declaration Lists
     if config.should_flatten(kind) {
         let mut cursor = node.walk();
         cursor.goto_first_child();
@@ -96,7 +96,7 @@ fn write_semantic_node_with_field(
         return Ok(());
     }
 
-    // Rule: Modifiers become empty elements
+    // /specs/tractor-parse/semantic-tree/transform-rules/lift-modifiers.md: Lift Modifiers
     if config.is_modifier_kind(kind) {
         let text = node.utf8_text(source.as_bytes()).unwrap_or("");
         if config.is_known_modifier(text) {
@@ -106,7 +106,8 @@ fn write_semantic_node_with_field(
         // Unknown modifier - fall through to normal processing
     }
 
-    // Determine element name based on kind and context
+    // /specs/tractor-parse/semantic-tree/transform-rules/rename-identifier.md: Rename Identifier to Name
+    // /specs/tractor-parse/semantic-tree/transform-rules/rename-element.md: Rename Element
     let element_name = if kind == "identifier" {
         // Detect if this identifier is a "name" or a "type reference" based on context
         let parent_kind = node.parent().map(|p| p.kind()).unwrap_or("");
@@ -136,12 +137,13 @@ fn write_semantic_node_with_field(
             _ => false,
         };
 
+        // /specs/tractor-parse/semantic-tree/transform-rules/wrap-types.md: Wrap Types
         if is_name { "name" } else { "type" }
     } else {
         config.map_element_name(kind)
     };
 
-    // Format location as compact: start="line:col" end="line:col"
+    // /specs/tractor-parse/semantic-tree/transform-rules/compact-location.md: Compact Location
     let start = node.start_position();
     let end = node.end_position();
     let start_attr = format!("{}:{}", start.row + 1, start.column + 1);
