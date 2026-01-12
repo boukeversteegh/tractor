@@ -10,12 +10,8 @@ pub mod ansi {
     pub const BLUE: &str = "\x1b[34m";
     pub const CYAN: &str = "\x1b[36m";
     pub const YELLOW: &str = "\x1b[33m";
-    pub const GREEN: &str = "\x1b[32m";
-    pub const GRAY: &str = "\x1b[90m";
-    pub const MAGENTA: &str = "\x1b[35m";
     pub const BLACK: &str = "\x1b[30m";
     pub const BG_YELLOW: &str = "\x1b[43m";
-    pub const BG_GREEN: &str = "\x1b[42m";
 }
 
 /// Determine if color should be used based on mode and environment
