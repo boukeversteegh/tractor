@@ -1,10 +1,11 @@
 [package]
-name = "tractor-parse"
+name = "tractor-core"
 version.workspace = true
 edition.workspace = true
-description = "TreeSitter-based multi-language parser for tractor toolchain"
+description = "Core library for tractor - multi-language code query tool"
 
 [dependencies]
+# TreeSitter
 tree-sitter.workspace = true
 tree-sitter-c-sharp.workspace = true
 tree-sitter-rust.workspace = true
@@ -28,6 +29,18 @@ tree-sitter-haskell.workspace = true
 tree-sitter-ocaml.workspace = true
 tree-sitter-r.workspace = true
 tree-sitter-julia.workspace = true
-clap.workspace = true
+
+# XPath 3.1
+xee-xpath.workspace = true
+xot.workspace = true
+
+# Utilities
 quick-xml.workspace = true
 atty.workspace = true
+glob.workspace = true
+rayon.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+regex.workspace = true

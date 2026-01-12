@@ -1,0 +1,16 @@
+[package]
+name = "tractor"
+version.workspace = true
+edition.workspace = true
+description = "Multi-language code query tool using XPath 3.1"
+
+[[bin]]
+name = "tractor"
+path = "src/main.rs"
+
+[dependencies]
+tractor-core = { path = "../tractor-core" }
+clap.workspace = true
+atty.workspace = true
+rayon.workspace = true
+num_cpus = "1.16"

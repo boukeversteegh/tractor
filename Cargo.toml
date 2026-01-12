@@ -1,0 +1,56 @@
+[workspace]
+resolver = "2"
+members = [
+    "tractor",
+    "tractor-core",
+    "tractor-parse",  # Keep as standalone utility
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[workspace.dependencies]
+# TreeSitter
+tree-sitter = "0.24"
+tree-sitter-c-sharp = "0.23"
+tree-sitter-rust = "0.23"
+tree-sitter-javascript = "0.23"
+tree-sitter-typescript = "0.23"
+tree-sitter-python = "0.23"
+tree-sitter-go = "0.23"
+tree-sitter-java = "0.23"
+tree-sitter-ruby = "0.23"
+tree-sitter-cpp = "0.23"
+tree-sitter-c = "0.23"
+tree-sitter-json = "0.24"
+tree-sitter-html = "0.23"
+tree-sitter-css = "0.23"
+tree-sitter-bash = "0.23"
+tree-sitter-yaml = "0.7"
+tree-sitter-php = "0.23"
+tree-sitter-scala = "0.23"
+tree-sitter-lua = "0.4"
+tree-sitter-haskell = "0.23"
+tree-sitter-ocaml = "0.24"
+tree-sitter-r = "1.0"
+tree-sitter-julia = "0.23"
+
+# XPath 3.1
+xee = { git = "https://github.com/Paligo/xee" }
+xee-xpath = { git = "https://github.com/Paligo/xee" }
+xot = "0.31"
+
+# CLI and utilities
+clap = { version = "4", features = ["derive"] }
+quick-xml = { version = "0.37", features = ["serialize"] }
+atty = "0.2"
+glob = "0.3"
+rayon = "1.10"
+num_cpus = "1.16"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
+anyhow = "1.0"
+regex = "1.10"
