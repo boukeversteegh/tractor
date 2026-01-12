@@ -4,7 +4,7 @@
 
 mod cli;
 
-use std::io::{self, BufRead, Read};
+use std::io::{self, BufRead, Read, Write};
 use std::process::ExitCode;
 
 use rayon::prelude::*;
@@ -18,6 +18,24 @@ use tractor_core::{
 
 use cli::Args;
 use clap::Parser;
+
+/// Split a slice into exponentially growing batches.
+/// Batch sizes: num_threads, num_threads*2, num_threads*4, ...
+/// This allows fast initial output while maintaining efficient parallelism.
+fn exponential_batches<T>(items: &[T], num_threads: usize) -> Vec<&[T]> {
+    let mut batches = Vec::new();
+    let mut start = 0;
+    let mut batch_size = num_threads;
+
+    while start < items.len() {
+        let end = (start + batch_size).min(items.len());
+        batches.push(&items[start..end]);
+        start = end;
+        batch_size *= 2; // Double batch size each iteration
+    }
+
+    batches
+}
 
 fn main() -> ExitCode {
     let args = Args::parse();
@@ -95,63 +113,92 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
         return process_single_result(result, &args, format, use_color);
     }
 
-    // Execute XPath query if provided - run per-file in parallel for performance
+    // Execute XPath query if provided - run per-file in parallel with streaming batches
     if let Some(ref xpath) = args.xpath {
         let verbose = args.verbose;
         let raw = args.raw;
         let lang_override = args.lang.clone();
 
-        // Process files in parallel: parse + query each file
-        let all_matches: Vec<Match> = files
-            .par_iter()
-            .filter_map(|file_path| {
-                // Parse the file
-                let result = match parse_file(std::path::Path::new(file_path), lang_override.as_deref(), raw) {
-                    Ok(r) => r,
-                    Err(e) => {
-                        if verbose {
-                            eprintln!("warning: {}: {}", file_path, e);
-                        }
-                        return None;
-                    }
-                };
-
-                // Generate XML for this file
-                let xml = generate_xml_document(&[result.clone()]);
-
-                // Query this file's XML
-                let engine = XPathEngine::new().with_verbose(verbose);
-                match engine.query(&xml, xpath, &result.source_lines, &result.file_path) {
-                    Ok(matches) => Some(matches),
-                    Err(e) => {
-                        if verbose {
-                            eprintln!("warning: {}: query error: {}", file_path, e);
-                        }
-                        None
-                    }
-                }
-            })
-            .flatten()
-            .collect();
-
-        // Apply limit
-        let matches: Vec<Match> = if let Some(limit) = args.limit {
-            all_matches.into_iter().take(limit).collect()
-        } else {
-            all_matches
-        };
-
-        // Format and output
+        // Output options for formatting
         let options = OutputOptions {
             message: args.message.clone(),
             use_color,
             strip_locations: !args.keep_locations,
         };
 
-        let output = format_matches(&matches, format, &options);
-        print!("{}", output);
+        // Process files in exponentially growing batches for streaming output
+        let batches = exponential_batches(&files, concurrency);
+        let mut total_matches = 0usize;
+        let mut remaining_limit = args.limit;
 
-        return check_expectation(&matches, &args);
+        // Count format doesn't benefit from streaming - just count everything
+        let is_count_format = matches!(format, OutputFormat::Count);
+
+        for batch in batches {
+            // Check if we've hit the limit
+            if remaining_limit == Some(0) {
+                break;
+            }
+
+            // Process this batch in parallel
+            let mut batch_matches: Vec<Match> = batch
+                .par_iter()
+                .filter_map(|file_path| {
+                    // Parse the file
+                    let result = match parse_file(std::path::Path::new(file_path), lang_override.as_deref(), raw) {
+                        Ok(r) => r,
+                        Err(e) => {
+                            if verbose {
+                                eprintln!("warning: {}: {}", file_path, e);
+                            }
+                            return None;
+                        }
+                    };
+
+                    // Generate XML for this file
+                    let xml = generate_xml_document(&[result.clone()]);
+
+                    // Query this file's XML
+                    let engine = XPathEngine::new().with_verbose(verbose);
+                    match engine.query(&xml, xpath, &result.source_lines, &result.file_path) {
+                        Ok(matches) => Some((file_path.clone(), matches)),
+                        Err(e) => {
+                            if verbose {
+                                eprintln!("warning: {}: query error: {}", file_path, e);
+                            }
+                            None
+                        }
+                    }
+                })
+                .flat_map(|(_, matches)| matches)
+                .collect();
+
+            // Sort by file path for consistent ordering within batch
+            batch_matches.sort_by(|a, b| (&a.file, a.line, a.column).cmp(&(&b.file, b.line, b.column)));
+
+            // Apply remaining limit
+            if let Some(limit) = remaining_limit {
+                batch_matches.truncate(limit);
+                remaining_limit = Some(limit.saturating_sub(batch_matches.len()));
+            }
+
+            total_matches += batch_matches.len();
+
+            // Stream output immediately (except for count format)
+            if !is_count_format {
+                let output = format_matches(&batch_matches, format.clone(), &options);
+                print!("{}", output);
+                io::stdout().flush().ok();
+            }
+        }
+
+        // For count format, print the total at the end
+        if is_count_format {
+            println!("{}", total_matches);
+        }
+
+        // Check expectation using total count
+        return check_expectation_count(total_matches, &args);
     }
 
     // No XPath - output full XML (parse all files, combine)
@@ -258,8 +305,11 @@ fn process_single_result(
 }
 
 fn check_expectation(matches: &[Match], args: &Args) -> Result<(), Box<dyn std::error::Error>> {
+    check_expectation_count(matches.len(), args)
+}
+
+fn check_expectation_count(count: usize, args: &Args) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(ref expect) = args.expect {
-        let count = matches.len();
         let ok = match expect.as_str() {
             "none" => count == 0,
             "some" => count > 0,
