@@ -53,7 +53,19 @@ fn main() -> ExitCode {
     ExitCode::SUCCESS
 }
 
+/// Normalize XPath expression - auto-prefix with // if not starting with /
+fn normalize_xpath(xpath: &str) -> String {
+    if xpath.starts_with('/') || xpath.starts_with('(') {
+        xpath.to_string()
+    } else {
+        format!("//{}", xpath)
+    }
+}
+
 fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
+    // Normalize XPath if provided (auto-prefix // for convenience)
+    let xpath = args.xpath.as_ref().map(|x| normalize_xpath(x));
+
     // Validate output format
     let format = OutputFormat::from_str(&args.output)
         .ok_or_else(|| {
@@ -115,11 +127,11 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
         io::stdin().read_to_string(&mut source)?;
         let lang = args.lang.as_deref().unwrap();
         let result = parse_string(&source, lang, "<stdin>".to_string(), args.raw)?;
-        return process_single_result(result, &args, format, use_color);
+        return process_single_result(result, &args, xpath.as_deref(), format, use_color);
     }
 
     // Execute XPath query if provided - run per-file in parallel with streaming batches
-    if let Some(ref xpath) = args.xpath {
+    if let Some(ref xpath_expr) = xpath {
         let verbose = args.verbose;
         let raw = args.raw;
         let lang_override = args.lang.clone();
@@ -165,7 +177,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
 
                     // Query this file's XML
                     let engine = XPathEngine::new().with_verbose(verbose);
-                    match engine.query(&xml, xpath, &result.source_lines, &result.file_path) {
+                    match engine.query(&xml, xpath_expr, &result.source_lines, &result.file_path) {
                         Ok(matches) => Some((file_path.clone(), matches)),
                         Err(e) => {
                             if verbose {
@@ -254,14 +266,15 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
 fn process_single_result(
     result: ParseResult,
     args: &Args,
+    xpath: Option<&str>,
     format: OutputFormat,
     use_color: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let xml = generate_xml_document(&[result.clone()]);
 
-    if let Some(ref xpath) = args.xpath {
+    if let Some(xpath_expr) = xpath {
         let engine = XPathEngine::new().with_verbose(args.verbose);
-        let matches = engine.query(&xml, xpath, &result.source_lines, &result.file_path)?;
+        let matches = engine.query(&xml, xpath_expr, &result.source_lines, &result.file_path)?;
 
         let matches: Vec<Match> = if let Some(limit) = args.limit {
             matches.into_iter().take(limit).collect()

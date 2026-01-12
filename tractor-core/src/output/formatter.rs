@@ -1,6 +1,7 @@
 //! Output formatters for different output modes
 
 use crate::xpath::Match;
+use crate::output::colors::colorize_xml;
 use regex::Regex;
 use serde::Serialize;
 
@@ -88,7 +89,13 @@ fn format_xml(matches: &[Match], options: &OutputOptions) -> String {
             } else {
                 xml.clone()
             };
-            output.push_str(&fragment);
+            // Apply color if enabled
+            let colored = if options.use_color {
+                colorize_xml(&fragment)
+            } else {
+                fragment
+            };
+            output.push_str(&colored);
             output.push('\n');
         } else {
             // Fallback to value if no XML fragment

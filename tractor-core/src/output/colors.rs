@@ -64,23 +64,23 @@ pub fn colorize_xml(xml: &str) -> String {
         )
     }).to_string();
 
-    // Attributes: name="value"
-    let attr_re = Regex::new(r#"(\s)([a-zA-Z_][\w\-]*)(\s*=\s*)([""'])([^""']*)\4"#).unwrap();
+    // Attributes: name="value" (simplified regex without backreference)
+    let attr_re = Regex::new(r#"(\s)([a-zA-Z_][\w\-]*)(\s*=\s*")([^"]*)""#).unwrap();
     result = attr_re.replace_all(&result, |caps: &regex::Captures| {
         format!(
-            "{}{}{}{}{}{}{}{}{}{}{}",
+            "{}{}{}{}{}{}\"{}{}{}{}\"{}",
             &caps[1],
             ansi::CYAN,
             &caps[2],
             ansi::RESET,
             ansi::DIM,
             &caps[3],
-            &caps[4],
             ansi::RESET,
             ansi::YELLOW,
-            &caps[5],
+            &caps[4],
             ansi::RESET,
-        ) + ansi::DIM + &caps[4] + ansi::RESET
+            ansi::DIM,
+        ) + ansi::RESET
     }).to_string();
 
     // Opening tags: <elementName
