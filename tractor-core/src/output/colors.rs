@@ -2,16 +2,17 @@
 
 use regex::Regex;
 
-/// ANSI color codes
+/// ANSI color codes (following tractor brand guidelines)
 pub mod ansi {
     pub const RESET: &str = "\x1b[0m";
     pub const DIM: &str = "\x1b[2m";
     pub const BOLD: &str = "\x1b[1m";
-    pub const BLUE: &str = "\x1b[34m";
-    pub const CYAN: &str = "\x1b[36m";
-    pub const YELLOW: &str = "\x1b[33m";
-    pub const BLACK: &str = "\x1b[30m";
-    pub const BG_YELLOW: &str = "\x1b[43m";
+    pub const BLUE: &str = "\x1b[34m";   // Primary: element/tag names
+    pub const CYAN: &str = "\x1b[36m";   // Secondary: attribute names
+    pub const YELLOW: &str = "\x1b[33m"; // Accent: attribute values
+    pub const WHITE: &str = "\x1b[97m";  // Content: text content
+    pub const BLACK: &str = "\x1b[30m";  // For highlight backgrounds
+    pub const BG_YELLOW: &str = "\x1b[43m"; // For match highlights
 }
 
 /// Determine if color should be used based on mode and environment
@@ -61,7 +62,7 @@ pub fn colorize_xml(xml: &str) -> String {
     }).to_string();
 
     // Attributes: name="value" (simplified regex without backreference)
-    let attr_re = Regex::new(r#"(\s)([a-zA-Z_][\w\-]*)(\s*=\s*")([^"]*)""#).unwrap();
+    let attr_re = Regex::new(r#"(\s)([a-zA-Z_][\w\-]*)(\s*=\s*)"([^"]*)""#).unwrap();
     result = attr_re.replace_all(&result, |caps: &regex::Captures| {
         format!(
             "{}{}{}{}{}{}\"{}{}{}{}\"{}",
@@ -70,7 +71,7 @@ pub fn colorize_xml(xml: &str) -> String {
             &caps[2],
             ansi::RESET,
             ansi::DIM,
-            &caps[3],
+            &caps[3],  // Now just "=" without the opening quote
             ansi::RESET,
             ansi::YELLOW,
             &caps[4],

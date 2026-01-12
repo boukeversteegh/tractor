@@ -84,7 +84,7 @@ fn escape_xml(s: &str) -> String {
 fn write_element_open_with_attrs(out: &mut impl Write, name: &str, attrs: &[(&str, &str)], _use_color: bool) -> std::io::Result<()> {
     write!(out, "<{}", escape_xml(name))?;
     for (attr_name, attr_value) in attrs {
-        write!(out, " {}=\"{}\"", attr_name, attr_value)?;
+        write!(out, " {}=\"{}\"", attr_name, escape_xml(attr_value))?;
     }
     write!(out, ">")?;
     Ok(())
@@ -94,7 +94,7 @@ fn write_element_with_attrs_and_text(out: &mut impl Write, name: &str, attrs: &[
     let escaped_name = escape_xml(name);
     write!(out, "<{}", escaped_name)?;
     for (attr_name, attr_value) in attrs {
-        write!(out, " {}=\"{}\"", attr_name, attr_value)?;
+        write!(out, " {}=\"{}\"", attr_name, escape_xml(attr_value))?;
     }
     write!(out, ">")?;
     if let Some(t) = text {
