@@ -19,19 +19,24 @@ use tractor_core::{
 use cli::Args;
 use clap::Parser;
 
-/// Split a slice into exponentially growing batches.
-/// Batch sizes: num_threads, num_threads*2, num_threads*4, ...
-/// This allows fast initial output while maintaining efficient parallelism.
+/// Split a slice into exponentially growing batches, capped at a maximum.
+/// Batch sizes: n, 2n, 4n, 8n, 8n, 8n... (where n = num_threads)
+/// This provides:
+/// - Fast initial output (small first batches)
+/// - Consistent update frequency (~0.25s per batch)
+/// - Efficient parallelism (batch size >= num_threads)
 fn exponential_batches<T>(items: &[T], num_threads: usize) -> Vec<&[T]> {
     let mut batches = Vec::new();
     let mut start = 0;
-    let mut batch_size = num_threads;
+    let mut batch_size = num_threads.max(1);
+    let max_batch_size = num_threads * 8; // Cap for consistent update frequency
 
     while start < items.len() {
         let end = (start + batch_size).min(items.len());
         batches.push(&items[start..end]);
         start = end;
-        batch_size *= 2; // Double batch size each iteration
+        // Double batch size until we hit the cap
+        batch_size = (batch_size * 2).min(max_batch_size);
     }
 
     batches
