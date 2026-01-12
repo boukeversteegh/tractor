@@ -17,6 +17,7 @@ string? tractorCsharpPath = null;
 string? stdinLang = null;
 bool useRoslyn = false;
 int? concurrency = null;
+int? limit = null;
 
 for (int i = 0; i < args.Length; i++)
 {
@@ -63,6 +64,9 @@ for (int i = 0; i < args.Length; i++)
             break;
         case "--concurrency" or "-c":
             concurrency = int.Parse(args[++i]);
+            break;
+        case "--limit" or "-n":
+            limit = int.Parse(args[++i]);
             break;
         case "--help" or "-h":
             PrintHelp();
@@ -153,6 +157,13 @@ else if (files.Count == 0 && stdinLang == null)
 
 // Expand globs and group files
 var allFiles = files.SelectMany(QueryEngine.ExpandGlob).ToList();
+
+// When no XPath is specified (just outputting XML), limit files directly
+if (xpathExpr == null && limit.HasValue && allFiles.Count > limit.Value)
+{
+    allFiles = allFiles.Take(limit.Value).ToList();
+}
+
 var csharpFiles = new List<string>();
 var otherFiles = new List<string>();
 
@@ -401,7 +412,12 @@ if (debug)
     return allMatches.Count > 0 ? 0 : 1;
 }
 
-// Output results
+// Apply limit if specified
+int totalMatches = allMatches.Count;
+if (limit.HasValue && allMatches.Count > limit.Value)
+{
+    allMatches = allMatches.Take(limit.Value).ToList();
+}
 int matchCount = allMatches.Count;
 
 switch (format)
@@ -658,6 +674,7 @@ void PrintHelp()
                                      source: exact matched source (column-precise)
                                      value: XML text content of matched node
           -m, --message <msg>      Custom message (supports {value}, {line}, {xpath})
+          -n, --limit <n>          Limit output to first N matches (useful for testing queries)
           --keep-locations         Include start/end line+col attributes in XML output
           --color <mode>           Color output: auto (default), always, never
           --no-color               Disable colored output
