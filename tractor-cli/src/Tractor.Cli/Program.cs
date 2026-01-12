@@ -6,7 +6,7 @@ using Tractor.XPath;
 var files = new List<string>();
 string? xpathExpr = null;
 string? expectation = null;
-string format = "lines";
+string format = "xml";
 string? message = null;
 bool stripLocationAttributes = true;
 bool verbose = false;
@@ -19,21 +19,49 @@ bool useRoslyn = false;
 int? concurrency = null;
 int? limit = null;
 
+void PrintFormatOptions()
+{
+    bool useColor = !Console.IsErrorRedirected && Environment.GetEnvironmentVariable("NO_COLOR") == null;
+    string green = useColor ? "\x1b[32m" : "";
+    string reset = useColor ? "\x1b[0m" : "";
+
+    Console.Error.WriteLine("valid formats:");
+    Console.Error.WriteLine($"  {green}xml{reset}     - XML of matched nodes (default)");
+    Console.Error.WriteLine($"  {green}lines{reset}   - full source lines containing the match");
+    Console.Error.WriteLine($"  {green}source{reset}  - exact matched source text (column-precise)");
+    Console.Error.WriteLine($"  {green}value{reset}   - text content of matched node");
+    Console.Error.WriteLine($"  {green}gcc{reset}     - GCC-style file:line:col: message");
+    Console.Error.WriteLine($"  {green}json{reset}    - JSON array with value, file, line, column");
+    Console.Error.WriteLine($"  {green}count{reset}   - number of matches");
+}
+
+string? GetNextArg(int index, string option)
+{
+    if (index + 1 >= args.Length)
+    {
+        Console.Error.WriteLine($"error: {option} requires a value");
+        if (option == "-o" || option == "--output")
+            PrintFormatOptions();
+        return null;
+    }
+    return args[index + 1];
+}
+
 for (int i = 0; i < args.Length; i++)
 {
     switch (args[i])
     {
         case "--xpath" or "-x":
-            xpathExpr = args[++i];
+            if (GetNextArg(i, args[i]) is { } x) { xpathExpr = x; i++; } else return 1;
             break;
         case "--expect" or "-e":
-            expectation = args[++i];
+            if (GetNextArg(i, args[i]) is { } e) { expectation = e; i++; } else return 1;
             break;
-        case "--format" or "-f":
-            format = args[++i];
+        case "--output" or "-o":
+            if (GetNextArg(i, args[i]) is { } f) { format = f; i++; } else return 1;
             break;
         case "--message" or "-m":
-            message = args[++i];
+            if (GetNextArg(i, args[i]) is { } msg) { message = msg; i++; } else return 1;
             break;
         case "--keep-locations":
             stripLocationAttributes = false;
@@ -45,37 +73,51 @@ for (int i = 0; i < args.Length; i++)
             debug = true;
             break;
         case "--lang" or "-l":
-            stdinLang = args[++i];
+            if (GetNextArg(i, args[i]) is { } lang) { stdinLang = lang; i++; } else return 1;
             break;
         case "--color":
-            colorMode = args[++i];
+            if (GetNextArg(i, args[i]) is { } c) { colorMode = c; i++; } else return 1;
             break;
         case "--no-color":
             colorMode = "never";
             break;
         case "--parser":
-            tractorParsePath = args[++i];
+            if (GetNextArg(i, args[i]) is { } p) { tractorParsePath = p; i++; } else return 1;
             break;
         case "--csharp-parser":
-            tractorCsharpPath = args[++i];
+            if (GetNextArg(i, args[i]) is { } cp) { tractorCsharpPath = cp; i++; } else return 1;
             break;
         case "--roslyn":
             useRoslyn = true;
             break;
         case "--concurrency" or "-c":
-            concurrency = int.Parse(args[++i]);
+            if (GetNextArg(i, args[i]) is { } conc) { concurrency = int.Parse(conc); i++; } else return 1;
             break;
         case "--limit" or "-n":
-            limit = int.Parse(args[++i]);
+            if (GetNextArg(i, args[i]) is { } lim) { limit = int.Parse(lim); i++; } else return 1;
             break;
         case "--help" or "-h":
             PrintHelp();
             return 0;
         default:
-            if (!args[i].StartsWith("-"))
-                files.Add(args[i]);
+            if (args[i].StartsWith("-"))
+            {
+                Console.Error.WriteLine($"error: unknown option '{args[i]}'");
+                Console.Error.WriteLine("use --help to see available options");
+                return 1;
+            }
+            files.Add(args[i]);
             break;
     }
+}
+
+// Validate format option
+var validFormats = new[] { "xml", "lines", "source", "value", "gcc", "json", "count" };
+if (!validFormats.Contains(format))
+{
+    Console.Error.WriteLine($"error: invalid format '{format}'");
+    PrintFormatOptions();
+    return 1;
 }
 
 // Handle stdin source input when --lang is specified
@@ -669,10 +711,11 @@ void PrintHelp()
           -l, --lang <language>    Parse source from stdin as this language
           --debug                  Show full XML with matches highlighted (for debugging XPath)
           -e, --expect <value>     Expected result: none, some, or a number
-          -f, --format <fmt>       Output format: lines (default), source, value, gcc, json, count, xml
+          -o, --output <fmt>       Output format: xml (default), lines, source, value, gcc, json, count
+                                     xml: XML of matched nodes
                                      lines: full source lines containing the match
                                      source: exact matched source (column-precise)
-                                     value: XML text content of matched node
+                                     value: text content of matched node
           -m, --message <msg>      Custom message (supports {value}, {line}, {xpath})
           -n, --limit <n>          Limit output to first N matches (useful for testing queries)
           --keep-locations         Include start/end line+col attributes in XML output
@@ -702,7 +745,7 @@ void PrintHelp()
           echo "public class Foo { }" | tractor --lang csharp -x "//class" --debug
 
           # CI/linting: fail if methods without OrderBy in Repository
-          tractor "src/**/*.cs" -x "//class[name[contains(.,'Repository')]]/method[not(contains(.,'OrderBy'))]" --expect none -f gcc
+          tractor "src/**/*.cs" -x "//class[name[contains(.,'Repository')]]/method[not(contains(.,'OrderBy'))]" --expect none -o gcc
 
         Low-level tools:
           tractor-parse     TreeSitter parser (files → XML AST) - all languages

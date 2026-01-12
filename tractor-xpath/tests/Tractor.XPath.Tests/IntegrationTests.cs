@@ -63,7 +63,7 @@ public class IntegrationTests : IDisposable
     public void GeneratesXmlForSimpleClass()
     {
         var file = CreateTestFile("test.cs", "public class Foo { }");
-        var (exit, stdout, _) = Run($"\"{file}\" -f xml");
+        var (exit, stdout, _) = Run($"\"{file}\" -o xml");
 
         Assert.Equal(0, exit);
         // /specs/tractor-parse/semantic-tree/transform-rules/rename-element.md: Rename Element
@@ -77,7 +77,7 @@ public class IntegrationTests : IDisposable
     public void GeneratesXmlForMethod()
     {
         var file = CreateTestFile("test.cs", "class C { void M() { } }");
-        var (exit, stdout, _) = Run($"\"{file}\" -f xml");
+        var (exit, stdout, _) = Run($"\"{file}\" -o xml");
 
         Assert.Equal(0, exit);
         // /specs/tractor-parse/semantic-tree/transform-rules/rename-element.md: Rename Element
@@ -90,7 +90,7 @@ public class IntegrationTests : IDisposable
     public void XmlOutputIncludesLocations()
     {
         var file = CreateTestFile("test.cs", "class C { }");
-        var (exit, stdout, _) = Run($"\"{file}\" -f xml");
+        var (exit, stdout, _) = Run($"\"{file}\" -o xml");
 
         Assert.Equal(0, exit);
         // /specs/tractor-parse/semantic-tree/transform-rules/compact-location.md: Compact Location
@@ -102,7 +102,7 @@ public class IntegrationTests : IDisposable
     public void KeepLocationsIncludesLineAndColumnAttributes()
     {
         var file = CreateTestFile("test.cs", "class C { }");
-        var (exit, stdout, _) = Run($"\"{file}\" --keep-locations -f xml");
+        var (exit, stdout, _) = Run($"\"{file}\" --keep-locations -o xml");
 
         Assert.Equal(0, exit);
         // /specs/tractor-parse/semantic-tree/transform-rules/compact-location.md: Compact Location
@@ -114,7 +114,7 @@ public class IntegrationTests : IDisposable
     public void IncludesModifiers()
     {
         var file = CreateTestFile("test.cs", "public static class Foo { }");
-        var (exit, stdout, _) = Run($"\"{file}\" -f xml");
+        var (exit, stdout, _) = Run($"\"{file}\" -o xml");
 
         Assert.Equal(0, exit);
         // /specs/tractor-parse/semantic-tree/transform-rules/lift-modifiers.md: Lift Modifiers
@@ -129,7 +129,7 @@ public class IntegrationTests : IDisposable
             public static class Ext {
                 public static void M(this string s) { }
             }");
-        var (exit, stdout, _) = Run($"\"{file}\" -f xml");
+        var (exit, stdout, _) = Run($"\"{file}\" -o xml");
 
         Assert.Equal(0, exit);
         // /specs/tractor-parse/semantic-tree/transform-rules/lift-modifiers.md: Lift Modifiers
@@ -143,7 +143,7 @@ public class IntegrationTests : IDisposable
     {
         var file = CreateTestFile("test.cs", "class C { void A() { } void B() { } }");
         // /specs/tractor-parse/semantic-tree/transform-rules/rename-identifier.md: Rename Identifier to Name
-        var (exit, stdout, _) = Run($"\"{file}\" -x \"//method/name\"");
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"//method/name\" -o value");
 
         Assert.Equal(0, exit);
         Assert.Contains("A", stdout);
@@ -155,8 +155,8 @@ public class IntegrationTests : IDisposable
     {
         var file = CreateTestFile("test.cs", "class MyClass { }");
         // /specs/tractor-parse/semantic-tree/transform-rules/rename-identifier.md: Rename Identifier to Name
-        // Use -f value to get just the text content (default is lines which shows full source line)
-        var (exit, stdout, _) = Run($"\"{file}\" -x \"//class/name\" -f value");
+        // Use -o value to get just the text content (default is lines which shows full source line)
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"//class/name\" -o value");
 
         Assert.Equal(0, exit);
         Assert.Equal("MyClass\n", stdout.Replace("\r\n", "\n"));
@@ -181,7 +181,7 @@ public class IntegrationTests : IDisposable
                 private void Priv() { }
             }");
         // /specs/tractor-parse/semantic-tree/transform-rules/lift-modifiers.md: Lift Modifiers
-        var (exit, stdout, _) = Run($"\"{file}\" -x \"//method[public]/name\"");
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"//method[public]/name\" -o value");
 
         Assert.Equal(0, exit);
         Assert.Contains("Pub", stdout);
@@ -194,7 +194,7 @@ public class IntegrationTests : IDisposable
     public void FormatCount()
     {
         var file = CreateTestFile("test.cs", "class C { void A() { } void B() { } }");
-        var (exit, stdout, _) = Run($"\"{file}\" -x \"//method\" -f count");
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"//method\" -o count");
 
         Assert.Equal(0, exit);
         Assert.Equal("2\n", stdout.Replace("\r\n", "\n"));
@@ -205,7 +205,7 @@ public class IntegrationTests : IDisposable
     {
         var file = CreateTestFile("test.cs", "class C { void M() { } }");
         // /specs/tractor-parse/semantic-tree/transform-rules/rename-identifier.md: Rename Identifier to Name
-        var (exit, stdout, _) = Run($"\"{file}\" -x \"//method/name\" -f json");
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"//method/name\" -o json");
 
         Assert.Equal(0, exit);
         Assert.Contains("\"value\": \"M\"", stdout);
@@ -216,7 +216,7 @@ public class IntegrationTests : IDisposable
     public void FormatGccShowsFileAndLine()
     {
         var file = CreateTestFile("test.cs", "class C { void M() { } }");
-        var (exit, stdout, _) = Run($"\"{file}\" -x \"//method\" -f gcc -m \"found method\"");
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"//method\" -o gcc -m \"found method\"");
 
         Assert.Equal(0, exit);
         Assert.Contains("test.cs:", stdout);
@@ -237,7 +237,7 @@ namespace Sample
         }
     }
 }");
-        var (exit, stdout, _) = Run($"\"{file}\" -x \"//if\"");
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"//if\" -o lines");
 
         Assert.Equal(0, exit);
         Assert.Contains("if (true) Console.WriteLine()", stdout.Replace("\r\n", "\n"));
@@ -257,7 +257,7 @@ namespace Sample
         }
     }
 }");
-        var (exit, stdout, _) = Run($"\"{file}\" -x \"//namespace\"");
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"//namespace\" -o lines");
 
         Assert.Equal(0, exit);
         var normalized = stdout.Replace("\r\n", "\n");
@@ -328,7 +328,7 @@ namespace Sample
     {
         var file = CreateTestFile("test.cs", "class C { void MyMethod() { } }");
         // /specs/tractor-parse/semantic-tree/transform-rules/rename-identifier.md: Rename Identifier to Name
-        var (exit, stdout, _) = Run($"\"{file}\" -x \"//method/name\" -f gcc -m \"name is {{value}}\"");
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"//method/name\" -o gcc -m \"name is {{value}}\"");
 
         Assert.Equal(0, exit);
         Assert.Contains("name is MyMethod", stdout);
@@ -339,7 +339,7 @@ namespace Sample
     {
         var file = CreateTestFile("test.cs", "class Outer { void Inner() { } }");
         // /specs/tractor-parse/semantic-tree/transform-rules/rename-identifier.md: Rename Identifier to Name
-        var (exit, stdout, _) = Run($"\"{file}\" -x \"//method\" -f gcc -m \"method in {{ancestor::class/name}}\"");
+        var (exit, stdout, _) = Run($"\"{file}\" -x \"//method\" -o gcc -m \"method in {{ancestor::class/name}}\"");
 
         Assert.Equal(0, exit);
         Assert.Contains("method in Outer", stdout);
@@ -351,7 +351,7 @@ namespace Sample
     public void ReadsFromStdin()
     {
         // /specs/tractor-parse/semantic-tree/transform-rules/rename-identifier.md: Rename Identifier to Name
-        var (exit, stdout, _) = Run("--lang csharp -x \"//class/name\"", "class FromStdin { }");
+        var (exit, stdout, _) = Run("--lang csharp -x \"//class/name\" -o value", "class FromStdin { }");
 
         Assert.Equal(0, exit);
         Assert.Contains("FromStdin", stdout);
@@ -368,6 +368,6 @@ namespace Sample
         Assert.Contains("Usage:", stdout);
         Assert.Contains("--xpath", stdout);
         Assert.Contains("--expect", stdout);
-        Assert.Contains("--format", stdout);
+        Assert.Contains("--output", stdout);
     }
 }

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CodeXTractor - Extract patterns from source code</title>
+    <title>Tractor - Code Extractor</title>
     <style>
         :root {
             --bg: #0d1117;
@@ -310,16 +310,22 @@
         .result-match { color: #00AA00; }  /* Fresh Green */
         .result-file { color: #8b949e; }
         .result-line { color: #AAAA00; }   /* Harvest Yellow */
+
+        /* Demo highlighting */
+        .highlight {
+            background: rgba(0, 170, 0, 0.2);
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
             <div class="logo">&#x1F69C;</div>
-            <h1>CodeXTractor</h1>
-            <p class="tagline">Extract patterns from source code using XPath queries</p>
+            <h1>Tractor</h1>
+            <p class="tagline">Code Extractor — query source code with XPath</p>
             <div style="margin-top: 1.5rem;">
-                <a href="https://github.com/user/codextractor" class="btn">View on GitHub</a>
+                <a href="https://github.com/user/tractor" class="btn">View on GitHub</a>
                 <a href="#install" class="btn btn-secondary">Get Started</a>
             </div>
         </header>
@@ -367,63 +373,42 @@
                     </div>
                     <pre><code id="source-code"><span class="cs-keyword">public class</span> <span class="cs-type">UserService</span>
 {
-    <span class="cs-keyword">private readonly</span> <span class="cs-type">ILogger</span> _logger;
-
-    <span class="cs-keyword">public</span> <span class="cs-type">UserService</span>(<span class="cs-type">ILogger</span> <span class="cs-param">logger</span>)
+<span data-method="GetAsync">    <span class="cs-keyword">public async</span> <span class="cs-type">Task</span>&lt;<span class="cs-type">User</span>&gt; <span class="cs-method" data-name="GetAsync">GetAsync</span>(<span class="cs-type">int</span> <span class="cs-param">id</span>)
     {
-        _logger = logger;
-    }
-
-    <span class="cs-keyword">public async</span> <span class="cs-type">Task</span>&lt;<span class="cs-type">User</span>&gt; <span class="cs-method">GetUserAsync</span>(<span class="cs-type">int</span> <span class="cs-param">id</span>)
-    {
-        <span class="cs-keyword">if</span> (id &lt;= <span class="cs-number">0</span>)
-            <span class="cs-keyword">throw new</span> <span class="cs-type">ArgumentException</span>(<span class="cs-string">"Invalid ID"</span>);
-
         <span class="cs-keyword">return await</span> _db.FindAsync(id);
     }
-
-    <span class="cs-keyword">public void</span> <span class="cs-method">DeleteUser</span>(<span class="cs-type">int</span> <span class="cs-param">id</span>)
+</span>
+<span data-method="SaveAsync">    <span class="cs-keyword">public async void</span> <span class="cs-method" data-name="SaveAsync">SaveAsync</span>(<span class="cs-type">User</span> <span class="cs-param">user</span>)
     {
-        <span class="cs-keyword">if</span> (id &lt;= <span class="cs-number">0</span>)
-            <span class="cs-keyword">return</span>;
-
-        _db.Delete(id);
-        _logger.Log(<span class="cs-string">"Deleted user"</span>);
+        <span class="cs-keyword">await</span> _db.SaveAsync(user);  <span class="cs-comment">// bug: async void!</span>
     }
+</span>
+<span data-method="Log">    <span class="cs-keyword">private void</span> <span class="cs-method" data-name="Log">Log</span>(<span class="cs-type">string</span> <span class="cs-param">msg</span>) { }</span>
 }</code></pre>
                 </div>
 
                 <!-- Top Right: XML AST -->
                 <div class="demo-panel">
                     <div class="demo-panel-header">
-                        <span class="icon">🌳</span> XML AST
+                        <span class="icon">🌳</span> Semantic Tree
                     </div>
-                    <pre><code id="xml-ast"><span class="xml-punct">&lt;</span><span class="xml-tag">File</span><span class="xml-punct">&gt;</span>
-  <span class="xml-punct">&lt;</span><span class="xml-tag">class</span> <span class="xml-attr">name</span><span class="xml-punct">=</span><span class="xml-value">"UserService"</span> <span class="xml-attr">modifiers</span><span class="xml-punct">=</span><span class="xml-value">"public"</span><span class="xml-punct">&gt;</span>
-    <span class="xml-punct">&lt;</span><span class="xml-tag">Field</span> <span class="xml-attr">name</span><span class="xml-punct">=</span><span class="xml-value">"_logger"</span> <span class="xml-attr">type</span><span class="xml-punct">=</span><span class="xml-value">"ILogger"</span> <span class="xml-attr">modifiers</span><span class="xml-punct">=</span><span class="xml-value">"private readonly"</span><span class="xml-punct">/&gt;</span>
-    <span class="xml-punct">&lt;</span><span class="xml-tag">Constructor</span> <span class="xml-attr">modifiers</span><span class="xml-punct">=</span><span class="xml-value">"public"</span><span class="xml-punct">&gt;</span>
-      <span class="xml-punct">&lt;</span><span class="xml-tag">Param</span> <span class="xml-attr">name</span><span class="xml-punct">=</span><span class="xml-value">"logger"</span> <span class="xml-attr">type</span><span class="xml-punct">=</span><span class="xml-value">"ILogger"</span><span class="xml-punct">/&gt;</span>
-      <span class="xml-punct">&lt;</span><span class="xml-tag">Block</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">Block</span><span class="xml-punct">&gt;</span>
-    <span class="xml-punct">&lt;/</span><span class="xml-tag">Constructor</span><span class="xml-punct">&gt;</span>
-    <span class="xml-punct">&lt;</span><span class="xml-tag">Method</span> <span class="xml-attr">name</span><span class="xml-punct">=</span><span class="xml-value">"GetUserAsync"</span> <span class="xml-attr">type</span><span class="xml-punct">=</span><span class="xml-value">"Task&lt;User&gt;"</span> <span class="xml-attr">modifiers</span><span class="xml-punct">=</span><span class="xml-value">"public async"</span><span class="xml-punct">&gt;</span>
-      <span class="xml-punct">&lt;</span><span class="xml-tag">Param</span> <span class="xml-attr">name</span><span class="xml-punct">=</span><span class="xml-value">"id"</span> <span class="xml-attr">type</span><span class="xml-punct">=</span><span class="xml-value">"int"</span><span class="xml-punct">/&gt;</span>
-      <span class="xml-punct">&lt;</span><span class="xml-tag">Block</span><span class="xml-punct">&gt;</span>
-        <span class="xml-punct">&lt;</span><span class="xml-tag">if</span><span class="xml-punct">&gt;</span>
-          <span class="xml-punct">&lt;</span><span class="xml-tag">throw</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">throw</span><span class="xml-punct">&gt;</span>
-        <span class="xml-punct">&lt;/</span><span class="xml-tag">if</span><span class="xml-punct">&gt;</span>
-        <span class="xml-punct">&lt;</span><span class="xml-tag">return</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">return</span><span class="xml-punct">&gt;</span>
-      <span class="xml-punct">&lt;/</span><span class="xml-tag">Block</span><span class="xml-punct">&gt;</span>
-    <span class="xml-punct">&lt;/</span><span class="xml-tag">Method</span><span class="xml-punct">&gt;</span>
-    <span class="xml-punct">&lt;</span><span class="xml-tag">Method</span> <span class="xml-attr">name</span><span class="xml-punct">=</span><span class="xml-value">"DeleteUser"</span> <span class="xml-attr">type</span><span class="xml-punct">=</span><span class="xml-value">"void"</span> <span class="xml-attr">modifiers</span><span class="xml-punct">=</span><span class="xml-value">"public"</span><span class="xml-punct">&gt;</span>
-      <span class="xml-punct">&lt;</span><span class="xml-tag">Param</span> <span class="xml-attr">name</span><span class="xml-punct">=</span><span class="xml-value">"id"</span> <span class="xml-attr">type</span><span class="xml-punct">=</span><span class="xml-value">"int"</span><span class="xml-punct">/&gt;</span>
-      <span class="xml-punct">&lt;</span><span class="xml-tag">Block</span><span class="xml-punct">&gt;</span>
-        <span class="xml-punct">&lt;</span><span class="xml-tag">if</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">if</span><span class="xml-punct">&gt;</span>
-        <span class="xml-punct">&lt;</span><span class="xml-tag">Call</span> <span class="xml-attr">target</span><span class="xml-punct">=</span><span class="xml-value">"_db.Delete"</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">Call</span><span class="xml-punct">&gt;</span>
-        <span class="xml-punct">&lt;</span><span class="xml-tag">Call</span> <span class="xml-attr">target</span><span class="xml-punct">=</span><span class="xml-value">"_logger.Log"</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">Call</span><span class="xml-punct">&gt;</span>
-      <span class="xml-punct">&lt;/</span><span class="xml-tag">Block</span><span class="xml-punct">&gt;</span>
-    <span class="xml-punct">&lt;/</span><span class="xml-tag">Method</span><span class="xml-punct">&gt;</span>
-  <span class="xml-punct">&lt;/</span><span class="xml-tag">class</span><span class="xml-punct">&gt;</span>
-<span class="xml-punct">&lt;/</span><span class="xml-tag">File</span><span class="xml-punct">&gt;</span></code></pre>
+                    <pre><code id="xml-ast"><span class="xml-punct">&lt;</span><span class="xml-tag">class</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">public</span><span class="xml-punct">/&gt;&lt;</span><span class="xml-tag">name</span><span class="xml-punct">&gt;</span>UserService<span class="xml-punct">&lt;/</span><span class="xml-tag">name</span><span class="xml-punct">&gt;</span>
+  <span data-method="GetAsync"><span class="xml-punct">&lt;</span><span class="xml-tag">method</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">public</span><span class="xml-punct">/&gt;&lt;</span><span class="xml-tag">async</span><span class="xml-punct">/&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">name</span><span class="xml-punct">&gt;</span><span data-name="GetAsync">GetAsync</span><span class="xml-punct">&lt;/</span><span class="xml-tag">name</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>Task&lt;User&gt;<span class="xml-punct">&lt;/</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">params</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">param</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">name</span><span class="xml-punct">&gt;</span>id<span class="xml-punct">&lt;/</span><span class="xml-tag">name</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>int<span class="xml-punct">&lt;/</span><span class="xml-tag">type</span><span class="xml-punct">&gt;&lt;/</span><span class="xml-tag">param</span><span class="xml-punct">&gt;&lt;/</span><span class="xml-tag">params</span><span class="xml-punct">&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">block</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">return</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">await</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">call</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">call</span><span class="xml-punct">&gt;&lt;/</span><span class="xml-tag">await</span><span class="xml-punct">&gt;&lt;/</span><span class="xml-tag">return</span><span class="xml-punct">&gt;&lt;/</span><span class="xml-tag">block</span><span class="xml-punct">&gt;</span>
+  <span class="xml-punct">&lt;/</span><span class="xml-tag">method</span><span class="xml-punct">&gt;</span></span>
+  <span data-method="SaveAsync"><span class="xml-punct">&lt;</span><span class="xml-tag">method</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">public</span><span class="xml-punct">/&gt;&lt;</span><span class="xml-tag">async</span><span class="xml-punct">/&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">name</span><span class="xml-punct">&gt;</span><span data-name="SaveAsync">SaveAsync</span><span class="xml-punct">&lt;/</span><span class="xml-tag">name</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>void<span class="xml-punct">&lt;/</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">params</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">param</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">name</span><span class="xml-punct">&gt;</span>user<span class="xml-punct">&lt;/</span><span class="xml-tag">name</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>User<span class="xml-punct">&lt;/</span><span class="xml-tag">type</span><span class="xml-punct">&gt;&lt;/</span><span class="xml-tag">param</span><span class="xml-punct">&gt;&lt;/</span><span class="xml-tag">params</span><span class="xml-punct">&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">block</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">await</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">call</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">call</span><span class="xml-punct">&gt;&lt;/</span><span class="xml-tag">await</span><span class="xml-punct">&gt;&lt;/</span><span class="xml-tag">block</span><span class="xml-punct">&gt;</span>
+  <span class="xml-punct">&lt;/</span><span class="xml-tag">method</span><span class="xml-punct">&gt;</span></span>
+  <span data-method="Log"><span class="xml-punct">&lt;</span><span class="xml-tag">method</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">private</span><span class="xml-punct">/&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">name</span><span class="xml-punct">&gt;</span><span data-name="Log">Log</span><span class="xml-punct">&lt;/</span><span class="xml-tag">name</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>void<span class="xml-punct">&lt;/</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">params</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">param</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">name</span><span class="xml-punct">&gt;</span>msg<span class="xml-punct">&lt;/</span><span class="xml-tag">name</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>string<span class="xml-punct">&lt;/</span><span class="xml-tag">type</span><span class="xml-punct">&gt;&lt;/</span><span class="xml-tag">param</span><span class="xml-punct">&gt;&lt;/</span><span class="xml-tag">params</span><span class="xml-punct">&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">block</span><span class="xml-punct">/&gt;</span>
+  <span class="xml-punct">&lt;/</span><span class="xml-tag">method</span><span class="xml-punct">&gt;</span></span>
+<span class="xml-punct">&lt;/</span><span class="xml-tag">class</span><span class="xml-punct">&gt;</span></code></pre>
                 </div>
 
                 <!-- Bottom Left: Query Buttons -->
@@ -432,12 +417,11 @@
                         <span class="icon">🔍</span> XPath Queries
                     </div>
                     <div class="query-buttons">
-                        <button class="query-btn active" data-query="methods">//Method/@name</button>
-                        <button class="query-btn" data-query="async">//Method[contains(@modifiers,'async')]/@name</button>
-                        <button class="query-btn" data-query="if">//if</button>
-                        <button class="query-btn" data-query="throws">//throw</button>
-                        <button class="query-btn" data-query="count">count(//Method)</button>
-                        <button class="query-btn" data-query="ci" style="border-color: #f85149;">--expect none //throw</button>
+                        <button class="query-btn active" data-query="all" data-hl-method="GetAsync,SaveAsync,Log">//method</button>
+                        <button class="query-btn" data-query="names" data-hl-name="GetAsync,SaveAsync,Log">//method/name</button>
+                        <button class="query-btn" data-query="async" data-hl-method="GetAsync,SaveAsync">//method[async]</button>
+                        <button class="query-btn" data-query="notpublic" data-hl-method="Log">//method[not(public)]</button>
+                        <button class="query-btn" data-query="asyncvoid" data-hl-method="SaveAsync" style="border-color: #f85149;">//method[async][type='void']</button>
                     </div>
                 </div>
 
@@ -452,8 +436,9 @@
                             <button class="output-tab" data-format="gcc">gcc</button>
                         </div>
                     </div>
-                    <div class="result-content" id="result-content">GetUserAsync
-DeleteUser</div>
+                    <div class="result-content" id="result-content">public async Task&lt;User&gt; GetAsync(int id) { ... }
+public async void SaveAsync(User user) { ... }
+private void Log(string msg) { }</div>
                 </div>
             </div>
         </section>
@@ -525,7 +510,7 @@ DeleteUser</div>
         <section id="install">
             <h2>Installation</h2>
             <div class="install-cmd">
-                dotnet tool install -g CodeXTractor
+                dotnet tool install -g Tractor
             </div>
             <p>Requires .NET 8.0 or later.</p>
         </section>
@@ -533,35 +518,38 @@ DeleteUser</div>
         <section>
             <h2>Quick Examples</h2>
 
-            <p>View the full XML AST of a file:</p>
+            <p>View the semantic tree of a file:</p>
             <pre><code>tractor Program.cs</code></pre>
 
             <p>Find all method names:</p>
-            <pre><code>tractor Program.cs -x <span class="string">"//Method/@name"</span></code></pre>
+            <pre><code>tractor Program.cs -x <span class="string">"//method/name"</span></code></pre>
 
             <p>Find all public methods:</p>
-            <pre><code>tractor Program.cs -x <span class="string">"//Method[@modifiers='public']/@name"</span></code></pre>
+            <pre><code>tractor Program.cs -x <span class="string">"//method[public]/name"</span></code></pre>
 
-            <p>Find if statements inside methods:</p>
-            <pre><code>tractor Program.cs -x <span class="string">"//Method//if"</span></code></pre>
+            <p>Find async methods:</p>
+            <pre><code>tractor Program.cs -x <span class="string">"//method[async]"</span></code></pre>
 
             <p>Count the number of classes:</p>
             <pre><code>tractor Program.cs -x <span class="string">"count(//class)"</span></code></pre>
 
-            <p>CI check - fail if any method has more than 50 lines:</p>
-            <pre><code>tractor src/**/*.cs -x <span class="string">"//Method[@endLine - @startLine > 50]"</span> \
-    --expect none --format gcc --message <span class="string">"Method too long"</span></code></pre>
+            <p>CI check - ban async void methods:</p>
+            <pre><code>tractor src/**/*.cs -x <span class="string">"//method[async][type='void']"</span> \
+    --expect none --format gcc --message <span class="string">"async void is dangerous"</span></code></pre>
         </section>
 
         <section>
             <h2>Element Names</h2>
-            <p>The XML uses intuitive element names:</p>
+            <p>The semantic tree uses intuitive, lowercase element names:</p>
 
-            <h3>Keywords (lowercase)</h3>
-            <pre><code><span class="element">if</span>, <span class="element">else</span>, <span class="element">for</span>, <span class="element">foreach</span>, <span class="element">while</span>, <span class="element">class</span>, <span class="element">struct</span>, <span class="element">interface</span>, <span class="element">namespace</span>, <span class="element">using</span>, <span class="element">try</span>, <span class="element">catch</span>, <span class="element">throw</span>, <span class="element">return</span>, <span class="element">await</span>, <span class="element">new</span>, ...</code></pre>
+            <h3>Structure</h3>
+            <pre><code><span class="element">class</span>, <span class="element">struct</span>, <span class="element">interface</span>, <span class="element">method</span>, <span class="element">property</span>, <span class="element">field</span>, <span class="element">param</span>, <span class="element">block</span>, <span class="element">name</span>, <span class="element">type</span>, ...</code></pre>
 
-            <h3>Structural (PascalCase)</h3>
-            <pre><code><span class="element">Method</span>, <span class="element">Property</span>, <span class="element">Field</span>, <span class="element">Constructor</span>, <span class="element">Param</span>, <span class="element">Block</span>, <span class="element">Call</span>, <span class="element">Arg</span>, <span class="element">Lambda</span>, <span class="element">Assign</span>, ...</code></pre>
+            <h3>Modifiers (empty elements)</h3>
+            <pre><code><span class="element">public</span>, <span class="element">private</span>, <span class="element">static</span>, <span class="element">async</span>, <span class="element">readonly</span>, <span class="element">abstract</span>, <span class="element">virtual</span>, <span class="element">override</span>, ...</code></pre>
+
+            <h3>Statements</h3>
+            <pre><code><span class="element">if</span>, <span class="element">else</span>, <span class="element">for</span>, <span class="element">foreach</span>, <span class="element">while</span>, <span class="element">try</span>, <span class="element">catch</span>, <span class="element">throw</span>, <span class="element">return</span>, <span class="element">await</span>, ...</code></pre>
         </section>
 
         <section>
@@ -595,9 +583,9 @@ Options:
 
         <footer>
             <p>
-                Made with &#x1F69C; by the CodeXTractor team<br>
-                <a href="https://github.com/user/codextractor">GitHub</a> &middot;
-                <a href="https://github.com/user/codextractor/issues">Issues</a>
+                Made with &#x1F69C; by the Tractor team<br>
+                <a href="https://github.com/user/tractor">GitHub</a> &middot;
+                <a href="https://github.com/user/tractor/issues">Issues</a>
             </p>
         </footer>
     </div>
@@ -605,60 +593,82 @@ Options:
     <script>
         // Demo data - results for each query in each format
         const results = {
-            methods: {
-                lines: 'GetUserAsync\nDeleteUser',
-                xml: '<Method name="GetUserAsync" type="Task&lt;User&gt;" modifiers="public async">...</Method>\n<Method name="DeleteUser" type="void" modifiers="public">...</Method>',
+            all: {
+                lines: 'public async Task<User> GetAsync(int id) { ... }\npublic async void SaveAsync(User user) { ... }\nprivate void Log(string msg) { }',
+                xml: '<method><public/><async/><name>GetAsync</name>...</method>\n<method><public/><async/><name>SaveAsync</name>...</method>\n<method><private/><name>Log</name>...</method>',
                 json: `[
-  {"file": "UserService.cs", "line": 10, "value": "GetUserAsync"},
-  {"file": "UserService.cs", "line": 17, "value": "DeleteUser"}
+  {"file": "UserService.cs", "line": 3, "value": "<method>...GetAsync...</method>"},
+  {"file": "UserService.cs", "line": 8, "value": "<method>...SaveAsync...</method>"},
+  {"file": "UserService.cs", "line": 13, "value": "<method>...Log...</method>"}
 ]`,
-                gcc: 'UserService.cs:10:5: note: GetUserAsync\nUserService.cs:17:5: note: DeleteUser'
+                gcc: 'UserService.cs:3:5: note: method GetAsync\nUserService.cs:8:5: note: method SaveAsync\nUserService.cs:13:5: note: method Log'
+            },
+            names: {
+                lines: 'GetAsync\nSaveAsync\nLog',
+                xml: '<name>GetAsync</name>\n<name>SaveAsync</name>\n<name>Log</name>',
+                json: `[
+  {"file": "UserService.cs", "line": 3, "value": "GetAsync"},
+  {"file": "UserService.cs", "line": 8, "value": "SaveAsync"},
+  {"file": "UserService.cs", "line": 13, "value": "Log"}
+]`,
+                gcc: 'UserService.cs:3:5: note: GetAsync\nUserService.cs:8:5: note: SaveAsync\nUserService.cs:13:5: note: Log'
             },
             async: {
-                lines: 'GetUserAsync',
-                xml: '<Method name="GetUserAsync" type="Task&lt;User&gt;" modifiers="public async">\n  <Param name="id" type="int"/>\n  <Block>...</Block>\n</Method>',
+                lines: 'GetAsync\nSaveAsync',
+                xml: '<method><public/><async/><name>GetAsync</name>...</method>\n<method><public/><async/><name>SaveAsync</name>...</method>',
                 json: `[
-  {"file": "UserService.cs", "line": 10, "value": "GetUserAsync"}
+  {"file": "UserService.cs", "line": 3, "value": "GetAsync"},
+  {"file": "UserService.cs", "line": 8, "value": "SaveAsync"}
 ]`,
-                gcc: 'UserService.cs:10:5: note: GetUserAsync'
+                gcc: 'UserService.cs:3:5: note: GetAsync\nUserService.cs:8:5: note: SaveAsync'
             },
-            if: {
-                lines: 'if (id <= 0)\n    throw new ArgumentException("Invalid ID");\n\nif (id <= 0)\n    return;',
-                xml: '<if>\n  <throw>...</throw>\n</if>\n\n<if>\n  <return/>\n</if>',
+            asyncvoid: {
+                lines: 'SaveAsync',
+                xml: '<method>\n  <public/><async/>\n  <name>SaveAsync</name>\n  <type>void</type>\n</method>',
                 json: `[
-  {"file": "UserService.cs", "line": 12, "value": "<if>...</if>"},
-  {"file": "UserService.cs", "line": 19, "value": "<if>...</if>"}
+  {"file": "UserService.cs", "line": 8, "value": "SaveAsync"}
 ]`,
-                gcc: 'UserService.cs:12:9: note: if statement\nUserService.cs:19:9: note: if statement'
+                gcc: 'UserService.cs:8:5: error: async void method found'
             },
-            throws: {
-                lines: 'throw new ArgumentException("Invalid ID");',
-                xml: '<throw>\n  <new type="ArgumentException">\n    <Arg><String value="Invalid ID"/></Arg>\n  </new>\n</throw>',
+            notpublic: {
+                lines: 'Log',
+                xml: '<method>\n  <private/>\n  <name>Log</name>\n  <type>void</type>\n</method>',
                 json: `[
-  {"file": "UserService.cs", "line": 13, "value": "<throw>...</throw>"}
+  {"file": "UserService.cs", "line": 13, "value": "Log"}
 ]`,
-                gcc: 'UserService.cs:13:13: note: throw statement'
+                gcc: 'UserService.cs:13:5: note: Log'
             },
-            count: {
-                lines: '2',
-                xml: '2',
-                json: '2',
-                gcc: '2'
-            },
-            ci: {
-                lines: 'error: Expected no matches but found 1\nexit code: 1',
-                xml: 'error: Expected no matches but found 1\nexit code: 1',
-                json: 'error: Expected no matches but found 1\nexit code: 1',
-                gcc: 'UserService.cs:13:13: error: throw statements not allowed\nerror: Expected no matches but found 1\nexit code: 1'
-            }
         };
 
-        let currentQuery = 'methods';
+        let currentQuery = 'all';
         let currentFormat = 'lines';
 
         function updateResult() {
             const content = document.getElementById('result-content');
             content.textContent = results[currentQuery][currentFormat];
+        }
+
+        function updateHighlight(hlName, hlMethod) {
+            // Clear all highlights
+            document.querySelectorAll('.highlight').forEach(el => {
+                el.classList.remove('highlight');
+            });
+            // Highlight names (just the name text)
+            if (hlName) {
+                hlName.split(',').forEach(name => {
+                    document.querySelectorAll(`[data-name="${name}"]`).forEach(el => {
+                        el.classList.add('highlight');
+                    });
+                });
+            }
+            // Highlight full methods
+            if (hlMethod) {
+                hlMethod.split(',').forEach(method => {
+                    document.querySelectorAll(`[data-method="${method}"]`).forEach(el => {
+                        el.classList.add('highlight');
+                    });
+                });
+            }
         }
 
         // Query button handlers
@@ -668,6 +678,7 @@ Options:
                 btn.classList.add('active');
                 currentQuery = btn.dataset.query;
                 updateResult();
+                updateHighlight(btn.dataset.hlName, btn.dataset.hlMethod);
             });
         });
 
@@ -680,6 +691,9 @@ Options:
                 updateResult();
             });
         });
+
+        // Initial highlight (all methods for //method)
+        updateHighlight(null, 'GetAsync,SaveAsync,Log');
     </script>
 </body>
 </html>
