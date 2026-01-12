@@ -143,6 +143,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
             message: args.message.clone(),
             use_color,
             strip_locations: !args.keep_locations,
+            max_depth: args.depth,
         };
 
         // Debug mode: show full XML with highlighted matches for each file
@@ -359,6 +360,7 @@ fn process_single_result(
             message: args.message.clone(),
             use_color,
             strip_locations: !args.keep_locations,
+            max_depth: args.depth,
         };
 
         let output = format_matches(&matches, format, &options);

@@ -99,6 +99,18 @@ pub fn render_document(xot: &Xot, node: Node, options: &RenderOptions) -> String
     output
 }
 
+/// Count all descendant elements (recursive)
+fn count_descendants(xot: &Xot, node: Node) -> usize {
+    let mut count = 0;
+    for child in xot.children(node) {
+        if matches!(xot.value(child), Value::Element(_)) {
+            count += 1;
+            count += count_descendants(xot, child);
+        }
+    }
+    count
+}
+
 /// Extract (line, col) from "start" attribute value like "5:10"
 fn extract_position(xot: &Xot, node: Node) -> Option<(u32, u32)> {
     let attrs = xot.attributes(node);
@@ -134,20 +146,8 @@ fn render_node_recursive(
         Value::Element(element) => {
             let name = xot.local_name_str(element.name());
 
-            // Check depth limit
-            if let Some(max) = options.max_depth {
-                if depth > max {
-                    output.push_str(&indent);
-                    if options.use_color {
-                        output.push_str(ansi::DIM);
-                    }
-                    output.push_str("<!--...-->\n");
-                    if options.use_color {
-                        output.push_str(ansi::RESET);
-                    }
-                    return;
-                }
-            }
+            // Check if children should be truncated (at max depth)
+            let truncate_children = options.max_depth.map_or(false, |max| depth >= max);
 
             // Check if this element should be highlighted
             let is_highlighted = options.highlights.as_ref().map_or(false, |highlights| {
@@ -196,6 +196,53 @@ fn render_node_recursive(
                 }
 
                 // Closing tag
+                if is_highlighted && options.use_color {
+                    output.push_str(ansi::BG_YELLOW);
+                    output.push_str(ansi::BLACK);
+                    output.push_str(ansi::BOLD);
+                } else if options.use_color {
+                    output.push_str(ansi::DIM);
+                }
+                output.push_str("</");
+                if !is_highlighted && options.use_color {
+                    output.push_str(ansi::RESET);
+                    output.push_str(ansi::BLUE);
+                }
+                output.push_str(name);
+                if !is_highlighted && options.use_color {
+                    output.push_str(ansi::RESET);
+                    output.push_str(ansi::DIM);
+                }
+                output.push('>');
+                if options.use_color {
+                    output.push_str(ansi::RESET);
+                }
+                output.push('\n');
+            } else if truncate_children {
+                // At max depth - show truncation comment instead of children
+                let child_count = count_descendants(xot, node);
+                if !is_highlighted && options.use_color {
+                    output.push_str(ansi::DIM);
+                }
+                output.push('>');
+                if options.use_color {
+                    output.push_str(ansi::RESET);
+                }
+                output.push('\n');
+
+                // Truncation comment
+                let child_indent = options.indent.repeat(depth + 1);
+                output.push_str(&child_indent);
+                if options.use_color {
+                    output.push_str(ansi::DIM);
+                }
+                output.push_str(&format!("<!-- ... ({} more) -->\n", child_count));
+                if options.use_color {
+                    output.push_str(ansi::RESET);
+                }
+
+                // Closing tag
+                output.push_str(&indent);
                 if is_highlighted && options.use_color {
                     output.push_str(ansi::BG_YELLOW);
                     output.push_str(ansi::BLACK);
@@ -448,5 +495,20 @@ mod tests {
 
         assert!(opts.use_color);
         assert!(!opts.include_locations);
+    }
+
+    #[test]
+    fn test_max_depth_truncation() {
+        let xml = r#"<root><a><b><c>text</c></b></a></root>"#;
+        let opts = RenderOptions::new()
+            .with_max_depth(Some(1));  // root=0, a=1, b=2 (truncated)
+
+        let output = render_xml_string(xml, &opts);
+
+        // Should contain truncation comment with count
+        assert!(output.contains("<!-- ... (2 more) -->"));
+        // Should not contain the deeply nested elements
+        assert!(!output.contains("<b>"));
+        assert!(!output.contains("<c>"));
     }
 }

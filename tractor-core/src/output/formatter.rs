@@ -54,6 +54,8 @@ pub struct OutputOptions {
     pub use_color: bool,
     /// Whether to strip location metadata from XML
     pub strip_locations: bool,
+    /// Maximum depth for XML rendering
+    pub max_depth: Option<usize>,
 }
 
 /// JSON output structure
@@ -84,7 +86,8 @@ fn format_xml(matches: &[Match], options: &OutputOptions) -> String {
     let mut output = String::new();
     let render_opts = RenderOptions::new()
         .with_color(options.use_color)
-        .with_locations(!options.strip_locations);
+        .with_locations(!options.strip_locations)
+        .with_max_depth(options.max_depth);
 
     for m in matches {
         if let Some(ref xml) = m.xml_fragment {
