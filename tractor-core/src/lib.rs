@@ -11,6 +11,7 @@ pub mod xpath;
 pub mod output;
 pub mod parallel;
 pub mod xot_builder;
+pub mod xot_transform;
 
 pub use parser::{
     parse_file, parse_string, detect_language, generate_xml_document,

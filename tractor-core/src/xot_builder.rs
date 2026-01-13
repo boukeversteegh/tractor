@@ -115,7 +115,8 @@ impl XotBuilder {
                 self.xot.append(element, text_node)?;
             }
         } else {
-            // Recurse into children with field information
+            // Non-leaf: iterate ALL children (named and anonymous) to preserve order
+            // Anonymous nodes become text children, named nodes become element children
             let mut cursor = ts_node.walk();
             cursor.goto_first_child();
             loop {
@@ -123,6 +124,15 @@ impl XotBuilder {
                 if child.is_named() {
                     let child_field = cursor.field_name();
                     self.build_raw_node(child, source, element, child_field)?;
+                } else {
+                    // Anonymous node - add as text child (operators, keywords, punctuation)
+                    if let Ok(text) = child.utf8_text(source.as_bytes()) {
+                        let trimmed = text.trim();
+                        if !trimmed.is_empty() {
+                            let text_node = self.xot.new_text(trimmed);
+                            self.xot.append(element, text_node)?;
+                        }
+                    }
                 }
                 if !cursor.goto_next_sibling() {
                     break;

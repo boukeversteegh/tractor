@@ -4,17 +4,17 @@
 //! converting source code into XML AST that can be queried with XPath.
 
 pub mod config;
-pub mod csharp;
-pub mod typescript;
+pub mod languages;
 pub mod raw;
 pub mod semantic;
+pub mod transform;
 
 use std::path::Path;
 use std::fs;
 use thiserror::Error;
 
-pub use config::{LanguageConfig, DEFAULT_CONFIG};
 pub use semantic::get_config;
+pub use transform::LangTransforms;
 
 /// Supported languages and their extensions
 pub static SUPPORTED_LANGUAGES: &[(&str, &[&str])] = &[
@@ -230,21 +230,22 @@ pub fn parse_string_to_xot(source: &str, lang: &str, file_path: String, raw_mode
     let tree = parser.parse(source, None)
         .ok_or_else(|| ParseError::Parse("Failed to parse source".to_string()))?;
 
-    // Build xot document
+    // Build xot document (always start with raw tree)
     let mut builder = XotBuilder::new();
+    let root = builder.build_raw(tree.root_node(), source, &file_path)
+        .map_err(|e| ParseError::Parse(e.to_string()))?;
 
-    let root = if raw_mode {
-        builder.build_raw(tree.root_node(), source, &file_path)
-            .map_err(|e| ParseError::Parse(e.to_string()))?
-    } else {
-        // TODO: Implement semantic mode for xot builder
-        // For now, fall back to raw mode
-        builder.build_raw(tree.root_node(), source, &file_path)
-            .map_err(|e| ParseError::Parse(e.to_string()))?
-    };
+    let mut xot = builder.into_xot();
+
+    // Apply semantic transforms if not in raw mode
+    if !raw_mode {
+        let transforms = languages::get_transforms(lang);
+        crate::xot_transform::transform_semantic(&mut xot, root, transforms)
+            .map_err(|e| ParseError::Parse(e.to_string()))?;
+    }
 
     Ok(XotParseResult {
-        xot: builder.into_xot(),
+        xot,
         root,
         source_lines: source.lines().map(|s| s.to_string()).collect(),
         file_path,

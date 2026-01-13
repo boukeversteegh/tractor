@@ -1,0 +1,80 @@
+//! Python language configuration
+
+use crate::parser::transform::{LangTransforms, IdentifierKind, default_compute_context};
+
+/// Python identifier classification
+fn classify_identifier(parent_kind: &str, _has_param_sibling: bool, _in_special_context: bool) -> IdentifierKind {
+    match parent_kind {
+        "function_definition" | "class_definition" => IdentifierKind::Name,
+        "parameter" | "default_parameter" | "typed_parameter" => IdentifierKind::Name,
+        "assignment" => IdentifierKind::Name,
+        _ => IdentifierKind::Type,
+    }
+}
+
+/// Python transform configuration
+pub static PYTHON_TRANSFORMS: LangTransforms = LangTransforms {
+    element_mappings: &[
+        ("module", "module"),
+        ("class_definition", "class"),
+        ("function_definition", "function"),
+        ("decorated_definition", "decorated"),
+        ("decorator", "decorator"),
+        ("parameters", "params"),
+        ("default_parameter", "param"),
+        ("typed_parameter", "param"),
+        ("typed_default_parameter", "param"),
+        ("return_statement", "return"),
+        ("if_statement", "if"),
+        ("elif_clause", "elif"),
+        ("else_clause", "else"),
+        ("for_statement", "for"),
+        ("while_statement", "while"),
+        ("try_statement", "try"),
+        ("except_clause", "except"),
+        ("finally_clause", "finally"),
+        ("with_statement", "with"),
+        ("raise_statement", "raise"),
+        ("import_statement", "import"),
+        ("import_from_statement", "from"),
+        ("pass_statement", "pass"),
+        ("call", "call"),
+        ("attribute", "member"),
+        ("subscript", "subscript"),
+        ("assignment", "assign"),
+        ("augmented_assignment", "augassign"),
+        ("binary_operator", "binary"),
+        ("unary_operator", "unary"),
+        ("comparison_operator", "compare"),
+        ("boolean_operator", "logical"),
+        ("conditional_expression", "ternary"),
+        ("lambda", "lambda"),
+        ("await", "await"),
+        ("list_comprehension", "listcomp"),
+        ("dictionary_comprehension", "dictcomp"),
+        ("set_comprehension", "setcomp"),
+        ("generator_expression", "genexp"),
+        ("string", "string"),
+        ("integer", "int"),
+        ("float", "float"),
+        ("true", "true"),
+        ("false", "false"),
+        ("none", "none"),
+        ("identifier", "name"),
+    ],
+    flatten_kinds: &["block"],
+    skip_kinds: &["expression_statement"],
+    operator_kinds: &[
+        "binary_operator",
+        "unary_operator",
+        "comparison_operator",
+        "boolean_operator",
+        "augmented_assignment",
+    ],
+    keyword_modifier_kinds: &[],
+    known_modifiers: &["async"],
+    modifier_wrapper_kinds: &[],
+    extract_name_attr_kinds: &[],
+    classify_identifier,
+    compute_identifier_context: default_compute_context,
+};
