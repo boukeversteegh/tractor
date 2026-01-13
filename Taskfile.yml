@@ -26,18 +26,6 @@ tasks:
     cmds:
       - cargo test
 
-  # === tractor-parse (standalone TreeSitter parser utility) ===
-
-  parse:build:
-    desc: Build tractor-parse
-    cmds:
-      - cargo build --release -p tractor-parse
-
-  parse:install:
-    desc: Install tractor-parse to ~/.cargo/bin
-    cmds:
-      - cargo install --path tractor-parse
-
   # === Distribution builds ===
 
   dist:linux:

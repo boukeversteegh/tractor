@@ -3,7 +3,6 @@ resolver = "2"
 members = [
     "tractor",
     "tractor-core",
-    "tractor-parse",  # Keep as standalone utility
 ]
 
 [workspace.package]

@@ -2,6 +2,7 @@
 
 use crate::xpath::Match;
 use crate::output::xml_renderer::{render_xml_string, RenderOptions};
+use crate::output::syntax_highlight::{extract_syntax_spans, highlight_source, highlight_lines};
 use regex::Regex;
 use serde::Serialize;
 
@@ -73,8 +74,8 @@ struct JsonMatch {
 pub fn format_matches(matches: &[Match], format: OutputFormat, options: &OutputOptions) -> String {
     match format {
         OutputFormat::Xml => format_xml(matches, options),
-        OutputFormat::Lines => format_lines(matches),
-        OutputFormat::Source => format_source(matches),
+        OutputFormat::Lines => format_lines(matches, options),
+        OutputFormat::Source => format_source(matches, options),
         OutputFormat::Value => format_value(matches),
         OutputFormat::Gcc => format_gcc(matches, options),
         OutputFormat::Json => format_json(matches, options),
@@ -107,24 +108,66 @@ fn format_xml(matches: &[Match], options: &OutputOptions) -> String {
     output
 }
 
-fn format_lines(matches: &[Match]) -> String {
+fn format_lines(matches: &[Match], options: &OutputOptions) -> String {
     let mut output = String::new();
     for m in matches {
         let lines = m.get_source_lines_range();
-        for line in lines {
-            output.push_str(line.trim_end_matches('\r'));
-            output.push('\n');
+        let lines_vec: Vec<String> = lines.iter().map(|l| l.trim_end_matches('\r').to_string()).collect();
+
+        if options.use_color && m.xml_fragment.is_some() {
+            // Apply syntax highlighting
+            let spans = extract_syntax_spans(m.xml_fragment.as_ref().unwrap());
+            if !spans.is_empty() {
+                let highlighted = highlight_lines(&lines_vec, &spans, m.line, m.end_line);
+                output.push_str(&highlighted);
+                output.push('\n');
+            } else {
+                // No spans extracted, output plain
+                for line in &lines_vec {
+                    output.push_str(line);
+                    output.push('\n');
+                }
+            }
+        } else {
+            // No color - output plain lines
+            for line in &lines_vec {
+                output.push_str(line);
+                output.push('\n');
+            }
         }
     }
     output
 }
 
-fn format_source(matches: &[Match]) -> String {
+fn format_source(matches: &[Match], options: &OutputOptions) -> String {
     let mut output = String::new();
     for m in matches {
         let snippet = m.extract_source_snippet();
-        output.push_str(&snippet);
-        output.push('\n');
+
+        if options.use_color && m.xml_fragment.is_some() && !snippet.is_empty() {
+            // Apply syntax highlighting
+            let spans = extract_syntax_spans(m.xml_fragment.as_ref().unwrap());
+            if !spans.is_empty() {
+                let highlighted = highlight_source(
+                    &snippet,
+                    &spans,
+                    m.line,
+                    m.column,
+                    m.end_line,
+                    m.end_column,
+                );
+                output.push_str(&highlighted);
+                output.push('\n');
+            } else {
+                // No spans extracted, output plain
+                output.push_str(&snippet);
+                output.push('\n');
+            }
+        } else {
+            // No color - output plain snippet
+            output.push_str(&snippet);
+            output.push('\n');
+        }
     }
     output
 }

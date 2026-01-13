@@ -7,6 +7,16 @@ pub fn write_node(out: &mut impl Write, node: tree_sitter::Node, source: &str, i
     write_node_with_field(out, node, source, indent, use_color, None)
 }
 
+/// Extract the first anonymous child's text (e.g., keyword like "let", "const", "var")
+fn get_first_anonymous_child_text<'a>(node: tree_sitter::Node<'a>, source: &'a str) -> Option<&'a str> {
+    if let Some(first_child) = node.child(0) {
+        if !first_child.is_named() {
+            return first_child.utf8_text(source.as_bytes()).ok();
+        }
+    }
+    None
+}
+
 /// Write TreeSitter node with optional field name from parent
 fn write_node_with_field(out: &mut impl Write, node: tree_sitter::Node, source: &str, indent: usize, use_color: bool, field_name: Option<&str>) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let indent_str = "  ".repeat(indent);
@@ -26,6 +36,14 @@ fn write_node_with_field(out: &mut impl Write, node: tree_sitter::Node, source: 
     let end_line = (end.row + 1).to_string();
     let end_col = (end.column + 1).to_string();
 
+    // For certain node types, extract the keyword from first anonymous child
+    let keyword_str: Option<String> = match kind {
+        "lexical_declaration" | "variable_declaration" => {
+            get_first_anonymous_child_text(node, source).map(|s| s.to_string())
+        }
+        _ => None,
+    };
+
     let mut attrs: Vec<(&str, &str)> = vec![
         ("startLine", &start_line),
         ("startCol", &start_col),
@@ -35,6 +53,10 @@ fn write_node_with_field(out: &mut impl Write, node: tree_sitter::Node, source: 
 
     if let Some(field) = field_name {
         attrs.push(("field", field));
+    }
+
+    if let Some(ref kw) = keyword_str {
+        attrs.push(("kind", kw));
     }
 
     // Check if this is a leaf node (no named children)

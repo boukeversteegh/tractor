@@ -166,4 +166,71 @@ mod tests {
         let stripped = XPathEngine::strip_location_metadata(xml);
         assert_eq!(stripped, "<class>Foo</class>");
     }
+
+    #[test]
+    fn test_query_semantic_xml() {
+        let xml = r#"<Files>
+  <File path="test.ts">
+    <program start="1:1" end="2:1">
+      <variable start="1:1" end="1:11">
+        <let/>
+        <name>x</name>
+        <value>
+          <number start="1:9" end="1:10">1</number>
+        </value>
+      </variable>
+    </program>
+  </File>
+</Files>"#;
+
+        let engine = XPathEngine::new();
+        let matches = engine.query(xml, "//variable", &[], "test.ts").unwrap();
+        assert_eq!(matches.len(), 1, "Should find one variable element");
+
+        let matches = engine.query(xml, "//name", &[], "test.ts").unwrap();
+        assert_eq!(matches.len(), 1, "Should find one name element");
+    }
+
+    #[test]
+    fn test_query_with_xml_prolog() {
+        // Test with the actual XML prolog that generate_xml_document creates
+        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<Files>
+  <File path="test.ts">
+    <program start="1:1" end="2:1">
+      <variable start="1:1" end="1:11">
+        <let/>
+        <name>x</name>
+        <value>
+          <number start="1:9" end="1:10">1</number>
+        </value>
+      </variable>
+    </program>
+  </File>
+</Files>"#;
+
+        let engine = XPathEngine::new();
+        let matches = engine.query(xml, "//variable", &[], "test.ts").unwrap();
+        assert_eq!(matches.len(), 1, "Should find one variable element with XML prolog");
+    }
+
+    #[test]
+    fn test_query_parsed_typescript() {
+        use crate::{parse_string, generate_xml_document};
+
+        let source = "let x = 1;";
+        let result = parse_string(source, "typescript", "test.ts".to_string(), false).unwrap();
+        let xml = generate_xml_document(&[result.clone()]);
+
+        let engine = XPathEngine::new();
+        let matches = engine.query(&xml, "//variable", &result.source_lines, "test.ts").unwrap();
+        assert_eq!(matches.len(), 1, "Should find one variable element");
+
+        // Also test querying nested elements
+        let matches = engine.query(&xml, "//name", &result.source_lines, "test.ts").unwrap();
+        assert_eq!(matches.len(), 1, "Should find one name element");
+
+        let matches = engine.query(&xml, "//value/number", &result.source_lines, "test.ts").unwrap();
+        assert_eq!(matches.len(), 1, "Should find number inside value");
+    }
 }

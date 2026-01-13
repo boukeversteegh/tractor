@@ -5,6 +5,7 @@
 
 pub mod config;
 pub mod csharp;
+pub mod typescript;
 pub mod raw;
 pub mod semantic;
 

@@ -12,6 +12,7 @@
 mod formatter;
 mod colors;
 pub mod xml_renderer;
+pub mod syntax_highlight;
 
 pub use formatter::{OutputFormat, format_matches, OutputOptions};
 pub use colors::should_use_color;
