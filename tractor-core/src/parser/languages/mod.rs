@@ -1,12 +1,7 @@
-//! Language-specific transform configurations
+//! Language-specific transform modules
 //!
-//! Each language has its own file with a `LangTransforms` config.
-//!
-//! ## Adding a new language
-//! 1. Create a new file (e.g., `python.rs`)
-//! 2. Define `PYTHON_TRANSFORMS: LangTransforms`
-//! 3. Add module declaration here
-//! 4. Add to `get_transforms()` match
+//! Each language owns its complete transform logic.
+//! The shared infrastructure (xot_transform) provides only the walker and helpers.
 
 pub mod typescript;
 pub mod csharp;
@@ -15,25 +10,27 @@ pub mod go;
 pub mod rust_lang;
 pub mod java;
 
-use super::transform::LangTransforms;
+use xot::{Xot, Node as XotNode};
+use crate::xot_transform::TransformAction;
 
-// Re-export language configs
-pub use typescript::TYPESCRIPT_TRANSFORMS;
-pub use csharp::CSHARP_TRANSFORMS;
-pub use python::PYTHON_TRANSFORMS;
-pub use go::GO_TRANSFORMS;
-pub use rust_lang::RUST_TRANSFORMS;
-pub use java::JAVA_TRANSFORMS;
+/// Type alias for language transform functions
+pub type TransformFn = fn(&mut Xot, XotNode) -> Result<TransformAction, xot::Error>;
 
-/// Get transform configuration for a language
-pub fn get_transforms(lang: &str) -> &'static LangTransforms {
+/// Get the transform function for a language
+pub fn get_transform(lang: &str) -> TransformFn {
     match lang {
-        "typescript" | "ts" | "tsx" | "javascript" | "js" | "jsx" => &TYPESCRIPT_TRANSFORMS,
-        "csharp" | "cs" => &CSHARP_TRANSFORMS,
-        "python" | "py" => &PYTHON_TRANSFORMS,
-        "go" => &GO_TRANSFORMS,
-        "rust" | "rs" => &RUST_TRANSFORMS,
-        "java" => &JAVA_TRANSFORMS,
-        _ => &TYPESCRIPT_TRANSFORMS, // Default
+        "typescript" | "ts" | "tsx" | "javascript" | "js" | "jsx" => typescript::transform,
+        "csharp" | "cs" => csharp::transform,
+        "python" | "py" => python::transform,
+        "go" => go::transform,
+        "rust" | "rs" => rust_lang::transform,
+        "java" => java::transform,
+        // Default: passthrough (no transforms)
+        _ => passthrough_transform,
     }
+}
+
+/// Default passthrough transform - just continues without changes
+fn passthrough_transform(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
+    Ok(TransformAction::Continue)
 }

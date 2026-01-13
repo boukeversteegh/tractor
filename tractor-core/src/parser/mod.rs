@@ -6,15 +6,10 @@
 pub mod config;
 pub mod languages;
 pub mod raw;
-pub mod semantic;
-pub mod transform;
 
 use std::path::Path;
 use std::fs;
 use thiserror::Error;
-
-pub use semantic::get_config;
-pub use transform::LangTransforms;
 
 /// Supported languages and their extensions
 pub static SUPPORTED_LANGUAGES: &[(&str, &[&str])] = &[
@@ -149,37 +144,52 @@ pub fn parse_file(path: &Path, lang_override: Option<&str>, raw_mode: bool) -> R
 }
 
 /// Parse a source string and return the XML AST
+///
+/// This function now uses the xot-based pipeline internally:
+/// AST → xot tree → transform → render to string
 pub fn parse_string(source: &str, lang: &str, file_path: String, raw_mode: bool) -> Result<ParseResult, ParseError> {
-    let language = get_tree_sitter_language(lang)?;
+    // Use the xot-based pipeline
+    let result = parse_string_to_xot(source, lang, file_path.clone(), raw_mode)?;
 
-    let mut parser = tree_sitter::Parser::new();
-    parser.set_language(&language)
-        .map_err(|e| ParseError::TreeSitter(e.to_string()))?;
+    // Find the actual content node (skip Files/File wrappers)
+    let content_node = find_content_root(&result.xot, result.root);
 
-    let tree = parser.parse(source, None)
-        .ok_or_else(|| ParseError::Parse("Failed to parse source".to_string()))?;
-
-    // Generate XML
-    let mut xml_output = Vec::new();
-
-    if raw_mode {
-        raw::write_node(&mut xml_output, tree.root_node(), source, 0, false)
-            .map_err(|e| ParseError::Parse(e.to_string()))?;
-    } else {
-        let config = get_config(lang);
-        semantic::write_semantic_node(&mut xml_output, tree.root_node(), source, 0, false, config)
-            .map_err(|e| ParseError::Parse(e.to_string()))?;
-    }
-
-    let xml = String::from_utf8(xml_output)
-        .map_err(|e| ParseError::Parse(e.to_string()))?;
+    // Render just the content (not the Files/File wrappers)
+    let options = crate::output::RenderOptions::new().with_locations(true);
+    let xml = crate::output::render_node(&result.xot, content_node, &options);
 
     Ok(ParseResult {
         xml,
-        source_lines: source.lines().map(|s| s.to_string()).collect(),
-        file_path,
-        language: lang.to_string(),
+        source_lines: result.source_lines,
+        file_path: result.file_path,
+        language: result.language,
     })
+}
+
+/// Find the actual content root, skipping Files/File wrappers
+fn find_content_root(xot: &xot::Xot, node: xot::Node) -> xot::Node {
+    use crate::xot_transform::helpers::get_element_name;
+
+    // If this is a document node, get the document element
+    if xot.is_document(node) {
+        if let Ok(elem) = xot.document_element(node) {
+            return find_content_root(xot, elem);
+        }
+    }
+
+    // Check if this is a Files or File wrapper
+    if let Some(name) = get_element_name(xot, node) {
+        if name == "Files" || name == "File" {
+            // Return the first element child
+            for child in xot.children(node) {
+                if xot.element(child).is_some() {
+                    return find_content_root(xot, child);
+                }
+            }
+        }
+    }
+
+    node
 }
 
 /// Generate full XML document with Files wrapper for multiple files
@@ -239,8 +249,8 @@ pub fn parse_string_to_xot(source: &str, lang: &str, file_path: String, raw_mode
 
     // Apply semantic transforms if not in raw mode
     if !raw_mode {
-        let transforms = languages::get_transforms(lang);
-        crate::xot_transform::transform_semantic(&mut xot, root, transforms)
+        let transform_fn = languages::get_transform(lang);
+        crate::xot_transform::walk_transform(&mut xot, root, transform_fn)
             .map_err(|e| ParseError::Parse(e.to_string()))?;
     }
 

@@ -1,196 +1,47 @@
-//! Semantic transformation for xot XML trees
+//! Xot tree transformation infrastructure
 //!
-//! This module provides xot → xot transformations that convert raw AST XML
-//! into semantic XML with cleaner element names, extracted attributes, etc.
+//! Provides a generic tree walker and low-level helpers for xot manipulation.
+//! No assumptions about AST structure - each language defines its own transform logic.
 //!
 //! ## Architecture
 //! ```text
-//! AST → build_raw() → xot tree → transform_semantic() → XPath/render
+//! AST → build_raw() → xot tree → walk_transform(lang_fn) → transformed tree
 //! ```
-//!
-//! The transformation walks the xot tree and applies language-specific rules:
-//! - Rename elements (binary_expression → binary)
-//! - Extract operators as attributes (op="+")
-//! - Flatten nodes (promote children to parent)
-//! - Skip nodes entirely
-//! - Convert modifier wrappers to empty elements (<public/>)
-//! - Classify identifiers as <name> or <type>
 
 use xot::{Xot, Node as XotNode, NameId};
-use std::collections::HashMap;
-use crate::parser::transform::{LangTransforms, IdentifierKind};
 
-/// Context passed through the transformation
-pub struct TransformContext<'a> {
-    /// Language-specific transformation rules
-    pub transforms: &'a LangTransforms,
-    /// Cache of name strings to NameIds (for efficient lookups)
-    name_cache: HashMap<String, NameId>,
-}
+// =============================================================================
+// TRANSFORM ACTION - Control flow for the walker
+// =============================================================================
 
-impl<'a> TransformContext<'a> {
-    pub fn new(transforms: &'a LangTransforms) -> Self {
-        Self {
-            transforms,
-            name_cache: HashMap::new(),
-        }
-    }
-
-    /// Get or create a NameId for a name string
-    fn get_or_create_name(&mut self, xot: &mut Xot, name: &str) -> NameId {
-        if let Some(&id) = self.name_cache.get(name) {
-            id
-        } else {
-            let id = xot.add_name(name);
-            self.name_cache.insert(name.to_string(), id);
-            id
-        }
-    }
+/// Result of transforming a node - controls how the walker proceeds
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum TransformAction {
+    /// Continue processing children normally
+    Continue,
+    /// Skip this node entirely - detach it, promote children to parent
+    Skip,
+    /// Flatten this node - transform children first, then detach node and promote them
+    Flatten,
+    /// Node fully handled - don't recurse into children
+    Done,
 }
 
 // =============================================================================
-// HELPER FUNCTIONS - Small reusable operations on xot nodes
+// TREE WALKER - Language-agnostic traversal
 // =============================================================================
 
-/// Get the local name of an element node
-pub fn get_element_name(xot: &Xot, node: XotNode) -> Option<String> {
-    if let Some(element) = xot.element(node) {
-        let name_id = element.name();
-        Some(xot.local_name_str(name_id).to_string())
-    } else {
-        None
-    }
-}
-
-/// Rename an element node
-pub fn rename_element(xot: &mut Xot, node: XotNode, new_name: NameId) {
-    if let Some(element) = xot.element_mut(node) {
-        element.set_name(new_name);
-    }
-}
-
-/// Get text content of a node (for leaf nodes)
-pub fn get_text_content(xot: &Xot, node: XotNode) -> Option<String> {
-    let mut text = String::new();
-    for child in xot.children(node) {
-        if let Some(t) = xot.text_str(child) {
-            text.push_str(t);
-        }
-    }
-    if text.is_empty() {
-        None
-    } else {
-        Some(text)
-    }
-}
-
-/// Set an attribute on an element
-pub fn set_attribute(xot: &mut Xot, node: XotNode, attr_name: NameId, value: &str) {
-    xot.attributes_mut(node).insert(attr_name, value.to_string());
-}
-
-/// Get an attribute value from an element
-pub fn get_attribute(xot: &Xot, node: XotNode, attr_name: &str) -> Option<String> {
-    let attrs = xot.attributes(node);
-    for (name_id, value) in attrs.iter() {
-        let local = xot.local_name_str(name_id);
-        if local == attr_name {
-            return Some(value.to_string());
-        }
-    }
-    None
-}
-
-/// Remove an attribute from an element
-pub fn remove_attribute(xot: &mut Xot, node: XotNode, attr_name: &str) {
-    let mut to_remove = None;
-    {
-        let attrs = xot.attributes(node);
-        for (name_id, _) in attrs.iter() {
-            let local = xot.local_name_str(name_id);
-            if local == attr_name {
-                to_remove = Some(name_id);
-                break;
-            }
-        }
-    }
-    if let Some(name_id) = to_remove {
-        xot.attributes_mut(node).remove(name_id);
-    }
-}
-
-/// Check if a node has any element children
-pub fn has_element_children(xot: &Xot, node: XotNode) -> bool {
-    xot.children(node).any(|child| xot.element(child).is_some())
-}
-
-/// Get all element children of a node
-pub fn element_children(xot: &Xot, node: XotNode) -> Vec<XotNode> {
-    xot.children(node)
-        .filter(|&child| xot.element(child).is_some())
-        .collect()
-}
-
-/// Create a new empty element and insert it as first child
-pub fn prepend_empty_element(xot: &mut Xot, parent: XotNode, name: NameId) -> Result<XotNode, xot::Error> {
-    let element = xot.new_element(name);
-    xot.prepend(parent, element)?;
-    Ok(element)
-}
-
-/// Create a new empty element and insert it before a sibling
-pub fn insert_empty_element_before(xot: &mut Xot, sibling: XotNode, name: NameId) -> Result<XotNode, xot::Error> {
-    let element = xot.new_element(name);
-    xot.insert_before(sibling, element)?;
-    Ok(element)
-}
-
-/// Remove a node from the tree (does not delete, just detaches)
-pub fn detach_node(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
-    xot.detach(node)
-}
-
-/// Move all children of a node to its parent (flatten)
-pub fn flatten_node(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
-    // Collect children first to avoid mutation during iteration
-    let children: Vec<XotNode> = xot.children(node).collect();
-
-    // Move each child to before the node
-    for child in children {
-        xot.detach(child)?;
-        xot.insert_before(node, child)?;
-    }
-
-    // Remove the now-empty node
-    xot.detach(node)?;
-    Ok(())
-}
-
-/// Delete a node and all its descendants
-pub fn delete_node(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
-    xot.detach(node)?;
-    // Node will be garbage collected by xot
-    Ok(())
-}
-
-// =============================================================================
-// SEMANTIC TRANSFORM - Main transformation logic
-// =============================================================================
-
-/// Transform a raw xot tree into semantic form
+/// Walk an xot tree and apply a transform function to each element node.
 ///
-/// This is the main entry point. It walks the tree and applies language-specific
-/// transformation rules from `LangTransforms`.
-pub fn transform_semantic(xot: &mut Xot, root: XotNode, transforms: &LangTransforms) -> Result<(), xot::Error> {
-    let mut ctx = TransformContext::new(transforms);
-
-    // Find the actual content root (skip Files/File wrapper if present)
+/// The transform function receives each node and returns a `TransformAction`
+/// to control how the walker proceeds.
+pub fn walk_transform<F>(xot: &mut Xot, root: XotNode, mut transform_fn: F) -> Result<(), xot::Error>
+where
+    F: FnMut(&mut Xot, XotNode) -> Result<TransformAction, xot::Error>,
+{
+    // Find the actual content root (skip document/Files/File wrappers)
     let content_root = find_content_root(xot, root);
-
-    // Transform recursively
-    transform_node(xot, content_root, &mut ctx)?;
-
-    Ok(())
+    walk_node(xot, content_root, &mut transform_fn)
 }
 
 /// Find the actual content root, skipping Files/File wrappers
@@ -203,7 +54,7 @@ fn find_content_root(xot: &Xot, node: XotNode) -> XotNode {
     }
 
     // Check if this is a Files or File wrapper
-    if let Some(name) = get_element_name(xot, node) {
+    if let Some(name) = helpers::get_element_name(xot, node) {
         if name == "Files" || name == "File" {
             // Return the first element child
             for child in xot.children(node) {
@@ -217,206 +68,207 @@ fn find_content_root(xot: &Xot, node: XotNode) -> XotNode {
     node
 }
 
-/// Transform a single node and its descendants
-fn transform_node(xot: &mut Xot, node: XotNode, ctx: &mut TransformContext) -> Result<(), xot::Error> {
+/// Recursively walk and transform a node
+fn walk_node<F>(xot: &mut Xot, node: XotNode, transform_fn: &mut F) -> Result<(), xot::Error>
+where
+    F: FnMut(&mut Xot, XotNode) -> Result<TransformAction, xot::Error>,
+{
     // Skip non-element nodes
     if xot.element(node).is_none() {
         return Ok(());
     }
 
-    let kind = match get_element_name(xot, node) {
-        Some(k) => k,
-        None => return Ok(()),
-    };
+    // Apply transform to this node
+    let action = transform_fn(xot, node)?;
 
-    // Rule 1: Skip nodes entirely (remove from tree)
-    if ctx.transforms.should_skip(&kind) {
-        // Move children to parent, then remove this node
+    match action {
+        TransformAction::Continue => {
+            // Process children recursively
+            let children: Vec<XotNode> = xot.children(node)
+                .filter(|&c| xot.element(c).is_some())
+                .collect();
+            for child in children {
+                walk_node(xot, child, transform_fn)?;
+            }
+        }
+        TransformAction::Skip => {
+            // Move children to parent, transform them, then remove this node
+            let children: Vec<XotNode> = xot.children(node).collect();
+            for child in children {
+                xot.detach(child)?;
+                xot.insert_before(node, child)?;
+                if xot.element(child).is_some() {
+                    walk_node(xot, child, transform_fn)?;
+                }
+            }
+            xot.detach(node)?;
+        }
+        TransformAction::Flatten => {
+            // Transform children first, then move them to parent and remove node
+            let children: Vec<XotNode> = xot.children(node)
+                .filter(|&c| xot.element(c).is_some())
+                .collect();
+            for child in children {
+                walk_node(xot, child, transform_fn)?;
+            }
+            helpers::flatten_node(xot, node)?;
+        }
+        TransformAction::Done => {
+            // Node fully handled, don't recurse
+        }
+    }
+
+    Ok(())
+}
+
+// =============================================================================
+// HELPERS - Low-level xot operations, no semantic meaning
+// =============================================================================
+
+pub mod helpers {
+    use super::*;
+
+    /// Get the local name of an element node
+    pub fn get_element_name(xot: &Xot, node: XotNode) -> Option<String> {
+        xot.element(node).map(|element| {
+            xot.local_name_str(element.name()).to_string()
+        })
+    }
+
+    /// Get or create a NameId for a name string
+    pub fn get_name(xot: &mut Xot, name: &str) -> NameId {
+        xot.add_name(name)
+    }
+
+    /// Rename an element node
+    pub fn rename(xot: &mut Xot, node: XotNode, new_name: &str) {
+        let name_id = xot.add_name(new_name);
+        if let Some(element) = xot.element_mut(node) {
+            element.set_name(name_id);
+        }
+    }
+
+    /// Set an attribute on an element
+    pub fn set_attr(xot: &mut Xot, node: XotNode, name: &str, value: &str) {
+        let name_id = xot.add_name(name);
+        xot.attributes_mut(node).insert(name_id, value.to_string());
+    }
+
+    /// Get an attribute value from an element
+    pub fn get_attr(xot: &Xot, node: XotNode, name: &str) -> Option<String> {
+        let attrs = xot.attributes(node);
+        for (name_id, value) in attrs.iter() {
+            if xot.local_name_str(name_id) == name {
+                return Some(value.to_string());
+            }
+        }
+        None
+    }
+
+    /// Remove an attribute from an element
+    pub fn remove_attr(xot: &mut Xot, node: XotNode, name: &str) {
+        let mut to_remove = None;
+        {
+            let attrs = xot.attributes(node);
+            for (name_id, _) in attrs.iter() {
+                if xot.local_name_str(name_id) == name {
+                    to_remove = Some(name_id);
+                    break;
+                }
+            }
+        }
+        if let Some(name_id) = to_remove {
+            xot.attributes_mut(node).remove(name_id);
+        }
+    }
+
+    /// Get all text content from immediate children (for extracting operators, keywords)
+    pub fn get_text_children(xot: &Xot, node: XotNode) -> Vec<String> {
+        xot.children(node)
+            .filter_map(|child| xot.text_str(child).map(|s| s.to_string()))
+            .collect()
+    }
+
+    /// Get all element children
+    pub fn get_element_children(xot: &Xot, node: XotNode) -> Vec<XotNode> {
+        xot.children(node)
+            .filter(|&child| xot.element(child).is_some())
+            .collect()
+    }
+
+    /// Check if node has any element children
+    pub fn has_element_children(xot: &Xot, node: XotNode) -> bool {
+        xot.children(node).any(|child| xot.element(child).is_some())
+    }
+
+    /// Get text content of a node (concatenated text children)
+    pub fn get_text_content(xot: &Xot, node: XotNode) -> Option<String> {
+        let text: String = xot.children(node)
+            .filter_map(|child| xot.text_str(child))
+            .collect();
+        if text.is_empty() { None } else { Some(text) }
+    }
+
+    /// Prepend an empty element as first child
+    pub fn prepend_empty_element(xot: &mut Xot, parent: XotNode, name: &str) -> Result<XotNode, xot::Error> {
+        let name_id = xot.add_name(name);
+        let element = xot.new_element(name_id);
+        xot.prepend(parent, element)?;
+        Ok(element)
+    }
+
+    /// Insert an empty element before a sibling
+    pub fn insert_empty_before(xot: &mut Xot, sibling: XotNode, name: &str) -> Result<XotNode, xot::Error> {
+        let name_id = xot.add_name(name);
+        let element = xot.new_element(name_id);
+        xot.insert_before(sibling, element)?;
+        Ok(element)
+    }
+
+    /// Detach a node from the tree
+    pub fn detach(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
+        xot.detach(node)
+    }
+
+    /// Move all children of a node to its parent, then remove the node
+    pub fn flatten_node(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
         let children: Vec<XotNode> = xot.children(node).collect();
         for child in children {
             xot.detach(child)?;
             xot.insert_before(node, child)?;
-            // Transform the promoted child
-            transform_node(xot, child, ctx)?;
         }
         xot.detach(node)?;
-        return Ok(());
+        Ok(())
     }
 
-    // Rule 2: Flatten nodes (promote children to parent, remove this node)
-    // IMPORTANT: We must transform children BEFORE flattening, otherwise they won't be processed
-    if ctx.transforms.should_flatten(&kind) {
-        // First, transform all element children
-        let children: Vec<XotNode> = xot.children(node)
-            .filter(|&c| xot.element(c).is_some())
+    /// Get parent element (if any)
+    pub fn get_parent(xot: &Xot, node: XotNode) -> Option<XotNode> {
+        xot.parent(node).filter(|&p| xot.element(p).is_some())
+    }
+
+    /// Get following siblings that are elements
+    pub fn get_following_siblings(xot: &Xot, node: XotNode) -> Vec<XotNode> {
+        xot.following_siblings(node)
+            .filter(|&s| xot.element(s).is_some())
+            .collect()
+    }
+
+    /// Remove all text children from a node
+    pub fn remove_text_children(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
+        let text_children: Vec<XotNode> = xot.children(node)
+            .filter(|&child| xot.text_str(child).is_some())
             .collect();
-        for child in children {
-            transform_node(xot, child, ctx)?;
+        for child in text_children {
+            xot.detach(child)?;
         }
-        // Then flatten (move children to parent, remove node)
-        flatten_node(xot, node)?;
-        return Ok(());
+        Ok(())
     }
-
-    // Rule 3: Handle modifier wrappers (C# "modifier" nodes become empty elements)
-    if ctx.transforms.is_modifier_wrapper(&kind) {
-        // Get the text content which should be the modifier name
-        if let Some(text) = get_text_content(xot, node) {
-            let text = text.trim();
-            if ctx.transforms.is_known_modifier(text) {
-                // Rename this element to the modifier name and clear its children
-                let new_name = ctx.get_or_create_name(xot, text);
-                rename_element(xot, node, new_name);
-
-                // Remove all children (text content)
-                let children: Vec<XotNode> = xot.children(node).collect();
-                for child in children {
-                    xot.detach(child)?;
-                }
-
-                // Remove location attributes for cleaner output
-                remove_attribute(xot, node, "start");
-                remove_attribute(xot, node, "end");
-                remove_attribute(xot, node, "field");
-
-                return Ok(());
-            }
-        }
-    }
-
-    // Rule 4: Extract operators from expression nodes
-    if ctx.transforms.should_extract_operator(&kind) {
-        extract_operator_attr(xot, node, ctx)?;
-    }
-
-    // Rule 5: Extract keyword modifiers (let/const/var for JS/TS)
-    if ctx.transforms.should_extract_keyword_modifier(&kind) {
-        extract_keyword_modifiers(xot, node, ctx)?;
-    }
-
-    // Rule 6: Rename element based on mappings
-    let new_name = ctx.transforms.rename_element(&kind);
-    if new_name != kind {
-        let name_id = ctx.get_or_create_name(xot, new_name);
-        rename_element(xot, node, name_id);
-    }
-
-    // Rule 7: Classify identifiers as name or type
-    // This happens after rename, so we check for "identifier", "type_identifier", "property_identifier"
-    if matches!(kind.as_str(), "identifier" | "type_identifier" | "property_identifier") {
-        classify_identifier(xot, node, ctx)?;
-    }
-
-    // Process children recursively
-    // Collect children first to avoid issues with tree modification during iteration
-    let children: Vec<XotNode> = xot.children(node)
-        .filter(|&c| xot.element(c).is_some())
-        .collect();
-
-    for child in children {
-        transform_node(xot, child, ctx)?;
-    }
-
-    Ok(())
-}
-
-/// Collect text node children as tokens
-fn collect_text_tokens(xot: &Xot, node: XotNode) -> Vec<String> {
-    xot.children(node)
-        .filter_map(|child| xot.text_str(child).map(|s| s.to_string()))
-        .collect()
-}
-
-/// Extract operator from expression node's text children and add as op attribute
-fn extract_operator_attr(xot: &mut Xot, node: XotNode, ctx: &mut TransformContext) -> Result<(), xot::Error> {
-    // Collect text tokens (operators, punctuation) from children
-    let tokens = collect_text_tokens(xot, node);
-
-    // Find the operator token (skip punctuation like parentheses, commas)
-    let operator = tokens.iter()
-        .find(|token| {
-            !token.chars().all(|c| matches!(c, '(' | ')' | ',' | ';' | '{' | '}' | '[' | ']'))
-        });
-
-    if let Some(op) = operator {
-        let op_attr = ctx.get_or_create_name(xot, "op");
-        set_attribute(xot, node, op_attr, op);
-    }
-
-    Ok(())
-}
-
-/// Extract keyword modifiers (let/const/var) from text children and add as empty child elements
-fn extract_keyword_modifiers(xot: &mut Xot, node: XotNode, ctx: &mut TransformContext) -> Result<(), xot::Error> {
-    // Collect text tokens from children
-    let tokens = collect_text_tokens(xot, node);
-
-    // Find known modifiers in the text tokens
-    let modifiers: Vec<&str> = tokens.iter()
-        .map(|s| s.as_str())
-        .filter(|token| ctx.transforms.is_known_modifier(token))
-        .collect();
-
-    // Insert modifier elements as first children
-    // We insert in reverse order so they appear in the original order
-    for modifier in modifiers.into_iter().rev() {
-        let name = ctx.get_or_create_name(xot, modifier);
-        prepend_empty_element(xot, node, name)?;
-    }
-
-    Ok(())
-}
-
-/// Classify an identifier node as <name> or <type> based on context
-fn classify_identifier(xot: &mut Xot, node: XotNode, ctx: &mut TransformContext) -> Result<(), xot::Error> {
-    // Get parent element to determine context
-    let parent = match xot.parent(node) {
-        Some(p) if xot.element(p).is_some() => p,
-        _ => return Ok(()),
-    };
-
-    let parent_kind = get_element_name(xot, parent).unwrap_or_default();
-
-    // Check if next sibling is a parameter list (indicates function/method name)
-    let has_param_sibling = xot.following_siblings(node).any(|sib| {
-        if let Some(name) = get_element_name(xot, sib) {
-            matches!(name.as_str(), "parameter_list" | "parameters" | "formal_parameters" | "params")
-        } else {
-            false
-        }
-    });
-
-    // Compute special context (e.g., namespace declaration in C#)
-    let parent_chain: Vec<&str> = collect_parent_chain_names(xot, node);
-    let special_context = ctx.transforms.compute_context(&parent_chain);
-
-    // Use language-specific classifier
-    let id_kind = (ctx.transforms.classify_identifier)(&parent_kind, has_param_sibling, special_context);
-
-    // Rename based on classification
-    let new_name = match id_kind {
-        IdentifierKind::Name => "name",
-        IdentifierKind::Type => "type",
-    };
-
-    let name_id = ctx.get_or_create_name(xot, new_name);
-    rename_element(xot, node, name_id);
-
-    Ok(())
-}
-
-/// Collect parent element names for context computation
-fn collect_parent_chain_names(xot: &Xot, node: XotNode) -> Vec<&'static str> {
-    // This is a bit awkward because we need static strings for the LangTransforms API
-    // For now, return an empty vec - the context computation will need adjustment
-    // to work with owned strings
-    let _ = (xot, node);
-    Vec::new()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::helpers::*;
 
     fn create_test_xot() -> (Xot, XotNode) {
         let mut xot = Xot::new();
@@ -434,60 +286,39 @@ mod tests {
     }
 
     #[test]
-    fn test_rename_element() {
+    fn test_rename() {
         let (mut xot, doc) = create_test_xot();
         let root = xot.document_element(doc).unwrap();
-        let new_name = xot.add_name("renamed");
-        rename_element(&mut xot, root, new_name);
+        rename(&mut xot, root, "renamed");
         assert_eq!(get_element_name(&xot, root), Some("renamed".to_string()));
     }
 
     #[test]
-    fn test_set_and_get_attribute() {
+    fn test_set_and_get_attr() {
         let (mut xot, doc) = create_test_xot();
         let root = xot.document_element(doc).unwrap();
-        let attr_name = xot.add_name("op");
-        set_attribute(&mut xot, root, attr_name, "+");
-        assert_eq!(get_attribute(&xot, root, "op"), Some("+".to_string()));
-    }
-
-    // Integration test using the actual xot pipeline
-    #[test]
-    fn test_xot_pipeline_typescript() {
-        use crate::parser::parse_string_to_xot;
-        use crate::output::{render_document, RenderOptions};
-
-        let source = "let x = 1 + 2;";
-        let result = parse_string_to_xot(source, "typescript", "<test>".to_string(), false).unwrap();
-
-        // Render to XML string
-        let options = RenderOptions::default();
-        let xml = render_document(&result.xot, result.root, &options);
-
-        // Check that transforms were applied:
-        // 1. Element renamed: binary_expression -> binary
-        assert!(xml.contains("<binary"), "binary_expression should be renamed to binary: {}", xml);
-        // 2. Operator extracted as attribute
-        assert!(xml.contains(r#"op="+""#), "operator should be extracted as op attribute: {}", xml);
-        // 3. let modifier extracted
-        assert!(xml.contains("<let"), "let should be extracted as modifier element: {}", xml);
+        set_attr(&mut xot, root, "op", "+");
+        assert_eq!(get_attr(&xot, root, "op"), Some("+".to_string()));
     }
 
     #[test]
-    fn test_xot_pipeline_raw_mode() {
-        use crate::parser::parse_string_to_xot;
-        use crate::output::{render_document, RenderOptions};
+    fn test_walk_transform_continue() {
+        let (mut xot, doc) = create_test_xot();
+        let root = xot.document_element(doc).unwrap();
 
-        let source = "let x = 1 + 2;";
-        let result = parse_string_to_xot(source, "typescript", "<test>".to_string(), true).unwrap();
+        // Add a child
+        let child_name = xot.add_name("child");
+        let child = xot.new_element(child_name);
+        xot.append(root, child).unwrap();
 
-        // Render to XML string
-        let options = RenderOptions::default();
-        let xml = render_document(&result.xot, result.root, &options);
+        let mut visited = Vec::new();
+        walk_transform(&mut xot, doc, |xot, node| {
+            if let Some(name) = get_element_name(xot, node) {
+                visited.push(name);
+            }
+            Ok(TransformAction::Continue)
+        }).unwrap();
 
-        // In raw mode, transforms should NOT be applied:
-        // Element should still be binary_expression, not binary
-        assert!(xml.contains("<binary_expression") || xml.contains("binary_expression"),
-            "raw mode should keep binary_expression: {}", xml);
+        assert_eq!(visited, vec!["root", "child"]);
     }
 }

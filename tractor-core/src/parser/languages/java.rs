@@ -1,76 +1,183 @@
-//! Java language configuration
+//! Java transform logic
+//!
+//! This module owns ALL Java-specific transformation rules.
+//! No assumptions about other languages - this is self-contained.
 
-use crate::parser::transform::{LangTransforms, IdentifierKind, default_compute_context};
+use xot::{Xot, Node as XotNode};
+use crate::xot_transform::{TransformAction, helpers::*};
 
-/// Java identifier classification
-fn classify_identifier(parent_kind: &str, has_param_sibling: bool, _in_special_context: bool) -> IdentifierKind {
-    match parent_kind {
-        "method_declaration" | "constructor_declaration" if has_param_sibling => IdentifierKind::Name,
-        "class_declaration" | "interface_declaration" | "enum_declaration" => IdentifierKind::Name,
-        "variable_declarator" => IdentifierKind::Name,
-        "formal_parameter" => IdentifierKind::Name,
-        _ => IdentifierKind::Type,
+/// Transform a Java AST node
+pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    let kind = match get_element_name(xot, node) {
+        Some(k) => k,
+        None => return Ok(TransformAction::Continue),
+    };
+
+    match kind.as_str() {
+        // ---------------------------------------------------------------------
+        // Skip nodes - remove entirely, promote children
+        // ---------------------------------------------------------------------
+        "expression_statement" => Ok(TransformAction::Skip),
+
+        // ---------------------------------------------------------------------
+        // Flatten nodes - transform children, then remove wrapper
+        // ---------------------------------------------------------------------
+        "class_body" | "interface_body" | "block" => Ok(TransformAction::Flatten),
+
+        // ---------------------------------------------------------------------
+        // Modifier wrappers - Java wraps modifiers in "modifiers" element
+        // Convert <modifiers>public static</modifiers> to <public/><static/>
+        // ---------------------------------------------------------------------
+        "modifiers" => {
+            if let Some(text) = get_text_content(xot, node) {
+                let words: Vec<&str> = text.split_whitespace().collect();
+                // Insert known modifiers as empty elements before this node
+                for modifier in words.iter().rev() {
+                    if is_known_modifier(modifier) {
+                        insert_empty_before(xot, node, modifier)?;
+                    }
+                }
+            }
+            // Remove the wrapper node entirely
+            detach(xot, node)?;
+            Ok(TransformAction::Done)
+        }
+
+        // ---------------------------------------------------------------------
+        // Binary/unary expressions - extract operator
+        // ---------------------------------------------------------------------
+        "binary_expression" | "unary_expression" | "assignment_expression" => {
+            extract_operator(xot, node)?;
+            if let Some(new_name) = map_element_name(&kind) {
+                rename(xot, node, new_name);
+            }
+            Ok(TransformAction::Continue)
+        }
+
+        // ---------------------------------------------------------------------
+        // Identifiers - classify as name or type based on context
+        // ---------------------------------------------------------------------
+        "identifier" => {
+            let classification = classify_identifier(xot, node);
+            rename(xot, node, classification);
+            Ok(TransformAction::Continue)
+        }
+        "type_identifier" => {
+            rename(xot, node, "type");
+            Ok(TransformAction::Continue)
+        }
+
+        // ---------------------------------------------------------------------
+        // Other nodes - just rename if needed
+        // ---------------------------------------------------------------------
+        _ => {
+            if let Some(new_name) = map_element_name(&kind) {
+                rename(xot, node, new_name);
+            }
+            Ok(TransformAction::Continue)
+        }
     }
 }
 
-/// Java transform configuration
-pub static JAVA_TRANSFORMS: LangTransforms = LangTransforms {
-    element_mappings: &[
-        ("program", "program"),
-        ("class_declaration", "class"),
-        ("interface_declaration", "interface"),
-        ("enum_declaration", "enum"),
-        ("method_declaration", "method"),
-        ("constructor_declaration", "ctor"),
-        ("field_declaration", "field"),
-        ("formal_parameters", "params"),
-        ("formal_parameter", "param"),
-        ("argument_list", "args"),
-        ("type_identifier", "type"),
-        ("generic_type", "generic"),
-        ("array_type", "array"),
-        ("return_statement", "return"),
-        ("if_statement", "if"),
-        ("else_clause", "else"),
-        ("for_statement", "for"),
-        ("enhanced_for_statement", "foreach"),
-        ("while_statement", "while"),
-        ("try_statement", "try"),
-        ("catch_clause", "catch"),
-        ("finally_clause", "finally"),
-        ("throw_statement", "throw"),
-        ("switch_expression", "switch"),
-        ("switch_block_statement_group", "case"),
-        ("method_invocation", "call"),
-        ("object_creation_expression", "new"),
-        ("field_access", "member"),
-        ("array_access", "index"),
-        ("assignment_expression", "assign"),
-        ("binary_expression", "binary"),
-        ("unary_expression", "unary"),
-        ("ternary_expression", "ternary"),
-        ("lambda_expression", "lambda"),
-        ("string_literal", "string"),
-        ("decimal_integer_literal", "int"),
-        ("decimal_floating_point_literal", "float"),
-        ("true", "true"),
-        ("false", "false"),
-        ("null_literal", "null"),
-        ("import_declaration", "import"),
-        ("package_declaration", "package"),
-        ("identifier", "name"),
-    ],
-    flatten_kinds: &["class_body", "interface_body", "block"],
-    skip_kinds: &["expression_statement"],
-    operator_kinds: &["binary_expression", "unary_expression", "assignment_expression"],
-    keyword_modifier_kinds: &[],
-    known_modifiers: &[
-        "public", "private", "protected",
-        "static", "final", "abstract", "synchronized",
-        "volatile", "transient", "native", "strictfp",
-    ],
-    modifier_wrapper_kinds: &["modifiers"],
-    extract_name_attr_kinds: &[],
-    classify_identifier,
-    compute_identifier_context: default_compute_context,
-};
+/// Known Java modifiers
+fn is_known_modifier(text: &str) -> bool {
+    matches!(text,
+        "public" | "private" | "protected" |
+        "static" | "final" | "abstract" | "synchronized" |
+        "volatile" | "transient" | "native" | "strictfp"
+    )
+}
+
+/// Map tree-sitter node kinds to semantic element names
+fn map_element_name(kind: &str) -> Option<&'static str> {
+    match kind {
+        "program" => Some("program"),
+        "class_declaration" => Some("class"),
+        "interface_declaration" => Some("interface"),
+        "enum_declaration" => Some("enum"),
+        "method_declaration" => Some("method"),
+        "constructor_declaration" => Some("ctor"),
+        "field_declaration" => Some("field"),
+        "formal_parameters" => Some("params"),
+        "formal_parameter" => Some("param"),
+        "argument_list" => Some("args"),
+        "generic_type" => Some("generic"),
+        "array_type" => Some("array"),
+        "return_statement" => Some("return"),
+        "if_statement" => Some("if"),
+        "else_clause" => Some("else"),
+        "for_statement" => Some("for"),
+        "enhanced_for_statement" => Some("foreach"),
+        "while_statement" => Some("while"),
+        "try_statement" => Some("try"),
+        "catch_clause" => Some("catch"),
+        "finally_clause" => Some("finally"),
+        "throw_statement" => Some("throw"),
+        "switch_expression" => Some("switch"),
+        "switch_block_statement_group" => Some("case"),
+        "method_invocation" => Some("call"),
+        "object_creation_expression" => Some("new"),
+        "field_access" => Some("member"),
+        "array_access" => Some("index"),
+        "assignment_expression" => Some("assign"),
+        "binary_expression" => Some("binary"),
+        "unary_expression" => Some("unary"),
+        "ternary_expression" => Some("ternary"),
+        "lambda_expression" => Some("lambda"),
+        "string_literal" => Some("string"),
+        "decimal_integer_literal" => Some("int"),
+        "decimal_floating_point_literal" => Some("float"),
+        "true" => Some("true"),
+        "false" => Some("false"),
+        "null_literal" => Some("null"),
+        "import_declaration" => Some("import"),
+        "package_declaration" => Some("package"),
+        _ => None,
+    }
+}
+
+/// Extract operator from text children and add as `op` attribute
+fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
+    let texts = get_text_children(xot, node);
+    let operator = texts.iter().find(|t| {
+        !t.chars().all(|c| matches!(c, '(' | ')' | ',' | ';' | '{' | '}' | '[' | ']'))
+    });
+    if let Some(op) = operator {
+        set_attr(xot, node, "op", op);
+    }
+    Ok(())
+}
+
+/// Classify an identifier as "name" or "type" based on context
+fn classify_identifier(xot: &Xot, node: XotNode) -> &'static str {
+    let parent = match get_parent(xot, node) {
+        Some(p) => p,
+        None => return "type",  // Default for Java
+    };
+    let parent_kind = get_element_name(xot, parent).unwrap_or_default();
+
+    // Check if followed by parameter list (method/ctor name)
+    let siblings = get_following_siblings(xot, node);
+    let has_param_sibling = siblings.iter().any(|&s| {
+        get_element_name(xot, s)
+            .map(|n| matches!(n.as_str(), "formal_parameters" | "parameters"))
+            .unwrap_or(false)
+    });
+
+    match parent_kind.as_str() {
+        // Method/constructor names followed by params
+        "method_declaration" | "constructor_declaration" if has_param_sibling => "name",
+
+        // Type declarations - the identifier IS the name
+        "class_declaration" | "interface_declaration" | "enum_declaration" => "name",
+
+        // Variable declarator - the identifier is the name
+        "variable_declarator" => "name",
+
+        // Parameter - the identifier is the parameter name
+        "formal_parameter" => "name",
+
+        // Default to type
+        _ => "type",
+    }
+}

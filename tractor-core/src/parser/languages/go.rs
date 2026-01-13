@@ -1,73 +1,117 @@
-//! Go language configuration
+//! Go transform logic
 
-use crate::parser::transform::{LangTransforms, IdentifierKind, default_compute_context};
+use xot::{Xot, Node as XotNode};
+use crate::xot_transform::{TransformAction, helpers::*};
 
-/// Go identifier classification
-fn classify_identifier(parent_kind: &str, _has_param_sibling: bool, _in_special_context: bool) -> IdentifierKind {
-    match parent_kind {
-        "function_declaration" | "method_declaration" => IdentifierKind::Name,
-        "type_spec" => IdentifierKind::Name,
-        "parameter_declaration" => IdentifierKind::Name,
-        "var_spec" | "const_spec" => IdentifierKind::Name,
-        _ => IdentifierKind::Type,
+/// Transform a Go AST node
+pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    let kind = match get_element_name(xot, node) {
+        Some(k) => k,
+        None => return Ok(TransformAction::Continue),
+    };
+
+    match kind.as_str() {
+        "expression_statement" => Ok(TransformAction::Skip),
+        "block" => Ok(TransformAction::Flatten),
+
+        "binary_expression" | "unary_expression" => {
+            extract_operator(xot, node)?;
+            if let Some(new_name) = map_element_name(&kind) {
+                rename(xot, node, new_name);
+            }
+            Ok(TransformAction::Continue)
+        }
+
+        "identifier" => {
+            let classification = classify_identifier(xot, node);
+            rename(xot, node, classification);
+            Ok(TransformAction::Continue)
+        }
+        "type_identifier" => {
+            rename(xot, node, "type");
+            Ok(TransformAction::Continue)
+        }
+
+        _ => {
+            if let Some(new_name) = map_element_name(&kind) {
+                rename(xot, node, new_name);
+            }
+            Ok(TransformAction::Continue)
+        }
     }
 }
 
-/// Go transform configuration
-pub static GO_TRANSFORMS: LangTransforms = LangTransforms {
-    element_mappings: &[
-        ("source_file", "file"),
-        ("package_clause", "package"),
-        ("function_declaration", "function"),
-        ("method_declaration", "method"),
-        ("type_declaration", "typedef"),
-        ("type_spec", "typespec"),
-        ("struct_type", "struct"),
-        ("interface_type", "interface"),
-        ("const_declaration", "const"),
-        ("var_declaration", "var"),
-        ("parameter_list", "params"),
-        ("parameter_declaration", "param"),
-        ("type_identifier", "type"),
-        ("pointer_type", "pointer"),
-        ("slice_type", "slice"),
-        ("map_type", "map"),
-        ("channel_type", "chan"),
-        ("return_statement", "return"),
-        ("if_statement", "if"),
-        ("else_clause", "else"),
-        ("for_statement", "for"),
-        ("range_clause", "range"),
-        ("switch_statement", "switch"),
-        ("case_clause", "case"),
-        ("default_case", "default"),
-        ("defer_statement", "defer"),
-        ("go_statement", "go"),
-        ("select_statement", "select"),
-        ("call_expression", "call"),
-        ("selector_expression", "member"),
-        ("index_expression", "index"),
-        ("composite_literal", "literal"),
-        ("binary_expression", "binary"),
-        ("unary_expression", "unary"),
-        ("interpreted_string_literal", "string"),
-        ("raw_string_literal", "rawstring"),
-        ("int_literal", "int"),
-        ("float_literal", "float"),
-        ("true", "true"),
-        ("false", "false"),
-        ("nil", "nil"),
-        ("identifier", "name"),
-        ("field_identifier", "field"),
-        ("package_identifier", "pkg"),
-    ],
-    flatten_kinds: &["block"],
-    skip_kinds: &["expression_statement"],
-    operator_kinds: &["binary_expression", "unary_expression"],
-    keyword_modifier_kinds: &[],
-    known_modifiers: &[],
-    modifier_wrapper_kinds: &[],
-    extract_name_attr_kinds: &[],
-    classify_identifier,
-    compute_identifier_context: default_compute_context,
-};
+fn map_element_name(kind: &str) -> Option<&'static str> {
+    match kind {
+        "source_file" => Some("file"),
+        "package_clause" => Some("package"),
+        "function_declaration" => Some("function"),
+        "method_declaration" => Some("method"),
+        "type_declaration" => Some("typedef"),
+        "type_spec" => Some("typespec"),
+        "struct_type" => Some("struct"),
+        "interface_type" => Some("interface"),
+        "const_declaration" => Some("const"),
+        "var_declaration" => Some("var"),
+        "parameter_list" => Some("params"),
+        "parameter_declaration" => Some("param"),
+        "pointer_type" => Some("pointer"),
+        "slice_type" => Some("slice"),
+        "map_type" => Some("map"),
+        "channel_type" => Some("chan"),
+        "return_statement" => Some("return"),
+        "if_statement" => Some("if"),
+        "else_clause" => Some("else"),
+        "for_statement" => Some("for"),
+        "range_clause" => Some("range"),
+        "switch_statement" => Some("switch"),
+        "case_clause" => Some("case"),
+        "default_case" => Some("default"),
+        "defer_statement" => Some("defer"),
+        "go_statement" => Some("go"),
+        "select_statement" => Some("select"),
+        "call_expression" => Some("call"),
+        "selector_expression" => Some("member"),
+        "index_expression" => Some("index"),
+        "composite_literal" => Some("literal"),
+        "binary_expression" => Some("binary"),
+        "unary_expression" => Some("unary"),
+        "interpreted_string_literal" => Some("string"),
+        "raw_string_literal" => Some("rawstring"),
+        "int_literal" => Some("int"),
+        "float_literal" => Some("float"),
+        "true" => Some("true"),
+        "false" => Some("false"),
+        "nil" => Some("nil"),
+        "field_identifier" => Some("field"),
+        "package_identifier" => Some("pkg"),
+        _ => None,
+    }
+}
+
+fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
+    let texts = get_text_children(xot, node);
+    let operator = texts.iter().find(|t| {
+        !t.chars().all(|c| matches!(c, '(' | ')' | ',' | ';' | '{' | '}' | '[' | ']'))
+    });
+    if let Some(op) = operator {
+        set_attr(xot, node, "op", op);
+    }
+    Ok(())
+}
+
+fn classify_identifier(xot: &Xot, node: XotNode) -> &'static str {
+    let parent = match get_parent(xot, node) {
+        Some(p) => p,
+        None => return "name",
+    };
+    let parent_kind = get_element_name(xot, parent).unwrap_or_default();
+
+    match parent_kind.as_str() {
+        "function_declaration" | "method_declaration" => "name",
+        "type_spec" => "name",
+        "parameter_declaration" => "name",
+        "var_spec" | "const_spec" => "name",
+        _ => "type",
+    }
+}

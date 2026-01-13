@@ -1,73 +1,159 @@
-//! Rust language configuration
+//! Rust transform logic
 
-use crate::parser::transform::{LangTransforms, IdentifierKind, default_compute_context};
+use xot::{Xot, Node as XotNode};
+use crate::xot_transform::{TransformAction, helpers::*};
 
-/// Rust identifier classification
-fn classify_identifier(parent_kind: &str, has_param_sibling: bool, _in_special_context: bool) -> IdentifierKind {
-    match parent_kind {
-        "function_item" if has_param_sibling => IdentifierKind::Name,
-        "struct_item" | "enum_item" | "trait_item" | "mod_item" | "type_item" => IdentifierKind::Name,
-        "let_declaration" => IdentifierKind::Name,
-        "parameter" => IdentifierKind::Name,
-        _ => IdentifierKind::Type,
+/// Transform a Rust AST node
+pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    let kind = match get_element_name(xot, node) {
+        Some(k) => k,
+        None => return Ok(TransformAction::Continue),
+    };
+
+    match kind.as_str() {
+        "expression_statement" => Ok(TransformAction::Skip),
+        "block" | "declaration_list" => Ok(TransformAction::Flatten),
+
+        // Visibility modifier (pub, pub(crate), etc.)
+        "visibility_modifier" => {
+            if let Some(text) = get_text_content(xot, node) {
+                let text = text.trim();
+                // Extract just "pub" from "pub(crate)" etc.
+                let modifier = if text.starts_with("pub") { "pub" } else { text };
+                rename(xot, node, modifier);
+                remove_text_children(xot, node)?;
+                remove_attr(xot, node, "start");
+                remove_attr(xot, node, "end");
+                return Ok(TransformAction::Done);
+            }
+            Ok(TransformAction::Continue)
+        }
+
+        "binary_expression" | "unary_expression" => {
+            extract_operator(xot, node)?;
+            if let Some(new_name) = map_element_name(&kind) {
+                rename(xot, node, new_name);
+            }
+            Ok(TransformAction::Continue)
+        }
+
+        // let declarations - extract mut modifier
+        "let_declaration" => {
+            extract_modifiers(xot, node)?;
+            rename(xot, node, "let");
+            Ok(TransformAction::Continue)
+        }
+
+        "identifier" => {
+            let classification = classify_identifier(xot, node);
+            rename(xot, node, classification);
+            Ok(TransformAction::Continue)
+        }
+        "type_identifier" | "primitive_type" => {
+            rename(xot, node, "type");
+            Ok(TransformAction::Continue)
+        }
+
+        _ => {
+            if let Some(new_name) = map_element_name(&kind) {
+                rename(xot, node, new_name);
+            }
+            Ok(TransformAction::Continue)
+        }
     }
 }
 
-/// Rust transform configuration
-pub static RUST_TRANSFORMS: LangTransforms = LangTransforms {
-    element_mappings: &[
-        ("source_file", "file"),
-        ("function_item", "function"),
-        ("impl_item", "impl"),
-        ("struct_item", "struct"),
-        ("enum_item", "enum"),
-        ("trait_item", "trait"),
-        ("mod_item", "mod"),
-        ("use_declaration", "use"),
-        ("const_item", "const"),
-        ("static_item", "static"),
-        ("type_item", "typedef"),
-        ("parameters", "params"),
-        ("parameter", "param"),
-        ("self_parameter", "self"),
-        ("type_identifier", "type"),
-        ("primitive_type", "type"),
-        ("reference_type", "ref"),
-        ("generic_type", "generic"),
-        ("scoped_type_identifier", "path"),
-        ("return_expression", "return"),
-        ("if_expression", "if"),
-        ("else_clause", "else"),
-        ("for_expression", "for"),
-        ("while_expression", "while"),
-        ("loop_expression", "loop"),
-        ("match_expression", "match"),
-        ("match_arm", "arm"),
-        ("call_expression", "call"),
-        ("method_call_expression", "methodcall"),
-        ("field_expression", "field"),
-        ("index_expression", "index"),
-        ("binary_expression", "binary"),
-        ("unary_expression", "unary"),
-        ("closure_expression", "closure"),
-        ("await_expression", "await"),
-        ("try_expression", "try"),
-        ("let_declaration", "let"),
-        ("macro_invocation", "macro"),
-        ("string_literal", "string"),
-        ("raw_string_literal", "rawstring"),
-        ("integer_literal", "int"),
-        ("float_literal", "float"),
-        ("boolean_literal", "bool"),
-        ("identifier", "name"),
-    ],
-    flatten_kinds: &["block", "declaration_list"],
-    skip_kinds: &["expression_statement"],
-    operator_kinds: &["binary_expression", "unary_expression"],
-    keyword_modifier_kinds: &["let_declaration"],
-    known_modifiers: &["pub", "mut", "async", "unsafe", "const", "static"],
-    modifier_wrapper_kinds: &["visibility_modifier"],
-    extract_name_attr_kinds: &[],
-    classify_identifier,
-    compute_identifier_context: default_compute_context,
-};
+fn map_element_name(kind: &str) -> Option<&'static str> {
+    match kind {
+        "source_file" => Some("file"),
+        "function_item" => Some("function"),
+        "impl_item" => Some("impl"),
+        "struct_item" => Some("struct"),
+        "enum_item" => Some("enum"),
+        "trait_item" => Some("trait"),
+        "mod_item" => Some("mod"),
+        "use_declaration" => Some("use"),
+        "const_item" => Some("const"),
+        "static_item" => Some("static"),
+        "type_item" => Some("typedef"),
+        "parameters" => Some("params"),
+        "parameter" => Some("param"),
+        "self_parameter" => Some("self"),
+        "reference_type" => Some("ref"),
+        "generic_type" => Some("generic"),
+        "scoped_type_identifier" => Some("path"),
+        "return_expression" => Some("return"),
+        "if_expression" => Some("if"),
+        "else_clause" => Some("else"),
+        "for_expression" => Some("for"),
+        "while_expression" => Some("while"),
+        "loop_expression" => Some("loop"),
+        "match_expression" => Some("match"),
+        "match_arm" => Some("arm"),
+        "call_expression" => Some("call"),
+        "method_call_expression" => Some("methodcall"),
+        "field_expression" => Some("field"),
+        "index_expression" => Some("index"),
+        "binary_expression" => Some("binary"),
+        "unary_expression" => Some("unary"),
+        "closure_expression" => Some("closure"),
+        "await_expression" => Some("await"),
+        "try_expression" => Some("try"),
+        "macro_invocation" => Some("macro"),
+        "string_literal" => Some("string"),
+        "raw_string_literal" => Some("rawstring"),
+        "integer_literal" => Some("int"),
+        "float_literal" => Some("float"),
+        "boolean_literal" => Some("bool"),
+        _ => None,
+    }
+}
+
+fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
+    let texts = get_text_children(xot, node);
+    let operator = texts.iter().find(|t| {
+        !t.chars().all(|c| matches!(c, '(' | ')' | ',' | ';' | '{' | '}' | '[' | ']'))
+    });
+    if let Some(op) = operator {
+        set_attr(xot, node, "op", op);
+    }
+    Ok(())
+}
+
+fn extract_modifiers(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
+    let texts = get_text_children(xot, node);
+    const MODIFIERS: &[&str] = &["mut", "async", "unsafe", "const"];
+
+    let found: Vec<&str> = texts.iter()
+        .filter_map(|t| MODIFIERS.iter().find(|&&m| m == t).copied())
+        .collect();
+
+    for modifier in found.into_iter().rev() {
+        prepend_empty_element(xot, node, modifier)?;
+    }
+    Ok(())
+}
+
+fn classify_identifier(xot: &Xot, node: XotNode) -> &'static str {
+    let parent = match get_parent(xot, node) {
+        Some(p) => p,
+        None => return "name",
+    };
+    let parent_kind = get_element_name(xot, parent).unwrap_or_default();
+
+    // Check if followed by parameter list
+    let siblings = get_following_siblings(xot, node);
+    let has_param_sibling = siblings.iter().any(|&s| {
+        get_element_name(xot, s)
+            .map(|n| matches!(n.as_str(), "parameters"))
+            .unwrap_or(false)
+    });
+
+    match parent_kind.as_str() {
+        "function_item" if has_param_sibling => "name",
+        "struct_item" | "enum_item" | "trait_item" | "mod_item" | "type_item" => "name",
+        "let_declaration" => "name",
+        "parameter" => "name",
+        _ => "type",
+    }
+}
