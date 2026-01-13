@@ -1,20 +1,14 @@
 //! Raw TreeSitter XML output mode
+//!
+//! Emits complete tree-sitter AST as XML with mixed content:
+//! - Named nodes become XML elements
+//! - Anonymous nodes (operators, keywords, punctuation) become text content
 
 use std::io::Write;
 
-/// Write TreeSitter node to XML in raw format (original verbose output)
+/// Write TreeSitter node to XML in raw format
 pub fn write_node(out: &mut impl Write, node: tree_sitter::Node, source: &str, indent: usize, use_color: bool) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     write_node_with_field(out, node, source, indent, use_color, None)
-}
-
-/// Extract the first anonymous child's text (e.g., keyword like "let", "const", "var")
-fn get_first_anonymous_child_text<'a>(node: tree_sitter::Node<'a>, source: &'a str) -> Option<&'a str> {
-    if let Some(first_child) = node.child(0) {
-        if !first_child.is_named() {
-            return first_child.utf8_text(source.as_bytes()).ok();
-        }
-    }
-    None
 }
 
 /// Write TreeSitter node with optional field name from parent
@@ -22,7 +16,7 @@ fn write_node_with_field(out: &mut impl Write, node: tree_sitter::Node, source: 
     let indent_str = "  ".repeat(indent);
     let kind = node.kind();
 
-    // Skip anonymous nodes (punctuation, etc.) - focus on named nodes
+    // Anonymous nodes are emitted as text content by the parent
     if !node.is_named() {
         return Ok(());
     }
@@ -36,14 +30,6 @@ fn write_node_with_field(out: &mut impl Write, node: tree_sitter::Node, source: 
     let end_line = (end.row + 1).to_string();
     let end_col = (end.column + 1).to_string();
 
-    // For certain node types, extract the keyword from first anonymous child
-    let keyword_str: Option<String> = match kind {
-        "lexical_declaration" | "variable_declaration" => {
-            get_first_anonymous_child_text(node, source).map(|s| s.to_string())
-        }
-        _ => None,
-    };
-
     let mut attrs: Vec<(&str, &str)> = vec![
         ("startLine", &start_line),
         ("startCol", &start_col),
@@ -55,43 +41,57 @@ fn write_node_with_field(out: &mut impl Write, node: tree_sitter::Node, source: 
         attrs.push(("field", field));
     }
 
-    if let Some(ref kw) = keyword_str {
-        attrs.push(("kind", kw));
-    }
+    // Check if this is a leaf node (no children at all)
+    let child_count = node.child_count();
 
-    // Check if this is a leaf node (no named children)
-    let named_child_count = node.named_child_count();
-
-    if named_child_count == 0 {
+    if child_count == 0 {
         // Leaf node - include text content
         let text = node.utf8_text(source.as_bytes()).unwrap_or("");
         write!(out, "{}", indent_str)?;
         write_element_with_attrs_and_text(out, kind, &attrs, Some(text), use_color)?;
         writeln!(out)?;
     } else {
-        // Node with children
+        // Node with children - emit all children (named as elements, anonymous as text)
         write!(out, "{}", indent_str)?;
         write_element_open_with_attrs(out, kind, &attrs, use_color)?;
-        writeln!(out)?;
 
-        // Recurse into children with field information
+        // Recurse into ALL children, emitting anonymous nodes as text
         let mut cursor = node.walk();
         cursor.goto_first_child();
         loop {
             let child = cursor.node();
             if child.is_named() {
+                // Named node - recurse
+                writeln!(out)?;
                 let child_field = cursor.field_name();
                 write_node_with_field(out, child, source, indent + 1, use_color, child_field)?;
+            } else {
+                // Anonymous node - emit as text content
+                let text = child.utf8_text(source.as_bytes()).unwrap_or("");
+                let trimmed = text.trim();
+                if !trimmed.is_empty() {
+                    write_text_content(out, trimmed)?;
+                }
             }
             if !cursor.goto_next_sibling() {
                 break;
             }
         }
 
+        writeln!(out)?;
         write_tag_close(out, kind, indent, use_color)?;
     }
 
     Ok(())
+}
+
+/// Write text content, using CDATA if it contains special characters
+fn write_text_content(out: &mut impl Write, text: &str) -> std::io::Result<()> {
+    if text.contains('<') || text.contains('>') || text.contains('&') {
+        write!(out, "<![CDATA[{}]]>", text)
+    } else {
+        write!(out, "{}", text)
+    }
 }
 
 // Helper functions for XML output
