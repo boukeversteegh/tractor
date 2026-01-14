@@ -1,0 +1,130 @@
+<Files>
+  <File path="tests/integration/fixtures/sample.go">
+    <source_file>
+      <comment>// Simple Go example
+</comment>
+      <package_clause>
+        package
+        <package_identifier>main</package_identifier>
+      </package_clause>
+      <import_declaration>
+        import
+        <import_spec>
+          <interpreted_string_literal field="path">
+            &quot;
+            <interpreted_string_literal_content>fmt</interpreted_string_literal_content>
+            &quot;
+          </interpreted_string_literal>
+        </import_spec>
+      </import_declaration>
+      <function_declaration>
+        func
+        <name>
+          <identifier>add</identifier>
+        </name>
+        <parameters>
+          <parameter_list>
+            (
+            <parameter_declaration>
+              <name>
+                <identifier>a</identifier>
+              </name>
+              <type_identifier field="type">int</type_identifier>
+            </parameter_declaration>
+            ,
+            <parameter_declaration>
+              <name>
+                <identifier>b</identifier>
+              </name>
+              <type_identifier field="type">int</type_identifier>
+            </parameter_declaration>
+            )
+          </parameter_list>
+        </parameters>
+        <type_identifier field="result">int</type_identifier>
+        <body>
+          <block>
+            {
+            <return_statement>
+              return
+              <expression_list>
+                <binary_expression>
+                  <left>
+                    <identifier>a</identifier>
+                  </left>
+                  +
+                  <right>
+                    <identifier>b</identifier>
+                  </right>
+                </binary_expression>
+              </expression_list>
+            </return_statement>
+            }
+          </block>
+        </body>
+      </function_declaration>
+      <function_declaration>
+        func
+        <name>
+          <identifier>main</identifier>
+        </name>
+        <parameters>
+          <parameter_list>()</parameter_list>
+        </parameters>
+        <body>
+          <block>
+            {
+            <short_var_declaration>
+              <left>
+                <expression_list>
+                  <identifier>result</identifier>
+                </expression_list>
+              </left>
+              :=
+              <right>
+                <expression_list>
+                  <call_expression>
+                    <identifier field="function">add</identifier>
+                    <arguments>
+                      <argument_list>
+                        (
+                        <int_literal>5</int_literal>
+                        ,
+                        <int_literal>3</int_literal>
+                        )
+                      </argument_list>
+                    </arguments>
+                  </call_expression>
+                </expression_list>
+              </right>
+            </short_var_declaration>
+            <expression_statement>
+              <call_expression>
+                <selector_expression field="function">
+                  <identifier field="operand">fmt</identifier>
+                  .
+                  <field_identifier field="field">Printf</field_identifier>
+                </selector_expression>
+                <arguments>
+                  <argument_list>
+                    (
+                    <interpreted_string_literal>
+                      &quot;
+                      <interpreted_string_literal_content>Result: %d</interpreted_string_literal_content>
+                      <escape_sequence>\n</escape_sequence>
+                      &quot;
+                    </interpreted_string_literal>
+                    ,
+                    <identifier>result</identifier>
+                    )
+                  </argument_list>
+                </arguments>
+              </call_expression>
+            </expression_statement>
+            }
+          </block>
+        </body>
+      </function_declaration>
+    </source_file>
+  </File>
+</Files>

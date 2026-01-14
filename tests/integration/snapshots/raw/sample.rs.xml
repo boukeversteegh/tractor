@@ -1,0 +1,101 @@
+<Files>
+  <File path="tests/integration/fixtures/sample.rs">
+    <source_file>
+      <line_comment>// Simple Rust example
+</line_comment>
+      <function_item>
+        fn
+        <name>
+          <identifier>add</identifier>
+        </name>
+        <parameters>
+          <parameters>
+            (
+            <parameter>
+              <identifier field="pattern">a</identifier>
+              :
+              <primitive_type field="type">i32</primitive_type>
+            </parameter>
+            ,
+            <parameter>
+              <identifier field="pattern">b</identifier>
+              :
+              <primitive_type field="type">i32</primitive_type>
+            </parameter>
+            )
+          </parameters>
+        </parameters>
+        -&gt;
+        <primitive_type field="return_type">i32</primitive_type>
+        <body>
+          <block>
+            {
+            <binary_expression>
+              <left>
+                <identifier>a</identifier>
+              </left>
+              +
+              <right>
+                <identifier>b</identifier>
+              </right>
+            </binary_expression>
+            }
+          </block>
+        </body>
+      </function_item>
+      <function_item>
+        fn
+        <name>
+          <identifier>main</identifier>
+        </name>
+        <parameters>
+          <parameters>()</parameters>
+        </parameters>
+        <body>
+          <block>
+            {
+            <let_declaration>
+              let
+              <identifier field="pattern">result</identifier>
+              =
+              <value>
+                <call_expression>
+                  <identifier field="function">add</identifier>
+                  <arguments>
+                    <arguments>
+                      (
+                      <integer_literal>5</integer_literal>
+                      ,
+                      <integer_literal>3</integer_literal>
+                      )
+                    </arguments>
+                  </arguments>
+                </call_expression>
+              </value>
+              ;
+            </let_declaration>
+            <expression_statement>
+              <macro_invocation>
+                <identifier field="macro">println</identifier>
+                !
+                <token_tree>
+                  (
+                  <string_literal>
+                    &quot;
+                    <string_content>Result: {}</string_content>
+                    &quot;
+                  </string_literal>
+                  ,
+                  <identifier>result</identifier>
+                  )
+                </token_tree>
+              </macro_invocation>
+              ;
+            </expression_statement>
+            }
+          </block>
+        </body>
+      </function_item>
+    </source_file>
+  </File>
+</Files>

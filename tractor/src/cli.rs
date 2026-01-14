@@ -42,9 +42,17 @@ pub struct Args {
     #[arg(long = "debug")]
     pub debug: bool,
 
-    /// Expected result: none, some, or a number (exit 1 if not met)
+    /// Expected result: none, some, or a number (enables test mode output)
     #[arg(short = 'e', long = "expect")]
     pub expect: Option<String>,
+
+    /// Error message template for failed expectations (per-match, supports {file}, {line}, {name}, etc.)
+    #[arg(long = "error")]
+    pub error: Option<String>,
+
+    /// Treat failed expectations as warnings (exit 0, show ⚠ instead of ✗)
+    #[arg(long = "warning")]
+    pub warning: bool,
 
     /// Output format: xml (default), lines, source, value, gcc, json, count
     #[arg(short = 'o', long = "output", default_value = "xml")]

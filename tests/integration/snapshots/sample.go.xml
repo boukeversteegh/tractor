@@ -1,7 +1,8 @@
 <Files>
-  <File path="/home/user/tractor/tests/integration/fixtures/sample.go">
+  <File path="tests/integration/fixtures/sample.go">
     <file>
-      <comment>// Simple Go example</comment>
+      <comment>// Simple Go example
+</comment>
       <package>
         package
         <pkg>main</pkg>

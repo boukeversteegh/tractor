@@ -218,6 +218,10 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
         // Count format doesn't benefit from streaming - just count everything
         let is_count_format = matches!(format, OutputFormat::Count);
 
+        // Test mode: collect all matches for error output; suppress streaming
+        let is_test_mode = args.expect.is_some();
+        let mut all_matches: Vec<Match> = Vec::new();
+
         for batch in batches {
             // Check if we've hit the limit
             if remaining_limit == Some(0) {
@@ -268,21 +272,26 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
 
             total_matches += batch_matches.len();
 
-            // Stream output immediately (except for count format)
-            if !is_count_format {
-                let output = format_matches(&batch_matches, format.clone(), &options);
-                print!("{}", output);
-                io::stdout().flush().ok();
+            if is_test_mode {
+                // Collect matches for test output later
+                all_matches.extend(batch_matches);
+            } else {
+                // Stream output immediately (except for count format)
+                if !is_count_format {
+                    let output = format_matches(&batch_matches, format.clone(), &options);
+                    print!("{}", output);
+                    io::stdout().flush().ok();
+                }
             }
         }
 
-        // For count format, print the total at the end
-        if is_count_format {
+        // For count format (non-test mode), print the total at the end
+        if is_count_format && !is_test_mode {
             println!("{}", total_matches);
         }
 
-        // Check expectation using total count
-        return check_expectation_count(total_matches, &args);
+        // Check expectation and output test results
+        return check_expectation_with_matches(total_matches, &all_matches, &args, use_color, &format, &options);
     }
 
     // No XPath - output full files using same formatting pipeline
@@ -389,7 +398,13 @@ fn process_single_result(
                 .with_highlights(highlights);
             let output = render_xml_string(&xml, &render_opts);
             print!("{}", output);
-            return check_expectation(&matches, args);
+            let options = OutputOptions {
+                message: args.message.clone(),
+                use_color,
+                strip_locations: !args.keep_locations,
+                max_depth: args.depth,
+            };
+            return check_expectation(&matches, args, use_color, &format, &options);
         }
 
         let options = OutputOptions {
@@ -399,10 +414,10 @@ fn process_single_result(
             max_depth: args.depth,
         };
 
-        let output = format_matches(&matches, format, &options);
+        let output = format_matches(&matches, format.clone(), &options);
         print!("{}", output);
 
-        check_expectation(&matches, args)
+        check_expectation(&matches, args, use_color, &format, &options)
     } else {
         // For XML format, use the render_xml_string
         if matches!(format, OutputFormat::Xml) {
@@ -463,13 +478,25 @@ fn extract_text_content(xml: &str) -> String {
     result.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
-fn check_expectation(matches: &[Match], args: &Args) -> Result<(), Box<dyn std::error::Error>> {
-    check_expectation_count(matches.len(), args)
+/// ANSI colors for test output
+mod test_colors {
+    pub const RESET: &str = "\x1b[0m";
+    pub const GREEN: &str = "\x1b[32m";
+    pub const RED: &str = "\x1b[31m";
+    pub const YELLOW: &str = "\x1b[33m";
+    pub const BOLD: &str = "\x1b[1m";
 }
 
-fn check_expectation_count(count: usize, args: &Args) -> Result<(), Box<dyn std::error::Error>> {
-    if let Some(ref expect) = args.expect {
-        let ok = match expect.as_str() {
+/// Result of an expectation check
+struct TestResult {
+    passed: bool,
+    expected: String,
+    actual: usize,
+}
+
+impl TestResult {
+    fn check(expect: &str, count: usize) -> Result<Self, Box<dyn std::error::Error>> {
+        let passed = match expect {
             "none" => count == 0,
             "some" => count > 0,
             _ => {
@@ -478,13 +505,106 @@ fn check_expectation_count(count: usize, args: &Args) -> Result<(), Box<dyn std:
                 count == expected
             }
         };
+        Ok(TestResult {
+            passed,
+            expected: expect.to_string(),
+            actual: count,
+        })
+    }
+}
 
-        if !ok {
-            return Err(format!(
-                "expectation failed: expected {}, got {} matches",
-                expect, count
-            ).into());
+fn check_expectation(matches: &[Match], args: &Args, use_color: bool, format: &OutputFormat, options: &OutputOptions) -> Result<(), Box<dyn std::error::Error>> {
+    check_expectation_with_matches(matches.len(), matches, args, use_color, format, options)
+}
+
+fn check_expectation_count(count: usize, args: &Args) -> Result<(), Box<dyn std::error::Error>> {
+    // Legacy function for contexts where we don't have matches available
+    check_expectation_with_matches(count, &[], args, false, &OutputFormat::Count, &OutputOptions::default())
+}
+
+fn check_expectation_with_matches(
+    count: usize,
+    matches: &[Match],
+    args: &Args,
+    use_color: bool,
+    format: &OutputFormat,
+    options: &OutputOptions,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let Some(ref expect) = args.expect else {
+        return Ok(());
+    };
+
+    let result = TestResult::check(expect, count)?;
+
+    // Determine symbols and colors
+    let (symbol, color) = if result.passed {
+        ("✓", test_colors::GREEN)
+    } else if args.warning {
+        ("⚠", test_colors::YELLOW)
+    } else {
+        ("✗", test_colors::RED)
+    };
+
+    // Build the output message
+    let label = args.message.as_deref().unwrap_or("");
+
+    // Print the test result line
+    if use_color {
+        if label.is_empty() {
+            println!("{}{}{} {} matches{}",
+                test_colors::BOLD, color, symbol, result.actual, test_colors::RESET);
+        } else if result.passed {
+            println!("{}{}{} {}{}",
+                test_colors::BOLD, color, symbol, label, test_colors::RESET);
+        } else {
+            println!("{}{}{} {} {}(expected {}, got {}){}",
+                test_colors::BOLD, color, symbol, label, test_colors::RESET,
+                result.expected, result.actual, test_colors::RESET);
+        }
+    } else {
+        if label.is_empty() {
+            println!("{} {} matches", symbol, result.actual);
+        } else if result.passed {
+            println!("{} {}", symbol, label);
+        } else {
+            println!("{} {} (expected {}, got {})", symbol, label, result.expected, result.actual);
         }
     }
+
+    // On failure, show per-match details
+    if !result.passed && !matches.is_empty() {
+        if let Some(ref error_template) = args.error {
+            // Use error template for per-match output (GCC format supports message templates)
+            let error_options = OutputOptions {
+                message: Some(error_template.clone()),
+                use_color: false, // We'll apply color ourselves
+                strip_locations: options.strip_locations,
+                max_depth: options.max_depth,
+            };
+            let output = format_matches(matches, OutputFormat::Gcc, &error_options);
+            for line in output.lines() {
+                if use_color {
+                    println!("  {}{}{}", color, line, test_colors::RESET);
+                } else {
+                    println!("  {}", line);
+                }
+            }
+        } else {
+            // Use default format for matches
+            let output = format_matches(matches, format.clone(), options);
+            for line in output.lines() {
+                println!("  {}", line);
+            }
+        }
+    }
+
+    // Return error only if failed and not warning mode
+    if !result.passed && !args.warning {
+        return Err(format!(
+            "expectation failed: expected {}, got {} matches",
+            result.expected, result.actual
+        ).into());
+    }
+
     Ok(())
 }

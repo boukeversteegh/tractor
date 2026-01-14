@@ -26,6 +26,18 @@ tasks:
     cmds:
       - cargo test
 
+  test:integration:
+    desc: Run integration tests
+    deps: [build]
+    cmds:
+      - bash tests/integration/test.sh
+
+  test:snapshots:
+    desc: Verify XML snapshots match committed versions
+    deps: [build]
+    cmds:
+      - bash tests/integration/test_snapshots.sh
+
   # === Distribution builds ===
 
   dist:linux:

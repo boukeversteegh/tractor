@@ -1,0 +1,153 @@
+<Files>
+  <File path="tests/integration/fixtures/sample.java">
+    <program>
+      <line_comment>// Simple Java example
+</line_comment>
+      <class_declaration>
+        <modifiers>public</modifiers>
+        class
+        <name>
+          <identifier>Sample</identifier>
+        </name>
+        <body>
+          <class_body>
+            {
+            <method_declaration>
+              <modifiers>public static</modifiers>
+              <integral_type field="type">int</integral_type>
+              <name>
+                <identifier>add</identifier>
+              </name>
+              <parameters>
+                <formal_parameters>
+                  (
+                  <formal_parameter>
+                    <integral_type field="type">int</integral_type>
+                    <name>
+                      <identifier>a</identifier>
+                    </name>
+                  </formal_parameter>
+                  ,
+                  <formal_parameter>
+                    <integral_type field="type">int</integral_type>
+                    <name>
+                      <identifier>b</identifier>
+                    </name>
+                  </formal_parameter>
+                  )
+                </formal_parameters>
+              </parameters>
+              <body>
+                <block>
+                  {
+                  <return_statement>
+                    return
+                    <binary_expression>
+                      <left>
+                        <identifier>a</identifier>
+                      </left>
+                      +
+                      <right>
+                        <identifier>b</identifier>
+                      </right>
+                    </binary_expression>
+                    ;
+                  </return_statement>
+                  }
+                </block>
+              </body>
+            </method_declaration>
+            <method_declaration>
+              <modifiers>public static</modifiers>
+              <void_type field="type">void</void_type>
+              <name>
+                <identifier>main</identifier>
+              </name>
+              <parameters>
+                <formal_parameters>
+                  (
+                  <formal_parameter>
+                    <array_type field="type">
+                      <type_identifier field="element">String</type_identifier>
+                      <dimensions field="dimensions">[]</dimensions>
+                    </array_type>
+                    <name>
+                      <identifier>args</identifier>
+                    </name>
+                  </formal_parameter>
+                  )
+                </formal_parameters>
+              </parameters>
+              <body>
+                <block>
+                  {
+                  <local_variable_declaration>
+                    <integral_type field="type">int</integral_type>
+                    <variable_declarator field="declarator">
+                      <name>
+                        <identifier>result</identifier>
+                      </name>
+                      =
+                      <value>
+                        <method_invocation>
+                          <name>
+                            <identifier>add</identifier>
+                          </name>
+                          <arguments>
+                            <argument_list>
+                              (
+                              <decimal_integer_literal>5</decimal_integer_literal>
+                              ,
+                              <decimal_integer_literal>3</decimal_integer_literal>
+                              )
+                            </argument_list>
+                          </arguments>
+                        </method_invocation>
+                      </value>
+                    </variable_declarator>
+                    ;
+                  </local_variable_declaration>
+                  <expression_statement>
+                    <method_invocation>
+                      <field_access field="object">
+                        <identifier field="object">System</identifier>
+                        .
+                        <identifier field="field">out</identifier>
+                      </field_access>
+                      .
+                      <name>
+                        <identifier>println</identifier>
+                      </name>
+                      <arguments>
+                        <argument_list>
+                          (
+                          <binary_expression>
+                            <left>
+                              <string_literal>
+                                &quot;
+                                <string_fragment>Result: </string_fragment>
+                                &quot;
+                              </string_literal>
+                            </left>
+                            +
+                            <right>
+                              <identifier>result</identifier>
+                            </right>
+                          </binary_expression>
+                          )
+                        </argument_list>
+                      </arguments>
+                    </method_invocation>
+                    ;
+                  </expression_statement>
+                  }
+                </block>
+              </body>
+            </method_declaration>
+            }
+          </class_body>
+        </body>
+      </class_declaration>
+    </program>
+  </File>
+</Files>

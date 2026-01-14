@@ -1,5 +1,5 @@
 <Files>
-  <File path="/home/user/tractor/tests/integration/fixtures/sample.py">
+  <File path="tests/integration/fixtures/sample.py">
     <module>
       <string>
         <string_start>&quot;&quot;&quot;</string_start>

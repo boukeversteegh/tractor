@@ -1,5 +1,5 @@
 <Files>
-  <File path="/home/user/tractor/tests/integration/fixtures/sample.cs">
+  <File path="tests/integration/fixtures/sample.cs">
     <unit>
       <comment>// Simple C# example</comment>
       <import>
