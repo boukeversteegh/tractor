@@ -1,16 +1,12 @@
 #!/usr/bin/env bash
 # Generate XML snapshots from fixture files
-# This script converts all source files in fixtures/ to XML and saves them in snapshots/
-# Generates both semantic (default) and raw TreeSitter XML
-# Paths are normalized to be relative for reproducible snapshots across environments
+# Each language has its own folder with sample.x, sample.x.xml, sample.x.raw.xml
 
 set -euo pipefail
 
 cd "$(dirname "$0")/../.."
 
-FIXTURES_DIR="tests/integration/fixtures"
-SNAPSHOTS_DIR="tests/integration/snapshots"
-RAW_SNAPSHOTS_DIR="tests/integration/snapshots/raw"
+TESTS_DIR="tests/integration"
 TRACTOR_BIN="${TRACTOR_BIN:-./target/release/tractor}"
 
 # Build tractor if needed
@@ -19,28 +15,43 @@ if [ ! -f "$TRACTOR_BIN" ]; then
     cargo build --release
 fi
 
-# Create snapshots directories
-mkdir -p "$SNAPSHOTS_DIR"
-mkdir -p "$RAW_SNAPSHOTS_DIR"
+# Language folders and their file extensions
+declare -A LANGUAGES=(
+    ["rust"]="rs"
+    ["python"]="py"
+    ["typescript"]="ts"
+    ["javascript"]="js"
+    ["go"]="go"
+    ["java"]="java"
+    ["csharp"]="cs"
+    ["ruby"]="rb"
+)
 
-# Process each fixture file (using relative paths for reproducible snapshots)
-for fixture in "$FIXTURES_DIR"/*; do
-    if [ -f "$fixture" ]; then
-        filename=$(basename "$fixture")
+# Process each language folder
+for lang in "${!LANGUAGES[@]}"; do
+    ext="${LANGUAGES[$lang]}"
+    lang_dir="$TESTS_DIR/$lang"
 
-        # Semantic XML (default)
-        echo "Generating snapshot for $filename..."
-        "$TRACTOR_BIN" "$fixture" > "$SNAPSHOTS_DIR/${filename}.xml"
+    if [ -d "$lang_dir" ]; then
+        # Find all source files in the language folder
+        for fixture in "$lang_dir"/*."$ext"; do
+            if [ -f "$fixture" ]; then
+                filename=$(basename "$fixture")
 
-        # Raw TreeSitter XML
-        "$TRACTOR_BIN" "$fixture" --raw > "$RAW_SNAPSHOTS_DIR/${filename}.xml"
+                echo "Generating snapshots for $lang/$filename..."
 
-        echo "  → $SNAPSHOTS_DIR/${filename}.xml"
-        echo "  → $RAW_SNAPSHOTS_DIR/${filename}.xml"
+                # Semantic XML (default)
+                "$TRACTOR_BIN" "$fixture" > "$lang_dir/${filename}.xml"
+
+                # Raw TreeSitter XML
+                "$TRACTOR_BIN" "$fixture" --raw > "$lang_dir/${filename}.raw.xml"
+
+                echo "  → $lang_dir/${filename}.xml"
+                echo "  → $lang_dir/${filename}.raw.xml"
+            fi
+        done
     fi
 done
 
 echo ""
 echo "Snapshot generation complete!"
-echo "Generated semantic snapshots in: $SNAPSHOTS_DIR"
-echo "Generated raw snapshots in: $RAW_SNAPSHOTS_DIR"

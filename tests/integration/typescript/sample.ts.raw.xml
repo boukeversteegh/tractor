@@ -1,5 +1,5 @@
 <Files>
-  <File path="tests/integration/fixtures/sample.ts">
+  <File path="tests/integration/typescript/sample.ts">
     <program>
       <comment>// Simple TypeScript example</comment>
       <function_declaration>

@@ -1,5 +1,5 @@
 <Files>
-  <File path="tests/integration/fixtures/sample.go">
+  <File path="tests/integration/go/sample.go">
     <file>
       <comment>// Simple Go example
 </comment>
@@ -45,7 +45,8 @@
           <return>
             return
             <expression_list>
-              <binary op="+">
+              <binary>
+                <op>+</op>
                 <left>
                   <type>a</type>
                 </left>

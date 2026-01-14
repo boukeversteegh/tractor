@@ -1,5 +1,5 @@
 <Files>
-  <File path="tests/integration/fixtures/sample.py">
+  <File path="tests/integration/python/sample.py">
     <module>
       <string>
         <string_start>&quot;&quot;&quot;</string_start>
@@ -27,7 +27,8 @@
           </string>
           <return>
             return
-            <binary op="+">
+            <binary>
+              <op>+</op>
               <left>
                 <type>a</type>
               </left>
@@ -91,7 +92,8 @@
       <if>
         if
         <condition>
-          <compare op="==">
+          <compare>
+            <op>==</op>
             <type>__name__</type>
             ==
             <string>

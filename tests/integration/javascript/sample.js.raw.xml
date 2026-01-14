@@ -1,5 +1,5 @@
 <Files>
-  <File path="tests/integration/fixtures/sample.js">
+  <File path="tests/integration/javascript/sample.js">
     <program>
       <comment>// Simple JavaScript example</comment>
       <function_declaration>

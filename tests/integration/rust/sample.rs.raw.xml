@@ -1,5 +1,5 @@
 <Files>
-  <File path="tests/integration/fixtures/sample.rs">
+  <File path="tests/integration/rust/sample.rs">
     <source_file>
       <line_comment>// Simple Rust example
 </line_comment>

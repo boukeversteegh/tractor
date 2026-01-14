@@ -1,5 +1,5 @@
 <Files>
-  <File path="tests/integration/fixtures/sample.java">
+  <File path="tests/integration/java/sample.java">
     <program>
       <line_comment>// Simple Java example
 </line_comment>
@@ -37,7 +37,8 @@
               {
               <return>
                 return
-                <binary op="+">
+                <binary>
+                  <op>+</op>
                   <left>
                     <type>a</type>
                   </left>
@@ -112,7 +113,8 @@
                 <arguments>
                   <args>
                     (
-                    <binary op="+">
+                    <binary>
+                      <op>+</op>
                       <left>
                         <string>
                           &quot;

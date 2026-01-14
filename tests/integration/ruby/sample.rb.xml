@@ -1,5 +1,5 @@
 <Files>
-  <File path="tests/integration/fixtures/sample.rb">
+  <File path="tests/integration/ruby/sample.rb">
     <program>
       <comment># Simple Ruby example
 </comment>

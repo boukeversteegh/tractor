@@ -1,5 +1,5 @@
 <Files>
-  <File path="tests/integration/fixtures/sample.cs">
+  <File path="tests/integration/csharp/sample.cs">
     <compilation_unit>
       <comment>// Simple C# example</comment>
       <using_directive>

@@ -1,5 +1,5 @@
 <Files>
-  <File path="tests/integration/fixtures/sample.rs">
+  <File path="tests/integration/rust/sample.rs">
     <file>
       <line_comment>// Simple Rust example
 </line_comment>
@@ -27,7 +27,8 @@
         <type field="return_type">i32</type>
         <body>
           {
-          <binary op="+">
+          <binary>
+            <op>+</op>
             <left>
               <type>a</type>
             </left>

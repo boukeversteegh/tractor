@@ -1,5 +1,5 @@
 <Files>
-  <File path="tests/integration/fixtures/sample.cs">
+  <File path="tests/integration/csharp/sample.cs">
     <unit>
       <comment>// Simple C# example</comment>
       <import>
@@ -18,31 +18,30 @@
               <type>int</type>
             </returns>
             <name>Add</name>
-            <parameters>
-              <params>
-                (
-                <param>
-                  <type field="type">int</type>
-                  <name>
-                    <type>a</type>
-                  </name>
-                </param>
-                ,
-                <param>
-                  <type field="type">int</type>
-                  <name>
-                    <type>b</type>
-                  </name>
-                </param>
-                )
-              </params>
-            </parameters>
+            <params>
+              (
+              <param>
+                <type field="type">int</type>
+                <name>
+                  <type>a</type>
+                </name>
+              </param>
+              ,
+              <param>
+                <type field="type">int</type>
+                <name>
+                  <type>b</type>
+                </name>
+              </param>
+              )
+            </params>
             <body>
               <block>
                 {
                 <return>
                   return
-                  <binary op="+">
+                  <binary>
+                    <op>+</op>
                     <left>
                       <type>a</type>
                     </left>
@@ -63,9 +62,7 @@
               <type>void</type>
             </returns>
             <name>Main</name>
-            <parameters>
-              <params>()</params>
-            </parameters>
+            <params>()</params>
             <body>
               <block>
                 {

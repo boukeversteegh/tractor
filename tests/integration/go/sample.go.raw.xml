@@ -1,5 +1,5 @@
 <Files>
-  <File path="tests/integration/fixtures/sample.go">
+  <File path="tests/integration/go/sample.go">
     <source_file>
       <comment>// Simple Go example
 </comment>

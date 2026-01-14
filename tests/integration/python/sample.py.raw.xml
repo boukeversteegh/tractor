@@ -1,5 +1,5 @@
 <Files>
-  <File path="tests/integration/fixtures/sample.py">
+  <File path="tests/integration/python/sample.py">
     <module>
       <expression_statement>
         <string>
