@@ -6,13 +6,33 @@
     <title>Tractor - Code Extractor</title>
     <style>
         :root {
-            --bg: #0d1117;
-            --fg: #c9d1d9;
-            --accent: #0000AA;      /* Blue - primary brand color */
-            --accent2: #AAAA00;     /* Harvest Yellow - highlights */
-            --accent-cyan: #00AAAA; /* Cyan - secondary */
-            --code-bg: #161b22;
-            --border: #30363d;
+            /* Solarized Base Colors */
+            --base03: #002b36;      /* Background */
+            --base02: #073642;      /* Background highlights */
+            --base01: #586e75;      /* Comments, secondary text */
+            --base00: #657b83;      /* Body text (light theme primary) */
+            --base0: #839496;       /* Body text (dark theme primary) */
+            --base1: #93a1a1;       /* Optional emphasized text */
+
+            /* Solarized Accent Colors */
+            --yellow: #b58900;
+            --orange: #cb4b16;
+            --red: #dc322f;
+            --magenta: #d33682;
+            --violet: #6c71c4;
+            --blue: #268bd2;
+            --cyan: #2aa198;
+            --green: #859900;
+
+            /* Semantic aliases */
+            --bg: var(--base03);
+            --fg: var(--base0);
+            --code-bg: var(--base02);
+            --border: var(--base01);
+            --accent: var(--blue);
+            --accent2: var(--yellow);
+            --accent-cyan: var(--cyan);
+            --muted: var(--base00);
         }
 
         * {
@@ -58,7 +78,7 @@
         }
 
         .tagline {
-            color: #8b949e;
+            color: var(--muted);
             font-size: 1.2rem;
             margin-top: 0.5rem;
         }
@@ -124,23 +144,23 @@
         }
 
         .comment {
-            color: #6a737d;
+            color: var(--base01);
         }
 
         .string {
-            color: #AAAA00;  /* Harvest Yellow - string values */
+            color: var(--yellow);
         }
 
         .keyword {
-            color: #ff7b72;
+            color: var(--orange);
         }
 
         .element {
-            color: #0000AA;  /* Blue - element names */
+            color: var(--blue);
         }
 
         .attr {
-            color: #00AAAA;  /* Cyan - attribute names */
+            color: var(--cyan);
         }
 
         a {
@@ -157,7 +177,7 @@
             padding: 2rem;
             margin-top: 3rem;
             border-top: 1px solid var(--border);
-            color: #8b949e;
+            color: var(--muted);
         }
 
         .btn {
@@ -204,10 +224,10 @@
         }
 
         .demo-panel-header {
-            background: #21262d;
+            background: var(--base02);
             padding: 0.5rem 1rem;
             font-size: 0.85rem;
-            color: #8b949e;
+            color: var(--base1);
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
@@ -234,7 +254,7 @@
         }
 
         .query-btn {
-            background: #21262d;
+            background: var(--base02);
             border: 1px solid var(--border);
             color: var(--fg);
             padding: 0.4rem 0.8rem;
@@ -247,7 +267,7 @@
 
         .query-btn:hover {
             border-color: var(--accent);
-            background: #30363d;
+            background: var(--base01);
         }
 
         .query-btn.active {
@@ -265,7 +285,7 @@
         .output-tab {
             background: transparent;
             border: none;
-            color: #8b949e;
+            color: var(--muted);
             padding: 0.5rem 1rem;
             cursor: pointer;
             font-size: 0.8rem;
@@ -292,78 +312,95 @@
         }
 
         /* Syntax highlighting for C# */
-        .cs-keyword { color: #ff7b72; }
-        .cs-type { color: #79c0ff; }
-        .cs-string { color: #a5d6ff; }
-        .cs-comment { color: #8b949e; }
-        .cs-number { color: #79c0ff; }
-        .cs-method { color: #d2a8ff; }
-        .cs-param { color: #ffa657; }
+        .cs-keyword { color: var(--orange); }
+        .cs-type { color: var(--blue); }
+        .cs-string { color: var(--cyan); }
+        .cs-comment { color: var(--base01); }
+        .cs-number { color: var(--violet); }
+        .cs-method { color: var(--violet); }
+        .cs-param { color: var(--yellow); }
 
-        /* Syntax highlighting for XML - Brand colors */
-        .xml-tag { color: #0000AA; }    /* Blue - elements */
-        .xml-attr { color: #00AAAA; }   /* Cyan - attributes */
-        .xml-value { color: #AAAA00; }  /* Harvest Yellow - values */
-        .xml-punct { color: #AAAAAA; }  /* Dim White - punctuation */
+        /* Syntax highlighting for XML */
+        .xml-tag { color: var(--blue); }
+        .xml-attr { color: var(--cyan); }
+        .xml-value { color: var(--yellow); }
+        .xml-punct { color: var(--base01); }
 
-        /* Result highlighting - Brand colors */
-        .result-match { color: #0000AA; }  /* Blue */
-        .result-file { color: #8b949e; }
-        .result-line { color: #AAAA00; }   /* Harvest Yellow */
+        /* Result highlighting */
+        .result-match { color: var(--blue); }
+        .result-file { color: var(--muted); }
+        .result-line { color: var(--yellow); }
 
         /* Demo highlighting */
         .highlight {
-            background: rgba(0, 0, 170, 0.2);
+            background: color-mix(in srgb, var(--blue) 20%, transparent);
             border-radius: 3px;
+        }
+
+        /* Language tabs */
+        .lang-tabs {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .lang-tab {
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            padding: 0.4rem 0.8rem;
+            cursor: pointer;
+            font-size: 0.85rem;
+            border-radius: 4px;
+            transition: all 0.15s;
+        }
+
+        .lang-tab:hover {
+            color: var(--fg);
+            background: var(--base02);
+        }
+
+        .lang-tab.active {
+            color: var(--accent);
+            background: var(--base02);
         }
     </style>
 </head>
 <body>
+    <!-- HERO -->
     <div class="container">
         <header>
             <div class="logo">&#x1F69C;</div>
             <h1>Tractor</h1>
-            <p class="tagline">Code Extractor — query source code with XPath</p>
+            <p class="tagline"><code>grep</code> for code structure, not text</p>
+
+            <div class="install-cmd" style="margin: 1.5rem auto; max-width: 400px;">
+                cargo install tractor
+            </div>
+
+            <div style="display: inline-block; margin: 1.5rem auto 0; text-align: left; min-width: 520px;">
+                <div class="lang-tabs" style="justify-content: flex-start; margin-bottom: 0; padding-left: 0.5rem;">
+                    <button class="lang-tab active" data-lang="csharp">C#</button>
+                    <button class="lang-tab" data-lang="typescript">TypeScript</button>
+                    <button class="lang-tab" data-lang="python">Python</button>
+                    <button class="lang-tab" data-lang="rust">Rust</button>
+                </div>
+                <pre id="hero-example" style="margin: 0; border-top-left-radius: 0;"><code><span class="comment"># Find async void methods (a common bug pattern)</span>
+tractor src/**/*.cs -x <span class="string">"method[async][type='void']"</span></code></pre>
+            </div>
+
             <div style="margin-top: 1.5rem;">
-                <a href="https://github.com/user/tractor" class="btn">View on GitHub</a>
-                <a href="#install" class="btn btn-secondary">Get Started</a>
+                <a href="https://github.com/user/tractor" class="btn">GitHub</a>
+                <a href="#examples" class="btn btn-secondary">Examples</a>
             </div>
         </header>
+    </div>
 
-        <section>
-            <h2>What is it?</h2>
-            <p>
-                <strong>tractor</strong> is a command-line tool that converts source code into an XML AST
-                (Abstract Syntax Tree) and lets you query it using XPath 2.0 expressions.
-                Think of it as <code>grep</code>, but for code structure instead of text.
-            </p>
-
-            <div class="feature-grid">
-                <div class="feature">
-                    <h3>Structural Search</h3>
-                    <p>Find code patterns by structure, not just text. Search for methods, classes, if statements, and more.</p>
-                </div>
-                <div class="feature">
-                    <h3>XPath 2.0</h3>
-                    <p>Use the full power of XPath 2.0 with predicates, functions, and axes for complex queries.</p>
-                </div>
-                <div class="feature">
-                    <h3>CI/CD Ready</h3>
-                    <p>Use <code>--expect</code> and <code>--format gcc</code> to enforce code patterns in your pipeline.</p>
-                </div>
-                <div class="feature">
-                    <h3>Colorized Output</h3>
-                    <p>Beautiful syntax-highlighted XML output in your terminal with <code>--color</code> support.</p>
-                </div>
-            </div>
-        </section>
-
-    </div><!-- close container for wide demo -->
+    <!-- INTERACTIVE DEMO -->
 
     <div class="container-wide">
         <section id="demo">
-            <h2>Interactive Demo</h2>
-            <p>Click a query to see how tractor extracts code patterns:</p>
 
             <div class="demo-grid">
                 <!-- Top Left: Source Code -->
@@ -417,11 +454,11 @@
                         <span class="icon">🔍</span> XPath Queries
                     </div>
                     <div class="query-buttons">
-                        <button class="query-btn active" data-query="all" data-hl-method="GetAsync,SaveAsync,Log">//method</button>
-                        <button class="query-btn" data-query="names" data-hl-name="GetAsync,SaveAsync,Log">//method/name</button>
-                        <button class="query-btn" data-query="async" data-hl-method="GetAsync,SaveAsync">//method[async]</button>
-                        <button class="query-btn" data-query="notpublic" data-hl-method="Log">//method[not(public)]</button>
-                        <button class="query-btn" data-query="asyncvoid" data-hl-method="SaveAsync" style="border-color: #f85149;">//method[async][type='void']</button>
+                        <button class="query-btn active" data-query="all" data-hl-method="GetAsync,SaveAsync,Log">method</button>
+                        <button class="query-btn" data-query="names" data-hl-name="GetAsync,SaveAsync,Log">method/name</button>
+                        <button class="query-btn" data-query="async" data-hl-method="GetAsync,SaveAsync">method[async]</button>
+                        <button class="query-btn" data-query="notpublic" data-hl-method="Log">method[not(public)]</button>
+                        <button class="query-btn" data-query="asyncvoid" data-hl-method="SaveAsync" style="border-color: var(--red);">method[async][type='void']</button>
                     </div>
                 </div>
 
@@ -445,140 +482,111 @@ private void Log(string msg) { }</div>
     </div><!-- close wide container -->
 
     <div class="container">
+        <!-- QUICK START -->
+        <section id="examples">
+            <h2>Quick Start</h2>
+
+            <p><strong>1. See the tree</strong> — run without a query to inspect the XML structure:</p>
+            <pre><code>tractor Program.cs</code></pre>
+
+            <p><strong>2. Query it</strong> — use XPath to find what you need:</p>
+            <pre><code>tractor Program.cs -x <span class="string">"method/name"</span>          <span class="comment"># all method names</span>
+tractor Program.cs -x <span class="string">"method[public]"</span>        <span class="comment"># public methods only</span>
+tractor Program.cs -x <span class="string">"method[async]"</span>         <span class="comment"># async methods</span>
+tractor Program.cs -x <span class="string">"count(class)"</span>          <span class="comment"># count classes</span></code></pre>
+
+            <p><strong>3. Use in CI</strong> — fail the build on bad patterns:</p>
+            <pre><code>tractor src/**/*.cs -x <span class="string">"method[async][type='void']"</span> --expect none \
+    --format gcc --message <span class="string">"async void is dangerous"</span></code></pre>
+        </section>
+
+        <!-- WHY XPATH -->
         <section>
             <h2>Why XPath?</h2>
             <p>
-                Other code search tools introduce custom query languages that are powerful but opaque.
-                When your query doesn't match, you're left guessing why.
+                Other code search tools use custom query languages. When your query doesn't match, you're left guessing why.
+                With tractor, you can <em>see</em> the tree you're querying.
+            </p>
+
+            <p style="margin: 1.5rem 0;">
+                <strong>The workflow:</strong> <code>tractor file.cs</code> → see the XML →
+                write your XPath → test in any XPath tool → <code>-x "..."</code> → done.
             </p>
 
             <div class="feature-grid">
                 <div class="feature">
-                    <h3>See What You're Querying</h3>
-                    <p>Run <code>tractor file.cs</code> without any query to see the full XML AST.
-                    No hidden structure—just look at the output and write your XPath.</p>
+                    <h3>Transparent</h3>
+                    <p>Run <code>tractor file.cs</code> to see exactly what you're querying. No hidden structure.</p>
                 </div>
                 <div class="feature">
-                    <h3>Debug With Any XPath Tool</h3>
-                    <p>Copy the XML into browser DevTools, an online XPath tester, or VS Code.
-                    Test and refine your query with instant feedback.</p>
+                    <h3>Debuggable</h3>
+                    <p>Copy XML into browser DevTools or any XPath tester. Refine with instant feedback.</p>
                 </div>
                 <div class="feature">
-                    <h3>No New Syntax to Learn</h3>
-                    <p>XPath is a W3C standard from 1999. Millions of developers already know it.
-                    Stack Overflow has 50k+ XPath questions with answers.</p>
+                    <h3>Standard</h3>
+                    <p>XPath is a W3C standard. Millions know it. Stack Overflow has 50k+ answers.</p>
                 </div>
                 <div class="feature">
-                    <h3>Predicates That Make Sense</h3>
-                    <p><code>[@modifiers='public']</code> reads like English.
-                    No magic symbols or pattern-matching DSLs to memorize.</p>
+                    <h3>Readable</h3>
+                    <p><code>//method[public][async]</code> reads like English. No DSL to memorize.</p>
                 </div>
             </div>
-
-            <p style="margin-top: 1.5rem;">
-                <strong>The workflow:</strong> Run <code>tractor file.cs</code> → see the XML →
-                write your XPath → test in any XPath tool → run with <code>-x "..."</code> → done.
-            </p>
         </section>
 
+        <!-- USE CASES -->
         <section>
             <h2>Use Cases</h2>
             <div class="feature-grid">
                 <div class="feature">
                     <h3>Code Search</h3>
-                    <p>Find specific patterns across your codebase. Search for method names, find TODO comments,
-                    locate extension methods, or identify all async functions.</p>
+                    <p>Find patterns by structure: async methods, extension methods, TODO comments, specific APIs.</p>
                 </div>
                 <div class="feature">
-                    <h3>CI Policy Enforcement</h3>
-                    <p>Enforce coding standards in your pipeline. Require SQL to end with semicolons,
-                    ban certain patterns, or ensure test files have at least one test.</p>
+                    <h3>CI Policy</h3>
+                    <p>Ban patterns, require conventions, ensure test coverage. Fail builds on violations.</p>
                 </div>
                 <div class="feature">
                     <h3>AST Inspection</h3>
-                    <p>Understand how your code is parsed. Debug syntax issues, explore the structure
-                    of unfamiliar code, or learn how Roslyn represents different constructs.</p>
+                    <p>Understand unfamiliar code. Debug syntax. See how constructs are parsed.</p>
                 </div>
                 <div class="feature">
-                    <h3>Refactoring Support</h3>
-                    <p>Identify refactoring candidates. Find similar patterns, locate code smells,
-                    or discover all usages before making breaking changes.</p>
+                    <h3>Refactoring</h3>
+                    <p>Find similar patterns, locate code smells, discover usages before breaking changes.</p>
                 </div>
             </div>
         </section>
 
-        <section id="install">
-            <h2>Installation</h2>
-            <div class="install-cmd">
-                dotnet tool install -g Tractor
-            </div>
-            <p>Requires .NET 8.0 or later.</p>
-        </section>
-
+        <!-- REFERENCE -->
         <section>
-            <h2>Quick Examples</h2>
+            <h2>Reference</h2>
 
-            <p>View the semantic tree of a file:</p>
-            <pre><code>tractor Program.cs</code></pre>
+            <h3>Element Names</h3>
+            <p>The semantic tree uses intuitive, lowercase names:</p>
+            <pre><code><span class="comment"># Structure</span>
+<span class="element">class</span>, <span class="element">struct</span>, <span class="element">interface</span>, <span class="element">method</span>, <span class="element">property</span>, <span class="element">field</span>, <span class="element">param</span>, <span class="element">block</span>, <span class="element">name</span>, <span class="element">type</span>
 
-            <p>Find all method names:</p>
-            <pre><code>tractor Program.cs -x <span class="string">"//method/name"</span></code></pre>
+<span class="comment"># Modifiers (empty elements)</span>
+<span class="element">public</span>, <span class="element">private</span>, <span class="element">static</span>, <span class="element">async</span>, <span class="element">readonly</span>, <span class="element">abstract</span>, <span class="element">virtual</span>, <span class="element">override</span>
 
-            <p>Find all public methods:</p>
-            <pre><code>tractor Program.cs -x <span class="string">"//method[public]/name"</span></code></pre>
+<span class="comment"># Statements</span>
+<span class="element">if</span>, <span class="element">else</span>, <span class="element">for</span>, <span class="element">foreach</span>, <span class="element">while</span>, <span class="element">try</span>, <span class="element">catch</span>, <span class="element">throw</span>, <span class="element">return</span>, <span class="element">await</span></code></pre>
 
-            <p>Find async methods:</p>
-            <pre><code>tractor Program.cs -x <span class="string">"//method[async]"</span></code></pre>
+            <h3>Output Formats</h3>
+            <pre><code>-f lines    <span class="comment"># Source code snippets (default)</span>
+-f xml      <span class="comment"># XML fragments</span>
+-f json     <span class="comment"># JSON array with file, line, value</span>
+-f gcc      <span class="comment"># GCC-style for IDE integration</span>
+-f count    <span class="comment"># Just the count</span></code></pre>
 
-            <p>Count the number of classes:</p>
-            <pre><code>tractor Program.cs -x <span class="string">"count(//class)"</span></code></pre>
+            <h3>All Options</h3>
+            <pre><code>tractor &lt;files...&gt; [options]
 
-            <p>CI check - ban async void methods:</p>
-            <pre><code>tractor src/**/*.cs -x <span class="string">"//method[async][type='void']"</span> \
-    --expect none --format gcc --message <span class="string">"async void is dangerous"</span></code></pre>
-        </section>
-
-        <section>
-            <h2>Element Names</h2>
-            <p>The semantic tree uses intuitive, lowercase element names:</p>
-
-            <h3>Structure</h3>
-            <pre><code><span class="element">class</span>, <span class="element">struct</span>, <span class="element">interface</span>, <span class="element">method</span>, <span class="element">property</span>, <span class="element">field</span>, <span class="element">param</span>, <span class="element">block</span>, <span class="element">name</span>, <span class="element">type</span>, ...</code></pre>
-
-            <h3>Modifiers (empty elements)</h3>
-            <pre><code><span class="element">public</span>, <span class="element">private</span>, <span class="element">static</span>, <span class="element">async</span>, <span class="element">readonly</span>, <span class="element">abstract</span>, <span class="element">virtual</span>, <span class="element">override</span>, ...</code></pre>
-
-            <h3>Statements</h3>
-            <pre><code><span class="element">if</span>, <span class="element">else</span>, <span class="element">for</span>, <span class="element">foreach</span>, <span class="element">while</span>, <span class="element">try</span>, <span class="element">catch</span>, <span class="element">throw</span>, <span class="element">return</span>, <span class="element">await</span>, ...</code></pre>
-        </section>
-
-        <section>
-            <h2>Output Formats</h2>
-            <p>Use <code>-f</code> or <code>--format</code> to change the output:</p>
-            <ul>
-                <li><code>lines</code> - Source code snippets (default)</li>
-                <li><code>xml</code> - XML fragments for each match</li>
-                <li><code>json</code> - JSON array with file, line, column, value</li>
-                <li><code>gcc</code> - GCC-style error format for IDE integration</li>
-                <li><code>count</code> - Just the number of matches</li>
-            </ul>
-        </section>
-
-        <section>
-            <h2>All Options</h2>
-            <pre><code>Usage: tractor &lt;files...&gt; [options]
-       tractor --stdin [options]
-
-Options:
-  -x, --xpath &lt;expr&gt;     XPath 2.0 query (without: outputs full XML AST)
-  -e, --expect &lt;value&gt;   Expected result: none, some, or a number
-  -f, --format &lt;fmt&gt;     Output format: lines, gcc, json, count, xml
-  -m, --message &lt;msg&gt;    Custom message (supports {value}, {line}, {xpath})
-  --keep-locations       Include start/end line+col attributes in XML output
-  --color &lt;mode&gt;         Color output: auto (default), always, never
-  --no-color             Disable colored output
-  -v, --verbose          Show parsed arguments (debug shell escaping)
-  -h, --help             Show help</code></pre>
+-x, --xpath &lt;expr&gt;    XPath 2.0 query (omit to see full tree)
+-e, --expect &lt;val&gt;    Expected: none, some, or a number
+-f, --format &lt;fmt&gt;    Output format (see above)
+-m, --message &lt;msg&gt;   Custom message ({value}, {line}, {xpath})
+--color &lt;mode&gt;        auto | always | never
+-h, --help            Show help</code></pre>
         </section>
 
         <footer>
@@ -591,6 +599,172 @@ Options:
     </div>
 
     <script>
+        // Language examples
+        const languages = {
+            csharp: {
+                file: 'UserService.cs',
+                ext: '*.cs',
+                heroExample: `<span class="comment"># Find async void methods (a common bug pattern)</span>
+tractor src/**/*.cs -x <span class="string">"method[async][type='void']"</span>`,
+                source: `<span class="cs-keyword">public class</span> <span class="cs-type">UserService</span>
+{
+<span data-method="GetAsync">    <span class="cs-keyword">public async</span> <span class="cs-type">Task</span>&lt;<span class="cs-type">User</span>&gt; <span class="cs-method" data-name="GetAsync">GetAsync</span>(<span class="cs-type">int</span> <span class="cs-param">id</span>)
+    {
+        <span class="cs-keyword">return await</span> _db.FindAsync(id);
+    }
+</span>
+<span data-method="SaveAsync">    <span class="cs-keyword">public async void</span> <span class="cs-method" data-name="SaveAsync">SaveAsync</span>(<span class="cs-type">User</span> <span class="cs-param">user</span>)
+    {
+        <span class="cs-keyword">await</span> _db.SaveAsync(user);  <span class="cs-comment">// bug: async void!</span>
+    }
+</span>
+<span data-method="Log">    <span class="cs-keyword">private void</span> <span class="cs-method" data-name="Log">Log</span>(<span class="cs-type">string</span> <span class="cs-param">msg</span>) { }</span>
+}`,
+                xml: `<span class="xml-punct">&lt;</span><span class="xml-tag">class</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">public</span><span class="xml-punct">/&gt;&lt;</span><span class="xml-tag">name</span><span class="xml-punct">&gt;</span>UserService<span class="xml-punct">&lt;/</span><span class="xml-tag">name</span><span class="xml-punct">&gt;</span>
+  <span data-method="GetAsync"><span class="xml-punct">&lt;</span><span class="xml-tag">method</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">public</span><span class="xml-punct">/&gt;&lt;</span><span class="xml-tag">async</span><span class="xml-punct">/&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">name</span><span class="xml-punct">&gt;</span><span data-name="GetAsync">GetAsync</span><span class="xml-punct">&lt;/</span><span class="xml-tag">name</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>Task&lt;User&gt;<span class="xml-punct">&lt;/</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">params</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">params</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">block</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">block</span><span class="xml-punct">&gt;</span>
+  <span class="xml-punct">&lt;/</span><span class="xml-tag">method</span><span class="xml-punct">&gt;</span></span>
+  <span data-method="SaveAsync"><span class="xml-punct">&lt;</span><span class="xml-tag">method</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">public</span><span class="xml-punct">/&gt;&lt;</span><span class="xml-tag">async</span><span class="xml-punct">/&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">name</span><span class="xml-punct">&gt;</span><span data-name="SaveAsync">SaveAsync</span><span class="xml-punct">&lt;/</span><span class="xml-tag">name</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>void<span class="xml-punct">&lt;/</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">params</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">params</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">block</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">block</span><span class="xml-punct">&gt;</span>
+  <span class="xml-punct">&lt;/</span><span class="xml-tag">method</span><span class="xml-punct">&gt;</span></span>
+  <span data-method="Log"><span class="xml-punct">&lt;</span><span class="xml-tag">method</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">private</span><span class="xml-punct">/&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">name</span><span class="xml-punct">&gt;</span><span data-name="Log">Log</span><span class="xml-punct">&lt;/</span><span class="xml-tag">name</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>void<span class="xml-punct">&lt;/</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">params</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">params</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">block</span><span class="xml-punct">/&gt;</span>
+  <span class="xml-punct">&lt;/</span><span class="xml-tag">method</span><span class="xml-punct">&gt;</span></span>
+<span class="xml-punct">&lt;/</span><span class="xml-tag">class</span><span class="xml-punct">&gt;</span>`,
+                methods: ['GetAsync', 'SaveAsync', 'Log']
+            },
+            typescript: {
+                file: 'UserService.ts',
+                ext: '*.ts',
+                heroExample: `<span class="comment"># Find exported function names</span>
+tractor src/**/*.ts -x <span class="string">"export_statement//type"</span>`,
+                source: `<span class="cs-keyword">export class</span> <span class="cs-type">UserService</span> {
+<span data-method="getUser">    <span class="cs-keyword">async</span> <span class="cs-method" data-name="getUser">getUser</span>(<span class="cs-param">id</span>: <span class="cs-type">number</span>): <span class="cs-type">Promise</span>&lt;<span class="cs-type">User</span>&gt; {
+        <span class="cs-keyword">return await</span> <span class="cs-keyword">this</span>.db.find(id);
+    }
+</span>
+<span data-method="saveUser">    <span class="cs-keyword">async</span> <span class="cs-method" data-name="saveUser">saveUser</span>(<span class="cs-param">user</span>: <span class="cs-type">User</span>): <span class="cs-type">Promise</span>&lt;<span class="cs-type">void</span>&gt; {
+        <span class="cs-keyword">await</span> <span class="cs-keyword">this</span>.db.save(user);
+    }
+</span>
+<span data-method="log">    <span class="cs-keyword">private</span> <span class="cs-method" data-name="log">log</span>(<span class="cs-param">msg</span>: <span class="cs-type">string</span>): <span class="cs-type">void</span> { }
+</span>}`,
+                xml: `<span class="xml-punct">&lt;</span><span class="xml-tag">class</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">export</span><span class="xml-punct">/&gt;&lt;</span><span class="xml-tag">name</span><span class="xml-punct">&gt;</span>UserService<span class="xml-punct">&lt;/</span><span class="xml-tag">name</span><span class="xml-punct">&gt;</span>
+  <span data-method="getUser"><span class="xml-punct">&lt;</span><span class="xml-tag">method</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">async</span><span class="xml-punct">/&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">name</span><span class="xml-punct">&gt;</span><span data-name="getUser">getUser</span><span class="xml-punct">&lt;/</span><span class="xml-tag">name</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>Promise&lt;User&gt;<span class="xml-punct">&lt;/</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">params</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">params</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">block</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">block</span><span class="xml-punct">&gt;</span>
+  <span class="xml-punct">&lt;/</span><span class="xml-tag">method</span><span class="xml-punct">&gt;</span></span>
+  <span data-method="saveUser"><span class="xml-punct">&lt;</span><span class="xml-tag">method</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">async</span><span class="xml-punct">/&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">name</span><span class="xml-punct">&gt;</span><span data-name="saveUser">saveUser</span><span class="xml-punct">&lt;/</span><span class="xml-tag">name</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>Promise&lt;void&gt;<span class="xml-punct">&lt;/</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">params</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">params</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">block</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">block</span><span class="xml-punct">&gt;</span>
+  <span class="xml-punct">&lt;/</span><span class="xml-tag">method</span><span class="xml-punct">&gt;</span></span>
+  <span data-method="log"><span class="xml-punct">&lt;</span><span class="xml-tag">method</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">private</span><span class="xml-punct">/&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">name</span><span class="xml-punct">&gt;</span><span data-name="log">log</span><span class="xml-punct">&lt;/</span><span class="xml-tag">name</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>void<span class="xml-punct">&lt;/</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">params</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">params</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">block</span><span class="xml-punct">/&gt;</span>
+  <span class="xml-punct">&lt;/</span><span class="xml-tag">method</span><span class="xml-punct">&gt;</span></span>
+<span class="xml-punct">&lt;/</span><span class="xml-tag">class</span><span class="xml-punct">&gt;</span>`,
+                methods: ['getUser', 'saveUser', 'log']
+            },
+            python: {
+                file: 'user_service.py',
+                ext: '*.py',
+                heroExample: `<span class="comment"># Find decorated functions</span>
+tractor src/**/*.py -x <span class="string">"function[@decorator]"</span>`,
+                source: `<span class="cs-keyword">class</span> <span class="cs-type">UserService</span>:
+<span data-method="get_user">    <span class="cs-keyword">async def</span> <span class="cs-method" data-name="get_user">get_user</span>(<span class="cs-param">self</span>, <span class="cs-param">id</span>: <span class="cs-type">int</span>) -> <span class="cs-type">User</span>:
+        <span class="cs-keyword">return await</span> self.db.find(id)
+</span>
+<span data-method="save_user">    <span class="cs-keyword">async def</span> <span class="cs-method" data-name="save_user">save_user</span>(<span class="cs-param">self</span>, <span class="cs-param">user</span>: <span class="cs-type">User</span>) -> <span class="cs-type">None</span>:
+        <span class="cs-keyword">await</span> self.db.save(user)
+</span>
+<span data-method="_log">    <span class="cs-keyword">def</span> <span class="cs-method" data-name="_log">_log</span>(<span class="cs-param">self</span>, <span class="cs-param">msg</span>: <span class="cs-type">str</span>) -> <span class="cs-type">None</span>:
+        <span class="cs-keyword">pass</span>
+</span>`,
+                xml: `<span class="xml-punct">&lt;</span><span class="xml-tag">class</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">name</span><span class="xml-punct">&gt;</span>UserService<span class="xml-punct">&lt;/</span><span class="xml-tag">name</span><span class="xml-punct">&gt;</span>
+  <span data-method="get_user"><span class="xml-punct">&lt;</span><span class="xml-tag">function</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">async</span><span class="xml-punct">/&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">name</span><span class="xml-punct">&gt;</span><span data-name="get_user">get_user</span><span class="xml-punct">&lt;/</span><span class="xml-tag">name</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>User<span class="xml-punct">&lt;/</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">params</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">params</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">block</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">block</span><span class="xml-punct">&gt;</span>
+  <span class="xml-punct">&lt;/</span><span class="xml-tag">function</span><span class="xml-punct">&gt;</span></span>
+  <span data-method="save_user"><span class="xml-punct">&lt;</span><span class="xml-tag">function</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">async</span><span class="xml-punct">/&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">name</span><span class="xml-punct">&gt;</span><span data-name="save_user">save_user</span><span class="xml-punct">&lt;/</span><span class="xml-tag">name</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>None<span class="xml-punct">&lt;/</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">params</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">params</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">block</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">block</span><span class="xml-punct">&gt;</span>
+  <span class="xml-punct">&lt;/</span><span class="xml-tag">function</span><span class="xml-punct">&gt;</span></span>
+  <span data-method="_log"><span class="xml-punct">&lt;</span><span class="xml-tag">function</span><span class="xml-punct">&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">name</span><span class="xml-punct">&gt;</span><span data-name="_log">_log</span><span class="xml-punct">&lt;/</span><span class="xml-tag">name</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>None<span class="xml-punct">&lt;/</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">params</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">params</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">block</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">block</span><span class="xml-punct">&gt;</span>
+  <span class="xml-punct">&lt;/</span><span class="xml-tag">function</span><span class="xml-punct">&gt;</span></span>
+<span class="xml-punct">&lt;/</span><span class="xml-tag">class</span><span class="xml-punct">&gt;</span>`,
+                methods: ['get_user', 'save_user', '_log']
+            },
+            rust: {
+                file: 'user_service.rs',
+                ext: '*.rs',
+                heroExample: `<span class="comment"># Find .unwrap() calls (panic risk)</span>
+tractor src/**/*.rs -x <span class="string">"call[name='unwrap']"</span>`,
+                source: `<span class="cs-keyword">impl</span> <span class="cs-type">UserService</span> {
+<span data-method="get_user">    <span class="cs-keyword">pub async fn</span> <span class="cs-method" data-name="get_user">get_user</span>(&<span class="cs-param">self</span>, <span class="cs-param">id</span>: <span class="cs-type">i32</span>) -> <span class="cs-type">User</span> {
+        self.db.find(id).<span class="cs-keyword">await</span>
+    }
+</span>
+<span data-method="save_user">    <span class="cs-keyword">pub async fn</span> <span class="cs-method" data-name="save_user">save_user</span>(&<span class="cs-param">self</span>, <span class="cs-param">user</span>: <span class="cs-type">User</span>) {
+        self.db.save(user).<span class="cs-keyword">await</span>;
+    }
+</span>
+<span data-method="log">    <span class="cs-keyword">fn</span> <span class="cs-method" data-name="log">log</span>(&<span class="cs-param">self</span>, <span class="cs-param">msg</span>: &<span class="cs-type">str</span>) { }
+</span>}`,
+                xml: `<span class="xml-punct">&lt;</span><span class="xml-tag">impl</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>UserService<span class="xml-punct">&lt;/</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>
+  <span data-method="get_user"><span class="xml-punct">&lt;</span><span class="xml-tag">function</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">pub</span><span class="xml-punct">/&gt;&lt;</span><span class="xml-tag">async</span><span class="xml-punct">/&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">name</span><span class="xml-punct">&gt;</span><span data-name="get_user">get_user</span><span class="xml-punct">&lt;/</span><span class="xml-tag">name</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>User<span class="xml-punct">&lt;/</span><span class="xml-tag">type</span><span class="xml-punct">&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">params</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">params</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">block</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">block</span><span class="xml-punct">&gt;</span>
+  <span class="xml-punct">&lt;/</span><span class="xml-tag">function</span><span class="xml-punct">&gt;</span></span>
+  <span data-method="save_user"><span class="xml-punct">&lt;</span><span class="xml-tag">function</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">pub</span><span class="xml-punct">/&gt;&lt;</span><span class="xml-tag">async</span><span class="xml-punct">/&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">name</span><span class="xml-punct">&gt;</span><span data-name="save_user">save_user</span><span class="xml-punct">&lt;/</span><span class="xml-tag">name</span><span class="xml-punct">&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">params</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">params</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">block</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">block</span><span class="xml-punct">&gt;</span>
+  <span class="xml-punct">&lt;/</span><span class="xml-tag">function</span><span class="xml-punct">&gt;</span></span>
+  <span data-method="log"><span class="xml-punct">&lt;</span><span class="xml-tag">function</span><span class="xml-punct">&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">name</span><span class="xml-punct">&gt;</span><span data-name="log">log</span><span class="xml-punct">&lt;/</span><span class="xml-tag">name</span><span class="xml-punct">&gt;</span>
+    <span class="xml-punct">&lt;</span><span class="xml-tag">params</span><span class="xml-punct">&gt;</span>...<span class="xml-punct">&lt;/</span><span class="xml-tag">params</span><span class="xml-punct">&gt;&lt;</span><span class="xml-tag">block</span><span class="xml-punct">/&gt;</span>
+  <span class="xml-punct">&lt;/</span><span class="xml-tag">function</span><span class="xml-punct">&gt;</span></span>
+<span class="xml-punct">&lt;/</span><span class="xml-tag">impl</span><span class="xml-punct">&gt;</span>`,
+                methods: ['get_user', 'save_user', 'log']
+            }
+        };
+
+        let currentLang = 'csharp';
+
+        function switchLanguage(lang) {
+            currentLang = lang;
+            const data = languages[lang];
+
+            // Update hero example
+            document.querySelector('#hero-example code').innerHTML = data.heroExample;
+
+            // Update file name in header
+            document.querySelector('.demo-panel-header .icon').parentElement.innerHTML =
+                `<span class="icon">📄</span> ${data.file}`;
+
+            // Update source code
+            document.getElementById('source-code').innerHTML = data.source;
+
+            // Update XML AST
+            document.getElementById('xml-ast').innerHTML = data.xml;
+
+            // Highlight all methods for the default query
+            updateHighlight(null, data.methods.join(','));
+        }
+
+        // Language tab handlers
+        document.querySelectorAll('.lang-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.lang-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                switchLanguage(tab.dataset.lang);
+            });
+        });
+
         // Demo data - results for each query in each format
         const results = {
             all: {

@@ -57,7 +57,8 @@ fn main() -> ExitCode {
 
 /// Normalize XPath expression - auto-prefix with // if not starting with /
 fn normalize_xpath(xpath: &str) -> String {
-    if xpath.starts_with('/') || xpath.starts_with('(') {
+    // Don't prefix expressions that are already absolute or context-relative
+    if xpath.starts_with('/') || xpath.starts_with('(') || xpath == "." {
         xpath.to_string()
     } else {
         format!("//{}", xpath)
@@ -284,7 +285,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
         return check_expectation_count(total_matches, &args);
     }
 
-    // No XPath - output full XML (parse all files, combine)
+    // No XPath - output full files using same formatting pipeline
     let lang_override = args.lang.as_deref();
     let raw = args.raw;
     let verbose = args.verbose;
@@ -308,15 +309,50 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
         return Err("no files could be parsed".into());
     }
 
-    let xml = generate_xml_document(&parse_results);
+    // For XML format, use combined document with Files wrapper
+    if matches!(format, OutputFormat::Xml) {
+        let xml = generate_xml_document(&parse_results);
+        let render_opts = RenderOptions::new()
+            .with_color(use_color)
+            .with_locations(args.keep_locations || args.debug)
+            .with_max_depth(args.depth);
+        let output = render_xml_string(&xml, &render_opts);
+        print!("{}", output);
+        return Ok(());
+    }
 
-    // Create render options based on CLI flags
-    let render_opts = RenderOptions::new()
-        .with_color(use_color)
-        .with_locations(args.keep_locations || args.debug)
-        .with_max_depth(args.depth);
+    // For other formats, create Match objects and use format_matches
+    let matches: Vec<Match> = parse_results
+        .iter()
+        .map(|result| {
+            let end_line = result.source_lines.len() as u32;
+            let end_column = result.source_lines.last()
+                .map(|l| l.len() as u32 + 1)
+                .unwrap_or(1);
 
-    let output = render_xml_string(&xml, &render_opts);
+            // Extract text content from XML for value output
+            let value = extract_text_content(&result.xml);
+
+            Match::with_location(
+                result.file_path.clone(),
+                1,
+                1,
+                end_line.max(1),
+                end_column,
+                value,
+                result.source_lines.clone(),
+            ).with_xml_fragment(result.xml.clone())
+        })
+        .collect();
+
+    let options = OutputOptions {
+        message: args.message.clone(),
+        use_color,
+        strip_locations: !args.keep_locations,
+        max_depth: args.depth,
+    };
+
+    let output = format_matches(&matches, format, &options);
     print!("{}", output);
 
     Ok(())
@@ -368,16 +404,63 @@ fn process_single_result(
 
         check_expectation(&matches, args)
     } else {
-        // Create render options based on CLI flags
-        let render_opts = RenderOptions::new()
-            .with_color(use_color)
-            .with_locations(args.keep_locations || args.debug)
-            .with_max_depth(args.depth);
+        // For XML format, use the render_xml_string
+        if matches!(format, OutputFormat::Xml) {
+            let render_opts = RenderOptions::new()
+                .with_color(use_color)
+                .with_locations(args.keep_locations || args.debug)
+                .with_max_depth(args.depth);
+            let output = render_xml_string(&xml, &render_opts);
+            print!("{}", output);
+            return Ok(());
+        }
 
-        let output = render_xml_string(&xml, &render_opts);
+        // For other formats, create a Match for the whole file and use format_matches
+        let end_line = result.source_lines.len() as u32;
+        let end_column = result.source_lines.last()
+            .map(|l| l.len() as u32 + 1)
+            .unwrap_or(1);
+        let value = extract_text_content(&result.xml);
+
+        let file_match = Match::with_location(
+            result.file_path.clone(),
+            1,
+            1,
+            end_line.max(1),
+            end_column,
+            value,
+            result.source_lines.clone(),
+        ).with_xml_fragment(result.xml.clone());
+
+        let options = OutputOptions {
+            message: args.message.clone(),
+            use_color,
+            strip_locations: !args.keep_locations,
+            max_depth: args.depth,
+        };
+
+        let output = format_matches(&[file_match], format, &options);
         print!("{}", output);
         Ok(())
     }
+}
+
+/// Extract text content from XML, removing all tags
+fn extract_text_content(xml: &str) -> String {
+    let mut result = String::new();
+    let mut in_tag = false;
+
+    for c in xml.chars() {
+        match c {
+            '<' => in_tag = true,
+            '>' => in_tag = false,
+            _ if !in_tag => result.push(c),
+            _ => {}
+        }
+    }
+
+    // Normalize whitespace
+    result.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
 fn check_expectation(matches: &[Match], args: &Args) -> Result<(), Box<dyn std::error::Error>> {
