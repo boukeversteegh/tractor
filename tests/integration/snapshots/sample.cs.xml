@@ -9,9 +9,7 @@
       </import>
       <class>
         class
-        <name>
-          <type>Sample</type>
-        </name>
+        <name>Sample</name>
         <body>
           {
           <method>
@@ -19,9 +17,7 @@
             <returns>
               <type>int</type>
             </returns>
-            <name>
-              <type>Add</type>
-            </name>
+            <name>Add</name>
             <parameters>
               <params>
                 (
@@ -66,9 +62,7 @@
             <returns>
               <type>void</type>
             </returns>
-            <name>
-              <type>Main</type>
-            </name>
+            <name>Main</name>
             <parameters>
               <params>()</params>
             </parameters>

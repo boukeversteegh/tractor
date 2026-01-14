@@ -75,9 +75,8 @@ echo ""
 # C#
 echo "C#:"
 run_test "$TRACTOR" "$FIXTURES/sample.cs" -x "method" --expect 2 -m "Has 2 methods"
-run_test "$TRACTOR" "$FIXTURES/sample.cs" -x "method/name[type='Add']" --expect 1 -m "Has 'Add' method"
-run_test "$TRACTOR" "$FIXTURES/sample.cs" -x "class/name[type='Sample']" --expect 1 -m "Has 'Sample' class"
-run_test "$TRACTOR" "$FIXTURES/sample.cs" -x "class/name[.='Sample']" --expect 1 -m "class/name text is 'Sample'"
+run_test "$TRACTOR" "$FIXTURES/sample.cs" -x "method/name[.='Add']" --expect 1 -m "Has 'Add' method"
+run_test "$TRACTOR" "$FIXTURES/sample.cs" -x "class/name[.='Sample']" --expect 1 -m "Has 'Sample' class"
 echo ""
 
 # Ruby

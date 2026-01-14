@@ -20,6 +20,50 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         "declaration_list" => Ok(TransformAction::Flatten),
 
         // ---------------------------------------------------------------------
+        // Name wrappers - inline identifier text directly
+        // TreeSitter: <name><identifier>Foo</identifier></name>
+        // We want: <name>Foo</name> (text content directly in name element)
+        // ---------------------------------------------------------------------
+        "name" => {
+            // Check if this name wrapper is in a declaration context
+            // Note: parent may already be renamed (class_declaration -> class) by the time we get here
+            if let Some(parent) = get_parent(xot, node) {
+                let parent_kind = get_element_name(xot, parent).unwrap_or_default();
+                if matches!(parent_kind.as_str(),
+                    // Original TreeSitter names
+                    "class_declaration" | "struct_declaration" | "interface_declaration"
+                    | "enum_declaration" | "record_declaration" | "namespace_declaration"
+                    | "method_declaration" | "constructor_declaration" | "property_declaration"
+                    // Renamed semantic names
+                    | "class" | "struct" | "interface" | "enum" | "record" | "namespace"
+                    | "method" | "ctor" | "prop"
+                ) {
+                    // Find identifier child and extract its text
+                    let children: Vec<_> = xot.children(node).collect();
+                    for child in children {
+                        if let Some(child_name) = get_element_name(xot, child) {
+                            if child_name == "identifier" {
+                                // Get the text from the identifier
+                                if let Some(text) = get_text_content(xot, child) {
+                                    // Remove all children from <name>
+                                    let all_children: Vec<_> = xot.children(node).collect();
+                                    for c in all_children {
+                                        xot.detach(c)?;
+                                    }
+                                    // Add text directly to <name>
+                                    let text_node = xot.new_text(&text);
+                                    xot.append(node, text_node)?;
+                                    return Ok(TransformAction::Done);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Ok(TransformAction::Continue)
+        }
+
+        // ---------------------------------------------------------------------
         // Modifier wrappers - C# wraps modifiers in "modifier" elements
         // Convert <modifier>public</modifier> to <public/>
         // ---------------------------------------------------------------------
@@ -163,6 +207,23 @@ fn classify_identifier(xot: &Xot, node: XotNode) -> &'static str {
     };
 
     let parent_kind = get_element_name(xot, parent).unwrap_or_default();
+
+    // If parent is a field wrapper (like <name>), check grandparent
+    // TreeSitter wraps identifiers in field elements like: <name><identifier>Foo</identifier></name>
+    if parent_kind == "name" {
+        if let Some(grandparent) = get_parent(xot, parent) {
+            let grandparent_kind = get_element_name(xot, grandparent).unwrap_or_default();
+            // If grandparent is a declaration, this identifier IS the name - flatten it
+            if matches!(grandparent_kind.as_str(),
+                "class_declaration" | "struct_declaration" | "interface_declaration"
+                | "enum_declaration" | "record_declaration" | "namespace_declaration"
+                | "method_declaration" | "constructor_declaration" | "property_declaration"
+                | "variable_declarator" | "parameter"
+            ) {
+                return "name";
+            }
+        }
+    }
 
     // Check if in namespace declaration path
     let in_namespace = is_in_namespace_context(xot, node);
