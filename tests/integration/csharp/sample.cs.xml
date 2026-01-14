@@ -4,7 +4,7 @@
       <comment>// Simple C# example</comment>
       <import>
         using
-        <type>System</type>
+        <ref>System</ref>
         ;
       </import>
       <class>
@@ -21,17 +21,13 @@
             <params>
               (
               <param>
-                <type field="type">int</type>
-                <name>
-                  <type>a</type>
-                </name>
+                <type>int</type>
+                <name>a</name>
               </param>
               ,
               <param>
-                <type field="type">int</type>
-                <name>
-                  <type>b</type>
-                </name>
+                <type>int</type>
+                <name>b</name>
               </param>
               )
             </params>
@@ -43,11 +39,11 @@
                   <binary>
                     <op>+</op>
                     <left>
-                      <type>a</type>
+                      <ref>a</ref>
                     </left>
                     +
                     <right>
-                      <type>b</type>
+                      <ref>b</ref>
                     </right>
                   </binary>
                   ;
@@ -68,14 +64,12 @@
                 {
                 <local>
                   <var>
-                    <type field="type">int</type>
+                    <type>int</type>
                     <decl>
-                      <name>
-                        <type>result</type>
-                      </name>
+                      <name>result</name>
                       =
                       <call>
-                        <type field="function">Add</type>
+                        <ref field="function">Add</ref>
                         <arguments>
                           <args>
                             (
@@ -97,10 +91,10 @@
                 <expression_statement>
                   <call>
                     <member field="function">
-                      <type field="expression">Console</type>
+                      <ref field="expression">Console</ref>
                       .
                       <name>
-                        <type>WriteLine</type>
+                        <ref>WriteLine</ref>
                       </name>
                     </member>
                     <arguments>
@@ -113,7 +107,7 @@
                             <string_content>Result: </string_content>
                             <interpolation>
                               <interpolation_brace>{</interpolation_brace>
-                              <type>result</type>
+                              <ref>result</ref>
                               <interpolation_brace>}</interpolation_brace>
                             </interpolation>
                             &quot;

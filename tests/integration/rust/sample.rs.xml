@@ -12,13 +12,13 @@
             <param>
               <type field="pattern">a</type>
               :
-              <type field="type">i32</type>
+              <type>i32</type>
             </param>
             ,
             <param>
               <type field="pattern">b</type>
               :
-              <type field="type">i32</type>
+              <type>i32</type>
             </param>
             )
           </params>

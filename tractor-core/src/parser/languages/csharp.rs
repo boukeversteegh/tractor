@@ -6,6 +6,27 @@
 use xot::{Xot, Node as XotNode};
 use crate::xot_transform::{TransformAction, helpers::*};
 
+/// Check if kind is a declaration that has a name child
+/// Handles both original TreeSitter names and renamed semantic names
+fn is_named_declaration(kind: &str) -> bool {
+    matches!(kind,
+        // Types
+        "class_declaration" | "class"
+        | "struct_declaration" | "struct"
+        | "interface_declaration" | "interface"
+        | "enum_declaration" | "enum"
+        | "record_declaration" | "record"
+        | "namespace_declaration" | "namespace"
+        // Members
+        | "method_declaration" | "method"
+        | "constructor_declaration" | "ctor"
+        | "property_declaration" | "prop"
+        // Parameters & variables
+        | "parameter" | "param"
+        | "variable_declarator" | "decl"
+    )
+}
+
 /// Transform a C# AST node
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let kind = match get_element_name(xot, node) {
@@ -26,18 +47,9 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // ---------------------------------------------------------------------
         "name" => {
             // Check if this name wrapper is in a declaration context
-            // Note: parent may already be renamed (class_declaration -> class) by the time we get here
             if let Some(parent) = get_parent(xot, node) {
                 let parent_kind = get_element_name(xot, parent).unwrap_or_default();
-                if matches!(parent_kind.as_str(),
-                    // Original TreeSitter names
-                    "class_declaration" | "struct_declaration" | "interface_declaration"
-                    | "enum_declaration" | "record_declaration" | "namespace_declaration"
-                    | "method_declaration" | "constructor_declaration" | "property_declaration"
-                    // Renamed semantic names
-                    | "class" | "struct" | "interface" | "enum" | "record" | "namespace"
-                    | "method" | "ctor" | "prop"
-                ) {
+                if is_named_declaration(&parent_kind) {
                     // Find identifier child and extract its text
                     let children: Vec<_> = xot.children(node).collect();
                     for child in children {
@@ -213,13 +225,8 @@ fn classify_identifier(xot: &Xot, node: XotNode) -> &'static str {
     if parent_kind == "name" {
         if let Some(grandparent) = get_parent(xot, parent) {
             let grandparent_kind = get_element_name(xot, grandparent).unwrap_or_default();
-            // If grandparent is a declaration, this identifier IS the name - flatten it
-            if matches!(grandparent_kind.as_str(),
-                "class_declaration" | "struct_declaration" | "interface_declaration"
-                | "enum_declaration" | "record_declaration" | "namespace_declaration"
-                | "method_declaration" | "constructor_declaration" | "property_declaration"
-                | "variable_declarator" | "parameter"
-            ) {
+            // If grandparent is a declaration, this identifier IS the name
+            if is_named_declaration(&grandparent_kind) {
                 return "name";
             }
         }
@@ -256,8 +263,11 @@ fn classify_identifier(xot: &Xot, node: XotNode) -> &'static str {
         // Generic name - the identifier is the generic type name
         "generic_name" => "type",
 
-        // Default to type
-        _ => "type",
+        // Type annotations - use type
+        "type_argument_list" | "type_parameter" => "type",
+
+        // Default to ref (variable/constant reference in expressions)
+        _ => "ref",
     }
 }
 

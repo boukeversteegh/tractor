@@ -27,14 +27,14 @@
               <name>
                 <type>a</type>
               </name>
-              <type field="type">int</type>
+              <type>int</type>
             </param>
             ,
             <param>
               <name>
                 <type>b</type>
               </name>
-              <type field="type">int</type>
+              <type>int</type>
             </param>
             )
           </params>
@@ -96,7 +96,7 @@
             <member field="function">
               <type field="operand">fmt</type>
               .
-              <field field="field">Printf</field>
+              <field>Printf</field>
             </member>
             <arguments>
               <argument_list>

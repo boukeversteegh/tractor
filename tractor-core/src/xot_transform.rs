@@ -141,10 +141,17 @@ pub mod helpers {
     }
 
     /// Rename an element node
+    /// Also removes redundant `field` attribute if it matches the new name
     pub fn rename(xot: &mut Xot, node: XotNode, new_name: &str) {
         let name_id = xot.add_name(new_name);
         if let Some(element) = xot.element_mut(node) {
             element.set_name(name_id);
+        }
+        // Remove redundant field attribute if it matches the new element name
+        if let Some(field_value) = get_attr(xot, node, "field") {
+            if field_value == new_name {
+                remove_attr(xot, node, "field");
+            }
         }
     }
 
