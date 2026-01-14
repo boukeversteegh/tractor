@@ -13,21 +13,20 @@ tests/integration/
 ├── fixtures/          # Source files in various languages
 ├── snapshots/         # Expected XML output (committed to git)
 ├── generate_snapshots.sh  # Regenerate snapshots from fixtures
-├── run_tests.sh       # Full test suite (comprehensive)
-├── test_simple.sh     # Simple test (quick sanity check)
+├── test.sh            # Main test suite (pure bash)
 └── README.md          # This file
 ```
 
 ## Running Tests
 
-### Quick Test
+### Run Tests
 ```bash
-./test_simple.sh
+./test.sh
 ```
 
-### Full Test Suite
+Each test is just one tractor command with `--expect`:
 ```bash
-./run_tests.sh
+tractor sample.rs -x "//function" --expect 2
 ```
 
 ### Regenerate Snapshots
@@ -53,21 +52,21 @@ This detects unintended changes in XML output. If the diff shows changes:
 - If changes are **expected**: regenerate snapshots and commit
 - If changes are **unexpected**: investigate and fix the regression
 
-### 2. Structure Assertions
+### 2. Structure Assertions with `--expect`
 
-The test suite uses XPath queries to verify XML structure:
+Tractor has a built-in `--expect` flag for assertions! Each test is just one command:
 
 ```bash
 # Check that Rust file has 2 functions
-tractor fixtures/sample.rs -x "//function" --output count
-# Expected: 2
+tractor sample.rs -x "//function" --expect 2
 
 # Check for specific function names
-tractor fixtures/sample.rs -x "//function/name[type='add']" --output count
-# Expected: 1
+tractor sample.rs -x "//function/name[type='add']" --expect 1
+
+# Exit code is 0 if matches, 1 if doesn't match
 ```
 
-This ensures the semantic structure is correct regardless of formatting.
+This means tests are pure bash - no need to parse output or count results!
 
 ### 3. XML Pass-through
 
@@ -111,13 +110,13 @@ Each fixture is designed to test common language constructs while being simple e
 ### Add a new fixture
 1. Create `fixtures/sample.ext` with representative code
 2. Run `./generate_snapshots.sh` to create the snapshot
-3. Add structure assertions in `run_tests.sh`
+3. Add structure assertions in `test.sh`
 
 ### Add a new assertion
-Edit `run_tests.sh` and add an `assert_xpath` call:
+Edit `test.sh` and add a `run_test` call:
 
 ```bash
-assert_xpath "$FIXTURES_DIR/sample.rs" "//loop" "0" "  Should have no loops"
+run_test "no loops" "$TRACTOR" "$FIXTURES/sample.rs" -x "//loop" --expect 0
 ```
 
 ## Troubleshooting
