@@ -1,0 +1,145 @@
+<Files>
+  <File path="/home/user/tractor/tests/integration/fixtures/sample.java">
+    <program>
+      <line_comment>// Simple Java example</line_comment>
+      <class>
+        <public/>
+        class
+        <name>
+          <type>Sample</type>
+        </name>
+        <body>
+          {
+          <method>
+            <static/>
+            <public/>
+            <integral_type field="type">int</integral_type>
+            <name>
+              <type>add</type>
+            </name>
+            <parameters>
+              <params>
+                (
+                <param>
+                  <integral_type field="type">int</integral_type>
+                  <name>
+                    <type>a</type>
+                  </name>
+                </param>
+                ,
+                <param>
+                  <integral_type field="type">int</integral_type>
+                  <name>
+                    <type>b</type>
+                  </name>
+                </param>
+                )
+              </params>
+            </parameters>
+            <body>
+              {
+              <return>
+                return
+                <binary op="+">
+                  <left>
+                    <type>a</type>
+                  </left>
+                  +
+                  <right>
+                    <type>b</type>
+                  </right>
+                </binary>
+                ;
+              </return>
+              }
+            </body>
+          </method>
+          <method>
+            <static/>
+            <public/>
+            <void_type field="type">void</void_type>
+            <name>
+              <type>main</type>
+            </name>
+            <parameters>
+              <params>
+                (
+                <param>
+                  <array field="type">
+                    <type field="element">String</type>
+                    <dimensions field="dimensions">[]</dimensions>
+                  </array>
+                  <name>
+                    <type>args</type>
+                  </name>
+                </param>
+                )
+              </params>
+            </parameters>
+            <body>
+              {
+              <local_variable_declaration>
+                <integral_type field="type">int</integral_type>
+                <variable_declarator field="declarator">
+                  <name>
+                    <type>result</type>
+                  </name>
+                  =
+                  <value>
+                    <call>
+                      <name>
+                        <type>add</type>
+                      </name>
+                      <arguments>
+                        <args>
+                          (
+                          <int>5</int>
+                          ,
+                          <int>3</int>
+                          )
+                        </args>
+                      </arguments>
+                    </call>
+                  </value>
+                </variable_declarator>
+                ;
+              </local_variable_declaration>
+              <call>
+                <member field="object">
+                  <type field="object">System</type>
+                  .
+                  <type field="field">out</type>
+                </member>
+                .
+                <name>
+                  <type>println</type>
+                </name>
+                <arguments>
+                  <args>
+                    (
+                    <binary op="+">
+                      <left>
+                        <string>
+                          &quot;
+                          <string_fragment>Result: </string_fragment>
+                          &quot;
+                        </string>
+                      </left>
+                      +
+                      <right>
+                        <type>result</type>
+                      </right>
+                    </binary>
+                    )
+                  </args>
+                </arguments>
+              </call>
+              ;}
+            </body>
+          </method>
+          }
+        </body>
+      </class>
+    </program>
+  </File>
+</Files>

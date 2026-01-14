@@ -263,6 +263,31 @@ pub fn parse_string_to_xot(source: &str, lang: &str, file_path: String, raw_mode
     })
 }
 
+/// Load XML directly as a ParseResult (pass-through mode)
+///
+/// This function allows you to load pre-generated XML (e.g., snapshots)
+/// and query them with XPath, just like parsed source files.
+///
+/// The XML is passed through without parsing source code.
+pub fn load_xml(xml: String, file_path: String) -> ParseResult {
+    // Try to extract source lines from the XML if they're embedded
+    // For now, just use empty source lines
+    let source_lines = Vec::new();
+
+    ParseResult {
+        xml,
+        source_lines,
+        file_path,
+        language: "xml".to_string(),
+    }
+}
+
+/// Load XML from a file as a ParseResult (pass-through mode)
+pub fn load_xml_file(path: &Path) -> Result<ParseResult, ParseError> {
+    let xml = fs::read_to_string(path)?;
+    Ok(load_xml(xml, path.to_string_lossy().to_string()))
+}
+
 /// Escape XML special characters
 pub fn escape_xml(s: &str) -> String {
     s.replace('&', "&amp;")

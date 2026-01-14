@@ -1,0 +1,85 @@
+<Files>
+  <File path="/home/user/tractor/tests/integration/fixtures/sample.rb">
+    <program>
+      <comment># Simple Ruby example</comment>
+      <method>
+        def
+        <name>
+          <identifier>add</identifier>
+        </name>
+        <parameters>
+          <method_parameters>
+            (
+            <identifier>a</identifier>
+            ,
+            <identifier>b</identifier>
+            )
+          </method_parameters>
+        </parameters>
+        <body>
+          <body_statement>
+            <binary>
+              <left>
+                <identifier>a</identifier>
+              </left>
+              +
+              <right>
+                <identifier>b</identifier>
+              </right>
+            </binary>
+          </body_statement>
+        </body>
+        end
+      </method>
+      <method>
+        def
+        <name>
+          <identifier>main</identifier>
+        </name>
+        <body>
+          <body_statement>
+            <assignment>
+              <left>
+                <identifier>result</identifier>
+              </left>
+              =
+              <right>
+                <call>
+                  <identifier field="method">add</identifier>
+                  <arguments>
+                    <argument_list>
+                      (
+                      <integer>5</integer>
+                      ,
+                      <integer>3</integer>
+                      )
+                    </argument_list>
+                  </arguments>
+                </call>
+              </right>
+            </assignment>
+            <call>
+              <identifier field="method">puts</identifier>
+              <arguments>
+                <argument_list>
+                  <string>
+                    &quot;
+                    <string_content>Result: </string_content>
+                    <interpolation>
+                      #{
+                      <identifier>result</identifier>
+                      }
+                    </interpolation>
+                    &quot;
+                  </string>
+                </argument_list>
+              </arguments>
+            </call>
+          </body_statement>
+        </body>
+        end
+      </method>
+      <identifier>main</identifier>
+    </program>
+  </File>
+</Files>

@@ -1,0 +1,129 @@
+<Files>
+  <File path="/home/user/tractor/tests/integration/fixtures/sample.ts">
+    <program>
+      <comment>// Simple TypeScript example</comment>
+      <function>
+        function
+        <name>
+          <type>add</type>
+        </name>
+        <parameters>
+          <params>
+            (
+            <param>
+              <type field="pattern">a</type>
+              <typeof field="type">
+                :
+                <predefined_type>number</predefined_type>
+              </typeof>
+            </param>
+            ,
+            <param>
+              <type field="pattern">b</type>
+              <typeof field="type">
+                :
+                <predefined_type>number</predefined_type>
+              </typeof>
+            </param>
+            )
+          </params>
+        </parameters>
+        <typeof field="return_type">
+          :
+          <predefined_type>number</predefined_type>
+        </typeof>
+        <body>
+          <block>
+            {
+            <return>
+              return
+              <binary op="+">
+                <left>
+                  <type>a</type>
+                </left>
+                +
+                <right>
+                  <type>b</type>
+                </right>
+              </binary>
+              ;
+            </return>
+            }
+          </block>
+        </body>
+      </function>
+      <function>
+        function
+        <name>
+          <type>main</type>
+        </name>
+        <parameters>
+          <params>()</params>
+        </parameters>
+        <typeof field="return_type">
+          :
+          <predefined_type>void</predefined_type>
+        </typeof>
+        <body>
+          <block>
+            {
+            <variable>
+              <const/>
+              const
+              <name>
+                <type>result</type>
+              </name>
+              =
+              <value>
+                <call>
+                  <type field="function">add</type>
+                  <arguments>
+                    <arguments>
+                      (
+                      <number>5</number>
+                      ,
+                      <number>3</number>
+                      )
+                    </arguments>
+                  </arguments>
+                </call>
+              </value>
+              ;
+            </variable>
+            <call>
+              <member field="function">
+                <type field="object">console</type>
+                .
+                <type field="property">log</type>
+              </member>
+              <arguments>
+                <arguments>
+                  (
+                  <template_string>
+                    `
+                    <string_fragment>Result: </string_fragment>
+                    <template_substitution>
+                      ${
+                      <type>result</type>
+                      }
+                    </template_substitution>
+                    `
+                  </template_string>
+                  )
+                </arguments>
+              </arguments>
+            </call>
+            ;}
+          </block>
+        </body>
+      </function>
+      <call>
+        <type field="function">main</type>
+        <arguments>
+          <arguments>()</arguments>
+        </arguments>
+      </call>
+      ;
+    </program>
+  </File>
+</Files>

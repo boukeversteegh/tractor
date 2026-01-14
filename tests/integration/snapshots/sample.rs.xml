@@ -1,0 +1,93 @@
+<Files>
+  <File path="/home/user/tractor/tests/integration/fixtures/sample.rs">
+    <file>
+      <line_comment>// Simple Rust example</line_comment>
+      <function>
+        fn
+        <name>
+          <type>add</type>
+        </name>
+        <params>
+          <params>
+            (
+            <param>
+              <type field="pattern">a</type>
+              :
+              <type field="type">i32</type>
+            </param>
+            ,
+            <param>
+              <type field="pattern">b</type>
+              :
+              <type field="type">i32</type>
+            </param>
+            )
+          </params>
+        </params>
+        -&gt;
+        <type field="return_type">i32</type>
+        <body>
+          {
+          <binary op="+">
+            <left>
+              <type>a</type>
+            </left>
+            +
+            <right>
+              <type>b</type>
+            </right>
+          </binary>
+          }
+        </body>
+      </function>
+      <function>
+        fn
+        <name>
+          <type>main</type>
+        </name>
+        <params>
+          <params>()</params>
+        </params>
+        <body>
+          {
+          <let>
+            let
+            <type field="pattern">result</type>
+            =
+            <value>
+              <call>
+                <type field="function">add</type>
+                <arguments>
+                  <arguments>
+                    (
+                    <int>5</int>
+                    ,
+                    <int>3</int>
+                    )
+                  </arguments>
+                </arguments>
+              </call>
+            </value>
+            ;
+          </let>
+          <macro>
+            <type field="macro">println</type>
+            !
+            <token_tree>
+              (
+              <string>
+                &quot;
+                <string_content>Result: {}</string_content>
+                &quot;
+              </string>
+              ,
+              <type>result</type>
+              )
+            </token_tree>
+          </macro>
+          ;}
+        </body>
+      </function>
+    </file>
+  </File>
+</Files>

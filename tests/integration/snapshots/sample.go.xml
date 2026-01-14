@@ -1,0 +1,123 @@
+<Files>
+  <File path="/home/user/tractor/tests/integration/fixtures/sample.go">
+    <file>
+      <comment>// Simple Go example</comment>
+      <package>
+        package
+        <pkg>main</pkg>
+      </package>
+      <import_declaration>
+        import
+        <import_spec>
+          <string field="path">
+            &quot;
+            <interpreted_string_literal_content>fmt</interpreted_string_literal_content>
+            &quot;
+          </string>
+        </import_spec>
+      </import_declaration>
+      <function>
+        func
+        <name>
+          <type>add</type>
+        </name>
+        <parameters>
+          <params>
+            (
+            <param>
+              <name>
+                <type>a</type>
+              </name>
+              <type field="type">int</type>
+            </param>
+            ,
+            <param>
+              <name>
+                <type>b</type>
+              </name>
+              <type field="type">int</type>
+            </param>
+            )
+          </params>
+        </parameters>
+        <type field="result">int</type>
+        <body>
+          {
+          <return>
+            return
+            <expression_list>
+              <binary op="+">
+                <left>
+                  <type>a</type>
+                </left>
+                +
+                <right>
+                  <type>b</type>
+                </right>
+              </binary>
+            </expression_list>
+          </return>
+          }
+        </body>
+      </function>
+      <function>
+        func
+        <name>
+          <type>main</type>
+        </name>
+        <parameters>
+          <params>()</params>
+        </parameters>
+        <body>
+          {
+          <short_var_declaration>
+            <left>
+              <expression_list>
+                <type>result</type>
+              </expression_list>
+            </left>
+            :=
+            <right>
+              <expression_list>
+                <call>
+                  <type field="function">add</type>
+                  <arguments>
+                    <argument_list>
+                      (
+                      <int>5</int>
+                      ,
+                      <int>3</int>
+                      )
+                    </argument_list>
+                  </arguments>
+                </call>
+              </expression_list>
+            </right>
+          </short_var_declaration>
+          <call>
+            <member field="function">
+              <type field="operand">fmt</type>
+              .
+              <field field="field">Printf</field>
+            </member>
+            <arguments>
+              <argument_list>
+                (
+                <string>
+                  &quot;
+                  <interpreted_string_literal_content>Result: %d</interpreted_string_literal_content>
+                  <escape_sequence>\n</escape_sequence>
+                  &quot;
+                </string>
+                ,
+                <type>result</type>
+                )
+              </argument_list>
+            </arguments>
+          </call>
+          }
+        </body>
+      </function>
+    </file>
+  </File>
+</Files>

@@ -18,6 +18,8 @@ pub use parser::{
     ParseResult, SUPPORTED_LANGUAGES,
     // New xot-based pipeline
     parse_file_to_xot, parse_string_to_xot, XotParseResult,
+    // XML pass-through for testing
+    load_xml, load_xml_file,
 };
 pub use xpath::{XPathEngine, Match};
 pub use output::{OutputFormat, format_matches, OutputOptions, render_node, render_document, render_xml_string, RenderOptions};

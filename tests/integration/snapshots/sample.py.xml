@@ -1,0 +1,120 @@
+<Files>
+  <File path="/home/user/tractor/tests/integration/fixtures/sample.py">
+    <module>
+      <string>
+        <string_start>&quot;&quot;&quot;</string_start>
+        <string_content>Simple Python example</string_content>
+        <string_end>&quot;&quot;&quot;</string_end>
+      </string>
+      <function>
+        def
+        <name>
+          <type>add</type>
+        </name>
+        <params>
+          <params>
+            (
+            <type>a</type>
+            ,
+            <type>b</type>
+            )
+          </params>
+        </params>
+        :
+        <body>
+          <string>
+            <string_start>&quot;&quot;&quot;</string_start>
+            <string_content>Add two numbers</string_content>
+            <string_end>&quot;&quot;&quot;</string_end>
+          </string>
+          <return>
+            return
+            <binary op="+">
+              <left>
+                <type>a</type>
+              </left>
+              +
+              <right>
+                <type>b</type>
+              </right>
+            </binary>
+          </return>
+        </body>
+      </function>
+      <function>
+        def
+        <name>
+          <type>main</type>
+        </name>
+        <params>
+          <params>()</params>
+        </params>
+        :
+        <body>
+          <assign>
+            <left>
+              <type>result</type>
+            </left>
+            =
+            <right>
+              <call>
+                <type field="function">add</type>
+                <arguments>
+                  <argument_list>
+                    (
+                    <int>5</int>
+                    ,
+                    <int>3</int>
+                    )
+                  </argument_list>
+                </arguments>
+              </call>
+            </right>
+          </assign>
+          <call>
+            <type field="function">print</type>
+            <arguments>
+              <argument_list>
+                (
+                <string>
+                  <string_start>f&quot;</string_start>
+                  <string_content>Result: </string_content>
+                  <interpolation>
+                    {
+                    <type field="expression">result</type>
+                    }
+                  </interpolation>
+                  <string_end>&quot;</string_end>
+                </string>
+                )
+              </argument_list>
+            </arguments>
+          </call>
+        </body>
+      </function>
+      <if>
+        if
+        <condition>
+          <compare op="==">
+            <type>__name__</type>
+            ==
+            <string>
+              <string_start>&quot;</string_start>
+              <string_content>__main__</string_content>
+              <string_end>&quot;</string_end>
+            </string>
+          </compare>
+        </condition>
+        :
+        <consequence>
+          <call>
+            <type field="function">main</type>
+            <arguments>
+              <argument_list>()</argument_list>
+            </arguments>
+          </call>
+        </consequence>
+      </if>
+    </module>
+  </File>
+</Files>
