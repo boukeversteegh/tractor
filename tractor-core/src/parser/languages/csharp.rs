@@ -17,7 +17,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // ---------------------------------------------------------------------
         // Flatten nodes - transform children, then remove wrapper
         // ---------------------------------------------------------------------
-        "declaration_list" => Ok(TransformAction::Flatten),
+        "declaration_list" | "parameters" => Ok(TransformAction::Flatten),
 
         // ---------------------------------------------------------------------
         // Name wrappers - inline identifier text directly
@@ -184,7 +184,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
     }
 }
 
-/// Extract operator from text children and add as `op` attribute
+/// Extract operator from text children and add as `<op>` child element
 fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     let texts = get_text_children(xot, node);
 
@@ -193,7 +193,7 @@ fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     });
 
     if let Some(op) = operator {
-        set_attr(xot, node, "op", op);
+        prepend_element_with_text(xot, node, "op", op)?;
     }
 
     Ok(())

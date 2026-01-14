@@ -124,7 +124,7 @@ fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
         !t.chars().all(|c| matches!(c, '(' | ')' | ',' | ':' | '{' | '}' | '[' | ']'))
     });
     if let Some(op) = operator {
-        set_attr(xot, node, "op", op);
+        prepend_element_with_text(xot, node, "op", op)?;
     }
     Ok(())
 }

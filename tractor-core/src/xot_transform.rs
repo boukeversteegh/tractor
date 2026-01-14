@@ -225,6 +225,16 @@ pub mod helpers {
         Ok(element)
     }
 
+    /// Prepend an element with text content as first child
+    pub fn prepend_element_with_text(xot: &mut Xot, parent: XotNode, name: &str, text: &str) -> Result<XotNode, xot::Error> {
+        let name_id = xot.add_name(name);
+        let element = xot.new_element(name_id);
+        let text_node = xot.new_text(text);
+        xot.append(element, text_node)?;
+        xot.prepend(parent, element)?;
+        Ok(element)
+    }
+
     /// Detach a node from the tree
     pub fn detach(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
         xot.detach(node)

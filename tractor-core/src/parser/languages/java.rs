@@ -168,14 +168,14 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
     }
 }
 
-/// Extract operator from text children and add as `op` attribute
+/// Extract operator from text children and add as `<op>` child element
 fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     let texts = get_text_children(xot, node);
     let operator = texts.iter().find(|t| {
         !t.chars().all(|c| matches!(c, '(' | ')' | ',' | ';' | '{' | '}' | '[' | ']'))
     });
     if let Some(op) = operator {
-        set_attr(xot, node, "op", op);
+        prepend_element_with_text(xot, node, "op", op)?;
     }
     Ok(())
 }

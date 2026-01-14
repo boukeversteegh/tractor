@@ -167,7 +167,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
     }
 }
 
-/// Extract operator from text children and add as `op` attribute
+/// Extract operator from text children and add as `<op>` child element
 fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     let texts = get_text_children(xot, node);
 
@@ -177,7 +177,7 @@ fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     });
 
     if let Some(op) = operator {
-        set_attr(xot, node, "op", op);
+        prepend_element_with_text(xot, node, "op", op)?;
     }
 
     Ok(())
@@ -256,7 +256,7 @@ mod tests {
 
         // Check transforms applied
         assert!(xml.contains("<binary"), "binary_expression should be renamed");
-        assert!(xml.contains(r#"op="+""#), "operator should be extracted");
+        assert!(xml.contains("<op>+</op>"), "operator should be extracted as child element");
         assert!(xml.contains("<let"), "let should be extracted as modifier");
     }
 }
