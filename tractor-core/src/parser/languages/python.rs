@@ -14,6 +14,35 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         "expression_statement" => Ok(TransformAction::Skip),
         "block" => Ok(TransformAction::Flatten),
 
+        // Name wrappers - inline identifier text directly
+        "name" => {
+            if let Some(parent) = get_parent(xot, node) {
+                let parent_kind = get_element_name(xot, parent).unwrap_or_default();
+                if matches!(parent_kind.as_str(),
+                    "function_definition" | "class_definition"
+                    | "function" | "class"
+                ) {
+                    let children: Vec<_> = xot.children(node).collect();
+                    for child in children {
+                        if let Some(child_name) = get_element_name(xot, child) {
+                            if child_name == "identifier" {
+                                if let Some(text) = get_text_content(xot, child) {
+                                    let all_children: Vec<_> = xot.children(node).collect();
+                                    for c in all_children {
+                                        xot.detach(c)?;
+                                    }
+                                    let text_node = xot.new_text(&text);
+                                    xot.append(node, text_node)?;
+                                    return Ok(TransformAction::Done);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Ok(TransformAction::Continue)
+        }
+
         // Binary/comparison operators
         "binary_operator" | "comparison_operator" | "boolean_operator"
         | "unary_operator" | "augmented_assignment" => {

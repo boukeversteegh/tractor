@@ -6,18 +6,14 @@
       <class>
         <public/>
         class
-        <name>
-          <type>Sample</type>
-        </name>
+        <name>Sample</name>
         <body>
           {
           <method>
             <static/>
             <public/>
             <integral_type field="type">int</integral_type>
-            <name>
-              <type>add</type>
-            </name>
+            <name>add</name>
             <parameters>
               <params>
                 (
@@ -59,9 +55,7 @@
             <static/>
             <public/>
             <void_type field="type">void</void_type>
-            <name>
-              <type>main</type>
-            </name>
+            <name>main</name>
             <parameters>
               <params>
                 (

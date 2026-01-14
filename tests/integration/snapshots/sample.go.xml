@@ -19,9 +19,7 @@
       </import_declaration>
       <function>
         func
-        <name>
-          <type>add</type>
-        </name>
+        <name>add</name>
         <parameters>
           <params>
             (
@@ -63,9 +61,7 @@
       </function>
       <function>
         func
-        <name>
-          <type>main</type>
-        </name>
+        <name>main</name>
         <parameters>
           <params>()</params>
         </parameters>

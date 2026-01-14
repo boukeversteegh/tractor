@@ -4,9 +4,7 @@
       <comment>// Simple TypeScript example</comment>
       <function>
         function
-        <name>
-          <type>add</type>
-        </name>
+        <name>add</name>
         <parameters>
           <params>
             (
@@ -54,9 +52,7 @@
       </function>
       <function>
         function
-        <name>
-          <type>main</type>
-        </name>
+        <name>main</name>
         <parameters>
           <params>()</params>
         </parameters>

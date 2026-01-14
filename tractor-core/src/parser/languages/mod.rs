@@ -9,6 +9,7 @@ pub mod python;
 pub mod go;
 pub mod rust_lang;
 pub mod java;
+pub mod ruby;
 
 use xot::{Xot, Node as XotNode};
 use crate::xot_transform::TransformAction;
@@ -25,6 +26,7 @@ pub fn get_transform(lang: &str) -> TransformFn {
         "go" => go::transform,
         "rust" | "rs" => rust_lang::transform,
         "java" => java::transform,
+        "ruby" | "rb" => ruby::transform,
         // Default: passthrough (no transforms)
         _ => passthrough_transform,
     }

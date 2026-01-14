@@ -14,6 +14,36 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         "expression_statement" => Ok(TransformAction::Skip),
         "block" | "declaration_list" => Ok(TransformAction::Flatten),
 
+        // Name wrappers - inline identifier text directly
+        // <name><identifier>foo</identifier></name> -> <name>foo</name>
+        "name" => {
+            if let Some(parent) = get_parent(xot, node) {
+                let parent_kind = get_element_name(xot, parent).unwrap_or_default();
+                if matches!(parent_kind.as_str(),
+                    "function_item" | "struct_item" | "enum_item" | "trait_item" | "mod_item" | "type_item"
+                    | "function" | "struct" | "enum" | "trait" | "mod" | "typedef"
+                ) {
+                    let children: Vec<_> = xot.children(node).collect();
+                    for child in children {
+                        if let Some(child_name) = get_element_name(xot, child) {
+                            if child_name == "identifier" || child_name == "type_identifier" {
+                                if let Some(text) = get_text_content(xot, child) {
+                                    let all_children: Vec<_> = xot.children(node).collect();
+                                    for c in all_children {
+                                        xot.detach(c)?;
+                                    }
+                                    let text_node = xot.new_text(&text);
+                                    xot.append(node, text_node)?;
+                                    return Ok(TransformAction::Done);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Ok(TransformAction::Continue)
+        }
+
         // Visibility modifier (pub, pub(crate), etc.)
         "visibility_modifier" => {
             if let Some(text) = get_text_content(xot, node) {

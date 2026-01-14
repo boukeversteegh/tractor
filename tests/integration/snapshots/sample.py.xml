@@ -8,9 +8,7 @@
       </string>
       <function>
         def
-        <name>
-          <type>add</type>
-        </name>
+        <name>add</name>
         <params>
           <params>
             (
@@ -43,9 +41,7 @@
       </function>
       <function>
         def
-        <name>
-          <type>main</type>
-        </name>
+        <name>main</name>
         <params>
           <params>()</params>
         </params>

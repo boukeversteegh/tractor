@@ -5,9 +5,7 @@
 </line_comment>
       <function>
         fn
-        <name>
-          <type>add</type>
-        </name>
+        <name>add</name>
         <params>
           <params>
             (
@@ -43,9 +41,7 @@
       </function>
       <function>
         fn
-        <name>
-          <type>main</type>
-        </name>
+        <name>main</name>
         <params>
           <params>()</params>
         </params>
