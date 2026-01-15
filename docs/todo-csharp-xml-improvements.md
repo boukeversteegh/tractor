@@ -23,18 +23,15 @@ Status as of the compaction point.
 
 ## In Progress
 
-- [ ] Restructure generic types for unified `//type` queries
-  - Current: `<generic field="type"><type>List</type><type_argument_list>...</type_argument_list></generic>`
-  - Target: `<type><generic/>List<arguments><type>string</type></arguments></type>`
-  - Blocked by: XPath string-value whitespace issue (see analysis-xpath-string-value.md)
+(none)
 
 ## Pending
 
 ### Priority 1: Type System Consistency
-- [ ] Rename `type_argument_list` → `arguments` (unified with function calls)
-- [ ] Wrap generic types in `<type>` with `<generic/>` marker
+- [x] Wrap generic types in `<type>` with `<generic/>` marker
+- [x] Rename `type_argument_list` → `arguments` (unified with function calls)
+- [x] Enable `//type[.='Dictionary<string,int>']` style queries
 - [ ] Wrap array types in `<type>` with `<array/>` marker
-- [ ] Enable `//type[.='Dictionary<string,int>']` style queries (requires whitespace fix)
 
 ### Priority 2: Clean Up Redundant Wrappers
 - [ ] Flatten or remove redundant `arguments` wrapper around `args`
@@ -63,8 +60,8 @@ Status as of the compaction point.
 - `specs/tractor-parse/semantic-tree/element-naming.md` - Full names, no abbreviations
 - `specs/tractor-parse/semantic-tree/type-element.md` - Unified type structure spec
 
-## Blocking Issue
+## Resolved Issues
 
 The XPath string-value whitespace problem (documented in `analysis-xpath-string-value.md`)
-blocks testing of the generic type restructure. The transform can be implemented, but
-queries like `//type[.='List<string>']` won't work until whitespace is fixed.
+has been resolved. Queries like `//type[.='List<string>']` and `//type[.='Dictionary<string,int>']`
+now work correctly.

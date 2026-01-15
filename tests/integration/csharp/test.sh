@@ -52,4 +52,36 @@ run_test tractor query-asnotracking.cs \
     -x "//method[contains(name, 'Get')][contains(., '_context')][contains(., 'Map')][not(contains(., 'AsNoTracking'))]/name" \
     --expect 1 -m "find Get methods using _context without AsNoTracking"
 
+# -------------------------------------------------------------------------
+# Generic Type Matching tests
+# Test exact string-value matching on generic types
+# -------------------------------------------------------------------------
+
+echo ""
+echo "  Generic Type Matching:"
+
+# Basic generic type matching (2 each: return type + new expression)
+run_test tractor generic-type-match.cs \
+    -x "//type[.='List<string>']" \
+    --expect 2 -m "exact match List<string>"
+
+run_test tractor generic-type-match.cs \
+    -x "//type[.='Dictionary<string,int>']" \
+    --expect 2 -m "exact match Dictionary<string,int>"
+
+# Find all generic types (2 per method × 3 methods + 2 nested = 8)
+run_test tractor generic-type-match.cs \
+    -x "//type[generic]" \
+    --expect 8 -m "find all generic types (including nested)"
+
+# Nested generic matching (2: return type + new expression)
+run_test tractor generic-type-match.cs \
+    -x "//type[.='List<Dictionary<string,User>>']" \
+    --expect 2 -m "exact match nested generic"
+
+# Query type arguments (List<string>×2 + Dictionary<string,int>×2 + Dictionary<string,User>×2 = 6)
+run_test tractor generic-type-match.cs \
+    -x "//type[generic]/arguments/type[.='string']" \
+    --expect 6 -m "find string type arguments"
+
 report

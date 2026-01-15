@@ -158,6 +158,46 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         // ---------------------------------------------------------------------
+        // Generic types - wrap in <type> with <generic/> marker
+        // TreeSitter: <generic_name><identifier>List</identifier><type_argument_list>...</type_argument_list></generic_name>
+        // We want: <type><generic/>List<arguments>...</arguments></type>
+        // ---------------------------------------------------------------------
+        "generic_name" => {
+            // Find the identifier child and extract its text
+            let mut type_name = String::new();
+            let children: Vec<_> = xot.children(node).collect();
+
+            for child in &children {
+                if let Some(child_kind) = get_kind(xot, *child) {
+                    if child_kind == "identifier" {
+                        if let Some(text) = get_text_content(xot, *child) {
+                            type_name = text;
+                        }
+                        // Remove the identifier element (we'll add text directly)
+                        xot.detach(*child)?;
+                    }
+                }
+            }
+
+            // Rename to "type"
+            rename(xot, node, "type");
+
+            // Add <generic/> marker as first child
+            let generic_name = xot.add_name("generic");
+            let generic_el = xot.new_element(generic_name);
+            xot.prepend(node, generic_el)?;
+
+            // Add the type name text after the marker
+            if !type_name.is_empty() {
+                let text_node = xot.new_text(&type_name);
+                xot.insert_after(generic_el, text_node)?;
+            }
+
+            // Continue to process type_argument_list children
+            Ok(TransformAction::Continue)
+        }
+
+        // ---------------------------------------------------------------------
         // Other nodes - just rename if needed
         // ---------------------------------------------------------------------
         _ => {
@@ -196,7 +236,8 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "parameter" => Some("parameter"),
         "argument_list" => Some("arguments"),
         "argument" => Some("argument"),
-        "generic_name" => Some("generic"),
+        // generic_name is handled specially - becomes <type><generic/>Name<arguments>...</arguments></type>
+        "type_argument_list" => Some("arguments"),
         // nullable_type is handled specially - becomes <type>X<nullable/></type>
         "array_type" => Some("array"),
         "block" => Some("block"),

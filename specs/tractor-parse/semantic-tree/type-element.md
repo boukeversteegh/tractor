@@ -50,9 +50,9 @@ Generic types contain a `<generic/>` marker and type arguments:
   <type>
     <generic/>
     List
-    <type_arguments>
+    <arguments>
       <type>User</type>
-    </type_arguments>
+    </arguments>
   </type>
   <name>users</name>
 </parameter>
@@ -84,16 +84,16 @@ Query for array types: `//type[array]`
 <type>
   <generic/>
   Dictionary
-  <type_arguments>
+  <arguments>
     <type>string</type>
     <type>
       <generic/>
       List
-      <type_arguments>
+      <arguments>
         <type>int</type>
-      </type_arguments>
+      </arguments>
     </type>
-  </type_arguments>
+  </arguments>
 </type>
 ```
 

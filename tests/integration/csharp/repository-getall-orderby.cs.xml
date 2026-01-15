@@ -10,14 +10,15 @@
           <method>
             <public/>
             <returns>
-              <generic>
-                <type>List</type>
-                <type_argument_list>
+              <type>
+                <generic/>
+                List
+                <arguments>
                   &lt;
                   <type>User</type>
                   &gt;
-                </type_argument_list>
-              </generic>
+                </arguments>
+              </type>
             </returns>
             <name>GetAll</name>
             <parameters>()</parameters>
@@ -54,14 +55,15 @@
           <method>
             <public/>
             <returns>
-              <generic>
-                <type>List</type>
-                <type_argument_list>
+              <type>
+                <generic/>
+                List
+                <arguments>
                   &lt;
                   <type>User</type>
                   &gt;
-                </type_argument_list>
-              </generic>
+                </arguments>
+              </type>
             </returns>
             <name>GetAllOrdered</name>
             <parameters>()</parameters>
@@ -136,14 +138,15 @@
           <method>
             <public/>
             <returns>
-              <generic>
-                <type>List</type>
-                <type_argument_list>
+              <type>
+                <generic/>
+                List
+                <arguments>
                   &lt;
                   <type>User</type>
                   &gt;
-                </type_argument_list>
-              </generic>
+                </arguments>
+              </type>
             </returns>
             <name>GetAll</name>
             <parameters>()</parameters>
