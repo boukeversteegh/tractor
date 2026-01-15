@@ -20,7 +20,7 @@
               </generic>
             </returns>
             <name>GetAll</name>
-            <params>()</params>
+            <parameters>()</parameters>
             <body>
               <block>
                 {
@@ -41,7 +41,7 @@
                       </name>
                     </member>
                     <arguments>
-                      <args>()</args>
+                      <arguments>()</arguments>
                     </arguments>
                   </call>
                   ;
@@ -64,7 +64,7 @@
               </generic>
             </returns>
             <name>GetAllOrdered</name>
-            <params>()</params>
+            <parameters>()</parameters>
             <body>
               <block>
                 {
@@ -87,9 +87,9 @@
                           </name>
                         </member>
                         <arguments>
-                          <args>
+                          <arguments>
                             (
-                            <arg>
+                            <argument>
                               <lambda>
                                 <implicit_parameter>u</implicit_parameter>
                                 =&gt;
@@ -103,9 +103,9 @@
                                   </member>
                                 </body>
                               </lambda>
-                            </arg>
+                            </argument>
                             )
-                          </args>
+                          </arguments>
                         </arguments>
                       </call>
                       .
@@ -114,7 +114,7 @@
                       </name>
                     </member>
                     <arguments>
-                      <args>()</args>
+                      <arguments>()</arguments>
                     </arguments>
                   </call>
                   ;
@@ -146,7 +146,7 @@
               </generic>
             </returns>
             <name>GetAll</name>
-            <params>()</params>
+            <parameters>()</parameters>
             <body>
               <block>
                 {
@@ -161,7 +161,7 @@
                       </name>
                     </member>
                     <arguments>
-                      <args>()</args>
+                      <arguments>()</arguments>
                     </arguments>
                   </call>
                   ;

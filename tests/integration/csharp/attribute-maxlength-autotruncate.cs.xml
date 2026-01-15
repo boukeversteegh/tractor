@@ -7,10 +7,10 @@
         <name>UserRecord</name>
         <body>
           {
-          <prop>
-            <attrs>
+          <property>
+            <attributes>
               [
-              <attr>
+              <attribute>
                 <name>
                   <ref>MaxLength</ref>
                 </name>
@@ -21,9 +21,9 @@
                   </attribute_argument>
                   )
                 </attribute_argument_list>
-              </attr>
+              </attribute>
               ]
-            </attrs>
+            </attributes>
             <public/>
             <type>string</type>
             <name>Name</name>
@@ -33,12 +33,12 @@
               <accessor>set;</accessor>
               }
             </accessors>
-          </prop>
+          </property>
           <comment>// MATCH - missing AutoTruncate</comment>
-          <prop>
-            <attrs>
+          <property>
+            <attributes>
               [
-              <attr>
+              <attribute>
                 <name>
                   <ref>MaxLength</ref>
                 </name>
@@ -49,18 +49,18 @@
                   </attribute_argument>
                   )
                 </attribute_argument_list>
-              </attr>
+              </attribute>
               ]
-            </attrs>
-            <attrs>
+            </attributes>
+            <attributes>
               [
-              <attr>
+              <attribute>
                 <name>
                   <ref>AutoTruncate</ref>
                 </name>
-              </attr>
+              </attribute>
               ]
-            </attrs>
+            </attributes>
             <public/>
             <type>string</type>
             <name>Email</name>
@@ -70,9 +70,9 @@
               <accessor>set;</accessor>
               }
             </accessors>
-          </prop>
+          </property>
           <comment>// OK - has AutoTruncate</comment>
-          <prop>
+          <property>
             <public/>
             <type>string</type>
             <name>Bio</name>
@@ -82,7 +82,7 @@
               <accessor>set;</accessor>
               }
             </accessors>
-          </prop>
+          </property>
           <comment>// OK - no MaxLength</comment>
           }
         </body>

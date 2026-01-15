@@ -7,16 +7,16 @@
         <name>UserRecord</name>
         <body>
           {
-          <prop>
-            <attrs>
+          <property>
+            <attributes>
               [
-              <attr>
+              <attribute>
                 <name>
                   <ref>Required</ref>
                 </name>
-              </attr>
+              </attribute>
               ]
-            </attrs>
+            </attributes>
             <public/>
             <type>Guid</type>
             <name>UserId</name>
@@ -26,18 +26,18 @@
               <accessor>set;</accessor>
               }
             </accessors>
-          </prop>
+          </property>
           <comment>// ERROR - Required on non-nullable Guid</comment>
-          <prop>
-            <attrs>
+          <property>
+            <attributes>
               [
-              <attr>
+              <attribute>
                 <name>
                   <ref>Required</ref>
                 </name>
-              </attr>
+              </attribute>
               ]
-            </attrs>
+            </attributes>
             <public/>
             <type>
               Guid
@@ -50,18 +50,18 @@
               <accessor>set;</accessor>
               }
             </accessors>
-          </prop>
+          </property>
           <comment>// OK - nullable Guid</comment>
-          <prop>
-            <attrs>
+          <property>
+            <attributes>
               [
-              <attr>
+              <attribute>
                 <name>
                   <ref>Required</ref>
                 </name>
-              </attr>
+              </attribute>
               ]
-            </attrs>
+            </attributes>
             <public/>
             <type>string</type>
             <name>Name</name>
@@ -71,7 +71,7 @@
               <accessor>set;</accessor>
               }
             </accessors>
-          </prop>
+          </property>
           <comment>// OK - string is reference type</comment>
           }
         </body>

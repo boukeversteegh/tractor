@@ -14,21 +14,21 @@
               <ref>UserDto</ref>
             </returns>
             <name>GetUser</name>
-            <params>
+            <parameters>
               (
-              <param>
+              <parameter>
                 <type>int</type>
                 <name>id</name>
-              </param>
+              </parameter>
               )
-            </params>
+            </parameters>
             <body>
               <block>
                 {
                 <local>
-                  <var>
+                  <variable>
                     <implicit_type field="type">var</implicit_type>
-                    <decl>
+                    <declarator>
                       <name>user</name>
                       =
                       <call>
@@ -46,9 +46,9 @@
                           </name>
                         </member>
                         <arguments>
-                          <args>
+                          <arguments>
                             (
-                            <arg>
+                            <argument>
                               <lambda>
                                 <implicit_parameter>u</implicit_parameter>
                                 =&gt;
@@ -71,13 +71,13 @@
                                   </binary>
                                 </body>
                               </lambda>
-                            </arg>
+                            </argument>
                             )
-                          </args>
+                          </arguments>
                         </arguments>
                       </call>
-                    </decl>
-                  </var>
+                    </declarator>
+                  </variable>
                   ;
                 </local>
                 <return>
@@ -85,13 +85,13 @@
                   <call>
                     <ref field="function">Map</ref>
                     <arguments>
-                      <args>
+                      <arguments>
                         (
-                        <arg>
+                        <argument>
                           <ref>user</ref>
-                        </arg>
+                        </argument>
                         )
-                      </args>
+                      </arguments>
                     </arguments>
                   </call>
                   ;
@@ -107,21 +107,21 @@
               <ref>UserDto</ref>
             </returns>
             <name>GetUserTracked</name>
-            <params>
+            <parameters>
               (
-              <param>
+              <parameter>
                 <type>int</type>
                 <name>id</name>
-              </param>
+              </parameter>
               )
-            </params>
+            </parameters>
             <body>
               <block>
                 {
                 <local>
-                  <var>
+                  <variable>
                     <implicit_type field="type">var</implicit_type>
-                    <decl>
+                    <declarator>
                       <name>user</name>
                       =
                       <call>
@@ -141,7 +141,7 @@
                               </name>
                             </member>
                             <arguments>
-                              <args>()</args>
+                              <arguments>()</arguments>
                             </arguments>
                           </call>
                           .
@@ -150,9 +150,9 @@
                           </name>
                         </member>
                         <arguments>
-                          <args>
+                          <arguments>
                             (
-                            <arg>
+                            <argument>
                               <lambda>
                                 <implicit_parameter>u</implicit_parameter>
                                 =&gt;
@@ -175,13 +175,13 @@
                                   </binary>
                                 </body>
                               </lambda>
-                            </arg>
+                            </argument>
                             )
-                          </args>
+                          </arguments>
                         </arguments>
                       </call>
-                    </decl>
-                  </var>
+                    </declarator>
+                  </variable>
                   ;
                 </local>
                 <return>
@@ -189,13 +189,13 @@
                   <call>
                     <ref field="function">Map</ref>
                     <arguments>
-                      <args>
+                      <arguments>
                         (
-                        <arg>
+                        <argument>
                           <ref>user</ref>
-                        </arg>
+                        </argument>
                         )
-                      </args>
+                      </arguments>
                     </arguments>
                   </call>
                   ;

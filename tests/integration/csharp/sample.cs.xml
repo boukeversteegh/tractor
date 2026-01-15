@@ -18,19 +18,19 @@
               <type>int</type>
             </returns>
             <name>Add</name>
-            <params>
+            <parameters>
               (
-              <param>
+              <parameter>
                 <type>int</type>
                 <name>a</name>
-              </param>
+              </parameter>
               ,
-              <param>
+              <parameter>
                 <type>int</type>
                 <name>b</name>
-              </param>
+              </parameter>
               )
-            </params>
+            </parameters>
             <body>
               <block>
                 {
@@ -58,34 +58,34 @@
               <type>void</type>
             </returns>
             <name>Main</name>
-            <params>()</params>
+            <parameters>()</parameters>
             <body>
               <block>
                 {
                 <local>
-                  <var>
+                  <variable>
                     <type>int</type>
-                    <decl>
+                    <declarator>
                       <name>result</name>
                       =
                       <call>
                         <ref field="function">Add</ref>
                         <arguments>
-                          <args>
+                          <arguments>
                             (
-                            <arg>
+                            <argument>
                               <int>5</int>
-                            </arg>
+                            </argument>
                             ,
-                            <arg>
+                            <argument>
                               <int>3</int>
-                            </arg>
+                            </argument>
                             )
-                          </args>
+                          </arguments>
                         </arguments>
                       </call>
-                    </decl>
-                  </var>
+                    </declarator>
+                  </variable>
                   ;
                 </local>
                 <expression_statement>
@@ -98,9 +98,9 @@
                       </name>
                     </member>
                     <arguments>
-                      <args>
+                      <arguments>
                         (
-                        <arg>
+                        <argument>
                           <interpolated_string_expression>
                             <interpolation_start>$</interpolation_start>
                             &quot;
@@ -112,9 +112,9 @@
                             </interpolation>
                             &quot;
                           </interpolated_string_expression>
-                        </arg>
+                        </argument>
                         )
-                      </args>
+                      </arguments>
                     </arguments>
                   </call>
                   ;

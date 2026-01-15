@@ -24,17 +24,17 @@ echo "  AST-Grep Comparisons:"
 
 # MaxLength without AutoTruncate (attribute-maxlength-autotruncate.md)
 run_test tractor attribute-maxlength-autotruncate.cs \
-    -x "//prop[attrs[contains(., 'MaxLength')]][not(attrs[contains(., 'AutoTruncate')])]/name" \
-    --expect 1 -m "find props with MaxLength but missing AutoTruncate"
+    -x "//property[attributes[contains(., 'MaxLength')]][not(attributes[contains(., 'AutoTruncate')])]/name" \
+    --expect 1 -m "find properties with MaxLength but missing AutoTruncate"
 
 # MaxLength on boolean (attribute-maxlength-boolean.md)
 run_test tractor attribute-maxlength-boolean.cs \
-    -x "//prop[type='bool'][attrs[contains(., 'MaxLength')]]/name" \
-    --expect 1 -m "find bool props with MaxLength (invalid)"
+    -x "//property[type='bool'][attributes[contains(., 'MaxLength')]]/name" \
+    --expect 1 -m "find bool properties with MaxLength (invalid)"
 
 # Extension method detection (mapper-extension-method.md)
 run_test tractor mapper-extension-method.cs \
-    -x "//class[static][contains(name, 'Mapper')]//method[public][static][count(params/param)=1][not(params/param/this)]/name" \
+    -x "//class[static][contains(name, 'Mapper')]//method[public][static][count(parameters/parameter)=1][not(parameters/parameter/this)]/name" \
     --expect 1 -m "find static methods that should be extension methods"
 
 # Block-scoped namespaces (namespaces-file-scoped.md)

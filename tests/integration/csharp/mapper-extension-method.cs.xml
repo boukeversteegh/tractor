@@ -15,14 +15,14 @@
               <ref>UserDto</ref>
             </returns>
             <name>Map</name>
-            <params>
+            <parameters>
               (
-              <param>
+              <parameter>
                 <type>User</type>
                 <name>user</name>
-              </param>
+              </parameter>
               )
-            </params>
+            </parameters>
             <body>
               <block>
                 {
@@ -32,7 +32,7 @@
                     new
                     <type>UserDto</type>
                     <arguments>
-                      <args>()</args>
+                      <arguments>()</arguments>
                     </arguments>
                   </new>
                   ;
@@ -49,15 +49,15 @@
               <ref>UserDto</ref>
             </returns>
             <name>MapExt</name>
-            <params>
+            <parameters>
               (
-              <param>
+              <parameter>
                 <this/>
                 <type>User</type>
                 <name>user</name>
-              </param>
+              </parameter>
               )
-            </params>
+            </parameters>
             <body>
               <block>
                 {
@@ -67,7 +67,7 @@
                     new
                     <type>UserDto</type>
                     <arguments>
-                      <args>()</args>
+                      <arguments>()</arguments>
                     </arguments>
                   </new>
                   ;
@@ -84,19 +84,19 @@
               <ref>UserDto</ref>
             </returns>
             <name>MapTwo</name>
-            <params>
+            <parameters>
               (
-              <param>
+              <parameter>
                 <type>User</type>
                 <name>a</name>
-              </param>
+              </parameter>
               ,
-              <param>
+              <parameter>
                 <type>User</type>
                 <name>b</name>
-              </param>
+              </parameter>
               )
-            </params>
+            </parameters>
             <body>
               <block>
                 {
@@ -106,7 +106,7 @@
                     new
                     <type>UserDto</type>
                     <arguments>
-                      <args>()</args>
+                      <arguments>()</arguments>
                     </arguments>
                   </new>
                   ;
