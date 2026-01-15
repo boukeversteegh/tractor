@@ -1,59 +1,110 @@
 ---
-title: Type Element Nesting
+title: Type Element Structure
 priority: 1
+refs:
+  - design.md#5-unified-concepts
+  - design.md#4-elements-over-attributes
 ---
 
-Types (return types, parameter types, variable types) are wrapped in a `<type>` element.
+All type references use a `<type>` element wrapper. This enables unified queries
+for "all types" regardless of whether they are simple, generic, nullable, or array.
 
-This provides consistent structure for both simple and complex types:
+## Principle Applied
+
+**Unified Concepts**: A query for all types should be `//type`, not
+`//type | //generic | //array | //nullable_type`.
+
+## Structure
+
+### Simple Types
 
 ```xml
-<!-- Simple type -->
-<param>
+<parameter>
+  <type>int</type>
   <name>count</name>
-  <type><name>int</name></type>
-</param>
-
-<!-- Generic type -->
-<param>
-  <name>items</name>
-  <type>
-    <generic>
-      <name>List</name>
-      <type><name>string</name></type>
-    </generic>
-  </type>
-</param>
-
-<!-- Method return type -->
-<method>
-  <name>GetItems</name>
-  <type>
-    <generic>
-      <name>List</name>
-      <type><name>T</name></type>
-    </generic>
-  </type>
-</method>
+</parameter>
 ```
 
-XPath queries:
-- `//method[type/name='void']` - find void methods
-- `//method[type/generic/name='List']` - find methods returning List<T>
-- `//param[type/name='string']` - find string parameters
+### Nullable Types
 
-Nested generics are supported:
+Nullable types contain the base type text plus a `<nullable/>` marker element:
+
 ```xml
+<parameter>
+  <type>
+    Guid
+    <nullable/>
+  </type>
+  <name>id</name>
+</parameter>
+```
+
+Query for nullable types: `//type[nullable]`
+
+### Generic Types
+
+Generic types contain a `<generic/>` marker and type arguments:
+
+```xml
+<parameter>
+  <type>
+    <generic/>
+    List
+    <type_arguments>
+      <type>User</type>
+    </type_arguments>
+  </type>
+  <name>users</name>
+</parameter>
+```
+
+Query for generic types: `//type[generic]`
+Query for List types: `//type[generic][contains(., 'List')]`
+
+### Array Types
+
+Array types contain an `<array/>` marker and optionally rank information:
+
+```xml
+<parameter>
+  <type>
+    <array/>
+    int
+  </type>
+  <name>numbers</name>
+</parameter>
+```
+
+Query for array types: `//type[array]`
+
+### Nested Generics
+
+```xml
+<!-- Dictionary<string, List<int>> -->
 <type>
-  <generic>
-    <name>Dictionary</name>
-    <type><name>string</name></type>
+  <generic/>
+  Dictionary
+  <type_arguments>
+    <type>string</type>
     <type>
-      <generic>
-        <name>List</name>
-        <type><name>int</name></type>
-      </generic>
+      <generic/>
+      List
+      <type_arguments>
+        <type>int</type>
+      </type_arguments>
     </type>
-  </generic>
+  </type_arguments>
 </type>
 ```
+
+## XPath Examples
+
+| Query | Finds |
+|-------|-------|
+| `//type` | All types |
+| `//type[nullable]` | Nullable types |
+| `//type[generic]` | Generic types |
+| `//type[array]` | Array types |
+| `//type[not(generic or array or nullable)]` | Simple types |
+| `//parameter/type` | All parameter types |
+| `//method/returns/type[generic]` | Methods returning generic types |

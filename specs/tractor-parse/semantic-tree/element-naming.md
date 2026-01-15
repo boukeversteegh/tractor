@@ -1,35 +1,53 @@
 ---
 title: Element Naming Convention
 priority: 1
+refs:
+  - design.md#2-full-names-over-abbreviations
+  - design.md#1-use-language-keywords
+  - design.md#3-always-lowercase
 ---
 
-All element names are lowercase and shortened to mirror how code appears in an editor.
+Element names are lowercase, use full words (not abbreviations), and mirror
+language keywords where possible.
 
-Principles:
-- Use the keyword from the language where possible (`class`, `if`, `for`, `return`)
-- Keep names short but recognizable
-- Never use capitals - everything lowercase for easy typing
+## Principles Applied
 
-Examples by language:
+- **Full names**: `property` not `prop`, `parameter` not `param`
+- **Language keywords**: `class`, `method`, `if`, `return`, `for`
+- **Lowercase always**: Never use capitals
 
-**C#:**
-- `class_declaration` → `class`
-- `method_declaration` → `method`
-- `property_declaration` → `prop`
-- `field_declaration` → `field`
-- `parameter` → `param`
-- `return_statement` → `return`
-- `if_statement` → `if`
+## C# Examples
 
-**Python:**
-- `function_definition` → `def`
-- `class_definition` → `class`
-- `return_statement` → `return`
-- `import_statement` → `import`
+| TreeSitter Node | Element Name |
+|-----------------|--------------|
+| `class_declaration` | `class` |
+| `method_declaration` | `method` |
+| `property_declaration` | `property` |
+| `field_declaration` | `field` |
+| `constructor_declaration` | `constructor` |
+| `parameter` | `parameter` |
+| `argument` | `argument` |
+| `return_statement` | `return` |
+| `if_statement` | `if` |
 
-**Java/JavaScript:**
-- `method_declaration` → `method`
-- `function_declaration` → `function` or `fn`
-- `class_declaration` → `class`
+## Language Keywords Preserved
 
-The mapping is language-specific but follows consistent patterns across languages.
+Some short names are kept because they are C# keywords that developers recognize:
+
+- `int` (integer literal) - C# type keyword
+- `bool` (boolean literal) - C# type keyword
+- `string` (string literal) - C# type keyword
+- `var` (implicit type) - C# keyword
+
+These are NOT abbreviations - they are the actual language syntax.
+
+## Python Examples
+
+| TreeSitter Node | Element Name |
+|-----------------|--------------|
+| `function_definition` | `def` |
+| `class_definition` | `class` |
+| `return_statement` | `return` |
+| `import_statement` | `import` |
+
+Python uses `def` because that's the keyword in the language.
