@@ -1,0 +1,124 @@
+<Files>
+  <File path="tests/integration/csharp/mapper-extension-method.cs">
+    <unit>
+      <class>
+        <public/>
+        <static/>
+        class
+        <name>UserMapper</name>
+        <body>
+          {
+          <method>
+            <public/>
+            <static/>
+            <returns>
+              <ref>UserDto</ref>
+            </returns>
+            <name>Map</name>
+            <params>
+              (
+              <param>
+                <name field="type">User</name>
+                <name>user</name>
+              </param>
+              )
+            </params>
+            <body>
+              <block>
+                {
+                <return>
+                  return
+                  <new>
+                    new
+                    <ref field="type">UserDto</ref>
+                    <arguments>
+                      <args>()</args>
+                    </arguments>
+                  </new>
+                  ;
+                </return>
+                }
+              </block>
+            </body>
+          </method>
+          <comment>// MATCH - missing 'this'</comment>
+          <method>
+            <public/>
+            <static/>
+            <returns>
+              <ref>UserDto</ref>
+            </returns>
+            <name>MapExt</name>
+            <params>
+              (
+              <param>
+                <modifier>this</modifier>
+                <name field="type">User</name>
+                <name>user</name>
+              </param>
+              )
+            </params>
+            <body>
+              <block>
+                {
+                <return>
+                  return
+                  <new>
+                    new
+                    <ref field="type">UserDto</ref>
+                    <arguments>
+                      <args>()</args>
+                    </arguments>
+                  </new>
+                  ;
+                </return>
+                }
+              </block>
+            </body>
+          </method>
+          <comment>// OK - is extension</comment>
+          <method>
+            <public/>
+            <static/>
+            <returns>
+              <ref>UserDto</ref>
+            </returns>
+            <name>MapTwo</name>
+            <params>
+              (
+              <param>
+                <name field="type">User</name>
+                <name>a</name>
+              </param>
+              ,
+              <param>
+                <name field="type">User</name>
+                <name>b</name>
+              </param>
+              )
+            </params>
+            <body>
+              <block>
+                {
+                <return>
+                  return
+                  <new>
+                    new
+                    <ref field="type">UserDto</ref>
+                    <arguments>
+                      <args>()</args>
+                    </arguments>
+                  </new>
+                  ;
+                </return>
+                }
+              </block>
+            </body>
+          </method>
+          <comment>// OK - 2 params</comment>
+          }
+        </body>
+      </class>
+    </unit>
+  </File>
+</Files>

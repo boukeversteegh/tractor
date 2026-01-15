@@ -1,0 +1,28 @@
+<Files>
+  <File path="tests/integration/csharp/namespaces-file-scoped.cs">
+    <unit>
+      <namespace>
+        namespace
+        <name>
+          <qualified_name>
+            <name field="qualifier">MyApp</name>
+            .
+            <name>
+              <ref>Services</ref>
+            </name>
+          </qualified_name>
+        </name>
+        <body>
+          {
+          <class>
+            <public/>
+            class
+            <name>UserService</name>
+            <body>{ }</body>
+          </class>
+          }
+        </body>
+      </namespace>
+    </unit>
+  </File>
+</Files>

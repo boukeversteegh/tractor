@@ -1,0 +1,179 @@
+<Files>
+  <File path="tests/integration/csharp/repository-getall-orderby.cs">
+    <unit>
+      <class>
+        <public/>
+        class
+        <name>UserRepository</name>
+        <body>
+          {
+          <method>
+            <public/>
+            <returns>
+              <generic>
+                <type>List</type>
+                <type_argument_list>
+                  &lt;
+                  <type>User</type>
+                  &gt;
+                </type_argument_list>
+              </generic>
+            </returns>
+            <name>GetAll</name>
+            <params>()</params>
+            <body>
+              <block>
+                {
+                <return>
+                  return
+                  <call>
+                    <member field="function">
+                      <member field="expression">
+                        <ref field="expression">_context</ref>
+                        .
+                        <name>
+                          <ref>Users</ref>
+                        </name>
+                      </member>
+                      .
+                      <name>
+                        <ref>ToList</ref>
+                      </name>
+                    </member>
+                    <arguments>
+                      <args>()</args>
+                    </arguments>
+                  </call>
+                  ;
+                </return>
+                }
+              </block>
+            </body>
+          </method>
+          <comment>// MATCH - missing OrderBy</comment>
+          <method>
+            <public/>
+            <returns>
+              <generic>
+                <type>List</type>
+                <type_argument_list>
+                  &lt;
+                  <type>User</type>
+                  &gt;
+                </type_argument_list>
+              </generic>
+            </returns>
+            <name>GetAllOrdered</name>
+            <params>()</params>
+            <body>
+              <block>
+                {
+                <return>
+                  return
+                  <call>
+                    <member field="function">
+                      <call field="expression">
+                        <member field="function">
+                          <member field="expression">
+                            <ref field="expression">_context</ref>
+                            .
+                            <name>
+                              <ref>Users</ref>
+                            </name>
+                          </member>
+                          .
+                          <name>
+                            <ref>OrderBy</ref>
+                          </name>
+                        </member>
+                        <arguments>
+                          <args>
+                            (
+                            <arg>
+                              <lambda>
+                                <implicit_parameter>u</implicit_parameter>
+                                =&gt;
+                                <body>
+                                  <member>
+                                    <ref field="expression">u</ref>
+                                    .
+                                    <name>
+                                      <ref>Name</ref>
+                                    </name>
+                                  </member>
+                                </body>
+                              </lambda>
+                            </arg>
+                            )
+                          </args>
+                        </arguments>
+                      </call>
+                      .
+                      <name>
+                        <ref>ToList</ref>
+                      </name>
+                    </member>
+                    <arguments>
+                      <args>()</args>
+                    </arguments>
+                  </call>
+                  ;
+                </return>
+                }
+              </block>
+            </body>
+          </method>
+          <comment>// OK</comment>
+          }
+        </body>
+      </class>
+      <class>
+        <public/>
+        class
+        <name>MockUserRepository</name>
+        <body>
+          {
+          <method>
+            <public/>
+            <returns>
+              <generic>
+                <type>List</type>
+                <type_argument_list>
+                  &lt;
+                  <type>User</type>
+                  &gt;
+                </type_argument_list>
+              </generic>
+            </returns>
+            <name>GetAll</name>
+            <params>()</params>
+            <body>
+              <block>
+                {
+                <return>
+                  return
+                  <call>
+                    <member field="function">
+                      <ref field="expression">mock</ref>
+                      .
+                      <name>
+                        <ref>ToList</ref>
+                      </name>
+                    </member>
+                    <arguments>
+                      <args>()</args>
+                    </arguments>
+                  </call>
+                  ;
+                </return>
+                }
+              </block>
+            </body>
+          </method>
+          <comment>// Skip - Mock class</comment>
+          }
+        </body>
+      </class>
+    </unit>
+  </File>
+</Files>

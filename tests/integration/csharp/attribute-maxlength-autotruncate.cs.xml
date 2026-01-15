@@ -1,0 +1,92 @@
+<Files>
+  <File path="tests/integration/csharp/attribute-maxlength-autotruncate.cs">
+    <unit>
+      <class>
+        <public/>
+        class
+        <name>UserRecord</name>
+        <body>
+          {
+          <prop>
+            <attrs>
+              [
+              <attr>
+                <name>
+                  <ref>MaxLength</ref>
+                </name>
+                <attribute_argument_list>
+                  (
+                  <attribute_argument>
+                    <int>100</int>
+                  </attribute_argument>
+                  )
+                </attribute_argument_list>
+              </attr>
+              ]
+            </attrs>
+            <public/>
+            <type>string</type>
+            <name>Name</name>
+            <accessor_list field="accessors">
+              {
+              <accessor_declaration>get;</accessor_declaration>
+              <accessor_declaration>set;</accessor_declaration>
+              }
+            </accessor_list>
+          </prop>
+          <comment>// MATCH - missing AutoTruncate</comment>
+          <prop>
+            <attrs>
+              [
+              <attr>
+                <name>
+                  <ref>MaxLength</ref>
+                </name>
+                <attribute_argument_list>
+                  (
+                  <attribute_argument>
+                    <int>50</int>
+                  </attribute_argument>
+                  )
+                </attribute_argument_list>
+              </attr>
+              ]
+            </attrs>
+            <attrs>
+              [
+              <attr>
+                <name>
+                  <ref>AutoTruncate</ref>
+                </name>
+              </attr>
+              ]
+            </attrs>
+            <public/>
+            <type>string</type>
+            <name>Email</name>
+            <accessor_list field="accessors">
+              {
+              <accessor_declaration>get;</accessor_declaration>
+              <accessor_declaration>set;</accessor_declaration>
+              }
+            </accessor_list>
+          </prop>
+          <comment>// OK - has AutoTruncate</comment>
+          <prop>
+            <public/>
+            <type>string</type>
+            <name>Bio</name>
+            <accessor_list field="accessors">
+              {
+              <accessor_declaration>get;</accessor_declaration>
+              <accessor_declaration>set;</accessor_declaration>
+              }
+            </accessor_list>
+          </prop>
+          <comment>// OK - no MaxLength</comment>
+          }
+        </body>
+      </class>
+    </unit>
+  </File>
+</Files>

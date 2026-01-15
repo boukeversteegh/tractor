@@ -1,0 +1,71 @@
+<Files>
+  <File path="tests/integration/csharp/attribute-maxlength-boolean.cs">
+    <unit>
+      <class>
+        <public/>
+        class
+        <name>UserRecord</name>
+        <body>
+          {
+          <prop>
+            <attrs>
+              [
+              <attr>
+                <name>
+                  <ref>MaxLength</ref>
+                </name>
+                <attribute_argument_list>
+                  (
+                  <attribute_argument>
+                    <int>1</int>
+                  </attribute_argument>
+                  )
+                </attribute_argument_list>
+              </attr>
+              ]
+            </attrs>
+            <public/>
+            <type>bool</type>
+            <name>IsActive</name>
+            <accessor_list field="accessors">
+              {
+              <accessor_declaration>get;</accessor_declaration>
+              <accessor_declaration>set;</accessor_declaration>
+              }
+            </accessor_list>
+          </prop>
+          <comment>// ERROR - MaxLength on bool</comment>
+          <prop>
+            <attrs>
+              [
+              <attr>
+                <name>
+                  <ref>MaxLength</ref>
+                </name>
+                <attribute_argument_list>
+                  (
+                  <attribute_argument>
+                    <int>100</int>
+                  </attribute_argument>
+                  )
+                </attribute_argument_list>
+              </attr>
+              ]
+            </attrs>
+            <public/>
+            <type>string</type>
+            <name>Name</name>
+            <accessor_list field="accessors">
+              {
+              <accessor_declaration>get;</accessor_declaration>
+              <accessor_declaration>set;</accessor_declaration>
+              }
+            </accessor_list>
+          </prop>
+          <comment>// OK - MaxLength on string</comment>
+          }
+        </body>
+      </class>
+    </unit>
+  </File>
+</Files>
