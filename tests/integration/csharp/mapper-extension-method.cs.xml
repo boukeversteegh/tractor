@@ -18,7 +18,7 @@
             <params>
               (
               <param>
-                <name field="type">User</name>
+                <type>User</type>
                 <name>user</name>
               </param>
               )
@@ -30,7 +30,7 @@
                   return
                   <new>
                     new
-                    <ref field="type">UserDto</ref>
+                    <type>UserDto</type>
                     <arguments>
                       <args>()</args>
                     </arguments>
@@ -53,7 +53,7 @@
               (
               <param>
                 <this/>
-                <name field="type">User</name>
+                <type>User</type>
                 <name>user</name>
               </param>
               )
@@ -65,7 +65,7 @@
                   return
                   <new>
                     new
-                    <ref field="type">UserDto</ref>
+                    <type>UserDto</type>
                     <arguments>
                       <args>()</args>
                     </arguments>
@@ -87,12 +87,12 @@
             <params>
               (
               <param>
-                <name field="type">User</name>
+                <type>User</type>
                 <name>a</name>
               </param>
               ,
               <param>
-                <name field="type">User</name>
+                <type>User</type>
                 <name>b</name>
               </param>
               )
@@ -104,7 +104,7 @@
                   return
                   <new>
                     new
-                    <ref field="type">UserDto</ref>
+                    <type>UserDto</type>
                     <arguments>
                       <args>()</args>
                     </arguments>

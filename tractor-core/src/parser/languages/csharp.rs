@@ -215,6 +215,13 @@ fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
 /// Classify an identifier as "name" or "type" based on context
 /// Uses get_kind() for robust parent detection
 fn classify_identifier(xot: &Xot, node: XotNode) -> &'static str {
+    // Check if this identifier has field="type" attribute (e.g., parameter type)
+    if let Some(field) = get_attr(xot, node, "field") {
+        if field == "type" {
+            return "type";
+        }
+    }
+
     let parent = match get_parent(xot, node) {
         Some(p) => p,
         None => return "type",  // Default for C#
