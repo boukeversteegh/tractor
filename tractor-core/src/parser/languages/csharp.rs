@@ -313,4 +313,21 @@ public class Foo {
         assert!(xml.contains("<method"), "method_declaration should be renamed");
         assert!(xml.contains("<public"), "public modifier should be extracted");
     }
+
+    #[test]
+    fn test_extension_method_this_modifier() {
+        let source = r#"
+public static class Mapper {
+    public static UserDto Map(this User user) { return new UserDto(); }
+}
+"#;
+        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), false).unwrap();
+
+        let options = RenderOptions::default();
+        let xml = render_document(&result.xot, result.root, &options);
+
+        // this modifier should be converted to <this/> element
+        assert!(xml.contains("<this/>"), "this modifier should be converted to <this/> element, got: {}", xml);
+        assert!(!xml.contains("<modifier>this</modifier>"), "this should not remain as <modifier>this</modifier>");
+    }
 }

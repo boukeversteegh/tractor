@@ -52,7 +52,7 @@
             <params>
               (
               <param>
-                <modifier>this</modifier>
+                <this/>
                 <name field="type">User</name>
                 <name>user</name>
               </param>
