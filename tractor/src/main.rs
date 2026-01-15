@@ -16,6 +16,7 @@ use tractor_core::{
     expand_globs, filter_supported_files,
     output::should_use_color,
     output::{render_xml_string, RenderOptions},
+    load_xml, load_xml_file, detect_language,
 };
 
 use cli::Args;
@@ -55,14 +56,64 @@ fn main() -> ExitCode {
     ExitCode::SUCCESS
 }
 
+/// Check if running under MSYS/MinGW which mangles // paths
+fn is_msys_environment() -> bool {
+    std::env::var("MSYSTEM").is_ok()
+}
+
 /// Normalize XPath expression - auto-prefix with // if not starting with /
+/// Also fixes MSYS/MinGW path mangling where // gets converted to /
 fn normalize_xpath(xpath: &str) -> String {
+    let xpath = fix_msys_xpath_mangling(xpath);
+
     // Don't prefix expressions that are already absolute or context-relative
     if xpath.starts_with('/') || xpath.starts_with('(') || xpath == "." {
-        xpath.to_string()
+        xpath
     } else {
         format!("//{}", xpath)
     }
+}
+
+/// Fix MSYS/MinGW path conversion that mangles // to /
+/// In MSYS, "//item" becomes "/item" due to UNC path conversion
+fn fix_msys_xpath_mangling(xpath: &str) -> String {
+    if !is_msys_environment() {
+        return xpath.to_string();
+    }
+
+    // MSYS converts "//foo" to "/foo" - restore the double slash
+    // Only do this for patterns like "/word" (not "//" which is already correct)
+    if xpath.starts_with('/') && !xpath.starts_with("//") {
+        // Check if it looks like a mangled descendant query (e.g., "/item" was "//item")
+        let rest = &xpath[1..];
+        if !rest.is_empty() && (rest.chars().next().unwrap().is_alphabetic() || rest.starts_with('*')) {
+            return format!("/{}", xpath);
+        }
+    }
+
+    xpath.to_string()
+}
+
+/// Check if a file is an XML file (for passthrough mode)
+fn is_xml_file(path: &str) -> bool {
+    detect_language(path) == "xml"
+}
+
+/// Load a file - either as XML passthrough or by parsing source code
+fn load_file(
+    path: &std::path::Path,
+    lang_override: Option<&str>,
+    raw_mode: bool,
+) -> Result<ParseResult, tractor_core::parser::ParseError> {
+    let path_str = path.to_string_lossy();
+
+    // XML passthrough: load directly without parsing
+    if lang_override.map_or_else(|| is_xml_file(&path_str), |l| l == "xml") {
+        return load_xml_file(path);
+    }
+
+    // Normal: parse source code
+    parse_file(path, lang_override, raw_mode)
 }
 
 fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
@@ -129,7 +180,13 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
         let mut source = String::new();
         io::stdin().read_to_string(&mut source)?;
         let lang = args.lang.as_deref().unwrap();
-        let result = parse_string(&source, lang, "<stdin>".to_string(), args.raw)?;
+
+        // XML passthrough for stdin
+        let result = if lang == "xml" {
+            load_xml(source, "<stdin>".to_string())
+        } else {
+            parse_string(&source, lang, "<stdin>".to_string(), args.raw)?
+        };
         return process_single_result(result, &args, xpath.as_deref(), format, use_color);
     }
 
@@ -157,7 +214,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                     break;
                 }
 
-                let result = match parse_file(std::path::Path::new(file_path), lang_override.as_deref(), raw) {
+                let result = match load_file(std::path::Path::new(file_path), lang_override.as_deref(), raw) {
                     Ok(r) => r,
                     Err(e) => {
                         if verbose {
@@ -233,7 +290,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                 .par_iter()
                 .filter_map(|file_path| {
                     // Parse the file
-                    let result = match parse_file(std::path::Path::new(file_path), lang_override.as_deref(), raw) {
+                    let result = match load_file(std::path::Path::new(file_path), lang_override.as_deref(), raw) {
                         Ok(r) => r,
                         Err(e) => {
                             if verbose {
@@ -302,7 +359,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
     let parse_results: Vec<ParseResult> = files
         .par_iter()
         .filter_map(|file_path| {
-            match parse_file(std::path::Path::new(file_path), lang_override, raw) {
+            match load_file(std::path::Path::new(file_path), lang_override, raw) {
                 Ok(r) => Some(r),
                 Err(e) => {
                     if verbose {

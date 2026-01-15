@@ -35,6 +35,8 @@ pub static SUPPORTED_LANGUAGES: &[(&str, &[&str])] = &[
     ("ocaml", &["ml", "mli"]),
     ("r", &["r"]),
     ("julia", &["jl"]),
+    // XML pass-through (not parsed, queried directly)
+    ("xml", &["xml"]),
 ];
 
 /// Parse result containing the AST and source information
@@ -103,6 +105,7 @@ pub fn detect_language(path: &str) -> &'static str {
         "ml" | "mli" => "ocaml",
         "r" => "r",
         "jl" => "julia",
+        "xml" => "xml",
         _ => "unknown",
     }
 }
@@ -269,7 +272,11 @@ pub fn parse_string_to_xot(source: &str, lang: &str, file_path: String, raw_mode
 /// and query them with XPath, just like parsed source files.
 ///
 /// The XML is passed through without parsing source code.
+/// XML declarations are stripped to avoid conflicts when wrapping.
 pub fn load_xml(xml: String, file_path: String) -> ParseResult {
+    // Strip XML declaration to avoid nested declarations when wrapping
+    let xml = strip_xml_declaration(&xml);
+
     // Try to extract source lines from the XML if they're embedded
     // For now, just use empty source lines
     let source_lines = Vec::new();
@@ -280,6 +287,17 @@ pub fn load_xml(xml: String, file_path: String) -> ParseResult {
         file_path,
         language: "xml".to_string(),
     }
+}
+
+/// Strip XML declaration (<?xml ...?>) from the beginning of an XML string
+fn strip_xml_declaration(xml: &str) -> String {
+    let trimmed = xml.trim_start();
+    if trimmed.starts_with("<?xml") {
+        if let Some(end) = trimmed.find("?>") {
+            return trimmed[end + 2..].trim_start().to_string();
+        }
+    }
+    xml.to_string()
 }
 
 /// Load XML from a file as a ParseResult (pass-through mode)

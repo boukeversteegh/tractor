@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="sample">
+  <config>
+    <setting name="debug">true</setting>
+    <setting name="timeout">30</setting>
+  </config>
+  <items>
+    <item id="1" type="feature">
+      <name>Login</name>
+      <status>complete</status>
+    </item>
+    <item id="2" type="feature">
+      <name>Logout</name>
+      <status>pending</status>
+    </item>
+    <item id="3" type="bug">
+      <name>Fix validation</name>
+      <status>in-progress</status>
+    </item>
+  </items>
+</project>
