@@ -14,13 +14,13 @@
                 <name>
                   <ref>MaxLength</ref>
                 </name>
-                <attribute_argument_list>
+                <arguments>
                   (
-                  <attribute_argument>
+                  <argument>
                     <int>1</int>
-                  </attribute_argument>
+                  </argument>
                   )
-                </attribute_argument_list>
+                </arguments>
               </attribute>
               ]
             </attributes>
@@ -42,13 +42,13 @@
                 <name>
                   <ref>MaxLength</ref>
                 </name>
-                <attribute_argument_list>
+                <arguments>
                   (
-                  <attribute_argument>
+                  <argument>
                     <int>100</int>
-                  </attribute_argument>
+                  </argument>
                   )
-                </attribute_argument_list>
+                </arguments>
               </attribute>
               ]
             </attributes>
