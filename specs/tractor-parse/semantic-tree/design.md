@@ -43,8 +43,8 @@ Rules that help us make consistent decisions.
 ### 1. Use Language Keywords
 
 Use element names that match keywords from the source language where possible.
-C# developers know `class`, `method`, `property`, `if`, `return`. These terms
-require no learning.
+Developers already know their language's keywords (`class`, `def`, `function`,
+`if`, `return`). These terms require no learning.
 
 **Rationale:** Supports Design Goal #2 (readable tree) and #3 (discoverability).
 
@@ -85,10 +85,11 @@ arguments" is `//argument`, not `//argument | //attribute_argument`.
 ### 6. Preserve Language Idioms
 
 When a language has a well-known keyword or term, preserve it even if it's short.
-C# developers recognize `int`, `bool`, `var` as type keywords. Keep these familiar.
+Developers recognize their language's type keywords (`int`, `bool`, `str`, `def`).
+Keep these familiar rather than expanding them.
 
 **Rationale:** Supports Design Goal #2 (readable tree). Expanding `int` to `integer`
-would feel foreign to C# developers.
+or `def` to `definition` would feel foreign to developers.
 
 ### 7. Modifiers as Empty Elements
 
