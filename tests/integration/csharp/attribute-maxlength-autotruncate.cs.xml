@@ -29,8 +29,8 @@
             <name>Name</name>
             <accessors>
               {
-              <accessor_declaration>get;</accessor_declaration>
-              <accessor_declaration>set;</accessor_declaration>
+              <accessor>get;</accessor>
+              <accessor>set;</accessor>
               }
             </accessors>
           </prop>
@@ -66,8 +66,8 @@
             <name>Email</name>
             <accessors>
               {
-              <accessor_declaration>get;</accessor_declaration>
-              <accessor_declaration>set;</accessor_declaration>
+              <accessor>get;</accessor>
+              <accessor>set;</accessor>
               }
             </accessors>
           </prop>
@@ -78,8 +78,8 @@
             <name>Bio</name>
             <accessors>
               {
-              <accessor_declaration>get;</accessor_declaration>
-              <accessor_declaration>set;</accessor_declaration>
+              <accessor>get;</accessor>
+              <accessor>set;</accessor>
               }
             </accessors>
           </prop>

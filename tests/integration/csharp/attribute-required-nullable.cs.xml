@@ -22,8 +22,8 @@
             <name>UserId</name>
             <accessors>
               {
-              <accessor_declaration>get;</accessor_declaration>
-              <accessor_declaration>set;</accessor_declaration>
+              <accessor>get;</accessor>
+              <accessor>set;</accessor>
               }
             </accessors>
           </prop>
@@ -46,8 +46,8 @@
             <name>NullableId</name>
             <accessors>
               {
-              <accessor_declaration>get;</accessor_declaration>
-              <accessor_declaration>set;</accessor_declaration>
+              <accessor>get;</accessor>
+              <accessor>set;</accessor>
               }
             </accessors>
           </prop>
@@ -67,8 +67,8 @@
             <name>Name</name>
             <accessors>
               {
-              <accessor_declaration>get;</accessor_declaration>
-              <accessor_declaration>set;</accessor_declaration>
+              <accessor>get;</accessor>
+              <accessor>set;</accessor>
               }
             </accessors>
           </prop>

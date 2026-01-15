@@ -230,6 +230,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "attribute_list" => Some("attrs"),
         "attribute" => Some("attr"),
         "accessor_list" => Some("accessors"),
+        "accessor_declaration" => Some("accessor"),
         "using_directive" => Some("import"),
         _ => None,
     }
