@@ -10,8 +10,8 @@ use std::process::ExitCode;
 
 use rayon::prelude::*;
 use tractor_core::{
-    parse_string, parse_file, generate_xml_document, ParseResult,
-    XPathEngine, Match,
+    parse_string, parse_file, generate_xml_document,
+    ParseResult, XPathEngine, Match,
     OutputFormat, format_matches, OutputOptions,
     expand_globs, filter_supported_files,
     output::should_use_color,
@@ -202,6 +202,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
             use_color,
             strip_locations: !args.keep_locations,
             max_depth: args.depth,
+            pretty_print: !args.no_pretty,
         };
 
         // Debug mode: show full XML with highlighted matches for each file
@@ -224,10 +225,11 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                     }
                 };
 
-                let xml = generate_xml_document(&[result.clone()]);
+                // Use compact XML for XPath query (no formatting whitespace)
+                let xml_compact = generate_xml_document(&[result.clone()], false);
                 let engine = XPathEngine::new().with_verbose(verbose);
 
-                match engine.query(&xml, xpath_expr, &result.source_lines, &result.file_path) {
+                match engine.query(&xml_compact, xpath_expr, &result.source_lines, &result.file_path) {
                     Ok(matches) if !matches.is_empty() => {
                         // Apply limit
                         let matches: Vec<_> = if let Some(limit) = remaining_limit {
@@ -247,12 +249,14 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                             .collect();
 
                         // Show full XML with highlights
+                        let xml_display = generate_xml_document(&[result.clone()], !args.no_pretty);
                         let render_opts = RenderOptions::new()
                             .with_color(use_color)
                             .with_locations(true)
                             .with_max_depth(args.depth)
-                            .with_highlights(highlights);
-                        let output = render_xml_string(&xml, &render_opts);
+                            .with_highlights(highlights)
+                            .with_pretty_print(!args.no_pretty);
+                        let output = render_xml_string(&xml_display, &render_opts);
                         print!("{}", output);
                     }
                     Ok(_) => {} // No matches in this file
@@ -300,8 +304,8 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                         }
                     };
 
-                    // Generate XML for this file
-                    let xml = generate_xml_document(&[result.clone()]);
+                    // Generate compact XML for XPath query (no formatting whitespace)
+                    let xml = generate_xml_document(&[result.clone()], false);
 
                     // Query this file's XML
                     let engine = XPathEngine::new().with_verbose(verbose);
@@ -377,7 +381,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
 
     // For XML format, use combined document with Files wrapper
     if matches!(format, OutputFormat::Xml) {
-        let xml = generate_xml_document(&parse_results);
+        let xml = generate_xml_document(&parse_results, !args.no_pretty);
         let render_opts = RenderOptions::new()
             .with_color(use_color)
             .with_locations(args.keep_locations || args.debug)
@@ -416,6 +420,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
         use_color,
         strip_locations: !args.keep_locations,
         max_depth: args.depth,
+        pretty_print: !args.no_pretty,
     };
 
     let output = format_matches(&matches, format, &options);
@@ -431,11 +436,12 @@ fn process_single_result(
     format: OutputFormat,
     use_color: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let xml = generate_xml_document(&[result.clone()]);
+    // Use compact XML for XPath queries (no formatting whitespace)
+    let xml_compact = generate_xml_document(&[result.clone()], false);
 
     if let Some(xpath_expr) = xpath {
         let engine = XPathEngine::new().with_verbose(args.verbose);
-        let matches = engine.query(&xml, xpath_expr, &result.source_lines, &result.file_path)?;
+        let matches = engine.query(&xml_compact, xpath_expr, &result.source_lines, &result.file_path)?;
 
         let matches: Vec<Match> = if let Some(limit) = args.limit {
             matches.into_iter().take(limit).collect()
@@ -448,18 +454,22 @@ fn process_single_result(
                 .iter()
                 .map(|m| (m.line, m.column))
                 .collect();
+            // Display XML (pretty unless --no-pretty)
+            let xml_display = generate_xml_document(&[result.clone()], !args.no_pretty);
             let render_opts = RenderOptions::new()
                 .with_color(use_color)
                 .with_locations(true)
                 .with_max_depth(args.depth)
-                .with_highlights(highlights);
-            let output = render_xml_string(&xml, &render_opts);
+                .with_highlights(highlights)
+                .with_pretty_print(!args.no_pretty);
+            let output = render_xml_string(&xml_display, &render_opts);
             print!("{}", output);
             let options = OutputOptions {
                 message: args.message.clone(),
                 use_color,
                 strip_locations: !args.keep_locations,
                 max_depth: args.depth,
+                pretty_print: !args.no_pretty,
             };
             return check_expectation(&matches, args, use_color, &format, &options);
         }
@@ -469,6 +479,7 @@ fn process_single_result(
             use_color,
             strip_locations: !args.keep_locations,
             max_depth: args.depth,
+            pretty_print: !args.no_pretty,
         };
 
         let output = format_matches(&matches, format.clone(), &options);
@@ -478,11 +489,13 @@ fn process_single_result(
     } else {
         // For XML format, use the render_xml_string
         if matches!(format, OutputFormat::Xml) {
+            let xml_display = generate_xml_document(&[result.clone()], !args.no_pretty);
             let render_opts = RenderOptions::new()
                 .with_color(use_color)
                 .with_locations(args.keep_locations || args.debug)
-                .with_max_depth(args.depth);
-            let output = render_xml_string(&xml, &render_opts);
+                .with_max_depth(args.depth)
+                .with_pretty_print(!args.no_pretty);
+            let output = render_xml_string(&xml_display, &render_opts);
             print!("{}", output);
             return Ok(());
         }
@@ -509,6 +522,7 @@ fn process_single_result(
             use_color,
             strip_locations: !args.keep_locations,
             max_depth: args.depth,
+            pretty_print: !args.no_pretty,
         };
 
         let output = format_matches(&[file_match], format, &options);
@@ -637,6 +651,7 @@ fn check_expectation_with_matches(
                 use_color: false, // We'll apply color ourselves
                 strip_locations: options.strip_locations,
                 max_depth: options.max_depth,
+                pretty_print: options.pretty_print,
             };
             let output = format_matches(matches, OutputFormat::Gcc, &error_options);
             for line in output.lines() {

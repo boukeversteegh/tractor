@@ -90,6 +90,10 @@ pub struct Args {
     #[arg(long = "raw")]
     pub raw: bool,
 
+    /// Disable pretty printing (shows XML without formatting, as used by XPath)
+    #[arg(long = "no-pretty")]
+    pub no_pretty: bool,
+
     /// Show verbose output
     #[arg(short = 'v', long = "verbose")]
     pub verbose: bool,

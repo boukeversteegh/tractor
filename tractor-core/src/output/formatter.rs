@@ -57,6 +57,8 @@ pub struct OutputOptions {
     pub strip_locations: bool,
     /// Maximum depth for XML rendering
     pub max_depth: Option<usize>,
+    /// Whether to pretty print XML (default: true)
+    pub pretty_print: bool,
 }
 
 /// JSON output structure
@@ -88,21 +90,24 @@ fn format_xml(matches: &[Match], options: &OutputOptions) -> String {
     let render_opts = RenderOptions::new()
         .with_color(options.use_color)
         .with_locations(!options.strip_locations)
-        .with_max_depth(options.max_depth);
+        .with_max_depth(options.max_depth)
+        .with_pretty_print(options.pretty_print);
 
     for m in matches {
         if let Some(ref xml) = m.xml_fragment {
             // Use proper tree-walking renderer for colorization
             let rendered = render_xml_string(xml, &render_opts);
             output.push_str(&rendered);
-            // render_xml_string adds newlines, so check if we need to add one
-            if !rendered.ends_with('\n') {
+            // Add newline separator between matches if pretty printing
+            if options.pretty_print && !rendered.ends_with('\n') {
                 output.push('\n');
             }
         } else {
             // Fallback to value if no XML fragment
             output.push_str(&m.value);
-            output.push('\n');
+            if options.pretty_print {
+                output.push('\n');
+            }
         }
     }
     output

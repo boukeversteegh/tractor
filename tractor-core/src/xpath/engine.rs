@@ -220,7 +220,7 @@ mod tests {
 
         let source = "let x = 1;";
         let result = parse_string(source, "typescript", "test.ts".to_string(), false).unwrap();
-        let xml = generate_xml_document(&[result.clone()]);
+        let xml = generate_xml_document(&[result.clone()], false); // compact for XPath
 
         let engine = XPathEngine::new();
         let matches = engine.query(&xml, "//variable", &result.source_lines, "test.ts").unwrap();

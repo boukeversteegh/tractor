@@ -51,7 +51,7 @@ fn test_query_xml_passthrough() {
 </file>"#.to_string();
 
     let result = load_xml(xml, "test.xml".to_string());
-    let doc = generate_xml_document(&[result.clone()]);
+    let doc = generate_xml_document(&[result.clone()], false); // compact for XPath
 
     let engine = XPathEngine::new();
     let matches = engine.query(&doc, "//function", &result.source_lines, &result.file_path)
@@ -99,7 +99,7 @@ fn test_snapshot_matches_current_output() {
     // Parse the fixture
     let parsed = parse_file(&fixture_path, None, false)
         .expect("Should parse fixture");
-    let current_xml = generate_xml_document(&[parsed]);
+    let current_xml = generate_xml_document(&[parsed], true); // pretty for snapshot comparison
 
     // Load the snapshot
     let snapshot = std::fs::read_to_string(&snapshot_path)
@@ -165,7 +165,7 @@ fn test_xpath_structure_assertions() {
 
     let parsed = parse_file(&fixture_path, None, false)
         .expect("Should parse fixture");
-    let xml = generate_xml_document(&[parsed.clone()]);
+    let xml = generate_xml_document(&[parsed.clone()], false); // compact for XPath
 
     let engine = XPathEngine::new();
 

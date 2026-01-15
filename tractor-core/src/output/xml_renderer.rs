@@ -31,6 +31,10 @@ pub struct RenderOptions {
     pub max_depth: Option<usize>,
     /// Positions (line, col) to highlight as matches
     pub highlights: Option<HashSet<(u32, u32)>>,
+    /// Pretty print with indentation and newlines (default: true).
+    /// Set to false for XPath queries where formatting whitespace would
+    /// corrupt string-value comparisons like `[.='exact match']`.
+    pub pretty_print: bool,
 }
 
 impl RenderOptions {
@@ -41,6 +45,7 @@ impl RenderOptions {
             indent: "  ".to_string(),
             max_depth: None,
             highlights: None,
+            pretty_print: true,
         }
     }
 
@@ -61,6 +66,11 @@ impl RenderOptions {
 
     pub fn with_highlights(mut self, highlights: HashSet<(u32, u32)>) -> Self {
         self.highlights = Some(highlights);
+        self
+    }
+
+    pub fn with_pretty_print(mut self, pretty_print: bool) -> Self {
+        self.pretty_print = pretty_print;
         self
     }
 }
@@ -84,7 +94,9 @@ pub fn render_document(xot: &Xot, node: Node, options: &RenderOptions) -> String
     if options.use_color {
         output.push_str(ansi::RESET);
     }
-    output.push('\n');
+    if options.pretty_print {
+        output.push('\n');
+    }
 
     // Render the document content
     // Skip the document node itself and render its children
@@ -134,7 +146,11 @@ fn render_node_recursive(
     depth: usize,
     output: &mut String,
 ) {
-    let indent = options.indent.repeat(depth);
+    let indent = if options.pretty_print {
+        options.indent.repeat(depth)
+    } else {
+        String::new()
+    };
 
     match xot.value(node) {
         Value::Document => {
@@ -179,7 +195,9 @@ fn render_node_recursive(
                 if options.use_color {
                     output.push_str(ansi::RESET);
                 }
-                output.push('\n');
+                if options.pretty_print {
+                    output.push('\n');
+                }
             } else if children.len() == 1 && matches!(xot.value(children[0]), Value::Text(_)) {
                 // Single text child - render inline
                 if !is_highlighted && options.use_color {
@@ -217,7 +235,9 @@ fn render_node_recursive(
                 if options.use_color {
                     output.push_str(ansi::RESET);
                 }
-                output.push('\n');
+                if options.pretty_print {
+                    output.push('\n');
+                }
             } else if truncate_children {
                 // At max depth - show truncation comment instead of children
                 let child_count = count_descendants(xot, node);
@@ -228,17 +248,19 @@ fn render_node_recursive(
                 if options.use_color {
                     output.push_str(ansi::RESET);
                 }
-                output.push('\n');
+                if options.pretty_print {
+                    output.push('\n');
 
-                // Truncation comment
-                let child_indent = options.indent.repeat(depth + 1);
-                output.push_str(&child_indent);
-                if options.use_color {
-                    output.push_str(ansi::DIM);
-                }
-                output.push_str(&format!("<!-- ... ({} more) -->\n", child_count));
-                if options.use_color {
-                    output.push_str(ansi::RESET);
+                    // Truncation comment
+                    let child_indent = options.indent.repeat(depth + 1);
+                    output.push_str(&child_indent);
+                    if options.use_color {
+                        output.push_str(ansi::DIM);
+                    }
+                    output.push_str(&format!("<!-- ... ({} more) -->\n", child_count));
+                    if options.use_color {
+                        output.push_str(ansi::RESET);
+                    }
                 }
 
                 // Closing tag
@@ -264,7 +286,9 @@ fn render_node_recursive(
                 if options.use_color {
                     output.push_str(ansi::RESET);
                 }
-                output.push('\n');
+                if options.pretty_print {
+                    output.push('\n');
+                }
             } else {
                 // Multiple children or element children
                 if !is_highlighted && options.use_color {
@@ -274,7 +298,9 @@ fn render_node_recursive(
                 if options.use_color {
                     output.push_str(ansi::RESET);
                 }
-                output.push('\n');
+                if options.pretty_print {
+                    output.push('\n');
+                }
 
                 // Render children
                 for child in children {
@@ -304,17 +330,25 @@ fn render_node_recursive(
                 if options.use_color {
                     output.push_str(ansi::RESET);
                 }
-                output.push('\n');
+                if options.pretty_print {
+                    output.push('\n');
+                }
             }
         }
         Value::Text(text) => {
             // Standalone text node (unusual but handle it)
             let text_str = text.get();
-            let trimmed = text_str.trim();
-            if !trimmed.is_empty() {
-                output.push_str(&indent);
-                output.push_str(&escape_xml(trimmed));
-                output.push('\n');
+            if options.pretty_print {
+                // In pretty print mode, trim whitespace-only text nodes
+                let trimmed = text_str.trim();
+                if !trimmed.is_empty() {
+                    output.push_str(&indent);
+                    output.push_str(&escape_xml(trimmed));
+                    output.push('\n');
+                }
+            } else {
+                // Non-pretty mode: preserve exact text content for XPath matching
+                output.push_str(&escape_xml(text_str));
             }
         }
         Value::Comment(comment) => {
@@ -328,7 +362,9 @@ fn render_node_recursive(
             if options.use_color {
                 output.push_str(ansi::RESET);
             }
-            output.push('\n');
+            if options.pretty_print {
+                output.push('\n');
+            }
         }
         Value::ProcessingInstruction(pi) => {
             output.push_str(&indent);
@@ -346,7 +382,9 @@ fn render_node_recursive(
             if options.use_color {
                 output.push_str(ansi::RESET);
             }
-            output.push('\n');
+            if options.pretty_print {
+                output.push('\n');
+            }
         }
         _ => {
             // Namespace nodes, attribute nodes (handled separately), etc.

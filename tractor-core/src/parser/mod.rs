@@ -195,27 +195,54 @@ fn find_content_root(xot: &xot::Xot, node: xot::Node) -> xot::Node {
     node
 }
 
-/// Generate full XML document with Files wrapper for multiple files
-pub fn generate_xml_document(results: &[ParseResult]) -> String {
+/// Generate full XML document with Files wrapper for multiple files.
+///
+/// When `pretty_print` is true, includes indentation and newlines for readability.
+/// When false, generates compact XML suitable for XPath queries where
+/// formatting whitespace would corrupt string-value comparisons.
+pub fn generate_xml_document(results: &[ParseResult], pretty_print: bool) -> String {
     let mut output = String::new();
     output.push_str(r#"<?xml version="1.0" encoding="UTF-8"?>"#);
-    output.push('\n');
-    output.push_str("<Files>\n");
-
-    for result in results {
-        output.push_str(&format!("  <File path=\"{}\">\n", escape_xml(&result.file_path)));
-        // Indent each line of the XML by 4 spaces
-        for line in result.xml.lines() {
-            if !line.is_empty() {
-                output.push_str("    ");
-                output.push_str(line);
-            }
-            output.push('\n');
-        }
-        output.push_str("  </File>\n");
+    if pretty_print {
+        output.push('\n');
     }
 
-    output.push_str("</Files>\n");
+    if pretty_print {
+        output.push_str("<Files>\n");
+    } else {
+        output.push_str("<Files>");
+    }
+
+    for result in results {
+        if pretty_print {
+            output.push_str(&format!("  <File path=\"{}\">\n", escape_xml(&result.file_path)));
+            // Indent each line of the XML by 4 spaces
+            for line in result.xml.lines() {
+                if !line.is_empty() {
+                    output.push_str("    ");
+                    output.push_str(line);
+                }
+                output.push('\n');
+            }
+            output.push_str("  </File>\n");
+        } else {
+            output.push_str(&format!("<File path=\"{}\">", escape_xml(&result.file_path)));
+            // Strip whitespace from the pre-rendered XML for compact output
+            for line in result.xml.lines() {
+                let trimmed = line.trim();
+                if !trimmed.is_empty() {
+                    output.push_str(trimmed);
+                }
+            }
+            output.push_str("</File>");
+        }
+    }
+
+    if pretty_print {
+        output.push_str("</Files>\n");
+    } else {
+        output.push_str("</Files>");
+    }
     output
 }
 
