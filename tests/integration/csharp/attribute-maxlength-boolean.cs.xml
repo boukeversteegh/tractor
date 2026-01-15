@@ -27,12 +27,12 @@
             <public/>
             <type>bool</type>
             <name>IsActive</name>
-            <accessor_list field="accessors">
+            <accessors>
               {
               <accessor_declaration>get;</accessor_declaration>
               <accessor_declaration>set;</accessor_declaration>
               }
-            </accessor_list>
+            </accessors>
           </prop>
           <comment>// ERROR - MaxLength on bool</comment>
           <prop>
@@ -55,12 +55,12 @@
             <public/>
             <type>string</type>
             <name>Name</name>
-            <accessor_list field="accessors">
+            <accessors>
               {
               <accessor_declaration>get;</accessor_declaration>
               <accessor_declaration>set;</accessor_declaration>
               }
-            </accessor_list>
+            </accessors>
           </prop>
           <comment>// OK - MaxLength on string</comment>
           }

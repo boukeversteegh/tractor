@@ -27,12 +27,12 @@
             <public/>
             <type>string</type>
             <name>Name</name>
-            <accessor_list field="accessors">
+            <accessors>
               {
               <accessor_declaration>get;</accessor_declaration>
               <accessor_declaration>set;</accessor_declaration>
               }
-            </accessor_list>
+            </accessors>
           </prop>
           <comment>// MATCH - missing AutoTruncate</comment>
           <prop>
@@ -64,24 +64,24 @@
             <public/>
             <type>string</type>
             <name>Email</name>
-            <accessor_list field="accessors">
+            <accessors>
               {
               <accessor_declaration>get;</accessor_declaration>
               <accessor_declaration>set;</accessor_declaration>
               }
-            </accessor_list>
+            </accessors>
           </prop>
           <comment>// OK - has AutoTruncate</comment>
           <prop>
             <public/>
             <type>string</type>
             <name>Bio</name>
-            <accessor_list field="accessors">
+            <accessors>
               {
               <accessor_declaration>get;</accessor_declaration>
               <accessor_declaration>set;</accessor_declaration>
               }
-            </accessor_list>
+            </accessors>
           </prop>
           <comment>// OK - no MaxLength</comment>
           }

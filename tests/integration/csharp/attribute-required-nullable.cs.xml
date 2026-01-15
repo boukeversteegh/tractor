@@ -20,12 +20,12 @@
             <public/>
             <type>Guid</type>
             <name>UserId</name>
-            <accessor_list field="accessors">
+            <accessors>
               {
               <accessor_declaration>get;</accessor_declaration>
               <accessor_declaration>set;</accessor_declaration>
               }
-            </accessor_list>
+            </accessors>
           </prop>
           <comment>// ERROR - Required on non-nullable Guid</comment>
           <prop>
@@ -44,12 +44,12 @@
               <nullable/>
             </type>
             <name>NullableId</name>
-            <accessor_list field="accessors">
+            <accessors>
               {
               <accessor_declaration>get;</accessor_declaration>
               <accessor_declaration>set;</accessor_declaration>
               }
-            </accessor_list>
+            </accessors>
           </prop>
           <comment>// OK - nullable Guid</comment>
           <prop>
@@ -65,12 +65,12 @@
             <public/>
             <type>string</type>
             <name>Name</name>
-            <accessor_list field="accessors">
+            <accessors>
               {
               <accessor_declaration>get;</accessor_declaration>
               <accessor_declaration>set;</accessor_declaration>
               }
-            </accessor_list>
+            </accessors>
           </prop>
           <comment>// OK - string is reference type</comment>
           }
