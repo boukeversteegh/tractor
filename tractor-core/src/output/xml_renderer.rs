@@ -385,11 +385,11 @@ fn render_open_tag(
     for (attr_name_id, attr_value) in attrs.iter() {
         let attr_name = xot.local_name_str(attr_name_id);
 
-        // Skip location attributes if not wanted
+        // Skip location and internal attributes if not wanted
         if !options.include_locations {
             if matches!(
                 attr_name,
-                "start" | "end" | "startLine" | "startCol" | "endLine" | "endCol"
+                "start" | "end" | "startLine" | "startCol" | "endLine" | "endCol" | "kind"
             ) {
                 continue;
             }

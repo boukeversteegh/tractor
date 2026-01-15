@@ -135,6 +135,12 @@ pub mod helpers {
         })
     }
 
+    /// Get the original TreeSitter kind from the `kind` attribute
+    /// This is the robust way to identify node types - it doesn't change after renames
+    pub fn get_kind(xot: &Xot, node: XotNode) -> Option<String> {
+        get_attr(xot, node, "kind")
+    }
+
     /// Get or create a NameId for a name string
     pub fn get_name(xot: &mut Xot, name: &str) -> NameId {
         xot.add_name(name)

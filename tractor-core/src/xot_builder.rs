@@ -103,6 +103,10 @@ impl XotBuilder {
         let elem_name = self.get_name(kind);
         let element = self.xot.new_element(elem_name);
 
+        // Add kind attribute (original TreeSitter kind) for robust transform detection
+        let kind_attr = self.get_name("kind");
+        self.xot.attributes_mut(element).insert(kind_attr, kind.to_string());
+
         // Add location attributes
         let start = ts_node.start_position();
         let end = ts_node.end_position();

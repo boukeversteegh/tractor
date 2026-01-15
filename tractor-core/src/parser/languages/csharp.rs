@@ -7,32 +7,33 @@ use xot::{Xot, Node as XotNode};
 use crate::xot_transform::{TransformAction, helpers::*};
 
 /// Check if kind is a declaration that has a name child
-/// Handles both original TreeSitter names and renamed semantic names
+/// Uses original TreeSitter kinds (from `kind` attribute) for robust detection
 fn is_named_declaration(kind: &str) -> bool {
     matches!(kind,
         // Types
-        "class_declaration" | "class"
-        | "struct_declaration" | "struct"
-        | "interface_declaration" | "interface"
-        | "enum_declaration" | "enum"
-        | "record_declaration" | "record"
-        | "namespace_declaration" | "namespace"
+        "class_declaration"
+        | "struct_declaration"
+        | "interface_declaration"
+        | "enum_declaration"
+        | "record_declaration"
+        | "namespace_declaration"
         // Members
-        | "method_declaration" | "method"
-        | "constructor_declaration" | "ctor"
-        | "property_declaration" | "prop"
+        | "method_declaration"
+        | "constructor_declaration"
+        | "property_declaration"
         // Parameters & variables
-        | "parameter" | "param"
-        | "variable_declarator" | "decl"
+        | "parameter"
+        | "variable_declarator"
     )
 }
 
 /// Transform a C# AST node
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    let kind = match get_element_name(xot, node) {
-        Some(k) => k,
-        None => return Ok(TransformAction::Continue),
-    };
+    // Use get_kind() for robust detection - original TreeSitter kind doesn't change after renames
+    // Fall back to element name for field wrappers (like <name>, <body>) which don't have kind attr
+    let kind = get_kind(xot, node)
+        .or_else(|| get_element_name(xot, node))
+        .unwrap_or_default();
 
     match kind.as_str() {
         // ---------------------------------------------------------------------
@@ -48,13 +49,13 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         "name" => {
             // Check if this name wrapper is in a declaration context
             if let Some(parent) = get_parent(xot, node) {
-                let parent_kind = get_element_name(xot, parent).unwrap_or_default();
+                let parent_kind = get_kind(xot, parent).unwrap_or_default();
                 if is_named_declaration(&parent_kind) {
                     // Find identifier child and extract its text
                     let children: Vec<_> = xot.children(node).collect();
                     for child in children {
-                        if let Some(child_name) = get_element_name(xot, child) {
-                            if child_name == "identifier" {
+                        if let Some(child_kind) = get_kind(xot, child) {
+                            if child_kind == "identifier" {
                                 // Get the text from the identifier
                                 if let Some(text) = get_text_content(xot, child) {
                                     // Remove all children from <name>
@@ -136,7 +137,7 @@ fn is_known_modifier(text: &str) -> bool {
     matches!(text,
         "public" | "private" | "protected" | "internal" |
         "static" | "async" | "abstract" | "virtual" | "override" |
-        "sealed" | "readonly" | "const" | "partial"
+        "sealed" | "readonly" | "const" | "partial" | "this"
     )
 }
 
@@ -212,19 +213,20 @@ fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
 }
 
 /// Classify an identifier as "name" or "type" based on context
+/// Uses get_kind() for robust parent detection
 fn classify_identifier(xot: &Xot, node: XotNode) -> &'static str {
     let parent = match get_parent(xot, node) {
         Some(p) => p,
         None => return "type",  // Default for C#
     };
 
-    let parent_kind = get_element_name(xot, parent).unwrap_or_default();
+    let parent_kind = get_kind(xot, parent).unwrap_or_default();
 
     // If parent is a field wrapper (like <name>), check grandparent
     // TreeSitter wraps identifiers in field elements like: <name><identifier>Foo</identifier></name>
     if parent_kind == "name" {
         if let Some(grandparent) = get_parent(xot, parent) {
-            let grandparent_kind = get_element_name(xot, grandparent).unwrap_or_default();
+            let grandparent_kind = get_kind(xot, grandparent).unwrap_or_default();
             // If grandparent is a declaration, this identifier IS the name
             if is_named_declaration(&grandparent_kind) {
                 return "name";
@@ -241,7 +243,7 @@ fn classify_identifier(xot: &Xot, node: XotNode) -> &'static str {
     // Check if followed by parameter list (method/ctor name)
     let siblings = get_following_siblings(xot, node);
     let has_param_sibling = siblings.iter().any(|&s| {
-        get_element_name(xot, s)
+        get_kind(xot, s)
             .map(|n| matches!(n.as_str(), "parameter_list" | "parameters"))
             .unwrap_or(false)
     });
@@ -275,7 +277,7 @@ fn classify_identifier(xot: &Xot, node: XotNode) -> &'static str {
 fn is_in_namespace_context(xot: &Xot, node: XotNode) -> bool {
     let mut current = get_parent(xot, node);
     while let Some(parent) = current {
-        if let Some(kind) = get_element_name(xot, parent) {
+        if let Some(kind) = get_kind(xot, parent) {
             match kind.as_str() {
                 "namespace_declaration" => return true,
                 // Stop if we hit a type declaration
