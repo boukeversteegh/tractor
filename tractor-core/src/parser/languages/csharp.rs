@@ -97,6 +97,43 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         // ---------------------------------------------------------------------
+        // Nullable types - convert to <type>X<nullable/></type>
+        // TreeSitter: <nullable_type><identifier>Guid</identifier>?</nullable_type>
+        // We want: <type kind="nullable_type">Guid<nullable/></type>
+        // ---------------------------------------------------------------------
+        "nullable_type" => {
+            // Find the inner type (identifier or predefined_type)
+            let children: Vec<_> = xot.children(node).collect();
+            for child in children {
+                if let Some(child_kind) = get_kind(xot, child) {
+                    if matches!(child_kind.as_str(), "identifier" | "predefined_type" | "type_identifier") {
+                        if let Some(type_text) = get_text_content(xot, child) {
+                            // Remove all children
+                            let all_children: Vec<_> = xot.children(node).collect();
+                            for c in all_children {
+                                xot.detach(c)?;
+                            }
+                            // Rename to "type" (kind="nullable_type" is preserved)
+                            rename(xot, node, "type");
+                            // Add the type text
+                            let text_node = xot.new_text(&type_text);
+                            xot.append(node, text_node)?;
+                            // Add <nullable/> element
+                            let nullable_name = xot.add_name("nullable");
+                            let nullable_el = xot.new_element(nullable_name);
+                            xot.append(node, nullable_el)?;
+                            return Ok(TransformAction::Done);
+                        }
+                    }
+                }
+            }
+            // No recognized inner type - continue with children processing
+            // kind="nullable_type" will be preserved for debugging
+            rename(xot, node, "type");
+            Ok(TransformAction::Continue)
+        }
+
+        // ---------------------------------------------------------------------
         // Binary/unary expressions - extract operator
         // ---------------------------------------------------------------------
         "binary_expression" | "unary_expression" | "assignment_expression" => {
@@ -160,7 +197,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "argument_list" => Some("args"),
         "argument" => Some("arg"),
         "generic_name" => Some("generic"),
-        "nullable_type" => Some("nullable"),
+        // nullable_type is handled specially - becomes <type>X<nullable/></type>
         "array_type" => Some("array"),
         "block" => Some("block"),
         "return_statement" => Some("return"),

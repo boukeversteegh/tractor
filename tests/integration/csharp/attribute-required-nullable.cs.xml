@@ -39,10 +39,10 @@
               ]
             </attrs>
             <public/>
-            <nullable field="type">
-              <type>Guid</type>
-              ?
-            </nullable>
+            <type>
+              Guid
+              <nullable/>
+            </type>
             <name>NullableId</name>
             <accessor_list field="accessors">
               {
