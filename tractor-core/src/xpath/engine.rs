@@ -7,18 +7,36 @@ use xee_xpath::Query;  // Import the Query trait for execute method
 /// XPath query engine using xee-xpath
 pub struct XPathEngine {
     verbose: bool,
+    ignore_whitespace: bool,
 }
 
 impl XPathEngine {
     /// Create a new XPath engine
     pub fn new() -> Self {
-        XPathEngine { verbose: false }
+        XPathEngine { verbose: false, ignore_whitespace: false }
     }
 
     /// Enable verbose mode for debugging
     pub fn with_verbose(mut self, verbose: bool) -> Self {
         self.verbose = verbose;
         self
+    }
+
+    /// Enable whitespace-insensitive matching
+    /// When enabled, whitespace is stripped from text nodes before XPath matching
+    pub fn with_ignore_whitespace(mut self, ignore: bool) -> Self {
+        self.ignore_whitespace = ignore;
+        self
+    }
+
+    /// Strip whitespace from text content in XML (content between > and <)
+    fn strip_xml_whitespace(xml: &str) -> String {
+        let re = Regex::new(r">([^<]+)<").unwrap();
+        re.replace_all(xml, |caps: &regex::Captures| {
+            let text = &caps[1];
+            let stripped: String = text.chars().filter(|c| !c.is_whitespace()).collect();
+            format!(">{}<", stripped)
+        }).to_string()
     }
 
     /// Execute an XPath query against XML and return matches
@@ -31,12 +49,19 @@ impl XPathEngine {
     ) -> Result<Vec<Match>, XPathError> {
         use xee_xpath::{Documents, Queries};
 
+        // Optionally strip whitespace for whitespace-insensitive matching
+        let xml_to_query = if self.ignore_whitespace {
+            Self::strip_xml_whitespace(xml)
+        } else {
+            xml.to_string()
+        };
+
         // Load XML into xee-xpath
         let mut documents = Documents::new();
         let doc = documents
             .add_string(
                 "file:///query".try_into().unwrap(),
-                xml,
+                &xml_to_query,
             )
             .map_err(|e| XPathError::XmlParse(e.to_string()))?;
 

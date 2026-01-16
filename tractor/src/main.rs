@@ -227,7 +227,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
 
                 // Use compact XML for XPath query (no formatting whitespace)
                 let xml_compact = generate_xml_document(&[result.clone()], false);
-                let engine = XPathEngine::new().with_verbose(verbose);
+                let engine = XPathEngine::new().with_verbose(verbose).with_ignore_whitespace(args.ignore_whitespace);
 
                 match engine.query(&xml_compact, xpath_expr, &result.source_lines, &result.file_path) {
                     Ok(matches) if !matches.is_empty() => {
@@ -308,7 +308,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                     let xml = generate_xml_document(&[result.clone()], false);
 
                     // Query this file's XML
-                    let engine = XPathEngine::new().with_verbose(verbose);
+                    let engine = XPathEngine::new().with_verbose(verbose).with_ignore_whitespace(args.ignore_whitespace);
                     match engine.query(&xml, xpath_expr, &result.source_lines, &result.file_path) {
                         Ok(matches) => Some((file_path.clone(), matches)),
                         Err(e) => {
@@ -440,7 +440,7 @@ fn process_single_result(
     let xml_compact = generate_xml_document(&[result.clone()], false);
 
     if let Some(xpath_expr) = xpath {
-        let engine = XPathEngine::new().with_verbose(args.verbose);
+        let engine = XPathEngine::new().with_verbose(args.verbose).with_ignore_whitespace(args.ignore_whitespace);
         let matches = engine.query(&xml_compact, xpath_expr, &result.source_lines, &result.file_path)?;
 
         let matches: Vec<Match> = if let Some(limit) = args.limit {

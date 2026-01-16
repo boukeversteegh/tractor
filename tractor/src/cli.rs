@@ -94,6 +94,10 @@ pub struct Args {
     #[arg(long = "no-pretty")]
     pub no_pretty: bool,
 
+    /// Ignore whitespace in XPath string matching (strips whitespace from text nodes)
+    #[arg(short = 'W', long = "ignore-whitespace")]
+    pub ignore_whitespace: bool,
+
     /// Show verbose output
     #[arg(short = 'v', long = "verbose")]
     pub verbose: bool,
