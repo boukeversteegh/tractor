@@ -5,6 +5,7 @@ use crate::output::xml_renderer::{render_xml_string, RenderOptions};
 use crate::output::syntax_highlight::{extract_syntax_spans, highlight_source, highlight_lines};
 use regex::Regex;
 use serde::Serialize;
+use xee_xpath::{Documents, Queries, Query};
 
 /// Output format options
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -290,7 +291,49 @@ fn format_count(matches: &[Match]) -> String {
     format!("{}\n", matches.len())
 }
 
+/// Evaluate an XPath expression against an XML fragment
+///
+/// The XML fragment is the matched element, and XPath queries should use
+/// absolute paths (e.g., `//name`) since the context is the document root.
+fn eval_xpath(xml: &str, xpath: &str) -> Option<String> {
+    let mut documents = Documents::new();
+
+    // Parse the XML fragment
+    let doc = documents
+        .add_string("file:///fragment".try_into().ok()?, xml)
+        .ok()?;
+
+    // Compile and execute the XPath query
+    let queries = Queries::default();
+    let query = queries.sequence(xpath).ok()?;
+    let results = query.execute(&mut documents, doc).ok()?;
+
+    // Extract the first result as a string
+    // We need to process immediately before `results` and `documents` go out of scope
+    for item in results.iter() {
+        return match item {
+            xee_xpath::Item::Node(node) => {
+                let xot = documents.xot();
+                Some(xot.string_value(node))
+            }
+            xee_xpath::Item::Atomic(atomic) => {
+                atomic.to_string().ok()
+            }
+            _ => None,
+        };
+    }
+
+    None
+}
+
 /// Format a message template by replacing placeholders
+///
+/// Supported placeholders:
+/// - `{file}` - file path
+/// - `{line}` - line number
+/// - `{col}` - column number
+/// - `{value}` - matched text value
+/// - `{//xpath}` - any XPath expression (use absolute paths like `//name`)
 pub fn format_message(template: &str, m: &Match) -> String {
     if !template.contains('{') {
         return template.to_string();
@@ -304,9 +347,16 @@ pub fn format_message(template: &str, m: &Match) -> String {
             "line" => m.line.to_string(),
             "col" => m.column.to_string(),
             "file" => m.file.clone(),
-            // For XPath expressions like {ancestor::class/name}, we'd need the XML context
-            // For now, return the placeholder
-            _ => format!("{{{}}}", expr),
+            // Try to evaluate as XPath expression if we have an XML fragment
+            _ => {
+                if let Some(ref xml) = m.xml_fragment {
+                    if let Some(result) = eval_xpath(xml, expr) {
+                        return truncate(&result, 100);
+                    }
+                }
+                // If XPath evaluation fails, return the placeholder unchanged
+                format!("{{{}}}", expr)
+            }
         }
     }).to_string()
 }
@@ -361,5 +411,38 @@ mod tests {
     fn test_truncate() {
         assert_eq!(truncate("short", 50), "short");
         assert_eq!(truncate("this is a very long string that should be truncated", 20), "this is a very lo...");
+    }
+
+    #[test]
+    fn test_format_message_with_xpath() {
+        // Create a match with an XML fragment
+        let xml = r#"<property><type>Guid</type><name>CustomerId</name></property>"#;
+        let m = Match::with_location(
+            "test.cs".to_string(),
+            10,
+            5,
+            10,
+            15,
+            "Guid CustomerId".to_string(),
+            vec![],
+        ).with_xml_fragment(xml.to_string());
+
+        // Test XPath-based placeholders
+        assert_eq!(
+            format_message("Property '{//name}' has type '{//type}'", &m),
+            "Property 'CustomerId' has type 'Guid'"
+        );
+
+        // Test combined with standard placeholders
+        assert_eq!(
+            format_message("{file}:{line}: Property '{//name}' has type '{//type}'", &m),
+            "test.cs:10: Property 'CustomerId' has type 'Guid'"
+        );
+
+        // Test fallback when XPath doesn't match
+        assert_eq!(
+            format_message("Field '{//field}'", &m),
+            "Field '{//field}'"
+        );
     }
 }

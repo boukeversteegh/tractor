@@ -32,6 +32,9 @@ EXAMPLES:
     # CI: fail if any TODO comments found
     tractor "src/**/*.cs" -x "//comment[contains(.,'TODO')]" --expect none
 
+    # Custom error messages with XPath placeholders
+    tractor "src/**/*.cs" -x "//property[type='Guid']" --expect none --error "Property '{//name}' should be Guid?"
+
     # Whitespace-insensitive matching
     tractor file.cs -x "//type[.='Dictionary<string,int>']" -W
 "#)]
@@ -56,7 +59,7 @@ pub struct Args {
     #[arg(short = 'e', long = "expect")]
     pub expect: Option<String>,
 
-    /// Error message template for failed expectations (per-match, supports {file}, {line}, {name}, etc.)
+    /// Error message template for failed expectations (supports {file}, {line}, {col}, {value}, {//xpath})
     #[arg(long = "error")]
     pub error: Option<String>,
 

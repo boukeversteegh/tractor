@@ -405,18 +405,35 @@ tractor "**/*.cs" \
   --expect-max 1
 ```
 
-### 3. Named Captures in Error Messages
+### 3. Named Captures in Error Messages ✅ IMPLEMENTED
 
 **Need**: Include matched element names/values in error messages
 
-**Current**: `{name}` placeholder doesn't resolve
+**Status**: ✅ **Now supported!**
 
-**Proposed**:
+**Usage**:
 ```bash
 tractor "**/*.cs" \
   -x "//property[type[.='Guid']]" \
-  --error "Property '{./name}' has non-nullable Guid in {file}:{line}"
+  --error "Property '{//name}' has non-nullable Guid in {file}:{line}"
 ```
+
+**Example Output**:
+```
+test.cs:10:5: error: Property 'CustomerId' has non-nullable Guid in test.cs:10
+```
+
+**Supported Placeholders**:
+- `{file}` - file path
+- `{line}` - line number
+- `{col}` - column number
+- `{value}` - matched text value
+- `{//xpath}` - any XPath expression (use absolute paths like `//name`, `//type`, etc.)
+
+**Notes**:
+- XPath expressions must use absolute paths (e.g., `//name`) not relative paths (e.g., `name` or `./name`)
+- The XML fragment contains only the matched element, not its ancestors
+- If the XPath doesn't match anything, the placeholder is left unchanged
 
 ### 4. Cross-Reference Checking
 
@@ -435,10 +452,13 @@ tractor "**/*.cs" \
 
 ## Summary
 
-Tractor is already useful for detecting many architectural violations in our codebase. The most impactful additions would be:
+Tractor is already useful for detecting many architectural violations in our codebase.
 
+**Implemented Features** ✅:
+- **Named captures in error messages** - XPath-based placeholders like `{//name}` now work in `--error` messages for actionable violation reports
+
+**Remaining Enhancements**:
 1. **Per-scope counting** - to properly enforce "exactly one API call" rules
-2. **Better error message placeholders** - for actionable violation reports
-3. **Ancestor exclusion** - to handle legitimate conditional branches
+2. **Ancestor exclusion** - verify if `ancestor::` axis already works (may just need documentation)
 
-These features would allow us to run tractor in CI to automatically catch design rule violations before code review.
+These existing and upcoming features allow us to run tractor in CI to automatically catch design rule violations before code review.
