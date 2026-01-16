@@ -84,4 +84,10 @@ run_test tractor generic-type-match.cs \
     -x "//type[generic]/arguments/type[.='string']" \
     --expect 6 -m "find string type arguments"
 
+# Whitespace-insensitive matching with -W flag
+# Source has "Dictionary<string, int>" but query uses no space - should match with -W
+run_test tractor generic-type-match.cs -W \
+    -x "//type[.='Dictionary<string,int>']" \
+    --expect 2 -m "ignore-whitespace flag matches without spaces"
+
 report

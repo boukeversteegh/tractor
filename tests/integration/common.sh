@@ -12,5 +12,16 @@ cd "$SCRIPT_DIR"
 [ -f "$REPO_ROOT/target/release/tractor" ] || (cd "$REPO_ROOT" && cargo build --release -q)
 
 PASSED=0 FAILED=0
-run_test() { if "$@" 2>/dev/null; then ((PASSED++)); else ((FAILED++)); fi; }
+run_test() {
+    local output
+    output=$("$@" 2>&1)
+    local exit_code=$?
+    if [ $exit_code -eq 0 ]; then
+        ((PASSED++))
+        echo "$output"
+    else
+        ((FAILED++))
+        echo "$output"
+    fi
+}
 report() { echo ""; echo "Passed: $PASSED | Failed: $FAILED"; [ "$FAILED" -eq 0 ]; }
