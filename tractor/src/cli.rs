@@ -6,24 +6,34 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 #[command(name = "tractor")]
 #[command(author, version, about, long_about = None)]
-#[command(after_help = r#"EXAMPLES:
+#[command(after_help = r#"WORKFLOW:
+    1. View the XML structure of your code:
+       tractor src/main.rs
+
+    2. Add -x to select specific elements:
+       tractor src/main.rs -x "//function"
+
+    3. Refine with predicates:
+       tractor src/main.rs -x "//function[name='main']"
+
+    4. Choose output format with -o:
+       tractor src/main.rs -x "//function/name" -o value
+
+EXAMPLES:
     # Query all C# files for classes
     tractor "src/**/*.cs" -x "//class"
 
-    # Find methods without OrderBy in Repository classes
-    tractor "src/**/*.cs" -x "//class[name[contains(.,'Repository')]]/method[not(contains(.,'OrderBy'))]" -o gcc
+    # Find methods missing OrderBy in Repository classes
+    tractor "src/**/*.cs" -x "//class[contains(name,'Repository')]//method[not(contains(.,'OrderBy'))]" -o gcc
 
     # Parse from stdin
-    echo "public class Foo { }" | tractor --lang csharp -x "//class/name" -o value
+    echo "public class Foo { }" | tractor -l csharp -x "//class/name" -o value
 
     # CI: fail if any TODO comments found
     tractor "src/**/*.cs" -x "//comment[contains(.,'TODO')]" --expect none
 
-    # Show full XML AST for debugging
-    tractor src/main.rs --debug
-
-LOW-LEVEL TOOLS:
-    tractor-parse     TreeSitter parser (files → XML AST) - kept as standalone utility
+    # Whitespace-insensitive matching
+    tractor file.cs -x "//type[.='Dictionary<string,int>']" -W
 "#)]
 pub struct Args {
     /// Files to process (supports glob patterns like "src/**/*.cs")
