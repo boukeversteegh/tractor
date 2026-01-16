@@ -66,8 +66,8 @@ run_test tractor generic-type-match.cs \
     --expect 2 -m "exact match List<string>"
 
 run_test tractor generic-type-match.cs \
-    -x "//type[.='Dictionary<string,int>']" \
-    --expect 2 -m "exact match Dictionary<string,int>"
+    -x "//type[.='Dictionary<string, int>']" \
+    --expect 2 -m "exact match Dictionary<string, int>"
 
 # Find all generic types (2 per method × 3 methods + 2 nested = 8)
 run_test tractor generic-type-match.cs \
@@ -76,7 +76,7 @@ run_test tractor generic-type-match.cs \
 
 # Nested generic matching (2: return type + new expression)
 run_test tractor generic-type-match.cs \
-    -x "//type[.='List<Dictionary<string,User>>']" \
+    -x "//type[.='List<Dictionary<string, User>>']" \
     --expect 2 -m "exact match nested generic"
 
 # Query type arguments (List<string>×2 + Dictionary<string,int>×2 + Dictionary<string,User>×2 = 6)
