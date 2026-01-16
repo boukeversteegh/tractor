@@ -13,4 +13,10 @@ run_test tractor sample.xml -x "project/@name" --expect 1 -m "queries attributes
 run_test tractor sample.xml -x "name" --expect 3 -m "finds all name elements"
 run_test tractor sample.xml -x "item/name" -o value --expect some -m "value output works"
 
+echo "Named Captures:"
+run_test tractor sample.xml -x "item" --error "Found item: '{//name}'" --expect 3 --expect-output "Found item: 'Login'" -m "XPath placeholder {//name}"
+run_test tractor sample.xml -x "item[@type='feature']" --error "Item '{//name}' has status '{//status}'" --expect 2 --expect-output "Item 'Login' has status 'complete'" -m "multiple XPath placeholders"
+run_test tractor sample.xml -x "item[@type='bug']" --error "{file}:{line} - {//name}" --expect 1 --expect-output "sample.xml:" -m "combined placeholders"
+run_test tractor sample.xml -x "item" --error "Missing: '{//missing}'" --expect 3 --expect-output "{//missing}" -m "non-matching XPath unchanged"
+
 report

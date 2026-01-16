@@ -642,29 +642,39 @@ fn check_expectation_with_matches(
         }
     }
 
-    // On failure, show per-match details
-    if !result.passed && !matches.is_empty() {
+    // Generate output text for validation (even if test passes)
+    let mut output_text = String::new();
+    if !matches.is_empty() {
         if let Some(ref error_template) = args.error {
-            // Use error template for per-match output (GCC format supports message templates)
             let error_options = OutputOptions {
                 message: Some(error_template.clone()),
-                use_color: false, // We'll apply color ourselves
+                use_color: false,
                 strip_locations: options.strip_locations,
                 max_depth: options.max_depth,
                 pretty_print: options.pretty_print,
             };
-            let output = format_matches(matches, OutputFormat::Gcc, &error_options);
-            for line in output.lines() {
-                if use_color {
-                    println!("  {}{}{}", color, line, test_colors::RESET);
-                } else {
-                    println!("  {}", line);
-                }
-            }
+            output_text = format_matches(matches, OutputFormat::Gcc, &error_options);
         } else {
-            // Use default format for matches
-            let output = format_matches(matches, format.clone(), options);
-            for line in output.lines() {
+            output_text = format_matches(matches, format.clone(), options);
+        }
+    }
+
+    // Check expected output string
+    if let Some(ref expected) = args.expect_output {
+        if !output_text.contains(expected) {
+            return Err(format!(
+                "output validation failed: expected output to contain '{}'",
+                expected
+            ).into());
+        }
+    }
+
+    // On failure, show per-match details
+    if !result.passed && !matches.is_empty() {
+        for line in output_text.lines() {
+            if use_color {
+                println!("  {}{}{}", color, line, test_colors::RESET);
+            } else {
                 println!("  {}", line);
             }
         }

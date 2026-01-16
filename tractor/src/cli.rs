@@ -63,6 +63,10 @@ pub struct Args {
     #[arg(long = "error")]
     pub error: Option<String>,
 
+    /// Expected string in output (for testing error messages)
+    #[arg(long = "expect-output")]
+    pub expect_output: Option<String>,
+
     /// Treat failed expectations as warnings (exit 0, show ⚠ instead of ✗)
     #[arg(long = "warning")]
     pub warning: bool,
