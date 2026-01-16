@@ -4,91 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tractor - XPath for Code</title>
-    <link rel="stylesheet" href="/src/ui/styles.css" />
+    <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
-    <div id="app">
-      <header>
-        <h1>Tractor</h1>
-        <p class="subtitle">Query code with XPath</p>
-      </header>
-
-      <main>
-        <div class="panel input-panel">
-          <div class="panel-header">
-            <label for="language-select">Language:</label>
-            <select id="language-select">
-              <option value="typescript">TypeScript</option>
-              <option value="javascript">JavaScript</option>
-              <option value="csharp">C#</option>
-              <option value="rust">Rust</option>
-              <option value="python">Python</option>
-              <option value="go">Go</option>
-              <option value="java">Java</option>
-              <option value="ruby">Ruby</option>
-              <option value="cpp">C++</option>
-              <option value="c">C</option>
-              <option value="json">JSON</option>
-              <option value="html">HTML</option>
-              <option value="css">CSS</option>
-              <option value="bash">Bash</option>
-              <option value="yaml">YAML</option>
-              <option value="php">PHP</option>
-              <option value="scala">Scala</option>
-              <option value="lua">Lua</option>
-              <option value="haskell">Haskell</option>
-              <option value="ocaml">OCaml</option>
-              <option value="r">R</option>
-              <option value="julia">Julia</option>
-            </select>
-            <label>
-              <input type="checkbox" id="raw-mode" />
-              Raw mode
-            </label>
-            <label>
-              <input type="checkbox" id="show-locations" />
-              Show locations
-            </label>
-            <label>
-              <input type="checkbox" id="pretty-print" checked />
-              Pretty print
-            </label>
-          </div>
-          <textarea id="source-input" placeholder="Enter source code here...">function hello(name: string): string {
-  return `Hello, ${name}!`;
-}</textarea>
-        </div>
-
-        <div class="panel output-panel">
-          <div class="panel-header">
-            <span>XML Output</span>
-            <button id="copy-xml" title="Copy XML to clipboard">Copy</button>
-          </div>
-          <pre id="xml-output"><code></code></pre>
-        </div>
-
-        <div class="panel query-panel">
-          <div class="panel-header">
-            <label for="xpath-input">XPath Query:</label>
-          </div>
-          <input type="text" id="xpath-input" placeholder="//function" value="//function" />
-          <div id="query-results"></div>
-        </div>
-      </main>
-
-      <footer>
-        <p>
-          <a href="https://github.com/your-repo/code-xpath" target="_blank">GitHub</a>
-          | Powered by TreeSitter + XPath 3.1
-        </p>
-      </footer>
-
-      <div id="loading" class="loading">
-        <div class="spinner"></div>
-        <p>Loading TreeSitter grammars...</p>
-      </div>
-    </div>
-
-    <script type="module" src="/src/main.ts"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

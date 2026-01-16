@@ -2,7 +2,7 @@
  * XPath query execution using fontoxpath
  */
 
-import { evaluateXPath, evaluateXPathToNodes } from 'fontoxpath';
+import { evaluateXPathToNodes } from 'fontoxpath';
 
 export interface Match {
   xml: string;
@@ -38,34 +38,4 @@ export function queryXml(xmlString: string, xpath: string): Match[] {
       end: element.getAttribute('end') ?? undefined,
     };
   });
-}
-
-/**
- * Execute an XPath query and return a string result
- */
-export function queryXmlToString(xmlString: string, xpath: string): string {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(xmlString, 'text/xml');
-
-  const parseError = doc.querySelector('parsererror');
-  if (parseError) {
-    throw new Error(`XML parse error: ${parseError.textContent}`);
-  }
-
-  return evaluateXPath(xpath, doc, null, null, { returnType: evaluateXPath.STRING_TYPE }) as string;
-}
-
-/**
- * Count matches for an XPath query
- */
-export function countMatches(xmlString: string, xpath: string): number {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(xmlString, 'text/xml');
-
-  const parseError = doc.querySelector('parsererror');
-  if (parseError) {
-    throw new Error(`XML parse error: ${parseError.textContent}`);
-  }
-
-  return evaluateXPath(`count(${xpath})`, doc, null, null, { returnType: evaluateXPath.NUMBER_TYPE }) as number;
 }

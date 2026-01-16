@@ -51,6 +51,11 @@ tasks:
     cmds:
       - npm install
 
+  check:
+    desc: Type check TypeScript
+    cmds:
+      - npx tsc --noEmit
+
   dev:
     desc: Run dev server
     deps: [wasm, grammars]
