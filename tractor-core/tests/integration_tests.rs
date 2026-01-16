@@ -229,3 +229,56 @@ fn test_multi_language_snapshots() {
         );
     }
 }
+
+#[test]
+fn test_xpath_string_value_preserves_whitespace() {
+    use tractor_core::parse_string;
+
+    // Test that inter-token whitespace is preserved in string-value
+    let source = "let mut batches = Vec::new();";
+    let result = parse_string(source, "rust", "<test>".to_string(), true)
+        .expect("Should parse Rust");
+    let xml = generate_xml_document(&[result.clone()], false);
+
+    let engine = XPathEngine::new();
+
+    // Test 1: String value should include spaces between tokens
+    let matches = engine.query(&xml, "//let_declaration", &result.source_lines, &result.file_path)
+        .expect("Query should succeed");
+    assert_eq!(matches.len(), 1, "Should find let_declaration");
+
+    let value = &matches[0].value;
+    assert!(
+        value.contains("let mut batches"),
+        "String value should preserve whitespace between tokens, got: {:?}",
+        value
+    );
+
+    // Test 2: Exact string matching should work with whitespace
+    let matches = engine.query(
+        &xml,
+        "//let_declaration[contains(.,'let mut batches')]",
+        &result.source_lines,
+        &result.file_path,
+    ).expect("Query should succeed");
+    assert_eq!(matches.len(), 1, "Should match with contains() and whitespace");
+}
+
+#[test]
+fn test_xpath_exact_string_match_without_formatting_whitespace() {
+    use tractor_core::parse_string;
+
+    // Test that exact string matching works (no extra formatting whitespace)
+    let source = "class T { List<string> x; }";
+    let result = parse_string(source, "csharp", "<test>".to_string(), false)
+        .expect("Should parse C#");
+    let xml = generate_xml_document(&[result.clone()], false);
+
+    let engine = XPathEngine::new();
+
+    // Exact match on type should work
+    let matches = engine.query(&xml, "//type[.='List<string>']", &result.source_lines, &result.file_path)
+        .expect("Query should succeed");
+    assert_eq!(matches.len(), 1, "Should find type with exact string match");
+    assert_eq!(matches[0].value, "List<string>");
+}

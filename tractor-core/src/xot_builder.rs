@@ -135,10 +135,25 @@ impl XotBuilder {
         } else {
             // Non-leaf: iterate ALL children (named and anonymous) to preserve order
             // Anonymous nodes become text children, named nodes become element children
+            // We also capture inter-node whitespace from the source to preserve spacing
             let mut cursor = ts_node.walk();
             cursor.goto_first_child();
+            let mut last_end_byte = ts_node.start_byte();
+
             loop {
                 let child = cursor.node();
+                let child_start = child.start_byte();
+
+                // Add any whitespace/content between the last node and this one
+                if child_start > last_end_byte {
+                    let gap = &source[last_end_byte..child_start];
+                    if !gap.is_empty() && gap.chars().any(|c| c.is_whitespace()) {
+                        // Normalize the gap to a single space if it contains any whitespace
+                        let text_node = self.xot.new_text(" ");
+                        self.xot.append(element, text_node)?;
+                    }
+                }
+
                 if child.is_named() {
                     let child_field = cursor.field_name();
                     self.build_raw_node(child, source, element, child_field)?;
@@ -152,6 +167,9 @@ impl XotBuilder {
                         }
                     }
                 }
+
+                last_end_byte = child.end_byte();
+
                 if !cursor.goto_next_sibling() {
                     break;
                 }

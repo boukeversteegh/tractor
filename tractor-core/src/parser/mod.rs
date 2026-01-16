@@ -157,8 +157,11 @@ pub fn parse_string(source: &str, lang: &str, file_path: String, raw_mode: bool)
     // Find the actual content node (skip Files/File wrappers)
     let content_node = find_content_root(&result.xot, result.root);
 
-    // Render just the content (not the Files/File wrappers)
-    let options = crate::output::RenderOptions::new().with_locations(true);
+    // Render compact XML (no formatting whitespace) to preserve source whitespace
+    // text nodes. Display code will re-render with pretty_print=true as needed.
+    let options = crate::output::RenderOptions::new()
+        .with_locations(true)
+        .with_pretty_print(false);
     let xml = crate::output::render_node(&result.xot, content_node, &options);
 
     Ok(ParseResult {
@@ -216,8 +219,15 @@ pub fn generate_xml_document(results: &[ParseResult], pretty_print: bool) -> Str
     for result in results {
         if pretty_print {
             output.push_str(&format!("  <File path=\"{}\">\n", escape_xml(&result.file_path)));
-            // Indent each line of the XML by 4 spaces
-            for line in result.xml.lines() {
+            // Re-render the compact XML with pretty printing
+            let pretty_xml = crate::output::render_xml_string(
+                &result.xml,
+                &crate::output::RenderOptions::new()
+                    .with_locations(true)
+                    .with_pretty_print(true),
+            );
+            // Indent each line by 4 spaces
+            for line in pretty_xml.lines() {
                 if !line.is_empty() {
                     output.push_str("    ");
                     output.push_str(line);
@@ -227,13 +237,8 @@ pub fn generate_xml_document(results: &[ParseResult], pretty_print: bool) -> Str
             output.push_str("  </File>\n");
         } else {
             output.push_str(&format!("<File path=\"{}\">", escape_xml(&result.file_path)));
-            // Strip whitespace from the pre-rendered XML for compact output
-            for line in result.xml.lines() {
-                let trimmed = line.trim();
-                if !trimmed.is_empty() {
-                    output.push_str(trimmed);
-                }
-            }
+            // Use compact XML directly (already has no formatting whitespace)
+            output.push_str(&result.xml);
             output.push_str("</File>");
         }
     }

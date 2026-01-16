@@ -196,9 +196,19 @@ pub mod helpers {
     }
 
     /// Get all text content from immediate children (for extracting operators, keywords)
+    /// Filters out whitespace-only text nodes and trims the text content.
     pub fn get_text_children(xot: &Xot, node: XotNode) -> Vec<String> {
         xot.children(node)
-            .filter_map(|child| xot.text_str(child).map(|s| s.to_string()))
+            .filter_map(|child| {
+                xot.text_str(child).and_then(|s| {
+                    let trimmed = s.trim();
+                    if trimmed.is_empty() {
+                        None
+                    } else {
+                        Some(trimmed.to_string())
+                    }
+                })
+            })
             .collect()
     }
 

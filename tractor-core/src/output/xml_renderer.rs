@@ -208,9 +208,16 @@ fn render_node_recursive(
                     output.push_str(ansi::RESET);
                 }
 
-                // Render text content
+                // Render text content (strip trailing newlines in pretty-print mode
+                // since those are typically parser artifacts like in line comments)
                 if let Value::Text(text) = xot.value(children[0]) {
-                    output.push_str(&escape_xml(text.get()));
+                    let text_str = text.get();
+                    let content = if options.pretty_print {
+                        text_str.trim_end_matches('\n').trim_end_matches('\r')
+                    } else {
+                        text_str
+                    };
+                    output.push_str(&escape_xml(content));
                 }
 
                 // Closing tag
