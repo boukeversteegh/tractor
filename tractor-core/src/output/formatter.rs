@@ -24,6 +24,8 @@ pub enum OutputFormat {
     Json,
     /// Number of matches
     Count,
+    /// Custom message format (uses -m template)
+    Message,
 }
 
 impl OutputFormat {
@@ -37,13 +39,14 @@ impl OutputFormat {
             "gcc" => Some(OutputFormat::Gcc),
             "json" => Some(OutputFormat::Json),
             "count" => Some(OutputFormat::Count),
+            "message" => Some(OutputFormat::Message),
             _ => None,
         }
     }
 
     /// Get list of all valid format names
     pub fn valid_formats() -> &'static [&'static str] {
-        &["xml", "lines", "source", "value", "gcc", "json", "count"]
+        &["xml", "lines", "source", "value", "gcc", "json", "count", "message"]
     }
 }
 
@@ -83,6 +86,7 @@ pub fn format_matches(matches: &[Match], format: OutputFormat, options: &OutputO
         OutputFormat::Gcc => format_gcc(matches, options),
         OutputFormat::Json => format_json(matches, options),
         OutputFormat::Count => format_count(matches),
+        OutputFormat::Message => format_message_output(matches, options),
     }
 }
 
@@ -291,10 +295,20 @@ fn format_count(matches: &[Match]) -> String {
     format!("{}\n", matches.len())
 }
 
+fn format_message_output(matches: &[Match], options: &OutputOptions) -> String {
+    let mut output = String::new();
+    let template = options.message.as_deref().unwrap_or("{value}");
+    for m in matches {
+        output.push_str(&format_message(template, m));
+        output.push('\n');
+    }
+    output
+}
+
 /// Evaluate an XPath expression against an XML fragment
 ///
-/// The XML fragment is the matched element, and XPath queries should use
-/// absolute paths (e.g., `//name`) since the context is the document root.
+/// The XML fragment is the matched element. Currently XPath expressions are evaluated
+/// with the document as context, so use descendant searches like `//name` to find elements.
 fn eval_xpath(xml: &str, xpath: &str) -> Option<String> {
     let mut documents = Documents::new();
 
@@ -333,7 +347,7 @@ fn eval_xpath(xml: &str, xpath: &str) -> Option<String> {
 /// - `{line}` - line number
 /// - `{col}` - column number
 /// - `{value}` - matched text value
-/// - `{//xpath}` - any XPath expression (use absolute paths like `//name`)
+/// - `{//xpath}` - any XPath expression (use descendant search like `//name`, `//type`)
 pub fn format_message(template: &str, m: &Match) -> String {
     if !template.contains('{') {
         return template.to_string();
