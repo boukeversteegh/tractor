@@ -6,7 +6,13 @@ import { TreeView } from './components/TreeView';
 import { XmlOutput } from './components/XmlOutput';
 import { QueryResults } from './components/QueryResults';
 import { SAMPLE_CODE } from './sampleCode';
-import { parseXmlToTree, XmlNode } from './xmlTree';
+import {
+  parseXmlToTree,
+  XmlNode,
+  findDeepestNodeAtPosition,
+  getPathToNode,
+  offsetToPosition,
+} from './xmlTree';
 import {
   SelectionState,
   createEmptyState,
@@ -90,6 +96,8 @@ export function App() {
 
   // UI state
   const [activeTab, setActiveTab] = useState<Tab>('builder');
+  const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
+  const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(new Set());
 
   // Initialize parsers
   useEffect(() => {
@@ -115,14 +123,21 @@ export function App() {
     async function parse() {
       try {
         const ast = await parseSource(source, language);
-        const xmlOutput = await parseAstToXmlSimple(
-          ast, source, language, rawMode, showLocations, prettyPrint
-        );
-        setXml(xmlOutput);
 
-        // Parse XML to tree for query builder
-        const tree = parseXmlToTree(xmlOutput);
+        // Always parse with locations for tree building (needed for click-to-expand)
+        const xmlWithLocations = await parseAstToXmlSimple(
+          ast, source, language, rawMode, true, prettyPrint
+        );
+
+        // Parse XML to tree for query builder (needs locations)
+        const tree = parseXmlToTree(xmlWithLocations);
         setXmlTree(tree);
+
+        // Generate display XML based on user preference
+        const xmlOutput = showLocations
+          ? xmlWithLocations
+          : await parseAstToXmlSimple(ast, source, language, rawMode, false, prettyPrint);
+        setXml(xmlOutput);
 
         // Build node info map
         if (tree) {
@@ -265,6 +280,36 @@ export function App() {
     setUseManualQuery(true);
   }, []);
 
+  // Handle click on source code to focus corresponding tree node
+  const handleSourceClick = useCallback((e: React.MouseEvent<HTMLTextAreaElement>) => {
+    if (!xmlTree) return;
+
+    const textarea = e.currentTarget;
+    const cursorOffset = textarea.selectionStart;
+    const position = offsetToPosition(source, cursorOffset);
+
+    const node = findDeepestNodeAtPosition(xmlTree, position);
+
+    if (node) {
+      setFocusedNodeId(node.id);
+
+      // Expand all ancestors of the focused node
+      const path = getPathToNode(xmlTree, node.id);
+      if (path) {
+        setExpandedNodeIds(prev => {
+          const newSet = new Set(prev);
+          for (const id of path) {
+            newSet.add(id);
+          }
+          return newSet;
+        });
+      }
+
+      // Switch to builder tab if not already there
+      setActiveTab('builder');
+    }
+  }, [xmlTree, source]);
+
   if (error) {
     return (
       <div className="app error-screen">
@@ -344,6 +389,7 @@ export function App() {
           <textarea
             value={source}
             onChange={(e) => setSource(e.target.value)}
+            onClick={handleSourceClick}
             placeholder="Enter source code..."
             className="source-input"
           />
@@ -369,9 +415,12 @@ export function App() {
               <TreeView
                 xmlTree={xmlTree}
                 selectionState={selectionState}
+                focusedNodeId={focusedNodeId}
+                expandedNodeIds={expandedNodeIds}
                 onToggleSelection={handleToggleSelection}
                 onSetTarget={handleSetTarget}
                 onAddCondition={handleAddCondition}
+                onExpandedChange={setExpandedNodeIds}
               />
             ) : (
               <XmlOutput xml={xml} />

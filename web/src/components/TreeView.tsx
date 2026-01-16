@@ -1,21 +1,27 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { XmlNode, getXmlNodeId } from '../xmlTree';
 import { SelectionState } from '../queryState';
 
 interface TreeViewProps {
   xmlTree: XmlNode | null;
   selectionState: SelectionState;
+  focusedNodeId: string | null;
+  expandedNodeIds: Set<string>;
   onToggleSelection: (nodeId: string, nodeName: string) => void;
   onSetTarget: (nodeId: string, nodeName: string) => void;
   onAddCondition: (nodeId: string, condition: string) => void;
+  onExpandedChange: (expanded: Set<string>) => void;
 }
 
 export function TreeView({
   xmlTree,
   selectionState,
+  focusedNodeId,
+  expandedNodeIds,
   onToggleSelection,
   onSetTarget,
   onAddCondition,
+  onExpandedChange,
 }: TreeViewProps) {
   if (!xmlTree) {
     return <div className="tree-view empty">No tree to display</div>;
@@ -26,9 +32,12 @@ export function TreeView({
       <TreeNode
         node={xmlTree}
         selectionState={selectionState}
+        focusedNodeId={focusedNodeId}
+        expandedNodeIds={expandedNodeIds}
         onToggleSelection={onToggleSelection}
         onSetTarget={onSetTarget}
         onAddCondition={onAddCondition}
+        onExpandedChange={onExpandedChange}
       />
     </div>
   );
@@ -37,28 +46,44 @@ export function TreeView({
 interface TreeNodeProps {
   node: XmlNode;
   selectionState: SelectionState;
+  focusedNodeId: string | null;
+  expandedNodeIds: Set<string>;
   onToggleSelection: (nodeId: string, nodeName: string) => void;
   onSetTarget: (nodeId: string, nodeName: string) => void;
   onAddCondition: (nodeId: string, condition: string) => void;
+  onExpandedChange: (expanded: Set<string>) => void;
 }
 
 function TreeNode({
   node,
   selectionState,
+  focusedNodeId,
+  expandedNodeIds,
   onToggleSelection,
   onSetTarget,
   onAddCondition,
+  onExpandedChange,
 }: TreeNodeProps) {
-  const [expanded, setExpanded] = useState(node.depth < 3);
   const [showMenu, setShowMenu] = useState(false);
+  const nodeRef = useRef<HTMLDivElement>(null);
 
   const nodeId = getXmlNodeId(node);
   const nodeState = selectionState.get(nodeId);
   const isSelected = nodeState?.selected ?? false;
   const isTarget = nodeState?.isTarget ?? false;
   const hasCondition = !!nodeState?.condition;
+  const isFocused = focusedNodeId === nodeId;
 
+  // Use expandedNodeIds from parent, with default expansion for shallow nodes
+  const isExpanded = expandedNodeIds.has(nodeId) || node.depth < 3;
   const hasChildren = node.children.length > 0;
+
+  // Scroll focused node into view
+  useEffect(() => {
+    if (isFocused && nodeRef.current) {
+      nodeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [isFocused]);
 
   const handlePillClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -104,8 +129,12 @@ function TreeNode({
 
   const toggleExpand = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    setExpanded(prev => !prev);
-  }, []);
+    onExpandedChange(
+      isExpanded
+        ? new Set([...expandedNodeIds].filter(id => id !== nodeId))
+        : new Set([...expandedNodeIds, nodeId])
+    );
+  }, [isExpanded, expandedNodeIds, nodeId, onExpandedChange]);
 
   const handleBlur = useCallback(() => {
     setTimeout(() => setShowMenu(false), 150);
@@ -117,15 +146,20 @@ function TreeNode({
     isSelected && 'selected',
     isTarget && 'target',
     hasCondition && 'has-condition',
+    isFocused && 'focused',
     showMenu && 'active',
   ].filter(Boolean).join(' ');
 
   return (
-    <div className="tree-node" style={{ marginLeft: node.depth > 0 ? 16 : 0 }}>
+    <div
+      ref={nodeRef}
+      className={`tree-node ${isFocused ? 'focused' : ''}`}
+      style={{ marginLeft: node.depth > 0 ? 16 : 0 }}
+    >
       <div className="node-row">
         {hasChildren && (
           <button className="expand-btn" onClick={toggleExpand}>
-            {expanded ? '▼' : '▶'}
+            {isExpanded ? '▼' : '▶'}
           </button>
         )}
         {!hasChildren && <span className="expand-placeholder" />}
@@ -178,16 +212,19 @@ function TreeNode({
         )}
       </div>
 
-      {expanded && hasChildren && (
+      {isExpanded && hasChildren && (
         <div className="node-children">
           {node.children.map((child) => (
             <TreeNode
               key={child.id}
               node={child}
               selectionState={selectionState}
+              focusedNodeId={focusedNodeId}
+              expandedNodeIds={expandedNodeIds}
               onToggleSelection={onToggleSelection}
               onSetTarget={onSetTarget}
               onAddCondition={onAddCondition}
+              onExpandedChange={onExpandedChange}
             />
           ))}
         </div>

@@ -336,6 +336,18 @@ body {
   border-width: 2px;
 }
 
+.node-pill.focused {
+  outline: 2px solid #f59e0b;
+  outline-offset: 2px;
+}
+
+.tree-node.focused > .node-row {
+  background: rgba(245, 158, 11, 0.15);
+  border-radius: 4px;
+  margin: 0 -0.25rem;
+  padding: 0.15rem 0.25rem;
+}
+
 .target-marker {
   font-size: 0.65rem;
   opacity: 0.8;
