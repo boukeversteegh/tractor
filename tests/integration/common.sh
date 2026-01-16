@@ -13,15 +13,10 @@ cd "$SCRIPT_DIR"
 
 PASSED=0 FAILED=0
 run_test() {
-    local output
-    output=$("$@" 2>&1)
-    local exit_code=$?
-    if [ $exit_code -eq 0 ]; then
+    if "$@"; then
         ((PASSED++))
-        echo "$output"
     else
         ((FAILED++))
-        echo "$output"
     fi
 }
 report() { echo ""; echo "Passed: $PASSED | Failed: $FAILED"; [ "$FAILED" -eq 0 ]; }
