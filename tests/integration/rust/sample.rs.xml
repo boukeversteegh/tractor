@@ -1,7 +1,8 @@
 <Files>
   <File path="tests/integration/rust/sample.rs">
     <file>
-      <line_comment>// Simple Rust example</line_comment>
+      <line_comment>// Simple Rust example
+    </line_comment>
       <function>
         fn
         <name>add</name>

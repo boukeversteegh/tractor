@@ -1,0 +1,21 @@
+<Files>
+  <File path="tests/integration/python/multiline-string-crlf.py">
+    <module>
+      <assign>
+        <left>
+          <type>msg</type>
+        </left>
+        =
+        <right>
+          <string>
+            <string_start>&quot;&quot;&quot;</string_start>
+            <string_content>hello
+
+    </string_content>
+            <string_end>&quot;&quot;&quot;</string_end>
+          </string>
+        </right>
+      </assign>
+    </module>
+  </File>
+</Files>

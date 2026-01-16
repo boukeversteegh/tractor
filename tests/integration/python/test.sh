@@ -11,4 +11,9 @@ run_test tractor sample.py -x "return" --expect 1 -m "return_statement renamed t
 run_test tractor sample.py -x "binary[op='+']" --expect 1 -m "operators extracted to op element"
 run_test tractor sample.py -x "call" --expect 3 -m "call expressions renamed to call"
 
+# Test multiline string with trailing newlines - newlines must be preserved in XPath matching
+# Note: tree-sitter normalizes CRLF to LF, so both files match with \n
+run_test tractor multiline-string-lf.py -x $'//string_content[.="hello\n\n"]' --expect 1 -m "can match multiline string with exact LF newlines"
+run_test tractor multiline-string-crlf.py -x $'//string_content[.="hello\n\n"]' --expect 1 -m "CRLF source normalized to LF by tree-sitter"
+
 report

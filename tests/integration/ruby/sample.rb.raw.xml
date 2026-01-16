@@ -1,7 +1,8 @@
 <Files>
   <File path="tests/integration/ruby/sample.rb">
     <program>
-      <comment># Simple Ruby example</comment>
+      <comment># Simple Ruby example
+    </comment>
       <method>
         def
         <name>
