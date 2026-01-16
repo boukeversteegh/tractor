@@ -1,0 +1,76 @@
+version: '3'
+
+vars:
+  GRAMMARS_DIR: public/grammars
+
+tasks:
+  grammars:
+    desc: Download TreeSitter WASM grammar files
+    cmds:
+      - mkdir -p {{.GRAMMARS_DIR}}
+      # Download from official GitHub releases
+      - |
+        download() {
+          local name=$1 repo=$2 version=$3 file=${4:-$1}
+          local url="https://github.com/${repo}/releases/download/${version}/${file}.wasm"
+          local out="{{.GRAMMARS_DIR}}/${name}.wasm"
+          if [ ! -f "$out" ]; then
+            echo "Downloading ${name}.wasm..."
+            curl -fsSL "$url" -o "$out" || echo "  -> failed: $url"
+          else
+            echo "  [skip] ${name}.wasm exists"
+          fi
+        }
+        download tree-sitter-javascript tree-sitter/tree-sitter-javascript v0.23.1 tree-sitter-javascript
+        download tree-sitter-typescript tree-sitter/tree-sitter-typescript v0.23.2 tree-sitter-typescript
+        download tree-sitter-tsx tree-sitter/tree-sitter-typescript v0.23.2 tree-sitter-tsx
+        download tree-sitter-python tree-sitter/tree-sitter-python v0.23.6 tree-sitter-python
+        download tree-sitter-rust tree-sitter/tree-sitter-rust v0.23.3 tree-sitter-rust
+        download tree-sitter-go tree-sitter/tree-sitter-go v0.23.4 tree-sitter-go
+        download tree-sitter-c tree-sitter/tree-sitter-c v0.23.4 tree-sitter-c
+        download tree-sitter-cpp tree-sitter/tree-sitter-cpp v0.23.4 tree-sitter-cpp
+        download tree-sitter-c_sharp tree-sitter/tree-sitter-c-sharp v0.23.1 tree-sitter-c_sharp
+        download tree-sitter-java tree-sitter/tree-sitter-java v0.23.5 tree-sitter-java
+        download tree-sitter-ruby tree-sitter/tree-sitter-ruby v0.23.1 tree-sitter-ruby
+        download tree-sitter-json tree-sitter/tree-sitter-json v0.24.8 tree-sitter-json
+        download tree-sitter-html tree-sitter/tree-sitter-html v0.23.2 tree-sitter-html
+        download tree-sitter-css tree-sitter/tree-sitter-css v0.23.2 tree-sitter-css
+        download tree-sitter-bash tree-sitter/tree-sitter-bash v0.23.3 tree-sitter-bash
+        download tree-sitter-php tree-sitter/tree-sitter-php v0.23.11 tree-sitter-php
+      # Copy tree-sitter runtime from web-tree-sitter npm package
+      - cp node_modules/web-tree-sitter/tree-sitter.wasm {{.GRAMMARS_DIR}}/ 2>/dev/null || true
+
+  wasm:
+    desc: Build tractor-core to WASM
+    cmds:
+      - cd ../tractor-core && wasm-pack build --target web --no-default-features --features wasm
+      - cp -r ../tractor-core/pkg ./
+
+  install:
+    desc: Install npm dependencies
+    cmds:
+      - npm install
+
+  dev:
+    desc: Run dev server
+    deps: [wasm, grammars]
+    cmds:
+      - npm run dev
+
+  build:
+    desc: Build for production
+    deps: [wasm]
+    cmds:
+      - npm run build
+
+  preview:
+    desc: Preview production build
+    cmds:
+      - npm run preview
+
+  clean:
+    desc: Clean web build artifacts
+    cmds:
+      - rm -rf pkg/
+      - rm -rf dist/
+      - rm -rf node_modules/

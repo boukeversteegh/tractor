@@ -6,13 +6,25 @@
 //! - XPath 3.1 query execution
 //! - Multiple output formats
 
+#[cfg(feature = "native")]
 pub mod parser;
 pub mod xpath;
 pub mod output;
+#[cfg(feature = "native")]
 pub mod parallel;
 pub mod xot_builder;
 pub mod xot_transform;
 
+// Language transforms - available for both native and WASM
+pub mod languages;
+
+// WASM support
+#[cfg(feature = "wasm")]
+pub mod wasm;
+#[cfg(feature = "wasm")]
+pub mod wasm_ast;
+
+#[cfg(feature = "native")]
 pub use parser::{
     parse_file, parse_string, detect_language, generate_xml_document,
     ParseResult, SUPPORTED_LANGUAGES,
@@ -23,5 +35,6 @@ pub use parser::{
 };
 pub use xpath::{XPathEngine, Match};
 pub use output::{OutputFormat, format_matches, OutputOptions, render_node, render_document, render_xml_string, RenderOptions};
+#[cfg(feature = "native")]
 pub use parallel::{process_files_parallel, expand_globs, filter_supported_files};
 pub use xot_builder::XotBuilder;

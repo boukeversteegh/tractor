@@ -7,7 +7,15 @@ pub fn should_use_color(mode: &str) -> bool {
         "never" => false,
         _ => {
             // Auto mode: check if stdout is a tty and NO_COLOR is not set
-            atty::is(atty::Stream::Stdout) && std::env::var("NO_COLOR").is_err()
+            #[cfg(feature = "native")]
+            {
+                atty::is(atty::Stream::Stdout) && std::env::var("NO_COLOR").is_err()
+            }
+            #[cfg(not(feature = "native"))]
+            {
+                // In WASM, default to no colors
+                false
+            }
         }
     }
 }

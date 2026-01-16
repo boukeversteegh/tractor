@@ -3,6 +3,11 @@ version: '3'
 vars:
   DIST_DIR: ./dist
 
+includes:
+  web:
+    taskfile: ./web/Taskfile.yml
+    dir: ./web
+
 tasks:
   # === tractor (Rust XPath CLI) ===
 
@@ -66,3 +71,4 @@ tasks:
     cmds:
       - rm -rf dist/
       - rm -rf target/
+      - task: web:clean

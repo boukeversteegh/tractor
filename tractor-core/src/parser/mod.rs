@@ -4,8 +4,10 @@
 //! converting source code into XML AST that can be queried with XPath.
 
 pub mod config;
-pub mod languages;
 pub mod raw;
+
+// Re-export languages for compatibility
+pub use crate::languages;
 
 use std::path::Path;
 use std::fs;

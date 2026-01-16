@@ -4,43 +4,91 @@ version.workspace = true
 edition.workspace = true
 description = "Core library for tractor - multi-language code query tool"
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = ["native"]
+native = [
+    "dep:tree-sitter",
+    "dep:tree-sitter-c-sharp",
+    "dep:tree-sitter-rust",
+    "dep:tree-sitter-javascript",
+    "dep:tree-sitter-typescript",
+    "dep:tree-sitter-python",
+    "dep:tree-sitter-go",
+    "dep:tree-sitter-java",
+    "dep:tree-sitter-ruby",
+    "dep:tree-sitter-cpp",
+    "dep:tree-sitter-c",
+    "dep:tree-sitter-json",
+    "dep:tree-sitter-html",
+    "dep:tree-sitter-css",
+    "dep:tree-sitter-bash",
+    "dep:tree-sitter-yaml",
+    "dep:tree-sitter-php",
+    "dep:tree-sitter-scala",
+    "dep:tree-sitter-lua",
+    "dep:tree-sitter-haskell",
+    "dep:tree-sitter-ocaml",
+    "dep:tree-sitter-r",
+    "dep:tree-sitter-julia",
+    "dep:glob",
+    "dep:rayon",
+    "dep:atty",
+]
+wasm = [
+    "dep:wasm-bindgen",
+    "dep:console_error_panic_hook",
+]
+
 [dependencies]
-# TreeSitter
-tree-sitter.workspace = true
-tree-sitter-c-sharp.workspace = true
-tree-sitter-rust.workspace = true
-tree-sitter-javascript.workspace = true
-tree-sitter-typescript.workspace = true
-tree-sitter-python.workspace = true
-tree-sitter-go.workspace = true
-tree-sitter-java.workspace = true
-tree-sitter-ruby.workspace = true
-tree-sitter-cpp.workspace = true
-tree-sitter-c.workspace = true
-tree-sitter-json.workspace = true
-tree-sitter-html.workspace = true
-tree-sitter-css.workspace = true
-tree-sitter-bash.workspace = true
-tree-sitter-yaml.workspace = true
-tree-sitter-php.workspace = true
-tree-sitter-scala.workspace = true
-tree-sitter-lua.workspace = true
-tree-sitter-haskell.workspace = true
-tree-sitter-ocaml.workspace = true
-tree-sitter-r.workspace = true
-tree-sitter-julia.workspace = true
+# TreeSitter (native only)
+tree-sitter = { workspace = true, optional = true }
+tree-sitter-c-sharp = { workspace = true, optional = true }
+tree-sitter-rust = { workspace = true, optional = true }
+tree-sitter-javascript = { workspace = true, optional = true }
+tree-sitter-typescript = { workspace = true, optional = true }
+tree-sitter-python = { workspace = true, optional = true }
+tree-sitter-go = { workspace = true, optional = true }
+tree-sitter-java = { workspace = true, optional = true }
+tree-sitter-ruby = { workspace = true, optional = true }
+tree-sitter-cpp = { workspace = true, optional = true }
+tree-sitter-c = { workspace = true, optional = true }
+tree-sitter-json = { workspace = true, optional = true }
+tree-sitter-html = { workspace = true, optional = true }
+tree-sitter-css = { workspace = true, optional = true }
+tree-sitter-bash = { workspace = true, optional = true }
+tree-sitter-yaml = { workspace = true, optional = true }
+tree-sitter-php = { workspace = true, optional = true }
+tree-sitter-scala = { workspace = true, optional = true }
+tree-sitter-lua = { workspace = true, optional = true }
+tree-sitter-haskell = { workspace = true, optional = true }
+tree-sitter-ocaml = { workspace = true, optional = true }
+tree-sitter-r = { workspace = true, optional = true }
+tree-sitter-julia = { workspace = true, optional = true }
 
 # XPath 3.1
 xee-xpath.workspace = true
 xot.workspace = true
 
-# Utilities
+# Utilities (always needed)
 quick-xml.workspace = true
-atty.workspace = true
-glob.workspace = true
-rayon.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 anyhow.workspace = true
 regex.workspace = true
+
+# Native-only utilities
+atty = { workspace = true, optional = true }
+glob = { workspace = true, optional = true }
+rayon = { workspace = true, optional = true }
+
+# WASM-only dependencies
+wasm-bindgen = { workspace = true, optional = true }
+console_error_panic_hook = { workspace = true, optional = true }
+
+# WASM requires getrandom with wasm_js feature
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.3", features = ["wasm_js"] }
