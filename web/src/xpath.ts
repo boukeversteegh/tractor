@@ -6,9 +6,22 @@ import { evaluateXPathToNodes } from 'fontoxpath';
 
 export interface Match {
   xml: string;
+  value: string;
   start?: string;
   end?: string;
 }
+
+export type OutputFormat = 'xml' | 'lines' | 'source' | 'value' | 'gcc' | 'json' | 'count';
+
+export const OUTPUT_FORMATS: { value: OutputFormat; label: string; description: string }[] = [
+  { value: 'xml', label: 'XML', description: 'XML fragments of matched nodes' },
+  { value: 'lines', label: 'Lines', description: 'Full source lines containing matches' },
+  { value: 'source', label: 'Source', description: 'Exact matched source text' },
+  { value: 'value', label: 'Value', description: 'Text content of matched nodes' },
+  { value: 'gcc', label: 'GCC', description: 'file:line:col format for IDEs' },
+  { value: 'json', label: 'JSON', description: 'JSON array with match details' },
+  { value: 'count', label: 'Count', description: 'Number of matches only' },
+];
 
 /**
  * Find location attributes on element, its descendants, or ancestors
@@ -89,6 +102,7 @@ export function queryXml(xmlString: string, xpath: string): Match[] {
 
     return {
       xml: serializer.serializeToString(element),
+      value: element.textContent || '',
       start: location.start,
       end: location.end,
     };

@@ -178,6 +178,33 @@ body {
   font-size: 0.85rem;
 }
 
+.format-tabs {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.format-tab {
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.format-tab:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.format-tab.active {
+  background: var(--accent);
+  color: white;
+}
+
 .options {
   display: flex;
   gap: 1rem;

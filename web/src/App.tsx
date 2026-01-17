@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { initParser, parseSource } from './parser';
 import { initTractor, parseAstToXmlSimple } from './tractor';
-import { queryXml, Match } from './xpath';
+import { queryXml, Match, OutputFormat, OUTPUT_FORMATS } from './xpath';
 import { TreeView } from './components/TreeView';
 import { XmlOutput } from './components/XmlOutput';
 import { QueryResults } from './components/QueryResults';
@@ -99,6 +99,7 @@ export function App() {
 
   // Query results
   const [matches, setMatches] = useState<Match[]>([]);
+  const [outputFormat, setOutputFormat] = useState<OutputFormat>('source');
 
   // UI state
   const [activeTab, setActiveTab] = useState<Tab>('builder');
@@ -438,8 +439,20 @@ export function App() {
         <div className="panel results-panel">
           <div className="panel-header">
             <span>Results</span>
+            <div className="format-tabs">
+              {OUTPUT_FORMATS.map((f) => (
+                <button
+                  key={f.value}
+                  className={`format-tab ${outputFormat === f.value ? 'active' : ''}`}
+                  onClick={() => setOutputFormat(f.value)}
+                  title={f.description}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
           </div>
-          <QueryResults matches={matches} />
+          <QueryResults matches={matches} format={outputFormat} source={source} />
         </div>
       </main>
     </div>
