@@ -125,6 +125,102 @@ body {
   color: var(--accent-light);
 }
 
+/* Query input with error highlighting - same pattern as SourceEditor */
+.query-input-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+}
+
+/* Shared text styling - must match exactly for alignment */
+.query-input-backdrop,
+.query-input-transparent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Use exact same values for pixel-perfect alignment */
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 14px;
+  line-height: 32px; /* Match container height minus border */
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  white-space: pre;
+  box-sizing: border-box;
+}
+
+.query-input-backdrop {
+  overflow: hidden;
+  pointer-events: none;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border-color: var(--border);
+}
+
+.query-input-backdrop .placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+.query-input-backdrop .error-highlight {
+  background: rgba(239, 68, 68, 0.4);
+  color: inherit;
+  border-radius: 2px;
+}
+
+.query-input-transparent {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  /* Use both for cross-browser support */
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  caret-color: var(--text-primary);
+}
+
+.query-input-transparent::placeholder {
+  color: transparent;
+}
+
+.query-input-transparent:focus {
+  outline: none;
+}
+
+.query-input-wrapper:focus-within .query-input-backdrop {
+  border-color: var(--accent);
+}
+
+.query-input-wrapper.error .query-input-backdrop {
+  border-color: #ef4444;
+}
+
+.query-input-wrapper.manual .query-input-backdrop {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+/* Legacy - keep for backward compat */
+.query-input.error {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.query-error {
+  padding: 0.25rem 0.5rem;
+  background: rgba(239, 68, 68, 0.2);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: #f87171;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: help;
+}
+
 .clear-btn {
   padding: 0.4rem 0.75rem;
   background: var(--bg-tertiary);
@@ -578,4 +674,34 @@ body {
   color: var(--text-secondary);
   font-style: italic;
   font-size: 0.8rem;
+}
+
+/* ANSI color classes (matching tractor CLI output) */
+.ansi-dim {
+  opacity: 0.6;
+}
+
+.ansi-bold {
+  font-weight: bold;
+}
+
+.ansi-blue {
+  color: #7aa2f7; /* Element/tag names */
+}
+
+.ansi-cyan {
+  color: #7dcfff; /* Attribute names */
+}
+
+.ansi-yellow {
+  color: #e0af68; /* Attribute values */
+}
+
+.ansi-black {
+  color: #1a1b26;
+}
+
+.ansi-bg-yellow {
+  background-color: #e0af68;
+  color: #1a1b26;
 }

@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { initParser, parseSource } from './parser';
-import { initTractor, parseAstToXmlSimple } from './tractor';
+import { initTractor, parseAstToXmlSimple, validateXPathSync, XPathValidationResult } from './tractor';
 import { queryXml, Match, OutputFormat, OUTPUT_FORMATS } from './xpath';
 import { TreeView } from './components/TreeView';
 import { XmlOutput } from './components/XmlOutput';
 import { QueryResults } from './components/QueryResults';
 import { SourceEditor } from './components/SourceEditor';
+import { QueryInput } from './components/QueryInput';
 import { Tabs } from './components/Tabs';
 import { SAMPLE_CODE } from './sampleCode';
 import {
@@ -100,6 +101,7 @@ export function App() {
 
   // Query results
   const [matches, setMatches] = useState<Match[]>([]);
+  const [queryValidation, setQueryValidation] = useState<XPathValidationResult | null>(null);
   const [outputFormat, setOutputFormat] = useState<OutputFormat>('source');
 
   // UI state
@@ -197,11 +199,11 @@ export function App() {
         const ast = await parseSource(source, language);
 
         // Always parse with locations for tree building and querying
+        // Use non-pretty-printed XML for querying to avoid whitespace in textContent
         const xmlWithLocations = await parseAstToXmlSimple(
-          ast, source, language, rawMode, true, prettyPrint
+          ast, source, language, rawMode, true, false  // never pretty-print for queries
         );
-        console.log('XML with locations (first 500 chars):', xmlWithLocations.substring(0, 500));
-        setXmlForQuery(xmlWithLocations);  // Store for querying (has locations)
+        setXmlForQuery(xmlWithLocations);  // Store for querying (has locations, no whitespace)
 
         // Parse XML to tree for query builder (needs locations)
         const tree = parseXmlToTree(xmlWithLocations);
@@ -248,7 +250,22 @@ export function App() {
 
   // Execute XPath query (use xmlForQuery which has locations)
   useEffect(() => {
-    if (!xmlForQuery || !effectiveQuery.trim()) {
+    if (!effectiveQuery.trim()) {
+      setMatches([]);
+      setQueryValidation(null);
+      return;
+    }
+
+    // Validate XPath first
+    const validation = validateXPathSync(effectiveQuery);
+    setQueryValidation(validation);
+
+    if (!validation.valid) {
+      setMatches([]);
+      return;
+    }
+
+    if (!xmlForQuery) {
       setMatches([]);
       return;
     }
@@ -258,6 +275,11 @@ export function App() {
       setMatches(results);
     } catch (e) {
       console.error('XPath error:', e);
+      setQueryValidation({
+        valid: false,
+        error: e instanceof Error ? e.message : 'Query execution failed',
+        warnings: [],
+      });
       setMatches([]);
     }
   }, [xmlForQuery, effectiveQuery]);
@@ -411,16 +433,23 @@ export function App() {
         </div>
         <div className="query-bar">
           <label>XPath:</label>
-          <input
-            type="text"
+          <QueryInput
             value={effectiveQuery}
-            onChange={(e) => handleQueryChange(e.target.value)}
+            onChange={handleQueryChange}
             placeholder="Click nodes to build query..."
-            className={`query-input ${useManualQuery ? 'manual' : ''}`}
+            className={`${useManualQuery ? 'manual' : ''} ${queryValidation && !queryValidation.valid ? 'error' : ''}`}
+            errorStart={queryValidation && !queryValidation.valid ? queryValidation.error_start : undefined}
+            errorEnd={queryValidation && !queryValidation.valid ? queryValidation.error_end : undefined}
           />
-          <span className="match-count">
-            {matches.length} match{matches.length !== 1 ? 'es' : ''}
-          </span>
+          {queryValidation && !queryValidation.valid ? (
+            <span className="query-error" title={queryValidation.error}>
+              ⚠ {(queryValidation.error?.length ?? 0) > 30 ? queryValidation.error?.slice(0, 30) + '...' : queryValidation.error}
+            </span>
+          ) : (
+            <span className="match-count">
+              {matches.length} match{matches.length !== 1 ? 'es' : ''}
+            </span>
+          )}
           <button onClick={handleClearSelection} className="clear-btn">Clear</button>
         </div>
       </header>

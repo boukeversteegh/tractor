@@ -2,7 +2,7 @@
  * XPath query execution using fontoxpath
  */
 
-import { evaluateXPathToNodes } from 'fontoxpath';
+import { evaluateXPathToNodes, evaluateXPath } from 'fontoxpath';
 
 export interface Match {
   xml: string;
@@ -78,6 +78,17 @@ function findLocation(element: Element): { start?: string; end?: string } {
 }
 
 /**
+ * Find location for a text node by looking at its parent element
+ */
+function findLocationForTextNode(textNode: Text): { start?: string; end?: string } {
+  const parent = textNode.parentElement;
+  if (parent) {
+    return findLocation(parent);
+  }
+  return {};
+}
+
+/**
  * Execute an XPath query on XML and return matching nodes
  */
 export function queryXml(xmlString: string, xpath: string): Match[] {
@@ -91,20 +102,103 @@ export function queryXml(xmlString: string, xpath: string): Match[] {
     throw new Error(`XML parse error: ${parseError.textContent}`);
   }
 
-  // Execute XPath query
-  const nodes = evaluateXPathToNodes(xpath, doc);
+  // Try to evaluate as nodes first
+  let nodes: Node[];
+  try {
+    nodes = evaluateXPathToNodes(xpath, doc);
+  } catch {
+    // If it fails (e.g., scalar result), try generic evaluation
+    nodes = [];
+  }
+
+  // If no nodes returned, try evaluating as a scalar (string, number, boolean)
+  if (nodes.length === 0) {
+    try {
+      const result = evaluateXPath(xpath, doc);
+      // Handle scalar results
+      if (result !== null && result !== undefined) {
+        if (typeof result === 'string' || typeof result === 'number' || typeof result === 'boolean') {
+          return [{
+            xml: String(result),
+            value: String(result),
+            start: undefined,
+            end: undefined,
+          }];
+        }
+        // If it's an array (sequence), convert each item
+        if (Array.isArray(result)) {
+          return result.map((item) => ({
+            xml: String(item),
+            value: String(item),
+            start: undefined,
+            end: undefined,
+          }));
+        }
+      }
+    } catch {
+      // If that also fails, return empty
+      return [];
+    }
+  }
+
+  // Filter out whitespace-only text nodes (common when using text())
+  const filteredNodes = nodes.filter((node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent || '';
+      // Keep only text nodes with non-whitespace content
+      return text.trim().length > 0;
+    }
+    return true;
+  });
 
   // Convert results to matches
-  return nodes.map((node) => {
-    const element = node as Element;
-    const serializer = new XMLSerializer();
-    const location = findLocation(element);
+  const serializer = new XMLSerializer();
 
-    return {
-      xml: serializer.serializeToString(element),
-      value: element.textContent || '',
-      start: location.start,
-      end: location.end,
-    };
+  return filteredNodes.map((node) => {
+    // Handle different node types
+    if (node.nodeType === Node.TEXT_NODE) {
+      // Text node - get location from parent, value is just the text
+      const textNode = node as Text;
+      const location = findLocationForTextNode(textNode);
+      const textContent = textNode.textContent || '';
+
+      return {
+        xml: textContent, // Text nodes don't have XML structure
+        value: textContent,
+        start: location.start,
+        end: location.end,
+      };
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      // Element node - original handling
+      const element = node as Element;
+      const location = findLocation(element);
+
+      return {
+        xml: serializer.serializeToString(element),
+        value: element.textContent || '',
+        start: location.start,
+        end: location.end,
+      };
+    } else if (node.nodeType === Node.ATTRIBUTE_NODE) {
+      // Attribute node - return the attribute value
+      const attr = node as Attr;
+      const parent = attr.ownerElement;
+      const location = parent ? findLocation(parent) : {};
+
+      return {
+        xml: `${attr.name}="${attr.value}"`,
+        value: attr.value,
+        start: location.start,
+        end: location.end,
+      };
+    } else {
+      // Other node types (comment, etc.) - fallback
+      return {
+        xml: node.textContent || '',
+        value: node.textContent || '',
+        start: undefined,
+        end: undefined,
+      };
+    }
   });
 }

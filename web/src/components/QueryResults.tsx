@@ -1,32 +1,12 @@
 import { Match, OutputFormat } from '../xpath';
-import { parsePositionString, positionToOffset } from '../xmlTree';
+import { parsePositionString } from '../xmlTree';
+import { extractSourceSnippetSync, getSourceLinesSync, prettyPrintXmlSync, ansiToHtml } from '../tractor';
 
 interface QueryResultsProps {
   matches: Match[];
   format: OutputFormat;
   source: string;
   fileName?: string;
-}
-
-function getSourceLines(source: string, start?: string, end?: string): string[] {
-  if (!start || !end) return [];
-  const startPos = parsePositionString(start);
-  const endPos = parsePositionString(end);
-  if (!startPos || !endPos) return [];
-
-  const lines = source.split('\n');
-  return lines.slice(startPos.line - 1, endPos.line);
-}
-
-function getSourceSnippet(source: string, start?: string, end?: string): string {
-  if (!start || !end) return '';
-  const startPos = parsePositionString(start);
-  const endPos = parsePositionString(end);
-  if (!startPos || !endPos) return '';
-
-  const startOffset = positionToOffset(source, startPos);
-  const endOffset = positionToOffset(source, endPos);
-  return source.slice(startOffset, endOffset);
 }
 
 export function QueryResults({ matches, format, source, fileName = 'input' }: QueryResultsProps) {
@@ -76,17 +56,25 @@ export function QueryResults({ matches, format, source, fileName = 'input' }: Qu
                   {match.start} - {match.end}
                 </span>
               )}
-              <pre><code>{match.xml.slice(0, 500)}{match.xml.length > 500 ? '...' : ''}</code></pre>
+              <pre><code dangerouslySetInnerHTML={{
+                __html: (() => {
+                  const pretty = prettyPrintXmlSync(match.xml, false, true);
+                  const truncated = pretty.length > 4000
+                    ? pretty.slice(0, 4000) + '\x1b[0m...'
+                    : pretty;
+                  return ansiToHtml(truncated);
+                })()
+              }} /></pre>
             </>
           )}
           {format === 'value' && (
             <pre><code>{match.value}</code></pre>
           )}
           {format === 'lines' && (
-            <pre><code>{getSourceLines(source, match.start, match.end).join('\n')}</code></pre>
+            <pre><code>{getSourceLinesSync(source, match.start, match.end).join('\n')}</code></pre>
           )}
           {format === 'source' && (
-            <pre><code>{getSourceSnippet(source, match.start, match.end)}</code></pre>
+            <pre><code>{extractSourceSnippetSync(source, match.start, match.end)}</code></pre>
           )}
           {format === 'gcc' && (
             <pre><code>{fileName}:{match.start?.replace(':', ':')}: {match.value.slice(0, 50)}{match.value.length > 50 ? '...' : ''}</code></pre>
