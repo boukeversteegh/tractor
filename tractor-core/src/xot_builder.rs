@@ -188,6 +188,17 @@ impl XotBuilder {
                 // Create wrapper element with field name
                 let wrapper_name = self.get_name(field);
                 let wrapper = self.xot.new_element(wrapper_name);
+
+                // Copy location attributes from child to wrapper
+                let start_attr = self.get_name("start");
+                let end_attr = self.get_name("end");
+                if let Some(start_val) = self.xot.attributes(element).get(start_attr).cloned() {
+                    self.xot.attributes_mut(wrapper).insert(start_attr, start_val);
+                }
+                if let Some(end_val) = self.xot.attributes(element).get(end_attr).cloned() {
+                    self.xot.attributes_mut(wrapper).insert(end_attr, end_val);
+                }
+
                 self.xot.append(wrapper, element)?;
                 self.xot.append(parent, wrapper)?;
             } else {
@@ -317,6 +328,17 @@ impl XotBuilder {
                 // Create wrapper element with field name
                 let wrapper_name = self.get_name(field);
                 let wrapper = self.xot.new_element(wrapper_name);
+
+                // Copy location attributes from child to wrapper
+                let start_attr = self.get_name("start");
+                let end_attr = self.get_name("end");
+                if let Some(start_val) = self.xot.attributes(element).get(start_attr).cloned() {
+                    self.xot.attributes_mut(wrapper).insert(start_attr, start_val);
+                }
+                if let Some(end_val) = self.xot.attributes(element).get(end_attr).cloned() {
+                    self.xot.attributes_mut(wrapper).insert(end_attr, end_val);
+                }
+
                 self.xot.append(wrapper, element)?;
                 self.xot.append(parent, wrapper)?;
             } else {

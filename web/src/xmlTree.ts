@@ -210,3 +210,43 @@ export function offsetToPosition(source: string, offset: number): Position {
 
   return { line, column };
 }
+
+/**
+ * Convert line:column position to character offset
+ */
+export function positionToOffset(source: string, position: Position): number {
+  let currentLine = 1;
+  let currentColumn = 1;
+
+  for (let i = 0; i < source.length; i++) {
+    if (currentLine === position.line && currentColumn === position.column) {
+      return i;
+    }
+
+    if (source[i] === '\n') {
+      currentLine++;
+      currentColumn = 1;
+    } else {
+      currentColumn++;
+    }
+  }
+
+  // If we reached the end and we're at the target line, return end position
+  if (currentLine === position.line) {
+    return source.length;
+  }
+
+  return source.length;
+}
+
+/**
+ * Parse position string "line:col" into Position
+ */
+export function parsePositionString(str: string): Position | null {
+  const match = str.match(/^(\d+):(\d+)$/);
+  if (!match) return null;
+  return {
+    line: parseInt(match[1], 10),
+    column: parseInt(match[2], 10),
+  };
+}

@@ -5,6 +5,7 @@ import { queryXml, Match } from './xpath';
 import { TreeView } from './components/TreeView';
 import { XmlOutput } from './components/XmlOutput';
 import { QueryResults } from './components/QueryResults';
+import { SourceEditor } from './components/SourceEditor';
 import { SAMPLE_CODE } from './sampleCode';
 import {
   parseXmlToTree,
@@ -32,24 +33,28 @@ interface NodeInfo {
 
 function buildQueryFromSelection(
   selectionState: SelectionState,
-  nodeInfoMap: Map<string, NodeInfo>
+  nodeInfoMap: Map<string, NodeInfo>,
+  tree: XmlNode | null
 ): string {
-  const selected: { id: string; info: NodeInfo }[] = [];
+  const selected: { id: string; info: NodeInfo; depth: number }[] = [];
 
   for (const [id, state] of selectionState) {
     const info = nodeInfoMap.get(id);
     if (!info) continue;
 
     if (state.selected) {
-      selected.push({ id, info: { ...info, ...state } });
+      // Get depth from tree path
+      const path = tree ? getPathToNode(tree, id) : null;
+      const depth = path ? path.length : 0;
+      selected.push({ id, info: { ...info, ...state }, depth });
     }
-    // TODO: Use targetId for tree-based query building
   }
 
   if (selected.length === 0) return '';
 
-  // For now, simple approach: join all selected names with //
-  // TODO: Use tree structure to determine / vs //
+  // Sort by tree depth (ancestors first)
+  selected.sort((a, b) => a.depth - b.depth);
+
   const names = selected.map(s => {
     let part = s.info.name;
     if (s.info.condition) {
@@ -68,7 +73,8 @@ export function App() {
   // Source & parsing state
   const [source, setSource] = useState(SAMPLE_CODE.csharp);
   const [language, setLanguage] = useState('csharp');
-  const [xml, setXml] = useState('');
+  const [xml, setXml] = useState('');  // Display XML (may not have locations)
+  const [xmlForQuery, setXmlForQuery] = useState('');  // XML with locations for querying
   const [xmlTree, setXmlTree] = useState<XmlNode | null>(null);
 
   // Options
@@ -82,8 +88,8 @@ export function App() {
 
   // Derived XPath query from selection
   const query = useMemo(() => {
-    return buildQueryFromSelection(selectionState, nodeInfoMap);
-  }, [selectionState, nodeInfoMap]);
+    return buildQueryFromSelection(selectionState, nodeInfoMap, xmlTree);
+  }, [selectionState, nodeInfoMap, xmlTree]);
 
   // Manual query override
   const [manualQuery, setManualQuery] = useState('');
@@ -124,10 +130,12 @@ export function App() {
       try {
         const ast = await parseSource(source, language);
 
-        // Always parse with locations for tree building (needed for click-to-expand)
+        // Always parse with locations for tree building and querying
         const xmlWithLocations = await parseAstToXmlSimple(
           ast, source, language, rawMode, true, prettyPrint
         );
+        console.log('XML with locations (first 500 chars):', xmlWithLocations.substring(0, 500));
+        setXmlForQuery(xmlWithLocations);  // Store for querying (has locations)
 
         // Parse XML to tree for query builder (needs locations)
         const tree = parseXmlToTree(xmlWithLocations);
@@ -137,7 +145,7 @@ export function App() {
         const xmlOutput = showLocations
           ? xmlWithLocations
           : await parseAstToXmlSimple(ast, source, language, rawMode, false, prettyPrint);
-        setXml(xmlOutput);
+        setXml(xmlOutput);  // For display only
 
         // Build node info map
         if (tree) {
@@ -172,21 +180,21 @@ export function App() {
     setUseManualQuery(false);
   }, [xmlTree]);
 
-  // Execute XPath query
+  // Execute XPath query (use xmlForQuery which has locations)
   useEffect(() => {
-    if (!xml || !effectiveQuery.trim()) {
+    if (!xmlForQuery || !effectiveQuery.trim()) {
       setMatches([]);
       return;
     }
 
     try {
-      const results = queryXml(xml, effectiveQuery);
+      const results = queryXml(xmlForQuery, effectiveQuery);
       setMatches(results);
     } catch (e) {
       console.error('XPath error:', e);
       setMatches([]);
     }
-  }, [xml, effectiveQuery]);
+  }, [xmlForQuery, effectiveQuery]);
 
   // Handle language change
   const handleLanguageChange = useCallback((newLang: string) => {
@@ -386,12 +394,11 @@ export function App() {
               </label>
             </div>
           </div>
-          <textarea
-            value={source}
-            onChange={(e) => setSource(e.target.value)}
+          <SourceEditor
+            source={source}
+            matches={matches}
+            onChange={setSource}
             onClick={handleSourceClick}
-            placeholder="Enter source code..."
-            className="source-input"
           />
         </div>
 
