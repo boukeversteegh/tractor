@@ -2,16 +2,7 @@
  * TreeSitter parser wrapper with AST serialization
  */
 
-// web-tree-sitter types
-type TreeSitterParser = {
-  init(options?: { locateFile?: (path: string) => string }): Promise<void>;
-  Language: {
-    load(path: string): Promise<any>;
-  };
-  new(): any;
-};
-
-let TreeSitter: TreeSitterParser;
+import { Parser, Language } from 'web-tree-sitter';
 
 /** Serialized node format matching Rust's SerializedNode */
 export interface SerializedNode {
@@ -27,58 +18,83 @@ export interface SerializedNode {
   children: SerializedNode[];
 }
 
-/** Language to grammar file mapping */
-const GRAMMAR_FILES: Record<string, string> = {
-  typescript: 'tree-sitter-typescript.wasm',
-  javascript: 'tree-sitter-javascript.wasm',
-  tsx: 'tree-sitter-tsx.wasm',
-  csharp: 'tree-sitter-c_sharp.wasm',
-  rust: 'tree-sitter-rust.wasm',
-  python: 'tree-sitter-python.wasm',
-  go: 'tree-sitter-go.wasm',
-  java: 'tree-sitter-java.wasm',
-  ruby: 'tree-sitter-ruby.wasm',
-  cpp: 'tree-sitter-cpp.wasm',
-  c: 'tree-sitter-c.wasm',
-  json: 'tree-sitter-json.wasm',
-  html: 'tree-sitter-html.wasm',
-  css: 'tree-sitter-css.wasm',
-  bash: 'tree-sitter-bash.wasm',
-  php: 'tree-sitter-php.wasm',
+// Import grammar wasm files from npm packages (Vite handles these)
+// @ts-ignore
+import treeSitterWasm from 'web-tree-sitter/web-tree-sitter.wasm?url';
+// @ts-ignore
+import rustWasm from 'tree-sitter-rust/tree-sitter-rust.wasm?url';
+// @ts-ignore
+import javascriptWasm from 'tree-sitter-javascript/tree-sitter-javascript.wasm?url';
+// @ts-ignore
+import typescriptWasm from 'tree-sitter-typescript/tree-sitter-typescript.wasm?url';
+// @ts-ignore
+import tsxWasm from 'tree-sitter-typescript/tree-sitter-tsx.wasm?url';
+// @ts-ignore
+import pythonWasm from 'tree-sitter-python/tree-sitter-python.wasm?url';
+// @ts-ignore
+import csharpWasm from 'tree-sitter-c-sharp/tree-sitter-c_sharp.wasm?url';
+// @ts-ignore
+import goWasm from 'tree-sitter-go/tree-sitter-go.wasm?url';
+// @ts-ignore
+import javaWasm from 'tree-sitter-java/tree-sitter-java.wasm?url';
+// @ts-ignore
+import cWasm from 'tree-sitter-c/tree-sitter-c.wasm?url';
+// @ts-ignore
+import cppWasm from 'tree-sitter-cpp/tree-sitter-cpp.wasm?url';
+// @ts-ignore
+import jsonWasm from 'tree-sitter-json/tree-sitter-json.wasm?url';
+// @ts-ignore
+import htmlWasm from 'tree-sitter-html/tree-sitter-html.wasm?url';
+// @ts-ignore
+import cssWasm from 'tree-sitter-css/tree-sitter-css.wasm?url';
+// @ts-ignore
+import bashWasm from 'tree-sitter-bash/tree-sitter-bash.wasm?url';
+
+/** Language to grammar URL mapping */
+const GRAMMAR_URLS: Record<string, string> = {
+  typescript: typescriptWasm,
+  javascript: javascriptWasm,
+  tsx: tsxWasm,
+  csharp: csharpWasm,
+  rust: rustWasm,
+  python: pythonWasm,
+  go: goWasm,
+  java: javaWasm,
+  cpp: cppWasm,
+  c: cWasm,
+  json: jsonWasm,
+  html: htmlWasm,
+  css: cssWasm,
+  bash: bashWasm,
 };
 
-let parser: any = null;
-const loadedLanguages = new Map<string, any>();
+let parser: Parser | null = null;
+const loadedLanguages = new Map<string, Language>();
 
 /**
  * Initialize the TreeSitter parser
  */
 export async function initParser(): Promise<void> {
-  // Dynamic import - web-tree-sitter exports the Parser class
-  const module = await import('web-tree-sitter');
-  // Handle both ESM default export and CommonJS module.exports
-  TreeSitter = module.default || module;
-
-  await TreeSitter.init({
-    locateFile: (scriptName: string) => `${import.meta.env.BASE_URL}grammars/${scriptName}`,
+  await Parser.init({
+    locateFile: () => treeSitterWasm,
   });
-  parser = new TreeSitter();
+  parser = new Parser();
 }
 
 /**
  * Load a language grammar
  */
-export async function loadLanguage(lang: string): Promise<any> {
+export async function loadLanguage(lang: string): Promise<Language> {
   if (loadedLanguages.has(lang)) {
     return loadedLanguages.get(lang)!;
   }
 
-  const grammarFile = GRAMMAR_FILES[lang];
-  if (!grammarFile) {
+  const grammarUrl = GRAMMAR_URLS[lang];
+  if (!grammarUrl) {
     throw new Error(`Unsupported language: ${lang}`);
   }
 
-  const language = await TreeSitter.Language.load(`${import.meta.env.BASE_URL}grammars/${grammarFile}`);
+  const language = await Language.load(grammarUrl);
   loadedLanguages.set(lang, language);
   return language;
 }
@@ -92,9 +108,12 @@ export async function parseSource(source: string, lang: string): Promise<Seriali
   }
 
   const language = await loadLanguage(lang);
-  parser.setLanguage(language);
+  parser!.setLanguage(language);
 
-  const tree = parser.parse(source);
+  const tree = parser!.parse(source);
+  if (!tree) {
+    throw new Error('Failed to parse source');
+  }
   return serializeNode(tree.rootNode);
 }
 
@@ -132,5 +151,5 @@ function serializeNode(node: any, fieldName?: string): SerializedNode {
  * Get list of supported languages
  */
 export function getSupportedLanguages(): string[] {
-  return Object.keys(GRAMMAR_FILES);
+  return Object.keys(GRAMMAR_URLS);
 }

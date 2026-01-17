@@ -58,7 +58,7 @@ tasks:
 
   dev:
     desc: Run dev server
-    deps: [wasm, grammars]
+    deps: [wasm]
     cmds:
       - npm run dev
 
