@@ -1,66 +1,64 @@
-import { useRef, useCallback, useMemo } from 'react';
+import { useRef, useCallback, useMemo, useImperativeHandle, forwardRef } from 'react';
 import { Match } from '../xpath';
 import { parsePositionString, positionToOffset } from '../xmlTree';
+
+export interface SourceEditorHandle {
+  focusAtOffset: (offset: number) => void;
+}
 
 interface HighlightRange {
   start: number;
   end: number;
+  matchIndex: number;
 }
 
 interface SourceEditorProps {
   source: string;
   matches: Match[];
+  hoveredMatchIndex?: number | null;
   onChange: (source: string) => void;
   onClick: (e: React.MouseEvent<HTMLTextAreaElement>) => void;
 }
 
-export function SourceEditor({ source, matches, onChange, onClick }: SourceEditorProps) {
+export const SourceEditor = forwardRef<SourceEditorHandle, SourceEditorProps>(
+  function SourceEditor({ source, matches, hoveredMatchIndex, onChange, onClick }, ref) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
 
-  // Convert matches to highlight ranges (character offsets)
+  // Expose focusAtOffset method via ref
+  useImperativeHandle(ref, () => ({
+    focusAtOffset: (offset: number) => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        textareaRef.current.setSelectionRange(offset, offset);
+        // Scroll into view
+        textareaRef.current.blur();
+        textareaRef.current.focus();
+      }
+    },
+  }), []);
+
+  // Convert matches to highlight ranges (character offsets) with match indices
   const highlightRanges = useMemo((): HighlightRange[] => {
     const ranges: HighlightRange[] = [];
 
-    console.log('SourceEditor matches:', matches);
-
-    for (const match of matches) {
-      console.log('Match:', match.start, match.end, 'xml:', match.xml.substring(0, 100));
-      if (!match.start || !match.end) continue;
+    matches.forEach((match, index) => {
+      if (!match.start || !match.end) return;
 
       const startPos = parsePositionString(match.start);
       const endPos = parsePositionString(match.end);
-      console.log('Parsed positions:', startPos, endPos);
-      if (!startPos || !endPos) continue;
+      if (!startPos || !endPos) return;
 
       const startOffset = positionToOffset(source, startPos);
       const endOffset = positionToOffset(source, endPos);
-      console.log('Offsets:', startOffset, endOffset);
 
-      ranges.push({ start: startOffset, end: endOffset });
-    }
+      ranges.push({ start: startOffset, end: endOffset, matchIndex: index });
+    });
 
-    console.log('Highlight ranges:', ranges);
-
-    // Sort by start position and merge overlapping ranges
+    // Sort by start position (don't merge - we need to track individual matches)
     ranges.sort((a, b) => a.start - b.start);
 
-    const merged: HighlightRange[] = [];
-    for (const range of ranges) {
-      if (merged.length === 0) {
-        merged.push(range);
-      } else {
-        const last = merged[merged.length - 1];
-        if (range.start <= last.end) {
-          // Overlapping - extend the last range
-          last.end = Math.max(last.end, range.end);
-        } else {
-          merged.push(range);
-        }
-      }
-    }
-
-    return merged;
+    return ranges;
   }, [source, matches]);
 
   // Generate highlighted text with mark tags
@@ -78,9 +76,11 @@ export function SourceEditor({ source, matches, onChange, onClick }: SourceEdito
         parts.push(escapeHtml(source.slice(lastEnd, range.start)));
       }
 
-      // Add highlighted text
+      // Add highlighted text with hover class if this is the hovered match
       const highlightedText = source.slice(range.start, range.end);
-      parts.push(`<mark class="highlight">${escapeHtml(highlightedText)}</mark>`);
+      const isHovered = hoveredMatchIndex === range.matchIndex;
+      const className = isHovered ? 'highlight highlight-hovered' : 'highlight';
+      parts.push(`<mark class="${className}">${escapeHtml(highlightedText)}</mark>`);
 
       lastEnd = range.end;
     }
@@ -91,7 +91,7 @@ export function SourceEditor({ source, matches, onChange, onClick }: SourceEdito
     }
 
     return parts.join('');
-  }, [source, highlightRanges]);
+  }, [source, highlightRanges, hoveredMatchIndex]);
 
   // Sync scroll between textarea and backdrop
   const handleScroll = useCallback(() => {
@@ -124,7 +124,7 @@ export function SourceEditor({ source, matches, onChange, onClick }: SourceEdito
       />
     </div>
   );
-}
+});
 
 function escapeHtml(text: string): string {
   return text

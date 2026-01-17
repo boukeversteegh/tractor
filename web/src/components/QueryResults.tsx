@@ -7,9 +7,12 @@ interface QueryResultsProps {
   format: OutputFormat;
   source: string;
   fileName?: string;
+  hoveredIndex?: number | null;
+  onHoverChange?: (index: number | null) => void;
+  onMatchClick?: (index: number) => void;
 }
 
-export function QueryResults({ matches, format, source, fileName = 'input' }: QueryResultsProps) {
+export function QueryResults({ matches, format, source, fileName = 'input', hoveredIndex, onHoverChange, onMatchClick }: QueryResultsProps) {
   if (format === 'count') {
     return (
       <div className="query-results">
@@ -48,7 +51,14 @@ export function QueryResults({ matches, format, source, fileName = 'input' }: Qu
   return (
     <div className="query-results">
       {displayMatches.map((match, i) => (
-        <div key={i} className="match">
+        <div
+          key={i}
+          className={`match ${hoveredIndex === i ? 'match-hovered' : ''}`}
+          onMouseEnter={() => onHoverChange?.(i)}
+          onMouseLeave={() => onHoverChange?.(null)}
+          onClick={() => onMatchClick?.(i)}
+          style={{ cursor: 'pointer' }}
+        >
           {format === 'xml' && (
             <>
               {match.start && (

@@ -373,6 +373,11 @@ body {
   color: transparent;
 }
 
+.source-backdrop .highlight-hovered {
+  background: rgba(124, 58, 237, 0.7);
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.5);
+}
+
 .source-textarea {
   position: absolute;
   top: 0;
@@ -650,6 +655,12 @@ body {
   background: var(--bg-secondary);
   border-radius: 4px;
   border-left: 3px solid var(--accent);
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.match-hovered {
+  background: var(--bg-tertiary);
+  border-left-color: var(--accent-light);
 }
 
 .match-location {

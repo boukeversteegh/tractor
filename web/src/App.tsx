@@ -5,7 +5,7 @@ import { queryXml, Match, OutputFormat, OUTPUT_FORMATS } from './xpath';
 import { TreeView } from './components/TreeView';
 import { XmlOutput } from './components/XmlOutput';
 import { QueryResults } from './components/QueryResults';
-import { SourceEditor } from './components/SourceEditor';
+import { SourceEditor, SourceEditorHandle } from './components/SourceEditor';
 import { QueryInput } from './components/QueryInput';
 import { Tabs } from './components/Tabs';
 import { SAMPLE_CODE } from './sampleCode';
@@ -15,6 +15,8 @@ import {
   findDeepestNodeAtPosition,
   getPathToNode,
   offsetToPosition,
+  positionToOffset,
+  parsePositionString,
 } from './xmlTree';
 import {
   SelectionState,
@@ -108,6 +110,7 @@ export function App() {
   const [activeTab, setActiveTab] = useState<Tab>('builder');
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
   const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(new Set());
+  const [hoveredMatchIndex, setHoveredMatchIndex] = useState<number | null>(null);
 
   // Panel resize state
   const STORAGE_KEY = 'tractor-panel-widths';
@@ -125,6 +128,7 @@ export function App() {
 
   const containerRef = useRef<HTMLElement>(null);
   const dragRef = useRef<{ index: number; startX: number; startWidths: number[] } | null>(null);
+  const sourceEditorRef = useRef<SourceEditorHandle>(null);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(panelWidths));
@@ -247,6 +251,11 @@ export function App() {
     setSelectionState(createEmptyState());
     setUseManualQuery(false);
   }, [xmlTree]);
+
+  // Clear hovered index when matches change
+  useEffect(() => {
+    setHoveredMatchIndex(null);
+  }, [matches]);
 
   // Execute XPath query (use xmlForQuery which has locations)
   useEffect(() => {
@@ -376,13 +385,47 @@ export function App() {
     setUseManualQuery(true);
   }, []);
 
-  // Handle click on source code to focus corresponding tree node
-  const handleSourceClick = useCallback((e: React.MouseEvent<HTMLTextAreaElement>) => {
-    if (!xmlTree) return;
+  // Handle click on a match result to focus source editor at that position
+  const handleMatchClick = useCallback((index: number) => {
+    const match = matches[index];
+    if (!match?.start) return;
 
+    const startPos = parsePositionString(match.start);
+    if (!startPos) return;
+
+    const offset = positionToOffset(source, startPos);
+    sourceEditorRef.current?.focusAtOffset(offset);
+    setHoveredMatchIndex(index);
+  }, [matches, source]);
+
+  // Handle click on source code to focus corresponding tree node and highlight matching result
+  const handleSourceClick = useCallback((e: React.MouseEvent<HTMLTextAreaElement>) => {
     const textarea = e.currentTarget;
     const cursorOffset = textarea.selectionStart;
     const position = offsetToPosition(source, cursorOffset);
+
+    // Check if click is within any match range
+    let foundMatchIndex: number | null = null;
+    for (let i = 0; i < matches.length; i++) {
+      const match = matches[i];
+      if (!match.start || !match.end) continue;
+
+      const startPos = parsePositionString(match.start);
+      const endPos = parsePositionString(match.end);
+      if (!startPos || !endPos) continue;
+
+      const startOffset = positionToOffset(source, startPos);
+      const endOffset = positionToOffset(source, endPos);
+
+      if (cursorOffset >= startOffset && cursorOffset <= endOffset) {
+        foundMatchIndex = i;
+        break;
+      }
+    }
+    setHoveredMatchIndex(foundMatchIndex);
+
+    // Focus tree node
+    if (!xmlTree) return;
 
     const node = findDeepestNodeAtPosition(xmlTree, position);
 
@@ -404,7 +447,7 @@ export function App() {
       // Switch to builder tab if not already there
       setActiveTab('builder');
     }
-  }, [xmlTree, source]);
+  }, [xmlTree, source, matches]);
 
   if (error) {
     return (
@@ -477,8 +520,10 @@ export function App() {
             </select>
           </div>
           <SourceEditor
+            ref={sourceEditorRef}
             source={source}
             matches={matches}
+            hoveredMatchIndex={hoveredMatchIndex}
             onChange={setSource}
             onClick={handleSourceClick}
           />
@@ -547,7 +592,14 @@ export function App() {
               onChange={setOutputFormat}
             />
           </div>
-          <QueryResults matches={matches} format={outputFormat} source={source} />
+          <QueryResults
+            matches={matches}
+            format={outputFormat}
+            source={source}
+            hoveredIndex={hoveredMatchIndex}
+            onHoverChange={setHoveredMatchIndex}
+            onMatchClick={handleMatchClick}
+          />
         </div>
       </main>
     </div>
