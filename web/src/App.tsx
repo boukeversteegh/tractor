@@ -6,6 +6,7 @@ import { TreeView } from './components/TreeView';
 import { XmlOutput } from './components/XmlOutput';
 import { QueryResults } from './components/QueryResults';
 import { SourceEditor } from './components/SourceEditor';
+import { Tabs } from './components/Tabs';
 import { SAMPLE_CODE } from './sampleCode';
 import {
   parseXmlToTree,
@@ -380,20 +381,6 @@ export function App() {
               <option value="bash">Bash</option>
               <option value="php">PHP</option>
             </select>
-            <div className="options">
-              <label>
-                <input type="checkbox" checked={rawMode} onChange={(e) => setRawMode(e.target.checked)} />
-                Raw
-              </label>
-              <label>
-                <input type="checkbox" checked={showLocations} onChange={(e) => setShowLocations(e.target.checked)} />
-                Locations
-              </label>
-              <label>
-                <input type="checkbox" checked={prettyPrint} onChange={(e) => setPrettyPrint(e.target.checked)} />
-                Pretty
-              </label>
-            </div>
           </div>
           <SourceEditor
             source={source}
@@ -404,19 +391,31 @@ export function App() {
         </div>
 
         <div className="panel output-panel">
-          <div className="panel-header tabs">
-            <button
-              className={`tab ${activeTab === 'builder' ? 'active' : ''}`}
-              onClick={() => setActiveTab('builder')}
-            >
-              Query Builder
-            </button>
-            <button
-              className={`tab ${activeTab === 'xml' ? 'active' : ''}`}
-              onClick={() => setActiveTab('xml')}
-            >
-              XML Output
-            </button>
+          <div className="panel-header">
+            <Tabs
+              tabs={[
+                { value: 'builder' as Tab, label: 'Builder' },
+                { value: 'xml' as Tab, label: 'XML' },
+              ]}
+              value={activeTab}
+              onChange={setActiveTab}
+            />
+            {activeTab === 'xml' && (
+              <div className="options">
+                <label>
+                  <input type="checkbox" checked={rawMode} onChange={(e) => setRawMode(e.target.checked)} />
+                  Raw
+                </label>
+                <label>
+                  <input type="checkbox" checked={showLocations} onChange={(e) => setShowLocations(e.target.checked)} />
+                  Locations
+                </label>
+                <label>
+                  <input type="checkbox" checked={prettyPrint} onChange={(e) => setPrettyPrint(e.target.checked)} />
+                  Pretty
+                </label>
+              </div>
+            )}
           </div>
           <div className="tab-content">
             {activeTab === 'builder' ? (
@@ -439,18 +438,15 @@ export function App() {
         <div className="panel results-panel">
           <div className="panel-header">
             <span>Results</span>
-            <div className="format-tabs">
-              {OUTPUT_FORMATS.map((f) => (
-                <button
-                  key={f.value}
-                  className={`format-tab ${outputFormat === f.value ? 'active' : ''}`}
-                  onClick={() => setOutputFormat(f.value)}
-                  title={f.description}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
+            <Tabs
+              tabs={OUTPUT_FORMATS.map((f) => ({
+                value: f.value,
+                label: f.label,
+                title: f.description,
+              }))}
+              value={outputFormat}
+              onChange={setOutputFormat}
+            />
           </div>
           <QueryResults matches={matches} format={outputFormat} source={source} />
         </div>
