@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { initParser, parseSource } from './parser';
 import { initTractor, parseAstToXmlSimple } from './tractor';
 import { queryXml, Match, OutputFormat, OUTPUT_FORMATS } from './xpath';
@@ -106,6 +106,70 @@ export function App() {
   const [activeTab, setActiveTab] = useState<Tab>('builder');
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
   const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(new Set());
+
+  // Panel resize state
+  const STORAGE_KEY = 'tractor-panel-widths';
+  const defaultWidths = [33, 34, 33];
+  const [panelWidths, setPanelWidths] = useState<number[]>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length === 3) return parsed;
+      }
+    } catch {}
+    return defaultWidths;
+  });
+
+  const containerRef = useRef<HTMLElement>(null);
+  const dragRef = useRef<{ index: number; startX: number; startWidths: number[] } | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(panelWidths));
+  }, [panelWidths]);
+
+  const handleResizeStart = useCallback((index: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    dragRef.current = { index, startX: e.clientX, startWidths: [...panelWidths] };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!dragRef.current || !containerRef.current) return;
+      const { index, startX, startWidths } = dragRef.current;
+      const containerWidth = containerRef.current.offsetWidth;
+      const deltaPercent = ((e.clientX - startX) / containerWidth) * 100;
+
+      const newWidths = [...startWidths];
+      const minWidth = 10;
+
+      newWidths[index] = Math.max(minWidth, startWidths[index] + deltaPercent);
+      newWidths[index + 1] = Math.max(minWidth, startWidths[index + 1] - deltaPercent);
+
+      // Clamp to ensure both panels stay above minimum
+      if (newWidths[index] < minWidth) {
+        newWidths[index] = minWidth;
+        newWidths[index + 1] = startWidths[index] + startWidths[index + 1] - minWidth;
+      }
+      if (newWidths[index + 1] < minWidth) {
+        newWidths[index + 1] = minWidth;
+        newWidths[index] = startWidths[index] + startWidths[index + 1] - minWidth;
+      }
+
+      setPanelWidths(newWidths);
+    };
+
+    const handleMouseUp = () => {
+      dragRef.current = null;
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, [panelWidths]);
 
   // Initialize parsers
   useEffect(() => {
@@ -361,9 +425,10 @@ export function App() {
         </div>
       </header>
 
-      <main className="app-main">
-        <div className="panel source-panel">
+      <main className="app-main" ref={containerRef}>
+        <div className="panel source-panel" style={{ width: `${panelWidths[0]}%` }}>
           <div className="panel-header">
+            <span>Source</span>
             <select value={language} onChange={(e) => handleLanguageChange(e.target.value)}>
               <option value="typescript">TypeScript</option>
               <option value="javascript">JavaScript</option>
@@ -390,8 +455,11 @@ export function App() {
           />
         </div>
 
-        <div className="panel output-panel">
+        <div className="resize-handle" onMouseDown={(e) => handleResizeStart(0, e)} />
+
+        <div className="panel output-panel" style={{ width: `${panelWidths[1]}%` }}>
           <div className="panel-header">
+            <span>Structure</span>
             <Tabs
               tabs={[
                 { value: 'builder' as Tab, label: 'Builder' },
@@ -435,7 +503,9 @@ export function App() {
           </div>
         </div>
 
-        <div className="panel results-panel">
+        <div className="resize-handle" onMouseDown={(e) => handleResizeStart(1, e)} />
+
+        <div className="panel results-panel" style={{ width: `${panelWidths[2]}%` }}>
           <div className="panel-header">
             <span>Results</span>
             <Tabs
