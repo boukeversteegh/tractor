@@ -146,6 +146,16 @@ function TreeNode({
     setTimeout(() => setShowMenu(false), 150);
   }, []);
 
+  const handleTextClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Select the node if not already selected
+    if (!isSelected) {
+      onToggleSelection(nodeId, node.name);
+    }
+    // Open the menu to show text condition options
+    setShowMenu(true);
+  }, [isSelected, nodeId, node.name, onToggleSelection]);
+
   // Determine pill classes based on state
   const pillClasses = [
     'node-pill',
@@ -184,7 +194,11 @@ function TreeNode({
         </button>
 
         {node.textContent && (
-          <span className="node-text" title={node.textContent}>
+          <span
+            className="node-text clickable"
+            title="Click to add text condition"
+            onClick={handleTextClick}
+          >
             {node.textContent.length > 30 ? node.textContent.slice(0, 30) + '...' : node.textContent}
           </span>
         )}
