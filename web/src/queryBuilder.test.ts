@@ -385,4 +385,78 @@ describe('buildQuery', () => {
     );
     expect(result).toBe("//class[@name='Calculator']/method[.//binary_expression[@operator='+']]");
   });
+
+  it('multiple uncle subtrees at different levels', () => {
+    // Tree structure:
+    // class
+    // ├── className (uncle at class level)
+    // └── method
+    //     ├── methodName (uncle at method level)
+    //     ├── params
+    //     │   └── param (uncle at method level, deeper)
+    //     └── body (TARGET)
+    const xml = `
+      <class>
+        <className>MyClass</className>
+        <method>
+          <methodName>doSomething</methodName>
+          <params>
+            <param type="int"/>
+          </params>
+          <body>
+            <return/>
+          </body>
+        </method>
+      </class>
+    `;
+    const tree = parseXmlToTree(xml)!;
+    const map = buildNodeInfoMap(tree);
+    const className = findNode(tree, 'className')!;
+    const methodName = findNode(tree, 'methodName')!;
+    const param = findNode(tree, 'param')!;
+    const body = findNode(tree, 'body')!;
+
+    // Select uncles at different levels, all with conditions
+    const result = buildQuery(
+      tree,
+      select(
+        { id: className.id, condition: ".='MyClass'" },
+        { id: methodName.id, condition: ".='doSomething'" },
+        { id: param.id, condition: "@type='int'" },
+        { id: body.id, isTarget: true }
+      ),
+      map
+    );
+    // class gets className predicate, method gets methodName and param predicates
+    // method is direct child of class, so /method not //method
+    expect(result).toBe("//class[className[.='MyClass']]/method[methodName[.='doSomething']][.//param[@type='int']]/body");
+  });
+
+  it('multiple uncles with same common ancestor', () => {
+    // Tree where two sibling uncles share the same common ancestor with target
+    const xml = `
+      <method>
+        <name>foo</name>
+        <returns>int</returns>
+        <body/>
+      </method>
+    `;
+    const tree = parseXmlToTree(xml)!;
+    const map = buildNodeInfoMap(tree);
+    const name = findNode(tree, 'name')!;
+    const returns = findNode(tree, 'returns')!;
+    const body = findNode(tree, 'body')!;
+
+    const result = buildQuery(
+      tree,
+      select(
+        { id: name.id, condition: ".='foo'" },
+        { id: returns.id, condition: ".='int'" },
+        { id: body.id, isTarget: true }
+      ),
+      map
+    );
+    // Both name and returns are predicates on method
+    expect(result).toBe("//method[name[.='foo']][returns[.='int']]/body");
+  });
 });
