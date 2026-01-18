@@ -66,9 +66,13 @@ export function buildQuery(
   const pathToTarget = getPathToNode(tree, targetId) || [];
   const pathIds = new Set(pathToTarget);
 
-  // Separate into path nodes (ancestors of target) and predicate nodes (descendants)
+  // Separate into:
+  // - pathNodes: ancestors of target (go in main path)
+  // - predicateNodes: descendants of target (become predicates on target)
+  // - uncleNodes: neither ancestor nor descendant (become predicates on their common ancestor with target)
   const pathNodes: SelectedNode[] = [];
   const predicateNodes: SelectedNode[] = [];
+  const uncleNodes: { node: SelectedNode; commonAncestorId: string }[] = [];
 
   for (const node of selectedNodes) {
     if (pathIds.has(node.id)) {
@@ -78,13 +82,45 @@ export function buildQuery(
       const pathToNode = getPathToNode(tree, node.id) || [];
       if (pathToNode.some(id => id === targetId)) {
         predicateNodes.push(node);
+      } else {
+        // Uncle node - find common ancestor with target
+        const commonAncestorId = findCommonAncestor(pathToTarget, pathToNode);
+        if (commonAncestorId) {
+          uncleNodes.push({ node, commonAncestorId });
+        }
       }
-      // Nodes that are neither ancestors nor descendants are ignored for now
     }
   }
 
+  // Ensure common ancestors of uncle nodes are included in the path
+  // Group uncle nodes by their common ancestor
+  const unclesByAncestor = new Map<string, SelectedNode[]>();
+  for (const { node, commonAncestorId } of uncleNodes) {
+    const existing = unclesByAncestor.get(commonAncestorId) || [];
+    existing.push(node);
+    unclesByAncestor.set(commonAncestorId, existing);
+  }
+
+  // Add implicit path nodes for ancestors that have uncle predicates but aren't selected
+  const implicitPathNodes: { id: string; name: string }[] = [];
+  for (const ancestorId of unclesByAncestor.keys()) {
+    if (!pathNodes.some(n => n.id === ancestorId)) {
+      const info = nodeInfoMap.get(ancestorId);
+      if (info) {
+        implicitPathNodes.push({ id: ancestorId, name: info.name });
+      }
+    }
+  }
+
+  // Combine explicit and implicit path nodes
+  type PathEntry = { id: string; name: string; condition?: string; isTarget: boolean };
+  const allPathNodes: PathEntry[] = [
+    ...pathNodes,
+    ...implicitPathNodes.map(n => ({ ...n, isTarget: false })),
+  ];
+
   // Sort path nodes by their position in the path
-  pathNodes.sort((a, b) => {
+  allPathNodes.sort((a, b) => {
     const aIdx = pathToTarget.indexOf(a.id);
     const bIdx = pathToTarget.indexOf(b.id);
     return aIdx - bIdx;
@@ -94,7 +130,7 @@ export function buildQuery(
   let xpath = '';
   let prevId: string | null = null;
 
-  for (const node of pathNodes) {
+  for (const node of allPathNodes) {
     // Determine separator
     let sep = '//';
     if (prevId !== null) {
@@ -108,6 +144,26 @@ export function buildQuery(
     }
 
     xpath += sep + node.name;
+
+    // Add uncle predicates for this ancestor
+    const unclesForThis = unclesByAncestor.get(node.id);
+    if (unclesForThis) {
+      for (const uncle of unclesForThis) {
+        const pathToUncle = getPathToNode(tree, uncle.id) || [];
+        const ancestorIdx = pathToUncle.indexOf(node.id);
+        const uncleIdx = pathToUncle.indexOf(uncle.id);
+
+        // Determine if direct child or descendant
+        const isDirectChild = ancestorIdx >= 0 && uncleIdx >= 0 && uncleIdx === ancestorIdx + 1;
+        const sep = isDirectChild ? '' : './/';
+
+        if (uncle.condition) {
+          xpath += `[${sep}${uncle.name}[${uncle.condition}]]`;
+        } else {
+          xpath += `[${sep}${uncle.name}]`;
+        }
+      }
+    }
 
     // Add condition if present and this is not the target with predicates
     if (node.condition && (node.id !== targetId || predicateNodes.length === 0)) {
@@ -316,4 +372,23 @@ function findDefaultTarget(tree: XmlNode, selectedNodes: SelectedNode[]): Select
 
   // Fallback
   return selectedNodes[0];
+}
+
+/**
+ * Find the deepest common ancestor between two paths.
+ * Returns the ID of the common ancestor, or null if none found.
+ */
+function findCommonAncestor(path1: string[], path2: string[]): string | null {
+  let commonAncestor: string | null = null;
+  const minLength = Math.min(path1.length, path2.length);
+
+  for (let i = 0; i < minLength; i++) {
+    if (path1[i] === path2[i]) {
+      commonAncestor = path1[i];
+    } else {
+      break;
+    }
+  }
+
+  return commonAncestor;
 }

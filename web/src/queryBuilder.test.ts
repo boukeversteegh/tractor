@@ -306,21 +306,65 @@ describe('buildQuery', () => {
     expect(result).toBe('//method[parameter][.//return]');
   });
 
-  it('skips non-ancestor non-descendant nodes (siblings)', () => {
-    const tree = parseXmlToTree(complexXml)!;
+  it('uncle nodes become predicates on common ancestor', () => {
+    // XML where name and body are siblings under method
+    const xml = `
+      <class>
+        <method>
+          <name>Hello</name>
+          <body>
+            <block/>
+          </body>
+        </method>
+      </class>
+    `;
+    const tree = parseXmlToTree(xml)!;
     const map = buildNodeInfoMap(tree);
-    const methods = findAllNodes(tree, 'method');
-    const method1 = methods[0]!;
-    const method2 = methods[1]!;
+    const name = findNode(tree, 'name')!;
+    const body = findNode(tree, 'body')!;
 
-    // Selecting two sibling methods - second one should be ignored
-    // since it's neither ancestor nor descendant of first
+    // Target: body, Uncle: name with condition
+    // Common ancestor of name and body is method
+    // Expected: //method[name[.='Hello']]//body
     const result = buildQuery(
       tree,
-      select({ id: method1.id, isTarget: true }, { id: method2.id }),
+      select(
+        { id: name.id, condition: ".='Hello'" },
+        { id: body.id, isTarget: true }
+      ),
       map
     );
-    expect(result).toBe('//method');
+    expect(result).toBe("//method[name[.='Hello']]/body");
+  });
+
+  it('uncle nodes: selecting deeper target with sibling condition', () => {
+    const xml = `
+      <class>
+        <method>
+          <name>Hello</name>
+          <body>
+            <block>
+              <return/>
+            </block>
+          </body>
+        </method>
+      </class>
+    `;
+    const tree = parseXmlToTree(xml)!;
+    const map = buildNodeInfoMap(tree);
+    const name = findNode(tree, 'name')!;
+    const block = findNode(tree, 'block')!;
+
+    // Target: block, Uncle: name with condition
+    const result = buildQuery(
+      tree,
+      select(
+        { id: name.id, condition: ".='Hello'" },
+        { id: block.id, isTarget: true }
+      ),
+      map
+    );
+    expect(result).toBe("//method[name[.='Hello']]//block");
   });
 
   it('complex: ancestor with condition, target, descendant predicate with condition', () => {
