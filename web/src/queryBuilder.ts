@@ -322,7 +322,24 @@ function findDefaultTarget(tree: XmlNode, selectedNodes: SelectedNode[]): Select
   const selectedIds = new Set(selectedNodes.map(n => n.id));
 
   // Get paths to all selected nodes
-  const paths = selectedNodes.map(n => getPathToNode(tree, n.id) || []);
+  const allPaths = selectedNodes.map(n => ({ node: n, path: getPathToNode(tree, n.id) || [] }));
+
+  // Filter to "leaf" selected nodes - those that don't have selected descendants
+  // This way, if class and method are both selected, we use method (not class) for LCA
+  const leafNodes = allPaths.filter(({ path }) => {
+    // Check if any other selected node has this node as an ancestor
+    const nodeId = path[path.length - 1];
+    const hasSelectedDescendant = allPaths.some(other => {
+      if (other.path === path) return false;
+      // Check if nodeId appears in other's path (meaning other is a descendant)
+      return other.path.slice(0, -1).includes(nodeId);
+    });
+    return !hasSelectedDescendant;
+  });
+
+  // Use leaf nodes for LCA calculation (fall back to all if somehow empty)
+  const pathsForLCA = leafNodes.length > 0 ? leafNodes : allPaths;
+  const paths = pathsForLCA.map(p => p.path);
 
   // Find common prefix of all paths
   const commonPrefix: string[] = [];

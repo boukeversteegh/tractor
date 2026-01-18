@@ -209,10 +209,10 @@ export function App() {
     return () => clearTimeout(timeout);
   }, [initialized, source, language, rawMode, showLocations, prettyPrint]);
 
-  // Clear selection when tree changes
+  // Clear selection when tree changes (node IDs become invalid)
+  // Note: we don't reset useManualQuery so the user's manual query is preserved
   useEffect(() => {
     setSelectionState(createEmptyState());
-    setUseManualQuery(false);
   }, [xmlTree]);
 
   // Clear hovered index when matches change

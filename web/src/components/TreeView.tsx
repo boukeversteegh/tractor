@@ -188,7 +188,7 @@ function TreeNode({
           onBlur={handleBlur}
           title="Click to select, right-click for options"
         >
-          {isEffectiveTarget && <span className="target-marker">{isExplicitTarget ? '→' : '⇢'}</span>}
+          {isEffectiveTarget && <span className="target-marker" title={isExplicitTarget ? 'Explicit target' : 'Auto-detected target (LCA)'}>{isExplicitTarget ? '▶' : '▷'}</span>}
           {node.name}
           {hasCondition && <span className="condition-marker">*</span>}
         </button>
