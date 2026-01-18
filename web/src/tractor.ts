@@ -17,6 +17,7 @@ import init, {
   getWebLanguages as wasmGetWebLanguages,
   validateXPath as wasmValidateXPath,
   prettyPrintXml as wasmPrettyPrintXml,
+  highlightFullSource as wasmHighlightFullSource,
 } from '../pkg/tractor_core.js';
 
 let initialized = false;
@@ -270,6 +271,30 @@ export function prettyPrintXmlSync(
   }
 }
 
+// ============================================================================
+// Syntax Highlighting
+// ============================================================================
+
+/**
+ * Highlight the full source code with syntax coloring based on XML tree.
+ * Only call after initTractor() has completed.
+ *
+ * @param source - The full source code
+ * @param xml - Complete XML document with position attributes
+ * @returns Source code with ANSI color codes for syntax highlighting
+ */
+export function highlightFullSourceSync(source: string, xml: string): string {
+  if (!initialized) {
+    console.warn('highlightFullSourceSync called before WASM initialized');
+    return source;
+  }
+  try {
+    return wasmHighlightFullSource(source, xml);
+  } catch {
+    return source;
+  }
+}
+
 /**
  * Convert ANSI color codes to HTML spans.
  * Supports the codes used by tractor's XML renderer.
@@ -277,11 +302,13 @@ export function prettyPrintXmlSync(
 export function ansiToHtml(text: string): string {
   // Map ANSI codes to CSS classes (matching tractor brand colors)
   const codeToClass: Record<string, string> = {
-    '2': 'ansi-dim',      // DIM
+    '2': 'ansi-dim',      // DIM (operators, punctuation)
     '1': 'ansi-bold',     // BOLD
-    '34': 'ansi-blue',    // BLUE (element names)
-    '36': 'ansi-cyan',    // CYAN (attribute names)
-    '33': 'ansi-yellow',  // YELLOW (attribute values)
+    '34': 'ansi-blue',    // BLUE (keywords)
+    '36': 'ansi-cyan',    // CYAN (types, functions)
+    '33': 'ansi-yellow',  // YELLOW (strings, numbers)
+    '32': 'ansi-green',   // GREEN (comments)
+    '97': 'ansi-white',   // WHITE (identifiers)
     '30': 'ansi-black',   // BLACK
     '43': 'ansi-bg-yellow', // BG_YELLOW (highlights)
   };

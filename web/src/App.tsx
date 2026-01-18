@@ -35,7 +35,7 @@ export function App() {
   const [source, setSource] = useState(SAMPLE_CODE.csharp);
   const [language, setLanguage] = useState('csharp');
   const [xml, setXml] = useState('');  // Display XML (may not have locations)
-  const [xmlForQuery, setXmlForQuery] = useState('');  // XML with locations for querying
+  const [xmlForQuery, setXmlForQuery] = useState('');  // XML with locations for querying and highlighting
   const [xmlTree, setXmlTree] = useState<XmlNode | null>(null);
 
   // Options
@@ -163,12 +163,12 @@ export function App() {
       try {
         const ast = await parseSource(source, language);
 
-        // Always parse with locations for tree building and querying
+        // Always parse with locations for tree building, querying, and highlighting
         // Use non-pretty-printed XML for querying to avoid whitespace in textContent
         const xmlWithLocations = await parseAstToXmlSimple(
           ast, source, language, rawMode, true, false  // never pretty-print for queries
         );
-        setXmlForQuery(xmlWithLocations);  // Store for querying (has locations, no whitespace)
+        setXmlForQuery(xmlWithLocations);  // Store for querying and highlighting
 
         // Parse XML to tree for query builder (needs locations)
         const tree = parseXmlToTree(xmlWithLocations);
@@ -464,6 +464,7 @@ export function App() {
             source={source}
             matches={matches}
             hoveredMatchIndex={hoveredMatchIndex}
+            xmlForHighlighting={xmlForQuery}
             onChange={setSource}
             onClick={handleSourceClick}
           />

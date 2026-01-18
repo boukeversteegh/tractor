@@ -363,14 +363,13 @@ body {
   white-space: pre-wrap;
   word-wrap: break-word;
   overflow: auto;
-  color: transparent;
+  color: var(--text-primary);
   pointer-events: none;
 }
 
 .source-backdrop .highlight {
   background: rgba(124, 58, 237, 0.3);
   border-radius: 2px;
-  color: transparent;
 }
 
 .source-backdrop .highlight-hovered {
@@ -390,7 +389,8 @@ body {
   line-height: 1.5;
   background: transparent;
   border: none;
-  color: var(--text-primary);
+  color: transparent;
+  -webkit-text-fill-color: transparent;
   resize: none;
   caret-color: var(--text-primary);
 }
@@ -708,7 +708,7 @@ body {
   font-size: 0.8rem;
 }
 
-/* ANSI color classes (matching tractor CLI output) */
+/* ANSI color classes for syntax highlighting */
 .ansi-dim {
   opacity: 0.6;
 }
@@ -718,15 +718,23 @@ body {
 }
 
 .ansi-blue {
-  color: #7aa2f7; /* Element/tag names */
+  color: #569cd6; /* Keywords - VS Code blue */
 }
 
 .ansi-cyan {
-  color: #7dcfff; /* Attribute names */
+  color: #4ec9b0; /* Types, functions - VS Code teal */
 }
 
 .ansi-yellow {
-  color: #e0af68; /* Attribute values */
+  color: #ce9178; /* Strings - VS Code orange/brown */
+}
+
+.ansi-green {
+  color: #6a9955; /* Comments - VS Code green */
+}
+
+.ansi-white {
+  color: #9cdcfe; /* Identifiers - VS Code light blue */
 }
 
 .ansi-black {

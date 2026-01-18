@@ -206,6 +206,139 @@ pub fn pretty_print_xml(xml: &str, include_locations: bool, use_color: bool) -> 
     crate::output::render_xml_string(xml, &options)
 }
 
+/// Highlight the full source code with syntax coloring based on XML tree
+///
+/// Expects transformed/semantic XML, not raw TreeSitter XML.
+///
+/// # Arguments
+/// * `source` - The full source code
+/// * `xml` - Complete semantic XML document with position attributes (start/end)
+///
+/// # Returns
+/// The full source code with ANSI color codes for syntax highlighting
+#[wasm_bindgen(js_name = highlightFullSource)]
+pub fn highlight_full_source(source: &str, xml: &str) -> String {
+    use crate::output::syntax_highlight::{extract_syntax_spans, highlight_source};
+
+    if source.is_empty() || xml.is_empty() {
+        return source.to_string();
+    }
+
+    // Extract syntax spans from the full XML tree
+    let spans = extract_syntax_spans(xml);
+
+    if spans.is_empty() {
+        return source.to_string();
+    }
+
+    // Count lines to get end position
+    let lines: Vec<&str> = source.lines().collect();
+    let end_line = lines.len() as u32;
+    let end_col = lines.last().map(|l| l.len() as u32 + 1).unwrap_or(1);
+
+    // Highlight the entire source
+    highlight_source(source, &spans, 1, 1, end_line, end_col)
+}
+
+/// Highlight a source snippet with syntax coloring based on XML metadata
+///
+/// Currently unused by web UI - available for future use (e.g., highlighting query results).
+/// Expects transformed/semantic XML, not raw TreeSitter XML.
+///
+/// # Arguments
+/// * `source` - The full source code
+/// * `xml` - Semantic XML fragment with position attributes (start/end)
+/// * `start` - Start position as "line:col" (1-based)
+/// * `end` - End position as "line:col" (1-based)
+///
+/// # Returns
+/// The source snippet with ANSI color codes for syntax highlighting
+#[wasm_bindgen(js_name = highlightSourceSnippet)]
+pub fn highlight_source_snippet(
+    source: &str,
+    xml: &str,
+    start: &str,
+    end: &str,
+) -> Result<String, JsValue> {
+    use crate::output::syntax_highlight::{extract_syntax_spans, highlight_source};
+    use crate::source_utils::parse_position;
+
+    // Parse positions
+    let (start_line, start_col) = parse_position(start)
+        .ok_or_else(|| JsValue::from_str(&format!("Invalid start position: {}", start)))?;
+    let (end_line, end_col) = parse_position(end)
+        .ok_or_else(|| JsValue::from_str(&format!("Invalid end position: {}", end)))?;
+
+    // Extract the source snippet
+    let snippet = crate::source_utils::extract_snippet(source, start, end)
+        .map_err(|e| JsValue::from_str(&e))?;
+
+    if snippet.is_empty() {
+        return Ok(String::new());
+    }
+
+    // Extract syntax spans from XML
+    let spans = extract_syntax_spans(xml);
+
+    if spans.is_empty() {
+        // No syntax info available, return plain snippet
+        return Ok(snippet);
+    }
+
+    // Apply highlighting
+    let highlighted = highlight_source(&snippet, &spans, start_line, start_col, end_line, end_col);
+    Ok(highlighted)
+}
+
+/// Highlight full source lines with syntax coloring based on XML metadata
+///
+/// Currently unused by web UI - available for future use (e.g., highlighting query results).
+/// Expects transformed/semantic XML, not raw TreeSitter XML.
+///
+/// # Arguments
+/// * `source` - The full source code
+/// * `xml` - Semantic XML fragment with position attributes (start/end)
+/// * `start` - Start position as "line:col" (1-based)
+/// * `end` - End position as "line:col" (1-based)
+///
+/// # Returns
+/// The full source lines (from start line to end line) with ANSI color codes
+#[wasm_bindgen(js_name = highlightSourceLines)]
+pub fn highlight_source_lines_wasm(
+    source: &str,
+    xml: &str,
+    start: &str,
+    end: &str,
+) -> Result<String, JsValue> {
+    use crate::output::syntax_highlight::{extract_syntax_spans, highlight_lines};
+    use crate::source_utils::parse_position;
+
+    // Parse positions
+    let (start_line, _) = parse_position(start)
+        .ok_or_else(|| JsValue::from_str(&format!("Invalid start position: {}", start)))?;
+    let (end_line, _) = parse_position(end)
+        .ok_or_else(|| JsValue::from_str(&format!("Invalid end position: {}", end)))?;
+
+    // Get source lines
+    let lines = crate::source_utils::get_source_lines(source, start_line, end_line);
+
+    if lines.is_empty() {
+        return Ok(String::new());
+    }
+
+    // Extract syntax spans from XML
+    let spans = extract_syntax_spans(xml);
+
+    if spans.is_empty() {
+        // No syntax info available, return plain lines
+        return Ok(lines.join("\n"));
+    }
+
+    // Apply highlighting
+    let highlighted = highlight_lines(&lines, &spans, start_line, end_line);
+    Ok(highlighted)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

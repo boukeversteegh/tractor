@@ -1,6 +1,7 @@
 import { useRef, useCallback, useMemo, useImperativeHandle, forwardRef } from 'react';
 import { Match } from '../xpath';
 import { parsePositionString, positionToOffset } from '../xmlTree';
+import { highlightFullSourceSync, ansiToHtml } from '../tractor';
 
 export interface SourceEditorHandle {
   focusAtOffset: (offset: number) => void;
@@ -16,12 +17,13 @@ interface SourceEditorProps {
   source: string;
   matches: Match[];
   hoveredMatchIndex?: number | null;
+  xmlForHighlighting?: string;
   onChange: (source: string) => void;
   onClick: (e: React.MouseEvent<HTMLTextAreaElement>) => void;
 }
 
 export const SourceEditor = forwardRef<SourceEditorHandle, SourceEditorProps>(
-  function SourceEditor({ source, matches, hoveredMatchIndex, onChange, onClick }, ref) {
+  function SourceEditor({ source, matches, hoveredMatchIndex, xmlForHighlighting, onChange, onClick }, ref) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
 
@@ -61,19 +63,37 @@ export const SourceEditor = forwardRef<SourceEditorHandle, SourceEditorProps>(
     return ranges;
   }, [source, matches]);
 
-  // Generate highlighted text with mark tags
+  // Generate syntax-highlighted HTML from source + XML
+  const syntaxHighlightedHtml = useMemo(() => {
+    if (!xmlForHighlighting || !source) {
+      return null;
+    }
+    const highlighted = highlightFullSourceSync(source, xmlForHighlighting);
+    // Only use if we actually got highlighting (contains ANSI codes)
+    if (highlighted && highlighted !== source && highlighted.includes('\x1b[')) {
+      return ansiToHtml(highlighted);
+    }
+    return null;
+  }, [source, xmlForHighlighting]);
+
+  // Generate highlighted text with match markers (and optionally syntax highlighting)
   const highlightedContent = useMemo(() => {
+    // If no match highlights needed, use syntax highlighting directly
     if (highlightRanges.length === 0) {
-      return escapeHtml(source);
+      return syntaxHighlightedHtml ?? escapeHtml(source);
     }
 
+    // With match highlights, we need to combine them with syntax highlighting
+    // For now, prioritize match highlights over syntax highlighting when both exist
+    // TODO: Could combine them with a more sophisticated approach
     const parts: string[] = [];
     let lastEnd = 0;
 
     for (const range of highlightRanges) {
-      // Add text before highlight
+      // Add text before highlight (with syntax highlighting if available)
       if (range.start > lastEnd) {
-        parts.push(escapeHtml(source.slice(lastEnd, range.start)));
+        const segment = source.slice(lastEnd, range.start);
+        parts.push(escapeHtml(segment));
       }
 
       // Add highlighted text with hover class if this is the hovered match
@@ -91,7 +111,7 @@ export const SourceEditor = forwardRef<SourceEditorHandle, SourceEditorProps>(
     }
 
     return parts.join('');
-  }, [source, highlightRanges, hoveredMatchIndex]);
+  }, [source, syntaxHighlightedHtml, highlightRanges, hoveredMatchIndex]);
 
   // Sync scroll between textarea and backdrop
   const handleScroll = useCallback(() => {
