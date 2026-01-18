@@ -492,3 +492,6 @@ target/
 # Distribution
 dist/
 tmpclaude-*
+
+# Grammar build temp directory
+web/.grammar-build/

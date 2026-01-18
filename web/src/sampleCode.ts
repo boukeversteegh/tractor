@@ -6,9 +6,30 @@ export const SAMPLE_CODE: Record<string, string> = {
   javascript: `function hello(name) {
   return \`Hello, \${name}!\`;
 }`,
-  csharp: `public class Greeter {
-    public string Hello(string name) {
-        return $"Hello, {name}!";
+  csharp: `public class UserService {
+    public User GetUser(int id) {
+        return GetUserFromCache(id) ?? GetUserFromDb(id);
+    }
+
+    private User GetUserFromCache(int id) {
+        return _cache.Get(id);
+    }
+
+    private User GetUserFromDb(int id) {
+        return _db.Query(id);
+    }
+
+    public void UpdateUser(User user) {
+        UpdateUserInDb(user);
+        UpdateUserInCache(user);
+    }
+
+    private void UpdateUserInDb(User user) {
+        _db.Save(user);
+    }
+
+    private void UpdateUserInCache(User user) {
+        _cache.Set(user.Id, user);
     }
 }`,
   rust: `fn hello(name: &str) -> String {

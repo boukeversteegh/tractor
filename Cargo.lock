@@ -1752,6 +1752,7 @@ version = "1.0.149"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "83fc039473c5595ace860d8c4fafa220ff474b3fc6bfdb4293327f1a37e94d86"
 dependencies = [
+ "indexmap",
  "itoa",
  "memchr",
  "serde",
@@ -2016,13 +2017,14 @@ dependencies = [
 
 [[package]]
 name = "tree-sitter"
-version = "0.24.7"
+version = "0.26.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a5387dffa7ffc7d2dae12b50c6f7aab8ff79d6210147c6613561fc3d474c6f75"
+checksum = "974d205cc395652cfa8b37daa053fe56eebd429acf8dc055503fee648dae981e"
 dependencies = [
  "cc",
  "regex",
  "regex-syntax 0.8.8",
+ "serde_json",
  "streaming-iterator",
  "tree-sitter-language",
 ]
@@ -2050,8 +2052,6 @@ dependencies = [
 [[package]]
 name = "tree-sitter-c-sharp"
 version = "0.23.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "67f06accca7b45351758663b8215089e643d53bd9a660ce0349314263737fcb0"
 dependencies = [
  "cc",
  "tree-sitter-language",

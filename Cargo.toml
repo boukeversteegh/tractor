@@ -12,7 +12,7 @@ license = "MIT"
 
 [workspace.dependencies]
 # TreeSitter
-tree-sitter = "0.24"
+tree-sitter = "0.26"
 tree-sitter-c-sharp = "0.23"
 tree-sitter-rust = "0.23"
 tree-sitter-javascript = "0.23"
@@ -55,3 +55,7 @@ anyhow = "1.0"
 regex = "1.10"
 wasm-bindgen = "0.2"
 console_error_panic_hook = "0.1"
+
+# Local grammar patches (managed by: task grammar:patch)
+[patch.crates-io]
+tree-sitter-c-sharp = { path = ".grammar-build/tree-sitter-c-sharp" }

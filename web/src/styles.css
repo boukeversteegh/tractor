@@ -544,13 +544,11 @@ body {
   font-size: 0.75rem;
   margin-left: 0.5rem;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 200px;
 }
 
-.node-text.clickable {
-  cursor: pointer;
+.node-text.selectable {
+  cursor: text;
+  user-select: text;
   padding: 0.1rem 0.35rem;
   border-radius: 3px;
   background: var(--bg-tertiary);
@@ -558,7 +556,7 @@ body {
   transition: all 0.15s ease;
 }
 
-.node-text.clickable:hover {
+.node-text.selectable:hover {
   color: var(--text-primary);
   border-color: var(--accent-light);
   background: var(--bg-secondary);

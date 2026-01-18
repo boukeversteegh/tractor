@@ -1,23 +1,23 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { XmlNode, getXmlNodeId } from '../xmlTree';
+import { XmlNode, getXmlNodeId, getNodeNamePath, pathToKey } from '../xmlTree';
 import { SelectionState } from '../queryState';
 
 interface TreeViewProps {
   xmlTree: XmlNode | null;
   selectionState: SelectionState;
-  effectiveTargetId: string | null;
+  effectiveTargetKey: string | null;  // Path key of effective target
   focusedNodeId: string | null;
   expandedNodeIds: Set<string>;
-  onToggleSelection: (nodeId: string, nodeName: string) => void;
-  onSetTarget: (nodeId: string, nodeName: string) => void;
-  onAddCondition: (nodeId: string, condition: string) => void;
+  onToggleSelection: (pathKey: string, nodeName: string) => void;
+  onSetTarget: (pathKey: string, nodeName: string) => void;
+  onAddCondition: (pathKey: string, condition: string) => void;
   onExpandedChange: (expanded: Set<string>) => void;
 }
 
 export function TreeView({
   xmlTree,
   selectionState,
-  effectiveTargetId,
+  effectiveTargetKey,
   focusedNodeId,
   expandedNodeIds,
   onToggleSelection,
@@ -33,8 +33,9 @@ export function TreeView({
     <div className="tree-view">
       <TreeNode
         node={xmlTree}
+        ancestorPath={[]}
         selectionState={selectionState}
-        effectiveTargetId={effectiveTargetId}
+        effectiveTargetKey={effectiveTargetKey}
         focusedNodeId={focusedNodeId}
         expandedNodeIds={expandedNodeIds}
         onToggleSelection={onToggleSelection}
@@ -48,20 +49,22 @@ export function TreeView({
 
 interface TreeNodeProps {
   node: XmlNode;
+  ancestorPath: string[];  // Path of ancestor node names (not including this node)
   selectionState: SelectionState;
-  effectiveTargetId: string | null;
+  effectiveTargetKey: string | null;
   focusedNodeId: string | null;
   expandedNodeIds: Set<string>;
-  onToggleSelection: (nodeId: string, nodeName: string) => void;
-  onSetTarget: (nodeId: string, nodeName: string) => void;
-  onAddCondition: (nodeId: string, condition: string) => void;
+  onToggleSelection: (pathKey: string, nodeName: string) => void;
+  onSetTarget: (pathKey: string, nodeName: string) => void;
+  onAddCondition: (pathKey: string, condition: string) => void;
   onExpandedChange: (expanded: Set<string>) => void;
 }
 
 function TreeNode({
   node,
+  ancestorPath,
   selectionState,
-  effectiveTargetId,
+  effectiveTargetKey,
   focusedNodeId,
   expandedNodeIds,
   onToggleSelection,
@@ -70,13 +73,26 @@ function TreeNode({
   onExpandedChange,
 }: TreeNodeProps) {
   const [showMenu, setShowMenu] = useState(false);
+  const [showTextMenu, setShowTextMenu] = useState(false);
+  const [textSelection, setTextSelection] = useState<{
+    text: string;
+    isStart: boolean;
+    isEnd: boolean;
+    isAll: boolean;
+  } | null>(null);
   const nodeRef = useRef<HTMLDivElement>(null);
+  const textMenuRef = useRef<HTMLSpanElement>(null);
 
+  // Compute the path key for this node (used for selection state)
+  const nodePath = getNodeNamePath(node, ancestorPath);
+  const pathKey = pathToKey(nodePath);
+
+  // Node ID is still used for expansion/focus (unique per instance)
   const nodeId = getXmlNodeId(node);
-  const nodeState = selectionState.get(nodeId);
+  const nodeState = selectionState.get(pathKey);
   const isSelected = nodeState?.selected ?? false;
   const isExplicitTarget = nodeState?.isTarget ?? false;
-  const isEffectiveTarget = nodeId === effectiveTargetId;
+  const isEffectiveTarget = pathKey === effectiveTargetKey;
   const hasCondition = !!nodeState?.condition;
   const isFocused = focusedNodeId === nodeId;
 
@@ -93,8 +109,8 @@ function TreeNode({
 
   const handlePillClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    onToggleSelection(nodeId, node.name);
-  }, [nodeId, node.name, onToggleSelection]);
+    onToggleSelection(pathKey, node.name);
+  }, [pathKey, node.name, onToggleSelection]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -104,14 +120,15 @@ function TreeNode({
 
   const handleSetTarget = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    onSetTarget(nodeId, node.name);
+    onSetTarget(pathKey, node.name);
     setShowMenu(false);
-  }, [nodeId, node.name, onSetTarget]);
+  }, [pathKey, node.name, onSetTarget]);
 
   const handleAddTextCondition = useCallback((type: 'exact' | 'contains' | 'starts' | 'ends') => {
-    if (!node.textContent) return;
+    const matchText = textSelection?.text || node.textContent;
+    if (!matchText) return;
 
-    const escapedText = node.textContent.replace(/'/g, "''");
+    const escapedText = matchText.replace(/'/g, "''");
     let condition: string;
 
     switch (type) {
@@ -129,9 +146,11 @@ function TreeNode({
         break;
     }
 
-    onAddCondition(nodeId, condition);
+    onAddCondition(pathKey, condition);
     setShowMenu(false);
-  }, [node.textContent, nodeId, onAddCondition]);
+    setShowTextMenu(false);
+    setTextSelection(null);
+  }, [textSelection, node.textContent, pathKey, onAddCondition]);
 
   const toggleExpand = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -146,15 +165,58 @@ function TreeNode({
     setTimeout(() => setShowMenu(false), 150);
   }, []);
 
-  const handleTextClick = useCallback((e: React.MouseEvent) => {
+  const handleTextMenuBlur = useCallback(() => {
+    setTimeout(() => {
+      setShowTextMenu(false);
+      setTextSelection(null);
+    }, 150);
+  }, []);
+
+  const handleTextMouseUp = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
+
+    const fullText = node.textContent || '';
+    const selection = window.getSelection();
+    const selectedText = selection?.toString() || '';
+
+    // If menu is open and no new selection, close it
+    if (showTextMenu && !selectedText) {
+      setShowTextMenu(false);
+      setTextSelection(null);
+      return;
+    }
+
+    // Determine selection position relative to full text
+    let isStart = false;
+    let isEnd = false;
+    let isAll = false;
+    let matchText = selectedText;
+
+    if (selectedText && selectedText.length > 0) {
+      const startIndex = fullText.indexOf(selectedText);
+      if (startIndex !== -1) {
+        isStart = startIndex === 0;
+        isEnd = startIndex + selectedText.length === fullText.length;
+        isAll = isStart && isEnd;
+      }
+      matchText = selectedText;
+    } else {
+      // No selection - use full text
+      matchText = fullText;
+      isAll = true;
+      isStart = true;
+      isEnd = true;
+    }
+
     // Select the node if not already selected
     if (!isSelected) {
-      onToggleSelection(nodeId, node.name);
+      onToggleSelection(pathKey, node.name);
     }
-    // Open the menu to show text condition options
-    setShowMenu(true);
-  }, [isSelected, nodeId, node.name, onToggleSelection]);
+
+    setTextSelection({ text: matchText, isStart, isEnd, isAll });
+    setShowTextMenu(true);
+    setShowMenu(false);
+  }, [node.textContent, isSelected, pathKey, node.name, onToggleSelection, showTextMenu]);
 
   // Determine pill classes based on state
   const pillClasses = [
@@ -195,11 +257,14 @@ function TreeNode({
 
         {node.textContent && (
           <span
-            className="node-text clickable"
-            title="Click to add text condition"
-            onClick={handleTextClick}
+            className="node-text selectable"
+            title="Select text or click to add condition"
+            onMouseUp={handleTextMouseUp}
+            ref={textMenuRef}
+            tabIndex={0}
+            onBlur={handleTextMenuBlur}
           >
-            {node.textContent.length > 30 ? node.textContent.slice(0, 30) + '...' : node.textContent}
+            {node.textContent}
           </span>
         )}
 
@@ -211,23 +276,31 @@ function TreeNode({
             <button onClick={handlePillClick}>
               {isSelected ? 'Deselect' : 'Select'}
             </button>
-            {node.textContent && (
-              <>
-                <hr />
-                <div className="menu-label">Match text:</div>
-                <button onClick={() => handleAddTextCondition('exact')}>
-                  Exactly "{node.textContent.slice(0, 20)}{node.textContent.length > 20 ? '...' : ''}"
-                </button>
-                <button onClick={() => handleAddTextCondition('contains')}>
-                  Contains
-                </button>
-                <button onClick={() => handleAddTextCondition('starts')}>
-                  Starts with
-                </button>
-                <button onClick={() => handleAddTextCondition('ends')}>
-                  Ends with
-                </button>
-              </>
+          </div>
+        )}
+
+        {showTextMenu && textSelection && (
+          <div className="node-menu text-menu">
+            <div className="menu-label">"{textSelection.text.slice(0, 20)}{textSelection.text.length > 20 ? '...' : ''}"</div>
+            {textSelection.isAll && (
+              <button onClick={() => handleAddTextCondition('exact')}>
+                Exactly
+              </button>
+            )}
+            {!textSelection.isAll && (
+              <button onClick={() => handleAddTextCondition('contains')}>
+                Contains
+              </button>
+            )}
+            {textSelection.isStart && !textSelection.isAll && (
+              <button onClick={() => handleAddTextCondition('starts')}>
+                Starts with
+              </button>
+            )}
+            {textSelection.isEnd && !textSelection.isAll && (
+              <button onClick={() => handleAddTextCondition('ends')}>
+                Ends with
+              </button>
             )}
           </div>
         )}
@@ -239,8 +312,9 @@ function TreeNode({
             <TreeNode
               key={child.id}
               node={child}
+              ancestorPath={nodePath}
               selectionState={selectionState}
-              effectiveTargetId={effectiveTargetId}
+              effectiveTargetKey={effectiveTargetKey}
               focusedNodeId={focusedNodeId}
               expandedNodeIds={expandedNodeIds}
               onToggleSelection={onToggleSelection}

@@ -250,3 +250,55 @@ export function parsePositionString(str: string): Position | null {
     column: parseInt(match[2], 10),
   };
 }
+
+/**
+ * Get the path of node names from root to this node.
+ * Returns an array like ['class', 'body', 'method', 'name'].
+ * This is used as the selection key - selecting any node with this path
+ * selects ALL nodes matching that pattern.
+ */
+export function getNodeNamePath(node: XmlNode, ancestors: string[] = []): string[] {
+  return [...ancestors, node.name];
+}
+
+/**
+ * Convert a name path array to a string key for selection state.
+ * e.g., ['class', 'body', 'method'] -> 'class/body/method'
+ */
+export function pathToKey(path: string[]): string {
+  return path.join('/');
+}
+
+/**
+ * Convert a path key string back to an array.
+ * e.g., 'class/body/method' -> ['class', 'body', 'method']
+ */
+export function keyToPath(key: string): string[] {
+  return key.split('/');
+}
+
+/**
+ * Find all nodes in the tree that match a given name path.
+ * Since paths don't include indexes, this returns all instances.
+ */
+export function findNodesByPath(
+  tree: XmlNode,
+  targetPath: string[],
+  currentPath: string[] = []
+): XmlNode[] {
+  const nodePath = [...currentPath, tree.name];
+  const results: XmlNode[] = [];
+
+  // Check if this node matches the target path
+  if (nodePath.length === targetPath.length &&
+      nodePath.every((name, i) => name === targetPath[i])) {
+    results.push(tree);
+  }
+
+  // Continue searching in children (path might match deeper nodes too)
+  for (const child of tree.children) {
+    results.push(...findNodesByPath(child, targetPath, nodePath));
+  }
+
+  return results;
+}

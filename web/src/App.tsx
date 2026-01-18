@@ -23,14 +23,9 @@ import {
   createEmptyState,
   clearSelection,
 } from './queryState';
-import { buildQuery, getEffectiveTarget } from './queryBuilder';
+import { buildQuery, getEffectiveTargetPath } from './pathQueryBuilder';
 
 type Tab = 'builder' | 'xml';
-
-// Maps nodeId -> { name } for query builder
-interface NodeInfo {
-  name: string;
-}
 
 export function App() {
   const [initialized, setInitialized] = useState(false);
@@ -48,19 +43,18 @@ export function App() {
   const [showLocations, setShowLocations] = useState(false);
   const [prettyPrint, setPrettyPrint] = useState(true);
 
-  // Selection state
+  // Selection state (keyed by path strings like "class/method/body")
   const [selectionState, setSelectionState] = useState<SelectionState>(createEmptyState);
-  const [nodeInfoMap, setNodeInfoMap] = useState<Map<string, NodeInfo>>(new Map());
 
   // Derived XPath query from selection
   const query = useMemo(() => {
-    return buildQuery(xmlTree, selectionState, nodeInfoMap);
-  }, [selectionState, nodeInfoMap, xmlTree]);
+    return buildQuery(selectionState);
+  }, [selectionState]);
 
-  // Effective target ID (explicit or auto-detected via LCA)
-  const effectiveTargetId = useMemo(() => {
-    return getEffectiveTarget(xmlTree, selectionState, nodeInfoMap);
-  }, [xmlTree, selectionState, nodeInfoMap]);
+  // Effective target path key (explicit or auto-detected via LCA)
+  const effectiveTargetKey = useMemo(() => {
+    return getEffectiveTargetPath(selectionState);
+  }, [selectionState]);
 
   // Manual query override
   const [manualQuery, setManualQuery] = useState('');
@@ -185,19 +179,6 @@ export function App() {
           ? xmlWithLocations
           : await parseAstToXmlSimple(ast, source, language, rawMode, false, prettyPrint);
         setXml(xmlOutput);  // For display only
-
-        // Build node info map (only need name - selection state is separate)
-        if (tree) {
-          const infoMap = new Map<string, NodeInfo>();
-          function traverse(node: XmlNode) {
-            infoMap.set(node.id, { name: node.name });
-            for (const child of node.children) {
-              traverse(child);
-            }
-          }
-          traverse(tree);
-          setNodeInfoMap(infoMap);
-        }
       } catch (e) {
         console.error('Parse error:', e);
         setXml('');
@@ -209,11 +190,12 @@ export function App() {
     return () => clearTimeout(timeout);
   }, [initialized, source, language, rawMode, showLocations, prettyPrint]);
 
-  // Clear selection when tree changes (node IDs become invalid)
-  // Note: we don't reset useManualQuery so the user's manual query is preserved
+  // With path-based selection, we preserve selection across source edits
+  // since paths like "class/method/body" remain valid.
+  // However, clear selection when language changes (AST structure differs).
   useEffect(() => {
     setSelectionState(createEmptyState());
-  }, [xmlTree]);
+  }, [language]);
 
   // Clear hovered index when matches change
   useEffect(() => {
@@ -264,16 +246,16 @@ export function App() {
     }
   }, []);
 
-  // Selection handlers
-  const handleToggleSelection = useCallback((nodeId: string, nodeName: string) => {
+  // Selection handlers (now use pathKey instead of nodeId)
+  const handleToggleSelection = useCallback((pathKey: string, _nodeName: string) => {
     setSelectionState(prev => {
       const newState = new Map(prev);
-      const current = newState.get(nodeId);
+      const current = newState.get(pathKey);
 
       if (current?.selected) {
-        newState.delete(nodeId);
+        newState.delete(pathKey);
       } else {
-        newState.set(nodeId, {
+        newState.set(pathKey, {
           selected: true,
           isTarget: current?.isTarget ?? false,
           condition: current?.condition,
@@ -281,41 +263,33 @@ export function App() {
       }
       return newState;
     });
-    setNodeInfoMap(prev => {
-      const newMap = new Map(prev);
-      const info = newMap.get(nodeId);
-      if (info) {
-        newMap.set(nodeId, { ...info, name: nodeName });
-      }
-      return newMap;
-    });
     setUseManualQuery(false);
   }, []);
 
-  const handleSetTarget = useCallback((nodeId: string, nodeName: string) => {
+  const handleSetTarget = useCallback((pathKey: string, _nodeName: string) => {
     setSelectionState(prev => {
       const newState = new Map(prev);
-      const current = newState.get(nodeId);
+      const current = newState.get(pathKey);
       const wasTarget = current?.isTarget ?? false;
 
       // Clear previous target
-      for (const [id, state] of newState) {
+      for (const [key, state] of newState) {
         if (state.isTarget) {
-          newState.set(id, { ...state, isTarget: false });
+          newState.set(key, { ...state, isTarget: false });
         }
       }
 
       // Toggle: if already target, just unset (keep selected); otherwise set as target
       if (wasTarget) {
         // Keep it selected but no longer target
-        newState.set(nodeId, {
+        newState.set(pathKey, {
           selected: current?.selected ?? true,
           isTarget: false,
           condition: current?.condition,
         });
       } else {
         // Set as new target (also select it)
-        newState.set(nodeId, {
+        newState.set(pathKey, {
           selected: true,
           isTarget: true,
           condition: current?.condition,
@@ -324,22 +298,14 @@ export function App() {
 
       return newState;
     });
-    setNodeInfoMap(prev => {
-      const newMap = new Map(prev);
-      const info = newMap.get(nodeId);
-      if (info) {
-        newMap.set(nodeId, { ...info, name: nodeName });
-      }
-      return newMap;
-    });
     setUseManualQuery(false);
   }, []);
 
-  const handleAddCondition = useCallback((nodeId: string, condition: string) => {
+  const handleAddCondition = useCallback((pathKey: string, condition: string) => {
     setSelectionState(prev => {
       const newState = new Map(prev);
-      const current = newState.get(nodeId);
-      newState.set(nodeId, {
+      const current = newState.get(pathKey);
+      newState.set(pathKey, {
         selected: current?.selected ?? true,
         isTarget: current?.isTarget ?? false,
         condition,
@@ -538,7 +504,7 @@ export function App() {
               <TreeView
                 xmlTree={xmlTree}
                 selectionState={selectionState}
-                effectiveTargetId={effectiveTargetId}
+                effectiveTargetKey={effectiveTargetKey}
                 focusedNodeId={focusedNodeId}
                 expandedNodeIds={expandedNodeIds}
                 onToggleSelection={handleToggleSelection}
