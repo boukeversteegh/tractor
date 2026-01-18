@@ -5,6 +5,7 @@ import { SelectionState } from '../queryState';
 interface TreeViewProps {
   xmlTree: XmlNode | null;
   selectionState: SelectionState;
+  effectiveTargetId: string | null;
   focusedNodeId: string | null;
   expandedNodeIds: Set<string>;
   onToggleSelection: (nodeId: string, nodeName: string) => void;
@@ -16,6 +17,7 @@ interface TreeViewProps {
 export function TreeView({
   xmlTree,
   selectionState,
+  effectiveTargetId,
   focusedNodeId,
   expandedNodeIds,
   onToggleSelection,
@@ -32,6 +34,7 @@ export function TreeView({
       <TreeNode
         node={xmlTree}
         selectionState={selectionState}
+        effectiveTargetId={effectiveTargetId}
         focusedNodeId={focusedNodeId}
         expandedNodeIds={expandedNodeIds}
         onToggleSelection={onToggleSelection}
@@ -46,6 +49,7 @@ export function TreeView({
 interface TreeNodeProps {
   node: XmlNode;
   selectionState: SelectionState;
+  effectiveTargetId: string | null;
   focusedNodeId: string | null;
   expandedNodeIds: Set<string>;
   onToggleSelection: (nodeId: string, nodeName: string) => void;
@@ -57,6 +61,7 @@ interface TreeNodeProps {
 function TreeNode({
   node,
   selectionState,
+  effectiveTargetId,
   focusedNodeId,
   expandedNodeIds,
   onToggleSelection,
@@ -70,7 +75,8 @@ function TreeNode({
   const nodeId = getXmlNodeId(node);
   const nodeState = selectionState.get(nodeId);
   const isSelected = nodeState?.selected ?? false;
-  const isTarget = nodeState?.isTarget ?? false;
+  const isExplicitTarget = nodeState?.isTarget ?? false;
+  const isEffectiveTarget = nodeId === effectiveTargetId;
   const hasCondition = !!nodeState?.condition;
   const isFocused = focusedNodeId === nodeId;
 
@@ -144,7 +150,8 @@ function TreeNode({
   const pillClasses = [
     'node-pill',
     isSelected && 'selected',
-    isTarget && 'target',
+    isEffectiveTarget && 'target',
+    isEffectiveTarget && !isExplicitTarget && 'auto-target',
     hasCondition && 'has-condition',
     isFocused && 'focused',
     showMenu && 'active',
@@ -171,7 +178,7 @@ function TreeNode({
           onBlur={handleBlur}
           title="Click to select, right-click for options"
         >
-          {isTarget && <span className="target-marker">→</span>}
+          {isEffectiveTarget && <span className="target-marker">{isExplicitTarget ? '→' : '⇢'}</span>}
           {node.name}
           {hasCondition && <span className="condition-marker">*</span>}
         </button>
@@ -185,7 +192,7 @@ function TreeNode({
         {showMenu && (
           <div className="node-menu">
             <button onClick={handleSetTarget}>
-              {isTarget ? '✓ ' : ''}Set as target
+              {isExplicitTarget ? 'Unset as target' : 'Set as target'}
             </button>
             <button onClick={handlePillClick}>
               {isSelected ? 'Deselect' : 'Select'}
@@ -219,6 +226,7 @@ function TreeNode({
               key={child.id}
               node={child}
               selectionState={selectionState}
+              effectiveTargetId={effectiveTargetId}
               focusedNodeId={focusedNodeId}
               expandedNodeIds={expandedNodeIds}
               onToggleSelection={onToggleSelection}

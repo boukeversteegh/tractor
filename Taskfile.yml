@@ -30,6 +30,7 @@ tasks:
     desc: Run tests
     cmds:
       - cargo test
+      - task: web:test
 
   test:integration:
     desc: Run integration tests

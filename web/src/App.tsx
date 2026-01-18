@@ -23,51 +23,13 @@ import {
   createEmptyState,
   clearSelection,
 } from './queryState';
+import { buildQuery, getEffectiveTarget } from './queryBuilder';
 
 type Tab = 'builder' | 'xml';
 
-// Simple query builder from selection state
-// Maps nodeId -> { name, selected, isTarget, condition }
+// Maps nodeId -> { name } for query builder
 interface NodeInfo {
   name: string;
-  selected: boolean;
-  isTarget: boolean;
-  condition?: string;
-}
-
-function buildQueryFromSelection(
-  selectionState: SelectionState,
-  nodeInfoMap: Map<string, NodeInfo>,
-  tree: XmlNode | null
-): string {
-  const selected: { id: string; info: NodeInfo; depth: number }[] = [];
-
-  for (const [id, state] of selectionState) {
-    const info = nodeInfoMap.get(id);
-    if (!info) continue;
-
-    if (state.selected) {
-      // Get depth from tree path
-      const path = tree ? getPathToNode(tree, id) : null;
-      const depth = path ? path.length : 0;
-      selected.push({ id, info: { ...info, ...state }, depth });
-    }
-  }
-
-  if (selected.length === 0) return '';
-
-  // Sort by tree depth (ancestors first)
-  selected.sort((a, b) => a.depth - b.depth);
-
-  const names = selected.map(s => {
-    let part = s.info.name;
-    if (s.info.condition) {
-      part += `[${s.info.condition}]`;
-    }
-    return part;
-  });
-
-  return '//' + names.join('//');
 }
 
 export function App() {
@@ -92,8 +54,13 @@ export function App() {
 
   // Derived XPath query from selection
   const query = useMemo(() => {
-    return buildQueryFromSelection(selectionState, nodeInfoMap, xmlTree);
+    return buildQuery(xmlTree, selectionState, nodeInfoMap);
   }, [selectionState, nodeInfoMap, xmlTree]);
+
+  // Effective target ID (explicit or auto-detected via LCA)
+  const effectiveTargetId = useMemo(() => {
+    return getEffectiveTarget(xmlTree, selectionState, nodeInfoMap);
+  }, [xmlTree, selectionState, nodeInfoMap]);
 
   // Manual query override
   const [manualQuery, setManualQuery] = useState('');
@@ -219,15 +186,11 @@ export function App() {
           : await parseAstToXmlSimple(ast, source, language, rawMode, false, prettyPrint);
         setXml(xmlOutput);  // For display only
 
-        // Build node info map
+        // Build node info map (only need name - selection state is separate)
         if (tree) {
           const infoMap = new Map<string, NodeInfo>();
           function traverse(node: XmlNode) {
-            infoMap.set(node.id, {
-              name: node.name,
-              selected: false,
-              isTarget: false,
-            });
+            infoMap.set(node.id, { name: node.name });
             for (const child of node.children) {
               traverse(child);
             }
@@ -332,6 +295,8 @@ export function App() {
   const handleSetTarget = useCallback((nodeId: string, nodeName: string) => {
     setSelectionState(prev => {
       const newState = new Map(prev);
+      const current = newState.get(nodeId);
+      const wasTarget = current?.isTarget ?? false;
 
       // Clear previous target
       for (const [id, state] of newState) {
@@ -340,13 +305,22 @@ export function App() {
         }
       }
 
-      // Set new target (also select it)
-      const current = newState.get(nodeId);
-      newState.set(nodeId, {
-        selected: true,
-        isTarget: true,
-        condition: current?.condition,
-      });
+      // Toggle: if already target, just unset (keep selected); otherwise set as target
+      if (wasTarget) {
+        // Keep it selected but no longer target
+        newState.set(nodeId, {
+          selected: current?.selected ?? true,
+          isTarget: false,
+          condition: current?.condition,
+        });
+      } else {
+        // Set as new target (also select it)
+        newState.set(nodeId, {
+          selected: true,
+          isTarget: true,
+          condition: current?.condition,
+        });
+      }
 
       return newState;
     });
@@ -564,6 +538,7 @@ export function App() {
               <TreeView
                 xmlTree={xmlTree}
                 selectionState={selectionState}
+                effectiveTargetId={effectiveTargetId}
                 focusedNodeId={focusedNodeId}
                 expandedNodeIds={expandedNodeIds}
                 onToggleSelection={handleToggleSelection}

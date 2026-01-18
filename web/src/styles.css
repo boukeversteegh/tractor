@@ -497,11 +497,19 @@ body {
   color: white;
 }
 
-.node-pill.target {
+.node-pill.target,
+.node-pill.selected.target {
   background: var(--success);
   border-color: var(--success);
   color: white;
   font-weight: 600;
+  box-shadow: 0 0 0 2px var(--success), 0 0 8px var(--success);
+}
+
+/* Auto-detected target (LCA) - dashed border to show it's inferred */
+.node-pill.auto-target {
+  border-style: dashed;
+  box-shadow: 0 0 0 2px var(--success);
 }
 
 .node-pill.has-condition {
@@ -522,8 +530,8 @@ body {
 }
 
 .target-marker {
-  font-size: 0.65rem;
-  opacity: 0.8;
+  font-size: 0.75rem;
+  margin-right: 0.25rem;
 }
 
 .condition-marker {
