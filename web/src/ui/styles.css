@@ -1,14 +1,24 @@
 :root {
-  --bg-primary: #1e1e1e;
-  --bg-secondary: #252526;
-  --bg-tertiary: #2d2d30;
-  --text-primary: #d4d4d4;
-  --text-secondary: #808080;
-  --accent: #569cd6;
-  --accent-hover: #4fc1ff;
-  --border: #3c3c3c;
-  --success: #4ec9b0;
-  --error: #f14c4c;
+  /* John Deere / Tractor Classic theme */
+  --bg-primary: #0f1a0f;     /* Darkest - main content area */
+  --bg-secondary: #1a2e1a;   /* Medium - headers, panels */
+  --bg-tertiary: #243824;    /* Lightest - hover states, elevated */
+  --text-primary: #c8e6c8;
+  --text-secondary: #8aaa8a;
+  --accent: #5cb85c;
+  --accent-hover: #8fd98f;
+  --accent-yellow: #d4aa00;
+  --border: #2a4a2a;
+  --success: #5cb85c;
+  --error: #dc3545;
+
+  /* Syntax highlighting colors */
+  --syntax-keyword: #5cb85c;   /* JD green */
+  --syntax-type: #d4aa00;      /* JD golden yellow */
+  --syntax-string: #f0c674;    /* Warm yellow */
+  --syntax-comment: #6a8f6a;   /* Muted forest green */
+  --syntax-identifier: #c8e6c8; /* Light green (base text) */
+  --syntax-operator: #7fa87f;  /* Muted green */
 }
 
 * {
@@ -148,11 +158,11 @@ main {
   color: var(--text-primary);
 }
 
-/* XML Syntax highlighting */
-#xml-output .xml-tag { color: #569cd6; }
-#xml-output .xml-attr { color: #9cdcfe; }
-#xml-output .xml-value { color: #ce9178; }
-#xml-output .xml-text { color: #d4d4d4; }
+/* XML Syntax highlighting - uses theme variables */
+#xml-output .xml-tag   { color: var(--syntax-keyword); }
+#xml-output .xml-attr  { color: var(--syntax-type); }
+#xml-output .xml-value { color: var(--syntax-string); }
+#xml-output .xml-text  { color: var(--syntax-identifier); }
 
 #xpath-input {
   width: 100%;

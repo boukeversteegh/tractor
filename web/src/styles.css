@@ -6,16 +6,26 @@
 }
 
 :root {
-  --bg-primary: #1e1e2e;
-  --bg-secondary: #2a2a3e;
-  --bg-tertiary: #363650;
-  --text-primary: #e0e0e0;
-  --text-secondary: #a0a0a0;
-  --accent: #7c3aed;
-  --accent-light: #a78bfa;
-  --border: #404060;
-  --success: #10b981;
-  --error: #ef4444;
+  /* John Deere / Tractor Classic theme */
+  --bg-primary: #0f1a0f;     /* Darkest - main content area */
+  --bg-secondary: #1a2e1a;   /* Medium - headers, panels */
+  --bg-tertiary: #243824;    /* Lightest - hover states, elevated */
+  --text-primary: #c8e6c8;
+  --text-secondary: #8aaa8a;
+  --accent: #5cb85c;         /* JD green */
+  --accent-light: #8fd98f;
+  --accent-yellow: #d4aa00;  /* JD yellow - softened */
+  --border: #2a4a2a;
+  --success: #5cb85c;
+  --error: #dc3545;
+
+  /* Syntax highlighting colors */
+  --syntax-keyword: #5cb85c;   /* JD green */
+  --syntax-type: #d4aa00;      /* JD golden yellow */
+  --syntax-string: #f0c674;    /* Warm yellow */
+  --syntax-comment: #6a8f6a;   /* Muted forest green */
+  --syntax-identifier: #c8e6c8; /* Light green (base text) */
+  --syntax-operator: #7fa87f;  /* Muted green */
 }
 
 body {
@@ -113,8 +123,8 @@ body {
 }
 
 .query-input.manual {
-  border-color: #f59e0b;
-  background: rgba(245, 158, 11, 0.1);
+  border-color: var(--accent-yellow);
+  background: rgba(212, 170, 0, 0.1);
 }
 
 .match-count {
@@ -343,14 +353,16 @@ body {
   overflow: auto;
 }
 
-/* Source editor with highlight overlay */
+/* Source editor with layered highlighting */
 .source-editor {
   flex: 1;
   position: relative;
   overflow: hidden;
 }
 
-.source-backdrop {
+/* Shared styles for both render layers */
+.source-highlights,
+.source-syntax {
   position: absolute;
   top: 0;
   left: 0;
@@ -363,20 +375,46 @@ body {
   white-space: pre-wrap;
   word-wrap: break-word;
   overflow: auto;
-  color: var(--text-primary);
   pointer-events: none;
 }
 
-.source-backdrop .highlight {
-  background: rgba(124, 58, 237, 0.3);
+/* Layer 1 (bottom): Highlight backgrounds - text invisible */
+.source-highlights {
+  color: transparent;
+  z-index: 1;
+}
+
+/* Reset default mark styling */
+.source-highlights mark {
+  background: transparent;
+  color: inherit;
+}
+
+/* Match highlights - subtle outline */
+.source-highlights .highlight {
+  outline: 1px solid rgba(212, 170, 0, 0.35);
   border-radius: 2px;
 }
 
-.source-backdrop .highlight-hovered {
-  background: rgba(124, 58, 237, 0.7);
-  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.5);
+.source-highlights .highlight-hovered {
+  outline: 1px solid rgba(212, 170, 0, 0.7);
+  background: rgba(212, 170, 0, 0.12);
 }
 
+/* Tree node hover highlight */
+.source-highlights .highlight-node {
+  background: rgba(92, 184, 92, 0.25);  /* JD green */
+  outline: 1px solid rgba(92, 184, 92, 0.6);  /* JD green outline */
+  border-radius: 2px;
+}
+
+/* Layer 2 (middle): Syntax-colored text */
+.source-syntax {
+  color: var(--syntax-identifier);
+  z-index: 2;
+}
+
+/* Layer 3 (top): Editable textarea - invisible text, captures input */
 .source-textarea {
   position: absolute;
   top: 0;
@@ -393,6 +431,7 @@ body {
   -webkit-text-fill-color: transparent;
   resize: none;
   caret-color: var(--text-primary);
+  z-index: 3;
 }
 
 .source-textarea:focus {
@@ -518,12 +557,12 @@ body {
 }
 
 .node-pill.focused {
-  outline: 2px solid #f59e0b;
+  outline: 2px solid var(--accent-yellow);
   outline-offset: 2px;
 }
 
 .tree-node.focused > .node-row {
-  background: rgba(245, 158, 11, 0.15);
+  background: rgba(212, 170, 0, 0.15);
   border-radius: 4px;
   margin: 0 -0.25rem;
   padding: 0.15rem 0.25rem;
@@ -536,7 +575,7 @@ body {
 
 .condition-marker {
   font-size: 0.65rem;
-  color: #fbbf24;
+  color: var(--accent-yellow);
 }
 
 .node-text {
@@ -708,40 +747,16 @@ body {
   font-size: 0.8rem;
 }
 
-/* ANSI color classes for syntax highlighting */
-.ansi-dim {
-  opacity: 0.6;
-}
-
-.ansi-bold {
-  font-weight: bold;
-}
-
-.ansi-blue {
-  color: #569cd6; /* Keywords - VS Code blue */
-}
-
-.ansi-cyan {
-  color: #4ec9b0; /* Types, functions - VS Code teal */
-}
-
-.ansi-yellow {
-  color: #ce9178; /* Strings - VS Code orange/brown */
-}
-
-.ansi-green {
-  color: #6a9955; /* Comments - VS Code green */
-}
-
-.ansi-white {
-  color: #9cdcfe; /* Identifiers - VS Code light blue */
-}
-
-.ansi-black {
-  color: #1a1b26;
-}
-
+/* ANSI color classes for syntax highlighting - John Deere / Tractor Classic */
+.ansi-dim    { color: var(--syntax-operator); }
+.ansi-bold   { font-weight: bold; }
+.ansi-blue   { color: var(--syntax-keyword); }
+.ansi-cyan   { color: var(--syntax-type); }
+.ansi-yellow { color: var(--syntax-string); }
+.ansi-green  { color: var(--syntax-comment); }
+.ansi-white  { color: var(--syntax-identifier); }
+.ansi-black  { color: var(--bg-primary); }
 .ansi-bg-yellow {
-  background-color: #e0af68;
-  color: #1a1b26;
+  background-color: var(--accent-yellow);
+  color: var(--bg-primary);
 }

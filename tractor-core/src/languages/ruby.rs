@@ -2,6 +2,7 @@
 
 use xot::{Xot, Node as XotNode};
 use crate::xot_transform::{TransformAction, helpers::*};
+use crate::output::syntax_highlight::SyntaxCategory;
 
 /// Transform a Ruby AST node
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
@@ -74,5 +75,51 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "array" => Some("array"),
         "hash" => Some("hash"),
         _ => None,
+    }
+}
+
+/// Map a transformed element name to a syntax category for highlighting
+pub fn syntax_category(element: &str) -> SyntaxCategory {
+    match element {
+        // Identifiers
+        "name" => SyntaxCategory::Identifier,
+        "type" => SyntaxCategory::Type,
+
+        // Literals
+        "string" => SyntaxCategory::String,
+        "int" | "float" => SyntaxCategory::Number,
+        "symbol" => SyntaxCategory::String,
+        "true" | "false" | "nil" => SyntaxCategory::Keyword,
+
+        // Keywords - declarations
+        "class" | "module" | "method" => SyntaxCategory::Keyword,
+
+        // Keywords - control flow
+        "if" | "unless" | "else" | "elsif" => SyntaxCategory::Keyword,
+        "case" | "when" => SyntaxCategory::Keyword,
+        "while" | "until" | "for" => SyntaxCategory::Keyword,
+        "begin" | "rescue" | "ensure" | "raise" => SyntaxCategory::Keyword,
+        "return" | "break" | "next" | "redo" | "retry" => SyntaxCategory::Keyword,
+        "yield" => SyntaxCategory::Keyword,
+
+        // Keywords - other
+        "def" | "end" | "do" => SyntaxCategory::Keyword,
+        "self" | "super" => SyntaxCategory::Keyword,
+
+        // Collections
+        "array" | "hash" => SyntaxCategory::Type,
+
+        // Functions/calls
+        "call" => SyntaxCategory::Function,
+
+        // Operators
+        "op" => SyntaxCategory::Operator,
+        "binary" | "unary" | "assign" => SyntaxCategory::Operator,
+
+        // Comments
+        "comment" => SyntaxCategory::Comment,
+
+        // Structural elements - no color
+        _ => SyntaxCategory::Default,
     }
 }

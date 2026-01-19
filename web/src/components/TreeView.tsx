@@ -12,6 +12,7 @@ interface TreeViewProps {
   onSetTarget: (pathKey: string, nodeName: string) => void;
   onAddCondition: (pathKey: string, condition: string) => void;
   onExpandedChange: (expanded: Set<string>) => void;
+  onNodeHover?: (node: XmlNode | null) => void;
 }
 
 export function TreeView({
@@ -24,6 +25,7 @@ export function TreeView({
   onSetTarget,
   onAddCondition,
   onExpandedChange,
+  onNodeHover,
 }: TreeViewProps) {
   if (!xmlTree) {
     return <div className="tree-view empty">No tree to display</div>;
@@ -42,6 +44,7 @@ export function TreeView({
         onSetTarget={onSetTarget}
         onAddCondition={onAddCondition}
         onExpandedChange={onExpandedChange}
+        onNodeHover={onNodeHover}
       />
     </div>
   );
@@ -58,6 +61,7 @@ interface TreeNodeProps {
   onSetTarget: (pathKey: string, nodeName: string) => void;
   onAddCondition: (pathKey: string, condition: string) => void;
   onExpandedChange: (expanded: Set<string>) => void;
+  onNodeHover?: (node: XmlNode | null) => void;
 }
 
 function TreeNode({
@@ -71,6 +75,7 @@ function TreeNode({
   onSetTarget,
   onAddCondition,
   onExpandedChange,
+  onNodeHover,
 }: TreeNodeProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [showTextMenu, setShowTextMenu] = useState(false);
@@ -248,6 +253,8 @@ function TreeNode({
           onClick={handlePillClick}
           onContextMenu={handleContextMenu}
           onBlur={handleBlur}
+          onMouseEnter={() => onNodeHover?.(node)}
+          onMouseLeave={() => onNodeHover?.(null)}
           title="Click to select, right-click for options"
         >
           {isEffectiveTarget && <span className="target-marker" title={isExplicitTarget ? 'Explicit target' : 'Auto-detected target (LCA)'}>{isExplicitTarget ? '▶' : '▷'}</span>}
@@ -321,6 +328,7 @@ function TreeNode({
               onSetTarget={onSetTarget}
               onAddCondition={onAddCondition}
               onExpandedChange={onExpandedChange}
+              onNodeHover={onNodeHover}
             />
           ))}
         </div>

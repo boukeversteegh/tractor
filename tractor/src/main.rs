@@ -203,6 +203,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
             strip_locations: !args.keep_locations,
             max_depth: args.depth,
             pretty_print: !args.no_pretty,
+            language: lang_override.clone(),
         };
 
         // Debug mode: show full XML with highlighted matches for each file
@@ -421,6 +422,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
         strip_locations: !args.keep_locations,
         max_depth: args.depth,
         pretty_print: !args.no_pretty,
+        language: args.lang.clone(),
     };
 
     let output = format_matches(&matches, format, &options);
@@ -470,6 +472,7 @@ fn process_single_result(
                 strip_locations: !args.keep_locations,
                 max_depth: args.depth,
                 pretty_print: !args.no_pretty,
+                language: args.lang.clone(),
             };
             return check_expectation(&matches, args, use_color, &format, &options);
         }
@@ -480,6 +483,7 @@ fn process_single_result(
             strip_locations: !args.keep_locations,
             max_depth: args.depth,
             pretty_print: !args.no_pretty,
+            language: args.lang.clone(),
         };
 
         let output = format_matches(&matches, format.clone(), &options);
@@ -523,6 +527,7 @@ fn process_single_result(
             strip_locations: !args.keep_locations,
             max_depth: args.depth,
             pretty_print: !args.no_pretty,
+            language: args.lang.clone(),
         };
 
         let output = format_matches(&[file_match], format, &options);
@@ -652,6 +657,7 @@ fn check_expectation_with_matches(
                 strip_locations: options.strip_locations,
                 max_depth: options.max_depth,
                 pretty_print: options.pretty_print,
+                language: options.language.clone(),
             };
             let output = format_matches(matches, OutputFormat::Gcc, &error_options);
             for line in output.lines() {

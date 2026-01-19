@@ -13,9 +13,14 @@ pub mod ruby;
 
 use xot::{Xot, Node as XotNode};
 use crate::xot_transform::TransformAction;
+use crate::output::syntax_highlight::SyntaxCategory;
 
 /// Type alias for language transform functions
 pub type TransformFn = fn(&mut Xot, XotNode) -> Result<TransformAction, xot::Error>;
+
+/// Type alias for syntax category mapping functions
+/// Maps a transformed element name to a syntax category for highlighting
+pub type SyntaxCategoryFn = fn(&str) -> SyntaxCategory;
 
 /// Get the transform function for a language
 pub fn get_transform(lang: &str) -> TransformFn {
@@ -32,7 +37,29 @@ pub fn get_transform(lang: &str) -> TransformFn {
     }
 }
 
+/// Get the syntax category function for a language
+/// This maps transformed element names to syntax categories for highlighting
+pub fn get_syntax_category(lang: &str) -> SyntaxCategoryFn {
+    match lang {
+        "typescript" | "ts" | "tsx" | "javascript" | "js" | "jsx" => typescript::syntax_category,
+        "csharp" | "cs" => csharp::syntax_category,
+        "python" | "py" => python::syntax_category,
+        "go" => go::syntax_category,
+        "rust" | "rs" => rust_lang::syntax_category,
+        "java" => java::syntax_category,
+        "ruby" | "rb" => ruby::syntax_category,
+        // Default: generic fallback
+        _ => default_syntax_category,
+    }
+}
+
 /// Default passthrough transform - just continues without changes
 fn passthrough_transform(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
     Ok(TransformAction::Continue)
+}
+
+/// Default syntax category - generic fallback for unknown languages
+fn default_syntax_category(element: &str) -> SyntaxCategory {
+    // Fallback to the generic mapping in syntax_highlight.rs
+    SyntaxCategory::from_element_name(element)
 }

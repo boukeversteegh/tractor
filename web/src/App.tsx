@@ -72,6 +72,7 @@ export function App() {
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
   const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(new Set());
   const [hoveredMatchIndex, setHoveredMatchIndex] = useState<number | null>(null);
+  const [hoveredTreeNode, setHoveredTreeNode] = useState<XmlNode | null>(null);
 
   // Panel resize state
   const STORAGE_KEY = 'tractor-panel-widths';
@@ -464,7 +465,9 @@ export function App() {
             source={source}
             matches={matches}
             hoveredMatchIndex={hoveredMatchIndex}
+            hoveredNode={hoveredTreeNode}
             xmlForHighlighting={xmlForQuery}
+            language={language}
             onChange={setSource}
             onClick={handleSourceClick}
           />
@@ -512,6 +515,7 @@ export function App() {
                 onSetTarget={handleSetTarget}
                 onAddCondition={handleAddCondition}
                 onExpandedChange={setExpandedNodeIds}
+                onNodeHover={setHoveredTreeNode}
               />
             ) : (
               <XmlOutput xml={xml} />

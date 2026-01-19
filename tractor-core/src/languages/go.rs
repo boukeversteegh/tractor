@@ -2,6 +2,7 @@
 
 use xot::{Xot, Node as XotNode};
 use crate::xot_transform::{TransformAction, helpers::*};
+use crate::output::syntax_highlight::SyntaxCategory;
 
 /// Transform a Go AST node
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
@@ -142,5 +143,53 @@ fn classify_identifier(xot: &Xot, node: XotNode) -> &'static str {
         "parameter_declaration" => "name",
         "var_spec" | "const_spec" => "name",
         _ => "type",
+    }
+}
+
+/// Map a transformed element name to a syntax category for highlighting
+pub fn syntax_category(element: &str) -> SyntaxCategory {
+    match element {
+        // Identifiers
+        "name" => SyntaxCategory::Identifier,
+        "type" => SyntaxCategory::Type,
+        "field" => SyntaxCategory::Identifier,
+        "pkg" => SyntaxCategory::Identifier,
+
+        // Literals
+        "string" | "rawstring" => SyntaxCategory::String,
+        "int" | "float" => SyntaxCategory::Number,
+        "true" | "false" | "nil" => SyntaxCategory::Keyword,
+
+        // Keywords - declarations
+        "function" | "method" => SyntaxCategory::Keyword,
+        "struct" | "interface" => SyntaxCategory::Keyword,
+        "typedef" | "typespec" => SyntaxCategory::Keyword,
+        "const" | "var" => SyntaxCategory::Keyword,
+        "package" => SyntaxCategory::Keyword,
+        "param" | "params" => SyntaxCategory::Keyword,
+
+        // Keywords - control flow
+        "if" | "else" => SyntaxCategory::Keyword,
+        "for" | "range" => SyntaxCategory::Keyword,
+        "switch" | "case" | "default" => SyntaxCategory::Keyword,
+        "select" => SyntaxCategory::Keyword,
+        "return" | "break" | "continue" | "goto" => SyntaxCategory::Keyword,
+        "defer" | "go" => SyntaxCategory::Keyword,
+
+        // Types
+        "pointer" | "slice" | "map" | "chan" => SyntaxCategory::Type,
+
+        // Functions/calls
+        "call" => SyntaxCategory::Function,
+
+        // Operators
+        "op" => SyntaxCategory::Operator,
+        "binary" | "unary" => SyntaxCategory::Operator,
+
+        // Comments
+        "comment" => SyntaxCategory::Comment,
+
+        // Structural elements - no color
+        _ => SyntaxCategory::Default,
     }
 }

@@ -281,15 +281,16 @@ export function prettyPrintXmlSync(
  *
  * @param source - The full source code
  * @param xml - Complete XML document with position attributes
+ * @param language - The language name (e.g., "csharp", "rust", "typescript")
  * @returns Source code with ANSI color codes for syntax highlighting
  */
-export function highlightFullSourceSync(source: string, xml: string): string {
+export function highlightFullSourceSync(source: string, xml: string, language: string): string {
   if (!initialized) {
     console.warn('highlightFullSourceSync called before WASM initialized');
     return source;
   }
   try {
-    return wasmHighlightFullSource(source, xml);
+    return wasmHighlightFullSource(source, xml, language);
   } catch {
     return source;
   }
@@ -362,6 +363,118 @@ export function ansiToHtml(text: string): string {
   while (openSpans > 0) {
     result += '</span>';
     openSpans--;
+  }
+
+  return result;
+}
+
+/**
+ * Convert ANSI-highlighted text to HTML while also inserting match highlight marks.
+ * This combines syntax highlighting with match markers without losing either.
+ */
+export function ansiToHtmlWithMarks(
+  ansiText: string,
+  matchRanges: Array<{ start: number; end: number; matchIndex: number }>,
+  hoveredMatchIndex: number | null
+): string {
+  const codeToClass: Record<string, string> = {
+    '2': 'ansi-dim',
+    '1': 'ansi-bold',
+    '34': 'ansi-blue',
+    '36': 'ansi-cyan',
+    '33': 'ansi-yellow',
+    '32': 'ansi-green',
+    '97': 'ansi-white',
+    '30': 'ansi-black',
+    '43': 'ansi-bg-yellow',
+  };
+
+  // Sort match ranges by start position
+  const sortedRanges = [...matchRanges].sort((a, b) => a.start - b.start);
+
+  let result = '';
+  let openSyntaxSpans = 0;
+  let inMark = false;
+  let currentRangeIdx = -1; // Index of the range we're currently inside
+  let srcPos = 0; // Position in original source (excludes ANSI codes)
+  let nextRangeIdx = 0; // Next range to potentially enter
+  let i = 0;
+
+  while (i < ansiText.length) {
+    // Check for ANSI escape sequence
+    if (ansiText[i] === '\x1b' && ansiText[i + 1] === '[') {
+      let j = i + 2;
+      while (j < ansiText.length && ansiText[j] !== 'm') {
+        j++;
+      }
+
+      if (j < ansiText.length) {
+        const code = ansiText.slice(i + 2, j);
+
+        if (code === '0') {
+          // RESET - close all open syntax spans
+          while (openSyntaxSpans > 0) {
+            result += '</span>';
+            openSyntaxSpans--;
+          }
+        } else if (codeToClass[code]) {
+          result += `<span class="${codeToClass[code]}">`;
+          openSyntaxSpans++;
+        }
+
+        i = j + 1;
+        continue;
+      }
+    }
+
+    // Before outputting this character, handle mark open/close
+
+    // Close mark if we've reached the end of the current range
+    if (inMark && currentRangeIdx >= 0 && srcPos >= sortedRanges[currentRangeIdx].end) {
+      result += '</mark>';
+      inMark = false;
+      currentRangeIdx = -1;
+    }
+
+    // Skip past any ranges we've completely passed
+    while (nextRangeIdx < sortedRanges.length && sortedRanges[nextRangeIdx].end <= srcPos) {
+      nextRangeIdx++;
+    }
+
+    // Open mark if we've reached the start of the next range
+    if (!inMark && nextRangeIdx < sortedRanges.length && srcPos >= sortedRanges[nextRangeIdx].start) {
+      const range = sortedRanges[nextRangeIdx];
+      const isHovered = hoveredMatchIndex === range.matchIndex;
+      const className = isHovered ? 'highlight highlight-hovered' : 'highlight';
+      result += `<mark class="${className}">`;
+      inMark = true;
+      currentRangeIdx = nextRangeIdx;
+      nextRangeIdx++;
+    }
+
+    // Output the character (HTML escaped)
+    const char = ansiText[i];
+    if (char === '&') {
+      result += '&amp;';
+    } else if (char === '<') {
+      result += '&lt;';
+    } else if (char === '>') {
+      result += '&gt;';
+    } else {
+      result += char;
+    }
+
+    srcPos++;
+    i++;
+  }
+
+  // Close any remaining marks and spans
+  if (inMark) {
+    result += '</mark>';
+  }
+  while (openSyntaxSpans > 0) {
+    result += '</span>';
+    openSyntaxSpans--;
   }
 
   return result;

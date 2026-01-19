@@ -209,23 +209,29 @@ pub fn pretty_print_xml(xml: &str, include_locations: bool, use_color: bool) -> 
 /// Highlight the full source code with syntax coloring based on XML tree
 ///
 /// Expects transformed/semantic XML, not raw TreeSitter XML.
+/// Uses language-specific category mapping for accurate highlighting.
 ///
 /// # Arguments
 /// * `source` - The full source code
 /// * `xml` - Complete semantic XML document with position attributes (start/end)
+/// * `language` - The language name (e.g., "csharp", "rust", "typescript")
 ///
 /// # Returns
 /// The full source code with ANSI color codes for syntax highlighting
 #[wasm_bindgen(js_name = highlightFullSource)]
-pub fn highlight_full_source(source: &str, xml: &str) -> String {
-    use crate::output::syntax_highlight::{extract_syntax_spans, highlight_source};
+pub fn highlight_full_source(source: &str, xml: &str, language: &str) -> String {
+    use crate::output::syntax_highlight::{extract_syntax_spans_with_lang, highlight_source};
+    use crate::languages::get_syntax_category;
 
     if source.is_empty() || xml.is_empty() {
         return source.to_string();
     }
 
-    // Extract syntax spans from the full XML tree
-    let spans = extract_syntax_spans(xml);
+    // Get the language-specific category function
+    let category_fn = get_syntax_category(language);
+
+    // Extract syntax spans from the full XML tree using language-specific mapping
+    let spans = extract_syntax_spans_with_lang(xml, category_fn);
 
     if spans.is_empty() {
         return source.to_string();

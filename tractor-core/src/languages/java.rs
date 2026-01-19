@@ -5,6 +5,7 @@
 
 use xot::{Xot, Node as XotNode};
 use crate::xot_transform::{TransformAction, helpers::*};
+use crate::output::syntax_highlight::SyntaxCategory;
 
 /// Transform a Java AST node
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
@@ -211,5 +212,55 @@ fn classify_identifier(xot: &Xot, node: XotNode) -> &'static str {
 
         // Default to type
         _ => "type",
+    }
+}
+
+/// Map a transformed element name to a syntax category for highlighting
+pub fn syntax_category(element: &str) -> SyntaxCategory {
+    match element {
+        // Identifiers
+        "name" => SyntaxCategory::Identifier,
+        "type" => SyntaxCategory::Type,
+
+        // Literals
+        "string" => SyntaxCategory::String,
+        "int" | "float" => SyntaxCategory::Number,
+        "true" | "false" | "null" => SyntaxCategory::Keyword,
+
+        // Keywords - declarations
+        "class" | "interface" | "enum" => SyntaxCategory::Keyword,
+        "method" | "ctor" | "field" => SyntaxCategory::Keyword,
+        "param" | "params" => SyntaxCategory::Keyword,
+        "import" | "package" => SyntaxCategory::Keyword,
+
+        // Keywords - control flow
+        "if" | "else" => SyntaxCategory::Keyword,
+        "for" | "foreach" | "while" | "do" => SyntaxCategory::Keyword,
+        "switch" | "case" => SyntaxCategory::Keyword,
+        "try" | "catch" | "finally" | "throw" => SyntaxCategory::Keyword,
+        "return" | "break" | "continue" => SyntaxCategory::Keyword,
+
+        // Keywords - modifiers
+        "public" | "private" | "protected" => SyntaxCategory::Keyword,
+        "static" | "final" | "abstract" | "synchronized" => SyntaxCategory::Keyword,
+        "volatile" | "transient" | "native" | "strictfp" => SyntaxCategory::Keyword,
+        "new" | "this" | "super" => SyntaxCategory::Keyword,
+
+        // Types
+        "generic" | "array" => SyntaxCategory::Type,
+
+        // Functions/calls
+        "call" => SyntaxCategory::Function,
+        "lambda" => SyntaxCategory::Function,
+
+        // Operators
+        "op" => SyntaxCategory::Operator,
+        "binary" | "unary" | "assign" | "ternary" => SyntaxCategory::Operator,
+
+        // Comments
+        "comment" => SyntaxCategory::Comment,
+
+        // Structural elements - no color
+        _ => SyntaxCategory::Default,
     }
 }

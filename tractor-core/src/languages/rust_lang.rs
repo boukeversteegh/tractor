@@ -2,6 +2,7 @@
 
 use xot::{Xot, Node as XotNode};
 use crate::xot_transform::{TransformAction, helpers::*};
+use crate::output::syntax_highlight::SyntaxCategory;
 
 /// Transform a Rust AST node
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
@@ -185,5 +186,53 @@ fn classify_identifier(xot: &Xot, node: XotNode) -> &'static str {
         "let_declaration" => "name",
         "parameter" => "name",
         _ => "type",
+    }
+}
+
+/// Map a transformed element name to a syntax category for highlighting
+pub fn syntax_category(element: &str) -> SyntaxCategory {
+    match element {
+        // Identifiers
+        "name" => SyntaxCategory::Identifier,
+        "type" => SyntaxCategory::Type,
+
+        // Literals
+        "string" | "rawstring" => SyntaxCategory::String,
+        "int" | "float" => SyntaxCategory::Number,
+        "bool" => SyntaxCategory::Keyword,
+
+        // Keywords - declarations
+        "function" | "impl" => SyntaxCategory::Keyword,
+        "struct" | "enum" | "trait" => SyntaxCategory::Keyword,
+        "mod" | "use" => SyntaxCategory::Keyword,
+        "const" | "static" | "typedef" => SyntaxCategory::Keyword,
+        "let" | "param" | "params" | "self" => SyntaxCategory::Keyword,
+
+        // Keywords - control flow
+        "if" | "else" => SyntaxCategory::Keyword,
+        "for" | "while" | "loop" => SyntaxCategory::Keyword,
+        "match" | "arm" => SyntaxCategory::Keyword,
+        "return" | "break" | "continue" => SyntaxCategory::Keyword,
+
+        // Keywords - modifiers
+        "pub" | "mut" | "async" | "await" | "unsafe" => SyntaxCategory::Keyword,
+
+        // Types
+        "ref" | "generic" | "path" => SyntaxCategory::Type,
+
+        // Functions/calls
+        "call" | "methodcall" => SyntaxCategory::Function,
+        "closure" => SyntaxCategory::Function,
+        "macro" => SyntaxCategory::Function,
+
+        // Operators
+        "op" => SyntaxCategory::Operator,
+        "binary" | "unary" | "try" => SyntaxCategory::Operator,
+
+        // Comments
+        "comment" => SyntaxCategory::Comment,
+
+        // Structural elements - no color
+        _ => SyntaxCategory::Default,
     }
 }

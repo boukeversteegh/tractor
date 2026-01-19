@@ -1,6 +1,6 @@
 import { useRef, useCallback, useMemo, useImperativeHandle, forwardRef } from 'react';
 import { Match } from '../xpath';
-import { parsePositionString, positionToOffset } from '../xmlTree';
+import { XmlNode, parsePositionString, positionToOffset } from '../xmlTree';
 import { highlightFullSourceSync, ansiToHtml } from '../tractor';
 
 export interface SourceEditorHandle {
@@ -11,21 +11,25 @@ interface HighlightRange {
   start: number;
   end: number;
   matchIndex: number;
+  isHover?: boolean;  // true for tree node hover highlight
 }
 
 interface SourceEditorProps {
   source: string;
   matches: Match[];
   hoveredMatchIndex?: number | null;
+  hoveredNode?: XmlNode | null;
   xmlForHighlighting?: string;
+  language?: string;
   onChange: (source: string) => void;
   onClick: (e: React.MouseEvent<HTMLTextAreaElement>) => void;
 }
 
 export const SourceEditor = forwardRef<SourceEditorHandle, SourceEditorProps>(
-  function SourceEditor({ source, matches, hoveredMatchIndex, xmlForHighlighting, onChange, onClick }, ref) {
+  function SourceEditor({ source, matches, hoveredMatchIndex, hoveredNode, xmlForHighlighting, language, onChange, onClick }, ref) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const backdropRef = useRef<HTMLDivElement>(null);
+  const syntaxLayerRef = useRef<HTMLDivElement>(null);
+  const matchLayerRef = useRef<HTMLDivElement>(null);
 
   // Expose focusAtOffset method via ref
   useImperativeHandle(ref, () => ({
@@ -57,67 +61,96 @@ export const SourceEditor = forwardRef<SourceEditorHandle, SourceEditorProps>(
       ranges.push({ start: startOffset, end: endOffset, matchIndex: index });
     });
 
-    // Sort by start position (don't merge - we need to track individual matches)
+    // Sort by start position
     ranges.sort((a, b) => a.start - b.start);
 
     return ranges;
   }, [source, matches]);
 
-  // Generate syntax-highlighted HTML from source + XML
-  const syntaxHighlightedHtml = useMemo(() => {
+  // Layer 1: Syntax-highlighted text (foreground)
+  const syntaxContent = useMemo(() => {
     if (!xmlForHighlighting || !source) {
-      return null;
+      return escapeHtml(source);
     }
-    const highlighted = highlightFullSourceSync(source, xmlForHighlighting);
-    // Only use if we actually got highlighting (contains ANSI codes)
+    const highlighted = highlightFullSourceSync(source, xmlForHighlighting, language || '');
     if (highlighted && highlighted !== source && highlighted.includes('\x1b[')) {
       return ansiToHtml(highlighted);
     }
-    return null;
-  }, [source, xmlForHighlighting]);
+    return escapeHtml(source);
+  }, [source, xmlForHighlighting, language]);
 
-  // Generate highlighted text with match markers (and optionally syntax highlighting)
-  const highlightedContent = useMemo(() => {
-    // If no match highlights needed, use syntax highlighting directly
-    if (highlightRanges.length === 0) {
-      return syntaxHighlightedHtml ?? escapeHtml(source);
+  // Combine match ranges with hovered node range
+  const allHighlightRanges = useMemo((): HighlightRange[] => {
+    const ranges = [...highlightRanges];
+
+    // Add hovered tree node range
+    if (hoveredNode?.location) {
+      const { start, end } = hoveredNode.location;
+      const startOffset = positionToOffset(source, start);
+      const endOffset = positionToOffset(source, end);
+      ranges.push({ start: startOffset, end: endOffset, matchIndex: -1, isHover: true });
     }
 
-    // With match highlights, we need to combine them with syntax highlighting
-    // For now, prioritize match highlights over syntax highlighting when both exist
-    // TODO: Could combine them with a more sophisticated approach
+    // Sort by start position
+    ranges.sort((a, b) => a.start - b.start);
+    return ranges;
+  }, [highlightRanges, hoveredNode, source]);
+
+  // Layer 2: Highlights (background) - same text but with <mark> tags
+  const highlightsContent = useMemo(() => {
+    if (allHighlightRanges.length === 0) {
+      return null; // No highlights layer needed
+    }
+
     const parts: string[] = [];
     let lastEnd = 0;
 
-    for (const range of highlightRanges) {
-      // Add text before highlight (with syntax highlighting if available)
-      if (range.start > lastEnd) {
-        const segment = source.slice(lastEnd, range.start);
-        parts.push(escapeHtml(segment));
+    for (const range of allHighlightRanges) {
+      // Skip ranges completely contained within already-processed text
+      if (range.end <= lastEnd) {
+        continue;
       }
 
-      // Add highlighted text with hover class if this is the hovered match
-      const highlightedText = source.slice(range.start, range.end);
-      const isHovered = hoveredMatchIndex === range.matchIndex;
-      const className = isHovered ? 'highlight highlight-hovered' : 'highlight';
-      parts.push(`<mark class="${className}">${escapeHtml(highlightedText)}</mark>`);
+      // Adjust start if it overlaps with already-processed text
+      const effectiveStart = Math.max(range.start, lastEnd);
+
+      // Add gap text before this highlight
+      if (effectiveStart > lastEnd) {
+        parts.push(escapeHtml(source.slice(lastEnd, effectiveStart)));
+      }
+
+      const text = source.slice(effectiveStart, range.end);
+      let className: string;
+      if (range.isHover) {
+        className = 'highlight highlight-node';
+      } else {
+        const isHovered = hoveredMatchIndex === range.matchIndex;
+        className = isHovered ? 'highlight highlight-hovered' : 'highlight';
+      }
+      parts.push(`<mark class="${className}">${escapeHtml(text)}</mark>`);
 
       lastEnd = range.end;
     }
 
-    // Add remaining text
     if (lastEnd < source.length) {
       parts.push(escapeHtml(source.slice(lastEnd)));
     }
 
     return parts.join('');
-  }, [source, syntaxHighlightedHtml, highlightRanges, hoveredMatchIndex]);
+  }, [source, allHighlightRanges, hoveredMatchIndex]);
 
-  // Sync scroll between textarea and backdrop
+  // Sync scroll between textarea and both layers
   const handleScroll = useCallback(() => {
-    if (textareaRef.current && backdropRef.current) {
-      backdropRef.current.scrollTop = textareaRef.current.scrollTop;
-      backdropRef.current.scrollLeft = textareaRef.current.scrollLeft;
+    if (textareaRef.current) {
+      const { scrollTop, scrollLeft } = textareaRef.current;
+      if (syntaxLayerRef.current) {
+        syntaxLayerRef.current.scrollTop = scrollTop;
+        syntaxLayerRef.current.scrollLeft = scrollLeft;
+      }
+      if (matchLayerRef.current) {
+        matchLayerRef.current.scrollTop = scrollTop;
+        matchLayerRef.current.scrollLeft = scrollLeft;
+      }
     }
   }, []);
 
@@ -127,11 +160,21 @@ export const SourceEditor = forwardRef<SourceEditorHandle, SourceEditorProps>(
 
   return (
     <div className="source-editor">
+      {/* Layer 1 (bottom): Match highlight backgrounds */}
+      {highlightsContent && (
+        <div
+          ref={matchLayerRef}
+          className="source-highlights"
+          dangerouslySetInnerHTML={{ __html: highlightsContent }}
+        />
+      )}
+      {/* Layer 2 (middle): Syntax-colored text */}
       <div
-        ref={backdropRef}
-        className="source-backdrop"
-        dangerouslySetInnerHTML={{ __html: highlightedContent }}
+        ref={syntaxLayerRef}
+        className="source-syntax"
+        dangerouslySetInnerHTML={{ __html: syntaxContent }}
       />
+      {/* Layer 3 (top): Editable textarea */}
       <textarea
         ref={textareaRef}
         value={source}

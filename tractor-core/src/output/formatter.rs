@@ -2,7 +2,8 @@
 
 use crate::xpath::Match;
 use crate::output::xml_renderer::{render_xml_string, RenderOptions};
-use crate::output::syntax_highlight::{extract_syntax_spans, highlight_source, highlight_lines};
+use crate::output::syntax_highlight::{extract_syntax_spans_with_lang, highlight_source, highlight_lines};
+use crate::languages::get_syntax_category;
 use regex::Regex;
 use serde::Serialize;
 
@@ -59,6 +60,8 @@ pub struct OutputOptions {
     pub max_depth: Option<usize>,
     /// Whether to pretty print XML (default: true)
     pub pretty_print: bool,
+    /// Language for syntax highlighting (e.g., "csharp", "rust")
+    pub language: Option<String>,
 }
 
 /// JSON output structure
@@ -115,13 +118,16 @@ fn format_xml(matches: &[Match], options: &OutputOptions) -> String {
 
 fn format_lines(matches: &[Match], options: &OutputOptions) -> String {
     let mut output = String::new();
+    // Get language-specific category function
+    let category_fn = get_syntax_category(options.language.as_deref().unwrap_or(""));
+
     for m in matches {
         let lines = m.get_source_lines_range();
         let lines_vec: Vec<String> = lines.iter().map(|l| l.trim_end_matches('\r').to_string()).collect();
 
         if options.use_color && m.xml_fragment.is_some() {
-            // Apply syntax highlighting
-            let spans = extract_syntax_spans(m.xml_fragment.as_ref().unwrap());
+            // Apply syntax highlighting with language-specific category mapping
+            let spans = extract_syntax_spans_with_lang(m.xml_fragment.as_ref().unwrap(), category_fn);
             if !spans.is_empty() {
                 let highlighted = highlight_lines(&lines_vec, &spans, m.line, m.end_line);
                 output.push_str(&highlighted);
@@ -146,12 +152,15 @@ fn format_lines(matches: &[Match], options: &OutputOptions) -> String {
 
 fn format_source(matches: &[Match], options: &OutputOptions) -> String {
     let mut output = String::new();
+    // Get language-specific category function
+    let category_fn = get_syntax_category(options.language.as_deref().unwrap_or(""));
+
     for m in matches {
         let snippet = m.extract_source_snippet();
 
         if options.use_color && m.xml_fragment.is_some() && !snippet.is_empty() {
-            // Apply syntax highlighting
-            let spans = extract_syntax_spans(m.xml_fragment.as_ref().unwrap());
+            // Apply syntax highlighting with language-specific category mapping
+            let spans = extract_syntax_spans_with_lang(m.xml_fragment.as_ref().unwrap(), category_fn);
             if !spans.is_empty() {
                 let highlighted = highlight_source(
                     &snippet,

@@ -5,6 +5,7 @@
 
 use xot::{Xot, Node as XotNode};
 use crate::xot_transform::{TransformAction, helpers::*};
+use crate::output::syntax_highlight::SyntaxCategory;
 
 /// Transform a TypeScript AST node
 ///
@@ -238,6 +239,54 @@ fn classify_identifier(xot: &Xot, node: XotNode) -> &'static str {
 
         // Default to type
         _ => "type",
+    }
+}
+
+/// Map a transformed element name to a syntax category for highlighting
+pub fn syntax_category(element: &str) -> SyntaxCategory {
+    match element {
+        // Identifiers
+        "name" => SyntaxCategory::Identifier,
+        "type" => SyntaxCategory::Type,
+
+        // Literals
+        "string" => SyntaxCategory::String,
+        "number" => SyntaxCategory::Number,
+        "true" | "false" | "null" => SyntaxCategory::Keyword,
+
+        // Keywords - declarations
+        "class" | "interface" | "enum" | "typealias" => SyntaxCategory::Keyword,
+        "function" | "method" => SyntaxCategory::Keyword,
+        "variable" | "param" | "params" => SyntaxCategory::Keyword,
+        "import" | "export" => SyntaxCategory::Keyword,
+
+        // Keywords - control flow
+        "if" | "else" | "for" | "while" | "do" => SyntaxCategory::Keyword,
+        "switch" | "case" | "default" => SyntaxCategory::Keyword,
+        "try" | "catch" | "finally" | "throw" => SyntaxCategory::Keyword,
+        "return" | "break" | "continue" | "yield" => SyntaxCategory::Keyword,
+
+        // Keywords - modifiers
+        "let" | "const" | "var" => SyntaxCategory::Keyword,
+        "async" | "await" => SyntaxCategory::Keyword,
+        "new" | "this" | "super" => SyntaxCategory::Keyword,
+
+        // Functions/calls
+        "call" => SyntaxCategory::Function,
+        "lambda" => SyntaxCategory::Function,
+
+        // Operators
+        "op" => SyntaxCategory::Operator,
+        "binary" | "unary" | "assign" | "ternary" => SyntaxCategory::Operator,
+
+        // Comments
+        "comment" => SyntaxCategory::Comment,
+
+        // Types
+        "typeof" | "typeparams" | "typeparam" => SyntaxCategory::Type,
+
+        // Structural elements - no color
+        _ => SyntaxCategory::Default,
     }
 }
 

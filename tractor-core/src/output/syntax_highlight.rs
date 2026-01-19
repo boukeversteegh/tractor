@@ -180,11 +180,14 @@ impl SyntaxSpan {
     }
 }
 
-/// Extract syntax spans from an XML fragment
+/// Type alias for syntax category mapping functions
+pub type SyntaxCategoryFn = fn(&str) -> SyntaxCategory;
+
+/// Extract syntax spans from an XML fragment using a language-specific category mapper
 ///
 /// Parses the XML and walks the tree to extract position information
-/// for each node, mapping element names to syntax categories.
-pub fn extract_syntax_spans(xml: &str) -> Vec<SyntaxSpan> {
+/// for each node, mapping element names to syntax categories using the provided function.
+pub fn extract_syntax_spans_with_lang(xml: &str, category_fn: SyntaxCategoryFn) -> Vec<SyntaxSpan> {
     if xml.is_empty() {
         return Vec::new();
     }
@@ -194,14 +197,14 @@ pub fn extract_syntax_spans(xml: &str) -> Vec<SyntaxSpan> {
 
     // Try to parse as-is first
     if let Ok(doc) = xot.parse(xml) {
-        extract_spans_recursive(&xot, doc, 0, &mut spans);
+        extract_spans_recursive(&xot, doc, 0, &mut spans, category_fn);
     } else {
         // Try wrapping in a root element (for fragments)
         let wrapped = format!("<_root_>{}</_root_>", xml);
         if let Ok(doc) = xot.parse(&wrapped) {
             if let Ok(doc_el) = xot.document_element(doc) {
                 for child in xot.children(doc_el) {
-                    extract_spans_recursive(&xot, child, 0, &mut spans);
+                    extract_spans_recursive(&xot, child, 0, &mut spans, category_fn);
                 }
             }
         }
@@ -217,16 +220,24 @@ pub fn extract_syntax_spans(xml: &str) -> Vec<SyntaxSpan> {
     spans
 }
 
-fn extract_spans_recursive(xot: &Xot, node: Node, depth: u32, spans: &mut Vec<SyntaxSpan>) {
+/// Extract syntax spans from an XML fragment (uses generic category mapping)
+///
+/// For backwards compatibility - uses the generic `from_element_name` mapping.
+/// Prefer `extract_syntax_spans_with_lang` when language is known.
+pub fn extract_syntax_spans(xml: &str) -> Vec<SyntaxSpan> {
+    extract_syntax_spans_with_lang(xml, SyntaxCategory::from_element_name)
+}
+
+fn extract_spans_recursive(xot: &Xot, node: Node, depth: u32, spans: &mut Vec<SyntaxSpan>, category_fn: SyntaxCategoryFn) {
     match xot.value(node) {
         Value::Document => {
             for child in xot.children(node) {
-                extract_spans_recursive(xot, child, depth, spans);
+                extract_spans_recursive(xot, child, depth, spans, category_fn);
             }
         }
         Value::Element(element) => {
             let name = xot.local_name_str(element.name());
-            let category = SyntaxCategory::from_element_name(name);
+            let category = category_fn(name);
 
             // Only add span if we have a meaningful category
             if category != SyntaxCategory::Default {
@@ -244,7 +255,7 @@ fn extract_spans_recursive(xot: &Xot, node: Node, depth: u32, spans: &mut Vec<Sy
 
             // Recurse into children
             for child in xot.children(node) {
-                extract_spans_recursive(xot, child, depth + 1, spans);
+                extract_spans_recursive(xot, child, depth + 1, spans, category_fn);
             }
         }
         _ => {}

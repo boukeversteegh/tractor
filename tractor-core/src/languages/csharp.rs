@@ -5,6 +5,7 @@
 
 use xot::{Xot, Node as XotNode};
 use crate::xot_transform::{TransformAction, helpers::*};
+use crate::output::syntax_highlight::SyntaxCategory;
 
 /// Check if kind is a declaration that has a name child
 /// Uses original TreeSitter kinds (from `kind` attribute) for robust detection
@@ -378,6 +379,70 @@ fn is_in_namespace_context(xot: &Xot, node: XotNode) -> bool {
         current = get_parent(xot, parent);
     }
     false
+}
+
+/// Map a transformed element name to a syntax category for highlighting
+/// This is called by the highlighter to determine what color to use
+pub fn syntax_category(element: &str) -> SyntaxCategory {
+    match element {
+        // Identifiers and references
+        "name" => SyntaxCategory::Identifier,
+        "ref" => SyntaxCategory::Identifier,
+
+        // Types
+        "type" => SyntaxCategory::Type,
+        "implicit_type" => SyntaxCategory::Type,  // var keyword in C#
+        "generic" => SyntaxCategory::Type,
+        "nullable" => SyntaxCategory::Type,
+        "array" => SyntaxCategory::Type,
+
+        // Literals
+        "string" => SyntaxCategory::String,
+        "int" => SyntaxCategory::Number,
+        "float" => SyntaxCategory::Number,
+        "bool" => SyntaxCategory::Keyword,
+        "null" => SyntaxCategory::Keyword,
+
+        // Keywords - declarations (actual keyword tokens, not structural wrappers)
+        "class" | "struct" | "interface" | "enum" | "record" | "namespace" => SyntaxCategory::Keyword,
+        "import" => SyntaxCategory::Keyword,
+
+        // Note: "method", "constructor", "property", "field", "parameter", "variable",
+        // "local", "declarator" are structural wrappers, not keywords. Leave as Default
+        // so punctuation inside them doesn't get colored.
+
+        // Keywords - control flow
+        "if" | "else" | "for" | "foreach" | "while" | "do" => SyntaxCategory::Keyword,
+        "switch" | "case" | "default" => SyntaxCategory::Keyword,
+        "try" | "catch" | "finally" | "throw" => SyntaxCategory::Keyword,
+        "return" | "break" | "continue" | "goto" | "yield" => SyntaxCategory::Keyword,
+        "using" | "lock" => SyntaxCategory::Keyword,
+
+        // Keywords - modifiers (these become empty elements like <public/>)
+        "public" | "private" | "protected" | "internal" => SyntaxCategory::Keyword,
+        "static" | "abstract" | "virtual" | "override" | "sealed" => SyntaxCategory::Keyword,
+        "readonly" | "const" | "volatile" => SyntaxCategory::Keyword,
+        "async" | "await" => SyntaxCategory::Keyword,
+        "partial" | "extern" | "unsafe" => SyntaxCategory::Keyword,
+        "new" | "this" | "base" => SyntaxCategory::Keyword,
+
+        // Functions/calls - lambda gets Function color, but call/member are structural
+        // (the actual function name is a ref/name inside, which gets Identifier color)
+        "lambda" => SyntaxCategory::Function,
+
+        // Operators
+        "op" => SyntaxCategory::Operator,
+        "binary" | "unary" | "assign" | "ternary" => SyntaxCategory::Operator,
+
+        // Comments
+        "comment" => SyntaxCategory::Comment,
+
+        // Attributes
+        "attribute" | "attributes" => SyntaxCategory::Type,
+
+        // Structural elements - no color
+        _ => SyntaxCategory::Default,
+    }
 }
 
 #[cfg(test)]

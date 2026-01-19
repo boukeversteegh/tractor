@@ -2,6 +2,7 @@
 
 use xot::{Xot, Node as XotNode};
 use crate::xot_transform::{TransformAction, helpers::*};
+use crate::output::syntax_highlight::SyntaxCategory;
 
 /// Transform a Python AST node
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
@@ -141,5 +142,53 @@ fn classify_identifier(xot: &Xot, node: XotNode) -> &'static str {
         "parameter" | "default_parameter" | "typed_parameter" => "name",
         "assignment" => "name",
         _ => "type",
+    }
+}
+
+/// Map a transformed element name to a syntax category for highlighting
+pub fn syntax_category(element: &str) -> SyntaxCategory {
+    match element {
+        // Identifiers
+        "name" => SyntaxCategory::Identifier,
+        "type" => SyntaxCategory::Type,
+
+        // Literals
+        "string" => SyntaxCategory::String,
+        "int" | "float" => SyntaxCategory::Number,
+        "true" | "false" | "none" => SyntaxCategory::Keyword,
+
+        // Keywords - declarations
+        "class" | "function" | "module" => SyntaxCategory::Keyword,
+        "param" | "params" => SyntaxCategory::Keyword,
+        "import" | "from" => SyntaxCategory::Keyword,
+        "decorated" | "decorator" => SyntaxCategory::Keyword,
+
+        // Keywords - control flow
+        "if" | "elif" | "else" => SyntaxCategory::Keyword,
+        "for" | "while" => SyntaxCategory::Keyword,
+        "try" | "except" | "finally" | "raise" => SyntaxCategory::Keyword,
+        "with" | "pass" => SyntaxCategory::Keyword,
+        "return" | "break" | "continue" | "yield" => SyntaxCategory::Keyword,
+
+        // Keywords - async
+        "async" | "await" => SyntaxCategory::Keyword,
+
+        // Functions/calls
+        "call" => SyntaxCategory::Function,
+        "lambda" => SyntaxCategory::Function,
+
+        // Operators
+        "op" => SyntaxCategory::Operator,
+        "binary" | "unary" | "compare" | "logical" => SyntaxCategory::Operator,
+        "assign" | "augassign" | "ternary" => SyntaxCategory::Operator,
+
+        // Comments
+        "comment" => SyntaxCategory::Comment,
+
+        // Comprehensions
+        "listcomp" | "dictcomp" | "setcomp" | "genexp" => SyntaxCategory::Keyword,
+
+        // Structural elements - no color
+        _ => SyntaxCategory::Default,
     }
 }
