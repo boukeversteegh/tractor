@@ -8,7 +8,6 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
   },
-  base: '/code-xpath/', // For GitHub Pages
   build: {
     outDir: 'dist',
     sourcemap: true,

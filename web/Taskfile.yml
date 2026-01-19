@@ -231,10 +231,22 @@ tasks:
       - npm run dev
 
   build:
-    desc: Build for production
+    desc: Build for production (GitHub Pages)
     deps: [wasm]
     cmds:
       - npm run build
+
+  build:fly:
+    desc: Build for Fly.io deployment (base=/)
+    deps: [wasm]
+    cmds:
+      - MSYS_NO_PATHCONV=1 npx vite build --base=/
+
+  deploy:fly:
+    desc: Build and deploy to Fly.io
+    cmds:
+      - task: build:fly
+      - fly deploy
 
   preview:
     desc: Preview production build

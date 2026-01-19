@@ -1,0 +1,64 @@
+# flyctl launch added from .grammar-build\tree-sitter-c-sharp\.gitignore
+# Rust artifacts
+.grammar-build\tree-sitter-c-sharp\**\target
+
+# Node artifacts
+.grammar-build\tree-sitter-c-sharp\**\build
+.grammar-build\tree-sitter-c-sharp\**\prebuilds
+.grammar-build\tree-sitter-c-sharp\**\node_modules
+
+# Swift artifacts
+.grammar-build\tree-sitter-c-sharp\**\.build
+
+# Go artifacts
+.grammar-build\tree-sitter-c-sharp\**\_obj
+
+# Python artifacts
+.grammar-build\tree-sitter-c-sharp\**\.venv
+.grammar-build\tree-sitter-c-sharp\**\dist
+.grammar-build\tree-sitter-c-sharp\**\*.egg-info
+.grammar-build\tree-sitter-c-sharp\**\*.whl
+
+# C artifacts
+.grammar-build\tree-sitter-c-sharp\**\*.a
+.grammar-build\tree-sitter-c-sharp\**\*.so
+.grammar-build\tree-sitter-c-sharp\**\*.so.*
+.grammar-build\tree-sitter-c-sharp\**\*.dylib
+.grammar-build\tree-sitter-c-sharp\**\*.dll
+.grammar-build\tree-sitter-c-sharp\**\*.pc
+.grammar-build\tree-sitter-c-sharp\**\parser.exp
+.grammar-build\tree-sitter-c-sharp\**\parser.lib
+
+# Example dirs
+.grammar-build\tree-sitter-c-sharp\examples\*
+
+# Grammar volatiles
+.grammar-build\tree-sitter-c-sharp\**\*.wasm
+.grammar-build\tree-sitter-c-sharp\**\*.obj
+.grammar-build\tree-sitter-c-sharp\**\*.o
+
+# Archives
+.grammar-build\tree-sitter-c-sharp\**\*.tar.gz
+.grammar-build\tree-sitter-c-sharp\**\*.tgz
+.grammar-build\tree-sitter-c-sharp\**\*.zip
+
+
+# flyctl launch added from .grammar-build\tree-sitter-c-sharp\tools\highlight-test-generator\.gitignore
+.grammar-build\tree-sitter-c-sharp\tools\highlight-test-generator\**\bin
+.grammar-build\tree-sitter-c-sharp\tools\highlight-test-generator\**\obj
+
+# flyctl launch added from .idea\.gitignore
+# Default ignored files
+.idea\shelf
+.idea\workspace.xml
+# Ignored default folder with query files
+.idea\queries
+# Datasource local storage ignored files
+.idea\dataSources
+.idea\dataSources.local.xml
+# Editor-based HTTP Client requests
+.idea\httpRequests
+
+# flyctl launch added from pkg\.gitignore
+pkg\**\*
+fly.toml
