@@ -195,6 +195,27 @@ fn format_value(matches: &[Match]) -> String {
     output
 }
 
+/// Normalize a file path to use forward slashes (for GCC-compatible output)
+fn normalize_path(path: &str) -> String {
+    path.replace('\\', "/")
+}
+
+/// Convert a file path to an absolute path with forward slashes (for GCC output)
+fn to_absolute_path(path: &str) -> String {
+    use std::path::Path;
+
+    let p = Path::new(path);
+    let absolute = if p.is_absolute() {
+        p.to_path_buf()
+    } else if let Ok(cwd) = std::env::current_dir() {
+        cwd.join(p)
+    } else {
+        p.to_path_buf()
+    };
+
+    normalize_path(&absolute.to_string_lossy())
+}
+
 fn format_gcc(matches: &[Match], options: &OutputOptions) -> String {
     let mut output = String::new();
     for m in matches {
@@ -204,7 +225,7 @@ fn format_gcc(matches: &[Match], options: &OutputOptions) -> String {
         );
         output.push_str(&format!(
             "{}:{}:{}: error: {}\n",
-            m.file, m.line, m.column, msg
+            to_absolute_path(&m.file), m.line, m.column, msg
         ));
 
         // Add source context
@@ -284,7 +305,7 @@ fn format_json(matches: &[Match], options: &OutputOptions) -> String {
     let json_matches: Vec<JsonMatch> = matches
         .iter()
         .map(|m| JsonMatch {
-            file: m.file.clone(),
+            file: normalize_path(&m.file),
             line: m.line,
             column: m.column,
             value: m.value.clone(),
@@ -312,7 +333,7 @@ pub fn format_message(template: &str, m: &Match) -> String {
             "value" => truncate(&m.value, 50),
             "line" => m.line.to_string(),
             "col" => m.column.to_string(),
-            "file" => m.file.clone(),
+            "file" => normalize_path(&m.file),
             // For XPath expressions like {ancestor::class/name}, we'd need the XML context
             // For now, return the placeholder
             _ => format!("{{{}}}", expr),
