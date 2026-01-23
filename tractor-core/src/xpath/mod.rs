@@ -5,7 +5,7 @@
 mod engine;
 mod match_result;
 
-pub use engine::XPathEngine;
+pub use engine::{XPathEngine, print_timing_stats};
 pub use match_result::Match;
 
 use serde::Serialize;

@@ -17,6 +17,7 @@ use tractor_core::{
     output::should_use_color,
     output::{render_xml_string, RenderOptions},
     load_xml, load_xml_file, detect_language,
+    print_timing_stats,
 };
 
 use cli::Args;
@@ -51,6 +52,11 @@ fn main() -> ExitCode {
     if let Err(e) = run(args) {
         eprintln!("error: {}", e);
         return ExitCode::FAILURE;
+    }
+
+    // Print timing stats if TRACTOR_PROFILE env var is set
+    if std::env::var("TRACTOR_PROFILE").is_ok() {
+        print_timing_stats();
     }
 
     ExitCode::SUCCESS
@@ -291,6 +297,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
             }
 
             // Process this batch in parallel
+            // Note: XPath queries are automatically cached per-thread for efficiency
             let mut batch_matches: Vec<Match> = batch
                 .par_iter()
                 .filter_map(|file_path| {
@@ -308,7 +315,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                     // Generate compact XML for XPath query (no formatting whitespace)
                     let xml = generate_xml_document(&[result.clone()], false);
 
-                    // Query this file's XML
+                    // Query this file's XML (query is cached per-thread automatically)
                     let engine = XPathEngine::new().with_verbose(verbose).with_ignore_whitespace(args.ignore_whitespace);
                     match engine.query(&xml, xpath_expr, &result.source_lines, &result.file_path) {
                         Ok(matches) => Some((file_path.clone(), matches)),
@@ -486,8 +493,11 @@ fn process_single_result(
             language: args.lang.clone(),
         };
 
-        let output = format_matches(&matches, format.clone(), &options);
-        print!("{}", output);
+        // In test mode, suppress normal output (only show test result)
+        if args.expect.is_none() {
+            let output = format_matches(&matches, format.clone(), &options);
+            print!("{}", output);
+        }
 
         check_expectation(&matches, args, use_color, &format, &options)
     } else {

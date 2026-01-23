@@ -35,7 +35,7 @@ pub use parser::{
     // XML pass-through for testing
     load_xml, load_xml_file,
 };
-pub use xpath::{XPathEngine, Match};
+pub use xpath::{XPathEngine, Match, print_timing_stats};
 pub use output::{OutputFormat, format_matches, OutputOptions, render_node, render_document, render_xml_string, RenderOptions};
 #[cfg(feature = "native")]
 pub use parallel::{process_files_parallel, expand_globs, filter_supported_files};
