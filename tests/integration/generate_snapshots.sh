@@ -7,7 +7,13 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 
 TESTS_DIR="tests/integration"
-TRACTOR_BIN="${TRACTOR_BIN:-./target/release/tractor}"
+
+# Detect Windows and add .exe suffix
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+    TRACTOR_BIN="${TRACTOR_BIN:-./target/release/tractor.exe}"
+else
+    TRACTOR_BIN="${TRACTOR_BIN:-./target/release/tractor}"
+fi
 
 # Build tractor if needed
 if [ ! -f "$TRACTOR_BIN" ]; then

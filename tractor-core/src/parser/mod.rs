@@ -257,7 +257,8 @@ pub fn generate_xml_document(results: &[ParseResult], pretty_print: bool) -> Str
 // New xot-based pipeline
 // ============================================================================
 
-use crate::xot_builder::XotBuilder;
+use crate::xot_builder::{XotBuilder, XeeBuilder};
+use xee_xpath::{Documents, DocumentHandle};
 
 /// Parse a file and return an xot document (new pipeline)
 pub fn parse_file_to_xot(path: &Path, lang_override: Option<&str>, raw_mode: bool) -> Result<XotParseResult, ParseError> {
@@ -298,6 +299,66 @@ pub fn parse_string_to_xot(source: &str, lang: &str, file_path: String, raw_mode
         file_path,
         language: lang.to_string(),
     })
+}
+
+/// Parse result for the fast query path (builds directly into Documents)
+pub struct XeeParseResult {
+    /// The Documents instance containing the AST
+    pub documents: Documents,
+    /// Handle to the document for querying
+    pub doc_handle: DocumentHandle,
+    /// Original source lines for location-based output
+    pub source_lines: Vec<String>,
+    /// File path or "<stdin>"
+    pub file_path: String,
+    /// Language used for parsing
+    pub language: String,
+}
+
+/// Parse a source string directly into Documents for fast XPath queries
+///
+/// This is the fast path that avoids XML serialization/parsing roundtrip.
+/// Returns an XeeParseResult that can be queried with XPathEngine::query_documents().
+pub fn parse_string_to_xee(
+    source: &str,
+    lang: &str,
+    file_path: String,
+    raw_mode: bool,
+) -> Result<XeeParseResult, ParseError> {
+    let language = get_tree_sitter_language(lang)?;
+
+    let mut parser = tree_sitter::Parser::new();
+    parser.set_language(&language)
+        .map_err(|e| ParseError::TreeSitter(e.to_string()))?;
+
+    let tree = parser.parse(source, None)
+        .ok_or_else(|| ParseError::Parse("Failed to parse source".to_string()))?;
+
+    // Build directly into Documents using XeeBuilder
+    let mut builder = XeeBuilder::new();
+    let doc_handle = builder.build(tree.root_node(), source, &file_path, lang, raw_mode)
+        .map_err(|e| ParseError::Parse(e.to_string()))?;
+
+    let documents = builder.into_documents();
+
+    Ok(XeeParseResult {
+        documents,
+        doc_handle,
+        source_lines: source.lines().map(|s| s.to_string()).collect(),
+        file_path,
+        language: lang.to_string(),
+    })
+}
+
+/// Parse a file directly into Documents for fast XPath queries
+pub fn parse_file_to_xee(
+    path: &Path,
+    lang_override: Option<&str>,
+    raw_mode: bool,
+) -> Result<XeeParseResult, ParseError> {
+    let source = fs::read_to_string(path)?;
+    let lang = lang_override.unwrap_or_else(|| detect_language(path.to_str().unwrap_or("")));
+    parse_string_to_xee(&source, lang, path.to_string_lossy().to_string(), raw_mode)
 }
 
 /// Load XML directly as a ParseResult (pass-through mode)

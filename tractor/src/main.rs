@@ -18,6 +18,8 @@ use tractor_core::{
     output::{render_xml_string, RenderOptions},
     load_xml, load_xml_file, detect_language,
     print_timing_stats,
+    // Fast query path
+    parse_file_to_xee,
 };
 
 use cli::Args;
@@ -298,37 +300,83 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
 
             // Process this batch in parallel
             // Note: XPath queries are automatically cached per-thread for efficiency
-            let mut batch_matches: Vec<Match> = batch
-                .par_iter()
-                .filter_map(|file_path| {
-                    // Parse the file
-                    let result = match load_file(std::path::Path::new(file_path), lang_override.as_deref(), raw) {
-                        Ok(r) => r,
-                        Err(e) => {
-                            if verbose {
-                                eprintln!("warning: {}: {}", file_path, e);
-                            }
-                            return None;
-                        }
-                    };
+            // Fast path is default - builds AST directly into xee-xpath Documents
+            let use_fast_path = lang_override.as_deref() != Some("xml");
 
-                    // Generate compact XML for XPath query (no formatting whitespace)
-                    let xml = generate_xml_document(&[result.clone()], false);
-
-                    // Query this file's XML (query is cached per-thread automatically)
-                    let engine = XPathEngine::new().with_verbose(verbose).with_ignore_whitespace(args.ignore_whitespace);
-                    match engine.query(&xml, xpath_expr, &result.source_lines, &result.file_path) {
-                        Ok(matches) => Some((file_path.clone(), matches)),
-                        Err(e) => {
-                            if verbose {
-                                eprintln!("warning: {}: query error: {}", file_path, e);
+            let mut batch_matches: Vec<Match> = if use_fast_path {
+                // Fast path: build AST directly into xee-xpath Documents (50% faster)
+                batch
+                    .par_iter()
+                    .filter_map(|file_path| {
+                        // Parse directly into Documents (no XML serialization)
+                        let mut result = match parse_file_to_xee(
+                            std::path::Path::new(file_path),
+                            lang_override.as_deref(),
+                            raw,
+                        ) {
+                            Ok(r) => r,
+                            Err(e) => {
+                                if verbose {
+                                    eprintln!("warning: {}: {}", file_path, e);
+                                }
+                                return None;
                             }
-                            None
+                        };
+
+                        // Query directly on Documents (no XML parsing)
+                        let engine = XPathEngine::new().with_verbose(verbose);
+                        match engine.query_documents(
+                            &mut result.documents,
+                            result.doc_handle,
+                            xpath_expr,
+                            &result.source_lines,
+                            &result.file_path,
+                        ) {
+                            Ok(matches) => Some((file_path.clone(), matches)),
+                            Err(e) => {
+                                if verbose {
+                                    eprintln!("warning: {}: query error: {}", file_path, e);
+                                }
+                                None
+                            }
                         }
-                    }
-                })
-                .flat_map(|(_, matches)| matches)
-                .collect();
+                    })
+                    .flat_map(|(_, matches)| matches)
+                    .collect()
+            } else {
+                // Standard path: parse to XML, then query
+                batch
+                    .par_iter()
+                    .filter_map(|file_path| {
+                        // Parse the file
+                        let result = match load_file(std::path::Path::new(file_path), lang_override.as_deref(), raw) {
+                            Ok(r) => r,
+                            Err(e) => {
+                                if verbose {
+                                    eprintln!("warning: {}: {}", file_path, e);
+                                }
+                                return None;
+                            }
+                        };
+
+                        // Generate compact XML for XPath query (no formatting whitespace)
+                        let xml = generate_xml_document(&[result.clone()], false);
+
+                        // Query this file's XML (query is cached per-thread automatically)
+                        let engine = XPathEngine::new().with_verbose(verbose).with_ignore_whitespace(args.ignore_whitespace);
+                        match engine.query(&xml, xpath_expr, &result.source_lines, &result.file_path) {
+                            Ok(matches) => Some((file_path.clone(), matches)),
+                            Err(e) => {
+                                if verbose {
+                                    eprintln!("warning: {}: query error: {}", file_path, e);
+                                }
+                                None
+                            }
+                        }
+                    })
+                    .flat_map(|(_, matches)| matches)
+                    .collect()
+            };
 
             // Sort by file path for consistent ordering within batch
             batch_matches.sort_by(|a, b| (&a.file, a.line, a.column).cmp(&(&b.file, b.line, b.column)));
