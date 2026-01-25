@@ -1,8 +1,7 @@
 <Files>
   <File path="tests/integration/go/sample.go">
     <source_file>
-      <comment>// Simple Go example
-    </comment>
+      <comment>// Simple Go example</comment>
       <package_clause>
         package
         <package_identifier>main</package_identifier>

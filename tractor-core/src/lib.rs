@@ -36,6 +36,8 @@ pub use parser::{
     // Fast query path (builds directly into Documents)
     parse_file_to_xee, parse_string_to_xee, XeeParseResult,
     parse_file_to_xee_with_options, parse_string_to_xee_with_options,
+    // Unified parsing pipeline (always returns Documents)
+    parse_to_documents, parse_string_to_documents,
     // XML pass-through for testing
     load_xml, load_xml_file,
 };

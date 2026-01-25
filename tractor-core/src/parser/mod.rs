@@ -447,6 +447,78 @@ pub fn load_xml_file(path: &Path) -> Result<ParseResult, ParseError> {
     Ok(load_xml(xml, path.to_string_lossy().to_string()))
 }
 
+// ============================================================================
+// Unified parsing pipeline - always returns Documents
+// ============================================================================
+
+/// Load XML string directly into Documents for querying
+///
+/// This is the XML passthrough path - no TreeSitter parsing, just load the XML.
+pub fn load_xml_string_to_documents(xml: &str, file_path: String) -> Result<XeeParseResult, ParseError> {
+    let mut documents = Documents::new();
+
+    // Parse XML directly into Documents
+    let doc_handle = documents.add_string(
+        "file:///source".try_into().unwrap(),
+        xml,
+    ).map_err(|e| ParseError::Parse(e.to_string()))?;
+
+    Ok(XeeParseResult {
+        documents,
+        doc_handle,
+        source_lines: Vec::new(), // XML passthrough doesn't have source lines
+        file_path,
+        language: "xml".to_string(),
+    })
+}
+
+/// Load XML file directly into Documents for querying
+pub fn load_xml_file_to_documents(path: &Path) -> Result<XeeParseResult, ParseError> {
+    let xml = fs::read_to_string(path)?;
+    load_xml_string_to_documents(&xml, path.to_string_lossy().to_string())
+}
+
+/// Unified parse function - returns Documents regardless of input type
+///
+/// This is the main entry point for parsing. It handles:
+/// - XML files: loaded directly into Documents (passthrough)
+/// - Source code: parsed with TreeSitter, built into Documents
+///
+/// The result can always be queried with `XPathEngine::query_documents()`.
+pub fn parse_to_documents(
+    path: &Path,
+    lang_override: Option<&str>,
+    raw_mode: bool,
+    ignore_whitespace: bool,
+) -> Result<XeeParseResult, ParseError> {
+    let lang = lang_override.unwrap_or_else(|| detect_language(path.to_str().unwrap_or("")));
+
+    if lang == "xml" {
+        // XML passthrough: load directly into Documents
+        load_xml_file_to_documents(path)
+    } else {
+        // Source code: TreeSitter → XeeBuilder → Documents
+        parse_file_to_xee_with_options(path, lang_override, raw_mode, ignore_whitespace)
+    }
+}
+
+/// Unified parse function for strings
+pub fn parse_string_to_documents(
+    source: &str,
+    lang: &str,
+    file_path: String,
+    raw_mode: bool,
+    ignore_whitespace: bool,
+) -> Result<XeeParseResult, ParseError> {
+    if lang == "xml" {
+        // XML passthrough
+        load_xml_string_to_documents(source, file_path)
+    } else {
+        // Source code: TreeSitter → XeeBuilder → Documents
+        parse_string_to_xee_with_options(source, lang, file_path, raw_mode, ignore_whitespace)
+    }
+}
+
 /// Escape XML special characters
 pub fn escape_xml(s: &str) -> String {
     s.replace('&', "&amp;")

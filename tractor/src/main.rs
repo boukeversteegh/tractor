@@ -10,16 +10,17 @@ use std::process::ExitCode;
 
 use rayon::prelude::*;
 use tractor_core::{
-    parse_string, parse_file, generate_xml_document,
+    // Legacy slow path (only for stdin without XPath)
+    parse_string, generate_xml_document,
     ParseResult, XPathEngine, Match,
     OutputFormat, format_matches, OutputOptions,
     expand_globs, filter_supported_files,
     output::should_use_color,
-    output::{render_xml_string, RenderOptions},
-    load_xml, load_xml_file, detect_language,
+    output::{render_xml_string, render_document, render_node, RenderOptions},
     print_timing_stats,
-    // Fast query path
-    parse_file_to_xee_with_options,
+    // Unified parsing pipeline (always returns Documents)
+    parse_to_documents, parse_string_to_documents,
+    XeeParseResult,
 };
 
 use cli::Args;
@@ -102,28 +103,6 @@ fn fix_msys_xpath_mangling(xpath: &str) -> String {
     xpath.to_string()
 }
 
-/// Check if a file is an XML file (for passthrough mode)
-fn is_xml_file(path: &str) -> bool {
-    detect_language(path) == "xml"
-}
-
-/// Load a file - either as XML passthrough or by parsing source code
-fn load_file(
-    path: &std::path::Path,
-    lang_override: Option<&str>,
-    raw_mode: bool,
-) -> Result<ParseResult, tractor_core::parser::ParseError> {
-    let path_str = path.to_string_lossy();
-
-    // XML passthrough: load directly without parsing
-    if lang_override.map_or_else(|| is_xml_file(&path_str), |l| l == "xml") {
-        return load_xml_file(path);
-    }
-
-    // Normal: parse source code
-    parse_file(path, lang_override, raw_mode)
-}
-
 fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
     // Normalize XPath if provided (auto-prefix // for convenience)
     let xpath = args.xpath.as_ref().map(|x| normalize_xpath(x));
@@ -189,12 +168,49 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
         io::stdin().read_to_string(&mut source)?;
         let lang = args.lang.as_deref().unwrap();
 
-        // XML passthrough for stdin
-        let result = if lang == "xml" {
-            load_xml(source, "<stdin>".to_string())
-        } else {
-            parse_string(&source, lang, "<stdin>".to_string(), args.raw)?
-        };
+        // With XPath query - use unified pipeline (handles XML and source code)
+        if let Some(ref xpath_expr) = xpath {
+            let mut result = parse_string_to_documents(
+                &source, lang, "<stdin>".to_string(), args.raw, args.ignore_whitespace
+            )?;
+
+            let engine = XPathEngine::new()
+                .with_verbose(args.verbose)
+                .with_ignore_whitespace(args.ignore_whitespace);
+
+            let matches = engine.query_documents(
+                &mut result.documents,
+                result.doc_handle,
+                xpath_expr,
+                &result.source_lines,
+                &result.file_path,
+            )?;
+
+            let matches: Vec<Match> = if let Some(limit) = args.limit {
+                matches.into_iter().take(limit).collect()
+            } else {
+                matches
+            };
+
+            let options = OutputOptions {
+                message: args.message.clone(),
+                use_color,
+                strip_locations: !args.keep_locations,
+                max_depth: args.depth,
+                pretty_print: !args.no_pretty,
+                language: Some(lang.to_string()),
+            };
+
+            if args.expect.is_none() {
+                let output = format_matches(&matches, format.clone(), &options);
+                print!("{}", output);
+            }
+
+            return check_expectation(&matches, &args, use_color, &format, &options);
+        }
+
+        // No XPath - need full output (legacy slow path for now)
+        let result = parse_string(&source, lang, "<stdin>".to_string(), args.raw)?;
         return process_single_result(result, &args, xpath.as_deref(), format, use_color);
     }
 
@@ -224,7 +240,13 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                     break;
                 }
 
-                let result = match load_file(std::path::Path::new(file_path), lang_override.as_deref(), raw) {
+                // Use unified pipeline
+                let mut result = match parse_to_documents(
+                    std::path::Path::new(file_path),
+                    lang_override.as_deref(),
+                    raw,
+                    args.ignore_whitespace,
+                ) {
                     Ok(r) => r,
                     Err(e) => {
                         if verbose {
@@ -234,11 +256,15 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                     }
                 };
 
-                // Use compact XML for XPath query (no formatting whitespace)
-                let xml_compact = generate_xml_document(&[result.clone()], false);
                 let engine = XPathEngine::new().with_verbose(verbose).with_ignore_whitespace(args.ignore_whitespace);
 
-                match engine.query(&xml_compact, xpath_expr, &result.source_lines, &result.file_path) {
+                match engine.query_documents(
+                    &mut result.documents,
+                    result.doc_handle,
+                    xpath_expr,
+                    &result.source_lines,
+                    &result.file_path,
+                ) {
                     Ok(matches) if !matches.is_empty() => {
                         // Apply limit
                         let matches: Vec<_> = if let Some(limit) = remaining_limit {
@@ -257,15 +283,15 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                             .map(|m| (m.line, m.column))
                             .collect();
 
-                        // Show full XML with highlights
-                        let xml_display = generate_xml_document(&[result.clone()], !args.no_pretty);
+                        // Render from Documents' xot directly
+                        let doc_node = result.documents.document_node(result.doc_handle).unwrap();
                         let render_opts = RenderOptions::new()
                             .with_color(use_color)
                             .with_locations(true)
                             .with_max_depth(args.depth)
                             .with_highlights(highlights)
                             .with_pretty_print(!args.no_pretty);
-                        let output = render_xml_string(&xml_display, &render_opts);
+                        let output = render_document(result.documents.xot(), doc_node, &render_opts);
                         print!("{}", output);
                     }
                     Ok(_) => {} // No matches in this file
@@ -298,125 +324,47 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                 break;
             }
 
-            // Process this batch in parallel
-            // Note: XPath queries are automatically cached per-thread for efficiency
-            // Fast path is default - builds AST directly into xee-xpath Documents
-            // XML passthrough mode uses the standard path (XML is queried directly, not parsed)
-            let use_fast_path = lang_override.as_deref() != Some("xml");
-
-            let mut batch_matches: Vec<Match> = if use_fast_path {
-                // Partition files: XML files use standard path, others use fast path
-                let (xml_files, non_xml_files): (Vec<_>, Vec<_>) = batch
-                    .iter()
-                    .partition(|f| is_xml_file(f));
-
-                // Process non-XML files with fast path
-                let mut fast_matches: Vec<Match> = non_xml_files
-                    .par_iter()
-                    .filter_map(|file_path| {
-                        // Parse directly into Documents (no XML serialization)
-                        let mut result = match parse_file_to_xee_with_options(
-                            std::path::Path::new(file_path),
-                            lang_override.as_deref(),
-                            raw,
-                            args.ignore_whitespace,
-                        ) {
-                            Ok(r) => r,
-                            Err(e) => {
-                                if verbose {
-                                    eprintln!("warning: {}: {}", file_path, e);
-                                }
-                                return None;
+            // Process batch in parallel using unified pipeline
+            // parse_to_documents handles both source code (TreeSitter) and XML (passthrough)
+            let mut batch_matches: Vec<Match> = batch
+                .par_iter()
+                .filter_map(|file_path| {
+                    // Unified parsing: always returns Documents
+                    let mut result = match parse_to_documents(
+                        std::path::Path::new(file_path),
+                        lang_override.as_deref(),
+                        raw,
+                        args.ignore_whitespace,
+                    ) {
+                        Ok(r) => r,
+                        Err(e) => {
+                            if verbose {
+                                eprintln!("warning: {}: {}", file_path, e);
                             }
-                        };
-
-                        // Query directly on Documents (no XML parsing)
-                        let engine = XPathEngine::new().with_verbose(verbose).with_ignore_whitespace(args.ignore_whitespace);
-                        match engine.query_documents(
-                            &mut result.documents,
-                            result.doc_handle,
-                            xpath_expr,
-                            &result.source_lines,
-                            &result.file_path,
-                        ) {
-                            Ok(matches) => Some(matches),
-                            Err(e) => {
-                                if verbose {
-                                    eprintln!("warning: {}: query error: {}", file_path, e);
-                                }
-                                None
-                            }
+                            return None;
                         }
-                    })
-                    .flatten()
-                    .collect();
+                    };
 
-                // Process XML files with standard path (passthrough mode)
-                let xml_matches: Vec<Match> = xml_files
-                    .par_iter()
-                    .filter_map(|file_path| {
-                        let result = match load_file(std::path::Path::new(file_path), lang_override.as_deref(), raw) {
-                            Ok(r) => r,
-                            Err(e) => {
-                                if verbose {
-                                    eprintln!("warning: {}: {}", file_path, e);
-                                }
-                                return None;
+                    // Query on Documents (same API for all file types)
+                    let engine = XPathEngine::new().with_verbose(verbose).with_ignore_whitespace(args.ignore_whitespace);
+                    match engine.query_documents(
+                        &mut result.documents,
+                        result.doc_handle,
+                        xpath_expr,
+                        &result.source_lines,
+                        &result.file_path,
+                    ) {
+                        Ok(matches) => Some(matches),
+                        Err(e) => {
+                            if verbose {
+                                eprintln!("warning: {}: query error: {}", file_path, e);
                             }
-                        };
-
-                        let xml = generate_xml_document(&[result.clone()], false);
-                        let engine = XPathEngine::new().with_verbose(verbose).with_ignore_whitespace(args.ignore_whitespace);
-                        match engine.query(&xml, xpath_expr, &result.source_lines, &result.file_path) {
-                            Ok(matches) => Some(matches),
-                            Err(e) => {
-                                if verbose {
-                                    eprintln!("warning: {}: query error: {}", file_path, e);
-                                }
-                                None
-                            }
+                            None
                         }
-                    })
-                    .flatten()
-                    .collect();
-
-                // Combine results
-                fast_matches.extend(xml_matches);
-                fast_matches
-            } else {
-                // Standard path: parse to XML, then query
-                batch
-                    .par_iter()
-                    .filter_map(|file_path| {
-                        // Parse the file
-                        let result = match load_file(std::path::Path::new(file_path), lang_override.as_deref(), raw) {
-                            Ok(r) => r,
-                            Err(e) => {
-                                if verbose {
-                                    eprintln!("warning: {}: {}", file_path, e);
-                                }
-                                return None;
-                            }
-                        };
-
-                        // Generate compact XML for XPath query (no formatting whitespace)
-                        let xml = generate_xml_document(&[result.clone()], false);
-
-                        // Query this file's XML (query is cached per-thread automatically)
-                        let engine = XPathEngine::new().with_verbose(verbose).with_ignore_whitespace(args.ignore_whitespace);
-                        match engine.query(&xml, xpath_expr, &result.source_lines, &result.file_path) {
-                            Ok(matches) => Some((file_path.clone(), matches)),
-                            Err(e) => {
-                                if verbose {
-                                    eprintln!("warning: {}: query error: {}", file_path, e);
-                                }
-                                None
-                            }
-                        }
-                    })
-                    .flat_map(|(_, matches)| matches)
-                    .collect()
-            };
+                    }
+                })
+                .flatten()
+                .collect();
 
             // Sort by file path for consistent ordering within batch
             batch_matches.sort_by(|a, b| (&a.file, a.line, a.column).cmp(&(&b.file, b.line, b.column)));
@@ -451,15 +399,21 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
         return check_expectation_with_matches(total_matches, &all_matches, &args, use_color, &format, &options);
     }
 
-    // No XPath - output full files using same formatting pipeline
+    // No XPath - output full files using unified pipeline
+    // Note: Sequential processing since Documents isn't Send (uses Rc<RefCell<>>)
     let lang_override = args.lang.as_deref();
     let raw = args.raw;
     let verbose = args.verbose;
 
-    let parse_results: Vec<ParseResult> = files
-        .par_iter()
+    let parse_results: Vec<XeeParseResult> = files
+        .iter()
         .filter_map(|file_path| {
-            match load_file(std::path::Path::new(file_path), lang_override, raw) {
+            match parse_to_documents(
+                std::path::Path::new(file_path),
+                lang_override,
+                raw,
+                args.ignore_whitespace,
+            ) {
                 Ok(r) => Some(r),
                 Err(e) => {
                     if verbose {
@@ -475,15 +429,50 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
         return Err("no files could be parsed".into());
     }
 
-    // For XML format, use combined document with Files wrapper
+    let render_opts = RenderOptions::new()
+        .with_color(use_color)
+        .with_locations(args.keep_locations || args.debug)
+        .with_max_depth(args.depth)
+        .with_pretty_print(!args.no_pretty);
+
+    // For XML format, output the Files wrapper (already in document structure)
+    // For multiple files, combine into a single Files wrapper
     if matches!(format, OutputFormat::Xml) {
-        let xml = generate_xml_document(&parse_results, !args.no_pretty);
-        let render_opts = RenderOptions::new()
-            .with_color(use_color)
-            .with_locations(args.keep_locations || args.debug)
-            .with_max_depth(args.depth);
-        let output = render_xml_string(&xml, &render_opts);
-        print!("{}", output);
+        if parse_results.len() == 1 {
+            // Single file: render as-is (already has Files/File wrapper)
+            // Use render_node on children to avoid XML declaration
+            let result = &parse_results[0];
+            let doc_node = result.documents.document_node(result.doc_handle).unwrap();
+            let xot = result.documents.xot();
+            for child in xot.children(doc_node) {
+                let output = render_node(xot, child, &render_opts);
+                print!("{}", output);
+            }
+        } else {
+            // Multiple files: combine File elements under single Files wrapper
+            println!(r#"<?xml version="1.0" encoding="UTF-8"?>"#);
+            println!("<Files>");
+            for result in &parse_results {
+                let doc_node = result.documents.document_node(result.doc_handle).unwrap();
+                let xot = result.documents.xot();
+                // Find the File element inside the Files wrapper
+                for files_child in xot.children(doc_node) {
+                    // Skip to File elements inside Files
+                    for file_child in xot.children(files_child) {
+                        let output = render_node(xot, file_child, &render_opts);
+                        // Indent each line for pretty printing
+                        if !args.no_pretty {
+                            for line in output.lines() {
+                                println!("  {}", line);
+                            }
+                        } else {
+                            print!("{}", output);
+                        }
+                    }
+                }
+            }
+            println!("</Files>");
+        }
         return Ok(());
     }
 
@@ -496,8 +485,13 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                 .map(|l| l.len() as u32 + 1)
                 .unwrap_or(1);
 
-            // Extract text content from XML for value output
-            let value = extract_text_content(&result.xml);
+            // Render document children (without XML declaration)
+            let doc_node = result.documents.document_node(result.doc_handle).unwrap();
+            let xot = result.documents.xot();
+            let xml: String = xot.children(doc_node)
+                .map(|child| render_node(xot, child, &render_opts))
+                .collect();
+            let value = extract_text_content(&xml);
 
             Match::with_location(
                 result.file_path.clone(),
@@ -507,7 +501,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                 end_column,
                 value,
                 result.source_lines.clone(),
-            ).with_xml_fragment(result.xml.clone())
+            ).with_xml_fragment(xml)
         })
         .collect();
 
