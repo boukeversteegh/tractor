@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tractor Theme Selector</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    h1 { margin-bottom: 0.5rem; }
+    .subtitle { color: #888; margin-bottom: 2rem; }
+
+    .themes {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .theme-card {
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      border: 2px solid transparent;
+    }
+
+    .theme-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+    }
+
+    .theme-card.selected {
+      border-color: #fff;
+    }
+
+    .theme-header {
+      padding: 1rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .theme-name {
+      font-weight: 600;
+      font-size: 1.1rem;
+    }
+
+    .theme-tag {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      opacity: 0.8;
+    }
+
+    .code-sample {
+      padding: 1.25rem;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      overflow-x: auto;
+    }
+
+    .color-bar {
+      display: flex;
+      height: 6px;
+    }
+
+    .color-bar span {
+      flex: 1;
+    }
+
+    /* Theme definitions */
+    .theme-gruvbox { --bg: #282828; --bg2: #1d2021; --fg: #ebdbb2; --accent: #d79921; }
+    .theme-gruvbox .theme-header { background: var(--bg2); color: var(--fg); }
+    .theme-gruvbox .theme-tag { background: #d79921; color: #282828; }
+    .theme-gruvbox .code-sample { background: var(--bg); }
+    .theme-gruvbox .kw { color: #fb4934; }
+    .theme-gruvbox .type { color: #fabd2f; }
+    .theme-gruvbox .fn { color: #b8bb26; }
+    .theme-gruvbox .str { color: #b8bb26; }
+    .theme-gruvbox .num { color: #d3869b; }
+    .theme-gruvbox .cmt { color: #928374; }
+    .theme-gruvbox .id { color: #ebdbb2; }
+    .theme-gruvbox .op { color: #a89984; }
+
+    .theme-deere { --bg: #1a2e1a; --bg2: #0f1f0f; --fg: #c8e6c8; --accent: #5cb85c; }
+    .theme-deere .theme-header { background: var(--bg2); color: var(--fg); }
+    .theme-deere .theme-tag { background: #ffde00; color: #1a2e1a; }
+    .theme-deere .code-sample { background: var(--bg); }
+    .theme-deere .kw { color: #5cb85c; }
+    .theme-deere .type { color: #ffde00; }
+    .theme-deere .fn { color: #8fd98f; }
+    .theme-deere .str { color: #f0c674; }
+    .theme-deere .num { color: #de935f; }
+    .theme-deere .cmt { color: #6a8f6a; }
+    .theme-deere .id { color: #c8e6c8; }
+    .theme-deere .op { color: #7fa87f; }
+
+    .theme-cat { --bg: #1c1c1c; --bg2: #141414; --fg: #e8e8e8; --accent: #ffb800; }
+    .theme-cat .theme-header { background: var(--bg2); color: var(--fg); }
+    .theme-cat .theme-tag { background: #ffb800; color: #1c1c1c; }
+    .theme-cat .code-sample { background: var(--bg); }
+    .theme-cat .kw { color: #ffb800; }
+    .theme-cat .type { color: #ffd966; }
+    .theme-cat .fn { color: #e8e8e8; }
+    .theme-cat .str { color: #a5d6a7; }
+    .theme-cat .num { color: #ffab40; }
+    .theme-cat .cmt { color: #757575; }
+    .theme-cat .id { color: #bdbdbd; }
+    .theme-cat .op { color: #9e9e9e; }
+
+    .theme-kubota { --bg: #1f1a17; --bg2: #151210; --fg: #e8ddd4; --accent: #f15a22; }
+    .theme-kubota .theme-header { background: var(--bg2); color: var(--fg); }
+    .theme-kubota .theme-tag { background: #f15a22; color: #fff; }
+    .theme-kubota .code-sample { background: var(--bg); }
+    .theme-kubota .kw { color: #f15a22; }
+    .theme-kubota .type { color: #ffa066; }
+    .theme-kubota .fn { color: #e8ddd4; }
+    .theme-kubota .str { color: #a8c97f; }
+    .theme-kubota .num { color: #d4a574; }
+    .theme-kubota .cmt { color: #7a6f66; }
+    .theme-kubota .id { color: #c9bdb3; }
+    .theme-kubota .op { color: #8a7f75; }
+
+    .theme-solarized { --bg: #002b36; --bg2: #001f27; --fg: #839496; --accent: #268bd2; }
+    .theme-solarized .theme-header { background: var(--bg2); color: var(--fg); }
+    .theme-solarized .theme-tag { background: #268bd2; color: #fdf6e3; }
+    .theme-solarized .code-sample { background: var(--bg); }
+    .theme-solarized .kw { color: #859900; }
+    .theme-solarized .type { color: #b58900; }
+    .theme-solarized .fn { color: #268bd2; }
+    .theme-solarized .str { color: #2aa198; }
+    .theme-solarized .num { color: #d33682; }
+    .theme-solarized .cmt { color: #586e75; }
+    .theme-solarized .id { color: #839496; }
+    .theme-solarized .op { color: #657b83; }
+
+    .theme-nord { --bg: #2e3440; --bg2: #242933; --fg: #d8dee9; --accent: #88c0d0; }
+    .theme-nord .theme-header { background: var(--bg2); color: var(--fg); }
+    .theme-nord .theme-tag { background: #88c0d0; color: #2e3440; }
+    .theme-nord .code-sample { background: var(--bg); }
+    .theme-nord .kw { color: #81a1c1; }
+    .theme-nord .type { color: #8fbcbb; }
+    .theme-nord .fn { color: #88c0d0; }
+    .theme-nord .str { color: #a3be8c; }
+    .theme-nord .num { color: #b48ead; }
+    .theme-nord .cmt { color: #616e88; }
+    .theme-nord .id { color: #d8dee9; }
+    .theme-nord .op { color: #9aa4b8; }
+
+    .theme-dracula { --bg: #282a36; --bg2: #1e1f29; --fg: #f8f8f2; --accent: #bd93f9; }
+    .theme-dracula .theme-header { background: var(--bg2); color: var(--fg); }
+    .theme-dracula .theme-tag { background: #bd93f9; color: #282a36; }
+    .theme-dracula .code-sample { background: var(--bg); }
+    .theme-dracula .kw { color: #ff79c6; }
+    .theme-dracula .type { color: #8be9fd; }
+    .theme-dracula .fn { color: #50fa7b; }
+    .theme-dracula .str { color: #f1fa8c; }
+    .theme-dracula .num { color: #bd93f9; }
+    .theme-dracula .cmt { color: #6272a4; }
+    .theme-dracula .id { color: #f8f8f2; }
+    .theme-dracula .op { color: #9ea4b0; }
+
+    .theme-current { --bg: #1e1e2e; --bg2: #181825; --fg: #e0e0e0; --accent: #7c3aed; }
+    .theme-current .theme-header { background: var(--bg2); color: var(--fg); }
+    .theme-current .theme-tag { background: #7c3aed; color: #fff; }
+    .theme-current .code-sample { background: var(--bg); }
+    .theme-current .kw { color: #569cd6; }
+    .theme-current .type { color: #4ec9b0; }
+    .theme-current .fn { color: #4ec9b0; }
+    .theme-current .str { color: #ce9178; }
+    .theme-current .num { color: #b5cea8; }
+    .theme-current .cmt { color: #6a9955; }
+    .theme-current .id { color: #9cdcfe; }
+    .theme-current .op { color: #808080; }
+
+    .legend {
+      margin-top: 2rem;
+      padding: 1rem;
+      background: #252525;
+      border-radius: 8px;
+    }
+
+    .legend h3 { margin-bottom: 0.75rem; }
+
+    .legend-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      font-size: 0.875rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+  </style>
+</head>
+<body>
+  <h1>🚜 Tractor Theme Selector</h1>
+  <p class="subtitle">Click a theme to see it in detail. Each shows the same C# code sample.</p>
+
+  <div class="themes">
+    <!-- Gruvbox -->
+    <div class="theme-card theme-gruvbox">
+      <div class="theme-header">
+        <span class="theme-name">Gruvbox Dark</span>
+        <span class="theme-tag">Earthy / Retro</span>
+      </div>
+      <div class="code-sample">
+<span class="kw">public class</span> <span class="type">UserService</span> {
+    <span class="kw">public</span> <span class="type">User</span> <span class="fn">GetUser</span><span class="op">(</span><span class="kw">int</span> <span class="id">id</span><span class="op">)</span> {
+        <span class="kw">return</span> <span class="fn">GetFromCache</span><span class="op">(</span><span class="id">id</span><span class="op">)</span> <span class="op">??</span> <span class="fn">GetFromDb</span><span class="op">(</span><span class="id">id</span><span class="op">);</span>
+    }
+    <span class="cmt">// Retrieves user from database</span>
+    <span class="kw">private</span> <span class="type">User</span> <span class="fn">GetFromDb</span><span class="op">(</span><span class="kw">int</span> <span class="id">id</span><span class="op">)</span> {
+        <span class="kw">var</span> <span class="id">query</span> <span class="op">=</span> <span class="str">"SELECT * FROM users"</span><span class="op">;</span>
+        <span class="kw">return</span> <span class="id">_db</span><span class="op">.</span><span class="fn">Query</span><span class="op">(</span><span class="id">query</span><span class="op">,</span> <span class="id">id</span><span class="op">);</span>
+    }
+}
+      </div>
+      <div class="color-bar">
+        <span style="background:#fb4934"></span>
+        <span style="background:#fabd2f"></span>
+        <span style="background:#b8bb26"></span>
+        <span style="background:#d3869b"></span>
+        <span style="background:#83a598"></span>
+        <span style="background:#d79921"></span>
+      </div>
+    </div>
+
+    <!-- John Deere -->
+    <div class="theme-card theme-deere">
+      <div class="theme-header">
+        <span class="theme-name">John Deere</span>
+        <span class="theme-tag">Tractor Classic</span>
+      </div>
+      <div class="code-sample">
+<span class="kw">public class</span> <span class="type">UserService</span> {
+    <span class="kw">public</span> <span class="type">User</span> <span class="fn">GetUser</span><span class="op">(</span><span class="kw">int</span> <span class="id">id</span><span class="op">)</span> {
+        <span class="kw">return</span> <span class="fn">GetFromCache</span><span class="op">(</span><span class="id">id</span><span class="op">)</span> <span class="op">??</span> <span class="fn">GetFromDb</span><span class="op">(</span><span class="id">id</span><span class="op">);</span>
+    }
+    <span class="cmt">// Retrieves user from database</span>
+    <span class="kw">private</span> <span class="type">User</span> <span class="fn">GetFromDb</span><span class="op">(</span><span class="kw">int</span> <span class="id">id</span><span class="op">)</span> {
+        <span class="kw">var</span> <span class="id">query</span> <span class="op">=</span> <span class="str">"SELECT * FROM users"</span><span class="op">;</span>
+        <span class="kw">return</span> <span class="id">_db</span><span class="op">.</span><span class="fn">Query</span><span class="op">(</span><span class="id">query</span><span class="op">,</span> <span class="id">id</span><span class="op">);</span>
+    }
+}
+      </div>
+      <div class="color-bar">
+        <span style="background:#5cb85c"></span>
+        <span style="background:#ffde00"></span>
+        <span style="background:#8fd98f"></span>
+        <span style="background:#f0c674"></span>
+        <span style="background:#367c2b"></span>
+        <span style="background:#2d5a2d"></span>
+      </div>
+    </div>
+
+    <!-- Caterpillar -->
+    <div class="theme-card theme-cat">
+      <div class="theme-header">
+        <span class="theme-name">Caterpillar</span>
+        <span class="theme-tag">Industrial</span>
+      </div>
+      <div class="code-sample">
+<span class="kw">public class</span> <span class="type">UserService</span> {
+    <span class="kw">public</span> <span class="type">User</span> <span class="fn">GetUser</span><span class="op">(</span><span class="kw">int</span> <span class="id">id</span><span class="op">)</span> {
+        <span class="kw">return</span> <span class="fn">GetFromCache</span><span class="op">(</span><span class="id">id</span><span class="op">)</span> <span class="op">??</span> <span class="fn">GetFromDb</span><span class="op">(</span><span class="id">id</span><span class="op">);</span>
+    }
+    <span class="cmt">// Retrieves user from database</span>
+    <span class="kw">private</span> <span class="type">User</span> <span class="fn">GetFromDb</span><span class="op">(</span><span class="kw">int</span> <span class="id">id</span><span class="op">)</span> {
+        <span class="kw">var</span> <span class="id">query</span> <span class="op">=</span> <span class="str">"SELECT * FROM users"</span><span class="op">;</span>
+        <span class="kw">return</span> <span class="id">_db</span><span class="op">.</span><span class="fn">Query</span><span class="op">(</span><span class="id">query</span><span class="op">,</span> <span class="id">id</span><span class="op">);</span>
+    }
+}
+      </div>
+      <div class="color-bar">
+        <span style="background:#ffb800"></span>
+        <span style="background:#ffd966"></span>
+        <span style="background:#e8e8e8"></span>
+        <span style="background:#a5d6a7"></span>
+        <span style="background:#424242"></span>
+        <span style="background:#1c1c1c"></span>
+      </div>
+    </div>
+
+    <!-- Kubota -->
+    <div class="theme-card theme-kubota">
+      <div class="theme-header">
+        <span class="theme-name">Kubota Orange</span>
+        <span class="theme-tag">Warm / Bold</span>
+      </div>
+      <div class="code-sample">
+<span class="kw">public class</span> <span class="type">UserService</span> {
+    <span class="kw">public</span> <span class="type">User</span> <span class="fn">GetUser</span><span class="op">(</span><span class="kw">int</span> <span class="id">id</span><span class="op">)</span> {
+        <span class="kw">return</span> <span class="fn">GetFromCache</span><span class="op">(</span><span class="id">id</span><span class="op">)</span> <span class="op">??</span> <span class="fn">GetFromDb</span><span class="op">(</span><span class="id">id</span><span class="op">);</span>
+    }
+    <span class="cmt">// Retrieves user from database</span>
+    <span class="kw">private</span> <span class="type">User</span> <span class="fn">GetFromDb</span><span class="op">(</span><span class="kw">int</span> <span class="id">id</span><span class="op">)</span> {
+        <span class="kw">var</span> <span class="id">query</span> <span class="op">=</span> <span class="str">"SELECT * FROM users"</span><span class="op">;</span>
+        <span class="kw">return</span> <span class="id">_db</span><span class="op">.</span><span class="fn">Query</span><span class="op">(</span><span class="id">query</span><span class="op">,</span> <span class="id">id</span><span class="op">);</span>
+    }
+}
+      </div>
+      <div class="color-bar">
+        <span style="background:#f15a22"></span>
+        <span style="background:#ffa066"></span>
+        <span style="background:#a8c97f"></span>
+        <span style="background:#d4a574"></span>
+        <span style="background:#4a3f38"></span>
+        <span style="background:#1f1a17"></span>
+      </div>
+    </div>
+
+    <!-- Solarized -->
+    <div class="theme-card theme-solarized">
+      <div class="theme-header">
+        <span class="theme-name">Solarized Dark</span>
+        <span class="theme-tag">Classic</span>
+      </div>
+      <div class="code-sample">
+<span class="kw">public class</span> <span class="type">UserService</span> {
+    <span class="kw">public</span> <span class="type">User</span> <span class="fn">GetUser</span><span class="op">(</span><span class="kw">int</span> <span class="id">id</span><span class="op">)</span> {
+        <span class="kw">return</span> <span class="fn">GetFromCache</span><span class="op">(</span><span class="id">id</span><span class="op">)</span> <span class="op">??</span> <span class="fn">GetFromDb</span><span class="op">(</span><span class="id">id</span><span class="op">);</span>
+    }
+    <span class="cmt">// Retrieves user from database</span>
+    <span class="kw">private</span> <span class="type">User</span> <span class="fn">GetFromDb</span><span class="op">(</span><span class="kw">int</span> <span class="id">id</span><span class="op">)</span> {
+        <span class="kw">var</span> <span class="id">query</span> <span class="op">=</span> <span class="str">"SELECT * FROM users"</span><span class="op">;</span>
+        <span class="kw">return</span> <span class="id">_db</span><span class="op">.</span><span class="fn">Query</span><span class="op">(</span><span class="id">query</span><span class="op">,</span> <span class="id">id</span><span class="op">);</span>
+    }
+}
+      </div>
+      <div class="color-bar">
+        <span style="background:#859900"></span>
+        <span style="background:#b58900"></span>
+        <span style="background:#268bd2"></span>
+        <span style="background:#2aa198"></span>
+        <span style="background:#d33682"></span>
+        <span style="background:#002b36"></span>
+      </div>
+    </div>
+
+    <!-- Nord -->
+    <div class="theme-card theme-nord">
+      <div class="theme-header">
+        <span class="theme-name">Nord</span>
+        <span class="theme-tag">Arctic / Cool</span>
+      </div>
+      <div class="code-sample">
+<span class="kw">public class</span> <span class="type">UserService</span> {
+    <span class="kw">public</span> <span class="type">User</span> <span class="fn">GetUser</span><span class="op">(</span><span class="kw">int</span> <span class="id">id</span><span class="op">)</span> {
+        <span class="kw">return</span> <span class="fn">GetFromCache</span><span class="op">(</span><span class="id">id</span><span class="op">)</span> <span class="op">??</span> <span class="fn">GetFromDb</span><span class="op">(</span><span class="id">id</span><span class="op">);</span>
+    }
+    <span class="cmt">// Retrieves user from database</span>
+    <span class="kw">private</span> <span class="type">User</span> <span class="fn">GetFromDb</span><span class="op">(</span><span class="kw">int</span> <span class="id">id</span><span class="op">)</span> {
+        <span class="kw">var</span> <span class="id">query</span> <span class="op">=</span> <span class="str">"SELECT * FROM users"</span><span class="op">;</span>
+        <span class="kw">return</span> <span class="id">_db</span><span class="op">.</span><span class="fn">Query</span><span class="op">(</span><span class="id">query</span><span class="op">,</span> <span class="id">id</span><span class="op">);</span>
+    }
+}
+      </div>
+      <div class="color-bar">
+        <span style="background:#81a1c1"></span>
+        <span style="background:#88c0d0"></span>
+        <span style="background:#a3be8c"></span>
+        <span style="background:#b48ead"></span>
+        <span style="background:#5e81ac"></span>
+        <span style="background:#2e3440"></span>
+      </div>
+    </div>
+
+    <!-- Dracula -->
+    <div class="theme-card theme-dracula">
+      <div class="theme-header">
+        <span class="theme-name">Dracula</span>
+        <span class="theme-tag">Vibrant</span>
+      </div>
+      <div class="code-sample">
+<span class="kw">public class</span> <span class="type">UserService</span> {
+    <span class="kw">public</span> <span class="type">User</span> <span class="fn">GetUser</span><span class="op">(</span><span class="kw">int</span> <span class="id">id</span><span class="op">)</span> {
+        <span class="kw">return</span> <span class="fn">GetFromCache</span><span class="op">(</span><span class="id">id</span><span class="op">)</span> <span class="op">??</span> <span class="fn">GetFromDb</span><span class="op">(</span><span class="id">id</span><span class="op">);</span>
+    }
+    <span class="cmt">// Retrieves user from database</span>
+    <span class="kw">private</span> <span class="type">User</span> <span class="fn">GetFromDb</span><span class="op">(</span><span class="kw">int</span> <span class="id">id</span><span class="op">)</span> {
+        <span class="kw">var</span> <span class="id">query</span> <span class="op">=</span> <span class="str">"SELECT * FROM users"</span><span class="op">;</span>
+        <span class="kw">return</span> <span class="id">_db</span><span class="op">.</span><span class="fn">Query</span><span class="op">(</span><span class="id">query</span><span class="op">,</span> <span class="id">id</span><span class="op">);</span>
+    }
+}
+      </div>
+      <div class="color-bar">
+        <span style="background:#ff79c6"></span>
+        <span style="background:#8be9fd"></span>
+        <span style="background:#50fa7b"></span>
+        <span style="background:#f1fa8c"></span>
+        <span style="background:#bd93f9"></span>
+        <span style="background:#282a36"></span>
+      </div>
+    </div>
+
+    <!-- Current -->
+    <div class="theme-card theme-current">
+      <div class="theme-header">
+        <span class="theme-name">Current (Mixed)</span>
+        <span class="theme-tag">Catppuccin + VS Code</span>
+      </div>
+      <div class="code-sample">
+<span class="kw">public class</span> <span class="type">UserService</span> {
+    <span class="kw">public</span> <span class="type">User</span> <span class="fn">GetUser</span><span class="op">(</span><span class="kw">int</span> <span class="id">id</span><span class="op">)</span> {
+        <span class="kw">return</span> <span class="fn">GetFromCache</span><span class="op">(</span><span class="id">id</span><span class="op">)</span> <span class="op">??</span> <span class="fn">GetFromDb</span><span class="op">(</span><span class="id">id</span><span class="op">);</span>
+    }
+    <span class="cmt">// Retrieves user from database</span>
+    <span class="kw">private</span> <span class="type">User</span> <span class="fn">GetFromDb</span><span class="op">(</span><span class="kw">int</span> <span class="id">id</span><span class="op">)</span> {
+        <span class="kw">var</span> <span class="id">query</span> <span class="op">=</span> <span class="str">"SELECT * FROM users"</span><span class="op">;</span>
+        <span class="kw">return</span> <span class="id">_db</span><span class="op">.</span><span class="fn">Query</span><span class="op">(</span><span class="id">query</span><span class="op">,</span> <span class="id">id</span><span class="op">);</span>
+    }
+}
+      </div>
+      <div class="color-bar">
+        <span style="background:#569cd6"></span>
+        <span style="background:#4ec9b0"></span>
+        <span style="background:#ce9178"></span>
+        <span style="background:#6a9955"></span>
+        <span style="background:#7c3aed"></span>
+        <span style="background:#1e1e2e"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <h3>Syntax Element Legend</h3>
+    <div class="legend-items">
+      <div class="legend-item"><code>.kw</code> = Keywords (public, class, return)</div>
+      <div class="legend-item"><code>.type</code> = Types (User, UserService)</div>
+      <div class="legend-item"><code>.fn</code> = Functions (GetUser, Query)</div>
+      <div class="legend-item"><code>.str</code> = Strings ("SELECT...")</div>
+      <div class="legend-item"><code>.id</code> = Identifiers (id, query, _db)</div>
+      <div class="legend-item"><code>.cmt</code> = Comments</div>
+      <div class="legend-item"><code>.op</code> = Operators & Punctuation</div>
+    </div>
+  </div>
+
+  <div class="terminal-section">
+    <h2>Terminal Compatibility</h2>
+    <p class="subtitle">For terminal output, we need ANSI escape codes. Two options:</p>
+
+    <div class="terminal-options">
+      <div class="terminal-option">
+        <h3>Option A: Basic 16 ANSI Colors</h3>
+        <p>Works everywhere, but colors depend on user's terminal theme</p>
+        <div class="ansi-grid">
+          <div class="ansi-color" style="background:#000">0 Black</div>
+          <div class="ansi-color" style="background:#c00">1 Red</div>
+          <div class="ansi-color" style="background:#0a0">2 Green</div>
+          <div class="ansi-color" style="background:#a50">3 Yellow</div>
+          <div class="ansi-color" style="background:#00a">4 Blue</div>
+          <div class="ansi-color" style="background:#a0a">5 Magenta</div>
+          <div class="ansi-color" style="background:#0aa">6 Cyan</div>
+          <div class="ansi-color" style="background:#aaa;color:#000">7 White</div>
+        </div>
+        <div class="ansi-grid bright">
+          <div class="ansi-color" style="background:#555">8 Bright Black</div>
+          <div class="ansi-color" style="background:#f55">9 Bright Red</div>
+          <div class="ansi-color" style="background:#5f5">10 Bright Green</div>
+          <div class="ansi-color" style="background:#ff5">11 Bright Yellow</div>
+          <div class="ansi-color" style="background:#55f">12 Bright Blue</div>
+          <div class="ansi-color" style="background:#f5f">13 Bright Magenta</div>
+          <div class="ansi-color" style="background:#5ff">14 Bright Cyan</div>
+          <div class="ansi-color" style="background:#fff;color:#000">15 Bright White</div>
+        </div>
+        <p class="note">Current mapping: Blue(kw), Cyan(type/fn), Yellow(str), Green(cmt), White(id), Dim(op)</p>
+      </div>
+
+      <div class="terminal-option">
+        <h3>Option B: True Color (24-bit RGB)</h3>
+        <p>Exact colors, but requires modern terminal (most support it now)</p>
+        <pre class="ansi-example">\x1b[38;2;R;G;Bm  (e.g., \x1b[38;2;251;73;52m for Gruvbox red)</pre>
+        <p class="note">Supported: iTerm2, Windows Terminal, GNOME Terminal, Alacritty, Kitty, VS Code terminal</p>
+      </div>
+    </div>
+
+    <h3>Recommended Semantic Mapping (works with any palette)</h3>
+    <table class="mapping-table">
+      <thead>
+        <tr>
+          <th>Semantic</th>
+          <th>ANSI Basic</th>
+          <th>Gruvbox RGB</th>
+          <th>John Deere RGB</th>
+          <th>Solarized RGB</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Keywords</td>
+          <td>\x1b[31m (Red) or \x1b[34m (Blue)</td>
+          <td style="color:#fb4934">#fb4934</td>
+          <td style="color:#5cb85c">#5cb85c</td>
+          <td style="color:#859900">#859900</td>
+        </tr>
+        <tr>
+          <td>Types</td>
+          <td>\x1b[33m (Yellow)</td>
+          <td style="color:#fabd2f">#fabd2f</td>
+          <td style="color:#ffde00">#ffde00</td>
+          <td style="color:#b58900">#b58900</td>
+        </tr>
+        <tr>
+          <td>Functions</td>
+          <td>\x1b[36m (Cyan) or \x1b[32m (Green)</td>
+          <td style="color:#b8bb26">#b8bb26</td>
+          <td style="color:#8fd98f">#8fd98f</td>
+          <td style="color:#268bd2">#268bd2</td>
+        </tr>
+        <tr>
+          <td>Strings</td>
+          <td>\x1b[32m (Green)</td>
+          <td style="color:#b8bb26">#b8bb26</td>
+          <td style="color:#f0c674">#f0c674</td>
+          <td style="color:#2aa198">#2aa198</td>
+        </tr>
+        <tr>
+          <td>Numbers</td>
+          <td>\x1b[35m (Magenta)</td>
+          <td style="color:#d3869b">#d3869b</td>
+          <td style="color:#de935f">#de935f</td>
+          <td style="color:#d33682">#d33682</td>
+        </tr>
+        <tr>
+          <td>Comments</td>
+          <td>\x1b[2m (Dim) or \x1b[90m (Gray)</td>
+          <td style="color:#928374">#928374</td>
+          <td style="color:#6a8f6a">#6a8f6a</td>
+          <td style="color:#586e75">#586e75</td>
+        </tr>
+        <tr>
+          <td>Identifiers</td>
+          <td>\x1b[0m (Default/Reset)</td>
+          <td style="color:#ebdbb2">#ebdbb2</td>
+          <td style="color:#c8e6c8">#c8e6c8</td>
+          <td style="color:#839496">#839496</td>
+        </tr>
+        <tr>
+          <td>Operators</td>
+          <td>\x1b[2m (Dim)</td>
+          <td style="color:#a89984">#a89984</td>
+          <td style="color:#7fa87f">#7fa87f</td>
+          <td style="color:#657b83">#657b83</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <style>
+    .terminal-section {
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid #333;
+    }
+
+    .terminal-section h2 {
+      margin-bottom: 0.5rem;
+    }
+
+    .terminal-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin: 1.5rem 0;
+    }
+
+    .terminal-option {
+      background: #252525;
+      padding: 1.25rem;
+      border-radius: 8px;
+    }
+
+    .terminal-option h3 {
+      margin-bottom: 0.5rem;
+      color: #fff;
+    }
+
+    .terminal-option p {
+      color: #999;
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+    }
+
+    .ansi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: 0.5rem;
+    }
+
+    .ansi-color {
+      padding: 0.5rem 0.25rem;
+      text-align: center;
+      font-size: 0.7rem;
+      border-radius: 4px;
+      color: #fff;
+    }
+
+    .ansi-example {
+      background: #1a1a1a;
+      padding: 0.75rem;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: #aaa;
+      margin-bottom: 1rem;
+    }
+
+    .note {
+      font-style: italic;
+      color: #777 !important;
+    }
+
+    .mapping-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      font-size: 0.875rem;
+    }
+
+    .mapping-table th,
+    .mapping-table td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #333;
+    }
+
+    .mapping-table th {
+      background: #252525;
+      color: #fff;
+    }
+
+    .mapping-table td {
+      font-family: monospace;
+    }
+
+    @media (max-width: 800px) {
+      .terminal-options {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</body>
+</html>
