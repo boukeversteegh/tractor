@@ -262,13 +262,34 @@ use xee_xpath::{Documents, DocumentHandle};
 
 /// Parse a file and return an xot document (new pipeline)
 pub fn parse_file_to_xot(path: &Path, lang_override: Option<&str>, raw_mode: bool) -> Result<XotParseResult, ParseError> {
+    parse_file_to_xot_with_options(path, lang_override, raw_mode, false)
+}
+
+/// Parse a file and return an xot document with options (new pipeline)
+pub fn parse_file_to_xot_with_options(
+    path: &Path,
+    lang_override: Option<&str>,
+    raw_mode: bool,
+    ignore_whitespace: bool,
+) -> Result<XotParseResult, ParseError> {
     let source = fs::read_to_string(path)?;
     let lang = lang_override.unwrap_or_else(|| detect_language(path.to_str().unwrap_or("")));
-    parse_string_to_xot(&source, lang, path.to_string_lossy().to_string(), raw_mode)
+    parse_string_to_xot_with_options(&source, lang, path.to_string_lossy().to_string(), raw_mode, ignore_whitespace)
 }
 
 /// Parse a source string and return an xot document (new pipeline)
 pub fn parse_string_to_xot(source: &str, lang: &str, file_path: String, raw_mode: bool) -> Result<XotParseResult, ParseError> {
+    parse_string_to_xot_with_options(source, lang, file_path, raw_mode, false)
+}
+
+/// Parse a source string and return an xot document with options (new pipeline)
+pub fn parse_string_to_xot_with_options(
+    source: &str,
+    lang: &str,
+    file_path: String,
+    raw_mode: bool,
+    ignore_whitespace: bool,
+) -> Result<XotParseResult, ParseError> {
     let language = get_tree_sitter_language(lang)?;
 
     let mut parser = tree_sitter::Parser::new();
@@ -280,7 +301,7 @@ pub fn parse_string_to_xot(source: &str, lang: &str, file_path: String, raw_mode
 
     // Build xot document (always start with raw tree)
     let mut builder = XotBuilder::new();
-    let root = builder.build_raw(tree.root_node(), source, &file_path)
+    let root = builder.build_raw_with_options(tree.root_node(), source, &file_path, ignore_whitespace)
         .map_err(|e| ParseError::Parse(e.to_string()))?;
 
     let mut xot = builder.into_xot();
@@ -325,6 +346,21 @@ pub fn parse_string_to_xee(
     file_path: String,
     raw_mode: bool,
 ) -> Result<XeeParseResult, ParseError> {
+    parse_string_to_xee_with_options(source, lang, file_path, raw_mode, false)
+}
+
+/// Parse a source string directly into Documents with options
+///
+/// This is the fast path that avoids XML serialization/parsing roundtrip.
+/// Returns an XeeParseResult that can be queried with XPathEngine::query_documents().
+/// Use `ignore_whitespace=true` to strip whitespace from text nodes during tree building.
+pub fn parse_string_to_xee_with_options(
+    source: &str,
+    lang: &str,
+    file_path: String,
+    raw_mode: bool,
+    ignore_whitespace: bool,
+) -> Result<XeeParseResult, ParseError> {
     let language = get_tree_sitter_language(lang)?;
 
     let mut parser = tree_sitter::Parser::new();
@@ -336,7 +372,7 @@ pub fn parse_string_to_xee(
 
     // Build directly into Documents using XeeBuilder
     let mut builder = XeeBuilder::new();
-    let doc_handle = builder.build(tree.root_node(), source, &file_path, lang, raw_mode)
+    let doc_handle = builder.build_with_options(tree.root_node(), source, &file_path, lang, raw_mode, ignore_whitespace)
         .map_err(|e| ParseError::Parse(e.to_string()))?;
 
     let documents = builder.into_documents();
@@ -356,9 +392,19 @@ pub fn parse_file_to_xee(
     lang_override: Option<&str>,
     raw_mode: bool,
 ) -> Result<XeeParseResult, ParseError> {
+    parse_file_to_xee_with_options(path, lang_override, raw_mode, false)
+}
+
+/// Parse a file directly into Documents with options
+pub fn parse_file_to_xee_with_options(
+    path: &Path,
+    lang_override: Option<&str>,
+    raw_mode: bool,
+    ignore_whitespace: bool,
+) -> Result<XeeParseResult, ParseError> {
     let source = fs::read_to_string(path)?;
     let lang = lang_override.unwrap_or_else(|| detect_language(path.to_str().unwrap_or("")));
-    parse_string_to_xee(&source, lang, path.to_string_lossy().to_string(), raw_mode)
+    parse_string_to_xee_with_options(&source, lang, path.to_string_lossy().to_string(), raw_mode, ignore_whitespace)
 }
 
 /// Load XML directly as a ParseResult (pass-through mode)

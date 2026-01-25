@@ -19,7 +19,7 @@ use tractor_core::{
     load_xml, load_xml_file, detect_language,
     print_timing_stats,
     // Fast query path
-    parse_file_to_xee,
+    parse_file_to_xee_with_options,
 };
 
 use cli::Args;
@@ -301,18 +301,25 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
             // Process this batch in parallel
             // Note: XPath queries are automatically cached per-thread for efficiency
             // Fast path is default - builds AST directly into xee-xpath Documents
+            // XML passthrough mode uses the standard path (XML is queried directly, not parsed)
             let use_fast_path = lang_override.as_deref() != Some("xml");
 
             let mut batch_matches: Vec<Match> = if use_fast_path {
-                // Fast path: build AST directly into xee-xpath Documents (50% faster)
-                batch
+                // Partition files: XML files use standard path, others use fast path
+                let (xml_files, non_xml_files): (Vec<_>, Vec<_>) = batch
+                    .iter()
+                    .partition(|f| is_xml_file(f));
+
+                // Process non-XML files with fast path
+                let mut fast_matches: Vec<Match> = non_xml_files
                     .par_iter()
                     .filter_map(|file_path| {
                         // Parse directly into Documents (no XML serialization)
-                        let mut result = match parse_file_to_xee(
+                        let mut result = match parse_file_to_xee_with_options(
                             std::path::Path::new(file_path),
                             lang_override.as_deref(),
                             raw,
+                            args.ignore_whitespace,
                         ) {
                             Ok(r) => r,
                             Err(e) => {
@@ -324,7 +331,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                         };
 
                         // Query directly on Documents (no XML parsing)
-                        let engine = XPathEngine::new().with_verbose(verbose);
+                        let engine = XPathEngine::new().with_verbose(verbose).with_ignore_whitespace(args.ignore_whitespace);
                         match engine.query_documents(
                             &mut result.documents,
                             result.doc_handle,
@@ -332,7 +339,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                             &result.source_lines,
                             &result.file_path,
                         ) {
-                            Ok(matches) => Some((file_path.clone(), matches)),
+                            Ok(matches) => Some(matches),
                             Err(e) => {
                                 if verbose {
                                     eprintln!("warning: {}: query error: {}", file_path, e);
@@ -341,8 +348,41 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                             }
                         }
                     })
-                    .flat_map(|(_, matches)| matches)
-                    .collect()
+                    .flatten()
+                    .collect();
+
+                // Process XML files with standard path (passthrough mode)
+                let xml_matches: Vec<Match> = xml_files
+                    .par_iter()
+                    .filter_map(|file_path| {
+                        let result = match load_file(std::path::Path::new(file_path), lang_override.as_deref(), raw) {
+                            Ok(r) => r,
+                            Err(e) => {
+                                if verbose {
+                                    eprintln!("warning: {}: {}", file_path, e);
+                                }
+                                return None;
+                            }
+                        };
+
+                        let xml = generate_xml_document(&[result.clone()], false);
+                        let engine = XPathEngine::new().with_verbose(verbose).with_ignore_whitespace(args.ignore_whitespace);
+                        match engine.query(&xml, xpath_expr, &result.source_lines, &result.file_path) {
+                            Ok(matches) => Some(matches),
+                            Err(e) => {
+                                if verbose {
+                                    eprintln!("warning: {}: query error: {}", file_path, e);
+                                }
+                                None
+                            }
+                        }
+                    })
+                    .flatten()
+                    .collect();
+
+                // Combine results
+                fast_matches.extend(xml_matches);
+                fast_matches
             } else {
                 // Standard path: parse to XML, then query
                 batch

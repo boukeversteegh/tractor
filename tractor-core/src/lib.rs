@@ -32,8 +32,10 @@ pub use parser::{
     ParseResult, SUPPORTED_LANGUAGES,
     // New xot-based pipeline
     parse_file_to_xot, parse_string_to_xot, XotParseResult,
+    parse_file_to_xot_with_options, parse_string_to_xot_with_options,
     // Fast query path (builds directly into Documents)
     parse_file_to_xee, parse_string_to_xee, XeeParseResult,
+    parse_file_to_xee_with_options, parse_string_to_xee_with_options,
     // XML pass-through for testing
     load_xml, load_xml_file,
 };

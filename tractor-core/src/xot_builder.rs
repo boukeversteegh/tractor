@@ -6,6 +6,8 @@
 //! There are two builders:
 //! - XotBuilder: Builds into a standalone xot::Xot instance
 //! - XeeBuilder: Builds into xee-xpath's Documents for direct XPath querying
+//!
+//! Both use `TreeBuilder` internally for shared tree-building logic.
 
 #[cfg(feature = "native")]
 use tree_sitter::Node as TsNode;
@@ -15,19 +17,38 @@ use std::collections::HashMap;
 #[cfg(feature = "wasm")]
 use crate::wasm_ast::SerializedNode;
 
-/// Builder for creating xot documents from TreeSitter AST
-pub struct XotBuilder {
-    xot: Xot,
-    /// Cache of name strings to NameIds
-    name_cache: HashMap<String, NameId>,
+/// Normalize CRLF line endings to LF
+/// This ensures consistent text content regardless of source file line endings
+#[inline]
+fn normalize_crlf(text: &str) -> std::borrow::Cow<'_, str> {
+    if text.contains("\r\n") {
+        std::borrow::Cow::Owned(text.replace("\r\n", "\n"))
+    } else {
+        std::borrow::Cow::Borrowed(text)
+    }
 }
 
-impl XotBuilder {
-    /// Create a new XotBuilder
-    pub fn new() -> Self {
-        XotBuilder {
-            xot: Xot::new(),
-            name_cache: HashMap::new(),
+// ============================================================================
+// TreeBuilder: Shared tree-building logic
+// ============================================================================
+
+/// Helper struct for building xot trees from TreeSitter AST
+///
+/// This extracts the shared logic between XotBuilder and XeeBuilder,
+/// avoiding code duplication while supporting the `ignore_whitespace` flag.
+struct TreeBuilder<'a> {
+    xot: &'a mut Xot,
+    name_cache: &'a mut HashMap<String, NameId>,
+    ignore_whitespace: bool,
+}
+
+impl<'a> TreeBuilder<'a> {
+    /// Create a new TreeBuilder
+    fn new(xot: &'a mut Xot, name_cache: &'a mut HashMap<String, NameId>, ignore_whitespace: bool) -> Self {
+        TreeBuilder {
+            xot,
+            name_cache,
+            ignore_whitespace,
         }
     }
 
@@ -42,33 +63,35 @@ impl XotBuilder {
         }
     }
 
-    /// Build an xot document from TreeSitter AST (raw mode)
-    #[cfg(feature = "native")]
-    pub fn build_raw(
-        &mut self,
-        ts_node: TsNode,
-        source: &str,
-        file_path: &str,
-    ) -> Result<XotNode, xot::Error> {
-        // Create Files root element
-        let files_name = self.get_name("Files");
-        let files_el = self.xot.new_element(files_name);
+    /// Create a text node, applying whitespace stripping if enabled
+    /// Returns None if the text is empty after processing
+    fn create_text(&mut self, text: &str) -> Option<XotNode> {
+        // Normalize CRLF first
+        let text = normalize_crlf(text);
 
-        // Create File element with path attribute
-        let file_name = self.get_name("File");
-        let file_el = self.xot.new_element(file_name);
+        // Apply whitespace stripping if enabled
+        let text = if self.ignore_whitespace {
+            text.split_whitespace().collect::<Vec<_>>().join("")
+        } else {
+            text.to_string()
+        };
 
-        let path_attr = self.get_name("path");
-        self.xot.attributes_mut(file_el).insert(path_attr, file_path.to_string());
+        // Skip empty text nodes
+        if text.is_empty() {
+            return None;
+        }
 
-        // Build the tree from TreeSitter
-        self.build_raw_node(ts_node, source, file_el, None)?;
+        Some(self.xot.new_text(&text))
+    }
 
-        // Assemble document
-        self.xot.append(files_el, file_el)?;
-        let doc = self.xot.new_document_with_element(files_el)?;
-
-        Ok(doc)
+    /// Create a normalized whitespace/gap text node
+    /// Returns None if ignore_whitespace is enabled
+    fn create_gap_text(&mut self) -> Option<XotNode> {
+        if self.ignore_whitespace {
+            None
+        } else {
+            Some(self.xot.new_text(" "))
+        }
     }
 
     /// Fields that should be wrapped in semantic elements
@@ -91,9 +114,9 @@ impl XotBuilder {
         Self::WRAPPED_FIELDS.contains(&field)
     }
 
-    /// Recursively build xot nodes from TreeSitter node (raw mode)
+    /// Recursively build xot nodes from TreeSitter node
     #[cfg(feature = "native")]
-    fn build_raw_node(
+    fn build_node(
         &mut self,
         ts_node: TsNode,
         source: &str,
@@ -135,8 +158,9 @@ impl XotBuilder {
         if named_child_count == 0 {
             // Leaf node - add text content
             if let Ok(text) = ts_node.utf8_text(source.as_bytes()) {
-                let text_node = self.xot.new_text(text);
-                self.xot.append(element, text_node)?;
+                if let Some(text_node) = self.create_text(text) {
+                    self.xot.append(element, text_node)?;
+                }
             }
         } else {
             // Non-leaf: iterate ALL children (named and anonymous) to preserve order
@@ -154,21 +178,22 @@ impl XotBuilder {
                 if child_start > last_end_byte {
                     let gap = &source[last_end_byte..child_start];
                     if !gap.is_empty() && gap.chars().any(|c| c.is_whitespace()) {
-                        // Normalize the gap to a single space if it contains any whitespace
-                        let text_node = self.xot.new_text(" ");
-                        self.xot.append(element, text_node)?;
+                        if let Some(text_node) = self.create_gap_text() {
+                            self.xot.append(element, text_node)?;
+                        }
                     }
                 }
 
                 if child.is_named() {
                     let child_field = cursor.field_name();
-                    self.build_raw_node(child, source, element, child_field)?;
+                    self.build_node(child, source, element, child_field)?;
                 } else {
                     // Anonymous node - add as text child (operators, keywords, punctuation)
                     if let Ok(text) = child.utf8_text(source.as_bytes()) {
-                        let trimmed = text.trim();
+                        let trimmed = normalize_crlf(text.trim());
                         if !trimmed.is_empty() {
-                            let text_node = self.xot.new_text(trimmed);
+                            // Anonymous tokens don't get whitespace stripping - they're operators/keywords
+                            let text_node = self.xot.new_text(&trimmed);
                             self.xot.append(element, text_node)?;
                         }
                     }
@@ -214,42 +239,9 @@ impl XotBuilder {
         Ok(())
     }
 
-    // =========================================================================
-    // WASM support - build from serialized AST
-    // =========================================================================
-
-    /// Build an xot document from a serialized AST (for WASM)
+    /// Recursively build xot nodes from serialized AST node (WASM)
     #[cfg(feature = "wasm")]
-    pub fn build_raw_from_serialized(
-        &mut self,
-        node: &SerializedNode,
-        source: &str,
-        file_path: &str,
-    ) -> Result<XotNode, xot::Error> {
-        // Create Files root element
-        let files_name = self.get_name("Files");
-        let files_el = self.xot.new_element(files_name);
-
-        // Create File element with path attribute
-        let file_name = self.get_name("File");
-        let file_el = self.xot.new_element(file_name);
-
-        let path_attr = self.get_name("path");
-        self.xot.attributes_mut(file_el).insert(path_attr, file_path.to_string());
-
-        // Build the tree from serialized AST
-        self.build_raw_serialized_node(node, source, file_el, None)?;
-
-        // Assemble document
-        self.xot.append(files_el, file_el)?;
-        let doc = self.xot.new_document_with_element(files_el)?;
-
-        Ok(doc)
-    }
-
-    /// Recursively build xot nodes from serialized AST node
-    #[cfg(feature = "wasm")]
-    fn build_raw_serialized_node(
+    fn build_serialized_node(
         &mut self,
         node: &SerializedNode,
         source: &str,
@@ -288,8 +280,9 @@ impl XotBuilder {
         if named_child_count == 0 {
             // Leaf node - add text content
             let text = node.text(source);
-            let text_node = self.xot.new_text(text);
-            self.xot.append(element, text_node)?;
+            if let Some(text_node) = self.create_text(text) {
+                self.xot.append(element, text_node)?;
+            }
         } else {
             // Non-leaf: iterate ALL children to preserve order
             let mut last_end_byte = node.start_byte;
@@ -301,19 +294,20 @@ impl XotBuilder {
                 if child_start > last_end_byte {
                     let gap = &source[last_end_byte..child_start];
                     if !gap.is_empty() && gap.chars().any(|c| c.is_whitespace()) {
-                        let text_node = self.xot.new_text(" ");
-                        self.xot.append(element, text_node)?;
+                        if let Some(text_node) = self.create_gap_text() {
+                            self.xot.append(element, text_node)?;
+                        }
                     }
                 }
 
                 if child.is_named {
-                    self.build_raw_serialized_node(child, source, element, child.field_name.as_deref())?;
+                    self.build_serialized_node(child, source, element, child.field_name.as_deref())?;
                 } else {
                     // Anonymous node - add as text child (operators, keywords, punctuation)
                     let text = child.text(source);
-                    let trimmed = text.trim();
+                    let trimmed = normalize_crlf(text.trim());
                     if !trimmed.is_empty() {
-                        let text_node = self.xot.new_text(trimmed);
+                        let text_node = self.xot.new_text(&trimmed);
                         self.xot.append(element, text_node)?;
                     }
                 }
@@ -352,6 +346,130 @@ impl XotBuilder {
         }
 
         Ok(())
+    }
+}
+
+// ============================================================================
+// XotBuilder: Build into standalone xot::Xot instance
+// ============================================================================
+
+/// Builder for creating xot documents from TreeSitter AST
+pub struct XotBuilder {
+    xot: Xot,
+    /// Cache of name strings to NameIds
+    name_cache: HashMap<String, NameId>,
+}
+
+impl XotBuilder {
+    /// Create a new XotBuilder
+    pub fn new() -> Self {
+        XotBuilder {
+            xot: Xot::new(),
+            name_cache: HashMap::new(),
+        }
+    }
+
+    /// Get or create a NameId for the given name
+    fn get_name(&mut self, name: &str) -> NameId {
+        if let Some(&id) = self.name_cache.get(name) {
+            id
+        } else {
+            let id = self.xot.add_name(name);
+            self.name_cache.insert(name.to_string(), id);
+            id
+        }
+    }
+
+    /// Build an xot document from TreeSitter AST (raw mode)
+    #[cfg(feature = "native")]
+    pub fn build_raw(
+        &mut self,
+        ts_node: TsNode,
+        source: &str,
+        file_path: &str,
+    ) -> Result<XotNode, xot::Error> {
+        self.build_raw_with_options(ts_node, source, file_path, false)
+    }
+
+    /// Build an xot document from TreeSitter AST with options
+    #[cfg(feature = "native")]
+    pub fn build_raw_with_options(
+        &mut self,
+        ts_node: TsNode,
+        source: &str,
+        file_path: &str,
+        ignore_whitespace: bool,
+    ) -> Result<XotNode, xot::Error> {
+        // Create Files root element
+        let files_name = self.get_name("Files");
+        let files_el = self.xot.new_element(files_name);
+
+        // Create File element with path attribute
+        let file_name = self.get_name("File");
+        let file_el = self.xot.new_element(file_name);
+
+        let path_attr = self.get_name("path");
+        self.xot.attributes_mut(file_el).insert(path_attr, file_path.to_string());
+
+        // Build the tree from TreeSitter using TreeBuilder
+        {
+            let mut builder = TreeBuilder::new(&mut self.xot, &mut self.name_cache, ignore_whitespace);
+            builder.build_node(ts_node, source, file_el, None)?;
+        }
+
+        // Assemble document
+        self.xot.append(files_el, file_el)?;
+        let doc = self.xot.new_document_with_element(files_el)?;
+
+        Ok(doc)
+    }
+
+    // =========================================================================
+    // WASM support - build from serialized AST
+    // =========================================================================
+
+    /// Build an xot document from a serialized AST (for WASM)
+    #[cfg(feature = "wasm")]
+    pub fn build_raw_from_serialized(
+        &mut self,
+        node: &SerializedNode,
+        source: &str,
+        file_path: &str,
+    ) -> Result<XotNode, xot::Error> {
+        self.build_raw_from_serialized_with_options(node, source, file_path, false)
+    }
+
+    /// Build an xot document from a serialized AST with options (for WASM)
+    #[cfg(feature = "wasm")]
+    pub fn build_raw_from_serialized_with_options(
+        &mut self,
+        node: &SerializedNode,
+        source: &str,
+        file_path: &str,
+        ignore_whitespace: bool,
+    ) -> Result<XotNode, xot::Error> {
+        // Create Files root element
+        let files_name = self.get_name("Files");
+        let files_el = self.xot.new_element(files_name);
+
+        // Create File element with path attribute
+        let file_name = self.get_name("File");
+        let file_el = self.xot.new_element(file_name);
+
+        let path_attr = self.get_name("path");
+        self.xot.attributes_mut(file_el).insert(path_attr, file_path.to_string());
+
+        // Build the tree from serialized AST using TreeBuilder
+        {
+            let mut builder = TreeBuilder::new(&mut self.xot, &mut self.name_cache, ignore_whitespace);
+            builder.build_serialized_node(node, source, file_el, None)?;
+        }
+
+        // Assemble document
+        self.xot.append(files_el, file_el)?;
+        let doc = self.xot.new_document_with_element(files_el)?;
+
+        Ok(doc)
     }
 
     /// Consume the builder and return the xot instance
@@ -406,18 +524,6 @@ impl XeeBuilder {
         }
     }
 
-    /// Get or create a NameId for the given name in the Documents' Xot
-    fn get_name(&mut self, name: &str) -> NameId {
-        if let Some(&id) = self.name_cache.get(name) {
-            id
-        } else {
-            let xot = self.documents.xot_mut();
-            let id = xot.add_name(name);
-            self.name_cache.insert(name.to_string(), id);
-            id
-        }
-    }
-
     /// Build a document from TreeSitter AST directly into Documents
     ///
     /// This is the fast path that avoids XML serialization/parsing.
@@ -431,8 +537,26 @@ impl XeeBuilder {
         lang: &str,
         raw_mode: bool,
     ) -> Result<DocumentHandle, xot::Error> {
+        self.build_with_options(ts_node, source, file_path, lang, raw_mode, false)
+    }
+
+    /// Build a document from TreeSitter AST with options
+    ///
+    /// This is the fast path that avoids XML serialization/parsing.
+    /// Use `raw_mode=true` to skip semantic transforms (faster but less normalized).
+    /// Use `ignore_whitespace=true` to strip whitespace from text nodes.
+    #[cfg(feature = "native")]
+    pub fn build_with_options(
+        &mut self,
+        ts_node: TsNode,
+        source: &str,
+        file_path: &str,
+        lang: &str,
+        raw_mode: bool,
+        ignore_whitespace: bool,
+    ) -> Result<DocumentHandle, xot::Error> {
         // Build the raw tree
-        let doc_handle = self.build_raw(ts_node, source, file_path)?;
+        let doc_handle = self.build_raw_with_options(ts_node, source, file_path, ignore_whitespace)?;
 
         // Apply semantic transforms if not in raw mode
         if !raw_mode {
@@ -455,6 +579,18 @@ impl XeeBuilder {
         ts_node: TsNode,
         source: &str,
         file_path: &str,
+    ) -> Result<DocumentHandle, xot::Error> {
+        self.build_raw_with_options(ts_node, source, file_path, false)
+    }
+
+    /// Build a document from TreeSitter AST with options (raw mode only)
+    #[cfg(feature = "native")]
+    pub fn build_raw_with_options(
+        &mut self,
+        ts_node: TsNode,
+        source: &str,
+        file_path: &str,
+        ignore_whitespace: bool,
     ) -> Result<DocumentHandle, xot::Error> {
         // Create a shell document with Files root
         let doc_handle = self.documents.add_string(
@@ -484,138 +620,18 @@ impl XeeBuilder {
         };
         xot.attributes_mut(file_el).insert(path_attr, file_path.to_string());
 
-        // Build the tree from TreeSitter
-        self.build_raw_node_into_documents(ts_node, source, file_el, None)?;
+        // Build the tree from TreeSitter using TreeBuilder
+        {
+            let xot = self.documents.xot_mut();
+            let mut builder = TreeBuilder::new(xot, &mut self.name_cache, ignore_whitespace);
+            builder.build_node(ts_node, source, file_el, None)?;
+        }
 
         // Append File to root
         let xot = self.documents.xot_mut();
         xot.append(root, file_el)?;
 
         Ok(doc_handle)
-    }
-
-    /// Recursively build xot nodes from TreeSitter node into Documents
-    #[cfg(feature = "native")]
-    fn build_raw_node_into_documents(
-        &mut self,
-        ts_node: TsNode,
-        source: &str,
-        parent: XotNode,
-        field_name: Option<&str>,
-    ) -> Result<(), xot::Error> {
-        // Skip anonymous nodes (punctuation, etc.)
-        if !ts_node.is_named() {
-            return Ok(());
-        }
-
-        let kind = ts_node.kind();
-        let elem_name = self.get_name(kind);
-        let xot = self.documents.xot_mut();
-        let element = xot.new_element(elem_name);
-
-        // Add kind attribute (original TreeSitter kind) for robust transform detection
-        let kind_attr = self.get_name("kind");
-        self.documents.xot_mut().attributes_mut(element).insert(kind_attr, kind.to_string());
-
-        // Add location attributes
-        let start = ts_node.start_position();
-        let end = ts_node.end_position();
-
-        let start_attr = self.get_name("start");
-        let end_attr = self.get_name("end");
-
-        self.documents.xot_mut().attributes_mut(element).insert(
-            start_attr,
-            format!("{}:{}", start.row + 1, start.column + 1),
-        );
-        self.documents.xot_mut().attributes_mut(element).insert(
-            end_attr,
-            format!("{}:{}", end.row + 1, end.column + 1),
-        );
-
-        // Check if leaf node (no named children)
-        let named_child_count = ts_node.named_child_count();
-
-        if named_child_count == 0 {
-            // Leaf node - add text content
-            if let Ok(text) = ts_node.utf8_text(source.as_bytes()) {
-                let text_node = self.documents.xot_mut().new_text(text);
-                self.documents.xot_mut().append(element, text_node)?;
-            }
-        } else {
-            // Non-leaf: iterate ALL children (named and anonymous) to preserve order
-            let mut cursor = ts_node.walk();
-            cursor.goto_first_child();
-            let mut last_end_byte = ts_node.start_byte();
-
-            loop {
-                let child = cursor.node();
-                let child_start = child.start_byte();
-
-                // Add any whitespace/content between the last node and this one
-                if child_start > last_end_byte {
-                    let gap = &source[last_end_byte..child_start];
-                    if !gap.is_empty() && gap.chars().any(|c| c.is_whitespace()) {
-                        let text_node = self.documents.xot_mut().new_text(" ");
-                        self.documents.xot_mut().append(element, text_node)?;
-                    }
-                }
-
-                if child.is_named() {
-                    let child_field = cursor.field_name();
-                    self.build_raw_node_into_documents(child, source, element, child_field)?;
-                } else {
-                    // Anonymous node - add as text child (operators, keywords, punctuation)
-                    if let Ok(text) = child.utf8_text(source.as_bytes()) {
-                        let trimmed = text.trim();
-                        if !trimmed.is_empty() {
-                            let text_node = self.documents.xot_mut().new_text(trimmed);
-                            self.documents.xot_mut().append(element, text_node)?;
-                        }
-                    }
-                }
-
-                last_end_byte = child.end_byte();
-
-                if !cursor.goto_next_sibling() {
-                    break;
-                }
-            }
-        }
-
-        // Wrap in field element if needed, or just append directly
-        if let Some(field) = field_name {
-            if XotBuilder::should_wrap_field(field) {
-                // Create wrapper element with field name
-                let wrapper_name = self.get_name(field);
-                let xot = self.documents.xot_mut();
-                let wrapper = xot.new_element(wrapper_name);
-
-                // Copy location attributes from child to wrapper
-                let start_attr = self.get_name("start");
-                let end_attr = self.get_name("end");
-                let xot = self.documents.xot_mut();
-                if let Some(start_val) = xot.attributes(element).get(start_attr).cloned() {
-                    xot.attributes_mut(wrapper).insert(start_attr, start_val);
-                }
-                if let Some(end_val) = xot.attributes(element).get(end_attr).cloned() {
-                    xot.attributes_mut(wrapper).insert(end_attr, end_val);
-                }
-
-                xot.append(wrapper, element)?;
-                xot.append(parent, wrapper)?;
-            } else {
-                // Add field as attribute instead
-                let field_attr = self.get_name("field");
-                let xot = self.documents.xot_mut();
-                xot.attributes_mut(element).insert(field_attr, field.to_string());
-                xot.append(parent, element)?;
-            }
-        } else {
-            self.documents.xot_mut().append(parent, element)?;
-        }
-
-        Ok(())
     }
 
     /// Consume the builder and return the Documents instance
