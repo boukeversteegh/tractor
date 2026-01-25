@@ -112,10 +112,12 @@ tasks:
       - cargo run --release -p tractor -- {{.CLI_ARGS}}
 
   test:
-    desc: Run tests
+    desc: Run all tests (Rust, TypeScript, integration)
     cmds:
-      - cargo test
+      - cargo test --workspace
       - task: web:test
+      - task: test:snapshots
+      - task: test:integration
 
   test:integration:
     desc: Run integration tests
