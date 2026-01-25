@@ -1,26 +1,75 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { MiniPlayground } from '../components/MiniPlayground';
+
+type Platform = 'unix' | 'windows';
 
 export function Homepage() {
+  const [platform, setPlatform] = useState<Platform>('unix');
+
   return (
     <div className="homepage">
       <header className="hero">
-        <div className="logo">&#x1F69C;</div>
-        <h1>Tractor</h1>
-        <p className="tagline"><code>grep</code> for code structure, not text</p>
+        <h1><span className="logo">&#x1F69C;&#x1F4A8;</span> Tractor</h1>
+        <p className="tagline">Extract patterns from your code</p>
+        <ul className="use-cases">
+          <li>Find code patterns</li>
+          <li>Build custom linters</li>
+          <li>Enforce conventions</li>
+        </ul>
+      </header>
 
-        <div className="install-cmd">
-          cargo install tractor
-        </div>
-
-        <div className="hero-actions">
+      <section className="demo-section">
+        <MiniPlayground />
+        <div className="demo-actions">
           <Link to="/playground" className="btn btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
             Try the Playground
           </Link>
           <a href="https://github.com/boukeversteegh/tractor" className="btn btn-secondary">
             GitHub
           </a>
         </div>
-      </header>
+      </section>
+
+      <section className="install-section-wrapper">
+        <div className="install-section">
+          <div className="install-header">
+            <span>Setup</span>
+            <div className="platform-switch">
+              <button
+                className={`platform-btn ${platform === 'unix' ? 'active' : ''}`}
+                onClick={() => setPlatform('unix')}
+              >
+                Linux / macOS
+              </button>
+              <button
+                className={`platform-btn ${platform === 'windows' ? 'active' : ''}`}
+                onClick={() => setPlatform('windows')}
+              >
+                Windows
+              </button>
+            </div>
+          </div>
+
+          <div className="install-steps">
+            <div className="install-step">
+              <span className="step-label">1. Install Rust</span>
+              {platform === 'unix' ? (
+                <pre className="install-cmd"><code>curl -fsSL https://sh.rustup.rs | sh</code></pre>
+              ) : (
+                <pre className="install-cmd"><code>winget install Rustlang.Rustup</code></pre>
+              )}
+            </div>
+            <div className="install-step">
+              <span className="step-label">2. Install Tractor</span>
+              <pre className="install-cmd"><code>cargo install --git https://github.com/boukeversteegh/tractor tractor</code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section className="features">
         <div className="feature-grid">
@@ -41,11 +90,6 @@ export function Homepage() {
             <p>Ban patterns, require conventions, ensure coverage. Fail builds on violations.</p>
           </div>
         </div>
-      </section>
-
-      <section className="quick-example">
-        <h2>Quick Example</h2>
-        <pre><code><span className="comment"># Find async void methods (a common bug pattern)</span>{'\n'}tractor src/**/*.cs -x <span className="string">"method[async][type='void']"</span></code></pre>
       </section>
 
       <footer className="homepage-footer">
