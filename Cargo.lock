@@ -1981,6 +1981,7 @@ dependencies = [
  "console_error_panic_hook",
  "getrandom 0.3.4",
  "glob",
+ "once_cell",
  "quick-xml",
  "rayon",
  "regex",
