@@ -45,113 +45,11 @@ static LEGACY_RE: Lazy<Regex> = Lazy::new(|| {
 static STRIP_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r#"\s*(start|end|startLine|startCol|endLine|endCol)="[^"]*""#).unwrap()
 });
-static WHITESPACE_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r">([^<]+)<").unwrap());
 
 // Thread-local cache for compiled XPath queries
 // Each thread gets its own compiled query to avoid RefCell conflicts
 thread_local! {
     static QUERY_CACHE: RefCell<Option<(String, SequenceQuery)>> = const { RefCell::new(None) };
-}
-
-/// Execute a cached query - compiles once per thread, reuses thereafter
-fn execute_cached_query(
-    xpath: &str,
-    xml: &str,
-    source_lines: &[String],
-    file_path: &str,
-    ignore_whitespace: bool,
-) -> Result<Vec<Match>, XPathError> {
-    // Optionally strip whitespace for whitespace-insensitive matching
-    let xml_to_query = if ignore_whitespace {
-        strip_xml_whitespace(xml)
-    } else {
-        xml.to_string()
-    };
-
-    QUERY_CACHE.with(|cache| {
-        let mut cache = cache.borrow_mut();
-
-        // Check if we have a cached query for this XPath
-        let query = if let Some((cached_xpath, cached_query)) = cache.as_ref() {
-            if cached_xpath == xpath {
-                cached_query
-            } else {
-                // Different XPath, need to recompile
-                let queries = Queries::default();
-                let new_query = queries
-                    .sequence(xpath)
-                    .map_err(|e| XPathError::Compile(e.to_string()))?;
-                *cache = Some((xpath.to_string(), new_query));
-                &cache.as_ref().unwrap().1
-            }
-        } else {
-            // No cached query, compile it
-            let queries = Queries::default();
-            let new_query = queries
-                .sequence(xpath)
-                .map_err(|e| XPathError::Compile(e.to_string()))?;
-            *cache = Some((xpath.to_string(), new_query));
-            &cache.as_ref().unwrap().1
-        };
-
-        // Load XML into xee-xpath
-        let t0 = Instant::now();
-        let mut documents = Documents::new();
-        let doc = documents
-            .add_string(
-                "file:///query".try_into().unwrap(),
-                &xml_to_query,
-            )
-            .map_err(|e| XPathError::XmlParse(e.to_string()))?;
-        let t1 = Instant::now();
-
-        // Execute the query
-        let results = query
-            .execute(&mut documents, doc)
-            .map_err(|e: xee_xpath::error::Error| XPathError::Execute(e.to_string()))?;
-        let t2 = Instant::now();
-
-        // Convert results to Match objects
-        let mut matches = Vec::new();
-
-        for item in results.iter() {
-            match item {
-                xee_xpath::Item::Node(node) => {
-                    let xot = documents.xot();
-                    let xml_fragment = xot.to_string(node).unwrap_or_default();
-                    let (line, col, end_line, end_col) = extract_location(&xml_fragment);
-                    let value = xot.string_value(node);
-                    let actual_file = extract_file_path_from_xml(&xml_fragment, file_path);
-
-                    let m = Match::with_location(
-                        actual_file,
-                        line,
-                        col,
-                        end_line,
-                        end_col,
-                        value,
-                        source_lines.to_vec(),
-                    ).with_xml_fragment(xml_fragment);
-
-                    matches.push(m);
-                }
-                xee_xpath::Item::Atomic(atomic) => {
-                    let value = atomic.to_string().unwrap_or_default();
-                    matches.push(Match::new(file_path.to_string(), value));
-                }
-                xee_xpath::Item::Function(_) => {}
-            }
-        }
-        let t3 = Instant::now();
-
-        // Record timing stats
-        TIMING_XML_LOAD.fetch_add((t1 - t0).as_micros() as u64, Ordering::Relaxed);
-        TIMING_QUERY_EXEC.fetch_add((t2 - t1).as_micros() as u64, Ordering::Relaxed);
-        TIMING_RESULT_PROC.fetch_add((t3 - t2).as_micros() as u64, Ordering::Relaxed);
-        TIMING_COUNT.fetch_add(1, Ordering::Relaxed);
-
-        Ok(matches)
-    })
 }
 
 /// Execute a query directly on Documents (no XML parsing needed)
@@ -268,21 +166,7 @@ impl XPathEngine {
         self
     }
 
-    /// Execute an XPath query against XML and return matches
-    ///
-    /// The query is automatically cached per-thread, so repeated calls with
-    /// the same XPath expression are efficient even across many files.
-    pub fn query(
-        &self,
-        xml: &str,
-        xpath: &str,
-        source_lines: &[String],
-        file_path: &str,
-    ) -> Result<Vec<Match>, XPathError> {
-        execute_cached_query(xpath, xml, source_lines, file_path, self.ignore_whitespace)
-    }
-
-    /// Execute an XPath query directly on Documents (fast path)
+    /// Execute an XPath query on Documents
     ///
     /// This method avoids the XML serialization/parsing roundtrip by querying
     /// directly on the Documents instance. Use this when you've built the AST
@@ -310,15 +194,6 @@ impl Default for XPathEngine {
     fn default() -> Self {
         Self::new()
     }
-}
-
-/// Strip whitespace from text content in XML (content between > and <)
-fn strip_xml_whitespace(xml: &str) -> String {
-    WHITESPACE_RE.replace_all(xml, |caps: &regex::Captures| {
-        let text = &caps[1];
-        let stripped: String = text.chars().filter(|c| !c.is_whitespace()).collect();
-        format!(">{}<", stripped)
-    }).to_string()
 }
 
 /// Extract location from XML fragment attributes
@@ -382,6 +257,8 @@ mod tests {
 
     #[test]
     fn test_query_semantic_xml() {
+        use crate::parser::load_xml_string_to_documents;
+
         let xml = r#"<Files>
   <File path="test.ts">
     <program start="1:1" end="2:1">
@@ -396,16 +273,26 @@ mod tests {
   </File>
 </Files>"#;
 
+        let mut result = load_xml_string_to_documents(xml, "test.ts".to_string()).unwrap();
         let engine = XPathEngine::new();
-        let matches = engine.query(xml, "//variable", &[], "test.ts").unwrap();
+
+        let matches = engine.query_documents(
+            &mut result.documents, result.doc_handle,
+            "//variable", &[], "test.ts"
+        ).unwrap();
         assert_eq!(matches.len(), 1, "Should find one variable element");
 
-        let matches = engine.query(xml, "//name", &[], "test.ts").unwrap();
+        let matches = engine.query_documents(
+            &mut result.documents, result.doc_handle,
+            "//name", &[], "test.ts"
+        ).unwrap();
         assert_eq!(matches.len(), 1, "Should find one name element");
     }
 
     #[test]
     fn test_query_caching() {
+        use crate::parser::load_xml_string_to_documents;
+
         // Test that querying the same XPath multiple times works
         // (queries are cached per-thread automatically)
         let xml1 = r#"<root><item>a</item></root>"#;
@@ -413,17 +300,27 @@ mod tests {
 
         let engine = XPathEngine::new();
 
-        let matches1 = engine.query(xml1, "//item", &[], "test1.xml").unwrap();
+        let mut result1 = load_xml_string_to_documents(xml1, "test1.xml".to_string()).unwrap();
+        let matches1 = engine.query_documents(
+            &mut result1.documents, result1.doc_handle,
+            "//item", &[], "test1.xml"
+        ).unwrap();
         assert_eq!(matches1.len(), 1);
 
         // Same query, different document - should use cached query
-        let matches2 = engine.query(xml2, "//item", &[], "test2.xml").unwrap();
+        let mut result2 = load_xml_string_to_documents(xml2, "test2.xml".to_string()).unwrap();
+        let matches2 = engine.query_documents(
+            &mut result2.documents, result2.doc_handle,
+            "//item", &[], "test2.xml"
+        ).unwrap();
         assert_eq!(matches2.len(), 2);
     }
 
     #[test]
     fn test_query_with_xml_prolog() {
-        // Test with the actual XML prolog that generate_xml_document creates
+        use crate::parser::load_xml_string_to_documents;
+
+        // Test with the actual XML prolog
         let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
 <Files>
   <File path="test.ts">
@@ -439,28 +336,43 @@ mod tests {
   </File>
 </Files>"#;
 
+        let mut result = load_xml_string_to_documents(xml, "test.ts".to_string()).unwrap();
         let engine = XPathEngine::new();
-        let matches = engine.query(xml, "//variable", &[], "test.ts").unwrap();
+        let matches = engine.query_documents(
+            &mut result.documents, result.doc_handle,
+            "//variable", &[], "test.ts"
+        ).unwrap();
         assert_eq!(matches.len(), 1, "Should find one variable element with XML prolog");
     }
 
     #[test]
     fn test_query_parsed_typescript() {
-        use crate::{parse_string, generate_xml_document};
+        use crate::parse_string_to_documents;
 
         let source = "let x = 1;";
-        let result = parse_string(source, "typescript", "test.ts".to_string(), false).unwrap();
-        let xml = generate_xml_document(&[result.clone()], false); // compact for XPath
+        let mut result = parse_string_to_documents(
+            source, "typescript", "test.ts".to_string(), false, false
+        ).unwrap();
 
         let engine = XPathEngine::new();
-        let matches = engine.query(&xml, "//variable", &result.source_lines, "test.ts").unwrap();
+
+        let matches = engine.query_documents(
+            &mut result.documents, result.doc_handle,
+            "//variable", &result.source_lines, "test.ts"
+        ).unwrap();
         assert_eq!(matches.len(), 1, "Should find one variable element");
 
         // Also test querying nested elements
-        let matches = engine.query(&xml, "//name", &result.source_lines, "test.ts").unwrap();
+        let matches = engine.query_documents(
+            &mut result.documents, result.doc_handle,
+            "//name", &result.source_lines, "test.ts"
+        ).unwrap();
         assert_eq!(matches.len(), 1, "Should find one name element");
 
-        let matches = engine.query(&xml, "//value/number", &result.source_lines, "test.ts").unwrap();
+        let matches = engine.query_documents(
+            &mut result.documents, result.doc_handle,
+            "//value/number", &result.source_lines, "test.ts"
+        ).unwrap();
         assert_eq!(matches.len(), 1, "Should find number inside value");
     }
 }

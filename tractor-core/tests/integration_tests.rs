@@ -3,12 +3,14 @@
 /// These tests verify:
 /// 1. XML pass-through functionality
 /// 2. Snapshot loading and querying
-/// 3. XPath querying against pre-generated XML
+/// 3. XPath querying against parsed code
 
 use std::path::PathBuf;
 use tractor_core::{
-    load_xml, load_xml_file, generate_xml_document,
-    XPathEngine, parse_file,
+    load_xml_string_to_documents, load_xml_file_to_documents,
+    parse_string_to_documents, parse_to_documents,
+    XPathEngine, XeeParseResult,
+    output::{render_node, RenderOptions},
 };
 
 fn get_test_fixtures_dir() -> PathBuf {
@@ -25,6 +27,16 @@ fn get_test_snapshots_dir() -> PathBuf {
         .join("tests/integration/snapshots")
 }
 
+/// Helper to render XeeParseResult to XML string (for comparison)
+fn render_to_xml(result: &XeeParseResult) -> String {
+    let doc_node = result.documents.document_node(result.doc_handle).unwrap();
+    let xot = result.documents.xot();
+    let render_opts = RenderOptions::new().with_pretty_print(true);
+    xot.children(doc_node)
+        .map(|child| render_node(xot, child, &render_opts))
+        .collect()
+}
+
 #[test]
 fn test_load_xml_passthrough() {
     // Test that we can load XML directly without parsing source
@@ -33,11 +45,11 @@ fn test_load_xml_passthrough() {
     fn
     <name><type>test</type></name>
   </function>
-</file>"#.to_string();
+</file>"#;
 
-    let result = load_xml(xml.clone(), "test.xml".to_string());
+    let result = load_xml_string_to_documents(xml, "test.xml".to_string())
+        .expect("Should load XML");
 
-    assert_eq!(result.xml, xml);
     assert_eq!(result.file_path, "test.xml");
     assert_eq!(result.language, "xml");
 }
@@ -48,14 +60,19 @@ fn test_query_xml_passthrough() {
     let xml = r#"<file>
   <function>fn <name><type>test</type></name></function>
   <function>fn <name><type>main</type></name></function>
-</file>"#.to_string();
+</file>"#;
 
-    let result = load_xml(xml, "test.xml".to_string());
-    let doc = generate_xml_document(&[result.clone()], false); // compact for XPath
+    let mut result = load_xml_string_to_documents(xml, "test.xml".to_string())
+        .expect("Should load XML");
 
     let engine = XPathEngine::new();
-    let matches = engine.query(&doc, "//function", &result.source_lines, &result.file_path)
-        .expect("Query should succeed");
+    let matches = engine.query_documents(
+        &mut result.documents,
+        result.doc_handle,
+        "//function",
+        &result.source_lines,
+        &result.file_path,
+    ).expect("Query should succeed");
 
     assert_eq!(matches.len(), 2, "Should find 2 functions");
 }
@@ -71,13 +88,17 @@ fn test_load_snapshot_and_query() {
         return;
     }
 
-    let result = load_xml_file(&snapshot_path)
+    let mut result = load_xml_file_to_documents(&snapshot_path)
         .expect("Should load snapshot");
 
-    // The snapshot already has Files/File wrapper, so use it directly
     let engine = XPathEngine::new();
-    let matches = engine.query(&result.xml, "//function", &result.source_lines, &result.file_path)
-        .expect("Query should succeed");
+    let matches = engine.query_documents(
+        &mut result.documents,
+        result.doc_handle,
+        "//function",
+        &result.source_lines,
+        &result.file_path,
+    ).expect("Query should succeed");
 
     assert!(matches.len() >= 2, "Should find at least 2 functions in sample.rs");
 }
@@ -96,19 +117,16 @@ fn test_snapshot_matches_current_output() {
         return;
     }
 
-    // Parse the fixture
-    let parsed = parse_file(&fixture_path, None, false)
+    // Parse the fixture using unified pipeline
+    let parsed = parse_to_documents(&fixture_path, None, false, false)
         .expect("Should parse fixture");
-    let current_xml = generate_xml_document(&[parsed], true); // pretty for snapshot comparison
+    let current_xml = render_to_xml(&parsed);
 
     // Load the snapshot
     let snapshot = std::fs::read_to_string(&snapshot_path)
         .expect("Should read snapshot");
 
-    // Normalize before comparing:
-    // 1. Remove XML declaration
-    // 2. Remove path attribute (snapshots have absolute paths)
-    // 3. Remove location attributes (start/end) as they may vary
+    // Normalize before comparing
     let normalize = |s: &str| {
         use regex::Regex;
         let mut normalized = s.to_string();
@@ -132,11 +150,9 @@ fn test_snapshot_matches_current_output() {
     let normalized_snapshot = normalize(&snapshot);
 
     if normalized_current != normalized_snapshot {
-        // Print first 500 chars of each for debugging
         eprintln!("Current (first 500 chars):\n{}", &normalized_current.chars().take(500).collect::<String>());
         eprintln!("\nSnapshot (first 500 chars):\n{}", &normalized_snapshot.chars().take(500).collect::<String>());
 
-        // Find first difference
         for (i, (c1, c2)) in normalized_current.chars().zip(normalized_snapshot.chars()).enumerate() {
             if c1 != c2 {
                 eprintln!("\nFirst difference at position {}: '{}' vs '{}'", i, c1, c2);
@@ -163,30 +179,49 @@ fn test_xpath_structure_assertions() {
         return;
     }
 
-    let parsed = parse_file(&fixture_path, None, false)
+    let mut parsed = parse_to_documents(&fixture_path, None, false, false)
         .expect("Should parse fixture");
-    let xml = generate_xml_document(&[parsed.clone()], false); // compact for XPath
 
     let engine = XPathEngine::new();
 
     // Assert: Should have 2 functions
-    let matches = engine.query(&xml, "//function", &parsed.source_lines, &parsed.file_path)
-        .expect("Query should succeed");
+    let matches = engine.query_documents(
+        &mut parsed.documents,
+        parsed.doc_handle,
+        "//function",
+        &parsed.source_lines,
+        &parsed.file_path,
+    ).expect("Query should succeed");
     assert_eq!(matches.len(), 2, "Should have 2 functions");
 
     // Assert: Should have 'add' function
-    let matches = engine.query(&xml, "//function/name[type='add']", &parsed.source_lines, &parsed.file_path)
-        .expect("Query should succeed");
+    let matches = engine.query_documents(
+        &mut parsed.documents,
+        parsed.doc_handle,
+        "//function/name[type='add']",
+        &parsed.source_lines,
+        &parsed.file_path,
+    ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should have 'add' function");
 
     // Assert: Should have 'main' function
-    let matches = engine.query(&xml, "//function/name[type='main']", &parsed.source_lines, &parsed.file_path)
-        .expect("Query should succeed");
+    let matches = engine.query_documents(
+        &mut parsed.documents,
+        parsed.doc_handle,
+        "//function/name[type='main']",
+        &parsed.source_lines,
+        &parsed.file_path,
+    ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should have 'main' function");
 
     // Assert: Should have binary operator +
-    let matches = engine.query(&xml, "//binary[@op='+']", &parsed.source_lines, &parsed.file_path)
-        .expect("Query should succeed");
+    let matches = engine.query_documents(
+        &mut parsed.documents,
+        parsed.doc_handle,
+        "//binary[@op='+']",
+        &parsed.source_lines,
+        &parsed.file_path,
+    ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should have + operator");
 }
 
@@ -216,11 +251,16 @@ fn test_multi_language_snapshots() {
             continue;
         }
 
-        let result = load_xml_file(&snapshot_path)
+        let mut result = load_xml_file_to_documents(&snapshot_path)
             .expect(&format!("Should load {}", snapshot_name));
 
-        let matches = engine.query(&result.xml, xpath, &result.source_lines, &result.file_path)
-            .expect(&format!("Query should succeed for {}", snapshot_name));
+        let matches = engine.query_documents(
+            &mut result.documents,
+            result.doc_handle,
+            xpath,
+            &result.source_lines,
+            &result.file_path,
+        ).expect(&format!("Query should succeed for {}", snapshot_name));
 
         assert_eq!(
             matches.len(), expected_count,
@@ -232,19 +272,21 @@ fn test_multi_language_snapshots() {
 
 #[test]
 fn test_xpath_string_value_preserves_whitespace() {
-    use tractor_core::parse_string;
-
     // Test that inter-token whitespace is preserved in string-value
     let source = "let mut batches = Vec::new();";
-    let result = parse_string(source, "rust", "<test>".to_string(), true)
+    let mut result = parse_string_to_documents(source, "rust", "<test>".to_string(), true, false)
         .expect("Should parse Rust");
-    let xml = generate_xml_document(&[result.clone()], false);
 
     let engine = XPathEngine::new();
 
     // Test 1: String value should include spaces between tokens
-    let matches = engine.query(&xml, "//let_declaration", &result.source_lines, &result.file_path)
-        .expect("Query should succeed");
+    let matches = engine.query_documents(
+        &mut result.documents,
+        result.doc_handle,
+        "//let_declaration",
+        &result.source_lines,
+        &result.file_path,
+    ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should find let_declaration");
 
     let value = &matches[0].value;
@@ -255,8 +297,9 @@ fn test_xpath_string_value_preserves_whitespace() {
     );
 
     // Test 2: Exact string matching should work with whitespace
-    let matches = engine.query(
-        &xml,
+    let matches = engine.query_documents(
+        &mut result.documents,
+        result.doc_handle,
         "//let_declaration[contains(.,'let mut batches')]",
         &result.source_lines,
         &result.file_path,
@@ -266,19 +309,21 @@ fn test_xpath_string_value_preserves_whitespace() {
 
 #[test]
 fn test_xpath_exact_string_match_without_formatting_whitespace() {
-    use tractor_core::parse_string;
-
     // Test that exact string matching works (no extra formatting whitespace)
     let source = "class T { List<string> x; }";
-    let result = parse_string(source, "csharp", "<test>".to_string(), false)
+    let mut result = parse_string_to_documents(source, "csharp", "<test>".to_string(), false, false)
         .expect("Should parse C#");
-    let xml = generate_xml_document(&[result.clone()], false);
 
     let engine = XPathEngine::new();
 
     // Exact match on type should work
-    let matches = engine.query(&xml, "//type[.='List<string>']", &result.source_lines, &result.file_path)
-        .expect("Query should succeed");
+    let matches = engine.query_documents(
+        &mut result.documents,
+        result.doc_handle,
+        "//type[.='List<string>']",
+        &result.source_lines,
+        &result.file_path,
+    ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should find type with exact string match");
     assert_eq!(matches[0].value, "List<string>");
 }

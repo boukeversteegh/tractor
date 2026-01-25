@@ -41,20 +41,7 @@ pub static SUPPORTED_LANGUAGES: &[(&str, &[&str])] = &[
     ("xml", &["xml"]),
 ];
 
-/// Parse result containing the AST and source information
-#[derive(Debug, Clone)]
-pub struct ParseResult {
-    /// The XML AST as a string (legacy, for compatibility)
-    pub xml: String,
-    /// Original source lines for location-based output
-    pub source_lines: Vec<String>,
-    /// File path or "<stdin>"
-    pub file_path: String,
-    /// Language used for parsing
-    pub language: String,
-}
-
-/// Parse result with xot document for the new unified pipeline
+/// Parse result with xot document
 pub struct XotParseResult {
     /// The xot document containing the AST
     pub xot: xot::Xot,
@@ -141,120 +128,8 @@ fn get_tree_sitter_language(lang: &str) -> Result<tree_sitter::Language, ParseEr
     }
 }
 
-/// Parse a file and return the XML AST
-pub fn parse_file(path: &Path, lang_override: Option<&str>, raw_mode: bool) -> Result<ParseResult, ParseError> {
-    let source = fs::read_to_string(path)?;
-    let lang = lang_override.unwrap_or_else(|| detect_language(path.to_str().unwrap_or("")));
-    parse_string(&source, lang, path.to_string_lossy().to_string(), raw_mode)
-}
-
-/// Parse a source string and return the XML AST
-///
-/// This function now uses the xot-based pipeline internally:
-/// AST → xot tree → transform → render to string
-pub fn parse_string(source: &str, lang: &str, file_path: String, raw_mode: bool) -> Result<ParseResult, ParseError> {
-    // Use the xot-based pipeline
-    let result = parse_string_to_xot(source, lang, file_path.clone(), raw_mode)?;
-
-    // Find the actual content node (skip Files/File wrappers)
-    let content_node = find_content_root(&result.xot, result.root);
-
-    // Render compact XML (no formatting whitespace) to preserve source whitespace
-    // text nodes. Display code will re-render with pretty_print=true as needed.
-    let options = crate::output::RenderOptions::new()
-        .with_locations(true)
-        .with_pretty_print(false);
-    let xml = crate::output::render_node(&result.xot, content_node, &options);
-
-    Ok(ParseResult {
-        xml,
-        source_lines: result.source_lines,
-        file_path: result.file_path,
-        language: result.language,
-    })
-}
-
-/// Find the actual content root, skipping Files/File wrappers
-fn find_content_root(xot: &xot::Xot, node: xot::Node) -> xot::Node {
-    use crate::xot_transform::helpers::get_element_name;
-
-    // If this is a document node, get the document element
-    if xot.is_document(node) {
-        if let Ok(elem) = xot.document_element(node) {
-            return find_content_root(xot, elem);
-        }
-    }
-
-    // Check if this is a Files or File wrapper
-    if let Some(name) = get_element_name(xot, node) {
-        if name == "Files" || name == "File" {
-            // Return the first element child
-            for child in xot.children(node) {
-                if xot.element(child).is_some() {
-                    return find_content_root(xot, child);
-                }
-            }
-        }
-    }
-
-    node
-}
-
-/// Generate full XML document with Files wrapper for multiple files.
-///
-/// When `pretty_print` is true, includes indentation and newlines for readability.
-/// When false, generates compact XML suitable for XPath queries where
-/// formatting whitespace would corrupt string-value comparisons.
-pub fn generate_xml_document(results: &[ParseResult], pretty_print: bool) -> String {
-    let mut output = String::new();
-    output.push_str(r#"<?xml version="1.0" encoding="UTF-8"?>"#);
-    if pretty_print {
-        output.push('\n');
-    }
-
-    if pretty_print {
-        output.push_str("<Files>\n");
-    } else {
-        output.push_str("<Files>");
-    }
-
-    for result in results {
-        if pretty_print {
-            output.push_str(&format!("  <File path=\"{}\">\n", escape_xml(&result.file_path)));
-            // Re-render the compact XML with pretty printing
-            let pretty_xml = crate::output::render_xml_string(
-                &result.xml,
-                &crate::output::RenderOptions::new()
-                    .with_locations(true)
-                    .with_pretty_print(true),
-            );
-            // Indent each line by 4 spaces
-            for line in pretty_xml.lines() {
-                if !line.is_empty() {
-                    output.push_str("    ");
-                    output.push_str(line);
-                }
-                output.push('\n');
-            }
-            output.push_str("  </File>\n");
-        } else {
-            output.push_str(&format!("<File path=\"{}\">", escape_xml(&result.file_path)));
-            // Use compact XML directly (already has no formatting whitespace)
-            output.push_str(&result.xml);
-            output.push_str("</File>");
-        }
-    }
-
-    if pretty_print {
-        output.push_str("</Files>\n");
-    } else {
-        output.push_str("</Files>");
-    }
-    output
-}
-
 // ============================================================================
-// New xot-based pipeline
+// Xot-based pipeline
 // ============================================================================
 
 use crate::xot_builder::{XotBuilder, XeeBuilder};
@@ -407,46 +282,6 @@ pub fn parse_file_to_xee_with_options(
     parse_string_to_xee_with_options(&source, lang, path.to_string_lossy().to_string(), raw_mode, ignore_whitespace)
 }
 
-/// Load XML directly as a ParseResult (pass-through mode)
-///
-/// This function allows you to load pre-generated XML (e.g., snapshots)
-/// and query them with XPath, just like parsed source files.
-///
-/// The XML is passed through without parsing source code.
-/// XML declarations are stripped to avoid conflicts when wrapping.
-pub fn load_xml(xml: String, file_path: String) -> ParseResult {
-    // Strip XML declaration to avoid nested declarations when wrapping
-    let xml = strip_xml_declaration(&xml);
-
-    // Try to extract source lines from the XML if they're embedded
-    // For now, just use empty source lines
-    let source_lines = Vec::new();
-
-    ParseResult {
-        xml,
-        source_lines,
-        file_path,
-        language: "xml".to_string(),
-    }
-}
-
-/// Strip XML declaration (<?xml ...?>) from the beginning of an XML string
-fn strip_xml_declaration(xml: &str) -> String {
-    let trimmed = xml.trim_start();
-    if trimmed.starts_with("<?xml") {
-        if let Some(end) = trimmed.find("?>") {
-            return trimmed[end + 2..].trim_start().to_string();
-        }
-    }
-    xml.to_string()
-}
-
-/// Load XML from a file as a ParseResult (pass-through mode)
-pub fn load_xml_file(path: &Path) -> Result<ParseResult, ParseError> {
-    let xml = fs::read_to_string(path)?;
-    Ok(load_xml(xml, path.to_string_lossy().to_string()))
-}
-
 // ============================================================================
 // Unified parsing pipeline - always returns Documents
 // ============================================================================
@@ -519,14 +354,6 @@ pub fn parse_string_to_documents(
     }
 }
 
-/// Escape XML special characters
-pub fn escape_xml(s: &str) -> String {
-    s.replace('&', "&amp;")
-     .replace('<', "&lt;")
-     .replace('>', "&gt;")
-     .replace('"', "&quot;")
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -542,8 +369,19 @@ mod tests {
 
     #[test]
     fn test_parse_simple_class() {
-        let result = parse_string("public class Foo { }", "csharp", "<test>".to_string(), false).unwrap();
-        assert!(result.xml.contains("<class"));
-        assert!(result.xml.contains("Foo"));
+        use crate::output::{render_node, RenderOptions};
+
+        let result = parse_string_to_documents(
+            "public class Foo { }", "csharp", "<test>".to_string(), false, false
+        ).unwrap();
+
+        let doc_node = result.documents.document_node(result.doc_handle).unwrap();
+        let xot = result.documents.xot();
+        let xml: String = xot.children(doc_node)
+            .map(|child| render_node(xot, child, &RenderOptions::new()))
+            .collect();
+
+        assert!(xml.contains("<class"), "Should contain class element");
+        assert!(xml.contains("Foo"), "Should contain Foo");
     }
 }

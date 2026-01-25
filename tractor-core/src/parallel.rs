@@ -1,30 +1,4 @@
-//! Parallel file processing using Rayon
-
-use rayon::prelude::*;
-use std::path::Path;
-
-use crate::parser::{parse_file, ParseResult, ParseError};
-
-/// Process multiple files in parallel
-pub fn process_files_parallel<P: AsRef<Path> + Sync>(
-    files: &[P],
-    lang_override: Option<&str>,
-    raw_mode: bool,
-    concurrency: Option<usize>,
-) -> Vec<Result<ParseResult, ParseError>> {
-    // Configure thread pool
-    if let Some(num_threads) = concurrency {
-        rayon::ThreadPoolBuilder::new()
-            .num_threads(num_threads)
-            .build_global()
-            .ok(); // Ignore error if pool already initialized
-    }
-
-    files
-        .par_iter()
-        .map(|path| parse_file(path.as_ref(), lang_override, raw_mode))
-        .collect()
-}
+//! Parallel file processing utilities
 
 /// Expand glob patterns to file paths
 pub fn expand_globs(patterns: &[String]) -> Vec<String> {
