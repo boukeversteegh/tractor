@@ -493,5 +493,8 @@ target/
 dist/
 tmpclaude-*
 
-# Grammar build temp directory
+# Grammar build temp directories
+# Root: cloned grammar repos for Cargo patching (Rust build)
+.grammar-build/
+# Web: tree-sitter WASM grammar builds
 web/.grammar-build/
