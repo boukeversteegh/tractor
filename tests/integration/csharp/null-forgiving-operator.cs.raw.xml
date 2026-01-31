@@ -1,0 +1,252 @@
+<Files>
+  <File path="tests/integration/csharp/null-forgiving-operator.cs">
+    <compilation_unit>
+      <comment>// Test: C# null-forgiving operator (!) should parse as postfix_unary_expression</comment>
+      <comment>// This was historically misidentified as broken due to shell escaping issues (! -&gt; \!)</comment>
+      <class_declaration>
+        <modifier>public</modifier>
+        class
+        <name>
+          <identifier>NullForgivingTest</identifier>
+        </name>
+        <body>
+          <declaration_list>
+            {
+            <method_declaration>
+              <modifier>public</modifier>
+              <returns>
+                <predefined_type>void</predefined_type>
+              </returns>
+              <name>
+                <identifier>TestMethod</identifier>
+              </name>
+              <parameters>
+                <parameter_list>()</parameter_list>
+              </parameters>
+              <body>
+                <block>
+                  {
+                  <local_declaration_statement>
+                    <variable_declaration>
+                      <nullable_type field="type">
+                        <predefined_type field="type">string</predefined_type>
+                        ?
+                      </nullable_type>
+                      <variable_declarator>
+                        <name>
+                          <identifier>nullable</identifier>
+                        </name>
+                        =
+                        <invocation_expression>
+                          <identifier field="function">GetNullable</identifier>
+                          <arguments>
+                            <argument_list>()</argument_list>
+                          </arguments>
+                        </invocation_expression>
+                      </variable_declarator>
+                    </variable_declaration>
+                    ;
+                  </local_declaration_statement>
+                  <comment>// Simple null-forgiving</comment>
+                  <local_declaration_statement>
+                    <variable_declaration>
+                      <implicit_type field="type">var</implicit_type>
+                      <variable_declarator>
+                        <name>
+                          <identifier>length</identifier>
+                        </name>
+                        =
+                        <member_access_expression>
+                          <postfix_unary_expression field="expression">
+                            <identifier>nullable</identifier>
+                            !
+                          </postfix_unary_expression>
+                          .
+                          <name>
+                            <identifier>Length</identifier>
+                          </name>
+                        </member_access_expression>
+                      </variable_declarator>
+                    </variable_declaration>
+                    ;
+                  </local_declaration_statement>
+                  <comment>// Chained member access</comment>
+                  <local_declaration_statement>
+                    <variable_declaration>
+                      <implicit_type field="type">var</implicit_type>
+                      <variable_declarator>
+                        <name>
+                          <identifier>upper</identifier>
+                        </name>
+                        =
+                        <member_access_expression>
+                          <invocation_expression field="expression">
+                            <member_access_expression field="function">
+                              <postfix_unary_expression field="expression">
+                                <identifier>nullable</identifier>
+                                !
+                              </postfix_unary_expression>
+                              .
+                              <name>
+                                <identifier>ToUpper</identifier>
+                              </name>
+                            </member_access_expression>
+                            <arguments>
+                              <argument_list>()</argument_list>
+                            </arguments>
+                          </invocation_expression>
+                          .
+                          <name>
+                            <identifier>Length</identifier>
+                          </name>
+                        </member_access_expression>
+                      </variable_declarator>
+                    </variable_declaration>
+                    ;
+                  </local_declaration_statement>
+                  <comment>// In method call</comment>
+                  <expression_statement>
+                    <invocation_expression>
+                      <identifier field="function">Process</identifier>
+                      <arguments>
+                        <argument_list>
+                          (
+                          <argument>
+                            <postfix_unary_expression>
+                              <identifier>nullable</identifier>
+                              !
+                            </postfix_unary_expression>
+                          </argument>
+                          )
+                        </argument_list>
+                      </arguments>
+                    </invocation_expression>
+                    ;
+                  </expression_statement>
+                  <comment>// Multiple on same line</comment>
+                  <local_declaration_statement>
+                    <variable_declaration>
+                      <implicit_type field="type">var</implicit_type>
+                      <variable_declarator>
+                        <name>
+                          <identifier>combined</identifier>
+                        </name>
+                        =
+                        <binary_expression>
+                          <left>
+                            <member_access_expression>
+                              <postfix_unary_expression field="expression">
+                                <identifier>first</identifier>
+                                !
+                              </postfix_unary_expression>
+                              .
+                              <name>
+                                <identifier>Length</identifier>
+                              </name>
+                            </member_access_expression>
+                          </left>
+                          +
+                          <right>
+                            <member_access_expression>
+                              <postfix_unary_expression field="expression">
+                                <identifier>second</identifier>
+                                !
+                              </postfix_unary_expression>
+                              .
+                              <name>
+                                <identifier>Length</identifier>
+                              </name>
+                            </member_access_expression>
+                          </right>
+                        </binary_expression>
+                      </variable_declarator>
+                    </variable_declaration>
+                    ;
+                  </local_declaration_statement>
+                  }
+                </block>
+              </body>
+            </method_declaration>
+            <method_declaration>
+              <modifier>private</modifier>
+              <returns>
+                <nullable_type>
+                  <predefined_type field="type">string</predefined_type>
+                  ?
+                </nullable_type>
+              </returns>
+              <name>
+                <identifier>GetNullable</identifier>
+              </name>
+              <parameters>
+                <parameter_list>()</parameter_list>
+              </parameters>
+              <body>
+                <arrow_expression_clause>
+                  =&gt;
+                  <null_literal>null</null_literal>
+                </arrow_expression_clause>
+              </body>
+              ;
+            </method_declaration>
+            <method_declaration>
+              <modifier>private</modifier>
+              <returns>
+                <predefined_type>void</predefined_type>
+              </returns>
+              <name>
+                <identifier>Process</identifier>
+              </name>
+              <parameters>
+                <parameter_list>
+                  (
+                  <parameter>
+                    <predefined_type field="type">string</predefined_type>
+                    <name>
+                      <identifier>s</identifier>
+                    </name>
+                  </parameter>
+                  )
+                </parameter_list>
+              </parameters>
+              <body>
+                <block>{ }</block>
+              </body>
+            </method_declaration>
+            <field_declaration>
+              <modifier>private</modifier>
+              <variable_declaration>
+                <nullable_type field="type">
+                  <predefined_type field="type">string</predefined_type>
+                  ?
+                </nullable_type>
+                <variable_declarator>
+                  <name>
+                    <identifier>first</identifier>
+                  </name>
+                </variable_declarator>
+              </variable_declaration>
+              ;
+            </field_declaration>
+            <field_declaration>
+              <modifier>private</modifier>
+              <variable_declaration>
+                <nullable_type field="type">
+                  <predefined_type field="type">string</predefined_type>
+                  ?
+                </nullable_type>
+                <variable_declarator>
+                  <name>
+                    <identifier>second</identifier>
+                  </name>
+                </variable_declarator>
+              </variable_declaration>
+              ;
+            </field_declaration>
+            }
+          </declaration_list>
+        </body>
+      </class_declaration>
+    </compilation_unit>
+  </File>
+</Files>
