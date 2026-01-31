@@ -5,7 +5,8 @@ use clap::Parser;
 /// Multi-language code query tool using XPath 3.1
 #[derive(Parser, Debug)]
 #[command(name = "tractor")]
-#[command(author, version, about, long_about = None)]
+#[command(author, about, long_about = None)]
+#[command(disable_version_flag = true)]
 #[command(after_help = r#"WORKFLOW:
     1. View the XML structure of your code:
        tractor src/main.rs
@@ -111,4 +112,8 @@ pub struct Args {
     /// Show verbose output
     #[arg(short = 'v', long = "verbose")]
     pub verbose: bool,
+
+    /// Print version information (use with -v for grammar versions)
+    #[arg(short = 'V', long = "version")]
+    pub version: bool,
 }

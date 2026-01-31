@@ -98,7 +98,8 @@ export function Homepage() {
         </p>
         <p>
           <a href="https://github.com/boukeversteegh/tractor">GitHub</a> &middot;
-          <a href="https://github.com/boukeversteegh/tractor/issues">Issues</a>
+          <a href="https://github.com/boukeversteegh/tractor/issues">Issues</a> &middot;
+          <a href="/versions.json">Versions</a>
         </p>
       </footer>
     </div>

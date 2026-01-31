@@ -3,6 +3,7 @@
 //! This is the main CLI entry point that orchestrates parsing and querying.
 
 mod cli;
+mod version;
 
 use std::collections::HashSet;
 use std::io::{self, BufRead, Read, Write};
@@ -49,6 +50,16 @@ fn exponential_batches<T>(items: &[T], num_threads: usize) -> Vec<&[T]> {
 
 fn main() -> ExitCode {
     let args = Args::parse();
+
+    // Handle --version flag (respects --verbose for detailed output)
+    if args.version {
+        if args.verbose {
+            version::print_version_verbose();
+        } else {
+            version::print_version();
+        }
+        return ExitCode::SUCCESS;
+    }
 
     if let Err(e) = run(args) {
         eprintln!("error: {}", e);

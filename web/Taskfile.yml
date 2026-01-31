@@ -80,7 +80,8 @@ tasks:
         import wasm from '/grammars/$WASM_FILE?url';
         export default wasm;
         EOF
-          echo "Generated {{.GRAMMARS_TS_DIR}}/{{.LANG}}.ts (source:{{.REPO}})"
+          COMMIT=$(git rev-parse --short HEAD)
+          echo "Generated {{.GRAMMARS_TS_DIR}}/{{.LANG}}.ts (source:{{.REPO}}@$COMMIT)"
         else
           echo "ERROR: No .wasm file generated"
           exit 1
@@ -188,6 +189,9 @@ tasks:
 
       # Generate index.ts that re-exports all grammars
       - task: grammar:generate-index
+
+      # Generate grammar-versions.json from installed packages
+      - node scripts/generate-grammar-versions.js
 
   #############################################################################
   # Convenience tasks for individual languages

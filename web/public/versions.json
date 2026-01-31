@@ -1,0 +1,89 @@
+{
+  "bash": {
+    "source": "npm",
+    "package": "tree-sitter-bash",
+    "version": "0.25.1"
+  },
+  "c": {
+    "source": "npm",
+    "package": "tree-sitter-c",
+    "version": "0.24.1"
+  },
+  "cpp": {
+    "source": "npm",
+    "package": "tree-sitter-cpp",
+    "version": "0.23.4"
+  },
+  "csharp": {
+    "source": "git",
+    "repo": "tree-sitter/tree-sitter-c-sharp",
+    "ref": "master",
+    "commit": "f05a2ca",
+    "date": "2026-01-19"
+  },
+  "css": {
+    "source": "npm",
+    "package": "tree-sitter-css",
+    "version": "0.25.0"
+  },
+  "go": {
+    "source": "npm",
+    "package": "tree-sitter-go",
+    "version": "0.25.0"
+  },
+  "html": {
+    "source": "npm",
+    "package": "tree-sitter-html",
+    "version": "0.23.2"
+  },
+  "java": {
+    "source": "npm",
+    "package": "tree-sitter-java",
+    "version": "0.23.5"
+  },
+  "javascript": {
+    "source": "npm",
+    "package": "tree-sitter-javascript",
+    "version": "0.25.0"
+  },
+  "json": {
+    "source": "npm",
+    "package": "tree-sitter-json",
+    "version": "0.24.8"
+  },
+  "php": {
+    "source": "npm",
+    "package": "tree-sitter-php",
+    "version": "0.24.2"
+  },
+  "python": {
+    "source": "npm",
+    "package": "tree-sitter-python",
+    "version": "0.25.0"
+  },
+  "ruby": {
+    "source": "npm",
+    "package": "tree-sitter-ruby",
+    "version": "0.23.1"
+  },
+  "rust": {
+    "source": "npm",
+    "package": "tree-sitter-rust",
+    "version": "0.24.0"
+  },
+  "tsx": {
+    "source": "npm",
+    "package": "tree-sitter-typescript",
+    "version": "0.23.2"
+  },
+  "typescript": {
+    "source": "npm",
+    "package": "tree-sitter-typescript",
+    "version": "0.23.2"
+  },
+  "_runtime": {
+    "package": "web-tree-sitter",
+    "version": "0.26.3"
+  },
+  "_generated": "2026-01-31T22:32:29.736Z"
+}

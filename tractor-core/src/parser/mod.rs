@@ -128,6 +128,112 @@ fn get_tree_sitter_language(lang: &str) -> Result<tree_sitter::Language, ParseEr
     }
 }
 
+/// Language ABI version info
+#[derive(Debug, Clone)]
+pub struct LanguageAbiInfo {
+    /// Tractor language name (e.g., "csharp", "rust")
+    pub name: &'static str,
+    /// Tree-sitter ABI version
+    pub abi_version: usize,
+}
+
+/// Get ABI versions for all supported tree-sitter languages
+///
+/// Returns a list of (language_name, abi_version) for all languages.
+/// The ABI version indicates tree-sitter parser compatibility.
+pub fn get_language_abi_versions() -> Vec<LanguageAbiInfo> {
+    vec![
+        LanguageAbiInfo {
+            name: "bash",
+            abi_version: tree_sitter::Language::from(tree_sitter_bash::LANGUAGE).abi_version(),
+        },
+        LanguageAbiInfo {
+            name: "c",
+            abi_version: tree_sitter::Language::from(tree_sitter_c::LANGUAGE).abi_version(),
+        },
+        LanguageAbiInfo {
+            name: "csharp",
+            abi_version: tree_sitter::Language::from(tree_sitter_c_sharp::LANGUAGE).abi_version(),
+        },
+        LanguageAbiInfo {
+            name: "cpp",
+            abi_version: tree_sitter::Language::from(tree_sitter_cpp::LANGUAGE).abi_version(),
+        },
+        LanguageAbiInfo {
+            name: "css",
+            abi_version: tree_sitter::Language::from(tree_sitter_css::LANGUAGE).abi_version(),
+        },
+        LanguageAbiInfo {
+            name: "go",
+            abi_version: tree_sitter::Language::from(tree_sitter_go::LANGUAGE).abi_version(),
+        },
+        LanguageAbiInfo {
+            name: "haskell",
+            abi_version: tree_sitter::Language::from(tree_sitter_haskell::LANGUAGE).abi_version(),
+        },
+        LanguageAbiInfo {
+            name: "html",
+            abi_version: tree_sitter::Language::from(tree_sitter_html::LANGUAGE).abi_version(),
+        },
+        LanguageAbiInfo {
+            name: "java",
+            abi_version: tree_sitter::Language::from(tree_sitter_java::LANGUAGE).abi_version(),
+        },
+        LanguageAbiInfo {
+            name: "javascript",
+            abi_version: tree_sitter::Language::from(tree_sitter_javascript::LANGUAGE).abi_version(),
+        },
+        LanguageAbiInfo {
+            name: "json",
+            abi_version: tree_sitter::Language::from(tree_sitter_json::LANGUAGE).abi_version(),
+        },
+        LanguageAbiInfo {
+            name: "julia",
+            abi_version: tree_sitter::Language::from(tree_sitter_julia::LANGUAGE).abi_version(),
+        },
+        LanguageAbiInfo {
+            name: "lua",
+            abi_version: tree_sitter::Language::from(tree_sitter_lua::LANGUAGE).abi_version(),
+        },
+        LanguageAbiInfo {
+            name: "ocaml",
+            abi_version: tree_sitter::Language::from(tree_sitter_ocaml::LANGUAGE_OCAML).abi_version(),
+        },
+        LanguageAbiInfo {
+            name: "php",
+            abi_version: tree_sitter::Language::from(tree_sitter_php::LANGUAGE_PHP).abi_version(),
+        },
+        LanguageAbiInfo {
+            name: "python",
+            abi_version: tree_sitter::Language::from(tree_sitter_python::LANGUAGE).abi_version(),
+        },
+        LanguageAbiInfo {
+            name: "r",
+            abi_version: tree_sitter::Language::from(tree_sitter_r::LANGUAGE).abi_version(),
+        },
+        LanguageAbiInfo {
+            name: "ruby",
+            abi_version: tree_sitter::Language::from(tree_sitter_ruby::LANGUAGE).abi_version(),
+        },
+        LanguageAbiInfo {
+            name: "rust",
+            abi_version: tree_sitter::Language::from(tree_sitter_rust::LANGUAGE).abi_version(),
+        },
+        LanguageAbiInfo {
+            name: "scala",
+            abi_version: tree_sitter::Language::from(tree_sitter_scala::LANGUAGE).abi_version(),
+        },
+        LanguageAbiInfo {
+            name: "typescript",
+            abi_version: tree_sitter::Language::from(tree_sitter_typescript::LANGUAGE_TYPESCRIPT).abi_version(),
+        },
+        LanguageAbiInfo {
+            name: "yaml",
+            abi_version: tree_sitter::Language::from(tree_sitter_yaml::LANGUAGE).abi_version(),
+        },
+    ]
+}
+
 // ============================================================================
 // Xot-based pipeline
 // ============================================================================
