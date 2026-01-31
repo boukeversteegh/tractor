@@ -6,6 +6,7 @@ interface TreeViewProps {
   xmlTree: XmlNode | null;
   selectionState: SelectionState;
   effectiveTargetKey: string | null;  // Path key of effective target
+  matchedNodeIds?: Set<string>;       // Node IDs that matched the query (for highlight)
   focusedNodeId: string | null;
   expandedNodeIds: Set<string>;
   onToggleSelection: (pathKey: string, nodeName: string) => void;
@@ -19,6 +20,7 @@ export function TreeView({
   xmlTree,
   selectionState,
   effectiveTargetKey,
+  matchedNodeIds,
   focusedNodeId,
   expandedNodeIds,
   onToggleSelection,
@@ -38,6 +40,7 @@ export function TreeView({
         ancestorPath={[]}
         selectionState={selectionState}
         effectiveTargetKey={effectiveTargetKey}
+        matchedNodeIds={matchedNodeIds}
         focusedNodeId={focusedNodeId}
         expandedNodeIds={expandedNodeIds}
         onToggleSelection={onToggleSelection}
@@ -55,6 +58,7 @@ interface TreeNodeProps {
   ancestorPath: string[];  // Path of ancestor node names (not including this node)
   selectionState: SelectionState;
   effectiveTargetKey: string | null;
+  matchedNodeIds?: Set<string>;  // Node IDs that matched the query
   focusedNodeId: string | null;
   expandedNodeIds: Set<string>;
   onToggleSelection: (pathKey: string, nodeName: string) => void;
@@ -69,6 +73,7 @@ function TreeNode({
   ancestorPath,
   selectionState,
   effectiveTargetKey,
+  matchedNodeIds,
   focusedNodeId,
   expandedNodeIds,
   onToggleSelection,
@@ -223,6 +228,9 @@ function TreeNode({
     setShowMenu(false);
   }, [node.textContent, isSelected, pathKey, node.name, onToggleSelection, showTextMenu]);
 
+  // Check if this node matched the query
+  const isMatched = matchedNodeIds?.has(nodeId) ?? false;
+
   // Determine pill classes based on state
   const pillClasses = [
     'node-pill',
@@ -237,7 +245,7 @@ function TreeNode({
   return (
     <div
       ref={nodeRef}
-      className={`tree-node ${isFocused ? 'focused' : ''}`}
+      className={`tree-node ${isFocused ? 'focused' : ''} ${isMatched ? 'matched' : ''}`}
       style={{ marginLeft: node.depth > 0 ? 16 : 0 }}
     >
       <div className="node-row">
@@ -277,10 +285,10 @@ function TreeNode({
 
         {showMenu && (
           <div className="node-menu">
-            <button onClick={handleSetTarget}>
+            <button onMouseDown={handleSetTarget}>
               {isExplicitTarget ? 'Unset as target' : 'Set as target'}
             </button>
-            <button onClick={handlePillClick}>
+            <button onMouseDown={handlePillClick}>
               {isSelected ? 'Deselect' : 'Select'}
             </button>
           </div>
@@ -290,22 +298,22 @@ function TreeNode({
           <div className="node-menu text-menu">
             <div className="menu-label">"{textSelection.text.slice(0, 20)}{textSelection.text.length > 20 ? '...' : ''}"</div>
             {textSelection.isAll && (
-              <button onClick={() => handleAddTextCondition('exact')}>
+              <button onMouseDown={() => handleAddTextCondition('exact')}>
                 Exactly
               </button>
             )}
             {!textSelection.isAll && (
-              <button onClick={() => handleAddTextCondition('contains')}>
+              <button onMouseDown={() => handleAddTextCondition('contains')}>
                 Contains
               </button>
             )}
             {textSelection.isStart && !textSelection.isAll && (
-              <button onClick={() => handleAddTextCondition('starts')}>
+              <button onMouseDown={() => handleAddTextCondition('starts')}>
                 Starts with
               </button>
             )}
             {textSelection.isEnd && !textSelection.isAll && (
-              <button onClick={() => handleAddTextCondition('ends')}>
+              <button onMouseDown={() => handleAddTextCondition('ends')}>
                 Ends with
               </button>
             )}
@@ -322,6 +330,7 @@ function TreeNode({
               ancestorPath={nodePath}
               selectionState={selectionState}
               effectiveTargetKey={effectiveTargetKey}
+              matchedNodeIds={matchedNodeIds}
               focusedNodeId={focusedNodeId}
               expandedNodeIds={expandedNodeIds}
               onToggleSelection={onToggleSelection}

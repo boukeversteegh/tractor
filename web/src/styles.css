@@ -556,6 +556,14 @@ body {
   border-width: 2px;
 }
 
+/* Row highlight for nodes that matched the query (same as focused but without pill outline) */
+.tree-node.matched > .node-row {
+  background: rgba(212, 170, 0, 0.15);
+  border-radius: 4px;
+  margin: 0 -0.25rem;
+  padding: 0.15rem 0.25rem;
+}
+
 .node-pill.focused {
   outline: 2px solid var(--accent-yellow);
   outline-offset: 2px;

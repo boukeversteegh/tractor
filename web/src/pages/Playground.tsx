@@ -67,6 +67,22 @@ export function Playground() {
   const [queryValidation, setQueryValidation] = useState<XPathValidationResult | null>(null);
   const [outputFormat, setOutputFormat] = useState<OutputFormat>('source');
 
+  // Compute which tree node instances matched the query (for highlighting)
+  const matchedNodeIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (!xmlTree || matches.length === 0) return ids;
+
+    for (const match of matches) {
+      if (!match.start) continue;
+      const startPos = parsePositionString(match.start);
+      if (!startPos) continue;
+      const node = findDeepestNodeAtPosition(xmlTree, startPos);
+      if (node) ids.add(node.id);
+    }
+
+    return ids;
+  }, [xmlTree, matches]);
+
   // UI state
   const [activeTab, setActiveTab] = useState<Tab>('builder');
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
@@ -509,6 +525,7 @@ export function Playground() {
                 xmlTree={xmlTree}
                 selectionState={selectionState}
                 effectiveTargetKey={effectiveTargetKey}
+                matchedNodeIds={matchedNodeIds}
                 focusedNodeId={focusedNodeId}
                 expandedNodeIds={expandedNodeIds}
                 onToggleSelection={handleToggleSelection}
