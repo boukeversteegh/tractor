@@ -7,6 +7,7 @@ interface TreeViewProps {
   selectionState: SelectionState;
   effectiveTargetKey: string | null;  // Path key of effective target
   matchedNodeIds?: Set<string>;       // Node IDs that matched the query (for highlight)
+  nonDistinguishingNodeIds?: Set<string>;  // Node IDs that are identical across all matches (dim)
   focusedNodeId: string | null;
   expandedNodeIds: Set<string>;
   onToggleSelection: (pathKey: string, nodeName: string) => void;
@@ -21,6 +22,7 @@ export function TreeView({
   selectionState,
   effectiveTargetKey,
   matchedNodeIds,
+  nonDistinguishingNodeIds,
   focusedNodeId,
   expandedNodeIds,
   onToggleSelection,
@@ -41,6 +43,7 @@ export function TreeView({
         selectionState={selectionState}
         effectiveTargetKey={effectiveTargetKey}
         matchedNodeIds={matchedNodeIds}
+        nonDistinguishingNodeIds={nonDistinguishingNodeIds}
         focusedNodeId={focusedNodeId}
         expandedNodeIds={expandedNodeIds}
         onToggleSelection={onToggleSelection}
@@ -59,6 +62,7 @@ interface TreeNodeProps {
   selectionState: SelectionState;
   effectiveTargetKey: string | null;
   matchedNodeIds?: Set<string>;  // Node IDs that matched the query
+  nonDistinguishingNodeIds?: Set<string>;  // Node IDs identical across all matches
   focusedNodeId: string | null;
   expandedNodeIds: Set<string>;
   onToggleSelection: (pathKey: string, nodeName: string) => void;
@@ -74,6 +78,7 @@ function TreeNode({
   selectionState,
   effectiveTargetKey,
   matchedNodeIds,
+  nonDistinguishingNodeIds,
   focusedNodeId,
   expandedNodeIds,
   onToggleSelection,
@@ -230,11 +235,14 @@ function TreeNode({
 
   // Check if this node matched the query
   const isMatched = matchedNodeIds?.has(nodeId) ?? false;
+  // Check if this node is non-distinguishing (identical across all matches)
+  const isNonDistinguishing = nonDistinguishingNodeIds?.has(nodeId) ?? false;
 
   // Determine pill classes based on state
   const pillClasses = [
     'node-pill',
     isSelected && 'selected',
+    isNonDistinguishing && 'non-distinguishing',
     isEffectiveTarget && 'target',
     isEffectiveTarget && !isExplicitTarget && 'auto-target',
     hasCondition && 'has-condition',
@@ -331,6 +339,7 @@ function TreeNode({
               selectionState={selectionState}
               effectiveTargetKey={effectiveTargetKey}
               matchedNodeIds={matchedNodeIds}
+              nonDistinguishingNodeIds={nonDistinguishingNodeIds}
               focusedNodeId={focusedNodeId}
               expandedNodeIds={expandedNodeIds}
               onToggleSelection={onToggleSelection}

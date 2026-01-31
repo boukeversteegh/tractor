@@ -68,19 +68,83 @@ export function Playground() {
   const [outputFormat, setOutputFormat] = useState<OutputFormat>('source');
 
   // Compute which tree node instances matched the query (for highlighting)
-  const matchedNodeIds = useMemo(() => {
-    const ids = new Set<string>();
-    if (!xmlTree || matches.length === 0) return ids;
+  // and which descendant nodes are non-distinguishing (identical across all matches)
+  const { matchedNodeIds, nonDistinguishingNodeIds } = useMemo(() => {
+    const matchedIds = new Set<string>();
+    const nonDistinguishingIds = new Set<string>();
+    if (!xmlTree || matches.length === 0) {
+      return { matchedNodeIds: matchedIds, nonDistinguishingNodeIds: nonDistinguishingIds };
+    }
 
+    // Find all matched nodes
+    const matchedNodes: XmlNode[] = [];
     for (const match of matches) {
       if (!match.start) continue;
       const startPos = parsePositionString(match.start);
       if (!startPos) continue;
       const node = findDeepestNodeAtPosition(xmlTree, startPos);
-      if (node) ids.add(node.id);
+      if (node) {
+        matchedIds.add(node.id);
+        matchedNodes.push(node);
+      }
     }
 
-    return ids;
+    // If only one match, nothing to distinguish
+    if (matchedNodes.length <= 1) {
+      return { matchedNodeIds: matchedIds, nonDistinguishingNodeIds: nonDistinguishingIds };
+    }
+
+    // Collect descendant signatures for each matched node
+    // Key: relative path (e.g., "body/return"), Value: signature (structure + text)
+    function getNodeSignature(node: XmlNode): string {
+      // Signature is the node name + text content + sorted attribute values
+      const attrs = Object.entries(node.attributes)
+        .filter(([k]) => k !== 'start' && k !== 'end') // ignore location attrs
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([k, v]) => `${k}=${v}`)
+        .join(',');
+      return `${node.name}[${attrs}]${node.textContent || ''}`;
+    }
+
+    function collectDescendants(
+      node: XmlNode,
+      relativePath: string,
+      result: Map<string, { signature: string; nodeId: string }>
+    ) {
+      const path = relativePath ? `${relativePath}/${node.name}` : node.name;
+      result.set(path, { signature: getNodeSignature(node), nodeId: node.id });
+      for (const child of node.children) {
+        collectDescendants(child, path, result);
+      }
+    }
+
+    // Collect descendants for each matched node
+    const allDescendantMaps: Map<string, { signature: string; nodeId: string }>[] = [];
+    for (const matchedNode of matchedNodes) {
+      const descendantMap = new Map<string, { signature: string; nodeId: string }>();
+      for (const child of matchedNode.children) {
+        collectDescendants(child, '', descendantMap);
+      }
+      allDescendantMaps.push(descendantMap);
+    }
+
+    // Find paths that exist in ALL matches with SAME signature
+    const firstMap = allDescendantMaps[0];
+    for (const [path, { signature }] of firstMap) {
+      const allSame = allDescendantMaps.every(map => {
+        const entry = map.get(path);
+        return entry && entry.signature === signature;
+      });
+      if (allSame) {
+        // Mark all nodes at this path as non-distinguishing
+        for (const map of allDescendantMaps) {
+          const entry = map.get(path);
+          if (entry) nonDistinguishingIds.add(entry.nodeId);
+        }
+      }
+    }
+
+    return { matchedNodeIds: matchedIds, nonDistinguishingNodeIds: nonDistinguishingIds };
   }, [xmlTree, matches]);
 
   // UI state
@@ -526,6 +590,7 @@ export function Playground() {
                 selectionState={selectionState}
                 effectiveTargetKey={effectiveTargetKey}
                 matchedNodeIds={matchedNodeIds}
+                nonDistinguishingNodeIds={nonDistinguishingNodeIds}
                 focusedNodeId={focusedNodeId}
                 expandedNodeIds={expandedNodeIds}
                 onToggleSelection={handleToggleSelection}
