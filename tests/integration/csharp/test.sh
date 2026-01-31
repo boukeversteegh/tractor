@@ -90,4 +90,28 @@ run_test tractor generic-type-match.cs -W \
     -x "//type[.='Dictionary<string,int>']" \
     --expect 2 -m "ignore-whitespace flag matches without spaces"
 
+# -------------------------------------------------------------------------
+# Null-forgiving operator (!) tests
+# Verifies ! is parsed as postfix_unary_expression, not ERROR
+# Note: Shell escaping of ! can cause false test failures (! -> \!)
+# -------------------------------------------------------------------------
+
+echo ""
+echo "  Null-forgiving Operator:"
+
+# The ! operator should create postfix_unary_expression nodes (5 usages in fixture)
+run_test tractor null-forgiving-operator.cs \
+    -x "//postfix_unary_expression" \
+    --expect 5 -m "null-forgiving operator parsed as postfix_unary_expression"
+
+# No ERROR nodes should be present (would indicate parse failure)
+run_test tractor null-forgiving-operator.cs \
+    -x "//ERROR" \
+    --expect 0 -m "no ERROR nodes from null-forgiving operator"
+
+# Can query member access on null-forgiving expression
+run_test tractor null-forgiving-operator.cs \
+    -x "//member[postfix_unary_expression]" \
+    --expect 4 -m "member access on null-forgiving expression"
+
 report
