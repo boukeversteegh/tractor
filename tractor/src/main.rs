@@ -12,7 +12,7 @@ use std::process::ExitCode;
 use rayon::prelude::*;
 use tractor_core::{
     XPathEngine, Match,
-    OutputFormat, format_matches, OutputOptions,
+    OutputFormat, format_matches, OutputOptions, SchemaCollector,
     expand_globs, filter_supported_files,
     output::should_use_color,
     output::{render_document, render_node, RenderOptions},
@@ -210,6 +210,20 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                 language: Some(lang.to_string()),
             };
 
+            // Schema format: aggregate match xml_fragments
+            if matches!(format, OutputFormat::Schema) {
+                let mut collector = SchemaCollector::new();
+                for m in &matches {
+                    if let Some(xml) = &m.xml_fragment {
+                        collector.collect_from_xml_string(xml);
+                    }
+                }
+                // Default depth of 4 for schema format if not specified
+                let schema_depth = args.depth.or(Some(4));
+                print!("{}", collector.format(schema_depth, use_color));
+                return Ok(());
+            }
+
             if args.expect.is_none() {
                 let output = format_matches(&matches, format.clone(), &options);
                 print!("{}", output);
@@ -237,6 +251,17 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                 let output = render_node(xot, child, &render_opts);
                 print!("{}", output);
             }
+            return Ok(());
+        }
+
+        // Schema format: show structure tree
+        if matches!(format, OutputFormat::Schema) {
+            let doc_node = result.documents.document_node(result.doc_handle).unwrap();
+            let mut collector = SchemaCollector::new();
+            collector.collect_from_xot(result.documents.xot(), doc_node);
+            // Default depth of 4 for schema format if not specified
+            let schema_depth = args.depth.or(Some(4));
+            print!("{}", collector.format(schema_depth, use_color));
             return Ok(());
         }
 
@@ -374,8 +399,9 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
         let mut total_matches = 0usize;
         let mut remaining_limit = args.limit;
 
-        // Count format doesn't benefit from streaming - just count everything
+        // Count and Schema formats don't benefit from streaming - collect everything first
         let is_count_format = matches!(format, OutputFormat::Count);
+        let is_schema_format = matches!(format, OutputFormat::Schema);
 
         // Test mode: collect all matches for error output; suppress streaming
         let is_test_mode = args.expect.is_some();
@@ -440,8 +466,8 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
 
             total_matches += batch_matches.len();
 
-            if is_test_mode {
-                // Collect matches for test output later
+            if is_test_mode || is_schema_format {
+                // Collect matches for later processing
                 all_matches.extend(batch_matches);
             } else {
                 // Stream output immediately (except for count format)
@@ -456,6 +482,20 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
         // For count format (non-test mode), print the total at the end
         if is_count_format && !is_test_mode {
             println!("{}", total_matches);
+        }
+
+        // For schema format, aggregate all matches and output the tree
+        if is_schema_format && !is_test_mode {
+            let mut collector = SchemaCollector::new();
+            for m in &all_matches {
+                if let Some(xml) = &m.xml_fragment {
+                    collector.collect_from_xml_string(xml);
+                }
+            }
+            // Default depth of 4 for schema format if not specified
+            let schema_depth = args.depth.or(Some(4));
+            print!("{}", collector.format(schema_depth, use_color));
+            return Ok(());
         }
 
         // Check expectation and output test results
@@ -536,6 +576,19 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
             }
             println!("</Files>");
         }
+        return Ok(());
+    }
+
+    // Schema format: aggregate structure across all files using Xot directly
+    if matches!(format, OutputFormat::Schema) {
+        let mut collector = SchemaCollector::new();
+        for result in &parse_results {
+            let doc_node = result.documents.document_node(result.doc_handle).unwrap();
+            collector.collect_from_xot(result.documents.xot(), doc_node);
+        }
+        // Default depth of 4 for schema format if not specified
+        let schema_depth = args.depth.or(Some(4));
+        print!("{}", collector.format(schema_depth, use_color));
         return Ok(());
     }
 

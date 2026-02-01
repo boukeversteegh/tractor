@@ -9,7 +9,7 @@ use std::path::PathBuf;
 use tractor_core::{
     load_xml_string_to_documents, load_xml_file_to_documents,
     parse_string_to_documents, parse_to_documents,
-    XPathEngine, XeeParseResult,
+    XPathEngine, XeeParseResult, SchemaCollector,
     output::{render_node, RenderOptions},
 };
 
@@ -367,4 +367,109 @@ fn test_csharp_null_forgiving_operator() {
         &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should find member access with postfix_unary_expression child");
+}
+
+// ============================================================================
+// Schema Format Tests
+// ============================================================================
+
+#[test]
+fn test_schema_collector_from_xot() {
+    // Test schema collection directly from Xot tree
+    let source = r#"
+        class Foo { void Bar() {} }
+        class Baz { void Qux() {} int x; }
+    "#;
+    let result = parse_string_to_documents(source, "csharp", "<test>".to_string(), false, false)
+        .expect("Should parse C#");
+
+    let doc_node = result.documents.document_node(result.doc_handle).unwrap();
+    let mut collector = SchemaCollector::new();
+    collector.collect_from_xot(result.documents.xot(), doc_node);
+
+    let output = collector.format(None, false);
+
+    // Should show class appearing twice
+    assert!(output.contains("class (2)"), "Should show 2 classes: {}", output);
+    // Should show method appearing twice (one in each class)
+    assert!(output.contains("method (2)"), "Should show 2 methods: {}", output);
+    // Should show field appearing once
+    assert!(output.contains("field"), "Should show field: {}", output);
+    // Should show class names
+    assert!(output.contains("Foo") || output.contains("Baz"), "Should show class names: {}", output);
+}
+
+#[test]
+fn test_schema_collector_from_xml_string() {
+    // Test schema collection from XML string (simulates XPath match xml_fragments)
+    let mut collector = SchemaCollector::new();
+
+    // Simulate two matched class fragments
+    collector.collect_from_xml_string("<class><name>Foo</name><body>{}</body></class>");
+    collector.collect_from_xml_string("<class><name>Bar</name><body>{}</body></class>");
+
+    let output = collector.format(None, false);
+
+    // Should aggregate both classes
+    assert!(output.contains("class (2)"), "Should show 2 classes: {}", output);
+    assert!(output.contains("name (2)"), "Should show 2 names: {}", output);
+    // Should collect unique text values
+    assert!(output.contains("Foo"), "Should show Foo: {}", output);
+    assert!(output.contains("Bar"), "Should show Bar: {}", output);
+}
+
+#[test]
+fn test_schema_depth_limit() {
+    // Test that depth limit works
+    let source = "class Foo { void Bar() { int x = 1; } }";
+    let result = parse_string_to_documents(source, "csharp", "<test>".to_string(), false, false)
+        .expect("Should parse C#");
+
+    let doc_node = result.documents.document_node(result.doc_handle).unwrap();
+    let mut collector = SchemaCollector::new();
+    collector.collect_from_xot(result.documents.xot(), doc_node);
+
+    // With depth 2, should not show deeply nested elements
+    let shallow = collector.format(Some(2), false);
+    let deep = collector.format(None, false);
+
+    // Deep output should have more lines than shallow
+    assert!(
+        deep.lines().count() > shallow.lines().count(),
+        "Deep output should have more lines than shallow"
+    );
+}
+
+#[test]
+fn test_schema_structural_pairs() {
+    // Test that structural pairs like {} are shown as {…}
+    // Note: The structural pair detection only triggers when values are exactly "{" and "}"
+    // We test this via XML string where we control the exact values
+    let mut collector = SchemaCollector::new();
+    collector.collect_from_xml_string("<body>{<child/>}</body>");
+
+    let output = collector.format(None, false);
+
+    // Body should show {…} for structural pair (exactly "{" and "}")
+    assert!(output.contains("{…}"), "Should show structural pair as {{…}}: {}", output);
+}
+
+#[test]
+fn test_schema_multiple_values_truncation() {
+    // Test that more than 5 unique values are truncated with (+N)
+    let source = r#"
+        class A { } class B { } class C { } class D { }
+        class E { } class F { } class G { }
+    "#;
+    let result = parse_string_to_documents(source, "csharp", "<test>".to_string(), false, false)
+        .expect("Should parse C#");
+
+    let doc_node = result.documents.document_node(result.doc_handle).unwrap();
+    let mut collector = SchemaCollector::new();
+    collector.collect_from_xot(result.documents.xot(), doc_node);
+
+    let output = collector.format(None, false);
+
+    // Should show (+N) for truncated values
+    assert!(output.contains("(+"), "Should truncate values with (+N): {}", output);
 }

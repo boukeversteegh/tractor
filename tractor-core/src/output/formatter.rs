@@ -24,6 +24,8 @@ pub enum OutputFormat {
     Json,
     /// Number of matches
     Count,
+    /// Merged schema tree showing unique element paths
+    Schema,
 }
 
 impl OutputFormat {
@@ -37,13 +39,14 @@ impl OutputFormat {
             "gcc" => Some(OutputFormat::Gcc),
             "json" => Some(OutputFormat::Json),
             "count" => Some(OutputFormat::Count),
+            "schema" => Some(OutputFormat::Schema),
             _ => None,
         }
     }
 
     /// Get list of all valid format names
     pub fn valid_formats() -> &'static [&'static str] {
-        &["xml", "lines", "source", "value", "gcc", "json", "count"]
+        &["xml", "lines", "source", "value", "gcc", "json", "count", "schema"]
     }
 }
 
@@ -85,6 +88,7 @@ pub fn format_matches(matches: &[Match], format: OutputFormat, options: &OutputO
         OutputFormat::Gcc => format_gcc(matches, options),
         OutputFormat::Json => format_json(matches, options),
         OutputFormat::Count => format_count(matches),
+        OutputFormat::Schema => String::new(), // Handled separately - requires full XML aggregation
     }
 }
 

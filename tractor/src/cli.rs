@@ -8,19 +8,32 @@ use clap::Parser;
 #[command(author, about, long_about = None)]
 #[command(disable_version_flag = true)]
 #[command(after_help = r#"WORKFLOW:
-    1. View the XML structure of your code:
+    1. Explore structure across files with schema view (depth 4 by default):
+       tractor "src/**/*.cs" -o schema
+       tractor "src/**/*.cs" -x "//class" -o schema
+
+    2. View the full XML of specific code:
        tractor src/main.rs
 
-    2. Add -x to select specific elements:
+    3. Add -x to select specific elements:
        tractor src/main.rs -x "//function"
 
-    3. Refine with predicates:
+    4. Refine with predicates:
        tractor src/main.rs -x "//function[name='main']"
 
-    4. Choose output format with -o:
+    5. Choose output format with -o:
        tractor src/main.rs -x "//function/name" -o value
 
 EXAMPLES:
+    # See what element types exist across all C# files (default depth 4)
+    tractor "src/**/*.cs" -o schema
+
+    # See deeper structure with custom depth
+    tractor "src/**/*.cs" -o schema -d 6
+
+    # See structure of all classes
+    tractor "src/**/*.cs" -x "//class" -o schema
+
     # Query all C# files for classes
     tractor "src/**/*.cs" -x "//class"
 
@@ -65,7 +78,7 @@ pub struct Args {
     #[arg(long = "warning")]
     pub warning: bool,
 
-    /// Output format: xml (default), lines, source, value, gcc, json, count
+    /// Output format: xml (default), lines, source, value, gcc, json, count, schema
     #[arg(short = 'o', long = "output", default_value = "xml")]
     pub output: String,
 
