@@ -191,7 +191,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                 &mut result.documents,
                 result.doc_handle,
                 xpath_expr,
-                &result.source_lines,
+                result.source_lines.clone(),
                 &result.file_path,
             )?;
 
@@ -350,7 +350,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                     &mut result.documents,
                     result.doc_handle,
                     xpath_expr,
-                    &result.source_lines,
+                    result.source_lines.clone(),
                     &result.file_path,
                 ) {
                     Ok(matches) if !matches.is_empty() => {
@@ -440,7 +440,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                         &mut result.documents,
                         result.doc_handle,
                         xpath_expr,
-                        &result.source_lines,
+                        result.source_lines.clone(),
                         &result.file_path,
                     ) {
                         Ok(matches) => Some(matches),

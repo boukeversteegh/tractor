@@ -309,8 +309,8 @@ pub struct XeeParseResult {
     pub documents: Documents,
     /// Handle to the document for querying
     pub doc_handle: DocumentHandle,
-    /// Original source lines for location-based output
-    pub source_lines: Vec<String>,
+    /// Original source lines for location-based output (Arc for cheap cloning)
+    pub source_lines: std::sync::Arc<Vec<String>>,
     /// File path or "<stdin>"
     pub file_path: String,
     /// Language used for parsing
@@ -361,7 +361,7 @@ pub fn parse_string_to_xee_with_options(
     Ok(XeeParseResult {
         documents,
         doc_handle,
-        source_lines: source.lines().map(|s| s.to_string()).collect(),
+        source_lines: std::sync::Arc::new(source.lines().map(|s| s.to_string()).collect()),
         file_path,
         language: lang.to_string(),
     })
@@ -407,7 +407,7 @@ pub fn load_xml_string_to_documents(xml: &str, file_path: String) -> Result<XeeP
     Ok(XeeParseResult {
         documents,
         doc_handle,
-        source_lines: Vec::new(), // XML passthrough doesn't have source lines
+        source_lines: std::sync::Arc::new(Vec::new()), // XML passthrough doesn't have source lines
         file_path,
         language: "xml".to_string(),
     })

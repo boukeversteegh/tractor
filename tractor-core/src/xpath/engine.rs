@@ -4,9 +4,11 @@ use super::{Match, XPathError};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::cell::RefCell;
+use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Instant;
 use xee_xpath::{Documents, DocumentHandle, Queries, Query, query::SequenceQuery};
+use xot::{Node, Value, Xot};
 
 // Timing stats (in microseconds) for profiling
 static TIMING_XML_LOAD: AtomicU64 = AtomicU64::new(0);
@@ -36,15 +38,58 @@ pub fn print_timing_stats() {
         (xml_load + query_exec + result_proc) as f64 / 1000.0 / count as f64);
 }
 
-// Pre-compiled regexes for location extraction (compiled once, reused forever)
-static START_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r#"start="(\d+):(\d+)""#).unwrap());
-static END_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r#"end="(\d+):(\d+)""#).unwrap());
-static LEGACY_RE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r#"startLine="(\d+)"\s+startCol="(\d+)"\s+endLine="(\d+)"\s+endCol="(\d+)""#).unwrap()
-});
+// Pre-compiled regex for stripping location metadata from XML
 static STRIP_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r#"\s*(start|end|startLine|startCol|endLine|endCol)="[^"]*""#).unwrap()
 });
+
+/// Extract location directly from xot node attributes (fast path - no serialization)
+fn extract_location_from_xot(xot: &Xot, node: Node) -> (u32, u32, u32, u32) {
+    if let Value::Element(_) = xot.value(node) {
+        let mut line = 1u32;
+        let mut col = 1u32;
+        let mut end_line = 1u32;
+        let mut end_col = 1u32;
+
+        for (name_id, value) in xot.attributes(node).iter() {
+            let name = xot.local_name_str(name_id);
+            match name {
+                "start" => {
+                    if let Some((l, c)) = parse_location_attr(value) {
+                        line = l;
+                        col = c;
+                    }
+                }
+                "end" => {
+                    if let Some((l, c)) = parse_location_attr(value) {
+                        end_line = l;
+                        end_col = c;
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        // If end wasn't found, use start
+        if end_line == 1 && end_col == 1 && (line != 1 || col != 1) {
+            end_line = line;
+            end_col = col;
+        }
+
+        (line, col, end_line, end_col)
+    } else {
+        (1, 1, 1, 1)
+    }
+}
+
+/// Parse "line:col" format from attribute value
+#[inline]
+fn parse_location_attr(value: &str) -> Option<(u32, u32)> {
+    let mut parts = value.split(':');
+    let line = parts.next()?.parse().ok()?;
+    let col = parts.next()?.parse().ok()?;
+    Some((line, col))
+}
 
 // Thread-local cache for compiled XPath queries
 // Each thread gets its own compiled query to avoid RefCell conflicts
@@ -60,7 +105,7 @@ fn execute_direct_query(
     xpath: &str,
     documents: &mut Documents,
     doc_handle: DocumentHandle,
-    source_lines: &[String],
+    source_lines: Arc<Vec<String>>,
     file_path: &str,
 ) -> Result<Vec<Match>, XPathError> {
     QUERY_CACHE.with(|cache| {
@@ -103,19 +148,20 @@ fn execute_direct_query(
             match item {
                 xee_xpath::Item::Node(node) => {
                     let xot = documents.xot();
-                    let xml_fragment = xot.to_string(node).unwrap_or_default();
-                    let (line, col, end_line, end_col) = extract_location(&xml_fragment);
+                    // Extract location directly from xot attributes (fast - no serialization)
+                    let (line, col, end_line, end_col) = extract_location_from_xot(xot, node);
                     let value = xot.string_value(node);
-                    let actual_file = extract_file_path_from_xml(&xml_fragment, file_path);
+                    // Serialize to XML only for the fragment (still needed for xml output)
+                    let xml_fragment = xot.to_string(node).unwrap_or_default();
 
                     let m = Match::with_location(
-                        actual_file,
+                        file_path.to_string(),
                         line,
                         col,
                         end_line,
                         end_col,
                         value,
-                        source_lines.to_vec(),
+                        Arc::clone(&source_lines),
                     ).with_xml_fragment(xml_fragment);
 
                     matches.push(m);
@@ -172,13 +218,13 @@ impl XPathEngine {
     /// directly on the Documents instance. Use this when you've built the AST
     /// directly into Documents using XeeBuilder.
     ///
-    /// This can be 50% faster than the XML-based query path.
+    /// source_lines is wrapped in Arc to avoid cloning for each match.
     pub fn query_documents(
         &self,
         documents: &mut Documents,
         doc_handle: DocumentHandle,
         xpath: &str,
-        source_lines: &[String],
+        source_lines: Arc<Vec<String>>,
         file_path: &str,
     ) -> Result<Vec<Match>, XPathError> {
         execute_direct_query(xpath, documents, doc_handle, source_lines, file_path)
@@ -196,57 +242,9 @@ impl Default for XPathEngine {
     }
 }
 
-/// Extract location from XML fragment attributes
-fn extract_location(xml: &str) -> (u32, u32, u32, u32) {
-    let mut line = 1u32;
-    let mut col = 1u32;
-    let mut end_line = 1u32;
-    let mut end_col = 1u32;
-
-    // Try compact format: start="line:col" end="line:col"
-    if let Some(caps) = START_RE.captures(xml) {
-        line = caps.get(1).and_then(|m| m.as_str().parse().ok()).unwrap_or(1);
-        col = caps.get(2).and_then(|m| m.as_str().parse().ok()).unwrap_or(1);
-    }
-
-    if let Some(caps) = END_RE.captures(xml) {
-        end_line = caps.get(1).and_then(|m| m.as_str().parse().ok()).unwrap_or(line);
-        end_col = caps.get(2).and_then(|m| m.as_str().parse().ok()).unwrap_or(col);
-    }
-
-    // Fallback to legacy format: startLine, startCol, endLine, endCol
-    if line == 1 && col == 1 {
-        if let Some(caps) = LEGACY_RE.captures(xml) {
-            line = caps.get(1).and_then(|m| m.as_str().parse().ok()).unwrap_or(1);
-            col = caps.get(2).and_then(|m| m.as_str().parse().ok()).unwrap_or(1);
-            end_line = caps.get(3).and_then(|m| m.as_str().parse().ok()).unwrap_or(1);
-            end_col = caps.get(4).and_then(|m| m.as_str().parse().ok()).unwrap_or(1);
-        }
-    }
-
-    (line, col, end_line, end_col)
-}
-
-/// Extract file path from XML context (looks for ancestor File element)
-fn extract_file_path_from_xml(_xml: &str, default: &str) -> String {
-    // For now, return the default
-    // Could parse XML to find File/@path attribute if needed
-    default.to_string()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_extract_location_compact() {
-        let xml = r#"<class start="5:10" end="10:2">Foo</class>"#;
-        let (line, col, end_line, end_col) = extract_location(xml);
-        assert_eq!(line, 5);
-        assert_eq!(col, 10);
-        assert_eq!(end_line, 10);
-        assert_eq!(end_col, 2);
-    }
 
     #[test]
     fn test_strip_location_metadata() {
@@ -278,13 +276,13 @@ mod tests {
 
         let matches = engine.query_documents(
             &mut result.documents, result.doc_handle,
-            "//variable", &[], "test.ts"
+            "//variable", Arc::new(vec![]), "test.ts"
         ).unwrap();
         assert_eq!(matches.len(), 1, "Should find one variable element");
 
         let matches = engine.query_documents(
             &mut result.documents, result.doc_handle,
-            "//name", &[], "test.ts"
+            "//name", Arc::new(vec![]), "test.ts"
         ).unwrap();
         assert_eq!(matches.len(), 1, "Should find one name element");
     }
@@ -303,7 +301,7 @@ mod tests {
         let mut result1 = load_xml_string_to_documents(xml1, "test1.xml".to_string()).unwrap();
         let matches1 = engine.query_documents(
             &mut result1.documents, result1.doc_handle,
-            "//item", &[], "test1.xml"
+            "//item", Arc::new(vec![]), "test1.xml"
         ).unwrap();
         assert_eq!(matches1.len(), 1);
 
@@ -311,7 +309,7 @@ mod tests {
         let mut result2 = load_xml_string_to_documents(xml2, "test2.xml".to_string()).unwrap();
         let matches2 = engine.query_documents(
             &mut result2.documents, result2.doc_handle,
-            "//item", &[], "test2.xml"
+            "//item", Arc::new(vec![]), "test2.xml"
         ).unwrap();
         assert_eq!(matches2.len(), 2);
     }
@@ -340,7 +338,7 @@ mod tests {
         let engine = XPathEngine::new();
         let matches = engine.query_documents(
             &mut result.documents, result.doc_handle,
-            "//variable", &[], "test.ts"
+            "//variable", Arc::new(vec![]), "test.ts"
         ).unwrap();
         assert_eq!(matches.len(), 1, "Should find one variable element with XML prolog");
     }
@@ -358,20 +356,20 @@ mod tests {
 
         let matches = engine.query_documents(
             &mut result.documents, result.doc_handle,
-            "//variable", &result.source_lines, "test.ts"
+            "//variable", result.source_lines.clone(), "test.ts"
         ).unwrap();
         assert_eq!(matches.len(), 1, "Should find one variable element");
 
         // Also test querying nested elements
         let matches = engine.query_documents(
             &mut result.documents, result.doc_handle,
-            "//name", &result.source_lines, "test.ts"
+            "//name", result.source_lines.clone(), "test.ts"
         ).unwrap();
         assert_eq!(matches.len(), 1, "Should find one name element");
 
         let matches = engine.query_documents(
             &mut result.documents, result.doc_handle,
-            "//value/number", &result.source_lines, "test.ts"
+            "//value/number", result.source_lines.clone(), "test.ts"
         ).unwrap();
         assert_eq!(matches.len(), 1, "Should find number inside value");
     }

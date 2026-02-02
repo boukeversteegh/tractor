@@ -1,5 +1,7 @@
 //! Match result types for XPath queries
 
+use std::sync::Arc;
+
 /// A single match from an XPath query
 #[derive(Debug, Clone)]
 pub struct Match {
@@ -15,8 +17,8 @@ pub struct Match {
     pub end_column: u32,
     /// The matched value (text content or source snippet)
     pub value: String,
-    /// Original source lines for location-based output
-    pub source_lines: Vec<String>,
+    /// Original source lines for location-based output (Arc for cheap cloning)
+    pub source_lines: Arc<Vec<String>>,
     /// The matched XML fragment (for XML output)
     pub xml_fragment: Option<String>,
 }
@@ -31,7 +33,7 @@ impl Match {
             end_line: 1,
             end_column: 1,
             value,
-            source_lines: Vec::new(),
+            source_lines: Arc::new(Vec::new()),
             xml_fragment: None,
         }
     }
@@ -44,7 +46,7 @@ impl Match {
         end_line: u32,
         end_column: u32,
         value: String,
-        source_lines: Vec<String>,
+        source_lines: Arc<Vec<String>>,
     ) -> Self {
         Match {
             file,
