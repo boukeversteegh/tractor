@@ -503,11 +503,77 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // No XPath - output full files using unified pipeline
-    // Note: Sequential processing since Documents isn't Send (uses Rc<RefCell<>>)
     let lang_override = args.lang.as_deref();
     let raw = args.raw;
     let verbose = args.verbose;
 
+    // Fast parallel paths for formats that don't need to keep Documents
+    // Documents isn't Send, but we can parse in parallel and extract results
+
+    // Fast path for count format: parallel count without keeping Documents
+    if matches!(format, OutputFormat::Count) {
+        let count: usize = files
+            .par_iter()
+            .filter(|file_path| {
+                match parse_to_documents(
+                    std::path::Path::new(file_path),
+                    lang_override,
+                    raw,
+                    args.ignore_whitespace,
+                ) {
+                    Ok(_) => true,
+                    Err(e) => {
+                        if verbose {
+                            eprintln!("warning: {}", e);
+                        }
+                        false
+                    }
+                }
+            })
+            .count();
+        println!("{}", count);
+        return Ok(());
+    }
+
+    // Fast path for schema format: parallel collection then merge
+    if matches!(format, OutputFormat::Schema) {
+        let collectors: Vec<SchemaCollector> = files
+            .par_iter()
+            .filter_map(|file_path| {
+                match parse_to_documents(
+                    std::path::Path::new(file_path),
+                    lang_override,
+                    raw,
+                    args.ignore_whitespace,
+                ) {
+                    Ok(result) => {
+                        let mut collector = SchemaCollector::new();
+                        let doc_node = result.documents.document_node(result.doc_handle)?;
+                        collector.collect_from_xot(result.documents.xot(), doc_node);
+                        Some(collector)
+                    }
+                    Err(e) => {
+                        if verbose {
+                            eprintln!("warning: {}", e);
+                        }
+                        None
+                    }
+                }
+            })
+            .collect();
+
+        // Merge all collectors
+        let mut final_collector = SchemaCollector::new();
+        for collector in collectors {
+            final_collector.merge(collector);
+        }
+
+        let schema_depth = args.depth.or(Some(4));
+        print!("{}", final_collector.format(schema_depth, use_color));
+        return Ok(());
+    }
+
+    // For other formats, sequential processing is required since Documents isn't Send
     let parse_results: Vec<XeeParseResult> = files
         .iter()
         .filter_map(|file_path| {

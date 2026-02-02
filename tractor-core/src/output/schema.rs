@@ -201,6 +201,31 @@ impl Default for SchemaCollector {
     }
 }
 
+// Allow SchemaCollector to be sent across threads for parallel collection
+unsafe impl Send for SchemaCollector {}
+
+impl SchemaCollector {
+    /// Merge another collector into this one
+    ///
+    /// Used for parallel schema collection: each thread builds its own collector,
+    /// then all are merged into the final result.
+    pub fn merge(&mut self, other: SchemaCollector) {
+        for (path, other_info) in other.paths {
+            let entry = self.paths.entry(path).or_insert(PathInfo {
+                values: Vec::new(),
+                count: 0,
+            });
+            entry.count += other_info.count;
+            // Merge values, avoiding duplicates
+            for value in other_info.values {
+                if !entry.values.contains(&value) {
+                    entry.values.push(value);
+                }
+            }
+        }
+    }
+}
+
 /// Tree node for display
 #[derive(Default)]
 struct TreeNode {
