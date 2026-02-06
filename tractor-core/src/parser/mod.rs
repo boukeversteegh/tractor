@@ -327,7 +327,7 @@ pub fn parse_string_to_xee(
     file_path: String,
     raw_mode: bool,
 ) -> Result<XeeParseResult, ParseError> {
-    parse_string_to_xee_with_options(source, lang, file_path, raw_mode, false)
+    parse_string_to_xee_with_options(source, lang, file_path, raw_mode, false, None)
 }
 
 /// Parse a source string directly into Documents with options
@@ -335,33 +335,83 @@ pub fn parse_string_to_xee(
 /// This is the fast path that avoids XML serialization/parsing roundtrip.
 /// Returns an XeeParseResult that can be queried with XPathEngine::query_documents().
 /// Use `ignore_whitespace=true` to strip whitespace from text nodes during tree building.
+// Timing stats for profiling (in microseconds)
+use std::sync::atomic::{AtomicU64, Ordering};
+static TIMING_TS_PARSE: AtomicU64 = AtomicU64::new(0);
+static TIMING_XOT_BUILD: AtomicU64 = AtomicU64::new(0);
+static TIMING_SOURCE_LINES: AtomicU64 = AtomicU64::new(0);
+static TIMING_PARSE_COUNT: AtomicU64 = AtomicU64::new(0);
+
+/// Print parsing timing stats
+pub fn print_parse_timing_stats() {
+    let count = TIMING_PARSE_COUNT.load(Ordering::Relaxed);
+    if count == 0 {
+        return;
+    }
+    let ts_parse = TIMING_TS_PARSE.load(Ordering::Relaxed);
+    let xot_build = TIMING_XOT_BUILD.load(Ordering::Relaxed);
+    let source_lines = TIMING_SOURCE_LINES.load(Ordering::Relaxed);
+
+    eprintln!("\n=== Parse Timing Stats ({} files) ===", count);
+    eprintln!("TreeSitter parse: {:>8.2}ms ({:.2}ms/file)",
+        ts_parse as f64 / 1000.0, ts_parse as f64 / 1000.0 / count as f64);
+    eprintln!("Xot building:     {:>8.2}ms ({:.2}ms/file)",
+        xot_build as f64 / 1000.0, xot_build as f64 / 1000.0 / count as f64);
+    eprintln!("Source lines:     {:>8.2}ms ({:.2}ms/file)",
+        source_lines as f64 / 1000.0, source_lines as f64 / 1000.0 / count as f64);
+    eprintln!("Total parsing:    {:>8.2}ms ({:.2}ms/file)",
+        (ts_parse + xot_build + source_lines) as f64 / 1000.0,
+        (ts_parse + xot_build + source_lines) as f64 / 1000.0 / count as f64);
+}
+
+/// Parse a source string directly into Documents with all options
+///
+/// This is the fast path that avoids XML serialization/parsing roundtrip.
+/// Returns an XeeParseResult that can be queried with XPathEngine::query_documents().
+/// Use `ignore_whitespace=true` to strip whitespace from text nodes during tree building.
+/// Use `max_depth` to limit tree building depth (skip deeper nodes for speed).
 pub fn parse_string_to_xee_with_options(
     source: &str,
     lang: &str,
     file_path: String,
     raw_mode: bool,
     ignore_whitespace: bool,
+    max_depth: Option<usize>,
 ) -> Result<XeeParseResult, ParseError> {
+    use std::time::Instant;
+
     let language = get_tree_sitter_language(lang)?;
 
+    let t0 = Instant::now();
     let mut parser = tree_sitter::Parser::new();
     parser.set_language(&language)
         .map_err(|e| ParseError::TreeSitter(e.to_string()))?;
 
     let tree = parser.parse(source, None)
         .ok_or_else(|| ParseError::Parse("Failed to parse source".to_string()))?;
+    let t1 = Instant::now();
 
     // Build directly into Documents using XeeBuilder
     let mut builder = XeeBuilder::new();
-    let doc_handle = builder.build_with_options(tree.root_node(), source, &file_path, lang, raw_mode, ignore_whitespace)
+    let doc_handle = builder.build_with_options(tree.root_node(), source, &file_path, lang, raw_mode, ignore_whitespace, max_depth)
         .map_err(|e| ParseError::Parse(e.to_string()))?;
 
     let documents = builder.into_documents();
+    let t2 = Instant::now();
+
+    let source_lines = std::sync::Arc::new(source.lines().map(|s| s.to_string()).collect());
+    let t3 = Instant::now();
+
+    // Record timing stats
+    TIMING_TS_PARSE.fetch_add((t1 - t0).as_micros() as u64, Ordering::Relaxed);
+    TIMING_XOT_BUILD.fetch_add((t2 - t1).as_micros() as u64, Ordering::Relaxed);
+    TIMING_SOURCE_LINES.fetch_add((t3 - t2).as_micros() as u64, Ordering::Relaxed);
+    TIMING_PARSE_COUNT.fetch_add(1, Ordering::Relaxed);
 
     Ok(XeeParseResult {
         documents,
         doc_handle,
-        source_lines: std::sync::Arc::new(source.lines().map(|s| s.to_string()).collect()),
+        source_lines,
         file_path,
         language: lang.to_string(),
     })
@@ -385,7 +435,7 @@ pub fn parse_file_to_xee_with_options(
 ) -> Result<XeeParseResult, ParseError> {
     let source = fs::read_to_string(path)?;
     let lang = lang_override.unwrap_or_else(|| detect_language(path.to_str().unwrap_or("")));
-    parse_string_to_xee_with_options(&source, lang, path.to_string_lossy().to_string(), raw_mode, ignore_whitespace)
+    parse_string_to_xee_with_options(&source, lang, path.to_string_lossy().to_string(), raw_mode, ignore_whitespace, None)
 }
 
 // ============================================================================
@@ -426,11 +476,13 @@ pub fn load_xml_file_to_documents(path: &Path) -> Result<XeeParseResult, ParseEr
 /// - Source code: parsed with TreeSitter, built into Documents
 ///
 /// The result can always be queried with `XPathEngine::query_documents()`.
+/// Use `max_depth` to limit tree building depth (skip deeper nodes for speed).
 pub fn parse_to_documents(
     path: &Path,
     lang_override: Option<&str>,
     raw_mode: bool,
     ignore_whitespace: bool,
+    max_depth: Option<usize>,
 ) -> Result<XeeParseResult, ParseError> {
     let lang = lang_override.unwrap_or_else(|| detect_language(path.to_str().unwrap_or("")));
 
@@ -439,7 +491,8 @@ pub fn parse_to_documents(
         load_xml_file_to_documents(path)
     } else {
         // Source code: TreeSitter → XeeBuilder → Documents
-        parse_file_to_xee_with_options(path, lang_override, raw_mode, ignore_whitespace)
+        let source = fs::read_to_string(path)?;
+        parse_string_to_xee_with_options(&source, lang, path.to_string_lossy().to_string(), raw_mode, ignore_whitespace, max_depth)
     }
 }
 
@@ -456,7 +509,7 @@ pub fn parse_string_to_documents(
         load_xml_string_to_documents(source, file_path)
     } else {
         // Source code: TreeSitter → XeeBuilder → Documents
-        parse_string_to_xee_with_options(source, lang, file_path, raw_mode, ignore_whitespace)
+        parse_string_to_xee_with_options(source, lang, file_path, raw_mode, ignore_whitespace, None)
     }
 }
 

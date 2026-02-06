@@ -386,7 +386,7 @@ mod tests {
             10,
             15,
             "MyMethod".to_string(),
-            vec![],
+            std::sync::Arc::new(vec![]),
         );
         assert_eq!(format_message("found {value} at line {line}", &m), "found MyMethod at line 10");
     }

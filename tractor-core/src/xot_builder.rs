@@ -114,7 +114,7 @@ impl<'a> TreeBuilder<'a> {
         Self::WRAPPED_FIELDS.contains(&field)
     }
 
-    /// Recursively build xot nodes from TreeSitter node
+    /// Recursively build xot nodes from TreeSitter node with optional depth limit
     #[cfg(feature = "native")]
     fn build_node(
         &mut self,
@@ -122,7 +122,16 @@ impl<'a> TreeBuilder<'a> {
         source: &str,
         parent: XotNode,
         field_name: Option<&str>,
+        current_depth: usize,
+        max_depth: Option<usize>,
     ) -> Result<(), xot::Error> {
+        // Check depth limit - stop recursion if exceeded
+        if let Some(max) = max_depth {
+            if current_depth >= max {
+                return Ok(());
+            }
+        }
+
         // Skip anonymous nodes (punctuation, etc.)
         if !ts_node.is_named() {
             return Ok(());
@@ -163,9 +172,7 @@ impl<'a> TreeBuilder<'a> {
                 }
             }
         } else {
-            // Non-leaf: iterate ALL children (named and anonymous) to preserve order
-            // Anonymous nodes become text children, named nodes become element children
-            // We also capture inter-node whitespace from the source to preserve spacing
+            // Non-leaf: iterate ALL children
             let mut cursor = ts_node.walk();
             cursor.goto_first_child();
             let mut last_end_byte = ts_node.start_byte();
@@ -186,13 +193,13 @@ impl<'a> TreeBuilder<'a> {
 
                 if child.is_named() {
                     let child_field = cursor.field_name();
-                    self.build_node(child, source, element, child_field)?;
+                    // Recurse with incremented depth
+                    self.build_node(child, source, element, child_field, current_depth + 1, max_depth)?;
                 } else {
-                    // Anonymous node - add as text child (operators, keywords, punctuation)
+                    // Anonymous node - add as text child
                     if let Ok(text) = child.utf8_text(source.as_bytes()) {
                         let trimmed = normalize_crlf(text.trim());
                         if !trimmed.is_empty() {
-                            // Anonymous tokens don't get whitespace stripping - they're operators/keywords
                             let text_node = self.xot.new_text(&trimmed);
                             self.xot.append(element, text_node)?;
                         }
@@ -210,11 +217,9 @@ impl<'a> TreeBuilder<'a> {
         // Wrap in field element if needed, or just append directly
         if let Some(field) = field_name {
             if Self::should_wrap_field(field) {
-                // Create wrapper element with field name
                 let wrapper_name = self.get_name(field);
                 let wrapper = self.xot.new_element(wrapper_name);
 
-                // Copy location attributes from child to wrapper
                 let start_attr = self.get_name("start");
                 let end_attr = self.get_name("end");
                 if let Some(start_val) = self.xot.attributes(element).get(start_attr).cloned() {
@@ -227,7 +232,6 @@ impl<'a> TreeBuilder<'a> {
                 self.xot.append(wrapper, element)?;
                 self.xot.append(parent, wrapper)?;
             } else {
-                // Add field as attribute instead
                 let field_attr = self.get_name("field");
                 self.xot.attributes_mut(element).insert(field_attr, field.to_string());
                 self.xot.append(parent, element)?;
@@ -414,7 +418,7 @@ impl XotBuilder {
         // Build the tree from TreeSitter using TreeBuilder
         {
             let mut builder = TreeBuilder::new(&mut self.xot, &mut self.name_cache, ignore_whitespace);
-            builder.build_node(ts_node, source, file_el, None)?;
+            builder.build_node(ts_node, source, file_el, None, 0, None)?;
         }
 
         // Assemble document
@@ -537,7 +541,7 @@ impl XeeBuilder {
         lang: &str,
         raw_mode: bool,
     ) -> Result<DocumentHandle, xot::Error> {
-        self.build_with_options(ts_node, source, file_path, lang, raw_mode, false)
+        self.build_with_options(ts_node, source, file_path, lang, raw_mode, false, None)
     }
 
     /// Build a document from TreeSitter AST with options
@@ -545,6 +549,7 @@ impl XeeBuilder {
     /// This is the fast path that avoids XML serialization/parsing.
     /// Use `raw_mode=true` to skip semantic transforms (faster but less normalized).
     /// Use `ignore_whitespace=true` to strip whitespace from text nodes.
+    /// Use `max_depth` to limit tree building depth (skip deeper nodes for speed).
     #[cfg(feature = "native")]
     pub fn build_with_options(
         &mut self,
@@ -554,9 +559,19 @@ impl XeeBuilder {
         lang: &str,
         raw_mode: bool,
         ignore_whitespace: bool,
+        max_depth: Option<usize>,
     ) -> Result<DocumentHandle, xot::Error> {
+        use std::time::Instant;
+        use std::sync::atomic::{AtomicU64, Ordering};
+
+        static TIMING_RAW_BUILD: AtomicU64 = AtomicU64::new(0);
+        static TIMING_TRANSFORM: AtomicU64 = AtomicU64::new(0);
+        static TIMING_BUILD_COUNT: AtomicU64 = AtomicU64::new(0);
+
+        let t0 = Instant::now();
         // Build the raw tree
-        let doc_handle = self.build_raw_with_options(ts_node, source, file_path, ignore_whitespace)?;
+        let doc_handle = self.build_raw_with_options(ts_node, source, file_path, ignore_whitespace, max_depth)?;
+        let t1 = Instant::now();
 
         // Apply semantic transforms if not in raw mode
         if !raw_mode {
@@ -567,6 +582,20 @@ impl XeeBuilder {
             // Apply language-specific transforms
             let transform_fn = crate::languages::get_transform(lang);
             crate::xot_transform::walk_transform(self.documents.xot_mut(), doc_node, transform_fn)?;
+        }
+        let t2 = Instant::now();
+
+        TIMING_RAW_BUILD.fetch_add((t1 - t0).as_micros() as u64, Ordering::Relaxed);
+        TIMING_TRANSFORM.fetch_add((t2 - t1).as_micros() as u64, Ordering::Relaxed);
+        let count = TIMING_BUILD_COUNT.fetch_add(1, Ordering::Relaxed) + 1;
+
+        // Print stats periodically
+        if count % 5000 == 0 {
+            let raw = TIMING_RAW_BUILD.load(Ordering::Relaxed);
+            let transform = TIMING_TRANSFORM.load(Ordering::Relaxed);
+            eprintln!("\n=== Xot Build Stats ({} files) ===", count);
+            eprintln!("Raw build:    {:>8.2}ms ({:.2}ms/file)", raw as f64 / 1000.0, raw as f64 / 1000.0 / count as f64);
+            eprintln!("Transform:    {:>8.2}ms ({:.2}ms/file)", transform as f64 / 1000.0, transform as f64 / 1000.0 / count as f64);
         }
 
         Ok(doc_handle)
@@ -580,10 +609,12 @@ impl XeeBuilder {
         source: &str,
         file_path: &str,
     ) -> Result<DocumentHandle, xot::Error> {
-        self.build_raw_with_options(ts_node, source, file_path, false)
+        self.build_raw_with_options(ts_node, source, file_path, false, None)
     }
 
     /// Build a document from TreeSitter AST with options (raw mode only)
+    ///
+    /// Use `max_depth` to limit tree building depth (skip deeper nodes for speed).
     #[cfg(feature = "native")]
     pub fn build_raw_with_options(
         &mut self,
@@ -591,6 +622,7 @@ impl XeeBuilder {
         source: &str,
         file_path: &str,
         ignore_whitespace: bool,
+        max_depth: Option<usize>,
     ) -> Result<DocumentHandle, xot::Error> {
         // Create a shell document with Files root
         let doc_handle = self.documents.add_string(
@@ -624,7 +656,7 @@ impl XeeBuilder {
         {
             let xot = self.documents.xot_mut();
             let mut builder = TreeBuilder::new(xot, &mut self.name_cache, ignore_whitespace);
-            builder.build_node(ts_node, source, file_el, None)?;
+            builder.build_node(ts_node, source, file_el, None, 0, max_depth)?;
         }
 
         // Append File to root

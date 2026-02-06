@@ -70,7 +70,7 @@ fn test_query_xml_passthrough() {
         &mut result.documents,
         result.doc_handle,
         "//function",
-        &result.source_lines,
+        result.source_lines.clone(),
         &result.file_path,
     ).expect("Query should succeed");
 
@@ -96,7 +96,7 @@ fn test_load_snapshot_and_query() {
         &mut result.documents,
         result.doc_handle,
         "//function",
-        &result.source_lines,
+        result.source_lines.clone(),
         &result.file_path,
     ).expect("Query should succeed");
 
@@ -118,7 +118,7 @@ fn test_snapshot_matches_current_output() {
     }
 
     // Parse the fixture using unified pipeline
-    let parsed = parse_to_documents(&fixture_path, None, false, false)
+    let parsed = parse_to_documents(&fixture_path, None, false, false, None)
         .expect("Should parse fixture");
     let current_xml = render_to_xml(&parsed);
 
@@ -179,7 +179,7 @@ fn test_xpath_structure_assertions() {
         return;
     }
 
-    let mut parsed = parse_to_documents(&fixture_path, None, false, false)
+    let mut parsed = parse_to_documents(&fixture_path, None, false, false, None)
         .expect("Should parse fixture");
 
     let engine = XPathEngine::new();
@@ -189,7 +189,7 @@ fn test_xpath_structure_assertions() {
         &mut parsed.documents,
         parsed.doc_handle,
         "//function",
-        &parsed.source_lines,
+        parsed.source_lines.clone(),
         &parsed.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 2, "Should have 2 functions");
@@ -199,7 +199,7 @@ fn test_xpath_structure_assertions() {
         &mut parsed.documents,
         parsed.doc_handle,
         "//function/name[type='add']",
-        &parsed.source_lines,
+        parsed.source_lines.clone(),
         &parsed.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should have 'add' function");
@@ -209,7 +209,7 @@ fn test_xpath_structure_assertions() {
         &mut parsed.documents,
         parsed.doc_handle,
         "//function/name[type='main']",
-        &parsed.source_lines,
+        parsed.source_lines.clone(),
         &parsed.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should have 'main' function");
@@ -219,7 +219,7 @@ fn test_xpath_structure_assertions() {
         &mut parsed.documents,
         parsed.doc_handle,
         "//binary[@op='+']",
-        &parsed.source_lines,
+        parsed.source_lines.clone(),
         &parsed.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should have + operator");
@@ -258,7 +258,7 @@ fn test_multi_language_snapshots() {
             &mut result.documents,
             result.doc_handle,
             xpath,
-            &result.source_lines,
+            result.source_lines.clone(),
             &result.file_path,
         ).expect(&format!("Query should succeed for {}", snapshot_name));
 
@@ -284,7 +284,7 @@ fn test_xpath_string_value_preserves_whitespace() {
         &mut result.documents,
         result.doc_handle,
         "//let_declaration",
-        &result.source_lines,
+        result.source_lines.clone(),
         &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should find let_declaration");
@@ -301,7 +301,7 @@ fn test_xpath_string_value_preserves_whitespace() {
         &mut result.documents,
         result.doc_handle,
         "//let_declaration[contains(.,'let mut batches')]",
-        &result.source_lines,
+        result.source_lines.clone(),
         &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should match with contains() and whitespace");
@@ -321,7 +321,7 @@ fn test_xpath_exact_string_match_without_formatting_whitespace() {
         &mut result.documents,
         result.doc_handle,
         "//type[.='List<string>']",
-        &result.source_lines,
+        result.source_lines.clone(),
         &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should find type with exact string match");
@@ -343,7 +343,7 @@ fn test_csharp_null_forgiving_operator() {
         &mut result.documents,
         result.doc_handle,
         "//postfix_unary_expression",
-        &result.source_lines,
+        result.source_lines.clone(),
         &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should find postfix_unary_expression for null-forgiving operator");
@@ -353,7 +353,7 @@ fn test_csharp_null_forgiving_operator() {
         &mut result.documents,
         result.doc_handle,
         "//ERROR",
-        &result.source_lines,
+        result.source_lines.clone(),
         &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(errors.len(), 0, "Should have no ERROR nodes - null-forgiving operator should parse correctly");
@@ -363,7 +363,7 @@ fn test_csharp_null_forgiving_operator() {
         &mut result.documents,
         result.doc_handle,
         "//member[postfix_unary_expression]",
-        &result.source_lines,
+        result.source_lines.clone(),
         &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should find member access with postfix_unary_expression child");

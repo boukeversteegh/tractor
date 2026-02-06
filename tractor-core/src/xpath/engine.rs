@@ -14,7 +14,10 @@ use xot::{Node, Value, Xot};
 static TIMING_XML_LOAD: AtomicU64 = AtomicU64::new(0);
 static TIMING_QUERY_EXEC: AtomicU64 = AtomicU64::new(0);
 static TIMING_RESULT_PROC: AtomicU64 = AtomicU64::new(0);
+static TIMING_XML_SERIALIZE: AtomicU64 = AtomicU64::new(0);
+static TIMING_STRING_VALUE: AtomicU64 = AtomicU64::new(0);
 static TIMING_COUNT: AtomicU64 = AtomicU64::new(0);
+static TIMING_MATCH_COUNT: AtomicU64 = AtomicU64::new(0);
 
 /// Print accumulated timing stats (call at end of processing)
 pub fn print_timing_stats() {
@@ -25,17 +28,24 @@ pub fn print_timing_stats() {
     let xml_load = TIMING_XML_LOAD.load(Ordering::Relaxed);
     let query_exec = TIMING_QUERY_EXEC.load(Ordering::Relaxed);
     let result_proc = TIMING_RESULT_PROC.load(Ordering::Relaxed);
+    let xml_serialize = TIMING_XML_SERIALIZE.load(Ordering::Relaxed);
+    let string_value = TIMING_STRING_VALUE.load(Ordering::Relaxed);
+    let match_count = TIMING_MATCH_COUNT.load(Ordering::Relaxed);
 
-    eprintln!("\n=== XPath Timing Stats ({} files) ===", count);
-    eprintln!("XML loading:    {:>8.2}ms ({:.2}ms/file)",
-        xml_load as f64 / 1000.0, xml_load as f64 / 1000.0 / count as f64);
-    eprintln!("Query exec:     {:>8.2}ms ({:.2}ms/file)",
+    eprintln!("\n=== XPath Timing Stats ({} files, {} matches) ===", count, match_count);
+    eprintln!("Query exec:       {:>8.2}ms ({:.2}ms/file)",
         query_exec as f64 / 1000.0, query_exec as f64 / 1000.0 / count as f64);
-    eprintln!("Result proc:    {:>8.2}ms ({:.2}ms/file)",
+    eprintln!("Result proc:      {:>8.2}ms ({:.2}ms/file)",
         result_proc as f64 / 1000.0, result_proc as f64 / 1000.0 / count as f64);
-    eprintln!("Total XPath:    {:>8.2}ms ({:.2}ms/file)",
-        (xml_load + query_exec + result_proc) as f64 / 1000.0,
-        (xml_load + query_exec + result_proc) as f64 / 1000.0 / count as f64);
+    eprintln!("  - xml_fragment: {:>8.2}ms ({:.3}ms/match)",
+        xml_serialize as f64 / 1000.0,
+        if match_count > 0 { xml_serialize as f64 / 1000.0 / match_count as f64 } else { 0.0 });
+    eprintln!("  - string_value: {:>8.2}ms ({:.3}ms/match)",
+        string_value as f64 / 1000.0,
+        if match_count > 0 { string_value as f64 / 1000.0 / match_count as f64 } else { 0.0 });
+    eprintln!("Total XPath:      {:>8.2}ms ({:.2}ms/file)",
+        (query_exec + result_proc) as f64 / 1000.0,
+        (query_exec + result_proc) as f64 / 1000.0 / count as f64);
 }
 
 // Pre-compiled regex for stripping location metadata from XML
@@ -143,6 +153,8 @@ fn execute_direct_query(
 
         // Convert results to Match objects
         let mut matches = Vec::new();
+        let mut xml_serialize_time = 0u64;
+        let mut string_value_time = 0u64;
 
         for item in results.iter() {
             match item {
@@ -150,9 +162,16 @@ fn execute_direct_query(
                     let xot = documents.xot();
                     // Extract location directly from xot attributes (fast - no serialization)
                     let (line, col, end_line, end_col) = extract_location_from_xot(xot, node);
+
+                    let ts0 = Instant::now();
                     let value = xot.string_value(node);
+                    let ts1 = Instant::now();
                     // Serialize to XML only for the fragment (still needed for xml output)
                     let xml_fragment = xot.to_string(node).unwrap_or_default();
+                    let ts2 = Instant::now();
+
+                    string_value_time += (ts1 - ts0).as_micros() as u64;
+                    xml_serialize_time += (ts2 - ts1).as_micros() as u64;
 
                     let m = Match::with_location(
                         file_path.to_string(),
@@ -174,6 +193,10 @@ fn execute_direct_query(
             }
         }
         let t3 = Instant::now();
+
+        TIMING_XML_SERIALIZE.fetch_add(xml_serialize_time, Ordering::Relaxed);
+        TIMING_STRING_VALUE.fetch_add(string_value_time, Ordering::Relaxed);
+        TIMING_MATCH_COUNT.fetch_add(matches.len() as u64, Ordering::Relaxed);
 
         // Record timing stats (no XML load time for direct queries!)
         TIMING_QUERY_EXEC.fetch_add((t2 - t1).as_micros() as u64, Ordering::Relaxed);

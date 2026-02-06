@@ -94,6 +94,10 @@ pub struct Args {
     #[arg(short = 'd', long = "depth")]
     pub depth: Option<usize>,
 
+    /// [EXPERIMENTAL] Limit tree building depth (skip parsing deeper nodes for speed)
+    #[arg(long = "parse-depth")]
+    pub parse_depth: Option<usize>,
+
     /// Include start/end location attributes in XML output
     #[arg(long = "keep-locations")]
     pub keep_locations: bool,

@@ -35,6 +35,8 @@ pub use parser::{
     XeeParseResult,
     // Version info
     get_language_abi_versions, LanguageAbiInfo,
+    // Timing stats
+    print_parse_timing_stats,
 };
 pub use xpath::{XPathEngine, Match, print_timing_stats, Documents, DocumentHandle};
 pub use output::{OutputFormat, format_matches, OutputOptions, render_node, render_document, render_xml_string, RenderOptions, format_schema, SchemaCollector};

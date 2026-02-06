@@ -68,6 +68,7 @@ fn main() -> ExitCode {
 
     // Print timing stats if TRACTOR_PROFILE env var is set
     if std::env::var("TRACTOR_PROFILE").is_ok() {
+        tractor_core::print_parse_timing_stats();
         print_timing_stats();
     }
 
@@ -334,6 +335,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                     lang_override.as_deref(),
                     raw,
                     args.ignore_whitespace,
+                    args.parse_depth,
                 ) {
                     Ok(r) => r,
                     Err(e) => {
@@ -424,6 +426,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                         lang_override.as_deref(),
                         raw,
                         args.ignore_whitespace,
+                        args.parse_depth,
                     ) {
                         Ok(r) => r,
                         Err(e) => {
@@ -520,6 +523,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                     lang_override,
                     raw,
                     args.ignore_whitespace,
+                    args.parse_depth,
                 ) {
                     Ok(_) => true,
                     Err(e) => {
@@ -545,6 +549,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                     lang_override,
                     raw,
                     args.ignore_whitespace,
+                    args.parse_depth,
                 ) {
                     Ok(result) => {
                         let mut collector = SchemaCollector::new();
@@ -582,6 +587,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                 lang_override,
                 raw,
                 args.ignore_whitespace,
+                args.parse_depth,
             ) {
                 Ok(r) => Some(r),
                 Err(e) => {

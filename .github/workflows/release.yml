@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  build-linux:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,7 +29,7 @@ jobs:
       - name: Run unit tests
         run: cargo test --workspace
 
-      - name: Build binary
+      - name: Build release binary
         run: cargo build --release -p tractor
 
       - name: Run integration tests
@@ -38,19 +38,15 @@ jobs:
       - name: Run snapshot tests
         run: bash tests/integration/test_snapshots.sh
 
-  build:
-    needs: test
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            artifact: tractor-linux-x86_64
-          - os: macos-latest
-            artifact: tractor-macos-arm64
-          - os: windows-latest
-            artifact: tractor-windows-x86_64.exe
-    runs-on: ${{ matrix.os }}
+      - name: Upload artifact
+        run: cp target/release/tractor tractor-linux-x86_64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tractor-linux-x86_64
+          path: tractor-linux-x86_64
+
+  build-macos:
+    runs-on: macos-latest
     defaults:
       run:
         shell: bash
@@ -68,21 +64,41 @@ jobs:
       - name: Build
         run: cargo build --release -p tractor
 
-      - name: Prepare artifact
-        run: |
-          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            cp target/release/tractor.exe "${{ matrix.artifact }}"
-          else
-            cp target/release/tractor "${{ matrix.artifact }}"
-          fi
-
+      - name: Upload artifact
+        run: cp target/release/tractor tractor-macos-arm64
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact }}
-          path: ${{ matrix.artifact }}
+          name: tractor-macos-arm64
+          path: tractor-macos-arm64
+
+  build-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clone patched grammars
+        run: |
+          mkdir -p .grammar-build
+          git clone --depth 1 https://github.com/tree-sitter/tree-sitter-c-sharp.git .grammar-build/tree-sitter-c-sharp
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build
+        run: cargo build --release -p tractor
+
+      - name: Upload artifact
+        run: cp target/release/tractor.exe tractor-windows-x86_64.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tractor-windows-x86_64.exe
+          path: tractor-windows-x86_64.exe
 
   release:
-    needs: build
+    needs: [build-linux, build-macos, build-windows]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
