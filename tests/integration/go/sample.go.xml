@@ -1,7 +1,7 @@
 <Files>
   <File path="tests/integration/go/sample.go">
     <file>
-      <comment>// Simple Go example</comment>
+      <comment>// Simple Go example</comment>
       <package>
         package
         <pkg>main</pkg>

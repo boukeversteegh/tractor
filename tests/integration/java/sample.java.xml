@@ -1,7 +1,7 @@
 <Files>
   <File path="tests/integration/java/sample.java">
     <program>
-      <line_comment>// Simple Java example</line_comment>
+      <line_comment>// Simple Java example</line_comment>
       <class>
         <public/>
         class

@@ -21,8 +21,8 @@ use crate::wasm_ast::SerializedNode;
 /// This ensures consistent text content regardless of source file line endings
 #[inline]
 fn normalize_crlf(text: &str) -> std::borrow::Cow<'_, str> {
-    if text.contains("\r\n") {
-        std::borrow::Cow::Owned(text.replace("\r\n", "\n"))
+    if text.contains('\r') {
+        std::borrow::Cow::Owned(text.replace('\r', ""))
     } else {
         std::borrow::Cow::Borrowed(text)
     }
