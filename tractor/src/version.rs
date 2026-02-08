@@ -5,8 +5,11 @@ use std::collections::HashMap;
 // Include the auto-generated versions from build.rs
 include!(concat!(env!("OUT_DIR"), "/versions.rs"));
 
-/// Package version from Cargo.toml
-pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+/// Release version (from TRACTOR_VERSION env var in CI, otherwise Cargo.toml version)
+pub const VERSION: &str = match option_env!("TRACTOR_VERSION") {
+    Some(v) => v,
+    None => env!("CARGO_PKG_VERSION"),
+};
 
 /// Git commit hash (set by build.rs)
 pub const GIT_HASH: &str = env!("TRACTOR_GIT_HASH");

@@ -48,6 +48,12 @@ fn main() {
     );
     println!("cargo:rustc-env=TRACTOR_GIT_DATE={}", commit_date);
 
+    // Allow overriding the version via TRACTOR_VERSION env var (set in CI release builds)
+    println!("cargo:rerun-if-env-changed=TRACTOR_VERSION");
+    if let Ok(release_version) = env::var("TRACTOR_VERSION") {
+        println!("cargo:rustc-env=TRACTOR_VERSION={}", release_version);
+    }
+
     // Extract dependency versions from Cargo.lock
     let versions = get_dependency_versions();
 
