@@ -3,6 +3,13 @@ name: Release
 on:
   push:
     branches: [main]
+    paths:
+      - 'tractor/**'
+      - 'tractor-core/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'tests/**'
+      - '.github/workflows/release.yml'
   workflow_dispatch:
 
 permissions:
@@ -29,11 +36,6 @@ jobs:
       TRACTOR_VERSION: ${{ needs.version.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
-
-      - name: Clone patched grammars
-        run: |
-          mkdir -p .grammar-build
-          git clone --depth 1 https://github.com/tree-sitter/tree-sitter-c-sharp.git .grammar-build/tree-sitter-c-sharp
 
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
@@ -68,11 +70,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Clone patched grammars
-        run: |
-          mkdir -p .grammar-build
-          git clone --depth 1 https://github.com/tree-sitter/tree-sitter-c-sharp.git .grammar-build/tree-sitter-c-sharp
-
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
 
@@ -96,11 +93,6 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v4
-
-      - name: Clone patched grammars
-        run: |
-          mkdir -p .grammar-build
-          git clone --depth 1 https://github.com/tree-sitter/tree-sitter-c-sharp.git .grammar-build/tree-sitter-c-sharp
 
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
