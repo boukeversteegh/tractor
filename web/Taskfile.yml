@@ -191,6 +191,10 @@ tasks:
       - task: grammar:from-source
         vars: { LANG: csharp, REPO: tree-sitter/tree-sitter-c-sharp }
 
+      # Markdown - BUILD FROM SOURCE (npm package has WASM compatibility issues with external scanner)
+      - task: grammar:from-source
+        vars: { LANG: markdown, REPO: tree-sitter-grammars/tree-sitter-markdown, REF: split_parser }
+
       # Generate index.ts that re-exports all grammars
       - task: grammar:generate-index
 

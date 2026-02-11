@@ -155,7 +155,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         name: "markdown",
         extensions: &["md", "markdown", "mdx"],
         has_transforms: true,
-        grammar_file: None,
+        grammar_file: Some("tree-sitter-markdown.wasm"),
     },
     LanguageInfo {
         name: "xml",
