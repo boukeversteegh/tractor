@@ -183,6 +183,10 @@ tasks:
       - task: grammar:from-npm
         vars: { LANG: php, PACKAGE: tree-sitter-php, WASM_FILE: tree-sitter-php }
 
+      # YAML - npm (scoped package from tree-sitter-grammars)
+      - task: grammar:from-npm
+        vars: { LANG: yaml, PACKAGE: "@tree-sitter-grammars/tree-sitter-yaml", WASM_FILE: tree-sitter-yaml }
+
       # C# - BUILD FROM SOURCE (npm v0.23.1 lacks C# 12 primary constructor support)
       - task: grammar:from-source
         vars: { LANG: csharp, REPO: tree-sitter/tree-sitter-c-sharp }

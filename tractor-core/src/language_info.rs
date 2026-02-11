@@ -106,8 +106,8 @@ pub static LANGUAGES: &[LanguageInfo] = &[
     LanguageInfo {
         name: "yaml",
         extensions: &["yml", "yaml"],
-        has_transforms: false,
-        grammar_file: None, // Not available in web yet
+        has_transforms: true,
+        grammar_file: Some("tree-sitter-yaml.wasm")
     },
     LanguageInfo {
         name: "php",
@@ -224,6 +224,6 @@ mod tests {
     fn test_web_languages() {
         let web_langs = get_web_languages();
         assert!(web_langs.iter().any(|l| l.name == "typescript"));
-        assert!(!web_langs.iter().any(|l| l.name == "yaml")); // No grammar file
+        assert!(web_langs.iter().any(|l| l.name == "yaml"));
     }
 }

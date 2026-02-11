@@ -1,0 +1,58 @@
+<Files>
+  <File path="tests/integration/yaml/sample.yaml">
+    <document>
+      <name>my-app</name>
+      <version>1.0.0</version>
+      <database>
+        <host>localhost</host>
+        <port>5432</port>
+        <credentials>
+          <username>admin</username>
+          <password>secret</password>
+        </credentials>
+      </database>
+      <servers>
+        <item>
+          <name>web-1</name>
+          <port>8080</port>
+        </item>
+        <item>
+          <name>web-2</name>
+          <port>8081</port>
+        </item>
+      </servers>
+      <features>
+        <item>auth</item>
+        <item>logging</item>
+        <item>metrics</item>
+      </features>
+      <nested>
+        <level1>
+          <level2>
+            <value>deep</value>
+          </level2>
+        </level1>
+      </nested>
+      <flow_map>
+        <x>1</x>
+        <y>2</y>
+      </flow_map>
+      <flow_list>
+        <item>a</item>
+        <item>b</item>
+        <item>c</item>
+      </flow_list>
+      <quoted>hello world</quoted>
+      <multiline>line one
+line two</multiline>
+      <first_name>
+        <key>first name</key>
+        Alice
+      </first_name>
+      <last_name>
+        <key>last name</key>
+        Bob
+      </last_name>
+    </document>
+  </File>
+</Files>

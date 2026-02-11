@@ -537,6 +537,7 @@ export function Playground() {
               <option value="html">HTML</option>
               <option value="css">CSS</option>
               <option value="bash">Bash</option>
+              <option value="yaml">YAML</option>
               <option value="php">PHP</option>
             </select>
           </div>

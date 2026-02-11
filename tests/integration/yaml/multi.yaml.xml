@@ -1,0 +1,16 @@
+<Files>
+  <File path="tests/integration/yaml/multi.yaml">
+    <document>
+      <name>doc1</name>
+      <value>one</value>
+    </document>
+    <document>
+      <name>doc2</name>
+      <value>two</value>
+    </document>
+    <document>
+      <name>doc3</name>
+      <value>three</value>
+    </document>
+  </File>
+</Files>

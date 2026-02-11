@@ -1,0 +1,36 @@
+name: my-app
+version: 1.0.0
+
+database:
+  host: localhost
+  port: 5432
+  credentials:
+    username: admin
+    password: secret
+
+servers:
+  - name: web-1
+    port: 8080
+  - name: web-2
+    port: 8081
+
+features:
+  - auth
+  - logging
+  - metrics
+
+nested:
+  level1:
+    level2:
+      value: deep
+
+flow_map: {x: 1, y: 2}
+flow_list: [a, b, c]
+
+quoted: "hello world"
+multiline: |
+  line one
+  line two
+
+"first name": Alice
+"last name": Bob
