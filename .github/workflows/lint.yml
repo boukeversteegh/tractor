@@ -23,9 +23,9 @@ jobs:
       - name: Build tractor
         run: cargo build --release -p tractor
 
-      - name: Lint - unwrap() usage
+      - name: Lint - no TODO comments
         run: |
           ./target/release/tractor "tractor-core/src/**/*.rs" "tractor/src/**/*.rs" \
-            -x '//call[field/field_identifier="unwrap"]' \
-            -o github -m "consider using expect() or proper error handling instead of unwrap()" \
-            --warning
+            -x '//line_comment[contains(.,"TODO")]' \
+            -o github -m "TODO comment: {value}" \
+            --expect none
