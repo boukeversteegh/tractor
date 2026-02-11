@@ -46,6 +46,9 @@ EXAMPLES:
     # CI: fail if any TODO comments found
     tractor "src/**/*.cs" -x "//comment[contains(.,'TODO')]" --expect none
 
+    # GitHub Actions: annotate errors in PR
+    tractor "src/**/*.cs" -x "//comment[contains(.,'TODO')]" -o github -m "TODO comment found"
+
     # Whitespace-insensitive matching
     tractor file.cs -x "//type[.='Dictionary<string,int>']" -W
 "#)]
@@ -78,7 +81,7 @@ pub struct Args {
     #[arg(long = "warning")]
     pub warning: bool,
 
-    /// Output format: xml (default), lines, source, value, gcc, json, count, schema
+    /// Output format: xml (default), lines, source, value, gcc, json, count, schema, github
     #[arg(short = 'o', long = "output", default_value = "xml")]
     pub output: String,
 

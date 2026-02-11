@@ -1,0 +1,31 @@
+name: Lint
+
+on:
+  pull_request:
+    paths:
+      - 'tractor/**'
+      - 'tractor-core/**'
+      - '.github/workflows/lint.yml'
+
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build tractor
+        run: cargo build --release -p tractor
+
+      - name: Lint - no TODO comments
+        run: |
+          ./target/release/tractor "tractor-core/src/**/*.rs" "tractor/src/**/*.rs" \
+            -x '//line_comment[contains(.,"TODO")]' \
+            -o github -m "TODO comment: {value}" \
+            --expect none

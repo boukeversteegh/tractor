@@ -26,6 +26,8 @@ pub enum OutputFormat {
     Count,
     /// Merged schema tree showing unique element paths
     Schema,
+    /// GitHub Actions workflow commands (::error / ::warning annotations)
+    Github,
 }
 
 impl OutputFormat {
@@ -40,13 +42,14 @@ impl OutputFormat {
             "json" => Some(OutputFormat::Json),
             "count" => Some(OutputFormat::Count),
             "schema" => Some(OutputFormat::Schema),
+            "github" => Some(OutputFormat::Github),
             _ => None,
         }
     }
 
     /// Get list of all valid format names
     pub fn valid_formats() -> &'static [&'static str] {
-        &["xml", "lines", "source", "value", "gcc", "json", "count", "schema"]
+        &["xml", "lines", "source", "value", "gcc", "json", "count", "schema", "github"]
     }
 }
 
@@ -65,6 +68,8 @@ pub struct OutputOptions {
     pub pretty_print: bool,
     /// Language for syntax highlighting (e.g., "csharp", "rust")
     pub language: Option<String>,
+    /// Whether to use warning severity (for github format: ::warning instead of ::error)
+    pub warning: bool,
 }
 
 /// JSON output structure
@@ -89,6 +94,7 @@ pub fn format_matches(matches: &[Match], format: OutputFormat, options: &OutputO
         OutputFormat::Json => format_json(matches, options),
         OutputFormat::Count => format_count(matches),
         OutputFormat::Schema => String::new(), // Handled separately - requires full XML aggregation
+        OutputFormat::Github => format_github(matches, options),
     }
 }
 
@@ -305,6 +311,29 @@ fn format_gcc(matches: &[Match], options: &OutputOptions) -> String {
     output
 }
 
+fn format_github(matches: &[Match], options: &OutputOptions) -> String {
+    let mut output = String::new();
+    let level = if options.warning { "warning" } else { "error" };
+    for m in matches {
+        let msg = format_message(
+            options.message.as_deref().unwrap_or("match"),
+            m,
+        );
+        let file = normalize_path(&m.file);
+        output.push_str(&format!(
+            "::{level} file={file},line={line},endLine={end_line},col={col},endColumn={end_col}::{msg}\n",
+            level = level,
+            file = file,
+            line = m.line,
+            end_line = m.end_line,
+            col = m.column,
+            end_col = m.end_column,
+            msg = msg,
+        ));
+    }
+    output
+}
+
 fn format_json(matches: &[Match], options: &OutputOptions) -> String {
     let json_matches: Vec<JsonMatch> = matches
         .iter()
@@ -395,5 +424,73 @@ mod tests {
     fn test_truncate() {
         assert_eq!(truncate("short", 50), "short");
         assert_eq!(truncate("this is a very long string that should be truncated", 20), "this is a very lo...");
+    }
+
+    #[test]
+    fn test_format_github_error() {
+        let matches = vec![
+            Match::with_location(
+                "src/main.rs".to_string(),
+                10,
+                5,
+                10,
+                15,
+                "MyMethod".to_string(),
+                std::sync::Arc::new(vec![]),
+            ),
+        ];
+        let options = OutputOptions {
+            message: Some("found {value}".to_string()),
+            warning: false,
+            ..Default::default()
+        };
+        assert_eq!(
+            format_github(&matches, &options),
+            "::error file=src/main.rs,line=10,endLine=10,col=5,endColumn=15::found MyMethod\n"
+        );
+    }
+
+    #[test]
+    fn test_format_github_warning() {
+        let matches = vec![
+            Match::with_location(
+                "src/main.rs".to_string(),
+                10,
+                5,
+                10,
+                15,
+                "MyMethod".to_string(),
+                std::sync::Arc::new(vec![]),
+            ),
+        ];
+        let options = OutputOptions {
+            message: Some("found {value}".to_string()),
+            warning: true,
+            ..Default::default()
+        };
+        assert_eq!(
+            format_github(&matches, &options),
+            "::warning file=src/main.rs,line=10,endLine=10,col=5,endColumn=15::found MyMethod\n"
+        );
+    }
+
+    #[test]
+    fn test_format_github_default_message() {
+        let matches = vec![
+            Match::with_location(
+                "src/lib.rs".to_string(),
+                3,
+                1,
+                5,
+                20,
+                "foo".to_string(),
+                std::sync::Arc::new(vec![]),
+            ),
+        ];
+        let options = OutputOptions::default();
+        assert_eq!(
+            format_github(&matches, &options),
+            "::error file=src/lib.rs,line=3,endLine=5,col=1,endColumn=20::match\n"
+        );
     }
 }
