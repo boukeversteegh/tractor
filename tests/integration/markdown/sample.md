@@ -18,6 +18,21 @@ def hello():
     print("Hello")
 ```
 
+```
+plain code block
+  with indentation
+    and nesting
+```
+
+```javascript
+function greet(name) {
+    if (name === "world") {
+        console.log("Hello, " + name + "!");
+    }
+    return true;
+}
+```
+
 [A link](https://example.com)
 
 ---

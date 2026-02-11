@@ -63,9 +63,44 @@
             </info_string>
             <block_continuation/>
             <code_fence_content>
-              ():
+              def hello():
               <block_continuation/>
-              (&quot;&quot;)
+              print(&quot;Hello&quot;)
+              <block_continuation/>
+            </code_fence_content>
+            <fenced_code_block_delimiter>```</fenced_code_block_delimiter>
+          </fenced_code_block>
+          <fenced_code_block>
+            <fenced_code_block_delimiter>```</fenced_code_block_delimiter>
+            <block_continuation/>
+            <code_fence_content>
+              plain code block
+              <block_continuation/>
+              with indentation
+              <block_continuation/>
+              and nesting
+              <block_continuation/>
+            </code_fence_content>
+            <fenced_code_block_delimiter>```</fenced_code_block_delimiter>
+          </fenced_code_block>
+          <fenced_code_block>
+            <fenced_code_block_delimiter>```</fenced_code_block_delimiter>
+            <info_string>
+              <language>javascript</language>
+            </info_string>
+            <block_continuation/>
+            <code_fence_content>
+              function greet(name) {
+              <block_continuation/>
+              if (name === &quot;world&quot;) {
+              <block_continuation/>
+              console.log(&quot;Hello, &quot; + name + &quot;!&quot;);
+              <block_continuation/>
+              }
+              <block_continuation/>
+              return true;
+              <block_continuation/>
+              }
               <block_continuation/>
             </code_fence_content>
             <fenced_code_block_delimiter>```</fenced_code_block_delimiter>

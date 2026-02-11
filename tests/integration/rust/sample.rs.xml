@@ -82,7 +82,8 @@
               )
             </token_tree>
           </macro>
-          ; }
+          ;
+}
         </body>
       </function>
     </file>

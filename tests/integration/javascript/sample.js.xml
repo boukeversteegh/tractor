@@ -90,7 +90,8 @@
                 </arguments>
               </arguments>
             </call>
-            ; }
+            ;
+}
           </block>
         </body>
       </function>
