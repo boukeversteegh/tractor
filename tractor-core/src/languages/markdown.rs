@@ -12,13 +12,14 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
     };
 
     match kind.as_str() {
-        // Extract heading level from the marker child and set as attribute
+        // Extract heading level from the marker child and add as empty element
         "atx_heading" => {
             // Determine heading level from the marker child (atx_h1_marker..atx_h6_marker)
             let level = detect_heading_level(xot, node);
             rename(xot, node, "heading");
             if let Some(lvl) = level {
-                set_attr(xot, node, "level", &lvl.to_string());
+                let level_name = format!("h{}", lvl);
+                prepend_empty_element(xot, node, &level_name)?;
             }
             Ok(TransformAction::Continue)
         }
@@ -27,7 +28,8 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             let level = detect_setext_level(xot, node);
             rename(xot, node, "heading");
             if let Some(lvl) = level {
-                set_attr(xot, node, "level", &lvl.to_string());
+                let level_name = format!("h{}", lvl);
+                prepend_empty_element(xot, node, &level_name)?;
             }
             Ok(TransformAction::Continue)
         }
@@ -42,11 +44,11 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 
         // Code blocks
         "fenced_code_block" => {
-            // Extract language from info_string child if present
+            // Extract language from info_string child and add as element
             let lang = detect_code_language(xot, node);
             rename(xot, node, "code_block");
             if let Some(lang) = lang {
-                set_attr(xot, node, "language", &lang);
+                prepend_element_with_text(xot, node, "language", &lang)?;
             }
             Ok(TransformAction::Continue)
         }
@@ -58,7 +60,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             rename(xot, node, "code");
             Ok(TransformAction::Continue)
         }
-        "info_string" | "language" => {
+        "info_string" => {
             detach(xot, node)?;
             Ok(TransformAction::Done)
         }
@@ -110,11 +112,11 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 
         // Lists
         "list" => {
-            // Detect ordered vs unordered from marker type
+            // Detect ordered vs unordered from marker type, add as empty element
             let list_type = detect_list_type(xot, node);
             rename(xot, node, "list");
             if let Some(t) = list_type {
-                set_attr(xot, node, "type", t);
+                prepend_empty_element(xot, node, t)?;
             }
             Ok(TransformAction::Continue)
         }
@@ -369,10 +371,10 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
 pub fn syntax_category(element: &str) -> SyntaxCategory {
     match element {
         // Headings
-        "heading" => SyntaxCategory::Keyword,
+        "heading" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => SyntaxCategory::Keyword,
 
         // Code
-        "code_block" | "code" => SyntaxCategory::String,
+        "code_block" | "code" | "language" => SyntaxCategory::String,
 
         // Emphasis
         "emphasis" | "strong" | "strikethrough" => SyntaxCategory::Identifier,
@@ -383,7 +385,7 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
         "label" | "title" => SyntaxCategory::String,
 
         // Lists
-        "list" | "item" => SyntaxCategory::Default,
+        "list" | "item" | "ordered" | "unordered" => SyntaxCategory::Default,
         "checked" | "unchecked" => SyntaxCategory::Keyword,
 
         // Block elements

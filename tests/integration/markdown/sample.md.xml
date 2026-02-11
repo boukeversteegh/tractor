@@ -2,17 +2,20 @@
   <File path="tests/integration/markdown/sample.md">
     <document>
       <section>
-        <heading level="1">
+        <heading>
+          <h1/>
           <inline field="heading_content">Heading 1</inline>
         </heading>
         <paragraph>
           <inline>A paragraph with **bold** and *italic* text.</inline>
         </paragraph>
         <section>
-          <heading level="2">
+          <heading>
+            <h2/>
             <inline field="heading_content">Heading 2</inline>
           </heading>
-          <list type="unordered">
+          <list>
+            <unordered/>
             <item>
               <paragraph>
                 <inline>Item one</inline>
@@ -29,7 +32,8 @@
               </paragraph>
             </item>
           </list>
-          <list type="ordered">
+          <list>
+            <ordered/>
             <item>
               <paragraph>
                 <inline>First</inline>
@@ -46,7 +50,8 @@
               <inline>A blockquote</inline>
             </paragraph>
           </blockquote>
-          <code_block language="python">
+          <code_block>
+            <language>python</language>
             <code> ():  (&quot;&quot;) </code>
           </code_block>
           <paragraph>
