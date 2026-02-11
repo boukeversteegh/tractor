@@ -209,6 +209,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                 max_depth: args.depth,
                 pretty_print: !args.no_pretty,
                 language: Some(lang.to_string()),
+                warning: args.warning,
             };
 
             // Schema format: aggregate match xml_fragments
@@ -296,6 +297,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
             max_depth: args.depth,
             pretty_print: !args.no_pretty,
             language: Some(lang.to_string()),
+            warning: args.warning,
         };
 
         let output = format_matches(&[file_match], format, &options);
@@ -317,6 +319,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
             max_depth: args.depth,
             pretty_print: !args.no_pretty,
             language: lang_override.clone(),
+            warning: args.warning,
         };
 
         // Debug mode: show full XML with highlighted matches for each file
@@ -700,6 +703,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
         max_depth: args.depth,
         pretty_print: !args.no_pretty,
         language: args.lang.clone(),
+        warning: args.warning,
     };
 
     let output = format_matches(&matches, format, &options);
@@ -830,6 +834,7 @@ fn check_expectation_with_matches(
                 max_depth: options.max_depth,
                 pretty_print: options.pretty_print,
                 language: options.language.clone(),
+                warning: options.warning,
             };
             let output = format_matches(matches, OutputFormat::Gcc, &error_options);
             for line in output.lines() {
