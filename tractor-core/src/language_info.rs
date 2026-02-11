@@ -106,7 +106,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
     LanguageInfo {
         name: "yaml",
         extensions: &["yml", "yaml"],
-        has_transforms: false,
+        has_transforms: true,
         grammar_file: None, // Not available in web yet
     },
     LanguageInfo {
