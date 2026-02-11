@@ -1,0 +1,45 @@
+name: Web
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: web-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+
+      - name: Install wasm-pack
+        run: cargo install wasm-pack
+
+      - name: Install dependencies
+        run: task web:install
+
+      - name: Fetch grammars
+        run: task web:grammars
+
+      - name: Build
+        run: task web:build
+
+      - name: Type check
+        run: task web:check
+
+      - name: Test
+        run: task web:test
