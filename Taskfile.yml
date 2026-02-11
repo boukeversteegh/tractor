@@ -2,7 +2,6 @@ version: '3'
 
 vars:
   DIST_DIR: ./dist
-  GRAMMAR_BUILD_DIR: .grammar-build
 
 includes:
   web:
@@ -11,71 +10,55 @@ includes:
 
 tasks:
   #############################################################################
-  # Grammar patching for Rust (override crates.io with local builds)
+  # Grammar patching (override crates.io with git repos)
   #############################################################################
 
-  grammar:clone:
-    internal: true
-    desc: Clone a grammar repo for local patching
-    requires:
-      vars: [REPO]
-    vars:
-      REF: '{{.REF | default "master"}}'
-      REPO_NAME: '{{base .REPO}}'
-    cmds:
-      - mkdir -p {{.GRAMMAR_BUILD_DIR}}
-      - |
-        cd {{.GRAMMAR_BUILD_DIR}}
-        rm -rf "{{.REPO_NAME}}"
-        echo "Cloning {{.REPO}} ({{.REF}})..."
-        git clone --depth 1 --branch {{.REF}} "https://github.com/{{.REPO}}.git" "{{.REPO_NAME}}"
-
   grammar:patch:
-    desc: "Patch a Rust grammar with local build. Usage: task grammar:patch CRATE=tree-sitter-c-sharp REPO=tree-sitter/tree-sitter-c-sharp"
+    desc: "Patch a grammar with a git repo. Usage: task grammar:patch CRATE=tree-sitter-c-sharp REPO=tree-sitter/tree-sitter-c-sharp"
     requires:
       vars: [CRATE, REPO]
-    vars:
-      REF: '{{.REF | default "master"}}'
-      REPO_NAME: '{{base .REPO}}'
     cmds:
-      - task: grammar:clone
-        vars: { REPO: "{{.REPO}}", REF: "{{.REF}}" }
       - |
         # Add [patch.crates-io] section if it doesn't exist
         if ! grep -q '^\[patch\.crates-io\]' Cargo.toml; then
           echo "" >> Cargo.toml
-          echo "# Local grammar patches (managed by: task grammar:patch)" >> Cargo.toml
+          echo "# Grammar patches (managed by: task grammar:patch)" >> Cargo.toml
           echo "[patch.crates-io]" >> Cargo.toml
         fi
 
-        # Remove existing patch for this crate if present
+        # Remove existing patch for this crate if present (git or legacy path)
+        sed -i '/^{{.CRATE}} = { git/d' Cargo.toml
         sed -i '/^{{.CRATE}} = { path/d' Cargo.toml
+        # Clean up legacy comment if present
+        sed -i '/^# Local grammar patches/d' Cargo.toml
 
-        # Add the patch
-        echo '{{.CRATE}} = { path = "{{.GRAMMAR_BUILD_DIR}}/{{.REPO_NAME}}" }' >> Cargo.toml
-        echo "Patched {{.CRATE}} -> {{.GRAMMAR_BUILD_DIR}}/{{.REPO_NAME}}"
+        # Add the git patch (Cargo.lock pins the exact commit)
+        echo '{{.CRATE}} = { git = "https://github.com/{{.REPO}}" }' >> Cargo.toml
+        echo "Patched {{.CRATE}} -> {{.REPO}} (run cargo update -p {{.CRATE}} to refresh)"
 
   grammar:unpatch:
-    desc: "Remove a local grammar patch. Usage: task grammar:unpatch CRATE=tree-sitter-c-sharp"
+    desc: "Remove a grammar patch. Usage: task grammar:unpatch CRATE=tree-sitter-c-sharp"
     requires:
       vars: [CRATE]
     cmds:
       - |
-        if grep -q '^{{.CRATE}} = { path' Cargo.toml; then
-          sed -i '/^{{.CRATE}} = { path/d' Cargo.toml
+        if grep -q '^{{.CRATE}} = { git' Cargo.toml; then
+          sed -i '/^{{.CRATE}} = { git/d' Cargo.toml
           echo "Removed patch for {{.CRATE}}"
+        elif grep -q '^{{.CRATE}} = { path' Cargo.toml; then
+          sed -i '/^{{.CRATE}} = { path/d' Cargo.toml
+          echo "Removed legacy path patch for {{.CRATE}}"
         else
           echo "No patch found for {{.CRATE}}"
         fi
 
   grammar:unpatch-all:
-    desc: Remove all local grammar patches
+    desc: Remove all grammar patches
     cmds:
       - |
-        # Remove all path-based patches and the section header if empty
+        sed -i '/^tree-sitter-.* = { git/d' Cargo.toml
         sed -i '/^tree-sitter-.* = { path/d' Cargo.toml
-        sed -i '/^# Local grammar patches/d' Cargo.toml
-        # Remove empty [patch.crates-io] section
+        sed -i '/^# Grammar patches/d' Cargo.toml
         sed -i '/^\[patch\.crates-io\]$/{ N; /^\[patch\.crates-io\]\n$/d }' Cargo.toml
         echo "Removed all grammar patches"
 
@@ -92,7 +75,7 @@ tasks:
     cmds:
       - |
         echo "Current grammar patches:"
-        grep '^tree-sitter-.* = { path' Cargo.toml 2>/dev/null || echo "  (none)"
+        grep -E '^tree-sitter-.* = \{ (git|path)' Cargo.toml 2>/dev/null || echo "  (none)"
 
   # === tractor (Rust XPath CLI) ===
 
