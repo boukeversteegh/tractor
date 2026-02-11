@@ -21,6 +21,7 @@ const SOURCE_BUILDS = {
 // Language to package mapping (for languages where names differ)
 const LANG_PACKAGE_MAP = {
   'tsx': 'tree-sitter-typescript',
+  'yaml': '@tree-sitter-grammars/tree-sitter-yaml',
 };
 
 function getPackageVersion(packageName) {

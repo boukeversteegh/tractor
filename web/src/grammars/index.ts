@@ -17,3 +17,4 @@ export { default as ruby } from './ruby';
 export { default as rust } from './rust';
 export { default as tsx } from './tsx';
 export { default as typescript } from './typescript';
+export { default as yaml } from './yaml';

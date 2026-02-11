@@ -18,8 +18,8 @@
     "source": "git",
     "repo": "tree-sitter/tree-sitter-c-sharp",
     "ref": "master",
-    "commit": "f05a2ca",
-    "date": "2026-01-19"
+    "commit": "unknown",
+    "date": "unknown"
   },
   "css": {
     "source": "npm",
@@ -81,9 +81,14 @@
     "package": "tree-sitter-typescript",
     "version": "0.23.2"
   },
+  "yaml": {
+    "source": "npm",
+    "package": "@tree-sitter-grammars/tree-sitter-yaml",
+    "version": "0.7.1"
+  },
   "_runtime": {
     "package": "web-tree-sitter",
     "version": "0.26.3"
   },
-  "_generated": "2026-01-31T22:32:29.736Z"
+  "_generated": "2026-02-11T19:58:01.771Z"
 }
