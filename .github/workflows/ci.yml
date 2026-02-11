@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  pull_request:
+    paths:
+      - 'tractor/**'
+      - 'tractor-core/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'tests/**'
+      - '.github/workflows/ci.yml'
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Run unit tests
+        run: cargo test --workspace
+
+      - name: Build release binary
+        run: cargo build --release -p tractor
+
+      - name: Run integration tests
+        run: bash tests/integration/test.sh
+
+      - name: Run snapshot tests
+        run: bash tests/integration/test_snapshots.sh
