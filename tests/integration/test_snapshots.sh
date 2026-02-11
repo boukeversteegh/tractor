@@ -9,7 +9,7 @@ cd "$(dirname "$0")/../.."
 TESTS_DIR="tests/integration"
 
 # Language folders to check
-LANGUAGES="rust python typescript javascript go java csharp ruby"
+LANGUAGES="rust python typescript javascript go java csharp ruby yaml"
 
 # Regenerate snapshots
 bash tests/integration/generate_snapshots.sh > /dev/null

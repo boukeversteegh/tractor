@@ -79,10 +79,16 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Flatten)
         }
 
+        // Document boundaries: preserve as <document> elements for multi-doc YAML
+        "document" => {
+            remove_text_children(xot, node)?;
+            Ok(TransformAction::Continue)
+        }
+
         // Wrapper nodes to flatten (remove wrapper, promote children)
         // Use Flatten (not Skip) to avoid xot text node consolidation panics
         // when nested nodes have text siblings
-        "stream" | "document" | "block_node" | "block_mapping"
+        "stream" | "block_node" | "block_mapping"
         | "flow_mapping" | "value" | "flow_node" | "plain_scalar"
         | "block_sequence" => {
             remove_text_children(xot, node)?;

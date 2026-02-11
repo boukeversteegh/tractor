@@ -20,5 +20,14 @@ run_test tractor sample.yaml -x "//multiline[contains(.,'line one')]" --expect 1
 run_test tractor sample.yaml -x "//first_name" --expect 1 -m "keys with spaces become sanitized element names"
 run_test tractor sample.yaml -x "//*[key='first name']" --expect 1 -m "original key preserved as <key> child when sanitized"
 run_test tractor sample.yaml -x "//first_name[text()='Alice']" --expect 1 -m "sanitized key values queryable via text()"
+run_test tractor sample.yaml -x "//document" --expect 1 -m "single-document YAML has one document element"
+
+echo ""
+echo "YAML (multi-document):"
+run_test tractor multi.yaml -x "//document" --expect 3 -m "multi-document YAML creates separate document elements"
+run_test tractor multi.yaml -x "//document[1]/name[.='doc1']" --expect 1 -m "first document content is queryable by position"
+run_test tractor multi.yaml -x "//document[2]/name[.='doc2']" --expect 1 -m "second document content is queryable by position"
+run_test tractor multi.yaml -x "//document[3]/value[.='three']" --expect 1 -m "third document values are queryable"
+run_test tractor multi.yaml -x "//name" --expect 3 -m "descendant queries span all documents"
 
 report

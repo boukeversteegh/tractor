@@ -31,6 +31,7 @@ declare -A LANGUAGES=(
     ["java"]="java"
     ["csharp"]="cs"
     ["ruby"]="rb"
+    ["yaml"]="yaml"
 )
 
 # Process each language folder
