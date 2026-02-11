@@ -152,6 +152,12 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         grammar_file: None,
     },
     LanguageInfo {
+        name: "markdown",
+        extensions: &["md", "markdown", "mdx"],
+        has_transforms: true,
+        grammar_file: None,
+    },
+    LanguageInfo {
         name: "xml",
         extensions: &["xml"],
         has_transforms: false,
@@ -169,6 +175,7 @@ pub fn get_language_info(name: &str) -> Option<&'static LanguageInfo> {
         "rs" => "rust",
         "py" => "python",
         "rb" => "ruby",
+        "md" | "mdx" => "markdown",
         _ => name,
     };
     LANGUAGES.iter().find(|l| l.name == normalized)

@@ -33,6 +33,7 @@ native = [
     "dep:tree-sitter-ocaml",
     "dep:tree-sitter-r",
     "dep:tree-sitter-julia",
+    "dep:tree-sitter-md",
     "dep:glob",
     "dep:rayon",
     "dep:atty",
@@ -67,6 +68,7 @@ tree-sitter-haskell = { workspace = true, optional = true }
 tree-sitter-ocaml = { workspace = true, optional = true }
 tree-sitter-r = { workspace = true, optional = true }
 tree-sitter-julia = { workspace = true, optional = true }
+tree-sitter-md = { workspace = true, optional = true }
 
 # XPath 3.1
 xee-xpath.workspace = true

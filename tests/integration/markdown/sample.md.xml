@@ -1,0 +1,60 @@
+<Files>
+  <File path="tests/integration/markdown/sample.md">
+    <document>
+      <section>
+        <heading level="1">
+          <inline field="heading_content">Heading 1</inline>
+        </heading>
+        <paragraph>
+          <inline>A paragraph with **bold** and *italic* text.</inline>
+        </paragraph>
+        <section>
+          <heading level="2">
+            <inline field="heading_content">Heading 2</inline>
+          </heading>
+          <list type="unordered">
+            <item>
+              <paragraph>
+                <inline>Item one</inline>
+              </paragraph>
+            </item>
+            <item>
+              <paragraph>
+                <inline>Item two</inline>
+              </paragraph>
+            </item>
+            <item>
+              <paragraph>
+                <inline>Item three</inline>
+              </paragraph>
+            </item>
+          </list>
+          <list type="ordered">
+            <item>
+              <paragraph>
+                <inline>First</inline>
+              </paragraph>
+            </item>
+            <item>
+              <paragraph>
+                <inline>Second</inline>
+              </paragraph>
+            </item>
+          </list>
+          <blockquote>
+            <paragraph>
+              <inline>A blockquote</inline>
+            </paragraph>
+          </blockquote>
+          <code_block language="python">
+            <code> ():  (&quot;&quot;) </code>
+          </code_block>
+          <paragraph>
+            <inline>[A link](https://example.com)</inline>
+          </paragraph>
+          <hr/>
+        </section>
+      </section>
+    </document>
+  </File>
+</Files>

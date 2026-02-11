@@ -1,0 +1,82 @@
+<Files>
+  <File path="tests/integration/markdown/sample.md">
+    <document>
+      <section>
+        <atx_heading>
+          <atx_h1_marker>#</atx_h1_marker>
+          <inline field="heading_content">Heading 1</inline>
+        </atx_heading>
+        <paragraph>
+          <inline>A paragraph with **bold** and *italic* text.</inline>
+        </paragraph>
+        <section>
+          <atx_heading>
+            <atx_h2_marker>##</atx_h2_marker>
+            <inline field="heading_content">Heading 2</inline>
+          </atx_heading>
+          <list>
+            <list_item>
+              <list_marker_minus>- </list_marker_minus>
+              <paragraph>
+                <inline>Item one</inline>
+              </paragraph>
+            </list_item>
+            <list_item>
+              <list_marker_minus>- </list_marker_minus>
+              <paragraph>
+                <inline>Item two</inline>
+              </paragraph>
+            </list_item>
+            <list_item>
+              <list_marker_minus>- </list_marker_minus>
+              <paragraph>
+                <inline>Item three</inline>
+                <block_continuation/>
+              </paragraph>
+            </list_item>
+          </list>
+          <list>
+            <list_item>
+              <list_marker_dot>1. </list_marker_dot>
+              <paragraph>
+                <inline>First</inline>
+              </paragraph>
+            </list_item>
+            <list_item>
+              <list_marker_dot>2. </list_marker_dot>
+              <paragraph>
+                <inline>Second</inline>
+                <block_continuation/>
+              </paragraph>
+            </list_item>
+          </list>
+          <block_quote>
+            <block_quote_marker>&gt; </block_quote_marker>
+            <paragraph>
+              <inline>A blockquote</inline>
+            </paragraph>
+          </block_quote>
+          <fenced_code_block>
+            <fenced_code_block_delimiter>```</fenced_code_block_delimiter>
+            <info_string>
+              <language>python</language>
+            </info_string>
+            <block_continuation/>
+            <code_fence_content>
+              ():
+              <block_continuation/>
+              (&quot;&quot;)
+              <block_continuation/>
+            </code_fence_content>
+            <fenced_code_block_delimiter>```</fenced_code_block_delimiter>
+          </fenced_code_block>
+          <paragraph>
+            <inline>[A link](https://example.com)</inline>
+          </paragraph>
+          <thematic_break>---
+</thematic_break>
+        </section>
+      </section>
+    </document>
+  </File>
+</Files>
