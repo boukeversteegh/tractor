@@ -105,7 +105,10 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
     }
 }
 
-/// Transform a mapping pair by extracting the key and renaming the element
+/// Transform a mapping pair by extracting the key and renaming the element.
+/// When the key requires sanitization (e.g. "first name" → `first_name`),
+/// a `<key>` child element preserves the original key for querying via
+/// `//*[key='first name']`.
 fn transform_mapping_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     if let Some(key) = extract_key_text(xot, node) {
         let safe_name = sanitize_xml_name(&key);
@@ -122,6 +125,11 @@ fn transform_mapping_pair(xot: &mut Xot, node: XotNode) -> Result<TransformActio
                     xot.detach(child)?;
                 }
             }
+        }
+
+        // When key was sanitized, add <key> child so the original is queryable
+        if safe_name != key {
+            prepend_element_with_text(xot, node, "key", &key)?;
         }
     }
     Ok(TransformAction::Continue)

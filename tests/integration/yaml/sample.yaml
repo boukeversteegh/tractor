@@ -31,3 +31,6 @@ quoted: "hello world"
 multiline: |
   line one
   line two
+
+"first name": Alice
+"last name": Bob
