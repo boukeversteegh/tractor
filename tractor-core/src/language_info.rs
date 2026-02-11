@@ -232,5 +232,6 @@ mod tests {
         let web_langs = get_web_languages();
         assert!(web_langs.iter().any(|l| l.name == "typescript"));
         assert!(web_langs.iter().any(|l| l.name == "yaml"));
+        assert!(web_langs.iter().any(|l| l.name == "markdown"));
     }
 }
