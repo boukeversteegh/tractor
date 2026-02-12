@@ -1,0 +1,52 @@
+<Files>
+  <File path="tests/integration/toml/sample.toml">
+    <document>
+      <title>My App</title>
+      <version>1.0.0</version>
+      <features>
+        <item>auth</item>
+        <item>logging</item>
+        <item>metrics</item>
+      </features>
+      <inline>
+        <x>1</x>
+        <y>2</y>
+      </inline>
+      <quoted>hello world</quoted>
+      <first_name>
+        <key>first name</key>
+        Alice
+      </first_name>
+      <database>
+        <host>localhost</host>
+        <port>5432</port>
+        <enabled>true</enabled>
+      </database>
+      <database>
+        <credentials>
+          <username>admin</username>
+          <password>secret</password>
+        </credentials>
+      </database>
+      <servers>
+        <item>
+          <name>web-1</name>
+          <port>8080</port>
+        </item>
+      </servers>
+      <servers>
+        <item>
+          <name>web-2</name>
+          <port>8081</port>
+        </item>
+      </servers>
+      <nested>
+        <level1>
+          <level2>
+            <value>deep</value>
+          </level2>
+        </level1>
+      </nested>
+    </document>
+  </File>
+</Files>

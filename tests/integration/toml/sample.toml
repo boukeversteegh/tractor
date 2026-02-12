@@ -1,0 +1,30 @@
+title = "My App"
+version = "1.0.0"
+
+features = ["auth", "logging", "metrics"]
+
+inline = {x = 1, y = 2}
+
+quoted = "hello world"
+
+"first name" = "Alice"
+
+[database]
+host = "localhost"
+port = 5432
+enabled = true
+
+[database.credentials]
+username = "admin"
+password = "secret"
+
+[[servers]]
+name = "web-1"
+port = 8080
+
+[[servers]]
+name = "web-2"
+port = 8081
+
+[nested.level1.level2]
+value = "deep"
