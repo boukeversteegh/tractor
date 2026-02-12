@@ -110,6 +110,12 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         grammar_file: Some("tree-sitter-yaml.wasm")
     },
     LanguageInfo {
+        name: "toml",
+        extensions: &["toml"],
+        has_transforms: true,
+        grammar_file: Some("tree-sitter-toml.wasm"),
+    },
+    LanguageInfo {
         name: "php",
         extensions: &["php"],
         has_transforms: false,
