@@ -10,6 +10,7 @@
 pub mod parser;
 pub mod xpath;
 pub mod output;
+pub mod replace;
 pub mod source_utils;
 pub mod language_info;
 #[cfg(feature = "native")]
@@ -40,6 +41,7 @@ pub use parser::{
 };
 pub use xpath::{XPathEngine, Match, print_timing_stats, Documents, DocumentHandle};
 pub use output::{OutputFormat, format_matches, OutputOptions, render_node, render_document, render_xml_string, RenderOptions, format_schema, SchemaCollector};
+pub use replace::{apply_replacements, ReplaceSummary, ReplaceError};
 #[cfg(feature = "native")]
 pub use parallel::{expand_globs, filter_supported_files};
 pub use xot_builder::{XotBuilder, XeeBuilder};

@@ -89,6 +89,10 @@ pub struct Args {
     #[arg(short = 'm', long = "message")]
     pub message: Option<String>,
 
+    /// Replace matched source text with this value (modifies files in-place)
+    #[arg(short = 'r', long = "replace")]
+    pub replace: Option<String>,
+
     /// Limit output to first N matches
     #[arg(short = 'n', long = "limit")]
     pub limit: Option<usize>,
