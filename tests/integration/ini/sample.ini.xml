@@ -1,0 +1,26 @@
+<Files>
+  <File path="tests/integration/ini/sample.ini">
+    <document>
+      <comment>Global settings</comment>
+      <name>my-app</name>
+      <version>1.0.0</version>
+      <database>
+        <host>localhost</host>
+        <port>5432</port>
+        <enabled>true</enabled>
+      </database>
+      <database.credentials>
+        <username>admin</username>
+        <password>secret</password>
+      </database.credentials>
+      <servers>
+        <count>2</count>
+      </servers>
+      <comment>comment with semicolon</comment>
+      <paths>
+        <home>/usr/local</home>
+        <temp>/tmp</temp>
+      </paths>
+    </document>
+  </File>
+</Files>

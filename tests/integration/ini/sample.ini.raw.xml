@@ -1,0 +1,92 @@
+<Files>
+  <File path="tests/integration/ini/sample.ini">
+    <document>
+      <comment>
+        #
+        <text> Global settings</text>
+      </comment>
+      <setting>
+        <setting_name>name</setting_name>
+        =
+        <setting_value> my-app</setting_value>
+      </setting>
+      <setting>
+        <setting_name>version</setting_name>
+        =
+        <setting_value> 1.0.0</setting_value>
+      </setting>
+      <section>
+        <section_name>
+          [
+          <text>database</text>
+          ]
+        </section_name>
+        <setting>
+          <setting_name>host</setting_name>
+          =
+          <setting_value> localhost</setting_value>
+        </setting>
+        <setting>
+          <setting_name>port</setting_name>
+          =
+          <setting_value> 5432</setting_value>
+        </setting>
+        <setting>
+          <setting_name>enabled</setting_name>
+          =
+          <setting_value> true</setting_value>
+        </setting>
+      </section>
+      <section>
+        <section_name>
+          [
+          <text>database.credentials</text>
+          ]
+        </section_name>
+        <setting>
+          <setting_name>username</setting_name>
+          =
+          <setting_value> admin</setting_value>
+        </setting>
+        <setting>
+          <setting_name>password</setting_name>
+          =
+          <setting_value> secret</setting_value>
+        </setting>
+      </section>
+      <section>
+        <section_name>
+          [
+          <text>servers</text>
+          ]
+        </section_name>
+        <setting>
+          <setting_name>count</setting_name>
+          =
+          <setting_value> 2</setting_value>
+        </setting>
+      </section>
+      <comment>
+        ;
+        <text> comment with semicolon</text>
+      </comment>
+      <section>
+        <section_name>
+          [
+          <text>paths</text>
+          ]
+        </section_name>
+        <setting>
+          <setting_name>home</setting_name>
+          =
+          <setting_value> /usr/local</setting_value>
+        </setting>
+        <setting>
+          <setting_name>temp</setting_name>
+          =
+          <setting_value> /tmp</setting_value>
+        </setting>
+      </section>
+    </document>
+  </File>
+</Files>
