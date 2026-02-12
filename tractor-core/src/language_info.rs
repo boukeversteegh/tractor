@@ -122,6 +122,12 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         grammar_file: Some("tree-sitter-ini.wasm"),
     },
     LanguageInfo {
+        name: "env",
+        extensions: &["env"],
+        has_transforms: true,
+        grammar_file: Some("tree-sitter-bash.wasm"),
+    },
+    LanguageInfo {
         name: "php",
         extensions: &["php"],
         has_transforms: false,
