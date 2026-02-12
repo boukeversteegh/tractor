@@ -32,6 +32,7 @@ declare -A LANGUAGES=(
     ["csharp"]="cs"
     ["ruby"]="rb"
     ["yaml"]="yaml"
+    ["markdown"]="md"
 )
 
 # Process each language folder

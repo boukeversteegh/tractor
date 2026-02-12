@@ -37,6 +37,7 @@ pub static SUPPORTED_LANGUAGES: &[(&str, &[&str])] = &[
     ("ocaml", &["ml", "mli"]),
     ("r", &["r"]),
     ("julia", &["jl"]),
+    ("markdown", &["md", "markdown", "mdx"]),
     // XML pass-through (not parsed, queried directly)
     ("xml", &["xml"]),
 ];
@@ -94,6 +95,7 @@ pub fn detect_language(path: &str) -> &'static str {
         "ml" | "mli" => "ocaml",
         "r" => "r",
         "jl" => "julia",
+        "md" | "markdown" | "mdx" => "markdown",
         "xml" => "xml",
         _ => "unknown",
     }
@@ -124,6 +126,7 @@ fn get_tree_sitter_language(lang: &str) -> Result<tree_sitter::Language, ParseEr
         "ocaml" | "ml" => Ok(tree_sitter_ocaml::LANGUAGE_OCAML.into()),
         "r" => Ok(tree_sitter_r::LANGUAGE.into()),
         "julia" | "jl" => Ok(tree_sitter_julia::LANGUAGE.into()),
+        "markdown" | "md" | "mdx" => Ok(tree_sitter_md::LANGUAGE.into()),
         _ => Err(ParseError::UnsupportedLanguage(lang.to_string())),
     }
 }
@@ -194,6 +197,10 @@ pub fn get_language_abi_versions() -> Vec<LanguageAbiInfo> {
         LanguageAbiInfo {
             name: "lua",
             abi_version: tree_sitter::Language::from(tree_sitter_lua::LANGUAGE).abi_version(),
+        },
+        LanguageAbiInfo {
+            name: "markdown",
+            abi_version: tree_sitter::Language::from(tree_sitter_md::LANGUAGE).abi_version(),
         },
         LanguageAbiInfo {
             name: "ocaml",

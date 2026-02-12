@@ -60,6 +60,6 @@ mod tests {
             "readme.md".to_string(),
         ];
         let filtered = filter_supported_files(files);
-        assert_eq!(filtered, vec!["test.cs", "test.rs"]);
+        assert_eq!(filtered, vec!["test.cs", "test.rs", "readme.md"]);
     }
 }

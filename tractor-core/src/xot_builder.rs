@@ -84,16 +84,6 @@ impl<'a> TreeBuilder<'a> {
         Some(self.xot.new_text(&text))
     }
 
-    /// Create a normalized whitespace/gap text node
-    /// Returns None if ignore_whitespace is enabled
-    fn create_gap_text(&mut self) -> Option<XotNode> {
-        if self.ignore_whitespace {
-            None
-        } else {
-            Some(self.xot.new_text(" "))
-        }
-    }
-
     /// Fields that should be wrapped in semantic elements
     const WRAPPED_FIELDS: &'static [&'static str] = &[
         "name",        // variable/function/class name
@@ -181,13 +171,11 @@ impl<'a> TreeBuilder<'a> {
                 let child = cursor.node();
                 let child_start = child.start_byte();
 
-                // Add any whitespace/content between the last node and this one
+                // Add source text between the last node and this one
                 if child_start > last_end_byte {
                     let gap = &source[last_end_byte..child_start];
-                    if !gap.is_empty() && gap.chars().any(|c| c.is_whitespace()) {
-                        if let Some(text_node) = self.create_gap_text() {
-                            self.xot.append(element, text_node)?;
-                        }
+                    if let Some(text_node) = self.create_text(gap) {
+                        self.xot.append(element, text_node)?;
                     }
                 }
 
@@ -210,6 +198,15 @@ impl<'a> TreeBuilder<'a> {
 
                 if !cursor.goto_next_sibling() {
                     break;
+                }
+            }
+
+            // Add any trailing text after the last child
+            let parent_end_byte = ts_node.end_byte();
+            if parent_end_byte > last_end_byte {
+                let trailing = &source[last_end_byte..parent_end_byte];
+                if let Some(text_node) = self.create_text(trailing) {
+                    self.xot.append(element, text_node)?;
                 }
             }
         }
@@ -294,13 +291,11 @@ impl<'a> TreeBuilder<'a> {
             for child in &node.children {
                 let child_start = child.start_byte;
 
-                // Add any whitespace between the last node and this one
+                // Add source text between the last node and this one
                 if child_start > last_end_byte {
                     let gap = &source[last_end_byte..child_start];
-                    if !gap.is_empty() && gap.chars().any(|c| c.is_whitespace()) {
-                        if let Some(text_node) = self.create_gap_text() {
-                            self.xot.append(element, text_node)?;
-                        }
+                    if let Some(text_node) = self.create_text(gap) {
+                        self.xot.append(element, text_node)?;
                     }
                 }
 
@@ -317,6 +312,15 @@ impl<'a> TreeBuilder<'a> {
                 }
 
                 last_end_byte = child.end_byte;
+            }
+
+            // Add any trailing text after the last child
+            let parent_end_byte = node.end_byte;
+            if parent_end_byte > last_end_byte {
+                let trailing = &source[last_end_byte..parent_end_byte];
+                if let Some(text_node) = self.create_text(trailing) {
+                    self.xot.append(element, text_node)?;
+                }
             }
         }
 

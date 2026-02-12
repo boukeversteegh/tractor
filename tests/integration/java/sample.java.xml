@@ -130,7 +130,8 @@
                   </args>
                 </arguments>
               </call>
-              ; }
+              ;
+    }
             </body>
           </method>
           }
