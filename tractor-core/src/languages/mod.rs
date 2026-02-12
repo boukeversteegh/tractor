@@ -12,6 +12,7 @@ pub mod java;
 pub mod ruby;
 pub mod yaml;
 pub mod toml;
+pub mod ini;
 pub mod markdown;
 
 use xot::{Xot, Node as XotNode};
@@ -37,6 +38,7 @@ pub fn get_transform(lang: &str) -> TransformFn {
         "ruby" | "rb" => ruby::transform,
         "yaml" | "yml" => yaml::transform,
         "toml" => toml::transform,
+        "ini" => ini::transform,
         "markdown" | "md" | "mdx" => markdown::transform,
         // Default: passthrough (no transforms)
         _ => passthrough_transform,
@@ -56,6 +58,7 @@ pub fn get_syntax_category(lang: &str) -> SyntaxCategoryFn {
         "ruby" | "rb" => ruby::syntax_category,
         "yaml" | "yml" => yaml::syntax_category,
         "toml" => toml::syntax_category,
+        "ini" => ini::syntax_category,
         "markdown" | "md" | "mdx" => markdown::syntax_category,
         // Default: generic fallback
         _ => default_syntax_category,

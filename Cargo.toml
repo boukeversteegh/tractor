@@ -37,6 +37,7 @@ tree-sitter-r = "1.0"
 tree-sitter-julia = "0.23"
 tree-sitter-md = "0.5"
 tree-sitter-toml-ng = "0.7"
+tree-sitter-ini = "1.4"
 
 # XPath 3.1
 xee = { git = "https://github.com/Paligo/xee" }

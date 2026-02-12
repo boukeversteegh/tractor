@@ -31,6 +31,7 @@ pub static SUPPORTED_LANGUAGES: &[(&str, &[&str])] = &[
     ("bash", &["sh", "bash"]),
     ("yaml", &["yml", "yaml"]),
     ("toml", &["toml"]),
+    ("ini", &["ini", "cfg", "inf"]),
     ("php", &["php"]),
     ("scala", &["scala", "sc"]),
     ("lua", &["lua"]),
@@ -90,6 +91,7 @@ pub fn detect_language(path: &str) -> &'static str {
         "sh" | "bash" => "bash",
         "yml" | "yaml" => "yaml",
         "toml" => "toml",
+        "ini" | "cfg" | "inf" => "ini",
         "php" => "php",
         "scala" | "sc" => "scala",
         "lua" => "lua",
@@ -122,6 +124,7 @@ fn get_tree_sitter_language(lang: &str) -> Result<tree_sitter::Language, ParseEr
         "bash" | "sh" => Ok(tree_sitter_bash::LANGUAGE.into()),
         "yaml" | "yml" => Ok(tree_sitter_yaml::LANGUAGE.into()),
         "toml" => Ok(tree_sitter_toml_ng::LANGUAGE.into()),
+        "ini" => Ok(tree_sitter_ini::LANGUAGE.into()),
         "php" => Ok(tree_sitter_php::LANGUAGE_PHP.into()),
         "scala" => Ok(tree_sitter_scala::LANGUAGE.into()),
         "lua" => Ok(tree_sitter_lua::LANGUAGE.into()),
@@ -240,6 +243,10 @@ pub fn get_language_abi_versions() -> Vec<LanguageAbiInfo> {
         LanguageAbiInfo {
             name: "toml",
             abi_version: tree_sitter::Language::from(tree_sitter_toml_ng::LANGUAGE).abi_version(),
+        },
+        LanguageAbiInfo {
+            name: "ini",
+            abi_version: tree_sitter::Language::from(tree_sitter_ini::LANGUAGE).abi_version(),
         },
         LanguageAbiInfo {
             name: "yaml",
