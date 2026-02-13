@@ -7,7 +7,7 @@ use clap::Parser;
 #[command(name = "tractor")]
 #[command(author, about, long_about = None)]
 #[command(disable_version_flag = true)]
-#[command(before_help = "NOTE: Full help is ~75 lines including WORKFLOW tutorial and EXAMPLES. Do not truncate.")]
+#[command(before_help = "NOTE: Full help includes WORKFLOW tutorial and EXAMPLES. Do not truncate.")]
 #[command(after_help = r#"WORKFLOW:
     1. Explore structure across files with schema view (depth 4 by default):
        tractor "src/**/*.cs" -o schema
@@ -44,8 +44,13 @@ EXAMPLES:
     # Parse from stdin
     echo "public class Foo { }" | tractor -l csharp -x "//class/name" -o value
 
-    # Parse content from argument (useful for scripting with consistent command prefix)
-    tractor -s "public class Foo { }" -l csharp -x "//class/name" -o value
+    # Parse from argument — escape-proof, works with multiline code
+    tractor -s "$(cat <<'CODE'
+    public class Foo {
+        public void Bar() { }
+    }
+    CODE
+    )" -l csharp -x "//class/name" -o value
 
     # CI: fail if any TODO comments found
     tractor "src/**/*.cs" -x "//comment[contains(.,'TODO')]" --expect none
