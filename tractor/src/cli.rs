@@ -7,6 +7,7 @@ use clap::Parser;
 #[command(name = "tractor")]
 #[command(author, about, long_about = None)]
 #[command(disable_version_flag = true)]
+#[command(before_help = "NOTE: Full help is ~75 lines including WORKFLOW tutorial and EXAMPLES. Do not truncate.")]
 #[command(after_help = r#"WORKFLOW:
     1. Explore structure across files with schema view (depth 4 by default):
        tractor "src/**/*.cs" -o schema
