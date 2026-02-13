@@ -23,7 +23,7 @@ use tractor_core::{
 };
 
 use cli::Args;
-use clap::Parser;
+use clap::{CommandFactory, Parser};
 
 /// Split a slice into exponentially growing batches, capped at a maximum.
 /// Batch sizes: n, 2n, 4n, 8n, 8n, 8n... (where n = num_threads)
@@ -158,11 +158,9 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
     files = filter_supported_files(files);
 
     if files.is_empty() && !stdin_source {
-        eprintln!("Usage: tractor <files...> [OPTIONS]");
-        eprintln!("   or: cat source.rs | tractor --lang rust -x \"//query\"");
-        eprintln!("   or: echo 'file.rs' | tractor -x \"//query\"");
-        eprintln!("\nUse --help for more information.");
-        return Err("no input files".into());
+        Args::command().print_help().ok();
+        println!();
+        return Ok(());
     }
 
     // Configure thread pool
