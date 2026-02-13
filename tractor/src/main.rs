@@ -137,9 +137,15 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
     // Collect files
     let mut files: Vec<String> = expand_globs(&args.files);
 
-    // Handle stdin input modes
-    let stdin_source = files.is_empty() && args.lang.is_some() && !atty::is(atty::Stream::Stdin);
-    let stdin_files = files.is_empty() && args.lang.is_none() && !atty::is(atty::Stream::Stdin);
+    // Handle --content argument (requires --lang)
+    let content_source = args.content.is_some();
+    if content_source && args.lang.is_none() {
+        return Err("--string requires --lang to specify the language".into());
+    }
+
+    // Handle stdin input modes (disabled when --content is provided)
+    let stdin_source = !content_source && files.is_empty() && args.lang.is_some() && !atty::is(atty::Stream::Stdin);
+    let stdin_files = !content_source && files.is_empty() && args.lang.is_none() && !atty::is(atty::Stream::Stdin);
 
     if stdin_files {
         // Read file paths from stdin
@@ -157,7 +163,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
     // Filter to supported languages
     files = filter_supported_files(files);
 
-    if files.is_empty() && !stdin_source {
+    if files.is_empty() && !stdin_source && !content_source {
         Args::command().print_help().ok();
         println!();
         return Ok(());
@@ -170,10 +176,15 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
         .build_global()
         .ok();
 
-    // Handle stdin source separately
-    if stdin_source {
-        let mut source = String::new();
-        io::stdin().read_to_string(&mut source)?;
+    // Handle inline source (--content argument or stdin with --lang)
+    if content_source || stdin_source {
+        let source = if let Some(ref content) = args.content {
+            content.clone()
+        } else {
+            let mut s = String::new();
+            io::stdin().read_to_string(&mut s)?;
+            s
+        };
         let lang = args.lang.as_deref().unwrap();
 
         // With XPath query - use unified pipeline (handles XML and source code)

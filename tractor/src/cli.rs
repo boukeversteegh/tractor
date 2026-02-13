@@ -44,6 +44,9 @@ EXAMPLES:
     # Parse from stdin
     echo "public class Foo { }" | tractor -l csharp -x "//class/name" -o value
 
+    # Parse content from argument (useful for scripting with consistent command prefix)
+    tractor -s "public class Foo { }" -l csharp -x "//class/name" -o value
+
     # CI: fail if any TODO comments found
     tractor "src/**/*.cs" -x "//comment[contains(.,'TODO')]" --expect none
 
@@ -65,6 +68,10 @@ pub struct Args {
     /// Language for stdin input (e.g., csharp, rust, python)
     #[arg(short = 'l', long = "lang")]
     pub lang: Option<String>,
+
+    /// Source code string to parse (alternative to stdin, requires --lang)
+    #[arg(short = 's', long = "string")]
+    pub content: Option<String>,
 
     /// Show full XML with matches highlighted (for debugging XPath)
     #[arg(long = "debug")]
