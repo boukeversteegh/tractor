@@ -82,7 +82,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
     LanguageInfo {
         name: "json",
         extensions: &["json"],
-        has_transforms: false,
+        has_transforms: true,
         grammar_file: Some("tree-sitter-json.wasm"),
     },
     LanguageInfo {
