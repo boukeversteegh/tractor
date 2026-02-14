@@ -44,6 +44,17 @@ where
     walk_node(xot, content_root, &mut transform_fn)
 }
 
+/// Walk and transform starting from a specific node (no wrapper skipping).
+///
+/// Use this when transforming a detached subtree that isn't wrapped in
+/// Files/File elements (e.g., a cloned content root for dual-branch assembly).
+pub fn walk_transform_node<F>(xot: &mut Xot, node: XotNode, mut transform_fn: F) -> Result<(), xot::Error>
+where
+    F: FnMut(&mut Xot, XotNode) -> Result<TransformAction, xot::Error>,
+{
+    walk_node(xot, node, &mut transform_fn)
+}
+
 /// Find the actual content root, skipping Files/File wrappers
 fn find_content_root(xot: &Xot, node: XotNode) -> XotNode {
     // If this is a document node, get the document element

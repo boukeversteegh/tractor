@@ -10,6 +10,7 @@ pub mod go;
 pub mod rust_lang;
 pub mod java;
 pub mod ruby;
+pub mod json;
 pub mod yaml;
 pub mod toml;
 pub mod ini;
@@ -27,7 +28,10 @@ pub type TransformFn = fn(&mut Xot, XotNode) -> Result<TransformAction, xot::Err
 /// Maps a transformed element name to a syntax category for highlighting
 pub type SyntaxCategoryFn = fn(&str) -> SyntaxCategory;
 
-/// Get the transform function for a language
+/// Get the transform function for a language (single-branch transform)
+///
+/// For data-aware languages (JSON, YAML), prefer `get_data_transforms()` which
+/// returns separate AST and data transforms for dual-branch output.
 pub fn get_transform(lang: &str) -> TransformFn {
     match lang {
         "typescript" | "ts" | "tsx" | "javascript" | "js" | "jsx" => typescript::transform,
@@ -37,13 +41,26 @@ pub fn get_transform(lang: &str) -> TransformFn {
         "rust" | "rs" => rust_lang::transform,
         "java" => java::transform,
         "ruby" | "rb" => ruby::transform,
-        "yaml" | "yml" => yaml::transform,
+        "json" => json::data_transform,
+        "yaml" | "yml" => yaml::data_transform,
         "toml" => toml::transform,
         "ini" => ini::transform,
         "env" => env::transform,
         "markdown" | "md" | "mdx" => markdown::transform,
         // Default: passthrough (no transforms)
         _ => passthrough_transform,
+    }
+}
+
+/// Get dual-branch transform functions for data-aware languages.
+///
+/// Returns `Some((ast_transform, data_transform))` for languages that produce
+/// both an `/ast` and `/data` branch, or `None` for other languages.
+pub fn get_data_transforms(lang: &str) -> Option<(&'static str, TransformFn, TransformFn)> {
+    match lang {
+        "json" => Some(("json", json::ast_transform, json::data_transform)),
+        "yaml" | "yml" => Some(("yaml", yaml::ast_transform, yaml::data_transform)),
+        _ => None,
     }
 }
 
@@ -58,6 +75,7 @@ pub fn get_syntax_category(lang: &str) -> SyntaxCategoryFn {
         "rust" | "rs" => rust_lang::syntax_category,
         "java" => java::syntax_category,
         "ruby" | "rb" => ruby::syntax_category,
+        "json" => json::syntax_category,
         "yaml" | "yml" => yaml::syntax_category,
         "toml" => toml::syntax_category,
         "ini" => ini::syntax_category,

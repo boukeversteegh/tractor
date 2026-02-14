@@ -579,13 +579,16 @@ impl XeeBuilder {
 
         // Apply semantic transforms if not in raw mode
         if !raw_mode {
-            // Get the document node for transformation
-            let doc_node = self.documents.document_node(doc_handle)
-                .ok_or_else(|| xot::Error::Io("Failed to get document node".to_string()))?;
-
-            // Apply language-specific transforms
-            let transform_fn = crate::languages::get_transform(lang);
-            crate::xot_transform::walk_transform(self.documents.xot_mut(), doc_node, transform_fn)?;
+            if let Some((format, ast_fn, data_fn)) = crate::languages::get_data_transforms(lang) {
+                // Data-aware language: build dual-branch (ast + data)
+                self.apply_data_transforms(doc_handle, format, ast_fn, data_fn)?;
+            } else {
+                // Programming language: single transform
+                let doc_node = self.documents.document_node(doc_handle)
+                    .ok_or_else(|| xot::Error::Io("Failed to get document node".to_string()))?;
+                let transform_fn = crate::languages::get_transform(lang);
+                crate::xot_transform::walk_transform(self.documents.xot_mut(), doc_node, transform_fn)?;
+            }
         }
         let t2 = Instant::now();
 
@@ -668,6 +671,72 @@ impl XeeBuilder {
         xot.append(root, file_el)?;
 
         Ok(doc_handle)
+    }
+
+    /// Build dual-branch (ast + data) tree for data-aware languages.
+    ///
+    /// Takes the raw tree under <File>, clones it, applies the AST transform
+    /// to one copy and the data transform to the other, then wraps each in
+    /// <ast> and <data> elements under <File>.
+    #[cfg(feature = "native")]
+    fn apply_data_transforms(
+        &mut self,
+        doc_handle: DocumentHandle,
+        format: &str,
+        ast_transform: crate::languages::TransformFn,
+        data_transform: crate::languages::TransformFn,
+    ) -> Result<(), xot::Error> {
+        let doc_node = self.documents.document_node(doc_handle)
+            .ok_or_else(|| xot::Error::Io("Failed to get document node".to_string()))?;
+
+        let xot = self.documents.xot_mut();
+
+        // Find <Files> -> <File>
+        let files_el = xot.document_element(doc_node)?;
+        let file_el = xot.children(files_el)
+            .find(|&c| xot.element(c).is_some())
+            .ok_or_else(|| xot::Error::Io("No File element found".to_string()))?;
+
+        // Set kind="data" and format="json|yaml" on <File>
+        let kind_attr = xot.add_name("kind");
+        xot.attributes_mut(file_el).insert(kind_attr, "data".to_string());
+        let format_attr = xot.add_name("format");
+        xot.attributes_mut(file_el).insert(format_attr, format.to_string());
+
+        // Find the content root (first element child of <File>)
+        let content_root = xot.children(file_el)
+            .find(|&c| xot.element(c).is_some())
+            .ok_or_else(|| xot::Error::Io("No content root under File".to_string()))?;
+
+        // Clone the content subtree for the data branch
+        let data_content = xot.clone_node(content_root);
+
+        // Create <ast> and <data> wrapper elements FIRST, then attach content
+        // to them before transforming. Transforms may Flatten the root node,
+        // which requires a parent to insert children into.
+        let ast_name = xot.add_name("ast");
+        let ast_el = xot.new_element(ast_name);
+        let data_name = xot.add_name("data");
+        let data_el = xot.new_element(data_name);
+
+        // Move original content from <File> into <ast>
+        xot.detach(content_root)?;
+        xot.append(ast_el, content_root)?;
+
+        // Attach cloned content into <data>
+        xot.append(data_el, data_content)?;
+
+        // Apply AST transform (content_root is now child of <ast>)
+        crate::xot_transform::walk_transform_node(xot, content_root, ast_transform)?;
+
+        // Apply data transform (data_content is now child of <data>)
+        crate::xot_transform::walk_transform_node(xot, data_content, data_transform)?;
+
+        // Append <ast> and <data> to <File>
+        xot.append(file_el, ast_el)?;
+        xot.append(file_el, data_el)?;
+
+        Ok(())
     }
 
     /// Consume the builder and return the Documents instance
