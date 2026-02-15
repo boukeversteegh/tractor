@@ -76,8 +76,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 /// Transform a section by extracting the name from its section_name child
 fn transform_section(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     if let Some(name) = extract_section_name(xot, node) {
-        let safe_name = sanitize_xml_name(&name);
-        rename(xot, node, &safe_name);
+        rename_to_key(xot, node, &name);
 
         // Remove the section_name child (already extracted)
         let children: Vec<XotNode> = xot.children(node).collect();
@@ -90,11 +89,6 @@ fn transform_section(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xo
                 }
             }
         }
-
-        // If name was sanitized, store original key as attribute
-        if safe_name != name {
-            set_attr(xot, node, "key", &name);
-        }
     }
     Ok(TransformAction::Continue)
 }
@@ -102,8 +96,7 @@ fn transform_section(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xo
 /// Transform a setting by extracting the key name and promoting the value
 fn transform_setting(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     if let Some(key) = extract_setting_name(xot, node) {
-        let safe_name = sanitize_xml_name(&key);
-        rename(xot, node, &safe_name);
+        rename_to_key(xot, node, &key);
 
         // Remove setting_name child and `=` text, keep setting_value
         let children: Vec<XotNode> = xot.children(node).collect();
@@ -120,11 +113,6 @@ fn transform_setting(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xo
 
         // Trim the setting_value text content
         trim_value_text(xot, node)?;
-
-        // If name was sanitized, store original key as attribute
-        if safe_name != key {
-            set_attr(xot, node, "key", &key);
-        }
     }
     Ok(TransformAction::Continue)
 }
@@ -217,51 +205,10 @@ fn trim_value_text(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     Ok(())
 }
 
-/// Sanitize a string to be a valid XML element name
-fn sanitize_xml_name(name: &str) -> String {
-    if name.is_empty() {
-        return "_".to_string();
-    }
-
-    let mut result = String::with_capacity(name.len());
-    for (i, c) in name.chars().enumerate() {
-        if i == 0 {
-            if c.is_ascii_alphabetic() || c == '_' {
-                result.push(c);
-            } else {
-                result.push('_');
-                if c.is_ascii_alphanumeric() || c == '-' || c == '.' {
-                    result.push(c);
-                }
-            }
-        } else if c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.' {
-            result.push(c);
-        } else {
-            result.push('_');
-        }
-    }
-    result
-}
-
 /// Map a transformed element name to a syntax category for highlighting
 pub fn syntax_category(element: &str) -> SyntaxCategory {
     match element {
         "comment" => SyntaxCategory::Comment,
         _ => SyntaxCategory::Default,
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_sanitize_xml_name() {
-        assert_eq!(sanitize_xml_name("foo"), "foo");
-        assert_eq!(sanitize_xml_name("foo_bar"), "foo_bar");
-        assert_eq!(sanitize_xml_name("foo-bar"), "foo-bar");
-        assert_eq!(sanitize_xml_name("123"), "_123");
-        assert_eq!(sanitize_xml_name("key with spaces"), "key_with_spaces");
-        assert_eq!(sanitize_xml_name(""), "_");
     }
 }

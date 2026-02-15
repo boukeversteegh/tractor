@@ -172,6 +172,48 @@ pub mod helpers {
         }
     }
 
+    /// Sanitize a string to be a valid XML element name.
+    /// Replaces invalid characters with underscores.
+    pub fn sanitize_xml_name(name: &str) -> String {
+        if name.is_empty() {
+            return "_".to_string();
+        }
+
+        let mut result = String::with_capacity(name.len());
+        for (i, c) in name.chars().enumerate() {
+            if i == 0 {
+                if c.is_ascii_alphabetic() || c == '_' {
+                    result.push(c);
+                } else {
+                    result.push('_');
+                    if c.is_ascii_alphanumeric() || c == '-' || c == '.' {
+                        result.push(c);
+                    }
+                }
+            } else if c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.' {
+                result.push(c);
+            } else {
+                result.push('_');
+            }
+        }
+        result
+    }
+
+    // /specs/tractor-parse/dual-view/data-branch/key-sanitization.md: Key Name Sanitization
+    /// Rename an element to represent a data key.
+    ///
+    /// Sanitizes the key for use as an XML element name, renames the node,
+    /// and stores the original key in a `key` attribute when sanitization
+    /// was needed. Returns the sanitized name.
+    pub fn rename_to_key(xot: &mut Xot, node: XotNode, key: &str) -> String {
+        let safe_name = sanitize_xml_name(key);
+        rename(xot, node, &safe_name);
+        if safe_name != key {
+            set_attr(xot, node, "key", key);
+        }
+        safe_name
+    }
+
     /// Set an attribute on an element
     pub fn set_attr(xot: &mut Xot, node: XotNode, name: &str, value: &str) {
         let name_id = xot.add_name(name);
@@ -420,5 +462,19 @@ mod tests {
         }).unwrap();
 
         assert_eq!(visited, vec!["root", "child"]);
+    }
+
+    #[test]
+    fn test_sanitize_xml_name() {
+        assert_eq!(sanitize_xml_name("foo"), "foo");
+        assert_eq!(sanitize_xml_name("foo_bar"), "foo_bar");
+        assert_eq!(sanitize_xml_name("foo-bar"), "foo-bar");
+        assert_eq!(sanitize_xml_name("foo.bar"), "foo.bar");
+        assert_eq!(sanitize_xml_name("123"), "_123");
+        assert_eq!(sanitize_xml_name("key with spaces"), "key_with_spaces");
+        assert_eq!(sanitize_xml_name(""), "_");
+        assert_eq!(sanitize_xml_name("-hyphen"), "_-hyphen");
+        assert_eq!(sanitize_xml_name("DB_HOST"), "DB_HOST");
+        assert_eq!(sanitize_xml_name("a:b"), "a_b");
     }
 }

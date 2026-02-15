@@ -7,6 +7,7 @@ use xot::{Xot, Node as XotNode};
 use crate::xot_transform::{TransformAction, helpers::*};
 use super::{strip_quotes_from_node, normalize_block_scalar};
 
+// /specs/tractor-parse/dual-view/syntax-branch/vocabulary.md: Unified Syntax Vocabulary
 /// Normalize TreeSitter YAML into unified syntax vocabulary.
 pub fn syntax_transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let kind = match get_kind(xot, node) {

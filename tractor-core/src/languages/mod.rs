@@ -52,6 +52,7 @@ pub fn get_transform(lang: &str) -> TransformFn {
     }
 }
 
+// /specs/tractor-parse/dual-view/supported-languages.md: Supported Languages
 /// Get dual-branch transform functions for data-aware languages.
 ///
 /// Returns `Some((syntax_transform, data_transform))` for languages

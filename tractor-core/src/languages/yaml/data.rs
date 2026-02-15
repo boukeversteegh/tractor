@@ -16,9 +16,10 @@
 
 use xot::{Xot, Node as XotNode};
 use crate::xot_transform::{TransformAction, helpers::*};
-use super::{strip_quotes, strip_quotes_from_node, normalize_block_scalar, sanitize_xml_name,
+use super::{strip_quotes, strip_quotes_from_node, normalize_block_scalar,
             decode_yaml_double_quote_escapes, decode_yaml_single_quote_escapes};
 
+// /specs/tractor-parse/dual-view/data-branch.md: Data Branch
 /// Project YAML into query-friendly data view.
 ///
 /// Mapping keys become element names, sequences repeat the parent key element,
@@ -35,7 +36,7 @@ pub fn data_transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
             transform_mapping_pair(xot, node)
         }
 
-        // Sequence items: rename to ancestor key name or "item"
+        // /specs/tractor-parse/dual-view/data-branch/arrays.md: Array Representation
         "block_sequence_item" => {
             let wrapper = find_ancestor_key_name(xot, node)
                 .unwrap_or_else(|| "item".to_string());
@@ -49,12 +50,12 @@ pub fn data_transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
             Ok(TransformAction::Continue)
         }
 
-        // Flow sequences: wrap each flow_node child as <item>, remove punctuation
+        // /specs/tractor-parse/dual-view/data-branch/arrays.md: Array Representation
         "flow_sequence" => {
             transform_flow_sequence(xot, node)
         }
 
-        // Quoted scalars: strip quotes, decode escapes, promote text
+        // /specs/tractor-parse/dual-view/data-branch/scalars.md: Scalar Values
         "double_quote_scalar" => {
             strip_quotes_from_node(xot, node)?;
             // Decode escape sequences in the stripped text
@@ -138,16 +139,13 @@ pub fn data_transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
     }
 }
 
+// /specs/tractor-parse/dual-view/data-branch/objects.md: Object Key-to-Element Mapping
 /// Transform a mapping pair by extracting the key and renaming the element.
-/// When the key requires sanitization (e.g. "first name" → `first_name`),
-/// a `<key>` child element preserves the original key for querying via
-/// `//*[key='first name']`.
 fn transform_mapping_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     if let Some(key) = extract_key_text(xot, node) {
-        let safe_name = sanitize_xml_name(&key);
-        rename(xot, node, &safe_name);
+        let safe_name = rename_to_key(xot, node, &key);
 
-        // Copy the value child's span to this node (so it points to the value, not the pair).
+        // /specs/tractor-parse/dual-view/data-branch/source-spans.md: Value-Oriented Source Spans
         // The value child is the first non-key, non-text element child.
         let value_child = get_element_children(xot, node).into_iter()
             .find(|&c| get_attr(xot, c, "field").as_deref() != Some("key"));
@@ -165,11 +163,6 @@ fn transform_mapping_pair(xot: &mut Xot, node: XotNode) -> Result<TransformActio
                     xot.detach(child)?;
                 }
             }
-        }
-
-        // When key was sanitized, store original key as attribute
-        if safe_name != key {
-            set_attr(xot, node, "key", &key);
         }
 
         // If value is a sequence and key wasn't sanitized, Flatten this pair

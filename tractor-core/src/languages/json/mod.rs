@@ -33,33 +33,6 @@ pub(crate) fn extract_string_content(xot: &Xot, string_node: XotNode) -> Option<
     None
 }
 
-/// Sanitize a string to be a valid XML element name.
-/// Replaces invalid characters with underscores.
-pub(crate) fn sanitize_xml_name(name: &str) -> String {
-    if name.is_empty() {
-        return "_".to_string();
-    }
-
-    let mut result = String::with_capacity(name.len());
-    for (i, c) in name.chars().enumerate() {
-        if i == 0 {
-            if c.is_ascii_alphabetic() || c == '_' {
-                result.push(c);
-            } else {
-                result.push('_');
-                if c.is_ascii_alphanumeric() || c == '-' || c == '.' {
-                    result.push(c);
-                }
-            }
-        } else if c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.' {
-            result.push(c);
-        } else {
-            result.push('_');
-        }
-    }
-    result
-}
-
 /// Extract and decode the full content of a JSON string node for data view.
 ///
 /// TreeSitter splits JSON strings into `string_content` and `escape_sequence`
@@ -155,13 +128,4 @@ mod tests {
         assert_eq!(decode_json_escapes(r"a\u00e9b"), "a\u{00e9}b"); // é
     }
 
-    #[test]
-    fn test_sanitize_xml_name() {
-        assert_eq!(sanitize_xml_name("foo"), "foo");
-        assert_eq!(sanitize_xml_name("foo_bar"), "foo_bar");
-        assert_eq!(sanitize_xml_name("foo-bar"), "foo-bar");
-        assert_eq!(sanitize_xml_name("123"), "_123");
-        assert_eq!(sanitize_xml_name("key with spaces"), "key_with_spaces");
-        assert_eq!(sanitize_xml_name(""), "_");
-    }
 }

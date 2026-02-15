@@ -13,8 +13,9 @@
 
 use xot::{Xot, Node as XotNode};
 use crate::xot_transform::{TransformAction, helpers::*};
-use super::{extract_string_content, extract_decoded_string_content, sanitize_xml_name};
+use super::{extract_string_content, extract_decoded_string_content};
 
+// /specs/tractor-parse/dual-view/data-branch.md: Data Branch
 /// Project JSON into query-friendly data view.
 ///
 /// Object keys become element names, arrays repeat the parent key element,
@@ -48,6 +49,7 @@ pub fn data_transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
             transform_data_array(xot, node)
         }
 
+        // /specs/tractor-parse/dual-view/data-branch/scalars.md: Scalar Values
         // string: extract decoded content (handles escape sequences), flatten to parent
         "string" => {
             let content = extract_decoded_string_content(xot, node);
@@ -80,14 +82,11 @@ pub fn data_transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
     }
 }
 
+// /specs/tractor-parse/dual-view/data-branch/objects.md: Object Key-to-Element Mapping
 /// Transform a pair into a named data element.
-///
-/// Extract the key text, sanitize it for XML, rename the pair element to that key.
-/// Remove the key child and value wrapper, keeping the value content.
 fn transform_data_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     if let Some(key_text) = extract_pair_key_text(xot, node) {
-        let safe_name = sanitize_xml_name(&key_text);
-        rename(xot, node, &safe_name);
+        let safe_name = rename_to_key(xot, node, &key_text);
 
         // Remove the key child and colon/punctuation text
         let children: Vec<XotNode> = xot.children(node).collect();
@@ -101,13 +100,8 @@ fn transform_data_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
             }
         }
 
-        // If key was sanitized, store original key as attribute
-        if safe_name != key_text {
-            set_attr(xot, node, "key", &key_text);
-        }
-
+        // /specs/tractor-parse/dual-view/data-branch/source-spans.md: Value-Oriented Source Spans
         // Flatten the <value> wrapper if present, copying its span first.
-        // The value's span is what this data element should point to (not the whole pair).
         let children: Vec<XotNode> = xot.children(node)
             .filter(|&c| xot.element(c).is_some())
             .collect();
@@ -144,11 +138,8 @@ fn extract_pair_key_text(xot: &Xot, pair_node: XotNode) -> Option<String> {
     None
 }
 
+// /specs/tractor-parse/dual-view/data-branch/arrays.md: Array Representation
 /// Transform a JSON array for data view.
-///
-/// Wraps each element child in a wrapper element, then flattens the array.
-/// Uses the ancestor key name (e.g. `<tags>`) when inside a named pair,
-/// or `<item>` for top-level/nested arrays.
 fn transform_data_array(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     remove_text_children(xot, node)?;
 

@@ -186,32 +186,6 @@ pub(crate) fn decode_yaml_single_quote_escapes(s: &str) -> String {
     s.replace("''", "'")
 }
 
-/// Sanitize a string to be a valid XML element name
-pub(crate) fn sanitize_xml_name(name: &str) -> String {
-    if name.is_empty() {
-        return "_".to_string();
-    }
-
-    let mut result = String::with_capacity(name.len());
-    for (i, c) in name.chars().enumerate() {
-        if i == 0 {
-            if c.is_ascii_alphabetic() || c == '_' {
-                result.push(c);
-            } else {
-                result.push('_');
-                if c.is_ascii_alphanumeric() || c == '-' || c == '.' {
-                    result.push(c);
-                }
-            }
-        } else if c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.' {
-            result.push(c);
-        } else {
-            result.push('_');
-        }
-    }
-    result
-}
-
 /// Map a transformed element name to a syntax category for highlighting
 pub fn syntax_category(element: &str) -> SyntaxCategory {
     match element {
@@ -236,18 +210,6 @@ mod tests {
     fn test_decode_yaml_single_quote_escapes() {
         assert_eq!(decode_yaml_single_quote_escapes("it''s"), "it's");
         assert_eq!(decode_yaml_single_quote_escapes("plain"), "plain");
-    }
-
-    #[test]
-    fn test_sanitize_xml_name() {
-        assert_eq!(sanitize_xml_name("foo"), "foo");
-        assert_eq!(sanitize_xml_name("foo_bar"), "foo_bar");
-        assert_eq!(sanitize_xml_name("foo-bar"), "foo-bar");
-        assert_eq!(sanitize_xml_name("foo.bar"), "foo.bar");
-        assert_eq!(sanitize_xml_name("123"), "_123");
-        assert_eq!(sanitize_xml_name("key with spaces"), "key_with_spaces");
-        assert_eq!(sanitize_xml_name(""), "_");
-        assert_eq!(sanitize_xml_name("-hyphen"), "_-hyphen");
     }
 
     #[test]

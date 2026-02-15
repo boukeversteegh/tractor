@@ -673,6 +673,7 @@ impl XeeBuilder {
         Ok(doc_handle)
     }
 
+    // /specs/tractor-parse/dual-view/xml-structure.md: XML Structure
     /// Build dual-branch (syntax + data) tree for data-aware languages.
     ///
     /// Takes the raw tree under <File>, clones it, applies the syntax transform
