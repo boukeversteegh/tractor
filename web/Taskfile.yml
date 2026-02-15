@@ -236,6 +236,7 @@ tasks:
 
   test:
     desc: Run vitest tests
+    dir: .
     cmds:
       - npx vitest run
 
