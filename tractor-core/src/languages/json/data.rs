@@ -101,9 +101,9 @@ fn transform_data_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
             }
         }
 
-        // If key was sanitized, add <key> child with original text
+        // If key was sanitized, store original key as attribute
         if safe_name != key_text {
-            prepend_element_with_text(xot, node, "key", &key_text)?;
+            set_attr(xot, node, "key", &key_text);
         }
 
         // Flatten the <value> wrapper if present (promote its children)

@@ -91,9 +91,9 @@ fn transform_section(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xo
             }
         }
 
-        // If name was sanitized, preserve original as <key> child
+        // If name was sanitized, store original key as attribute
         if safe_name != name {
-            prepend_element_with_text(xot, node, "key", &name)?;
+            set_attr(xot, node, "key", &name);
         }
     }
     Ok(TransformAction::Continue)
@@ -121,9 +121,9 @@ fn transform_setting(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xo
         // Trim the setting_value text content
         trim_value_text(xot, node)?;
 
-        // If name was sanitized, preserve original as <key> child
+        // If name was sanitized, store original key as attribute
         if safe_name != key {
-            prepend_element_with_text(xot, node, "key", &key)?;
+            set_attr(xot, node, "key", &key);
         }
     }
     Ok(TransformAction::Continue)

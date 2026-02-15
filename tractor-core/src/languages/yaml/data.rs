@@ -129,9 +129,9 @@ fn transform_mapping_pair(xot: &mut Xot, node: XotNode) -> Result<TransformActio
             }
         }
 
-        // When key was sanitized, add <key> child so the original is queryable
+        // When key was sanitized, store original key as attribute
         if safe_name != key {
-            prepend_element_with_text(xot, node, "key", &key)?;
+            set_attr(xot, node, "key", &key);
         }
 
         // If value is a sequence and key wasn't sanitized, Flatten this pair

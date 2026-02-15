@@ -125,7 +125,7 @@ fn transform_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::
             rename(xot, node, &safe_name);
 
             if safe_name != segments[0] {
-                prepend_element_with_text(xot, node, "key", &segments[0])?;
+                set_attr(xot, node, "key", &segments[0]);
             }
         } else {
             // Dotted key: create nested elements a.b.c → <a><b><c>value</c></b></a>
@@ -133,7 +133,7 @@ fn transform_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::
             rename(xot, node, &safe_name);
 
             if safe_name != *segments.last().unwrap() {
-                prepend_element_with_text(xot, node, "key", segments.last().unwrap())?;
+                set_attr(xot, node, "key", segments.last().unwrap());
             }
 
             // Wrap in parent elements for preceding segments (innermost to outermost)
@@ -165,7 +165,7 @@ fn transform_table(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot:
         rename(xot, node, &safe_name);
 
         if safe_name != *segments.last().unwrap() {
-            prepend_element_with_text(xot, node, "key", segments.last().unwrap())?;
+            set_attr(xot, node, "key", segments.last().unwrap());
         }
 
         // For dotted keys, wrap in parent elements

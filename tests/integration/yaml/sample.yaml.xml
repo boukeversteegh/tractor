@@ -273,14 +273,8 @@ line two</string>
       <quoted>hello world</quoted>
       <multiline>line one
 line two</multiline>
-      <first_name>
-        <key>first name</key>
-        Alice
-      </first_name>
-      <last_name>
-        <key>last name</key>
-        Bob
-      </last_name>
+      <first_name key="first name">Alice</first_name>
+      <last_name key="last name">Bob</last_name>
     </data>
   </File>
 </Files>

@@ -309,10 +309,8 @@ pub mod helpers {
             if let Some(kind) = get_kind(xot, current) {
                 match kind.as_str() {
                     "block_mapping_pair" | "flow_pair" | "pair" => {
-                        // Skip if key was sanitized (has <key> child element)
-                        let has_key_child = xot.children(current)
-                            .any(|c| get_element_name(xot, c).as_deref() == Some("key"));
-                        if has_key_child {
+                        // Skip if key was sanitized (has key="..." attribute)
+                        if get_attr(xot, current, "key").is_some() {
                             return None;
                         }
                         return get_element_name(xot, current);

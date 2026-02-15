@@ -18,7 +18,7 @@ run_test tractor sample.yaml -x "//data/flow_list" --expect 3 -m "flow sequences
 run_test tractor sample.yaml -x "//data/quoted[.='hello world']" --expect 1 -m "quoted strings have quotes stripped"
 run_test tractor sample.yaml -x "//data/multiline[contains(.,'line one')]" --expect 1 -m "block scalars are normalized"
 run_test tractor sample.yaml -x "//data/first_name" --expect 1 -m "keys with spaces become sanitized element names"
-run_test tractor sample.yaml -x "//data//*[key='first name']" --expect 1 -m "original key preserved as <key> child when sanitized"
+run_test tractor sample.yaml -x "//data//*[@key='first name']" --expect 1 -m "original key preserved as @key attribute when sanitized"
 run_test tractor sample.yaml -x "//data/first_name[text()='Alice']" --expect 1 -m "sanitized key values queryable via text()"
 
 echo ""
