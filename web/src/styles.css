@@ -461,6 +461,8 @@ body {
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
   font-size: 0.8rem;
   overflow: auto;
+  height: 100%;
+  box-sizing: border-box;
 }
 
 .tree-view.empty {
@@ -612,6 +614,47 @@ body {
   color: var(--text-primary);
   border-color: var(--accent-light);
   background: var(--bg-secondary);
+}
+
+/* Schema view: occurrence count badge */
+.schema-count {
+  color: var(--accent-yellow);
+  font-size: 0.7rem;
+  margin-left: 0.15rem;
+}
+
+/* Schema view: wrapper for values + their dropdown menu (keeps focus together) */
+.schema-values-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  outline: none;
+}
+
+/* Schema view: merged values display */
+.schema-values {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
+  white-space: nowrap;
+  cursor: pointer;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  background: var(--bg-tertiary);
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.schema-values:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-light);
+  background: var(--bg-secondary);
+}
+
+/* Value list menu (scrollable) */
+.node-menu.value-list {
+  max-height: 250px;
+  overflow-y: auto;
 }
 
 .node-menu {

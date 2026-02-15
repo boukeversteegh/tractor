@@ -26,8 +26,18 @@
 
 use quick_xml::events::Event;
 use quick_xml::Reader;
+use serde::Serialize;
 use std::collections::HashMap;
 use xot::{Node, Value, Xot};
+
+/// Serializable schema node for JSON output (used by WASM and web UI)
+#[derive(Debug, Clone, Serialize)]
+pub struct SchemaNode {
+    pub name: String,
+    pub count: usize,
+    pub values: Vec<String>,
+    pub children: Vec<SchemaNode>,
+}
 
 /// A path with its text values and occurrence count
 struct PathInfo {
@@ -198,6 +208,29 @@ impl SchemaCollector {
 impl Default for SchemaCollector {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl SchemaCollector {
+    /// Convert collected paths to a serializable schema tree
+    ///
+    /// Returns the children of the virtual root node. For a single file,
+    /// this is typically the top-level elements (e.g., `[SchemaNode { name: "class", ... }]`).
+    /// The Files/File wrapper is included in the tree since it's part of the collected paths.
+    pub fn to_schema_tree(&self) -> Vec<SchemaNode> {
+        let tree = self.build_tree();
+        fn convert(node: &TreeNode) -> Vec<SchemaNode> {
+            node.children
+                .iter()
+                .map(|(name, child)| SchemaNode {
+                    name: name.clone(),
+                    count: child.count,
+                    values: child.values.clone(),
+                    children: convert(child),
+                })
+                .collect()
+        }
+        convert(&tree)
     }
 }
 

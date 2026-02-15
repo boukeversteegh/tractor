@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { initParser, parseSource } from '../parser';
-import { initTractor, parseAstToXmlSimple, validateXPathSync, XPathValidationResult } from '../tractor';
+import { initTractor, parseAstToXmlSimple, validateXPathSync, XPathValidationResult, getSchemaTreeSync, SchemaNode } from '../tractor';
 import { queryXml, Match, OutputFormat, OUTPUT_FORMATS } from '../xpath';
 import { TreeView } from '../components/TreeView';
 import { XmlOutput } from '../components/XmlOutput';
@@ -13,7 +13,7 @@ import {
   parseXmlToTree,
   XmlNode,
   findDeepestNodeAtPosition,
-  getPathToNode,
+  computePathKeyForNode,
   offsetToPosition,
   positionToOffset,
   parsePositionString,
@@ -37,6 +37,7 @@ export function Playground() {
   const [xml, setXml] = useState('');  // Display XML (may not have locations)
   const [xmlForQuery, setXmlForQuery] = useState('');  // XML with locations for querying and highlighting
   const [xmlTree, setXmlTree] = useState<XmlNode | null>(null);
+  const [schemaTree, setSchemaTree] = useState<SchemaNode[]>([]);
 
   // Options
   const [rawMode, setRawMode] = useState(false);
@@ -67,92 +68,11 @@ export function Playground() {
   const [queryValidation, setQueryValidation] = useState<XPathValidationResult | null>(null);
   const [outputFormat, setOutputFormat] = useState<OutputFormat>('source');
 
-  // Compute which tree node instances matched the query (for highlighting)
-  // and which descendant nodes are non-distinguishing (identical across all matches)
-  const { matchedNodeIds, nonDistinguishingNodeIds } = useMemo(() => {
-    const matchedIds = new Set<string>();
-    const nonDistinguishingIds = new Set<string>();
-    if (!xmlTree || matches.length === 0) {
-      return { matchedNodeIds: matchedIds, nonDistinguishingNodeIds: nonDistinguishingIds };
-    }
-
-    // Find all matched nodes
-    const matchedNodes: XmlNode[] = [];
-    for (const match of matches) {
-      if (!match.start) continue;
-      const startPos = parsePositionString(match.start);
-      if (!startPos) continue;
-      const node = findDeepestNodeAtPosition(xmlTree, startPos);
-      if (node) {
-        matchedIds.add(node.id);
-        matchedNodes.push(node);
-      }
-    }
-
-    // If only one match, nothing to distinguish
-    if (matchedNodes.length <= 1) {
-      return { matchedNodeIds: matchedIds, nonDistinguishingNodeIds: nonDistinguishingIds };
-    }
-
-    // Collect descendant signatures for each matched node
-    // Key: relative path (e.g., "body/return"), Value: signature (structure + text)
-    function getNodeSignature(node: XmlNode): string {
-      // Signature is the node name + text content + sorted attribute values
-      const attrs = Object.entries(node.attributes)
-        .filter(([k]) => k !== 'start' && k !== 'end') // ignore location attrs
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([k, v]) => `${k}=${v}`)
-        .join(',');
-      return `${node.name}[${attrs}]${node.textContent || ''}`;
-    }
-
-    function collectDescendants(
-      node: XmlNode,
-      relativePath: string,
-      result: Map<string, { signature: string; nodeId: string }>
-    ) {
-      const path = relativePath ? `${relativePath}/${node.name}` : node.name;
-      result.set(path, { signature: getNodeSignature(node), nodeId: node.id });
-      for (const child of node.children) {
-        collectDescendants(child, path, result);
-      }
-    }
-
-    // Collect descendants for each matched node
-    const allDescendantMaps: Map<string, { signature: string; nodeId: string }>[] = [];
-    for (const matchedNode of matchedNodes) {
-      const descendantMap = new Map<string, { signature: string; nodeId: string }>();
-      for (const child of matchedNode.children) {
-        collectDescendants(child, '', descendantMap);
-      }
-      allDescendantMaps.push(descendantMap);
-    }
-
-    // Find paths that exist in ALL matches with SAME signature
-    const firstMap = allDescendantMaps[0];
-    for (const [path, { signature }] of firstMap) {
-      const allSame = allDescendantMaps.every(map => {
-        const entry = map.get(path);
-        return entry && entry.signature === signature;
-      });
-      if (allSame) {
-        // Mark all nodes at this path as non-distinguishing
-        for (const map of allDescendantMaps) {
-          const entry = map.get(path);
-          if (entry) nonDistinguishingIds.add(entry.nodeId);
-        }
-      }
-    }
-
-    return { matchedNodeIds: matchedIds, nonDistinguishingNodeIds: nonDistinguishingIds };
-  }, [xmlTree, matches]);
-
   // UI state
   const [activeTab, setActiveTab] = useState<Tab>('builder');
-  const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
-  const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(new Set());
+  const [focusedPathKey, setFocusedPathKey] = useState<string | null>(null);
+  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
   const [hoveredMatchIndex, setHoveredMatchIndex] = useState<number | null>(null);
-  const [hoveredTreeNode, setHoveredTreeNode] = useState<XmlNode | null>(null);
 
   // Panel resize state
   const STORAGE_KEY = 'tractor-panel-widths';
@@ -237,6 +157,7 @@ export function Playground() {
     if (!initialized || !source.trim()) {
       setXml('');
       setXmlTree(null);
+      setSchemaTree([]);
       return;
     }
 
@@ -251,9 +172,13 @@ export function Playground() {
         );
         setXmlForQuery(xmlWithLocations);  // Store for querying and highlighting
 
-        // Parse XML to tree for query builder (needs locations)
+        // Parse XML to tree for position lookups (source click → tree node)
         const tree = parseXmlToTree(xmlWithLocations);
         setXmlTree(tree);
+
+        // Build schema tree via WASM (merged element paths with counts)
+        const schema = getSchemaTreeSync(ast, source, language, rawMode);
+        setSchemaTree(schema);
 
         // Generate display XML based on user preference
         const xmlOutput = showLocations
@@ -264,6 +189,7 @@ export function Playground() {
         console.error('Parse error:', e);
         setXml('');
         setXmlTree(null);
+        setSchemaTree([]);
       }
     }
 
@@ -445,21 +371,23 @@ export function Playground() {
     }
     setHoveredMatchIndex(foundMatchIndex);
 
-    // Focus tree node
+    // Focus schema node by computing path key from xml tree position
     if (!xmlTree) return;
 
     const node = findDeepestNodeAtPosition(xmlTree, position);
 
     if (node) {
-      setFocusedNodeId(node.id);
+      // Compute the path key by walking up the XML tree to build ancestor names
+      const pathKey = computePathKeyForNode(xmlTree, node);
+      if (pathKey) {
+        setFocusedPathKey(pathKey);
 
-      // Expand all ancestors of the focused node
-      const path = getPathToNode(xmlTree, node.id);
-      if (path) {
-        setExpandedNodeIds(prev => {
+        // Expand all ancestor paths of the focused node
+        const parts = pathKey.split('/');
+        setExpandedPaths(prev => {
           const newSet = new Set(prev);
-          for (const id of path) {
-            newSet.add(id);
+          for (let i = 1; i <= parts.length; i++) {
+            newSet.add(parts.slice(0, i).join('/'));
           }
           return newSet;
         });
@@ -546,7 +474,7 @@ export function Playground() {
             source={source}
             matches={matches}
             hoveredMatchIndex={hoveredMatchIndex}
-            hoveredNode={hoveredTreeNode}
+            hoveredNode={null}
             xmlForHighlighting={xmlForQuery}
             language={language}
             onChange={setSource}
@@ -587,18 +515,15 @@ export function Playground() {
           <div className="tab-content">
             {activeTab === 'builder' ? (
               <TreeView
-                xmlTree={xmlTree}
+                schemaTree={schemaTree}
                 selectionState={selectionState}
                 effectiveTargetKey={effectiveTargetKey}
-                matchedNodeIds={matchedNodeIds}
-                nonDistinguishingNodeIds={nonDistinguishingNodeIds}
-                focusedNodeId={focusedNodeId}
-                expandedNodeIds={expandedNodeIds}
+                focusedPathKey={focusedPathKey}
+                expandedPaths={expandedPaths}
                 onToggleSelection={handleToggleSelection}
                 onSetTarget={handleSetTarget}
                 onAddCondition={handleAddCondition}
-                onExpandedChange={setExpandedNodeIds}
-                onNodeHover={setHoveredTreeNode}
+                onExpandedChange={setExpandedPaths}
               />
             ) : (
               <XmlOutput xml={xml} />

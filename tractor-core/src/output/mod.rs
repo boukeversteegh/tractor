@@ -19,7 +19,7 @@ mod schema;
 pub use formatter::{OutputFormat, format_matches, OutputOptions};
 pub use colors::should_use_color;
 pub use xml_renderer::{render_node, render_document, render_xml_string, RenderOptions};
-pub use schema::{format_schema, SchemaCollector};
+pub use schema::{format_schema, SchemaCollector, SchemaNode};
 
 use crate::xpath::Match;
 
