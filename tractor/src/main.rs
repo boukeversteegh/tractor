@@ -24,7 +24,7 @@ use tractor_core::{
 };
 
 use cli::Args;
-use clap::Parser;
+use clap::{CommandFactory, Parser};
 
 /// Split a slice into exponentially growing batches, capped at a maximum.
 /// Batch sizes: n, 2n, 4n, 8n, 8n, 8n... (where n = num_threads)
@@ -138,9 +138,15 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
     // Collect files
     let mut files: Vec<String> = expand_globs(&args.files);
 
-    // Handle stdin input modes
-    let stdin_source = files.is_empty() && args.lang.is_some() && !atty::is(atty::Stream::Stdin);
-    let stdin_files = files.is_empty() && args.lang.is_none() && !atty::is(atty::Stream::Stdin);
+    // Handle --content argument (requires --lang)
+    let content_source = args.content.is_some();
+    if content_source && args.lang.is_none() {
+        return Err("--string requires --lang to specify the language".into());
+    }
+
+    // Handle stdin input modes (disabled when --content is provided)
+    let stdin_source = !content_source && files.is_empty() && args.lang.is_some() && !atty::is(atty::Stream::Stdin);
+    let stdin_files = !content_source && files.is_empty() && args.lang.is_none() && !atty::is(atty::Stream::Stdin);
 
     if stdin_files {
         // Read file paths from stdin
@@ -158,12 +164,10 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
     // Filter to supported languages
     files = filter_supported_files(files);
 
-    if files.is_empty() && !stdin_source {
-        eprintln!("Usage: tractor <files...> [OPTIONS]");
-        eprintln!("   or: cat source.rs | tractor --lang rust -x \"//query\"");
-        eprintln!("   or: echo 'file.rs' | tractor -x \"//query\"");
-        eprintln!("\nUse --help for more information.");
-        return Err("no input files".into());
+    if files.is_empty() && !stdin_source && !content_source {
+        Args::command().print_help().ok();
+        println!();
+        return Ok(());
     }
 
     // Configure thread pool
@@ -178,13 +182,18 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
         return Err("--replace requires an XPath query (-x)".into());
     }
 
-    // Handle stdin source separately
-    if stdin_source {
+    // Handle inline source (--content argument or stdin with --lang)
+    if content_source || stdin_source {
         if args.replace.is_some() {
             return Err("--replace cannot be used with stdin input (no file to modify)".into());
         }
-        let mut source = String::new();
-        io::stdin().read_to_string(&mut source)?;
+        let source = if let Some(ref content) = args.content {
+            content.clone()
+        } else {
+            let mut s = String::new();
+            io::stdin().read_to_string(&mut s)?;
+            s
+        };
         let lang = args.lang.as_deref().unwrap();
 
         // With XPath query - use unified pipeline (handles XML and source code)

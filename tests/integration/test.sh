@@ -12,7 +12,7 @@ echo -e "${BLUE}Tractor Integration Tests${NC}"
 echo ""
 
 # Run each language test script
-for lang in rust python typescript javascript go java csharp ruby xml yaml markdown; do
+for lang in rust python typescript javascript go java csharp ruby xml yaml markdown string-input; do
     bash "tests/integration/$lang/test.sh" || exit 1
     echo ""
 done
