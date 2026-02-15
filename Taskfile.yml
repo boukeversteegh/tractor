@@ -141,6 +141,13 @@ tasks:
       - cargo build --release
       - cp target/release/tractor.exe {{.DIST_DIR}}/windows-x64/
 
+  # === Setup ===
+
+  setup:fly-deploy:
+    desc: Configure Fly.io deploy token as GitHub Actions secret
+    cmds:
+      - fly tokens create deploy -a tractor | gh secret set FLY_API_TOKEN
+
   # === Maintenance ===
 
   clean:
