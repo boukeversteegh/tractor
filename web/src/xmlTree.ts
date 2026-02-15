@@ -278,6 +278,29 @@ export function keyToPath(key: string): string[] {
 }
 
 /**
+ * Compute the path key (e.g., "class/body/method") for a target node
+ * by walking the tree to find it and building the ancestor name path.
+ */
+export function computePathKeyForNode(
+  tree: XmlNode,
+  target: XmlNode,
+  currentNames: string[] = [],
+): string | null {
+  const names = [...currentNames, tree.name];
+
+  if (tree.id === target.id) {
+    return names.join('/');
+  }
+
+  for (const child of tree.children) {
+    const result = computePathKeyForNode(child, target, names);
+    if (result) return result;
+  }
+
+  return null;
+}
+
+/**
  * Find all nodes in the tree that match a given name path.
  * Since paths don't include indexes, this returns all instances.
  */

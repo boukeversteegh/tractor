@@ -110,6 +110,66 @@ fn parse_ast_to_xml(
     Ok(crate::output::render_document(&xot, root, &options))
 }
 
+/// Get schema tree from a parsed AST
+///
+/// Returns the same merged element tree as `tractor <file> -o schema`.
+/// The result is a JSON array of schema nodes, each with name, count,
+/// values (unique text content), and children.
+///
+/// # Arguments
+/// * `ast_json` - JSON string of the serialized AST
+/// * `source` - Original source code
+/// * `language` - Language identifier
+/// * `raw_mode` - Whether to skip transforms
+///
+/// # Returns
+/// JSON array of SchemaNode objects
+#[wasm_bindgen(js_name = getSchemaTree)]
+pub fn get_schema_tree(
+    ast_json: &str,
+    source: &str,
+    language: &str,
+    raw_mode: bool,
+) -> Result<String, JsValue> {
+    use crate::output::SchemaCollector;
+
+    let ast: crate::wasm_ast::SerializedNode = serde_json::from_str(ast_json)
+        .map_err(|e| JsValue::from_str(&format!("Failed to parse AST: {}", e)))?;
+
+    // Build the xot document (same as parse_ast_to_xml)
+    let mut builder = XotBuilder::new();
+    let root = builder.build_raw_from_serialized(&ast, source, "input")
+        .map_err(|e| JsValue::from_str(&format!("Failed to build XML: {}", e)))?;
+
+    let mut xot = builder.into_xot();
+
+    // Apply transforms if not in raw mode
+    if !raw_mode {
+        let transform_fn = get_transform(language);
+        walk_transform(&mut xot, root, transform_fn)
+            .map_err(|e| JsValue::from_str(&format!("Transform failed: {}", e)))?;
+    }
+
+    // Collect schema from the xot tree
+    let mut collector = SchemaCollector::new();
+    collector.collect_from_xot(&xot, root);
+
+    // Convert to serializable tree, unwrapping the Files/File wrapper
+    // (web playground only handles a single file)
+    let mut schema_tree = collector.to_schema_tree();
+    if schema_tree.len() == 1 && schema_tree[0].name == "Files" {
+        let files_node = schema_tree.remove(0);
+        schema_tree = files_node.children;
+        if schema_tree.len() == 1 && schema_tree[0].name == "File" {
+            let file_node = schema_tree.remove(0);
+            schema_tree = file_node.children;
+        }
+    }
+
+    serde_json::to_string(&schema_tree)
+        .map_err(|e| JsValue::from_str(&format!("Failed to serialize schema: {}", e)))
+}
+
 /// Get the list of supported languages
 #[wasm_bindgen(js_name = getSupportedLanguages)]
 pub fn get_supported_languages() -> String {

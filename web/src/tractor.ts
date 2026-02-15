@@ -18,6 +18,7 @@ import init, {
   validateXPath as wasmValidateXPath,
   prettyPrintXml as wasmPrettyPrintXml,
   highlightFullSource as wasmHighlightFullSource,
+  getSchemaTree as wasmGetSchemaTree,
 } from '../pkg/tractor_core.js';
 
 let initialized = false;
@@ -478,4 +479,39 @@ export function ansiToHtmlWithMarks(
   }
 
   return result;
+}
+
+// ============================================================================
+// Schema Tree
+// ============================================================================
+
+/** A node in the schema tree (merged element paths with counts) */
+export interface SchemaNode {
+  name: string;
+  count: number;
+  values: string[];
+  children: SchemaNode[];
+}
+
+/**
+ * Get the schema tree for a parsed AST.
+ * Returns the same merged element tree as `tractor <file> -o schema`.
+ * Only call after initTractor() has completed.
+ */
+export function getSchemaTreeSync(
+  ast: SerializedNode,
+  source: string,
+  language: string,
+  rawMode: boolean = false,
+): SchemaNode[] {
+  if (!initialized) {
+    console.warn('getSchemaTreeSync called before WASM initialized');
+    return [];
+  }
+  try {
+    return JSON.parse(wasmGetSchemaTree(JSON.stringify(ast), source, language, rawMode));
+  } catch (e) {
+    console.error('getSchemaTree error:', e);
+    return [];
+  }
 }
