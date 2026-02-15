@@ -269,9 +269,9 @@ fn format_node(
         if depth >= max && !node.children.is_empty() {
             let child_count = count_descendants(node);
             if use_color {
-                output.push_str(&format!("{}\u{2514}\u{2500} \x1b[2m\u{2026} ({} more)\x1b[0m\n", prefix, child_count));
+                output.push_str(&format!("{}\u{2514}\u{2500} \x1b[2m\u{2026} ({} children)\x1b[0m\n", prefix, child_count));
             } else {
-                output.push_str(&format!("{}\u{2514}\u{2500} \u{2026} ({} more)\n", prefix, child_count));
+                output.push_str(&format!("{}\u{2514}\u{2500} \u{2026} ({} children)\n", prefix, child_count));
             }
             *truncated = true;
             return;
@@ -342,11 +342,14 @@ fn format_node(
             format!("{}\u{2502}  ", prefix)
         };
 
+        // Don't increment depth for the invisible root node, matching
+        // how the XML renderer treats Document nodes transparently.
+        let child_depth = if is_root { depth } else { depth + 1 };
         format_node(
             child,
             &new_prefix,
             false,
-            depth + 1,
+            child_depth,
             max_depth,
             use_color,
             output,

@@ -257,7 +257,7 @@ fn render_node_recursive(
                     if options.use_color {
                         output.push_str(ansi::DIM);
                     }
-                    output.push_str(&format!("<!-- ... ({} more) -->\n", child_count));
+                    output.push_str(&format!("<!-- ... ({} children) -->\n", child_count));
                     if options.use_color {
                         output.push_str(ansi::RESET);
                     }
@@ -544,7 +544,7 @@ mod tests {
         let output = render_xml_string(xml, &opts);
 
         // Should contain truncation comment with count
-        assert!(output.contains("<!-- ... (2 more) -->"));
+        assert!(output.contains("<!-- ... (2 children) -->"));
         // Should not contain the deeply nested elements
         assert!(!output.contains("<b>"));
         assert!(!output.contains("<c>"));
