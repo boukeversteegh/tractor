@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Snapshot check — verifies current snapshots match what tractor would generate.
 # Does NOT modify the working tree. Use `task test:snapshots:update` to regenerate.
+#
+# Generates fresh snapshots into a temp directory and compares against committed files.
 
 set -euo pipefail
 
@@ -34,6 +36,9 @@ declare -A LANGUAGES=(
     ["markdown"]="md"
 )
 
+TMPDIR=$(mktemp -d)
+trap "rm -rf $TMPDIR" EXIT
+
 HAS_CHANGES=0
 MISMATCHES=""
 
@@ -42,6 +47,7 @@ for lang in "${!LANGUAGES[@]}"; do
     lang_dir="$TESTS_DIR/$lang"
 
     if [ -d "$lang_dir" ]; then
+        mkdir -p "$TMPDIR/$lang"
         for fixture in "$lang_dir"/*."$ext"; do
             if [ -f "$fixture" ]; then
                 filename=$(basename "$fixture")
@@ -49,8 +55,8 @@ for lang in "${!LANGUAGES[@]}"; do
                 # Check semantic XML
                 expected="$lang_dir/${filename}.xml"
                 if [ -f "$expected" ]; then
-                    actual=$("$TRACTOR_BIN" "$fixture" 2>/dev/null)
-                    if ! diff -q <(echo "$actual") "$expected" > /dev/null 2>&1; then
+                    "$TRACTOR_BIN" "$fixture" > "$TMPDIR/$lang/${filename}.xml" 2>/dev/null
+                    if ! diff -q "$TMPDIR/$lang/${filename}.xml" "$expected" > /dev/null 2>&1; then
                         HAS_CHANGES=1
                         MISMATCHES="$MISMATCHES  $expected\n"
                     fi
@@ -59,8 +65,8 @@ for lang in "${!LANGUAGES[@]}"; do
                 # Check raw XML
                 expected_raw="$lang_dir/${filename}.raw.xml"
                 if [ -f "$expected_raw" ]; then
-                    actual_raw=$("$TRACTOR_BIN" "$fixture" --raw 2>/dev/null)
-                    if ! diff -q <(echo "$actual_raw") "$expected_raw" > /dev/null 2>&1; then
+                    "$TRACTOR_BIN" "$fixture" --raw > "$TMPDIR/$lang/${filename}.raw.xml" 2>/dev/null
+                    if ! diff -q "$TMPDIR/$lang/${filename}.raw.xml" "$expected_raw" > /dev/null 2>&1; then
                         HAS_CHANGES=1
                         MISMATCHES="$MISMATCHES  $expected_raw\n"
                     fi

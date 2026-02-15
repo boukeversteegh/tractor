@@ -7,5 +7,3 @@ tests/integration/**/*.xml text eol=lf
 # Preserve line endings for multiline string tests
 tests/integration/python/multiline-string-lf.py text eol=lf
 tests/integration/python/multiline-string-crlf.py text eol=crlf
-tests/integration/python/multiline-string-crlf.py.xml text eol=crlf
-tests/integration/python/multiline-string-crlf.py.raw.xml text eol=crlf
