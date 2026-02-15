@@ -82,7 +82,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
     LanguageInfo {
         name: "json",
         extensions: &["json"],
-        has_transforms: false,
+        has_transforms: true,
         grammar_file: Some("tree-sitter-json.wasm"),
     },
     LanguageInfo {
@@ -120,6 +120,12 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         extensions: &["ini", "cfg", "inf"],
         has_transforms: true,
         grammar_file: Some("tree-sitter-ini.wasm"),
+    },
+    LanguageInfo {
+        name: "env",
+        extensions: &["env"],
+        has_transforms: true,
+        grammar_file: Some("tree-sitter-bash.wasm"),
     },
     LanguageInfo {
         name: "php",

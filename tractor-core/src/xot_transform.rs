@@ -44,6 +44,17 @@ where
     walk_node(xot, content_root, &mut transform_fn)
 }
 
+/// Walk and transform starting from a specific node (no wrapper skipping).
+///
+/// Use this when transforming a detached subtree that isn't wrapped in
+/// Files/File elements (e.g., a cloned content root for dual-branch assembly).
+pub fn walk_transform_node<F>(xot: &mut Xot, node: XotNode, mut transform_fn: F) -> Result<(), xot::Error>
+where
+    F: FnMut(&mut Xot, XotNode) -> Result<TransformAction, xot::Error>,
+{
+    walk_node(xot, node, &mut transform_fn)
+}
+
 /// Find the actual content root, skipping Files/File wrappers
 fn find_content_root(xot: &Xot, node: XotNode) -> XotNode {
     // If this is a document node, get the document element
@@ -161,6 +172,48 @@ pub mod helpers {
         }
     }
 
+    /// Sanitize a string to be a valid XML element name.
+    /// Replaces invalid characters with underscores.
+    pub fn sanitize_xml_name(name: &str) -> String {
+        if name.is_empty() {
+            return "_".to_string();
+        }
+
+        let mut result = String::with_capacity(name.len());
+        for (i, c) in name.chars().enumerate() {
+            if i == 0 {
+                if c.is_ascii_alphabetic() || c == '_' {
+                    result.push(c);
+                } else {
+                    result.push('_');
+                    if c.is_ascii_alphanumeric() || c == '-' || c == '.' {
+                        result.push(c);
+                    }
+                }
+            } else if c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.' {
+                result.push(c);
+            } else {
+                result.push('_');
+            }
+        }
+        result
+    }
+
+    // /specs/tractor-parse/dual-view/data-branch/key-sanitization.md: Key Name Sanitization
+    /// Rename an element to represent a data key.
+    ///
+    /// Sanitizes the key for use as an XML element name, renames the node,
+    /// and stores the original key in a `key` attribute when sanitization
+    /// was needed. Returns the sanitized name.
+    pub fn rename_to_key(xot: &mut Xot, node: XotNode, key: &str) -> String {
+        let safe_name = sanitize_xml_name(key);
+        rename(xot, node, &safe_name);
+        if safe_name != key {
+            set_attr(xot, node, "key", key);
+        }
+        safe_name
+    }
+
     /// Set an attribute on an element
     pub fn set_attr(xot: &mut Xot, node: XotNode, name: &str, value: &str) {
         let name_id = xot.add_name(name);
@@ -274,6 +327,16 @@ pub mod helpers {
         Ok(())
     }
 
+    /// Copy source location attributes (start/end) from one node to another
+    pub fn copy_source_location(xot: &mut Xot, from: XotNode, to: XotNode) {
+        if let Some(s) = get_attr(xot, from, "start") {
+            set_attr(xot, to, "start", &s);
+        }
+        if let Some(e) = get_attr(xot, from, "end") {
+            set_attr(xot, to, "end", &e);
+        }
+    }
+
     /// Get parent element (if any)
     pub fn get_parent(xot: &Xot, node: XotNode) -> Option<XotNode> {
         xot.parent(node).filter(|&p| xot.element(p).is_some())
@@ -284,6 +347,52 @@ pub mod helpers {
         xot.following_siblings(node)
             .filter(|&s| xot.element(s).is_some())
             .collect()
+    }
+
+    /// Walk up the ancestor chain to find the nearest mapping pair that was
+    /// renamed to its key name. Returns the key name for use as array item
+    /// wrapper, enabling `//key[n]` instead of `//key/item[n]`.
+    ///
+    /// Returns `None` for top-level arrays (no named pair ancestor) or when
+    /// the ancestor pair has a sanitized key (has `<key>` child).
+    pub fn find_ancestor_key_name(xot: &Xot, node: XotNode) -> Option<String> {
+        let mut current = xot.parent(node)?;
+        loop {
+            if let Some(kind) = get_kind(xot, current) {
+                match kind.as_str() {
+                    "block_mapping_pair" | "flow_pair" | "pair" => {
+                        // Skip if key was sanitized (has key="..." attribute)
+                        if get_attr(xot, current, "key").is_some() {
+                            return None;
+                        }
+                        return get_element_name(xot, current);
+                    }
+                    _ => {}
+                }
+            }
+            current = xot.parent(current)?;
+        }
+    }
+
+    /// Check if a node has a sequence/array descendant (through wrapper nodes).
+    /// Used by pair transforms to decide whether to Flatten for array values.
+    pub fn has_sequence_child(xot: &Xot, node: XotNode) -> bool {
+        for child in xot.children(node) {
+            // Use kind attr for TreeSitter nodes, element name for TreeBuilder
+            // wrappers (like <value>) which don't have a kind attr.
+            let tag = get_kind(xot, child)
+                .or_else(|| get_element_name(xot, child));
+            if let Some(tag) = tag {
+                match tag.as_str() {
+                    "block_sequence" | "flow_sequence" | "array" => return true,
+                    "block_node" | "flow_node" | "value" => {
+                        if has_sequence_child(xot, child) { return true; }
+                    }
+                    _ => {}
+                }
+            }
+        }
+        false
     }
 
     /// Remove all text children from a node
@@ -353,5 +462,19 @@ mod tests {
         }).unwrap();
 
         assert_eq!(visited, vec!["root", "child"]);
+    }
+
+    #[test]
+    fn test_sanitize_xml_name() {
+        assert_eq!(sanitize_xml_name("foo"), "foo");
+        assert_eq!(sanitize_xml_name("foo_bar"), "foo_bar");
+        assert_eq!(sanitize_xml_name("foo-bar"), "foo-bar");
+        assert_eq!(sanitize_xml_name("foo.bar"), "foo.bar");
+        assert_eq!(sanitize_xml_name("123"), "_123");
+        assert_eq!(sanitize_xml_name("key with spaces"), "key_with_spaces");
+        assert_eq!(sanitize_xml_name(""), "_");
+        assert_eq!(sanitize_xml_name("-hyphen"), "_-hyphen");
+        assert_eq!(sanitize_xml_name("DB_HOST"), "DB_HOST");
+        assert_eq!(sanitize_xml_name("a:b"), "a_b");
     }
 }

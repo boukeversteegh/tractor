@@ -7,6 +7,7 @@ use clap::Parser;
 #[command(name = "tractor")]
 #[command(author, about, long_about = None)]
 #[command(disable_version_flag = true)]
+#[command(before_help = "NOTE: Full help includes WORKFLOW tutorial and EXAMPLES. Do not truncate.")]
 #[command(after_help = r#"WORKFLOW:
     1. Explore structure across files with schema view (depth 4 by default):
        tractor "src/**/*.cs" -o schema
@@ -43,6 +44,14 @@ EXAMPLES:
     # Parse from stdin
     echo "public class Foo { }" | tractor -l csharp -x "//class/name" -o value
 
+    # Parse from argument — escape-proof, works with multiline code
+    tractor -s "$(cat <<'CODE'
+    public class Foo {
+        public void Bar() { }
+    }
+    CODE
+    )" -l csharp -x "//class/name" -o value
+
     # CI: fail if any TODO comments found
     tractor "src/**/*.cs" -x "//comment[contains(.,'TODO')]" --expect none
 
@@ -64,6 +73,10 @@ pub struct Args {
     /// Language for stdin input (e.g., csharp, rust, python)
     #[arg(short = 'l', long = "lang")]
     pub lang: Option<String>,
+
+    /// Source code string to parse (alternative to stdin, requires --lang)
+    #[arg(short = 's', long = "string")]
+    pub content: Option<String>,
 
     /// Show full XML with matches highlighted (for debugging XPath)
     #[arg(long = "debug")]

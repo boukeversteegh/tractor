@@ -579,13 +579,16 @@ impl XeeBuilder {
 
         // Apply semantic transforms if not in raw mode
         if !raw_mode {
-            // Get the document node for transformation
-            let doc_node = self.documents.document_node(doc_handle)
-                .ok_or_else(|| xot::Error::Io("Failed to get document node".to_string()))?;
-
-            // Apply language-specific transforms
-            let transform_fn = crate::languages::get_transform(lang);
-            crate::xot_transform::walk_transform(self.documents.xot_mut(), doc_node, transform_fn)?;
+            if let Some((syntax_fn, data_fn)) = crate::languages::get_data_transforms(lang) {
+                // Data-aware language: build dual-branch (syntax + data)
+                self.apply_data_transforms(doc_handle, syntax_fn, data_fn)?;
+            } else {
+                // Programming language: single transform
+                let doc_node = self.documents.document_node(doc_handle)
+                    .ok_or_else(|| xot::Error::Io("Failed to get document node".to_string()))?;
+                let transform_fn = crate::languages::get_transform(lang);
+                crate::xot_transform::walk_transform(self.documents.xot_mut(), doc_node, transform_fn)?;
+            }
         }
         let t2 = Instant::now();
 
@@ -668,6 +671,105 @@ impl XeeBuilder {
         xot.append(root, file_el)?;
 
         Ok(doc_handle)
+    }
+
+    // /specs/tractor-parse/dual-view/xml-structure.md: XML Structure
+    /// Build dual-branch (syntax + data) tree for data-aware languages.
+    ///
+    /// Takes the raw tree under <File>, clones it, applies the syntax transform
+    /// to one copy and the data transform to the other, then wraps each in
+    /// <syntax> and <data> elements under <File>.
+    ///
+    /// For the data branch, single-document files have <document> flattened
+    /// so content sits directly under <data>. Multi-document files keep
+    /// <document> wrappers for positional queries.
+    #[cfg(feature = "native")]
+    fn apply_data_transforms(
+        &mut self,
+        doc_handle: DocumentHandle,
+        syntax_transform: crate::languages::TransformFn,
+        data_transform: crate::languages::TransformFn,
+    ) -> Result<(), xot::Error> {
+        let doc_node = self.documents.document_node(doc_handle)
+            .ok_or_else(|| xot::Error::Io("Failed to get document node".to_string()))?;
+
+        let xot = self.documents.xot_mut();
+
+        // Find <Files> -> <File>
+        let files_el = xot.document_element(doc_node)?;
+        let file_el = xot.children(files_el)
+            .find(|&c| xot.element(c).is_some())
+            .ok_or_else(|| xot::Error::Io("No File element found".to_string()))?;
+
+        // Find the content root (first element child of <File>)
+        let content_root = xot.children(file_el)
+            .find(|&c| xot.element(c).is_some())
+            .ok_or_else(|| xot::Error::Io("No content root under File".to_string()))?;
+
+        // Clone the content subtree for the data branch
+        let data_content = xot.clone_node(content_root);
+
+        // Create <syntax> and <data> wrapper elements FIRST, then attach content
+        // to them before transforming. Transforms may Flatten the root node,
+        // which requires a parent to insert children into.
+        let syntax_name = xot.add_name("syntax");
+        let syntax_el = xot.new_element(syntax_name);
+        let data_name = xot.add_name("data");
+        let data_el = xot.new_element(data_name);
+
+        // Copy the content root's span to <data> so it covers the whole document
+        let start_attr = xot.add_name("start");
+        let end_attr = xot.add_name("end");
+        if let Some(sv) = xot.attributes(content_root).get(start_attr).cloned() {
+            xot.attributes_mut(data_el).insert(start_attr, sv);
+        }
+        if let Some(ev) = xot.attributes(content_root).get(end_attr).cloned() {
+            xot.attributes_mut(data_el).insert(end_attr, ev);
+        }
+
+        // Move original content from <File> into <syntax>
+        xot.detach(content_root)?;
+        xot.append(syntax_el, content_root)?;
+
+        // Attach cloned content into <data>
+        xot.append(data_el, data_content)?;
+
+        // Apply syntax transform (content_root is now child of <syntax>)
+        crate::xot_transform::walk_transform_node(xot, content_root, syntax_transform)?;
+
+        // Apply data transform (data_content is now child of <data>)
+        crate::xot_transform::walk_transform_node(xot, data_content, data_transform)?;
+
+        // Flatten single <document> in data branch.
+        // For single-doc files (JSON, single YAML), <document> is unnecessary
+        // nesting — content should sit directly under <data>.
+        // For multi-doc YAML, keep <document> wrappers for positional queries.
+        let doc_element_name = xot.add_name("document");
+        let doc_children: Vec<XotNode> = xot.children(data_el)
+            .filter(|&c| {
+                xot.element(c)
+                    .map(|e| e.name() == doc_element_name)
+                    .unwrap_or(false)
+            })
+            .collect();
+
+        if doc_children.len() == 1 {
+            let single_doc = doc_children[0];
+            // Move all children of <document> up to <data>
+            let children: Vec<XotNode> = xot.children(single_doc).collect();
+            for child in children {
+                xot.detach(child)?;
+                xot.insert_before(single_doc, child)?;
+            }
+            // Remove the now-empty <document>
+            xot.detach(single_doc)?;
+        }
+
+        // Append <syntax> and <data> to <File>
+        xot.append(file_el, syntax_el)?;
+        xot.append(file_el, data_el)?;
+
+        Ok(())
     }
 
     /// Consume the builder and return the Documents instance
