@@ -121,20 +121,10 @@ fn transform_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::
 
         if segments.len() == 1 {
             // Simple key: rename pair to the key name
-            let safe_name = sanitize_xml_name(&segments[0]);
-            rename(xot, node, &safe_name);
-
-            if safe_name != segments[0] {
-                prepend_element_with_text(xot, node, "key", &segments[0])?;
-            }
+            rename_to_key(xot, node, &segments[0]);
         } else {
             // Dotted key: create nested elements a.b.c → <a><b><c>value</c></b></a>
-            let safe_name = sanitize_xml_name(segments.last().unwrap());
-            rename(xot, node, &safe_name);
-
-            if safe_name != *segments.last().unwrap() {
-                prepend_element_with_text(xot, node, "key", segments.last().unwrap())?;
-            }
+            rename_to_key(xot, node, segments.last().unwrap());
 
             // Wrap in parent elements for preceding segments (innermost to outermost)
             wrap_in_nested_elements(xot, node, &segments[..segments.len() - 1])?;
@@ -161,12 +151,7 @@ fn transform_table(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot:
         }
 
         // Rename to last segment
-        let safe_name = sanitize_xml_name(segments.last().unwrap());
-        rename(xot, node, &safe_name);
-
-        if safe_name != *segments.last().unwrap() {
-            prepend_element_with_text(xot, node, "key", segments.last().unwrap())?;
-        }
+        rename_to_key(xot, node, segments.last().unwrap());
 
         // For dotted keys, wrap in parent elements
         if segments.len() > 1 {
@@ -360,32 +345,6 @@ fn strip_quotes_from_node(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error
     Ok(())
 }
 
-/// Sanitize a string to be a valid XML element name
-fn sanitize_xml_name(name: &str) -> String {
-    if name.is_empty() {
-        return "_".to_string();
-    }
-
-    let mut result = String::with_capacity(name.len());
-    for (i, c) in name.chars().enumerate() {
-        if i == 0 {
-            if c.is_ascii_alphabetic() || c == '_' {
-                result.push(c);
-            } else {
-                result.push('_');
-                if c.is_ascii_alphanumeric() || c == '-' || c == '.' {
-                    result.push(c);
-                }
-            }
-        } else if c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.' {
-            result.push(c);
-        } else {
-            result.push('_');
-        }
-    }
-    result
-}
-
 /// Map a transformed element name to a syntax category for highlighting
 pub fn syntax_category(element: &str) -> SyntaxCategory {
     match element {
@@ -397,16 +356,6 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_sanitize_xml_name() {
-        assert_eq!(sanitize_xml_name("foo"), "foo");
-        assert_eq!(sanitize_xml_name("foo_bar"), "foo_bar");
-        assert_eq!(sanitize_xml_name("foo-bar"), "foo-bar");
-        assert_eq!(sanitize_xml_name("123"), "_123");
-        assert_eq!(sanitize_xml_name("key with spaces"), "key_with_spaces");
-        assert_eq!(sanitize_xml_name(""), "_");
-    }
 
     #[test]
     fn test_strip_quotes() {

@@ -19,7 +19,7 @@ run_test tractor sample.toml -x "//inline/x[.='1']" --expect 1 -m "inline tables
 run_test tractor sample.toml -x "//inline/y[.='2']" --expect 1 -m "inline table values are queryable"
 run_test tractor sample.toml -x "//quoted[.='hello world']" --expect 1 -m "quoted strings have quotes stripped"
 run_test tractor sample.toml -x "//first_name" --expect 1 -m "quoted keys become sanitized element names"
-run_test tractor sample.toml -x "//*[key='first name']" --expect 1 -m "original key preserved as <key> child when sanitized"
+run_test tractor sample.toml -x "//*[@key='first name']" --expect 1 -m "original key preserved as @key attribute when sanitized"
 run_test tractor sample.toml -x "//nested/level1/level2/value[.='deep']" --expect 1 -m "deeply dotted table keys create nested elements"
 run_test tractor sample.toml -x "//document" --expect 1 -m "document root element is present"
 
