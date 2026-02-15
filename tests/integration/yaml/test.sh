@@ -20,7 +20,6 @@ run_test tractor sample.yaml -x "//data/multiline[contains(.,'line one')]" --exp
 run_test tractor sample.yaml -x "//data/first_name" --expect 1 -m "keys with spaces become sanitized element names"
 run_test tractor sample.yaml -x "//data//*[key='first name']" --expect 1 -m "original key preserved as <key> child when sanitized"
 run_test tractor sample.yaml -x "//data/first_name[text()='Alice']" --expect 1 -m "sanitized key values queryable via text()"
-run_test tractor sample.yaml -x "//data/document" --expect 1 -m "single-document YAML has one document element"
 
 echo ""
 echo "YAML (multi-document):"
@@ -31,8 +30,8 @@ run_test tractor multi.yaml -x "//data/document[3]/value[.='three']" --expect 1 
 run_test tractor multi.yaml -x "//data//name" --expect 3 -m "descendant queries span all documents"
 
 echo ""
-echo "YAML (AST branch):"
-run_test tractor sample.yaml -x "//ast/object" --expect 1 -m "AST has object root"
-run_test tractor sample.yaml -x "//ast//property[key/string='name']/value/string[.='my-app']" --expect 1 -m "AST key/value structure is queryable"
+echo "YAML (syntax branch):"
+run_test tractor sample.yaml -x "//syntax/document/object" --expect 1 -m "syntax branch has document/object root"
+run_test tractor sample.yaml -x "//syntax//property[key/string='name']/value/string[.='my-app']" --expect 1 -m "syntax key/value structure is queryable"
 
 report

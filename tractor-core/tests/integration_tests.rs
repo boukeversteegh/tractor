@@ -375,7 +375,7 @@ fn test_csharp_null_forgiving_operator() {
 
 #[test]
 fn test_json_dual_branch_structure() {
-    // Verify JSON produces both <ast> and <data> branches under <File>
+    // Verify JSON produces both <syntax> and <data> branches under <File>
     let source = r#"{"name": "John", "age": 30}"#;
     let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), false, false)
         .expect("Should parse JSON");
@@ -385,9 +385,9 @@ fn test_json_dual_branch_structure() {
     // Both branches should exist
     let ast_matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//File/ast", result.source_lines.clone(), &result.file_path,
+        "//File/syntax", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
-    assert_eq!(ast_matches.len(), 1, "Should have one <ast> branch");
+    assert_eq!(ast_matches.len(), 1, "Should have one <syntax> branch");
 
     let data_matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
@@ -404,53 +404,53 @@ fn test_json_dual_branch_structure() {
 }
 
 #[test]
-fn test_json_ast_vocabulary() {
-    // Verify JSON AST uses normalized vocabulary
+fn test_json_syntax_vocabulary() {
+    // Verify JSON syntax branch uses normalized vocabulary
     let source = r#"{"name": "John", "age": 30, "active": true, "x": null}"#;
     let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), false, false)
         .expect("Should parse JSON");
 
     let engine = XPathEngine::new();
 
-    // object at root of AST
+    // object at root of syntax branch
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//ast/object", result.source_lines.clone(), &result.file_path,
+        "//syntax/object", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
-    assert_eq!(matches.len(), 1, "AST should have <object> root");
+    assert_eq!(matches.len(), 1, "Syntax should have <object> root");
 
     // properties
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//ast//property", result.source_lines.clone(), &result.file_path,
+        "//syntax//property", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 4, "Should have 4 properties");
 
     // key/value structure
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//ast//property/key/string", result.source_lines.clone(), &result.file_path,
+        "//syntax//property/key/string", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 4, "Each property should have key/string");
 
     // typed values
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//ast//property[key/string='age']/value/number", result.source_lines.clone(), &result.file_path,
+        "//syntax//property[key/string='age']/value/number", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "age should have number value");
     assert_eq!(matches[0].value, "30");
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//ast//bool", result.source_lines.clone(), &result.file_path,
+        "//syntax//bool", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should have one bool");
     assert_eq!(matches[0].value, "true");
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//ast//null", result.source_lines.clone(), &result.file_path,
+        "//syntax//null", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should have one null");
 }
@@ -580,19 +580,19 @@ fn test_json_source_output_from_data() {
 
 #[test]
 fn test_json_raw_mode_unchanged() {
-    // --raw mode should produce single tree (no ast/data branches)
+    // --raw mode should produce single tree (no syntax/data branches)
     let source = r#"{"a": 1}"#;
     let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), true, false)
         .expect("Should parse JSON in raw mode");
 
     let engine = XPathEngine::new();
 
-    // Should NOT have ast/data branches
+    // Should NOT have syntax/data branches
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//ast", result.source_lines.clone(), &result.file_path,
+        "//syntax", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
-    assert_eq!(matches.len(), 0, "Raw mode should not have <ast> branch");
+    assert_eq!(matches.len(), 0, "Raw mode should not have <syntax> branch");
 
     // Should have raw TreeSitter nodes
     let matches = engine.query_documents(
@@ -604,18 +604,18 @@ fn test_json_raw_mode_unchanged() {
 
 #[test]
 fn test_yaml_dual_branch_structure() {
-    // Verify YAML produces both <ast> and <data> branches
+    // Verify YAML produces both <syntax> and <data> branches
     let source = "name: John\nage: 30";
     let mut result = parse_string_to_documents(source, "yaml", "<test>".to_string(), false, false)
         .expect("Should parse YAML");
 
     let engine = XPathEngine::new();
 
-    let ast = engine.query_documents(
+    let syntax = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//File/ast", result.source_lines.clone(), &result.file_path,
+        "//File/syntax", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
-    assert_eq!(ast.len(), 1, "Should have <ast> branch");
+    assert_eq!(syntax.len(), 1, "Should have <syntax> branch");
 
     let data = engine.query_documents(
         &mut result.documents, result.doc_handle,
@@ -631,42 +631,42 @@ fn test_yaml_dual_branch_structure() {
 }
 
 #[test]
-fn test_yaml_ast_vocabulary() {
-    // Verify YAML AST uses same vocabulary as JSON AST
+fn test_yaml_syntax_vocabulary() {
+    // Verify YAML syntax uses same vocabulary as JSON syntax
     let source = "name: John\ncount: 42\nactive: true\nempty: null";
     let mut result = parse_string_to_documents(source, "yaml", "<test>".to_string(), false, false)
         .expect("Should parse YAML");
 
     let engine = XPathEngine::new();
 
-    // Should have object/property/key/value/string/number/bool/null
+    // Syntax branch should have object/property/key/value/string/number/bool/null
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//ast/object", result.source_lines.clone(), &result.file_path,
+        "//syntax/document/object", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
-    assert_eq!(matches.len(), 1, "AST should have <object>");
+    assert_eq!(matches.len(), 1, "Syntax should have document/object");
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//ast//property", result.source_lines.clone(), &result.file_path,
+        "//syntax//property", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 4, "Should have 4 properties");
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//ast//property[key/string='count']/value/number", result.source_lines.clone(), &result.file_path,
+        "//syntax//property[key/string='count']/value/number", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "count should be a number");
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//ast//bool", result.source_lines.clone(), &result.file_path,
+        "//syntax//bool", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should have one bool");
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//ast//null", result.source_lines.clone(), &result.file_path,
+        "//syntax//null", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should have one null");
 }
@@ -674,7 +674,7 @@ fn test_yaml_ast_vocabulary() {
 #[test]
 fn test_yaml_data_view() {
     // Verify YAML data view navigation
-    // Note: YAML data view preserves <document> wrappers, so use // to descend
+    // Single-doc YAML has <document> flattened, so //data/user works directly
     let source = "user:\n  name: John\n  age: 30\n  tags:\n    - math\n    - science";
     let mut result = parse_string_to_documents(source, "yaml", "<test>".to_string(), false, false)
         .expect("Should parse YAML");
@@ -683,14 +683,14 @@ fn test_yaml_data_view() {
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data//user/name", result.source_lines.clone(), &result.file_path,
+        "//data/user/name", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1);
     assert_eq!(matches[0].value, "John");
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data//user/tags/item", result.source_lines.clone(), &result.file_path,
+        "//data/user/tags/item", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 2, "Should have 2 tag items");
     assert_eq!(matches[0].value, "math");
@@ -708,9 +708,9 @@ fn test_typescript_not_affected() {
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//ast", result.source_lines.clone(), &result.file_path,
+        "//syntax", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
-    assert_eq!(matches.len(), 0, "TypeScript should not have <ast> branch");
+    assert_eq!(matches.len(), 0, "TypeScript should not have <syntax> branch");
 
     // Should still have normal structure
     let matches = engine.query_documents(
@@ -729,17 +729,17 @@ fn test_json_empty_structures() {
 
     let engine = XPathEngine::new();
 
-    // Empty object in AST
+    // Empty object in syntax branch
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//ast//property[key/string='obj']/value/object", result.source_lines.clone(), &result.file_path,
+        "//syntax//property[key/string='obj']/value/object", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should find empty object");
 
-    // Empty array in AST
+    // Empty array in syntax branch
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//ast//property[key/string='arr']/value/array", result.source_lines.clone(), &result.file_path,
+        "//syntax//property[key/string='arr']/value/array", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should find empty array");
 
