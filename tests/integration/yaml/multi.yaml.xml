@@ -57,12 +57,18 @@
       </object>
     </ast>
     <data>
-      <name>doc1</name>
-      <value>one</value>
-      <name>doc2</name>
-      <value>two</value>
-      <name>doc3</name>
-      <value>three</value>
+      <document>
+        <name>doc1</name>
+        <value>one</value>
+      </document>
+      <document>
+        <name>doc2</name>
+        <value>two</value>
+      </document>
+      <document>
+        <name>doc3</name>
+        <value>three</value>
+      </document>
     </data>
   </File>
 </Files>

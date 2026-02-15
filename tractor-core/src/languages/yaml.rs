@@ -230,10 +230,10 @@ pub fn data_transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
             Ok(TransformAction::Flatten)
         }
 
-        // Document: flatten for data view
+        // Document: keep for multi-doc YAML support
         "document" => {
             remove_text_children(xot, node)?;
-            Ok(TransformAction::Flatten)
+            Ok(TransformAction::Continue)
         }
 
         // Wrapper nodes to flatten (remove wrapper, promote children)

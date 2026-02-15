@@ -674,6 +674,7 @@ fn test_yaml_ast_vocabulary() {
 #[test]
 fn test_yaml_data_view() {
     // Verify YAML data view navigation
+    // Note: YAML data view preserves <document> wrappers, so use // to descend
     let source = "user:\n  name: John\n  age: 30\n  tags:\n    - math\n    - science";
     let mut result = parse_string_to_documents(source, "yaml", "<test>".to_string(), false, false)
         .expect("Should parse YAML");
@@ -682,14 +683,14 @@ fn test_yaml_data_view() {
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/user/name", result.source_lines.clone(), &result.file_path,
+        "//data//user/name", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1);
     assert_eq!(matches[0].value, "John");
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/user/tags/item", result.source_lines.clone(), &result.file_path,
+        "//data//user/tags/item", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 2, "Should have 2 tag items");
     assert_eq!(matches[0].value, "math");
