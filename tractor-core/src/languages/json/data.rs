@@ -17,7 +17,7 @@ use super::{extract_string_content, sanitize_xml_name};
 
 /// Project JSON into query-friendly data view.
 ///
-/// Object keys become element names, arrays use <item> wrappers,
+/// Object keys become element names, arrays repeat the parent key element,
 /// scalars become text content.
 pub fn data_transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let kind = match get_kind(xot, node) {
@@ -118,6 +118,12 @@ fn transform_data_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
                 }
             }
         }
+
+        // If value is an array and key wasn't sanitized, Flatten this pair
+        // so that repeated key-named elements become siblings in the parent.
+        if safe_name == key_text && has_sequence_child(xot, node) {
+            return Ok(TransformAction::Flatten);
+        }
     }
 
     Ok(TransformAction::Continue)
@@ -138,19 +144,21 @@ fn extract_pair_key_text(xot: &Xot, pair_node: XotNode) -> Option<String> {
 
 /// Transform a JSON array for data view.
 ///
-/// Wraps each element child in an `<item>` element so that scalars don't
-/// get flattened into merged text. Then flattens the array wrapper.
+/// Wraps each element child in a wrapper element, then flattens the array.
+/// Uses the ancestor key name (e.g. `<tags>`) when inside a named pair,
+/// or `<item>` for top-level/nested arrays.
 fn transform_data_array(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     remove_text_children(xot, node)?;
 
-    // Wrap each element child in <item>
+    let wrapper = find_ancestor_key_name(xot, node).unwrap_or_else(|| "item".to_string());
+    let wrapper_name = get_name(xot, &wrapper);
+
     let children: Vec<XotNode> = xot.children(node)
         .filter(|&c| xot.element(c).is_some())
         .collect();
 
-    let item_name = get_name(xot, "item");
     for child in children {
-        let item = xot.new_element(item_name);
+        let item = xot.new_element(wrapper_name);
         if let Some(sv) = get_attr(xot, child, "start") {
             set_attr(xot, item, "start", &sv);
         }

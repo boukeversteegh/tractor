@@ -20,7 +20,7 @@ use super::{strip_quotes, strip_quotes_from_node, normalize_block_scalar, saniti
 
 /// Project YAML into query-friendly data view.
 ///
-/// Mapping keys become element names, sequences use <item> wrappers,
+/// Mapping keys become element names, sequences repeat the parent key element,
 /// scalars become text content.
 pub fn data_transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let kind = match get_element_name(xot, node) {
@@ -34,9 +34,11 @@ pub fn data_transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
             transform_mapping_pair(xot, node)
         }
 
-        // Sequence items: rename to "item"
+        // Sequence items: rename to ancestor key name or "item"
         "block_sequence_item" => {
-            rename(xot, node, "item");
+            let wrapper = find_ancestor_key_name(xot, node)
+                .unwrap_or_else(|| "item".to_string());
+            rename(xot, node, &wrapper);
             remove_text_children(xot, node)?;
             Ok(TransformAction::Continue)
         }
@@ -131,6 +133,12 @@ fn transform_mapping_pair(xot: &mut Xot, node: XotNode) -> Result<TransformActio
         if safe_name != key {
             prepend_element_with_text(xot, node, "key", &key)?;
         }
+
+        // If value is a sequence and key wasn't sanitized, Flatten this pair
+        // so that repeated key-named elements become siblings in the parent.
+        if safe_name == key && has_sequence_child(xot, node) {
+            return Ok(TransformAction::Flatten);
+        }
     }
     Ok(TransformAction::Continue)
 }
@@ -171,9 +179,12 @@ fn collect_deep_text(xot: &Xot, node: XotNode) -> Option<String> {
     None
 }
 
-/// Transform a flow sequence by renaming flow_node children to "item"
+/// Transform a flow sequence by renaming flow_node children to ancestor key name or "item"
 fn transform_flow_sequence(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     remove_text_children(xot, node)?;
+
+    let wrapper = find_ancestor_key_name(xot, node)
+        .unwrap_or_else(|| "item".to_string());
 
     let children: Vec<XotNode> = xot.children(node)
         .filter(|&c| xot.element(c).is_some())
@@ -181,7 +192,7 @@ fn transform_flow_sequence(xot: &mut Xot, node: XotNode) -> Result<TransformActi
     for child in children {
         if let Some(name) = get_element_name(xot, child) {
             if name == "flow_node" {
-                rename(xot, child, "item");
+                rename(xot, child, &wrapper);
             }
         }
     }

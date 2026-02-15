@@ -489,19 +489,19 @@ fn test_json_data_view_arrays() {
 
     let engine = XPathEngine::new();
 
-    // Array items should be wrapped in <item>
+    // Arrays repeat the parent key element
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/tags/item", result.source_lines.clone(), &result.file_path,
+        "//data/tags", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
-    assert_eq!(matches.len(), 2, "Should have 2 items");
+    assert_eq!(matches.len(), 2, "Should have 2 repeated tags elements");
     assert_eq!(matches[0].value, "math");
     assert_eq!(matches[1].value, "science");
 
     // Index access
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/tags/item[2]", result.source_lines.clone(), &result.file_path,
+        "//data/tags[2]", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1);
     assert_eq!(matches[0].value, "science");
@@ -690,9 +690,9 @@ fn test_yaml_data_view() {
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/user/tags/item", result.source_lines.clone(), &result.file_path,
+        "//data/user/tags", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
-    assert_eq!(matches.len(), 2, "Should have 2 tag items");
+    assert_eq!(matches.len(), 2, "Should have 2 repeated tags elements");
     assert_eq!(matches[0].value, "math");
     assert_eq!(matches[1].value, "science");
 }

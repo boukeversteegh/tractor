@@ -246,20 +246,16 @@ line two</string>
         </credentials>
       </database>
       <servers>
-        <item>
-          <name>web-1</name>
-          <port>8080</port>
-        </item>
-        <item>
-          <name>web-2</name>
-          <port>8081</port>
-        </item>
+        <name>web-1</name>
+        <port>8080</port>
       </servers>
-      <features>
-        <item>auth</item>
-        <item>logging</item>
-        <item>metrics</item>
-      </features>
+      <servers>
+        <name>web-2</name>
+        <port>8081</port>
+      </servers>
+      <features>auth</features>
+      <features>logging</features>
+      <features>metrics</features>
       <nested>
         <level1>
           <level2>
@@ -271,11 +267,9 @@ line two</string>
         <x>1</x>
         <y>2</y>
       </flow_map>
-      <flow_list>
-        <item>a</item>
-        <item>b</item>
-        <item>c</item>
-      </flow_list>
+      <flow_list>a</flow_list>
+      <flow_list>b</flow_list>
+      <flow_list>c</flow_list>
       <quoted>hello world</quoted>
       <multiline>line one
 line two</multiline>

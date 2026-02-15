@@ -297,6 +297,54 @@ pub mod helpers {
             .collect()
     }
 
+    /// Walk up the ancestor chain to find the nearest mapping pair that was
+    /// renamed to its key name. Returns the key name for use as array item
+    /// wrapper, enabling `//key[n]` instead of `//key/item[n]`.
+    ///
+    /// Returns `None` for top-level arrays (no named pair ancestor) or when
+    /// the ancestor pair has a sanitized key (has `<key>` child).
+    pub fn find_ancestor_key_name(xot: &Xot, node: XotNode) -> Option<String> {
+        let mut current = xot.parent(node)?;
+        loop {
+            if let Some(kind) = get_kind(xot, current) {
+                match kind.as_str() {
+                    "block_mapping_pair" | "flow_pair" | "pair" => {
+                        // Skip if key was sanitized (has <key> child element)
+                        let has_key_child = xot.children(current)
+                            .any(|c| get_element_name(xot, c).as_deref() == Some("key"));
+                        if has_key_child {
+                            return None;
+                        }
+                        return get_element_name(xot, current);
+                    }
+                    _ => {}
+                }
+            }
+            current = xot.parent(current)?;
+        }
+    }
+
+    /// Check if a node has a sequence/array descendant (through wrapper nodes).
+    /// Used by pair transforms to decide whether to Flatten for array values.
+    pub fn has_sequence_child(xot: &Xot, node: XotNode) -> bool {
+        for child in xot.children(node) {
+            // Use kind attr for TreeSitter nodes, element name for TreeBuilder
+            // wrappers (like <value>) which don't have a kind attr.
+            let tag = get_kind(xot, child)
+                .or_else(|| get_element_name(xot, child));
+            if let Some(tag) = tag {
+                match tag.as_str() {
+                    "block_sequence" | "flow_sequence" | "array" => return true,
+                    "block_node" | "flow_node" | "value" => {
+                        if has_sequence_child(xot, child) { return true; }
+                    }
+                    _ => {}
+                }
+            }
+        }
+        false
+    }
+
     /// Remove all text children from a node
     pub fn remove_text_children(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
         let text_children: Vec<XotNode> = xot.children(node)
