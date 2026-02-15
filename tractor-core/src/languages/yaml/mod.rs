@@ -121,6 +121,71 @@ pub(crate) fn normalize_block_scalar(xot: &mut Xot, node: XotNode) -> Result<(),
     Ok(())
 }
 
+/// Decode escape sequences in a YAML double-quoted string (after quotes are stripped).
+///
+/// Handles: `\\`, `\"`, `\/`, `\b`, `\f`, `\n`, `\r`, `\t`, `\0`, `\a`, `\e`,
+/// `\xNN`, `\uXXXX`, `\UXXXXXXXX`, `\ `, `\_`
+pub(crate) fn decode_yaml_double_quote_escapes(s: &str) -> String {
+    let mut result = String::with_capacity(s.len());
+    let mut chars = s.chars();
+    while let Some(c) = chars.next() {
+        if c == '\\' {
+            match chars.next() {
+                Some('\\') => result.push('\\'),
+                Some('"') => result.push('"'),
+                Some('/') => result.push('/'),
+                Some('b') => result.push('\u{0008}'),
+                Some('f') => result.push('\u{000C}'),
+                Some('n') => result.push('\n'),
+                Some('r') => result.push('\r'),
+                Some('t') => result.push('\t'),
+                Some('0') => result.push('\0'),
+                Some('a') => result.push('\u{0007}'),
+                Some('e') => result.push('\u{001B}'),
+                Some(' ') => result.push(' '),
+                Some('_') => result.push('\u{00A0}'),
+                Some('x') => {
+                    let hex: String = chars.by_ref().take(2).collect();
+                    if let Ok(code) = u32::from_str_radix(&hex, 16) {
+                        if let Some(ch) = char::from_u32(code) {
+                            result.push(ch);
+                        }
+                    }
+                }
+                Some('u') => {
+                    let hex: String = chars.by_ref().take(4).collect();
+                    if let Ok(code) = u32::from_str_radix(&hex, 16) {
+                        if let Some(ch) = char::from_u32(code) {
+                            result.push(ch);
+                        }
+                    }
+                }
+                Some('U') => {
+                    let hex: String = chars.by_ref().take(8).collect();
+                    if let Ok(code) = u32::from_str_radix(&hex, 16) {
+                        if let Some(ch) = char::from_u32(code) {
+                            result.push(ch);
+                        }
+                    }
+                }
+                Some(other) => {
+                    result.push('\\');
+                    result.push(other);
+                }
+                None => result.push('\\'),
+            }
+        } else {
+            result.push(c);
+        }
+    }
+    result
+}
+
+/// Decode YAML single-quoted escape: '' → '
+pub(crate) fn decode_yaml_single_quote_escapes(s: &str) -> String {
+    s.replace("''", "'")
+}
+
 /// Sanitize a string to be a valid XML element name
 pub(crate) fn sanitize_xml_name(name: &str) -> String {
     if name.is_empty() {
@@ -158,6 +223,20 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_decode_yaml_double_quote_escapes() {
+        assert_eq!(decode_yaml_double_quote_escapes("hello"), "hello");
+        assert_eq!(decode_yaml_double_quote_escapes(r"hello\nworld"), "hello\nworld");
+        assert_eq!(decode_yaml_double_quote_escapes(r"tab\there"), "tab\there");
+        assert_eq!(decode_yaml_double_quote_escapes(r"\u0041"), "A");
+    }
+
+    #[test]
+    fn test_decode_yaml_single_quote_escapes() {
+        assert_eq!(decode_yaml_single_quote_escapes("it''s"), "it's");
+        assert_eq!(decode_yaml_single_quote_escapes("plain"), "plain");
+    }
 
     #[test]
     fn test_sanitize_xml_name() {

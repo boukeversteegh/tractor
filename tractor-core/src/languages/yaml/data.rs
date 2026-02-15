@@ -16,7 +16,8 @@
 
 use xot::{Xot, Node as XotNode};
 use crate::xot_transform::{TransformAction, helpers::*};
-use super::{strip_quotes, strip_quotes_from_node, normalize_block_scalar, sanitize_xml_name};
+use super::{strip_quotes, strip_quotes_from_node, normalize_block_scalar, sanitize_xml_name,
+            decode_yaml_double_quote_escapes, decode_yaml_single_quote_escapes};
 
 /// Project YAML into query-friendly data view.
 ///
@@ -39,6 +40,11 @@ pub fn data_transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
             let wrapper = find_ancestor_key_name(xot, node)
                 .unwrap_or_else(|| "item".to_string());
             rename(xot, node, &wrapper);
+            // Copy first element child's span (excludes the "- " prefix)
+            let first_child = get_element_children(xot, node).into_iter().next();
+            if let Some(child) = first_child {
+                copy_source_location(xot, child, node);
+            }
             remove_text_children(xot, node)?;
             Ok(TransformAction::Continue)
         }
@@ -48,9 +54,33 @@ pub fn data_transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
             transform_flow_sequence(xot, node)
         }
 
-        // Quoted scalars: strip quotes and promote text
-        "double_quote_scalar" | "single_quote_scalar" => {
+        // Quoted scalars: strip quotes, decode escapes, promote text
+        "double_quote_scalar" => {
             strip_quotes_from_node(xot, node)?;
+            // Decode escape sequences in the stripped text
+            if let Some(text) = get_text_content(xot, node) {
+                let decoded = decode_yaml_double_quote_escapes(&text);
+                if decoded != text {
+                    let children: Vec<XotNode> = xot.children(node).collect();
+                    for c in children { xot.detach(c)?; }
+                    let text_node = xot.new_text(&decoded);
+                    xot.append(node, text_node)?;
+                }
+            }
+            Ok(TransformAction::Flatten)
+        }
+        "single_quote_scalar" => {
+            strip_quotes_from_node(xot, node)?;
+            // Decode '' → ' in single-quoted strings
+            if let Some(text) = get_text_content(xot, node) {
+                let decoded = decode_yaml_single_quote_escapes(&text);
+                if decoded != text {
+                    let children: Vec<XotNode> = xot.children(node).collect();
+                    for c in children { xot.detach(c)?; }
+                    let text_node = xot.new_text(&decoded);
+                    xot.append(node, text_node)?;
+                }
+            }
             Ok(TransformAction::Flatten)
         }
 
@@ -116,6 +146,14 @@ fn transform_mapping_pair(xot: &mut Xot, node: XotNode) -> Result<TransformActio
     if let Some(key) = extract_key_text(xot, node) {
         let safe_name = sanitize_xml_name(&key);
         rename(xot, node, &safe_name);
+
+        // Copy the value child's span to this node (so it points to the value, not the pair).
+        // The value child is the first non-key, non-text element child.
+        let value_child = get_element_children(xot, node).into_iter()
+            .find(|&c| get_attr(xot, c, "field").as_deref() != Some("key"));
+        if let Some(vc) = value_child {
+            copy_source_location(xot, vc, node);
+        }
 
         // Remove key-related children and colon text
         let children: Vec<XotNode> = xot.children(node).collect();

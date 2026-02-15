@@ -285,6 +285,16 @@ pub mod helpers {
         Ok(())
     }
 
+    /// Copy source location attributes (start/end) from one node to another
+    pub fn copy_source_location(xot: &mut Xot, from: XotNode, to: XotNode) {
+        if let Some(s) = get_attr(xot, from, "start") {
+            set_attr(xot, to, "start", &s);
+        }
+        if let Some(e) = get_attr(xot, from, "end") {
+            set_attr(xot, to, "end", &e);
+        }
+    }
+
     /// Get parent element (if any)
     pub fn get_parent(xot: &Xot, node: XotNode) -> Option<XotNode> {
         xot.parent(node).filter(|&p| xot.element(p).is_some())

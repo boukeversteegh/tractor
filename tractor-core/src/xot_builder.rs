@@ -723,6 +723,16 @@ impl XeeBuilder {
         let data_name = xot.add_name("data");
         let data_el = xot.new_element(data_name);
 
+        // Copy the content root's span to <data> so it covers the whole document
+        let start_attr = xot.add_name("start");
+        let end_attr = xot.add_name("end");
+        if let Some(sv) = xot.attributes(content_root).get(start_attr).cloned() {
+            xot.attributes_mut(data_el).insert(start_attr, sv);
+        }
+        if let Some(ev) = xot.attributes(content_root).get(end_attr).cloned() {
+            xot.attributes_mut(data_el).insert(end_attr, ev);
+        }
+
         // Move original content from <File> into <syntax>
         xot.detach(content_root)?;
         xot.append(syntax_el, content_root)?;

@@ -13,7 +13,7 @@
 
 use xot::{Xot, Node as XotNode};
 use crate::xot_transform::{TransformAction, helpers::*};
-use super::{extract_string_content, sanitize_xml_name};
+use super::{extract_string_content, extract_decoded_string_content, sanitize_xml_name};
 
 /// Project JSON into query-friendly data view.
 ///
@@ -48,9 +48,9 @@ pub fn data_transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
             transform_data_array(xot, node)
         }
 
-        // string: extract string_content, flatten to promote text to parent
+        // string: extract decoded content (handles escape sequences), flatten to parent
         "string" => {
-            let content = extract_string_content(xot, node);
+            let content = extract_decoded_string_content(xot, node);
             let all_children: Vec<XotNode> = xot.children(node).collect();
             for c in all_children {
                 xot.detach(c)?;
@@ -106,13 +106,15 @@ fn transform_data_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
             set_attr(xot, node, "key", &key_text);
         }
 
-        // Flatten the <value> wrapper if present (promote its children)
+        // Flatten the <value> wrapper if present, copying its span first.
+        // The value's span is what this data element should point to (not the whole pair).
         let children: Vec<XotNode> = xot.children(node)
             .filter(|&c| xot.element(c).is_some())
             .collect();
         for child in children {
             if let Some(name) = get_element_name(xot, child) {
                 if name == "value" {
+                    copy_source_location(xot, child, node);
                     flatten_node(xot, child)?;
                     break;
                 }
@@ -159,12 +161,7 @@ fn transform_data_array(xot: &mut Xot, node: XotNode) -> Result<TransformAction,
 
     for child in children {
         let item = xot.new_element(wrapper_name);
-        if let Some(sv) = get_attr(xot, child, "start") {
-            set_attr(xot, item, "start", &sv);
-        }
-        if let Some(ev) = get_attr(xot, child, "end") {
-            set_attr(xot, item, "end", &ev);
-        }
+        copy_source_location(xot, child, item);
         xot.insert_before(child, item)?;
         xot.detach(child)?;
         xot.append(item, child)?;
