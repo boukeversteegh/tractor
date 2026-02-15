@@ -579,9 +579,9 @@ impl XeeBuilder {
 
         // Apply semantic transforms if not in raw mode
         if !raw_mode {
-            if let Some((format, syntax_fn, data_fn)) = crate::languages::get_data_transforms(lang) {
+            if let Some((syntax_fn, data_fn)) = crate::languages::get_data_transforms(lang) {
                 // Data-aware language: build dual-branch (syntax + data)
-                self.apply_data_transforms(doc_handle, format, syntax_fn, data_fn)?;
+                self.apply_data_transforms(doc_handle, syntax_fn, data_fn)?;
             } else {
                 // Programming language: single transform
                 let doc_node = self.documents.document_node(doc_handle)
@@ -686,7 +686,6 @@ impl XeeBuilder {
     fn apply_data_transforms(
         &mut self,
         doc_handle: DocumentHandle,
-        format: &str,
         syntax_transform: crate::languages::TransformFn,
         data_transform: crate::languages::TransformFn,
     ) -> Result<(), xot::Error> {
@@ -700,12 +699,6 @@ impl XeeBuilder {
         let file_el = xot.children(files_el)
             .find(|&c| xot.element(c).is_some())
             .ok_or_else(|| xot::Error::Io("No File element found".to_string()))?;
-
-        // Set kind="data" and format="json|yaml" on <File>
-        let kind_attr = xot.add_name("kind");
-        xot.attributes_mut(file_el).insert(kind_attr, "data".to_string());
-        let format_attr = xot.add_name("format");
-        xot.attributes_mut(file_el).insert(format_attr, format.to_string());
 
         // Find the content root (first element child of <File>)
         let content_root = xot.children(file_el)

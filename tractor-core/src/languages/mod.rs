@@ -54,12 +54,12 @@ pub fn get_transform(lang: &str) -> TransformFn {
 
 /// Get dual-branch transform functions for data-aware languages.
 ///
-/// Returns `Some((format, syntax_transform, data_transform))` for languages
+/// Returns `Some((syntax_transform, data_transform))` for languages
 /// that produce both a `/syntax` and `/data` branch, or `None` for other languages.
-pub fn get_data_transforms(lang: &str) -> Option<(&'static str, TransformFn, TransformFn)> {
+pub fn get_data_transforms(lang: &str) -> Option<(TransformFn, TransformFn)> {
     match lang {
-        "json" => Some(("json", json::ast_transform, json::data_transform)),
-        "yaml" | "yml" => Some(("yaml", yaml::ast_transform, yaml::data_transform)),
+        "json" => Some((json::ast_transform, json::data_transform)),
+        "yaml" | "yml" => Some((yaml::ast_transform, yaml::data_transform)),
         _ => None,
     }
 }

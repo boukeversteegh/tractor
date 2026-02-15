@@ -395,12 +395,6 @@ fn test_json_dual_branch_structure() {
     ).expect("Query should succeed");
     assert_eq!(data_matches.len(), 1, "Should have one <data> branch");
 
-    // File should have format attribute
-    let format_matches = engine.query_documents(
-        &mut result.documents, result.doc_handle,
-        "//File[@format='json']", result.source_lines.clone(), &result.file_path,
-    ).expect("Query should succeed");
-    assert_eq!(format_matches.len(), 1, "File should have format='json'");
 }
 
 #[test]
@@ -778,11 +772,6 @@ fn test_yaml_dual_branch_structure() {
     ).expect("Query should succeed");
     assert_eq!(data.len(), 1, "Should have <data> branch");
 
-    let format = engine.query_documents(
-        &mut result.documents, result.doc_handle,
-        "//File[@format='yaml']", result.source_lines.clone(), &result.file_path,
-    ).expect("Query should succeed");
-    assert_eq!(format.len(), 1, "File should have format='yaml'");
 }
 
 #[test]

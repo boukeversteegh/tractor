@@ -1,5 +1,5 @@
 <Files>
-  <File path="tests/integration/yaml/sample.yaml" format="yaml">
+  <File path="tests/integration/yaml/sample.yaml">
     <syntax>
       <document>
         <object>
