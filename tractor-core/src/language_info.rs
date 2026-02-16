@@ -181,6 +181,13 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         has_transforms: false,
         grammar_file: None, // Pass-through, no parsing needed
     },
+    // SQL dialects - multiple languages share the .sql extension
+    LanguageInfo {
+        name: "tsql",
+        extensions: &["sql"],
+        has_transforms: true,
+        grammar_file: None,
+    },
 ];
 
 /// Get language info by name
@@ -194,6 +201,7 @@ pub fn get_language_info(name: &str) -> Option<&'static LanguageInfo> {
         "py" => "python",
         "rb" => "ruby",
         "md" | "mdx" => "markdown",
+        "mssql" => "tsql",
         _ => name,
     };
     LANGUAGES.iter().find(|l| l.name == normalized)
@@ -205,6 +213,19 @@ pub fn get_language_for_extension(ext: &str) -> Option<&'static LanguageInfo> {
     LANGUAGES
         .iter()
         .find(|l| l.extensions.iter().any(|e| *e == ext_lower))
+}
+
+/// Get all languages that match a file extension
+///
+/// Returns all languages that claim a given extension. If more than one
+/// language matches, the extension is considered ambiguous and `--lang`
+/// should be required.
+pub fn get_all_languages_for_extension(ext: &str) -> Vec<&'static LanguageInfo> {
+    let ext_lower = ext.to_lowercase();
+    LANGUAGES
+        .iter()
+        .filter(|l| l.extensions.iter().any(|e| *e == ext_lower))
+        .collect()
 }
 
 /// Get list of all language names
@@ -243,6 +264,29 @@ mod tests {
 
         let lang = get_language_for_extension("cs").unwrap();
         assert_eq!(lang.name, "csharp");
+    }
+
+    #[test]
+    fn test_tsql_language() {
+        let tsql = get_language_info("tsql").unwrap();
+        assert_eq!(tsql.name, "tsql");
+        assert!(tsql.extensions.contains(&"sql"));
+        assert!(tsql.has_transforms);
+
+        // Alias
+        assert_eq!(get_language_info("mssql").unwrap().name, "tsql");
+    }
+
+    #[test]
+    fn test_get_all_languages_for_extension() {
+        // Unambiguous extension
+        let ts_langs = get_all_languages_for_extension("ts");
+        assert_eq!(ts_langs.len(), 1);
+        assert_eq!(ts_langs[0].name, "typescript");
+
+        // SQL extension - currently just tsql
+        let sql_langs = get_all_languages_for_extension("sql");
+        assert!(sql_langs.iter().any(|l| l.name == "tsql"));
     }
 
     #[test]
