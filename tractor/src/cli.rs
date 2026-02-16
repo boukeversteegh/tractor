@@ -102,6 +102,10 @@ pub struct Args {
     #[arg(short = 'm', long = "message")]
     pub message: Option<String>,
 
+    /// Set matched nodes to this value (modifies files in-place)
+    #[arg(long = "set")]
+    pub set: Option<String>,
+
     /// Limit output to first N matches
     #[arg(short = 'n', long = "limit")]
     pub limit: Option<usize>,
