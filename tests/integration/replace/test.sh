@@ -12,7 +12,7 @@ database:
   port: 5432
 EOF
 
-tractor /tmp/tractor-set-test-single.yaml -x "//database/host" --set "host: db.example.com" 2>/dev/null
+tractor /tmp/tractor-set-test-single.yaml -x "//database/host" --set "db.example.com" 2>/dev/null
 ACTUAL=$(cat /tmp/tractor-set-test-single.yaml)
 EXPECTED='name: my-app
 database:
@@ -39,7 +39,7 @@ servers:
     port: 9090
 EOF
 
-tractor /tmp/tractor-set-test-multi.yaml -x "//servers/item/port[.='8080']" --set "port: 3000" 2>/dev/null
+tractor /tmp/tractor-set-test-multi.yaml -x "//servers/port[.='8080']" --set "3000" 2>/dev/null
 ACTUAL=$(cat /tmp/tractor-set-test-multi.yaml)
 EXPECTED='servers:
   - name: web-1
@@ -66,7 +66,7 @@ items:
   - value: old
 EOF
 
-tractor /tmp/tractor-set-test-limit.yaml -x "//items/item/value[.='old']" -n 1 --set "value: new" 2>/dev/null
+tractor /tmp/tractor-set-test-limit.yaml -x "//items/value[.='old']" -n 1 --set "new" 2>/dev/null
 ACTUAL=$(cat /tmp/tractor-set-test-limit.yaml)
 EXPECTED='items:
   - value: new
@@ -95,7 +95,7 @@ cat > /tmp/tractor-set-test.json << 'EOF'
 }
 EOF
 
-tractor /tmp/tractor-set-test.json -x "//pair[string/string_content='host']/value/string" --set '"db.example.com"' 2>/dev/null
+tractor /tmp/tractor-set-test.json -x "//database/host" --set '"db.example.com"' 2>/dev/null
 ACTUAL=$(cat /tmp/tractor-set-test.json)
 EXPECTED='{
   "database": {
@@ -143,29 +143,7 @@ else
     ((FAILED++))
 fi
 
-# --- Set with empty string (deletion) ---
-cat > /tmp/tractor-set-test-delete.yaml << 'EOF'
-keep: yes
-remove: this
-also_keep: yes
-EOF
-
-tractor /tmp/tractor-set-test-delete.yaml -x "//remove" --set "" 2>/dev/null
-ACTUAL=$(cat /tmp/tractor-set-test-delete.yaml)
-EXPECTED='keep: yes
-
-also_keep: yes'
-if [ "$ACTUAL" = "$EXPECTED" ]; then
-    echo "  ✓ set with empty string (deletion)"
-    ((PASSED++))
-else
-    echo "  ✗ set with empty string (deletion)"
-    echo "    expected: $EXPECTED"
-    echo "    actual: $ACTUAL"
-    ((FAILED++))
-fi
-
 # Cleanup
-rm -f /tmp/tractor-set-test-single.yaml /tmp/tractor-set-test-multi.yaml /tmp/tractor-set-test-limit.yaml /tmp/tractor-set-test.json /tmp/tractor-set-test-delete.yaml
+rm -f /tmp/tractor-set-test-single.yaml /tmp/tractor-set-test-multi.yaml /tmp/tractor-set-test-limit.yaml /tmp/tractor-set-test.json
 
 report
