@@ -233,9 +233,17 @@ fn get_deep_identifier_text(xot: &Xot, node: XotNode) -> Option<String> {
 
 fn map_element_name(kind: &str) -> Option<&'static str> {
     match kind {
+        // Top-level
         "program" => Some("file"),
         "statement" => Some("statement"),
+
+        // DML statements
         "select" => Some("select"),
+        "insert" => Some("insert"),
+        "delete" => Some("delete"),
+        "update" => Some("update"),
+
+        // Clauses
         "from" => Some("from"),
         "where" => Some("where"),
         "order_by" => Some("order_by"),
@@ -243,20 +251,82 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "group_by" => Some("group_by"),
         "having" => Some("having"),
         "join" => Some("join"),
+        "direction" => Some("direction"),
+
+        // References and columns
         "relation" => Some("relation"),
         "object_reference" => Some("ref"),
         "field" => Some("column"),
-        "literal" => Some("literal"),
-        "invocation" => Some("call"),
-        "insert" => Some("insert"),
-        "delete" => Some("delete"),
-        "update" => Some("update"),
-        "list" => Some("list"),
         "column" => Some("col"),
+        "all_fields" => Some("star"),
+
+        // Literals and values
+        "literal" => Some("literal"),
+        "list" => Some("list"),
+
+        // Functions/calls
+        "invocation" => Some("call"),
         "function_body" => Some("body"),
         "function_arguments" | "function_argument" => Some("arg"),
+
+        // Subqueries, CTEs, set operations
+        "subquery" => Some("subquery"),
+        "cte" => Some("cte"),
+        "set_operation" => Some("union"),
+        "exists" => Some("exists"),
+
+        // Window functions
+        "window_function" => Some("window"),
+        "window_specification" => Some("over"),
+        "partition_by" => Some("partition_by"),
+
+        // CASE expression
+        "case" => Some("case"),
+        "when_clause" => Some("when"),
+
+        // CAST
+        "cast" => Some("cast"),
+
+        // DDL
+        "create_table" => Some("create_table"),
+        "column_definitions" => Some("columns"),
+        "column_definition" => Some("col_def"),
+
+        // MERGE
+        "merge" => Some("merge"),
+
+        // Transactions
+        "transaction" => Some("transaction"),
+
+        // SET variable
+        "set_statement" => Some("set"),
+
+        // CREATE FUNCTION
+        "create_function" => Some("create_function"),
+
+        // GO batch separator
+        "go_statement" => Some("go"),
+
+        // EXEC
+        "execute_statement" => Some("exec"),
+
+        // ALTER TABLE
+        "alter_table" => Some("alter_table"),
+        "add_column" => Some("add_column"),
+
+        // CREATE INDEX
+        "create_index" => Some("create_index"),
+        "index_fields" => Some("index_fields"),
+
+        // Data types
         "int" => Some("int"),
+        "varchar" => Some("varchar"),
+        "nvarchar" => Some("nvarchar"),
+        "datetime" => Some("datetime"),
+
+        // Assignment
         "assignment" => Some("assign"),
+
         _ => None,
     }
 }
@@ -278,33 +348,29 @@ fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
 pub fn syntax_category(element: &str) -> SyntaxCategory {
     match element {
         // Identifiers
-        "name" => SyntaxCategory::Identifier,
-        "alias" => SyntaxCategory::Identifier,
-        "schema" => SyntaxCategory::Identifier,
-        "var" => SyntaxCategory::Identifier,
-        "temp_ref" => SyntaxCategory::Identifier,
+        "name" | "alias" | "schema" | "var" | "temp_ref" | "column" => SyntaxCategory::Identifier,
 
         // Literals
         "literal" => SyntaxCategory::String,
 
-        // Keywords - statements
+        // Keywords - statements and clauses
         "select" | "insert" | "update" | "delete" => SyntaxCategory::Keyword,
         "from" | "where" | "order_by" | "group_by" | "having" => SyntaxCategory::Keyword,
-        "join" => SyntaxCategory::Keyword,
-        "statement" => SyntaxCategory::Keyword,
+        "join" | "union" | "exists" | "merge" => SyntaxCategory::Keyword,
+        "statement" | "create_table" | "alter_table" | "create_index" | "cte" => SyntaxCategory::Keyword,
+        "create_function" | "exec" | "set" | "transaction" | "go" => SyntaxCategory::Keyword,
+        "case" | "when" | "direction" => SyntaxCategory::Keyword,
+        "star" => SyntaxCategory::Keyword,
 
         // Types
-        "int" | "ref" => SyntaxCategory::Type,
+        "int" | "varchar" | "nvarchar" | "datetime" | "ref" => SyntaxCategory::Type,
 
         // Functions/calls
-        "call" => SyntaxCategory::Function,
+        "call" | "cast" | "window" => SyntaxCategory::Function,
 
         // Operators
         "op" => SyntaxCategory::Operator,
         "compare" | "between" | "assign" => SyntaxCategory::Operator,
-
-        // Column references
-        "column" => SyntaxCategory::Identifier,
 
         // Comments
         "comment" => SyntaxCategory::Comment,
