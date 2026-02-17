@@ -1,5 +1,5 @@
 <Files>
-  <File path="tests/integration/tsql/sample.sql">
+  <File path="/home/user/tractor/tests/integration/tsql/sample.sql">
     <program>
       <comment>-- Simple T-SQL example</comment>
       <statement>
@@ -157,6 +157,126 @@
             </binary_expression>
           </where>
         </from>
+      </statement>
+      ;
+      <comment>-- Bracket identifiers, schema-qualified names, variables</comment>
+      <statement>
+        <select>
+          <keyword_select>SELECT</keyword_select>
+          <select_expression>
+            <term>
+              <value>
+                <field>
+                  <object_reference>
+                    <identifier field="schema">[dbo]</identifier>
+                    .
+                    <name>
+                      <identifier>[Users]</identifier>
+                    </name>
+                  </object_reference>
+                  .
+                  <name>
+                    <identifier>[Name]</identifier>
+                  </name>
+                </field>
+              </value>
+              <keyword_as>AS</keyword_as>
+              <identifier field="alias">UserName</identifier>
+            </term>
+            ,
+            <term>
+              <value>
+                <field>
+                  <name>
+                    <identifier>@StartDate</identifier>
+                  </name>
+                </field>
+              </value>
+            </term>
+          </select_expression>
+        </select>
+        <from>
+          <keyword_from>FROM</keyword_from>
+          <relation>
+            <object_reference>
+              <identifier field="schema">[dbo]</identifier>
+              .
+              <name>
+                <identifier>[Users]</identifier>
+              </name>
+            </object_reference>
+          </relation>
+          <where>
+            <keyword_where>WHERE</keyword_where>
+            <between_expression field="predicate">
+              <left>
+                <field>
+                  <name>
+                    <identifier>[Age]</identifier>
+                  </name>
+                </field>
+              </left>
+              <keyword_between field="operator">BETWEEN</keyword_between>
+              <literal field="low">18</literal>
+              <keyword_and>AND</keyword_and>
+              <literal field="high">65</literal>
+            </between_expression>
+          </where>
+        </from>
+      </statement>
+      ;
+      <comment>-- UPDATE with variables and schema-qualified table</comment>
+      <statement>
+        <update>
+          <keyword_update>UPDATE</keyword_update>
+          <relation>
+            <object_reference>
+              <identifier field="schema">dbo</identifier>
+              .
+              <name>
+                <identifier>Config</identifier>
+              </name>
+            </object_reference>
+          </relation>
+          <keyword_set>SET</keyword_set>
+          <assignment>
+            <left>
+              <field>
+                <name>
+                  <identifier>Value</identifier>
+                </name>
+              </field>
+            </left>
+            =
+            <right>
+              <field>
+                <name>
+                  <identifier>@NewValue</identifier>
+                </name>
+              </field>
+            </right>
+          </assignment>
+          <where>
+            <keyword_where>WHERE</keyword_where>
+            <binary_expression field="predicate">
+              <left>
+                <field>
+                  <name>
+                    <identifier>[Key]</identifier>
+                  </name>
+                </field>
+              </left>
+              =
+              <right>
+                <field>
+                  <name>
+                    <identifier>@KeyName</identifier>
+                  </name>
+                </field>
+              </right>
+            </binary_expression>
+          </where>
+        </update>
       </statement>
       ;
     </program>

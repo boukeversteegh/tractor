@@ -1,5 +1,5 @@
 <Files>
-  <File path="tests/integration/tsql/sample.sql">
+  <File path="/home/user/tractor/tests/integration/tsql/sample.sql">
     <file>
       <comment>-- Simple T-SQL example</comment>
       <statement>
@@ -103,6 +103,79 @@
             </compare>
           </where>
         </from>
+      </statement>
+      ;
+      <comment>-- Bracket identifiers, schema-qualified names, variables</comment>
+      <statement>
+        <select>
+          <column>
+            <ref>
+              <schema>dbo</schema>
+              .
+              <name>Users</name>
+            </ref>
+            .
+            <name>Name</name>
+          </column>
+          <alias>UserName</alias>
+          ,
+          <column>
+            <var>StartDate</var>
+          </column>
+        </select>
+        <from>
+          <relation>
+            <ref>
+              <schema>dbo</schema>
+              .
+              <name>Users</name>
+            </ref>
+          </relation>
+          <where>
+            <between field="predicate">
+              <column>
+                <name>Age</name>
+              </column>
+              <literal field="low">18</literal>
+              <literal field="high">65</literal>
+            </between>
+          </where>
+        </from>
+      </statement>
+      ;
+      <comment>-- UPDATE with variables and schema-qualified table</comment>
+      <statement>
+        <update>
+          <relation>
+            <ref>
+              <schema>dbo</schema>
+              .
+              <name>Config</name>
+            </ref>
+          </relation>
+          <assign>
+            <op>=</op>
+            <column>
+              <name>Value</name>
+            </column>
+            =
+            <column>
+              <var>NewValue</var>
+            </column>
+          </assign>
+          <where>
+            <compare field="predicate">
+              <op>=</op>
+              <column>
+                <name>Key</name>
+              </column>
+              =
+              <column>
+                <var>KeyName</var>
+              </column>
+            </compare>
+          </where>
+        </update>
       </statement>
       ;
     </file>
