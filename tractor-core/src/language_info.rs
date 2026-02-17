@@ -186,7 +186,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         name: "tsql",
         extensions: &["sql"],
         has_transforms: true,
-        grammar_file: None,
+        grammar_file: Some("tree-sitter-sql.wasm"),
     },
 ];
 

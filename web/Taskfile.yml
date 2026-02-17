@@ -198,6 +198,10 @@ tasks:
       - task: grammar:from-source
         vars: { LANG: markdown, REPO: tree-sitter-grammars/tree-sitter-markdown, REF: split_parser, SUBDIR: tree-sitter-markdown }
 
+      # T-SQL - BUILD FROM SOURCE (no npm package with WASM available)
+      - task: grammar:from-source
+        vars: { LANG: tsql, REPO: jamie8johnson/tree-sitter-sql }
+
       # Generate index.ts that re-exports all grammars
       - task: grammar:generate-index
 
