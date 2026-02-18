@@ -62,6 +62,7 @@
         </object>
       </document>
     </syntax>
+    <!-- Data view: query-friendly projection. Node spans point to values, not full key-value pairs. -->
     <data>
       <document>
         <name>doc1</name>

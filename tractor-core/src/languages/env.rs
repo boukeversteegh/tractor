@@ -106,6 +106,15 @@ fn transform_variable_assignment(xot: &mut Xot, node: XotNode) -> Result<Transfo
     if let Some(name) = var_name {
         rename_to_key(xot, node, &name);
 
+        // Copy the value child's source span to the node so --set replaces
+        // only the value portion, not the entire `KEY=value` assignment.
+        let value_child = xot.children(node).find(|&c| {
+            get_element_name(xot, c).as_deref() == Some("value")
+        });
+        if let Some(vc) = value_child {
+            copy_source_location(xot, vc, node);
+        }
+
         // Remove all children and replace with value text
         let children: Vec<XotNode> = xot.children(node).collect();
         for child in children {
