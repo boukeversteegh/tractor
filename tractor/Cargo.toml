@@ -8,6 +8,10 @@ description = "Multi-language code query tool using XPath 3.1"
 name = "tractor"
 path = "src/main.rs"
 
+[[bin]]
+name = "update-snapshots"
+path = "src/bin/update_snapshots.rs"
+
 [dependencies]
 tractor-core = { path = "../tractor-core" }
 clap.workspace = true

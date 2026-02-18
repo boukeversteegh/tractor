@@ -234,6 +234,7 @@ line two</string>
         </object>
       </document>
     </syntax>
+    <!-- Data view: query-friendly projection. Node spans point to values, not full key-value pairs. -->
     <data>
       <name>my-app</name>
       <version>1.0.0</version>
