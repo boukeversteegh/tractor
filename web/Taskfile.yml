@@ -242,7 +242,8 @@ tasks:
     desc: Run vitest tests
     dir: .
     cmds:
-      - npx vitest run
+      # Uppercase drive letter - vitest jsdom breaks with lowercase on Windows
+      - cd "$(pwd | sed 's|^\(/[a-z]/\)|\U\1|')" && npx vitest run
 
   dev:
     desc: Run dev server
