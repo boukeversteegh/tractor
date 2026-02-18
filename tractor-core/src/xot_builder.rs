@@ -765,8 +765,10 @@ impl XeeBuilder {
             xot.detach(single_doc)?;
         }
 
-        // Append <syntax> and <data> to <File>
+        // Append <syntax> and <data> to <File>, with a hint comment before <data>
         xot.append(file_el, syntax_el)?;
+        let hint = xot.new_comment(" Data view: query-friendly projection. Node spans point to values, not full key-value pairs. ");
+        xot.append(file_el, hint)?;
         xot.append(file_el, data_el)?;
 
         Ok(())

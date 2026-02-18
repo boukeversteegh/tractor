@@ -98,6 +98,15 @@ fn transform_setting(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xo
     if let Some(key) = extract_setting_name(xot, node) {
         rename_to_key(xot, node, &key);
 
+        // Copy the setting_value child's source span to the node so --set
+        // replaces only the value portion, not the entire `key = value` line.
+        let value_child = xot.children(node).find(|&c| {
+            get_element_name(xot, c).as_deref() == Some("setting_value")
+        });
+        if let Some(vc) = value_child {
+            copy_source_location(xot, vc, node);
+        }
+
         // Remove setting_name child and `=` text, keep setting_value
         let children: Vec<XotNode> = xot.children(node).collect();
         for child in children {
