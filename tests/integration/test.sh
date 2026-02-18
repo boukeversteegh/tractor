@@ -11,9 +11,9 @@ NC='\033[0m'
 echo -e "${BLUE}Tractor Integration Tests${NC}"
 echo ""
 
-# Run each language test script
-for lang in rust python typescript javascript go java csharp ruby xml yaml markdown string-input; do
-    bash "tests/integration/$lang/test.sh" || exit 1
+# Run each test suite
+for suite in rust python typescript javascript go java csharp ruby xml yaml markdown string-input replace; do
+    bash "tests/integration/$suite/test.sh" || exit 1
     echo ""
 done
 

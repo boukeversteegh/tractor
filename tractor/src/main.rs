@@ -17,6 +17,7 @@ use tractor_core::{
     output::should_use_color,
     output::{render_document, render_node, RenderOptions},
     print_timing_stats,
+    apply_replacements,
     // Unified parsing pipeline (always returns Documents)
     parse_to_documents, parse_string_to_documents,
     XeeParseResult,
@@ -176,8 +177,16 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
         .build_global()
         .ok();
 
+    // Validate --set usage
+    if args.set.is_some() && xpath.is_none() {
+        return Err("--set requires an XPath query (-x)".into());
+    }
+
     // Handle inline source (--content argument or stdin with --lang)
     if content_source || stdin_source {
+        if args.set.is_some() {
+            return Err("--set cannot be used with stdin input (no file to modify)".into());
+        }
         let source = if let Some(ref content) = args.content {
             content.clone()
         } else {
@@ -417,6 +426,9 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
         let is_count_format = matches!(format, OutputFormat::Count);
         let is_schema_format = matches!(format, OutputFormat::Schema);
 
+        // Set mode: collect all matches, then apply replacements to files
+        let is_replace_mode = args.set.is_some();
+
         // Test mode: collect all matches for error output; suppress streaming
         let is_test_mode = args.expect.is_some();
         let mut all_matches: Vec<Match> = Vec::new();
@@ -481,7 +493,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
 
             total_matches += batch_matches.len();
 
-            if is_test_mode || is_schema_format {
+            if is_test_mode || is_schema_format || is_replace_mode {
                 // Collect matches for later processing
                 all_matches.extend(batch_matches);
             } else {
@@ -510,6 +522,19 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
             // Default depth of 4 for schema format if not specified
             let schema_depth = args.depth.or(Some(4));
             print!("{}", collector.format(schema_depth, use_color));
+            return Ok(());
+        }
+
+        // Set mode: apply replacements to files
+        if let Some(ref set_value) = args.set {
+            let summary = apply_replacements(&all_matches, set_value)?;
+            eprintln!(
+                "Set {} match{} in {} file{}",
+                summary.replacements_made,
+                if summary.replacements_made == 1 { "" } else { "es" },
+                summary.files_modified,
+                if summary.files_modified == 1 { "" } else { "s" },
+            );
             return Ok(());
         }
 
