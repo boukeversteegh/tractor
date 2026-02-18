@@ -43,6 +43,8 @@ pub static SUPPORTED_LANGUAGES: &[(&str, &[&str])] = &[
     ("markdown", &["md", "markdown", "mdx"]),
     // XML pass-through (not parsed, queried directly)
     ("xml", &["xml"]),
+    // SQL dialects
+    ("tsql", &["sql"]),
 ];
 
 /// Parse result with xot document
@@ -64,6 +66,12 @@ pub struct XotParseResult {
 pub enum ParseError {
     #[error("Unsupported language: {0}")]
     UnsupportedLanguage(String),
+    #[error("Ambiguous file extension '.{extension}': multiple languages match ({languages}). Use --lang to specify which language to use (e.g. --lang {first}).")]
+    AmbiguousLanguage {
+        extension: String,
+        languages: String,
+        first: String,
+    },
     #[error("Failed to read file: {0}")]
     FileRead(#[from] std::io::Error),
     #[error("Failed to parse: {0}")]
@@ -103,6 +111,7 @@ pub fn detect_language(path: &str) -> &'static str {
         "jl" => "julia",
         "md" | "markdown" | "mdx" => "markdown",
         "xml" => "xml",
+        "sql" => "tsql",
         _ => "unknown",
     }
 }
@@ -136,6 +145,7 @@ fn get_tree_sitter_language(lang: &str) -> Result<tree_sitter::Language, ParseEr
         "r" => Ok(tree_sitter_r::LANGUAGE.into()),
         "julia" | "jl" => Ok(tree_sitter_julia::LANGUAGE.into()),
         "markdown" | "md" | "mdx" => Ok(tree_sitter_md::LANGUAGE.into()),
+        "tsql" | "mssql" => Ok(tree_sitter_sequel_tsql::LANGUAGE.into()),
         _ => Err(ParseError::UnsupportedLanguage(lang.to_string())),
     }
 }
@@ -259,6 +269,10 @@ pub fn get_language_abi_versions() -> Vec<LanguageAbiInfo> {
             name: "yaml",
             abi_version: tree_sitter::Language::from(tree_sitter_yaml::LANGUAGE).abi_version(),
         },
+        LanguageAbiInfo {
+            name: "tsql",
+            abi_version: tree_sitter::Language::from(tree_sitter_sequel_tsql::LANGUAGE).abi_version(),
+        },
     ]
 }
 
@@ -266,8 +280,30 @@ pub fn get_language_abi_versions() -> Vec<LanguageAbiInfo> {
 // Xot-based pipeline
 // ============================================================================
 
+use crate::language_info::get_all_languages_for_extension;
 use crate::xot_builder::{XotBuilder, XeeBuilder};
 use xee_xpath::{Documents, DocumentHandle};
+
+/// Check if a file extension is ambiguous (multiple languages claim it).
+/// Returns Ok(()) if the extension is unambiguous, or an error if it is ambiguous.
+fn check_ambiguous_extension(path: &Path) -> Result<(), ParseError> {
+    let ext = path.extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("");
+    if ext.is_empty() {
+        return Ok(());
+    }
+    let langs = get_all_languages_for_extension(ext);
+    if langs.len() > 1 {
+        let lang_names: Vec<&str> = langs.iter().map(|l| l.name).collect();
+        return Err(ParseError::AmbiguousLanguage {
+            extension: ext.to_string(),
+            languages: lang_names.join(", "),
+            first: lang_names[0].to_string(),
+        });
+    }
+    Ok(())
+}
 
 /// Parse a file and return an xot document (new pipeline)
 pub fn parse_file_to_xot(path: &Path, lang_override: Option<&str>, raw_mode: bool) -> Result<XotParseResult, ParseError> {
@@ -281,6 +317,9 @@ pub fn parse_file_to_xot_with_options(
     raw_mode: bool,
     ignore_whitespace: bool,
 ) -> Result<XotParseResult, ParseError> {
+    if lang_override.is_none() {
+        check_ambiguous_extension(path)?;
+    }
     let source = fs::read_to_string(path)?;
     let lang = lang_override.unwrap_or_else(|| detect_language(path.to_str().unwrap_or("")));
     parse_string_to_xot_with_options(&source, lang, path.to_string_lossy().to_string(), raw_mode, ignore_whitespace)
@@ -461,6 +500,9 @@ pub fn parse_file_to_xee_with_options(
     raw_mode: bool,
     ignore_whitespace: bool,
 ) -> Result<XeeParseResult, ParseError> {
+    if lang_override.is_none() {
+        check_ambiguous_extension(path)?;
+    }
     let source = fs::read_to_string(path)?;
     let lang = lang_override.unwrap_or_else(|| detect_language(path.to_str().unwrap_or("")));
     parse_string_to_xee_with_options(&source, lang, path.to_string_lossy().to_string(), raw_mode, ignore_whitespace, None)
@@ -512,6 +554,9 @@ pub fn parse_to_documents(
     ignore_whitespace: bool,
     max_depth: Option<usize>,
 ) -> Result<XeeParseResult, ParseError> {
+    if lang_override.is_none() {
+        check_ambiguous_extension(path)?;
+    }
     let lang = lang_override.unwrap_or_else(|| detect_language(path.to_str().unwrap_or("")));
 
     if lang == "xml" {
@@ -551,6 +596,7 @@ mod tests {
         assert_eq!(detect_language("foo.rs"), "rust");
         assert_eq!(detect_language("foo.py"), "python");
         assert_eq!(detect_language("foo.js"), "javascript");
+        assert_eq!(detect_language("foo.sql"), "tsql");
         assert_eq!(detect_language("foo.unknown"), "unknown");
     }
 

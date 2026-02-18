@@ -36,6 +36,7 @@ native = [
     "dep:tree-sitter-md",
     "dep:tree-sitter-toml-ng",
     "dep:tree-sitter-ini",
+    "dep:tree-sitter-sequel-tsql",
     "dep:glob",
     "dep:rayon",
     "dep:atty",
@@ -44,7 +45,6 @@ wasm = [
     "dep:wasm-bindgen",
     "dep:console_error_panic_hook",
 ]
-
 [dependencies]
 # TreeSitter (native only)
 tree-sitter = { workspace = true, optional = true }
@@ -73,6 +73,7 @@ tree-sitter-julia = { workspace = true, optional = true }
 tree-sitter-md = { workspace = true, optional = true }
 tree-sitter-toml-ng = { workspace = true, optional = true }
 tree-sitter-ini = { workspace = true, optional = true }
+tree-sitter-sequel-tsql = { workspace = true, optional = true }
 
 # XPath 3.1
 xee-xpath.workspace = true

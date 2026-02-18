@@ -12,7 +12,7 @@ echo -e "${BLUE}Tractor Integration Tests${NC}"
 echo ""
 
 # Run each test suite
-for suite in rust python typescript javascript go java csharp ruby xml yaml markdown string-input replace; do
+for suite in rust python typescript javascript go java csharp ruby xml yaml markdown tsql string-input replace; do
     bash "tests/integration/$suite/test.sh" || exit 1
     echo ""
 done

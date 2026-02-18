@@ -16,6 +16,7 @@ pub mod toml;
 pub mod ini;
 pub mod env;
 pub mod markdown;
+pub mod tsql;
 
 use xot::{Xot, Node as XotNode};
 use crate::xot_transform::TransformAction;
@@ -47,6 +48,7 @@ pub fn get_transform(lang: &str) -> TransformFn {
         "ini" => ini::transform,
         "env" => env::transform,
         "markdown" | "md" | "mdx" => markdown::transform,
+        "tsql" | "mssql" => tsql::transform,
         // Default: passthrough (no transforms)
         _ => passthrough_transform,
     }
@@ -82,6 +84,7 @@ pub fn get_syntax_category(lang: &str) -> SyntaxCategoryFn {
         "ini" => ini::syntax_category,
         "env" => env::syntax_category,
         "markdown" | "md" | "mdx" => markdown::syntax_category,
+        "tsql" | "mssql" => tsql::syntax_category,
         // Default: generic fallback
         _ => default_syntax_category,
     }
