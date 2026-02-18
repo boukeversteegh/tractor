@@ -25,7 +25,7 @@ pub fn print_timing_stats() {
     if count == 0 {
         return;
     }
-    let xml_load = TIMING_XML_LOAD.load(Ordering::Relaxed);
+    let _xml_load = TIMING_XML_LOAD.load(Ordering::Relaxed);
     let query_exec = TIMING_QUERY_EXEC.load(Ordering::Relaxed);
     let result_proc = TIMING_RESULT_PROC.load(Ordering::Relaxed);
     let xml_serialize = TIMING_XML_SERIALIZE.load(Ordering::Relaxed);
@@ -396,4 +396,5 @@ mod tests {
         ).unwrap();
         assert_eq!(matches.len(), 1, "Should find number inside value");
     }
+
 }

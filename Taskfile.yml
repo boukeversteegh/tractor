@@ -112,13 +112,13 @@ tasks:
     desc: Check that XML snapshots match current tractor output
     deps: [build]
     cmds:
-      - bash tests/integration/test_snapshots.sh
+      - cargo run --release --bin update-snapshots -- --check
 
   test:snapshots:update:
     desc: Regenerate XML snapshots from current tractor output
     deps: [build]
     cmds:
-      - bash tests/integration/generate_snapshots.sh
+      - cargo run --release --bin update-snapshots
 
   # === Distribution builds ===
 
