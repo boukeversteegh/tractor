@@ -1,5 +1,5 @@
 <Files>
-  <File path="/home/user/tractor/tests/integration/tsql/sample.sql">
+  <File path="tests/integration/tsql/sample.sql">
     <file>
       <comment>-- Simple T-SQL example</comment>
       <statement>
