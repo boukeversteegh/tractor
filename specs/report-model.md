@@ -577,11 +577,11 @@ This means `--severity warning` is the way to have a rule that reports but doesn
 
 1. **Serialization targets**: `--format` values: `text`, `json`, `github`. Others needed? (SARIF? XML?)
 
-2. **JSON mapping**: Each XML element type needs a standard JSON representation. What are the mapping rules?
+2. **XML→text and XML→JSON mapping**: Each report element type needs standard rendering rules for both plain text and JSON. This is also what determines how `-q` results display — text rendering IS the mapping question.
 
 3. **Severity and exit codes**: Resolved — see below.
 
-4. **Per-file grouping**: Rendering option for plain text. What controls it?
+4. **Per-file grouping**: Not just a rendering option — changes the report structure. Flat `matches[]` vs `files[] > matches[]`. If grouped, the report XML becomes `<files><file path="..."><match/><match/></file></files>` instead of `<matches><match/><match/></matches>`. This affects `-q` paths and JSON shape. Need to decide: always grouped? Always flat? Flag to switch?
 
 5. **Multiple `-q`**: Do multiple `-q` flags chain (pipeline) or union (multiple selections)? Or both with different syntax?
 
