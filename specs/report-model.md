@@ -304,57 +304,25 @@ Custom queries work too — anything that isn't a predefined name is treated as 
 
 ### Lazy field computation
 
-Not all match fields are equal in cost. `value` and `line` are available directly from the XPath match. But `source` requires reading back into the source file to extract the exact text. `lines` requires even more context. `xml` requires serializing the AST subtree.
+Most match fields are cheap: `value`, `line`, `column`, `file` are available directly from the XPath match. `source` and `lines` are just slices into `source_lines` — an `Arc<Vec<String>>` already in memory from parsing. The only potentially expensive field is `ast` (serializing the AST subtree to XML), and even that is modest.
 
-Tractor analyzes the `-q` expression (or shorthand) and only computes the fields that are actually referenced:
+In practice, lazy field computation is a minor optimization at best. The main value of `-q` is **selection** (what to show), not computation avoidance. We may still want format-declared field lists for rendering purposes (what a format needs to display), but this is a rendering concern, not a performance one.
 
-```
--q value          →  computes: value only (cheap)
--q source         →  computes: value + source (I/O)
--q ast            →  computes: value + ast serialization
--q summary        →  computes: counts only (no per-match fields)
-(no -q, default)  →  computes: based on --format's required fields
-```
-
-This is what makes `-q` more than syntactic sugar for piping — it's an optimization hint. Tractor knows what you need and skips the rest.
-
-Each output format formally declares which report fields it requires. When no `-q` is given, the format's required fields determine what gets computed:
+Each output format declares which report fields it renders. When no `-q` is given, the format determines the default view:
 
 ```yaml
 formats:
   text:                             # default
-    query_requires: [value, ast]    # show AST fragments
-    check_requires: [file, line, column, reason, severity]  # gcc-style lines
-    test_requires: [file, line, column, value]  # match detail on failure
+    query_default: [value, ast]     # show AST fragments
+    check_default: [file, line, column, reason, severity]  # gcc-style lines
+    test_default: [file, line, column, value]  # match detail on failure
   json:
-    requires: all                   # full report structure
+    default: all                    # full report structure
   github:
-    requires: [file, line, column, end_line, end_column, reason, severity]
+    default: [file, line, column, end_line, end_column, reason, severity]
 ```
 
-When `-q` is explicit, it overrides the format's defaults — tractor computes what the query touches, and the format serializes whatever comes out.
-
-#### Detecting which fields are needed
-
-Three tiers of `-q` complexity, with different optimization strategies:
-
-**Tier 1 — Predefined shorthands** (`value`, `source`, `schema`, etc.): Cost is known statically. Fully optimized.
-
-**Tier 2 — Simple selector paths** (no `[]` predicates): Paths like `match/value`, `summary/total`, `match/@file`. Tractor can parse out the referenced field names directly — just split on `/` and collect names. Fully optimized.
-
-**Tier 3 — Complex queries** (predicates, functions, nested paths): This is where it gets hard. The query reads fields that don't appear in the output:
-
-```
--q "match[contains(@file, '.chtml')]/value"     →  reads: file, returns: value
--q "match[ast//method/public]/name"              →  reads: ast (expensive!), returns: name
--q "match[number(source) > 100]"                 →  reads: source (I/O!), filters on it
-```
-
-A probe document with placeholder nodes fails here — predicates filter against fake data and produce wrong results. And lazy "compute on access" doesn't work either, because predicates like `match[ast//method/public]` need the real computed AST to decide whether the match survives the filter.
-
-**Current approach**: Detect whether the query is "simple" (tier 1–2) or "complex" (tier 3). Simple queries get full optimization. Complex queries compute all fields conservatively.
-
-**XPath AST inspection (future)**: xee internally has an AST (`xee-xpath-ast` crate) and a compiler that uses it, but the public API only exposes compile+execute (`Queries::sequence()` → `SequenceQuery::execute()`). No way to walk the parsed expression or extract referenced names. To enable tier-3 optimization via AST inspection, xee would need to expose the AST publicly — either via upstream contribution to Paligo/xee or a fork.
+When `-q` is explicit, it overrides the format's defaults — the format serializes whatever `-q` selects.
 
 ### The pipe asymmetry
 
@@ -626,7 +594,7 @@ This means `--severity warning` is the way to have a rule that reports but doesn
 - **Composability**: Output can be piped back into tractor. `-q` is an optimization of piping.
 - **Severity controls exit code**: `error` → exit 1 (fail). `warning` → exit 0 (success). If a check produces only warnings, it passes. Mixed error+warning: exit 1 (errors dominate).
 - **Inline rules parallel rule files**: Every rule file property has a CLI flag equivalent. Ad-hoc `tractor check` commands map 1:1 to rule definitions, so you can experiment inline and convert to a permanent rule.
-- **Compute vs select (lazy fields)**: Tractor only computes fields that are needed. For shorthands and simple selectors (no `[]`), field detection is exact. For complex queries with predicates/functions, all fields are computed conservatively. Each `--format` also declares its required fields as a baseline.
+- **Lazy fields not needed**: Most match fields are cheap — `source`/`lines` are already in memory from parsing (`Arc<Vec<String>>`). Only `ast` serialization has any cost. `-q` is primarily about selection, not computation avoidance. Each `--format` declares which fields it renders as a default view.
 
 ## Open Questions
 
