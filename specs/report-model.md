@@ -313,12 +313,28 @@ Tractor analyzes the `-q` expression (or shorthand) and only computes the fields
 -q source         →  computes: value + source (I/O)
 -q ast            →  computes: value + ast serialization
 -q summary        →  computes: counts only (no per-match fields)
-(no -q, default)  →  computes: based on --format defaults
+(no -q, default)  →  computes: based on --format's required fields
 ```
 
 This is what makes `-q` more than syntactic sugar for piping — it's an optimization hint. Tractor knows what you need and skips the rest.
 
-For predefined shorthands, the cost is known statically. For arbitrary XPath, tractor inspects the expression for field name references (e.g., does it mention `source`? `ast`?). Conservative: if in doubt, compute it.
+Each output format formally declares which report fields it requires. When no `-q` is given, the format's required fields determine what gets computed:
+
+```yaml
+formats:
+  text:                             # default
+    query_requires: [value, ast]    # show AST fragments
+    check_requires: [file, line, column, reason, severity]  # gcc-style lines
+    test_requires: [file, line, column, value]  # match detail on failure
+  json:
+    requires: all                   # full report structure
+  github:
+    requires: [file, line, column, end_line, end_column, reason, severity]
+```
+
+When `-q` is explicit, it overrides the format's defaults — tractor computes what the query touches, and the format serializes whatever comes out.
+
+For predefined shorthands, the cost is known statically. For arbitrary XPath, the detection uses a **probe document**: tractor builds a lightweight report XML with placeholder/sentinel nodes for each expensive field, evaluates the `-q` expression against it, and checks which placeholders appear in the result. This uses the real XPath engine to determine what's needed — handling predicates, axes, functions, unions, etc. correctly without fragile expression parsing.
 
 ### The pipe asymmetry
 
