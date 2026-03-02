@@ -352,7 +352,9 @@ Three tiers of `-q` complexity, with different optimization strategies:
 
 A probe document with placeholder nodes fails here — predicates filter against fake data and produce wrong results. And lazy "compute on access" doesn't work either, because predicates like `match[ast//method/public]` need the real computed AST to decide whether the match survives the filter.
 
-**Current approach**: Detect whether the query is "simple" (tier 1–2) or "complex" (tier 3). Simple queries get full optimization. Complex queries compute all fields conservatively. This could be refined later with XPath AST inspection (walking the parsed expression tree to collect all referenced names — pending investigation into whether xee exposes this).
+**Current approach**: Detect whether the query is "simple" (tier 1–2) or "complex" (tier 3). Simple queries get full optimization. Complex queries compute all fields conservatively.
+
+**XPath AST inspection (future)**: xee internally has an AST (`xee-xpath-ast` crate) and a compiler that uses it, but the public API only exposes compile+execute (`Queries::sequence()` → `SequenceQuery::execute()`). No way to walk the parsed expression or extract referenced names. To enable tier-3 optimization via AST inspection, xee would need to expose the AST publicly — either via upstream contribution to Paligo/xee or a fork.
 
 ### The pipe asymmetry
 
