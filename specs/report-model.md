@@ -106,13 +106,15 @@ These concerns are orthogonal. You can serialize any command's report in any for
 
 ### New Parameters
 
-| Parameter       | Purpose                              | Values                                    |
-|-----------------|--------------------------------------|-------------------------------------------|
-| `--format / -f` | Serialization of the report          | `text` (default), `json`, `github`        |
-| `--view`        | Projection — what to show            | `xml` (default), `value`, `source`, `lines`, `gcc`, `schema`, `count`, custom template |
-| `--reason`      | Per-match violation text (check)     | string                                    |
-| `--expect`      | Assertion (test only)                | `none`, `some`, or a number               |
-| `--severity`    | Violation severity (check)           | `error` (default), `warning`              |
+| Parameter        | Level  | Purpose                          | Values                                          |
+|------------------|--------|----------------------------------|-------------------------------------------------|
+| `--format / -f`  | output | Serialization of the report      | `text` (default), `json`, `github`              |
+| `--report`       | report | Which report section to emit     | `auto` (default), `matches`, `summary`, `schema`, `count` |
+| `--view`         | match  | How to render each match         | `xml` (default), `value`, `source`, `lines`, `gcc` |
+| `--template`     | match  | Custom match template            | string with field refs: `{value}`, `{file}`, `{line}`, etc. |
+| `--reason`       | match  | Violation text (check)           | string                                          |
+| `--expect`       | report | Assertion (test only)            | `none`, `some`, or a number                     |
+| `--severity`     | match  | Violation severity (check)       | `error` (default), `warning`                    |
 
 **No `--description` flag** — summary labels are derived from context (rule name, xpath expression, etc.)
 
@@ -124,24 +126,31 @@ The full output of any tractor command is a **report**. A report is a structured
 
 ### Report structure
 
-```
-report
-  summary (check, test only)
-    - passed
-    - total
-    - files_affected
-    - errors, warnings            # severity breakdown (check)
-    - expected (test only)
-  matches[]
-    - file, line, column, end_line, end_column
-    - value                       # text content
-    - source                      # exact matched source text
-    - lines                       # source lines in context
-    - xml                         # AST fragment
-    - reason (check only)         # violation description
-    - severity (check only)       # error/warning
-    - rule_id (multi-rule only)   # which rule matched
-  schema (query only)             # derived from matches, structural tree
+```yaml
+report:
+  summary:                        # check, test only
+    passed:                       # did the command succeed?
+    total:                        # match count
+    files_affected:               # distinct file count
+    errors:                       # error-severity count (check)
+    warnings:                     # warning-severity count (check)
+    expected:                     # assertion: none/some/N (test)
+
+  matches:
+    - file:                       # source file path
+      line:                       # start line
+      column:                     # start column
+      end_line:
+      end_column:
+      value:                      # text content of matched node
+      source:                     # exact matched source text
+      lines:                      # source lines in context
+      xml:                        # AST fragment
+      reason:                     # violation description (check only)
+      severity:                   # error/warning (check only)
+      rule_id:                    # which rule matched (multi-rule only)
+
+  schema:                         # query only, derived from matches
 ```
 
 ### What each command includes
@@ -158,79 +167,100 @@ test report:   summary (with expected) + matches[]
 
 Every command produces matches. This is the shared base:
 
-```
-match
-  - file                          # source file path
-  - line, column                  # start position
-  - end_line, end_column          # end position
-  - value                         # text content of matched node
-  - source                        # exact matched source text
-  - lines                         # source lines in context
-  - xml                           # matched AST as XML
+```yaml
+match:
+  file:                           # source file path
+  line:                           # start position
+  column:
+  end_line:                       # end position
+  end_column:
+  value:                          # text content of matched node
+  source:                         # exact matched source text
+  lines:                          # source lines in context
+  xml:                            # matched AST as XML
 ```
 
 ### Common: Summary (shared by check and test)
 
-Both check and test produce a summary. The shared base:
-
-```
-summary
-  - passed (bool)                 # did the command succeed?
-  - total                         # match count
-  - files_affected                # distinct file count
-```
-
-Check extends with:
-```
-  - errors                        # count of error-severity matches
-  - warnings                      # count of warning-severity matches
-```
-
-Test extends with:
-```
-  - expected                      # the assertion (none/some/N)
+```yaml
+summary:
+  passed:                         # did the command succeed?
+  total:                          # match count
+  files_affected:                 # distinct file count
+  errors:                         # error-severity count (check)
+  warnings:                       # warning-severity count (check)
+  expected:                       # assertion: none/some/N (test)
 ```
 
 ---
 
-## Two Levels of Selection (`--view`)
+## Two Levels of Selection
 
-`--view` is the projection mechanism. It operates at two levels on the report tree:
+Selection operates at two independent levels on the report tree, controlled by separate parameters:
 
-### Report-level views — which section of the report to emit
+### Report-level: `--report` — which section of the report to emit
 
-- Full report (default for `--format json`)
-- Just `matches` (default for plain-text query)
-- Just `summary`
-- Just `summary/total` — i.e., the count
-- Just `schema` (query only — derived from match XML fragments)
+Controls which top-level section(s) of the report to include in the output.
 
-### Match-level views — which field(s) of each match to render
+- `auto` (default, unset) — depends on the command:
+  - Query: `matches`
+  - Check: `summary` + `matches`
+  - Test: `summary` + `matches`
+- `matches` — only the match list
+- `summary` — only the summary
+- `count` — only `summary.total` (shorthand)
+- `schema` — only the schema (query only)
 
+### Match-level: `--view` — how to render each match
+
+Controls how each individual match is displayed. Only relevant when matches are included in the output.
+
+Predefined views:
 - `xml` — AST fragment (query default)
 - `value` — text content of the matched node
 - `source` — exact matched source text
 - `lines` — source lines in context
 - `gcc` — `{file}:{line}:{column}: {reason}` (check default)
-- Custom template — user-defined with field references
 
-These are **projections**, not transformations. The underlying data is the same; you're choosing what to see.
+Custom templates via `--template`:
+- `--template "{value}"` — equivalent to `--view value`
+- `--template "{file}:{line}: {value}"` — custom format
+- `--template '{"file": "{file}", "line": {line}}'` — custom JSON structure per match
+
+Predefined views are named shortcuts for common templates:
+```
+--view value   ≡  --template "{value}"
+--view gcc     ≡  --template "{file}:{line}:{col}: {reason}"
+--view source  ≡  --template "{source}"
+```
+
+### How they combine
+
+`--report` and `--view` are independent. `--report` controls what sections appear; `--view` controls how matches render within those sections.
+
+```
+--report=auto --view=gcc      →  summary + gcc-style match list (check default)
+--report=auto --view=lines    →  summary + source lines per violation
+--report=matches --view=value →  just values, no summary
+--report=schema               →  just schema, --view is irrelevant
+--report=count                →  just a number, --view is irrelevant
+```
 
 ### The selector mental model
 
-Conceptually, all view controls are XPath-like selectors on the report tree. The implementation uses fixed known values for performance, but the mental model is consistent:
+Conceptually, all selection controls are XPath-like selectors on the report tree. The implementation uses fixed known values for performance, but the mental model is consistent:
 
 ```
---view xml        →  for each match: ./xml
---view value      →  for each match: ./value
---view gcc        →  for each match: {file}:{line}:{col}: {reason}
---view schema     →  /report/schema
---view count      →  /report/summary/total
+--report=matches              →  /report/matches
+--report=summary              →  /report/summary
+--report=schema               →  /report/schema
+--report=count                →  /report/summary/total
+--view xml                    →  for each match: ./xml
+--view value                  →  for each match: ./value
+--template "{file}:{line}"    →  for each match: custom projection
 ```
 
 This extends to custom templates too — `{value}`, `{line}`, `{file}` are field selectors on the match node.
-
-In JSON (`--format json`), `--view` is irrelevant — the full report with all fields is always emitted.
 
 ---
 
@@ -247,7 +277,7 @@ Human-readable plain text. Rendering depends on the command and `--view`:
 
 ### `--format json`
 
-Machine-parseable. The full report becomes a JSON object. All fields are included regardless of `--view`.
+Machine-parseable. The selected report section(s) become a JSON object. `--report` still controls what's included — `--format json --report summary` gives you just the summary as JSON. When `--report auto`, the default sections for the command are emitted.
 
 ### `--format github`
 
@@ -260,7 +290,7 @@ GitHub Actions workflow commands. Match-level annotations only — no report env
 ### Query examples
 
 ```bash
-# Default: show AST fragments (--view xml is default)
+# Default: show AST fragments (--view xml, --report matches)
 tractor "src/**/*.cs" -x "//function"
 
 # Show just the matched text content
@@ -269,11 +299,17 @@ tractor "src/**/*.cs" -x "//function/name" --view value
 # Show source lines in context
 tractor "src/**/*.cs" -x "//function" --view lines
 
-# Show structural overview
-tractor "src/**/*.cs" -x "//class" --view schema
+# Show structural overview (report-level selection)
+tractor "src/**/*.cs" -x "//class" --report schema
+
+# Just the count
+tractor "src/**/*.cs" -x "//function" --report count
 
 # Full report as JSON (all fields included)
 tractor "src/**/*.cs" -x "//function" --format json
+
+# Custom template per match
+tractor "src/**/*.cs" -x "//function/name" --template "{file}:{line}: {value}"
 ```
 
 ### Check examples
@@ -375,11 +411,13 @@ Grouping by file or by rule is a rendering option, not a structural change. The 
 
 - **Subcommands**: `tractor` (query, default), `tractor check` (lint), `tractor test` (assertion), `tractor set` (mutation).
 - **Report**: The full output is called a "report" — a structured data tree.
-- **Serialization** (`--format / -f`): Orthogonal to content. Values: `text`, `json`, `github`.
-- **Match views** (`--view`): Separate from serialization. Projections on the report tree at report-level and match-level.
-- **Reason** (`--reason`): Per-match violation text in check mode. Distinct from view/format.
+- **Three orthogonal output concerns**:
+  - `--format / -f` — serialization (how the report is encoded): `text`, `json`, `github`
+  - `--report` — report-level selection (what sections to include): `auto`, `matches`, `summary`, `schema`, `count`
+  - `--view` / `--template` — match-level rendering (how each match is displayed): `xml`, `value`, `source`, `lines`, `gcc`, or custom template
+- **Reason** (`--reason`): Per-match violation text in check mode.
 - **Schema**: An element in the report tree, derived from matches. Query only — not available in check/test.
-- **Count**: A report-level projection (`summary.total`). Not a format.
+- **Count**: A report-level projection (`--report count` → `summary.total`). Not a format.
 - **Multi-rule reports**: Flat match list with `rule_id` per match (only when using `--rules`). Summary breaks down by severity. Grouping by file/rule is a rendering option.
 - **Inline check**: No `rule_id` for ad-hoc checks.
 - **Summary description**: Derived from context (rule name, xpath). No CLI flag needed.
@@ -388,12 +426,14 @@ Grouping by file or by rule is a rendering option, not a structural change. The 
 
 1. **Serialization targets**: `--format` values: `text`, `json`, `github`. Are there others needed? (SARIF? XML?)
 
-2. **JSON granularity**: Does `--format json` always include all fields (xml, source, lines, value), or can `--view` filter JSON output too?
+2. **JSON match fields**: When matches are included in JSON output, are all match fields always present (xml, source, lines, value), or can `--view` filter which fields appear?
 
 3. **Severity and exit codes**: Should `--severity warning` mean exit 0 on violations? Or should exit behavior be a separate flag?
 
-4. **Per-file grouping**: Plain-text rendering option. What controls it? (flag? view?)
+4. **Per-file grouping**: Plain-text rendering option. What controls it? (flag? `--report` variant?)
 
-5. **Template syntax**: Custom `--view` templates use `{value}`, `{line}`, `{file}`. Should these stay as curly-brace placeholders, or align more with XPath?
+5. **Template syntax**: Custom `--template` uses `{value}`, `{line}`, `{file}`. Should these stay as curly-brace placeholders, or align more with XPath?
 
-6. **View defaults per command**: Query defaults to `--view xml`, check defaults to `--view gcc`. Should test have its own default view?
+6. **View defaults per command**: Query defaults to `--view xml`, check defaults to `--view gcc`. What does test default to?
+
+7. **`--view` for check/test**: Can you override the match-level view in check (e.g., `--view lines` to see violating code in context)? Or is check rendering fixed?
