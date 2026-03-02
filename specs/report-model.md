@@ -302,9 +302,24 @@ Custom queries work too — anything that isn't a predefined name is treated as 
 -q "summary|match/value"                           # summary + values
 ```
 
+### The pipe asymmetry
+
+Ideally, `-q A -q B` should equal `-q A/B` — pure composition. But it doesn't, because there's a **report-wrapping transformation** after the first query:
+
+```
+source → -q₁ → [wrap into report] → -q₂ → output
+              ↑ hidden step
+```
+
+The first `-q` (currently `-x`) queries source ASTs and builds a report — injecting `<match>` wrappers, `<summary>`, metadata attributes (`file`, `line`, `col`), etc. This is a structural transformation, not a pure projection.
+
+Subsequent `-q`s are pure projections on the report. So the first query is special: **query + build report**. The rest are just XPath.
+
+This means `-x` being a separate flag may actually be honest — it signals "this is the source query that builds the report." Making it `-q` too would hide the asymmetry. Or, if everything becomes `-q`, the first one is implicitly the source query and the report-building is always implied.
+
 ### Multiple `-q` queries
 
-Multiple `-q` flags could run multiple queries on the same report, or chain as pipeline stages (first narrows, second queries within results). Design TBD — both are useful.
+Multiple `-q` flags could chain as pipeline stages (first narrows, second queries within results). But given the pipe asymmetry, only the first `-q` (the source query) triggers report-building. Subsequent `-q`s are pure projections. Design TBD.
 
 ### Parameters (revised)
 
