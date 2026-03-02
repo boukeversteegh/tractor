@@ -106,15 +106,16 @@ These concerns are orthogonal. You can serialize any command's report in any for
 
 ### New Parameters
 
-| Parameter        | Level  | Purpose                          | Values                                          |
+| Parameter        | Stage  | Purpose                          | Values                                          |
 |------------------|--------|----------------------------------|-------------------------------------------------|
-| `--format / -f`  | output | Serialization of the report      | `text` (default), `json`, `github`              |
-| `--report`       | report | Which report section to emit     | `auto` (default), `matches`, `summary`, `schema`, `count` |
-| `--view`         | match  | How to render each match         | `xml` (default), `value`, `source`, `lines`, `gcc` |
-| `--template`     | match  | Custom match template            | string with field refs: `{value}`, `{file}`, `{line}`, etc. |
+| `-x`             | source | Query source code ASTs           | XPath expression                                |
+| `-q`             | report | Query/project the report         | XPath expression or predefined shorthand (`value`, `count`, `schema`, etc.) |
+| `--format / -f`  | output | Serialization                    | `text` (default), `json`, `github`              |
 | `--reason`       | match  | Violation text (check)           | string                                          |
 | `--expect`       | report | Assertion (test only)            | `none`, `some`, or a number                     |
 | `--severity`     | match  | Violation severity (check)       | `error` (default), `warning`                    |
+
+`-x` and `-q` are the same operation (XPath query) at different pipeline stages. `--report` and `--view` are replaced by `-q`.
 
 **No `--description` flag** — summary labels are derived from context (rule name, xpath expression, etc.)
 
@@ -194,94 +195,150 @@ summary:
 
 ---
 
-## Two Levels of Selection
+## The Pipeline Model
 
-Selection operates at two independent levels on the report tree, controlled by separate parameters:
-
-### Report-level: `--report` — which section of the report to emit
-
-Controls which top-level section(s) of the report to include in the output.
-
-- `auto` (default, unset) — depends on the command:
-  - Query: `matches`
-  - Check: `summary` + `matches`
-  - Test: `summary` + `matches`
-- `matches` — only the match list
-- `summary` — only the summary
-- `count` — only `summary.total` (shorthand)
-- `schema` — only the schema (query only)
-
-### Match-level: `--view` — how to render each match
-
-Controls how each individual match is displayed. Only relevant when matches are included in the output.
-
-Predefined views:
-- `xml` — AST fragment (query default)
-- `value` — text content of the matched node
-- `source` — exact matched source text
-- `lines` — source lines in context
-- `gcc` — `{file}:{line}:{column}: {reason}` (check default)
-
-Custom templates via `--template`:
-- `--template "{value}"` — equivalent to `--view value`
-- `--template "{file}:{line}: {value}"` — custom format
-- `--template '{"file": "{file}", "line": {line}}'` — custom JSON structure per match
-
-Predefined views are named shortcuts for common templates:
-```
---view value   ≡  --template "{value}"
---view gcc     ≡  --template "{file}:{line}:{col}: {reason}"
---view source  ≡  --template "{source}"
-```
-
-### How they combine
-
-`--report` and `--view` are independent. `--report` controls what sections appear; `--view` controls how matches render within those sections.
+Tractor is a two-stage XPath pipeline. The same operation (parse → query) happens twice:
 
 ```
---report=auto --view=gcc      →  summary + gcc-style match list (check default)
---report=auto --view=lines    →  summary + source lines per violation
---report=matches --view=value →  just values, no summary
---report=schema               →  just schema, --view is irrelevant
---report=count                →  just a number, --view is irrelevant
+source files → parse → AST (XML) → -x query → matches → report (XML) → -q query → output
+               stage 1: source                  stage 2: report
 ```
 
-### The selector mental model
+**Stage 1** (`-x`): Query source code ASTs. Produces matches.
+**Stage 2** (`-q`): Query the report. Selects and projects output.
 
-Conceptually, all selection controls are XPath-like selectors on the report tree. The implementation uses fixed known values for performance, but the mental model is consistent:
+Both stages use XPath. The report is an XML document — querying it with `-q` is the same operation as querying source with `-x`. And because the output is XML, you can pipe it back into tractor:
 
+```bash
+# Two commands (piping):
+tractor **/*.cs -x "//method[public]" --format xml | tractor --lang xml -x "//match/name"
+
+# One command (same result, optimized):
+tractor **/*.cs -x "//method[public]" -q "match/name"
 ```
---report=matches              →  /report/matches
---report=summary              →  /report/summary
---report=schema               →  /report/schema
---report=count                →  /report/summary/total
---view xml                    →  for each match: ./xml
---view value                  →  for each match: ./value
---template "{file}:{line}"    →  for each match: custom projection
+
+The `-q` flag is conceptually identical to piping into another tractor — it's faster because tractor can skip computing fields you didn't ask for.
+
+### Report as XML
+
+The report has a concrete XML representation:
+
+```xml
+<report>
+  <summary>
+    <passed>false</passed>
+    <total>3</total>
+    <files>2</files>
+  </summary>
+  <matches>
+    <match file="src/Foo.cs" line="12" col="5">
+      <value>Foo</value>
+      <source>public class Foo {</source>
+      <ast>
+        <class>
+          <name>Foo</name>
+          <body>...</body>
+        </class>
+      </ast>
+      <reason>TODO should be resolved</reason>
+      <severity>error</severity>
+    </match>
+  </matches>
+  <schema>
+    ...
+  </schema>
+</report>
 ```
 
-This extends to custom templates too — `{value}`, `{line}`, `{file}` are field selectors on the match node.
+### The `<ast>` boundary
+
+The `<ast>` element embeds the matched source AST fragment — it contains language-specific elements (`class`, `function`, `name`, etc.) that could collide with report-level element names.
+
+**Rule**: `-q` treats `<ast>` as a boundary. Descendant queries (`//`) do not descend into `<ast>` unless you explicitly step into it.
+
+```bash
+-q value            →  //value (outside ast)       →  match value elements
+-q summary/total    →  //summary/total             →  the count
+-q ast//name        →  explicitly enters ast        →  AST name elements
+-q match/@file      →  //match/@file               →  file attributes
+```
+
+Same auto-prefix rule as `-x`: bare name becomes `//name`.
+
+**Implementation options** (in order of preference):
+
+1. **Document boundary** (preferred): Store each match's AST as a separate sub-document. Standard XPath already doesn't cross document boundaries with `//`. Access via `doc(source)` or similar function. Cleanest — uses standard XPath semantics, no rewriting or hooks needed. Depends on xee multi-document support.
+   ```bash
+   -q value                  # report-level, no ast
+   -q "doc(source)//name"    # explicitly enter the AST sub-document
+   -q "doc(source)"          # see the full AST content
+   ```
+   Tradeoff: AST is not inline in raw XML output. User does `-q doc(source)` to see it.
+
+2. **Evaluation hook**: Intercept descendant axis traversal, skip `<ast>` children. AST stays inline in the XML. Needs a way to detect explicit `ast/...` paths. Depends on xee extensibility.
+
+3. **Query rewriting**: Automatically add `[not(ancestor::ast)]` to descendant queries. Fragile with complex XPath expressions.
+
+**Pragmatic note**: Report element names (`match`, `value`, `summary`, `total`, `schema`, `reason`, `severity`) and AST element names (`class`, `function`, `method`, `comment`, `attribute`) are already naturally distinct. Collisions are unlikely in practice, so the boundary is a guarantee rather than a frequent necessity.
+
+### Predefined `-q` shorthands
+
+Common queries get short names for convenience. These are optimized — tractor can skip computing unused fields:
+
+```bash
+-q value            ≡  -q "//match/value"          # text content per match
+-q source           ≡  -q "//match/source"         # matched source text
+-q ast              ≡  -q "//match/ast"            # AST fragments (query default)
+-q summary          ≡  -q "//summary"              # just the summary
+-q count            ≡  -q "//summary/total"         # just the count
+-q schema           ≡  -q "//schema"               # structural tree (query only)
+```
+
+Custom queries work too — anything that isn't a predefined name is treated as XPath:
+
+```bash
+-q "match/ast//name"                               # AST name elements
+-q "match[@file='src/Foo.cs']"                     # matches from one file
+-q "summary|match/value"                           # summary + values
+```
+
+### Multiple `-q` queries
+
+Multiple `-q` flags could run multiple queries on the same report, or chain as pipeline stages (first narrows, second queries within results). Design TBD — both are useful.
+
+### Parameters (revised)
+
+| Parameter        | Purpose                          | Values                                          |
+|------------------|----------------------------------|-------------------------------------------------|
+| `-x`             | Stage 1: query source AST       | XPath expression                                |
+| `-q`             | Stage 2: query the report        | XPath expression or predefined shorthand         |
+| `--format / -f`  | Serialization of output          | `text` (default), `json`, `github`              |
+| `--reason`       | Per-match violation text (check) | string                                          |
+| `--expect`       | Assertion (test only)            | `none`, `some`, or a number                     |
+| `--severity`     | Violation severity (check)       | `error` (default), `warning`                    |
+
+`--report` and `--view` are replaced by `-q`. The report is XML; querying it is just XPath.
 
 ---
 
 ## Serialization (`--format`)
 
-`--format` controls how the report is serialized to stdout. It is orthogonal to what's in the report.
+`--format` controls how the output is serialized. It is orthogonal to what's selected by `-q`.
 
 ### `--format text` (default)
 
-Human-readable plain text. Rendering depends on the command and `--view`:
-- **Query**: renders each match using the selected view (xml, value, source, etc.)
+Human-readable plain text. Rendering depends on the command and query:
+- **Query**: renders selected elements (AST fragments, values, etc.)
 - **Check**: gcc-style violation lines + summary footer
 - **Test**: pass/fail line with indented match detail on failure
 
 ### `--format json`
 
-Machine-parseable. The selected report section(s) become a JSON object. `--report` still controls what's included — `--format json --report summary` gives you just the summary as JSON. When `--report auto`, the default sections for the command are emitted.
+Machine-parseable. The selected elements become JSON. Each XML element type has a standard JSON mapping (e.g., `<summary>` → `{"passed": false, "total": 3, ...}`).
 
 ### `--format github`
 
-GitHub Actions workflow commands. Match-level annotations only — no report envelope.
+GitHub Actions workflow commands. Match-level annotations only.
 
 ---
 
@@ -290,26 +347,29 @@ GitHub Actions workflow commands. Match-level annotations only — no report env
 ### Query examples
 
 ```bash
-# Default: show AST fragments (--view xml, --report matches)
+# Default: show AST fragments (-q ast is default for query)
 tractor "src/**/*.cs" -x "//function"
 
 # Show just the matched text content
-tractor "src/**/*.cs" -x "//function/name" --view value
+tractor "src/**/*.cs" -x "//function/name" -q value
 
 # Show source lines in context
-tractor "src/**/*.cs" -x "//function" --view lines
+tractor "src/**/*.cs" -x "//function" -q lines
 
-# Show structural overview (report-level selection)
-tractor "src/**/*.cs" -x "//class" --report schema
+# Show structural overview
+tractor "src/**/*.cs" -x "//class" -q schema
 
 # Just the count
-tractor "src/**/*.cs" -x "//function" --report count
+tractor "src/**/*.cs" -x "//function" -q count
 
-# Full report as JSON (all fields included)
+# Full report as JSON
 tractor "src/**/*.cs" -x "//function" --format json
 
-# Custom template per match
-tractor "src/**/*.cs" -x "//function/name" --template "{file}:{line}: {value}"
+# Drill into AST within matches
+tractor "src/**/*.cs" -x "//class" -q "ast//name"
+
+# Custom XPath on report
+tractor "src/**/*.cs" -x "//function" -q "match[@file='src/Foo.cs']/value"
 ```
 
 ### Check examples
@@ -349,6 +409,14 @@ tractor check "src/**/*.cs" -x "//comment[contains(.,'TODO')]" --reason "TODO sh
 ::error file=src/Foo.cs,line=12,col=5::TODO should be resolved
 ::error file=src/Foo.cs,line=47,col=5::TODO should be resolved
 ::error file=src/Bar.cs,line=3,col=1::TODO should be resolved
+```
+
+**Just the summary as JSON:**
+```bash
+tractor check "src/**/*.cs" -x "//comment[contains(.,'TODO')]" --reason "TODO" -q summary --format json
+```
+```json
+{"passed": false, "total": 3, "files": 2, "errors": 3, "warnings": 0}
 ```
 
 ### Test examples
@@ -410,30 +478,30 @@ Grouping by file or by rule is a rendering option, not a structural change. The 
 ## Resolved Decisions
 
 - **Subcommands**: `tractor` (query, default), `tractor check` (lint), `tractor test` (assertion), `tractor set` (mutation).
-- **Report**: The full output is called a "report" — a structured data tree.
-- **Three orthogonal output concerns**:
-  - `--format / -f` — serialization (how the report is encoded): `text`, `json`, `github`
-  - `--report` — report-level selection (what sections to include): `auto`, `matches`, `summary`, `schema`, `count`
-  - `--view` / `--template` — match-level rendering (how each match is displayed): `xml`, `value`, `source`, `lines`, `gcc`, or custom template
+- **Report**: The full output is a structured XML tree called a "report".
+- **Two-stage pipeline**: `-x` queries source ASTs (stage 1), `-q` queries the report (stage 2). Same XPath at both stages.
+- **`-q` replaces `--report` and `--view`**: One XPath-based parameter for all report selection and projection. Predefined shorthands (`value`, `count`, `schema`, etc.) for common queries.
+- **`<ast>` boundary**: The `<ast>` element in the report wraps source AST fragments. `-q` does not descend into `<ast>` by default. Explicit `ast//...` to cross the boundary.
+- **Serialization** (`--format / -f`): Orthogonal. `text`, `json`, `github`.
 - **Reason** (`--reason`): Per-match violation text in check mode.
-- **Schema**: An element in the report tree, derived from matches. Query only — not available in check/test.
-- **Count**: A report-level projection (`--report count` → `summary.total`). Not a format.
-- **Multi-rule reports**: Flat match list with `rule_id` per match (only when using `--rules`). Summary breaks down by severity. Grouping by file/rule is a rendering option.
+- **Schema**: An element in the report tree, derived from matches. Query only.
+- **Multi-rule reports**: Flat match list with `rule_id` per match (only with `--rules`). Summary by severity.
 - **Inline check**: No `rule_id` for ad-hoc checks.
-- **Summary description**: Derived from context (rule name, xpath). No CLI flag needed.
+- **Summary labels**: Derived from context. No CLI flag.
+- **Composability**: Output can be piped back into tractor. `-q` is an optimization of piping.
 
 ## Open Questions
 
-1. **Serialization targets**: `--format` values: `text`, `json`, `github`. Are there others needed? (SARIF? XML?)
+1. **Serialization targets**: `--format` values: `text`, `json`, `github`. Others needed? (SARIF? XML?)
 
-2. **JSON match fields**: When matches are included in JSON output, are all match fields always present (xml, source, lines, value), or can `--view` filter which fields appear?
+2. **JSON mapping**: Each XML element type needs a standard JSON representation. What are the mapping rules?
 
-3. **Severity and exit codes**: Should `--severity warning` mean exit 0 on violations? Or should exit behavior be a separate flag?
+3. **Severity and exit codes**: Should `--severity warning` mean exit 0 on violations? Or separate flag?
 
-4. **Per-file grouping**: Plain-text rendering option. What controls it? (flag? `--report` variant?)
+4. **Per-file grouping**: Rendering option for plain text. What controls it?
 
-5. **Template syntax**: Custom `--template` uses `{value}`, `{line}`, `{file}`. Should these stay as curly-brace placeholders, or align more with XPath?
+5. **Multiple `-q`**: Do multiple `-q` flags chain (pipeline) or union (multiple selections)? Or both with different syntax?
 
-6. **View defaults per command**: Query defaults to `--view xml`, check defaults to `--view gcc`. What does test default to?
+6. **AST boundary implementation**: Document boundary (preferred) vs evaluation hook vs query rewriting. Needs xee library investigation — does it support sub-documents? Custom axis traversal?
 
-7. **`--view` for check/test**: Can you override the match-level view in check (e.g., `--view lines` to see violating code in context)? Or is check rendering fixed?
+7. **Custom templates**: Do we still want `--view "{file}:{line}: {value}"` style templates alongside `-q`? Or is XPath sufficient? Templates are more ergonomic for simple formatting.
