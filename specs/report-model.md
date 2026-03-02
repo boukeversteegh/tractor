@@ -513,6 +513,47 @@ For **inline check** (ad-hoc `tractor check -x ... --reason ...`), there's no `r
 
 Grouping by file or by rule is a rendering option, not a structural change. The data is the same flat list either way.
 
+### Inline rules ↔ rule file parallel
+
+A `tractor check` command maps 1:1 to a rule definition in a YAML file. This is a core design principle: you experiment ad-hoc, then promote to a permanent rule by moving parameters into YAML.
+
+```bash
+# Ad-hoc inline rule:
+tractor check "src/**/*.cs" \
+  -x "//comment[contains(.,'TODO')]" \
+  --reason "TODO should be resolved" \
+  --severity error
+```
+
+```yaml
+# Equivalent rule file entry:
+- id: no-todos
+  files: "src/**/*.cs"
+  xpath: "//comment[contains(.,'TODO')]"
+  reason: TODO should be resolved
+  severity: error
+```
+
+Every CLI flag has a YAML property counterpart:
+
+| CLI flag       | YAML property | Purpose                          |
+|----------------|---------------|----------------------------------|
+| (positional)   | `files`       | File glob pattern                |
+| `-x`           | `xpath`       | Source query                     |
+| `--reason`     | `reason`      | Violation message                |
+| `--severity`   | `severity`    | `error` (exit 1) or `warning` (exit 0) |
+| (auto)         | `id`          | Rule identifier (YAML only)      |
+
+### Exit code behavior
+
+Exit codes are determined by severity:
+
+- **error-severity violations found** → exit 1 (fail)
+- **only warning-severity violations** → exit 0 (pass, but warnings shown)
+- **no violations** → exit 0 (pass)
+
+This means `--severity warning` is the way to have a rule that reports but doesn't break CI. And in a multi-rule report, errors dominate: any error means exit 1, regardless of how many warnings.
+
 ---
 
 ## Resolved Decisions
@@ -529,6 +570,8 @@ Grouping by file or by rule is a rendering option, not a structural change. The 
 - **Inline check**: No `rule_id` for ad-hoc checks.
 - **Summary labels**: Derived from context. No CLI flag.
 - **Composability**: Output can be piped back into tractor. `-q` is an optimization of piping.
+- **Severity controls exit code**: `error` → exit 1 (fail). `warning` → exit 0 (success). If a check produces only warnings, it passes. Mixed error+warning: exit 1 (errors dominate).
+- **Inline rules parallel rule files**: Every rule file property has a CLI flag equivalent. Ad-hoc `tractor check` commands map 1:1 to rule definitions, so you can experiment inline and convert to a permanent rule.
 
 ## Open Questions
 
@@ -536,7 +579,7 @@ Grouping by file or by rule is a rendering option, not a structural change. The 
 
 2. **JSON mapping**: Each XML element type needs a standard JSON representation. What are the mapping rules?
 
-3. **Severity and exit codes**: Should `--severity warning` mean exit 0 on violations? Or separate flag?
+3. **Severity and exit codes**: Resolved — see below.
 
 4. **Per-file grouping**: Rendering option for plain text. What controls it?
 
