@@ -302,6 +302,24 @@ Custom queries work too — anything that isn't a predefined name is treated as 
 -q "summary|match/value"                           # summary + values
 ```
 
+### Lazy field computation
+
+Not all match fields are equal in cost. `value` and `line` are available directly from the XPath match. But `source` requires reading back into the source file to extract the exact text. `lines` requires even more context. `xml` requires serializing the AST subtree.
+
+Tractor analyzes the `-q` expression (or shorthand) and only computes the fields that are actually referenced:
+
+```
+-q value          →  computes: value only (cheap)
+-q source         →  computes: value + source (I/O)
+-q ast            →  computes: value + ast serialization
+-q summary        →  computes: counts only (no per-match fields)
+(no -q, default)  →  computes: based on --format defaults
+```
+
+This is what makes `-q` more than syntactic sugar for piping — it's an optimization hint. Tractor knows what you need and skips the rest.
+
+For predefined shorthands, the cost is known statically. For arbitrary XPath, tractor inspects the expression for field name references (e.g., does it mention `source`? `ast`?). Conservative: if in doubt, compute it.
+
 ### The pipe asymmetry
 
 Ideally, `-q A -q B` should equal `-q A/B` — pure composition. But it doesn't, because there's a **report-wrapping transformation** after the first query:
@@ -572,6 +590,7 @@ This means `--severity warning` is the way to have a rule that reports but doesn
 - **Composability**: Output can be piped back into tractor. `-q` is an optimization of piping.
 - **Severity controls exit code**: `error` → exit 1 (fail). `warning` → exit 0 (success). If a check produces only warnings, it passes. Mixed error+warning: exit 1 (errors dominate).
 - **Inline rules parallel rule files**: Every rule file property has a CLI flag equivalent. Ad-hoc `tractor check` commands map 1:1 to rule definitions, so you can experiment inline and convert to a permanent rule.
+- **Compute vs select (lazy fields)**: Tractor analyzes the `-q` expression and only computes fields that are actually referenced. `-q source` triggers source extraction (expensive I/O). `-q value` skips it. No explicit flag needed — the query determines what gets computed.
 
 ## Open Questions
 
@@ -579,12 +598,10 @@ This means `--severity warning` is the way to have a rule that reports but doesn
 
 2. **XML→text and XML→JSON mapping**: Each report element type needs standard rendering rules for both plain text and JSON. This is also what determines how `-q` results display — text rendering IS the mapping question.
 
-3. **Severity and exit codes**: Resolved — see below.
+3. **Per-file grouping**: Not just a rendering option — changes the report structure. Flat `matches[]` vs `files[] > matches[]`. If grouped, the report XML becomes `<files><file path="..."><match/><match/></file></files>` instead of `<matches><match/><match/></matches>`. This affects `-q` paths and JSON shape. Need to decide: always grouped? Always flat? Flag to switch?
 
-4. **Per-file grouping**: Not just a rendering option — changes the report structure. Flat `matches[]` vs `files[] > matches[]`. If grouped, the report XML becomes `<files><file path="..."><match/><match/></file></files>` instead of `<matches><match/><match/></matches>`. This affects `-q` paths and JSON shape. Need to decide: always grouped? Always flat? Flag to switch?
+4. **Multiple `-q`**: Do multiple `-q` flags chain (pipeline) or union (multiple selections)? Or both with different syntax?
 
-5. **Multiple `-q`**: Do multiple `-q` flags chain (pipeline) or union (multiple selections)? Or both with different syntax?
+5. **AST boundary implementation**: Document boundary (preferred) vs evaluation hook vs query rewriting. Needs xee library investigation — does it support sub-documents? Custom axis traversal?
 
-6. **AST boundary implementation**: Document boundary (preferred) vs evaluation hook vs query rewriting. Needs xee library investigation — does it support sub-documents? Custom axis traversal?
-
-7. **Custom templates**: Do we still want `--view "{file}:{line}: {value}"` style templates alongside `-q`? Or is XPath sufficient? Templates are more ergonomic for simple formatting.
+6. **Custom templates**: Do we still want `--view "{file}:{line}: {value}"` style templates alongside `-q`? Or is XPath sufficient? Templates are more ergonomic for simple formatting.
