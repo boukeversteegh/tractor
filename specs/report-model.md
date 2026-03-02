@@ -317,9 +317,34 @@ Subsequent `-q`s are pure projections on the report. So the first query is speci
 
 This means `-x` being a separate flag may actually be honest — it signals "this is the source query that builds the report." Making it `-q` too would hide the asymmetry. Or, if everything becomes `-q`, the first one is implicitly the source query and the report-building is always implied.
 
+### Map vs reduce ambiguity
+
+`-x` is a **map** operation: it runs per-file, independently. Results are flattened and wrapped into the report. This means:
+
+```bash
+-x "count(//method)"       →  per-file count (one number per file)
+-q "count(//match)"        →  global count across all files
+```
+
+The report-building step is the **reduce** — it aggregates per-file results into one structure. `-q` runs on the aggregated result.
+
+When chaining `-q A -q B`, the semantics are ambiguous:
+
+- **Map**: `-q B` applied to each node returned by A (like `for each result of A: query B`)
+- **Reduce**: `-q B` applied to the entire output of A as a collection (like `wrap results of A, then query B`)
+
+In XPath, a query takes a context node and returns a node set. If `-q A` returns 5 nodes, `-q B` needs a context:
+- Map: each of the 5 nodes becomes a context → 5 evaluations of B
+- Reduce: the 5 nodes are wrapped in a container → 1 evaluation of B on the container
+
+Unix commands each decide for themselves (grep maps, wc reduces, sort operates on the whole stream). There's no universal rule. Tractor needs to be explicit about this.
+
 ### Multiple `-q` queries
 
-Multiple `-q` flags could chain as pipeline stages (first narrows, second queries within results). But given the pipe asymmetry, only the first `-q` (the source query) triggers report-building. Subsequent `-q`s are pure projections. Design TBD.
+Design TBD. Key questions:
+- Is chaining map or reduce? Or does it depend on the query?
+- Should there be explicit syntax for map vs reduce? (e.g., `-q` for reduce, `-q:each` for map?)
+- Or is the answer: just use XPath's own `for` expressions and aggregation functions within a single `-q`?
 
 ### Parameters (revised)
 
