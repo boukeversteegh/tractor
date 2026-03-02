@@ -334,7 +334,25 @@ formats:
 
 When `-q` is explicit, it overrides the format's defaults — tractor computes what the query touches, and the format serializes whatever comes out.
 
-For predefined shorthands, the cost is known statically. For arbitrary XPath, the detection uses a **probe document**: tractor builds a lightweight report XML with placeholder/sentinel nodes for each expensive field, evaluates the `-q` expression against it, and checks which placeholders appear in the result. This uses the real XPath engine to determine what's needed — handling predicates, axes, functions, unions, etc. correctly without fragile expression parsing.
+#### Detecting which fields are needed
+
+Three tiers of `-q` complexity, with different optimization strategies:
+
+**Tier 1 — Predefined shorthands** (`value`, `source`, `schema`, etc.): Cost is known statically. Fully optimized.
+
+**Tier 2 — Simple selector paths** (no `[]` predicates): Paths like `match/value`, `summary/total`, `match/@file`. Tractor can parse out the referenced field names directly — just split on `/` and collect names. Fully optimized.
+
+**Tier 3 — Complex queries** (predicates, functions, nested paths): This is where it gets hard. The query reads fields that don't appear in the output:
+
+```
+-q "match[contains(@file, '.chtml')]/value"     →  reads: file, returns: value
+-q "match[ast//method/public]/name"              →  reads: ast (expensive!), returns: name
+-q "match[number(source) > 100]"                 →  reads: source (I/O!), filters on it
+```
+
+A probe document with placeholder nodes fails here — predicates filter against fake data and produce wrong results. And lazy "compute on access" doesn't work either, because predicates like `match[ast//method/public]` need the real computed AST to decide whether the match survives the filter.
+
+**Current approach**: Detect whether the query is "simple" (tier 1–2) or "complex" (tier 3). Simple queries get full optimization. Complex queries compute all fields conservatively. This could be refined later with XPath AST inspection (walking the parsed expression tree to collect all referenced names — pending investigation into whether xee exposes this).
 
 ### The pipe asymmetry
 
@@ -606,7 +624,7 @@ This means `--severity warning` is the way to have a rule that reports but doesn
 - **Composability**: Output can be piped back into tractor. `-q` is an optimization of piping.
 - **Severity controls exit code**: `error` → exit 1 (fail). `warning` → exit 0 (success). If a check produces only warnings, it passes. Mixed error+warning: exit 1 (errors dominate).
 - **Inline rules parallel rule files**: Every rule file property has a CLI flag equivalent. Ad-hoc `tractor check` commands map 1:1 to rule definitions, so you can experiment inline and convert to a permanent rule.
-- **Compute vs select (lazy fields)**: Tractor analyzes the `-q` expression and only computes fields that are actually referenced. `-q source` triggers source extraction (expensive I/O). `-q value` skips it. No explicit flag needed — the query determines what gets computed.
+- **Compute vs select (lazy fields)**: Tractor only computes fields that are needed. For shorthands and simple selectors (no `[]`), field detection is exact. For complex queries with predicates/functions, all fields are computed conservatively. Each `--format` also declares its required fields as a baseline.
 
 ## Open Questions
 
