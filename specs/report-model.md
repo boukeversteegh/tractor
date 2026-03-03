@@ -609,3 +609,43 @@ This means `--severity warning` is the way to have a rule that reports but doesn
 5. **AST boundary implementation**: Document boundary (preferred) vs evaluation hook vs query rewriting. Needs xee library investigation — does it support sub-documents? Custom axis traversal?
 
 6. **Custom templates**: Do we still want `--view "{file}:{line}: {value}"` style templates alongside `-q`? Or is XPath sufficient? Templates are more ergonomic for simple formatting.
+
+---
+
+## Considered & Rejected Approaches
+
+### Probe document for lazy field detection
+Build a lightweight report XML with placeholder/sentinel nodes, run the `-q` expression against it, check which placeholders appear in the result.
+**Rejected**: Fails for queries with predicates. `match[contains(@file, '.chtml')]` filters against placeholder strings and returns wrong results. `match[ast//method/public]` needs real computed AST to evaluate the predicate. The probe tells you what the query *returns*, but queries also *read* fields in predicates that don't appear in output.
+
+### Lazy field computation (expensive fields)
+Detect from `-q` which fields are expensive (especially `source`) and skip computing them.
+**Rejected**: `source_lines` is an `Arc<Vec<String>>` already in memory from parsing. `source`/`lines` are just slices, no I/O. Only `ast` serialization has any cost, and it's modest. The whole premise of "expensive fields" was wrong. `-q` is about selection (what to show), not computation avoidance.
+
+### Tiered query complexity detection
+Three tiers — shorthands (static), simple selectors without `[]` (parse names), complex queries (conservative fallback). Each tier uses different optimization strategy.
+**Rejected**: Collapsed with the lazy field discovery above. Since fields aren't expensive, the optimization tiers aren't needed.
+
+### XPath AST inspection via xee
+Walk xee's parsed XPath AST to extract all referenced element/attribute names for field detection.
+**Rejected**: xee has an internal AST (`xee-xpath-ast` crate) but doesn't expose it publicly. API is compile+execute only (`Queries::sequence()` → `SequenceQuery::execute()`). Would need upstream contribution to Paligo/xee or a fork. Also moot since lazy computation turned out unnecessary.
+
+### tree-sitter-xpath for query parsing
+Use tree-sitter (already a dependency) to parse XPath expressions and extract referenced names.
+**Rejected**: [tree-sitter-xpath](https://github.com/eyelidlessness/tree-sitter-xpath) exists but is XPath 1.0 only (tractor uses 3.1). Also moot since lazy computation turned out unnecessary.
+
+### `--report` + `--view` as separate parameters
+`--report` for report-level projection (summary, schema), `--view` for match-level projection (value, source, gcc).
+**Rejected**: Both replaced by `-q` (XPath on report). One parameter, full composability. The report is XML; querying it is just XPath.
+
+### `--description` flag for summary labels
+A CLI flag to set the summary/label text shown in check/test output.
+**Rejected**: Derived from context (rule name, xpath expression, etc.). No flag needed.
+
+### `--view` at two levels
+`--view` operates at both report level and match level.
+**Rejected**: Matrix analysis showed report-level and match-level selection are independent, not mutually exclusive. Led first to `--report` + `--view` split, then both were replaced by `-q`.
+
+### Single `-o` flag for everything (current system)
+`-o` conflates serialization format (json, github) with match rendering (xml, lines, value, gcc) and aggregates (count, schema).
+**Rejected for new design**: Decomposed into three orthogonal concerns — structure (command), selection (`-q`), serialization (`--format`).
