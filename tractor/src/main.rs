@@ -26,6 +26,10 @@ use tractor_core::{
 use cli::Args;
 use clap::{CommandFactory, Parser};
 
+// ---------------------------------------------------------------------------
+// Batch utility
+// ---------------------------------------------------------------------------
+
 /// Split a slice into exponentially growing batches, capped at a maximum.
 /// Batch sizes: n, 2n, 4n, 8n, 8n, 8n... (where n = num_threads)
 /// This provides:
@@ -48,6 +52,10 @@ fn exponential_batches<T>(items: &[T], num_threads: usize) -> Vec<&[T]> {
 
     batches
 }
+
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
 
 fn main() -> ExitCode {
     let args = Args::parse();
@@ -75,6 +83,10 @@ fn main() -> ExitCode {
 
     ExitCode::SUCCESS
 }
+
+// ---------------------------------------------------------------------------
+// XPath normalization
+// ---------------------------------------------------------------------------
 
 /// Check if running under MSYS/MinGW which mangles // paths
 fn is_msys_environment() -> bool {
@@ -136,199 +148,94 @@ fn fix_msys_xpath_mangling(xpath: &str) -> String {
     xpath.to_string()
 }
 
-fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
-    // Normalize XPath if provided (auto-prefix // for convenience)
-    let xpath = args.xpath.as_ref().map(|x| normalize_xpath(x));
+// ---------------------------------------------------------------------------
+// Run context
+// ---------------------------------------------------------------------------
 
-    // Validate output format
-    let format = OutputFormat::from_str(&args.output)
-        .ok_or_else(|| {
-            format!(
-                "invalid format '{}'. Valid formats: {}",
-                args.output,
-                OutputFormat::valid_formats().join(", ")
-            )
-        })?;
+enum InputMode {
+    Files(Vec<String>),
+    InlineSource { source: String, lang: String },
+}
 
-    // Determine color mode
-    let use_color = if args.no_color {
-        false
-    } else {
-        should_use_color(&args.color)
-    };
+struct RunContext {
+    args: Args,
+    xpath: Option<String>,
+    format: OutputFormat,
+    use_color: bool,
+    options: OutputOptions,
+    input: InputMode,
+    concurrency: usize,
+}
 
-    // Collect files
-    let mut files: Vec<String> = expand_globs(&args.files);
+impl RunContext {
+    fn from_args(args: Args) -> Result<Self, Box<dyn std::error::Error>> {
+        let xpath = args.xpath.as_ref().map(|x| normalize_xpath(x));
 
-    // Handle --content argument (requires --lang)
-    let content_source = args.content.is_some();
-    if content_source && args.lang.is_none() {
-        return Err("--string requires --lang to specify the language".into());
-    }
+        let format = OutputFormat::from_str(&args.output)
+            .ok_or_else(|| {
+                format!(
+                    "invalid format '{}'. Valid formats: {}",
+                    args.output,
+                    OutputFormat::valid_formats().join(", ")
+                )
+            })?;
 
-    // Handle stdin input modes (disabled when --content is provided)
-    let stdin_source = !content_source && files.is_empty() && args.lang.is_some() && !atty::is(atty::Stream::Stdin);
-    let stdin_files = !content_source && files.is_empty() && args.lang.is_none() && !atty::is(atty::Stream::Stdin);
-
-    if stdin_files {
-        // Read file paths from stdin
-        let stdin = io::stdin();
-        for line in stdin.lock().lines() {
-            if let Ok(path) = line {
-                let path = path.trim().to_string();
-                if !path.is_empty() {
-                    files.push(path);
-                }
-            }
-        }
-    }
-
-    // Filter to supported languages
-    files = filter_supported_files(files);
-
-    if files.is_empty() && !stdin_source && !content_source {
-        Args::command().print_help().ok();
-        println!();
-        return Ok(());
-    }
-
-    // Configure thread pool
-    let concurrency = args.concurrency.unwrap_or_else(|| num_cpus::get());
-    rayon::ThreadPoolBuilder::new()
-        .num_threads(concurrency)
-        .build_global()
-        .ok();
-
-    // Validate --set usage
-    if args.set.is_some() && xpath.is_none() {
-        return Err("--set requires an XPath query (-x)".into());
-    }
-
-    // Handle inline source (--content argument or stdin with --lang)
-    if content_source || stdin_source {
-        if args.set.is_some() {
-            return Err("--set cannot be used with stdin input (no file to modify)".into());
-        }
-        let source = if let Some(ref content) = args.content {
-            content.clone()
+        let use_color = if args.no_color {
+            false
         } else {
+            should_use_color(&args.color)
+        };
+
+        let mut files: Vec<String> = expand_globs(&args.files);
+
+        // Determine input mode
+        let input = if let Some(ref content) = args.content {
+            if args.lang.is_none() {
+                return Err("--string requires --lang to specify the language".into());
+            }
+            InputMode::InlineSource {
+                source: content.clone(),
+                lang: args.lang.clone().unwrap(),
+            }
+        } else if files.is_empty() && args.lang.is_some() && !atty::is(atty::Stream::Stdin) {
+            // Stdin with --lang: read source from stdin
             let mut s = String::new();
             io::stdin().read_to_string(&mut s)?;
-            s
-        };
-        let lang = args.lang.as_deref().unwrap();
-
-        // With XPath query - use unified pipeline (handles XML and source code)
-        if let Some(ref xpath_expr) = xpath {
-            let mut result = parse_string_to_documents(
-                &source, lang, "<stdin>".to_string(), args.raw, args.ignore_whitespace
-            )?;
-
-            let engine = XPathEngine::new()
-                .with_verbose(args.verbose)
-                .with_ignore_whitespace(args.ignore_whitespace);
-
-            let matches = engine.query_documents(
-                &mut result.documents,
-                result.doc_handle,
-                xpath_expr,
-                result.source_lines.clone(),
-                &result.file_path,
-            )?;
-
-            let matches: Vec<Match> = if let Some(limit) = args.limit {
-                matches.into_iter().take(limit).collect()
-            } else {
-                matches
-            };
-
-            let options = OutputOptions {
-                message: args.message.clone(),
-                use_color,
-                strip_locations: !args.keep_locations,
-                max_depth: args.depth,
-                pretty_print: !args.no_pretty,
-                language: Some(lang.to_string()),
-                warning: args.warning,
-            };
-
-            // Schema format: aggregate match xml_fragments
-            if matches!(format, OutputFormat::Schema) {
-                let mut collector = SchemaCollector::new();
-                for m in &matches {
-                    if let Some(xml) = &m.xml_fragment {
-                        collector.collect_from_xml_string(xml);
+            InputMode::InlineSource {
+                source: s,
+                lang: args.lang.clone().unwrap(),
+            }
+        } else {
+            // Check for file paths on stdin
+            if files.is_empty() && args.lang.is_none() && !atty::is(atty::Stream::Stdin) {
+                let stdin = io::stdin();
+                for line in stdin.lock().lines() {
+                    if let Ok(path) = line {
+                        let path = path.trim().to_string();
+                        if !path.is_empty() {
+                            files.push(path);
+                        }
                     }
                 }
-                // Default depth of 4 for schema format if not specified
-                let schema_depth = args.depth.or(Some(4));
-                print!("{}", collector.format(schema_depth, use_color));
-                return Ok(());
             }
+            files = filter_supported_files(files);
+            InputMode::Files(files)
+        };
 
-            if args.expect.is_none() {
-                let output = format_matches(&matches, format.clone(), &options);
-                print!("{}", output);
-            }
+        // Configure thread pool
+        let concurrency = args.concurrency.unwrap_or_else(|| num_cpus::get());
+        rayon::ThreadPoolBuilder::new()
+            .num_threads(concurrency)
+            .build_global()
+            .ok();
 
-            return check_expectation(&matches, &args, use_color, &format, &options);
+        // Validate flag combinations
+        if args.set.is_some() && xpath.is_none() {
+            return Err("--set requires an XPath query (-x)".into());
         }
-
-        // No XPath - output full parsed document
-        let result = parse_string_to_documents(
-            &source, lang, "<stdin>".to_string(), args.raw, args.ignore_whitespace
-        )?;
-
-        let render_opts = RenderOptions::new()
-            .with_color(use_color)
-            .with_locations(args.keep_locations || args.debug)
-            .with_max_depth(args.depth)
-            .with_pretty_print(!args.no_pretty);
-
-        if matches!(format, OutputFormat::Xml) {
-            // Render document children (without XML declaration for consistency)
-            let doc_node = result.documents.document_node(result.doc_handle).unwrap();
-            let xot = result.documents.xot();
-            for child in xot.children(doc_node) {
-                let output = render_node(xot, child, &render_opts);
-                print!("{}", output);
-            }
-            return Ok(());
+        if args.set.is_some() && matches!(input, InputMode::InlineSource { .. }) {
+            return Err("--set cannot be used with stdin input (no file to modify)".into());
         }
-
-        // Schema format: show structure tree
-        if matches!(format, OutputFormat::Schema) {
-            let doc_node = result.documents.document_node(result.doc_handle).unwrap();
-            let mut collector = SchemaCollector::new();
-            collector.collect_from_xot(result.documents.xot(), doc_node);
-            // Default depth of 4 for schema format if not specified
-            let schema_depth = args.depth.or(Some(4));
-            print!("{}", collector.format(schema_depth, use_color));
-            return Ok(());
-        }
-
-        // For other formats, create a Match for the whole file
-        let doc_node = result.documents.document_node(result.doc_handle).unwrap();
-        let xot = result.documents.xot();
-        let xml: String = xot.children(doc_node)
-            .map(|child| render_node(xot, child, &render_opts))
-            .collect();
-        let value = extract_text_content(&xml);
-
-        let end_line = result.source_lines.len() as u32;
-        let end_column = result.source_lines.last()
-            .map(|l| l.len() as u32 + 1)
-            .unwrap_or(1);
-
-        let file_match = Match::with_location(
-            result.file_path.clone(),
-            1,
-            1,
-            end_line.max(1),
-            end_column,
-            value,
-            result.source_lines.clone(),
-        ).with_xml_fragment(xml);
 
         let options = OutputOptions {
             message: args.message.clone(),
@@ -336,61 +243,293 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
             strip_locations: !args.keep_locations,
             max_depth: args.depth,
             pretty_print: !args.no_pretty,
-            language: Some(lang.to_string()),
+            language: args.lang.clone(),
             warning: args.warning,
         };
 
-        let output = format_matches(&[file_match], format, &options);
-        print!("{}", output);
-        return Ok(());
+        Ok(RunContext { args, xpath, format, use_color, options, input, concurrency })
     }
 
-    // Execute XPath query if provided - run per-file in parallel with streaming batches
-    if let Some(ref xpath_expr) = xpath {
-        let verbose = args.verbose;
-        let raw = args.raw;
-        let lang_override = args.lang.clone();
+    fn render_options(&self) -> RenderOptions {
+        RenderOptions::new()
+            .with_color(self.use_color)
+            .with_locations(self.args.keep_locations || self.args.debug)
+            .with_max_depth(self.args.depth)
+            .with_pretty_print(!self.args.no_pretty)
+    }
 
-        // Output options for formatting
-        let options = OutputOptions {
-            message: args.message.clone(),
-            use_color,
-            strip_locations: !args.keep_locations,
-            max_depth: args.depth,
-            pretty_print: !args.no_pretty,
-            language: lang_override.clone(),
-            warning: args.warning,
+    fn schema_depth(&self) -> Option<usize> {
+        self.args.depth.or(Some(4))
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Dispatcher
+// ---------------------------------------------------------------------------
+
+fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
+    let ctx = RunContext::from_args(args)?;
+
+    // Nothing to do?
+    if let InputMode::Files(ref files) = ctx.input {
+        if files.is_empty() {
+            Args::command().print_help().ok();
+            println!();
+            return Ok(());
+        }
+    }
+
+    // Debug mode (file-based only, handles --expect internally)
+    if ctx.args.debug {
+        if let (Some(ref xpath), InputMode::Files(ref files)) = (&ctx.xpath, &ctx.input) {
+            return run_debug(&ctx, files, xpath);
+        }
+    }
+
+    if ctx.args.set.is_some() {
+        return run_set(&ctx);
+    }
+
+    if ctx.args.expect.is_some() {
+        return run_test(&ctx);
+    }
+
+    run_query(&ctx)
+}
+
+// ---------------------------------------------------------------------------
+// Mode handlers
+// ---------------------------------------------------------------------------
+
+fn run_query(ctx: &RunContext) -> Result<(), Box<dyn std::error::Error>> {
+    match &ctx.input {
+        InputMode::InlineSource { source, lang } => {
+            if let Some(ref xpath_expr) = ctx.xpath {
+                let matches = query_inline_source(ctx, source, lang, xpath_expr)?;
+                output_query_results(ctx, &matches);
+            } else {
+                explore_inline(ctx, source, lang)?;
+            }
+        }
+        InputMode::Files(files) => {
+            if let Some(ref xpath_expr) = ctx.xpath {
+                let collect = matches!(ctx.format, OutputFormat::Schema);
+                let (count, matches) = query_files_batched(ctx, files, xpath_expr, collect)?;
+                if matches!(ctx.format, OutputFormat::Count) {
+                    println!("{}", count);
+                } else if matches!(ctx.format, OutputFormat::Schema) {
+                    print_schema_from_matches(&matches, ctx.schema_depth(), ctx.use_color);
+                }
+            } else {
+                explore_files(ctx, files)?;
+            }
+        }
+    }
+    Ok(())
+}
+
+fn run_test(ctx: &RunContext) -> Result<(), Box<dyn std::error::Error>> {
+    let dot = ".".to_string();
+    let xpath_expr = ctx.xpath.as_ref().unwrap_or(&dot);
+
+    let (count, matches) = match &ctx.input {
+        InputMode::InlineSource { source, lang } => {
+            let matches = query_inline_source(ctx, source, lang, xpath_expr)?;
+            let count = matches.len();
+            (count, matches)
+        }
+        InputMode::Files(files) => {
+            query_files_batched(ctx, files, xpath_expr, true)?
+        }
+    };
+
+    check_expectation_with_matches(count, &matches, ctx)
+}
+
+fn run_set(ctx: &RunContext) -> Result<(), Box<dyn std::error::Error>> {
+    let xpath_expr = ctx.xpath.as_ref()
+        .ok_or("--set requires an XPath query (-x)")?;
+    let set_value = ctx.args.set.as_ref().unwrap();
+
+    let files = match &ctx.input {
+        InputMode::Files(files) => files,
+        InputMode::InlineSource { .. } => unreachable!(), // validated in from_args
+    };
+
+    let (_, matches) = query_files_batched(ctx, files, xpath_expr, true)?;
+
+    let summary = apply_replacements(&matches, set_value)?;
+    eprintln!(
+        "Set {} match{} in {} file{}",
+        summary.replacements_made,
+        if summary.replacements_made == 1 { "" } else { "es" },
+        summary.files_modified,
+        if summary.files_modified == 1 { "" } else { "s" },
+    );
+    Ok(())
+}
+
+fn run_debug(ctx: &RunContext, files: &[String], xpath_expr: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let mut total_matches = 0usize;
+    let mut remaining_limit = ctx.args.limit;
+
+    for file_path in files {
+        if remaining_limit == Some(0) {
+            break;
+        }
+
+        let mut result = match parse_to_documents(
+            std::path::Path::new(file_path),
+            ctx.args.lang.as_deref(),
+            ctx.args.raw,
+            ctx.args.ignore_whitespace,
+            ctx.args.parse_depth,
+        ) {
+            Ok(r) => r,
+            Err(e) => {
+                if ctx.args.verbose {
+                    eprintln!("warning: {}: {}", file_path, e);
+                }
+                continue;
+            }
         };
 
-        // Debug mode: show full XML with highlighted matches for each file
-        if args.debug {
-            let mut total_matches = 0usize;
-            let mut remaining_limit = args.limit;
+        let engine = XPathEngine::new()
+            .with_verbose(ctx.args.verbose)
+            .with_ignore_whitespace(ctx.args.ignore_whitespace);
 
-            for file_path in &files {
-                if remaining_limit == Some(0) {
-                    break;
+        match engine.query_documents(
+            &mut result.documents,
+            result.doc_handle,
+            xpath_expr,
+            result.source_lines.clone(),
+            &result.file_path,
+        ) {
+            Ok(matches) if !matches.is_empty() => {
+                let matches: Vec<_> = if let Some(limit) = remaining_limit {
+                    let take = limit.min(matches.len());
+                    remaining_limit = Some(limit - take);
+                    matches.into_iter().take(take).collect()
+                } else {
+                    matches
+                };
+
+                total_matches += matches.len();
+
+                let highlights: HashSet<(u32, u32)> = matches
+                    .iter()
+                    .map(|m| (m.line, m.column))
+                    .collect();
+
+                let doc_node = result.documents.document_node(result.doc_handle).unwrap();
+                let render_opts = RenderOptions::new()
+                    .with_color(ctx.use_color)
+                    .with_locations(true)
+                    .with_max_depth(ctx.args.depth)
+                    .with_highlights(highlights)
+                    .with_pretty_print(!ctx.args.no_pretty);
+                let output = render_document(result.documents.xot(), doc_node, &render_opts);
+                print!("{}", output);
+            }
+            Ok(_) => {}
+            Err(e) => {
+                if ctx.args.verbose {
+                    eprintln!("warning: {}: query error: {}", file_path, e);
                 }
+            }
+        }
+    }
 
-                // Use unified pipeline
+    // Debug mode supports --expect (count-only, no per-match details)
+    if let Some(ref expect) = ctx.args.expect {
+        let test_result = TestResult::check(expect, total_matches)?;
+        if !test_result.passed && !ctx.args.warning {
+            return Err(format!(
+                "expectation failed: expected {}, got {} matches",
+                test_result.expected, test_result.actual
+            ).into());
+        }
+    }
+
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// Query pipeline
+// ---------------------------------------------------------------------------
+
+fn query_inline_source(
+    ctx: &RunContext,
+    source: &str,
+    lang: &str,
+    xpath_expr: &str,
+) -> Result<Vec<Match>, Box<dyn std::error::Error>> {
+    let mut result = parse_string_to_documents(
+        source, lang, "<stdin>".to_string(), ctx.args.raw, ctx.args.ignore_whitespace
+    )?;
+
+    let engine = XPathEngine::new()
+        .with_verbose(ctx.args.verbose)
+        .with_ignore_whitespace(ctx.args.ignore_whitespace);
+
+    let matches = engine.query_documents(
+        &mut result.documents,
+        result.doc_handle,
+        xpath_expr,
+        result.source_lines.clone(),
+        &result.file_path,
+    )?;
+
+    let matches = if let Some(limit) = ctx.args.limit {
+        matches.into_iter().take(limit).collect()
+    } else {
+        matches
+    };
+
+    Ok(matches)
+}
+
+/// Query files in parallel batches. When `collect` is true, all matches are
+/// returned. When false, matches are streamed to stdout per batch (query mode).
+fn query_files_batched(
+    ctx: &RunContext,
+    files: &[String],
+    xpath_expr: &str,
+    collect: bool,
+) -> Result<(usize, Vec<Match>), Box<dyn std::error::Error>> {
+    let batches = exponential_batches(files, ctx.concurrency);
+    let mut total_matches = 0usize;
+    let mut remaining_limit = ctx.args.limit;
+    let mut all_matches: Vec<Match> = Vec::new();
+    let is_count_format = matches!(ctx.format, OutputFormat::Count);
+
+    for batch in batches {
+        if remaining_limit == Some(0) {
+            break;
+        }
+
+        let mut batch_matches: Vec<Match> = batch
+            .par_iter()
+            .filter_map(|file_path| {
                 let mut result = match parse_to_documents(
                     std::path::Path::new(file_path),
-                    lang_override.as_deref(),
-                    raw,
-                    args.ignore_whitespace,
-                    args.parse_depth,
+                    ctx.args.lang.as_deref(),
+                    ctx.args.raw,
+                    ctx.args.ignore_whitespace,
+                    ctx.args.parse_depth,
                 ) {
                     Ok(r) => r,
                     Err(e) => {
-                        if verbose {
+                        if ctx.args.verbose {
                             eprintln!("warning: {}: {}", file_path, e);
                         }
-                        continue;
+                        return None;
                     }
                 };
 
-                let engine = XPathEngine::new().with_verbose(verbose).with_ignore_whitespace(args.ignore_whitespace);
-
+                let engine = XPathEngine::new()
+                    .with_verbose(ctx.args.verbose)
+                    .with_ignore_whitespace(ctx.args.ignore_whitespace);
                 match engine.query_documents(
                     &mut result.documents,
                     result.doc_handle,
@@ -398,197 +537,60 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                     result.source_lines.clone(),
                     &result.file_path,
                 ) {
-                    Ok(matches) if !matches.is_empty() => {
-                        // Apply limit
-                        let matches: Vec<_> = if let Some(limit) = remaining_limit {
-                            let take = limit.min(matches.len());
-                            remaining_limit = Some(limit - take);
-                            matches.into_iter().take(take).collect()
-                        } else {
-                            matches
-                        };
-
-                        total_matches += matches.len();
-
-                        // Collect match positions for highlighting
-                        let highlights: HashSet<(u32, u32)> = matches
-                            .iter()
-                            .map(|m| (m.line, m.column))
-                            .collect();
-
-                        // Render from Documents' xot directly
-                        let doc_node = result.documents.document_node(result.doc_handle).unwrap();
-                        let render_opts = RenderOptions::new()
-                            .with_color(use_color)
-                            .with_locations(true)
-                            .with_max_depth(args.depth)
-                            .with_highlights(highlights)
-                            .with_pretty_print(!args.no_pretty);
-                        let output = render_document(result.documents.xot(), doc_node, &render_opts);
-                        print!("{}", output);
-                    }
-                    Ok(_) => {} // No matches in this file
+                    Ok(matches) => Some(matches),
                     Err(e) => {
-                        if verbose {
+                        if ctx.args.verbose {
                             eprintln!("warning: {}: query error: {}", file_path, e);
                         }
+                        None
                     }
                 }
-            }
+            })
+            .flatten()
+            .collect();
 
-            return check_expectation_count(total_matches, &args);
+        batch_matches.sort_by(|a, b| (&a.file, a.line, a.column).cmp(&(&b.file, b.line, b.column)));
+
+        if let Some(limit) = remaining_limit {
+            batch_matches.truncate(limit);
+            remaining_limit = Some(limit.saturating_sub(batch_matches.len()));
         }
 
-        // Normal mode: process files in exponentially growing batches for streaming output
-        let batches = exponential_batches(&files, concurrency);
-        let mut total_matches = 0usize;
-        let mut remaining_limit = args.limit;
+        total_matches += batch_matches.len();
 
-        // Count and Schema formats don't benefit from streaming - collect everything first
-        let is_count_format = matches!(format, OutputFormat::Count);
-        let is_schema_format = matches!(format, OutputFormat::Schema);
-
-        // Set mode: collect all matches, then apply replacements to files
-        let is_replace_mode = args.set.is_some();
-
-        // Test mode: collect all matches for error output; suppress streaming
-        let is_test_mode = args.expect.is_some();
-        let mut all_matches: Vec<Match> = Vec::new();
-
-        for batch in batches {
-            // Check if we've hit the limit
-            if remaining_limit == Some(0) {
-                break;
-            }
-
-            // Process batch in parallel using unified pipeline
-            // parse_to_documents handles both source code (TreeSitter) and XML (passthrough)
-            let mut batch_matches: Vec<Match> = batch
-                .par_iter()
-                .filter_map(|file_path| {
-                    // Unified parsing: always returns Documents
-                    let mut result = match parse_to_documents(
-                        std::path::Path::new(file_path),
-                        lang_override.as_deref(),
-                        raw,
-                        args.ignore_whitespace,
-                        args.parse_depth,
-                    ) {
-                        Ok(r) => r,
-                        Err(e) => {
-                            if verbose {
-                                eprintln!("warning: {}: {}", file_path, e);
-                            }
-                            return None;
-                        }
-                    };
-
-                    // Query on Documents (same API for all file types)
-                    let engine = XPathEngine::new().with_verbose(verbose).with_ignore_whitespace(args.ignore_whitespace);
-                    match engine.query_documents(
-                        &mut result.documents,
-                        result.doc_handle,
-                        xpath_expr,
-                        result.source_lines.clone(),
-                        &result.file_path,
-                    ) {
-                        Ok(matches) => Some(matches),
-                        Err(e) => {
-                            if verbose {
-                                eprintln!("warning: {}: query error: {}", file_path, e);
-                            }
-                            None
-                        }
-                    }
-                })
-                .flatten()
-                .collect();
-
-            // Sort by file path for consistent ordering within batch
-            batch_matches.sort_by(|a, b| (&a.file, a.line, a.column).cmp(&(&b.file, b.line, b.column)));
-
-            // Apply remaining limit
-            if let Some(limit) = remaining_limit {
-                batch_matches.truncate(limit);
-                remaining_limit = Some(limit.saturating_sub(batch_matches.len()));
-            }
-
-            total_matches += batch_matches.len();
-
-            if is_test_mode || is_schema_format || is_replace_mode {
-                // Collect matches for later processing
-                all_matches.extend(batch_matches);
-            } else {
-                // Stream output immediately (except for count format)
-                if !is_count_format {
-                    let output = format_matches(&batch_matches, format.clone(), &options);
-                    print!("{}", output);
-                    io::stdout().flush().ok();
-                }
-            }
+        if collect {
+            all_matches.extend(batch_matches);
+        } else if !is_count_format {
+            let output = format_matches(&batch_matches, ctx.format.clone(), &ctx.options);
+            print!("{}", output);
+            io::stdout().flush().ok();
         }
-
-        // For count format (non-test mode), print the total at the end
-        if is_count_format && !is_test_mode {
-            println!("{}", total_matches);
-        }
-
-        // For schema format, aggregate all matches and output the tree
-        if is_schema_format && !is_test_mode {
-            let mut collector = SchemaCollector::new();
-            for m in &all_matches {
-                if let Some(xml) = &m.xml_fragment {
-                    collector.collect_from_xml_string(xml);
-                }
-            }
-            // Default depth of 4 for schema format if not specified
-            let schema_depth = args.depth.or(Some(4));
-            print!("{}", collector.format(schema_depth, use_color));
-            return Ok(());
-        }
-
-        // Set mode: apply replacements to files
-        if let Some(ref set_value) = args.set {
-            let summary = apply_replacements(&all_matches, set_value)?;
-            eprintln!(
-                "Set {} match{} in {} file{}",
-                summary.replacements_made,
-                if summary.replacements_made == 1 { "" } else { "es" },
-                summary.files_modified,
-                if summary.files_modified == 1 { "" } else { "s" },
-            );
-            return Ok(());
-        }
-
-        // Check expectation and output test results
-        return check_expectation_with_matches(total_matches, &all_matches, &args, use_color, &format, &options);
     }
 
-    // No XPath - output full files using unified pipeline
-    let lang_override = args.lang.as_deref();
-    let raw = args.raw;
-    let verbose = args.verbose;
+    Ok((total_matches, all_matches))
+}
 
-    // Fast parallel paths for formats that don't need to keep Documents
-    // Documents isn't Send, but we can parse in parallel and extract results
+// ---------------------------------------------------------------------------
+// Explore (no XPath — fast paths skip the XPath engine entirely)
+// ---------------------------------------------------------------------------
 
-    // Fast path for count format: parallel count without keeping Documents
-    if matches!(format, OutputFormat::Count) {
+fn explore_files(ctx: &RunContext, files: &[String]) -> Result<(), Box<dyn std::error::Error>> {
+    let lang_override = ctx.args.lang.as_deref();
+    let raw = ctx.args.raw;
+    let verbose = ctx.args.verbose;
+
+    // Fast path: count format (parallel, no XPath)
+    if matches!(ctx.format, OutputFormat::Count) {
         let count: usize = files
             .par_iter()
             .filter(|file_path| {
                 match parse_to_documents(
                     std::path::Path::new(file_path),
-                    lang_override,
-                    raw,
-                    args.ignore_whitespace,
-                    args.parse_depth,
+                    lang_override, raw, ctx.args.ignore_whitespace, ctx.args.parse_depth,
                 ) {
                     Ok(_) => true,
                     Err(e) => {
-                        if verbose {
-                            eprintln!("warning: {}", e);
-                        }
+                        if verbose { eprintln!("warning: {}", e); }
                         false
                     }
                 }
@@ -598,17 +600,14 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
-    // Fast path for schema format: parallel collection then merge
-    if matches!(format, OutputFormat::Schema) {
+    // Fast path: schema format (parallel collection then merge)
+    if matches!(ctx.format, OutputFormat::Schema) {
         let collectors: Vec<SchemaCollector> = files
             .par_iter()
             .filter_map(|file_path| {
                 match parse_to_documents(
                     std::path::Path::new(file_path),
-                    lang_override,
-                    raw,
-                    args.ignore_whitespace,
-                    args.parse_depth,
+                    lang_override, raw, ctx.args.ignore_whitespace, ctx.args.parse_depth,
                 ) {
                     Ok(result) => {
                         let mut collector = SchemaCollector::new();
@@ -617,42 +616,32 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                         Some(collector)
                     }
                     Err(e) => {
-                        if verbose {
-                            eprintln!("warning: {}", e);
-                        }
+                        if verbose { eprintln!("warning: {}", e); }
                         None
                     }
                 }
             })
             .collect();
 
-        // Merge all collectors
         let mut final_collector = SchemaCollector::new();
         for collector in collectors {
             final_collector.merge(collector);
         }
-
-        let schema_depth = args.depth.or(Some(4));
-        print!("{}", final_collector.format(schema_depth, use_color));
+        print!("{}", final_collector.format(ctx.schema_depth(), ctx.use_color));
         return Ok(());
     }
 
-    // For other formats, sequential processing is required since Documents isn't Send
+    // Sequential processing for remaining formats (Documents isn't Send)
     let parse_results: Vec<XeeParseResult> = files
         .iter()
         .filter_map(|file_path| {
             match parse_to_documents(
                 std::path::Path::new(file_path),
-                lang_override,
-                raw,
-                args.ignore_whitespace,
-                args.parse_depth,
+                lang_override, raw, ctx.args.ignore_whitespace, ctx.args.parse_depth,
             ) {
                 Ok(r) => Some(r),
                 Err(e) => {
-                    if verbose {
-                        eprintln!("warning: {}", e);
-                    }
+                    if verbose { eprintln!("warning: {}", e); }
                     None
                 }
             }
@@ -663,18 +652,11 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
         return Err("no files could be parsed".into());
     }
 
-    let render_opts = RenderOptions::new()
-        .with_color(use_color)
-        .with_locations(args.keep_locations || args.debug)
-        .with_max_depth(args.depth)
-        .with_pretty_print(!args.no_pretty);
+    let render_opts = ctx.render_options();
 
-    // For XML format, output the Files wrapper (already in document structure)
-    // For multiple files, combine into a single Files wrapper
-    if matches!(format, OutputFormat::Xml) {
+    // XML format: render document tree(s)
+    if matches!(ctx.format, OutputFormat::Xml) {
         if parse_results.len() == 1 {
-            // Single file: render as-is (already has Files/File wrapper)
-            // Use render_node on children to avoid XML declaration
             let result = &parse_results[0];
             let doc_node = result.documents.document_node(result.doc_handle).unwrap();
             let xot = result.documents.xot();
@@ -683,19 +665,15 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                 print!("{}", output);
             }
         } else {
-            // Multiple files: combine File elements under single Files wrapper
             println!(r#"<?xml version="1.0" encoding="UTF-8"?>"#);
             println!("<Files>");
             for result in &parse_results {
                 let doc_node = result.documents.document_node(result.doc_handle).unwrap();
                 let xot = result.documents.xot();
-                // Find the File element inside the Files wrapper
                 for files_child in xot.children(doc_node) {
-                    // Skip to File elements inside Files
                     for file_child in xot.children(files_child) {
                         let output = render_node(xot, file_child, &render_opts);
-                        // Indent each line for pretty printing
-                        if !args.no_pretty {
+                        if !ctx.args.no_pretty {
                             for line in output.lines() {
                                 println!("  {}", line);
                             }
@@ -710,20 +688,7 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
-    // Schema format: aggregate structure across all files using Xot directly
-    if matches!(format, OutputFormat::Schema) {
-        let mut collector = SchemaCollector::new();
-        for result in &parse_results {
-            let doc_node = result.documents.document_node(result.doc_handle).unwrap();
-            collector.collect_from_xot(result.documents.xot(), doc_node);
-        }
-        // Default depth of 4 for schema format if not specified
-        let schema_depth = args.depth.or(Some(4));
-        print!("{}", collector.format(schema_depth, use_color));
-        return Ok(());
-    }
-
-    // For other formats, create Match objects and use format_matches
+    // Other formats: create Match objects and use format_matches
     let matches: Vec<Match> = parse_results
         .iter()
         .map(|result| {
@@ -732,7 +697,6 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
                 .map(|l| l.len() as u32 + 1)
                 .unwrap_or(1);
 
-            // Render document children (without XML declaration)
             let doc_node = result.documents.document_node(result.doc_handle).unwrap();
             let xot = result.documents.xot();
             let xml: String = xot.children(doc_node)
@@ -742,30 +706,92 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
 
             Match::with_location(
                 result.file_path.clone(),
-                1,
-                1,
-                end_line.max(1),
-                end_column,
+                1, 1,
+                end_line.max(1), end_column,
                 value,
                 result.source_lines.clone(),
             ).with_xml_fragment(xml)
         })
         .collect();
 
-    let options = OutputOptions {
-        message: args.message.clone(),
-        use_color,
-        strip_locations: !args.keep_locations,
-        max_depth: args.depth,
-        pretty_print: !args.no_pretty,
-        language: args.lang.clone(),
-        warning: args.warning,
-    };
-
-    let output = format_matches(&matches, format, &options);
+    let output = format_matches(&matches, ctx.format.clone(), &ctx.options);
     print!("{}", output);
 
     Ok(())
+}
+
+fn explore_inline(ctx: &RunContext, source: &str, lang: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let result = parse_string_to_documents(
+        source, lang, "<stdin>".to_string(), ctx.args.raw, ctx.args.ignore_whitespace
+    )?;
+
+    let render_opts = ctx.render_options();
+
+    if matches!(ctx.format, OutputFormat::Xml) {
+        let doc_node = result.documents.document_node(result.doc_handle).unwrap();
+        let xot = result.documents.xot();
+        for child in xot.children(doc_node) {
+            let output = render_node(xot, child, &render_opts);
+            print!("{}", output);
+        }
+        return Ok(());
+    }
+
+    if matches!(ctx.format, OutputFormat::Schema) {
+        let doc_node = result.documents.document_node(result.doc_handle).unwrap();
+        let mut collector = SchemaCollector::new();
+        collector.collect_from_xot(result.documents.xot(), doc_node);
+        print!("{}", collector.format(ctx.schema_depth(), ctx.use_color));
+        return Ok(());
+    }
+
+    // Other formats: create a Match for the whole file
+    let doc_node = result.documents.document_node(result.doc_handle).unwrap();
+    let xot = result.documents.xot();
+    let xml: String = xot.children(doc_node)
+        .map(|child| render_node(xot, child, &render_opts))
+        .collect();
+    let value = extract_text_content(&xml);
+
+    let end_line = result.source_lines.len() as u32;
+    let end_column = result.source_lines.last()
+        .map(|l| l.len() as u32 + 1)
+        .unwrap_or(1);
+
+    let file_match = Match::with_location(
+        result.file_path.clone(),
+        1, 1,
+        end_line.max(1), end_column,
+        value,
+        result.source_lines.clone(),
+    ).with_xml_fragment(xml);
+
+    let output = format_matches(&[file_match], ctx.format.clone(), &ctx.options);
+    print!("{}", output);
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// Output helpers
+// ---------------------------------------------------------------------------
+
+fn output_query_results(ctx: &RunContext, matches: &[Match]) {
+    if matches!(ctx.format, OutputFormat::Schema) {
+        print_schema_from_matches(matches, ctx.schema_depth(), ctx.use_color);
+        return;
+    }
+    let output = format_matches(matches, ctx.format.clone(), &ctx.options);
+    print!("{}", output);
+}
+
+fn print_schema_from_matches(matches: &[Match], depth: Option<usize>, use_color: bool) {
+    let mut collector = SchemaCollector::new();
+    for m in matches {
+        if let Some(xml) = &m.xml_fragment {
+            collector.collect_from_xml_string(xml);
+        }
+    }
+    print!("{}", collector.format(depth, use_color));
 }
 
 /// Extract text content from XML, removing all tags
@@ -786,7 +812,10 @@ fn extract_text_content(xml: &str) -> String {
     result.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
-/// ANSI colors for test output
+// ---------------------------------------------------------------------------
+// Test / expectation
+// ---------------------------------------------------------------------------
+
 mod test_colors {
     pub const RESET: &str = "\x1b[0m";
     pub const GREEN: &str = "\x1b[32m";
@@ -795,7 +824,6 @@ mod test_colors {
     pub const BOLD: &str = "\x1b[1m";
 }
 
-/// Result of an expectation check
 struct TestResult {
     passed: bool,
     expected: String,
@@ -821,43 +849,28 @@ impl TestResult {
     }
 }
 
-fn check_expectation(matches: &[Match], args: &Args, use_color: bool, format: &OutputFormat, options: &OutputOptions) -> Result<(), Box<dyn std::error::Error>> {
-    check_expectation_with_matches(matches.len(), matches, args, use_color, format, options)
-}
-
-fn check_expectation_count(count: usize, args: &Args) -> Result<(), Box<dyn std::error::Error>> {
-    // Legacy function for contexts where we don't have matches available
-    check_expectation_with_matches(count, &[], args, false, &OutputFormat::Count, &OutputOptions::default())
-}
-
 fn check_expectation_with_matches(
     count: usize,
     matches: &[Match],
-    args: &Args,
-    use_color: bool,
-    format: &OutputFormat,
-    options: &OutputOptions,
+    ctx: &RunContext,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let Some(ref expect) = args.expect else {
+    let Some(ref expect) = ctx.args.expect else {
         return Ok(());
     };
 
     let result = TestResult::check(expect, count)?;
 
-    // Determine symbols and colors
     let (symbol, color) = if result.passed {
         ("✓", test_colors::GREEN)
-    } else if args.warning {
+    } else if ctx.args.warning {
         ("⚠", test_colors::YELLOW)
     } else {
         ("✗", test_colors::RED)
     };
 
-    // Build the output message
-    let label = args.message.as_deref().unwrap_or("");
+    let label = ctx.args.message.as_deref().unwrap_or("");
 
-    // Print the test result line
-    if use_color {
+    if ctx.use_color {
         if label.is_empty() {
             println!("{}{}{} {} matches{}",
                 test_colors::BOLD, color, symbol, result.actual, test_colors::RESET);
@@ -881,36 +894,33 @@ fn check_expectation_with_matches(
 
     // On failure, show per-match details
     if !result.passed && !matches.is_empty() {
-        if let Some(ref error_template) = args.error {
-            // Use error template for per-match output (GCC format supports message templates)
+        if let Some(ref error_template) = ctx.args.error {
             let error_options = OutputOptions {
                 message: Some(error_template.clone()),
-                use_color: false, // We'll apply color ourselves
-                strip_locations: options.strip_locations,
-                max_depth: options.max_depth,
-                pretty_print: options.pretty_print,
-                language: options.language.clone(),
-                warning: options.warning,
+                use_color: false,
+                strip_locations: ctx.options.strip_locations,
+                max_depth: ctx.options.max_depth,
+                pretty_print: ctx.options.pretty_print,
+                language: ctx.options.language.clone(),
+                warning: ctx.options.warning,
             };
             let output = format_matches(matches, OutputFormat::Gcc, &error_options);
             for line in output.lines() {
-                if use_color {
+                if ctx.use_color {
                     println!("  {}{}{}", color, line, test_colors::RESET);
                 } else {
                     println!("  {}", line);
                 }
             }
         } else {
-            // Use default format for matches
-            let output = format_matches(matches, format.clone(), options);
+            let output = format_matches(matches, ctx.format.clone(), &ctx.options);
             for line in output.lines() {
                 println!("  {}", line);
             }
         }
     }
 
-    // Return error only if failed and not warning mode
-    if !result.passed && !args.warning {
+    if !result.passed && !ctx.args.warning {
         return Err(format!(
             "expectation failed: expected {}, got {} matches",
             result.expected, result.actual
@@ -919,6 +929,10 @@ fn check_expectation_with_matches(
 
     Ok(())
 }
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
 
 #[cfg(test)]
 mod tests {
