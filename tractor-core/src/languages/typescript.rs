@@ -27,7 +27,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Flatten nodes - transform children, then remove wrapper
         // ---------------------------------------------------------------------
         "variable_declarator" => Ok(TransformAction::Flatten),
-        "class_body" => Ok(TransformAction::Flatten),
+        "class_body" | "interface_body" | "enum_body" => Ok(TransformAction::Flatten),
 
         // ---------------------------------------------------------------------
         // Name wrappers - inline identifier text directly

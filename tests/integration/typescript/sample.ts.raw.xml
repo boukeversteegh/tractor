@@ -130,6 +130,61 @@
         </call_expression>
         ;
       </expression_statement>
+      <interface_declaration>
+        interface
+        <name>
+          <type_identifier>Person</type_identifier>
+        </name>
+        <body>
+          <interface_body>
+            {
+            <property_signature>
+              <name>
+                <property_identifier>name</property_identifier>
+              </name>
+              <type_annotation field="type">
+                :
+                <predefined_type>string</predefined_type>
+              </type_annotation>
+            </property_signature>
+            ;
+            <property_signature>
+              <name>
+                <property_identifier>age</property_identifier>
+              </name>
+              <type_annotation field="type">
+                :
+                <predefined_type>number</predefined_type>
+              </type_annotation>
+            </property_signature>
+            ;
+}
+          </interface_body>
+        </body>
+      </interface_declaration>
+      <enum_declaration>
+        enum
+        <name>
+          <identifier>Color</identifier>
+        </name>
+        <body>
+          <enum_body>
+            {
+            <name>
+              <property_identifier>Red</property_identifier>
+            </name>
+            ,
+            <name>
+              <property_identifier>Green</property_identifier>
+            </name>
+            ,
+            <name>
+              <property_identifier>Blue</property_identifier>
+            </name>
+            }
+          </enum_body>
+        </body>
+      </enum_declaration>
     </program>
   </File>
 </Files>

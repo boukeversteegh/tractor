@@ -122,6 +122,57 @@
         </arguments>
       </call>
       ;
+      <interface>
+        interface
+        <name>
+          <type>Person</type>
+        </name>
+        <body>
+          {
+          <property_signature>
+            <name>
+              <type>name</type>
+            </name>
+            <typeof field="type">
+              :
+              <predefined_type>string</predefined_type>
+            </typeof>
+          </property_signature>
+          ;
+          <property_signature>
+            <name>
+              <type>age</type>
+            </name>
+            <typeof field="type">
+              :
+              <predefined_type>number</predefined_type>
+            </typeof>
+          </property_signature>
+          ;
+}
+        </body>
+      </interface>
+      <enum>
+        enum
+        <name>
+          <type>Color</type>
+        </name>
+        <body>
+          {
+          <name>
+            <type>Red</type>
+          </name>
+          ,
+          <name>
+            <type>Green</type>
+          </name>
+          ,
+          <name>
+            <type>Blue</type>
+          </name>
+          }
+        </body>
+      </enum>
     </program>
   </File>
 </Files>

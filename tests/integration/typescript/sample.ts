@@ -9,3 +9,10 @@ function main(): void {
 }
 
 main();
+
+interface Person {
+    name: string;
+    age: number;
+}
+
+enum Color { Red, Green, Blue }
