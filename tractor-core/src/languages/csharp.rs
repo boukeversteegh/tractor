@@ -83,14 +83,9 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // ---------------------------------------------------------------------
         "modifier" => {
             if let Some(text) = get_text_content(xot, node) {
-                let text = text.trim();
-                if is_known_modifier(text) {
-                    rename(xot, node, text);
-                    remove_text_children(xot, node)?;
-                    // Remove location attributes for cleaner output
-                    remove_attr(xot, node, "start");
-                    remove_attr(xot, node, "end");
-                    remove_attr(xot, node, "field");
+                let text = text.trim().to_string();
+                if is_known_modifier(&text) {
+                    rename_to_marker(xot, node, &text)?;
                     return Ok(TransformAction::Done);
                 }
             }
@@ -199,6 +194,23 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         // ---------------------------------------------------------------------
+        // Declarations — prepend default access modifier if none present
+        // ---------------------------------------------------------------------
+        "class_declaration" | "struct_declaration" | "interface_declaration"
+        | "enum_declaration" | "record_declaration"
+        | "method_declaration" | "constructor_declaration"
+        | "property_declaration" | "field_declaration" => {
+            if !has_access_modifier_child(xot, node) {
+                let default = default_access_modifier(xot, node);
+                prepend_empty_element(xot, node, default)?;
+            }
+            if let Some(new_name) = map_element_name(&kind) {
+                rename(xot, node, new_name);
+            }
+            Ok(TransformAction::Continue)
+        }
+
+        // ---------------------------------------------------------------------
         // Other nodes - just rename if needed
         // ---------------------------------------------------------------------
         _ => {
@@ -208,6 +220,53 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
     }
+}
+
+/// Check if text is an access modifier keyword
+fn is_access_modifier(text: &str) -> bool {
+    matches!(text, "public" | "private" | "protected" | "internal")
+}
+
+/// Check if a declaration node has any access modifier children (using raw kind)
+fn has_access_modifier_child(xot: &Xot, node: XotNode) -> bool {
+    for child in xot.children(node) {
+        if let Some(kind) = get_kind(xot, child) {
+            if kind == "modifier" {
+                if let Some(text) = get_text_content(xot, child) {
+                    if is_access_modifier(text.trim()) {
+                        return true;
+                    }
+                }
+            }
+        }
+        // Also check already-transformed markers
+        if let Some(name) = get_element_name(xot, child) {
+            if is_access_modifier(&name) {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+/// Determine the default access modifier for a C# declaration based on context.
+/// Looks through `declaration_list` wrappers (which get Flatten'd, so children are
+/// processed while still inside the wrapper).
+fn default_access_modifier(xot: &Xot, node: XotNode) -> &'static str {
+    let mut current = get_parent(xot, node);
+    while let Some(parent) = current {
+        if let Some(parent_kind) = get_kind(xot, parent).as_deref().map(str::to_owned) {
+            match parent_kind.as_str() {
+                "class_declaration" | "struct_declaration" | "interface_declaration"
+                | "record_declaration" => return "private",
+                // declaration_list is a transparent wrapper — look through it
+                "declaration_list" => {}
+                _ => break,
+            }
+        }
+        current = get_parent(xot, parent);
+    }
+    "internal"
 }
 
 /// Known C# modifiers

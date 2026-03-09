@@ -44,6 +44,16 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
 
+        // Declarations — add <exported/> or <unexported/> based on name capitalization
+        "function_declaration" | "method_declaration" | "type_spec" => {
+            let marker = get_export_marker(xot, node);
+            prepend_empty_element(xot, node, marker)?;
+            if let Some(new_name) = map_element_name(&kind) {
+                rename(xot, node, new_name);
+            }
+            Ok(TransformAction::Continue)
+        }
+
         "binary_expression" | "unary_expression" => {
             extract_operator(xot, node)?;
             if let Some(new_name) = map_element_name(&kind) {
@@ -69,6 +79,46 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
     }
+}
+
+/// Determine exported/unexported based on name child's first character
+fn get_export_marker(xot: &Xot, node: XotNode) -> &'static str {
+    for child in xot.children(node) {
+        if let Some(name) = get_element_name(xot, child) {
+            if name == "name" {
+                // Look for identifier text inside the name wrapper
+                for grandchild in xot.children(child) {
+                    if let Some(text) = get_text_content(xot, grandchild) {
+                        if text.starts_with(|c: char| c.is_uppercase()) {
+                            return "exported";
+                        }
+                        return "unexported";
+                    }
+                }
+                // Name wrapper might have text directly
+                if let Some(text) = get_text_content(xot, child) {
+                    if text.starts_with(|c: char| c.is_uppercase()) {
+                        return "exported";
+                    }
+                    return "unexported";
+                }
+            }
+            // Also check identifier/type_identifier directly (before name wrapping)
+            if name == "identifier" || name == "type_identifier" {
+                if let Some(field) = get_attr(xot, child, "field") {
+                    if field == "name" {
+                        if let Some(text) = get_text_content(xot, child) {
+                            if text.starts_with(|c: char| c.is_uppercase()) {
+                                return "exported";
+                            }
+                            return "unexported";
+                        }
+                    }
+                }
+            }
+        }
+    }
+    "unexported" // default
 }
 
 fn map_element_name(kind: &str) -> Option<&'static str> {
@@ -175,6 +225,7 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
         "select" => SyntaxCategory::Keyword,
         "return" | "break" | "continue" | "goto" => SyntaxCategory::Keyword,
         "defer" | "go" => SyntaxCategory::Keyword,
+        "exported" | "unexported" => SyntaxCategory::Keyword,
 
         // Types
         "pointer" | "slice" | "map" | "chan" => SyntaxCategory::Type,

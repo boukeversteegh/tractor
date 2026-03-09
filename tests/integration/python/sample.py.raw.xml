@@ -48,6 +48,35 @@
         </body>
       </function_definition>
       <function_definition>
+        async def
+        <name>
+          <identifier>fetch_data</identifier>
+        </name>
+        <parameters>
+          <parameters>
+            (
+            <identifier>url</identifier>
+            )
+          </parameters>
+        </parameters>
+        :
+        <body>
+          <block>
+            <expression_statement>
+              <string>
+                <string_start>&quot;&quot;&quot;</string_start>
+                <string_content>Async function example</string_content>
+                <string_end>&quot;&quot;&quot;</string_end>
+              </string>
+            </expression_statement>
+            <return_statement>
+              return
+              <identifier>url</identifier>
+            </return_statement>
+          </block>
+        </body>
+      </function_definition>
+      <function_definition>
         def
         <name>
           <identifier>main</identifier>

@@ -20,3 +20,7 @@ enum Color { Red, Green, Blue }
 function greet(name: string, title?: string): string {
     return title ? `${title} ${name}` : name;
 }
+
+function configure(host: string, port: number, timeout?: number): void {
+    console.log(host, port, timeout);
+}

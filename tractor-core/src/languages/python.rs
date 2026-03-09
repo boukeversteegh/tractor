@@ -54,6 +54,16 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
 
+        // Function definitions — extract async modifier if present
+        "function_definition" => {
+            let texts = get_text_children(xot, node);
+            if texts.iter().any(|t| t.contains("async")) {
+                prepend_empty_element(xot, node, "async")?;
+            }
+            rename(xot, node, "function");
+            Ok(TransformAction::Continue)
+        }
+
         // Identifiers
         "identifier" => {
             let classification = classify_identifier(xot, node);

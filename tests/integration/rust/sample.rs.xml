@@ -3,6 +3,7 @@
     <file>
       <line_comment>// Simple Rust example</line_comment>
       <function>
+        <pub/>
         fn
         <name>add</name>
         <params>
@@ -40,6 +41,7 @@
         </body>
       </function>
       <function>
+        <private/>
         fn
         <name>main</name>
         <params>
@@ -86,6 +88,126 @@
 }
         </body>
       </function>
+      <function>
+        <pub>
+          <crate>crate</crate>
+        </pub>
+        fn
+        <name>helper</name>
+        <params>
+          <params>()</params>
+        </params>
+        -&gt;
+        <type field="return_type">bool</type>
+        <body>
+          {
+          <bool>true</bool>
+          }
+        </body>
+      </function>
+      <struct>
+        <pub/>
+        struct
+        <name>Point</name>
+        <body>
+          <field_declaration_list>
+            {
+            <field_declaration>
+              <pub/>
+              <name>
+                <field_identifier>x</field_identifier>
+              </name>
+              :
+              <type>i32</type>
+            </field_declaration>
+            ,
+            <field_declaration>
+              <name>
+                <field_identifier>y</field_identifier>
+              </name>
+              :
+              <type>i32</type>
+            </field_declaration>
+            ,
+}
+          </field_declaration_list>
+        </body>
+      </struct>
+      <enum>
+        <private/>
+        enum
+        <name>Color</name>
+        <body>
+          <enum_variant_list>
+            {
+            <enum_variant>
+              <name>
+                <type>Red</type>
+              </name>
+            </enum_variant>
+            ,
+            <enum_variant>
+              <name>
+                <type>Green</type>
+              </name>
+            </enum_variant>
+            ,
+            <enum_variant>
+              <name>
+                <type>Blue</type>
+              </name>
+            </enum_variant>
+            ,
+}
+          </enum_variant_list>
+        </body>
+      </enum>
+      <trait>
+        <pub/>
+        trait
+        <name>Drawable</name>
+        <body>
+          {
+          <function_signature_item>
+            fn
+            <name>
+              <type>draw</type>
+            </name>
+            <params>
+              <params>
+                (
+                <self>
+                  &amp;
+                  <self>self</self>
+                </self>
+                )
+              </params>
+            </params>
+            ;
+          </function_signature_item>
+          }
+        </body>
+      </trait>
+      <mod>
+        <private/>
+        mod
+        <name>internal</name>
+        <body>
+          {
+          <function>
+            <pub>
+              <super>super</super>
+            </pub>
+            fn
+            <name>secret</name>
+            <params>
+              <params>()</params>
+            </params>
+            <body>{}</body>
+          </function>
+          }
+        </body>
+      </mod>
     </file>
   </File>
 </Files>

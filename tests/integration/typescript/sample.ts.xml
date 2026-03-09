@@ -9,6 +9,7 @@
           <params>
             (
             <param>
+              <required/>
               <type field="pattern">a</type>
               <typeof field="type">
                 :
@@ -17,6 +18,7 @@
             </param>
             ,
             <param>
+              <required/>
               <type field="pattern">b</type>
               <typeof field="type">
                 :
@@ -180,6 +182,7 @@
           <params>
             (
             <param>
+              <required/>
               <type field="pattern">name</type>
               <typeof field="type">
                 :
@@ -238,6 +241,72 @@
               ;
             </return>
             }
+          </block>
+        </body>
+      </function>
+      <function>
+        function
+        <name>configure</name>
+        <parameters>
+          <params>
+            (
+            <param>
+              <required/>
+              <type field="pattern">host</type>
+              <typeof field="type">
+                :
+                <predefined_type>string</predefined_type>
+              </typeof>
+            </param>
+            ,
+            <param>
+              <required/>
+              <type field="pattern">port</type>
+              <typeof field="type">
+                :
+                <predefined_type>number</predefined_type>
+              </typeof>
+            </param>
+            ,
+            <param>
+              <optional/>
+              <type field="pattern">timeout</type>
+              ?
+              <typeof field="type">
+                :
+                <predefined_type>number</predefined_type>
+              </typeof>
+            </param>
+            )
+          </params>
+        </parameters>
+        <typeof field="return_type">
+          :
+          <predefined_type>void</predefined_type>
+        </typeof>
+        <body>
+          <block>
+            {
+            <call>
+              <member field="function">
+                <type field="object">console</type>
+                .
+                <type field="property">log</type>
+              </member>
+              <arguments>
+                <arguments>
+                  (
+                  <type>host</type>
+                  ,
+                  <type>port</type>
+                  ,
+                  <type>timeout</type>
+                  )
+                </arguments>
+              </arguments>
+            </call>
+            ;
+}
           </block>
         </body>
       </function>

@@ -17,6 +17,7 @@
         </import_spec>
       </import_declaration>
       <function>
+        <unexported/>
         func
         <name>add</name>
         <parameters>
@@ -60,6 +61,7 @@
         </body>
       </function>
       <function>
+        <unexported/>
         func
         <name>main</name>
         <parameters>
@@ -115,6 +117,76 @@
           }
         </body>
       </function>
+      <comment>// Exported function</comment>
+      <function>
+        <exported/>
+        func
+        <name>PublicHelper</name>
+        <parameters>
+          <params>()</params>
+        </parameters>
+        <type field="result">string</type>
+        <body>
+          {
+          <return>
+            return
+            <expression_list>
+              <string>
+                &quot;
+                <interpreted_string_literal_content>hello</interpreted_string_literal_content>
+                &quot;
+              </string>
+            </expression_list>
+          </return>
+          }
+        </body>
+      </function>
+      <typedef>
+        type
+        <typespec>
+          <exported/>
+          <name>Point</name>
+          <struct field="type">
+            struct
+            <field_declaration_list>
+              {
+              <field_declaration>
+                <name>
+                  <field>X</field>
+                </name>
+                <type>int</type>
+              </field_declaration>
+              <field_declaration>
+                <name>
+                  <field>Y</field>
+                </name>
+                <type>int</type>
+              </field_declaration>
+              }
+            </field_declaration_list>
+          </struct>
+        </typespec>
+      </typedef>
+      <typedef>
+        type
+        <typespec>
+          <exported/>
+          <name>Shape</name>
+          <interface field="type">
+            interface {
+            <method_elem>
+              <name>
+                <field>Area</field>
+              </name>
+              <parameters>
+                <params>()</params>
+              </parameters>
+              <type field="result">float64</type>
+            </method_elem>
+            }
+          </interface>
+        </typespec>
+      </typedef>
     </file>
   </File>
 </Files>

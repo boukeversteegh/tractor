@@ -5,14 +5,18 @@ source "$(dirname "$0")/../common.sh"
 echo "C#:"
 
 # Basic transforms
-run_test tractor sample.cs -x "method" --expect 2 -m "method declarations become method elements"
+run_test tractor sample.cs -x "method" --expect 5 -m "method declarations become method elements"
 run_test tractor sample.cs -x "method[name='Add']" --expect 1 -m "method names are directly queryable"
 run_test tractor sample.cs -x "class[name='Sample']" --expect 1 -m "class names are directly queryable"
 run_test tractor sample.cs -x "unit" --expect 1 -m "compilation_unit renamed to unit"
 run_test tractor sample.cs -x "static" --expect 2 -m "static modifier extracted"
 run_test tractor sample.cs -x "binary[op='+']" --expect 1 -m "operators extracted to op element"
-run_test tractor sample.cs -x "call" --expect 2 -m "invocation expressions renamed to call"
+run_test tractor sample.cs -x "call" --expect 4 -m "invocation expressions renamed to call"
 run_test tractor sample.cs -x "int" --expect 2 -m "integer literals renamed to int"
+run_test tractor sample.cs -x "//method[public]" --expect 1 -m "public methods have <public/> marker"
+run_test tractor sample.cs -x "//method[private]" --expect 2 -m "private methods have <private/> marker (default in class body)"
+run_test tractor sample.cs -x "//method[internal]" --expect 1 -m "internal methods have <internal/> marker"
+run_test tractor sample.cs -x "//method[protected]" --expect 1 -m "protected methods have <protected/> marker"
 
 # -------------------------------------------------------------------------
 # AST-Grep comparison tests

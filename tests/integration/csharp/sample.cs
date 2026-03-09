@@ -1,16 +1,49 @@
 // Simple C# example
 using System;
 
-class Sample
+namespace SampleApp
 {
-    static int Add(int a, int b)
+    public class Sample
     {
-        return a + b;
+        private readonly int _value;
+
+        public Sample(int value)
+        {
+            _value = value;
+        }
+
+        public static int Add(int a, int b)
+        {
+            return a + b;
+        }
+
+        internal void Log(string message)
+        {
+            Console.WriteLine(message);
+        }
+
+        protected virtual string Format()
+        {
+            return _value.ToString();
+        }
+
+        static void Main()
+        {
+            int result = Add(5, 3);
+            Console.WriteLine($"Result: {result}");
+        }
     }
 
-    static void Main()
+    interface IService
     {
-        int result = Add(5, 3);
-        Console.WriteLine($"Result: {result}");
+        void Execute();
+    }
+
+    enum Status { Active, Inactive }
+
+    struct Point
+    {
+        public int X;
+        public int Y;
     }
 }

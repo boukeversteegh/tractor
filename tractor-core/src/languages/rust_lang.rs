@@ -48,14 +48,39 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Visibility modifier (pub, pub(crate), etc.)
         "visibility_modifier" => {
             if let Some(text) = get_text_content(xot, node) {
-                let text = text.trim();
-                // Extract just "pub" from "pub(crate)" etc.
-                let modifier = if text.starts_with("pub") { "pub" } else { text };
-                rename(xot, node, modifier);
-                remove_text_children(xot, node)?;
-                remove_attr(xot, node, "start");
-                remove_attr(xot, node, "end");
+                let text = text.trim().to_string();
+                rename_to_marker(xot, node, "pub")?;
+                // Add restriction detail as child element
+                if let Some(start) = text.find('(') {
+                    if let Some(end) = text.find(')') {
+                        let inner = text[start+1..end].trim();
+                        match inner {
+                            "crate" => { prepend_empty_element(xot, node, "crate")?; }
+                            "super" => { prepend_empty_element(xot, node, "super")?; }
+                            _ if inner.starts_with("in ") => {
+                                let path = inner[3..].trim();
+                                prepend_element_with_text(xot, node, "in", path)?;
+                            }
+                            _ => {}
+                        }
+                    }
+                }
                 return Ok(TransformAction::Done);
+            }
+            Ok(TransformAction::Continue)
+        }
+
+        // Declarations — prepend <private/> if no visibility_modifier child
+        "function_item" | "struct_item" | "enum_item" | "trait_item"
+        | "const_item" | "static_item" | "type_item" | "mod_item" => {
+            let has_vis = xot.children(node).any(|child| {
+                get_element_name(xot, child).as_deref() == Some("visibility_modifier")
+            });
+            if !has_vis {
+                prepend_empty_element(xot, node, "private")?;
+            }
+            if let Some(new_name) = map_element_name(&kind) {
+                rename(xot, node, new_name);
             }
             Ok(TransformAction::Continue)
         }
@@ -215,7 +240,7 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
         "return" | "break" | "continue" => SyntaxCategory::Keyword,
 
         // Keywords - modifiers
-        "pub" | "mut" | "async" | "await" | "unsafe" => SyntaxCategory::Keyword,
+        "pub" | "private" | "mut" | "async" | "await" | "unsafe" => SyntaxCategory::Keyword,
 
         // Types
         "ref" | "generic" | "path" => SyntaxCategory::Type,

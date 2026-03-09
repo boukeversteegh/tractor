@@ -11,6 +11,56 @@
         <body>
           <class_body>
             {
+            <field_declaration>
+              <modifiers>private</modifiers>
+              <integral_type field="type">int</integral_type>
+              <variable_declarator field="declarator">
+                <name>
+                  <identifier>value</identifier>
+                </name>
+              </variable_declarator>
+              ;
+            </field_declaration>
+            <constructor_declaration>
+              <modifiers>public</modifiers>
+              <name>
+                <identifier>Sample</identifier>
+              </name>
+              <parameters>
+                <formal_parameters>
+                  (
+                  <formal_parameter>
+                    <integral_type field="type">int</integral_type>
+                    <name>
+                      <identifier>value</identifier>
+                    </name>
+                  </formal_parameter>
+                  )
+                </formal_parameters>
+              </parameters>
+              <body>
+                <constructor_body>
+                  {
+                  <expression_statement>
+                    <assignment_expression>
+                      <left>
+                        <field_access>
+                          <this field="object">this</this>
+                          .
+                          <identifier field="field">value</identifier>
+                        </field_access>
+                      </left>
+                      =
+                      <right>
+                        <identifier>value</identifier>
+                      </right>
+                    </assignment_expression>
+                    ;
+                  </expression_statement>
+                  }
+                </constructor_body>
+              </body>
+            </constructor_declaration>
             <method_declaration>
               <modifiers>public static</modifiers>
               <integral_type field="type">int</integral_type>
@@ -52,6 +102,68 @@
                     </binary_expression>
                     ;
                   </return_statement>
+                  }
+                </block>
+              </body>
+            </method_declaration>
+            <method_declaration>
+              <modifiers>protected</modifiers>
+              <void_type field="type">void</void_type>
+              <name>
+                <identifier>log</identifier>
+              </name>
+              <parameters>
+                <formal_parameters>
+                  (
+                  <formal_parameter>
+                    <type_identifier field="type">String</type_identifier>
+                    <name>
+                      <identifier>message</identifier>
+                    </name>
+                  </formal_parameter>
+                  )
+                </formal_parameters>
+              </parameters>
+              <body>
+                <block>
+                  {
+                  <expression_statement>
+                    <method_invocation>
+                      <field_access field="object">
+                        <identifier field="object">System</identifier>
+                        .
+                        <identifier field="field">out</identifier>
+                      </field_access>
+                      .
+                      <name>
+                        <identifier>println</identifier>
+                      </name>
+                      <arguments>
+                        <argument_list>
+                          (
+                          <identifier>message</identifier>
+                          )
+                        </argument_list>
+                      </arguments>
+                    </method_invocation>
+                    ;
+                  </expression_statement>
+                  }
+                </block>
+              </body>
+            </method_declaration>
+            <method_declaration>
+              <void_type field="type">void</void_type>
+              <name>
+                <identifier>defaultAccess</identifier>
+              </name>
+              <parameters>
+                <formal_parameters>()</formal_parameters>
+              </parameters>
+              <body>
+                <block>
+                  {
+                  <line_comment>// package-private method</line_comment>
                   }
                 </block>
               </body>
@@ -147,6 +259,51 @@
           </class_body>
         </body>
       </class_declaration>
+      <interface_declaration>
+        interface
+        <name>
+          <identifier>Service</identifier>
+        </name>
+        <body>
+          <interface_body>
+            {
+            <method_declaration>
+              <void_type field="type">void</void_type>
+              <name>
+                <identifier>execute</identifier>
+              </name>
+              <parameters>
+                <formal_parameters>()</formal_parameters>
+              </parameters>
+              ;
+            </method_declaration>
+            }
+          </interface_body>
+        </body>
+      </interface_declaration>
+      <enum_declaration>
+        enum
+        <name>
+          <identifier>Status</identifier>
+        </name>
+        <body>
+          <enum_body>
+            {
+            <enum_constant>
+              <name>
+                <identifier>ACTIVE</identifier>
+              </name>
+            </enum_constant>
+            ,
+            <enum_constant>
+              <name>
+                <identifier>INACTIVE</identifier>
+              </name>
+            </enum_constant>
+            }
+          </enum_body>
+        </body>
+      </enum_declaration>
     </program>
   </File>
 </Files>

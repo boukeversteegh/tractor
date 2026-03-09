@@ -60,16 +60,26 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // ---------------------------------------------------------------------
         // Modifier wrappers - Java wraps modifiers in "modifiers" element
         // Convert <modifiers>public static</modifiers> to <public/><static/>
+        // Also inserts <package-private/> if no access modifier found (Principle #9)
         // ---------------------------------------------------------------------
         "modifiers" => {
+            let mut has_access = false;
             if let Some(text) = get_text_content(xot, node) {
                 let words: Vec<&str> = text.split_whitespace().collect();
+                for word in &words {
+                    if is_access_modifier(word) {
+                        has_access = true;
+                    }
+                }
                 // Insert known modifiers as empty elements before this node
                 for modifier in words.iter().rev() {
                     if is_known_modifier(modifier) {
                         insert_empty_before(xot, node, modifier)?;
                     }
                 }
+            }
+            if !has_access {
+                insert_empty_before(xot, node, "package-private")?;
             }
             // Remove the wrapper node entirely
             detach(xot, node)?;
@@ -101,6 +111,20 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         // ---------------------------------------------------------------------
+        // Declarations — prepend <package-private/> if no modifiers child
+        // ---------------------------------------------------------------------
+        "class_declaration" | "interface_declaration" | "enum_declaration"
+        | "method_declaration" | "constructor_declaration" | "field_declaration" => {
+            if !has_modifiers_child(xot, node) {
+                prepend_empty_element(xot, node, "package-private")?;
+            }
+            if let Some(new_name) = map_element_name(&kind) {
+                rename(xot, node, new_name);
+            }
+            Ok(TransformAction::Continue)
+        }
+
+        // ---------------------------------------------------------------------
         // Other nodes - just rename if needed
         // ---------------------------------------------------------------------
         _ => {
@@ -110,6 +134,23 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
     }
+}
+
+/// Check if text is an access modifier keyword
+fn is_access_modifier(text: &str) -> bool {
+    matches!(text, "public" | "private" | "protected")
+}
+
+/// Check if a declaration node has a `modifiers` child element
+fn has_modifiers_child(xot: &Xot, node: XotNode) -> bool {
+    for child in xot.children(node) {
+        if let Some(name) = get_element_name(xot, child) {
+            if name == "modifiers" {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 /// Known Java modifiers
@@ -241,7 +282,7 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
         "return" | "break" | "continue" => SyntaxCategory::Keyword,
 
         // Keywords - modifiers
-        "public" | "private" | "protected" => SyntaxCategory::Keyword,
+        "public" | "private" | "protected" | "package-private" => SyntaxCategory::Keyword,
         "static" | "final" | "abstract" | "synchronized" => SyntaxCategory::Keyword,
         "volatile" | "transient" | "native" | "strictfp" => SyntaxCategory::Keyword,
         "new" | "this" | "super" => SyntaxCategory::Keyword,

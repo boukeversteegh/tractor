@@ -104,6 +104,15 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         // ---------------------------------------------------------------------
+        // Required parameters - add <required/> marker (exhaustive with optional)
+        // ---------------------------------------------------------------------
+        "required_parameter" => {
+            prepend_empty_element(xot, node, "required")?;
+            rename(xot, node, "param");
+            Ok(TransformAction::Continue)
+        }
+
+        // ---------------------------------------------------------------------
         // Other nodes - just rename if needed
         // ---------------------------------------------------------------------
         _ => {
@@ -266,7 +275,7 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
         // Keywords - declarations
         "class" | "interface" | "enum" | "typealias" => SyntaxCategory::Keyword,
         "function" | "method" => SyntaxCategory::Keyword,
-        "variable" | "param" | "params" | "optional" => SyntaxCategory::Keyword,
+        "variable" | "param" | "params" | "optional" | "required" => SyntaxCategory::Keyword,
         "import" | "export" => SyntaxCategory::Keyword,
 
         // Keywords - control flow

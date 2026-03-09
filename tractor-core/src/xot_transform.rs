@@ -395,6 +395,14 @@ pub mod helpers {
         false
     }
 
+    /// Rename an element to a marker: renames, removes text children.
+    /// Preserves `start`/`end` and `kind` attributes (source location for keyword-based markers).
+    pub fn rename_to_marker(xot: &mut Xot, node: XotNode, name: &str) -> Result<(), xot::Error> {
+        rename(xot, node, name);
+        remove_text_children(xot, node)?;
+        Ok(())
+    }
+
     /// Remove all text children from a node
     pub fn remove_text_children(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
         let text_children: Vec<XotNode> = xot.children(node)
