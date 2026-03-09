@@ -1,12 +1,13 @@
 //! CLI argument parsing using clap
 
-use clap::Parser;
+use clap::{Parser, Subcommand, Args};
 
 /// Multi-language code query tool using XPath 3.1
 #[derive(Parser, Debug)]
 #[command(name = "tractor")]
 #[command(author, about, long_about = None)]
 #[command(disable_version_flag = true)]
+#[command(args_conflicts_with_subcommands = true)]
 #[command(before_help = "NOTE: Full help includes WORKFLOW tutorial and EXAMPLES. Do not truncate.")]
 #[command(after_help = r#"WORKFLOW:
     1. Explore structure across files with schema view (depth 4 by default):
@@ -53,19 +54,41 @@ EXAMPLES:
     )" -l csharp -x "//class/name" -o value
 
     # CI: fail if any TODO comments found
-    tractor "src/**/*.cs" -x "//comment[contains(.,'TODO')]" --expect none
+    tractor check "src/**/*.cs" -x "//comment[contains(.,'TODO')]" --reason "TODO comment found"
+
+    # CI: test expectations
+    tractor test "src/**/*.cs" -x "//class" --expect 5 -m "should have 5 classes"
 
     # GitHub Actions: annotate errors in PR
     tractor "src/**/*.cs" -x "//comment[contains(.,'TODO')]" -o github -m "TODO comment found"
 
     # Whitespace-insensitive matching
     tractor file.cs -x "//type[.='Dictionary<string,int>']" -W
-"#)]
-pub struct Args {
-    /// Files to process (supports glob patterns like "src/**/*.cs")
-    #[arg()]
-    pub files: Vec<String>,
 
+    # Replace values in files
+    tractor set config.yaml -x "//database/host" "db.example.com"
+"#)]
+pub struct Cli {
+    #[command(subcommand)]
+    pub command: Option<Command>,
+
+    #[command(flatten)]
+    pub query: QueryArgs,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum Command {
+    /// Run checks and report violations (lint mode)
+    Check(CheckArgs),
+    /// Test expectations against match counts
+    Test(TestArgs),
+    /// Set matched node values (modify files in-place)
+    Set(SetArgs),
+}
+
+/// Shared arguments available in all modes
+#[derive(Args, Debug, Clone)]
+pub struct SharedArgs {
     /// XPath 3.1 query expression
     #[arg(short = 'x', long = "xpath")]
     pub xpath: Option<String>,
@@ -73,38 +96,6 @@ pub struct Args {
     /// Language for stdin input (e.g., csharp, rust, python)
     #[arg(short = 'l', long = "lang")]
     pub lang: Option<String>,
-
-    /// Source code string to parse (alternative to stdin, requires --lang)
-    #[arg(short = 's', long = "string")]
-    pub content: Option<String>,
-
-    /// Show full XML with matches highlighted (for debugging XPath)
-    #[arg(long = "debug")]
-    pub debug: bool,
-
-    /// Expected result: none, some, or a number (enables test mode output)
-    #[arg(short = 'e', long = "expect")]
-    pub expect: Option<String>,
-
-    /// Error message template for failed expectations (per-match, supports {file}, {line}, {name}, etc.)
-    #[arg(long = "error")]
-    pub error: Option<String>,
-
-    /// Treat failed expectations as warnings (exit 0, show ⚠ instead of ✗)
-    #[arg(long = "warning")]
-    pub warning: bool,
-
-    /// Output format: xml (default), lines, source, value, gcc, json, count, schema, github
-    #[arg(short = 'o', long = "output", default_value = "xml")]
-    pub output: String,
-
-    /// Custom message template (supports {value}, {line}, {col}, {file})
-    #[arg(short = 'm', long = "message")]
-    pub message: Option<String>,
-
-    /// Set matched nodes to this value (modifies files in-place)
-    #[arg(long = "set")]
-    pub set: Option<String>,
 
     /// Limit output to first N matches
     #[arg(short = 'n', long = "limit")]
@@ -149,8 +140,112 @@ pub struct Args {
     /// Show verbose output
     #[arg(short = 'v', long = "verbose")]
     pub verbose: bool,
+}
 
-    /// Print version information (use with -v for grammar versions)
+/// Query/explore mode (default, no subcommand)
+#[derive(Args, Debug)]
+pub struct QueryArgs {
+    /// Files to process (supports glob patterns like "src/**/*.cs")
+    #[arg()]
+    pub files: Vec<String>,
+
+    #[command(flatten)]
+    pub shared: SharedArgs,
+
+    /// Output format: xml (default), lines, source, value, gcc, json, count, schema, github
+    #[arg(short = 'o', long = "output", default_value = "xml")]
+    pub output: String,
+
+    /// Custom message template (supports {value}, {line}, {col}, {file})
+    #[arg(short = 'm', long = "message")]
+    pub message: Option<String>,
+
+    /// Source code string to parse (alternative to stdin, requires --lang)
+    #[arg(short = 's', long = "string")]
+    pub content: Option<String>,
+
+    /// Show full XML with matches highlighted (for debugging XPath)
+    #[arg(long = "debug")]
+    pub debug: bool,
+
+    /// Print version information (use with -v for detailed output)
     #[arg(short = 'V', long = "version")]
     pub version: bool,
+}
+
+/// Check mode: lint/report violations
+#[derive(Args, Debug)]
+pub struct CheckArgs {
+    /// Files to process (supports glob patterns like "src/**/*.cs")
+    #[arg()]
+    pub files: Vec<String>,
+
+    #[command(flatten)]
+    pub shared: SharedArgs,
+
+    /// Reason message for each violation
+    #[arg(long = "reason")]
+    pub reason: Option<String>,
+
+    /// Severity level: error (default) or warning
+    #[arg(long = "severity", default_value = "error")]
+    pub severity: String,
+
+    /// Output format: gcc (default), json, github
+    #[arg(short = 'o', long = "output", default_value = "gcc")]
+    pub output: String,
+
+    /// Custom message template (supports {value}, {line}, {col}, {file})
+    #[arg(short = 'm', long = "message")]
+    pub message: Option<String>,
+}
+
+/// Test mode: assert match count expectations
+#[derive(Args, Debug)]
+pub struct TestArgs {
+    /// Files to process (supports glob patterns like "src/**/*.cs")
+    #[arg()]
+    pub files: Vec<String>,
+
+    #[command(flatten)]
+    pub shared: SharedArgs,
+
+    /// Expected result: none, some, or a number
+    #[arg(short = 'e', long = "expect")]
+    pub expect: String,
+
+    /// Error message template for failed expectations (per-match, supports {file}, {line}, {name}, etc.)
+    #[arg(long = "error")]
+    pub error: Option<String>,
+
+    /// Treat failed expectations as warnings (exit 0, show ⚠ instead of ✗)
+    #[arg(long = "warning")]
+    pub warning: bool,
+
+    /// Output format: xml (default), lines, source, value, gcc, json, count, schema, github
+    #[arg(short = 'o', long = "output", default_value = "xml")]
+    pub output: String,
+
+    /// Custom message template (supports {value}, {line}, {col}, {file})
+    #[arg(short = 'm', long = "message")]
+    pub message: Option<String>,
+
+    /// Source code string to parse (alternative to stdin, requires --lang)
+    #[arg(short = 's', long = "string")]
+    pub content: Option<String>,
+}
+
+/// Set mode: modify matched node values in-place
+#[derive(Args, Debug)]
+pub struct SetArgs {
+    /// Files to process (supports glob patterns like "src/**/*.cs")
+    #[arg()]
+    pub files: Vec<String>,
+
+    #[command(flatten)]
+    pub shared: SharedArgs,
+
+    /// Value to set matched nodes to
+    #[arg(long = "value")]
+    pub value: String,
 }

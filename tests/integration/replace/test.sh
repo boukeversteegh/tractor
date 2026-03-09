@@ -12,7 +12,7 @@ database:
   port: 5432
 EOF
 
-tractor /tmp/tractor-set-test-single.yaml -x "//database/host" --set "db.example.com" 2>/dev/null
+tractor set /tmp/tractor-set-test-single.yaml -x "//database/host" --value "db.example.com" 2>/dev/null
 ACTUAL=$(cat /tmp/tractor-set-test-single.yaml)
 EXPECTED='name: my-app
 database:
@@ -39,7 +39,7 @@ servers:
     port: 9090
 EOF
 
-tractor /tmp/tractor-set-test-multi.yaml -x "//servers/port[.='8080']" --set "3000" 2>/dev/null
+tractor set /tmp/tractor-set-test-multi.yaml -x "//servers/port[.='8080']" --value "3000" 2>/dev/null
 ACTUAL=$(cat /tmp/tractor-set-test-multi.yaml)
 EXPECTED='servers:
   - name: web-1
@@ -66,7 +66,7 @@ items:
   - value: old
 EOF
 
-tractor /tmp/tractor-set-test-limit.yaml -x "//items/value[.='old']" -n 1 --set "new" 2>/dev/null
+tractor set /tmp/tractor-set-test-limit.yaml -x "//items/value[.='old']" -n 1 --value "new" 2>/dev/null
 ACTUAL=$(cat /tmp/tractor-set-test-limit.yaml)
 EXPECTED='items:
   - value: new
@@ -95,7 +95,7 @@ cat > /tmp/tractor-set-test.json << 'EOF'
 }
 EOF
 
-tractor /tmp/tractor-set-test.json -x "//database/host" --set '"db.example.com"' 2>/dev/null
+tractor set /tmp/tractor-set-test.json -x "//database/host" --value '"db.example.com"' 2>/dev/null
 ACTUAL=$(cat /tmp/tractor-set-test.json)
 EXPECTED='{
   "database": {
@@ -117,7 +117,7 @@ echo ""
 echo "Set (error cases):"
 
 # --- Set without XPath should fail ---
-if tractor /tmp/tractor-set-test.json --set "foo" 2>/dev/null; then
+if tractor set /tmp/tractor-set-test.json --value "foo" 2>/dev/null; then
     echo "  ✗ set without xpath should fail"
     ((FAILED++))
 else
@@ -126,7 +126,7 @@ else
 fi
 
 # --- Set with stdin should fail ---
-if echo "name: test" | tractor --lang yaml -x "//name" --set "name: new" 2>/dev/null; then
+if echo "name: test" | tractor set --lang yaml -x "//name" --value "name: new" 2>/dev/null; then
     echo "  ✗ set with stdin should fail"
     ((FAILED++))
 else
@@ -135,7 +135,7 @@ else
 fi
 
 # --- Set with no matches should succeed ---
-if tractor /tmp/tractor-set-test.json -x "//nonexistent" --set "x" 2>/dev/null; then
+if tractor set /tmp/tractor-set-test.json -x "//nonexistent" --value "x" 2>/dev/null; then
     echo "  ✓ set with no matches succeeds"
     ((PASSED++))
 else

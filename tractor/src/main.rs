@@ -21,9 +21,10 @@ use tractor_core::{
     // Unified parsing pipeline (always returns Documents)
     parse_to_documents, parse_string_to_documents,
     XeeParseResult,
+    report::{Severity, CheckSummary},
 };
 
-use cli::Args;
+use cli::{Cli, Command, SharedArgs, QueryArgs, CheckArgs, TestArgs, SetArgs};
 use clap::{CommandFactory, Parser};
 
 // ---------------------------------------------------------------------------
@@ -31,22 +32,16 @@ use clap::{CommandFactory, Parser};
 // ---------------------------------------------------------------------------
 
 /// Split a slice into exponentially growing batches, capped at a maximum.
-/// Batch sizes: n, 2n, 4n, 8n, 8n, 8n... (where n = num_threads)
-/// This provides:
-/// - Fast initial output (small first batches)
-/// - Consistent update frequency (~0.25s per batch)
-/// - Efficient parallelism (batch size >= num_threads)
 fn exponential_batches<T>(items: &[T], num_threads: usize) -> Vec<&[T]> {
     let mut batches = Vec::new();
     let mut start = 0;
     let mut batch_size = num_threads.max(1);
-    let max_batch_size = num_threads * 8; // Cap for consistent update frequency
+    let max_batch_size = num_threads * 8;
 
     while start < items.len() {
         let end = (start + batch_size).min(items.len());
         batches.push(&items[start..end]);
         start = end;
-        // Double batch size until we hit the cap
         batch_size = (batch_size * 2).min(max_batch_size);
     }
 
@@ -58,11 +53,11 @@ fn exponential_batches<T>(items: &[T], num_threads: usize) -> Vec<&[T]> {
 // ---------------------------------------------------------------------------
 
 fn main() -> ExitCode {
-    let args = Args::parse();
+    let cli = Cli::parse();
 
-    // Handle --version flag (respects --verbose for detailed output)
-    if args.version {
-        if args.verbose {
+    // Handle --version flag (only in query/default mode)
+    if cli.command.is_none() && cli.query.version {
+        if cli.query.shared.verbose {
             version::print_version_verbose();
         } else {
             version::print_version();
@@ -70,7 +65,14 @@ fn main() -> ExitCode {
         return ExitCode::SUCCESS;
     }
 
-    if let Err(e) = run(args) {
+    let result = match cli.command {
+        Some(Command::Check(args)) => run_check(args),
+        Some(Command::Test(args)) => run_test(args),
+        Some(Command::Set(args)) => run_set(args),
+        None => run_query(cli.query),
+    };
+
+    if let Err(e) = result {
         eprintln!("error: {}", e);
         return ExitCode::FAILURE;
     }
@@ -88,18 +90,13 @@ fn main() -> ExitCode {
 // XPath normalization
 // ---------------------------------------------------------------------------
 
-/// Check if running under MSYS/MinGW which mangles // paths
 fn is_msys_environment() -> bool {
     std::env::var("MSYSTEM").is_ok()
 }
 
-/// Normalize XPath expression - auto-prefix with // if not starting with /
-/// Also fixes MSYS/MinGW path mangling where // gets converted to /
 fn normalize_xpath(xpath: &str) -> String {
     let xpath = fix_msys_xpath_mangling(xpath);
 
-    // Don't prefix expressions that are already absolute, context-relative,
-    // or full XPath 3.1 expressions (let/for/if/some/every, variable refs, literals, function calls)
     if xpath.starts_with('/')
         || xpath.starts_with('(')
         || xpath.starts_with('$')
@@ -114,10 +111,7 @@ fn normalize_xpath(xpath: &str) -> String {
     }
 }
 
-/// Check if the expression starts with an XPath 3.1 keyword or looks like
-/// a full expression rather than a simple element name to auto-prefix with //
 fn looks_like_xpath_expression(xpath: &str) -> bool {
-    // XPath 3.1 expression keywords that can start an expression
     let keywords = ["let ", "let$", "for ", "for$", "if ", "if(", "some ", "some$", "every ", "every$"];
     keywords.iter().any(|kw| xpath.starts_with(kw))
         || xpath.starts_with("not(")
@@ -128,17 +122,12 @@ fn looks_like_xpath_expression(xpath: &str) -> bool {
         || xpath.chars().next().map_or(false, |c| c.is_ascii_digit())
 }
 
-/// Fix MSYS/MinGW path conversion that mangles // to /
-/// In MSYS, "//item" becomes "/item" due to UNC path conversion
 fn fix_msys_xpath_mangling(xpath: &str) -> String {
     if !is_msys_environment() {
         return xpath.to_string();
     }
 
-    // MSYS converts "//foo" to "/foo" - restore the double slash
-    // Only do this for patterns like "/word" (not "//" which is already correct)
     if xpath.starts_with('/') && !xpath.starts_with("//") {
-        // Check if it looks like a mangled descendant query (e.g., "/item" was "//item")
         let rest = &xpath[1..];
         if !rest.is_empty() && (rest.chars().next().unwrap().is_alphabetic() || rest.starts_with('*')) {
             return format!("/{}", xpath);
@@ -149,7 +138,7 @@ fn fix_msys_xpath_mangling(xpath: &str) -> String {
 }
 
 // ---------------------------------------------------------------------------
-// Run context
+// Run context (shared infrastructure)
 // ---------------------------------------------------------------------------
 
 enum InputMode {
@@ -158,56 +147,73 @@ enum InputMode {
 }
 
 struct RunContext {
-    args: Args,
     xpath: Option<String>,
     format: OutputFormat,
     use_color: bool,
     options: OutputOptions,
     input: InputMode,
     concurrency: usize,
+    // Shared args (borrowed fields exposed individually)
+    limit: Option<usize>,
+    depth: Option<usize>,
+    parse_depth: Option<usize>,
+    keep_locations: bool,
+    raw: bool,
+    no_pretty: bool,
+    ignore_whitespace: bool,
+    verbose: bool,
+    lang: Option<String>,
+    // Mode-specific
+    debug: bool,
 }
 
 impl RunContext {
-    fn from_args(args: Args) -> Result<Self, Box<dyn std::error::Error>> {
-        let xpath = args.xpath.as_ref().map(|x| normalize_xpath(x));
+    fn build(
+        shared: &SharedArgs,
+        files: Vec<String>,
+        xpath: Option<String>,
+        output_format: &str,
+        message: Option<String>,
+        content: Option<String>,
+        warning: bool,
+        debug: bool,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        let xpath = xpath.as_ref().map(|x| normalize_xpath(x));
 
-        let format = OutputFormat::from_str(&args.output)
+        let format = OutputFormat::from_str(output_format)
             .ok_or_else(|| {
                 format!(
                     "invalid format '{}'. Valid formats: {}",
-                    args.output,
+                    output_format,
                     OutputFormat::valid_formats().join(", ")
                 )
             })?;
 
-        let use_color = if args.no_color {
+        let use_color = if shared.no_color {
             false
         } else {
-            should_use_color(&args.color)
+            should_use_color(&shared.color)
         };
 
-        let mut files: Vec<String> = expand_globs(&args.files);
+        let mut files: Vec<String> = expand_globs(&files);
 
-        // Determine input mode
-        let input = if let Some(ref content) = args.content {
-            if args.lang.is_none() {
+        let input = if let Some(ref content_str) = content {
+            if shared.lang.is_none() {
                 return Err("--string requires --lang to specify the language".into());
             }
             InputMode::InlineSource {
-                source: content.clone(),
-                lang: args.lang.clone().unwrap(),
+                source: content_str.clone(),
+                lang: shared.lang.clone().unwrap(),
             }
-        } else if files.is_empty() && args.lang.is_some() && !atty::is(atty::Stream::Stdin) {
-            // Stdin with --lang: read source from stdin
+        } else if files.is_empty() && shared.lang.is_some() && !atty::is(atty::Stream::Stdin) {
             let mut s = String::new();
             io::stdin().read_to_string(&mut s)?;
             InputMode::InlineSource {
                 source: s,
-                lang: args.lang.clone().unwrap(),
+                lang: shared.lang.clone().unwrap(),
             }
         } else {
-            // Check for file paths on stdin
-            if files.is_empty() && args.lang.is_none() && !atty::is(atty::Stream::Stdin) {
+            if files.is_empty() && shared.lang.is_none() && !atty::is(atty::Stream::Stdin) {
                 let stdin = io::stdin();
                 for line in stdin.lock().lines() {
                     if let Ok(path) = line {
@@ -222,143 +228,161 @@ impl RunContext {
             InputMode::Files(files)
         };
 
-        // Configure thread pool
-        let concurrency = args.concurrency.unwrap_or_else(|| num_cpus::get());
+        let concurrency = shared.concurrency.unwrap_or_else(|| num_cpus::get());
         rayon::ThreadPoolBuilder::new()
             .num_threads(concurrency)
             .build_global()
             .ok();
 
-        // Validate flag combinations
-        if args.set.is_some() && xpath.is_none() {
-            return Err("--set requires an XPath query (-x)".into());
-        }
-        if args.set.is_some() && matches!(input, InputMode::InlineSource { .. }) {
-            return Err("--set cannot be used with stdin input (no file to modify)".into());
-        }
-
         let options = OutputOptions {
-            message: args.message.clone(),
+            message,
             use_color,
-            strip_locations: !args.keep_locations,
-            max_depth: args.depth,
-            pretty_print: !args.no_pretty,
-            language: args.lang.clone(),
-            warning: args.warning,
+            strip_locations: !shared.keep_locations,
+            max_depth: shared.depth,
+            pretty_print: !shared.no_pretty,
+            language: shared.lang.clone(),
+            warning,
         };
 
-        Ok(RunContext { args, xpath, format, use_color, options, input, concurrency })
+        Ok(RunContext {
+            xpath,
+            format,
+            use_color,
+            options,
+            input,
+            concurrency,
+            limit: shared.limit,
+            depth: shared.depth,
+            parse_depth: shared.parse_depth,
+            keep_locations: shared.keep_locations,
+            raw: shared.raw,
+            no_pretty: shared.no_pretty,
+            ignore_whitespace: shared.ignore_whitespace,
+            verbose: shared.verbose,
+            lang: shared.lang.clone(),
+            debug,
+        })
     }
 
     fn render_options(&self) -> RenderOptions {
         RenderOptions::new()
             .with_color(self.use_color)
-            .with_locations(self.args.keep_locations || self.args.debug)
-            .with_max_depth(self.args.depth)
-            .with_pretty_print(!self.args.no_pretty)
+            .with_locations(self.keep_locations || self.debug)
+            .with_max_depth(self.depth)
+            .with_pretty_print(!self.no_pretty)
     }
 
     fn schema_depth(&self) -> Option<usize> {
-        self.args.depth.or(Some(4))
+        self.depth.or(Some(4))
     }
 }
 
 // ---------------------------------------------------------------------------
-// Dispatcher
+// Query mode (default)
 // ---------------------------------------------------------------------------
 
-fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
-    let ctx = RunContext::from_args(args)?;
+fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
+    let ctx = RunContext::build(
+        &args.shared, args.files, args.shared.xpath.clone(),
+        &args.output, args.message, args.content, false, args.debug,
+    )?;
 
-    // Nothing to do?
     if let InputMode::Files(ref files) = ctx.input {
         if files.is_empty() {
-            Args::command().print_help().ok();
+            Cli::command().print_help().ok();
             println!();
             return Ok(());
         }
     }
 
-    // Debug mode (file-based only, handles --expect internally)
-    if ctx.args.debug {
+    // Debug mode
+    if ctx.debug {
         if let (Some(ref xpath), InputMode::Files(ref files)) = (&ctx.xpath, &ctx.input) {
             return run_debug(&ctx, files, xpath);
         }
     }
 
-    if ctx.args.set.is_some() {
-        return run_set(&ctx);
-    }
-
-    if ctx.args.expect.is_some() {
-        return run_test(&ctx);
-    }
-
-    run_query(&ctx)
-}
-
-// ---------------------------------------------------------------------------
-// Mode handlers
-// ---------------------------------------------------------------------------
-
-fn run_query(ctx: &RunContext) -> Result<(), Box<dyn std::error::Error>> {
     match &ctx.input {
         InputMode::InlineSource { source, lang } => {
             if let Some(ref xpath_expr) = ctx.xpath {
-                let matches = query_inline_source(ctx, source, lang, xpath_expr)?;
-                output_query_results(ctx, &matches);
+                let matches = query_inline_source(&ctx, source, lang, xpath_expr)?;
+                output_query_results(&ctx, &matches);
             } else {
-                explore_inline(ctx, source, lang)?;
+                explore_inline(&ctx, source, lang)?;
             }
         }
         InputMode::Files(files) => {
             if let Some(ref xpath_expr) = ctx.xpath {
                 let collect = matches!(ctx.format, OutputFormat::Schema);
-                let (count, matches) = query_files_batched(ctx, files, xpath_expr, collect)?;
+                let (count, matches) = query_files_batched(&ctx, files, xpath_expr, collect)?;
                 if matches!(ctx.format, OutputFormat::Count) {
                     println!("{}", count);
                 } else if matches!(ctx.format, OutputFormat::Schema) {
                     print_schema_from_matches(&matches, ctx.schema_depth(), ctx.use_color);
                 }
             } else {
-                explore_files(ctx, files)?;
+                explore_files(&ctx, files)?;
             }
         }
     }
     Ok(())
 }
 
-fn run_test(ctx: &RunContext) -> Result<(), Box<dyn std::error::Error>> {
+// ---------------------------------------------------------------------------
+// Test mode
+// ---------------------------------------------------------------------------
+
+fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
+    let warning = args.warning;
+    let expect = args.expect.clone();
+    let error_template = args.error.clone();
+    let message = args.message.clone();
+
+    let ctx = RunContext::build(
+        &args.shared, args.files, args.shared.xpath.clone(),
+        &args.output, args.message, args.content, args.warning, false,
+    )?;
+
     let dot = ".".to_string();
     let xpath_expr = ctx.xpath.as_ref().unwrap_or(&dot);
 
     let (count, matches) = match &ctx.input {
         InputMode::InlineSource { source, lang } => {
-            let matches = query_inline_source(ctx, source, lang, xpath_expr)?;
+            let matches = query_inline_source(&ctx, source, lang, xpath_expr)?;
             let count = matches.len();
             (count, matches)
         }
         InputMode::Files(files) => {
-            query_files_batched(ctx, files, xpath_expr, true)?
+            query_files_batched(&ctx, files, xpath_expr, true)?
         }
     };
 
-    check_expectation_with_matches(count, &matches, ctx)
+    check_expectation_with_matches(count, &matches, &ctx, &expect, &message, &error_template, warning)
 }
 
-fn run_set(ctx: &RunContext) -> Result<(), Box<dyn std::error::Error>> {
+// ---------------------------------------------------------------------------
+// Set mode
+// ---------------------------------------------------------------------------
+
+fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
+    let ctx = RunContext::build(
+        &args.shared, args.files, args.shared.xpath.clone(),
+        "xml", None, None, false, false,
+    )?;
+
     let xpath_expr = ctx.xpath.as_ref()
-        .ok_or("--set requires an XPath query (-x)")?;
-    let set_value = ctx.args.set.as_ref().unwrap();
+        .ok_or("set requires an XPath query (-x)")?;
 
     let files = match &ctx.input {
         InputMode::Files(files) => files,
-        InputMode::InlineSource { .. } => unreachable!(), // validated in from_args
+        InputMode::InlineSource { .. } => {
+            return Err("set cannot be used with stdin input (no file to modify)".into());
+        }
     };
 
-    let (_, matches) = query_files_batched(ctx, files, xpath_expr, true)?;
+    let (_, matches) = query_files_batched(&ctx, files, xpath_expr, true)?;
 
-    let summary = apply_replacements(&matches, set_value)?;
+    let summary = apply_replacements(&matches, &args.value)?;
     eprintln!(
         "Set {} match{} in {} file{}",
         summary.replacements_made,
@@ -369,9 +393,100 @@ fn run_set(ctx: &RunContext) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+// ---------------------------------------------------------------------------
+// Check mode (new)
+// ---------------------------------------------------------------------------
+
+fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
+    let severity = match args.severity.as_str() {
+        "error" => Severity::Error,
+        "warning" => Severity::Warning,
+        s => return Err(format!("invalid severity '{}': use 'error' or 'warning'", s).into()),
+    };
+    let reason = args.reason.clone().unwrap_or_else(|| "check failed".to_string());
+
+    let ctx = RunContext::build(
+        &args.shared, args.files, args.shared.xpath.clone(),
+        &args.output, args.message, None, false, false,
+    )?;
+
+    let xpath_expr = ctx.xpath.as_ref()
+        .ok_or("check requires an XPath query (-x)")?;
+
+    let files = match &ctx.input {
+        InputMode::Files(files) => files,
+        InputMode::InlineSource { .. } => {
+            return Err("check cannot be used with stdin input".into());
+        }
+    };
+
+    if files.is_empty() {
+        return Ok(());
+    }
+
+    let (_, matches) = query_files_batched(&ctx, files, xpath_expr, true)?;
+
+    let severity_str = match severity {
+        Severity::Error => "error",
+        Severity::Warning => "warning",
+    };
+
+    // If using gcc (default) or github format, emit per-match lines
+    if matches!(ctx.format, OutputFormat::Gcc | OutputFormat::Github) {
+        let check_options = OutputOptions {
+            message: Some(reason.clone()),
+            use_color: false,
+            strip_locations: ctx.options.strip_locations,
+            max_depth: ctx.options.max_depth,
+            pretty_print: ctx.options.pretty_print,
+            language: ctx.options.language.clone(),
+            warning: matches!(severity, Severity::Warning),
+        };
+        let output = format_matches(&matches, ctx.format.clone(), &check_options);
+        print!("{}", output);
+    } else {
+        // For other formats (json, etc.), just output matches normally
+        let output = format_matches(&matches, ctx.format.clone(), &ctx.options);
+        print!("{}", output);
+    }
+
+    // Summary
+    let mut files_affected = HashSet::new();
+    for m in &matches {
+        files_affected.insert(&m.file);
+    }
+    let summary = CheckSummary {
+        total: matches.len(),
+        files_affected: files_affected.len(),
+        errors: if matches!(severity, Severity::Error) { matches.len() } else { 0 },
+        warnings: if matches!(severity, Severity::Warning) { matches.len() } else { 0 },
+    };
+
+    if summary.total > 0 {
+        eprintln!();
+        let kind = if summary.errors > 0 {
+            format!("{} error{}", summary.errors, if summary.errors == 1 { "" } else { "s" })
+        } else {
+            format!("{} warning{}", summary.warnings, if summary.warnings == 1 { "" } else { "s" })
+        };
+        eprintln!("{} in {} file{}", kind, summary.files_affected,
+            if summary.files_affected == 1 { "" } else { "s" });
+    }
+
+    // Exit code: 1 if any errors, 0 for warnings-only or no matches
+    if summary.errors > 0 {
+        return Err(format!("{} {} found", summary.errors, severity_str).into());
+    }
+
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// Debug mode
+// ---------------------------------------------------------------------------
+
 fn run_debug(ctx: &RunContext, files: &[String], xpath_expr: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let mut total_matches = 0usize;
-    let mut remaining_limit = ctx.args.limit;
+    let mut remaining_limit = ctx.limit;
 
     for file_path in files {
         if remaining_limit == Some(0) {
@@ -380,14 +495,14 @@ fn run_debug(ctx: &RunContext, files: &[String], xpath_expr: &str) -> Result<(),
 
         let mut result = match parse_to_documents(
             std::path::Path::new(file_path),
-            ctx.args.lang.as_deref(),
-            ctx.args.raw,
-            ctx.args.ignore_whitespace,
-            ctx.args.parse_depth,
+            ctx.lang.as_deref(),
+            ctx.raw,
+            ctx.ignore_whitespace,
+            ctx.parse_depth,
         ) {
             Ok(r) => r,
             Err(e) => {
-                if ctx.args.verbose {
+                if ctx.verbose {
                     eprintln!("warning: {}: {}", file_path, e);
                 }
                 continue;
@@ -395,8 +510,8 @@ fn run_debug(ctx: &RunContext, files: &[String], xpath_expr: &str) -> Result<(),
         };
 
         let engine = XPathEngine::new()
-            .with_verbose(ctx.args.verbose)
-            .with_ignore_whitespace(ctx.args.ignore_whitespace);
+            .with_verbose(ctx.verbose)
+            .with_ignore_whitespace(ctx.ignore_whitespace);
 
         match engine.query_documents(
             &mut result.documents,
@@ -414,8 +529,6 @@ fn run_debug(ctx: &RunContext, files: &[String], xpath_expr: &str) -> Result<(),
                     matches
                 };
 
-                total_matches += matches.len();
-
                 let highlights: HashSet<(u32, u32)> = matches
                     .iter()
                     .map(|m| (m.line, m.column))
@@ -425,29 +538,18 @@ fn run_debug(ctx: &RunContext, files: &[String], xpath_expr: &str) -> Result<(),
                 let render_opts = RenderOptions::new()
                     .with_color(ctx.use_color)
                     .with_locations(true)
-                    .with_max_depth(ctx.args.depth)
+                    .with_max_depth(ctx.depth)
                     .with_highlights(highlights)
-                    .with_pretty_print(!ctx.args.no_pretty);
+                    .with_pretty_print(!ctx.no_pretty);
                 let output = render_document(result.documents.xot(), doc_node, &render_opts);
                 print!("{}", output);
             }
             Ok(_) => {}
             Err(e) => {
-                if ctx.args.verbose {
+                if ctx.verbose {
                     eprintln!("warning: {}: query error: {}", file_path, e);
                 }
             }
-        }
-    }
-
-    // Debug mode supports --expect (count-only, no per-match details)
-    if let Some(ref expect) = ctx.args.expect {
-        let test_result = TestResult::check(expect, total_matches)?;
-        if !test_result.passed && !ctx.args.warning {
-            return Err(format!(
-                "expectation failed: expected {}, got {} matches",
-                test_result.expected, test_result.actual
-            ).into());
         }
     }
 
@@ -465,12 +567,12 @@ fn query_inline_source(
     xpath_expr: &str,
 ) -> Result<Vec<Match>, Box<dyn std::error::Error>> {
     let mut result = parse_string_to_documents(
-        source, lang, "<stdin>".to_string(), ctx.args.raw, ctx.args.ignore_whitespace
+        source, lang, "<stdin>".to_string(), ctx.raw, ctx.ignore_whitespace
     )?;
 
     let engine = XPathEngine::new()
-        .with_verbose(ctx.args.verbose)
-        .with_ignore_whitespace(ctx.args.ignore_whitespace);
+        .with_verbose(ctx.verbose)
+        .with_ignore_whitespace(ctx.ignore_whitespace);
 
     let matches = engine.query_documents(
         &mut result.documents,
@@ -480,7 +582,7 @@ fn query_inline_source(
         &result.file_path,
     )?;
 
-    let matches = if let Some(limit) = ctx.args.limit {
+    let matches = if let Some(limit) = ctx.limit {
         matches.into_iter().take(limit).collect()
     } else {
         matches
@@ -489,8 +591,6 @@ fn query_inline_source(
     Ok(matches)
 }
 
-/// Query files in parallel batches. When `collect` is true, all matches are
-/// returned. When false, matches are streamed to stdout per batch (query mode).
 fn query_files_batched(
     ctx: &RunContext,
     files: &[String],
@@ -499,7 +599,7 @@ fn query_files_batched(
 ) -> Result<(usize, Vec<Match>), Box<dyn std::error::Error>> {
     let batches = exponential_batches(files, ctx.concurrency);
     let mut total_matches = 0usize;
-    let mut remaining_limit = ctx.args.limit;
+    let mut remaining_limit = ctx.limit;
     let mut all_matches: Vec<Match> = Vec::new();
     let is_count_format = matches!(ctx.format, OutputFormat::Count);
 
@@ -513,14 +613,14 @@ fn query_files_batched(
             .filter_map(|file_path| {
                 let mut result = match parse_to_documents(
                     std::path::Path::new(file_path),
-                    ctx.args.lang.as_deref(),
-                    ctx.args.raw,
-                    ctx.args.ignore_whitespace,
-                    ctx.args.parse_depth,
+                    ctx.lang.as_deref(),
+                    ctx.raw,
+                    ctx.ignore_whitespace,
+                    ctx.parse_depth,
                 ) {
                     Ok(r) => r,
                     Err(e) => {
-                        if ctx.args.verbose {
+                        if ctx.verbose {
                             eprintln!("warning: {}: {}", file_path, e);
                         }
                         return None;
@@ -528,8 +628,8 @@ fn query_files_batched(
                 };
 
                 let engine = XPathEngine::new()
-                    .with_verbose(ctx.args.verbose)
-                    .with_ignore_whitespace(ctx.args.ignore_whitespace);
+                    .with_verbose(ctx.verbose)
+                    .with_ignore_whitespace(ctx.ignore_whitespace);
                 match engine.query_documents(
                     &mut result.documents,
                     result.doc_handle,
@@ -539,7 +639,7 @@ fn query_files_batched(
                 ) {
                     Ok(matches) => Some(matches),
                     Err(e) => {
-                        if ctx.args.verbose {
+                        if ctx.verbose {
                             eprintln!("warning: {}: query error: {}", file_path, e);
                         }
                         None
@@ -571,22 +671,21 @@ fn query_files_batched(
 }
 
 // ---------------------------------------------------------------------------
-// Explore (no XPath — fast paths skip the XPath engine entirely)
+// Explore (no XPath)
 // ---------------------------------------------------------------------------
 
 fn explore_files(ctx: &RunContext, files: &[String]) -> Result<(), Box<dyn std::error::Error>> {
-    let lang_override = ctx.args.lang.as_deref();
-    let raw = ctx.args.raw;
-    let verbose = ctx.args.verbose;
+    let lang_override = ctx.lang.as_deref();
+    let raw = ctx.raw;
+    let verbose = ctx.verbose;
 
-    // Fast path: count format (parallel, no XPath)
     if matches!(ctx.format, OutputFormat::Count) {
         let count: usize = files
             .par_iter()
             .filter(|file_path| {
                 match parse_to_documents(
                     std::path::Path::new(file_path),
-                    lang_override, raw, ctx.args.ignore_whitespace, ctx.args.parse_depth,
+                    lang_override, raw, ctx.ignore_whitespace, ctx.parse_depth,
                 ) {
                     Ok(_) => true,
                     Err(e) => {
@@ -600,14 +699,13 @@ fn explore_files(ctx: &RunContext, files: &[String]) -> Result<(), Box<dyn std::
         return Ok(());
     }
 
-    // Fast path: schema format (parallel collection then merge)
     if matches!(ctx.format, OutputFormat::Schema) {
         let collectors: Vec<SchemaCollector> = files
             .par_iter()
             .filter_map(|file_path| {
                 match parse_to_documents(
                     std::path::Path::new(file_path),
-                    lang_override, raw, ctx.args.ignore_whitespace, ctx.args.parse_depth,
+                    lang_override, raw, ctx.ignore_whitespace, ctx.parse_depth,
                 ) {
                     Ok(result) => {
                         let mut collector = SchemaCollector::new();
@@ -631,13 +729,12 @@ fn explore_files(ctx: &RunContext, files: &[String]) -> Result<(), Box<dyn std::
         return Ok(());
     }
 
-    // Sequential processing for remaining formats (Documents isn't Send)
     let parse_results: Vec<XeeParseResult> = files
         .iter()
         .filter_map(|file_path| {
             match parse_to_documents(
                 std::path::Path::new(file_path),
-                lang_override, raw, ctx.args.ignore_whitespace, ctx.args.parse_depth,
+                lang_override, raw, ctx.ignore_whitespace, ctx.parse_depth,
             ) {
                 Ok(r) => Some(r),
                 Err(e) => {
@@ -654,7 +751,6 @@ fn explore_files(ctx: &RunContext, files: &[String]) -> Result<(), Box<dyn std::
 
     let render_opts = ctx.render_options();
 
-    // XML format: render document tree(s)
     if matches!(ctx.format, OutputFormat::Xml) {
         if parse_results.len() == 1 {
             let result = &parse_results[0];
@@ -673,7 +769,7 @@ fn explore_files(ctx: &RunContext, files: &[String]) -> Result<(), Box<dyn std::
                 for files_child in xot.children(doc_node) {
                     for file_child in xot.children(files_child) {
                         let output = render_node(xot, file_child, &render_opts);
-                        if !ctx.args.no_pretty {
+                        if !ctx.no_pretty {
                             for line in output.lines() {
                                 println!("  {}", line);
                             }
@@ -688,7 +784,6 @@ fn explore_files(ctx: &RunContext, files: &[String]) -> Result<(), Box<dyn std::
         return Ok(());
     }
 
-    // Other formats: create Match objects and use format_matches
     let matches: Vec<Match> = parse_results
         .iter()
         .map(|result| {
@@ -722,7 +817,7 @@ fn explore_files(ctx: &RunContext, files: &[String]) -> Result<(), Box<dyn std::
 
 fn explore_inline(ctx: &RunContext, source: &str, lang: &str) -> Result<(), Box<dyn std::error::Error>> {
     let result = parse_string_to_documents(
-        source, lang, "<stdin>".to_string(), ctx.args.raw, ctx.args.ignore_whitespace
+        source, lang, "<stdin>".to_string(), ctx.raw, ctx.ignore_whitespace
     )?;
 
     let render_opts = ctx.render_options();
@@ -745,7 +840,6 @@ fn explore_inline(ctx: &RunContext, source: &str, lang: &str) -> Result<(), Box<
         return Ok(());
     }
 
-    // Other formats: create a Match for the whole file
     let doc_node = result.documents.document_node(result.doc_handle).unwrap();
     let xot = result.documents.xot();
     let xml: String = xot.children(doc_node)
@@ -794,7 +888,6 @@ fn print_schema_from_matches(matches: &[Match], depth: Option<usize>, use_color:
     print!("{}", collector.format(depth, use_color));
 }
 
-/// Extract text content from XML, removing all tags
 fn extract_text_content(xml: &str) -> String {
     let mut result = String::new();
     let mut in_tag = false;
@@ -808,7 +901,6 @@ fn extract_text_content(xml: &str) -> String {
         }
     }
 
-    // Normalize whitespace
     result.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
@@ -853,22 +945,22 @@ fn check_expectation_with_matches(
     count: usize,
     matches: &[Match],
     ctx: &RunContext,
+    expect: &str,
+    message: &Option<String>,
+    error_template: &Option<String>,
+    warning: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let Some(ref expect) = ctx.args.expect else {
-        return Ok(());
-    };
-
     let result = TestResult::check(expect, count)?;
 
     let (symbol, color) = if result.passed {
         ("✓", test_colors::GREEN)
-    } else if ctx.args.warning {
+    } else if warning {
         ("⚠", test_colors::YELLOW)
     } else {
         ("✗", test_colors::RED)
     };
 
-    let label = ctx.args.message.as_deref().unwrap_or("");
+    let label = message.as_deref().unwrap_or("");
 
     if ctx.use_color {
         if label.is_empty() {
@@ -892,11 +984,10 @@ fn check_expectation_with_matches(
         }
     }
 
-    // On failure, show per-match details
     if !result.passed && !matches.is_empty() {
-        if let Some(ref error_template) = ctx.args.error {
+        if let Some(ref error_tmpl) = error_template {
             let error_options = OutputOptions {
-                message: Some(error_template.clone()),
+                message: Some(error_tmpl.clone()),
                 use_color: false,
                 strip_locations: ctx.options.strip_locations,
                 max_depth: ctx.options.max_depth,
@@ -920,7 +1011,7 @@ fn check_expectation_with_matches(
         }
     }
 
-    if !result.passed && !ctx.args.warning {
+    if !result.passed && !warning {
         return Err(format!(
             "expectation failed: expected {}, got {} matches",
             result.expected, result.actual
@@ -950,8 +1041,6 @@ mod tests {
     fn test_normalize_preserves_absolute_paths() {
         assert_eq!(normalize_xpath("//function"), "//function");
         assert_eq!(normalize_xpath("//class[name='Foo']"), "//class[name='Foo']");
-        // "/root" gets converted to "//root" in MSYS environments (by design,
-        // to fix MinGW UNC path mangling), so we only test it outside MSYS
         if !is_msys_environment() {
             assert_eq!(normalize_xpath("/root"), "/root");
         }
