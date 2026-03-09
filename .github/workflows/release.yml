@@ -27,7 +27,18 @@ jobs:
     steps:
       - name: Determine version
         id: version
-        run: echo "tag=$(date -u +'%y.%m%d')" >> "$GITHUB_OUTPUT"
+        run: |
+          BASE=$(date -u +'%y.%m%d')
+          # Check if a release with today's base tag already exists
+          EXISTING=$(gh release list --limit 100 --json tagName -q "[.[] | .tagName | select(startswith(\"$BASE\"))] | length")
+          if [ "$EXISTING" -eq 0 ]; then
+            TAG="$BASE"
+          else
+            TAG="$BASE.$((EXISTING + 1))"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
 
   build-linux:
     needs: version
