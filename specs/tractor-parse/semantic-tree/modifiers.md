@@ -42,3 +42,7 @@ The empty element approach is chosen over attributes because:
 1. `//method[public]` is more readable than `//method[@public='true']`
 2. No need to remember attribute value formats
 3. Naturally supports `not()` for negation
+
+Modifiers with a corresponding source keyword carry source locations, and
+mutually exclusive sets always include one marker (never use absence as default).
+See [design principles #9 and #10](design.md#9-exhaustive-markers-for-mutually-exclusive-variations).

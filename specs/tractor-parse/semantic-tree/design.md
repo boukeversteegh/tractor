@@ -99,6 +99,62 @@ child elements: `<public/>`, `<static/>`, `<async/>`.
 **Rationale:** Supports Design Goal #1 (intuitive queries) and Principle #4
 (elements over attributes). Queries read naturally: `//method[public][static]`.
 
+### 8. Renderability
+
+The transformed AST must be renderable back into valid source code. Every
+structural distinction needed for correct syntax must be preserved in the
+element names alone (without relying on `kind` attributes). If a transform
+loses information that a renderer would need to reconstruct valid syntax,
+the transform violates this principle and should be fixed.
+
+**Rationale:** Enables code generation from the AST (e.g. C#→TypeScript).
+A handcoded renderer achieved 100% round-trip fidelity once this principle
+was applied.
+
+### 9. Exhaustive Markers for Mutually Exclusive Variations
+
+When lifted modifiers represent mutually exclusive choices, **all** variants
+must have an explicit marker — don't use the absence of a marker as a default.
+
+```xml
+<!-- WRONG: absence of <const/> implicitly means let or var -->
+<variable><name>x</name></variable>
+
+<!-- RIGHT: always include one marker from the set -->
+<variable><let/><name>x</name></variable>
+<variable><const/><name>y</name></variable>
+```
+
+This ensures:
+- **Queries are symmetric**: `//variable[const]` and `//variable[let]`
+  work the same way — match on presence, never on absence.
+- **Rendering is unambiguous**: switch on which marker is present.
+- **No implicit knowledge needed**: no "unmarked default" to memorize.
+
+Mutually exclusive sets currently identified:
+- **Declaration kind**: `const`, `let`, `var`
+- **Parameter optionality**: `required`, `optional`
+- **Access modifiers**: `public`, `private`, `protected`, `internal`
+
+**Rationale:** Supports Design Goal #1 (intuitive queries) and Principle #8
+(renderability).
+
+### 10. Marker Source Locations
+
+Lifted modifier elements that correspond to a source keyword carry `start`/`end`
+source locations pointing to that keyword. Markers that are inferred (no
+corresponding source token) omit the location.
+
+```xml
+<variable>
+  <const start="1:1" end="1:6"/>
+  <name start="1:7" end="1:8">x</name>
+</variable>
+```
+
+**Rationale:** Supports Principle #8 (renderability). Exemplar-based renderers
+need source locations to learn correct gap patterns for keywords.
+
 ---
 
 ## Decisions
