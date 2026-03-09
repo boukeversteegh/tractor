@@ -16,3 +16,7 @@ interface Person {
 }
 
 enum Color { Red, Green, Blue }
+
+function greet(name: string, title?: string): string {
+    return title ? `${title} ${name}` : name;
+}

@@ -95,6 +95,15 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         // ---------------------------------------------------------------------
+        // Optional parameters - add <optional/> marker to distinguish from required
+        // ---------------------------------------------------------------------
+        "optional_parameter" => {
+            prepend_empty_element(xot, node, "optional")?;
+            rename(xot, node, "param");
+            Ok(TransformAction::Continue)
+        }
+
+        // ---------------------------------------------------------------------
         // Other nodes - just rename if needed
         // ---------------------------------------------------------------------
         _ => {
@@ -257,7 +266,7 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
         // Keywords - declarations
         "class" | "interface" | "enum" | "typealias" => SyntaxCategory::Keyword,
         "function" | "method" => SyntaxCategory::Keyword,
-        "variable" | "param" | "params" => SyntaxCategory::Keyword,
+        "variable" | "param" | "params" | "optional" => SyntaxCategory::Keyword,
         "import" | "export" => SyntaxCategory::Keyword,
 
         // Keywords - control flow
@@ -307,5 +316,25 @@ mod tests {
         assert!(xml.contains("<binary"), "binary_expression should be renamed");
         assert!(xml.contains("<op>+</op>"), "operator should be extracted as child element");
         assert!(xml.contains("<let"), "let should be extracted as modifier");
+    }
+
+    #[test]
+    fn test_optional_parameter_marker() {
+        let source = "function f(a: string, b?: number) {}";
+        let result = parse_string_to_xot(source, "typescript", "<test>".to_string(), false).unwrap();
+
+        let options = RenderOptions::default();
+        let xml = render_document(&result.xot, result.root, &options);
+
+        // Count occurrences of <param> (not <params> or <parameters>) - should have 2
+        let param_count = xml.matches("<param>").count() + xml.matches("<param ").count();
+        assert_eq!(param_count, 2, "should have 2 params, got: {xml}");
+
+        // Only the optional parameter should have <optional/>
+        assert!(xml.contains("<optional/>"), "optional parameter should have <optional/> marker, got: {xml}");
+
+        // The <optional/> should appear exactly once (only for b?)
+        let optional_count = xml.matches("<optional/>").count();
+        assert_eq!(optional_count, 1, "should have exactly 1 <optional/> marker, got: {xml}");
     }
 }

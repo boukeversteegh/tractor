@@ -185,6 +185,75 @@
           </enum_body>
         </body>
       </enum_declaration>
+      <function_declaration>
+        function
+        <name>
+          <identifier>greet</identifier>
+        </name>
+        <parameters>
+          <formal_parameters>
+            (
+            <required_parameter>
+              <identifier field="pattern">name</identifier>
+              <type_annotation field="type">
+                :
+                <predefined_type>string</predefined_type>
+              </type_annotation>
+            </required_parameter>
+            ,
+            <optional_parameter>
+              <identifier field="pattern">title</identifier>
+              ?
+              <type_annotation field="type">
+                :
+                <predefined_type>string</predefined_type>
+              </type_annotation>
+            </optional_parameter>
+            )
+          </formal_parameters>
+        </parameters>
+        <type_annotation field="return_type">
+          :
+          <predefined_type>string</predefined_type>
+        </type_annotation>
+        <body>
+          <statement_block>
+            {
+            <return_statement>
+              return
+              <ternary_expression>
+                <condition>
+                  <identifier>title</identifier>
+                </condition>
+                ?
+                <consequence>
+                  <template_string>
+                    `
+                    <template_substitution>
+                      ${
+                      <identifier>title</identifier>
+                      }
+                    </template_substitution>
+                    <string_fragment> </string_fragment>
+                    <template_substitution>
+                      ${
+                      <identifier>name</identifier>
+                      }
+                    </template_substitution>
+                    `
+                  </template_string>
+                </consequence>
+                :
+                <alternative>
+                  <identifier>name</identifier>
+                </alternative>
+              </ternary_expression>
+              ;
+            </return_statement>
+            }
+          </statement_block>
+        </body>
+      </function_declaration>
     </program>
   </File>
 </Files>

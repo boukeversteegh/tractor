@@ -173,6 +173,74 @@
           }
         </body>
       </enum>
+      <function>
+        function
+        <name>greet</name>
+        <parameters>
+          <params>
+            (
+            <param>
+              <type field="pattern">name</type>
+              <typeof field="type">
+                :
+                <predefined_type>string</predefined_type>
+              </typeof>
+            </param>
+            ,
+            <param>
+              <optional/>
+              <type field="pattern">title</type>
+              ?
+              <typeof field="type">
+                :
+                <predefined_type>string</predefined_type>
+              </typeof>
+            </param>
+            )
+          </params>
+        </parameters>
+        <typeof field="return_type">
+          :
+          <predefined_type>string</predefined_type>
+        </typeof>
+        <body>
+          <block>
+            {
+            <return>
+              return
+              <ternary>
+                <condition>
+                  <type>title</type>
+                </condition>
+                ?
+                <consequence>
+                  <template_string>
+                    `
+                    <template_substitution>
+                      ${
+                      <type>title</type>
+                      }
+                    </template_substitution>
+                    <string_fragment> </string_fragment>
+                    <template_substitution>
+                      ${
+                      <type>name</type>
+                      }
+                    </template_substitution>
+                    `
+                  </template_string>
+                </consequence>
+                :
+                <alternative>
+                  <type>name</type>
+                </alternative>
+              </ternary>
+              ;
+            </return>
+            }
+          </block>
+        </body>
+      </function>
     </program>
   </File>
 </Files>
