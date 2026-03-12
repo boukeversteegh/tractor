@@ -20,17 +20,25 @@ use modes::{check::run_check, test::run_test, set::run_set, query::run_query};
 fn main() -> ExitCode {
     let cli = Cli::parse();
 
-    // Handle --version flag (only in query/default mode)
-    if cli.command.is_none() && cli.query.version {
-        if cli.query.shared.verbose {
-            version::print_version_verbose();
-        } else {
-            version::print_version();
+    // Handle --version flag (query/default mode)
+    let version_args = match &cli.command {
+        Some(Command::Query(args)) => Some(args),
+        None => Some(&cli.query),
+        _ => None,
+    };
+    if let Some(args) = version_args {
+        if args.version {
+            if args.shared.verbose {
+                version::print_version_verbose();
+            } else {
+                version::print_version();
+            }
+            return ExitCode::SUCCESS;
         }
-        return ExitCode::SUCCESS;
     }
 
     let result = match cli.command {
+        Some(Command::Query(args)) => run_query(args),
         Some(Command::Check(args)) => run_check(args),
         Some(Command::Test(args)) => run_test(args),
         Some(Command::Set(args)) => run_set(args),

@@ -17,6 +17,7 @@ pub mod syntax_highlight;
 mod schema;
 
 pub use formatter::{OutputFormat, format_matches, OutputOptions};
+pub(crate) use formatter::normalize_path;
 pub use colors::should_use_color;
 pub use xml_renderer::{render_node, render_document, render_xml_string, RenderOptions};
 pub use schema::{format_schema, SchemaCollector, SchemaNode};

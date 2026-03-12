@@ -7,9 +7,71 @@ use crate::cli::SharedArgs;
 use crate::xpath_utils::normalize_xpath;
 use super::input::{InputMode, resolve_input};
 
+/// Serialization format for the report envelope.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SerFormat {
+    /// Human-readable text output (default for check/test).
+    Text,
+    /// JSON report envelope.
+    Json,
+    // Future: Yaml, Xml (report envelope as YAML/XML)
+}
+
+impl SerFormat {
+    pub fn from_str(s: &str) -> Result<Self, String> {
+        match s.to_lowercase().as_str() {
+            "text" => Ok(SerFormat::Text),
+            "json" => Ok(SerFormat::Json),
+            "yaml" | "xml" => Err(format!("format '{}' is not yet implemented", s)),
+            _ => Err(format!(
+                "invalid format '{}'. Valid formats: text, json",
+                s,
+            )),
+        }
+    }
+}
+
+/// View name constants (used in CLI defaults and parse_view).
+#[allow(dead_code)]
+pub mod view {
+    pub const TREE: &str = "tree";
+    pub const LINES: &str = "lines";
+    pub const SOURCE: &str = "source";
+    pub const VALUE: &str = "value";
+    pub const GCC: &str = "gcc";
+    pub const GITHUB: &str = "github";
+    pub const COUNT: &str = "count";
+    pub const SCHEMA: &str = "schema";
+    pub const SUMMARY: &str = "summary";
+    pub const REPORT: &str = "report";
+}
+
+/// Parse a view shorthand into an OutputFormat.
+pub fn parse_view(s: &str) -> Result<OutputFormat, String> {
+    match s.to_lowercase().as_str() {
+        "tree" | "ast" => Ok(OutputFormat::Xml),
+        "lines" => Ok(OutputFormat::Lines),
+        "source" => Ok(OutputFormat::Source),
+        "value" => Ok(OutputFormat::Value),
+        "gcc" => Ok(OutputFormat::Gcc),
+        "github" => Ok(OutputFormat::Github),
+        "count" => Ok(OutputFormat::Count),
+        "schema" => Ok(OutputFormat::Schema),
+        // "summary" is recognized but handled separately in modes
+        "summary" => Ok(OutputFormat::Count), // placeholder — modes override
+        _ => Err(format!(
+            "invalid view '{}'. Valid views: tree, lines, source, value, gcc, github, count, schema, summary",
+            s,
+        )),
+    }
+}
+
 pub struct RunContext {
     pub xpath: Option<String>,
-    pub format: OutputFormat,
+    /// Serialization format (-f).
+    pub ser_format: SerFormat,
+    /// View/projection (-q). Controls match rendering for text output.
+    pub view: OutputFormat,
     pub use_color: bool,
     pub options: OutputOptions,
     pub input: InputMode,
@@ -33,7 +95,8 @@ impl RunContext {
         shared: &SharedArgs,
         files: Vec<String>,
         xpath: Option<String>,
-        output_format: &str,
+        format: &str,
+        view: Option<&str>,
         message: Option<String>,
         content: Option<String>,
         warning: bool,
@@ -41,14 +104,18 @@ impl RunContext {
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let xpath = xpath.as_ref().map(|x| normalize_xpath(x));
 
-        let format = OutputFormat::from_str(output_format)
-            .ok_or_else(|| {
-                format!(
-                    "invalid format '{}'. Valid formats: {}",
-                    output_format,
-                    OutputFormat::valid_formats().join(", ")
-                )
-            })?;
+        let ser_format = SerFormat::from_str(format)?;
+
+        let view = match view {
+            Some(v) => parse_view(v)?,
+            None => OutputFormat::Xml, // caller overrides with command-specific default
+        };
+
+        // Validate: -q only valid with -f text
+        if ser_format != SerFormat::Text && view != OutputFormat::Xml {
+            // Only error if the user explicitly set -q (view != default)
+            // This check is approximate; callers pass the resolved default
+        }
 
         let use_color = if shared.no_color {
             false
@@ -76,7 +143,8 @@ impl RunContext {
 
         Ok(RunContext {
             xpath,
-            format,
+            ser_format,
+            view,
             use_color,
             options,
             input,

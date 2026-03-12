@@ -1,10 +1,7 @@
 use std::collections::HashSet;
-use tractor_core::{
-    OutputFormat, format_matches, OutputOptions,
-    report::{Severity, Summary},
-};
+use tractor_core::report::{Report, ReportMatch, Severity, Summary};
 use crate::cli::CheckArgs;
-use crate::pipeline::{RunContext, InputMode, query_files_batched};
+use crate::pipeline::{RunContext, InputMode, view, query_files_batched, render_check_report};
 
 pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
     let severity = match args.severity.as_str() {
@@ -14,9 +11,12 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
     };
     let reason = args.reason.clone().unwrap_or_else(|| "check failed".to_string());
 
+    let default_view = view::GCC;
+    let view = args.view.as_deref().unwrap_or(default_view);
+
     let ctx = RunContext::build(
         &args.shared, args.files, args.shared.xpath.clone(),
-        &args.output, args.message, None, false, false,
+        &args.format, Some(view), args.message, None, false, false,
     )?;
 
     let xpath_expr = ctx.xpath.as_ref()
@@ -35,59 +35,31 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     let (_, matches) = query_files_batched(&ctx, files, xpath_expr, true)?;
 
-    let severity_str = match severity {
-        Severity::Error => "error",
-        Severity::Warning => "warning",
-    };
+    // Build ReportMatches with reason and severity
+    let report_matches: Vec<ReportMatch> = matches.into_iter().map(|m| {
+        ReportMatch {
+            inner: m,
+            reason: Some(reason.clone()),
+            severity: Some(severity),
+            rule_id: None,
+        }
+    }).collect();
 
-    // If using gcc (default) or github format, emit per-match lines
-    if matches!(ctx.format, OutputFormat::Gcc | OutputFormat::Github) {
-        let check_options = OutputOptions {
-            message: Some(reason.clone()),
-            use_color: false,
-            strip_locations: ctx.options.strip_locations,
-            max_depth: ctx.options.max_depth,
-            pretty_print: ctx.options.pretty_print,
-            language: ctx.options.language.clone(),
-            warning: matches!(severity, Severity::Warning),
-        };
-        let output = format_matches(&matches, ctx.format.clone(), &check_options);
-        print!("{}", output);
-    } else {
-        // For other formats (json, etc.), just output matches normally
-        let output = format_matches(&matches, ctx.format.clone(), &ctx.options);
-        print!("{}", output);
-    }
-
-    // Summary
+    // Build summary
     let mut files_affected = HashSet::new();
-    for m in &matches {
-        files_affected.insert(&m.file);
+    for rm in &report_matches {
+        files_affected.insert(&rm.inner.file);
     }
+    let total = report_matches.len();
     let summary = Summary {
-        passed: matches.is_empty(),
-        total: matches.len(),
+        passed: total == 0,
+        total,
         files_affected: files_affected.len(),
-        errors: if matches!(severity, Severity::Error) { matches.len() } else { 0 },
-        warnings: if matches!(severity, Severity::Warning) { matches.len() } else { 0 },
+        errors: if matches!(severity, Severity::Error) { total } else { 0 },
+        warnings: if matches!(severity, Severity::Warning) { total } else { 0 },
         expected: None,
     };
 
-    if summary.total > 0 {
-        eprintln!();
-        let kind = if summary.errors > 0 {
-            format!("{} error{}", summary.errors, if summary.errors == 1 { "" } else { "s" })
-        } else {
-            format!("{} warning{}", summary.warnings, if summary.warnings == 1 { "" } else { "s" })
-        };
-        eprintln!("{} in {} file{}", kind, summary.files_affected,
-            if summary.files_affected == 1 { "" } else { "s" });
-    }
-
-    // Exit code: 1 if any errors, 0 for warnings-only or no matches
-    if summary.errors > 0 {
-        return Err(format!("{} {} found", summary.errors, severity_str).into());
-    }
-
-    Ok(())
+    let report = Report::check(report_matches, summary);
+    render_check_report(&report, &ctx)
 }

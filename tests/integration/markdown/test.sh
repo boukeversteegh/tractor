@@ -19,8 +19,8 @@ run_test tractor test sample.md -x "//hr" --expect 1 -m "horizontal rule found"
 # Round-trip test: extract code from markdown code block, parse it as the declared language
 echo ""
 echo "  Round-trip: extract JS code block from markdown, parse as JavaScript..."
-JS_CODE=$(tractor sample.md -x "//code_block[language='javascript']/code" -o value)
-JS_FUNCTIONS=$(echo "$JS_CODE" | tractor -l javascript -x "//function" -o count)
+JS_CODE=$(tractor sample.md -x "//code_block[language='javascript']/code" -v value)
+JS_FUNCTIONS=$(echo "$JS_CODE" | tractor -l javascript -x "//function" -v count)
 if [ "$JS_FUNCTIONS" = "1" ]; then
     echo "  ✓ round-trip: extracted JS code parses as JavaScript with 1 function"
     ((PASSED++))

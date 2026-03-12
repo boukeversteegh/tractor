@@ -78,7 +78,7 @@ pub fn query_files_batched(
     let mut total_matches = 0usize;
     let mut remaining_limit = ctx.limit;
     let mut all_matches: Vec<Match> = Vec::new();
-    let is_count_format = matches!(ctx.format, OutputFormat::Count);
+    let is_count_format = matches!(ctx.view, OutputFormat::Count);
 
     for batch in batches {
         if remaining_limit == Some(0) {
@@ -138,7 +138,7 @@ pub fn query_files_batched(
         if collect {
             all_matches.extend(batch_matches);
         } else if !is_count_format {
-            let output = format_matches(&batch_matches, ctx.format.clone(), &ctx.options);
+            let output = format_matches(&batch_matches, ctx.view.clone(), &ctx.options);
             print!("{}", output);
             io::stdout().flush().ok();
         }
@@ -156,7 +156,7 @@ pub fn explore_files(ctx: &RunContext, files: &[String]) -> Result<(), Box<dyn s
     let raw = ctx.raw;
     let verbose = ctx.verbose;
 
-    if matches!(ctx.format, OutputFormat::Count) {
+    if matches!(ctx.view, OutputFormat::Count) {
         let count: usize = files
             .par_iter()
             .filter(|file_path| {
@@ -176,7 +176,7 @@ pub fn explore_files(ctx: &RunContext, files: &[String]) -> Result<(), Box<dyn s
         return Ok(());
     }
 
-    if matches!(ctx.format, OutputFormat::Schema) {
+    if matches!(ctx.view, OutputFormat::Schema) {
         let collectors: Vec<SchemaCollector> = files
             .par_iter()
             .filter_map(|file_path| {
@@ -228,7 +228,7 @@ pub fn explore_files(ctx: &RunContext, files: &[String]) -> Result<(), Box<dyn s
 
     let render_opts = ctx.render_options();
 
-    if matches!(ctx.format, OutputFormat::Xml) {
+    if matches!(ctx.view, OutputFormat::Xml) {
         if parse_results.len() == 1 {
             let result = &parse_results[0];
             let doc_node = result.documents.document_node(result.doc_handle).unwrap();
@@ -286,7 +286,7 @@ pub fn explore_files(ctx: &RunContext, files: &[String]) -> Result<(), Box<dyn s
         })
         .collect();
 
-    let output = format_matches(&matches, ctx.format.clone(), &ctx.options);
+    let output = format_matches(&matches, ctx.view.clone(), &ctx.options);
     print!("{}", output);
 
     Ok(())
@@ -299,7 +299,7 @@ pub fn explore_inline(ctx: &RunContext, source: &str, lang: &str) -> Result<(), 
 
     let render_opts = ctx.render_options();
 
-    if matches!(ctx.format, OutputFormat::Xml) {
+    if matches!(ctx.view, OutputFormat::Xml) {
         let doc_node = result.documents.document_node(result.doc_handle).unwrap();
         let xot = result.documents.xot();
         for child in xot.children(doc_node) {
@@ -309,7 +309,7 @@ pub fn explore_inline(ctx: &RunContext, source: &str, lang: &str) -> Result<(), 
         return Ok(());
     }
 
-    if matches!(ctx.format, OutputFormat::Schema) {
+    if matches!(ctx.view, OutputFormat::Schema) {
         let doc_node = result.documents.document_node(result.doc_handle).unwrap();
         let mut collector = SchemaCollector::new();
         collector.collect_from_xot(result.documents.xot(), doc_node);
@@ -337,7 +337,7 @@ pub fn explore_inline(ctx: &RunContext, source: &str, lang: &str) -> Result<(), 
         result.source_lines.clone(),
     ).with_xml_fragment(xml);
 
-    let output = format_matches(&[file_match], ctx.format.clone(), &ctx.options);
+    let output = format_matches(&[file_match], ctx.view.clone(), &ctx.options);
     print!("{}", output);
     Ok(())
 }
@@ -347,11 +347,11 @@ pub fn explore_inline(ctx: &RunContext, source: &str, lang: &str) -> Result<(), 
 // ---------------------------------------------------------------------------
 
 pub fn output_query_results(ctx: &RunContext, matches: &[Match]) {
-    if matches!(ctx.format, OutputFormat::Schema) {
+    if matches!(ctx.view, OutputFormat::Schema) {
         print_schema_from_matches(matches, ctx.schema_depth(), ctx.use_color);
         return;
     }
-    let output = format_matches(matches, ctx.format.clone(), &ctx.options);
+    let output = format_matches(matches, ctx.view.clone(), &ctx.options);
     print!("{}", output);
 }
 

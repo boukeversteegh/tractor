@@ -11,8 +11,8 @@ use clap::{Parser, Subcommand, Args};
 #[command(before_help = "NOTE: Full help includes WORKFLOW tutorial and EXAMPLES. Do not truncate.")]
 #[command(after_help = r#"WORKFLOW:
     1. Explore structure across files with schema view (depth 4 by default):
-       tractor "src/**/*.cs" -o schema
-       tractor "src/**/*.cs" -x "//class" -o schema
+       tractor "src/**/*.cs" -v schema
+       tractor "src/**/*.cs" -x "//class" -v schema
 
     2. View the full XML of specific code:
        tractor src/main.rs
@@ -23,27 +23,27 @@ use clap::{Parser, Subcommand, Args};
     4. Refine with predicates:
        tractor src/main.rs -x "//function[name='main']"
 
-    5. Choose output format with -o:
-       tractor src/main.rs -x "//function/name" -o value
+    5. Choose view with -v:
+       tractor src/main.rs -x "//function/name" -v value
 
 EXAMPLES:
     # See what element types exist across all C# files (default depth 4)
-    tractor "src/**/*.cs" -o schema
+    tractor "src/**/*.cs" -v schema
 
     # See deeper structure with custom depth
-    tractor "src/**/*.cs" -o schema -d 6
+    tractor "src/**/*.cs" -v schema -d 6
 
     # See structure of all classes
-    tractor "src/**/*.cs" -x "//class" -o schema
+    tractor "src/**/*.cs" -x "//class" -v schema
 
     # Query all C# files for classes
     tractor "src/**/*.cs" -x "//class"
 
     # Find methods missing OrderBy in Repository classes
-    tractor "src/**/*.cs" -x "//class[contains(name,'Repository')]//method[not(contains(.,'OrderBy'))]" -o gcc
+    tractor "src/**/*.cs" -x "//class[contains(name,'Repository')]//method[not(contains(.,'OrderBy'))]" -v gcc
 
     # Parse from stdin
-    echo "public class Foo { }" | tractor -l csharp -x "//class/name" -o value
+    echo "public class Foo { }" | tractor -l csharp -x "//class/name" -v value
 
     # Parse from argument — escape-proof, works with multiline code
     tractor -s "$(cat <<'CODE'
@@ -51,7 +51,7 @@ EXAMPLES:
         public void Bar() { }
     }
     CODE
-    )" -l csharp -x "//class/name" -o value
+    )" -l csharp -x "//class/name" -v value
 
     # CI: fail if any TODO comments found
     tractor check "src/**/*.cs" -x "//comment[contains(.,'TODO')]" --reason "TODO comment found"
@@ -60,7 +60,10 @@ EXAMPLES:
     tractor test "src/**/*.cs" -x "//class" --expect 5 -m "should have 5 classes"
 
     # GitHub Actions: annotate errors in PR
-    tractor "src/**/*.cs" -x "//comment[contains(.,'TODO')]" -o github -m "TODO comment found"
+    tractor check "src/**/*.cs" -x "//comment[contains(.,'TODO')]" --reason "TODO comment found" -v github
+
+    # JSON report output
+    tractor check "src/**/*.cs" -x "//comment[contains(.,'TODO')]" --reason "TODO" -f json
 
     # Whitespace-insensitive matching
     tractor file.cs -x "//type[.='Dictionary<string,int>']" -W
@@ -78,6 +81,8 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum Command {
+    /// Query source code ASTs with XPath (default when no subcommand given)
+    Query(QueryArgs),
     /// Run checks and report violations (lint mode)
     Check(CheckArgs),
     /// Test expectations against match counts
@@ -89,56 +94,61 @@ pub enum Command {
 /// Shared arguments available in all modes
 #[derive(Args, Debug, Clone)]
 pub struct SharedArgs {
-    /// XPath 3.1 query expression
-    #[arg(short = 'x', long = "xpath")]
-    pub xpath: Option<String>,
-
+    // -- Input --
     /// Language for stdin input (e.g., csharp, rust, python)
-    #[arg(short = 'l', long = "lang")]
+    #[arg(short = 'l', long = "lang", help_heading = None)]
     pub lang: Option<String>,
 
+    // -- Extract --
+    /// XPath expression to extract matching AST nodes
+    #[arg(short = 'x', long = "extract", help_heading = "Extract")]
+    pub xpath: Option<String>,
+
+    /// Use raw tree-sitter AST instead of semantic (changes what -x queries)
+    #[arg(long = "raw", help_heading = "Extract")]
+    pub raw: bool,
+
+    /// Ignore whitespace in XPath string matching (strips whitespace from text nodes)
+    #[arg(short = 'W', long = "ignore-whitespace", help_heading = "Extract")]
+    pub ignore_whitespace: bool,
+
+    // -- View --
     /// Limit output to first N matches
-    #[arg(short = 'n', long = "limit")]
+    #[arg(short = 'n', long = "limit", help_heading = "View")]
     pub limit: Option<usize>,
 
     /// Limit XML output depth (useful for large ASTs)
-    #[arg(short = 'd', long = "depth")]
+    #[arg(short = 'd', long = "depth", help_heading = "View")]
     pub depth: Option<usize>,
 
-    /// [EXPERIMENTAL] Limit tree building depth (skip parsing deeper nodes for speed)
-    #[arg(long = "parse-depth")]
-    pub parse_depth: Option<usize>,
-
     /// Include start/end location attributes in XML output
-    #[arg(long = "keep-locations")]
+    #[arg(long = "keep-locations", help_heading = "View")]
     pub keep_locations: bool,
 
+    // -- Format --
+    /// Disable pretty printing (shows XML without formatting, as used by XPath)
+    #[arg(long = "no-pretty", help_heading = "Format")]
+    pub no_pretty: bool,
+
     /// Color output: auto (default), always, never
-    #[arg(long = "color", default_value = "auto")]
+    #[arg(long = "color", default_value = "auto", help_heading = "Format")]
     pub color: String,
 
     /// Disable color output
-    #[arg(long = "no-color")]
+    #[arg(long = "no-color", help_heading = "Format")]
     pub no_color: bool,
 
+    // -- Advanced --
+    /// [EXPERIMENTAL] Limit tree building depth (skip parsing deeper nodes for speed)
+    #[arg(long = "parse-depth", help_heading = "Advanced")]
+    pub parse_depth: Option<usize>,
+
     /// Number of parallel workers
-    #[arg(short = 'c', long = "concurrency")]
+    #[arg(short = 'c', long = "concurrency", help_heading = "Advanced")]
     pub concurrency: Option<usize>,
 
-    /// Output raw TreeSitter XML (not semantic)
-    #[arg(long = "raw")]
-    pub raw: bool,
-
-    /// Disable pretty printing (shows XML without formatting, as used by XPath)
-    #[arg(long = "no-pretty")]
-    pub no_pretty: bool,
-
-    /// Ignore whitespace in XPath string matching (strips whitespace from text nodes)
-    #[arg(short = 'W', long = "ignore-whitespace")]
-    pub ignore_whitespace: bool,
-
     /// Show verbose output
-    #[arg(short = 'v', long = "verbose")]
+    #[arg(long = "verbose", help_heading = "Advanced")]
     pub verbose: bool,
 }
 
@@ -152,24 +162,38 @@ pub struct QueryArgs {
     #[command(flatten)]
     pub shared: SharedArgs,
 
-    /// Output format: xml (default), lines, source, value, gcc, json, count, schema, github
-    #[arg(short = 'o', long = "output", default_value = "xml")]
-    pub output: String,
-
-    /// Custom message template (supports {value}, {line}, {col}, {file})
-    #[arg(short = 'm', long = "message")]
-    pub message: Option<String>,
-
     /// Source code string to parse (alternative to stdin, requires --lang)
-    #[arg(short = 's', long = "string")]
+    #[arg(short = 's', long = "string", help_heading = None)]
     pub content: Option<String>,
 
+    /// Report view [default: tree]
+    #[arg(short = 'v', long = "view", help_heading = "View",
+        long_help = "\
+Report view [default: tree]
+  tree      Parsed source tree (XML or JSON, depending on -f)
+  value     Text content of matched nodes
+  source    Exact matched source text
+  lines     Full source lines containing each match
+  gcc       file:line:col: severity: message
+  github    GitHub Actions annotation format
+  count     Total match count
+  schema    Structural overview of element types")]
+    pub view: Option<String>,
+
+    /// Custom message template (supports {value}, {line}, {col}, {file})
+    #[arg(short = 'm', long = "message", help_heading = "View")]
+    pub message: Option<String>,
+
+    /// Report format: text (default), json
+    #[arg(short = 'f', long = "format", default_value = "text", help_heading = "Format")]
+    pub format: String,
+
     /// Show full XML with matches highlighted (for debugging XPath)
-    #[arg(long = "debug")]
+    #[arg(long = "debug", help_heading = "Advanced")]
     pub debug: bool,
 
-    /// Print version information (use with -v for detailed output)
-    #[arg(short = 'V', long = "version")]
+    /// Print version information (use with --verbose for detailed output)
+    #[arg(short = 'V', long = "version", help_heading = "Advanced")]
     pub version: bool,
 }
 
@@ -183,21 +207,33 @@ pub struct CheckArgs {
     #[command(flatten)]
     pub shared: SharedArgs,
 
+    /// Report view [default: gcc]
+    #[arg(short = 'v', long = "view", help_heading = "View",
+        long_help = "\
+Report view [default: gcc]
+  gcc       file:line:col: severity: message (default for check)
+  github    GitHub Actions annotation format
+  value     Text content of matched nodes
+  tree      Parsed source tree
+  lines     Full source lines containing each match
+  source    Exact matched source text")]
+    pub view: Option<String>,
+
+    /// Custom message template (supports {value}, {line}, {col}, {file})
+    #[arg(short = 'm', long = "message", help_heading = "View")]
+    pub message: Option<String>,
+
+    /// Report format: text (default), json
+    #[arg(short = 'f', long = "format", default_value = "text", help_heading = "Format")]
+    pub format: String,
+
     /// Reason message for each violation
-    #[arg(long = "reason")]
+    #[arg(long = "reason", help_heading = "Check")]
     pub reason: Option<String>,
 
     /// Severity level: error (default) or warning
-    #[arg(long = "severity", default_value = "error")]
+    #[arg(long = "severity", default_value = "error", help_heading = "Check")]
     pub severity: String,
-
-    /// Output format: gcc (default), json, github
-    #[arg(short = 'o', long = "output", default_value = "gcc")]
-    pub output: String,
-
-    /// Custom message template (supports {value}, {line}, {col}, {file})
-    #[arg(short = 'm', long = "message")]
-    pub message: Option<String>,
 }
 
 /// Test mode: assert match count expectations
@@ -210,29 +246,43 @@ pub struct TestArgs {
     #[command(flatten)]
     pub shared: SharedArgs,
 
+    /// Source code string to parse (alternative to stdin, requires --lang)
+    #[arg(short = 's', long = "string", help_heading = None)]
+    pub content: Option<String>,
+
+    /// Report view [default: tree]
+    #[arg(short = 'v', long = "view", help_heading = "View",
+        long_help = "\
+Report view [default: tree]
+  tree      Parsed source tree (XML or JSON, depending on -f)
+  value     Text content of matched nodes
+  source    Exact matched source text
+  lines     Full source lines containing each match
+  gcc       file:line:col: severity: message
+  github    GitHub Actions annotation format
+  count     Total match count
+  schema    Structural overview of element types")]
+    pub view: Option<String>,
+
+    /// Custom message template (supports {value}, {line}, {col}, {file})
+    #[arg(short = 'm', long = "message", help_heading = "View")]
+    pub message: Option<String>,
+
+    /// Report format: text (default), json
+    #[arg(short = 'f', long = "format", default_value = "text", help_heading = "Format")]
+    pub format: String,
+
     /// Expected result: none, some, or a number
-    #[arg(short = 'e', long = "expect")]
+    #[arg(short = 'e', long = "expect", help_heading = "Test")]
     pub expect: String,
 
     /// Error message template for failed expectations (per-match, supports {file}, {line}, {name}, etc.)
-    #[arg(long = "error")]
+    #[arg(long = "error", help_heading = "Test")]
     pub error: Option<String>,
 
-    /// Treat failed expectations as warnings (exit 0, show ⚠ instead of ✗)
-    #[arg(long = "warning")]
+    /// Treat failed expectations as warnings (exit 0, show warning instead of failure)
+    #[arg(long = "warning", help_heading = "Test")]
     pub warning: bool,
-
-    /// Output format: xml (default), lines, source, value, gcc, json, count, schema, github
-    #[arg(short = 'o', long = "output", default_value = "xml")]
-    pub output: String,
-
-    /// Custom message template (supports {value}, {line}, {col}, {file})
-    #[arg(short = 'm', long = "message")]
-    pub message: Option<String>,
-
-    /// Source code string to parse (alternative to stdin, requires --lang)
-    #[arg(short = 's', long = "string")]
-    pub content: Option<String>,
 }
 
 /// Set mode: modify matched node values in-place
@@ -246,6 +296,6 @@ pub struct SetArgs {
     pub shared: SharedArgs,
 
     /// Value to set matched nodes to
-    #[arg(long = "value")]
+    #[arg(long = "value", help_heading = "Set")]
     pub value: String,
 }

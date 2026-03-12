@@ -11,6 +11,6 @@ run_test tractor test sample.xml -x "setting" --expect 2 -m "finds setting eleme
 run_test tractor test sample.xml -x "item[status='complete']" --expect 1 -m "filters by child element"
 run_test tractor test sample.xml -x "project/@name" --expect 1 -m "queries attributes"
 run_test tractor test sample.xml -x "name" --expect 3 -m "finds all name elements"
-run_test tractor test sample.xml -x "item/name" -o value --expect some -m "value output works"
+run_test tractor test sample.xml -x "item/name" -v value --expect some -m "value output works"
 
 report

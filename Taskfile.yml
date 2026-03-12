@@ -143,6 +143,45 @@ tasks:
 
   # === Setup ===
 
+  setup:sccache:
+    desc: Install sccache for faster Rust builds (compilation cache)
+    internal: true
+    status:
+      - command -v sccache
+    cmds:
+      - |
+        echo "Installing sccache..."
+        VERSION="v0.14.0"
+        case "$(uname -s)" in
+          MINGW*|MSYS*|CYGWIN*|*_NT*)
+            ARCHIVE="sccache-${VERSION}-x86_64-pc-windows-msvc"
+            curl -fsSL "https://github.com/mozilla/sccache/releases/download/${VERSION}/${ARCHIVE}.tar.gz" -o /tmp/sccache.tar.gz
+            tar -xzf /tmp/sccache.tar.gz -C /tmp/
+            cp "/tmp/${ARCHIVE}/sccache.exe" "$HOME/.cargo/bin/"
+            rm -rf /tmp/sccache.tar.gz "/tmp/${ARCHIVE}"
+            ;;
+          Linux*)
+            ARCHIVE="sccache-${VERSION}-x86_64-unknown-linux-musl"
+            curl -fsSL "https://github.com/mozilla/sccache/releases/download/${VERSION}/${ARCHIVE}.tar.gz" -o /tmp/sccache.tar.gz
+            tar -xzf /tmp/sccache.tar.gz -C /tmp/
+            cp "/tmp/${ARCHIVE}/sccache" "$HOME/.cargo/bin/"
+            rm -rf /tmp/sccache.tar.gz "/tmp/${ARCHIVE}"
+            ;;
+          Darwin*)
+            ARCHIVE="sccache-${VERSION}-aarch64-apple-darwin"
+            curl -fsSL "https://github.com/mozilla/sccache/releases/download/${VERSION}/${ARCHIVE}.tar.gz" -o /tmp/sccache.tar.gz
+            tar -xzf /tmp/sccache.tar.gz -C /tmp/
+            cp "/tmp/${ARCHIVE}/sccache" "$HOME/.cargo/bin/"
+            rm -rf /tmp/sccache.tar.gz "/tmp/${ARCHIVE}"
+            ;;
+        esac
+        echo "sccache installed: $(sccache --version)"
+
+  setup:
+    desc: Set up development environment
+    cmds:
+      - task: setup:sccache
+
   setup:fly-deploy:
     desc: Configure Fly.io deploy token as GitHub Actions secret
     cmds:

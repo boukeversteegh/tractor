@@ -155,6 +155,34 @@ corresponding source token) omit the location.
 **Rationale:** Supports Principle #8 (renderability). Exemplar-based renderers
 need source locations to learn correct gap patterns for keywords.
 
+### 11. Specific Names Over Type Hierarchies
+
+Use the most specific semantic name for each node. Don't encode type
+hierarchies (is-a relationships) as wrapper elements. A `<binary>` is known
+to be an expression by its position in the tree, not by wrapping it in
+`<expression><binary/>`.
+
+```xml
+<!-- WRONG: encoding is-a hierarchy -->
+<expression><binary/><op>+</op><left>a</left><right>b</right></expression>
+<declaration><class/><name>Foo</name></declaration>
+<member><method/><name>bar</name></member>
+
+<!-- RIGHT: use the specific name directly -->
+<binary><op>+</op><left>a</left><right>b</right></binary>
+<class><name>Foo</name></class>
+<method><name>bar</name></method>
+```
+
+The hierarchy is implicit from tree position — a `<binary>` inside a
+`<method>` body is obviously an expression. Adding wrapper elements
+increases nesting, query verbosity, and tree noise without enabling
+useful queries ("find all expressions" is too broad to be practical).
+
+**Rationale:** Supports Design Goal #1 (intuitive queries — `//binary`
+beats `//expression[binary]`), #2 (readable tree — less nesting), and
+#4 (minimal query complexity — no extra predicates needed).
+
 ---
 
 ## Decisions

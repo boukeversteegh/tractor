@@ -18,8 +18,8 @@
     "source": "git",
     "repo": "tree-sitter/tree-sitter-c-sharp",
     "ref": "master",
-    "commit": "unknown",
-    "date": "unknown"
+    "commit": "8836663",
+    "date": "2026-02-17"
   },
   "css": {
     "source": "npm",
@@ -90,5 +90,5 @@
     "package": "web-tree-sitter",
     "version": "0.26.3"
   },
-  "_generated": "2026-02-11T19:58:01.771Z"
+  "_generated": "2026-02-23T19:27:41.378Z"
 }

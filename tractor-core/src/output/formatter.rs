@@ -206,7 +206,7 @@ fn format_value(matches: &[Match]) -> String {
 }
 
 /// Normalize a file path to use forward slashes (for GCC-compatible output)
-fn normalize_path(path: &str) -> String {
+pub(crate) fn normalize_path(path: &str) -> String {
     path.replace('\\', "/")
 }
 
