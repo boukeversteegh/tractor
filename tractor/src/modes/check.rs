@@ -11,12 +11,11 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
     };
     let reason = args.reason.clone().unwrap_or_else(|| "check failed".to_string());
 
-    let default_view = view::GCC;
-    let view = args.view.as_deref().unwrap_or(default_view);
-
+    // Default view for check: reason and severity (the fields that matter for violations)
+    let default_view = &format!("{},{}", view::REASON, view::SEVERITY);
     let ctx = RunContext::build(
         &args.shared, args.files, args.shared.xpath.clone(),
-        &args.format, Some(view), args.message, None, false, false,
+        &args.format, default_view, args.view.as_deref(), args.message, None, false, false,
     )?;
 
     let xpath_expr = ctx.xpath.as_ref()
@@ -36,9 +35,12 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
     let (_, matches) = query_files_batched(&ctx, files, xpath_expr, true)?;
 
     // Build ReportMatches with reason and severity
+    let message_template = ctx.options.message.clone();
     let report_matches: Vec<ReportMatch> = matches.into_iter().map(|m| {
+        let message = message_template.as_deref().map(|t| tractor_core::format_message(t, &m));
         ReportMatch {
             inner: m,
+            message,
             reason: Some(reason.clone()),
             severity: Some(severity),
             rule_id: None,
@@ -60,6 +62,6 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
         expected: None,
     };
 
-    let report = Report::check(report_matches, summary);
+    let report = Report::check(report_matches, summary).with_groups();
     render_check_report(&report, &ctx)
 }

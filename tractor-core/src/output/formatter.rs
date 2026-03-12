@@ -5,9 +5,10 @@ use crate::output::xml_renderer::{render_xml_string, RenderOptions};
 use crate::output::syntax_highlight::{extract_syntax_spans_with_lang, highlight_source, highlight_lines};
 use crate::languages::get_syntax_category;
 use regex::Regex;
-use serde::Serialize;
 
-/// Output format options
+/// Output format options for match rendering (-v / --view).
+/// These are view/field selections, not serialization formats.
+/// For serialization formats (gcc, github, json, xml), see SerFormat in the tractor binary.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OutputFormat {
     /// XML of matched nodes
@@ -18,39 +19,10 @@ pub enum OutputFormat {
     Source,
     /// Text content of matched node
     Value,
-    /// GCC-style file:line:col: message
-    Gcc,
-    /// JSON array with match details
-    Json,
     /// Number of matches
     Count,
     /// Merged schema tree showing unique element paths
     Schema,
-    /// GitHub Actions workflow commands (::error / ::warning annotations)
-    Github,
-}
-
-impl OutputFormat {
-    /// Parse format from string
-    pub fn from_str(s: &str) -> Option<Self> {
-        match s.to_lowercase().as_str() {
-            "xml" => Some(OutputFormat::Xml),
-            "lines" => Some(OutputFormat::Lines),
-            "source" => Some(OutputFormat::Source),
-            "value" => Some(OutputFormat::Value),
-            "gcc" => Some(OutputFormat::Gcc),
-            "json" => Some(OutputFormat::Json),
-            "count" => Some(OutputFormat::Count),
-            "schema" => Some(OutputFormat::Schema),
-            "github" => Some(OutputFormat::Github),
-            _ => None,
-        }
-    }
-
-    /// Get list of all valid format names
-    pub fn valid_formats() -> &'static [&'static str] {
-        &["xml", "lines", "source", "value", "gcc", "json", "count", "schema", "github"]
-    }
 }
 
 /// Options for output formatting
@@ -72,29 +44,15 @@ pub struct OutputOptions {
     pub warning: bool,
 }
 
-/// JSON output structure
-#[derive(Serialize)]
-struct JsonMatch {
-    file: String,
-    line: u32,
-    column: u32,
-    value: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    message: Option<String>,
-}
-
-/// Format matches according to the specified format
+/// Format matches according to the specified view format
 pub fn format_matches(matches: &[Match], format: OutputFormat, options: &OutputOptions) -> String {
     match format {
         OutputFormat::Xml => format_xml(matches, options),
         OutputFormat::Lines => format_lines(matches, options),
         OutputFormat::Source => format_source(matches, options),
         OutputFormat::Value => format_value(matches),
-        OutputFormat::Gcc => format_gcc(matches, options),
-        OutputFormat::Json => format_json(matches, options),
         OutputFormat::Count => format_count(matches),
         OutputFormat::Schema => String::new(), // Handled separately - requires full XML aggregation
-        OutputFormat::Github => format_github(matches, options),
     }
 }
 
@@ -205,155 +163,16 @@ fn format_value(matches: &[Match]) -> String {
     output
 }
 
-/// Normalize a file path to use forward slashes (for GCC-compatible output)
-pub(crate) fn normalize_path(path: &str) -> String {
+/// Normalize a file path to use forward slashes
+pub fn normalize_path(path: &str) -> String {
     path.replace('\\', "/")
-}
-
-/// Convert a file path to an absolute path with forward slashes (for GCC output)
-fn to_absolute_path(path: &str) -> String {
-    use std::path::Path;
-
-    let p = Path::new(path);
-    let absolute = if p.is_absolute() {
-        p.to_path_buf()
-    } else if let Ok(cwd) = std::env::current_dir() {
-        cwd.join(p)
-    } else {
-        p.to_path_buf()
-    };
-
-    normalize_path(&absolute.to_string_lossy())
-}
-
-fn format_gcc(matches: &[Match], options: &OutputOptions) -> String {
-    let mut output = String::new();
-    for m in matches {
-        let msg = format_message(
-            options.message.as_deref().unwrap_or("match"),
-            m,
-        );
-        output.push_str(&format!(
-            "{}:{}:{}: error: {}\n",
-            to_absolute_path(&m.file), m.line, m.column, msg
-        ));
-
-        // Add source context
-        if !m.source_lines.is_empty() && m.line > 0 {
-            let start_line = m.line as usize;
-            let end_line = (m.end_line as usize).min(m.source_lines.len());
-            let line_count = end_line - start_line + 1;
-            let line_num_width = end_line.to_string().len();
-
-            if line_count == 1 && start_line <= m.source_lines.len() {
-                let source_line = m.source_lines[start_line - 1].trim_end_matches('\r');
-                output.push_str(&format!(
-                    "{:>width$} | {}\n",
-                    start_line,
-                    source_line,
-                    width = line_num_width
-                ));
-
-                // Add caret/underline
-                let caret_col = (m.column as usize).saturating_sub(1);
-                let underline_len = (m.end_column as usize).saturating_sub(m.column as usize).max(1);
-                let padding = " ".repeat(line_num_width + 3 + caret_col);
-                let underline = format!("^{}", "~".repeat(underline_len.saturating_sub(1)));
-                output.push_str(&format!("{}{}\n", padding, underline));
-            } else if line_count <= 6 {
-                for i in start_line..=end_line {
-                    if i <= m.source_lines.len() {
-                        let source_line = m.source_lines[i - 1].trim_end_matches('\r');
-                        let marker = if i == start_line || i == end_line { ">" } else { " " };
-                        output.push_str(&format!(
-                            "{:>width$} {}| {}\n",
-                            i,
-                            marker,
-                            source_line,
-                            width = line_num_width
-                        ));
-                    }
-                }
-            } else {
-                // Show first 2, ellipsis, last 2
-                for i in start_line..start_line + 2 {
-                    if i <= m.source_lines.len() {
-                        let source_line = m.source_lines[i - 1].trim_end_matches('\r');
-                        output.push_str(&format!(
-                            "{:>width$} >| {}\n",
-                            i,
-                            source_line,
-                            width = line_num_width
-                        ));
-                    }
-                }
-                output.push_str(&format!(
-                    "{:>width$}  | ... ({} more lines)\n",
-                    "...",
-                    line_count - 4,
-                    width = line_num_width
-                ));
-                for i in (end_line - 1)..=end_line {
-                    if i <= m.source_lines.len() {
-                        let source_line = m.source_lines[i - 1].trim_end_matches('\r');
-                        output.push_str(&format!(
-                            "{:>width$} >| {}\n",
-                            i,
-                            source_line,
-                            width = line_num_width
-                        ));
-                    }
-                }
-            }
-            output.push('\n');
-        }
-    }
-    output
-}
-
-fn format_github(matches: &[Match], options: &OutputOptions) -> String {
-    let mut output = String::new();
-    let level = if options.warning { "warning" } else { "error" };
-    for m in matches {
-        let msg = format_message(
-            options.message.as_deref().unwrap_or("match"),
-            m,
-        );
-        let file = normalize_path(&m.file);
-        output.push_str(&format!(
-            "::{level} file={file},line={line},endLine={end_line},col={col},endColumn={end_col}::{msg}\n",
-            level = level,
-            file = file,
-            line = m.line,
-            end_line = m.end_line,
-            col = m.column,
-            end_col = m.end_column,
-            msg = msg,
-        ));
-    }
-    output
-}
-
-fn format_json(matches: &[Match], options: &OutputOptions) -> String {
-    let json_matches: Vec<JsonMatch> = matches
-        .iter()
-        .map(|m| JsonMatch {
-            file: normalize_path(&m.file),
-            line: m.line,
-            column: m.column,
-            value: m.value.clone(),
-            message: options.message.clone(),
-        })
-        .collect();
-
-    serde_json::to_string_pretty(&json_matches).unwrap_or_else(|_| "[]".to_string())
 }
 
 fn format_count(matches: &[Match]) -> String {
     format!("{}\n", matches.len())
 }
 
-/// Format a message template by replacing placeholders
+/// Format a message template by replacing placeholders ({value}, {line}, {col}, {file}).
 pub fn format_message(template: &str, m: &Match) -> String {
     if !template.contains('{') {
         return template.to_string();
@@ -367,8 +186,6 @@ pub fn format_message(template: &str, m: &Match) -> String {
             "line" => m.line.to_string(),
             "col" => m.column.to_string(),
             "file" => normalize_path(&m.file),
-            // For XPath expressions like {ancestor::class/name}, we'd need the XML context
-            // For now, return the placeholder
             _ => format!("{{{}}}", expr),
         }
     }).to_string()
@@ -424,73 +241,5 @@ mod tests {
     fn test_truncate() {
         assert_eq!(truncate("short", 50), "short");
         assert_eq!(truncate("this is a very long string that should be truncated", 20), "this is a very lo...");
-    }
-
-    #[test]
-    fn test_format_github_error() {
-        let matches = vec![
-            Match::with_location(
-                "src/main.rs".to_string(),
-                10,
-                5,
-                10,
-                15,
-                "MyMethod".to_string(),
-                std::sync::Arc::new(vec![]),
-            ),
-        ];
-        let options = OutputOptions {
-            message: Some("found {value}".to_string()),
-            warning: false,
-            ..Default::default()
-        };
-        assert_eq!(
-            format_github(&matches, &options),
-            "::error file=src/main.rs,line=10,endLine=10,col=5,endColumn=15::found MyMethod\n"
-        );
-    }
-
-    #[test]
-    fn test_format_github_warning() {
-        let matches = vec![
-            Match::with_location(
-                "src/main.rs".to_string(),
-                10,
-                5,
-                10,
-                15,
-                "MyMethod".to_string(),
-                std::sync::Arc::new(vec![]),
-            ),
-        ];
-        let options = OutputOptions {
-            message: Some("found {value}".to_string()),
-            warning: true,
-            ..Default::default()
-        };
-        assert_eq!(
-            format_github(&matches, &options),
-            "::warning file=src/main.rs,line=10,endLine=10,col=5,endColumn=15::found MyMethod\n"
-        );
-    }
-
-    #[test]
-    fn test_format_github_default_message() {
-        let matches = vec![
-            Match::with_location(
-                "src/lib.rs".to_string(),
-                3,
-                1,
-                5,
-                20,
-                "foo".to_string(),
-                std::sync::Arc::new(vec![]),
-            ),
-        ];
-        let options = OutputOptions::default();
-        assert_eq!(
-            format_github(&matches, &options),
-            "::error file=src/lib.rs,line=3,endLine=5,col=1,endColumn=20::match\n"
-        );
     }
 }

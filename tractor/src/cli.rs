@@ -40,7 +40,7 @@ EXAMPLES:
     tractor "src/**/*.cs" -x "//class"
 
     # Find methods missing OrderBy in Repository classes
-    tractor "src/**/*.cs" -x "//class[contains(name,'Repository')]//method[not(contains(.,'OrderBy'))]" -v gcc
+    tractor "src/**/*.cs" -x "//class[contains(name,'Repository')]//method[not(contains(.,'OrderBy'))]" -v value
 
     # Parse from stdin
     echo "public class Foo { }" | tractor -l csharp -x "//class/name" -v value
@@ -60,7 +60,7 @@ EXAMPLES:
     tractor test "src/**/*.cs" -x "//class" --expect 5 -m "should have 5 classes"
 
     # GitHub Actions: annotate errors in PR
-    tractor check "src/**/*.cs" -x "//comment[contains(.,'TODO')]" --reason "TODO comment found" -v github
+    tractor check "src/**/*.cs" -x "//comment[contains(.,'TODO')]" --reason "TODO comment found" -f github
 
     # JSON report output
     tractor check "src/**/*.cs" -x "//comment[contains(.,'TODO')]" --reason "TODO" -f json
@@ -174,8 +174,6 @@ Report view [default: tree]
   value     Text content of matched nodes
   source    Exact matched source text
   lines     Full source lines containing each match
-  gcc       file:line:col: severity: message
-  github    GitHub Actions annotation format
   count     Total match count
   schema    Structural overview of element types")]
     pub view: Option<String>,
@@ -184,8 +182,16 @@ Report view [default: tree]
     #[arg(short = 'm', long = "message", help_heading = "View")]
     pub message: Option<String>,
 
-    /// Report format: text (default), json
-    #[arg(short = 'f', long = "format", default_value = "text", help_heading = "Format")]
+    /// Output format: text (default), json, yaml, xml, gcc, github
+    #[arg(short = 'f', long = "format", default_value = "text", help_heading = "Format",
+        long_help = "\
+Output format [default: text]
+  text      Human-readable plain text
+  json      JSON report envelope
+  yaml      YAML report envelope
+  xml       XML report envelope
+  gcc       file:line:col: severity: reason (for CI/editors)
+  github    GitHub Actions annotation (::error file=...)")]
     pub format: String,
 
     /// Show full XML with matches highlighted (for debugging XPath)
@@ -207,24 +213,32 @@ pub struct CheckArgs {
     #[command(flatten)]
     pub shared: SharedArgs,
 
-    /// Report view [default: gcc]
+    /// Report view [default: tree]
     #[arg(short = 'v', long = "view", help_heading = "View",
         long_help = "\
-Report view [default: gcc]
-  gcc       file:line:col: severity: message (default for check)
-  github    GitHub Actions annotation format
-  value     Text content of matched nodes
+Report view [default: tree]
   tree      Parsed source tree
+  value     Text content of matched nodes
+  source    Exact matched source text
   lines     Full source lines containing each match
-  source    Exact matched source text")]
+  count     Total match count
+  schema    Structural overview of element types")]
     pub view: Option<String>,
 
     /// Custom message template (supports {value}, {line}, {col}, {file})
     #[arg(short = 'm', long = "message", help_heading = "View")]
     pub message: Option<String>,
 
-    /// Report format: text (default), json
-    #[arg(short = 'f', long = "format", default_value = "text", help_heading = "Format")]
+    /// Output format [default: gcc]
+    #[arg(short = 'f', long = "format", default_value = "gcc", help_heading = "Format",
+        long_help = "\
+Output format [default: gcc]
+  gcc       file:line:col: severity: reason (default for check)
+  github    GitHub Actions annotation (::error file=...)
+  text      Human-readable plain text
+  json      JSON report envelope
+  yaml      YAML report envelope
+  xml       XML report envelope")]
     pub format: String,
 
     /// Reason message for each violation
@@ -258,8 +272,6 @@ Report view [default: tree]
   value     Text content of matched nodes
   source    Exact matched source text
   lines     Full source lines containing each match
-  gcc       file:line:col: severity: message
-  github    GitHub Actions annotation format
   count     Total match count
   schema    Structural overview of element types")]
     pub view: Option<String>,
@@ -268,7 +280,7 @@ Report view [default: tree]
     #[arg(short = 'm', long = "message", help_heading = "View")]
     pub message: Option<String>,
 
-    /// Report format: text (default), json
+    /// Output format: text (default), json, yaml, gcc, github
     #[arg(short = 'f', long = "format", default_value = "text", help_heading = "Format")]
     pub format: String,
 

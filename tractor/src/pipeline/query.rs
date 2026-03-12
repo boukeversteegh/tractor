@@ -4,13 +4,13 @@ use std::collections::HashSet;
 use rayon::prelude::*;
 use tractor_core::{
     XPathEngine, Match,
-    OutputFormat, format_matches, SchemaCollector,
+    format_matches, SchemaCollector,
     output::{render_document, render_node, RenderOptions},
     parse_to_documents, parse_string_to_documents,
     XeeParseResult,
 };
 
-use super::context::RunContext;
+use super::context::{RunContext, ViewField};
 
 // ---------------------------------------------------------------------------
 // Batch utility
@@ -78,7 +78,7 @@ pub fn query_files_batched(
     let mut total_matches = 0usize;
     let mut remaining_limit = ctx.limit;
     let mut all_matches: Vec<Match> = Vec::new();
-    let is_count_format = matches!(ctx.view, OutputFormat::Count);
+    let is_count_format = ctx.view.has(ViewField::Count);
 
     for batch in batches {
         if remaining_limit == Some(0) {
@@ -138,7 +138,7 @@ pub fn query_files_batched(
         if collect {
             all_matches.extend(batch_matches);
         } else if !is_count_format {
-            let output = format_matches(&batch_matches, ctx.view.clone(), &ctx.options);
+            let output = format_matches(&batch_matches, ctx.view.primary_output_format(), &ctx.options);
             print!("{}", output);
             io::stdout().flush().ok();
         }
@@ -156,7 +156,7 @@ pub fn explore_files(ctx: &RunContext, files: &[String]) -> Result<(), Box<dyn s
     let raw = ctx.raw;
     let verbose = ctx.verbose;
 
-    if matches!(ctx.view, OutputFormat::Count) {
+    if ctx.view.has(ViewField::Count) {
         let count: usize = files
             .par_iter()
             .filter(|file_path| {
@@ -176,7 +176,7 @@ pub fn explore_files(ctx: &RunContext, files: &[String]) -> Result<(), Box<dyn s
         return Ok(());
     }
 
-    if matches!(ctx.view, OutputFormat::Schema) {
+    if ctx.view.has(ViewField::Schema) {
         let collectors: Vec<SchemaCollector> = files
             .par_iter()
             .filter_map(|file_path| {
@@ -228,7 +228,7 @@ pub fn explore_files(ctx: &RunContext, files: &[String]) -> Result<(), Box<dyn s
 
     let render_opts = ctx.render_options();
 
-    if matches!(ctx.view, OutputFormat::Xml) {
+    if ctx.view.has(ViewField::Tree) {
         if parse_results.len() == 1 {
             let result = &parse_results[0];
             let doc_node = result.documents.document_node(result.doc_handle).unwrap();
@@ -286,7 +286,7 @@ pub fn explore_files(ctx: &RunContext, files: &[String]) -> Result<(), Box<dyn s
         })
         .collect();
 
-    let output = format_matches(&matches, ctx.view.clone(), &ctx.options);
+    let output = format_matches(&matches, ctx.view.primary_output_format(), &ctx.options);
     print!("{}", output);
 
     Ok(())
@@ -299,7 +299,7 @@ pub fn explore_inline(ctx: &RunContext, source: &str, lang: &str) -> Result<(), 
 
     let render_opts = ctx.render_options();
 
-    if matches!(ctx.view, OutputFormat::Xml) {
+    if ctx.view.has(ViewField::Tree) {
         let doc_node = result.documents.document_node(result.doc_handle).unwrap();
         let xot = result.documents.xot();
         for child in xot.children(doc_node) {
@@ -309,7 +309,7 @@ pub fn explore_inline(ctx: &RunContext, source: &str, lang: &str) -> Result<(), 
         return Ok(());
     }
 
-    if matches!(ctx.view, OutputFormat::Schema) {
+    if ctx.view.has(ViewField::Schema) {
         let doc_node = result.documents.document_node(result.doc_handle).unwrap();
         let mut collector = SchemaCollector::new();
         collector.collect_from_xot(result.documents.xot(), doc_node);
@@ -337,7 +337,7 @@ pub fn explore_inline(ctx: &RunContext, source: &str, lang: &str) -> Result<(), 
         result.source_lines.clone(),
     ).with_xml_fragment(xml);
 
-    let output = format_matches(&[file_match], ctx.view.clone(), &ctx.options);
+    let output = format_matches(&[file_match], ctx.view.primary_output_format(), &ctx.options);
     print!("{}", output);
     Ok(())
 }
@@ -345,15 +345,6 @@ pub fn explore_inline(ctx: &RunContext, source: &str, lang: &str) -> Result<(), 
 // ---------------------------------------------------------------------------
 // Output helpers
 // ---------------------------------------------------------------------------
-
-pub fn output_query_results(ctx: &RunContext, matches: &[Match]) {
-    if matches!(ctx.view, OutputFormat::Schema) {
-        print_schema_from_matches(matches, ctx.schema_depth(), ctx.use_color);
-        return;
-    }
-    let output = format_matches(matches, ctx.view.clone(), &ctx.options);
-    print!("{}", output);
-}
 
 pub fn print_schema_from_matches(matches: &[Match], depth: Option<usize>, use_color: bool) {
     let mut collector = SchemaCollector::new();

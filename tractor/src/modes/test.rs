@@ -31,12 +31,9 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
     let error_template = args.error.clone();
     let message = args.message.clone();
 
-    let default_view = view::TREE;
-    let view = args.view.as_deref().unwrap_or(default_view);
-
     let ctx = RunContext::build(
         &args.shared, args.files, args.shared.xpath.clone(),
-        &args.format, Some(view), args.message, args.content, args.warning, false,
+        &args.format, view::SUMMARY, args.view.as_deref(), args.message, args.content, args.warning, false,
     )?;
 
     let dot = ".".to_string();
@@ -57,9 +54,13 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
     let passed = check_expectation(&expect, count)?;
 
     // Build ReportMatches (no reason/severity for test matches)
-    let report_matches: Vec<ReportMatch> = matches.into_iter()
-        .map(ReportMatch::from_match)
-        .collect();
+    let message_template = ctx.options.message.clone();
+    let report_matches: Vec<ReportMatch> = matches.into_iter().map(|m| {
+        let message = message_template.as_deref().map(|t| tractor_core::format_message(t, &m));
+        let mut rm = ReportMatch::from_match(m);
+        rm.message = message;
+        rm
+    }).collect();
 
     // Build summary
     let mut files_affected = HashSet::new();

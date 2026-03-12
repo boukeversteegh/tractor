@@ -13,6 +13,17 @@ use cli::{Cli, Command};
 use clap::Parser;
 use modes::{check::run_check, test::run_test, set::run_set, query::run_query};
 
+/// An error that has already been reported to the user; main should exit with
+/// failure but not print an additional "error: ..." line.
+pub struct SilentExit;
+impl std::fmt::Display for SilentExit {
+    fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> std::fmt::Result { Ok(()) }
+}
+impl std::fmt::Debug for SilentExit {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result { write!(f, "SilentExit") }
+}
+impl std::error::Error for SilentExit {}
+
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
@@ -46,7 +57,10 @@ fn main() -> ExitCode {
     };
 
     if let Err(e) = result {
-        eprintln!("error: {}", e);
+        let msg = e.to_string();
+        if !msg.is_empty() {
+            eprintln!("error: {}", msg);
+        }
         return ExitCode::FAILURE;
     }
 

@@ -46,6 +46,9 @@ impl Severity {
 pub struct ReportMatch {
     pub inner: Match,
 
+    /// Interpolated message from `-m` template.
+    pub message: Option<String>,
+
     /// Violation description — populated by `tractor check --reason`.
     pub reason: Option<String>,
 
@@ -58,15 +61,16 @@ pub struct ReportMatch {
 
 impl ReportMatch {
     pub fn from_match(m: Match) -> Self {
-        ReportMatch { inner: m, reason: None, severity: None, rule_id: None }
+        ReportMatch { inner: m, message: None, reason: None, severity: None, rule_id: None }
     }
 }
 
 impl Serialize for ReportMatch {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         // Count fields: file, line, column, end_line, end_column, value = 6
-        // + optional: reason, severity, rule_id
-        let optional_count = self.reason.as_ref().map_or(0, |_| 1)
+        // + optional: message, reason, severity, rule_id
+        let optional_count = self.message.as_ref().map_or(0, |_| 1)
+            + self.reason.as_ref().map_or(0, |_| 1)
             + self.severity.as_ref().map_or(0, |_| 1)
             + self.rule_id.as_ref().map_or(0, |_| 1);
         let mut map = serializer.serialize_map(Some(6 + optional_count))?;
@@ -78,6 +82,9 @@ impl Serialize for ReportMatch {
         map.serialize_entry("end_column", &self.inner.end_column)?;
         map.serialize_entry("value", &self.inner.value)?;
 
+        if let Some(ref message) = self.message {
+            map.serialize_entry("message", message)?;
+        }
         if let Some(ref reason) = self.reason {
             map.serialize_entry("reason", reason)?;
         }
@@ -133,6 +140,13 @@ pub enum ReportKind {
     Test,
 }
 
+/// Matches grouped by source file.
+#[derive(Debug, Clone, Serialize)]
+pub struct FileGroup {
+    pub file: String,
+    pub matches: Vec<ReportMatch>,
+}
+
 /// The normalized output of a tractor command.
 #[derive(Debug, Serialize)]
 pub struct Report {
@@ -142,24 +156,47 @@ pub struct Report {
     /// Present for check and test reports; absent for query.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub summary: Option<Summary>,
+
+    /// Optional pre-grouped structure. Populated by `group_by_file()`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub groups: Option<Vec<FileGroup>>,
 }
 
 impl Report {
     pub fn query(matches: Vec<ReportMatch>, summary: Summary) -> Self {
-        Report { kind: ReportKind::Query, matches, summary: Some(summary) }
+        Report { kind: ReportKind::Query, matches, summary: Some(summary), groups: None }
     }
 
     pub fn check(matches: Vec<ReportMatch>, summary: Summary) -> Self {
-        Report { kind: ReportKind::Check, matches, summary: Some(summary) }
+        Report { kind: ReportKind::Check, matches, summary: Some(summary), groups: None }
     }
 
     pub fn test(matches: Vec<ReportMatch>, summary: Summary) -> Self {
-        Report { kind: ReportKind::Test, matches, summary: Some(summary) }
+        Report { kind: ReportKind::Test, matches, summary: Some(summary), groups: None }
     }
 
     /// Serialize this report to pretty-printed JSON.
     pub fn to_json(&self) -> String {
         serde_json::to_string_pretty(self).unwrap_or_else(|_| "{}".to_string())
+    }
+
+    /// Consume flat `matches`, group them by source file, and clear the flat list.
+    /// After this call `matches` is empty and `groups` holds all the data.
+    /// Renderers can then unconditionally render whichever of the two is non-empty.
+    pub fn with_groups(mut self) -> Self {
+        let mut groups: Vec<FileGroup> = Vec::new();
+        let mut file_index: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+
+        for rm in self.matches.drain(..) {
+            let file = normalize_path(&rm.inner.file);
+            let idx = file_index.entry(file.clone()).or_insert_with(|| {
+                groups.push(FileGroup { file: file.clone(), matches: Vec::new() });
+                groups.len() - 1
+            });
+            groups[*idx].matches.push(rm);
+        }
+        self.groups = Some(groups);
+        self
     }
 }
 
@@ -179,12 +216,14 @@ mod tests {
     fn test_check_report_json() {
         let m1 = ReportMatch {
             inner: make_match("src\\main.rs", 10, 5, "foo"),
+            message: None,
             reason: Some("no foo allowed".to_string()),
             severity: Some(Severity::Error),
             rule_id: None,
         };
         let m2 = ReportMatch {
             inner: make_match("src/lib.rs", 3, 1, "bar"),
+            message: None,
             reason: Some("no bar allowed".to_string()),
             severity: Some(Severity::Warning),
             rule_id: None,

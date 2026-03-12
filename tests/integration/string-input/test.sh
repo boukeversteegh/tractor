@@ -22,7 +22,7 @@ run_test tractor test -s "let x = 1;" -l rust -x "function" --expect none -m "ex
 # Output formats
 run_test tractor test -s "class Foo { }" -l csharp -x "class/name" -v value --expect 1 -m "output value with -s"
 run_test tractor test -s "class Foo { }" -l csharp -x "class" -v count --expect 1 -m "output count with -s"
-run_test tractor test -s "class Foo { }" -l csharp -x "class" -v gcc --expect 1 -m "output gcc with -s"
+run_test tractor test -s "class Foo { }" -l csharp -x "class" -f gcc --expect 1 -m "output gcc with -s"
 
 # Without xpath (full AST output) - should succeed without error
 run_test tractor test -s "let x = 1;" -l rust -v count --expect 1 -m "string without xpath outputs AST"

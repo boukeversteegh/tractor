@@ -41,7 +41,7 @@ pub use parser::{
     print_parse_timing_stats,
 };
 pub use xpath::{XPathEngine, Match, print_timing_stats, Documents, DocumentHandle};
-pub use output::{OutputFormat, format_matches, OutputOptions, render_node, render_document, render_xml_string, RenderOptions, format_schema, SchemaCollector};
+pub use output::{OutputFormat, format_matches, OutputOptions, format_message, normalize_path, render_node, render_document, render_xml_string, RenderOptions, format_schema, SchemaCollector};
 pub use replace::{apply_replacements, ReplaceSummary, ReplaceError};
 pub use report::{Report, ReportKind, ReportMatch, Summary, Severity};
 #[cfg(feature = "native")]
