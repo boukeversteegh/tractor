@@ -92,7 +92,7 @@ tasks:
   run:
     desc: Run tractor with arguments
     cmds:
-      - cargo run --release -p tractor -- {{.CLI_ARGS}}
+      - cargo run --release -p tractor --bin tractor -- {{.CLI_ARGS}}
 
   test:
     desc: Run all tests (Rust, TypeScript, integration)
