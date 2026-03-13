@@ -84,6 +84,24 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
         "check", "tests/integration/formats/sample.cs", "-x", "class",
         "--reason", "class found", "-f", "yaml",
     ]),
+    // Color snapshots: ANSI codes rendered as \e so they are visible in text editors.
+    // These document what colored output looks like for each format.
+    ("text/query-color.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "--color", "always",
+    ]),
+    ("xml/query-color.xml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-f", "xml", "--color", "always",
+    ]),
+    ("xml/check-color.xml", &[
+        "check", "tests/integration/formats/sample.cs", "-x", "class",
+        "--reason", "class found", "-f", "xml", "--color", "always",
+    ]),
+    ("gcc/check-color.txt", &[
+        "check", "tests/integration/formats/sample.cs", "-x", "class",
+        "--reason", "class found", "--color", "always",
+    ]),
 ];
 
 fn main() {
@@ -185,11 +203,10 @@ fn main() {
         }
         let raw = run_tractor_args(&tractor_bin, args);
         // Strip the absolute CWD prefix from gcc/text output so snapshots are portable.
-        let output = if !cwd_prefix.is_empty() {
-            raw.replace(&cwd_prefix, "")
-        } else {
-            raw
-        };
+        // Make ANSI escape codes visible as \e so color snapshots are readable in text editors.
+        let output = raw
+            .replace(&cwd_prefix, "")
+            .replace('\x1b', "\\e");
 
         if check_mode {
             if let Ok(existing) = fs::read_to_string(&snap_path) {
