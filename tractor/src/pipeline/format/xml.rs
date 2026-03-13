@@ -4,9 +4,10 @@ use super::options::{ViewField, ViewSet};
 pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions) -> String {
     use tractor_core::report::ReportKind;
 
-    let mut out = String::new();
-    out.push_str("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-    out.push_str("<report>\n");
+    // Tree fragments inside <tree> are built without color. The entire report is colorized
+    // in one pass at the end via render_xml_string — keeping coloring at the serialization layer.
+    let mut tree_opts = render_opts.clone();
+    tree_opts.use_color = false;
 
     // Summary: always present for check/test reports (structural, not view-gated).
     // For query reports, only include if explicitly requested via -v summary.
@@ -15,20 +16,6 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
     } else {
         true
     };
-    if show_summary {
-        if let Some(ref summary) = report.summary {
-            out.push_str("  <summary>\n");
-            out.push_str(&format!("    <passed>{}</passed>\n", summary.passed));
-            out.push_str(&format!("    <total>{}</total>\n", summary.total));
-            out.push_str(&format!("    <files>{}</files>\n", summary.files_affected));
-            out.push_str(&format!("    <errors>{}</errors>\n", summary.errors));
-            out.push_str(&format!("    <warnings>{}</warnings>\n", summary.warnings));
-            if let Some(ref expected) = summary.expected {
-                out.push_str(&format!("    <expected>{}</expected>\n", escape(expected)));
-            }
-            out.push_str("  </summary>\n");
-        }
-    }
 
     let show_tree     = view.has(ViewField::Tree);
     let show_value    = view.has(ViewField::Value);
@@ -37,27 +24,56 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
     let show_reason   = view.has(ViewField::Reason);
     let show_severity = view.has(ViewField::Severity);
 
-    if !report.matches.is_empty() {
-        out.push_str("  <matches>\n");
-        for rm in &report.matches {
-            append_match(&mut out, rm, show_tree, show_value, show_source, show_lines, show_reason, show_severity, "    ", render_opts);
-        }
-        out.push_str("  </matches>\n");
-    }
-    if let Some(ref groups) = report.groups {
-        out.push_str("  <groups>\n");
-        for g in groups {
-            out.push_str(&format!("    <group file=\"{}\">\n", escape_attr(&g.file)));
-            for rm in &g.matches {
-                append_match(&mut out, rm, show_tree, show_value, show_source, show_lines, show_reason, show_severity, "      ", render_opts);
+    let mut body = String::new();
+    body.push_str("<report>\n");
+
+    if show_summary {
+        if let Some(ref summary) = report.summary {
+            body.push_str("  <summary>\n");
+            body.push_str(&format!("    <passed>{}</passed>\n", summary.passed));
+            body.push_str(&format!("    <total>{}</total>\n", summary.total));
+            body.push_str(&format!("    <files>{}</files>\n", summary.files_affected));
+            body.push_str(&format!("    <errors>{}</errors>\n", summary.errors));
+            body.push_str(&format!("    <warnings>{}</warnings>\n", summary.warnings));
+            if let Some(ref expected) = summary.expected {
+                body.push_str(&format!("    <expected>{}</expected>\n", escape(expected)));
             }
-            out.push_str("    </group>\n");
+            body.push_str("  </summary>\n");
         }
-        out.push_str("  </groups>\n");
     }
 
-    out.push_str("</report>\n");
-    out
+    if !report.matches.is_empty() {
+        body.push_str("  <matches>\n");
+        for rm in &report.matches {
+            append_match(&mut body, rm, show_tree, show_value, show_source, show_lines, show_reason, show_severity, "    ", &tree_opts);
+        }
+        body.push_str("  </matches>\n");
+    }
+    if let Some(ref groups) = report.groups {
+        body.push_str("  <groups>\n");
+        for g in groups {
+            body.push_str(&format!("    <group file=\"{}\">\n", escape_attr(&g.file)));
+            for rm in &g.matches {
+                append_match(&mut body, rm, show_tree, show_value, show_source, show_lines, show_reason, show_severity, "      ", &tree_opts);
+            }
+            body.push_str("    </group>\n");
+        }
+        body.push_str("  </groups>\n");
+    }
+
+    body.push_str("</report>\n");
+
+    // Colorize the whole report XML in one pass via the unified XML renderer.
+    if render_opts.use_color {
+        let color_opts = RenderOptions::new()
+            .with_color(true)
+            .with_locations(render_opts.include_locations)
+            .with_pretty_print(true);
+        let colored = render_xml_string(&body, &color_opts);
+        format!("\x1b[2m<?xml version=\"1.0\" encoding=\"UTF-8\"?>\x1b[0m\n{}", colored)
+    } else {
+        format!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n{}", body)
+    }
 }
 
 fn append_match(
@@ -115,6 +131,7 @@ fn append_match(
     // Tree is always last — it's the bulkiest field
     if show_tree {
         if let Some(ref frag) = m.xml_fragment {
+            // render_opts has use_color=false here; the outer colorization pass handles it
             let rendered = render_xml_string(frag, render_opts);
             out.push_str(&format!("{}<tree>\n", inner));
             for line in rendered.lines() {
