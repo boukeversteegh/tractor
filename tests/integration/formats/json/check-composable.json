@@ -14,13 +14,90 @@
           "line": 1,
           "column": 1,
           "reason": "class found",
-          "severity": "error"
+          "severity": "error",
+          "tree": {
+            "type": "class",
+            "public": true,
+            "children": [
+              {
+                "name": "Foo"
+              },
+              {
+                "type": "body",
+                "children": [
+                  {
+                    "type": "property",
+                    "public": true,
+                    "children": [
+                      {
+                        "type": "int"
+                      },
+                      {
+                        "name": "Bar"
+                      },
+                      {
+                        "type": "accessors",
+                        "children": [
+                          {
+                            "accessor": "get;"
+                          },
+                          {
+                            "accessor": "set;"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "method",
+                    "public": true,
+                    "children": [
+                      {
+                        "type": "returns",
+                        "children": [
+                          {
+                            "type": "void"
+                          }
+                        ]
+                      },
+                      {
+                        "name": "Baz"
+                      },
+                      {
+                        "parameters": "()"
+                      },
+                      {
+                        "type": "body",
+                        "children": [
+                          {
+                            "block": "{ }"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
         },
         {
           "line": 7,
           "column": 1,
           "reason": "class found",
-          "severity": "error"
+          "severity": "error",
+          "tree": {
+            "type": "class",
+            "public": true,
+            "children": [
+              {
+                "name": "Qux"
+              },
+              {
+                "body": "{ }"
+              }
+            ]
+          }
         }
       ]
     }

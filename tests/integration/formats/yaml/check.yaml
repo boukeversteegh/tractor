@@ -1,0 +1,17 @@
+summary:
+  passed: false
+  total: 2
+  files: 1
+  errors: 2
+  warnings: 0
+groups:
+- file: tests/integration/formats/sample.cs
+  matches:
+  - line: 1
+    column: 1
+    reason: class found
+    severity: error
+  - line: 7
+    column: 1
+    reason: class found
+    severity: error

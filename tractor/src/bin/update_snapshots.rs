@@ -62,7 +62,11 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
     ]),
     ("json/check-composable.json", &[
         "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "-v", "reason,severity", "-f", "json",
+        "--reason", "class found", "-v", "tree,reason,severity", "-f", "json",
+    ]),
+    ("json/query-summary.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-v", "summary", "-f", "json",
     ]),
     // -f xml
     ("xml/query.xml", &[
@@ -75,6 +79,10 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
     // -f yaml
     ("yaml/query.yaml", &[
         "query", "tests/integration/formats/sample.cs", "-x", "class", "-f", "yaml",
+    ]),
+    ("yaml/check.yaml", &[
+        "check", "tests/integration/formats/sample.cs", "-x", "class",
+        "--reason", "class found", "-f", "yaml",
     ]),
 ];
 
