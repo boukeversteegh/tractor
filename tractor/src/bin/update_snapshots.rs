@@ -170,6 +170,11 @@ fn main() {
 
     let output_formats_dir = tests_dir.join("formats");
 
+    // Stable CWD prefix for normalizing absolute paths in gcc snapshots.
+    let cwd_prefix = std::env::current_dir()
+        .map(|p| p.to_string_lossy().replace('\\', "/") + "/")
+        .unwrap_or_default();
+
     for (name, args) in OUTPUT_FORMAT_CASES {
         let snap_path = output_formats_dir.join(name);
         let snap_path_str = snap_path.to_string_lossy().replace('\\', "/");
@@ -178,7 +183,13 @@ fn main() {
                 fs::create_dir_all(parent).expect("cannot create output-format subdir");
             }
         }
-        let output = run_tractor_args(&tractor_bin, args);
+        let raw = run_tractor_args(&tractor_bin, args);
+        // Strip the absolute CWD prefix from gcc/text output so snapshots are portable.
+        let output = if !cwd_prefix.is_empty() {
+            raw.replace(&cwd_prefix, "")
+        } else {
+            raw
+        };
 
         if check_mode {
             if let Ok(existing) = fs::read_to_string(&snap_path) {
