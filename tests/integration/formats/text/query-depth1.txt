@@ -1,0 +1,14 @@
+<class>
+  <public/>
+  class
+  <name>Foo</name>
+  <body>
+    <!-- ... (15 children) -->
+  </body>
+</class>
+<class>
+  <public/>
+  class
+  <name>Qux</name>
+  <body>{ }</body>
+</class>

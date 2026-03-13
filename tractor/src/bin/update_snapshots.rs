@@ -84,6 +84,25 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
         "check", "tests/integration/formats/sample.cs", "-x", "class",
         "--reason", "class found", "-f", "yaml",
     ]),
+    // --depth snapshots: verify tree truncation at various depths
+    ("text/query-depth1.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "--depth", "1",
+    ]),
+    ("text/query-depth2.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "--depth", "2",
+    ]),
+    ("json/query-depth1.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-v", "tree", "-f", "json", "--depth", "1",
+    ]),
+    ("json/query-depth2.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-v", "tree", "-f", "json", "--depth", "2",
+    ]),
+    ("xml/check-composable-depth1.xml", &[
+        "check", "tests/integration/formats/sample.cs", "-x", "class",
+        "--reason", "class found", "-v", "tree,reason,severity", "-f", "xml", "--depth", "1",
+    ]),
     // Color snapshots: ANSI codes rendered as \e so they are visible in text editors.
     // These document what colored output looks like for each format.
     ("text/query-color.txt", &[
