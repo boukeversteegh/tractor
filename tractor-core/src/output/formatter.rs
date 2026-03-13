@@ -6,11 +6,20 @@ use crate::output::syntax_highlight::{extract_syntax_spans_with_lang, highlight_
 use crate::languages::get_syntax_category;
 use regex::Regex;
 
-/// Output format options for match rendering (-v / --view).
-/// These are view/field selections, not serialization formats.
-/// For serialization formats (gcc, github, json, xml), see SerFormat in the tractor binary.
+/// Internal dispatch enum for the text output path of `format_matches()`.
+///
+/// # OBSOLETE
+///
+/// This enum is a legacy internal detail. The canonical view-field representation
+/// is `ViewField`/`ViewSet` in the tractor binary layer. `ViewSet::primary_output_format()`
+/// is a compatibility shim that translates into this enum so the old text renderer
+/// still works.
+///
+/// TODO: Eliminate this enum by inlining the per-variant dispatch directly into
+/// `format_matches()` and replacing call sites with direct `ViewSet` checks.
+/// That removes the shim and this type entirely.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum OutputFormat {
+pub enum TextViewMode {
     /// XML of matched nodes
     Xml,
     /// Full source lines containing the match
@@ -45,14 +54,14 @@ pub struct OutputOptions {
 }
 
 /// Format matches according to the specified view format
-pub fn format_matches(matches: &[Match], format: OutputFormat, options: &OutputOptions) -> String {
+pub fn format_matches(matches: &[Match], format: TextViewMode, options: &OutputOptions) -> String {
     match format {
-        OutputFormat::Xml => format_xml(matches, options),
-        OutputFormat::Lines => format_lines(matches, options),
-        OutputFormat::Source => format_source(matches, options),
-        OutputFormat::Value => format_value(matches),
-        OutputFormat::Count => format_count(matches),
-        OutputFormat::Schema => String::new(), // Handled separately - requires full XML aggregation
+        TextViewMode::Xml => format_xml(matches, options),
+        TextViewMode::Lines => format_lines(matches, options),
+        TextViewMode::Source => format_source(matches, options),
+        TextViewMode::Value => format_value(matches),
+        TextViewMode::Count => format_count(matches),
+        TextViewMode::Schema => String::new(), // Handled separately - requires full XML aggregation
     }
 }
 

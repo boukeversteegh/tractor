@@ -2,8 +2,8 @@ use std::collections::HashSet;
 use tractor_core::report::{Report, ReportMatch, Summary};
 use clap::CommandFactory;
 use crate::cli::{Cli, QueryArgs};
-use crate::pipeline::{RunContext, SerFormat, ViewField, InputMode, view, query_inline_source, query_files_batched, explore_inline, explore_files, run_debug};
-use crate::pipeline::report_output::{render_gcc, render_github, render_xml_report, render_json_report, render_yaml_report};
+use crate::pipeline::{RunContext, OutputFormat, ViewField, InputMode, view, query_inline_source, query_files_batched, explore_inline, explore_files, run_debug};
+use crate::pipeline::format::{render_gcc, render_github, render_xml_report, render_json_report, render_yaml_report};
 
 pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     let ctx = RunContext::build(
@@ -85,31 +85,31 @@ fn build_query_report(matches: Vec<tractor_core::Match>, message_template: Optio
     Report::query(report_matches, summary)
 }
 
-/// Render query results to stdout based on the current SerFormat.
+/// Render query results to stdout based on the current OutputFormat.
 fn render_query_output(ctx: &RunContext, matches: Vec<tractor_core::Match>) -> Result<(), Box<dyn std::error::Error>> {
     let template = ctx.options.message.as_deref();
-    match ctx.ser_format {
-        SerFormat::Json => {
+    match ctx.output_format {
+        OutputFormat::Json => {
             let report = build_query_report(matches, template);
             print!("{}", render_json_report(&report, &ctx.view, &ctx.render_options()));
         }
-        SerFormat::Yaml => {
+        OutputFormat::Yaml => {
             let report = build_query_report(matches, template);
             print!("{}", render_yaml_report(&report, &ctx.view, &ctx.render_options()));
         }
-        SerFormat::Xml => {
+        OutputFormat::Xml => {
             let report = build_query_report(matches, template);
             print!("{}", render_xml_report(&report, &ctx.view, &ctx.render_options()));
         }
-        SerFormat::Gcc => {
+        OutputFormat::Gcc => {
             let report = build_query_report(matches, template);
             print!("{}", render_gcc(&report));
         }
-        SerFormat::Github => {
+        OutputFormat::Github => {
             let report = build_query_report(matches, template);
             print!("{}", render_github(&report));
         }
-        SerFormat::Text => {
+        OutputFormat::Text => {
             let output = tractor_core::format_matches(&matches, ctx.view.primary_output_format(), &ctx.options);
             print!("{}", output);
         }

@@ -10,7 +10,8 @@ use tractor_core::{
     XeeParseResult,
 };
 
-use super::context::{RunContext, ViewField};
+use super::context::RunContext;
+use super::format::ViewField;
 
 // ---------------------------------------------------------------------------
 // Batch utility

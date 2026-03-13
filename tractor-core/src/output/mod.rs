@@ -17,7 +17,7 @@ pub mod syntax_highlight;
 mod schema;
 pub mod xml_to_json;
 
-pub use formatter::{OutputFormat, format_matches, OutputOptions, format_message};
+pub use formatter::{TextViewMode, format_matches, OutputOptions, format_message};
 pub use formatter::normalize_path;
 pub use colors::should_use_color;
 pub use xml_renderer::{render_node, render_document, render_xml_string, RenderOptions};
@@ -29,7 +29,7 @@ use crate::xpath::Match;
 /// Format a list of matches according to the specified format
 pub fn format_output(
     matches: &[Match],
-    format: OutputFormat,
+    format: TextViewMode,
     options: &OutputOptions,
 ) -> String {
     format_matches(matches, format, options)
