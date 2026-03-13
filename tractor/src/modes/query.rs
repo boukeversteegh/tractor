@@ -110,8 +110,18 @@ fn render_query_output(ctx: &RunContext, matches: Vec<tractor_core::Match>) -> R
             print!("{}", render_github(&report));
         }
         OutputFormat::Text => {
-            let output = tractor_core::format_matches(&matches, ctx.view.primary_output_format(), &ctx.options);
-            print!("{}", output);
+            let report = build_query_report(matches, template);
+            let inner: Vec<_> = report.matches.iter().map(|rm| rm.inner.clone()).collect();
+            if template.is_some() {
+                for rm in &report.matches {
+                    if let Some(ref msg) = rm.message {
+                        println!("{}", msg);
+                    }
+                }
+            } else {
+                let output = tractor_core::format_matches(&inner, ctx.view.primary_output_format(), &ctx.options);
+                print!("{}", output);
+            }
         }
     }
     Ok(())

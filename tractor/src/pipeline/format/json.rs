@@ -4,7 +4,6 @@ use super::options::{ViewField, ViewSet};
 
 pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions) -> String {
     let mut root = serde_json::Map::new();
-    root.insert("kind".into(), json!(format!("{:?}", report.kind).to_lowercase()));
 
     if view.has(ViewField::Summary) {
         if let Some(ref summary) = report.summary {

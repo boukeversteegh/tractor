@@ -11,8 +11,14 @@ NC='\033[0m'
 echo -e "${BLUE}Tractor Integration Tests${NC}"
 echo ""
 
-# Run each test suite
-for suite in rust python typescript javascript go java csharp ruby xml yaml markdown tsql string-input replace xpath-expressions; do
+# Language parse/query tests
+for suite in rust python typescript javascript go java csharp ruby xml yaml markdown tsql ini toml; do
+    bash "tests/integration/languages/$suite/test.sh" || exit 1
+    echo ""
+done
+
+# Feature tests
+for suite in string-input replace xpath-expressions; do
     bash "tests/integration/$suite/test.sh" || exit 1
     echo ""
 done

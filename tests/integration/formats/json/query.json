@@ -1,0 +1,102 @@
+{
+  "matches": [
+    {
+      "file": "tests/integration/formats/sample.cs",
+      "line": 1,
+      "column": 1,
+      "tree": {
+        "type": "class",
+        "public": true,
+        "children": [
+          {
+            "type": "name",
+            "text": "Foo"
+          },
+          {
+            "type": "body",
+            "children": [
+              {
+                "type": "property",
+                "public": true,
+                "children": [
+                  {
+                    "type": "type",
+                    "text": "int"
+                  },
+                  {
+                    "type": "name",
+                    "text": "Bar"
+                  },
+                  {
+                    "type": "accessors",
+                    "children": [
+                      {
+                        "type": "accessor",
+                        "text": "get;"
+                      },
+                      {
+                        "type": "accessor",
+                        "text": "set;"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "method",
+                "public": true,
+                "children": [
+                  {
+                    "type": "returns",
+                    "children": [
+                      {
+                        "type": "type",
+                        "text": "void"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "name",
+                    "text": "Baz"
+                  },
+                  {
+                    "type": "parameters",
+                    "text": "()"
+                  },
+                  {
+                    "type": "body",
+                    "children": [
+                      {
+                        "type": "block",
+                        "text": "{ }"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "file": "tests/integration/formats/sample.cs",
+      "line": 7,
+      "column": 1,
+      "tree": {
+        "type": "class",
+        "public": true,
+        "children": [
+          {
+            "type": "name",
+            "text": "Qux"
+          },
+          {
+            "type": "body",
+            "text": "{ }"
+          }
+        ]
+      }
+    }
+  ]
+}

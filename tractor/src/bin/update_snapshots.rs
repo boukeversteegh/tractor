@@ -3,6 +3,9 @@
 //! Walks `tests/integration/*/`, finds source files by known extensions,
 //! and runs tractor on each to produce `.xml` and `.raw.xml` snapshots.
 //!
+//! Also handles output-format combination snapshots in
+//! `tests/integration/formats/snapshots/`.
+//!
 //! Usage:
 //!   cargo run --release --bin update-snapshots          # update snapshots
 //!   cargo run --release --bin update-snapshots -- --check  # check only (no writes)
@@ -14,6 +17,66 @@ use std::process::{self, Command};
 
 /// File extensions to skip (not source fixtures).
 const SKIP_EXTENSIONS: &[&str] = &["xml", "sh", "md"];
+
+/// Output-format snapshot cases: (relative path under formats/, tractor args).
+/// Directory = -f value, name = command + params, extension = file format.
+const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
+    // -f text
+    ("text/query.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+    ]),
+    ("text/query-value.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-v", "value",
+    ]),
+    ("text/query-count.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-v", "count",
+    ]),
+    ("text/query-message.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-m", "{file}:{line}",
+    ]),
+    // -f gcc
+    ("gcc/check.txt", &[
+        "check", "tests/integration/formats/sample.cs", "-x", "class",
+        "--reason", "class found",
+    ]),
+    ("gcc/check-no-matches.txt", &[
+        "check", "tests/integration/formats/sample.cs", "-x", "interface",
+        "--reason", "interface found",
+    ]),
+    // -f json
+    ("json/query.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-f", "json",
+    ]),
+    ("json/query-value.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-v", "value", "-f", "json",
+    ]),
+    ("json/query-message.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-m", "{file}:{line}", "-f", "json",
+    ]),
+    ("json/check.json", &[
+        "check", "tests/integration/formats/sample.cs", "-x", "class",
+        "--reason", "class found", "-f", "json",
+    ]),
+    ("json/check-composable.json", &[
+        "check", "tests/integration/formats/sample.cs", "-x", "class",
+        "--reason", "class found", "-v", "reason,severity", "-f", "json",
+    ]),
+    // -f xml
+    ("xml/query.xml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-f", "xml",
+    ]),
+    ("xml/check.xml", &[
+        "check", "tests/integration/formats/sample.cs", "-x", "class",
+        "--reason", "class found", "-f", "xml",
+    ]),
+    // -f yaml
+    ("yaml/query.yaml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-f", "yaml",
+    ]),
+];
 
 fn main() {
     let check_mode = std::env::args().any(|a| a == "--check");
@@ -30,8 +93,11 @@ fn main() {
     let mut processed = 0;
     let mut mismatches: Vec<String> = Vec::new();
 
-    let mut dirs: Vec<_> = fs::read_dir(tests_dir)
-        .expect("cannot read tests/integration")
+    // --- Language parse-tree snapshots ---
+
+    let languages_dir = tests_dir.join("languages");
+    let mut dirs: Vec<_> = fs::read_dir(&languages_dir)
+        .expect("cannot read tests/integration/languages")
         .filter_map(|e| e.ok())
         .filter(|e| e.file_type().map(|t| t.is_dir()).unwrap_or(false))
         .collect();
@@ -72,7 +138,6 @@ fn main() {
             let raw_output = run_tractor(&tractor_bin, &path_str, &["--raw"]);
 
             if check_mode {
-                // Compare against existing snapshots
                 if let Ok(existing) = fs::read_to_string(&xml_path) {
                     if existing != output {
                         mismatches.push(xml_path.clone());
@@ -84,7 +149,6 @@ fn main() {
                     }
                 }
             } else {
-                // Write snapshots
                 fs::write(&xml_path, &output).expect("cannot write .xml snapshot");
                 fs::write(&raw_xml_path, &raw_output).expect("cannot write .raw.xml snapshot");
                 println!("  {}/{} -> .xml, .raw.xml", lang_name, file_name);
@@ -92,6 +156,36 @@ fn main() {
 
             processed += 1;
         }
+    }
+
+    // --- Output-format combination snapshots ---
+
+    let output_formats_dir = tests_dir.join("formats");
+
+    for (name, args) in OUTPUT_FORMAT_CASES {
+        let snap_path = output_formats_dir.join(name);
+        let snap_path_str = snap_path.to_string_lossy().replace('\\', "/");
+        if !check_mode {
+            if let Some(parent) = snap_path.parent() {
+                fs::create_dir_all(parent).expect("cannot create output-format subdir");
+            }
+        }
+        let output = run_tractor_args(&tractor_bin, args);
+
+        if check_mode {
+            if let Ok(existing) = fs::read_to_string(&snap_path) {
+                if existing != output {
+                    mismatches.push(snap_path_str.clone());
+                }
+            } else {
+                mismatches.push(format!("{} (missing)", snap_path_str));
+            }
+        } else {
+            fs::write(&snap_path, &output).expect("cannot write output-format snapshot");
+            println!("  formats/{}", name);
+        }
+
+        processed += 1;
     }
 
     if check_mode {
@@ -153,5 +247,19 @@ fn run_tractor(bin: &str, fixture: &str, extra_args: &[&str]) -> String {
         );
     }
 
+    String::from_utf8(output.stdout).expect("non-UTF8 tractor output")
+}
+
+/// Run tractor with an arbitrary list of args (for output-format cases).
+fn run_tractor_args(bin: &str, args: &[&str]) -> String {
+    let output = Command::new(bin)
+        .args(args)
+        .output()
+        .unwrap_or_else(|e| {
+            eprintln!("error: failed to run {}: {}", bin, e);
+            process::exit(1);
+        });
+
+    // Non-zero exit is expected for check commands that find violations — capture stdout anyway.
     String::from_utf8(output.stdout).expect("non-UTF8 tractor output")
 }

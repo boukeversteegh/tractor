@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report>
+  <groups>
+    <group file="tests/integration/formats/sample.cs">
+      <match file="tests/integration/formats/sample.cs" line="1" column="1" end_line="5" end_column="2">
+        <reason>class found</reason>
+        <severity>error</severity>
+      </match>
+      <match file="tests/integration/formats/sample.cs" line="7" column="1" end_line="7" end_column="21">
+        <reason>class found</reason>
+        <severity>error</severity>
+      </match>
+    </group>
+  </groups>
+</report>

@@ -5,7 +5,10 @@ set -uo pipefail
 
 # Determine paths based on caller's location
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[1]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+# Derive REPO_ROOT from common.sh's location so it works at any directory depth
+_COMMON_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$_COMMON_DIR/../.." && pwd)"
+unset _COMMON_DIR
 export PATH="$REPO_ROOT/target/release:$PATH"
 
 cd "$SCRIPT_DIR"
