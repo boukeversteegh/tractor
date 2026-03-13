@@ -10,6 +10,8 @@ use tractor_core::{
     format_matches, format_message,
     report::Report,
     normalize_path,
+    render_xml_string, RenderOptions,
+    xml_fragment_to_json,
     Match,
 };
 use super::context::{RunContext, SerFormat, ViewField, ViewSet};
@@ -141,7 +143,7 @@ pub fn render_gcc_with_template(matches: &[Match], template: &str, is_warning: b
 // ---------------------------------------------------------------------------
 
 /// Render a Report as an XML document, respecting `view` field selection.
-pub fn render_xml_report(report: &Report, view: &ViewSet) -> String {
+pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions) -> String {
     use tractor_core::report::ReportKind;
 
     let mut out = String::new();
@@ -168,13 +170,16 @@ pub fn render_xml_report(report: &Report, view: &ViewSet) -> String {
     }
 
     // Matches section
+    let show_tree = view.has(ViewField::Tree);
     let show_value = view.has(ViewField::Value);
+    let show_source = view.has(ViewField::Source);
+    let show_lines = view.has(ViewField::Lines);
     let show_reason = view.has(ViewField::Reason);
     let show_severity = view.has(ViewField::Severity);
     if !report.matches.is_empty() {
         out.push_str("  <matches>\n");
         for rm in &report.matches {
-            append_xml_match(&mut out, rm, show_value, show_reason, show_severity, "    ");
+            append_xml_match(&mut out, rm, show_tree, show_value, show_source, show_lines, show_reason, show_severity, "    ", render_opts);
         }
         out.push_str("  </matches>\n");
     }
@@ -184,7 +189,7 @@ pub fn render_xml_report(report: &Report, view: &ViewSet) -> String {
             let file = xml_attr_escape(&g.file);
             out.push_str(&format!("    <group file=\"{}\">\n", file));
             for rm in &g.matches {
-                append_xml_match(&mut out, rm, show_value, show_reason, show_severity, "      ");
+                append_xml_match(&mut out, rm, show_tree, show_value, show_source, show_lines, show_reason, show_severity, "      ", render_opts);
             }
             out.push_str("    </group>\n");
         }
@@ -198,10 +203,14 @@ pub fn render_xml_report(report: &Report, view: &ViewSet) -> String {
 fn append_xml_match(
     out: &mut String,
     rm: &tractor_core::report::ReportMatch,
+    show_tree: bool,
     show_value: bool,
+    show_source: bool,
+    show_lines: bool,
     show_reason: bool,
     show_severity: bool,
     indent: &str,
+    render_opts: &RenderOptions,
 ) {
     let m = &rm.inner;
     let file = xml_attr_escape(&normalize_path(&m.file));
@@ -215,8 +224,33 @@ fn append_xml_match(
     out.push_str(">\n");
 
     let inner = &format!("{}  ", indent);
-    if show_value && !m.value.is_empty() {
+    if show_tree {
+        if let Some(ref frag) = m.xml_fragment {
+            let rendered = render_xml_string(frag, render_opts);
+            out.push_str(&format!("{}<tree>\n", inner));
+            let deep = &format!("{}  ", inner);
+            for line in rendered.lines() {
+                out.push_str(deep);
+                out.push_str(line);
+                out.push('\n');
+            }
+            out.push_str(&format!("{}</tree>\n", inner));
+        }
+    }
+    if show_value {
         out.push_str(&format!("{}<value>{}</value>\n", inner, xml_escape(&m.value)));
+    }
+    if show_source {
+        let snippet = m.extract_source_snippet();
+        out.push_str(&format!("{}<source>{}</source>\n", inner, xml_escape(&snippet)));
+    }
+    if show_lines {
+        let lines = m.get_source_lines_range();
+        out.push_str(&format!("{}<lines>\n", inner));
+        for line in lines {
+            out.push_str(&format!("{}<line>{}</line>\n", inner, xml_escape(line.trim_end_matches('\r'))));
+        }
+        out.push_str(&format!("{}</lines>\n", inner));
     }
     if let Some(ref message) = rm.message {
         out.push_str(&format!("{}<message>{}</message>\n", inner, xml_escape(message)));
@@ -238,15 +272,37 @@ fn append_xml_match(
     out.push_str(&format!("{}</match>\n", indent));
 }
 
-fn report_match_to_json(rm: &tractor_core::report::ReportMatch, show_value: bool, show_reason: bool, show_severity: bool) -> serde_json::Value {
+fn report_match_to_json(
+    rm: &tractor_core::report::ReportMatch,
+    show_tree: bool,
+    show_value: bool,
+    show_source: bool,
+    show_lines: bool,
+    show_reason: bool,
+    show_severity: bool,
+    render_opts: &RenderOptions,
+) -> serde_json::Value {
     use serde_json::{json, Value};
     let m = &rm.inner;
     let mut obj = serde_json::Map::new();
     obj.insert("file".into(), json!(normalize_path(&m.file)));
     obj.insert("line".into(), json!(m.line));
     obj.insert("column".into(), json!(m.column));
-    if show_value && !m.value.is_empty() {
+    if show_tree {
+        if let Some(ref frag) = m.xml_fragment {
+            obj.insert("tree".into(), xml_fragment_to_json(frag, render_opts.max_depth));
+        }
+    }
+    if show_value {
         obj.insert("value".into(), json!(m.value));
+    }
+    if show_source {
+        obj.insert("source".into(), json!(m.extract_source_snippet()));
+    }
+    if show_lines {
+        let lines: Vec<&str> = m.get_source_lines_range();
+        let lines_clean: Vec<&str> = lines.iter().map(|l| l.trim_end_matches('\r')).collect();
+        obj.insert("lines".into(), json!(lines_clean));
     }
     if let Some(ref message) = rm.message {
         obj.insert("message".into(), json!(message));
@@ -268,17 +324,20 @@ fn report_match_to_json(rm: &tractor_core::report::ReportMatch, show_value: bool
 }
 
 /// Render a Report as a JSON document, respecting `view` field selection.
-pub fn render_json_report(report: &Report, view: &ViewSet) -> String {
+pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions) -> String {
     use serde_json::{json, Value};
     use tractor_core::report::ReportKind;
 
     let show_summary = view.has(ViewField::Summary);
+    let show_tree = view.has(ViewField::Tree);
     let show_value = view.has(ViewField::Value);
+    let show_source = view.has(ViewField::Source);
+    let show_lines = view.has(ViewField::Lines);
     let show_reason = view.has(ViewField::Reason);
     let show_severity = view.has(ViewField::Severity);
 
     let matches_json: Vec<Value> = report.matches.iter()
-        .map(|rm| report_match_to_json(rm, show_value, show_reason, show_severity))
+        .map(|rm| report_match_to_json(rm, show_tree, show_value, show_source, show_lines, show_reason, show_severity, render_opts))
         .collect();
 
     let mut root = serde_json::Map::new();
@@ -304,7 +363,7 @@ pub fn render_json_report(report: &Report, view: &ViewSet) -> String {
     if let Some(ref groups) = report.groups {
         let groups_json: Vec<Value> = groups.iter().map(|g| {
             let group_matches: Vec<Value> = g.matches.iter()
-                .map(|rm| report_match_to_json(rm, show_value, show_reason, show_severity))
+                .map(|rm| report_match_to_json(rm, show_tree, show_value, show_source, show_lines, show_reason, show_severity, render_opts))
                 .collect();
             json!({ "file": g.file, "matches": group_matches })
         }).collect();
@@ -317,17 +376,20 @@ pub fn render_json_report(report: &Report, view: &ViewSet) -> String {
 /// Render a Report as a YAML document, respecting `view` field selection.
 /// Reuses the same JSON-value structure as `render_json_report`, then
 /// serializes with serde_yaml for consistent field ordering and types.
-pub fn render_yaml_report(report: &Report, view: &ViewSet) -> String {
+pub fn render_yaml_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions) -> String {
     use serde_json::Value;
     use tractor_core::report::ReportKind;
 
     let show_summary = view.has(ViewField::Summary);
+    let show_tree = view.has(ViewField::Tree);
     let show_value = view.has(ViewField::Value);
+    let show_source = view.has(ViewField::Source);
+    let show_lines = view.has(ViewField::Lines);
     let show_reason = view.has(ViewField::Reason);
     let show_severity = view.has(ViewField::Severity);
 
     let matches_json: Vec<Value> = report.matches.iter()
-        .map(|rm| report_match_to_json(rm, show_value, show_reason, show_severity))
+        .map(|rm| report_match_to_json(rm, show_tree, show_value, show_source, show_lines, show_reason, show_severity, render_opts))
         .collect();
 
     let mut root = serde_json::Map::new();
@@ -353,7 +415,7 @@ pub fn render_yaml_report(report: &Report, view: &ViewSet) -> String {
     if let Some(ref groups) = report.groups {
         let groups_json: Vec<Value> = groups.iter().map(|g| {
             let group_matches: Vec<Value> = g.matches.iter()
-                .map(|rm| report_match_to_json(rm, show_value, show_reason, show_severity))
+                .map(|rm| report_match_to_json(rm, show_tree, show_value, show_source, show_lines, show_reason, show_severity, render_opts))
                 .collect();
             serde_json::json!({ "file": g.file, "matches": group_matches })
         }).collect();
@@ -386,13 +448,13 @@ pub fn render_check_report(
 
     match ctx.ser_format {
         SerFormat::Json => {
-            print!("{}", render_json_report(report, &ctx.view));
+            print!("{}", render_json_report(report, &ctx.view, &ctx.render_options()));
         }
         SerFormat::Yaml => {
-            print!("{}", render_yaml_report(report, &ctx.view));
+            print!("{}", render_yaml_report(report, &ctx.view, &ctx.render_options()));
         }
         SerFormat::Xml => {
-            print!("{}", render_xml_report(report, &ctx.view));
+            print!("{}", render_xml_report(report, &ctx.view, &ctx.render_options()));
         }
         SerFormat::Gcc => {
             print!("{}", render_gcc(report));
@@ -444,21 +506,21 @@ pub fn render_test_report(
 
     match ctx.ser_format {
         SerFormat::Json => {
-            print!("{}", render_json_report(report, &ctx.view));
+            print!("{}", render_json_report(report, &ctx.view, &ctx.render_options()));
             if !summary.passed && !warning {
                 return Err(Box::new(crate::SilentExit));
             }
             return Ok(());
         }
         SerFormat::Yaml => {
-            print!("{}", render_yaml_report(report, &ctx.view));
+            print!("{}", render_yaml_report(report, &ctx.view, &ctx.render_options()));
             if !summary.passed && !warning {
                 return Err(Box::new(crate::SilentExit));
             }
             return Ok(());
         }
         SerFormat::Xml => {
-            print!("{}", render_xml_report(report, &ctx.view));
+            print!("{}", render_xml_report(report, &ctx.view, &ctx.render_options()));
             if !summary.passed && !warning {
                 return Err(Box::new(crate::SilentExit));
             }

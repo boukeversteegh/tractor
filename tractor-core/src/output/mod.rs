@@ -15,12 +15,14 @@ mod colors;
 pub mod xml_renderer;
 pub mod syntax_highlight;
 mod schema;
+pub mod xml_to_json;
 
 pub use formatter::{OutputFormat, format_matches, OutputOptions, format_message};
 pub use formatter::normalize_path;
 pub use colors::should_use_color;
 pub use xml_renderer::{render_node, render_document, render_xml_string, RenderOptions};
 pub use schema::{format_schema, SchemaCollector, SchemaNode};
+pub use xml_to_json::xml_fragment_to_json;
 
 use crate::xpath::Match;
 

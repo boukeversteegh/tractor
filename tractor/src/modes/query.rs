@@ -91,15 +91,15 @@ fn render_query_output(ctx: &RunContext, matches: Vec<tractor_core::Match>) -> R
     match ctx.ser_format {
         SerFormat::Json => {
             let report = build_query_report(matches, template);
-            print!("{}", render_json_report(&report, &ctx.view));
+            print!("{}", render_json_report(&report, &ctx.view, &ctx.render_options()));
         }
         SerFormat::Yaml => {
             let report = build_query_report(matches, template);
-            print!("{}", render_yaml_report(&report, &ctx.view));
+            print!("{}", render_yaml_report(&report, &ctx.view, &ctx.render_options()));
         }
         SerFormat::Xml => {
             let report = build_query_report(matches, template);
-            print!("{}", render_xml_report(&report, &ctx.view));
+            print!("{}", render_xml_report(&report, &ctx.view, &ctx.render_options()));
         }
         SerFormat::Gcc => {
             let report = build_query_report(matches, template);
