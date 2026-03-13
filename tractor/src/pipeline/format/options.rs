@@ -137,6 +137,20 @@ pub fn parse_view_set(s: &str) -> Result<ViewSet, String> {
 }
 
 // ---------------------------------------------------------------------------
+// GroupBy — controls whether the file field is emitted on individual matches
+// ---------------------------------------------------------------------------
+
+/// Describes how matches are grouped in the output.
+/// When grouped by file, the file is on the parent — individual matches omit it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GroupBy {
+    /// Matches are not grouped; include the `file` field on each match.
+    None,
+    /// Matches are grouped by file; omit `file` from individual matches.
+    File,
+}
+
+// ---------------------------------------------------------------------------
 // View name constants — correspond to `-v` values
 // ---------------------------------------------------------------------------
 

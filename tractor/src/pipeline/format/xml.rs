@@ -8,20 +8,25 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
     out.push_str("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
     out.push_str("<report>\n");
 
-    if view.has(ViewField::Summary) {
+    // Summary: always present for check/test reports (structural, not view-gated).
+    // For query reports, only include if explicitly requested via -v summary.
+    let show_summary = if matches!(report.kind, ReportKind::Query) {
+        view.has(ViewField::Summary)
+    } else {
+        true
+    };
+    if show_summary {
         if let Some(ref summary) = report.summary {
-            if !matches!(report.kind, ReportKind::Query) {
-                out.push_str("  <summary>\n");
-                out.push_str(&format!("    <passed>{}</passed>\n", summary.passed));
-                out.push_str(&format!("    <total>{}</total>\n", summary.total));
-                out.push_str(&format!("    <files>{}</files>\n", summary.files_affected));
-                out.push_str(&format!("    <errors>{}</errors>\n", summary.errors));
-                out.push_str(&format!("    <warnings>{}</warnings>\n", summary.warnings));
-                if let Some(ref expected) = summary.expected {
-                    out.push_str(&format!("    <expected>{}</expected>\n", escape(expected)));
-                }
-                out.push_str("  </summary>\n");
+            out.push_str("  <summary>\n");
+            out.push_str(&format!("    <passed>{}</passed>\n", summary.passed));
+            out.push_str(&format!("    <total>{}</total>\n", summary.total));
+            out.push_str(&format!("    <files>{}</files>\n", summary.files_affected));
+            out.push_str(&format!("    <errors>{}</errors>\n", summary.errors));
+            out.push_str(&format!("    <warnings>{}</warnings>\n", summary.warnings));
+            if let Some(ref expected) = summary.expected {
+                out.push_str(&format!("    <expected>{}</expected>\n", escape(expected)));
             }
+            out.push_str("  </summary>\n");
         }
     }
 
@@ -78,18 +83,6 @@ fn append_match(
     let inner = &format!("{}  ", indent);
     let deep  = &format!("{}    ", indent);
 
-    if show_tree {
-        if let Some(ref frag) = m.xml_fragment {
-            let rendered = render_xml_string(frag, render_opts);
-            out.push_str(&format!("{}<tree>\n", inner));
-            for line in rendered.lines() {
-                out.push_str(deep);
-                out.push_str(line);
-                out.push('\n');
-            }
-            out.push_str(&format!("{}</tree>\n", inner));
-        }
-    }
     if show_value {
         out.push_str(&format!("{}<value>{}</value>\n", inner, escape(&m.value)));
     }
@@ -118,6 +111,19 @@ fn append_match(
     }
     if let Some(ref rule_id) = rm.rule_id {
         out.push_str(&format!("{}<rule-id>{}</rule-id>\n", inner, escape(rule_id)));
+    }
+    // Tree is always last — it's the bulkiest field
+    if show_tree {
+        if let Some(ref frag) = m.xml_fragment {
+            let rendered = render_xml_string(frag, render_opts);
+            out.push_str(&format!("{}<tree>\n", inner));
+            for line in rendered.lines() {
+                out.push_str(deep);
+                out.push_str(line);
+                out.push('\n');
+            }
+            out.push_str(&format!("{}</tree>\n", inner));
+        }
     }
 
     out.push_str(&format!("{}</match>\n", indent));

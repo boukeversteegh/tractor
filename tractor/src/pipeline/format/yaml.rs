@@ -1,39 +1,44 @@
 use serde_json::Value;
 use tractor_core::{report::Report, report::ReportKind, RenderOptions};
-use super::options::{ViewField, ViewSet};
+use super::options::{GroupBy, ViewField, ViewSet};
 use super::json::{match_to_value, MatchFlags};
 
 pub fn render_yaml_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions) -> String {
     let mut root = serde_json::Map::new();
-    root.insert("kind".into(), serde_json::json!(format!("{:?}", report.kind).to_lowercase()));
 
-    if view.has(ViewField::Summary) {
+    // Summary: always present for check/test reports (structural, not view-gated).
+    // For query reports, only include if explicitly requested via -v summary.
+    let show_summary = if matches!(report.kind, ReportKind::Query) {
+        view.has(ViewField::Summary)
+    } else {
+        true
+    };
+    if show_summary {
         if let Some(ref summary) = report.summary {
-            if !matches!(report.kind, ReportKind::Query) {
-                root.insert("summary".into(), serde_json::json!({
-                    "passed":   summary.passed,
-                    "total":    summary.total,
-                    "files":    summary.files_affected,
-                    "errors":   summary.errors,
-                    "warnings": summary.warnings,
-                }));
-            }
+            root.insert("summary".into(), serde_json::json!({
+                "passed":   summary.passed,
+                "total":    summary.total,
+                "files":    summary.files_affected,
+                "errors":   summary.errors,
+                "warnings": summary.warnings,
+            }));
         }
     }
 
     let match_flags = MatchFlags::from_view(view);
 
-    let matches_yaml: Vec<Value> = report.matches.iter()
-        .map(|rm| match_to_value(rm, &match_flags, render_opts))
-        .collect();
-    if !matches_yaml.is_empty() {
+    if !report.matches.is_empty() {
+        let matches_yaml: Vec<Value> = report.matches.iter()
+            .map(|rm| match_to_value(rm, &match_flags, render_opts, GroupBy::None))
+            .collect();
         root.insert("matches".into(), Value::Array(matches_yaml));
     }
 
     if let Some(ref groups) = report.groups {
         let groups_yaml: Vec<Value> = groups.iter().map(|g| {
             let group_matches: Vec<Value> = g.matches.iter()
-                .map(|rm| match_to_value(rm, &match_flags, render_opts))
+                // file is on the group — omit it from individual matches
+                .map(|rm| match_to_value(rm, &match_flags, render_opts, GroupBy::File))
                 .collect();
             serde_json::json!({ "file": g.file, "matches": group_matches })
         }).collect();

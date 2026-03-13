@@ -154,12 +154,23 @@ impl JsonNode {
     }
 
     fn into_value(self) -> Value {
-        let only_text = self.content_children.iter().all(|c| {
+        // A child is an anonymous text token if it is {"text": "..."} (single key).
+        // All other children are structural (simplified leaves or typed nodes).
+        let only_anon_text = self.content_children.iter().all(|c| {
             c.as_object().map_or(false, |o| o.contains_key(KEY_TEXT) && o.len() == 1)
         });
-        let has_element_children = self.content_children.iter().any(|c| {
-            c.as_object().map_or(false, |o| o.contains_key(KEY_TYPE) || o.contains_key(KEY_CHILDREN))
-        });
+
+        // Pure text-only leaf (no flags, no element children): collapse to {name: text}.
+        // e.g. <name>Foo</name>     → {"name": "Foo"}
+        //      <accessor>get</accessor> → {"accessor": "get"}
+        if only_anon_text && self.flags.is_empty() && !self.content_children.is_empty() {
+            let combined: Vec<&str> = self.content_children.iter()
+                .filter_map(|c| c.get(KEY_TEXT).and_then(|v| v.as_str()))
+                .collect();
+            let mut obj = Map::new();
+            obj.insert(self.name, Value::String(combined.join(" ")));
+            return Value::Object(obj);
+        }
 
         let mut obj = Map::new();
         obj.insert(KEY_TYPE.into(), Value::String(self.name));
@@ -171,18 +182,18 @@ impl JsonNode {
 
         if self.content_children.is_empty() {
             // No content — type and flags only
-        } else if only_text && !has_element_children {
-            // Collapse all text children into a single "text" string
+        } else if only_anon_text {
+            // Text leaf that also has flags: keep {type, text, flag: true, ...}
             let combined: Vec<&str> = self.content_children.iter()
                 .filter_map(|c| c.get(KEY_TEXT).and_then(|v| v.as_str()))
                 .collect();
             obj.insert(KEY_TEXT.into(), Value::String(combined.join(" ")));
         } else {
-            // Mixed content: drop anonymous text tokens (syntactic noise like "class", "{", "<")
-            // Only structural element children are meaningful here
+            // Mixed/structural content: drop anonymous text tokens (syntactic noise like
+            // "class", "{", "<"), keep all structural children (simplified leaves and typed nodes).
             let element_children: Vec<Value> = self.content_children.into_iter()
-                .filter(|c| c.as_object().map_or(false, |o| {
-                    o.contains_key(KEY_TYPE) || o.contains_key(KEY_CHILDREN)
+                .filter(|c| c.as_object().map_or(true, |o| {
+                    !(o.len() == 1 && o.contains_key(KEY_TEXT))
                 }))
                 .collect();
             if !element_children.is_empty() {

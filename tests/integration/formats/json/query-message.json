@@ -4,13 +4,13 @@
       "file": "tests/integration/formats/sample.cs",
       "line": 1,
       "column": 1,
+      "message": "tests/integration/formats/sample.cs:1",
       "tree": {
         "type": "class",
         "public": true,
         "children": [
           {
-            "type": "name",
-            "text": "Foo"
+            "name": "Foo"
           },
           {
             "type": "body",
@@ -20,23 +20,19 @@
                 "public": true,
                 "children": [
                   {
-                    "type": "type",
-                    "text": "int"
+                    "type": "int"
                   },
                   {
-                    "type": "name",
-                    "text": "Bar"
+                    "name": "Bar"
                   },
                   {
                     "type": "accessors",
                     "children": [
                       {
-                        "type": "accessor",
-                        "text": "get;"
+                        "accessor": "get;"
                       },
                       {
-                        "type": "accessor",
-                        "text": "set;"
+                        "accessor": "set;"
                       }
                     ]
                   }
@@ -50,25 +46,21 @@
                     "type": "returns",
                     "children": [
                       {
-                        "type": "type",
-                        "text": "void"
+                        "type": "void"
                       }
                     ]
                   },
                   {
-                    "type": "name",
-                    "text": "Baz"
+                    "name": "Baz"
                   },
                   {
-                    "type": "parameters",
-                    "text": "()"
+                    "parameters": "()"
                   },
                   {
                     "type": "body",
                     "children": [
                       {
-                        "type": "block",
-                        "text": "{ }"
+                        "block": "{ }"
                       }
                     ]
                   }
@@ -77,28 +69,25 @@
             ]
           }
         ]
-      },
-      "message": "tests/integration/formats/sample.cs:1"
+      }
     },
     {
       "file": "tests/integration/formats/sample.cs",
       "line": 7,
       "column": 1,
+      "message": "tests/integration/formats/sample.cs:7",
       "tree": {
         "type": "class",
         "public": true,
         "children": [
           {
-            "type": "name",
-            "text": "Qux"
+            "name": "Qux"
           },
           {
-            "type": "body",
-            "text": "{ }"
+            "body": "{ }"
           }
         ]
-      },
-      "message": "tests/integration/formats/sample.cs:7"
+      }
     }
   ]
 }

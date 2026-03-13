@@ -9,8 +9,7 @@
         "public": true,
         "children": [
           {
-            "type": "name",
-            "text": "Foo"
+            "name": "Foo"
           },
           {
             "type": "body",
@@ -20,23 +19,19 @@
                 "public": true,
                 "children": [
                   {
-                    "type": "type",
-                    "text": "int"
+                    "type": "int"
                   },
                   {
-                    "type": "name",
-                    "text": "Bar"
+                    "name": "Bar"
                   },
                   {
                     "type": "accessors",
                     "children": [
                       {
-                        "type": "accessor",
-                        "text": "get;"
+                        "accessor": "get;"
                       },
                       {
-                        "type": "accessor",
-                        "text": "set;"
+                        "accessor": "set;"
                       }
                     ]
                   }
@@ -50,25 +45,21 @@
                     "type": "returns",
                     "children": [
                       {
-                        "type": "type",
-                        "text": "void"
+                        "type": "void"
                       }
                     ]
                   },
                   {
-                    "type": "name",
-                    "text": "Baz"
+                    "name": "Baz"
                   },
                   {
-                    "type": "parameters",
-                    "text": "()"
+                    "parameters": "()"
                   },
                   {
                     "type": "body",
                     "children": [
                       {
-                        "type": "block",
-                        "text": "{ }"
+                        "block": "{ }"
                       }
                     ]
                   }
@@ -88,12 +79,10 @@
         "public": true,
         "children": [
           {
-            "type": "name",
-            "text": "Qux"
+            "name": "Qux"
           },
           {
-            "type": "body",
-            "text": "{ }"
+            "body": "{ }"
           }
         ]
       }

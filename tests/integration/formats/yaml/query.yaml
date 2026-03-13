@@ -1,4 +1,3 @@
-kind: query
 matches:
 - file: tests/integration/formats/sample.cs
   line: 1
@@ -7,38 +6,29 @@ matches:
     type: class
     public: true
     children:
-    - type: name
-      text: Foo
+    - name: Foo
     - type: body
       children:
       - type: property
         public: true
         children:
-        - type: type
-          text: int
-        - type: name
-          text: Bar
+        - type: int
+        - name: Bar
         - type: accessors
           children:
-          - type: accessor
-            text: get;
-          - type: accessor
-            text: set;
+          - accessor: get;
+          - accessor: set;
       - type: method
         public: true
         children:
         - type: returns
           children:
-          - type: type
-            text: void
-        - type: name
-          text: Baz
-        - type: parameters
-          text: ()
+          - type: void
+        - name: Baz
+        - parameters: ()
         - type: body
           children:
-          - type: block
-            text: '{ }'
+          - block: '{ }'
 - file: tests/integration/formats/sample.cs
   line: 7
   column: 1
@@ -46,7 +36,5 @@ matches:
     type: class
     public: true
     children:
-    - type: name
-      text: Qux
-    - type: body
-      text: '{ }'
+    - name: Qux
+    - body: '{ }'
