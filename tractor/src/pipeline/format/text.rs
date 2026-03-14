@@ -7,7 +7,7 @@
 //! for query reports.
 
 use tractor_core::{
-    TextViewMode, format_matches,
+    TextViewMode, format_matches, normalize_path,
     output::OutputOptions,
     report::{Report, ReportKind, ReportMatch, Summary},
     RenderOptions,
@@ -24,13 +24,20 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         report.matches.iter().collect()
     };
 
-    // Blank line between matches when output is multi-line per match.
+    // Blank line between matches when a single match produces more than one output line.
+    // File/line/column are combined onto one location line — they don't count individually.
     // In message-template mode all matches render as single lines — no separator.
     let message_mode = matches.first().map_or(false, |rm| rm.message.is_some());
-    let needs_separator = !message_mode && (view.fields.len() > 1
-        || view.has(ViewField::Tree)
+    let has_location = view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
+    let single_line_fields = [ViewField::Value, ViewField::Reason, ViewField::Severity]
+        .iter().filter(|&&f| view.has(f)).count();
+    let needs_separator = !message_mode && (
+        view.has(ViewField::Tree)
         || view.has(ViewField::Lines)
-        || view.has(ViewField::Source));
+        || view.has(ViewField::Source)
+        || single_line_fields >= 2
+        || (single_line_fields >= 1 && has_location)
+    );
 
     for (i, rm) in matches.iter().enumerate() {
         if needs_separator && i > 0 {
@@ -67,6 +74,24 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
         out.push_str(msg);
         out.push('\n');
         return;
+    }
+
+    // Location prefix: file, line, and/or column — combined on one line as file:line:col
+    if view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column) {
+        let mut loc = String::new();
+        if view.has(ViewField::File) {
+            loc.push_str(&normalize_path(&rm.inner.file));
+        }
+        if view.has(ViewField::Line) {
+            if !loc.is_empty() { loc.push(':'); }
+            loc.push_str(&rm.inner.line.to_string());
+        }
+        if view.has(ViewField::Column) {
+            loc.push(':');
+            loc.push_str(&rm.inner.column.to_string());
+        }
+        out.push_str(&loc);
+        out.push('\n');
     }
 
     // Canonical field order

@@ -164,4 +164,7 @@ pub mod view {
     pub const SUMMARY:  &str = "summary";
     pub const REASON:   &str = "reason";
     pub const SEVERITY: &str = "severity";
+    pub const FILE:     &str = "file";
+    pub const LINE:     &str = "line";
+    pub const COLUMN:   &str = "column";
 }

@@ -8,7 +8,7 @@ use crate::pipeline::format::{render_gcc, render_github, render_xml_report, rend
 pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     let ctx = RunContext::build(
         &args.shared, args.files, args.shared.xpath.clone(),
-        &args.format, view::TREE, args.view.as_deref(), args.message, args.content, false, args.debug,
+        &args.format, &format!("{},{},{}", view::FILE, view::LINE, view::TREE), args.view.as_deref(), args.message, args.content, false, args.debug,
     )?;
 
     if let InputMode::Files(ref files) = ctx.input {
