@@ -12,16 +12,15 @@ pub fn render_github(report: &Report) -> String {
     for rm in iter {
         let reason = rm.reason.as_deref().unwrap_or("violation");
         let level  = rm.severity.map_or("error", |s| s.as_str());
-        let m      = &rm.inner;
-        let file   = normalize_path(&m.file);
+        let file   = normalize_path(&rm.file);
         out.push_str(&format!(
             "::{level} file={file},line={line},endLine={end_line},col={col},endColumn={end_col}::{reason}\n",
             level    = level,
             file     = file,
-            line     = m.line,
-            end_line = m.end_line,
-            col      = m.column,
-            end_col  = m.end_column,
+            line     = rm.line,
+            end_line = rm.end_line,
+            col      = rm.column,
+            end_col  = rm.end_column,
             reason   = reason,
         ));
     }

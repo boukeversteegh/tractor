@@ -1,29 +1,57 @@
-use std::io::{self, Write};
 use std::collections::HashSet;
 
 use rayon::prelude::*;
 use tractor_core::{
     XPathEngine, Match,
-    render_tree_match, render_source_match, render_lines_match,
     SchemaCollector,
-    output::{render_document, render_node, RenderOptions},
+    output::{render_document, RenderOptions},
     parse_to_documents, parse_string_to_documents,
-    XeeParseResult,
+    report::{ReportMatch, Severity},
 };
 
 use super::context::RunContext;
-use super::format::ViewField;
+use super::format::{ViewField, ViewSet};
 
-/// Render a single match for text output based on the active view fields.
-fn render_match_text(m: &Match, view: &super::format::ViewSet, opts: &RenderOptions) -> String {
-    if view.has(ViewField::Source) {
-        render_source_match(m, opts)
-    } else if view.has(ViewField::Lines) {
-        render_lines_match(m, opts)
-    } else if view.has(ViewField::Value) {
-        format!("{}\n", m.value)
-    } else {
-        render_tree_match(m, opts)
+// ---------------------------------------------------------------------------
+// Report-match builder
+// ---------------------------------------------------------------------------
+
+/// Convert a raw `Match` into a `ReportMatch`, populating only the content
+/// fields that are present in `view`. The `Match` (including source_lines and
+/// xml_fragment) is consumed and dropped after extraction.
+pub fn match_to_report_match(
+    m: Match,
+    view: &ViewSet,
+    reason: Option<String>,
+    severity: Option<Severity>,
+    message: Option<String>,
+) -> ReportMatch {
+    let tree   = view.has(ViewField::Tree)
+                     .then(|| m.xml_fragment.clone().unwrap_or_default());
+    let value  = view.has(ViewField::Value)
+                     .then(|| m.value.clone());
+    let source = view.has(ViewField::Source)
+                     .then(|| m.extract_source_snippet());
+    let lines  = view.has(ViewField::Lines)
+                     .then(|| m.get_source_lines_range()
+                               .into_iter()
+                               .map(|l| l.trim_end_matches('\r').to_owned())
+                               .collect());
+
+    ReportMatch {
+        file:       m.file.clone(),
+        line:       m.line,
+        column:     m.column,
+        end_line:   m.end_line,
+        end_column: m.end_column,
+        tree,
+        value,
+        source,
+        lines,
+        reason,
+        severity,
+        message,
+        rule_id: None,
     }
 }
 
@@ -93,7 +121,6 @@ pub fn query_files_batched(
     let mut total_matches = 0usize;
     let mut remaining_limit = ctx.limit;
     let mut all_matches: Vec<Match> = Vec::new();
-    let is_count_format = ctx.view.has(ViewField::Count);
 
     for batch in batches {
         if remaining_limit == Some(0) {
@@ -152,213 +179,11 @@ pub fn query_files_batched(
 
         if collect {
             all_matches.extend(batch_matches);
-        } else if !is_count_format {
-            let opts = ctx.render_options();
-            for m in &batch_matches {
-                print!("{}", render_match_text(m, &ctx.view, &opts));
-            }
-            io::stdout().flush().ok();
         }
+        // collect=false: streaming placeholder for future large-repo optimization
     }
 
     Ok((total_matches, all_matches))
-}
-
-// ---------------------------------------------------------------------------
-// Explore (no XPath)
-// ---------------------------------------------------------------------------
-
-pub fn explore_files(ctx: &RunContext, files: &[String]) -> Result<(), Box<dyn std::error::Error>> {
-    let lang_override = ctx.lang.as_deref();
-    let raw = ctx.raw;
-    let verbose = ctx.verbose;
-
-    if ctx.view.has(ViewField::Count) {
-        let count: usize = files
-            .par_iter()
-            .filter(|file_path| {
-                match parse_to_documents(
-                    std::path::Path::new(file_path),
-                    lang_override, raw, ctx.ignore_whitespace, ctx.parse_depth,
-                ) {
-                    Ok(_) => true,
-                    Err(e) => {
-                        if verbose { eprintln!("warning: {}", e); }
-                        false
-                    }
-                }
-            })
-            .count();
-        println!("{}", count);
-        return Ok(());
-    }
-
-    if ctx.view.has(ViewField::Schema) {
-        let collectors: Vec<SchemaCollector> = files
-            .par_iter()
-            .filter_map(|file_path| {
-                match parse_to_documents(
-                    std::path::Path::new(file_path),
-                    lang_override, raw, ctx.ignore_whitespace, ctx.parse_depth,
-                ) {
-                    Ok(result) => {
-                        let mut collector = SchemaCollector::new();
-                        let doc_node = result.documents.document_node(result.doc_handle)?;
-                        collector.collect_from_xot(result.documents.xot(), doc_node);
-                        Some(collector)
-                    }
-                    Err(e) => {
-                        if verbose { eprintln!("warning: {}", e); }
-                        None
-                    }
-                }
-            })
-            .collect();
-
-        let mut final_collector = SchemaCollector::new();
-        for collector in collectors {
-            final_collector.merge(collector);
-        }
-        print!("{}", final_collector.format(ctx.schema_depth(), ctx.use_color));
-        return Ok(());
-    }
-
-    let parse_results: Vec<XeeParseResult> = files
-        .iter()
-        .filter_map(|file_path| {
-            match parse_to_documents(
-                std::path::Path::new(file_path),
-                lang_override, raw, ctx.ignore_whitespace, ctx.parse_depth,
-            ) {
-                Ok(r) => Some(r),
-                Err(e) => {
-                    if verbose { eprintln!("warning: {}", e); }
-                    None
-                }
-            }
-        })
-        .collect();
-
-    if parse_results.is_empty() {
-        return Err("no files could be parsed".into());
-    }
-
-    let render_opts = ctx.render_options();
-
-    if ctx.view.has(ViewField::Tree) {
-        if parse_results.len() == 1 {
-            let result = &parse_results[0];
-            let doc_node = result.documents.document_node(result.doc_handle).unwrap();
-            let xot = result.documents.xot();
-            for child in xot.children(doc_node) {
-                let output = render_node(xot, child, &render_opts);
-                print!("{}", output);
-            }
-        } else {
-            println!(r#"<?xml version="1.0" encoding="UTF-8"?>"#);
-            println!("<Files>");
-            for result in &parse_results {
-                let doc_node = result.documents.document_node(result.doc_handle).unwrap();
-                let xot = result.documents.xot();
-                for files_child in xot.children(doc_node) {
-                    for file_child in xot.children(files_child) {
-                        let output = render_node(xot, file_child, &render_opts);
-                        if !ctx.no_pretty {
-                            for line in output.lines() {
-                                println!("  {}", line);
-                            }
-                        } else {
-                            print!("{}", output);
-                        }
-                    }
-                }
-            }
-            println!("</Files>");
-        }
-        return Ok(());
-    }
-
-    let matches: Vec<Match> = parse_results
-        .iter()
-        .map(|result| {
-            let end_line = result.source_lines.len() as u32;
-            let end_column = result.source_lines.last()
-                .map(|l| l.len() as u32 + 1)
-                .unwrap_or(1);
-
-            let doc_node = result.documents.document_node(result.doc_handle).unwrap();
-            let xot = result.documents.xot();
-            let xml: String = xot.children(doc_node)
-                .map(|child| render_node(xot, child, &render_opts))
-                .collect();
-            let value = extract_text_content(&xml);
-
-            Match::with_location(
-                result.file_path.clone(),
-                1, 1,
-                end_line.max(1), end_column,
-                value,
-                result.source_lines.clone(),
-            ).with_xml_fragment(xml)
-        })
-        .collect();
-
-    let opts = ctx.render_options();
-    for m in &matches {
-        print!("{}", render_match_text(m, &ctx.view, &opts));
-    }
-
-    Ok(())
-}
-
-pub fn explore_inline(ctx: &RunContext, source: &str, lang: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let result = parse_string_to_documents(
-        source, lang, "<stdin>".to_string(), ctx.raw, ctx.ignore_whitespace
-    )?;
-
-    let render_opts = ctx.render_options();
-
-    if ctx.view.has(ViewField::Tree) {
-        let doc_node = result.documents.document_node(result.doc_handle).unwrap();
-        let xot = result.documents.xot();
-        for child in xot.children(doc_node) {
-            let output = render_node(xot, child, &render_opts);
-            print!("{}", output);
-        }
-        return Ok(());
-    }
-
-    if ctx.view.has(ViewField::Schema) {
-        let doc_node = result.documents.document_node(result.doc_handle).unwrap();
-        let mut collector = SchemaCollector::new();
-        collector.collect_from_xot(result.documents.xot(), doc_node);
-        print!("{}", collector.format(ctx.schema_depth(), ctx.use_color));
-        return Ok(());
-    }
-
-    let doc_node = result.documents.document_node(result.doc_handle).unwrap();
-    let xot = result.documents.xot();
-    let xml: String = xot.children(doc_node)
-        .map(|child| render_node(xot, child, &render_opts))
-        .collect();
-    let value = extract_text_content(&xml);
-
-    let end_line = result.source_lines.len() as u32;
-    let end_column = result.source_lines.last()
-        .map(|l| l.len() as u32 + 1)
-        .unwrap_or(1);
-
-    let file_match = Match::with_location(
-        result.file_path.clone(),
-        1, 1,
-        end_line.max(1), end_column,
-        value,
-        result.source_lines.clone(),
-    ).with_xml_fragment(xml);
-
-    let opts = ctx.render_options();
-    print!("{}", render_match_text(&file_match, &ctx.view, &opts));
-    Ok(())
 }
 
 // ---------------------------------------------------------------------------
@@ -373,22 +198,6 @@ pub fn print_schema_from_matches(matches: &[Match], depth: Option<usize>, use_co
         }
     }
     print!("{}", collector.format(depth, use_color));
-}
-
-pub fn extract_text_content(xml: &str) -> String {
-    let mut result = String::new();
-    let mut in_tag = false;
-
-    for c in xml.chars() {
-        match c {
-            '<' => in_tag = true,
-            '>' => in_tag = false,
-            _ if !in_tag => result.push(c),
-            _ => {}
-        }
-    }
-
-    result.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
 // ---------------------------------------------------------------------------

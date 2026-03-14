@@ -1,7 +1,7 @@
 use std::collections::HashSet;
-use tractor_core::report::{Report, ReportMatch, Severity, Summary};
+use tractor_core::report::{Report, Severity, Summary};
 use crate::cli::CheckArgs;
-use crate::pipeline::{RunContext, InputMode, view, query_files_batched, render_check_report};
+use crate::pipeline::{RunContext, InputMode, view, query_files_batched, render_check_report, match_to_report_match};
 
 pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
     let severity = match args.severity.as_str() {
@@ -34,25 +34,19 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     let (_, matches) = query_files_batched(&ctx, files, xpath_expr, true)?;
 
-    // Build ReportMatches with reason and severity
+    // Build ReportMatches with reason and severity, populating only selected fields
     let message_template = ctx.message.clone();
-    let report_matches: Vec<ReportMatch> = matches.into_iter().map(|m| {
+    let mut files_affected = HashSet::new();
+    for m in &matches {
+        files_affected.insert(m.file.clone());
+    }
+    let total = matches.len();
+
+    let report_matches = matches.into_iter().map(|m| {
         let message = message_template.as_deref().map(|t| tractor_core::format_message(t, &m));
-        ReportMatch {
-            inner: m,
-            message,
-            reason: Some(reason.clone()),
-            severity: Some(severity),
-            rule_id: None,
-        }
+        match_to_report_match(m, &ctx.view, Some(reason.clone()), Some(severity), message)
     }).collect();
 
-    // Build summary
-    let mut files_affected = HashSet::new();
-    for rm in &report_matches {
-        files_affected.insert(&rm.inner.file);
-    }
-    let total = report_matches.len();
     let summary = Summary {
         passed: total == 0,
         total,

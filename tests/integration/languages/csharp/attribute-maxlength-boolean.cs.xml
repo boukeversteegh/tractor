@@ -1,3 +1,4 @@
+tests/integration/languages/csharp/attribute-maxlength-boolean.cs:1
 <Files>
   <File path="tests/integration/languages/csharp/attribute-maxlength-boolean.cs">
     <unit>

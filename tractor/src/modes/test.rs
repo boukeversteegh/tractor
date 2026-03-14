@@ -1,7 +1,7 @@
 use std::collections::HashSet;
-use tractor_core::report::{Report, ReportMatch, Summary};
+use tractor_core::report::{Report, Summary};
 use crate::cli::TestArgs;
-use crate::pipeline::{RunContext, InputMode, view, query_inline_source, query_files_batched, render_test_report};
+use crate::pipeline::{RunContext, InputMode, view, query_inline_source, query_files_batched, render_test_report, match_to_report_match};
 
 pub mod test_colors {
     pub const RESET: &str = "\x1b[0m";
@@ -55,22 +55,21 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     // Build ReportMatches (no reason/severity for test matches)
     let message_template = ctx.message.clone();
-    let report_matches: Vec<ReportMatch> = matches.into_iter().map(|m| {
-        let message = message_template.as_deref().map(|t| tractor_core::format_message(t, &m));
-        let mut rm = ReportMatch::from_match(m);
-        rm.message = message;
-        rm
+    let mut files_affected = HashSet::new();
+    for m in &matches {
+        files_affected.insert(m.file.clone());
+    }
+    let files_count = files_affected.len();
+
+    let report_matches = matches.into_iter().map(|m| {
+        let msg = message_template.as_deref().map(|t| tractor_core::format_message(t, &m));
+        match_to_report_match(m, &ctx.view, None, None, msg)
     }).collect();
 
-    // Build summary
-    let mut files_affected = HashSet::new();
-    for rm in &report_matches {
-        files_affected.insert(&rm.inner.file);
-    }
     let summary = Summary {
         passed,
         total: count,
-        files_affected: files_affected.len(),
+        files_affected: files_count,
         errors: 0,
         warnings: 0,
         expected: Some(expect.clone()),

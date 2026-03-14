@@ -1,7 +1,7 @@
 use serde_json::Value;
 use tractor_core::{report::Report, report::ReportKind, RenderOptions};
 use super::options::{GroupBy, ViewField, ViewSet};
-use super::json::{match_to_value, MatchFlags};
+use super::json::match_to_value;
 
 pub fn render_yaml_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions) -> String {
     let mut root = serde_json::Map::new();
@@ -25,11 +25,9 @@ pub fn render_yaml_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         }
     }
 
-    let match_flags = MatchFlags::from_view(view);
-
     if !report.matches.is_empty() {
         let matches_yaml: Vec<Value> = report.matches.iter()
-            .map(|rm| match_to_value(rm, &match_flags, render_opts, GroupBy::None))
+            .map(|rm| match_to_value(rm, view, render_opts, GroupBy::None))
             .collect();
         root.insert("matches".into(), Value::Array(matches_yaml));
     }
@@ -38,7 +36,7 @@ pub fn render_yaml_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         let groups_yaml: Vec<Value> = groups.iter().map(|g| {
             let group_matches: Vec<Value> = g.matches.iter()
                 // file is on the group — omit it from individual matches
-                .map(|rm| match_to_value(rm, &match_flags, render_opts, GroupBy::File))
+                .map(|rm| match_to_value(rm, view, render_opts, GroupBy::File))
                 .collect();
             serde_json::json!({ "file": g.file, "matches": group_matches })
         }).collect();

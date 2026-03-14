@@ -82,6 +82,60 @@ pub fn normalize_path(path: &str) -> String {
     path.replace('\\', "/")
 }
 
+/// Render a pre-computed source snippet with optional syntax highlighting.
+///
+/// When `xml_fragment` is `Some`, uses it to extract syntax spans for highlighting.
+/// Requires `opts.use_color` to be true for coloring to take effect.
+pub fn render_source_precomputed(
+    snippet: &str,
+    xml_fragment: Option<&str>,
+    line: u32,
+    column: u32,
+    end_line: u32,
+    end_column: u32,
+    opts: &RenderOptions,
+) -> String {
+    if opts.use_color {
+        if let Some(xml) = xml_fragment {
+            let category_fn = get_syntax_category(opts.language.as_deref().unwrap_or(""));
+            let spans = extract_syntax_spans_with_lang(xml, category_fn);
+            if !spans.is_empty() {
+                let highlighted = highlight_source(snippet, &spans, line, column, end_line, end_column);
+                return format!("{}\n", highlighted);
+            }
+        }
+    }
+    format!("{}\n", snippet)
+}
+
+/// Render pre-computed source lines with optional syntax highlighting.
+///
+/// Lines should have trailing `\r` already stripped. When `xml_fragment` is `Some`,
+/// uses it to extract syntax spans for highlighting.
+pub fn render_lines_precomputed(
+    lines: &[String],
+    xml_fragment: Option<&str>,
+    start_line: u32,
+    end_line: u32,
+    opts: &RenderOptions,
+) -> String {
+    if opts.use_color {
+        if let Some(xml) = xml_fragment {
+            let category_fn = get_syntax_category(opts.language.as_deref().unwrap_or(""));
+            let spans = extract_syntax_spans_with_lang(xml, category_fn);
+            if !spans.is_empty() {
+                return format!("{}\n", highlight_lines(lines, &spans, start_line, end_line));
+            }
+        }
+    }
+    let mut out = String::new();
+    for line in lines {
+        out.push_str(line);
+        out.push('\n');
+    }
+    out
+}
+
 /// Format a message template by replacing placeholders ({value}, {line}, {col}, {file}).
 pub fn format_message(template: &str, m: &Match) -> String {
     if !template.contains('{') {

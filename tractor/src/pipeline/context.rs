@@ -47,6 +47,17 @@ impl RunContext {
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let xpath         = xpath.as_ref().map(|x| normalize_xpath(x));
         let output_format = OutputFormat::from_str(format)?;
+
+        // gcc and github have a fixed output schema — -v is not compatible.
+        if matches!(output_format, OutputFormat::Gcc | OutputFormat::Github) {
+            if user_view.is_some() {
+                return Err(format!(
+                    "-v is not compatible with -f {}; {} has a fixed output schema",
+                    format, format
+                ).into());
+            }
+        }
+
         let view          = parse_view_set(user_view.unwrap_or(default_view))?;
         let use_color     = if shared.no_color { false } else { should_use_color(&shared.color) };
         let input         = resolve_input(shared, files, content)?;

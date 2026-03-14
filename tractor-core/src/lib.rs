@@ -41,7 +41,7 @@ pub use parser::{
     print_parse_timing_stats,
 };
 pub use xpath::{XPathEngine, Match, print_timing_stats, Documents, DocumentHandle};
-pub use output::{render_tree_match, render_source_match, render_lines_match, format_message, normalize_path, render_node, render_document, render_xml_string, RenderOptions, format_schema, SchemaCollector, xml_fragment_to_json};
+pub use output::{render_tree_match, render_source_match, render_lines_match, render_source_precomputed, render_lines_precomputed, format_message, normalize_path, render_node, render_document, render_xml_string, RenderOptions, format_schema, SchemaCollector, xml_fragment_to_json};
 pub use replace::{apply_replacements, ReplaceSummary, ReplaceError};
 pub use report::{Report, ReportKind, ReportMatch, Summary, Severity};
 #[cfg(feature = "native")]

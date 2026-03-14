@@ -8,16 +8,40 @@ pub mod text;
 mod shared;
 
 pub use options::{OutputFormat, ViewField, ViewSet, parse_view_set, view};
-pub use gcc::{render_gcc, render_gcc_with_template};
+pub use gcc::{render_gcc, render_gcc_report_with_template};
 pub use github::render_github;
 pub use xml::render_xml_report;
 pub use json::render_json_report;
 pub use yaml::render_yaml_report;
 pub use text::render_text_report;
 
-use tractor_core::{render_tree_match, render_source_match, render_lines_match, report::Report};
+use tractor_core::{
+    render_xml_string,
+    render_source_precomputed, render_lines_precomputed,
+    report::Report,
+};
 use crate::pipeline::context::RunContext;
 use crate::modes::test::test_colors;
+
+// ---------------------------------------------------------------------------
+// Query report renderer — dispatches to format-specific renderers
+// ---------------------------------------------------------------------------
+
+/// Render a query (or explore) report to stdout.
+pub fn render_query_report(
+    report: &Report,
+    ctx: &RunContext,
+) -> Result<(), Box<dyn std::error::Error>> {
+    match ctx.output_format {
+        OutputFormat::Json   => print!("{}", render_json_report(report, &ctx.view, &ctx.render_options())),
+        OutputFormat::Yaml   => print!("{}", render_yaml_report(report, &ctx.view, &ctx.render_options())),
+        OutputFormat::Xml    => print!("{}", render_xml_report(report, &ctx.view, &ctx.render_options())),
+        OutputFormat::Gcc    => print!("{}", render_gcc(report)),
+        OutputFormat::Github => print!("{}", render_github(report)),
+        OutputFormat::Text   => print!("{}", render_text_report(report, &ctx.view, &ctx.render_options())),
+    }
+    Ok(())
+}
 
 // ---------------------------------------------------------------------------
 // Check report renderer — dispatches to format-specific renderers
@@ -104,9 +128,8 @@ pub fn render_test_report(
     }
 
     if !summary.passed && !report.matches.is_empty() {
-        let inner: Vec<_> = report.matches.iter().map(|rm| rm.inner.clone()).collect();
         if let Some(ref error_tmpl) = error_template {
-            let out = render_gcc_with_template(&inner, error_tmpl, warning);
+            let out = render_gcc_report_with_template(&report.matches, error_tmpl, warning);
             for line in out.lines() {
                 if ctx.use_color {
                     println!("  {}{}{}", color, line, test_colors::RESET);
@@ -116,15 +139,26 @@ pub fn render_test_report(
             }
         } else {
             let opts = ctx.render_options();
-            for m in &inner {
-                let rendered = if ctx.view.has(ViewField::Source) {
-                    render_source_match(m, &opts)
-                } else if ctx.view.has(ViewField::Lines) {
-                    render_lines_match(m, &opts)
-                } else if ctx.view.has(ViewField::Value) {
-                    format!("{}\n", m.value)
+            for rm in &report.matches {
+                let rendered = if let Some(ref s) = rm.source {
+                    render_source_precomputed(
+                        s, rm.tree.as_deref(),
+                        rm.line, rm.column, rm.end_line, rm.end_column,
+                        &opts,
+                    )
+                } else if let Some(ref ls) = rm.lines {
+                    render_lines_precomputed(ls, rm.tree.as_deref(), rm.line, rm.end_line, &opts)
+                } else if let Some(ref v) = rm.value {
+                    format!("{}\n", v)
+                } else if let Some(ref xml) = rm.tree {
+                    let rendered = render_xml_string(xml, &opts);
+                    if opts.pretty_print && !rendered.ends_with('\n') {
+                        format!("{}\n", rendered)
+                    } else {
+                        rendered
+                    }
                 } else {
-                    render_tree_match(m, &opts)
+                    String::new()
                 };
                 for line in rendered.lines() {
                     println!("  {}", line);

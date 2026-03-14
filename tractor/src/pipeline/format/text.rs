@@ -1,13 +1,14 @@
 //! Plain-text report renderer.
 //!
 //! Renders a `Report` as plain text by iterating matches and emitting selected
-//! fields in a fixed canonical order. No field labels — just values.
+//! fields in the order declared by the ViewSet. No field labels — just values.
 //!
 //! Summary is always included for check/test reports; opt-in via `-v summary`
 //! for query reports.
 
 use tractor_core::{
-    render_tree_match, render_source_match, render_lines_match, normalize_path,
+    render_xml_string, normalize_path,
+    render_source_precomputed, render_lines_precomputed,
     report::{Report, ReportKind, ReportMatch, Summary},
     RenderOptions,
 };
@@ -65,8 +66,7 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
 fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts: &RenderOptions) {
 
     // When a message template was used, it is the intended primary output —
-    // it replaces tree/value/etc in text format.  Use -f json/xml if you want
-    // both the message and structured fields.
+    // it replaces tree/value/etc in text format.
     if let Some(ref msg) = rm.message {
         out.push_str(msg);
         out.push('\n');
@@ -77,44 +77,75 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
     if view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column) {
         let mut loc = String::new();
         if view.has(ViewField::File) {
-            loc.push_str(&normalize_path(&rm.inner.file));
+            loc.push_str(&normalize_path(&rm.file));
         }
         if view.has(ViewField::Line) {
             if !loc.is_empty() { loc.push(':'); }
-            loc.push_str(&rm.inner.line.to_string());
+            loc.push_str(&rm.line.to_string());
         }
         if view.has(ViewField::Column) {
             loc.push(':');
-            loc.push_str(&rm.inner.column.to_string());
+            loc.push_str(&rm.column.to_string());
         }
         out.push_str(&loc);
         out.push('\n');
     }
 
-    // Canonical field order
-    if view.has(ViewField::Tree) {
-        out.push_str(&render_tree_match(&rm.inner, render_opts));
-    }
-    if view.has(ViewField::Value) {
-        out.push_str(&rm.inner.value);
-        out.push('\n');
-    }
-    if view.has(ViewField::Source) {
-        out.push_str(&render_source_match(&rm.inner, render_opts));
-    }
-    if view.has(ViewField::Lines) {
-        out.push_str(&render_lines_match(&rm.inner, render_opts));
-    }
-    if view.has(ViewField::Reason) {
-        if let Some(ref reason) = rm.reason {
-            out.push_str(reason);
-            out.push('\n');
-        }
-    }
-    if view.has(ViewField::Severity) {
-        if let Some(severity) = rm.severity {
-            out.push_str(severity.as_str());
-            out.push('\n');
+    // Content fields — iterate ViewSet for declaration order
+    for field in &view.fields {
+        match field {
+            ViewField::Tree => {
+                if let Some(ref xml) = rm.tree {
+                    let rendered = render_xml_string(xml, render_opts);
+                    if render_opts.pretty_print && !rendered.ends_with('\n') {
+                        out.push_str(&rendered);
+                        out.push('\n');
+                    } else {
+                        out.push_str(&rendered);
+                    }
+                }
+            }
+            ViewField::Value => {
+                if let Some(ref v) = rm.value {
+                    out.push_str(v);
+                    out.push('\n');
+                }
+            }
+            ViewField::Source => {
+                if let Some(ref s) = rm.source {
+                    out.push_str(&render_source_precomputed(
+                        s,
+                        rm.tree.as_deref(),
+                        rm.line, rm.column, rm.end_line, rm.end_column,
+                        render_opts,
+                    ));
+                }
+            }
+            ViewField::Lines => {
+                if let Some(ref ls) = rm.lines {
+                    out.push_str(&render_lines_precomputed(
+                        ls,
+                        rm.tree.as_deref(),
+                        rm.line, rm.end_line,
+                        render_opts,
+                    ));
+                }
+            }
+            ViewField::Reason => {
+                if let Some(ref reason) = rm.reason {
+                    out.push_str(reason);
+                    out.push('\n');
+                }
+            }
+            ViewField::Severity => {
+                if let Some(severity) = rm.severity {
+                    out.push_str(severity.as_str());
+                    out.push('\n');
+                }
+            }
+            // File/Line/Column handled above as combined location line
+            // Summary/Count/Schema handled outside match loop
+            _ => {}
         }
     }
 }

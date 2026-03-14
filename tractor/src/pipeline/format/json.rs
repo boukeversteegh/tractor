@@ -1,5 +1,5 @@
 use serde_json::{json, Value};
-use tractor_core::{report::Report, report::ReportKind, normalize_path, xml_fragment_to_json, RenderOptions};
+use tractor_core::{report::{Report, ReportKind, ReportMatch}, normalize_path, xml_fragment_to_json, RenderOptions};
 use super::options::{GroupBy, ViewField, ViewSet};
 
 pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions) -> String {
@@ -27,11 +27,9 @@ pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         }
     }
 
-    let match_flags = MatchFlags::from_view(view);
-
     if !report.matches.is_empty() {
         let matches_json: Vec<Value> = report.matches.iter()
-            .map(|rm| match_to_value(rm, &match_flags, render_opts, GroupBy::None))
+            .map(|rm| match_to_value(rm, view, render_opts, GroupBy::None))
             .collect();
         root.insert("matches".into(), Value::Array(matches_json));
     }
@@ -40,7 +38,7 @@ pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         let groups_json: Vec<Value> = groups.iter().map(|g| {
             let group_matches: Vec<Value> = g.matches.iter()
                 // file is on the group — omit it from individual matches
-                .map(|rm| match_to_value(rm, &match_flags, render_opts, GroupBy::File))
+                .map(|rm| match_to_value(rm, view, render_opts, GroupBy::File))
                 .collect();
             json!({ "file": g.file, "matches": group_matches })
         }).collect();
@@ -52,77 +50,67 @@ pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderO
 
 /// Shared match serialization — reused by yaml.rs.
 /// `group_by`: when `File`, omits the `file` field (already on the parent group).
+/// Fields are emitted in ViewSet declaration order.
 pub fn match_to_value(
-    rm: &tractor_core::report::ReportMatch,
-    flags: &MatchFlags,
+    rm: &ReportMatch,
+    view: &ViewSet,
     render_opts: &RenderOptions,
     group_by: GroupBy,
 ) -> Value {
-    let m = &rm.inner;
     let mut obj = serde_json::Map::new();
-    if group_by == GroupBy::None {
-        obj.insert("file".into(), json!(normalize_path(&m.file)));
-    }
-    obj.insert("line".into(),   json!(m.line));
-    obj.insert("column".into(), json!(m.column));
 
-    if flags.value {
-        obj.insert("value".into(), json!(m.value));
-    }
-    if flags.source {
-        obj.insert("source".into(), json!(m.extract_source_snippet()));
-    }
-    if flags.lines {
-        let lines: Vec<&str> = m.get_source_lines_range()
-            .into_iter()
-            .map(|l| l.trim_end_matches('\r'))
-            .collect();
-        obj.insert("lines".into(), json!(lines));
-    }
-    if let Some(ref message) = rm.message {
-        obj.insert("message".into(), json!(message));
-    }
-    if flags.reason {
-        if let Some(ref reason) = rm.reason {
-            obj.insert("reason".into(), json!(reason));
+    for field in &view.fields {
+        match field {
+            ViewField::File => {
+                if group_by == GroupBy::None {
+                    obj.insert("file".into(), json!(normalize_path(&rm.file)));
+                }
+            }
+            ViewField::Line   => { obj.insert("line".into(),   json!(rm.line)); }
+            ViewField::Column => { obj.insert("column".into(), json!(rm.column)); }
+            ViewField::Value  => {
+                if let Some(ref v) = rm.value {
+                    obj.insert("value".into(), json!(v));
+                }
+            }
+            ViewField::Source => {
+                if let Some(ref s) = rm.source {
+                    obj.insert("source".into(), json!(s));
+                }
+            }
+            ViewField::Lines => {
+                if let Some(ref ls) = rm.lines {
+                    obj.insert("lines".into(), json!(ls));
+                }
+            }
+            ViewField::Reason => {
+                if let Some(ref r) = rm.reason {
+                    obj.insert("reason".into(), json!(r));
+                }
+            }
+            ViewField::Severity => {
+                if let Some(sv) = rm.severity {
+                    obj.insert("severity".into(), json!(sv.as_str()));
+                }
+            }
+            ViewField::Tree => {
+                if let Some(ref xml) = rm.tree {
+                    obj.insert("tree".into(), xml_fragment_to_json(xml, render_opts.max_depth));
+                }
+            }
+            // rule_id: emitted if present regardless of ViewSet (it's an annotation)
+            // Summary/Count/Schema: handled outside match iteration
+            _ => {}
         }
     }
-    if flags.severity {
-        if let Some(severity) = rm.severity {
-            obj.insert("severity".into(), json!(severity.as_str()));
-        }
+
+    // message and rule_id are always emitted when present (not ViewFields, but annotations)
+    if let Some(ref msg) = rm.message {
+        obj.insert("message".into(), json!(msg));
     }
     if let Some(ref rule_id) = rm.rule_id {
         obj.insert("rule_id".into(), json!(rule_id));
     }
-    // Tree is always last — it's the bulkiest field
-    if flags.tree {
-        if let Some(ref frag) = m.xml_fragment {
-            obj.insert("tree".into(), xml_fragment_to_json(frag, render_opts.max_depth));
-        }
-    }
+
     Value::Object(obj)
-}
-
-/// Pre-computed view flags for match serialization.
-pub struct MatchFlags {
-    pub tree:     bool,
-    pub value:    bool,
-    pub source:   bool,
-    pub lines:    bool,
-    pub reason:   bool,
-    pub severity: bool,
-}
-
-impl MatchFlags {
-    pub fn from_view(view: &ViewSet) -> Self {
-        MatchFlags {
-            tree:     view.has(ViewField::Tree),
-            value:    view.has(ViewField::Value),
-            source:   view.has(ViewField::Source),
-            lines:    view.has(ViewField::Lines),
-            reason:   view.has(ViewField::Reason),
-            severity: view.has(ViewField::Severity),
-        }
-    }
 }

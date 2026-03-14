@@ -1,9 +1,9 @@
 use std::collections::HashSet;
-use tractor_core::report::{Report, ReportMatch, Summary};
+use tractor_core::report::{Report, Summary};
 use clap::CommandFactory;
 use crate::cli::{Cli, QueryArgs};
-use crate::pipeline::{RunContext, OutputFormat, ViewField, InputMode, view, query_inline_source, query_files_batched, explore_inline, explore_files, run_debug};
-use crate::pipeline::format::{render_gcc, render_github, render_xml_report, render_json_report, render_yaml_report, render_text_report};
+use crate::pipeline::{RunContext, ViewField, InputMode, query_inline_source, query_files_batched, run_debug, match_to_report_match};
+use crate::pipeline::format::{render_query_report, view};
 
 pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     let ctx = RunContext::build(
@@ -26,34 +26,31 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
+    // Explore (no XPath) = query with implicit "/*" — selects the document root of each file.
+    // Same pipeline, same output, same -f/-v flags.
+    let xpath_expr = ctx.xpath.as_deref().unwrap_or("/*");
+
     match &ctx.input {
         InputMode::InlineSource { source, lang } => {
-            if let Some(ref xpath_expr) = ctx.xpath {
-                let matches = query_inline_source(&ctx, source, lang, xpath_expr)?;
-                if ctx.view.has(ViewField::Count) {
-                    println!("{}", matches.len());
-                } else if ctx.view.has(ViewField::Schema) {
-                    crate::pipeline::print_schema_from_matches(&matches, ctx.schema_depth(), ctx.use_color);
-                } else {
-                    render_query_output(&ctx, matches)?;
-                }
+            let matches = query_inline_source(&ctx, source, lang, xpath_expr)?;
+            if ctx.view.has(ViewField::Count) {
+                println!("{}", matches.len());
+            } else if ctx.view.has(ViewField::Schema) {
+                crate::pipeline::print_schema_from_matches(&matches, ctx.schema_depth(), ctx.use_color);
             } else {
-                explore_inline(&ctx, source, lang)?;
+                let report = build_query_report(matches, &ctx);
+                render_query_report(&report, &ctx)?;
             }
         }
         InputMode::Files(files) => {
-            if let Some(ref xpath_expr) = ctx.xpath {
-                let (count, matches) = query_files_batched(&ctx, files, xpath_expr, true)?;
-
-                if ctx.view.has(ViewField::Count) {
-                    println!("{}", count);
-                } else if ctx.view.has(ViewField::Schema) {
-                    crate::pipeline::print_schema_from_matches(&matches, ctx.schema_depth(), ctx.use_color);
-                } else {
-                    render_query_output(&ctx, matches)?;
-                }
+            let (count, matches) = query_files_batched(&ctx, files, xpath_expr, true)?;
+            if ctx.view.has(ViewField::Count) {
+                println!("{}", count);
+            } else if ctx.view.has(ViewField::Schema) {
+                crate::pipeline::print_schema_from_matches(&matches, ctx.schema_depth(), ctx.use_color);
             } else {
-                explore_files(&ctx, files)?;
+                let report = build_query_report(matches, &ctx);
+                render_query_report(&report, &ctx)?;
             }
         }
     }
@@ -61,58 +58,29 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 /// Build a Report from query matches (no reason/severity — query mode).
-fn build_query_report(matches: Vec<tractor_core::Match>, message_template: Option<&str>) -> Report {
-    let report_matches: Vec<ReportMatch> = matches.iter()
-        .map(|m| {
-            let message = message_template.map(|t| tractor_core::format_message(t, m));
-            let mut rm = ReportMatch::from_match(m.clone());
-            rm.message = message;
-            rm
-        })
-        .collect();
+pub(crate) fn build_query_report(matches: Vec<tractor_core::Match>, ctx: &RunContext) -> Report {
+    let message_template = ctx.message.as_deref();
     let mut files_seen = HashSet::new();
     for m in &matches {
-        files_seen.insert(&m.file);
+        files_seen.insert(m.file.clone());
     }
+    let files_affected = files_seen.len();
+    let total = matches.len();
+
+    let report_matches = matches.into_iter()
+        .map(|m| {
+            let message = message_template.map(|t| tractor_core::format_message(t, &m));
+            match_to_report_match(m, &ctx.view, None, None, message)
+        })
+        .collect();
+
     let summary = Summary {
         passed: true,
-        total: matches.len(),
-        files_affected: files_seen.len(),
+        total,
+        files_affected,
         errors: 0,
         warnings: 0,
         expected: None,
     };
     Report::query(report_matches, summary)
-}
-
-/// Render query results to stdout based on the current OutputFormat.
-fn render_query_output(ctx: &RunContext, matches: Vec<tractor_core::Match>) -> Result<(), Box<dyn std::error::Error>> {
-    let template = ctx.message.as_deref();
-    match ctx.output_format {
-        OutputFormat::Json => {
-            let report = build_query_report(matches, template);
-            print!("{}", render_json_report(&report, &ctx.view, &ctx.render_options()));
-        }
-        OutputFormat::Yaml => {
-            let report = build_query_report(matches, template);
-            print!("{}", render_yaml_report(&report, &ctx.view, &ctx.render_options()));
-        }
-        OutputFormat::Xml => {
-            let report = build_query_report(matches, template);
-            print!("{}", render_xml_report(&report, &ctx.view, &ctx.render_options()));
-        }
-        OutputFormat::Gcc => {
-            let report = build_query_report(matches, template);
-            print!("{}", render_gcc(&report));
-        }
-        OutputFormat::Github => {
-            let report = build_query_report(matches, template);
-            print!("{}", render_github(&report));
-        }
-        OutputFormat::Text => {
-            let report = build_query_report(matches, template);
-            print!("{}", render_text_report(&report, &ctx.view, &ctx.render_options()));
-        }
-    }
-    Ok(())
 }

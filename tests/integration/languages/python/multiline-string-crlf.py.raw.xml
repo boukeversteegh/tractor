@@ -1,3 +1,4 @@
+tests/integration/languages/python/multiline-string-crlf.py:1
 <Files>
   <File path="tests/integration/languages/python/multiline-string-crlf.py">
     <module>

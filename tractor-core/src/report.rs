@@ -11,7 +11,6 @@
 use serde::{Serialize, Serializer};
 use serde::ser::SerializeMap;
 
-use crate::Match;
 use crate::output::normalize_path;
 
 // ---------------------------------------------------------------------------
@@ -39,61 +38,62 @@ impl Severity {
 // ReportMatch
 // ---------------------------------------------------------------------------
 
-/// A match enriched with report-level metadata.
-/// Wraps the core `Match` and adds fields that are only meaningful in context
-/// of a specific command (check reason, severity, rule identity).
+/// A match with view-selected content fields.
+///
+/// Core identity fields (file, line, column) are always populated.
+/// Content fields are Some only when the corresponding ViewField was in the
+/// resolved ViewSet at report-build time.
 #[derive(Debug, Clone)]
 pub struct ReportMatch {
-    pub inner: Match,
+    // Core identity — always present; used for sorting, grouping, gcc/github templates
+    pub file: String,
+    pub line: u32,
+    pub column: u32,
+    pub end_line: u32,
+    pub end_column: u32,
 
-    /// Interpolated message from `-m` template.
-    pub message: Option<String>,
-
-    /// Violation description — populated by `tractor check --reason`.
-    pub reason: Option<String>,
-
-    /// Violation severity — populated by `tractor check --severity`.
+    // Content fields — Some only if selected by resolved ViewSet
+    /// Raw xml_fragment string; renderer converts natively (text → pretty-print, json → object).
+    pub tree:     Option<String>,
+    /// XPath string value of the matched node.
+    pub value:    Option<String>,
+    /// Pre-computed column-precise source snippet (plain text; coloring in renderer).
+    pub source:   Option<String>,
+    /// Pre-computed source lines spanning the match (trailing \r stripped).
+    pub lines:    Option<Vec<String>>,
+    pub reason:   Option<String>,
     pub severity: Option<Severity>,
-
+    pub message:  Option<String>,
     /// Rule identifier for multi-rule reports (future: `--rules` flag).
-    pub rule_id: Option<String>,
-}
-
-impl ReportMatch {
-    pub fn from_match(m: Match) -> Self {
-        ReportMatch { inner: m, message: None, reason: None, severity: None, rule_id: None }
-    }
+    pub rule_id:  Option<String>,
 }
 
 impl Serialize for ReportMatch {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        // Count fields: file, line, column, end_line, end_column, value = 6
-        // + optional: message, reason, severity, rule_id
-        let optional_count = self.message.as_ref().map_or(0, |_| 1)
+        let optional_count = self.tree.as_ref().map_or(0, |_| 1)
+            + self.value.as_ref().map_or(0, |_| 1)
+            + self.source.as_ref().map_or(0, |_| 1)
+            + self.lines.as_ref().map_or(0, |_| 1)
             + self.reason.as_ref().map_or(0, |_| 1)
             + self.severity.as_ref().map_or(0, |_| 1)
+            + self.message.as_ref().map_or(0, |_| 1)
             + self.rule_id.as_ref().map_or(0, |_| 1);
-        let mut map = serializer.serialize_map(Some(6 + optional_count))?;
+        let mut map = serializer.serialize_map(Some(5 + optional_count))?;
 
-        map.serialize_entry("file", &normalize_path(&self.inner.file))?;
-        map.serialize_entry("line", &self.inner.line)?;
-        map.serialize_entry("column", &self.inner.column)?;
-        map.serialize_entry("end_line", &self.inner.end_line)?;
-        map.serialize_entry("end_column", &self.inner.end_column)?;
-        map.serialize_entry("value", &self.inner.value)?;
+        map.serialize_entry("file", &normalize_path(&self.file))?;
+        map.serialize_entry("line", &self.line)?;
+        map.serialize_entry("column", &self.column)?;
+        map.serialize_entry("end_line", &self.end_line)?;
+        map.serialize_entry("end_column", &self.end_column)?;
 
-        if let Some(ref message) = self.message {
-            map.serialize_entry("message", message)?;
-        }
-        if let Some(ref reason) = self.reason {
-            map.serialize_entry("reason", reason)?;
-        }
-        if let Some(ref severity) = self.severity {
-            map.serialize_entry("severity", severity)?;
-        }
-        if let Some(ref rule_id) = self.rule_id {
-            map.serialize_entry("rule_id", rule_id)?;
-        }
+        if let Some(ref v) = self.tree     { map.serialize_entry("tree", v)?; }
+        if let Some(ref v) = self.value    { map.serialize_entry("value", v)?; }
+        if let Some(ref v) = self.source   { map.serialize_entry("source", v)?; }
+        if let Some(ref v) = self.lines    { map.serialize_entry("lines", v)?; }
+        if let Some(ref v) = self.reason   { map.serialize_entry("reason", v)?; }
+        if let Some(ref v) = self.severity { map.serialize_entry("severity", v)?; }
+        if let Some(ref v) = self.message  { map.serialize_entry("message", v)?; }
+        if let Some(ref v) = self.rule_id  { map.serialize_entry("rule_id", v)?; }
 
         map.end()
     }
@@ -157,7 +157,7 @@ pub struct Report {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub summary: Option<Summary>,
 
-    /// Optional pre-grouped structure. Populated by `group_by_file()`.
+    /// Optional pre-grouped structure. Populated by `with_groups()`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub groups: Option<Vec<FileGroup>>,
 }
@@ -188,7 +188,7 @@ impl Report {
         let mut file_index: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
 
         for rm in self.matches.drain(..) {
-            let file = normalize_path(&rm.inner.file);
+            let file = normalize_path(&rm.file);
             let idx = file_index.entry(file.clone()).or_insert_with(|| {
                 groups.push(FileGroup { file: file.clone(), matches: Vec::new() });
                 groups.len() - 1
@@ -203,29 +203,55 @@ impl Report {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Arc;
 
-    fn make_match(file: &str, line: u32, col: u32, value: &str) -> Match {
-        Match::with_location(
-            file.to_string(), line, col, line, col + value.len() as u32,
-            value.to_string(), Arc::new(vec![]),
-        )
+    fn make_report_match(file: &str, line: u32, col: u32, value: &str) -> ReportMatch {
+        ReportMatch {
+            file: file.to_string(),
+            line,
+            column: col,
+            end_line: line,
+            end_column: col + value.len() as u32,
+            tree: None,
+            value: Some(value.to_string()),
+            source: None,
+            lines: None,
+            reason: None,
+            severity: None,
+            message: None,
+            rule_id: None,
+        }
     }
 
     #[test]
     fn test_check_report_json() {
         let m1 = ReportMatch {
-            inner: make_match("src\\main.rs", 10, 5, "foo"),
-            message: None,
+            file: "src\\main.rs".to_string(),
+            line: 10,
+            column: 5,
+            end_line: 10,
+            end_column: 8,
+            tree: None,
+            value: Some("foo".to_string()),
+            source: None,
+            lines: None,
             reason: Some("no foo allowed".to_string()),
             severity: Some(Severity::Error),
+            message: None,
             rule_id: None,
         };
         let m2 = ReportMatch {
-            inner: make_match("src/lib.rs", 3, 1, "bar"),
-            message: None,
+            file: "src/lib.rs".to_string(),
+            line: 3,
+            column: 1,
+            end_line: 3,
+            end_column: 4,
+            tree: None,
+            value: Some("bar".to_string()),
+            source: None,
+            lines: None,
             reason: Some("no bar allowed".to_string()),
             severity: Some(Severity::Warning),
+            message: None,
             rule_id: None,
         };
         let summary = Summary {
@@ -258,7 +284,7 @@ mod tests {
 
     #[test]
     fn test_test_report_json() {
-        let m = ReportMatch::from_match(make_match("test.cs", 1, 1, "x"));
+        let m = make_report_match("test.cs", 1, 1, "x");
         let summary = Summary {
             passed: true,
             total: 1,

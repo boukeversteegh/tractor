@@ -7,11 +7,7 @@ summary:
 groups:
 - file: tests/integration/formats/sample.cs
   matches:
-  - line: 1
-    column: 1
-    reason: class found
+  - reason: class found
     severity: error
-  - line: 7
-    column: 1
-    reason: class found
+  - reason: class found
     severity: error

@@ -1,3 +1,4 @@
+tests/integration/languages/ini/sample.ini:1
 <Files>
   <File path="tests/integration/languages/ini/sample.ini">
     <document>

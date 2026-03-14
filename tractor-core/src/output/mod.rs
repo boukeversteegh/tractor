@@ -18,6 +18,7 @@ mod schema;
 pub mod xml_to_json;
 
 pub use formatter::{render_tree_match, render_source_match, render_lines_match};
+pub use formatter::{render_source_precomputed, render_lines_precomputed};
 pub use formatter::{format_message, normalize_path};
 pub use colors::should_use_color;
 pub use xml_renderer::{render_node, render_document, render_xml_string, RenderOptions};

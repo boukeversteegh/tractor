@@ -1,3 +1,4 @@
+tests/integration/languages/csharp/null-forgiving-operator.cs:1
 <Files>
   <File path="tests/integration/languages/csharp/null-forgiving-operator.cs">
     <unit>

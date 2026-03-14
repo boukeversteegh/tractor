@@ -7,15 +7,7 @@
     "warnings": 0
   },
   "matches": [
-    {
-      "file": "tests/integration/formats/sample.cs",
-      "line": 1,
-      "column": 1
-    },
-    {
-      "file": "tests/integration/formats/sample.cs",
-      "line": 7,
-      "column": 1
-    }
+    {},
+    {}
   ]
 }

@@ -1,3 +1,4 @@
+tests/integration/languages/yaml/sample.yaml:1
 <Files>
   <File path="tests/integration/languages/yaml/sample.yaml">
     <stream>

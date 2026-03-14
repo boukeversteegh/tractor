@@ -1,3 +1,4 @@
+tests/integration/languages/csharp/attribute-required-nullable.cs:1
 <Files>
   <File path="tests/integration/languages/csharp/attribute-required-nullable.cs">
     <compilation_unit>

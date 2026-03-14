@@ -1,3 +1,4 @@
+tests/integration/languages/toml/sample.toml:1
 <Files>
   <File path="tests/integration/languages/toml/sample.toml">
     <document>

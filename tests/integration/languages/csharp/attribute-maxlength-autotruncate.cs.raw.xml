@@ -1,3 +1,4 @@
+tests/integration/languages/csharp/attribute-maxlength-autotruncate.cs:1
 <Files>
   <File path="tests/integration/languages/csharp/attribute-maxlength-autotruncate.cs">
     <compilation_unit>

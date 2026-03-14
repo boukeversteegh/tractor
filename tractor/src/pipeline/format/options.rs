@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 // ---------------------------------------------------------------------------
 // OutputFormat — serialization/rendering format (-f flag)
 // ---------------------------------------------------------------------------
@@ -88,37 +86,53 @@ impl ViewField {
     }
 }
 
-/// A set of selected view fields. Supports comma-separated composition: `-v tree,summary`.
+/// A set of selected view fields, preserving declaration order.
+///
+/// Order determines output field order in renderers.
+/// Supports comma-separated composition: `-v tree,summary`.
 #[derive(Debug, Clone)]
 pub struct ViewSet {
-    pub fields: HashSet<ViewField>,
+    pub fields: Vec<ViewField>,
 }
 
 #[allow(dead_code)]
 impl ViewSet {
-    pub fn new(fields: HashSet<ViewField>) -> Self {
+    pub fn new(fields: Vec<ViewField>) -> Self {
         ViewSet { fields }
     }
 
     pub fn single(field: ViewField) -> Self {
-        let mut f = HashSet::new();
-        f.insert(field);
-        ViewSet { fields: f }
+        ViewSet { fields: vec![field] }
+    }
+
+    pub fn from_fields(fields: Vec<ViewField>) -> Self {
+        ViewSet { fields }
     }
 
     pub fn has(&self, field: ViewField) -> bool {
         self.fields.contains(&field)
     }
 
+    /// Add a field at the end if not already present.
+    pub fn push_if_absent(&mut self, field: ViewField) {
+        if !self.has(field) {
+            self.fields.push(field);
+        }
+    }
 }
 
-/// Parse a comma-separated view expression into a `ViewSet`.
+/// Parse a comma-separated view expression into a `ViewSet`, preserving order.
+/// Duplicate fields are silently ignored.
 pub fn parse_view_set(s: &str) -> Result<ViewSet, String> {
-    let mut fields = HashSet::new();
+    let mut fields = Vec::new();
+    let mut seen = std::collections::HashSet::new();
     for part in s.split(',') {
         let part = part.trim().to_lowercase();
         if part.is_empty() { continue; }
-        fields.insert(ViewField::from_str(&part)?);
+        let field = ViewField::from_str(&part)?;
+        if seen.insert(field) {
+            fields.push(field);
+        }
     }
     if fields.is_empty() {
         return Err("view cannot be empty".to_string());

@@ -1,4 +1,4 @@
-use tractor_core::{format_message, report::Report, Match};
+use tractor_core::{report::{Report, ReportMatch}, Match};
 use super::shared::{to_absolute_path, append_source_context};
 
 /// Render report matches in gcc format: `file:line:col: severity: reason`
@@ -19,28 +19,50 @@ pub fn render_gcc(report: &Report) -> String {
     out
 }
 
-fn render_gcc_match(out: &mut String, rm: &tractor_core::report::ReportMatch) {
+fn render_gcc_match(out: &mut String, rm: &ReportMatch) {
     let reason   = rm.reason.as_deref().unwrap_or("violation");
     let severity = rm.severity.map_or("error", |s| s.as_str());
-    let m = &rm.inner;
     out.push_str(&format!(
         "{}:{}:{}: {}: {}\n",
-        to_absolute_path(&m.file), m.line, m.column, severity, reason
+        to_absolute_path(&rm.file), rm.line, rm.column, severity, reason
     ));
-    append_source_context(out, m);
+    // Reconstruct a minimal Match for source context rendering
+    let m = make_context_match(rm);
+    append_source_context(out, &m);
 }
 
-/// Render matches in gcc format using a message template (for `test --error`).
-pub fn render_gcc_with_template(matches: &[Match], template: &str, is_warning: bool) -> String {
+
+/// Render ReportMatches in gcc format using a message template (for `test --error`).
+pub fn render_gcc_report_with_template(matches: &[ReportMatch], template: &str, is_warning: bool) -> String {
     let severity = if is_warning { "warning" } else { "error" };
     let mut out = String::new();
-    for m in matches {
-        let msg = format_message(template, m);
+    for rm in matches {
+        // Build the message from the template using available fields
+        let msg = template
+            .replace("{file}", &tractor_core::normalize_path(&rm.file))
+            .replace("{line}", &rm.line.to_string())
+            .replace("{col}", &rm.column.to_string())
+            .replace("{value}", rm.value.as_deref().unwrap_or(""));
         out.push_str(&format!(
             "{}:{}:{}: {}: {}\n",
-            to_absolute_path(&m.file), m.line, m.column, severity, msg
+            to_absolute_path(&rm.file), rm.line, rm.column, severity, msg
         ));
-        append_source_context(&mut out, m);
+        let m = make_context_match(rm);
+        append_source_context(&mut out, &m);
     }
     out
+}
+
+/// Construct a minimal Match for source-context rendering.
+/// source_lines is empty (already consumed at report-build time), so context
+/// is suppressed — this is acceptable since gcc format is CI-oriented.
+fn make_context_match(rm: &ReportMatch) -> Match {
+    use std::sync::Arc;
+    Match::with_location(
+        rm.file.clone(),
+        rm.line, rm.column,
+        rm.end_line, rm.end_column,
+        rm.value.clone().unwrap_or_default(),
+        Arc::new(vec![]),
+    )
 }

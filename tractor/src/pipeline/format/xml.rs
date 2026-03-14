@@ -17,13 +17,6 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
         true
     };
 
-    let show_tree     = view.has(ViewField::Tree);
-    let show_value    = view.has(ViewField::Value);
-    let show_source   = view.has(ViewField::Source);
-    let show_lines    = view.has(ViewField::Lines);
-    let show_reason   = view.has(ViewField::Reason);
-    let show_severity = view.has(ViewField::Severity);
-
     let mut body = String::new();
     body.push_str("<report>\n");
 
@@ -45,7 +38,7 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
     if !report.matches.is_empty() {
         body.push_str("  <matches>\n");
         for rm in &report.matches {
-            append_match(&mut body, rm, show_tree, show_value, show_source, show_lines, show_reason, show_severity, "    ", &tree_opts);
+            append_match(&mut body, rm, view, "    ", &tree_opts);
         }
         body.push_str("  </matches>\n");
     }
@@ -54,7 +47,7 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
         for g in groups {
             body.push_str(&format!("    <group file=\"{}\">\n", escape_attr(&g.file)));
             for rm in &g.matches {
-                append_match(&mut body, rm, show_tree, show_value, show_source, show_lines, show_reason, show_severity, "      ", &tree_opts);
+                append_match(&mut body, rm, view, "      ", &tree_opts);
             }
             body.push_str("    </group>\n");
         }
@@ -79,68 +72,76 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
 fn append_match(
     out: &mut String,
     rm: &tractor_core::report::ReportMatch,
-    show_tree: bool,
-    show_value: bool,
-    show_source: bool,
-    show_lines: bool,
-    show_reason: bool,
-    show_severity: bool,
+    view: &ViewSet,
     indent: &str,
     render_opts: &RenderOptions,
 ) {
-    let m    = &rm.inner;
-    let file = escape_attr(&normalize_path(&m.file));
-    out.push_str(&format!("{}<match file=\"{}\" line=\"{}\" column=\"{}\"", indent, file, m.line, m.column));
-    if m.end_line != m.line || m.end_column != m.column {
-        out.push_str(&format!(" end_line=\"{}\" end_column=\"{}\"", m.end_line, m.end_column));
+    let file = escape_attr(&normalize_path(&rm.file));
+    out.push_str(&format!("{}<match file=\"{}\" line=\"{}\" column=\"{}\"", indent, file, rm.line, rm.column));
+    if rm.end_line != rm.line || rm.end_column != rm.column {
+        out.push_str(&format!(" end_line=\"{}\" end_column=\"{}\"", rm.end_line, rm.end_column));
     }
     out.push_str(">\n");
 
     let inner = &format!("{}  ", indent);
     let deep  = &format!("{}    ", indent);
 
-    if show_value {
-        out.push_str(&format!("{}<value>{}</value>\n", inner, escape(&m.value)));
-    }
-    if show_source {
-        out.push_str(&format!("{}<source>{}</source>\n", inner, escape(&m.extract_source_snippet())));
-    }
-    if show_lines {
-        out.push_str(&format!("{}<lines>\n", inner));
-        for line in m.get_source_lines_range() {
-            out.push_str(&format!("{}<line>{}</line>\n", inner, escape(line.trim_end_matches('\r'))));
+    // Iterate ViewSet for declaration order
+    for field in &view.fields {
+        match field {
+            ViewField::Value => {
+                if let Some(ref v) = rm.value {
+                    out.push_str(&format!("{}<value>{}</value>\n", inner, escape(v)));
+                }
+            }
+            ViewField::Source => {
+                if let Some(ref s) = rm.source {
+                    out.push_str(&format!("{}<source>{}</source>\n", inner, escape(s)));
+                }
+            }
+            ViewField::Lines => {
+                if let Some(ref ls) = rm.lines {
+                    out.push_str(&format!("{}<lines>\n", inner));
+                    for line in ls {
+                        out.push_str(&format!("{}<line>{}</line>\n", inner, escape(line)));
+                    }
+                    out.push_str(&format!("{}</lines>\n", inner));
+                }
+            }
+            ViewField::Reason => {
+                if let Some(ref reason) = rm.reason {
+                    out.push_str(&format!("{}<reason>{}</reason>\n", inner, escape(reason)));
+                }
+            }
+            ViewField::Severity => {
+                if let Some(severity) = rm.severity {
+                    out.push_str(&format!("{}<severity>{}</severity>\n", inner, severity.as_str()));
+                }
+            }
+            ViewField::Tree => {
+                if let Some(ref xml) = rm.tree {
+                    // render_opts has use_color=false here; the outer colorization pass handles it
+                    let rendered = render_xml_string(xml, render_opts);
+                    out.push_str(&format!("{}<tree>\n", inner));
+                    for line in rendered.lines() {
+                        out.push_str(deep);
+                        out.push_str(line);
+                        out.push('\n');
+                    }
+                    out.push_str(&format!("{}</tree>\n", inner));
+                }
+            }
+            // File/Line/Column are attributes, not child elements; Summary/Count/Schema handled elsewhere
+            _ => {}
         }
-        out.push_str(&format!("{}</lines>\n", inner));
     }
+
+    // message and rule_id always emitted when present (annotations, not view-gated)
     if let Some(ref message) = rm.message {
         out.push_str(&format!("{}<message>{}</message>\n", inner, escape(message)));
     }
-    if show_reason {
-        if let Some(ref reason) = rm.reason {
-            out.push_str(&format!("{}<reason>{}</reason>\n", inner, escape(reason)));
-        }
-    }
-    if show_severity {
-        if let Some(severity) = rm.severity {
-            out.push_str(&format!("{}<severity>{}</severity>\n", inner, severity.as_str()));
-        }
-    }
     if let Some(ref rule_id) = rm.rule_id {
         out.push_str(&format!("{}<rule-id>{}</rule-id>\n", inner, escape(rule_id)));
-    }
-    // Tree is always last — it's the bulkiest field
-    if show_tree {
-        if let Some(ref frag) = m.xml_fragment {
-            // render_opts has use_color=false here; the outer colorization pass handles it
-            let rendered = render_xml_string(frag, render_opts);
-            out.push_str(&format!("{}<tree>\n", inner));
-            for line in rendered.lines() {
-                out.push_str(deep);
-                out.push_str(line);
-                out.push('\n');
-            }
-            out.push_str(&format!("{}</tree>\n", inner));
-        }
     }
 
     out.push_str(&format!("{}</match>\n", indent));
