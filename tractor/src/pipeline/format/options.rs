@@ -1,5 +1,4 @@
 use std::collections::HashSet;
-use tractor_core::TextViewMode;
 
 // ---------------------------------------------------------------------------
 // OutputFormat — serialization/rendering format (-f flag)
@@ -111,15 +110,6 @@ impl ViewSet {
         self.fields.contains(&field)
     }
 
-    /// Primary `TextViewMode` for `format_matches()` — backward compat bridge.
-    pub fn primary_output_format(&self) -> TextViewMode {
-        if self.fields.contains(&ViewField::Schema) { return TextViewMode::Schema; }
-        if self.fields.contains(&ViewField::Count)  { return TextViewMode::Count; }
-        if self.fields.contains(&ViewField::Lines)  { return TextViewMode::Lines; }
-        if self.fields.contains(&ViewField::Source) { return TextViewMode::Source; }
-        if self.fields.contains(&ViewField::Value)  { return TextViewMode::Value; }
-        TextViewMode::Xml // Tree is the default
-    }
 }
 
 /// Parse a comma-separated view expression into a `ViewSet`.

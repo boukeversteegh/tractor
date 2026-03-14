@@ -54,7 +54,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
     let passed = check_expectation(&expect, count)?;
 
     // Build ReportMatches (no reason/severity for test matches)
-    let message_template = ctx.options.message.clone();
+    let message_template = ctx.message.clone();
     let report_matches: Vec<ReportMatch> = matches.into_iter().map(|m| {
         let message = message_template.as_deref().map(|t| tractor_core::format_message(t, &m));
         let mut rm = ReportMatch::from_match(m);

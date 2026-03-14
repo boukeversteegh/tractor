@@ -1,5 +1,4 @@
 use tractor_core::{
-    OutputOptions,
     output::should_use_color,
     output::RenderOptions,
 };
@@ -15,7 +14,10 @@ pub struct RunContext {
     /// View field selection (-v).
     pub view: ViewSet,
     pub use_color: bool,
-    pub options: OutputOptions,
+    /// Interpolated message template from `-m`, if provided.
+    pub message: Option<String>,
+    /// True when violations should be treated as warnings (for `test --warning`).
+    pub warning: bool,
     pub input: InputMode,
     pub concurrency: usize,
     pub limit: Option<usize>,
@@ -55,22 +57,13 @@ impl RunContext {
             .build_global()
             .ok();
 
-        let options = OutputOptions {
-            message,
-            use_color,
-            strip_locations: !shared.keep_locations,
-            max_depth: shared.depth,
-            pretty_print: !shared.no_pretty,
-            language: shared.lang.clone(),
-            warning,
-        };
-
         Ok(RunContext {
             xpath,
             output_format,
             view,
             use_color,
-            options,
+            message,
+            warning,
             input,
             concurrency,
             limit: shared.limit,

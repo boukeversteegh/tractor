@@ -7,8 +7,7 @@
 //! for query reports.
 
 use tractor_core::{
-    TextViewMode, format_matches, normalize_path,
-    output::OutputOptions,
+    render_tree_match, render_source_match, render_lines_match, normalize_path,
     report::{Report, ReportKind, ReportMatch, Summary},
     RenderOptions,
 };
@@ -64,8 +63,6 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
 }
 
 fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts: &RenderOptions) {
-    let opts = to_output_opts(render_opts);
-    let single = &[rm.inner.clone()];
 
     // When a message template was used, it is the intended primary output —
     // it replaces tree/value/etc in text format.  Use -f json/xml if you want
@@ -96,17 +93,17 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
 
     // Canonical field order
     if view.has(ViewField::Tree) {
-        out.push_str(&format_matches(single, TextViewMode::Xml, &opts));
+        out.push_str(&render_tree_match(&rm.inner, render_opts));
     }
     if view.has(ViewField::Value) {
         out.push_str(&rm.inner.value);
         out.push('\n');
     }
     if view.has(ViewField::Source) {
-        out.push_str(&format_matches(single, TextViewMode::Source, &opts));
+        out.push_str(&render_source_match(&rm.inner, render_opts));
     }
     if view.has(ViewField::Lines) {
-        out.push_str(&format_matches(single, TextViewMode::Lines, &opts));
+        out.push_str(&render_lines_match(&rm.inner, render_opts));
     }
     if view.has(ViewField::Reason) {
         if let Some(ref reason) = rm.reason {
@@ -119,18 +116,6 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
             out.push_str(severity.as_str());
             out.push('\n');
         }
-    }
-}
-
-fn to_output_opts(render_opts: &RenderOptions) -> OutputOptions {
-    OutputOptions {
-        message: None,
-        use_color: render_opts.use_color,
-        strip_locations: !render_opts.include_locations,
-        max_depth: render_opts.max_depth,
-        pretty_print: render_opts.pretty_print,
-        language: render_opts.language.clone(),
-        warning: false,
     }
 }
 

@@ -4,7 +4,8 @@ use std::collections::HashSet;
 use rayon::prelude::*;
 use tractor_core::{
     XPathEngine, Match,
-    format_matches, SchemaCollector,
+    render_tree_match, render_source_match, render_lines_match,
+    SchemaCollector,
     output::{render_document, render_node, RenderOptions},
     parse_to_documents, parse_string_to_documents,
     XeeParseResult,
@@ -12,6 +13,19 @@ use tractor_core::{
 
 use super::context::RunContext;
 use super::format::ViewField;
+
+/// Render a single match for text output based on the active view fields.
+fn render_match_text(m: &Match, view: &super::format::ViewSet, opts: &RenderOptions) -> String {
+    if view.has(ViewField::Source) {
+        render_source_match(m, opts)
+    } else if view.has(ViewField::Lines) {
+        render_lines_match(m, opts)
+    } else if view.has(ViewField::Value) {
+        format!("{}\n", m.value)
+    } else {
+        render_tree_match(m, opts)
+    }
+}
 
 // ---------------------------------------------------------------------------
 // Batch utility
@@ -139,8 +153,10 @@ pub fn query_files_batched(
         if collect {
             all_matches.extend(batch_matches);
         } else if !is_count_format {
-            let output = format_matches(&batch_matches, ctx.view.primary_output_format(), &ctx.options);
-            print!("{}", output);
+            let opts = ctx.render_options();
+            for m in &batch_matches {
+                print!("{}", render_match_text(m, &ctx.view, &opts));
+            }
             io::stdout().flush().ok();
         }
     }
@@ -287,8 +303,10 @@ pub fn explore_files(ctx: &RunContext, files: &[String]) -> Result<(), Box<dyn s
         })
         .collect();
 
-    let output = format_matches(&matches, ctx.view.primary_output_format(), &ctx.options);
-    print!("{}", output);
+    let opts = ctx.render_options();
+    for m in &matches {
+        print!("{}", render_match_text(m, &ctx.view, &opts));
+    }
 
     Ok(())
 }
@@ -338,8 +356,8 @@ pub fn explore_inline(ctx: &RunContext, source: &str, lang: &str) -> Result<(), 
         result.source_lines.clone(),
     ).with_xml_fragment(xml);
 
-    let output = format_matches(&[file_match], ctx.view.primary_output_format(), &ctx.options);
-    print!("{}", output);
+    let opts = ctx.render_options();
+    print!("{}", render_match_text(&file_match, &ctx.view, &opts));
     Ok(())
 }
 

@@ -87,7 +87,7 @@ fn build_query_report(matches: Vec<tractor_core::Match>, message_template: Optio
 
 /// Render query results to stdout based on the current OutputFormat.
 fn render_query_output(ctx: &RunContext, matches: Vec<tractor_core::Match>) -> Result<(), Box<dyn std::error::Error>> {
-    let template = ctx.options.message.as_deref();
+    let template = ctx.message.as_deref();
     match ctx.output_format {
         OutputFormat::Json => {
             let report = build_query_report(matches, template);

@@ -35,7 +35,7 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
     let (_, matches) = query_files_batched(&ctx, files, xpath_expr, true)?;
 
     // Build ReportMatches with reason and severity
-    let message_template = ctx.options.message.clone();
+    let message_template = ctx.message.clone();
     let report_matches: Vec<ReportMatch> = matches.into_iter().map(|m| {
         let message = message_template.as_deref().map(|t| tractor_core::format_message(t, &m));
         ReportMatch {

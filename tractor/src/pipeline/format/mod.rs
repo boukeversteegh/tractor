@@ -15,7 +15,7 @@ pub use json::render_json_report;
 pub use yaml::render_yaml_report;
 pub use text::render_text_report;
 
-use tractor_core::{format_matches, report::Report};
+use tractor_core::{render_tree_match, render_source_match, render_lines_match, report::Report};
 use crate::pipeline::context::RunContext;
 use crate::modes::test::test_colors;
 
@@ -106,7 +106,7 @@ pub fn render_test_report(
     if !summary.passed && !report.matches.is_empty() {
         let inner: Vec<_> = report.matches.iter().map(|rm| rm.inner.clone()).collect();
         if let Some(ref error_tmpl) = error_template {
-            let out = render_gcc_with_template(&inner, error_tmpl, ctx.options.warning);
+            let out = render_gcc_with_template(&inner, error_tmpl, warning);
             for line in out.lines() {
                 if ctx.use_color {
                     println!("  {}{}{}", color, line, test_colors::RESET);
@@ -115,9 +115,20 @@ pub fn render_test_report(
                 }
             }
         } else {
-            let out = format_matches(&inner, ctx.view.primary_output_format(), &ctx.options);
-            for line in out.lines() {
-                println!("  {}", line);
+            let opts = ctx.render_options();
+            for m in &inner {
+                let rendered = if ctx.view.has(ViewField::Source) {
+                    render_source_match(m, &opts)
+                } else if ctx.view.has(ViewField::Lines) {
+                    render_lines_match(m, &opts)
+                } else if ctx.view.has(ViewField::Value) {
+                    format!("{}\n", m.value)
+                } else {
+                    render_tree_match(m, &opts)
+                };
+                for line in rendered.lines() {
+                    println!("  {}", line);
+                }
             }
         }
     }
