@@ -50,6 +50,9 @@ pub fn xml_fragment_to_json(xml: &str, max_depth: Option<usize>) -> Value {
                 let content_depth = stack.len() - 1;
                 if max_depth.map_or(false, |max| content_depth >= max) {
                     skip_depth = 1;
+                    if let Some(parent) = stack.last_mut() {
+                        parent.children_truncated = true;
+                    }
                     continue;
                 }
                 let name = String::from_utf8_lossy(e.local_name().as_ref()).to_string();
@@ -74,6 +77,9 @@ pub fn xml_fragment_to_json(xml: &str, max_depth: Option<usize>) -> Value {
                 }
                 let content_depth = stack.len() - 1;
                 if max_depth.map_or(false, |max| content_depth >= max) {
+                    if let Some(parent) = stack.last_mut() {
+                        parent.children_truncated = true;
+                    }
                     continue;
                 }
                 // Self-closing element — becomes a boolean flag on the parent
@@ -142,11 +148,16 @@ struct JsonNode {
     flags: Vec<String>,
     /// Non-flag child content (element objects + text nodes)
     content_children: Vec<Value>,
+    /// True when at least one element child was skipped due to max_depth.
+    /// Prevents collapsing to a simplified leaf when the element has real
+    /// (but hidden) children — e.g. <body>{ }</body> at depth limit should
+    /// remain {"type": "body"}, not {"body": "{ }"}.
+    children_truncated: bool,
 }
 
 impl JsonNode {
     fn new(name: &str) -> Self {
-        JsonNode { name: name.to_string(), flags: Vec::new(), content_children: Vec::new() }
+        JsonNode { name: name.to_string(), flags: Vec::new(), content_children: Vec::new(), children_truncated: false }
     }
 
     fn add_content_child(&mut self, child: Value) {
@@ -163,7 +174,11 @@ impl JsonNode {
         // Pure text-only leaf (no flags, no element children): collapse to {name: text}.
         // e.g. <name>Foo</name>     → {"name": "Foo"}
         //      <accessor>get</accessor> → {"accessor": "get"}
-        if only_anon_text && self.flags.is_empty() && !self.content_children.is_empty() {
+        // Guard: if element children were truncated by max_depth, the element is not truly
+        // a leaf — it has real children that are hidden. Keep it as {type: name} instead.
+        if only_anon_text && self.flags.is_empty() && !self.content_children.is_empty()
+            && !self.children_truncated
+        {
             let combined: Vec<&str> = self.content_children.iter()
                 .filter_map(|c| c.get(KEY_TEXT).and_then(|v| v.as_str()))
                 .collect();
@@ -180,8 +195,10 @@ impl JsonNode {
             obj.insert(flag, Value::Bool(true));
         }
 
-        if self.content_children.is_empty() {
-            // No content — type and flags only
+        if self.content_children.is_empty() || (self.children_truncated && only_anon_text) {
+            // No content — type and flags only.
+            // Also: if element children were truncated, surviving anonymous text children are
+            // syntactic noise (e.g. "{", "}") that leaked through the depth filter — drop them.
         } else if only_anon_text {
             // Text leaf that also has flags: keep {type, text, flag: true, ...}
             let combined: Vec<&str> = self.content_children.iter()
