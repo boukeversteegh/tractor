@@ -35,6 +35,18 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
         "query", "tests/integration/formats/sample.cs", "-x", "class",
         "-m", "{file}:{line}",
     ]),
+    ("text/check.txt", &[
+        "check", "tests/integration/formats/sample.cs", "-x", "class",
+        "--reason", "class found", "-f", "text",
+    ]),
+    ("text/check-composable.txt", &[
+        "check", "tests/integration/formats/sample.cs", "-x", "class",
+        "--reason", "class found", "-v", "tree,reason,severity", "-f", "text",
+    ]),
+    ("text/query-summary.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-v", "summary",
+    ]),
     // -f gcc
     ("gcc/check.txt", &[
         "check", "tests/integration/formats/sample.cs", "-x", "class",

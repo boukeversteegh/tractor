@@ -92,6 +92,7 @@ impl RunContext {
             .with_locations(self.keep_locations || self.debug)
             .with_max_depth(self.depth)
             .with_pretty_print(!self.no_pretty)
+            .with_language(self.lang.clone())
     }
 
     pub fn schema_depth(&self) -> Option<usize> {

@@ -1,0 +1,6 @@
+class found
+error
+
+class found
+error
+2 errors in 1 file

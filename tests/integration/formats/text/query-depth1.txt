@@ -6,6 +6,7 @@
     <!-- ... (15 children) -->
   </body>
 </class>
+
 <class>
   <public/>
   class

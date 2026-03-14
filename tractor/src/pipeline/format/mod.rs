@@ -4,6 +4,7 @@ pub mod github;
 pub mod xml;
 pub mod json;
 pub mod yaml;
+pub mod text;
 mod shared;
 
 pub use options::{OutputFormat, ViewField, ViewSet, parse_view_set, view};
@@ -12,6 +13,7 @@ pub use github::render_github;
 pub use xml::render_xml_report;
 pub use json::render_json_report;
 pub use yaml::render_yaml_report;
+pub use text::render_text_report;
 
 use tractor_core::{format_matches, report::Report};
 use crate::pipeline::context::RunContext;
@@ -34,11 +36,7 @@ pub fn render_check_report(
         OutputFormat::Xml    => print!("{}", render_xml_report(report, &ctx.view, &ctx.render_options())),
         OutputFormat::Gcc    => { print!("{}", render_gcc(report)); print_check_summary(summary); }
         OutputFormat::Github => print!("{}", render_github(report)),
-        OutputFormat::Text   => {
-            let inner: Vec<_> = report.matches.iter().map(|rm| rm.inner.clone()).collect();
-            print!("{}", format_matches(&inner, ctx.view.primary_output_format(), &ctx.options));
-            print_check_summary(summary);
-        }
+        OutputFormat::Text   => print!("{}", render_text_report(report, &ctx.view, &ctx.render_options())),
     }
 
     if summary.errors > 0 {

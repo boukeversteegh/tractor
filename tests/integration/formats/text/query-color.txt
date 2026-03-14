@@ -29,6 +29,7 @@
     }
   \e[2m</\e[0m\e[34mbody\e[0m\e[2m>\e[0m
 \e[2m</\e[0m\e[34mclass\e[0m\e[2m>\e[0m
+
 \e[2m<\e[0m\e[34mclass\e[0m\e[2m>\e[0m
   \e[2m<\e[0m\e[34mpublic\e[0m\e[2m/>\e[0m
   class

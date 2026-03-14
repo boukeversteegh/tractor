@@ -3,7 +3,7 @@ use tractor_core::report::{Report, ReportMatch, Summary};
 use clap::CommandFactory;
 use crate::cli::{Cli, QueryArgs};
 use crate::pipeline::{RunContext, OutputFormat, ViewField, InputMode, view, query_inline_source, query_files_batched, explore_inline, explore_files, run_debug};
-use crate::pipeline::format::{render_gcc, render_github, render_xml_report, render_json_report, render_yaml_report};
+use crate::pipeline::format::{render_gcc, render_github, render_xml_report, render_json_report, render_yaml_report, render_text_report};
 
 pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     let ctx = RunContext::build(
@@ -111,17 +111,7 @@ fn render_query_output(ctx: &RunContext, matches: Vec<tractor_core::Match>) -> R
         }
         OutputFormat::Text => {
             let report = build_query_report(matches, template);
-            let inner: Vec<_> = report.matches.iter().map(|rm| rm.inner.clone()).collect();
-            if template.is_some() {
-                for rm in &report.matches {
-                    if let Some(ref msg) = rm.message {
-                        println!("{}", msg);
-                    }
-                }
-            } else {
-                let output = tractor_core::format_matches(&inner, ctx.view.primary_output_format(), &ctx.options);
-                print!("{}", output);
-            }
+            print!("{}", render_text_report(&report, &ctx.view, &ctx.render_options()));
         }
     }
     Ok(())

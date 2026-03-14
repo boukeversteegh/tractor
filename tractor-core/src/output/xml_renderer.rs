@@ -35,6 +35,9 @@ pub struct RenderOptions {
     /// Set to false for XPath queries where formatting whitespace would
     /// corrupt string-value comparisons like `[.='exact match']`.
     pub pretty_print: bool,
+    /// Source language for syntax highlighting (e.g. "csharp", "rust").
+    /// Used by text-format renderers for -v source and -v lines.
+    pub language: Option<String>,
 }
 
 impl RenderOptions {
@@ -46,6 +49,7 @@ impl RenderOptions {
             max_depth: None,
             highlights: None,
             pretty_print: true,
+            language: None,
         }
     }
 
@@ -71,6 +75,11 @@ impl RenderOptions {
 
     pub fn with_pretty_print(mut self, pretty_print: bool) -> Self {
         self.pretty_print = pretty_print;
+        self
+    }
+
+    pub fn with_language(mut self, language: Option<String>) -> Self {
+        self.language = language;
         self
     }
 }

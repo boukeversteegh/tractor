@@ -29,6 +29,8 @@
     }
   </body>
 </class>
+class found
+error
 
 <class>
   <public/>
@@ -36,3 +38,6 @@
   <name>Qux</name>
   <body>{ }</body>
 </class>
+class found
+error
+2 errors in 1 file
