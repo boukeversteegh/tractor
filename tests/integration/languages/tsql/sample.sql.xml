@@ -29,7 +29,12 @@
           </relation>
           <where>
             <compare field="predicate">
-              <op>&gt;</op>
+              <op>
+                <compare>
+                  <greater/>
+                </compare>
+                &gt;
+              </op>
               <column>
                 <ref>
                   <name>u</name>
@@ -94,7 +99,12 @@
           </ref>
           <where>
             <compare field="predicate">
-              <op>&lt;</op>
+              <op>
+                <compare>
+                  <less/>
+                </compare>
+                &lt;
+              </op>
               <column>
                 <name>CreatedAt</name>
               </column>
@@ -266,7 +276,12 @@
           </join>
           <where>
             <compare field="predicate">
-              <op>&gt;</op>
+              <op>
+                <compare>
+                  <greater/>
+                </compare>
+                &gt;
+              </op>
               <column>
                 <ref>
                   <name>o</name>
@@ -314,7 +329,12 @@
                   </relation>
                   <where>
                     <compare field="predicate">
-                      <op>&gt;</op>
+                      <op>
+                        <compare>
+                          <greater/>
+                        </compare>
+                        &gt;
+                      </op>
                       <column>
                         <name>Total</name>
                       </column>
@@ -432,7 +452,12 @@
           </group_by>
           <having>
             <compare>
-              <op>&gt;</op>
+              <op>
+                <compare>
+                  <greater/>
+                </compare>
+                &gt;
+              </op>
               <call>
                 <ref>
                   <name>COUNT</name>
@@ -457,7 +482,13 @@
           ,
           <case>
             <compare>
-              <op>&gt;=</op>
+              <op>
+                <compare>
+                  <greater/>
+                  <or-equal/>
+                </compare>
+                &gt;=
+              </op>
               <column>
                 <name>Age</name>
               </column>
@@ -869,7 +900,10 @@
               </column>
               =
               <compare>
-                <op>-</op>
+                <op>
+                  <minus/>
+                  -
+                </op>
                 <column>
                   <name>Balance</name>
                 </column>
@@ -904,7 +938,10 @@
               </column>
               =
               <compare>
-                <op>+</op>
+                <op>
+                  <plus/>
+                  +
+                </op>
                 <column>
                   <name>Balance</name>
                 </column>

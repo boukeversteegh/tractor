@@ -171,7 +171,7 @@ fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
         !t.chars().all(|c| matches!(c, '(' | ')' | ',' | ';' | '{' | '}' | '[' | ']'))
     });
     if let Some(op) = operator {
-        prepend_element_with_text(xot, node, "op", op)?;
+        prepend_op_element(xot, node, op)?;
     }
     Ok(())
 }
@@ -252,6 +252,7 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
 
         // Operators
         "op" => SyntaxCategory::Operator,
+        _ if is_operator_marker(element) => SyntaxCategory::Operator,
         "binary" | "unary" | "try" => SyntaxCategory::Operator,
 
         // Comments

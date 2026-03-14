@@ -311,6 +311,110 @@ pub mod helpers {
         Ok(element)
     }
 
+    /// Append an empty element as last child
+    pub fn append_empty_element(xot: &mut Xot, parent: XotNode, name: &str) -> Result<XotNode, xot::Error> {
+        let name_id = xot.add_name(name);
+        let element = xot.new_element(name_id);
+        xot.append(parent, element)?;
+        Ok(element)
+    }
+
+    /// Append a marker element with optional flat children
+    pub fn append_marker(xot: &mut Xot, parent: XotNode, name: &str, children: &[&str]) -> Result<XotNode, xot::Error> {
+        let el = append_empty_element(xot, parent, name)?;
+        for child in children {
+            append_empty_element(xot, el, child)?;
+        }
+        Ok(el)
+    }
+
+    /// Prepend an `<op>` element with semantic markers and raw text
+    pub fn prepend_op_element(xot: &mut Xot, parent: XotNode, op_text: &str) -> Result<XotNode, xot::Error> {
+        let op_name = xot.add_name("op");
+        let op_element = xot.new_element(op_name);
+        add_operator_markers(xot, op_element, op_text)?;
+        let text_node = xot.new_text(op_text);
+        xot.append(op_element, text_node)?;
+        xot.prepend(parent, op_element)?;
+        Ok(op_element)
+    }
+
+    /// Add semantic marker children inside an `<op>` element based on operator text
+    fn add_operator_markers(xot: &mut Xot, op: XotNode, text: &str) -> Result<(), xot::Error> {
+        match text {
+            // Equality
+            "==" => { append_marker(xot, op, "equals", &[])?; }
+            "===" => { append_marker(xot, op, "equals", &["strict"])?; }
+            "!=" => { append_marker(xot, op, "not-equals", &[])?; }
+            "!==" => { append_marker(xot, op, "not-equals", &["strict"])?; }
+            // Comparison
+            "<" => { append_marker(xot, op, "compare", &["less"])?; }
+            ">" => { append_marker(xot, op, "compare", &["greater"])?; }
+            "<=" => { append_marker(xot, op, "compare", &["less", "or-equal"])?; }
+            ">=" => { append_marker(xot, op, "compare", &["greater", "or-equal"])?; }
+            // Arithmetic
+            "+" => { append_marker(xot, op, "plus", &[])?; }
+            "-" => { append_marker(xot, op, "minus", &[])?; }
+            "*" => { append_marker(xot, op, "multiply", &[])?; }
+            "/" => { append_marker(xot, op, "divide", &[])?; }
+            "%" => { append_marker(xot, op, "modulo", &[])?; }
+            "**" => { append_marker(xot, op, "power", &[])?; }
+            // Logical
+            "&&" | "and" => { append_marker(xot, op, "logical", &["and"])?; }
+            "||" | "or" => { append_marker(xot, op, "logical", &["or"])?; }
+            "!" | "not" => { append_marker(xot, op, "logical", &["not"])?; }
+            "??" => { append_marker(xot, op, "nullish-coalescing", &[])?; }
+            // Bitwise
+            "&" => { append_marker(xot, op, "bitwise", &["and"])?; }
+            "|" => { append_marker(xot, op, "bitwise", &["or"])?; }
+            "^" => { append_marker(xot, op, "bitwise", &["xor"])?; }
+            "~" => { append_marker(xot, op, "bitwise", &["not"])?; }
+            "<<" => { append_marker(xot, op, "shift", &["left"])?; }
+            ">>" => { append_marker(xot, op, "shift", &["right"])?; }
+            ">>>" => { append_marker(xot, op, "shift", &["right", "unsigned"])?; }
+            // Assignment (bare = gets no marker — parent element disambiguates)
+            // Compound assignment (arithmetic)
+            "+=" => { append_marker(xot, op, "assign", &["plus"])?; }
+            "-=" => { append_marker(xot, op, "assign", &["minus"])?; }
+            "*=" => { append_marker(xot, op, "assign", &["multiply"])?; }
+            "/=" => { append_marker(xot, op, "assign", &["divide"])?; }
+            "%=" => { append_marker(xot, op, "assign", &["modulo"])?; }
+            "**=" => { append_marker(xot, op, "assign", &["power"])?; }
+            // Compound assignment (logical/bitwise/shift)
+            "&&=" => { let a = append_marker(xot, op, "assign", &[])?; append_marker(xot, a, "logical", &["and"])?; }
+            "||=" => { let a = append_marker(xot, op, "assign", &[])?; append_marker(xot, a, "logical", &["or"])?; }
+            "??=" => { let a = append_marker(xot, op, "assign", &[])?; append_marker(xot, a, "nullish-coalescing", &[])?; }
+            "<<=" => { let a = append_marker(xot, op, "assign", &[])?; append_marker(xot, a, "shift", &["left"])?; }
+            ">>=" => { let a = append_marker(xot, op, "assign", &[])?; append_marker(xot, a, "shift", &["right"])?; }
+            "&=" => { let a = append_marker(xot, op, "assign", &[])?; append_marker(xot, a, "bitwise", &["and"])?; }
+            "|=" => { let a = append_marker(xot, op, "assign", &[])?; append_marker(xot, a, "bitwise", &["or"])?; }
+            "^=" => { let a = append_marker(xot, op, "assign", &[])?; append_marker(xot, a, "bitwise", &["xor"])?; }
+            // Python-specific
+            "in" => { append_marker(xot, op, "contains", &[])?; }
+            "not in" => { append_marker(xot, op, "contains", &["not"])?; }
+            "is" => { append_marker(xot, op, "identity", &[])?; }
+            "is not" => { append_marker(xot, op, "identity", &["not"])?; }
+            // Unary prefix/postfix
+            "++" => { append_marker(xot, op, "increment", &[])?; }
+            "--" => { append_marker(xot, op, "decrement", &[])?; }
+            // No marker — graceful degradation
+            _ => {}
+        }
+        Ok(())
+    }
+
+    /// Check if an element name is an operator semantic marker
+    pub fn is_operator_marker(name: &str) -> bool {
+        matches!(name,
+            "equals" | "not-equals" | "compare" | "less" | "greater" | "or-equal"
+            | "plus" | "minus" | "multiply" | "divide" | "modulo" | "power"
+            | "logical" | "bitwise" | "shift" | "nullish-coalescing"
+            | "assign" | "increment" | "decrement"
+            | "strict" | "left" | "right" | "unsigned" | "xor"
+            | "contains" | "identity" | "not" | "and" | "or"
+        )
+    }
+
     /// Detach a node from the tree
     pub fn detach(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
         xot.detach(node)

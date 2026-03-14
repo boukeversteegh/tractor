@@ -1,33 +1,24 @@
 ---
 title: Operator Element
 priority: 2
-status: proposed
+status: implemented
+refs:
+  - /tractor-core/src/xot_transform.rs # prepend_op_element, add_operator_markers, is_operator_marker
+  - /tractor-core/src/languages/typescript.rs # extract_operator
+  - /tractor-core/src/languages/csharp.rs # extract_operator
+  - /tractor-core/src/languages/rust_lang.rs # extract_operator
+  - /tractor-core/src/languages/python.rs # extract_operator
+  - /tractor-core/src/languages/java.rs # extract_operator
+  - /tractor-core/src/languages/go.rs # extract_operator
+  - /tractor-core/src/languages/tsql.rs # extract_operator
 ---
 
 Operators in expressions are represented as `<op>` child elements with semantic
 marker children that classify the operator, plus the original token as text.
 
-## Current State
+## Structure
 
-Operators are extracted from anonymous tree-sitter text into `<op>` elements
-with the raw token as text content:
-
-```xml
-<binary>
-  <op>===</op>
-  <left>x</left>
-  <right>0</right>
-</binary>
-```
-
-This solves the "anonymous operator" problem (operators are queryable), but
-the raw token is the only way to identify operator meaning. Queries like
-"find all equality checks" require enumerating tokens:
-`//binary[op='==' or op='===']`.
-
-## Proposed Structure
-
-Add semantic marker elements inside `<op>`. The raw token is preserved as
+Semantic marker elements are added inside `<op>`. The raw token is preserved as
 text content of `<op>` (not inside the marker), keeping markers pure
 empty elements consistent with the modifier pattern.
 
@@ -53,16 +44,16 @@ Both text matching and semantic matching work:
 
 ### Graceful degradation
 
-Operators without a semantic marker fall back to the current behavior — just
-`<op>` with text content. This means the taxonomy can be built incrementally:
-common operators get markers first, obscure ones later (or never).
+Operators without a semantic marker get no marker — just `<op>` with text
+content. The taxonomy can be built incrementally: common operators get markers
+first, obscure ones later (or never).
 
 ```xml
 <!-- Semantic marker available -->
 <op><plus/>+</op>
 
-<!-- No marker yet — still works, just no semantic query -->
-<op>&gt;&gt;&gt;</op>
+<!-- No marker — still works, just no semantic query -->
+<op>=</op>
 ```
 
 ## Operator Taxonomy
@@ -131,15 +122,22 @@ Query: `//binary[op[logical]]` — all logical operations.
 
 | Token(s)       | Marker                     | Languages |
 |----------------|----------------------------|-----------|
-| `=`            | `<assign/>`                | All       |
+| `=`            | *(none)*                   | All       |
 | `+=`           | `<assign><plus/></assign>` | All       |
 | `-=`           | `<assign><minus/></assign>`| All       |
 | (etc.)         | `<assign><OP/></assign>`   | All       |
 
-Compound assignment reuses the arithmetic/logical marker as a child of
-`<assign>`, mirroring the language semantics ("+= is assignment with addition").
+Bare `=` receives **no marker**. Assignment semantics are carried by the parent
+element (`<assign>`, `<variable>`, etc.), and `=` is ambiguous across languages:
+in SQL it means equality in comparisons (`WHERE x = 1`) and assignment in SET
+clauses (`SET x = 1`). Rather than misclassify, we leave `=` unmarked —
+the parent element already disambiguates.
 
-Query: `//expression[op[assign]]` — all assignments (simple and compound).
+Compound assignments (`+=`, `-=`, etc.) use `<assign>` as a wrapper with the
+arithmetic/logical marker as a child, since the parent element doesn't always
+convey the compound nature.
+
+Query: `//assign[op[assign]]` — all compound assignments.
 
 ## Design Principles
 
@@ -157,9 +155,13 @@ This design follows:
 
 ## Implementation Notes
 
-- The `<op>` wrapper is already implemented in all languages
-- Semantic markers are additive — they go inside existing `<op>` elements
-- Languages can share the same taxonomy; the marker means the same *syntactic*
+- Shared classification function `add_operator_markers` in `xot_transform.rs`
+  maps operator text to semantic markers
+- Each language's `extract_operator` calls `prepend_op_element` which handles
+  marker insertion and text content in one step
+- `is_operator_marker` helper used by all language `syntax_category` functions
+  to map marker elements to `SyntaxCategory::Operator` for highlighting
+- Languages share the same taxonomy; the marker means the same *syntactic*
   concept even when runtime semantics differ (e.g. `==` in JS vs Java)
 - Operators that don't fit a family get no marker; `<op>` with just text
   still works for queries and rendering

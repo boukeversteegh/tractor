@@ -28,7 +28,10 @@
           <return>
             return
             <binary>
-              <op>+</op>
+              <op>
+                <plus/>
+                +
+              </op>
               <left>
                 <type>a</type>
               </left>
@@ -117,7 +120,10 @@
         if
         <condition>
           <compare>
-            <op>==</op>
+            <op>
+              <equals/>
+              ==
+            </op>
             <type>__name__</type>
             ==
             <string>

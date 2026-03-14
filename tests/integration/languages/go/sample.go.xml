@@ -46,7 +46,10 @@
             return
             <expression_list>
               <binary>
-                <op>+</op>
+                <op>
+                  <plus/>
+                  +
+                </op>
                 <left>
                   <type>a</type>
                 </left>

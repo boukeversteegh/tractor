@@ -118,7 +118,10 @@
                       <name>combined</name>
                       =
                       <binary>
-                        <op>+</op>
+                        <op>
+                          <plus/>
+                          +
+                        </op>
                         <left>
                           <member>
                             <postfix_unary_expression field="expression">

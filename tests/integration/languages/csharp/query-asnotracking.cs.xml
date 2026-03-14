@@ -54,7 +54,10 @@
                                 =&gt;
                                 <body>
                                   <binary>
-                                    <op>==</op>
+                                    <op>
+                                      <equals/>
+                                      ==
+                                    </op>
                                     <left>
                                       <member>
                                         <ref field="expression">u</ref>
@@ -158,7 +161,10 @@
                                 =&gt;
                                 <body>
                                   <binary>
-                                    <op>==</op>
+                                    <op>
+                                      <equals/>
+                                      ==
+                                    </op>
                                     <left>
                                       <member>
                                         <ref field="expression">u</ref>

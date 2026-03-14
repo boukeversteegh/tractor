@@ -86,7 +86,10 @@
                     <return>
                       return
                       <binary>
-                        <op>+</op>
+                        <op>
+                          <plus/>
+                          +
+                        </op>
                         <left>
                           <ref>a</ref>
                         </left>

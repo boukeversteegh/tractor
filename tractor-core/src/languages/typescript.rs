@@ -196,7 +196,7 @@ fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     });
 
     if let Some(op) = operator {
-        prepend_element_with_text(xot, node, "op", op)?;
+        prepend_op_element(xot, node, op)?;
     }
 
     Ok(())
@@ -295,6 +295,7 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
 
         // Operators
         "op" => SyntaxCategory::Operator,
+        _ if is_operator_marker(element) => SyntaxCategory::Operator,
         "binary" | "unary" | "assign" | "ternary" => SyntaxCategory::Operator,
 
         // Comments
@@ -323,7 +324,7 @@ mod tests {
 
         // Check transforms applied
         assert!(xml.contains("<binary"), "binary_expression should be renamed");
-        assert!(xml.contains("<op>+</op>"), "operator should be extracted as child element");
+        assert!(xml.contains("<op><plus/>+</op>"), "operator should be extracted with semantic marker");
         assert!(xml.contains("<let"), "let should be extracted as modifier");
     }
 
