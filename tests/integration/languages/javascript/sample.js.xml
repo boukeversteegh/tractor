@@ -5,8 +5,8 @@ tests/integration/languages/javascript/sample.js:1
       <comment>// Simple JavaScript example</comment>
       <function>
         function
-        <name>add</name>
-        <parameters>
+        <name field="name">add</name>
+        <parameters field="parameters">
           <params>
             (
             <type>a</type>
@@ -15,8 +15,8 @@ tests/integration/languages/javascript/sample.js:1
             )
           </params>
         </parameters>
-        <body>
-          <block>
+        <body field="body">
+          <block field="block">
             {
             <return>
               return
@@ -25,12 +25,12 @@ tests/integration/languages/javascript/sample.js:1
                   <plus/>
                   +
                 </op>
-                <left>
-                  <type>a</type>
+                <left field="left">
+                  <type field="type">a</type>
                 </left>
                 +
-                <right>
-                  <type>b</type>
+                <right field="right">
+                  <type field="type">b</type>
                 </right>
               </binary>
               ;
@@ -41,24 +41,24 @@ tests/integration/languages/javascript/sample.js:1
       </function>
       <function>
         function
-        <name>main</name>
-        <parameters>
+        <name field="name">main</name>
+        <parameters field="parameters">
           <params>()</params>
         </parameters>
-        <body>
-          <block>
+        <body field="body">
+          <block field="block">
             {
             <variable>
               <const/>
               const
-              <name>
+              <name field="name">
                 <type>result</type>
               </name>
               =
-              <value>
-                <call>
+              <value field="value">
+                <call field="call">
                   <type field="function">add</type>
-                  <arguments>
+                  <arguments field="arguments">
                     <arguments>
                       (
                       <number>5</number>
@@ -77,7 +77,7 @@ tests/integration/languages/javascript/sample.js:1
                 .
                 <type field="property">log</type>
               </member>
-              <arguments>
+              <arguments field="arguments">
                 <arguments>
                   (
                   <template_string>
@@ -101,7 +101,7 @@ tests/integration/languages/javascript/sample.js:1
       </function>
       <call>
         <type field="function">main</type>
-        <arguments>
+        <arguments field="arguments">
           <arguments>()</arguments>
         </arguments>
       </call>

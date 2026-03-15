@@ -6,14 +6,14 @@ tests/integration/languages/java/sample.java:1
       <class>
         <public/>
         class
-        <name>Sample</name>
-        <body>
+        <name field="name">Sample</name>
+        <body field="body">
           {
-          <field>
+          <field field="field">
             <private/>
             <integral_type field="type">int</integral_type>
             <variable_declarator field="declarator">
-              <name>
+              <name field="name">
                 <type>value</type>
               </name>
             </variable_declarator>
@@ -21,34 +21,34 @@ tests/integration/languages/java/sample.java:1
           </field>
           <ctor>
             <public/>
-            <name>Sample</name>
-            <parameters>
+            <name field="name">Sample</name>
+            <parameters field="parameters">
               <params>
                 (
                 <param>
                   <integral_type field="type">int</integral_type>
-                  <name>
+                  <name field="name">
                     <type>value</type>
                   </name>
                 </param>
                 )
               </params>
             </parameters>
-            <body>
-              <constructor_body>
+            <body field="body">
+              <constructor_body field="constructor_body">
                 {
                 <assign>
                   <op>=</op>
-                  <left>
-                    <member>
+                  <left field="left">
+                    <member field="member">
                       <this field="object">this</this>
                       .
                       <type field="field">value</type>
                     </member>
                   </left>
                   =
-                  <right>
-                    <type>value</type>
+                  <right field="right">
+                    <type field="type">value</type>
                   </right>
                 </assign>
                 ;
@@ -60,41 +60,41 @@ tests/integration/languages/java/sample.java:1
             <static/>
             <public/>
             <integral_type field="type">int</integral_type>
-            <name>add</name>
-            <parameters>
+            <name field="name">add</name>
+            <parameters field="parameters">
               <params>
                 (
                 <param>
                   <integral_type field="type">int</integral_type>
-                  <name>
+                  <name field="name">
                     <type>a</type>
                   </name>
                 </param>
                 ,
                 <param>
                   <integral_type field="type">int</integral_type>
-                  <name>
+                  <name field="name">
                     <type>b</type>
                   </name>
                 </param>
                 )
               </params>
             </parameters>
-            <body>
+            <body field="body">
               {
-              <return>
+              <return field="return">
                 return
                 <binary>
                   <op>
                     <plus/>
                     +
                   </op>
-                  <left>
-                    <type>a</type>
+                  <left field="left">
+                    <type field="type">a</type>
                   </left>
                   +
-                  <right>
-                    <type>b</type>
+                  <right field="right">
+                    <type field="type">b</type>
                   </right>
                 </binary>
                 ;
@@ -105,32 +105,32 @@ tests/integration/languages/java/sample.java:1
           <method>
             <protected/>
             <void_type field="type">void</void_type>
-            <name>log</name>
-            <parameters>
+            <name field="name">log</name>
+            <parameters field="parameters">
               <params>
                 (
                 <param>
                   <type>String</type>
-                  <name>
+                  <name field="name">
                     <type>message</type>
                   </name>
                 </param>
                 )
               </params>
             </parameters>
-            <body>
+            <body field="body">
               {
-              <call>
+              <call field="call">
                 <member field="object">
                   <type field="object">System</type>
                   .
                   <type field="field">out</type>
                 </member>
                 .
-                <name>
+                <name field="name">
                   <type>println</type>
                 </name>
-                <arguments>
+                <arguments field="arguments">
                   <args>
                     (
                     <type>message</type>
@@ -145,13 +145,13 @@ tests/integration/languages/java/sample.java:1
           <method>
             <package-private/>
             <void_type field="type">void</void_type>
-            <name>defaultAccess</name>
-            <parameters>
+            <name field="name">defaultAccess</name>
+            <parameters field="parameters">
               <params>()</params>
             </parameters>
-            <body>
+            <body field="body">
               {
-              <line_comment>// package-private method</line_comment>
+              <line_comment field="line_comment">// package-private method</line_comment>
               }
             </body>
           </method>
@@ -159,8 +159,8 @@ tests/integration/languages/java/sample.java:1
             <static/>
             <public/>
             <void_type field="type">void</void_type>
-            <name>main</name>
-            <parameters>
+            <name field="name">main</name>
+            <parameters field="parameters">
               <params>
                 (
                 <param>
@@ -168,28 +168,28 @@ tests/integration/languages/java/sample.java:1
                     <type field="element">String</type>
                     <dimensions field="dimensions">[]</dimensions>
                   </array>
-                  <name>
+                  <name field="name">
                     <type>args</type>
                   </name>
                 </param>
                 )
               </params>
             </parameters>
-            <body>
+            <body field="body">
               {
-              <local_variable_declaration>
+              <local_variable_declaration field="local_variable_declaration">
                 <integral_type field="type">int</integral_type>
                 <variable_declarator field="declarator">
-                  <name>
+                  <name field="name">
                     <type>result</type>
                   </name>
                   =
-                  <value>
-                    <call>
-                      <name>
+                  <value field="value">
+                    <call field="call">
+                      <name field="name">
                         <type>add</type>
                       </name>
-                      <arguments>
+                      <arguments field="arguments">
                         <args>
                           (
                           <int>5</int>
@@ -210,10 +210,10 @@ tests/integration/languages/java/sample.java:1
                   <type field="field">out</type>
                 </member>
                 .
-                <name>
+                <name field="name">
                   <type>println</type>
                 </name>
-                <arguments>
+                <arguments field="arguments">
                   <args>
                     (
                     <binary>
@@ -221,16 +221,16 @@ tests/integration/languages/java/sample.java:1
                         <plus/>
                         +
                       </op>
-                      <left>
-                        <string>
+                      <left field="left">
+                        <string field="string">
                           &quot;
                           <string_fragment>Result: </string_fragment>
                           &quot;
                         </string>
                       </left>
                       +
-                      <right>
-                        <type>result</type>
+                      <right field="right">
+                        <type field="type">result</type>
                       </right>
                     </binary>
                     )
@@ -247,14 +247,14 @@ tests/integration/languages/java/sample.java:1
       <interface>
         <package-private/>
         interface
-        <name>Service</name>
-        <body>
+        <name field="name">Service</name>
+        <body field="body">
           {
-          <method>
+          <method field="method">
             <package-private/>
             <void_type field="type">void</void_type>
-            <name>execute</name>
-            <parameters>
+            <name field="name">execute</name>
+            <parameters field="parameters">
               <params>()</params>
             </parameters>
             ;
@@ -265,18 +265,18 @@ tests/integration/languages/java/sample.java:1
       <enum>
         <package-private/>
         enum
-        <name>Status</name>
-        <body>
-          <enum_body>
+        <name field="name">Status</name>
+        <body field="body">
+          <enum_body field="enum_body">
             {
             <enum_constant>
-              <name>
+              <name field="name">
                 <type>ACTIVE</type>
               </name>
             </enum_constant>
             ,
             <enum_constant>
-              <name>
+              <name field="name">
                 <type>INACTIVE</type>
               </name>
             </enum_constant>

@@ -1,24 +1,31 @@
-//! XML fragment → JSON tree conversion.
+//! XML fragment → JSON tree conversion with field-based property lifting.
 //!
 //! Converts a raw tractor XML fragment directly to a serde_json::Value tree,
 //! without going through a rendered string representation.
 //!
 //! ## Output structure
 //!
+//! Elements with a `field` attribute are **singletons** (one per parent) and get
+//! lifted to direct JSON properties on their parent object. Elements without
+//! `field` go into a `children` array.
+//!
 //! - Self-closing children (modifiers/flags) become boolean properties: `"public": true`
-//! - Text-only elements: `{"type": "name", "text": "QueryHelpers"}`
-//! - Elements with content: `{"type": "class", "public": true, "children": [...]}`
-//!   where `children` contains only element nodes (anonymous text tokens are dropped).
+//! - Field-backed text-only leaves collapse to plain strings:
+//!   `<name field="name">Foo</name>` → parent gets `"name": "Foo"`
+//! - Field-backed structural nodes become objects WITHOUT `$type`:
+//!   `<body field="body">...</body>` → parent gets `"body": { "children": [...] }`
+//! - Non-field text-only leaves keep compact form: `<accessor>get;</accessor>` → `{"accessor": "get;"}`
+//! - Non-field structural nodes get `$type`: `{"$type": "method", "children": [...]}`
 //!
 //! Attributes in the raw fragment (location metadata like `start`, `end`, etc.) are
-//! silently ignored — they are internal parser annotations, not semantic content.
+//! silently ignored — except `field` which drives the singleton detection.
 //! Whitespace-only text nodes are also dropped.
 
 use quick_xml::Reader;
 use quick_xml::events::Event;
 use serde_json::{Map, Value};
 
-const KEY_TYPE: &str = "type";
+const KEY_TYPE: &str = "$type";
 const KEY_TEXT: &str = "text";
 const KEY_CHILDREN: &str = "children";
 
@@ -34,7 +41,7 @@ pub fn xml_fragment_to_json(xml: &str, max_depth: Option<usize>) -> Value {
 
     let mut stack: Vec<JsonNode> = Vec::new();
     // Sentinel root to collect top-level siblings (depth 0)
-    stack.push(JsonNode::new("__root__"));
+    stack.push(JsonNode::new("__root__", None));
 
     // skip_depth > 0 means we are inside a subtree that exceeds max_depth
     let mut skip_depth: usize = 0;
@@ -56,7 +63,14 @@ pub fn xml_fragment_to_json(xml: &str, max_depth: Option<usize>) -> Value {
                     continue;
                 }
                 let name = String::from_utf8_lossy(e.local_name().as_ref()).to_string();
-                stack.push(JsonNode::new(&name));
+
+                // Extract `field` attribute if present
+                let field = e.attributes()
+                    .filter_map(|a| a.ok())
+                    .find(|a| a.key.as_ref() == b"field")
+                    .and_then(|a| String::from_utf8(a.value.to_vec()).ok());
+
+                stack.push(JsonNode::new(&name, field));
             }
             Ok(Event::End(_)) => {
                 if skip_depth > 0 {
@@ -65,9 +79,10 @@ pub fn xml_fragment_to_json(xml: &str, max_depth: Option<usize>) -> Value {
                 }
                 if stack.len() > 1 {
                     let node = stack.pop().unwrap();
+                    let field = node.field.clone();
                     let val = node.into_value();
                     if let Some(parent) = stack.last_mut() {
-                        parent.add_content_child(val);
+                        parent.content_children.push(ChildEntry { field, value: val });
                     }
                 }
             }
@@ -95,10 +110,8 @@ pub fn xml_fragment_to_json(xml: &str, max_depth: Option<usize>) -> Value {
                 if let Ok(text) = e.unescape() {
                     let trimmed = text.trim();
                     if !trimmed.is_empty() {
-                        let mut obj = Map::new();
-                        obj.insert(KEY_TEXT.into(), Value::String(trimmed.to_string()));
                         if let Some(top) = stack.last_mut() {
-                            top.add_content_child(Value::Object(obj));
+                            top.text_fragments.push(trimmed.to_string());
                         }
                     }
                 }
@@ -110,10 +123,8 @@ pub fn xml_fragment_to_json(xml: &str, max_depth: Option<usize>) -> Value {
                 if let Ok(text) = std::str::from_utf8(e.as_ref()) {
                     let trimmed = text.trim();
                     if !trimmed.is_empty() {
-                        let mut obj = Map::new();
-                        obj.insert(KEY_TEXT.into(), Value::String(trimmed.to_string()));
                         if let Some(top) = stack.last_mut() {
-                            top.add_content_child(Value::Object(obj));
+                            top.text_fragments.push(trimmed.to_string());
                         }
                     }
                 }
@@ -124,10 +135,17 @@ pub fn xml_fragment_to_json(xml: &str, max_depth: Option<usize>) -> Value {
     }
 
     // Unwrap the sentinel root
-    let root = stack.pop().unwrap_or_else(|| JsonNode::new("__root__"));
-    if root.content_children.len() == 1 && root.flags.is_empty() {
-        root.content_children.into_iter().next().unwrap()
-    } else if root.content_children.is_empty() && root.flags.is_empty() {
+    let root = stack.pop().unwrap_or_else(|| JsonNode::new("__root__", None));
+    let non_text_children: Vec<&ChildEntry> = root.content_children.iter()
+        .filter(|c| !is_anon_text_entry(c))
+        .collect();
+    if non_text_children.len() == 1 && root.flags.is_empty() {
+        // Single top-level element — unwrap the sentinel
+        let entry = root.content_children.into_iter()
+            .find(|c| !is_anon_text_entry(c))
+            .unwrap();
+        entry.value
+    } else if non_text_children.is_empty() && root.flags.is_empty() {
         Value::Null
     } else {
         // Multiple top-level items — return flat list
@@ -137,87 +155,231 @@ pub fn xml_fragment_to_json(xml: &str, max_depth: Option<usize>) -> Value {
             obj.insert(KEY_TYPE.into(), Value::String(flag));
             result.push(Value::Object(obj));
         }
-        result.extend(root.content_children);
+        for entry in root.content_children {
+            if !is_anon_text_entry(&entry) {
+                result.push(entry.value);
+            }
+        }
         Value::Array(result)
     }
 }
 
+/// A child entry that tracks whether it came from a field-backed element.
+struct ChildEntry {
+    field: Option<String>,
+    value: Value,
+}
+
+/// Check if a ChildEntry is an anonymous text token (no field, text-only).
+fn is_anon_text_entry(entry: &ChildEntry) -> bool {
+    entry.field.is_none() && entry.value.as_object().map_or(false, |o| {
+        o.len() == 1 && o.contains_key(KEY_TEXT)
+    })
+}
+
 struct JsonNode {
     name: String,
+    /// The `field` attribute value, if this element is field-backed.
+    field: Option<String>,
     /// Self-closing child elements become boolean flags on this node
     flags: Vec<String>,
-    /// Non-flag child content (element objects + text nodes)
-    content_children: Vec<Value>,
+    /// Text fragments directly inside this element (not inside child elements)
+    text_fragments: Vec<String>,
+    /// Child entries (element children with optional field info)
+    content_children: Vec<ChildEntry>,
     /// True when at least one element child was skipped due to max_depth.
-    /// Prevents collapsing to a simplified leaf when the element has real
-    /// (but hidden) children — e.g. <body>{ }</body> at depth limit should
-    /// remain {"type": "body"}, not {"body": "{ }"}.
     children_truncated: bool,
 }
 
 impl JsonNode {
-    fn new(name: &str) -> Self {
-        JsonNode { name: name.to_string(), flags: Vec::new(), content_children: Vec::new(), children_truncated: false }
+    fn new(name: &str, field: Option<String>) -> Self {
+        JsonNode {
+            name: name.to_string(),
+            field,
+            flags: Vec::new(),
+            text_fragments: Vec::new(),
+            content_children: Vec::new(),
+            children_truncated: false,
+        }
     }
 
-    fn add_content_child(&mut self, child: Value) {
-        self.content_children.push(child);
+    /// True if this node has only text content (no element children).
+    fn is_text_only(&self) -> bool {
+        self.content_children.iter().all(|c| is_anon_text_entry(c))
+    }
+
+    /// Combine all text fragments into a single string.
+    fn combined_text(&self) -> String {
+        // Include both direct text fragments and text from anonymous child entries
+        let mut parts: Vec<&str> = Vec::new();
+        // We interleave: text_fragments are direct text, anon text entries are
+        // text children that were pushed as ChildEntry. But since we now store
+        // text directly in text_fragments, just use those.
+        for frag in &self.text_fragments {
+            parts.push(frag);
+        }
+        parts.join(" ")
     }
 
     fn into_value(self) -> Value {
-        // A child is an anonymous text token if it is {"text": "..."} (single key).
-        // All other children are structural (simplified leaves or typed nodes).
-        let only_anon_text = self.content_children.iter().all(|c| {
-            c.as_object().map_or(false, |o| o.contains_key(KEY_TEXT) && o.len() == 1)
-        });
+        let is_text_only = self.is_text_only();
+        let has_text = !self.text_fragments.is_empty();
+        let combined_text = if has_text { self.combined_text() } else { String::new() };
 
-        // Pure text-only leaf (no flags, no element children): collapse to {name: text}.
-        // e.g. <name>Foo</name>     → {"name": "Foo"}
-        //      <accessor>get</accessor> → {"accessor": "get"}
-        // Guard: if element children were truncated by max_depth, the element is not truly
-        // a leaf — it has real children that are hidden. Keep it as {type: name} instead.
-        if only_anon_text && self.flags.is_empty() && !self.content_children.is_empty()
-            && !self.children_truncated
-        {
-            let combined: Vec<&str> = self.content_children.iter()
-                .filter_map(|c| c.get(KEY_TEXT).and_then(|v| v.as_str()))
-                .collect();
-            let mut obj = Map::new();
-            obj.insert(self.name, Value::String(combined.join(" ")));
-            return Value::Object(obj);
+        // Pure text-only leaf (no flags, no element children): eligible for collapsing.
+        // Guard: if children were truncated by max_depth, keep structural form.
+        if is_text_only && self.flags.is_empty() && has_text && !self.children_truncated {
+            if self.field.is_some() {
+                // Field-backed text-only leaf: just return the string value.
+                // The parent will lift it as a property using the field name.
+                return Value::String(combined_text);
+            } else {
+                // Non-field text-only leaf: compact form {elementName: text}
+                let mut obj = Map::new();
+                obj.insert(self.name, Value::String(combined_text));
+                return Value::Object(obj);
+            }
         }
 
+        // Build the JSON object for this node.
+        // Field-backed nodes omit $type (parent lifts by field name).
+        // Non-field nodes include $type for identification in children array.
         let mut obj = Map::new();
-        obj.insert(KEY_TYPE.into(), Value::String(self.name));
+
+        if self.field.is_none() {
+            obj.insert(KEY_TYPE.into(), Value::String(self.name));
+        }
 
         // Boolean flags become direct properties
         for flag in self.flags {
             obj.insert(flag, Value::Bool(true));
         }
 
-        if self.content_children.is_empty() || (self.children_truncated && only_anon_text) {
-            // No content — type and flags only.
-            // Also: if element children were truncated, surviving anonymous text children are
-            // syntactic noise (e.g. "{", "}") that leaked through the depth filter — drop them.
-        } else if only_anon_text {
-            // Text leaf that also has flags: keep {type, text, flag: true, ...}
-            let combined: Vec<&str> = self.content_children.iter()
-                .filter_map(|c| c.get(KEY_TEXT).and_then(|v| v.as_str()))
-                .collect();
-            obj.insert(KEY_TEXT.into(), Value::String(combined.join(" ")));
-        } else {
-            // Mixed/structural content: drop anonymous text tokens (syntactic noise like
-            // "class", "{", "<"), keep all structural children (simplified leaves and typed nodes).
-            let element_children: Vec<Value> = self.content_children.into_iter()
-                .filter(|c| c.as_object().map_or(true, |o| {
-                    !(o.len() == 1 && o.contains_key(KEY_TEXT))
-                }))
-                .collect();
-            if !element_children.is_empty() {
-                obj.insert(KEY_CHILDREN.into(), Value::Array(element_children));
+        // Partition children: field-backed → direct properties, rest → children array
+        let mut array_children: Vec<Value> = Vec::new();
+
+        for entry in self.content_children {
+            if is_anon_text_entry(&entry) {
+                // Anonymous text token — drop in structural content (syntactic noise)
+                continue;
+            }
+            if let Some(field_name) = entry.field {
+                // Field-backed child → lift to direct property
+                obj.insert(field_name, entry.value);
+            } else {
+                // Non-field child → children array
+                array_children.push(entry.value);
             }
         }
 
+        if self.children_truncated && is_text_only {
+            // Children were truncated, surviving text is syntactic noise — drop
+        } else if is_text_only && has_text {
+            // Text leaf that also has flags: keep {$type, text, flag: true, ...}
+            obj.insert(KEY_TEXT.into(), Value::String(combined_text));
+        } else if !array_children.is_empty() {
+            obj.insert(KEY_CHILDREN.into(), Value::Array(array_children));
+        }
+
         Value::Object(obj)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_field_backed_text_leaf_lifted() {
+        // <parent><name field="name">Foo</name></parent>
+        let xml = r#"<parent><name field="name">Foo</name></parent>"#;
+        let result = xml_fragment_to_json(xml, None);
+        let obj = result.as_object().unwrap();
+        assert_eq!(obj.get("name").unwrap(), "Foo");
+        assert!(!obj.contains_key(KEY_CHILDREN));
+    }
+
+    #[test]
+    fn test_field_backed_structural_node_lifted() {
+        // <parent><body field="body"><block>{ }</block></body></parent>
+        let xml = r#"<parent><body field="body"><block>{ }</block></body></parent>"#;
+        let result = xml_fragment_to_json(xml, None);
+        let obj = result.as_object().unwrap();
+        let body = obj.get("body").unwrap().as_object().unwrap();
+        assert!(body.contains_key(KEY_CHILDREN));
+        assert!(!body.contains_key(KEY_TYPE));
+    }
+
+    #[test]
+    fn test_non_field_child_gets_type() {
+        // <parent><method>text</method></parent>
+        // method has no field attr → goes to children array with $type
+        let xml = r#"<parent><method></method></parent>"#;
+        let result = xml_fragment_to_json(xml, None);
+        let obj = result.as_object().unwrap();
+        let children = obj.get(KEY_CHILDREN).unwrap().as_array().unwrap();
+        assert_eq!(children.len(), 1);
+        let child = children[0].as_object().unwrap();
+        assert_eq!(child.get(KEY_TYPE).unwrap(), "method");
+    }
+
+    #[test]
+    fn test_mixed_field_and_non_field() {
+        let xml = r#"<class><name field="name">Foo</name><method></method></class>"#;
+        let result = xml_fragment_to_json(xml, None);
+        let obj = result.as_object().unwrap();
+        // name is lifted as property
+        assert_eq!(obj.get("name").unwrap(), "Foo");
+        // method goes to children
+        let children = obj.get(KEY_CHILDREN).unwrap().as_array().unwrap();
+        assert_eq!(children.len(), 1);
+        assert_eq!(children[0].get(KEY_TYPE).unwrap(), "method");
+    }
+
+    #[test]
+    fn test_flags_still_boolean() {
+        let xml = r#"<class><public/><name field="name">Foo</name></class>"#;
+        let result = xml_fragment_to_json(xml, None);
+        let obj = result.as_object().unwrap();
+        assert_eq!(obj.get("public").unwrap(), true);
+        assert_eq!(obj.get("name").unwrap(), "Foo");
+    }
+
+    #[test]
+    fn test_non_field_text_leaf_compact() {
+        // Non-field text-only leaf keeps compact form {name: text}
+        let xml = r#"<parent><accessor>get;</accessor></parent>"#;
+        let result = xml_fragment_to_json(xml, None);
+        let obj = result.as_object().unwrap();
+        let children = obj.get(KEY_CHILDREN).unwrap().as_array().unwrap();
+        assert_eq!(children.len(), 1);
+        let child = children[0].as_object().unwrap();
+        assert_eq!(child.get("accessor").unwrap(), "get;");
+    }
+
+    #[test]
+    fn test_type_key_is_dollar_type() {
+        let xml = r#"<method></method>"#;
+        let result = xml_fragment_to_json(xml, None);
+        let obj = result.as_object().unwrap();
+        assert!(obj.contains_key("$type"));
+        assert!(!obj.contains_key("type"));
+    }
+
+    #[test]
+    fn test_depth_limiting() {
+        // At depth 2, <b> is included but <c> is truncated
+        let xml = r#"<a><b field="b"><c>deep</c></b></a>"#;
+        let result = xml_fragment_to_json(xml, Some(2));
+        let obj = result.as_object().unwrap();
+        // b is field-backed but its children are truncated
+        let b = obj.get("b").unwrap().as_object().unwrap();
+        assert!(!b.contains_key(KEY_TYPE)); // field-backed, no $type
+
+        // At depth 1, b is skipped entirely (truncated at parent level)
+        let result1 = xml_fragment_to_json(xml, Some(1));
+        let obj1 = result1.as_object().unwrap();
+        assert!(!obj1.contains_key("b")); // truncated
+        assert_eq!(obj1.get(KEY_TYPE).unwrap(), "a");
     }
 }

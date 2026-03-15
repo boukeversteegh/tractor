@@ -19,21 +19,21 @@ tests/integration/languages/go/sample.go:1
       </import_declaration>
       <function_declaration>
         func
-        <name>
+        <name field="name">
           <identifier>add</identifier>
         </name>
-        <parameters>
+        <parameters field="parameters">
           <parameter_list>
             (
             <parameter_declaration>
-              <name>
+              <name field="name">
                 <identifier>a</identifier>
               </name>
               <type_identifier field="type">int</type_identifier>
             </parameter_declaration>
             ,
             <parameter_declaration>
-              <name>
+              <name field="name">
                 <identifier>b</identifier>
               </name>
               <type_identifier field="type">int</type_identifier>
@@ -42,18 +42,18 @@ tests/integration/languages/go/sample.go:1
           </parameter_list>
         </parameters>
         <type_identifier field="result">int</type_identifier>
-        <body>
+        <body field="body">
           <block>
             {
             <return_statement>
               return
               <expression_list>
                 <binary_expression>
-                  <left>
+                  <left field="left">
                     <identifier>a</identifier>
                   </left>
                   +
-                  <right>
+                  <right field="right">
                     <identifier>b</identifier>
                   </right>
                 </binary_expression>
@@ -65,27 +65,27 @@ tests/integration/languages/go/sample.go:1
       </function_declaration>
       <function_declaration>
         func
-        <name>
+        <name field="name">
           <identifier>main</identifier>
         </name>
-        <parameters>
+        <parameters field="parameters">
           <parameter_list>()</parameter_list>
         </parameters>
-        <body>
+        <body field="body">
           <block>
             {
             <short_var_declaration>
-              <left>
+              <left field="left">
                 <expression_list>
                   <identifier>result</identifier>
                 </expression_list>
               </left>
               :=
-              <right>
+              <right field="right">
                 <expression_list>
                   <call_expression>
                     <identifier field="function">add</identifier>
-                    <arguments>
+                    <arguments field="arguments">
                       <argument_list>
                         (
                         <int_literal>5</int_literal>
@@ -105,7 +105,7 @@ tests/integration/languages/go/sample.go:1
                   .
                   <field_identifier field="field">Printf</field_identifier>
                 </selector_expression>
-                <arguments>
+                <arguments field="arguments">
                   <argument_list>
                     (
                     <interpreted_string_literal>
@@ -128,14 +128,14 @@ tests/integration/languages/go/sample.go:1
       <comment>// Exported function</comment>
       <function_declaration>
         func
-        <name>
+        <name field="name">
           <identifier>PublicHelper</identifier>
         </name>
-        <parameters>
+        <parameters field="parameters">
           <parameter_list>()</parameter_list>
         </parameters>
         <type_identifier field="result">string</type_identifier>
-        <body>
+        <body field="body">
           <block>
             {
             <return_statement>
@@ -155,7 +155,7 @@ tests/integration/languages/go/sample.go:1
       <type_declaration>
         type
         <type_spec>
-          <name>
+          <name field="name">
             <type_identifier>Point</type_identifier>
           </name>
           <struct_type field="type">
@@ -163,13 +163,13 @@ tests/integration/languages/go/sample.go:1
             <field_declaration_list>
               {
               <field_declaration>
-                <name>
+                <name field="name">
                   <field_identifier>X</field_identifier>
                 </name>
                 <type_identifier field="type">int</type_identifier>
               </field_declaration>
               <field_declaration>
-                <name>
+                <name field="name">
                   <field_identifier>Y</field_identifier>
                 </name>
                 <type_identifier field="type">int</type_identifier>
@@ -182,16 +182,16 @@ tests/integration/languages/go/sample.go:1
       <type_declaration>
         type
         <type_spec>
-          <name>
+          <name field="name">
             <type_identifier>Shape</type_identifier>
           </name>
           <interface_type field="type">
             interface {
             <method_elem>
-              <name>
+              <name field="name">
                 <field_identifier>Area</field_identifier>
               </name>
-              <parameters>
+              <parameters field="parameters">
                 <parameter_list>()</parameter_list>
               </parameters>
               <type_identifier field="result">float64</type_identifier>

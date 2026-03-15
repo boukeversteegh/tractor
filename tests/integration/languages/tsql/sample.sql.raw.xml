@@ -8,15 +8,15 @@ tests/integration/languages/tsql/sample.sql:1
           <keyword_select>SELECT</keyword_select>
           <select_expression>
             <term>
-              <value>
+              <value field="value">
                 <field>
                   <object_reference>
-                    <name>
+                    <name field="name">
                       <identifier>u</identifier>
                     </name>
                   </object_reference>
                   .
-                  <name>
+                  <name field="name">
                     <identifier>Name</identifier>
                   </name>
                 </field>
@@ -24,15 +24,15 @@ tests/integration/languages/tsql/sample.sql:1
             </term>
             ,
             <term>
-              <value>
+              <value field="value">
                 <field>
                   <object_reference>
-                    <name>
+                    <name field="name">
                       <identifier>u</identifier>
                     </name>
                   </object_reference>
                   .
-                  <name>
+                  <name field="name">
                     <identifier>Age</identifier>
                   </name>
                 </field>
@@ -44,7 +44,7 @@ tests/integration/languages/tsql/sample.sql:1
           <keyword_from>FROM</keyword_from>
           <relation>
             <object_reference>
-              <name>
+              <name field="name">
                 <identifier>Users</identifier>
               </name>
             </object_reference>
@@ -53,21 +53,21 @@ tests/integration/languages/tsql/sample.sql:1
           <where>
             <keyword_where>WHERE</keyword_where>
             <binary_expression field="predicate">
-              <left>
+              <left field="left">
                 <field>
                   <object_reference>
-                    <name>
+                    <name field="name">
                       <identifier>u</identifier>
                     </name>
                   </object_reference>
                   .
-                  <name>
+                  <name field="name">
                     <identifier>Age</identifier>
                   </name>
                 </field>
               </left>
               &gt;
-              <right>
+              <right field="right">
                 <literal>18</literal>
               </right>
             </binary_expression>
@@ -78,12 +78,12 @@ tests/integration/languages/tsql/sample.sql:1
             <order_target>
               <field>
                 <object_reference>
-                  <name>
+                  <name field="name">
                     <identifier>u</identifier>
                   </name>
                 </object_reference>
                 .
-                <name>
+                <name field="name">
                   <identifier>Name</identifier>
                 </name>
               </field>
@@ -97,7 +97,7 @@ tests/integration/languages/tsql/sample.sql:1
           <keyword_insert>INSERT</keyword_insert>
           <keyword_into>INTO</keyword_into>
           <object_reference>
-            <name>
+            <name field="name">
               <identifier>AuditLog</identifier>
             </name>
           </object_reference>
@@ -119,7 +119,7 @@ tests/integration/languages/tsql/sample.sql:1
             ,
             <invocation>
               <object_reference>
-                <name>
+                <name field="name">
                   <identifier>GETDATE</identifier>
                 </name>
               </object_reference>
@@ -137,22 +137,22 @@ tests/integration/languages/tsql/sample.sql:1
         <from>
           <keyword_from>FROM</keyword_from>
           <object_reference>
-            <name>
+            <name field="name">
               <identifier>OldRecords</identifier>
             </name>
           </object_reference>
           <where>
             <keyword_where>WHERE</keyword_where>
             <binary_expression field="predicate">
-              <left>
+              <left field="left">
                 <field>
-                  <name>
+                  <name field="name">
                     <identifier>CreatedAt</identifier>
                   </name>
                 </field>
               </left>
               &lt;
-              <right>
+              <right field="right">
                 <literal>'2020-01-01'</literal>
               </right>
             </binary_expression>
@@ -166,17 +166,17 @@ tests/integration/languages/tsql/sample.sql:1
           <keyword_select>SELECT</keyword_select>
           <select_expression>
             <term>
-              <value>
+              <value field="value">
                 <field>
                   <object_reference>
                     <identifier field="schema">[dbo]</identifier>
                     .
-                    <name>
+                    <name field="name">
                       <identifier>[Users]</identifier>
                     </name>
                   </object_reference>
                   .
-                  <name>
+                  <name field="name">
                     <identifier>[Name]</identifier>
                   </name>
                 </field>
@@ -186,9 +186,9 @@ tests/integration/languages/tsql/sample.sql:1
             </term>
             ,
             <term>
-              <value>
+              <value field="value">
                 <field>
-                  <name>
+                  <name field="name">
                     <identifier>@StartDate</identifier>
                   </name>
                 </field>
@@ -202,7 +202,7 @@ tests/integration/languages/tsql/sample.sql:1
             <object_reference>
               <identifier field="schema">[dbo]</identifier>
               .
-              <name>
+              <name field="name">
                 <identifier>[Users]</identifier>
               </name>
             </object_reference>
@@ -210,9 +210,9 @@ tests/integration/languages/tsql/sample.sql:1
           <where>
             <keyword_where>WHERE</keyword_where>
             <between_expression field="predicate">
-              <left>
+              <left field="left">
                 <field>
-                  <name>
+                  <name field="name">
                     <identifier>[Age]</identifier>
                   </name>
                 </field>
@@ -234,24 +234,24 @@ tests/integration/languages/tsql/sample.sql:1
             <object_reference>
               <identifier field="schema">dbo</identifier>
               .
-              <name>
+              <name field="name">
                 <identifier>Config</identifier>
               </name>
             </object_reference>
           </relation>
           <keyword_set>SET</keyword_set>
           <assignment>
-            <left>
+            <left field="left">
               <field>
-                <name>
+                <name field="name">
                   <identifier>Value</identifier>
                 </name>
               </field>
             </left>
             =
-            <right>
+            <right field="right">
               <field>
-                <name>
+                <name field="name">
                   <identifier>@NewValue</identifier>
                 </name>
               </field>
@@ -260,17 +260,17 @@ tests/integration/languages/tsql/sample.sql:1
           <where>
             <keyword_where>WHERE</keyword_where>
             <binary_expression field="predicate">
-              <left>
+              <left field="left">
                 <field>
-                  <name>
+                  <name field="name">
                     <identifier>[Key]</identifier>
                   </name>
                 </field>
               </left>
               =
-              <right>
+              <right field="right">
                 <field>
-                  <name>
+                  <name field="name">
                     <identifier>@KeyName</identifier>
                   </name>
                 </field>
@@ -286,15 +286,15 @@ tests/integration/languages/tsql/sample.sql:1
           <keyword_select>SELECT</keyword_select>
           <select_expression>
             <term>
-              <value>
+              <value field="value">
                 <field>
                   <object_reference>
-                    <name>
+                    <name field="name">
                       <identifier>o</identifier>
                     </name>
                   </object_reference>
                   .
-                  <name>
+                  <name field="name">
                     <identifier>ID</identifier>
                   </name>
                 </field>
@@ -302,15 +302,15 @@ tests/integration/languages/tsql/sample.sql:1
             </term>
             ,
             <term>
-              <value>
+              <value field="value">
                 <field>
                   <object_reference>
-                    <name>
+                    <name field="name">
                       <identifier>u</identifier>
                     </name>
                   </object_reference>
                   .
-                  <name>
+                  <name field="name">
                     <identifier>Name</identifier>
                   </name>
                 </field>
@@ -318,15 +318,15 @@ tests/integration/languages/tsql/sample.sql:1
             </term>
             ,
             <term>
-              <value>
+              <value field="value">
                 <field>
                   <object_reference>
-                    <name>
+                    <name field="name">
                       <identifier>a</identifier>
                     </name>
                   </object_reference>
                   .
-                  <name>
+                  <name field="name">
                     <identifier>City</identifier>
                   </name>
                 </field>
@@ -338,7 +338,7 @@ tests/integration/languages/tsql/sample.sql:1
           <keyword_from>FROM</keyword_from>
           <relation>
             <object_reference>
-              <name>
+              <name field="name">
                 <identifier>Orders</identifier>
               </name>
             </object_reference>
@@ -348,7 +348,7 @@ tests/integration/languages/tsql/sample.sql:1
             <keyword_join>JOIN</keyword_join>
             <relation>
               <object_reference>
-                <name>
+                <name field="name">
                   <identifier>Users</identifier>
                 </name>
               </object_reference>
@@ -356,29 +356,29 @@ tests/integration/languages/tsql/sample.sql:1
             </relation>
             <keyword_on>ON</keyword_on>
             <binary_expression field="predicate">
-              <left>
+              <left field="left">
                 <field>
                   <object_reference>
-                    <name>
+                    <name field="name">
                       <identifier>o</identifier>
                     </name>
                   </object_reference>
                   .
-                  <name>
+                  <name field="name">
                     <identifier>UserID</identifier>
                   </name>
                 </field>
               </left>
               =
-              <right>
+              <right field="right">
                 <field>
                   <object_reference>
-                    <name>
+                    <name field="name">
                       <identifier>u</identifier>
                     </name>
                   </object_reference>
                   .
-                  <name>
+                  <name field="name">
                     <identifier>ID</identifier>
                   </name>
                 </field>
@@ -390,7 +390,7 @@ tests/integration/languages/tsql/sample.sql:1
             <keyword_join>JOIN</keyword_join>
             <relation>
               <object_reference>
-                <name>
+                <name field="name">
                   <identifier>Addresses</identifier>
                 </name>
               </object_reference>
@@ -398,29 +398,29 @@ tests/integration/languages/tsql/sample.sql:1
             </relation>
             <keyword_on>ON</keyword_on>
             <binary_expression field="predicate">
-              <left>
+              <left field="left">
                 <field>
                   <object_reference>
-                    <name>
+                    <name field="name">
                       <identifier>u</identifier>
                     </name>
                   </object_reference>
                   .
-                  <name>
+                  <name field="name">
                     <identifier>ID</identifier>
                   </name>
                 </field>
               </left>
               =
-              <right>
+              <right field="right">
                 <field>
                   <object_reference>
-                    <name>
+                    <name field="name">
                       <identifier>a</identifier>
                     </name>
                   </object_reference>
                   .
-                  <name>
+                  <name field="name">
                     <identifier>UserID</identifier>
                   </name>
                 </field>
@@ -430,21 +430,21 @@ tests/integration/languages/tsql/sample.sql:1
           <where>
             <keyword_where>WHERE</keyword_where>
             <binary_expression field="predicate">
-              <left>
+              <left field="left">
                 <field>
                   <object_reference>
-                    <name>
+                    <name field="name">
                       <identifier>o</identifier>
                     </name>
                   </object_reference>
                   .
-                  <name>
+                  <name field="name">
                     <identifier>Total</identifier>
                   </name>
                 </field>
               </left>
               &gt;
-              <right>
+              <right field="right">
                 <literal>100</literal>
               </right>
             </binary_expression>
@@ -458,9 +458,9 @@ tests/integration/languages/tsql/sample.sql:1
           <keyword_select>SELECT</keyword_select>
           <select_expression>
             <term>
-              <value>
+              <value field="value">
                 <field>
-                  <name>
+                  <name field="name">
                     <identifier>Name</identifier>
                   </name>
                 </field>
@@ -472,7 +472,7 @@ tests/integration/languages/tsql/sample.sql:1
           <keyword_from>FROM</keyword_from>
           <relation>
             <object_reference>
-              <name>
+              <name field="name">
                 <identifier>Users</identifier>
               </name>
             </object_reference>
@@ -480,24 +480,24 @@ tests/integration/languages/tsql/sample.sql:1
           <where>
             <keyword_where>WHERE</keyword_where>
             <binary_expression field="predicate">
-              <left>
+              <left field="left">
                 <field>
-                  <name>
+                  <name field="name">
                     <identifier>ID</identifier>
                   </name>
                 </field>
               </left>
               <keyword_in field="operator">IN</keyword_in>
-              <right>
+              <right field="right">
                 <subquery>
                   (
                   <select>
                     <keyword_select>SELECT</keyword_select>
                     <select_expression>
                       <term>
-                        <value>
+                        <value field="value">
                           <field>
-                            <name>
+                            <name field="name">
                               <identifier>UserID</identifier>
                             </name>
                           </field>
@@ -509,7 +509,7 @@ tests/integration/languages/tsql/sample.sql:1
                     <keyword_from>FROM</keyword_from>
                     <relation>
                       <object_reference>
-                        <name>
+                        <name field="name">
                           <identifier>Orders</identifier>
                         </name>
                       </object_reference>
@@ -517,15 +517,15 @@ tests/integration/languages/tsql/sample.sql:1
                     <where>
                       <keyword_where>WHERE</keyword_where>
                       <binary_expression field="predicate">
-                        <left>
+                        <left field="left">
                           <field>
-                            <name>
+                            <name field="name">
                               <identifier>Total</identifier>
                             </name>
                           </field>
                         </left>
                         &gt;
-                        <right>
+                        <right field="right">
                           <literal>50</literal>
                         </right>
                       </binary_expression>
@@ -545,15 +545,15 @@ tests/integration/languages/tsql/sample.sql:1
           <keyword_select>SELECT</keyword_select>
           <select_expression>
             <term>
-              <value>
+              <value field="value">
                 <field>
                   <object_reference>
-                    <name>
+                    <name field="name">
                       <identifier>u</identifier>
                     </name>
                   </object_reference>
                   .
-                  <name>
+                  <name field="name">
                     <identifier>Name</identifier>
                   </name>
                 </field>
@@ -565,7 +565,7 @@ tests/integration/languages/tsql/sample.sql:1
           <keyword_from>FROM</keyword_from>
           <relation>
             <object_reference>
-              <name>
+              <name field="name">
                 <identifier>Users</identifier>
               </name>
             </object_reference>
@@ -581,7 +581,7 @@ tests/integration/languages/tsql/sample.sql:1
                   <keyword_select>SELECT</keyword_select>
                   <select_expression>
                     <term>
-                      <value>
+                      <value field="value">
                         <literal>1</literal>
                       </value>
                     </term>
@@ -591,7 +591,7 @@ tests/integration/languages/tsql/sample.sql:1
                   <keyword_from>FROM</keyword_from>
                   <relation>
                     <object_reference>
-                      <name>
+                      <name field="name">
                         <identifier>Orders</identifier>
                       </name>
                     </object_reference>
@@ -600,29 +600,29 @@ tests/integration/languages/tsql/sample.sql:1
                   <where>
                     <keyword_where>WHERE</keyword_where>
                     <binary_expression field="predicate">
-                      <left>
+                      <left field="left">
                         <field>
                           <object_reference>
-                            <name>
+                            <name field="name">
                               <identifier>o</identifier>
                             </name>
                           </object_reference>
                           .
-                          <name>
+                          <name field="name">
                             <identifier>UserID</identifier>
                           </name>
                         </field>
                       </left>
                       =
-                      <right>
+                      <right field="right">
                         <field>
                           <object_reference>
-                            <name>
+                            <name field="name">
                               <identifier>u</identifier>
                             </name>
                           </object_reference>
                           .
-                          <name>
+                          <name field="name">
                             <identifier>ID</identifier>
                           </name>
                         </field>
@@ -643,9 +643,9 @@ tests/integration/languages/tsql/sample.sql:1
           <keyword_select>SELECT</keyword_select>
           <select_expression>
             <term>
-              <value>
+              <value field="value">
                 <field>
-                  <name>
+                  <name field="name">
                     <identifier>Department</identifier>
                   </name>
                 </field>
@@ -653,16 +653,16 @@ tests/integration/languages/tsql/sample.sql:1
             </term>
             ,
             <term>
-              <value>
+              <value field="value">
                 <invocation>
                   <object_reference>
-                    <name>
+                    <name field="name">
                       <identifier>COUNT</identifier>
                     </name>
                   </object_reference>
                   (
                   <term field="parameter">
-                    <value>
+                    <value field="value">
                       <all_fields>*</all_fields>
                     </value>
                   </term>
@@ -674,18 +674,18 @@ tests/integration/languages/tsql/sample.sql:1
             </term>
             ,
             <term>
-              <value>
+              <value field="value">
                 <invocation>
                   <object_reference>
-                    <name>
+                    <name field="name">
                       <identifier>AVG</identifier>
                     </name>
                   </object_reference>
                   (
                   <term field="parameter">
-                    <value>
+                    <value field="value">
                       <field>
-                        <name>
+                        <name field="name">
                           <identifier>Salary</identifier>
                         </name>
                       </field>
@@ -703,7 +703,7 @@ tests/integration/languages/tsql/sample.sql:1
           <keyword_from>FROM</keyword_from>
           <relation>
             <object_reference>
-              <name>
+              <name field="name">
                 <identifier>Employees</identifier>
               </name>
             </object_reference>
@@ -712,7 +712,7 @@ tests/integration/languages/tsql/sample.sql:1
             <keyword_group>GROUP</keyword_group>
             <keyword_by>BY</keyword_by>
             <field>
-              <name>
+              <name field="name">
                 <identifier>Department</identifier>
               </name>
             </field>
@@ -720,16 +720,16 @@ tests/integration/languages/tsql/sample.sql:1
           <having>
             <keyword_having>HAVING</keyword_having>
             <binary_expression>
-              <left>
+              <left field="left">
                 <invocation>
                   <object_reference>
-                    <name>
+                    <name field="name">
                       <identifier>COUNT</identifier>
                     </name>
                   </object_reference>
                   (
                   <term field="parameter">
-                    <value>
+                    <value field="value">
                       <all_fields>*</all_fields>
                     </value>
                   </term>
@@ -737,7 +737,7 @@ tests/integration/languages/tsql/sample.sql:1
                 </invocation>
               </left>
               &gt;
-              <right>
+              <right field="right">
                 <literal>5</literal>
               </right>
             </binary_expression>
@@ -751,9 +751,9 @@ tests/integration/languages/tsql/sample.sql:1
           <keyword_select>SELECT</keyword_select>
           <select_expression>
             <term>
-              <value>
+              <value field="value">
                 <field>
-                  <name>
+                  <name field="name">
                     <identifier>Name</identifier>
                   </name>
                 </field>
@@ -761,20 +761,20 @@ tests/integration/languages/tsql/sample.sql:1
             </term>
             ,
             <term>
-              <value>
+              <value field="value">
                 <case>
                   <keyword_case>CASE</keyword_case>
                   <keyword_when>WHEN</keyword_when>
                   <binary_expression>
-                    <left>
+                    <left field="left">
                       <field>
-                        <name>
+                        <name field="name">
                           <identifier>Age</identifier>
                         </name>
                       </field>
                     </left>
                     &gt;=
-                    <right>
+                    <right field="right">
                       <literal>18</literal>
                     </right>
                   </binary_expression>
@@ -794,7 +794,7 @@ tests/integration/languages/tsql/sample.sql:1
           <keyword_from>FROM</keyword_from>
           <relation>
             <object_reference>
-              <name>
+              <name field="name">
                 <identifier>Users</identifier>
               </name>
             </object_reference>
@@ -814,9 +814,9 @@ tests/integration/languages/tsql/sample.sql:1
               <keyword_select>SELECT</keyword_select>
               <select_expression>
                 <term>
-                  <value>
+                  <value field="value">
                     <field>
-                      <name>
+                      <name field="name">
                         <identifier>ID</identifier>
                       </name>
                     </field>
@@ -824,9 +824,9 @@ tests/integration/languages/tsql/sample.sql:1
                 </term>
                 ,
                 <term>
-                  <value>
+                  <value field="value">
                     <field>
-                      <name>
+                      <name field="name">
                         <identifier>Name</identifier>
                       </name>
                     </field>
@@ -838,7 +838,7 @@ tests/integration/languages/tsql/sample.sql:1
               <keyword_from>FROM</keyword_from>
               <relation>
                 <object_reference>
-                  <name>
+                  <name field="name">
                     <identifier>Users</identifier>
                   </name>
                 </object_reference>
@@ -846,15 +846,15 @@ tests/integration/languages/tsql/sample.sql:1
               <where>
                 <keyword_where>WHERE</keyword_where>
                 <binary_expression field="predicate">
-                  <left>
+                  <left field="left">
                     <field>
-                      <name>
+                      <name field="name">
                         <identifier>Active</identifier>
                       </name>
                     </field>
                   </left>
                   =
-                  <right>
+                  <right field="right">
                     <literal>1</literal>
                   </right>
                 </binary_expression>
@@ -867,9 +867,9 @@ tests/integration/languages/tsql/sample.sql:1
           <keyword_select>SELECT</keyword_select>
           <select_expression>
             <term>
-              <value>
+              <value field="value">
                 <field>
-                  <name>
+                  <name field="name">
                     <identifier>Name</identifier>
                   </name>
                 </field>
@@ -881,7 +881,7 @@ tests/integration/languages/tsql/sample.sql:1
           <keyword_from>FROM</keyword_from>
           <relation>
             <object_reference>
-              <name>
+              <name field="name">
                 <identifier>ActiveUsers</identifier>
               </name>
             </object_reference>
@@ -896,9 +896,9 @@ tests/integration/languages/tsql/sample.sql:1
             <keyword_select>SELECT</keyword_select>
             <select_expression>
               <term>
-                <value>
+                <value field="value">
                   <field>
-                    <name>
+                    <name field="name">
                       <identifier>Name</identifier>
                     </name>
                   </field>
@@ -906,7 +906,7 @@ tests/integration/languages/tsql/sample.sql:1
               </term>
               ,
               <term>
-                <value>
+                <value field="value">
                   <literal>'User'</literal>
                 </value>
                 <keyword_as>AS</keyword_as>
@@ -918,7 +918,7 @@ tests/integration/languages/tsql/sample.sql:1
             <keyword_from>FROM</keyword_from>
             <relation>
               <object_reference>
-                <name>
+                <name field="name">
                   <identifier>Users</identifier>
                 </name>
               </object_reference>
@@ -930,9 +930,9 @@ tests/integration/languages/tsql/sample.sql:1
             <keyword_select>SELECT</keyword_select>
             <select_expression>
               <term>
-                <value>
+                <value field="value">
                   <field>
-                    <name>
+                    <name field="name">
                       <identifier>Name</identifier>
                     </name>
                   </field>
@@ -940,7 +940,7 @@ tests/integration/languages/tsql/sample.sql:1
               </term>
               ,
               <term>
-                <value>
+                <value field="value">
                   <literal>'Admin'</literal>
                 </value>
                 <keyword_as>AS</keyword_as>
@@ -952,7 +952,7 @@ tests/integration/languages/tsql/sample.sql:1
             <keyword_from>FROM</keyword_from>
             <relation>
               <object_reference>
-                <name>
+                <name field="name">
                   <identifier>Admins</identifier>
                 </name>
               </object_reference>
@@ -967,9 +967,9 @@ tests/integration/languages/tsql/sample.sql:1
           <keyword_select>SELECT</keyword_select>
           <select_expression>
             <term>
-              <value>
+              <value field="value">
                 <field>
-                  <name>
+                  <name field="name">
                     <identifier>Name</identifier>
                   </name>
                 </field>
@@ -977,11 +977,11 @@ tests/integration/languages/tsql/sample.sql:1
             </term>
             ,
             <term>
-              <value>
+              <value field="value">
                 <window_function>
                   <invocation>
                     <object_reference>
-                      <name>
+                      <name field="name">
                         <identifier>ROW_NUMBER</identifier>
                       </name>
                     </object_reference>
@@ -994,7 +994,7 @@ tests/integration/languages/tsql/sample.sql:1
                       <keyword_partition>PARTITION</keyword_partition>
                       <keyword_by>BY</keyword_by>
                       <field>
-                        <name>
+                        <name field="name">
                           <identifier>Department</identifier>
                         </name>
                       </field>
@@ -1004,7 +1004,7 @@ tests/integration/languages/tsql/sample.sql:1
                       <keyword_by>BY</keyword_by>
                       <order_target>
                         <field>
-                          <name>
+                          <name field="name">
                             <identifier>Salary</identifier>
                           </name>
                         </field>
@@ -1026,7 +1026,7 @@ tests/integration/languages/tsql/sample.sql:1
           <keyword_from>FROM</keyword_from>
           <relation>
             <object_reference>
-              <name>
+              <name field="name">
                 <identifier>Employees</identifier>
               </name>
             </object_reference>
@@ -1040,18 +1040,18 @@ tests/integration/languages/tsql/sample.sql:1
           <keyword_select>SELECT</keyword_select>
           <select_expression>
             <term>
-              <value>
+              <value field="value">
                 <invocation>
                   <object_reference>
-                    <name>
+                    <name field="name">
                       <identifier>COALESCE</identifier>
                     </name>
                   </object_reference>
                   (
                   <term field="parameter">
-                    <value>
+                    <value field="value">
                       <field>
-                        <name>
+                        <name field="name">
                           <identifier>Nickname</identifier>
                         </name>
                       </field>
@@ -1059,9 +1059,9 @@ tests/integration/languages/tsql/sample.sql:1
                   </term>
                   ,
                   <term field="parameter">
-                    <value>
+                    <value field="value">
                       <field>
-                        <name>
+                        <name field="name">
                           <identifier>Name</identifier>
                         </name>
                       </field>
@@ -1075,14 +1075,14 @@ tests/integration/languages/tsql/sample.sql:1
             </term>
             ,
             <term>
-              <value>
+              <value field="value">
                 <cast>
-                  <name>
+                  <name field="name">
                     <keyword_cast>CAST</keyword_cast>
                   </name>
                   (
                   <field field="parameter">
-                    <name>
+                    <name field="name">
                       <identifier>Age</identifier>
                     </name>
                   </field>
@@ -1105,7 +1105,7 @@ tests/integration/languages/tsql/sample.sql:1
           <keyword_from>FROM</keyword_from>
           <relation>
             <object_reference>
-              <name>
+              <name field="name">
                 <identifier>Users</identifier>
               </name>
             </object_reference>
@@ -1113,35 +1113,35 @@ tests/integration/languages/tsql/sample.sql:1
           <where>
             <keyword_where>WHERE</keyword_where>
             <binary_expression field="predicate">
-              <left>
+              <left field="left">
                 <binary_expression>
-                  <left>
+                  <left field="left">
                     <binary_expression>
-                      <left>
+                      <left field="left">
                         <field>
-                          <name>
+                          <name field="name">
                             <identifier>Email</identifier>
                           </name>
                         </field>
                       </left>
                       <keyword_like field="operator">LIKE</keyword_like>
-                      <right>
+                      <right field="right">
                         <literal>'%@gmail.com'</literal>
                       </right>
                     </binary_expression>
                   </left>
                   <keyword_and field="operator">AND</keyword_and>
-                  <right>
+                  <right field="right">
                     <binary_expression>
-                      <left>
+                      <left field="left">
                         <field>
-                          <name>
+                          <name field="name">
                             <identifier>DeletedAt</identifier>
                           </name>
                         </field>
                       </left>
                       <keyword_is field="operator">IS</keyword_is>
-                      <right>
+                      <right field="right">
                         <literal>
                           <keyword_null>NULL</keyword_null>
                         </literal>
@@ -1151,17 +1151,17 @@ tests/integration/languages/tsql/sample.sql:1
                 </binary_expression>
               </left>
               <keyword_and field="operator">AND</keyword_and>
-              <right>
+              <right field="right">
                 <binary_expression>
-                  <left>
+                  <left field="left">
                     <field>
-                      <name>
+                      <name field="name">
                         <identifier>Role</identifier>
                       </name>
                     </field>
                   </left>
                   <keyword_in field="operator">IN</keyword_in>
-                  <right>
+                  <right field="right">
                     <list>
                       (
                       <literal>'admin'</literal>
@@ -1184,9 +1184,9 @@ tests/integration/languages/tsql/sample.sql:1
           <keyword_distinct>DISTINCT</keyword_distinct>
           <select_expression>
             <term>
-              <value>
+              <value field="value">
                 <field>
-                  <name>
+                  <name field="name">
                     <identifier>Department</identifier>
                   </name>
                 </field>
@@ -1198,7 +1198,7 @@ tests/integration/languages/tsql/sample.sql:1
           <keyword_from>FROM</keyword_from>
           <relation>
             <object_reference>
-              <name>
+              <name field="name">
                 <identifier>Employees</identifier>
               </name>
             </object_reference>
@@ -1208,7 +1208,7 @@ tests/integration/languages/tsql/sample.sql:1
             <keyword_by>BY</keyword_by>
             <order_target>
               <field>
-                <name>
+                <name field="name">
                   <identifier>Department</identifier>
                 </name>
               </field>
@@ -1226,14 +1226,14 @@ tests/integration/languages/tsql/sample.sql:1
           <keyword_create>CREATE</keyword_create>
           <keyword_table>TABLE</keyword_table>
           <object_reference>
-            <name>
+            <name field="name">
               <identifier>Audit</identifier>
             </name>
           </object_reference>
           <column_definitions>
             (
             <column_definition>
-              <name>
+              <name field="name">
                 <identifier>ID</identifier>
               </name>
               <int field="type">
@@ -1244,7 +1244,7 @@ tests/integration/languages/tsql/sample.sql:1
             </column_definition>
             ,
             <column_definition>
-              <name>
+              <name field="name">
                 <identifier>Action</identifier>
               </name>
               <nvarchar field="type">
@@ -1258,14 +1258,14 @@ tests/integration/languages/tsql/sample.sql:1
             </column_definition>
             ,
             <column_definition>
-              <name>
+              <name field="name">
                 <identifier>CreatedAt</identifier>
               </name>
               <keyword_datetime field="type">DATETIME</keyword_datetime>
               <keyword_default>DEFAULT</keyword_default>
               <invocation>
                 <object_reference>
-                  <name>
+                  <name field="name">
                     <identifier>GETDATE</identifier>
                   </name>
                 </object_reference>
@@ -1282,43 +1282,43 @@ tests/integration/languages/tsql/sample.sql:1
         <keyword_merge>MERGE</keyword_merge>
         <keyword_into>INTO</keyword_into>
         <object_reference>
-          <name>
+          <name field="name">
             <identifier>Target</identifier>
           </name>
         </object_reference>
         <identifier field="alias">t</identifier>
         <keyword_using>USING</keyword_using>
         <object_reference>
-          <name>
+          <name field="name">
             <identifier>Source</identifier>
           </name>
         </object_reference>
         <identifier field="alias">s</identifier>
         <keyword_on>ON</keyword_on>
         <binary_expression field="predicate">
-          <left>
+          <left field="left">
             <field>
               <object_reference>
-                <name>
+                <name field="name">
                   <identifier>t</identifier>
                 </name>
               </object_reference>
               .
-              <name>
+              <name field="name">
                 <identifier>ID</identifier>
               </name>
             </field>
           </left>
           =
-          <right>
+          <right field="right">
             <field>
               <object_reference>
-                <name>
+                <name field="name">
                   <identifier>s</identifier>
                 </name>
               </object_reference>
               .
-              <name>
+              <name field="name">
                 <identifier>ID</identifier>
               </name>
             </field>
@@ -1331,29 +1331,29 @@ tests/integration/languages/tsql/sample.sql:1
           <keyword_update>UPDATE</keyword_update>
           <keyword_set>SET</keyword_set>
           <assignment>
-            <left>
+            <left field="left">
               <field>
                 <object_reference>
-                  <name>
+                  <name field="name">
                     <identifier>t</identifier>
                   </name>
                 </object_reference>
                 .
-                <name>
+                <name field="name">
                   <identifier>Name</identifier>
                 </name>
               </field>
             </left>
             =
-            <right>
+            <right field="right">
               <field>
                 <object_reference>
-                  <name>
+                  <name field="name">
                     <identifier>s</identifier>
                   </name>
                 </object_reference>
                 .
-                <name>
+                <name field="name">
                   <identifier>Name</identifier>
                 </name>
               </field>
@@ -1382,24 +1382,24 @@ tests/integration/languages/tsql/sample.sql:1
             (
             <field>
               <object_reference>
-                <name>
+                <name field="name">
                   <identifier>s</identifier>
                 </name>
               </object_reference>
               .
-              <name>
+              <name field="name">
                 <identifier>ID</identifier>
               </name>
             </field>
             ,
             <field>
               <object_reference>
-                <name>
+                <name field="name">
                   <identifier>s</identifier>
                 </name>
               </object_reference>
               .
-              <name>
+              <name field="name">
                 <identifier>Name</identifier>
               </name>
             </field>
@@ -1414,9 +1414,9 @@ tests/integration/languages/tsql/sample.sql:1
           <keyword_select>SELECT</keyword_select>
           <select_expression>
             <term>
-              <value>
+              <value field="value">
                 <field>
-                  <name>
+                  <name field="name">
                     <identifier>Name</identifier>
                   </name>
                 </field>
@@ -1424,9 +1424,9 @@ tests/integration/languages/tsql/sample.sql:1
             </term>
             ,
             <term>
-              <value>
+              <value field="value">
                 <field>
-                  <name>
+                  <name field="name">
                     <identifier>Age</identifier>
                   </name>
                 </field>
@@ -1437,11 +1437,11 @@ tests/integration/languages/tsql/sample.sql:1
         <keyword_into>INTO</keyword_into>
         <select_expression>
           <term>
-            <value>
+            <value field="value">
               <unary_expression>
                 <op_unary_other field="operator">#</op_unary_other>
                 <field field="operand">
-                  <name>
+                  <name field="name">
                     <identifier>TempUsers</identifier>
                   </name>
                 </field>
@@ -1453,7 +1453,7 @@ tests/integration/languages/tsql/sample.sql:1
           <keyword_from>FROM</keyword_from>
           <relation>
             <object_reference>
-              <name>
+              <name field="name">
                 <identifier>Users</identifier>
               </name>
             </object_reference>
@@ -1461,15 +1461,15 @@ tests/integration/languages/tsql/sample.sql:1
           <where>
             <keyword_where>WHERE</keyword_where>
             <binary_expression field="predicate">
-              <left>
+              <left field="left">
                 <field>
-                  <name>
+                  <name field="name">
                     <identifier>Active</identifier>
                   </name>
                 </field>
               </left>
               =
-              <right>
+              <right field="right">
                 <literal>1</literal>
               </right>
             </binary_expression>
@@ -1487,32 +1487,32 @@ tests/integration/languages/tsql/sample.sql:1
             <keyword_update>UPDATE</keyword_update>
             <relation>
               <object_reference>
-                <name>
+                <name field="name">
                   <identifier>Accounts</identifier>
                 </name>
               </object_reference>
             </relation>
             <keyword_set>SET</keyword_set>
             <assignment>
-              <left>
+              <left field="left">
                 <field>
-                  <name>
+                  <name field="name">
                     <identifier>Balance</identifier>
                   </name>
                 </field>
               </left>
               =
-              <right>
+              <right field="right">
                 <binary_expression>
-                  <left>
+                  <left field="left">
                     <field>
-                      <name>
+                      <name field="name">
                         <identifier>Balance</identifier>
                       </name>
                     </field>
                   </left>
                   -
-                  <right>
+                  <right field="right">
                     <literal>100</literal>
                   </right>
                 </binary_expression>
@@ -1521,15 +1521,15 @@ tests/integration/languages/tsql/sample.sql:1
             <where>
               <keyword_where>WHERE</keyword_where>
               <binary_expression field="predicate">
-                <left>
+                <left field="left">
                   <field>
-                    <name>
+                    <name field="name">
                       <identifier>ID</identifier>
                     </name>
                   </field>
                 </left>
                 =
-                <right>
+                <right field="right">
                   <literal>1</literal>
                 </right>
               </binary_expression>
@@ -1542,32 +1542,32 @@ tests/integration/languages/tsql/sample.sql:1
             <keyword_update>UPDATE</keyword_update>
             <relation>
               <object_reference>
-                <name>
+                <name field="name">
                   <identifier>Accounts</identifier>
                 </name>
               </object_reference>
             </relation>
             <keyword_set>SET</keyword_set>
             <assignment>
-              <left>
+              <left field="left">
                 <field>
-                  <name>
+                  <name field="name">
                     <identifier>Balance</identifier>
                   </name>
                 </field>
               </left>
               =
-              <right>
+              <right field="right">
                 <binary_expression>
-                  <left>
+                  <left field="left">
                     <field>
-                      <name>
+                      <name field="name">
                         <identifier>Balance</identifier>
                       </name>
                     </field>
                   </left>
                   +
-                  <right>
+                  <right field="right">
                     <literal>100</literal>
                   </right>
                 </binary_expression>
@@ -1576,15 +1576,15 @@ tests/integration/languages/tsql/sample.sql:1
             <where>
               <keyword_where>WHERE</keyword_where>
               <binary_expression field="predicate">
-                <left>
+                <left field="left">
                   <field>
-                    <name>
+                    <name field="name">
                       <identifier>ID</identifier>
                     </name>
                   </field>
                 </left>
                 =
-                <right>
+                <right field="right">
                   <literal>2</literal>
                 </right>
               </binary_expression>
@@ -1600,7 +1600,7 @@ tests/integration/languages/tsql/sample.sql:1
         <set_statement>
           <keyword_set>SET</keyword_set>
           <object_reference>
-            <name>
+            <name field="name">
               <identifier>@Threshold</identifier>
             </name>
           </object_reference>
@@ -1617,7 +1617,7 @@ tests/integration/languages/tsql/sample.sql:1
           <object_reference>
             <identifier field="schema">dbo</identifier>
             .
-            <name>
+            <name field="name">
               <identifier>GetAge</identifier>
             </name>
           </object_reference>
@@ -1639,15 +1639,15 @@ tests/integration/languages/tsql/sample.sql:1
             <keyword_return>RETURN</keyword_return>
             <invocation>
               <object_reference>
-                <name>
+                <name field="name">
                   <identifier>DATEDIFF</identifier>
                 </name>
               </object_reference>
               (
               <term field="parameter">
-                <value>
+                <value field="value">
                   <field>
-                    <name>
+                    <name field="name">
                       <identifier>YEAR</identifier>
                     </name>
                   </field>
@@ -1655,9 +1655,9 @@ tests/integration/languages/tsql/sample.sql:1
               </term>
               ,
               <term field="parameter">
-                <value>
+                <value field="value">
                   <field>
-                    <name>
+                    <name field="name">
                       <identifier>@BirthDate</identifier>
                     </name>
                   </field>
@@ -1665,10 +1665,10 @@ tests/integration/languages/tsql/sample.sql:1
               </term>
               ,
               <term field="parameter">
-                <value>
+                <value field="value">
                   <invocation>
                     <object_reference>
-                      <name>
+                      <name field="name">
                         <identifier>GETDATE</identifier>
                       </name>
                     </object_reference>
@@ -1689,7 +1689,7 @@ tests/integration/languages/tsql/sample.sql:1
         <execute_statement>
           <keyword_exec>EXEC</keyword_exec>
           <object_reference>
-            <name>
+            <name field="name">
               <identifier>sp_helpdb</identifier>
             </name>
           </object_reference>

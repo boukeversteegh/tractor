@@ -2,37 +2,33 @@ matches:
 - file: tests/integration/formats/sample.cs
   line: 1
   tree:
-    type: class
+    $type: class
     public: true
-    children:
-    - name: Foo
-    - type: body
-      children:
-      - type: property
+    name: Foo
+    body:
+      property:
         public: true
+        name: Bar
         children:
         - type: int
-        - name: Bar
-        - type: accessors
+        - $type: accessors
           children:
           - accessor: get;
           - accessor: set;
-      - type: method
+      children:
+      - $type: method
         public: true
+        returns:
+          type: void
+        name: Baz
+        body:
+          block: '{ }'
         children:
-        - type: returns
-          children:
-          - type: void
-        - name: Baz
         - parameters: ()
-        - type: body
-          children:
-          - block: '{ }'
 - file: tests/integration/formats/sample.cs
   line: 7
   tree:
-    type: class
+    $type: class
     public: true
-    children:
-    - name: Qux
-    - body: '{ }'
+    name: Qux
+    body: '{ }'

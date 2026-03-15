@@ -9,8 +9,8 @@ tests/integration/languages/python/sample.py:1
       </string>
       <function>
         def
-        <name>add</name>
-        <params>
+        <name field="name">add</name>
+        <params field="parameters">
           <params>
             (
             <type>a</type>
@@ -20,8 +20,8 @@ tests/integration/languages/python/sample.py:1
           </params>
         </params>
         :
-        <body>
-          <string>
+        <body field="body">
+          <string field="string">
             <string_start>&quot;&quot;&quot;</string_start>
             <string_content>Add two numbers</string_content>
             <string_end>&quot;&quot;&quot;</string_end>
@@ -33,12 +33,12 @@ tests/integration/languages/python/sample.py:1
                 <plus/>
                 +
               </op>
-              <left>
-                <type>a</type>
+              <left field="left">
+                <type field="type">a</type>
               </left>
               +
-              <right>
-                <type>b</type>
+              <right field="right">
+                <type field="type">b</type>
               </right>
             </binary>
           </return>
@@ -47,8 +47,8 @@ tests/integration/languages/python/sample.py:1
       <function>
         <async/>
         async def
-        <name>fetch_data</name>
-        <params>
+        <name field="name">fetch_data</name>
+        <params field="parameters">
           <params>
             (
             <type>url</type>
@@ -56,8 +56,8 @@ tests/integration/languages/python/sample.py:1
           </params>
         </params>
         :
-        <body>
-          <string>
+        <body field="body">
+          <string field="string">
             <string_start>&quot;&quot;&quot;</string_start>
             <string_content>Async function example</string_content>
             <string_end>&quot;&quot;&quot;</string_end>
@@ -70,21 +70,21 @@ tests/integration/languages/python/sample.py:1
       </function>
       <function>
         def
-        <name>main</name>
-        <params>
+        <name field="name">main</name>
+        <params field="parameters">
           <params>()</params>
         </params>
         :
-        <body>
-          <assign>
-            <left>
-              <type>result</type>
+        <body field="body">
+          <assign field="assign">
+            <left field="left">
+              <type field="type">result</type>
             </left>
             =
-            <right>
-              <call>
+            <right field="right">
+              <call field="call">
                 <type field="function">add</type>
-                <arguments>
+                <arguments field="arguments">
                   <argument_list>
                     (
                     <int>5</int>
@@ -98,7 +98,7 @@ tests/integration/languages/python/sample.py:1
           </assign>
           <call>
             <type field="function">print</type>
-            <arguments>
+            <arguments field="arguments">
               <argument_list>
                 (
                 <string>
@@ -119,8 +119,8 @@ tests/integration/languages/python/sample.py:1
       </function>
       <if>
         if
-        <condition>
-          <compare>
+        <condition field="condition">
+          <compare field="compare">
             <op>
               <equals/>
               ==
@@ -135,10 +135,10 @@ tests/integration/languages/python/sample.py:1
           </compare>
         </condition>
         :
-        <consequence>
-          <call>
+        <consequence field="consequence">
+          <call field="call">
             <type field="function">main</type>
-            <arguments>
+            <arguments field="arguments">
               <argument_list>()</argument_list>
             </arguments>
           </call>

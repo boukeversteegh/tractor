@@ -2,30 +2,18 @@
   "matches": [
     {
       "tree": {
-        "type": "class",
+        "$type": "class",
         "public": true,
-        "children": [
-          {
-            "name": "Foo"
-          },
-          {
-            "type": "body"
-          }
-        ]
+        "name": "Foo",
+        "body": {}
       }
     },
     {
       "tree": {
-        "type": "class",
+        "$type": "class",
         "public": true,
-        "children": [
-          {
-            "name": "Qux"
-          },
-          {
-            "body": "{ }"
-          }
-        ]
+        "name": "Qux",
+        "body": "{ }"
       }
     }
   ]

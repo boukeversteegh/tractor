@@ -2,13 +2,13 @@ tests/integration/formats/sample.cs:1
 <class>
   <public/>
   class
-  <name>Foo</name>
-  <body>
+  <name field="name">Foo</name>
+  <body field="body">
     {
-    <property>
+    <property field="property">
       <public/>
       <type>int</type>
-      <name>Bar</name>
+      <name field="name">Bar</name>
       <accessors>
         {
         <accessor>get;</accessor>
@@ -18,13 +18,13 @@ tests/integration/formats/sample.cs:1
     </property>
     <method>
       <public/>
-      <returns>
-        <type>void</type>
+      <returns field="returns">
+        <type field="type">void</type>
       </returns>
-      <name>Baz</name>
+      <name field="name">Baz</name>
       <parameters>()</parameters>
-      <body>
-        <block>{ }</block>
+      <body field="body">
+        <block field="block">{ }</block>
       </body>
     </method>
     }
@@ -35,6 +35,6 @@ tests/integration/formats/sample.cs:7
 <class>
   <public/>
   class
-  <name>Qux</name>
-  <body>{ }</body>
+  <name field="name">Qux</name>
+  <body field="body">{ }</body>
 </class>

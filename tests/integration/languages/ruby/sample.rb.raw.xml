@@ -5,10 +5,10 @@ tests/integration/languages/ruby/sample.rb:1
       <comment># Simple Ruby example</comment>
       <method>
         def
-        <name>
+        <name field="name">
           <identifier>add</identifier>
         </name>
-        <parameters>
+        <parameters field="parameters">
           <method_parameters>
             (
             <identifier>a</identifier>
@@ -17,14 +17,14 @@ tests/integration/languages/ruby/sample.rb:1
             )
           </method_parameters>
         </parameters>
-        <body>
+        <body field="body">
           <body_statement>
             <binary>
-              <left>
+              <left field="left">
                 <identifier>a</identifier>
               </left>
               +
-              <right>
+              <right field="right">
                 <identifier>b</identifier>
               </right>
             </binary>
@@ -34,20 +34,20 @@ tests/integration/languages/ruby/sample.rb:1
       </method>
       <method>
         def
-        <name>
+        <name field="name">
           <identifier>main</identifier>
         </name>
-        <body>
+        <body field="body">
           <body_statement>
             <assignment>
-              <left>
+              <left field="left">
                 <identifier>result</identifier>
               </left>
               =
-              <right>
+              <right field="right">
                 <call>
                   <identifier field="method">add</identifier>
-                  <arguments>
+                  <arguments field="arguments">
                     <argument_list>
                       (
                       <integer>5</integer>
@@ -61,7 +61,7 @@ tests/integration/languages/ruby/sample.rb:1
             </assignment>
             <call>
               <identifier field="method">puts</identifier>
-              <arguments>
+              <arguments field="arguments">
                 <argument_list>
                   <string>
                     &quot;

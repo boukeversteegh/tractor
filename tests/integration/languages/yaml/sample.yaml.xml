@@ -8,7 +8,7 @@ tests/integration/languages/yaml/sample.yaml:1
             <key>
               <string>name</string>
             </key>
-            <value>
+            <value field="value">
               <string>my-app</string>
             </value>
           </property>
@@ -16,7 +16,7 @@ tests/integration/languages/yaml/sample.yaml:1
             <key>
               <string>version</string>
             </key>
-            <value>
+            <value field="value">
               <string>1.0.0</string>
             </value>
           </property>
@@ -24,13 +24,13 @@ tests/integration/languages/yaml/sample.yaml:1
             <key>
               <string>database</string>
             </key>
-            <value>
+            <value field="value">
               <object>
                 <property>
                   <key>
                     <string>host</string>
                   </key>
-                  <value>
+                  <value field="value">
                     <string>localhost</string>
                   </value>
                 </property>
@@ -38,7 +38,7 @@ tests/integration/languages/yaml/sample.yaml:1
                   <key>
                     <string>port</string>
                   </key>
-                  <value>
+                  <value field="value">
                     <number>5432</number>
                   </value>
                 </property>
@@ -46,13 +46,13 @@ tests/integration/languages/yaml/sample.yaml:1
                   <key>
                     <string>credentials</string>
                   </key>
-                  <value>
+                  <value field="value">
                     <object>
                       <property>
                         <key>
                           <string>username</string>
                         </key>
-                        <value>
+                        <value field="value">
                           <string>admin</string>
                         </value>
                       </property>
@@ -60,7 +60,7 @@ tests/integration/languages/yaml/sample.yaml:1
                         <key>
                           <string>password</string>
                         </key>
-                        <value>
+                        <value field="value">
                           <string>secret</string>
                         </value>
                       </property>
@@ -74,14 +74,14 @@ tests/integration/languages/yaml/sample.yaml:1
             <key>
               <string>servers</string>
             </key>
-            <value>
+            <value field="value">
               <array>
                 <object>
                   <property>
                     <key>
                       <string>name</string>
                     </key>
-                    <value>
+                    <value field="value">
                       <string>web-1</string>
                     </value>
                   </property>
@@ -89,7 +89,7 @@ tests/integration/languages/yaml/sample.yaml:1
                     <key>
                       <string>port</string>
                     </key>
-                    <value>
+                    <value field="value">
                       <number>8080</number>
                     </value>
                   </property>
@@ -99,7 +99,7 @@ tests/integration/languages/yaml/sample.yaml:1
                     <key>
                       <string>name</string>
                     </key>
-                    <value>
+                    <value field="value">
                       <string>web-2</string>
                     </value>
                   </property>
@@ -107,7 +107,7 @@ tests/integration/languages/yaml/sample.yaml:1
                     <key>
                       <string>port</string>
                     </key>
-                    <value>
+                    <value field="value">
                       <number>8081</number>
                     </value>
                   </property>
@@ -119,7 +119,7 @@ tests/integration/languages/yaml/sample.yaml:1
             <key>
               <string>features</string>
             </key>
-            <value>
+            <value field="value">
               <array>
                 <string>auth</string>
                 <string>logging</string>
@@ -131,25 +131,25 @@ tests/integration/languages/yaml/sample.yaml:1
             <key>
               <string>nested</string>
             </key>
-            <value>
+            <value field="value">
               <object>
                 <property>
                   <key>
                     <string>level1</string>
                   </key>
-                  <value>
+                  <value field="value">
                     <object>
                       <property>
                         <key>
                           <string>level2</string>
                         </key>
-                        <value>
+                        <value field="value">
                           <object>
                             <property>
                               <key>
                                 <string>value</string>
                               </key>
-                              <value>
+                              <value field="value">
                                 <string>deep</string>
                               </value>
                             </property>
@@ -166,13 +166,13 @@ tests/integration/languages/yaml/sample.yaml:1
             <key>
               <string>flow_map</string>
             </key>
-            <value>
+            <value field="value">
               <object>
                 <property>
                   <key>
                     <string>x</string>
                   </key>
-                  <value>
+                  <value field="value">
                     <number>1</number>
                   </value>
                 </property>
@@ -180,7 +180,7 @@ tests/integration/languages/yaml/sample.yaml:1
                   <key>
                     <string>y</string>
                   </key>
-                  <value>
+                  <value field="value">
                     <number>2</number>
                   </value>
                 </property>
@@ -191,7 +191,7 @@ tests/integration/languages/yaml/sample.yaml:1
             <key>
               <string>flow_list</string>
             </key>
-            <value>
+            <value field="value">
               <array>
                 <string>a</string>
                 <string>b</string>
@@ -203,7 +203,7 @@ tests/integration/languages/yaml/sample.yaml:1
             <key>
               <string>quoted</string>
             </key>
-            <value>
+            <value field="value">
               <string>hello world</string>
             </value>
           </property>
@@ -211,7 +211,7 @@ tests/integration/languages/yaml/sample.yaml:1
             <key>
               <string>multiline</string>
             </key>
-            <value>
+            <value field="value">
               <string>line one
 line two</string>
             </value>
@@ -220,7 +220,7 @@ line two</string>
             <key>
               <string>first name</string>
             </key>
-            <value>
+            <value field="value">
               <string>Alice</string>
             </value>
           </property>
@@ -228,7 +228,7 @@ line two</string>
             <key>
               <string>last name</string>
             </key>
-            <value>
+            <value field="value">
               <string>Bob</string>
             </value>
           </property>

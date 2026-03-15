@@ -14,8 +14,8 @@
           <class>
             <public/>
             class
-            <name>Foo</name>
-            <body>
+            <name field="name">Foo</name>
+            <body field="body">
               <!-- ... (15 children) -->
             </body>
           </class>
@@ -28,8 +28,8 @@
           <class>
             <public/>
             class
-            <name>Qux</name>
-            <body>{ }</body>
+            <name field="name">Qux</name>
+            <body field="body">{ }</body>
           </class>
         </tree>
         <reason>class found</reason>

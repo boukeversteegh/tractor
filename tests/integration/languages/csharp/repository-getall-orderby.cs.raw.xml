@@ -5,15 +5,15 @@ tests/integration/languages/csharp/repository-getall-orderby.cs:1
       <class_declaration>
         <modifier>public</modifier>
         class
-        <name>
+        <name field="name">
           <identifier>UserRepository</identifier>
         </name>
-        <body>
+        <body field="body">
           <declaration_list>
             {
             <method_declaration>
               <modifier>public</modifier>
-              <returns>
+              <returns field="returns">
                 <generic_name>
                   <identifier>List</identifier>
                   <type_argument_list>
@@ -23,13 +23,13 @@ tests/integration/languages/csharp/repository-getall-orderby.cs:1
                   </type_argument_list>
                 </generic_name>
               </returns>
-              <name>
+              <name field="name">
                 <identifier>GetAll</identifier>
               </name>
-              <parameters>
+              <parameters field="parameters">
                 <parameter_list>()</parameter_list>
               </parameters>
-              <body>
+              <body field="body">
                 <block>
                   {
                   <return_statement>
@@ -39,16 +39,16 @@ tests/integration/languages/csharp/repository-getall-orderby.cs:1
                         <member_access_expression field="expression">
                           <identifier field="expression">_context</identifier>
                           .
-                          <name>
+                          <name field="name">
                             <identifier>Users</identifier>
                           </name>
                         </member_access_expression>
                         .
-                        <name>
+                        <name field="name">
                           <identifier>ToList</identifier>
                         </name>
                       </member_access_expression>
-                      <arguments>
+                      <arguments field="arguments">
                         <argument_list>()</argument_list>
                       </arguments>
                     </invocation_expression>
@@ -61,7 +61,7 @@ tests/integration/languages/csharp/repository-getall-orderby.cs:1
             <comment>// MATCH - missing OrderBy</comment>
             <method_declaration>
               <modifier>public</modifier>
-              <returns>
+              <returns field="returns">
                 <generic_name>
                   <identifier>List</identifier>
                   <type_argument_list>
@@ -71,13 +71,13 @@ tests/integration/languages/csharp/repository-getall-orderby.cs:1
                   </type_argument_list>
                 </generic_name>
               </returns>
-              <name>
+              <name field="name">
                 <identifier>GetAllOrdered</identifier>
               </name>
-              <parameters>
+              <parameters field="parameters">
                 <parameter_list>()</parameter_list>
               </parameters>
-              <body>
+              <body field="body">
                 <block>
                   {
                   <return_statement>
@@ -89,29 +89,29 @@ tests/integration/languages/csharp/repository-getall-orderby.cs:1
                             <member_access_expression field="expression">
                               <identifier field="expression">_context</identifier>
                               .
-                              <name>
+                              <name field="name">
                                 <identifier>Users</identifier>
                               </name>
                             </member_access_expression>
                             .
-                            <name>
+                            <name field="name">
                               <identifier>OrderBy</identifier>
                             </name>
                           </member_access_expression>
-                          <arguments>
+                          <arguments field="arguments">
                             <argument_list>
                               (
                               <argument>
                                 <lambda_expression>
-                                  <parameters>
+                                  <parameters field="parameters">
                                     <implicit_parameter>u</implicit_parameter>
                                   </parameters>
                                   =&gt;
-                                  <body>
+                                  <body field="body">
                                     <member_access_expression>
                                       <identifier field="expression">u</identifier>
                                       .
-                                      <name>
+                                      <name field="name">
                                         <identifier>Name</identifier>
                                       </name>
                                     </member_access_expression>
@@ -123,11 +123,11 @@ tests/integration/languages/csharp/repository-getall-orderby.cs:1
                           </arguments>
                         </invocation_expression>
                         .
-                        <name>
+                        <name field="name">
                           <identifier>ToList</identifier>
                         </name>
                       </member_access_expression>
-                      <arguments>
+                      <arguments field="arguments">
                         <argument_list>()</argument_list>
                       </arguments>
                     </invocation_expression>
@@ -145,15 +145,15 @@ tests/integration/languages/csharp/repository-getall-orderby.cs:1
       <class_declaration>
         <modifier>public</modifier>
         class
-        <name>
+        <name field="name">
           <identifier>MockUserRepository</identifier>
         </name>
-        <body>
+        <body field="body">
           <declaration_list>
             {
             <method_declaration>
               <modifier>public</modifier>
-              <returns>
+              <returns field="returns">
                 <generic_name>
                   <identifier>List</identifier>
                   <type_argument_list>
@@ -163,13 +163,13 @@ tests/integration/languages/csharp/repository-getall-orderby.cs:1
                   </type_argument_list>
                 </generic_name>
               </returns>
-              <name>
+              <name field="name">
                 <identifier>GetAll</identifier>
               </name>
-              <parameters>
+              <parameters field="parameters">
                 <parameter_list>()</parameter_list>
               </parameters>
-              <body>
+              <body field="body">
                 <block>
                   {
                   <return_statement>
@@ -178,11 +178,11 @@ tests/integration/languages/csharp/repository-getall-orderby.cs:1
                       <member_access_expression field="function">
                         <identifier field="expression">mock</identifier>
                         .
-                        <name>
+                        <name field="name">
                           <identifier>ToList</identifier>
                         </name>
                       </member_access_expression>
-                      <arguments>
+                      <arguments field="arguments">
                         <argument_list>()</argument_list>
                       </arguments>
                     </invocation_expression>

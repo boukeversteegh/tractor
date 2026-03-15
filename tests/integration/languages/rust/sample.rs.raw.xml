@@ -6,10 +6,10 @@ tests/integration/languages/rust/sample.rs:1
       <function_item>
         <visibility_modifier>pub</visibility_modifier>
         fn
-        <name>
+        <name field="name">
           <identifier>add</identifier>
         </name>
-        <parameters>
+        <parameters field="parameters">
           <parameters>
             (
             <parameter>
@@ -28,15 +28,15 @@ tests/integration/languages/rust/sample.rs:1
         </parameters>
         -&gt;
         <primitive_type field="return_type">i32</primitive_type>
-        <body>
+        <body field="body">
           <block>
             {
             <binary_expression>
-              <left>
+              <left field="left">
                 <identifier>a</identifier>
               </left>
               +
-              <right>
+              <right field="right">
                 <identifier>b</identifier>
               </right>
             </binary_expression>
@@ -46,23 +46,23 @@ tests/integration/languages/rust/sample.rs:1
       </function_item>
       <function_item>
         fn
-        <name>
+        <name field="name">
           <identifier>main</identifier>
         </name>
-        <parameters>
+        <parameters field="parameters">
           <parameters>()</parameters>
         </parameters>
-        <body>
+        <body field="body">
           <block>
             {
             <let_declaration>
               let
               <identifier field="pattern">result</identifier>
               =
-              <value>
+              <value field="value">
                 <call_expression>
                   <identifier field="function">add</identifier>
-                  <arguments>
+                  <arguments field="arguments">
                     <arguments>
                       (
                       <integer_literal>5</integer_literal>
@@ -104,15 +104,15 @@ tests/integration/languages/rust/sample.rs:1
           )
         </visibility_modifier>
         fn
-        <name>
+        <name field="name">
           <identifier>helper</identifier>
         </name>
-        <parameters>
+        <parameters field="parameters">
           <parameters>()</parameters>
         </parameters>
         -&gt;
         <primitive_type field="return_type">bool</primitive_type>
-        <body>
+        <body field="body">
           <block>
             {
             <boolean_literal>true</boolean_literal>
@@ -123,15 +123,15 @@ tests/integration/languages/rust/sample.rs:1
       <struct_item>
         <visibility_modifier>pub</visibility_modifier>
         struct
-        <name>
+        <name field="name">
           <type_identifier>Point</type_identifier>
         </name>
-        <body>
+        <body field="body">
           <field_declaration_list>
             {
             <field_declaration>
               <visibility_modifier>pub</visibility_modifier>
-              <name>
+              <name field="name">
                 <field_identifier>x</field_identifier>
               </name>
               :
@@ -139,7 +139,7 @@ tests/integration/languages/rust/sample.rs:1
             </field_declaration>
             ,
             <field_declaration>
-              <name>
+              <name field="name">
                 <field_identifier>y</field_identifier>
               </name>
               :
@@ -152,26 +152,26 @@ tests/integration/languages/rust/sample.rs:1
       </struct_item>
       <enum_item>
         enum
-        <name>
+        <name field="name">
           <type_identifier>Color</type_identifier>
         </name>
-        <body>
+        <body field="body">
           <enum_variant_list>
             {
             <enum_variant>
-              <name>
+              <name field="name">
                 <identifier>Red</identifier>
               </name>
             </enum_variant>
             ,
             <enum_variant>
-              <name>
+              <name field="name">
                 <identifier>Green</identifier>
               </name>
             </enum_variant>
             ,
             <enum_variant>
-              <name>
+              <name field="name">
                 <identifier>Blue</identifier>
               </name>
             </enum_variant>
@@ -183,18 +183,18 @@ tests/integration/languages/rust/sample.rs:1
       <trait_item>
         <visibility_modifier>pub</visibility_modifier>
         trait
-        <name>
+        <name field="name">
           <type_identifier>Drawable</type_identifier>
         </name>
-        <body>
+        <body field="body">
           <declaration_list>
             {
             <function_signature_item>
               fn
-              <name>
+              <name field="name">
                 <identifier>draw</identifier>
               </name>
-              <parameters>
+              <parameters field="parameters">
                 <parameters>
                   (
                   <self_parameter>
@@ -212,10 +212,10 @@ tests/integration/languages/rust/sample.rs:1
       </trait_item>
       <mod_item>
         mod
-        <name>
+        <name field="name">
           <identifier>internal</identifier>
         </name>
-        <body>
+        <body field="body">
           <declaration_list>
             {
             <function_item>
@@ -225,13 +225,13 @@ tests/integration/languages/rust/sample.rs:1
                 )
               </visibility_modifier>
               fn
-              <name>
+              <name field="name">
                 <identifier>secret</identifier>
               </name>
-              <parameters>
+              <parameters field="parameters">
                 <parameters>()</parameters>
               </parameters>
-              <body>
+              <body field="body">
                 <block>{}</block>
               </body>
             </function_item>

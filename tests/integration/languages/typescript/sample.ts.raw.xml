@@ -5,10 +5,10 @@ tests/integration/languages/typescript/sample.ts:1
       <comment>// Simple TypeScript example</comment>
       <function_declaration>
         function
-        <name>
+        <name field="name">
           <identifier>add</identifier>
         </name>
-        <parameters>
+        <parameters field="parameters">
           <formal_parameters>
             (
             <required_parameter>
@@ -33,17 +33,17 @@ tests/integration/languages/typescript/sample.ts:1
           :
           <predefined_type>number</predefined_type>
         </type_annotation>
-        <body>
+        <body field="body">
           <statement_block>
             {
             <return_statement>
               return
               <binary_expression>
-                <left>
+                <left field="left">
                   <identifier>a</identifier>
                 </left>
                 +
-                <right>
+                <right field="right">
                   <identifier>b</identifier>
                 </right>
               </binary_expression>
@@ -55,30 +55,30 @@ tests/integration/languages/typescript/sample.ts:1
       </function_declaration>
       <function_declaration>
         function
-        <name>
+        <name field="name">
           <identifier>main</identifier>
         </name>
-        <parameters>
+        <parameters field="parameters">
           <formal_parameters>()</formal_parameters>
         </parameters>
         <type_annotation field="return_type">
           :
           <predefined_type>void</predefined_type>
         </type_annotation>
-        <body>
+        <body field="body">
           <statement_block>
             {
             <lexical_declaration>
               const
               <variable_declarator>
-                <name>
+                <name field="name">
                   <identifier>result</identifier>
                 </name>
                 =
-                <value>
+                <value field="value">
                   <call_expression>
                     <identifier field="function">add</identifier>
-                    <arguments>
+                    <arguments field="arguments">
                       <arguments>
                         (
                         <number>5</number>
@@ -99,7 +99,7 @@ tests/integration/languages/typescript/sample.ts:1
                   .
                   <property_identifier field="property">log</property_identifier>
                 </member_expression>
-                <arguments>
+                <arguments field="arguments">
                   <arguments>
                     (
                     <template_string>
@@ -125,7 +125,7 @@ tests/integration/languages/typescript/sample.ts:1
       <expression_statement>
         <call_expression>
           <identifier field="function">main</identifier>
-          <arguments>
+          <arguments field="arguments">
             <arguments>()</arguments>
           </arguments>
         </call_expression>
@@ -133,14 +133,14 @@ tests/integration/languages/typescript/sample.ts:1
       </expression_statement>
       <interface_declaration>
         interface
-        <name>
+        <name field="name">
           <type_identifier>Person</type_identifier>
         </name>
-        <body>
+        <body field="body">
           <interface_body>
             {
             <property_signature>
-              <name>
+              <name field="name">
                 <property_identifier>name</property_identifier>
               </name>
               <type_annotation field="type">
@@ -150,7 +150,7 @@ tests/integration/languages/typescript/sample.ts:1
             </property_signature>
             ;
             <property_signature>
-              <name>
+              <name field="name">
                 <property_identifier>age</property_identifier>
               </name>
               <type_annotation field="type">
@@ -165,21 +165,21 @@ tests/integration/languages/typescript/sample.ts:1
       </interface_declaration>
       <enum_declaration>
         enum
-        <name>
+        <name field="name">
           <identifier>Color</identifier>
         </name>
-        <body>
+        <body field="body">
           <enum_body>
             {
-            <name>
+            <name field="name">
               <property_identifier>Red</property_identifier>
             </name>
             ,
-            <name>
+            <name field="name">
               <property_identifier>Green</property_identifier>
             </name>
             ,
-            <name>
+            <name field="name">
               <property_identifier>Blue</property_identifier>
             </name>
             }
@@ -188,10 +188,10 @@ tests/integration/languages/typescript/sample.ts:1
       </enum_declaration>
       <function_declaration>
         function
-        <name>
+        <name field="name">
           <identifier>greet</identifier>
         </name>
-        <parameters>
+        <parameters field="parameters">
           <formal_parameters>
             (
             <required_parameter>
@@ -217,17 +217,17 @@ tests/integration/languages/typescript/sample.ts:1
           :
           <predefined_type>string</predefined_type>
         </type_annotation>
-        <body>
+        <body field="body">
           <statement_block>
             {
             <return_statement>
               return
               <ternary_expression>
-                <condition>
+                <condition field="condition">
                   <identifier>title</identifier>
                 </condition>
                 ?
-                <consequence>
+                <consequence field="consequence">
                   <template_string>
                     `
                     <template_substitution>
@@ -245,7 +245,7 @@ tests/integration/languages/typescript/sample.ts:1
                   </template_string>
                 </consequence>
                 :
-                <alternative>
+                <alternative field="alternative">
                   <identifier>name</identifier>
                 </alternative>
               </ternary_expression>
@@ -257,10 +257,10 @@ tests/integration/languages/typescript/sample.ts:1
       </function_declaration>
       <function_declaration>
         function
-        <name>
+        <name field="name">
           <identifier>configure</identifier>
         </name>
-        <parameters>
+        <parameters field="parameters">
           <formal_parameters>
             (
             <required_parameter>
@@ -294,7 +294,7 @@ tests/integration/languages/typescript/sample.ts:1
           :
           <predefined_type>void</predefined_type>
         </type_annotation>
-        <body>
+        <body field="body">
           <statement_block>
             {
             <expression_statement>
@@ -304,7 +304,7 @@ tests/integration/languages/typescript/sample.ts:1
                   .
                   <property_identifier field="property">log</property_identifier>
                 </member_expression>
-                <arguments>
+                <arguments field="arguments">
                   <arguments>
                     (
                     <identifier>host</identifier>

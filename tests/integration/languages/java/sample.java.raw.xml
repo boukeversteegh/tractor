@@ -6,17 +6,17 @@ tests/integration/languages/java/sample.java:1
       <class_declaration>
         <modifiers>public</modifiers>
         class
-        <name>
+        <name field="name">
           <identifier>Sample</identifier>
         </name>
-        <body>
+        <body field="body">
           <class_body>
             {
             <field_declaration>
               <modifiers>private</modifiers>
               <integral_type field="type">int</integral_type>
               <variable_declarator field="declarator">
-                <name>
+                <name field="name">
                   <identifier>value</identifier>
                 </name>
               </variable_declarator>
@@ -24,27 +24,27 @@ tests/integration/languages/java/sample.java:1
             </field_declaration>
             <constructor_declaration>
               <modifiers>public</modifiers>
-              <name>
+              <name field="name">
                 <identifier>Sample</identifier>
               </name>
-              <parameters>
+              <parameters field="parameters">
                 <formal_parameters>
                   (
                   <formal_parameter>
                     <integral_type field="type">int</integral_type>
-                    <name>
+                    <name field="name">
                       <identifier>value</identifier>
                     </name>
                   </formal_parameter>
                   )
                 </formal_parameters>
               </parameters>
-              <body>
+              <body field="body">
                 <constructor_body>
                   {
                   <expression_statement>
                     <assignment_expression>
-                      <left>
+                      <left field="left">
                         <field_access>
                           <this field="object">this</this>
                           .
@@ -52,7 +52,7 @@ tests/integration/languages/java/sample.java:1
                         </field_access>
                       </left>
                       =
-                      <right>
+                      <right field="right">
                         <identifier>value</identifier>
                       </right>
                     </assignment_expression>
@@ -65,39 +65,39 @@ tests/integration/languages/java/sample.java:1
             <method_declaration>
               <modifiers>public static</modifiers>
               <integral_type field="type">int</integral_type>
-              <name>
+              <name field="name">
                 <identifier>add</identifier>
               </name>
-              <parameters>
+              <parameters field="parameters">
                 <formal_parameters>
                   (
                   <formal_parameter>
                     <integral_type field="type">int</integral_type>
-                    <name>
+                    <name field="name">
                       <identifier>a</identifier>
                     </name>
                   </formal_parameter>
                   ,
                   <formal_parameter>
                     <integral_type field="type">int</integral_type>
-                    <name>
+                    <name field="name">
                       <identifier>b</identifier>
                     </name>
                   </formal_parameter>
                   )
                 </formal_parameters>
               </parameters>
-              <body>
+              <body field="body">
                 <block>
                   {
                   <return_statement>
                     return
                     <binary_expression>
-                      <left>
+                      <left field="left">
                         <identifier>a</identifier>
                       </left>
                       +
-                      <right>
+                      <right field="right">
                         <identifier>b</identifier>
                       </right>
                     </binary_expression>
@@ -110,22 +110,22 @@ tests/integration/languages/java/sample.java:1
             <method_declaration>
               <modifiers>protected</modifiers>
               <void_type field="type">void</void_type>
-              <name>
+              <name field="name">
                 <identifier>log</identifier>
               </name>
-              <parameters>
+              <parameters field="parameters">
                 <formal_parameters>
                   (
                   <formal_parameter>
                     <type_identifier field="type">String</type_identifier>
-                    <name>
+                    <name field="name">
                       <identifier>message</identifier>
                     </name>
                   </formal_parameter>
                   )
                 </formal_parameters>
               </parameters>
-              <body>
+              <body field="body">
                 <block>
                   {
                   <expression_statement>
@@ -136,10 +136,10 @@ tests/integration/languages/java/sample.java:1
                         <identifier field="field">out</identifier>
                       </field_access>
                       .
-                      <name>
+                      <name field="name">
                         <identifier>println</identifier>
                       </name>
-                      <arguments>
+                      <arguments field="arguments">
                         <argument_list>
                           (
                           <identifier>message</identifier>
@@ -155,13 +155,13 @@ tests/integration/languages/java/sample.java:1
             </method_declaration>
             <method_declaration>
               <void_type field="type">void</void_type>
-              <name>
+              <name field="name">
                 <identifier>defaultAccess</identifier>
               </name>
-              <parameters>
+              <parameters field="parameters">
                 <formal_parameters>()</formal_parameters>
               </parameters>
-              <body>
+              <body field="body">
                 <block>
                   {
                   <line_comment>// package-private method</line_comment>
@@ -172,10 +172,10 @@ tests/integration/languages/java/sample.java:1
             <method_declaration>
               <modifiers>public static</modifiers>
               <void_type field="type">void</void_type>
-              <name>
+              <name field="name">
                 <identifier>main</identifier>
               </name>
-              <parameters>
+              <parameters field="parameters">
                 <formal_parameters>
                   (
                   <formal_parameter>
@@ -183,29 +183,29 @@ tests/integration/languages/java/sample.java:1
                       <type_identifier field="element">String</type_identifier>
                       <dimensions field="dimensions">[]</dimensions>
                     </array_type>
-                    <name>
+                    <name field="name">
                       <identifier>args</identifier>
                     </name>
                   </formal_parameter>
                   )
                 </formal_parameters>
               </parameters>
-              <body>
+              <body field="body">
                 <block>
                   {
                   <local_variable_declaration>
                     <integral_type field="type">int</integral_type>
                     <variable_declarator field="declarator">
-                      <name>
+                      <name field="name">
                         <identifier>result</identifier>
                       </name>
                       =
-                      <value>
+                      <value field="value">
                         <method_invocation>
-                          <name>
+                          <name field="name">
                             <identifier>add</identifier>
                           </name>
-                          <arguments>
+                          <arguments field="arguments">
                             <argument_list>
                               (
                               <decimal_integer_literal>5</decimal_integer_literal>
@@ -227,14 +227,14 @@ tests/integration/languages/java/sample.java:1
                         <identifier field="field">out</identifier>
                       </field_access>
                       .
-                      <name>
+                      <name field="name">
                         <identifier>println</identifier>
                       </name>
-                      <arguments>
+                      <arguments field="arguments">
                         <argument_list>
                           (
                           <binary_expression>
-                            <left>
+                            <left field="left">
                               <string_literal>
                                 &quot;
                                 <string_fragment>Result: </string_fragment>
@@ -242,7 +242,7 @@ tests/integration/languages/java/sample.java:1
                               </string_literal>
                             </left>
                             +
-                            <right>
+                            <right field="right">
                               <identifier>result</identifier>
                             </right>
                           </binary_expression>
@@ -262,18 +262,18 @@ tests/integration/languages/java/sample.java:1
       </class_declaration>
       <interface_declaration>
         interface
-        <name>
+        <name field="name">
           <identifier>Service</identifier>
         </name>
-        <body>
+        <body field="body">
           <interface_body>
             {
             <method_declaration>
               <void_type field="type">void</void_type>
-              <name>
+              <name field="name">
                 <identifier>execute</identifier>
               </name>
-              <parameters>
+              <parameters field="parameters">
                 <formal_parameters>()</formal_parameters>
               </parameters>
               ;
@@ -284,20 +284,20 @@ tests/integration/languages/java/sample.java:1
       </interface_declaration>
       <enum_declaration>
         enum
-        <name>
+        <name field="name">
           <identifier>Status</identifier>
         </name>
-        <body>
+        <body field="body">
           <enum_body>
             {
             <enum_constant>
-              <name>
+              <name field="name">
                 <identifier>ACTIVE</identifier>
               </name>
             </enum_constant>
             ,
             <enum_constant>
-              <name>
+              <name field="name">
                 <identifier>INACTIVE</identifier>
               </name>
             </enum_constant>

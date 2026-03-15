@@ -5,13 +5,13 @@ tests/integration/languages/csharp/generic-type-match.cs:1
       <class>
         <public/>
         class
-        <name>DataService</name>
-        <body>
+        <name field="name">DataService</name>
+        <body field="body">
           {
-          <method>
+          <method field="method">
             <public/>
-            <returns>
-              <type>
+            <returns field="returns">
+              <type field="type">
                 <generic/>
                 List
                 <arguments>
@@ -21,10 +21,10 @@ tests/integration/languages/csharp/generic-type-match.cs:1
                 </arguments>
               </type>
             </returns>
-            <name>GetNames</name>
+            <name field="name">GetNames</name>
             <parameters>()</parameters>
-            <body>
-              <block>
+            <body field="body">
+              <block field="block">
                 {
                 <return>
                   return
@@ -39,7 +39,7 @@ tests/integration/languages/csharp/generic-type-match.cs:1
                         &gt;
                       </arguments>
                     </type>
-                    <arguments>
+                    <arguments field="arguments">
                       <arguments>()</arguments>
                     </arguments>
                   </new>
@@ -51,8 +51,8 @@ tests/integration/languages/csharp/generic-type-match.cs:1
           </method>
           <method>
             <public/>
-            <returns>
-              <type>
+            <returns field="returns">
+              <type field="type">
                 <generic/>
                 Dictionary
                 <arguments>
@@ -64,10 +64,10 @@ tests/integration/languages/csharp/generic-type-match.cs:1
                 </arguments>
               </type>
             </returns>
-            <name>GetCounts</name>
+            <name field="name">GetCounts</name>
             <parameters>()</parameters>
-            <body>
-              <block>
+            <body field="body">
+              <block field="block">
                 {
                 <return>
                   return
@@ -84,7 +84,7 @@ tests/integration/languages/csharp/generic-type-match.cs:1
                         &gt;
                       </arguments>
                     </type>
-                    <arguments>
+                    <arguments field="arguments">
                       <arguments>()</arguments>
                     </arguments>
                   </new>
@@ -96,8 +96,8 @@ tests/integration/languages/csharp/generic-type-match.cs:1
           </method>
           <method>
             <public/>
-            <returns>
-              <type>
+            <returns field="returns">
+              <type field="type">
                 <generic/>
                 List
                 <arguments>
@@ -117,10 +117,10 @@ tests/integration/languages/csharp/generic-type-match.cs:1
                 </arguments>
               </type>
             </returns>
-            <name>GetUserMaps</name>
+            <name field="name">GetUserMaps</name>
             <parameters>()</parameters>
-            <body>
-              <block>
+            <body field="body">
+              <block field="block">
                 {
                 <return>
                   return
@@ -145,7 +145,7 @@ tests/integration/languages/csharp/generic-type-match.cs:1
                         &gt;
                       </arguments>
                     </type>
-                    <arguments>
+                    <arguments field="arguments">
                       <arguments>()</arguments>
                     </arguments>
                   </new>

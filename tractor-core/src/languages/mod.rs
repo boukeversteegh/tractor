@@ -90,6 +90,21 @@ pub fn get_syntax_category(lang: &str) -> SyntaxCategoryFn {
     }
 }
 
+/// Get the singleton wrapper list for a language.
+///
+/// Returns the list of wrapper element names that should have their single
+/// child annotated with `field` for JSON property lifting.
+/// Data-aware languages (JSON, YAML) return an empty list.
+pub fn get_singleton_wrappers(lang: &str) -> &'static [&'static str] {
+    use crate::xot_transform::helpers::DEFAULT_SINGLETON_WRAPPERS;
+    match lang {
+        // Data languages don't have singleton wrappers
+        "json" | "yaml" | "yml" | "toml" | "ini" | "env" | "markdown" | "md" | "mdx" => &[],
+        // All programming languages use the default list
+        _ => DEFAULT_SINGLETON_WRAPPERS,
+    }
+}
+
 /// Default passthrough transform - just continues without changes
 fn passthrough_transform(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
     Ok(TransformAction::Continue)

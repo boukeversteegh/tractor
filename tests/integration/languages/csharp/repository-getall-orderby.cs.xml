@@ -5,13 +5,13 @@ tests/integration/languages/csharp/repository-getall-orderby.cs:1
       <class>
         <public/>
         class
-        <name>UserRepository</name>
-        <body>
+        <name field="name">UserRepository</name>
+        <body field="body">
           {
-          <method>
+          <method field="method">
             <public/>
-            <returns>
-              <type>
+            <returns field="returns">
+              <type field="type">
                 <generic/>
                 List
                 <arguments>
@@ -21,10 +21,10 @@ tests/integration/languages/csharp/repository-getall-orderby.cs:1
                 </arguments>
               </type>
             </returns>
-            <name>GetAll</name>
+            <name field="name">GetAll</name>
             <parameters>()</parameters>
-            <body>
-              <block>
+            <body field="body">
+              <block field="block">
                 {
                 <return>
                   return
@@ -33,16 +33,16 @@ tests/integration/languages/csharp/repository-getall-orderby.cs:1
                       <member field="expression">
                         <ref field="expression">_context</ref>
                         .
-                        <name>
+                        <name field="name">
                           <ref>Users</ref>
                         </name>
                       </member>
                       .
-                      <name>
+                      <name field="name">
                         <ref>ToList</ref>
                       </name>
                     </member>
-                    <arguments>
+                    <arguments field="arguments">
                       <arguments>()</arguments>
                     </arguments>
                   </call>
@@ -55,8 +55,8 @@ tests/integration/languages/csharp/repository-getall-orderby.cs:1
           <comment>// MATCH - missing OrderBy</comment>
           <method>
             <public/>
-            <returns>
-              <type>
+            <returns field="returns">
+              <type field="type">
                 <generic/>
                 List
                 <arguments>
@@ -66,10 +66,10 @@ tests/integration/languages/csharp/repository-getall-orderby.cs:1
                 </arguments>
               </type>
             </returns>
-            <name>GetAllOrdered</name>
+            <name field="name">GetAllOrdered</name>
             <parameters>()</parameters>
-            <body>
-              <block>
+            <body field="body">
+              <block field="block">
                 {
                 <return>
                   return
@@ -80,27 +80,27 @@ tests/integration/languages/csharp/repository-getall-orderby.cs:1
                           <member field="expression">
                             <ref field="expression">_context</ref>
                             .
-                            <name>
+                            <name field="name">
                               <ref>Users</ref>
                             </name>
                           </member>
                           .
-                          <name>
+                          <name field="name">
                             <ref>OrderBy</ref>
                           </name>
                         </member>
-                        <arguments>
+                        <arguments field="arguments">
                           <arguments>
                             (
                             <argument>
                               <lambda>
                                 <implicit_parameter>u</implicit_parameter>
                                 =&gt;
-                                <body>
-                                  <member>
+                                <body field="body">
+                                  <member field="member">
                                     <ref field="expression">u</ref>
                                     .
-                                    <name>
+                                    <name field="name">
                                       <ref>Name</ref>
                                     </name>
                                   </member>
@@ -112,11 +112,11 @@ tests/integration/languages/csharp/repository-getall-orderby.cs:1
                         </arguments>
                       </call>
                       .
-                      <name>
+                      <name field="name">
                         <ref>ToList</ref>
                       </name>
                     </member>
-                    <arguments>
+                    <arguments field="arguments">
                       <arguments>()</arguments>
                     </arguments>
                   </call>
@@ -133,13 +133,13 @@ tests/integration/languages/csharp/repository-getall-orderby.cs:1
       <class>
         <public/>
         class
-        <name>MockUserRepository</name>
-        <body>
+        <name field="name">MockUserRepository</name>
+        <body field="body">
           {
-          <method>
+          <method field="method">
             <public/>
-            <returns>
-              <type>
+            <returns field="returns">
+              <type field="type">
                 <generic/>
                 List
                 <arguments>
@@ -149,10 +149,10 @@ tests/integration/languages/csharp/repository-getall-orderby.cs:1
                 </arguments>
               </type>
             </returns>
-            <name>GetAll</name>
+            <name field="name">GetAll</name>
             <parameters>()</parameters>
-            <body>
-              <block>
+            <body field="body">
+              <block field="block">
                 {
                 <return>
                   return
@@ -160,11 +160,11 @@ tests/integration/languages/csharp/repository-getall-orderby.cs:1
                     <member field="function">
                       <ref field="expression">mock</ref>
                       .
-                      <name>
+                      <name field="name">
                         <ref>ToList</ref>
                       </name>
                     </member>
-                    <arguments>
+                    <arguments field="arguments">
                       <arguments>()</arguments>
                     </arguments>
                   </call>

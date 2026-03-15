@@ -5,14 +5,14 @@ tests/integration/languages/csharp/attribute-maxlength-autotruncate.cs:1
       <class>
         <public/>
         class
-        <name>UserRecord</name>
-        <body>
+        <name field="name">UserRecord</name>
+        <body field="body">
           {
-          <property>
+          <property field="property">
             <attributes>
               [
               <attribute>
-                <name>
+                <name field="name">
                   <ref>MaxLength</ref>
                 </name>
                 <arguments>
@@ -27,7 +27,7 @@ tests/integration/languages/csharp/attribute-maxlength-autotruncate.cs:1
             </attributes>
             <public/>
             <type>string</type>
-            <name>Name</name>
+            <name field="name">Name</name>
             <accessors>
               {
               <accessor>get;</accessor>
@@ -40,7 +40,7 @@ tests/integration/languages/csharp/attribute-maxlength-autotruncate.cs:1
             <attributes>
               [
               <attribute>
-                <name>
+                <name field="name">
                   <ref>MaxLength</ref>
                 </name>
                 <arguments>
@@ -56,7 +56,7 @@ tests/integration/languages/csharp/attribute-maxlength-autotruncate.cs:1
             <attributes>
               [
               <attribute>
-                <name>
+                <name field="name">
                   <ref>AutoTruncate</ref>
                 </name>
               </attribute>
@@ -64,7 +64,7 @@ tests/integration/languages/csharp/attribute-maxlength-autotruncate.cs:1
             </attributes>
             <public/>
             <type>string</type>
-            <name>Email</name>
+            <name field="name">Email</name>
             <accessors>
               {
               <accessor>get;</accessor>
@@ -76,7 +76,7 @@ tests/integration/languages/csharp/attribute-maxlength-autotruncate.cs:1
           <property>
             <public/>
             <type>string</type>
-            <name>Bio</name>
+            <name field="name">Bio</name>
             <accessors>
               {
               <accessor>get;</accessor>

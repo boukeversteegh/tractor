@@ -5,15 +5,15 @@ tests/integration/languages/csharp/generic-type-match.cs:1
       <class_declaration>
         <modifier>public</modifier>
         class
-        <name>
+        <name field="name">
           <identifier>DataService</identifier>
         </name>
-        <body>
+        <body field="body">
           <declaration_list>
             {
             <method_declaration>
               <modifier>public</modifier>
-              <returns>
+              <returns field="returns">
                 <generic_name>
                   <identifier>List</identifier>
                   <type_argument_list>
@@ -23,13 +23,13 @@ tests/integration/languages/csharp/generic-type-match.cs:1
                   </type_argument_list>
                 </generic_name>
               </returns>
-              <name>
+              <name field="name">
                 <identifier>GetNames</identifier>
               </name>
-              <parameters>
+              <parameters field="parameters">
                 <parameter_list>()</parameter_list>
               </parameters>
-              <body>
+              <body field="body">
                 <block>
                   {
                   <return_statement>
@@ -44,7 +44,7 @@ tests/integration/languages/csharp/generic-type-match.cs:1
                           &gt;
                         </type_argument_list>
                       </generic_name>
-                      <arguments>
+                      <arguments field="arguments">
                         <argument_list>()</argument_list>
                       </arguments>
                     </object_creation_expression>
@@ -56,7 +56,7 @@ tests/integration/languages/csharp/generic-type-match.cs:1
             </method_declaration>
             <method_declaration>
               <modifier>public</modifier>
-              <returns>
+              <returns field="returns">
                 <generic_name>
                   <identifier>Dictionary</identifier>
                   <type_argument_list>
@@ -68,13 +68,13 @@ tests/integration/languages/csharp/generic-type-match.cs:1
                   </type_argument_list>
                 </generic_name>
               </returns>
-              <name>
+              <name field="name">
                 <identifier>GetCounts</identifier>
               </name>
-              <parameters>
+              <parameters field="parameters">
                 <parameter_list>()</parameter_list>
               </parameters>
-              <body>
+              <body field="body">
                 <block>
                   {
                   <return_statement>
@@ -91,7 +91,7 @@ tests/integration/languages/csharp/generic-type-match.cs:1
                           &gt;
                         </type_argument_list>
                       </generic_name>
-                      <arguments>
+                      <arguments field="arguments">
                         <argument_list>()</argument_list>
                       </arguments>
                     </object_creation_expression>
@@ -103,7 +103,7 @@ tests/integration/languages/csharp/generic-type-match.cs:1
             </method_declaration>
             <method_declaration>
               <modifier>public</modifier>
-              <returns>
+              <returns field="returns">
                 <generic_name>
                   <identifier>List</identifier>
                   <type_argument_list>
@@ -122,13 +122,13 @@ tests/integration/languages/csharp/generic-type-match.cs:1
                   </type_argument_list>
                 </generic_name>
               </returns>
-              <name>
+              <name field="name">
                 <identifier>GetUserMaps</identifier>
               </name>
-              <parameters>
+              <parameters field="parameters">
                 <parameter_list>()</parameter_list>
               </parameters>
-              <body>
+              <body field="body">
                 <block>
                   {
                   <return_statement>
@@ -152,7 +152,7 @@ tests/integration/languages/csharp/generic-type-match.cs:1
                           &gt;
                         </type_argument_list>
                       </generic_name>
-                      <arguments>
+                      <arguments field="arguments">
                         <argument_list>()</argument_list>
                       </arguments>
                     </object_creation_expression>

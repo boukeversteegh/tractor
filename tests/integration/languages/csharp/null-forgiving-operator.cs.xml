@@ -7,18 +7,18 @@ tests/integration/languages/csharp/null-forgiving-operator.cs:1
       <class>
         <public/>
         class
-        <name>NullForgivingTest</name>
-        <body>
+        <name field="name">NullForgivingTest</name>
+        <body field="body">
           {
-          <method>
+          <method field="method">
             <public/>
-            <returns>
-              <type>void</type>
+            <returns field="returns">
+              <type field="type">void</type>
             </returns>
-            <name>TestMethod</name>
+            <name field="name">TestMethod</name>
             <parameters>()</parameters>
-            <body>
-              <block>
+            <body field="body">
+              <block field="block">
                 {
                 <local>
                   <variable>
@@ -27,11 +27,11 @@ tests/integration/languages/csharp/null-forgiving-operator.cs:1
                       <nullable/>
                     </type>
                     <declarator>
-                      <name>nullable</name>
+                      <name field="name">nullable</name>
                       =
                       <call>
                         <ref field="function">GetNullable</ref>
-                        <arguments>
+                        <arguments field="arguments">
                           <arguments>()</arguments>
                         </arguments>
                       </call>
@@ -44,7 +44,7 @@ tests/integration/languages/csharp/null-forgiving-operator.cs:1
                   <variable>
                     <implicit_type field="type">var</implicit_type>
                     <declarator>
-                      <name>length</name>
+                      <name field="name">length</name>
                       =
                       <member>
                         <postfix_unary_expression field="expression">
@@ -52,7 +52,7 @@ tests/integration/languages/csharp/null-forgiving-operator.cs:1
                           !
                         </postfix_unary_expression>
                         .
-                        <name>
+                        <name field="name">
                           <ref>Length</ref>
                         </name>
                       </member>
@@ -65,7 +65,7 @@ tests/integration/languages/csharp/null-forgiving-operator.cs:1
                   <variable>
                     <implicit_type field="type">var</implicit_type>
                     <declarator>
-                      <name>upper</name>
+                      <name field="name">upper</name>
                       =
                       <member>
                         <call field="expression">
@@ -75,16 +75,16 @@ tests/integration/languages/csharp/null-forgiving-operator.cs:1
                               !
                             </postfix_unary_expression>
                             .
-                            <name>
+                            <name field="name">
                               <ref>ToUpper</ref>
                             </name>
                           </member>
-                          <arguments>
+                          <arguments field="arguments">
                             <arguments>()</arguments>
                           </arguments>
                         </call>
                         .
-                        <name>
+                        <name field="name">
                           <ref>Length</ref>
                         </name>
                       </member>
@@ -96,7 +96,7 @@ tests/integration/languages/csharp/null-forgiving-operator.cs:1
                 <expression_statement>
                   <call>
                     <ref field="function">Process</ref>
-                    <arguments>
+                    <arguments field="arguments">
                       <arguments>
                         (
                         <argument>
@@ -116,34 +116,34 @@ tests/integration/languages/csharp/null-forgiving-operator.cs:1
                   <variable>
                     <implicit_type field="type">var</implicit_type>
                     <declarator>
-                      <name>combined</name>
+                      <name field="name">combined</name>
                       =
                       <binary>
                         <op>
                           <plus/>
                           +
                         </op>
-                        <left>
-                          <member>
+                        <left field="left">
+                          <member field="member">
                             <postfix_unary_expression field="expression">
                               <ref>first</ref>
                               !
                             </postfix_unary_expression>
                             .
-                            <name>
+                            <name field="name">
                               <ref>Length</ref>
                             </name>
                           </member>
                         </left>
                         +
-                        <right>
-                          <member>
+                        <right field="right">
+                          <member field="member">
                             <postfix_unary_expression field="expression">
                               <ref>second</ref>
                               !
                             </postfix_unary_expression>
                             .
-                            <name>
+                            <name field="name">
                               <ref>Length</ref>
                             </name>
                           </member>
@@ -159,16 +159,16 @@ tests/integration/languages/csharp/null-forgiving-operator.cs:1
           </method>
           <method>
             <private/>
-            <returns>
-              <type>
+            <returns field="returns">
+              <type field="type">
                 string
                 <nullable/>
               </type>
             </returns>
-            <name>GetNullable</name>
+            <name field="name">GetNullable</name>
             <parameters>()</parameters>
-            <body>
-              <arrow_expression_clause>
+            <body field="body">
+              <arrow_expression_clause field="arrow_expression_clause">
                 =&gt;
                 <null>null</null>
               </arrow_expression_clause>
@@ -177,20 +177,20 @@ tests/integration/languages/csharp/null-forgiving-operator.cs:1
           </method>
           <method>
             <private/>
-            <returns>
-              <type>void</type>
+            <returns field="returns">
+              <type field="type">void</type>
             </returns>
-            <name>Process</name>
+            <name field="name">Process</name>
             <parameters>
               (
               <parameter>
                 <type>string</type>
-                <name>s</name>
+                <name field="name">s</name>
               </parameter>
               )
             </parameters>
-            <body>
-              <block>{ }</block>
+            <body field="body">
+              <block field="block">{ }</block>
             </body>
           </method>
           <field>
@@ -201,7 +201,7 @@ tests/integration/languages/csharp/null-forgiving-operator.cs:1
                 <nullable/>
               </type>
               <declarator>
-                <name>first</name>
+                <name field="name">first</name>
               </declarator>
             </variable>
             ;
@@ -214,7 +214,7 @@ tests/integration/languages/csharp/null-forgiving-operator.cs:1
                 <nullable/>
               </type>
               <declarator>
-                <name>second</name>
+                <name field="name">second</name>
               </declarator>
             </variable>
             ;

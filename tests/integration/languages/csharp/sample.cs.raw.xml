@@ -10,19 +10,19 @@ tests/integration/languages/csharp/sample.cs:1
       </using_directive>
       <namespace_declaration>
         namespace
-        <name>
+        <name field="name">
           <identifier>SampleApp</identifier>
         </name>
-        <body>
+        <body field="body">
           <declaration_list>
             {
             <class_declaration>
               <modifier>public</modifier>
               class
-              <name>
+              <name field="name">
                 <identifier>Sample</identifier>
               </name>
-              <body>
+              <body field="body">
                 <declaration_list>
                   {
                   <field_declaration>
@@ -31,7 +31,7 @@ tests/integration/languages/csharp/sample.cs:1
                     <variable_declaration>
                       <predefined_type field="type">int</predefined_type>
                       <variable_declarator>
-                        <name>
+                        <name field="name">
                           <identifier>_value</identifier>
                         </name>
                       </variable_declarator>
@@ -40,31 +40,31 @@ tests/integration/languages/csharp/sample.cs:1
                   </field_declaration>
                   <constructor_declaration>
                     <modifier>public</modifier>
-                    <name>
+                    <name field="name">
                       <identifier>Sample</identifier>
                     </name>
-                    <parameters>
+                    <parameters field="parameters">
                       <parameter_list>
                         (
                         <parameter>
                           <predefined_type field="type">int</predefined_type>
-                          <name>
+                          <name field="name">
                             <identifier>value</identifier>
                           </name>
                         </parameter>
                         )
                       </parameter_list>
                     </parameters>
-                    <body>
+                    <body field="body">
                       <block>
                         {
                         <expression_statement>
                           <assignment_expression>
-                            <left>
+                            <left field="left">
                               <identifier>_value</identifier>
                             </left>
                             =
-                            <right>
+                            <right field="right">
                               <identifier>value</identifier>
                             </right>
                           </assignment_expression>
@@ -77,42 +77,42 @@ tests/integration/languages/csharp/sample.cs:1
                   <method_declaration>
                     <modifier>public</modifier>
                     <modifier>static</modifier>
-                    <returns>
+                    <returns field="returns">
                       <predefined_type>int</predefined_type>
                     </returns>
-                    <name>
+                    <name field="name">
                       <identifier>Add</identifier>
                     </name>
-                    <parameters>
+                    <parameters field="parameters">
                       <parameter_list>
                         (
                         <parameter>
                           <predefined_type field="type">int</predefined_type>
-                          <name>
+                          <name field="name">
                             <identifier>a</identifier>
                           </name>
                         </parameter>
                         ,
                         <parameter>
                           <predefined_type field="type">int</predefined_type>
-                          <name>
+                          <name field="name">
                             <identifier>b</identifier>
                           </name>
                         </parameter>
                         )
                       </parameter_list>
                     </parameters>
-                    <body>
+                    <body field="body">
                       <block>
                         {
                         <return_statement>
                           return
                           <binary_expression>
-                            <left>
+                            <left field="left">
                               <identifier>a</identifier>
                             </left>
                             +
-                            <right>
+                            <right field="right">
                               <identifier>b</identifier>
                             </right>
                           </binary_expression>
@@ -124,25 +124,25 @@ tests/integration/languages/csharp/sample.cs:1
                   </method_declaration>
                   <method_declaration>
                     <modifier>internal</modifier>
-                    <returns>
+                    <returns field="returns">
                       <predefined_type>void</predefined_type>
                     </returns>
-                    <name>
+                    <name field="name">
                       <identifier>Log</identifier>
                     </name>
-                    <parameters>
+                    <parameters field="parameters">
                       <parameter_list>
                         (
                         <parameter>
                           <predefined_type field="type">string</predefined_type>
-                          <name>
+                          <name field="name">
                             <identifier>message</identifier>
                           </name>
                         </parameter>
                         )
                       </parameter_list>
                     </parameters>
-                    <body>
+                    <body field="body">
                       <block>
                         {
                         <expression_statement>
@@ -150,11 +150,11 @@ tests/integration/languages/csharp/sample.cs:1
                             <member_access_expression field="function">
                               <identifier field="expression">Console</identifier>
                               .
-                              <name>
+                              <name field="name">
                                 <identifier>WriteLine</identifier>
                               </name>
                             </member_access_expression>
-                            <arguments>
+                            <arguments field="arguments">
                               <argument_list>
                                 (
                                 <argument>
@@ -173,16 +173,16 @@ tests/integration/languages/csharp/sample.cs:1
                   <method_declaration>
                     <modifier>protected</modifier>
                     <modifier>virtual</modifier>
-                    <returns>
+                    <returns field="returns">
                       <predefined_type>string</predefined_type>
                     </returns>
-                    <name>
+                    <name field="name">
                       <identifier>Format</identifier>
                     </name>
-                    <parameters>
+                    <parameters field="parameters">
                       <parameter_list>()</parameter_list>
                     </parameters>
-                    <body>
+                    <body field="body">
                       <block>
                         {
                         <return_statement>
@@ -191,11 +191,11 @@ tests/integration/languages/csharp/sample.cs:1
                             <member_access_expression field="function">
                               <identifier field="expression">_value</identifier>
                               .
-                              <name>
+                              <name field="name">
                                 <identifier>ToString</identifier>
                               </name>
                             </member_access_expression>
-                            <arguments>
+                            <arguments field="arguments">
                               <argument_list>()</argument_list>
                             </arguments>
                           </invocation_expression>
@@ -207,29 +207,29 @@ tests/integration/languages/csharp/sample.cs:1
                   </method_declaration>
                   <method_declaration>
                     <modifier>static</modifier>
-                    <returns>
+                    <returns field="returns">
                       <predefined_type>void</predefined_type>
                     </returns>
-                    <name>
+                    <name field="name">
                       <identifier>Main</identifier>
                     </name>
-                    <parameters>
+                    <parameters field="parameters">
                       <parameter_list>()</parameter_list>
                     </parameters>
-                    <body>
+                    <body field="body">
                       <block>
                         {
                         <local_declaration_statement>
                           <variable_declaration>
                             <predefined_type field="type">int</predefined_type>
                             <variable_declarator>
-                              <name>
+                              <name field="name">
                                 <identifier>result</identifier>
                               </name>
                               =
                               <invocation_expression>
                                 <identifier field="function">Add</identifier>
-                                <arguments>
+                                <arguments field="arguments">
                                   <argument_list>
                                     (
                                     <argument>
@@ -252,11 +252,11 @@ tests/integration/languages/csharp/sample.cs:1
                             <member_access_expression field="function">
                               <identifier field="expression">Console</identifier>
                               .
-                              <name>
+                              <name field="name">
                                 <identifier>WriteLine</identifier>
                               </name>
                             </member_access_expression>
-                            <arguments>
+                            <arguments field="arguments">
                               <argument_list>
                                 (
                                 <argument>
@@ -288,20 +288,20 @@ tests/integration/languages/csharp/sample.cs:1
             </class_declaration>
             <interface_declaration>
               interface
-              <name>
+              <name field="name">
                 <identifier>IService</identifier>
               </name>
-              <body>
+              <body field="body">
                 <declaration_list>
                   {
                   <method_declaration>
-                    <returns>
+                    <returns field="returns">
                       <predefined_type>void</predefined_type>
                     </returns>
-                    <name>
+                    <name field="name">
                       <identifier>Execute</identifier>
                     </name>
-                    <parameters>
+                    <parameters field="parameters">
                       <parameter_list>()</parameter_list>
                     </parameters>
                     ;
@@ -312,20 +312,20 @@ tests/integration/languages/csharp/sample.cs:1
             </interface_declaration>
             <enum_declaration>
               enum
-              <name>
+              <name field="name">
                 <identifier>Status</identifier>
               </name>
-              <body>
+              <body field="body">
                 <enum_member_declaration_list>
                   {
                   <enum_member_declaration>
-                    <name>
+                    <name field="name">
                       <identifier>Active</identifier>
                     </name>
                   </enum_member_declaration>
                   ,
                   <enum_member_declaration>
-                    <name>
+                    <name field="name">
                       <identifier>Inactive</identifier>
                     </name>
                   </enum_member_declaration>
@@ -335,10 +335,10 @@ tests/integration/languages/csharp/sample.cs:1
             </enum_declaration>
             <struct_declaration>
               struct
-              <name>
+              <name field="name">
                 <identifier>Point</identifier>
               </name>
-              <body>
+              <body field="body">
                 <declaration_list>
                   {
                   <field_declaration>
@@ -346,7 +346,7 @@ tests/integration/languages/csharp/sample.cs:1
                     <variable_declaration>
                       <predefined_type field="type">int</predefined_type>
                       <variable_declarator>
-                        <name>
+                        <name field="name">
                           <identifier>X</identifier>
                         </name>
                       </variable_declarator>
@@ -358,7 +358,7 @@ tests/integration/languages/csharp/sample.cs:1
                     <variable_declaration>
                       <predefined_type field="type">int</predefined_type>
                       <variable_declarator>
-                        <name>
+                        <name field="name">
                           <identifier>Y</identifier>
                         </name>
                       </variable_declarator>

@@ -8,7 +8,7 @@ tests/integration/languages/yaml/multi.yaml:1
             <key>
               <string>name</string>
             </key>
-            <value>
+            <value field="value">
               <string>doc1</string>
             </value>
           </property>
@@ -16,7 +16,7 @@ tests/integration/languages/yaml/multi.yaml:1
             <key>
               <string>value</string>
             </key>
-            <value>
+            <value field="value">
               <string>one</string>
             </value>
           </property>
@@ -28,7 +28,7 @@ tests/integration/languages/yaml/multi.yaml:1
             <key>
               <string>name</string>
             </key>
-            <value>
+            <value field="value">
               <string>doc2</string>
             </value>
           </property>
@@ -36,7 +36,7 @@ tests/integration/languages/yaml/multi.yaml:1
             <key>
               <string>value</string>
             </key>
-            <value>
+            <value field="value">
               <string>two</string>
             </value>
           </property>
@@ -48,7 +48,7 @@ tests/integration/languages/yaml/multi.yaml:1
             <key>
               <string>name</string>
             </key>
-            <value>
+            <value field="value">
               <string>doc3</string>
             </value>
           </property>
@@ -56,7 +56,7 @@ tests/integration/languages/yaml/multi.yaml:1
             <key>
               <string>value</string>
             </key>
-            <value>
+            <value field="value">
               <string>three</string>
             </value>
           </property>

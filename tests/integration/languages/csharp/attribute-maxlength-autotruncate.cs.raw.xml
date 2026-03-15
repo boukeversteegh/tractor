@@ -5,17 +5,17 @@ tests/integration/languages/csharp/attribute-maxlength-autotruncate.cs:1
       <class_declaration>
         <modifier>public</modifier>
         class
-        <name>
+        <name field="name">
           <identifier>UserRecord</identifier>
         </name>
-        <body>
+        <body field="body">
           <declaration_list>
             {
             <property_declaration>
               <attribute_list>
                 [
                 <attribute>
-                  <name>
+                  <name field="name">
                     <identifier>MaxLength</identifier>
                   </name>
                   <attribute_argument_list>
@@ -30,7 +30,7 @@ tests/integration/languages/csharp/attribute-maxlength-autotruncate.cs:1
               </attribute_list>
               <modifier>public</modifier>
               <predefined_type field="type">string</predefined_type>
-              <name>
+              <name field="name">
                 <identifier>Name</identifier>
               </name>
               <accessor_list field="accessors">
@@ -45,7 +45,7 @@ tests/integration/languages/csharp/attribute-maxlength-autotruncate.cs:1
               <attribute_list>
                 [
                 <attribute>
-                  <name>
+                  <name field="name">
                     <identifier>MaxLength</identifier>
                   </name>
                   <attribute_argument_list>
@@ -61,7 +61,7 @@ tests/integration/languages/csharp/attribute-maxlength-autotruncate.cs:1
               <attribute_list>
                 [
                 <attribute>
-                  <name>
+                  <name field="name">
                     <identifier>AutoTruncate</identifier>
                   </name>
                 </attribute>
@@ -69,7 +69,7 @@ tests/integration/languages/csharp/attribute-maxlength-autotruncate.cs:1
               </attribute_list>
               <modifier>public</modifier>
               <predefined_type field="type">string</predefined_type>
-              <name>
+              <name field="name">
                 <identifier>Email</identifier>
               </name>
               <accessor_list field="accessors">
@@ -83,7 +83,7 @@ tests/integration/languages/csharp/attribute-maxlength-autotruncate.cs:1
             <property_declaration>
               <modifier>public</modifier>
               <predefined_type field="type">string</predefined_type>
-              <name>
+              <name field="name">
                 <identifier>Bio</identifier>
               </name>
               <accessor_list field="accessors">

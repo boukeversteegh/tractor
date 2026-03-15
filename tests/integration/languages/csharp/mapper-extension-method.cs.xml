@@ -6,33 +6,33 @@ tests/integration/languages/csharp/mapper-extension-method.cs:1
         <public/>
         <static/>
         class
-        <name>UserMapper</name>
-        <body>
+        <name field="name">UserMapper</name>
+        <body field="body">
           {
-          <method>
+          <method field="method">
             <public/>
             <static/>
-            <returns>
-              <ref>UserDto</ref>
+            <returns field="returns">
+              <ref field="ref">UserDto</ref>
             </returns>
-            <name>Map</name>
+            <name field="name">Map</name>
             <parameters>
               (
               <parameter>
                 <type>User</type>
-                <name>user</name>
+                <name field="name">user</name>
               </parameter>
               )
             </parameters>
-            <body>
-              <block>
+            <body field="body">
+              <block field="block">
                 {
                 <return>
                   return
                   <new>
                     new
                     <type>UserDto</type>
-                    <arguments>
+                    <arguments field="arguments">
                       <arguments>()</arguments>
                     </arguments>
                   </new>
@@ -46,28 +46,28 @@ tests/integration/languages/csharp/mapper-extension-method.cs:1
           <method>
             <public/>
             <static/>
-            <returns>
-              <ref>UserDto</ref>
+            <returns field="returns">
+              <ref field="ref">UserDto</ref>
             </returns>
-            <name>MapExt</name>
+            <name field="name">MapExt</name>
             <parameters>
               (
               <parameter>
                 <this/>
                 <type>User</type>
-                <name>user</name>
+                <name field="name">user</name>
               </parameter>
               )
             </parameters>
-            <body>
-              <block>
+            <body field="body">
+              <block field="block">
                 {
                 <return>
                   return
                   <new>
                     new
                     <type>UserDto</type>
-                    <arguments>
+                    <arguments field="arguments">
                       <arguments>()</arguments>
                     </arguments>
                   </new>
@@ -81,32 +81,32 @@ tests/integration/languages/csharp/mapper-extension-method.cs:1
           <method>
             <public/>
             <static/>
-            <returns>
-              <ref>UserDto</ref>
+            <returns field="returns">
+              <ref field="ref">UserDto</ref>
             </returns>
-            <name>MapTwo</name>
+            <name field="name">MapTwo</name>
             <parameters>
               (
               <parameter>
                 <type>User</type>
-                <name>a</name>
+                <name field="name">a</name>
               </parameter>
               ,
               <parameter>
                 <type>User</type>
-                <name>b</name>
+                <name field="name">b</name>
               </parameter>
               )
             </parameters>
-            <body>
-              <block>
+            <body field="body">
+              <block field="block">
                 {
                 <return>
                   return
                   <new>
                     new
                     <type>UserDto</type>
-                    <arguments>
+                    <arguments field="arguments">
                       <arguments>()</arguments>
                     </arguments>
                   </new>

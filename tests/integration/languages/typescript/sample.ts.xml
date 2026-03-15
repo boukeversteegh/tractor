@@ -5,8 +5,8 @@ tests/integration/languages/typescript/sample.ts:1
       <comment>// Simple TypeScript example</comment>
       <function>
         function
-        <name>add</name>
-        <parameters>
+        <name field="name">add</name>
+        <parameters field="parameters">
           <params>
             (
             <param>
@@ -33,8 +33,8 @@ tests/integration/languages/typescript/sample.ts:1
           :
           <predefined_type>number</predefined_type>
         </typeof>
-        <body>
-          <block>
+        <body field="body">
+          <block field="block">
             {
             <return>
               return
@@ -43,12 +43,12 @@ tests/integration/languages/typescript/sample.ts:1
                   <plus/>
                   +
                 </op>
-                <left>
-                  <type>a</type>
+                <left field="left">
+                  <type field="type">a</type>
                 </left>
                 +
-                <right>
-                  <type>b</type>
+                <right field="right">
+                  <type field="type">b</type>
                 </right>
               </binary>
               ;
@@ -59,28 +59,28 @@ tests/integration/languages/typescript/sample.ts:1
       </function>
       <function>
         function
-        <name>main</name>
-        <parameters>
+        <name field="name">main</name>
+        <parameters field="parameters">
           <params>()</params>
         </parameters>
         <typeof field="return_type">
           :
           <predefined_type>void</predefined_type>
         </typeof>
-        <body>
-          <block>
+        <body field="body">
+          <block field="block">
             {
             <variable>
               <const/>
               const
-              <name>
+              <name field="name">
                 <type>result</type>
               </name>
               =
-              <value>
-                <call>
+              <value field="value">
+                <call field="call">
                   <type field="function">add</type>
-                  <arguments>
+                  <arguments field="arguments">
                     <arguments>
                       (
                       <number>5</number>
@@ -99,7 +99,7 @@ tests/integration/languages/typescript/sample.ts:1
                 .
                 <type field="property">log</type>
               </member>
-              <arguments>
+              <arguments field="arguments">
                 <arguments>
                   (
                   <template_string>
@@ -123,20 +123,20 @@ tests/integration/languages/typescript/sample.ts:1
       </function>
       <call>
         <type field="function">main</type>
-        <arguments>
+        <arguments field="arguments">
           <arguments>()</arguments>
         </arguments>
       </call>
       ;
       <interface>
         interface
-        <name>
+        <name field="name">
           <type>Person</type>
         </name>
-        <body>
+        <body field="body">
           {
-          <property_signature>
-            <name>
+          <property_signature field="property_signature">
+            <name field="name">
               <type>name</type>
             </name>
             <typeof field="type">
@@ -146,7 +146,7 @@ tests/integration/languages/typescript/sample.ts:1
           </property_signature>
           ;
           <property_signature>
-            <name>
+            <name field="name">
               <type>age</type>
             </name>
             <typeof field="type">
@@ -160,20 +160,20 @@ tests/integration/languages/typescript/sample.ts:1
       </interface>
       <enum>
         enum
-        <name>
+        <name field="name">
           <type>Color</type>
         </name>
-        <body>
+        <body field="body">
           {
-          <name>
+          <name field="name">
             <type>Red</type>
           </name>
           ,
-          <name>
+          <name field="name">
             <type>Green</type>
           </name>
           ,
-          <name>
+          <name field="name">
             <type>Blue</type>
           </name>
           }
@@ -181,8 +181,8 @@ tests/integration/languages/typescript/sample.ts:1
       </enum>
       <function>
         function
-        <name>greet</name>
-        <parameters>
+        <name field="name">greet</name>
+        <parameters field="parameters">
           <params>
             (
             <param>
@@ -210,18 +210,18 @@ tests/integration/languages/typescript/sample.ts:1
           :
           <predefined_type>string</predefined_type>
         </typeof>
-        <body>
-          <block>
+        <body field="body">
+          <block field="block">
             {
             <return>
               return
               <ternary>
-                <condition>
-                  <type>title</type>
+                <condition field="condition">
+                  <type field="type">title</type>
                 </condition>
                 ?
-                <consequence>
-                  <template_string>
+                <consequence field="consequence">
+                  <template_string field="template_string">
                     `
                     <template_substitution>
                       ${
@@ -238,8 +238,8 @@ tests/integration/languages/typescript/sample.ts:1
                   </template_string>
                 </consequence>
                 :
-                <alternative>
-                  <type>name</type>
+                <alternative field="alternative">
+                  <type field="type">name</type>
                 </alternative>
               </ternary>
               ;
@@ -250,8 +250,8 @@ tests/integration/languages/typescript/sample.ts:1
       </function>
       <function>
         function
-        <name>configure</name>
-        <parameters>
+        <name field="name">configure</name>
+        <parameters field="parameters">
           <params>
             (
             <param>
@@ -288,8 +288,8 @@ tests/integration/languages/typescript/sample.ts:1
           :
           <predefined_type>void</predefined_type>
         </typeof>
-        <body>
-          <block>
+        <body field="body">
+          <block field="block">
             {
             <call>
               <member field="function">
@@ -297,7 +297,7 @@ tests/integration/languages/typescript/sample.ts:1
                 .
                 <type field="property">log</type>
               </member>
-              <arguments>
+              <arguments field="arguments">
                 <arguments>
                   (
                   <type>host</type>

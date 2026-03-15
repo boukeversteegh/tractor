@@ -4,69 +4,49 @@
       "file": "tests/integration/formats/sample.cs",
       "line": 1,
       "tree": {
-        "type": "class",
+        "$type": "class",
         "public": true,
-        "children": [
-          {
-            "name": "Foo"
-          },
-          {
-            "type": "body",
+        "name": "Foo",
+        "body": {
+          "property": {
+            "public": true,
+            "name": "Bar",
             "children": [
               {
-                "type": "property",
-                "public": true,
-                "children": [
-                  {
-                    "type": "int"
-                  },
-                  {
-                    "name": "Bar"
-                  },
-                  {
-                    "type": "accessors",
-                    "children": [
-                      {
-                        "accessor": "get;"
-                      },
-                      {
-                        "accessor": "set;"
-                      }
-                    ]
-                  }
-                ]
+                "type": "int"
               },
               {
-                "type": "method",
-                "public": true,
+                "$type": "accessors",
                 "children": [
                   {
-                    "type": "returns",
-                    "children": [
-                      {
-                        "type": "void"
-                      }
-                    ]
+                    "accessor": "get;"
                   },
                   {
-                    "name": "Baz"
-                  },
-                  {
-                    "parameters": "()"
-                  },
-                  {
-                    "type": "body",
-                    "children": [
-                      {
-                        "block": "{ }"
-                      }
-                    ]
+                    "accessor": "set;"
                   }
                 ]
               }
             ]
-          }
-        ]
+          },
+          "children": [
+            {
+              "$type": "method",
+              "public": true,
+              "returns": {
+                "type": "void"
+              },
+              "name": "Baz",
+              "body": {
+                "block": "{ }"
+              },
+              "children": [
+                {
+                  "parameters": "()"
+                }
+              ]
+            }
+          ]
+        }
       },
       "message": "tests/integration/formats/sample.cs:1"
     },
@@ -74,16 +54,10 @@
       "file": "tests/integration/formats/sample.cs",
       "line": 7,
       "tree": {
-        "type": "class",
+        "$type": "class",
         "public": true,
-        "children": [
-          {
-            "name": "Qux"
-          },
-          {
-            "body": "{ }"
-          }
-        ]
+        "name": "Qux",
+        "body": "{ }"
       },
       "message": "tests/integration/formats/sample.cs:7"
     }

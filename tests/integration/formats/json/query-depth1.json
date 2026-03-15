@@ -2,12 +2,12 @@
   "matches": [
     {
       "tree": {
-        "type": "class"
+        "$type": "class"
       }
     },
     {
       "tree": {
-        "type": "class"
+        "$type": "class"
       }
     }
   ]

@@ -6,34 +6,34 @@ tests/integration/languages/csharp/mapper-extension-method.cs:1
         <modifier>public</modifier>
         <modifier>static</modifier>
         class
-        <name>
+        <name field="name">
           <identifier>UserMapper</identifier>
         </name>
-        <body>
+        <body field="body">
           <declaration_list>
             {
             <method_declaration>
               <modifier>public</modifier>
               <modifier>static</modifier>
-              <returns>
+              <returns field="returns">
                 <identifier>UserDto</identifier>
               </returns>
-              <name>
+              <name field="name">
                 <identifier>Map</identifier>
               </name>
-              <parameters>
+              <parameters field="parameters">
                 <parameter_list>
                   (
                   <parameter>
                     <identifier field="type">User</identifier>
-                    <name>
+                    <name field="name">
                       <identifier>user</identifier>
                     </name>
                   </parameter>
                   )
                 </parameter_list>
               </parameters>
-              <body>
+              <body field="body">
                 <block>
                   {
                   <return_statement>
@@ -41,7 +41,7 @@ tests/integration/languages/csharp/mapper-extension-method.cs:1
                     <object_creation_expression>
                       new
                       <identifier field="type">UserDto</identifier>
-                      <arguments>
+                      <arguments field="arguments">
                         <argument_list>()</argument_list>
                       </arguments>
                     </object_creation_expression>
@@ -55,26 +55,26 @@ tests/integration/languages/csharp/mapper-extension-method.cs:1
             <method_declaration>
               <modifier>public</modifier>
               <modifier>static</modifier>
-              <returns>
+              <returns field="returns">
                 <identifier>UserDto</identifier>
               </returns>
-              <name>
+              <name field="name">
                 <identifier>MapExt</identifier>
               </name>
-              <parameters>
+              <parameters field="parameters">
                 <parameter_list>
                   (
                   <parameter>
                     <modifier>this</modifier>
                     <identifier field="type">User</identifier>
-                    <name>
+                    <name field="name">
                       <identifier>user</identifier>
                     </name>
                   </parameter>
                   )
                 </parameter_list>
               </parameters>
-              <body>
+              <body field="body">
                 <block>
                   {
                   <return_statement>
@@ -82,7 +82,7 @@ tests/integration/languages/csharp/mapper-extension-method.cs:1
                     <object_creation_expression>
                       new
                       <identifier field="type">UserDto</identifier>
-                      <arguments>
+                      <arguments field="arguments">
                         <argument_list>()</argument_list>
                       </arguments>
                     </object_creation_expression>
@@ -96,32 +96,32 @@ tests/integration/languages/csharp/mapper-extension-method.cs:1
             <method_declaration>
               <modifier>public</modifier>
               <modifier>static</modifier>
-              <returns>
+              <returns field="returns">
                 <identifier>UserDto</identifier>
               </returns>
-              <name>
+              <name field="name">
                 <identifier>MapTwo</identifier>
               </name>
-              <parameters>
+              <parameters field="parameters">
                 <parameter_list>
                   (
                   <parameter>
                     <identifier field="type">User</identifier>
-                    <name>
+                    <name field="name">
                       <identifier>a</identifier>
                     </name>
                   </parameter>
                   ,
                   <parameter>
                     <identifier field="type">User</identifier>
-                    <name>
+                    <name field="name">
                       <identifier>b</identifier>
                     </name>
                   </parameter>
                   )
                 </parameter_list>
               </parameters>
-              <body>
+              <body field="body">
                 <block>
                   {
                   <return_statement>
@@ -129,7 +129,7 @@ tests/integration/languages/csharp/mapper-extension-method.cs:1
                     <object_creation_expression>
                       new
                       <identifier field="type">UserDto</identifier>
-                      <arguments>
+                      <arguments field="arguments">
                         <argument_list>()</argument_list>
                       </arguments>
                     </object_creation_expression>

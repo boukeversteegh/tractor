@@ -5,10 +5,10 @@ tests/integration/languages/javascript/sample.js:1
       <comment>// Simple JavaScript example</comment>
       <function_declaration>
         function
-        <name>
+        <name field="name">
           <identifier>add</identifier>
         </name>
-        <parameters>
+        <parameters field="parameters">
           <formal_parameters>
             (
             <identifier>a</identifier>
@@ -17,17 +17,17 @@ tests/integration/languages/javascript/sample.js:1
             )
           </formal_parameters>
         </parameters>
-        <body>
+        <body field="body">
           <statement_block>
             {
             <return_statement>
               return
               <binary_expression>
-                <left>
+                <left field="left">
                   <identifier>a</identifier>
                 </left>
                 +
-                <right>
+                <right field="right">
                   <identifier>b</identifier>
                 </right>
               </binary_expression>
@@ -39,26 +39,26 @@ tests/integration/languages/javascript/sample.js:1
       </function_declaration>
       <function_declaration>
         function
-        <name>
+        <name field="name">
           <identifier>main</identifier>
         </name>
-        <parameters>
+        <parameters field="parameters">
           <formal_parameters>()</formal_parameters>
         </parameters>
-        <body>
+        <body field="body">
           <statement_block>
             {
             <lexical_declaration>
               const
               <variable_declarator>
-                <name>
+                <name field="name">
                   <identifier>result</identifier>
                 </name>
                 =
-                <value>
+                <value field="value">
                   <call_expression>
                     <identifier field="function">add</identifier>
-                    <arguments>
+                    <arguments field="arguments">
                       <arguments>
                         (
                         <number>5</number>
@@ -79,7 +79,7 @@ tests/integration/languages/javascript/sample.js:1
                   .
                   <property_identifier field="property">log</property_identifier>
                 </member_expression>
-                <arguments>
+                <arguments field="arguments">
                   <arguments>
                     (
                     <template_string>
@@ -105,7 +105,7 @@ tests/integration/languages/javascript/sample.js:1
       <expression_statement>
         <call_expression>
           <identifier field="function">main</identifier>
-          <arguments>
+          <arguments field="arguments">
             <arguments>()</arguments>
           </arguments>
         </call_expression>

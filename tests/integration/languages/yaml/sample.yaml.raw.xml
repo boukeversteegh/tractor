@@ -12,7 +12,7 @@ tests/integration/languages/yaml/sample.yaml:1
                 </plain_scalar>
               </flow_node>
               :
-              <value>
+              <value field="value">
                 <flow_node>
                   <plain_scalar>
                     <string_scalar>my-app</string_scalar>
@@ -27,7 +27,7 @@ tests/integration/languages/yaml/sample.yaml:1
                 </plain_scalar>
               </flow_node>
               :
-              <value>
+              <value field="value">
                 <flow_node>
                   <plain_scalar>
                     <string_scalar>1.0.0</string_scalar>
@@ -42,7 +42,7 @@ tests/integration/languages/yaml/sample.yaml:1
                 </plain_scalar>
               </flow_node>
               :
-              <value>
+              <value field="value">
                 <block_node>
                   <block_mapping>
                     <block_mapping_pair>
@@ -52,7 +52,7 @@ tests/integration/languages/yaml/sample.yaml:1
                         </plain_scalar>
                       </flow_node>
                       :
-                      <value>
+                      <value field="value">
                         <flow_node>
                           <plain_scalar>
                             <string_scalar>localhost</string_scalar>
@@ -67,7 +67,7 @@ tests/integration/languages/yaml/sample.yaml:1
                         </plain_scalar>
                       </flow_node>
                       :
-                      <value>
+                      <value field="value">
                         <flow_node>
                           <plain_scalar>
                             <integer_scalar>5432</integer_scalar>
@@ -82,7 +82,7 @@ tests/integration/languages/yaml/sample.yaml:1
                         </plain_scalar>
                       </flow_node>
                       :
-                      <value>
+                      <value field="value">
                         <block_node>
                           <block_mapping>
                             <block_mapping_pair>
@@ -92,7 +92,7 @@ tests/integration/languages/yaml/sample.yaml:1
                                 </plain_scalar>
                               </flow_node>
                               :
-                              <value>
+                              <value field="value">
                                 <flow_node>
                                   <plain_scalar>
                                     <string_scalar>admin</string_scalar>
@@ -107,7 +107,7 @@ tests/integration/languages/yaml/sample.yaml:1
                                 </plain_scalar>
                               </flow_node>
                               :
-                              <value>
+                              <value field="value">
                                 <flow_node>
                                   <plain_scalar>
                                     <string_scalar>secret</string_scalar>
@@ -130,7 +130,7 @@ tests/integration/languages/yaml/sample.yaml:1
                 </plain_scalar>
               </flow_node>
               :
-              <value>
+              <value field="value">
                 <block_node>
                   <block_sequence>
                     <block_sequence_item>
@@ -144,7 +144,7 @@ tests/integration/languages/yaml/sample.yaml:1
                               </plain_scalar>
                             </flow_node>
                             :
-                            <value>
+                            <value field="value">
                               <flow_node>
                                 <plain_scalar>
                                   <string_scalar>web-1</string_scalar>
@@ -159,7 +159,7 @@ tests/integration/languages/yaml/sample.yaml:1
                               </plain_scalar>
                             </flow_node>
                             :
-                            <value>
+                            <value field="value">
                               <flow_node>
                                 <plain_scalar>
                                   <integer_scalar>8080</integer_scalar>
@@ -181,7 +181,7 @@ tests/integration/languages/yaml/sample.yaml:1
                               </plain_scalar>
                             </flow_node>
                             :
-                            <value>
+                            <value field="value">
                               <flow_node>
                                 <plain_scalar>
                                   <string_scalar>web-2</string_scalar>
@@ -196,7 +196,7 @@ tests/integration/languages/yaml/sample.yaml:1
                               </plain_scalar>
                             </flow_node>
                             :
-                            <value>
+                            <value field="value">
                               <flow_node>
                                 <plain_scalar>
                                   <integer_scalar>8081</integer_scalar>
@@ -218,7 +218,7 @@ tests/integration/languages/yaml/sample.yaml:1
                 </plain_scalar>
               </flow_node>
               :
-              <value>
+              <value field="value">
                 <block_node>
                   <block_sequence>
                     <block_sequence_item>
@@ -256,7 +256,7 @@ tests/integration/languages/yaml/sample.yaml:1
                 </plain_scalar>
               </flow_node>
               :
-              <value>
+              <value field="value">
                 <block_node>
                   <block_mapping>
                     <block_mapping_pair>
@@ -266,7 +266,7 @@ tests/integration/languages/yaml/sample.yaml:1
                         </plain_scalar>
                       </flow_node>
                       :
-                      <value>
+                      <value field="value">
                         <block_node>
                           <block_mapping>
                             <block_mapping_pair>
@@ -276,7 +276,7 @@ tests/integration/languages/yaml/sample.yaml:1
                                 </plain_scalar>
                               </flow_node>
                               :
-                              <value>
+                              <value field="value">
                                 <block_node>
                                   <block_mapping>
                                     <block_mapping_pair>
@@ -286,7 +286,7 @@ tests/integration/languages/yaml/sample.yaml:1
                                         </plain_scalar>
                                       </flow_node>
                                       :
-                                      <value>
+                                      <value field="value">
                                         <flow_node>
                                           <plain_scalar>
                                             <string_scalar>deep</string_scalar>
@@ -313,7 +313,7 @@ tests/integration/languages/yaml/sample.yaml:1
                 </plain_scalar>
               </flow_node>
               :
-              <value>
+              <value field="value">
                 <flow_node>
                   <flow_mapping>
                     {
@@ -324,7 +324,7 @@ tests/integration/languages/yaml/sample.yaml:1
                         </plain_scalar>
                       </flow_node>
                       :
-                      <value>
+                      <value field="value">
                         <flow_node>
                           <plain_scalar>
                             <integer_scalar>1</integer_scalar>
@@ -340,7 +340,7 @@ tests/integration/languages/yaml/sample.yaml:1
                         </plain_scalar>
                       </flow_node>
                       :
-                      <value>
+                      <value field="value">
                         <flow_node>
                           <plain_scalar>
                             <integer_scalar>2</integer_scalar>
@@ -360,7 +360,7 @@ tests/integration/languages/yaml/sample.yaml:1
                 </plain_scalar>
               </flow_node>
               :
-              <value>
+              <value field="value">
                 <flow_node>
                   <flow_sequence>
                     [
@@ -393,7 +393,7 @@ tests/integration/languages/yaml/sample.yaml:1
                 </plain_scalar>
               </flow_node>
               :
-              <value>
+              <value field="value">
                 <flow_node>
                   <double_quote_scalar>&quot;hello world&quot;</double_quote_scalar>
                 </flow_node>
@@ -406,7 +406,7 @@ tests/integration/languages/yaml/sample.yaml:1
                 </plain_scalar>
               </flow_node>
               :
-              <value>
+              <value field="value">
                 <block_node>
                   <block_scalar>|
   line one
@@ -419,7 +419,7 @@ tests/integration/languages/yaml/sample.yaml:1
                 <double_quote_scalar>&quot;first name&quot;</double_quote_scalar>
               </flow_node>
               :
-              <value>
+              <value field="value">
                 <flow_node>
                   <plain_scalar>
                     <string_scalar>Alice</string_scalar>
@@ -432,7 +432,7 @@ tests/integration/languages/yaml/sample.yaml:1
                 <double_quote_scalar>&quot;last name&quot;</double_quote_scalar>
               </flow_node>
               :
-              <value>
+              <value field="value">
                 <flow_node>
                   <plain_scalar>
                     <string_scalar>Bob</string_scalar>

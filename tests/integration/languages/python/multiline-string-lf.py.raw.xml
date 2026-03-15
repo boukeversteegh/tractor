@@ -4,11 +4,11 @@ tests/integration/languages/python/multiline-string-lf.py:1
     <module>
       <expression_statement>
         <assignment>
-          <left>
+          <left field="left">
             <identifier>msg</identifier>
           </left>
           =
-          <right>
+          <right field="right">
             <string>
               <string_start>&quot;&quot;&quot;</string_start>
               <string_content>hello

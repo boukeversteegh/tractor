@@ -3,12 +3,12 @@ tests/integration/languages/python/multiline-string-lf.py:1
   <File path="tests/integration/languages/python/multiline-string-lf.py">
     <module>
       <assign>
-        <left>
-          <type>msg</type>
+        <left field="left">
+          <type field="type">msg</type>
         </left>
         =
-        <right>
-          <string>
+        <right field="right">
+          <string field="string">
             <string_start>&quot;&quot;&quot;</string_start>
             <string_content>hello
 

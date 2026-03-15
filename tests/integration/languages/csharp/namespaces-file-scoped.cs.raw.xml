@@ -4,25 +4,25 @@ tests/integration/languages/csharp/namespaces-file-scoped.cs:1
     <compilation_unit>
       <namespace_declaration>
         namespace
-        <name>
+        <name field="name">
           <qualified_name>
             <identifier field="qualifier">MyApp</identifier>
             .
-            <name>
+            <name field="name">
               <identifier>Services</identifier>
             </name>
           </qualified_name>
         </name>
-        <body>
+        <body field="body">
           <declaration_list>
             {
             <class_declaration>
               <modifier>public</modifier>
               class
-              <name>
+              <name field="name">
                 <identifier>UserService</identifier>
               </name>
-              <body>
+              <body field="body">
                 <declaration_list>{ }</declaration_list>
               </body>
             </class_declaration>

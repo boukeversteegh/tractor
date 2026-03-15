@@ -226,6 +226,10 @@ impl<'a> TreeBuilder<'a> {
                     self.xot.attributes_mut(wrapper).insert(end_attr, end_val);
                 }
 
+                // Mark wrapper as field-backed for JSON property lifting
+                let field_attr = self.get_name("field");
+                self.xot.attributes_mut(wrapper).insert(field_attr, field.to_string());
+
                 self.xot.append(wrapper, element)?;
                 self.xot.append(parent, wrapper)?;
             } else {
@@ -340,6 +344,10 @@ impl<'a> TreeBuilder<'a> {
                 if let Some(end_val) = self.xot.attributes(element).get(end_attr).cloned() {
                     self.xot.attributes_mut(wrapper).insert(end_attr, end_val);
                 }
+
+                // Mark wrapper as field-backed for JSON property lifting
+                let field_attr = self.get_name("field");
+                self.xot.attributes_mut(wrapper).insert(field_attr, field.to_string());
 
                 self.xot.append(wrapper, element)?;
                 self.xot.append(parent, wrapper)?;
@@ -588,6 +596,13 @@ impl XeeBuilder {
                     .ok_or_else(|| xot::Error::Io("Failed to get document node".to_string()))?;
                 let transform_fn = crate::languages::get_transform(lang);
                 crate::xot_transform::walk_transform(self.documents.xot_mut(), doc_node, transform_fn)?;
+                // Post-transform: lift singleton wrapper children
+                let singletons = crate::languages::get_singleton_wrappers(lang);
+                if !singletons.is_empty() {
+                    crate::xot_transform::helpers::lift_singleton_children(
+                        self.documents.xot_mut(), doc_node, singletons,
+                    );
+                }
             }
         }
         let t2 = Instant::now();

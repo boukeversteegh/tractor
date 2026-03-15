@@ -11,10 +11,10 @@ tests/integration/languages/python/sample.py:1
       </expression_statement>
       <function_definition>
         def
-        <name>
+        <name field="name">
           <identifier>add</identifier>
         </name>
-        <parameters>
+        <parameters field="parameters">
           <parameters>
             (
             <identifier>a</identifier>
@@ -24,7 +24,7 @@ tests/integration/languages/python/sample.py:1
           </parameters>
         </parameters>
         :
-        <body>
+        <body field="body">
           <block>
             <expression_statement>
               <string>
@@ -36,11 +36,11 @@ tests/integration/languages/python/sample.py:1
             <return_statement>
               return
               <binary_operator>
-                <left>
+                <left field="left">
                   <identifier>a</identifier>
                 </left>
                 +
-                <right>
+                <right field="right">
                   <identifier>b</identifier>
                 </right>
               </binary_operator>
@@ -50,10 +50,10 @@ tests/integration/languages/python/sample.py:1
       </function_definition>
       <function_definition>
         async def
-        <name>
+        <name field="name">
           <identifier>fetch_data</identifier>
         </name>
-        <parameters>
+        <parameters field="parameters">
           <parameters>
             (
             <identifier>url</identifier>
@@ -61,7 +61,7 @@ tests/integration/languages/python/sample.py:1
           </parameters>
         </parameters>
         :
-        <body>
+        <body field="body">
           <block>
             <expression_statement>
               <string>
@@ -79,25 +79,25 @@ tests/integration/languages/python/sample.py:1
       </function_definition>
       <function_definition>
         def
-        <name>
+        <name field="name">
           <identifier>main</identifier>
         </name>
-        <parameters>
+        <parameters field="parameters">
           <parameters>()</parameters>
         </parameters>
         :
-        <body>
+        <body field="body">
           <block>
             <expression_statement>
               <assignment>
-                <left>
+                <left field="left">
                   <identifier>result</identifier>
                 </left>
                 =
-                <right>
+                <right field="right">
                   <call>
                     <identifier field="function">add</identifier>
-                    <arguments>
+                    <arguments field="arguments">
                       <argument_list>
                         (
                         <integer>5</integer>
@@ -113,7 +113,7 @@ tests/integration/languages/python/sample.py:1
             <expression_statement>
               <call>
                 <identifier field="function">print</identifier>
-                <arguments>
+                <arguments field="arguments">
                   <argument_list>
                     (
                     <string>
@@ -136,7 +136,7 @@ tests/integration/languages/python/sample.py:1
       </function_definition>
       <if_statement>
         if
-        <condition>
+        <condition field="condition">
           <comparison_operator>
             <identifier>__name__</identifier>
             ==
@@ -148,12 +148,12 @@ tests/integration/languages/python/sample.py:1
           </comparison_operator>
         </condition>
         :
-        <consequence>
+        <consequence field="consequence">
           <block>
             <expression_statement>
               <call>
                 <identifier field="function">main</identifier>
-                <arguments>
+                <arguments field="arguments">
                   <argument_list>()</argument_list>
                 </arguments>
               </call>

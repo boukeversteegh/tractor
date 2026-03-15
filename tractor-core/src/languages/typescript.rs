@@ -172,8 +172,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         // Literals
         "string" => Some("string"),
         "number" => Some("number"),
-        "true" => Some("true"),
-        "false" => Some("false"),
+        "true" | "false" => Some("bool"),
         "null" => Some("null"),
 
         // Types

@@ -5,72 +5,72 @@ tests/integration/languages/csharp/query-asnotracking.cs:1
       <class>
         <public/>
         class
-        <name>UserService</name>
-        <body>
+        <name field="name">UserService</name>
+        <body field="body">
           {
-          <comment>// GetUser: missing AsNoTracking - should be flagged</comment>
+          <comment field="comment">// GetUser: missing AsNoTracking - should be flagged</comment>
           <method>
             <public/>
-            <returns>
-              <ref>UserDto</ref>
+            <returns field="returns">
+              <ref field="ref">UserDto</ref>
             </returns>
-            <name>GetUser</name>
+            <name field="name">GetUser</name>
             <parameters>
               (
               <parameter>
                 <type>int</type>
-                <name>id</name>
+                <name field="name">id</name>
               </parameter>
               )
             </parameters>
-            <body>
-              <block>
+            <body field="body">
+              <block field="block">
                 {
                 <local>
                   <variable>
                     <implicit_type field="type">var</implicit_type>
                     <declarator>
-                      <name>user</name>
+                      <name field="name">user</name>
                       =
                       <call>
                         <member field="function">
                           <member field="expression">
                             <ref field="expression">_context</ref>
                             .
-                            <name>
+                            <name field="name">
                               <ref>Users</ref>
                             </name>
                           </member>
                           .
-                          <name>
+                          <name field="name">
                             <ref>First</ref>
                           </name>
                         </member>
-                        <arguments>
+                        <arguments field="arguments">
                           <arguments>
                             (
                             <argument>
                               <lambda>
                                 <implicit_parameter>u</implicit_parameter>
                                 =&gt;
-                                <body>
-                                  <binary>
+                                <body field="body">
+                                  <binary field="binary">
                                     <op>
                                       <equals/>
                                       ==
                                     </op>
-                                    <left>
-                                      <member>
+                                    <left field="left">
+                                      <member field="member">
                                         <ref field="expression">u</ref>
                                         .
-                                        <name>
+                                        <name field="name">
                                           <ref>Id</ref>
                                         </name>
                                       </member>
                                     </left>
                                     ==
-                                    <right>
-                                      <ref>id</ref>
+                                    <right field="right">
+                                      <ref field="ref">id</ref>
                                     </right>
                                   </binary>
                                 </body>
@@ -88,7 +88,7 @@ tests/integration/languages/csharp/query-asnotracking.cs:1
                   return
                   <call>
                     <ref field="function">Map</ref>
-                    <arguments>
+                    <arguments field="arguments">
                       <arguments>
                         (
                         <argument>
@@ -107,26 +107,26 @@ tests/integration/languages/csharp/query-asnotracking.cs:1
           <comment>// GetUserTracked: has AsNoTracking - OK</comment>
           <method>
             <public/>
-            <returns>
-              <ref>UserDto</ref>
+            <returns field="returns">
+              <ref field="ref">UserDto</ref>
             </returns>
-            <name>GetUserTracked</name>
+            <name field="name">GetUserTracked</name>
             <parameters>
               (
               <parameter>
                 <type>int</type>
-                <name>id</name>
+                <name field="name">id</name>
               </parameter>
               )
             </parameters>
-            <body>
-              <block>
+            <body field="body">
+              <block field="block">
                 {
                 <local>
                   <variable>
                     <implicit_type field="type">var</implicit_type>
                     <declarator>
-                      <name>user</name>
+                      <name field="name">user</name>
                       =
                       <call>
                         <member field="function">
@@ -135,49 +135,49 @@ tests/integration/languages/csharp/query-asnotracking.cs:1
                               <member field="expression">
                                 <ref field="expression">_context</ref>
                                 .
-                                <name>
+                                <name field="name">
                                   <ref>Users</ref>
                                 </name>
                               </member>
                               .
-                              <name>
+                              <name field="name">
                                 <ref>AsNoTracking</ref>
                               </name>
                             </member>
-                            <arguments>
+                            <arguments field="arguments">
                               <arguments>()</arguments>
                             </arguments>
                           </call>
                           .
-                          <name>
+                          <name field="name">
                             <ref>First</ref>
                           </name>
                         </member>
-                        <arguments>
+                        <arguments field="arguments">
                           <arguments>
                             (
                             <argument>
                               <lambda>
                                 <implicit_parameter>u</implicit_parameter>
                                 =&gt;
-                                <body>
-                                  <binary>
+                                <body field="body">
+                                  <binary field="binary">
                                     <op>
                                       <equals/>
                                       ==
                                     </op>
-                                    <left>
-                                      <member>
+                                    <left field="left">
+                                      <member field="member">
                                         <ref field="expression">u</ref>
                                         .
-                                        <name>
+                                        <name field="name">
                                           <ref>Id</ref>
                                         </name>
                                       </member>
                                     </left>
                                     ==
-                                    <right>
-                                      <ref>id</ref>
+                                    <right field="right">
+                                      <ref field="ref">id</ref>
                                     </right>
                                   </binary>
                                 </body>
@@ -195,7 +195,7 @@ tests/integration/languages/csharp/query-asnotracking.cs:1
                   return
                   <call>
                     <ref field="function">Map</ref>
-                    <arguments>
+                    <arguments field="arguments">
                       <arguments>
                         (
                         <argument>

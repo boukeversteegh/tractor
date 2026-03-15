@@ -5,17 +5,17 @@ tests/integration/languages/csharp/attribute-maxlength-boolean.cs:1
       <class_declaration>
         <modifier>public</modifier>
         class
-        <name>
+        <name field="name">
           <identifier>UserRecord</identifier>
         </name>
-        <body>
+        <body field="body">
           <declaration_list>
             {
             <property_declaration>
               <attribute_list>
                 [
                 <attribute>
-                  <name>
+                  <name field="name">
                     <identifier>MaxLength</identifier>
                   </name>
                   <attribute_argument_list>
@@ -30,7 +30,7 @@ tests/integration/languages/csharp/attribute-maxlength-boolean.cs:1
               </attribute_list>
               <modifier>public</modifier>
               <predefined_type field="type">bool</predefined_type>
-              <name>
+              <name field="name">
                 <identifier>IsActive</identifier>
               </name>
               <accessor_list field="accessors">
@@ -45,7 +45,7 @@ tests/integration/languages/csharp/attribute-maxlength-boolean.cs:1
               <attribute_list>
                 [
                 <attribute>
-                  <name>
+                  <name field="name">
                     <identifier>MaxLength</identifier>
                   </name>
                   <attribute_argument_list>
@@ -60,7 +60,7 @@ tests/integration/languages/csharp/attribute-maxlength-boolean.cs:1
               </attribute_list>
               <modifier>public</modifier>
               <predefined_type field="type">string</predefined_type>
-              <name>
+              <name field="name">
                 <identifier>Name</identifier>
               </name>
               <accessor_list field="accessors">

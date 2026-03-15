@@ -7,24 +7,24 @@ tests/integration/languages/tsql/sample.sql:1
         <select>
           <column>
             <ref>
-              <name>u</name>
+              <name field="name">u</name>
             </ref>
             .
-            <name>Name</name>
+            <name field="name">Name</name>
           </column>
           ,
           <column>
             <ref>
-              <name>u</name>
+              <name field="name">u</name>
             </ref>
             .
-            <name>Age</name>
+            <name field="name">Age</name>
           </column>
         </select>
         <from>
           <relation>
             <ref>
-              <name>Users</name>
+              <name field="name">Users</name>
             </ref>
             <alias>u</alias>
           </relation>
@@ -38,10 +38,10 @@ tests/integration/languages/tsql/sample.sql:1
               </op>
               <column>
                 <ref>
-                  <name>u</name>
+                  <name field="name">u</name>
                 </ref>
                 .
-                <name>Age</name>
+                <name field="name">Age</name>
               </column>
               &gt;
               <literal>18</literal>
@@ -51,10 +51,10 @@ tests/integration/languages/tsql/sample.sql:1
             <order_target>
               <column>
                 <ref>
-                  <name>u</name>
+                  <name field="name">u</name>
                 </ref>
                 .
-                <name>Name</name>
+                <name field="name">Name</name>
               </column>
             </order_target>
           </order_by>
@@ -64,7 +64,7 @@ tests/integration/languages/tsql/sample.sql:1
       <statement>
         <insert>
           <ref>
-            <name>AuditLog</name>
+            <name field="name">AuditLog</name>
           </ref>
           <list>
             (
@@ -83,7 +83,7 @@ tests/integration/languages/tsql/sample.sql:1
             ,
             <call>
               <ref>
-                <name>GETDATE</name>
+                <name field="name">GETDATE</name>
               </ref>
               ()
             </call>
@@ -96,7 +96,7 @@ tests/integration/languages/tsql/sample.sql:1
         <delete/>
         <from>
           <ref>
-            <name>OldRecords</name>
+            <name field="name">OldRecords</name>
           </ref>
           <where>
             <compare field="predicate">
@@ -107,7 +107,7 @@ tests/integration/languages/tsql/sample.sql:1
                 &lt;
               </op>
               <column>
-                <name>CreatedAt</name>
+                <name field="name">CreatedAt</name>
               </column>
               &lt;
               <literal>'2020-01-01'</literal>
@@ -123,15 +123,15 @@ tests/integration/languages/tsql/sample.sql:1
             <ref>
               <schema>dbo</schema>
               .
-              <name>Users</name>
+              <name field="name">Users</name>
             </ref>
             .
-            <name>Name</name>
+            <name field="name">Name</name>
           </column>
           <alias>UserName</alias>
           ,
           <column>
-            <var>StartDate</var>
+            <var field="name">StartDate</var>
           </column>
         </select>
         <from>
@@ -139,13 +139,13 @@ tests/integration/languages/tsql/sample.sql:1
             <ref>
               <schema>dbo</schema>
               .
-              <name>Users</name>
+              <name field="name">Users</name>
             </ref>
           </relation>
           <where>
             <between field="predicate">
               <column>
-                <name>Age</name>
+                <name field="name">Age</name>
               </column>
               <literal field="low">18</literal>
               <literal field="high">65</literal>
@@ -161,28 +161,28 @@ tests/integration/languages/tsql/sample.sql:1
             <ref>
               <schema>dbo</schema>
               .
-              <name>Config</name>
+              <name field="name">Config</name>
             </ref>
           </relation>
           <assign>
             <op>=</op>
             <column>
-              <name>Value</name>
+              <name field="name">Value</name>
             </column>
             =
             <column>
-              <var>NewValue</var>
+              <var field="name">NewValue</var>
             </column>
           </assign>
           <where>
             <compare field="predicate">
               <op>=</op>
               <column>
-                <name>Key</name>
+                <name field="name">Key</name>
               </column>
               =
               <column>
-                <var>KeyName</var>
+                <var field="name">KeyName</var>
               </column>
             </compare>
           </where>
@@ -194,39 +194,39 @@ tests/integration/languages/tsql/sample.sql:1
         <select>
           <column>
             <ref>
-              <name>o</name>
+              <name field="name">o</name>
             </ref>
             .
-            <name>ID</name>
+            <name field="name">ID</name>
           </column>
           ,
           <column>
             <ref>
-              <name>u</name>
+              <name field="name">u</name>
             </ref>
             .
-            <name>Name</name>
+            <name field="name">Name</name>
           </column>
           ,
           <column>
             <ref>
-              <name>a</name>
+              <name field="name">a</name>
             </ref>
             .
-            <name>City</name>
+            <name field="name">City</name>
           </column>
         </select>
         <from>
           <relation>
             <ref>
-              <name>Orders</name>
+              <name field="name">Orders</name>
             </ref>
             <alias>o</alias>
           </relation>
           <join>
             <relation>
               <ref>
-                <name>Users</name>
+                <name field="name">Users</name>
               </ref>
               <alias>u</alias>
             </relation>
@@ -234,25 +234,25 @@ tests/integration/languages/tsql/sample.sql:1
               <op>=</op>
               <column>
                 <ref>
-                  <name>o</name>
+                  <name field="name">o</name>
                 </ref>
                 .
-                <name>UserID</name>
+                <name field="name">UserID</name>
               </column>
               =
               <column>
                 <ref>
-                  <name>u</name>
+                  <name field="name">u</name>
                 </ref>
                 .
-                <name>ID</name>
+                <name field="name">ID</name>
               </column>
             </compare>
           </join>
           <join>
             <relation>
               <ref>
-                <name>Addresses</name>
+                <name field="name">Addresses</name>
               </ref>
               <alias>a</alias>
             </relation>
@@ -260,18 +260,18 @@ tests/integration/languages/tsql/sample.sql:1
               <op>=</op>
               <column>
                 <ref>
-                  <name>u</name>
+                  <name field="name">u</name>
                 </ref>
                 .
-                <name>ID</name>
+                <name field="name">ID</name>
               </column>
               =
               <column>
                 <ref>
-                  <name>a</name>
+                  <name field="name">a</name>
                 </ref>
                 .
-                <name>UserID</name>
+                <name field="name">UserID</name>
               </column>
             </compare>
           </join>
@@ -285,10 +285,10 @@ tests/integration/languages/tsql/sample.sql:1
               </op>
               <column>
                 <ref>
-                  <name>o</name>
+                  <name field="name">o</name>
                 </ref>
                 .
-                <name>Total</name>
+                <name field="name">Total</name>
               </column>
               &gt;
               <literal>100</literal>
@@ -301,31 +301,31 @@ tests/integration/languages/tsql/sample.sql:1
       <statement>
         <select>
           <column>
-            <name>Name</name>
+            <name field="name">Name</name>
           </column>
         </select>
         <from>
           <relation>
             <ref>
-              <name>Users</name>
+              <name field="name">Users</name>
             </ref>
           </relation>
           <where>
             <compare field="predicate">
               <column>
-                <name>ID</name>
+                <name field="name">ID</name>
               </column>
               <subquery>
                 (
                 <select>
                   <column>
-                    <name>UserID</name>
+                    <name field="name">UserID</name>
                   </column>
                 </select>
                 <from>
                   <relation>
                     <ref>
-                      <name>Orders</name>
+                      <name field="name">Orders</name>
                     </ref>
                   </relation>
                   <where>
@@ -337,7 +337,7 @@ tests/integration/languages/tsql/sample.sql:1
                         &gt;
                       </op>
                       <column>
-                        <name>Total</name>
+                        <name field="name">Total</name>
                       </column>
                       &gt;
                       <literal>50</literal>
@@ -356,16 +356,16 @@ tests/integration/languages/tsql/sample.sql:1
         <select>
           <column>
             <ref>
-              <name>u</name>
+              <name field="name">u</name>
             </ref>
             .
-            <name>Name</name>
+            <name field="name">Name</name>
           </column>
         </select>
         <from>
           <relation>
             <ref>
-              <name>Users</name>
+              <name field="name">Users</name>
             </ref>
             <alias>u</alias>
           </relation>
@@ -379,7 +379,7 @@ tests/integration/languages/tsql/sample.sql:1
                 <from>
                   <relation>
                     <ref>
-                      <name>Orders</name>
+                      <name field="name">Orders</name>
                     </ref>
                     <alias>o</alias>
                   </relation>
@@ -388,18 +388,18 @@ tests/integration/languages/tsql/sample.sql:1
                       <op>=</op>
                       <column>
                         <ref>
-                          <name>o</name>
+                          <name field="name">o</name>
                         </ref>
                         .
-                        <name>UserID</name>
+                        <name field="name">UserID</name>
                       </column>
                       =
                       <column>
                         <ref>
-                          <name>u</name>
+                          <name field="name">u</name>
                         </ref>
                         .
-                        <name>ID</name>
+                        <name field="name">ID</name>
                       </column>
                     </compare>
                   </where>
@@ -415,12 +415,12 @@ tests/integration/languages/tsql/sample.sql:1
       <statement>
         <select>
           <column>
-            <name>Department</name>
+            <name field="name">Department</name>
           </column>
           ,
           <call>
             <ref>
-              <name>COUNT</name>
+              <name field="name">COUNT</name>
             </ref>
             (
             <star>*</star>
@@ -430,11 +430,11 @@ tests/integration/languages/tsql/sample.sql:1
           ,
           <call>
             <ref>
-              <name>AVG</name>
+              <name field="name">AVG</name>
             </ref>
             (
             <column>
-              <name>Salary</name>
+              <name field="name">Salary</name>
             </column>
             )
           </call>
@@ -443,12 +443,12 @@ tests/integration/languages/tsql/sample.sql:1
         <from>
           <relation>
             <ref>
-              <name>Employees</name>
+              <name field="name">Employees</name>
             </ref>
           </relation>
           <group_by>
             <column>
-              <name>Department</name>
+              <name field="name">Department</name>
             </column>
           </group_by>
           <having>
@@ -461,7 +461,7 @@ tests/integration/languages/tsql/sample.sql:1
               </op>
               <call>
                 <ref>
-                  <name>COUNT</name>
+                  <name field="name">COUNT</name>
                 </ref>
                 (
                 <star>*</star>
@@ -478,7 +478,7 @@ tests/integration/languages/tsql/sample.sql:1
       <statement>
         <select>
           <column>
-            <name>Name</name>
+            <name field="name">Name</name>
           </column>
           ,
           <case>
@@ -491,7 +491,7 @@ tests/integration/languages/tsql/sample.sql:1
                 &gt;=
               </op>
               <column>
-                <name>Age</name>
+                <name field="name">Age</name>
               </column>
               &gt;=
               <literal>18</literal>
@@ -504,7 +504,7 @@ tests/integration/languages/tsql/sample.sql:1
         <from>
           <relation>
             <ref>
-              <name>Users</name>
+              <name field="name">Users</name>
             </ref>
           </relation>
         </from>
@@ -518,24 +518,24 @@ tests/integration/languages/tsql/sample.sql:1
           <statement>
             <select>
               <column>
-                <name>ID</name>
+                <name field="name">ID</name>
               </column>
               ,
               <column>
-                <name>Name</name>
+                <name field="name">Name</name>
               </column>
             </select>
             <from>
               <relation>
                 <ref>
-                  <name>Users</name>
+                  <name field="name">Users</name>
                 </ref>
               </relation>
               <where>
                 <compare field="predicate">
                   <op>=</op>
                   <column>
-                    <name>Active</name>
+                    <name field="name">Active</name>
                   </column>
                   =
                   <literal>1</literal>
@@ -547,13 +547,13 @@ tests/integration/languages/tsql/sample.sql:1
         </cte>
         <select>
           <column>
-            <name>Name</name>
+            <name field="name">Name</name>
           </column>
         </select>
         <from>
           <relation>
             <ref>
-              <name>ActiveUsers</name>
+              <name field="name">ActiveUsers</name>
             </ref>
           </relation>
         </from>
@@ -564,7 +564,7 @@ tests/integration/languages/tsql/sample.sql:1
         <union>
           <select>
             <column>
-              <name>Name</name>
+              <name field="name">Name</name>
             </column>
             ,
             <literal>'User'</literal>
@@ -573,13 +573,13 @@ tests/integration/languages/tsql/sample.sql:1
           <from>
             <relation>
               <ref>
-                <name>Users</name>
+                <name field="name">Users</name>
               </ref>
             </relation>
           </from>
           <select>
             <column>
-              <name>Name</name>
+              <name field="name">Name</name>
             </column>
             ,
             <literal>'Admin'</literal>
@@ -588,7 +588,7 @@ tests/integration/languages/tsql/sample.sql:1
           <from>
             <relation>
               <ref>
-                <name>Admins</name>
+                <name field="name">Admins</name>
               </ref>
             </relation>
           </from>
@@ -599,13 +599,13 @@ tests/integration/languages/tsql/sample.sql:1
       <statement>
         <select>
           <column>
-            <name>Name</name>
+            <name field="name">Name</name>
           </column>
           ,
           <window>
             <call>
               <ref>
-                <name>ROW_NUMBER</name>
+                <name field="name">ROW_NUMBER</name>
               </ref>
               ()
             </call>
@@ -613,13 +613,13 @@ tests/integration/languages/tsql/sample.sql:1
               (
               <partition_by>
                 <column>
-                  <name>Department</name>
+                  <name field="name">Department</name>
                 </column>
               </partition_by>
               <order_by>
                 <order_target>
                   <column>
-                    <name>Salary</name>
+                    <name field="name">Salary</name>
                   </column>
                   <direction/>
                 </order_target>
@@ -632,7 +632,7 @@ tests/integration/languages/tsql/sample.sql:1
         <from>
           <relation>
             <ref>
-              <name>Employees</name>
+              <name field="name">Employees</name>
             </ref>
           </relation>
         </from>
@@ -643,25 +643,25 @@ tests/integration/languages/tsql/sample.sql:1
         <select>
           <call>
             <ref>
-              <name>COALESCE</name>
+              <name field="name">COALESCE</name>
             </ref>
             (
             <column>
-              <name>Nickname</name>
+              <name field="name">Nickname</name>
             </column>
             ,
             <column>
-              <name>Name</name>
+              <name field="name">Name</name>
             </column>
             )
           </call>
           <alias>DisplayName</alias>
           ,
           <cast>
-            <name/>
+            <name field="name"/>
             (
             <column field="parameter">
-              <name>Age</name>
+              <name field="name">Age</name>
             </column>
             <varchar>
               (
@@ -675,7 +675,7 @@ tests/integration/languages/tsql/sample.sql:1
         <from>
           <relation>
             <ref>
-              <name>Users</name>
+              <name field="name">Users</name>
             </ref>
           </relation>
           <where>
@@ -683,20 +683,20 @@ tests/integration/languages/tsql/sample.sql:1
               <compare>
                 <compare>
                   <column>
-                    <name>Email</name>
+                    <name field="name">Email</name>
                   </column>
                   <literal>'%@gmail.com'</literal>
                 </compare>
                 <compare>
                   <column>
-                    <name>DeletedAt</name>
+                    <name field="name">DeletedAt</name>
                   </column>
                   <literal/>
                 </compare>
               </compare>
               <compare>
                 <column>
-                  <name>Role</name>
+                  <name field="name">Role</name>
                 </column>
                 <list>
                   (
@@ -715,19 +715,19 @@ tests/integration/languages/tsql/sample.sql:1
       <statement>
         <select>
           <column>
-            <name>Department</name>
+            <name field="name">Department</name>
           </column>
         </select>
         <from>
           <relation>
             <ref>
-              <name>Employees</name>
+              <name field="name">Employees</name>
             </ref>
           </relation>
           <order_by>
             <order_target>
               <column>
-                <name>Department</name>
+                <name field="name">Department</name>
               </column>
               <direction/>
             </order_target>
@@ -739,17 +739,17 @@ tests/integration/languages/tsql/sample.sql:1
       <statement>
         <create_table>
           <ref>
-            <name>Audit</name>
+            <name field="name">Audit</name>
           </ref>
           <columns>
             (
             <col_def>
-              <name>ID</name>
+              <name field="name">ID</name>
               <int field="type"/>
             </col_def>
             ,
             <col_def>
-              <name>Action</name>
+              <name field="name">Action</name>
               <nvarchar field="type">
                 (
                 <literal field="size">100</literal>
@@ -758,10 +758,10 @@ tests/integration/languages/tsql/sample.sql:1
             </col_def>
             ,
             <col_def>
-              <name>CreatedAt</name>
+              <name field="name">CreatedAt</name>
               <call>
                 <ref>
-                  <name>GETDATE</name>
+                  <name field="name">GETDATE</name>
                 </ref>
                 ()
               </call>
@@ -774,29 +774,29 @@ tests/integration/languages/tsql/sample.sql:1
       <comment>-- MERGE statement</comment>
       <statement>
         <ref>
-          <name>Target</name>
+          <name field="name">Target</name>
         </ref>
         <alias>t</alias>
         <ref>
-          <name>Source</name>
+          <name field="name">Source</name>
         </ref>
         <alias>s</alias>
         <compare field="predicate">
           <op>=</op>
           <column>
             <ref>
-              <name>t</name>
+              <name field="name">t</name>
             </ref>
             .
-            <name>ID</name>
+            <name field="name">ID</name>
           </column>
           =
           <column>
             <ref>
-              <name>s</name>
+              <name field="name">s</name>
             </ref>
             .
-            <name>ID</name>
+            <name field="name">ID</name>
           </column>
         </compare>
         <when>
@@ -804,18 +804,18 @@ tests/integration/languages/tsql/sample.sql:1
             <op>=</op>
             <column>
               <ref>
-                <name>t</name>
+                <name field="name">t</name>
               </ref>
               .
-              <name>Name</name>
+              <name field="name">Name</name>
             </column>
             =
             <column>
               <ref>
-                <name>s</name>
+                <name field="name">s</name>
               </ref>
               .
-              <name>Name</name>
+              <name field="name">Name</name>
             </column>
           </assign>
         </when>
@@ -835,18 +835,18 @@ tests/integration/languages/tsql/sample.sql:1
             (
             <column>
               <ref>
-                <name>s</name>
+                <name field="name">s</name>
               </ref>
               .
-              <name>ID</name>
+              <name field="name">ID</name>
             </column>
             ,
             <column>
               <ref>
-                <name>s</name>
+                <name field="name">s</name>
               </ref>
               .
-              <name>Name</name>
+              <name field="name">Name</name>
             </column>
             )
           </list>
@@ -857,25 +857,25 @@ tests/integration/languages/tsql/sample.sql:1
       <statement>
         <select>
           <column>
-            <name>Name</name>
+            <name field="name">Name</name>
           </column>
           ,
           <column>
-            <name>Age</name>
+            <name field="name">Age</name>
           </column>
         </select>
         <temp_ref>#TempUsers</temp_ref>
         <from>
           <relation>
             <ref>
-              <name>Users</name>
+              <name field="name">Users</name>
             </ref>
           </relation>
           <where>
             <compare field="predicate">
               <op>=</op>
               <column>
-                <name>Active</name>
+                <name field="name">Active</name>
               </column>
               =
               <literal>1</literal>
@@ -891,13 +891,13 @@ tests/integration/languages/tsql/sample.sql:1
           <update>
             <relation>
               <ref>
-                <name>Accounts</name>
+                <name field="name">Accounts</name>
               </ref>
             </relation>
             <assign>
               <op>=</op>
               <column>
-                <name>Balance</name>
+                <name field="name">Balance</name>
               </column>
               =
               <compare>
@@ -906,7 +906,7 @@ tests/integration/languages/tsql/sample.sql:1
                   -
                 </op>
                 <column>
-                  <name>Balance</name>
+                  <name field="name">Balance</name>
                 </column>
                 -
                 <literal>100</literal>
@@ -916,7 +916,7 @@ tests/integration/languages/tsql/sample.sql:1
               <compare field="predicate">
                 <op>=</op>
                 <column>
-                  <name>ID</name>
+                  <name field="name">ID</name>
                 </column>
                 =
                 <literal>1</literal>
@@ -929,13 +929,13 @@ tests/integration/languages/tsql/sample.sql:1
           <update>
             <relation>
               <ref>
-                <name>Accounts</name>
+                <name field="name">Accounts</name>
               </ref>
             </relation>
             <assign>
               <op>=</op>
               <column>
-                <name>Balance</name>
+                <name field="name">Balance</name>
               </column>
               =
               <compare>
@@ -944,7 +944,7 @@ tests/integration/languages/tsql/sample.sql:1
                   +
                 </op>
                 <column>
-                  <name>Balance</name>
+                  <name field="name">Balance</name>
                 </column>
                 +
                 <literal>100</literal>
@@ -954,7 +954,7 @@ tests/integration/languages/tsql/sample.sql:1
               <compare field="predicate">
                 <op>=</op>
                 <column>
-                  <name>ID</name>
+                  <name field="name">ID</name>
                 </column>
                 =
                 <literal>2</literal>
@@ -969,7 +969,7 @@ tests/integration/languages/tsql/sample.sql:1
       <statement>
         <set>
           <ref>
-            <var>Threshold</var>
+            <var field="name">Threshold</var>
           </ref>
           =
           <literal>42</literal>
@@ -982,7 +982,7 @@ tests/integration/languages/tsql/sample.sql:1
           <ref>
             <schema>dbo</schema>
             .
-            <name>GetAge</name>
+            <name field="name">GetAge</name>
           </ref>
           <arg>
             (
@@ -995,20 +995,20 @@ tests/integration/languages/tsql/sample.sql:1
           <body>
             <call>
               <ref>
-                <name>DATEDIFF</name>
+                <name field="name">DATEDIFF</name>
               </ref>
               (
               <column>
-                <name>YEAR</name>
+                <name field="name">YEAR</name>
               </column>
               ,
               <column>
-                <var>BirthDate</var>
+                <var field="name">BirthDate</var>
               </column>
               ,
               <call>
                 <ref>
-                  <name>GETDATE</name>
+                  <name field="name">GETDATE</name>
                 </ref>
                 ()
               </call>
@@ -1023,7 +1023,7 @@ tests/integration/languages/tsql/sample.sql:1
       <statement>
         <exec>
           <ref>
-            <name>sp_helpdb</name>
+            <name field="name">sp_helpdb</name>
           </ref>
         </exec>
       </statement>

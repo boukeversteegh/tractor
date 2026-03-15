@@ -13,7 +13,7 @@ tests/integration/languages/yaml/multi.yaml:1
                 </plain_scalar>
               </flow_node>
               :
-              <value>
+              <value field="value">
                 <flow_node>
                   <plain_scalar>
                     <string_scalar>doc1</string_scalar>
@@ -28,7 +28,7 @@ tests/integration/languages/yaml/multi.yaml:1
                 </plain_scalar>
               </flow_node>
               :
-              <value>
+              <value field="value">
                 <flow_node>
                   <plain_scalar>
                     <string_scalar>one</string_scalar>
@@ -50,7 +50,7 @@ tests/integration/languages/yaml/multi.yaml:1
                 </plain_scalar>
               </flow_node>
               :
-              <value>
+              <value field="value">
                 <flow_node>
                   <plain_scalar>
                     <string_scalar>doc2</string_scalar>
@@ -65,7 +65,7 @@ tests/integration/languages/yaml/multi.yaml:1
                 </plain_scalar>
               </flow_node>
               :
-              <value>
+              <value field="value">
                 <flow_node>
                   <plain_scalar>
                     <string_scalar>two</string_scalar>
@@ -87,7 +87,7 @@ tests/integration/languages/yaml/multi.yaml:1
                 </plain_scalar>
               </flow_node>
               :
-              <value>
+              <value field="value">
                 <flow_node>
                   <plain_scalar>
                     <string_scalar>doc3</string_scalar>
@@ -102,7 +102,7 @@ tests/integration/languages/yaml/multi.yaml:1
                 </plain_scalar>
               </flow_node>
               :
-              <value>
+              <value field="value">
                 <flow_node>
                   <plain_scalar>
                     <string_scalar>three</string_scalar>

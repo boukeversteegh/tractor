@@ -5,14 +5,14 @@ tests/integration/languages/csharp/attribute-required-nullable.cs:1
       <class>
         <public/>
         class
-        <name>UserRecord</name>
-        <body>
+        <name field="name">UserRecord</name>
+        <body field="body">
           {
-          <property>
+          <property field="property">
             <attributes>
               [
               <attribute>
-                <name>
+                <name field="name">
                   <ref>Required</ref>
                 </name>
               </attribute>
@@ -20,7 +20,7 @@ tests/integration/languages/csharp/attribute-required-nullable.cs:1
             </attributes>
             <public/>
             <type>Guid</type>
-            <name>UserId</name>
+            <name field="name">UserId</name>
             <accessors>
               {
               <accessor>get;</accessor>
@@ -33,7 +33,7 @@ tests/integration/languages/csharp/attribute-required-nullable.cs:1
             <attributes>
               [
               <attribute>
-                <name>
+                <name field="name">
                   <ref>Required</ref>
                 </name>
               </attribute>
@@ -44,7 +44,7 @@ tests/integration/languages/csharp/attribute-required-nullable.cs:1
               Guid
               <nullable/>
             </type>
-            <name>NullableId</name>
+            <name field="name">NullableId</name>
             <accessors>
               {
               <accessor>get;</accessor>
@@ -57,7 +57,7 @@ tests/integration/languages/csharp/attribute-required-nullable.cs:1
             <attributes>
               [
               <attribute>
-                <name>
+                <name field="name">
                   <ref>Required</ref>
                 </name>
               </attribute>
@@ -65,7 +65,7 @@ tests/integration/languages/csharp/attribute-required-nullable.cs:1
             </attributes>
             <public/>
             <type>string</type>
-            <name>Name</name>
+            <name field="name">Name</name>
             <accessors>
               {
               <accessor>get;</accessor>

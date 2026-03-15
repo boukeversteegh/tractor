@@ -5,8 +5,8 @@ tests/integration/languages/ruby/sample.rb:1
       <comment># Simple Ruby example</comment>
       <method>
         def
-        <name>add</name>
-        <parameters>
+        <name field="name">add</name>
+        <parameters field="parameters">
           <method_parameters>
             (
             <identifier>a</identifier>
@@ -15,14 +15,14 @@ tests/integration/languages/ruby/sample.rb:1
             )
           </method_parameters>
         </parameters>
-        <body>
-          <binary>
-            <left>
-              <identifier>a</identifier>
+        <body field="body">
+          <binary field="binary">
+            <left field="left">
+              <identifier field="identifier">a</identifier>
             </left>
             +
-            <right>
-              <identifier>b</identifier>
+            <right field="right">
+              <identifier field="identifier">b</identifier>
             </right>
           </binary>
         </body>
@@ -30,17 +30,17 @@ tests/integration/languages/ruby/sample.rb:1
       </method>
       <method>
         def
-        <name>main</name>
-        <body>
-          <assign>
-            <left>
-              <identifier>result</identifier>
+        <name field="name">main</name>
+        <body field="body">
+          <assign field="assign">
+            <left field="left">
+              <identifier field="identifier">result</identifier>
             </left>
             =
-            <right>
-              <call>
+            <right field="right">
+              <call field="call">
                 <identifier field="method">add</identifier>
-                <arguments>
+                <arguments field="arguments">
                   <argument_list>
                     (
                     <int>5</int>
@@ -54,7 +54,7 @@ tests/integration/languages/ruby/sample.rb:1
           </assign>
           <call>
             <identifier field="method">puts</identifier>
-            <arguments>
+            <arguments field="arguments">
               <argument_list>
                 <string>
                   &quot;
