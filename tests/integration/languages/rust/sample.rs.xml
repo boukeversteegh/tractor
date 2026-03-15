@@ -1,217 +1,216 @@
 tests/integration/languages/rust/sample.rs:1
 <Files>
-  <File path="tests/integration/languages/rust/sample.rs">
-    <file>
-      <line_comment>// Simple Rust example</line_comment>
-      <function>
-        <pub/>
-        fn
-        <name field="name">add</name>
-        <params field="parameters">
-          <params>
-            (
-            <param>
-              <type field="pattern">a</type>
-              :
-              <type>i32</type>
-            </param>
-            ,
-            <param>
-              <type field="pattern">b</type>
-              :
-              <type>i32</type>
-            </param>
-            )
-          </params>
+  <file>tests/integration/languages/rust/sample.rs</file>
+  <file>
+    <line_comment>// Simple Rust example</line_comment>
+    <function>
+      <pub/>
+      fn
+      <name>add</name>
+      <params>
+        <params>
+          (
+          <param>
+            <type>a</type>
+            :
+            <type>i32</type>
+          </param>
+          ,
+          <param>
+            <type>b</type>
+            :
+            <type>i32</type>
+          </param>
+          )
         </params>
-        -&gt;
-        <type field="return_type">i32</type>
-        <body field="body">
-          {
-          <binary field="binary">
-            <op>
-              <plus/>
-              +
-            </op>
-            <left field="left">
-              <type field="type">a</type>
-            </left>
+      </params>
+      -&gt;
+      <type>i32</type>
+      <body>
+        {
+        <binary>
+          <op>
+            <plus/>
             +
-            <right field="right">
-              <type field="type">b</type>
-            </right>
-          </binary>
-          }
-        </body>
-      </function>
-      <function>
-        <private/>
-        fn
-        <name field="name">main</name>
-        <params field="parameters">
-          <params>()</params>
-        </params>
-        <body field="body">
-          {
-          <let field="let">
-            let
-            <type field="pattern">result</type>
-            =
-            <value field="value">
-              <call field="call">
-                <type field="function">add</type>
-                <arguments field="arguments">
-                  <arguments>
-                    (
-                    <int>5</int>
-                    ,
-                    <int>3</int>
-                    )
-                  </arguments>
+          </op>
+          <left>
+            <type>a</type>
+          </left>
+          +
+          <right>
+            <type>b</type>
+          </right>
+        </binary>
+        }
+      </body>
+    </function>
+    <function>
+      <private/>
+      fn
+      <name>main</name>
+      <params>
+        <params>()</params>
+      </params>
+      <body>
+        {
+        <let>
+          let
+          <type>result</type>
+          =
+          <value>
+            <call>
+              <type>add</type>
+              <arguments>
+                <arguments>
+                  (
+                  <int>5</int>
+                  ,
+                  <int>3</int>
+                  )
                 </arguments>
-              </call>
-            </value>
-            ;
-          </let>
-          <macro>
-            <type field="macro">println</type>
-            !
-            <token_tree>
-              (
-              <string>
-                &quot;
-                <string_content>Result: {}</string_content>
-                &quot;
-              </string>
-              ,
-              <type>result</type>
-              )
-            </token_tree>
-          </macro>
+              </arguments>
+            </call>
+          </value>
           ;
+        </let>
+        <macro>
+          <type>println</type>
+          !
+          <token_tree>
+            (
+            <string>
+              &quot;
+              <string_content>Result: {}</string_content>
+              &quot;
+            </string>
+            ,
+            <type>result</type>
+            )
+          </token_tree>
+        </macro>
+        ;
 }
-        </body>
-      </function>
-      <function>
-        <pub>
-          <crate>crate</crate>
-        </pub>
-        fn
-        <name field="name">helper</name>
-        <params field="parameters">
-          <params>()</params>
-        </params>
-        -&gt;
-        <type field="return_type">bool</type>
-        <body field="body">
+      </body>
+    </function>
+    <function>
+      <pub>
+        <crate>crate</crate>
+      </pub>
+      fn
+      <name>helper</name>
+      <params>
+        <params>()</params>
+      </params>
+      -&gt;
+      <type>bool</type>
+      <body>
+        {
+        <bool>true</bool>
+        }
+      </body>
+    </function>
+    <struct>
+      <pub/>
+      struct
+      <name>Point</name>
+      <body>
+        <field_declaration_list>
           {
-          <bool field="bool">true</bool>
-          }
-        </body>
-      </function>
-      <struct>
-        <pub/>
-        struct
-        <name field="name">Point</name>
-        <body field="body">
-          <field_declaration_list field="field_declaration_list">
-            {
-            <field_declaration>
-              <pub/>
-              <name field="name">
-                <field_identifier>x</field_identifier>
-              </name>
-              :
-              <type>i32</type>
-            </field_declaration>
-            ,
-            <field_declaration>
-              <name field="name">
-                <field_identifier>y</field_identifier>
-              </name>
-              :
-              <type>i32</type>
-            </field_declaration>
-            ,
-}
-          </field_declaration_list>
-        </body>
-      </struct>
-      <enum>
-        <private/>
-        enum
-        <name field="name">Color</name>
-        <body field="body">
-          <enum_variant_list field="enum_variant_list">
-            {
-            <enum_variant>
-              <name field="name">
-                <type>Red</type>
-              </name>
-            </enum_variant>
-            ,
-            <enum_variant>
-              <name field="name">
-                <type>Green</type>
-              </name>
-            </enum_variant>
-            ,
-            <enum_variant>
-              <name field="name">
-                <type>Blue</type>
-              </name>
-            </enum_variant>
-            ,
-}
-          </enum_variant_list>
-        </body>
-      </enum>
-      <trait>
-        <pub/>
-        trait
-        <name field="name">Drawable</name>
-        <body field="body">
-          {
-          <function_signature_item field="function_signature_item">
-            fn
-            <name field="name">
-              <type>draw</type>
+          <field_declaration>
+            <pub/>
+            <name>
+              <field_identifier>x</field_identifier>
             </name>
-            <params field="parameters">
-              <params>
-                (
-                <self>
-                  &amp;
-                  <self>self</self>
-                </self>
-                )
-              </params>
-            </params>
-            ;
-          </function_signature_item>
-          }
-        </body>
-      </trait>
-      <mod>
-        <private/>
-        mod
-        <name field="name">internal</name>
-        <body field="body">
+            :
+            <type>i32</type>
+          </field_declaration>
+          ,
+          <field_declaration>
+            <name>
+              <field_identifier>y</field_identifier>
+            </name>
+            :
+            <type>i32</type>
+          </field_declaration>
+          ,
+}
+        </field_declaration_list>
+      </body>
+    </struct>
+    <enum>
+      <private/>
+      enum
+      <name>Color</name>
+      <body>
+        <enum_variant_list>
           {
-          <function field="function">
-            <pub>
-              <super>super</super>
-            </pub>
-            fn
-            <name field="name">secret</name>
-            <params field="parameters">
-              <params>()</params>
+          <enum_variant>
+            <name>
+              <type>Red</type>
+            </name>
+          </enum_variant>
+          ,
+          <enum_variant>
+            <name>
+              <type>Green</type>
+            </name>
+          </enum_variant>
+          ,
+          <enum_variant>
+            <name>
+              <type>Blue</type>
+            </name>
+          </enum_variant>
+          ,
+}
+        </enum_variant_list>
+      </body>
+    </enum>
+    <trait>
+      <pub/>
+      trait
+      <name>Drawable</name>
+      <body>
+        {
+        <function_signature_item>
+          fn
+          <name>
+            <type>draw</type>
+          </name>
+          <params>
+            <params>
+              (
+              <self>
+                &amp;
+                <self>self</self>
+              </self>
+              )
             </params>
-            <body field="body">{}</body>
-          </function>
-          }
-        </body>
-      </mod>
-    </file>
-  </File>
+          </params>
+          ;
+        </function_signature_item>
+        }
+      </body>
+    </trait>
+    <mod>
+      <private/>
+      mod
+      <name>internal</name>
+      <body>
+        {
+        <function>
+          <pub>
+            <super>super</super>
+          </pub>
+          fn
+          <name>secret</name>
+          <params>
+            <params>()</params>
+          </params>
+          <body>{}</body>
+        </function>
+        }
+      </body>
+    </mod>
+  </file>
 </Files>

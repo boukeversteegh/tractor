@@ -23,8 +23,8 @@ pub mod ansi {
 pub struct RenderOptions {
     /// Whether to use ANSI colors
     pub use_color: bool,
-    /// Whether to include location attributes (start, end, etc.)
-    pub include_locations: bool,
+    /// Whether to include metadata attributes (start, end, kind, field)
+    pub include_meta: bool,
     /// Indentation string (default: 2 spaces)
     pub indent: String,
     /// Maximum depth to render (None = unlimited)
@@ -44,7 +44,7 @@ impl RenderOptions {
     pub fn new() -> Self {
         RenderOptions {
             use_color: false,
-            include_locations: true,
+            include_meta: true,
             indent: "  ".to_string(),
             max_depth: None,
             highlights: None,
@@ -58,8 +58,8 @@ impl RenderOptions {
         self
     }
 
-    pub fn with_locations(mut self, include: bool) -> Self {
-        self.include_locations = include;
+    pub fn with_meta(mut self, include: bool) -> Self {
+        self.include_meta = include;
         self
     }
 
@@ -170,6 +170,38 @@ fn render_node_recursive(
         }
         Value::Element(element) => {
             let name = xot.local_name_str(element.name());
+
+            // In default mode, convert <File path="..."> to <file>path</file> + promote children
+            if name == "File" && !options.include_meta {
+                // Emit <file>path</file>
+                let path_value = xot.attributes(node).iter()
+                    .find(|(n, _)| xot.local_name_str(*n) == "path")
+                    .map(|(_, v)| v.as_str());
+                if let Some(path) = path_value {
+                    output.push_str(&indent);
+                    if options.use_color { output.push_str(ansi::DIM); }
+                    output.push('<');
+                    if options.use_color { output.push_str(ansi::RESET); output.push_str(ansi::BLUE); }
+                    output.push_str("file");
+                    if options.use_color { output.push_str(ansi::RESET); output.push_str(ansi::DIM); }
+                    output.push('>');
+                    if options.use_color { output.push_str(ansi::RESET); }
+                    output.push_str(&escape_xml(path));
+                    if options.use_color { output.push_str(ansi::DIM); }
+                    output.push_str("</");
+                    if options.use_color { output.push_str(ansi::RESET); output.push_str(ansi::BLUE); }
+                    output.push_str("file");
+                    if options.use_color { output.push_str(ansi::RESET); output.push_str(ansi::DIM); }
+                    output.push('>');
+                    if options.use_color { output.push_str(ansi::RESET); }
+                    if options.pretty_print { output.push('\n'); }
+                }
+                // Render children as siblings (promoted out of File wrapper)
+                for child in xot.children(node) {
+                    render_node_recursive(xot, child, options, depth, output);
+                }
+                return;
+            }
 
             // Check if children should be truncated (at max depth)
             let truncate_children = options.max_depth.map_or(false, |max| depth >= max);
@@ -432,11 +464,12 @@ fn render_open_tag(
     for (attr_name_id, attr_value) in attrs.iter() {
         let attr_name = xot.local_name_str(attr_name_id);
 
-        // Skip location and internal attributes if not wanted
-        if !options.include_locations {
+        // Skip metadata attributes unless --meta is on
+        if !options.include_meta {
             if matches!(
                 attr_name,
-                "start" | "end" | "startLine" | "startCol" | "endLine" | "endCol" | "kind"
+                "start" | "end" | "startLine" | "startCol" | "endLine" | "endCol"
+                | "kind" | "field" | "path"
             ) {
                 continue;
             }
@@ -538,10 +571,10 @@ mod tests {
     fn test_render_options_builder() {
         let opts = RenderOptions::new()
             .with_color(true)
-            .with_locations(false);
+            .with_meta(false);
 
         assert!(opts.use_color);
-        assert!(!opts.include_locations);
+        assert!(!opts.include_meta);
     }
 
     #[test]

@@ -1,35 +1,34 @@
 tests/integration/languages/csharp/namespaces-file-scoped.cs:1
 <Files>
-  <File path="tests/integration/languages/csharp/namespaces-file-scoped.cs">
-    <compilation_unit>
-      <namespace_declaration>
-        namespace
-        <name field="name">
-          <qualified_name>
-            <identifier field="qualifier">MyApp</identifier>
-            .
-            <name field="name">
-              <identifier>Services</identifier>
+  <file>tests/integration/languages/csharp/namespaces-file-scoped.cs</file>
+  <compilation_unit>
+    <namespace_declaration>
+      namespace
+      <name>
+        <qualified_name>
+          <identifier>MyApp</identifier>
+          .
+          <name>
+            <identifier>Services</identifier>
+          </name>
+        </qualified_name>
+      </name>
+      <body>
+        <declaration_list>
+          {
+          <class_declaration>
+            <modifier>public</modifier>
+            class
+            <name>
+              <identifier>UserService</identifier>
             </name>
-          </qualified_name>
-        </name>
-        <body field="body">
-          <declaration_list>
-            {
-            <class_declaration>
-              <modifier>public</modifier>
-              class
-              <name field="name">
-                <identifier>UserService</identifier>
-              </name>
-              <body field="body">
-                <declaration_list>{ }</declaration_list>
-              </body>
-            </class_declaration>
-            }
-          </declaration_list>
-        </body>
-      </namespace_declaration>
-    </compilation_unit>
-  </File>
+            <body>
+              <declaration_list>{ }</declaration_list>
+            </body>
+          </class_declaration>
+          }
+        </declaration_list>
+      </body>
+    </namespace_declaration>
+  </compilation_unit>
 </Files>

@@ -6,13 +6,13 @@
         \e[2m<\e[0m\e[34mclass\e[0m\e[2m>\e[0m
           \e[2m<\e[0m\e[34mpublic\e[0m\e[2m/>\e[0m
           class
-          \e[2m<\e[0m\e[34mname\e[0m \e[36mfield\e[0m\e[2m="\e[0m\e[33mname\e[0m\e[2m"\e[0m\e[2m>Foo\e[2m</\e[0m\e[34mname\e[0m\e[2m>\e[0m
-          \e[2m<\e[0m\e[34mbody\e[0m \e[36mfield\e[0m\e[2m="\e[0m\e[33mbody\e[0m\e[2m"\e[0m\e[2m>\e[0m
+          \e[2m<\e[0m\e[34mname\e[0m\e[2m>Foo\e[2m</\e[0m\e[34mname\e[0m\e[2m>\e[0m
+          \e[2m<\e[0m\e[34mbody\e[0m\e[2m>\e[0m
             {
-            \e[2m<\e[0m\e[34mproperty\e[0m \e[36mfield\e[0m\e[2m="\e[0m\e[33mproperty\e[0m\e[2m"\e[0m\e[2m>\e[0m
+            \e[2m<\e[0m\e[34mproperty\e[0m\e[2m>\e[0m
               \e[2m<\e[0m\e[34mpublic\e[0m\e[2m/>\e[0m
               \e[2m<\e[0m\e[34mtype\e[0m\e[2m>int\e[2m</\e[0m\e[34mtype\e[0m\e[2m>\e[0m
-              \e[2m<\e[0m\e[34mname\e[0m \e[36mfield\e[0m\e[2m="\e[0m\e[33mname\e[0m\e[2m"\e[0m\e[2m>Bar\e[2m</\e[0m\e[34mname\e[0m\e[2m>\e[0m
+              \e[2m<\e[0m\e[34mname\e[0m\e[2m>Bar\e[2m</\e[0m\e[34mname\e[0m\e[2m>\e[0m
               \e[2m<\e[0m\e[34maccessors\e[0m\e[2m>\e[0m
                 {
                 \e[2m<\e[0m\e[34maccessor\e[0m\e[2m>get;\e[2m</\e[0m\e[34maccessor\e[0m\e[2m>\e[0m
@@ -22,13 +22,13 @@
             \e[2m</\e[0m\e[34mproperty\e[0m\e[2m>\e[0m
             \e[2m<\e[0m\e[34mmethod\e[0m\e[2m>\e[0m
               \e[2m<\e[0m\e[34mpublic\e[0m\e[2m/>\e[0m
-              \e[2m<\e[0m\e[34mreturns\e[0m \e[36mfield\e[0m\e[2m="\e[0m\e[33mreturns\e[0m\e[2m"\e[0m\e[2m>\e[0m
-                \e[2m<\e[0m\e[34mtype\e[0m \e[36mfield\e[0m\e[2m="\e[0m\e[33mtype\e[0m\e[2m"\e[0m\e[2m>void\e[2m</\e[0m\e[34mtype\e[0m\e[2m>\e[0m
+              \e[2m<\e[0m\e[34mreturns\e[0m\e[2m>\e[0m
+                \e[2m<\e[0m\e[34mtype\e[0m\e[2m>void\e[2m</\e[0m\e[34mtype\e[0m\e[2m>\e[0m
               \e[2m</\e[0m\e[34mreturns\e[0m\e[2m>\e[0m
-              \e[2m<\e[0m\e[34mname\e[0m \e[36mfield\e[0m\e[2m="\e[0m\e[33mname\e[0m\e[2m"\e[0m\e[2m>Baz\e[2m</\e[0m\e[34mname\e[0m\e[2m>\e[0m
+              \e[2m<\e[0m\e[34mname\e[0m\e[2m>Baz\e[2m</\e[0m\e[34mname\e[0m\e[2m>\e[0m
               \e[2m<\e[0m\e[34mparameters\e[0m\e[2m>()\e[2m</\e[0m\e[34mparameters\e[0m\e[2m>\e[0m
-              \e[2m<\e[0m\e[34mbody\e[0m \e[36mfield\e[0m\e[2m="\e[0m\e[33mbody\e[0m\e[2m"\e[0m\e[2m>\e[0m
-                \e[2m<\e[0m\e[34mblock\e[0m \e[36mfield\e[0m\e[2m="\e[0m\e[33mblock\e[0m\e[2m"\e[0m\e[2m>{ }\e[2m</\e[0m\e[34mblock\e[0m\e[2m>\e[0m
+              \e[2m<\e[0m\e[34mbody\e[0m\e[2m>\e[0m
+                \e[2m<\e[0m\e[34mblock\e[0m\e[2m>{ }\e[2m</\e[0m\e[34mblock\e[0m\e[2m>\e[0m
               \e[2m</\e[0m\e[34mbody\e[0m\e[2m>\e[0m
             \e[2m</\e[0m\e[34mmethod\e[0m\e[2m>\e[0m
             }
@@ -41,8 +41,8 @@
         \e[2m<\e[0m\e[34mclass\e[0m\e[2m>\e[0m
           \e[2m<\e[0m\e[34mpublic\e[0m\e[2m/>\e[0m
           class
-          \e[2m<\e[0m\e[34mname\e[0m \e[36mfield\e[0m\e[2m="\e[0m\e[33mname\e[0m\e[2m"\e[0m\e[2m>Qux\e[2m</\e[0m\e[34mname\e[0m\e[2m>\e[0m
-          \e[2m<\e[0m\e[34mbody\e[0m \e[36mfield\e[0m\e[2m="\e[0m\e[33mbody\e[0m\e[2m"\e[0m\e[2m>{ }\e[2m</\e[0m\e[34mbody\e[0m\e[2m>\e[0m
+          \e[2m<\e[0m\e[34mname\e[0m\e[2m>Qux\e[2m</\e[0m\e[34mname\e[0m\e[2m>\e[0m
+          \e[2m<\e[0m\e[34mbody\e[0m\e[2m>{ }\e[2m</\e[0m\e[34mbody\e[0m\e[2m>\e[0m
         \e[2m</\e[0m\e[34mclass\e[0m\e[2m>\e[0m
       \e[2m</\e[0m\e[34mtree\e[0m\e[2m>\e[0m
     \e[2m</\e[0m\e[34mmatch\e[0m\e[2m>\e[0m

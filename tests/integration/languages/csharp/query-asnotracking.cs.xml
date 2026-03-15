@@ -1,219 +1,218 @@
 tests/integration/languages/csharp/query-asnotracking.cs:1
 <Files>
-  <File path="tests/integration/languages/csharp/query-asnotracking.cs">
-    <unit>
-      <class>
-        <public/>
-        class
-        <name field="name">UserService</name>
-        <body field="body">
-          {
-          <comment field="comment">// GetUser: missing AsNoTracking - should be flagged</comment>
-          <method>
-            <public/>
-            <returns field="returns">
-              <ref field="ref">UserDto</ref>
-            </returns>
-            <name field="name">GetUser</name>
-            <parameters>
-              (
-              <parameter>
-                <type>int</type>
-                <name field="name">id</name>
-              </parameter>
-              )
-            </parameters>
-            <body field="body">
-              <block field="block">
-                {
-                <local>
-                  <variable>
-                    <implicit_type field="type">var</implicit_type>
-                    <declarator>
-                      <name field="name">user</name>
-                      =
-                      <call>
-                        <member field="function">
-                          <member field="expression">
-                            <ref field="expression">_context</ref>
-                            .
-                            <name field="name">
-                              <ref>Users</ref>
-                            </name>
-                          </member>
+  <file>tests/integration/languages/csharp/query-asnotracking.cs</file>
+  <unit>
+    <class>
+      <public/>
+      class
+      <name>UserService</name>
+      <body>
+        {
+        <comment>// GetUser: missing AsNoTracking - should be flagged</comment>
+        <method>
+          <public/>
+          <returns>
+            <ref>UserDto</ref>
+          </returns>
+          <name>GetUser</name>
+          <parameters>
+            (
+            <parameter>
+              <type>int</type>
+              <name>id</name>
+            </parameter>
+            )
+          </parameters>
+          <body>
+            <block>
+              {
+              <local>
+                <variable>
+                  <implicit_type>var</implicit_type>
+                  <declarator>
+                    <name>user</name>
+                    =
+                    <call>
+                      <member>
+                        <member>
+                          <ref>_context</ref>
                           .
-                          <name field="name">
-                            <ref>First</ref>
+                          <name>
+                            <ref>Users</ref>
                           </name>
                         </member>
-                        <arguments field="arguments">
-                          <arguments>
-                            (
-                            <argument>
-                              <lambda>
-                                <implicit_parameter>u</implicit_parameter>
-                                =&gt;
-                                <body field="body">
-                                  <binary field="binary">
-                                    <op>
-                                      <equals/>
-                                      ==
-                                    </op>
-                                    <left field="left">
-                                      <member field="member">
-                                        <ref field="expression">u</ref>
-                                        .
-                                        <name field="name">
-                                          <ref>Id</ref>
-                                        </name>
-                                      </member>
-                                    </left>
-                                    ==
-                                    <right field="right">
-                                      <ref field="ref">id</ref>
-                                    </right>
-                                  </binary>
-                                </body>
-                              </lambda>
-                            </argument>
-                            )
-                          </arguments>
-                        </arguments>
-                      </call>
-                    </declarator>
-                  </variable>
-                  ;
-                </local>
-                <return>
-                  return
-                  <call>
-                    <ref field="function">Map</ref>
-                    <arguments field="arguments">
+                        .
+                        <name>
+                          <ref>First</ref>
+                        </name>
+                      </member>
                       <arguments>
-                        (
-                        <argument>
-                          <ref>user</ref>
-                        </argument>
-                        )
+                        <arguments>
+                          (
+                          <argument>
+                            <lambda>
+                              <implicit_parameter>u</implicit_parameter>
+                              =&gt;
+                              <body>
+                                <binary>
+                                  <op>
+                                    <equals/>
+                                    ==
+                                  </op>
+                                  <left>
+                                    <member>
+                                      <ref>u</ref>
+                                      .
+                                      <name>
+                                        <ref>Id</ref>
+                                      </name>
+                                    </member>
+                                  </left>
+                                  ==
+                                  <right>
+                                    <ref>id</ref>
+                                  </right>
+                                </binary>
+                              </body>
+                            </lambda>
+                          </argument>
+                          )
+                        </arguments>
                       </arguments>
+                    </call>
+                  </declarator>
+                </variable>
+                ;
+              </local>
+              <return>
+                return
+                <call>
+                  <ref>Map</ref>
+                  <arguments>
+                    <arguments>
+                      (
+                      <argument>
+                        <ref>user</ref>
+                      </argument>
+                      )
                     </arguments>
-                  </call>
-                  ;
-                </return>
-                }
-              </block>
-            </body>
-          </method>
-          <comment>// GetUserTracked: has AsNoTracking - OK</comment>
-          <method>
-            <public/>
-            <returns field="returns">
-              <ref field="ref">UserDto</ref>
-            </returns>
-            <name field="name">GetUserTracked</name>
-            <parameters>
-              (
-              <parameter>
-                <type>int</type>
-                <name field="name">id</name>
-              </parameter>
-              )
-            </parameters>
-            <body field="body">
-              <block field="block">
-                {
-                <local>
-                  <variable>
-                    <implicit_type field="type">var</implicit_type>
-                    <declarator>
-                      <name field="name">user</name>
-                      =
-                      <call>
-                        <member field="function">
-                          <call field="expression">
-                            <member field="function">
-                              <member field="expression">
-                                <ref field="expression">_context</ref>
-                                .
-                                <name field="name">
-                                  <ref>Users</ref>
-                                </name>
-                              </member>
+                  </arguments>
+                </call>
+                ;
+              </return>
+              }
+            </block>
+          </body>
+        </method>
+        <comment>// GetUserTracked: has AsNoTracking - OK</comment>
+        <method>
+          <public/>
+          <returns>
+            <ref>UserDto</ref>
+          </returns>
+          <name>GetUserTracked</name>
+          <parameters>
+            (
+            <parameter>
+              <type>int</type>
+              <name>id</name>
+            </parameter>
+            )
+          </parameters>
+          <body>
+            <block>
+              {
+              <local>
+                <variable>
+                  <implicit_type>var</implicit_type>
+                  <declarator>
+                    <name>user</name>
+                    =
+                    <call>
+                      <member>
+                        <call>
+                          <member>
+                            <member>
+                              <ref>_context</ref>
                               .
-                              <name field="name">
-                                <ref>AsNoTracking</ref>
+                              <name>
+                                <ref>Users</ref>
                               </name>
                             </member>
-                            <arguments field="arguments">
-                              <arguments>()</arguments>
-                            </arguments>
-                          </call>
-                          .
-                          <name field="name">
-                            <ref>First</ref>
-                          </name>
-                        </member>
-                        <arguments field="arguments">
+                            .
+                            <name>
+                              <ref>AsNoTracking</ref>
+                            </name>
+                          </member>
                           <arguments>
-                            (
-                            <argument>
-                              <lambda>
-                                <implicit_parameter>u</implicit_parameter>
-                                =&gt;
-                                <body field="body">
-                                  <binary field="binary">
-                                    <op>
-                                      <equals/>
-                                      ==
-                                    </op>
-                                    <left field="left">
-                                      <member field="member">
-                                        <ref field="expression">u</ref>
-                                        .
-                                        <name field="name">
-                                          <ref>Id</ref>
-                                        </name>
-                                      </member>
-                                    </left>
-                                    ==
-                                    <right field="right">
-                                      <ref field="ref">id</ref>
-                                    </right>
-                                  </binary>
-                                </body>
-                              </lambda>
-                            </argument>
-                            )
+                            <arguments>()</arguments>
                           </arguments>
-                        </arguments>
-                      </call>
-                    </declarator>
-                  </variable>
-                  ;
-                </local>
-                <return>
-                  return
-                  <call>
-                    <ref field="function">Map</ref>
-                    <arguments field="arguments">
+                        </call>
+                        .
+                        <name>
+                          <ref>First</ref>
+                        </name>
+                      </member>
                       <arguments>
-                        (
-                        <argument>
-                          <ref>user</ref>
-                        </argument>
-                        )
+                        <arguments>
+                          (
+                          <argument>
+                            <lambda>
+                              <implicit_parameter>u</implicit_parameter>
+                              =&gt;
+                              <body>
+                                <binary>
+                                  <op>
+                                    <equals/>
+                                    ==
+                                  </op>
+                                  <left>
+                                    <member>
+                                      <ref>u</ref>
+                                      .
+                                      <name>
+                                        <ref>Id</ref>
+                                      </name>
+                                    </member>
+                                  </left>
+                                  ==
+                                  <right>
+                                    <ref>id</ref>
+                                  </right>
+                                </binary>
+                              </body>
+                            </lambda>
+                          </argument>
+                          )
+                        </arguments>
                       </arguments>
+                    </call>
+                  </declarator>
+                </variable>
+                ;
+              </local>
+              <return>
+                return
+                <call>
+                  <ref>Map</ref>
+                  <arguments>
+                    <arguments>
+                      (
+                      <argument>
+                        <ref>user</ref>
+                      </argument>
+                      )
                     </arguments>
-                  </call>
-                  ;
-                </return>
-                }
-              </block>
-            </body>
-          </method>
-          }
-        </body>
-      </class>
-    </unit>
-  </File>
+                  </arguments>
+                </call>
+                ;
+              </return>
+              }
+            </block>
+          </body>
+        </method>
+        }
+      </body>
+    </class>
+  </unit>
 </Files>

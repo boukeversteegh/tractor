@@ -60,7 +60,7 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
     if render_opts.use_color {
         let color_opts = RenderOptions::new()
             .with_color(true)
-            .with_locations(render_opts.include_locations)
+            .with_meta(render_opts.include_meta)
             .with_pretty_print(true);
         let colored = render_xml_string(&body, &color_opts);
         format!("\x1b[2m<?xml version=\"1.0\" encoding=\"UTF-8\"?>\x1b[0m\n{}", colored)

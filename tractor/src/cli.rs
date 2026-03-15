@@ -121,9 +121,9 @@ pub struct SharedArgs {
     #[arg(short = 'd', long = "depth", help_heading = "View")]
     pub depth: Option<usize>,
 
-    /// Include start/end location attributes in XML output
-    #[arg(long = "keep-locations", help_heading = "View")]
-    pub keep_locations: bool,
+    /// Include metadata attributes (start/end, kind, field) in XML output
+    #[arg(long = "meta", help_heading = "View")]
+    pub meta: bool,
 
     // -- Format --
     /// Disable pretty printing (shows XML without formatting, as used by XPath)

@@ -1,116 +1,115 @@
 tests/integration/languages/javascript/sample.js:1
 <Files>
-  <File path="tests/integration/languages/javascript/sample.js">
-    <program>
-      <comment>// Simple JavaScript example</comment>
-      <function_declaration>
-        function
-        <name field="name">
-          <identifier>add</identifier>
-        </name>
-        <parameters field="parameters">
-          <formal_parameters>
-            (
-            <identifier>a</identifier>
-            ,
-            <identifier>b</identifier>
-            )
-          </formal_parameters>
-        </parameters>
-        <body field="body">
-          <statement_block>
-            {
-            <return_statement>
-              return
-              <binary_expression>
-                <left field="left">
-                  <identifier>a</identifier>
-                </left>
-                +
-                <right field="right">
-                  <identifier>b</identifier>
-                </right>
-              </binary_expression>
-              ;
-            </return_statement>
-            }
-          </statement_block>
-        </body>
-      </function_declaration>
-      <function_declaration>
-        function
-        <name field="name">
-          <identifier>main</identifier>
-        </name>
-        <parameters field="parameters">
-          <formal_parameters>()</formal_parameters>
-        </parameters>
-        <body field="body">
-          <statement_block>
-            {
-            <lexical_declaration>
-              const
-              <variable_declarator>
-                <name field="name">
-                  <identifier>result</identifier>
-                </name>
-                =
-                <value field="value">
-                  <call_expression>
-                    <identifier field="function">add</identifier>
-                    <arguments field="arguments">
-                      <arguments>
-                        (
-                        <number>5</number>
-                        ,
-                        <number>3</number>
-                        )
-                      </arguments>
-                    </arguments>
-                  </call_expression>
-                </value>
-              </variable_declarator>
-              ;
-            </lexical_declaration>
-            <expression_statement>
-              <call_expression>
-                <member_expression field="function">
-                  <identifier field="object">console</identifier>
-                  .
-                  <property_identifier field="property">log</property_identifier>
-                </member_expression>
-                <arguments field="arguments">
+  <file>tests/integration/languages/javascript/sample.js</file>
+  <program>
+    <comment>// Simple JavaScript example</comment>
+    <function_declaration>
+      function
+      <name>
+        <identifier>add</identifier>
+      </name>
+      <parameters>
+        <formal_parameters>
+          (
+          <identifier>a</identifier>
+          ,
+          <identifier>b</identifier>
+          )
+        </formal_parameters>
+      </parameters>
+      <body>
+        <statement_block>
+          {
+          <return_statement>
+            return
+            <binary_expression>
+              <left>
+                <identifier>a</identifier>
+              </left>
+              +
+              <right>
+                <identifier>b</identifier>
+              </right>
+            </binary_expression>
+            ;
+          </return_statement>
+          }
+        </statement_block>
+      </body>
+    </function_declaration>
+    <function_declaration>
+      function
+      <name>
+        <identifier>main</identifier>
+      </name>
+      <parameters>
+        <formal_parameters>()</formal_parameters>
+      </parameters>
+      <body>
+        <statement_block>
+          {
+          <lexical_declaration>
+            const
+            <variable_declarator>
+              <name>
+                <identifier>result</identifier>
+              </name>
+              =
+              <value>
+                <call_expression>
+                  <identifier>add</identifier>
                   <arguments>
-                    (
-                    <template_string>
-                      `
-                      <string_fragment>Result: </string_fragment>
-                      <template_substitution>
-                        ${
-                        <identifier>result</identifier>
-                        }
-                      </template_substitution>
-                      `
-                    </template_string>
-                    )
+                    <arguments>
+                      (
+                      <number>5</number>
+                      ,
+                      <number>3</number>
+                      )
+                    </arguments>
                   </arguments>
+                </call_expression>
+              </value>
+            </variable_declarator>
+            ;
+          </lexical_declaration>
+          <expression_statement>
+            <call_expression>
+              <member_expression>
+                <identifier>console</identifier>
+                .
+                <property_identifier>log</property_identifier>
+              </member_expression>
+              <arguments>
+                <arguments>
+                  (
+                  <template_string>
+                    `
+                    <string_fragment>Result: </string_fragment>
+                    <template_substitution>
+                      ${
+                      <identifier>result</identifier>
+                      }
+                    </template_substitution>
+                    `
+                  </template_string>
+                  )
                 </arguments>
-              </call_expression>
-              ;
-            </expression_statement>
-            }
-          </statement_block>
-        </body>
-      </function_declaration>
-      <expression_statement>
-        <call_expression>
-          <identifier field="function">main</identifier>
-          <arguments field="arguments">
-            <arguments>()</arguments>
-          </arguments>
-        </call_expression>
-        ;
-      </expression_statement>
-    </program>
-  </File>
+              </arguments>
+            </call_expression>
+            ;
+          </expression_statement>
+          }
+        </statement_block>
+      </body>
+    </function_declaration>
+    <expression_statement>
+      <call_expression>
+        <identifier>main</identifier>
+        <arguments>
+          <arguments>()</arguments>
+        </arguments>
+      </call_expression>
+      ;
+    </expression_statement>
+  </program>
 </Files>

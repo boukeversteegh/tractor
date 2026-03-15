@@ -1,22 +1,21 @@
 tests/integration/languages/python/multiline-string-lf.py:1
 <Files>
-  <File path="tests/integration/languages/python/multiline-string-lf.py">
-    <module>
-      <assign>
-        <left field="left">
-          <type field="type">msg</type>
-        </left>
-        =
-        <right field="right">
-          <string field="string">
-            <string_start>&quot;&quot;&quot;</string_start>
-            <string_content>hello
+  <file>tests/integration/languages/python/multiline-string-lf.py</file>
+  <module>
+    <assign>
+      <left>
+        <type>msg</type>
+      </left>
+      =
+      <right>
+        <string>
+          <string_start>&quot;&quot;&quot;</string_start>
+          <string_content>hello
 
 </string_content>
-            <string_end>&quot;&quot;&quot;</string_end>
-          </string>
-        </right>
-      </assign>
-    </module>
-  </File>
+          <string_end>&quot;&quot;&quot;</string_end>
+        </string>
+      </right>
+    </assign>
+  </module>
 </Files>

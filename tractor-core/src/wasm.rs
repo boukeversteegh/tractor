@@ -98,14 +98,9 @@ fn parse_ast_to_xml(
     }
 
     // Render to XML string
-    let options = RenderOptions {
-        use_color: false,
-        include_locations,
-        indent: "  ".to_string(),
-        max_depth: None,
-        highlights: None,
-        pretty_print,
-    };
+    let options = RenderOptions::new()
+        .with_meta(include_locations)
+        .with_pretty_print(pretty_print);
 
     Ok(crate::output::render_document(&xot, root, &options))
 }
@@ -255,14 +250,9 @@ pub fn get_source_lines(source: &str, start: &str, end: &str) -> Result<String, 
 /// The pretty-printed XML string (with ANSI codes if use_color is true)
 #[wasm_bindgen(js_name = prettyPrintXml)]
 pub fn pretty_print_xml(xml: &str, include_locations: bool, use_color: bool) -> String {
-    let options = RenderOptions {
-        use_color,
-        include_locations,
-        indent: "  ".to_string(),
-        max_depth: None,
-        highlights: None,
-        pretty_print: true,
-    };
+    let options = RenderOptions::new()
+        .with_color(use_color)
+        .with_meta(include_locations);
     crate::output::render_xml_string(xml, &options)
 }
 

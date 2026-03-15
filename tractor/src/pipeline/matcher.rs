@@ -256,7 +256,7 @@ pub fn run_debug(ctx: &RunContext, files: &[String], xpath_expr: &str) -> Result
                 let doc_node = result.documents.document_node(result.doc_handle).unwrap();
                 let render_opts = RenderOptions::new()
                     .with_color(ctx.use_color)
-                    .with_locations(true)
+                    .with_meta(true)
                     .with_max_depth(ctx.depth)
                     .with_highlights(highlights)
                     .with_pretty_print(!ctx.no_pretty);

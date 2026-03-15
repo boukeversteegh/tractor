@@ -21,7 +21,7 @@ pub struct RunContext {
     pub limit: Option<usize>,
     pub depth: Option<usize>,
     pub parse_depth: Option<usize>,
-    pub keep_locations: bool,
+    pub meta: bool,
     pub raw: bool,
     pub no_pretty: bool,
     pub ignore_whitespace: bool,
@@ -80,7 +80,7 @@ impl RunContext {
             limit: shared.limit,
             depth: shared.depth,
             parse_depth: shared.parse_depth,
-            keep_locations: shared.keep_locations,
+            meta: shared.meta,
             raw: shared.raw,
             no_pretty: shared.no_pretty,
             ignore_whitespace: shared.ignore_whitespace,
@@ -93,7 +93,7 @@ impl RunContext {
     pub fn render_options(&self) -> RenderOptions {
         RenderOptions::new()
             .with_color(self.use_color)
-            .with_locations(self.keep_locations || self.debug)
+            .with_meta(self.meta || self.debug)
             .with_max_depth(self.depth)
             .with_pretty_print(!self.no_pretty)
             .with_language(self.lang.clone())

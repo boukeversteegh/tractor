@@ -1,13 +1,13 @@
 <class>
   <public/>
   class
-  <name field="name">Foo</name>
-  <body field="body">
+  <name>Foo</name>
+  <body>
     {
-    <property field="property">
+    <property>
       <public/>
       <type>int</type>
-      <name field="name">Bar</name>
+      <name>Bar</name>
       <accessors>
         {
         <accessor>get;</accessor>
@@ -17,13 +17,13 @@
     </property>
     <method>
       <public/>
-      <returns field="returns">
-        <type field="type">void</type>
+      <returns>
+        <type>void</type>
       </returns>
-      <name field="name">Baz</name>
+      <name>Baz</name>
       <parameters>()</parameters>
-      <body field="body">
-        <block field="block">{ }</block>
+      <body>
+        <block>{ }</block>
       </body>
     </method>
     }
@@ -35,8 +35,8 @@ error
 <class>
   <public/>
   class
-  <name field="name">Qux</name>
-  <body field="body">{ }</body>
+  <name>Qux</name>
+  <body>{ }</body>
 </class>
 class found
 error
