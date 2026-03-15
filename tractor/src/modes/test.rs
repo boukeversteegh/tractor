@@ -7,7 +7,6 @@ pub mod test_colors {
     pub const RESET: &str = "\x1b[0m";
     pub const GREEN: &str = "\x1b[32m";
     pub const RED: &str = "\x1b[31m";
-    pub const YELLOW: &str = "\x1b[33m";
     pub const BOLD: &str = "\x1b[1m";
 }
 
@@ -26,14 +25,13 @@ pub fn check_expectation(expect: &str, count: usize) -> Result<bool, Box<dyn std
 }
 
 pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
-    let warning = args.warning;
     let expect = args.expect.clone();
     let error_template = args.error.clone();
     let message = args.message.clone();
 
     let ctx = RunContext::build(
         &args.shared, args.files, args.shared.xpath.clone(),
-        &args.format, &[ViewField::Summary], args.view.as_deref(), args.message, args.content, args.warning, false,
+        &args.format, &[ViewField::Summary], args.view.as_deref(), args.message, args.content, false,
     )?;
 
     let dot = ".".to_string();
@@ -76,5 +74,5 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let report = Report::test(report_matches, summary);
-    render_test_report(&report, &ctx, &message, &error_template, warning)
+    render_test_report(&report, &ctx, &message, &error_template)
 }

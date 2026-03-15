@@ -292,9 +292,6 @@ Report view [default: tree]
     #[arg(long = "error", help_heading = "Test")]
     pub error: Option<String>,
 
-    /// Treat failed expectations as warnings (exit 0, show warning instead of failure)
-    #[arg(long = "warning", help_heading = "Test")]
-    pub warning: bool,
 }
 
 /// Set mode: modify matched node values in-place

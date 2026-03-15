@@ -16,8 +16,6 @@ pub struct RunContext {
     pub use_color: bool,
     /// Interpolated message template from `-m`, if provided.
     pub message: Option<String>,
-    /// True when violations should be treated as warnings (for `test --warning`).
-    pub warning: bool,
     pub input: InputMode,
     pub concurrency: usize,
     pub limit: Option<usize>,
@@ -42,7 +40,6 @@ impl RunContext {
         user_view: Option<&str>,
         message: Option<String>,
         content: Option<String>,
-        warning: bool,
         debug: bool,
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let xpath         = xpath.as_ref().map(|x| normalize_xpath(x));
@@ -78,7 +75,6 @@ impl RunContext {
             view,
             use_color,
             message,
-            warning,
             input,
             concurrency,
             limit: shared.limit,

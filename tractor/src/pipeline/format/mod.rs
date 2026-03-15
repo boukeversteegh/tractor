@@ -79,7 +79,6 @@ pub fn render_test_report(
     ctx: &RunContext,
     message: &Option<String>,
     error_template: &Option<String>,
-    warning: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let summary = report.summary.as_ref().expect("test report must have summary");
 
@@ -91,7 +90,7 @@ pub fn render_test_report(
                 OutputFormat::Xml  => print!("{}", render_xml_report(report, &ctx.view, &ctx.render_options())),
                 _ => unreachable!(),
             }
-            if !summary.passed && !warning {
+            if !summary.passed {
                 return Err(Box::new(crate::SilentExit));
             }
             return Ok(());
@@ -102,8 +101,6 @@ pub fn render_test_report(
     // Text/gcc/github: colored pass/fail line
     let (symbol, color) = if summary.passed {
         ("✓", test_colors::GREEN)
-    } else if warning {
-        ("⚠", test_colors::YELLOW)
     } else {
         ("✗", test_colors::RED)
     };
@@ -129,7 +126,7 @@ pub fn render_test_report(
 
     if !summary.passed && !report.matches.is_empty() {
         if let Some(ref error_tmpl) = error_template {
-            let out = render_gcc_report_with_template(&report.matches, error_tmpl, warning);
+            let out = render_gcc_report_with_template(&report.matches, error_tmpl, false);
             for line in out.lines() {
                 if ctx.use_color {
                     println!("  {}{}{}", color, line, test_colors::RESET);
@@ -167,7 +164,7 @@ pub fn render_test_report(
         }
     }
 
-    if !summary.passed && !warning {
+    if !summary.passed {
         return Err(Box::new(crate::SilentExit));
     }
     Ok(())
