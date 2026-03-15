@@ -3,12 +3,12 @@ use tractor_core::report::{Report, Summary};
 use clap::CommandFactory;
 use crate::cli::{Cli, QueryArgs};
 use crate::pipeline::{RunContext, ViewField, InputMode, query_inline_source, query_files_batched, run_debug, match_to_report_match};
-use crate::pipeline::format::{render_query_report, view};
+use crate::pipeline::format::render_query_report;
 
 pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     let ctx = RunContext::build(
         &args.shared, args.files, args.shared.xpath.clone(),
-        &args.format, &format!("{},{},{}", view::FILE, view::LINE, view::TREE), args.view.as_deref(), args.message, args.content, false, args.debug,
+        &args.format, &[ViewField::File, ViewField::Line, ViewField::Tree], args.view.as_deref(), args.message, args.content, false, args.debug,
     )?;
 
     if let InputMode::Files(ref files) = ctx.input {

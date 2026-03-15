@@ -7,7 +7,7 @@ pub mod yaml;
 pub mod text;
 mod shared;
 
-pub use options::{OutputFormat, ViewField, ViewSet, parse_view_set, view};
+pub use options::{OutputFormat, ViewField, ViewSet, parse_view_set};
 pub use gcc::{render_gcc, render_gcc_report_with_template};
 pub use github::render_github;
 pub use xml::render_xml_report;

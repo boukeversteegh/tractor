@@ -5,7 +5,7 @@ pub mod format;
 
 pub use input::InputMode;
 pub use context::RunContext;
-pub use format::{ViewField, view};
+pub use format::ViewField;
 pub use matcher::{
     query_files_batched, query_inline_source,
     print_schema_from_matches,

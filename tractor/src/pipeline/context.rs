@@ -5,7 +5,7 @@ use tractor_core::{
 use crate::cli::SharedArgs;
 use crate::xpath_utils::normalize_xpath;
 use super::input::{InputMode, resolve_input};
-use super::format::{OutputFormat, ViewSet, parse_view_set};
+use super::format::{OutputFormat, ViewField, ViewSet, parse_view_set};
 
 pub struct RunContext {
     pub xpath: Option<String>,
@@ -38,7 +38,7 @@ impl RunContext {
         files: Vec<String>,
         xpath: Option<String>,
         format: &str,
-        default_view: &str,
+        default_view: &[ViewField],
         user_view: Option<&str>,
         message: Option<String>,
         content: Option<String>,
@@ -58,7 +58,11 @@ impl RunContext {
             }
         }
 
-        let view          = parse_view_set(user_view.unwrap_or(default_view))?;
+        let view = if let Some(s) = user_view {
+            parse_view_set(s)?
+        } else {
+            ViewSet::from_fields(default_view.to_vec())
+        };
         let use_color     = if shared.no_color { false } else { should_use_color(&shared.color) };
         let input         = resolve_input(shared, files, content)?;
 

@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use tractor_core::report::{Report, Severity, Summary};
 use crate::cli::CheckArgs;
-use crate::pipeline::{RunContext, InputMode, view, query_files_batched, render_check_report, match_to_report_match};
+use crate::pipeline::{RunContext, ViewField, InputMode, query_files_batched, render_check_report, match_to_report_match};
 
 pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
     let severity = match args.severity.as_str() {
@@ -11,11 +11,9 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
     };
     let reason = args.reason.clone().unwrap_or_else(|| "check failed".to_string());
 
-    // Default view for check: reason and severity (the fields that matter for violations)
-    let default_view = &format!("{},{}", view::REASON, view::SEVERITY);
     let ctx = RunContext::build(
         &args.shared, args.files, args.shared.xpath.clone(),
-        &args.format, default_view, args.view.as_deref(), args.message, None, false, false,
+        &args.format, &[ViewField::Reason, ViewField::Severity], args.view.as_deref(), args.message, None, false, false,
     )?;
 
     let xpath_expr = ctx.xpath.as_ref()

@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use tractor_core::report::{Report, Summary};
 use crate::cli::TestArgs;
-use crate::pipeline::{RunContext, InputMode, view, query_inline_source, query_files_batched, render_test_report, match_to_report_match};
+use crate::pipeline::{RunContext, ViewField, InputMode, query_inline_source, query_files_batched, render_test_report, match_to_report_match};
 
 pub mod test_colors {
     pub const RESET: &str = "\x1b[0m";
@@ -33,7 +33,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     let ctx = RunContext::build(
         &args.shared, args.files, args.shared.xpath.clone(),
-        &args.format, view::SUMMARY, args.view.as_deref(), args.message, args.content, args.warning, false,
+        &args.format, &[ViewField::Summary], args.view.as_deref(), args.message, args.content, args.warning, false,
     )?;
 
     let dot = ".".to_string();

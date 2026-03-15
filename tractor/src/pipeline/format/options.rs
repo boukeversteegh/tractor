@@ -154,21 +154,3 @@ pub enum GroupBy {
     File,
 }
 
-// ---------------------------------------------------------------------------
-// View name constants — correspond to `-v` values
-// ---------------------------------------------------------------------------
-
-pub mod view {
-    pub const TREE:     &str = "tree";
-    pub const LINES:    &str = "lines";
-    pub const SOURCE:   &str = "source";
-    pub const VALUE:    &str = "value";
-    pub const COUNT:    &str = "count";
-    pub const SCHEMA:   &str = "schema";
-    pub const SUMMARY:  &str = "summary";
-    pub const REASON:   &str = "reason";
-    pub const SEVERITY: &str = "severity";
-    pub const FILE:     &str = "file";
-    pub const LINE:     &str = "line";
-    pub const COLUMN:   &str = "column";
-}
