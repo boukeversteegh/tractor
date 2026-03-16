@@ -140,7 +140,7 @@ pub struct SharedArgs {
 
     // -- Group --
     /// Group output by file
-    #[arg(short = 'g', long = "group-by", help_heading = "View")]
+    #[arg(short = 'g', long = "group", help_heading = "View")]
     pub group_by: Option<String>,
 
     // -- Advanced --

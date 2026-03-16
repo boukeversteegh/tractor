@@ -68,7 +68,7 @@ impl RunContext {
         let group_by_file = match shared.group_by.as_deref() {
             Some("file") => true,
             Some("none") => false,
-            Some(other) => return Err(format!("invalid --group-by value '{}': use 'file' or 'none'", other).into()),
+            Some(other) => return Err(format!("invalid --group value '{}': use 'file' or 'none'", other).into()),
             None => default_group_by_file,
         };
 
