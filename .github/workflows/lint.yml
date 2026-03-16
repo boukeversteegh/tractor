@@ -18,6 +18,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: dtolnay/rust-toolchain@stable
+      - uses: mozilla-actions/sccache-action@v0.0.7
       - uses: Swatinem/rust-cache@v2
 
       - name: Build tractor
@@ -25,7 +26,7 @@ jobs:
 
       - name: Lint - no TODO comments
         run: |
-          ./target/release/tractor "tractor-core/src/**/*.rs" "tractor/src/**/*.rs" \
+          ./target/release/tractor test "tractor-core/src/**/*.rs" "tractor/src/**/*.rs" \
             -x '//line_comment[contains(.,"TODO")]' \
-            -o github -m "TODO comment: {value}" \
+            -f github -m "TODO comment: {value}" \
             --expect none
