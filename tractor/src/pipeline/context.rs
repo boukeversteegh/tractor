@@ -28,6 +28,7 @@ pub struct RunContext {
     pub verbose: bool,
     pub lang: Option<String>,
     pub debug: bool,
+    pub group_by_file: bool,
 }
 
 impl RunContext {
@@ -41,6 +42,7 @@ impl RunContext {
         message: Option<String>,
         content: Option<String>,
         debug: bool,
+        default_group_by_file: bool,
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let xpath         = xpath.as_ref().map(|x| normalize_xpath(x));
         let output_format = OutputFormat::from_str(format)?;
@@ -62,6 +64,13 @@ impl RunContext {
         };
         let use_color     = if shared.no_color { false } else { should_use_color(&shared.color) };
         let input         = resolve_input(shared, files, content)?;
+
+        let group_by_file = match shared.group_by.as_deref() {
+            Some("file") => true,
+            Some("none") => false,
+            Some(other) => return Err(format!("invalid --group value '{}': use 'file' or 'none'", other).into()),
+            None => default_group_by_file,
+        };
 
         let concurrency = shared.concurrency.unwrap_or_else(|| num_cpus::get());
         rayon::ThreadPoolBuilder::new()
@@ -87,6 +96,7 @@ impl RunContext {
             verbose: shared.verbose,
             lang: shared.lang.clone(),
             debug,
+            group_by_file,
         })
     }
 

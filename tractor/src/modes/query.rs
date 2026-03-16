@@ -8,7 +8,7 @@ use crate::pipeline::format::render_query_report;
 pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     let ctx = RunContext::build(
         &args.shared, args.files, args.shared.xpath.clone(),
-        &args.format, &[ViewField::File, ViewField::Line, ViewField::Tree], args.view.as_deref(), args.message, args.content, args.debug,
+        &args.format, &[ViewField::File, ViewField::Line, ViewField::Tree], args.view.as_deref(), args.message, args.content, args.debug, false,
     )?;
 
     if let InputMode::Files(ref files) = ctx.input {
@@ -39,6 +39,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
                 crate::pipeline::print_schema_from_matches(&matches, ctx.schema_depth(), ctx.use_color);
             } else {
                 let report = build_query_report(matches, &ctx);
+                let report = if ctx.group_by_file { report.with_groups() } else { report };
                 render_query_report(&report, &ctx)?;
             }
         }
@@ -50,6 +51,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
                 crate::pipeline::print_schema_from_matches(&matches, ctx.schema_depth(), ctx.use_color);
             } else {
                 let report = build_query_report(matches, &ctx);
+                let report = if ctx.group_by_file { report.with_groups() } else { report };
                 render_query_report(&report, &ctx)?;
             }
         }

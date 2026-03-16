@@ -138,6 +138,11 @@ pub struct SharedArgs {
     #[arg(long = "no-color", help_heading = "Format")]
     pub no_color: bool,
 
+    // -- Group --
+    /// Group output by file
+    #[arg(short = 'g', long = "group", help_heading = "View")]
+    pub group_by: Option<String>,
+
     // -- Advanced --
     /// [EXPERIMENTAL] Limit tree building depth (skip parsing deeper nodes for speed)
     #[arg(long = "parse-depth", help_heading = "Advanced")]

@@ -31,7 +31,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     let ctx = RunContext::build(
         &args.shared, args.files, args.shared.xpath.clone(),
-        &args.format, &[ViewField::Summary], args.view.as_deref(), args.message, args.content, false,
+        &args.format, &[ViewField::Summary], args.view.as_deref(), args.message, args.content, false, false,
     )?;
 
     let dot = ".".to_string();
@@ -74,5 +74,6 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let report = Report::test(report_matches, summary);
+    let report = if ctx.group_by_file { report.with_groups() } else { report };
     render_test_report(&report, &ctx, &message, &error_template)
 }

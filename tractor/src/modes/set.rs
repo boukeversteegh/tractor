@@ -5,7 +5,7 @@ use crate::pipeline::{RunContext, ViewField, InputMode, query_files_batched};
 pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
     let ctx = RunContext::build(
         &args.shared, args.files, args.shared.xpath.clone(),
-        "text", &[ViewField::Tree], None, None, None, false,
+        "text", &[ViewField::Tree], None, None, None, false, false,
     )?;
 
     let xpath_expr = ctx.xpath.as_ref()

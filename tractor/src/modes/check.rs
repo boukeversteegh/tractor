@@ -13,7 +13,7 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     let ctx = RunContext::build(
         &args.shared, args.files, args.shared.xpath.clone(),
-        &args.format, &[ViewField::Reason, ViewField::Severity], args.view.as_deref(), args.message, None, false,
+        &args.format, &[ViewField::Reason, ViewField::Severity], args.view.as_deref(), args.message, None, false, true,
     )?;
 
     let xpath_expr = ctx.xpath.as_ref()
@@ -54,6 +54,7 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
         expected: None,
     };
 
-    let report = Report::check(report_matches, summary).with_groups();
+    let report = Report::check(report_matches, summary);
+    let report = if ctx.group_by_file { report.with_groups() } else { report };
     render_check_report(&report, &ctx)
 }
