@@ -50,6 +50,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: dtolnay/rust-toolchain@stable
+      - uses: mozilla-actions/sccache-action@v0.0.7
       - uses: Swatinem/rust-cache@v2
 
       - name: Run unit tests
@@ -62,7 +63,7 @@ jobs:
         run: bash tests/integration/test.sh
 
       - name: Run snapshot tests
-        run: bash tests/integration/test_snapshots.sh
+        run: cargo run --release --bin update-snapshots -- --check
 
       - name: Upload artifact
         run: cp target/release/tractor tractor-linux-x86_64
@@ -83,6 +84,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: dtolnay/rust-toolchain@stable
+      - uses: mozilla-actions/sccache-action@v0.0.7
       - uses: Swatinem/rust-cache@v2
 
       - name: Build
@@ -107,6 +109,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: dtolnay/rust-toolchain@stable
+      - uses: mozilla-actions/sccache-action@v0.0.7
       - uses: Swatinem/rust-cache@v2
 
       - name: Build
