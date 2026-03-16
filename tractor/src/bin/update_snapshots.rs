@@ -128,6 +128,10 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
         "query", "tests/integration/formats/sample.cs", "tests/integration/formats/sample2.cs",
         "-x", "class", "-g", "file", "-f", "xml",
     ]),
+    ("json/check-no-group.json", &[
+        "check", "tests/integration/formats/sample.cs", "tests/integration/formats/sample2.cs",
+        "-x", "class", "--reason", "class found", "-g", "none", "-f", "json",
+    ]),
     // Color snapshots: ANSI codes rendered as \e so they are visible in text editors.
     // These document what colored output looks like for each format.
     ("text/query-color.txt", &[
