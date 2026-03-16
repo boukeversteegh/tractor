@@ -17,17 +17,17 @@ use super::options::{ViewField, ViewSet};
 pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions) -> String {
     let mut out = String::new();
 
-    // Collect matches — groups take priority (with_groups() drains flat list)
-    let matches: Vec<&ReportMatch> = if let Some(ref groups) = report.groups {
-        groups.iter().flat_map(|g| g.matches.iter()).collect()
+    // Collect matches with optional group file — groups take priority
+    let matches: Vec<(Option<&str>, &ReportMatch)> = if let Some(ref groups) = report.groups {
+        groups.iter().flat_map(|g| g.matches.iter().map(move |rm| (Some(g.file.as_str()), rm))).collect()
     } else {
-        report.matches.iter().collect()
+        report.matches.iter().map(|rm| (None, rm)).collect()
     };
 
     // Blank line between matches when a single match produces more than one output line.
     // File/line/column are combined onto one location line — they don't count individually.
     // In message-template mode all matches render as single lines — no separator.
-    let message_mode = matches.first().map_or(false, |rm| rm.message.is_some());
+    let message_mode = matches.first().map_or(false, |(_, rm)| rm.message.is_some());
     let has_location = view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
     let single_line_fields = [ViewField::Value, ViewField::Reason, ViewField::Severity]
         .iter().filter(|&&f| view.has(f)).count();
@@ -39,11 +39,11 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         || (single_line_fields >= 1 && has_location)
     );
 
-    for (i, rm) in matches.iter().enumerate() {
+    for (i, (group_file, rm)) in matches.iter().enumerate() {
         if needs_separator && i > 0 {
             out.push('\n');
         }
-        append_match(&mut out, rm, view, render_opts);
+        append_match(&mut out, rm, view, render_opts, *group_file);
     }
 
     // Summary: always for check/test; gated on -v summary for query
@@ -63,7 +63,7 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
     out
 }
 
-fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts: &RenderOptions) {
+fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts: &RenderOptions, group_file: Option<&str>) {
 
     // When a message template was used, it is the intended primary output —
     // it replaces tree/value/etc in text format.
@@ -77,7 +77,8 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
     if view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column) {
         let mut loc = String::new();
         if view.has(ViewField::File) {
-            loc.push_str(&normalize_path(&rm.file));
+            let file = group_file.unwrap_or(&rm.file);
+            loc.push_str(&normalize_path(file));
         }
         if view.has(ViewField::Line) {
             if !loc.is_empty() { loc.push(':'); }

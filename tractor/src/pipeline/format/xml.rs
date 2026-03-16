@@ -76,8 +76,12 @@ fn append_match(
     indent: &str,
     render_opts: &RenderOptions,
 ) {
-    let file = escape_attr(&normalize_path(&rm.file));
-    out.push_str(&format!("{}<match file=\"{}\" line=\"{}\" column=\"{}\"", indent, file, rm.line, rm.column));
+    let file_str = normalize_path(&rm.file);
+    if file_str.is_empty() {
+        out.push_str(&format!("{}<match line=\"{}\" column=\"{}\"", indent, rm.line, rm.column));
+    } else {
+        out.push_str(&format!("{}<match file=\"{}\" line=\"{}\" column=\"{}\"", indent, escape_attr(&file_str), rm.line, rm.column));
+    }
     if rm.end_line != rm.line || rm.end_column != rm.column {
         out.push_str(&format!(" end_line=\"{}\" end_column=\"{}\"", rm.end_line, rm.end_column));
     }

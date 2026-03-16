@@ -8,23 +8,24 @@ pub fn render_gcc(report: &Report) -> String {
     if let Some(ref groups) = report.groups {
         for g in groups {
             for rm in &g.matches {
-                render_gcc_match(&mut out, rm);
+                render_gcc_match(&mut out, rm, Some(&g.file));
             }
         }
     } else {
         for rm in &report.matches {
-            render_gcc_match(&mut out, rm);
+            render_gcc_match(&mut out, rm, None);
         }
     }
     out
 }
 
-fn render_gcc_match(out: &mut String, rm: &ReportMatch) {
+fn render_gcc_match(out: &mut String, rm: &ReportMatch, group_file: Option<&str>) {
     let reason   = rm.reason.as_deref().unwrap_or("violation");
     let severity = rm.severity.map_or("error", |s| s.as_str());
+    let file = group_file.unwrap_or(&rm.file);
     out.push_str(&format!(
         "{}:{}:{}: {}: {}\n",
-        to_absolute_path(&rm.file), rm.line, rm.column, severity, reason
+        to_absolute_path(file), rm.line, rm.column, severity, reason
     ));
     // Reconstruct a minimal Match for source context rendering
     let m = make_context_match(rm);

@@ -78,9 +78,13 @@ impl Serialize for ReportMatch {
             + self.severity.as_ref().map_or(0, |_| 1)
             + self.message.as_ref().map_or(0, |_| 1)
             + self.rule_id.as_ref().map_or(0, |_| 1);
-        let mut map = serializer.serialize_map(Some(5 + optional_count))?;
+        let has_file = !self.file.is_empty();
+        let core_count = if has_file { 5 } else { 4 };
+        let mut map = serializer.serialize_map(Some(core_count + optional_count))?;
 
-        map.serialize_entry("file", &normalize_path(&self.file))?;
+        if has_file {
+            map.serialize_entry("file", &normalize_path(&self.file))?;
+        }
         map.serialize_entry("line", &self.line)?;
         map.serialize_entry("column", &self.column)?;
         map.serialize_entry("end_line", &self.end_line)?;
@@ -187,12 +191,13 @@ impl Report {
         let mut groups: Vec<FileGroup> = Vec::new();
         let mut file_index: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
 
-        for rm in self.matches.drain(..) {
+        for mut rm in self.matches.drain(..) {
             let file = normalize_path(&rm.file);
             let idx = file_index.entry(file.clone()).or_insert_with(|| {
                 groups.push(FileGroup { file: file.clone(), matches: Vec::new() });
                 groups.len() - 1
             });
+            rm.file = String::new();
             groups[*idx].matches.push(rm);
         }
         self.groups = Some(groups);
