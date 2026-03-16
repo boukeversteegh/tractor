@@ -119,6 +119,15 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
         "check", "tests/integration/formats/sample.cs", "-x", "class",
         "--reason", "class found", "-v", "tree,reason,severity", "-f", "xml", "--depth", "1",
     ]),
+    // -g file (group-by) snapshots: query mode with multi-file grouping
+    ("json/query-group-file.json", &[
+        "query", "tests/integration/formats/sample.cs", "tests/integration/formats/sample2.cs",
+        "-x", "class", "-g", "file", "-f", "json",
+    ]),
+    ("xml/query-group-file.xml", &[
+        "query", "tests/integration/formats/sample.cs", "tests/integration/formats/sample2.cs",
+        "-x", "class", "-g", "file", "-f", "xml",
+    ]),
     // Color snapshots: ANSI codes rendered as \e so they are visible in text editors.
     // These document what colored output looks like for each format.
     ("text/query-color.txt", &[
