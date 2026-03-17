@@ -1,4 +1,4 @@
-use tractor_core::{report::Report, normalize_path, render_xml_string, RenderOptions};
+use tractor_core::{report::Report, normalize_path, render_xml_string, render_xml_node, RenderOptions};
 use super::options::{ViewField, ViewSet};
 
 pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions) -> String {
@@ -123,9 +123,9 @@ fn append_match(
                 }
             }
             ViewField::Tree => {
-                if let Some(ref xml) = rm.tree {
+                if let Some(ref node) = rm.tree {
                     // render_opts has use_color=false here; the outer colorization pass handles it
-                    let rendered = render_xml_string(xml, render_opts);
+                    let rendered = render_xml_node(node, render_opts);
                     out.push_str(&format!("{}<tree>\n", inner));
                     for line in rendered.lines() {
                         out.push_str(deep);

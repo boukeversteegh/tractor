@@ -7,7 +7,7 @@
 //! for query reports.
 
 use tractor_core::{
-    render_xml_string, normalize_path,
+    render_xml_node, normalize_path,
     render_source_precomputed, render_lines_precomputed,
     report::{Report, ReportKind, ReportMatch, Summary},
     RenderOptions,
@@ -96,8 +96,8 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
     for field in &view.fields {
         match field {
             ViewField::Tree => {
-                if let Some(ref xml) = rm.tree {
-                    let rendered = render_xml_string(xml, render_opts);
+                if let Some(ref node) = rm.tree {
+                    let rendered = render_xml_node(node, render_opts);
                     if render_opts.pretty_print && !rendered.ends_with('\n') {
                         out.push_str(&rendered);
                         out.push('\n');
@@ -116,7 +116,7 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
                 if let Some(ref s) = rm.source {
                     out.push_str(&render_source_precomputed(
                         s,
-                        rm.tree.as_deref(),
+                        rm.tree.as_ref(),
                         rm.line, rm.column, rm.end_line, rm.end_column,
                         render_opts,
                     ));
@@ -126,7 +126,7 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
                 if let Some(ref ls) = rm.lines {
                     out.push_str(&render_lines_precomputed(
                         ls,
-                        rm.tree.as_deref(),
+                        rm.tree.as_ref(),
                         rm.line, rm.end_line,
                         render_opts,
                     ));

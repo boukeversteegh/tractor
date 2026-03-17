@@ -29,6 +29,7 @@ use quick_xml::Reader;
 use serde::Serialize;
 use std::collections::HashMap;
 use xot::{Node, Value, Xot};
+use crate::xpath::XmlNode;
 
 /// Serializable schema node for JSON output (used by WASM and web UI)
 #[derive(Debug, Clone, Serialize)]
@@ -157,6 +158,47 @@ impl SchemaCollector {
                 Err(_) => break,
                 _ => {}
             }
+        }
+    }
+
+    /// Collect paths from an XmlNode tree (no XML string parsing needed).
+    pub fn collect_from_xml_node(&mut self, node: &XmlNode) {
+        let mut stack = Vec::new();
+        self.collect_from_xml_node_recursive(node, &mut stack);
+    }
+
+    fn collect_from_xml_node_recursive(&mut self, node: &XmlNode, stack: &mut Vec<String>) {
+        match node {
+            XmlNode::Element { name, children, .. } => {
+                stack.push(name.clone());
+
+                let entry = self.paths.entry(stack.clone()).or_insert(PathInfo {
+                    values: Vec::new(),
+                    count: 0,
+                });
+                entry.count += 1;
+
+                // Collect text content from direct text children
+                for child in children {
+                    if let XmlNode::Text(text) = child {
+                        let trimmed = text.trim();
+                        if !trimmed.is_empty() {
+                            if let Some(info) = self.paths.get_mut(stack) {
+                                if !info.values.contains(&trimmed.to_string()) {
+                                    info.values.push(trimmed.to_string());
+                                }
+                            }
+                        }
+                    }
+                }
+
+                for child in children {
+                    self.collect_from_xml_node_recursive(child, stack);
+                }
+
+                stack.pop();
+            }
+            _ => {}
         }
     }
 

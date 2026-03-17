@@ -4,6 +4,7 @@
 //! Uses the XML fragment's TreeSitter node kinds to determine syntax categories.
 
 use xot::{Xot, Node, Value};
+use crate::xpath::XmlNode;
 
 /// ANSI color codes for syntax highlighting
 pub mod ansi {
@@ -226,6 +227,80 @@ pub fn extract_syntax_spans_with_lang(xml: &str, category_fn: SyntaxCategoryFn) 
 /// Prefer `extract_syntax_spans_with_lang` when language is known.
 pub fn extract_syntax_spans(xml: &str) -> Vec<SyntaxSpan> {
     extract_syntax_spans_with_lang(xml, SyntaxCategory::from_element_name)
+}
+
+/// Extract syntax spans from an XmlNode tree (no XML string parsing).
+pub fn extract_syntax_spans_from_xml_node(node: &XmlNode, category_fn: SyntaxCategoryFn) -> Vec<SyntaxSpan> {
+    let mut spans = Vec::new();
+    extract_spans_from_xml_node_recursive(node, 0, &mut spans, category_fn);
+
+    spans.sort_by(|a, b| {
+        a.start_line.cmp(&b.start_line)
+            .then(a.start_col.cmp(&b.start_col))
+            .then(b.depth.cmp(&a.depth))
+    });
+
+    spans
+}
+
+fn extract_xml_node_position_span(attrs: &[(String, String)]) -> Option<(u32, u32, u32, u32)> {
+    let mut start: Option<(u32, u32)> = None;
+    let mut end: Option<(u32, u32)> = None;
+
+    for (k, v) in attrs {
+        match k.as_str() {
+            "start" => {
+                let parts: Vec<&str> = v.split(':').collect();
+                if parts.len() == 2 {
+                    if let (Ok(l), Ok(c)) = (parts[0].parse(), parts[1].parse()) {
+                        start = Some((l, c));
+                    }
+                }
+            }
+            "end" => {
+                let parts: Vec<&str> = v.split(':').collect();
+                if parts.len() == 2 {
+                    if let (Ok(l), Ok(c)) = (parts[0].parse(), parts[1].parse()) {
+                        end = Some((l, c));
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    match (start, end) {
+        (Some((sl, sc)), Some((el, ec))) => Some((sl, sc, el, ec)),
+        _ => None,
+    }
+}
+
+fn extract_spans_from_xml_node_recursive(
+    node: &XmlNode,
+    depth: u32,
+    spans: &mut Vec<SyntaxSpan>,
+    category_fn: SyntaxCategoryFn,
+) {
+    if let XmlNode::Element { name, attributes, children } = node {
+        let category = category_fn(name);
+
+        if category != SyntaxCategory::Default {
+            if let Some((start_line, start_col, end_line, end_col)) = extract_xml_node_position_span(attributes) {
+                spans.push(SyntaxSpan {
+                    start_line,
+                    start_col,
+                    end_line,
+                    end_col,
+                    category,
+                    depth,
+                });
+            }
+        }
+
+        for child in children {
+            extract_spans_from_xml_node_recursive(child, depth + 1, spans, category_fn);
+        }
+    }
 }
 
 fn extract_spans_recursive(xot: &Xot, node: Node, depth: u32, spans: &mut Vec<SyntaxSpan>, category_fn: SyntaxCategoryFn) {

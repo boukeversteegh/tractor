@@ -9,9 +9,9 @@
 //!
 //! All three accept a `RenderOptions` and respect `use_color` and `language`.
 
-use crate::xpath::Match;
-use crate::output::xml_renderer::{render_xml_string, RenderOptions};
-use crate::output::syntax_highlight::{extract_syntax_spans_with_lang, highlight_source, highlight_lines};
+use crate::xpath::{Match, XmlNode};
+use crate::output::xml_renderer::{render_xml_node, RenderOptions};
+use crate::output::syntax_highlight::{extract_syntax_spans_from_xml_node, highlight_source, highlight_lines};
 use crate::languages::get_syntax_category;
 use regex::Regex;
 
@@ -20,8 +20,8 @@ use regex::Regex;
 /// Falls back to the match value if no XML fragment is available.
 /// Always ends with a newline when `opts.pretty_print` is true.
 pub fn render_tree_match(m: &Match, opts: &RenderOptions) -> String {
-    if let Some(xml) = m.xml_fragment_string() {
-        let rendered = render_xml_string(&xml, opts);
+    if let Some(ref node) = m.xml_node {
+        let rendered = render_xml_node(node, opts);
         if opts.pretty_print && !rendered.ends_with('\n') {
             format!("{}\n", rendered)
         } else {
@@ -40,10 +40,9 @@ pub fn render_tree_match(m: &Match, opts: &RenderOptions) -> String {
 /// is set in `opts.language`.
 pub fn render_source_match(m: &Match, opts: &RenderOptions) -> String {
     let snippet = m.extract_source_snippet();
-    let xml_str = m.xml_fragment_string();
-    if opts.use_color && xml_str.is_some() && !snippet.is_empty() {
+    if opts.use_color && m.xml_node.is_some() && !snippet.is_empty() {
         let category_fn = get_syntax_category(opts.language.as_deref().unwrap_or(""));
-        let spans = extract_syntax_spans_with_lang(xml_str.as_ref().unwrap(), category_fn);
+        let spans = extract_syntax_spans_from_xml_node(m.xml_node.as_ref().unwrap(), category_fn);
         if !spans.is_empty() {
             let highlighted = highlight_source(
                 &snippet, &spans, m.line, m.column, m.end_line, m.end_column,
@@ -63,10 +62,9 @@ pub fn render_lines_match(m: &Match, opts: &RenderOptions) -> String {
     let lines_vec: Vec<String> = lines.iter()
         .map(|l| l.trim_end_matches('\r').to_string())
         .collect();
-    let xml_str = m.xml_fragment_string();
-    if opts.use_color && xml_str.is_some() {
+    if opts.use_color && m.xml_node.is_some() {
         let category_fn = get_syntax_category(opts.language.as_deref().unwrap_or(""));
-        let spans = extract_syntax_spans_with_lang(xml_str.as_ref().unwrap(), category_fn);
+        let spans = extract_syntax_spans_from_xml_node(m.xml_node.as_ref().unwrap(), category_fn);
         if !spans.is_empty() {
             return format!("{}\n", highlight_lines(&lines_vec, &spans, m.line, m.end_line));
         }
@@ -86,11 +84,11 @@ pub fn normalize_path(path: &str) -> String {
 
 /// Render a pre-computed source snippet with optional syntax highlighting.
 ///
-/// When `xml_fragment` is `Some`, uses it to extract syntax spans for highlighting.
+/// When `xml_node` is `Some`, uses it to extract syntax spans for highlighting.
 /// Requires `opts.use_color` to be true for coloring to take effect.
 pub fn render_source_precomputed(
     snippet: &str,
-    xml_fragment: Option<&str>,
+    xml_node: Option<&XmlNode>,
     line: u32,
     column: u32,
     end_line: u32,
@@ -98,9 +96,9 @@ pub fn render_source_precomputed(
     opts: &RenderOptions,
 ) -> String {
     if opts.use_color {
-        if let Some(xml) = xml_fragment {
+        if let Some(node) = xml_node {
             let category_fn = get_syntax_category(opts.language.as_deref().unwrap_or(""));
-            let spans = extract_syntax_spans_with_lang(xml, category_fn);
+            let spans = extract_syntax_spans_from_xml_node(node, category_fn);
             if !spans.is_empty() {
                 let highlighted = highlight_source(snippet, &spans, line, column, end_line, end_column);
                 return format!("{}\n", highlighted);
@@ -112,19 +110,19 @@ pub fn render_source_precomputed(
 
 /// Render pre-computed source lines with optional syntax highlighting.
 ///
-/// Lines should have trailing `\r` already stripped. When `xml_fragment` is `Some`,
+/// Lines should have trailing `\r` already stripped. When `xml_node` is `Some`,
 /// uses it to extract syntax spans for highlighting.
 pub fn render_lines_precomputed(
     lines: &[String],
-    xml_fragment: Option<&str>,
+    xml_node: Option<&XmlNode>,
     start_line: u32,
     end_line: u32,
     opts: &RenderOptions,
 ) -> String {
     if opts.use_color {
-        if let Some(xml) = xml_fragment {
+        if let Some(node) = xml_node {
             let category_fn = get_syntax_category(opts.language.as_deref().unwrap_or(""));
-            let spans = extract_syntax_spans_with_lang(xml, category_fn);
+            let spans = extract_syntax_spans_from_xml_node(node, category_fn);
             if !spans.is_empty() {
                 return format!("{}\n", highlight_lines(lines, &spans, start_line, end_line));
             }

@@ -16,7 +16,7 @@ pub use yaml::render_yaml_report;
 pub use text::render_text_report;
 
 use tractor_core::{
-    render_xml_string,
+    render_xml_node,
     render_source_precomputed, render_lines_precomputed,
     report::Report,
 };
@@ -139,16 +139,16 @@ pub fn render_test_report(
             for rm in &report.matches {
                 let rendered = if let Some(ref s) = rm.source {
                     render_source_precomputed(
-                        s, rm.tree.as_deref(),
+                        s, rm.tree.as_ref(),
                         rm.line, rm.column, rm.end_line, rm.end_column,
                         &opts,
                     )
                 } else if let Some(ref ls) = rm.lines {
-                    render_lines_precomputed(ls, rm.tree.as_deref(), rm.line, rm.end_line, &opts)
+                    render_lines_precomputed(ls, rm.tree.as_ref(), rm.line, rm.end_line, &opts)
                 } else if let Some(ref v) = rm.value {
                     format!("{}\n", v)
-                } else if let Some(ref xml) = rm.tree {
-                    let rendered = render_xml_string(xml, &opts);
+                } else if let Some(ref node) = rm.tree {
+                    let rendered = render_xml_node(node, &opts);
                     if opts.pretty_print && !rendered.ends_with('\n') {
                         format!("{}\n", rendered)
                     } else {
