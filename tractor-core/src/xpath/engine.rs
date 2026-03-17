@@ -186,10 +186,13 @@ fn execute_direct_query(
                     matches.push(m);
                 }
                 xee_xpath::Item::Atomic(atomic) => {
-                    let value = atomic.to_string().unwrap_or_default();
+                    let value = atomic.xpath_representation();
                     matches.push(Match::new(file_path.to_string(), value));
                 }
-                xee_xpath::Item::Function(_) => {}
+                xee_xpath::Item::Function(func) => {
+                    let value = format!("{:?}", func);
+                    matches.push(Match::new(file_path.to_string(), value));
+                }
             }
         }
         let t3 = Instant::now();
