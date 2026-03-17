@@ -489,6 +489,32 @@ mod tests {
     }
 
     #[test]
+    fn test_map_with_node_values() {
+        use crate::parser::load_xml_string_to_documents;
+
+        let xml = r#"<root><item><name>foo</name><value>1</value></item></root>"#;
+        let mut result = load_xml_string_to_documents(xml, "test.xml".to_string()).unwrap();
+        let engine = XPathEngine::new();
+
+        // Map with node values (not string() wrapped) — xee serializes nodes
+        // as their XML representation within the JSON string values
+        let matches = engine.query_documents(
+            &mut result.documents, result.doc_handle,
+            r#"//item ! map { "name": name, "val": value }"#,
+            Arc::new(vec![]), "test.xml"
+        ).unwrap();
+        assert_eq!(matches.len(), 1);
+        assert!(matches[0].is_json_value);
+        let parsed: serde_json::Value = serde_json::from_str(&matches[0].value)
+            .expect("Map with node values should still be valid JSON");
+        // Node values are serialized as XML strings by xee
+        assert!(parsed["name"].as_str().unwrap().contains("foo"),
+            "Node value should contain text content, got: {}", parsed["name"]);
+        assert!(parsed["val"].as_str().unwrap().contains("1"),
+            "Node value should contain text content, got: {}", parsed["val"]);
+    }
+
+    #[test]
     fn test_query_with_xml_prolog() {
         use crate::parser::load_xml_string_to_documents;
 
