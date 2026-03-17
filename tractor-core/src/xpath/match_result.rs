@@ -2,6 +2,39 @@
 
 use std::sync::Arc;
 
+// ---------------------------------------------------------------------------
+// XmlNode — native IR for matched XML fragments
+// ---------------------------------------------------------------------------
+
+/// A native representation of an XML node tree, replacing serialized XML strings.
+///
+/// This avoids the serialize-then-reparse roundtrip: instead of calling
+/// `xot.to_string(node)` and later parsing the string back, we walk the xot
+/// tree once and build an `XmlNode` that downstream renderers can consume
+/// directly.
+#[derive(Debug, Clone)]
+pub enum XmlNode {
+    /// An XML element with tag name, attributes, and children.
+    Element {
+        name: String,
+        attributes: Vec<(String, String)>,
+        children: Vec<XmlNode>,
+    },
+    /// A text node.
+    Text(String),
+    /// A comment node.
+    Comment(String),
+    /// A processing instruction.
+    ProcessingInstruction {
+        target: String,
+        data: Option<String>,
+    },
+}
+
+// ---------------------------------------------------------------------------
+// Match
+// ---------------------------------------------------------------------------
+
 /// A single match from an XPath query
 #[derive(Debug, Clone)]
 pub struct Match {
@@ -19,8 +52,8 @@ pub struct Match {
     pub value: String,
     /// Original source lines for location-based output (Arc for cheap cloning)
     pub source_lines: Arc<Vec<String>>,
-    /// The matched XML fragment (for XML output)
-    pub xml_fragment: Option<String>,
+    /// The matched XML node tree (native IR, replaces xml_fragment string)
+    pub xml_node: Option<XmlNode>,
 }
 
 impl Match {
@@ -34,7 +67,7 @@ impl Match {
             end_column: 1,
             value,
             source_lines: Arc::new(Vec::new()),
-            xml_fragment: None,
+            xml_node: None,
         }
     }
 
@@ -56,13 +89,13 @@ impl Match {
             end_column,
             value,
             source_lines,
-            xml_fragment: None,
+            xml_node: None,
         }
     }
 
-    /// Set the XML fragment for this match
-    pub fn with_xml_fragment(mut self, xml: String) -> Self {
-        self.xml_fragment = Some(xml);
+    /// Set the XML node tree for this match
+    pub fn with_xml_node(mut self, node: XmlNode) -> Self {
+        self.xml_node = Some(node);
         self
     }
 

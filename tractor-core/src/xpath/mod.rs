@@ -6,7 +6,7 @@ mod engine;
 mod match_result;
 
 pub use engine::{XPathEngine, print_timing_stats};
-pub use match_result::Match;
+pub use match_result::{Match, XmlNode};
 
 // Re-export xee-xpath types needed for direct query API
 pub use xee_xpath::{Documents, DocumentHandle};

@@ -1,5 +1,5 @@
 use serde_json::{json, Value};
-use tractor_core::{report::{Report, ReportKind, ReportMatch}, normalize_path, xml_fragment_to_json, RenderOptions};
+use tractor_core::{report::{Report, ReportKind, ReportMatch}, normalize_path, xml_node_to_json, RenderOptions};
 use super::options::{GroupBy, ViewField, ViewSet};
 
 pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions) -> String {
@@ -94,8 +94,8 @@ pub fn match_to_value(
                 }
             }
             ViewField::Tree => {
-                if let Some(ref xml) = rm.tree {
-                    obj.insert("tree".into(), xml_fragment_to_json(xml, render_opts.max_depth));
+                if let Some(ref node) = rm.tree {
+                    obj.insert("tree".into(), xml_node_to_json(node, render_opts.max_depth));
                 }
             }
             // rule_id: emitted if present regardless of ViewSet (it's an annotation)

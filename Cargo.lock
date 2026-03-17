@@ -2092,6 +2092,7 @@ dependencies = [
  "tree-sitter-typescript",
  "tree-sitter-yaml",
  "wasm-bindgen",
+ "xee-interpreter",
  "xee-xpath",
  "xot",
 ]

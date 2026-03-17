@@ -11,7 +11,8 @@
 use serde::{Serialize, Serializer};
 use serde::ser::SerializeMap;
 
-use crate::output::normalize_path;
+use crate::output::{normalize_path, xml_node_to_string};
+use crate::xpath::XmlNode;
 
 // ---------------------------------------------------------------------------
 // Severity
@@ -53,8 +54,8 @@ pub struct ReportMatch {
     pub end_column: u32,
 
     // Content fields — Some only if selected by resolved ViewSet
-    /// Raw xml_fragment string; renderer converts natively (text → pretty-print, json → object).
-    pub tree:     Option<String>,
+    /// Native XML node tree; renderers convert directly (text → pretty-print, json → object).
+    pub tree:     Option<XmlNode>,
     /// XPath string value of the matched node.
     pub value:    Option<String>,
     /// Pre-computed column-precise source snippet (plain text; coloring in renderer).
@@ -90,7 +91,7 @@ impl Serialize for ReportMatch {
         map.serialize_entry("end_line", &self.end_line)?;
         map.serialize_entry("end_column", &self.end_column)?;
 
-        if let Some(ref v) = self.tree     { map.serialize_entry("tree", v)?; }
+        if let Some(ref v) = self.tree     { map.serialize_entry("tree", &xml_node_to_string(v))?; }
         if let Some(ref v) = self.value    { map.serialize_entry("value", v)?; }
         if let Some(ref v) = self.source   { map.serialize_entry("source", v)?; }
         if let Some(ref v) = self.lines    { map.serialize_entry("lines", v)?; }

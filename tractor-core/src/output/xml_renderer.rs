@@ -5,6 +5,7 @@
 
 use xot::{Xot, Node, Value};
 use std::collections::HashSet;
+use crate::xpath::XmlNode;
 
 /// ANSI color codes (following tractor brand guidelines)
 pub mod ansi {
@@ -555,6 +556,301 @@ pub fn render_xml_string(xml: &str, options: &RenderOptions) -> String {
     xml.to_string()
 }
 
+// ---------------------------------------------------------------------------
+// XmlNode-native rendering (no XML string parsing)
+// ---------------------------------------------------------------------------
+
+/// Render an XmlNode tree to a string with optional colors.
+///
+/// This is the native-IR equivalent of `render_xml_string` — it renders
+/// directly from the XmlNode tree without parsing an XML string.
+pub fn render_xml_node(node: &XmlNode, options: &RenderOptions) -> String {
+    let mut output = String::new();
+    render_xml_node_recursive(node, options, 0, &mut output);
+    output
+}
+
+/// Count all descendant elements in an XmlNode tree
+fn count_xml_node_descendants(node: &XmlNode) -> usize {
+    match node {
+        XmlNode::Element { children, .. } => {
+            let mut count = 0;
+            for child in children {
+                if matches!(child, XmlNode::Element { .. }) {
+                    count += 1;
+                    count += count_xml_node_descendants(child);
+                }
+            }
+            count
+        }
+        _ => 0,
+    }
+}
+
+/// Extract (line, col) from "start" attribute in an XmlNode element
+fn extract_xml_node_position(attrs: &[(String, String)]) -> Option<(u32, u32)> {
+    for (k, v) in attrs {
+        if k == "start" {
+            let parts: Vec<&str> = v.split(':').collect();
+            if parts.len() == 2 {
+                if let (Ok(line), Ok(col)) = (parts[0].parse(), parts[1].parse()) {
+                    return Some((line, col));
+                }
+            }
+        }
+    }
+    None
+}
+
+fn render_xml_node_recursive(
+    node: &XmlNode,
+    options: &RenderOptions,
+    depth: usize,
+    output: &mut String,
+) {
+    let indent = if options.pretty_print {
+        options.indent.repeat(depth)
+    } else {
+        String::new()
+    };
+
+    match node {
+        XmlNode::Element { name, attributes, children } => {
+            // In default mode, convert <File path="..."> to <file>path</file> + promote children
+            if name == "File" && !options.include_meta {
+                let path_value = attributes.iter()
+                    .find(|(k, _)| k == "path")
+                    .map(|(_, v)| v.as_str());
+                if let Some(path) = path_value {
+                    output.push_str(&indent);
+                    if options.use_color { output.push_str(ansi::DIM); }
+                    output.push('<');
+                    if options.use_color { output.push_str(ansi::RESET); output.push_str(ansi::BLUE); }
+                    output.push_str("file");
+                    if options.use_color { output.push_str(ansi::RESET); output.push_str(ansi::DIM); }
+                    output.push('>');
+                    if options.use_color { output.push_str(ansi::RESET); }
+                    output.push_str(&escape_xml(path));
+                    if options.use_color { output.push_str(ansi::DIM); }
+                    output.push_str("</");
+                    if options.use_color { output.push_str(ansi::RESET); output.push_str(ansi::BLUE); }
+                    output.push_str("file");
+                    if options.use_color { output.push_str(ansi::RESET); output.push_str(ansi::DIM); }
+                    output.push('>');
+                    if options.use_color { output.push_str(ansi::RESET); }
+                    if options.pretty_print { output.push('\n'); }
+                }
+                for child in children {
+                    render_xml_node_recursive(child, options, depth, output);
+                }
+                return;
+            }
+
+            let truncate_children = options.max_depth.map_or(false, |max| depth >= max);
+
+            let is_highlighted = options.highlights.as_ref().map_or(false, |highlights| {
+                extract_xml_node_position(attributes)
+                    .map_or(false, |pos| highlights.contains(&pos))
+            });
+
+            output.push_str(&indent);
+
+            if is_highlighted && options.use_color {
+                output.push_str(ansi::BG_YELLOW);
+                output.push_str(ansi::BLACK);
+                output.push_str(ansi::BOLD);
+            }
+
+            // Opening tag
+            render_xml_node_open_tag(name, attributes, options, is_highlighted, output);
+
+            if children.is_empty() {
+                // Self-closing
+                if !is_highlighted && options.use_color { output.push_str(ansi::DIM); }
+                output.push_str("/>");
+                if options.use_color { output.push_str(ansi::RESET); }
+                if options.pretty_print { output.push('\n'); }
+            } else if children.len() == 1 && matches!(&children[0], XmlNode::Text(_)) {
+                // Single text child — inline
+                if !is_highlighted && options.use_color { output.push_str(ansi::DIM); }
+                output.push('>');
+                if is_highlighted && options.use_color { output.push_str(ansi::RESET); }
+
+                if let XmlNode::Text(text) = &children[0] {
+                    output.push_str(&escape_xml(text));
+                }
+
+                if is_highlighted && options.use_color {
+                    output.push_str(ansi::BG_YELLOW);
+                    output.push_str(ansi::BLACK);
+                    output.push_str(ansi::BOLD);
+                } else if options.use_color {
+                    output.push_str(ansi::DIM);
+                }
+                output.push_str("</");
+                if !is_highlighted && options.use_color {
+                    output.push_str(ansi::RESET);
+                    output.push_str(ansi::BLUE);
+                }
+                output.push_str(name);
+                if !is_highlighted && options.use_color {
+                    output.push_str(ansi::RESET);
+                    output.push_str(ansi::DIM);
+                }
+                output.push('>');
+                if options.use_color { output.push_str(ansi::RESET); }
+                if options.pretty_print { output.push('\n'); }
+            } else if truncate_children {
+                let child_count = count_xml_node_descendants(node);
+                if !is_highlighted && options.use_color { output.push_str(ansi::DIM); }
+                output.push('>');
+                if options.use_color { output.push_str(ansi::RESET); }
+                if options.pretty_print {
+                    output.push('\n');
+                    let child_indent = options.indent.repeat(depth + 1);
+                    output.push_str(&child_indent);
+                    if options.use_color { output.push_str(ansi::DIM); }
+                    output.push_str(&format!("<!-- ... ({} children) -->\n", child_count));
+                    if options.use_color { output.push_str(ansi::RESET); }
+                }
+
+                output.push_str(&indent);
+                if is_highlighted && options.use_color {
+                    output.push_str(ansi::BG_YELLOW);
+                    output.push_str(ansi::BLACK);
+                    output.push_str(ansi::BOLD);
+                } else if options.use_color {
+                    output.push_str(ansi::DIM);
+                }
+                output.push_str("</");
+                if !is_highlighted && options.use_color {
+                    output.push_str(ansi::RESET);
+                    output.push_str(ansi::BLUE);
+                }
+                output.push_str(name);
+                if !is_highlighted && options.use_color {
+                    output.push_str(ansi::RESET);
+                    output.push_str(ansi::DIM);
+                }
+                output.push('>');
+                if options.use_color { output.push_str(ansi::RESET); }
+                if options.pretty_print { output.push('\n'); }
+            } else {
+                // Multiple children
+                if !is_highlighted && options.use_color { output.push_str(ansi::DIM); }
+                output.push('>');
+                if options.use_color { output.push_str(ansi::RESET); }
+                if options.pretty_print { output.push('\n'); }
+
+                for child in children {
+                    render_xml_node_recursive(child, options, depth + 1, output);
+                }
+
+                output.push_str(&indent);
+                if is_highlighted && options.use_color {
+                    output.push_str(ansi::BG_YELLOW);
+                    output.push_str(ansi::BLACK);
+                    output.push_str(ansi::BOLD);
+                } else if options.use_color {
+                    output.push_str(ansi::DIM);
+                }
+                output.push_str("</");
+                if !is_highlighted && options.use_color {
+                    output.push_str(ansi::RESET);
+                    output.push_str(ansi::BLUE);
+                }
+                output.push_str(name);
+                if !is_highlighted && options.use_color {
+                    output.push_str(ansi::RESET);
+                    output.push_str(ansi::DIM);
+                }
+                output.push('>');
+                if options.use_color { output.push_str(ansi::RESET); }
+                if options.pretty_print { output.push('\n'); }
+            }
+        }
+        XmlNode::Text(text) => {
+            if options.pretty_print {
+                let trimmed = text.trim();
+                if !trimmed.is_empty() {
+                    output.push_str(&indent);
+                    output.push_str(&escape_xml(trimmed));
+                    output.push('\n');
+                }
+            } else {
+                output.push_str(&escape_xml(text));
+            }
+        }
+        XmlNode::Comment(text) => {
+            output.push_str(&indent);
+            if options.use_color { output.push_str(ansi::DIM); }
+            output.push_str("<!--");
+            output.push_str(text);
+            output.push_str("-->");
+            if options.use_color { output.push_str(ansi::RESET); }
+            if options.pretty_print { output.push('\n'); }
+        }
+        XmlNode::ProcessingInstruction { target, data } => {
+            output.push_str(&indent);
+            if options.use_color { output.push_str(ansi::DIM); }
+            output.push_str("<?");
+            output.push_str(target);
+            if let Some(d) = data {
+                output.push(' ');
+                output.push_str(d);
+            }
+            output.push_str("?>");
+            if options.use_color { output.push_str(ansi::RESET); }
+            if options.pretty_print { output.push('\n'); }
+        }
+    }
+}
+
+fn render_xml_node_open_tag(
+    name: &str,
+    attributes: &[(String, String)],
+    options: &RenderOptions,
+    is_highlighted: bool,
+    output: &mut String,
+) {
+    if !is_highlighted && options.use_color { output.push_str(ansi::DIM); }
+    output.push('<');
+    if !is_highlighted && options.use_color { output.push_str(ansi::RESET); }
+
+    if !is_highlighted && options.use_color { output.push_str(ansi::BLUE); }
+    output.push_str(name);
+    if !is_highlighted && options.use_color { output.push_str(ansi::RESET); }
+
+    for (attr_name, attr_value) in attributes {
+        if !options.include_meta {
+            if matches!(
+                attr_name.as_str(),
+                "start" | "end" | "startLine" | "startCol" | "endLine" | "endCol"
+                | "kind" | "field" | "path"
+            ) {
+                continue;
+            }
+        }
+
+        output.push(' ');
+        if !is_highlighted && options.use_color { output.push_str(ansi::CYAN); }
+        output.push_str(attr_name);
+        if !is_highlighted && options.use_color { output.push_str(ansi::RESET); }
+
+        if !is_highlighted && options.use_color { output.push_str(ansi::DIM); }
+        output.push_str("=\"");
+        if !is_highlighted && options.use_color { output.push_str(ansi::RESET); }
+
+        if !is_highlighted && options.use_color { output.push_str(ansi::YELLOW); }
+        output.push_str(&escape_xml(attr_value));
+        if !is_highlighted && options.use_color { output.push_str(ansi::RESET); }
+
+        if !is_highlighted && options.use_color { output.push_str(ansi::DIM); }
+        output.push('"');
+        if !is_highlighted && options.use_color { output.push_str(ansi::RESET); }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -591,4 +887,75 @@ mod tests {
         assert!(!output.contains("<b>"));
         assert!(!output.contains("<c>"));
     }
+}
+
+// ---------------------------------------------------------------------------
+// XmlNode → compact XML string (no pretty-printing, no colors)
+// ---------------------------------------------------------------------------
+
+/// Serialize an XmlNode to a compact XML string (no formatting, no colors).
+///
+/// Used by the report serializer to emit `tree` as an XML string in
+/// structured output formats (JSON/YAML snapshots, etc.).
+pub fn xml_node_to_string(node: &XmlNode) -> String {
+    let mut out = String::new();
+    write_xml_compact(node, &mut out);
+    out
+}
+
+fn write_xml_compact(node: &XmlNode, out: &mut String) {
+    match node {
+        XmlNode::Element { name, attributes, children } => {
+            out.push('<');
+            out.push_str(name);
+            for (k, v) in attributes {
+                out.push(' ');
+                out.push_str(k);
+                out.push_str("=\"");
+                out.push_str(&escape_xml_attr(v));
+                out.push('"');
+            }
+            if children.is_empty() {
+                out.push_str("/>");
+            } else {
+                out.push('>');
+                for child in children {
+                    write_xml_compact(child, out);
+                }
+                out.push_str("</");
+                out.push_str(name);
+                out.push('>');
+            }
+        }
+        XmlNode::Text(text) => {
+            out.push_str(&escape_xml_text(text));
+        }
+        XmlNode::Comment(text) => {
+            out.push_str("<!--");
+            out.push_str(text);
+            out.push_str("-->");
+        }
+        XmlNode::ProcessingInstruction { target, data } => {
+            out.push_str("<?");
+            out.push_str(target);
+            if let Some(d) = data {
+                out.push(' ');
+                out.push_str(d);
+            }
+            out.push_str("?>");
+        }
+    }
+}
+
+fn escape_xml_text(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+}
+
+fn escape_xml_attr(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
 }

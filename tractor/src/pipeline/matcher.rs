@@ -26,8 +26,7 @@ pub fn match_to_report_match(
     severity: Option<Severity>,
     message: Option<String>,
 ) -> ReportMatch {
-    let tree   = view.has(ViewField::Tree)
-                     .then(|| m.xml_fragment.clone().unwrap_or_default());
+    let tree   = if view.has(ViewField::Tree) { m.xml_node.clone() } else { None };
     let value  = view.has(ViewField::Value)
                      .then(|| m.value.clone());
     let source = view.has(ViewField::Source)
@@ -193,8 +192,8 @@ pub fn query_files_batched(
 pub fn print_schema_from_matches(matches: &[Match], depth: Option<usize>, use_color: bool) {
     let mut collector = SchemaCollector::new();
     for m in matches {
-        if let Some(xml) = &m.xml_fragment {
-            collector.collect_from_xml_string(xml);
+        if let Some(ref node) = m.xml_node {
+            collector.collect_from_xml_node(node);
         }
     }
     print!("{}", collector.format(depth, use_color));
