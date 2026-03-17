@@ -54,6 +54,9 @@ pub struct Match {
     pub source_lines: Arc<Vec<String>>,
     /// The matched XML node tree (native IR, replaces xml_fragment string)
     pub xml_node: Option<XmlNode>,
+    /// True when `value` contains a JSON string from an XPath map/array constructor.
+    /// Output renderers can parse this back into structured data for proper nesting.
+    pub is_json_value: bool,
 }
 
 impl Match {
@@ -68,6 +71,7 @@ impl Match {
             value,
             source_lines: Arc::new(Vec::new()),
             xml_node: None,
+            is_json_value: false,
         }
     }
 
@@ -90,6 +94,7 @@ impl Match {
             value,
             source_lines,
             xml_node: None,
+            is_json_value: false,
         }
     }
 

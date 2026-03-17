@@ -70,7 +70,17 @@ pub fn match_to_value(
             ViewField::Column => { obj.insert("column".into(), json!(rm.column)); }
             ViewField::Value  => {
                 if let Some(ref v) = rm.value {
-                    obj.insert("value".into(), json!(v));
+                    if rm.is_json_value {
+                        // Parse JSON map/array values into real JSON objects
+                        // instead of double-escaping them as strings.
+                        if let Ok(parsed) = serde_json::from_str::<Value>(v) {
+                            obj.insert("value".into(), parsed);
+                        } else {
+                            obj.insert("value".into(), json!(v));
+                        }
+                    } else {
+                        obj.insert("value".into(), json!(v));
+                    }
                 }
             }
             ViewField::Source => {
@@ -113,4 +123,78 @@ pub fn match_to_value(
     }
 
     Value::Object(obj)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tractor_core::report::{Report, Summary};
+
+    fn make_match(value: &str, is_json: bool) -> ReportMatch {
+        ReportMatch {
+            file: "test.xml".to_string(),
+            line: 1, column: 1, end_line: 1, end_column: 1,
+            tree: None,
+            value: Some(value.to_string()),
+            source: None, lines: None, reason: None, severity: None,
+            message: None, rule_id: None,
+            is_json_value: is_json,
+        }
+    }
+
+    #[test]
+    fn test_map_value_rendered_as_json_object() {
+        let rm = make_match(r#"{"name":"foo","val":"1"}"#, true);
+        let view = ViewSet::single(ViewField::Value);
+        let opts = RenderOptions::new();
+        let val = match_to_value(&rm, &view, &opts, GroupBy::None);
+        // The value should be a real JSON object, not a string
+        let v = val.get("value").unwrap();
+        assert!(v.is_object(), "Map value should be a JSON object, got: {}", v);
+        assert_eq!(v["name"], "foo");
+        assert_eq!(v["val"], "1");
+    }
+
+    #[test]
+    fn test_non_json_value_rendered_as_string() {
+        let rm = make_match("hello world", false);
+        let view = ViewSet::single(ViewField::Value);
+        let opts = RenderOptions::new();
+        let val = match_to_value(&rm, &view, &opts, GroupBy::None);
+        // Regular value should remain a string
+        let v = val.get("value").unwrap();
+        assert!(v.is_string(), "Regular value should be a string, got: {}", v);
+        assert_eq!(v.as_str().unwrap(), "hello world");
+    }
+
+    #[test]
+    fn test_map_value_in_full_json_report() {
+        let rm = make_match(r#"{"name":"foo","count":3}"#, true);
+        let summary = Summary {
+            passed: true, total: 1, files_affected: 1,
+            errors: 0, warnings: 0, expected: None,
+        };
+        let report = Report::query(vec![rm], summary);
+        let view = ViewSet::new(vec![ViewField::File, ViewField::Value]);
+        let opts = RenderOptions::new();
+        let output = render_json_report(&report, &view, &opts);
+        let parsed: serde_json::Value = serde_json::from_str(&output).unwrap();
+        // The map value should be embedded as a real JSON object
+        let match_value = &parsed["matches"][0]["value"];
+        assert!(match_value.is_object(), "Map value should be a JSON object in report output, got: {}", match_value);
+        assert_eq!(match_value["name"], "foo");
+        assert_eq!(match_value["count"], 3);
+    }
+
+    #[test]
+    fn test_string_that_looks_like_json_stays_string() {
+        // A string value that happens to look like JSON but is_json_value=false
+        // should remain a string (no accidental parsing)
+        let rm = make_match(r#"{"key":"val"}"#, false);
+        let view = ViewSet::single(ViewField::Value);
+        let opts = RenderOptions::new();
+        let val = match_to_value(&rm, &view, &opts, GroupBy::None);
+        let v = val.get("value").unwrap();
+        assert!(v.is_string(), "Non-json-flagged value should remain a string even if it looks like JSON");
+    }
 }

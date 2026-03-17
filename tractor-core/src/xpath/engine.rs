@@ -259,7 +259,9 @@ fn execute_direct_query(
                 }
                 xee_xpath::Item::Function(func) => {
                     let value = function_to_json_string(&func, documents.xot_mut());
-                    matches.push(Match::new(file_path.to_string(), value));
+                    let mut m = Match::new(file_path.to_string(), value);
+                    m.is_json_value = true;
+                    matches.push(m);
                 }
             }
         }
@@ -448,6 +450,42 @@ mod tests {
             .expect(&format!("Map value should be valid JSON, got: {}", matches[0].value));
         assert_eq!(parsed["name"], "foo");
         assert_eq!(parsed["val"], "1");
+    }
+
+    #[test]
+    fn test_map_constructor_is_json_value_flag() {
+        use crate::parser::load_xml_string_to_documents;
+
+        let xml = r#"<root><item><name>foo</name><value>1</value></item></root>"#;
+        let mut result = load_xml_string_to_documents(xml, "test.xml".to_string()).unwrap();
+        let engine = XPathEngine::new();
+
+        // Map results should have is_json_value = true
+        let matches = engine.query_documents(
+            &mut result.documents, result.doc_handle,
+            r#"//item ! map { "name": string(name) }"#,
+            Arc::new(vec![]), "test.xml"
+        ).unwrap();
+        assert_eq!(matches.len(), 1);
+        assert!(matches[0].is_json_value, "Map results should have is_json_value = true");
+
+        // Node results should have is_json_value = false
+        let matches = engine.query_documents(
+            &mut result.documents, result.doc_handle,
+            "//name",
+            Arc::new(vec![]), "test.xml"
+        ).unwrap();
+        assert_eq!(matches.len(), 1);
+        assert!(!matches[0].is_json_value, "Node results should have is_json_value = false");
+
+        // Atomic results should have is_json_value = false
+        let matches = engine.query_documents(
+            &mut result.documents, result.doc_handle,
+            "string(//name)",
+            Arc::new(vec![]), "test.xml"
+        ).unwrap();
+        assert_eq!(matches.len(), 1);
+        assert!(!matches[0].is_json_value, "Atomic results should have is_json_value = false");
     }
 
     #[test]
