@@ -51,7 +51,6 @@ pub fn match_to_report_match(
         severity,
         message,
         rule_id: None,
-        is_json_value: m.is_json_value,
     }
 }
 

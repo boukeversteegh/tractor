@@ -67,8 +67,6 @@ pub struct ReportMatch {
     pub message:  Option<String>,
     /// Rule identifier for multi-rule reports (future: `--rules` flag).
     pub rule_id:  Option<String>,
-    /// True when `value` contains a JSON string from an XPath map/array constructor.
-    pub is_json_value: bool,
 }
 
 impl Serialize for ReportMatch {
@@ -227,7 +225,6 @@ mod tests {
             severity: None,
             message: None,
             rule_id: None,
-            is_json_value: false,
         }
     }
 
@@ -247,7 +244,6 @@ mod tests {
             severity: Some(Severity::Error),
             message: None,
             rule_id: None,
-            is_json_value: false,
         };
         let m2 = ReportMatch {
             file: "src/lib.rs".to_string(),
@@ -263,7 +259,6 @@ mod tests {
             severity: Some(Severity::Warning),
             message: None,
             rule_id: None,
-            is_json_value: false,
         };
         let summary = Summary {
             passed: false,

@@ -158,7 +158,6 @@ fn xot_node_to_xml_node(xot: &Xot, node: Node) -> XmlNode {
 /// Convert an XPath Function (map or array) to a JSON string representation.
 fn function_to_json_string(func: &xee_xpath::function::Function, xot: &mut Xot) -> String {
     use xee_interpreter::sequence::QNameOrString;
-    // Wrap the function item in a Sequence and use xee's JSON serializer
     let item = xee_xpath::Item::Function(func.clone());
     let seq = Sequence::from(item);
     let mut params = SerializationParameters::new();
@@ -166,6 +165,31 @@ fn function_to_json_string(func: &xee_xpath::function::Function, xot: &mut Xot) 
     match seq.serialize(params, xot) {
         Ok(json) => json,
         Err(_) => format!("{:?}", func),
+    }
+}
+
+/// Convert a `serde_json::Value` into an `XmlNode` tree.
+///
+/// This is the robust bridge between xee's JSON serializer (the only public
+/// API for inspecting map/array contents) and our native IR. The JSON string
+/// is parsed exactly once at query time; downstream renderers work with the
+/// structured `XmlNode` directly.
+fn json_value_to_xml_node(val: &serde_json::Value) -> XmlNode {
+    match val {
+        serde_json::Value::Object(map) => {
+            let entries = map.iter()
+                .map(|(k, v)| (k.clone(), json_value_to_xml_node(v)))
+                .collect();
+            XmlNode::Map { entries }
+        }
+        serde_json::Value::Array(arr) => {
+            let items = arr.iter().map(json_value_to_xml_node).collect();
+            XmlNode::Array { items }
+        }
+        serde_json::Value::String(s) => XmlNode::Text(s.clone()),
+        serde_json::Value::Number(n) => XmlNode::Number(n.as_f64().unwrap_or(0.0)),
+        serde_json::Value::Bool(b) => XmlNode::Boolean(*b),
+        serde_json::Value::Null => XmlNode::Null,
     }
 }
 
@@ -258,9 +282,12 @@ fn execute_direct_query(
                     matches.push(Match::new(file_path.to_string(), value));
                 }
                 xee_xpath::Item::Function(func) => {
-                    let value = function_to_json_string(&func, documents.xot_mut());
-                    let mut m = Match::new(file_path.to_string(), value);
-                    m.is_json_value = true;
+                    let json_str = function_to_json_string(&func, documents.xot_mut());
+                    let mut m = Match::new(file_path.to_string(), json_str.clone());
+                    // Parse the JSON into structured XmlNode IR
+                    if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&json_str) {
+                        m.xml_node = Some(json_value_to_xml_node(&parsed));
+                    }
                     matches.push(m);
                 }
             }
@@ -453,39 +480,42 @@ mod tests {
     }
 
     #[test]
-    fn test_map_constructor_is_json_value_flag() {
+    fn test_map_result_has_structured_tree() {
         use crate::parser::load_xml_string_to_documents;
 
         let xml = r#"<root><item><name>foo</name><value>1</value></item></root>"#;
         let mut result = load_xml_string_to_documents(xml, "test.xml".to_string()).unwrap();
         let engine = XPathEngine::new();
 
-        // Map results should have is_json_value = true
+        // Map results should have a Map variant in xml_node
         let matches = engine.query_documents(
             &mut result.documents, result.doc_handle,
             r#"//item ! map { "name": string(name) }"#,
             Arc::new(vec![]), "test.xml"
         ).unwrap();
         assert_eq!(matches.len(), 1);
-        assert!(matches[0].is_json_value, "Map results should have is_json_value = true");
+        assert!(matches!(matches[0].xml_node, Some(XmlNode::Map { .. })),
+            "Map results should have XmlNode::Map in tree, got: {:?}", matches[0].xml_node);
 
-        // Node results should have is_json_value = false
+        // Node results should have an Element variant
         let matches = engine.query_documents(
             &mut result.documents, result.doc_handle,
             "//name",
             Arc::new(vec![]), "test.xml"
         ).unwrap();
         assert_eq!(matches.len(), 1);
-        assert!(!matches[0].is_json_value, "Node results should have is_json_value = false");
+        assert!(matches!(matches[0].xml_node, Some(XmlNode::Element { .. })),
+            "Node results should have XmlNode::Element in tree");
 
-        // Atomic results should have is_json_value = false
+        // Atomic results should have no tree
         let matches = engine.query_documents(
             &mut result.documents, result.doc_handle,
             "string(//name)",
             Arc::new(vec![]), "test.xml"
         ).unwrap();
         assert_eq!(matches.len(), 1);
-        assert!(!matches[0].is_json_value, "Atomic results should have is_json_value = false");
+        assert!(matches[0].xml_node.is_none(),
+            "Atomic results should have no tree");
     }
 
     #[test]
@@ -497,21 +527,28 @@ mod tests {
         let engine = XPathEngine::new();
 
         // Map with node values (not string() wrapped) — xee serializes nodes
-        // as their XML representation within the JSON string values
+        // as their XML representation, then we parse back to XmlNode::Map
         let matches = engine.query_documents(
             &mut result.documents, result.doc_handle,
             r#"//item ! map { "name": name, "val": value }"#,
             Arc::new(vec![]), "test.xml"
         ).unwrap();
         assert_eq!(matches.len(), 1);
-        assert!(matches[0].is_json_value);
-        let parsed: serde_json::Value = serde_json::from_str(&matches[0].value)
-            .expect("Map with node values should still be valid JSON");
-        // Node values are serialized as XML strings by xee
-        assert!(parsed["name"].as_str().unwrap().contains("foo"),
-            "Node value should contain text content, got: {}", parsed["name"]);
-        assert!(parsed["val"].as_str().unwrap().contains("1"),
-            "Node value should contain text content, got: {}", parsed["val"]);
+        // Should have structured Map in tree
+        match &matches[0].xml_node {
+            Some(XmlNode::Map { entries }) => {
+                assert_eq!(entries.len(), 2);
+                assert_eq!(entries[0].0, "name");
+                assert_eq!(entries[1].0, "val");
+                // Node values become Text strings (from xee's XML serialization)
+                if let XmlNode::Text(ref s) = entries[0].1 {
+                    assert!(s.contains("foo"), "Node value should contain 'foo', got: {}", s);
+                } else {
+                    panic!("Expected Text for node value, got: {:?}", entries[0].1);
+                }
+            }
+            other => panic!("Expected XmlNode::Map, got: {:?}", other),
+        }
     }
 
     #[test]
