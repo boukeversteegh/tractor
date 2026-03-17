@@ -538,13 +538,21 @@ mod tests {
         match &matches[0].xml_node {
             Some(XmlNode::Map { entries }) => {
                 assert_eq!(entries.len(), 2);
-                assert_eq!(entries[0].0, "name");
-                assert_eq!(entries[1].0, "val");
+                // Look up by key (order depends on serde_json's BTreeMap)
+                let name_val = entries.iter().find(|(k, _)| k == "name")
+                    .expect("Should have 'name' key");
+                let val_val = entries.iter().find(|(k, _)| k == "val")
+                    .expect("Should have 'val' key");
                 // Node values become Text strings (from xee's XML serialization)
-                if let XmlNode::Text(ref s) = entries[0].1 {
+                if let XmlNode::Text(ref s) = name_val.1 {
                     assert!(s.contains("foo"), "Node value should contain 'foo', got: {}", s);
                 } else {
-                    panic!("Expected Text for node value, got: {:?}", entries[0].1);
+                    panic!("Expected Text for 'name' value, got: {:?}", name_val.1);
+                }
+                if let XmlNode::Text(ref s) = val_val.1 {
+                    assert!(s.contains("1"), "Node value should contain '1', got: {}", s);
+                } else {
+                    panic!("Expected Text for 'val' value, got: {:?}", val_val.1);
                 }
             }
             other => panic!("Expected XmlNode::Map, got: {:?}", other),
