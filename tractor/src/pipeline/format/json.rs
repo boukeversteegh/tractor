@@ -69,15 +69,6 @@ pub fn match_to_value(
             ViewField::Line   => { obj.insert("line".into(),   json!(rm.line)); }
             ViewField::Column => { obj.insert("column".into(), json!(rm.column)); }
             ViewField::Value  => {
-                // If tree holds structured XPath data (Map/Array), render it
-                // as a real JSON value instead of a string.
-                if let Some(ref node) = rm.tree {
-                    if matches!(node, tractor_core::xpath::XmlNode::Map { .. }
-                                    | tractor_core::xpath::XmlNode::Array { .. }) {
-                        obj.insert("value".into(), xml_node_to_json(node, render_opts.max_depth));
-                        continue;
-                    }
-                }
                 if let Some(ref v) = rm.value {
                     obj.insert("value".into(), json!(v));
                 }
@@ -149,29 +140,29 @@ mod tests {
             file: "test.xml".to_string(),
             line: 1, column: 1, end_line: 1, end_column: 1,
             tree: Some(tree),
-            value: Some("{}".to_string()), // fallback string
+            value: None, // maps have no value — data is in tree
             source: None, lines: None, reason: None, severity: None,
             message: None, rule_id: None,
         }
     }
 
     #[test]
-    fn test_map_value_rendered_as_json_object() {
+    fn test_map_tree_rendered_as_json_object() {
         let rm = make_map_match(vec![
             ("name", XmlNode::Text("foo".into())),
             ("val", XmlNode::Text("1".into())),
         ]);
-        let view = ViewSet::single(ViewField::Value);
+        let view = ViewSet::single(ViewField::Tree);
         let opts = RenderOptions::new();
         let val = match_to_value(&rm, &view, &opts, GroupBy::None);
-        let v = val.get("value").unwrap();
-        assert!(v.is_object(), "Map value should be a JSON object, got: {}", v);
+        let v = val.get("tree").unwrap();
+        assert!(v.is_object(), "Map tree should be a JSON object, got: {}", v);
         assert_eq!(v["name"], "foo");
         assert_eq!(v["val"], "1");
     }
 
     #[test]
-    fn test_non_json_value_rendered_as_string() {
+    fn test_plain_value_rendered_as_string() {
         let rm = make_plain_match("hello world");
         let view = ViewSet::single(ViewField::Value);
         let opts = RenderOptions::new();
@@ -182,7 +173,7 @@ mod tests {
     }
 
     #[test]
-    fn test_map_value_in_full_json_report() {
+    fn test_map_tree_in_full_json_report() {
         let rm = make_map_match(vec![
             ("name", XmlNode::Text("foo".into())),
             ("count", XmlNode::Number(3.0)),
@@ -192,25 +183,13 @@ mod tests {
             errors: 0, warnings: 0, expected: None,
         };
         let report = Report::query(vec![rm], summary);
-        let view = ViewSet::new(vec![ViewField::File, ViewField::Value]);
+        let view = ViewSet::new(vec![ViewField::File, ViewField::Tree]);
         let opts = RenderOptions::new();
         let output = render_json_report(&report, &view, &opts);
         let parsed: serde_json::Value = serde_json::from_str(&output).unwrap();
-        let match_value = &parsed["matches"][0]["value"];
-        assert!(match_value.is_object(), "Map value should be a JSON object in report output, got: {}", match_value);
-        assert_eq!(match_value["name"], "foo");
-        assert_eq!(match_value["count"], 3.0);
-    }
-
-    #[test]
-    fn test_string_that_looks_like_json_stays_string() {
-        // A string value that happens to look like JSON but has no tree
-        // should remain a string (no accidental parsing)
-        let rm = make_plain_match(r#"{"key":"val"}"#);
-        let view = ViewSet::single(ViewField::Value);
-        let opts = RenderOptions::new();
-        let val = match_to_value(&rm, &view, &opts, GroupBy::None);
-        let v = val.get("value").unwrap();
-        assert!(v.is_string(), "Value without Map tree should remain a string even if it looks like JSON");
+        let match_tree = &parsed["matches"][0]["tree"];
+        assert!(match_tree.is_object(), "Map tree should be a JSON object in report output, got: {}", match_tree);
+        assert_eq!(match_tree["name"], "foo");
+        assert_eq!(match_tree["count"], 3.0);
     }
 }

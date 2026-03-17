@@ -283,8 +283,9 @@ fn execute_direct_query(
                 }
                 xee_xpath::Item::Function(func) => {
                     let json_str = function_to_json_string(&func, documents.xot_mut());
-                    let mut m = Match::new(file_path.to_string(), json_str.clone());
-                    // Parse the JSON into structured XmlNode IR
+                    let mut m = Match::new(file_path.to_string(), String::new());
+                    // Parse the JSON into structured XmlNode IR — value stays empty,
+                    // all data lives in the tree field.
                     if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&json_str) {
                         m.xml_node = Some(json_value_to_xml_node(&parsed));
                     }
@@ -453,9 +454,14 @@ mod tests {
         assert!(matches.is_ok(), "Map constructor should parse: {:?}", matches.err());
         let m = matches.unwrap();
         assert_eq!(m.len(), 2, "Should get 2 maps");
-        // Verify JSON-formatted output
-        assert!(m[0].value.contains("\"n\""), "Map value should contain key 'n', got: {}", m[0].value);
-        assert!(m[0].value.contains("\"v\""), "Map value should contain key 'v', got: {}", m[0].value);
+        // Verify structured tree
+        match &m[0].xml_node {
+            Some(XmlNode::Map { entries }) => {
+                assert!(entries.iter().any(|(k, _)| k == "n"), "Map should have key 'n'");
+                assert!(entries.iter().any(|(k, _)| k == "v"), "Map should have key 'v'");
+            }
+            other => panic!("Expected XmlNode::Map, got: {:?}", other),
+        }
     }
 
     #[test]
@@ -472,11 +478,16 @@ mod tests {
             Arc::new(vec![]), "test.xml"
         ).unwrap();
         assert_eq!(matches.len(), 1);
-        // Should be valid JSON
-        let parsed: serde_json::Value = serde_json::from_str(&matches[0].value)
-            .expect(&format!("Map value should be valid JSON, got: {}", matches[0].value));
-        assert_eq!(parsed["name"], "foo");
-        assert_eq!(parsed["val"], "1");
+        // Tree should be a structured Map
+        match &matches[0].xml_node {
+            Some(XmlNode::Map { entries }) => {
+                let name_entry = entries.iter().find(|(k, _)| k == "name").expect("key 'name'");
+                let val_entry = entries.iter().find(|(k, _)| k == "val").expect("key 'val'");
+                assert_eq!(name_entry.1, XmlNode::Text("foo".into()));
+                assert_eq!(val_entry.1, XmlNode::Text("1".into()));
+            }
+            other => panic!("Expected XmlNode::Map, got: {:?}", other),
+        }
     }
 
     #[test]

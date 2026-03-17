@@ -7,7 +7,6 @@ use tractor_core::{
     output::{render_document, RenderOptions},
     parse_to_documents, parse_string_to_documents,
     report::{ReportMatch, Severity},
-    xpath::XmlNode,
 };
 
 use super::context::RunContext;
@@ -27,21 +26,7 @@ pub fn match_to_report_match(
     severity: Option<Severity>,
     message: Option<String>,
 ) -> ReportMatch {
-    let tree   = if view.has(ViewField::Tree) {
-        m.xml_node.clone()
-    } else if view.has(ViewField::Value) {
-        // Keep structured data (Map/Array) even for value-only views so the
-        // JSON formatter can render them as real objects instead of strings.
-        m.xml_node.as_ref().and_then(|node| {
-            if matches!(node, XmlNode::Map { .. } | XmlNode::Array { .. }) {
-                Some(node.clone())
-            } else {
-                None
-            }
-        })
-    } else {
-        None
-    };
+    let tree   = if view.has(ViewField::Tree) { m.xml_node.clone() } else { None };
     let value  = view.has(ViewField::Value)
                      .then(|| m.value.clone());
     let source = view.has(ViewField::Source)
