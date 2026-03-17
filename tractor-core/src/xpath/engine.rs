@@ -7,7 +7,7 @@ use std::cell::RefCell;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Instant;
-use xee_xpath::{Documents, DocumentHandle, Queries, Query, query::SequenceQuery};
+use xee_xpath::{Documents, DocumentHandle, Queries, Query, Sequence, SerializationParameters, query::SequenceQuery};
 use xot::{Node, Value, Xot};
 
 // Timing stats (in microseconds) for profiling
@@ -101,6 +101,20 @@ fn parse_location_attr(value: &str) -> Option<(u32, u32)> {
     Some((line, col))
 }
 
+/// Convert an XPath Function (map or array) to a JSON string representation.
+fn function_to_json_string(func: &xee_xpath::function::Function, xot: &mut Xot) -> String {
+    use xee_interpreter::sequence::QNameOrString;
+    // Wrap the function item in a Sequence and use xee's JSON serializer
+    let item = xee_xpath::Item::Function(func.clone());
+    let seq = Sequence::from(item);
+    let mut params = SerializationParameters::new();
+    params.method = QNameOrString::String("json".to_string());
+    match seq.serialize(params, xot) {
+        Ok(json) => json,
+        Err(_) => format!("{:?}", func),
+    }
+}
+
 // Thread-local cache for compiled XPath queries
 // Each thread gets its own compiled query to avoid RefCell conflicts
 thread_local! {
@@ -190,7 +204,7 @@ fn execute_direct_query(
                     matches.push(Match::new(file_path.to_string(), value));
                 }
                 xee_xpath::Item::Function(func) => {
-                    let value = format!("{:?}", func);
+                    let value = function_to_json_string(&func, documents.xot_mut());
                     matches.push(Match::new(file_path.to_string(), value));
                 }
             }
@@ -338,6 +352,48 @@ mod tests {
             "//item", Arc::new(vec![]), "test2.xml"
         ).unwrap();
         assert_eq!(matches2.len(), 2);
+    }
+
+    #[test]
+    fn test_map_constructor() {
+        use crate::parser::load_xml_string_to_documents;
+
+        let xml = r#"<root><item><name>foo</name><value>1</value></item><item><name>bar</name><value>2</value></item></root>"#;
+        let mut result = load_xml_string_to_documents(xml, "test.xml".to_string()).unwrap();
+        let engine = XPathEngine::new();
+
+        let matches = engine.query_documents(
+            &mut result.documents, result.doc_handle,
+            r#"//item ! map { "n": string(name), "v": string(value) }"#,
+            Arc::new(vec![]), "test.xml"
+        );
+        assert!(matches.is_ok(), "Map constructor should parse: {:?}", matches.err());
+        let m = matches.unwrap();
+        assert_eq!(m.len(), 2, "Should get 2 maps");
+        // Verify JSON-formatted output
+        assert!(m[0].value.contains("\"n\""), "Map value should contain key 'n', got: {}", m[0].value);
+        assert!(m[0].value.contains("\"v\""), "Map value should contain key 'v', got: {}", m[0].value);
+    }
+
+    #[test]
+    fn test_map_constructor_json_format() {
+        use crate::parser::load_xml_string_to_documents;
+
+        let xml = r#"<root><item><name>foo</name><value>1</value></item></root>"#;
+        let mut result = load_xml_string_to_documents(xml, "test.xml".to_string()).unwrap();
+        let engine = XPathEngine::new();
+
+        let matches = engine.query_documents(
+            &mut result.documents, result.doc_handle,
+            r#"//item ! map { "name": string(name), "val": string(value) }"#,
+            Arc::new(vec![]), "test.xml"
+        ).unwrap();
+        assert_eq!(matches.len(), 1);
+        // Should be valid JSON
+        let parsed: serde_json::Value = serde_json::from_str(&matches[0].value)
+            .expect(&format!("Map value should be valid JSON, got: {}", matches[0].value));
+        assert_eq!(parsed["name"], "foo");
+        assert_eq!(parsed["val"], "1");
     }
 
     #[test]

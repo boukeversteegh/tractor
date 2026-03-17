@@ -77,6 +77,7 @@ tree-sitter-sequel-tsql = { workspace = true, optional = true }
 
 # XPath 3.1
 xee-xpath.workspace = true
+xee-interpreter = { git = "https://github.com/Paligo/xee" }
 xot.workspace = true
 
 # Utilities (always needed)
