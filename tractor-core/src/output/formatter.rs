@@ -20,8 +20,8 @@ use regex::Regex;
 /// Falls back to the match value if no XML fragment is available.
 /// Always ends with a newline when `opts.pretty_print` is true.
 pub fn render_tree_match(m: &Match, opts: &RenderOptions) -> String {
-    if let Some(ref xml) = m.xml_fragment {
-        let rendered = render_xml_string(xml, opts);
+    if let Some(xml) = m.xml_fragment_string() {
+        let rendered = render_xml_string(&xml, opts);
         if opts.pretty_print && !rendered.ends_with('\n') {
             format!("{}\n", rendered)
         } else {
@@ -40,9 +40,10 @@ pub fn render_tree_match(m: &Match, opts: &RenderOptions) -> String {
 /// is set in `opts.language`.
 pub fn render_source_match(m: &Match, opts: &RenderOptions) -> String {
     let snippet = m.extract_source_snippet();
-    if opts.use_color && m.xml_fragment.is_some() && !snippet.is_empty() {
+    let xml_str = m.xml_fragment_string();
+    if opts.use_color && xml_str.is_some() && !snippet.is_empty() {
         let category_fn = get_syntax_category(opts.language.as_deref().unwrap_or(""));
-        let spans = extract_syntax_spans_with_lang(m.xml_fragment.as_ref().unwrap(), category_fn);
+        let spans = extract_syntax_spans_with_lang(xml_str.as_ref().unwrap(), category_fn);
         if !spans.is_empty() {
             let highlighted = highlight_source(
                 &snippet, &spans, m.line, m.column, m.end_line, m.end_column,
@@ -62,9 +63,10 @@ pub fn render_lines_match(m: &Match, opts: &RenderOptions) -> String {
     let lines_vec: Vec<String> = lines.iter()
         .map(|l| l.trim_end_matches('\r').to_string())
         .collect();
-    if opts.use_color && m.xml_fragment.is_some() {
+    let xml_str = m.xml_fragment_string();
+    if opts.use_color && xml_str.is_some() {
         let category_fn = get_syntax_category(opts.language.as_deref().unwrap_or(""));
-        let spans = extract_syntax_spans_with_lang(m.xml_fragment.as_ref().unwrap(), category_fn);
+        let spans = extract_syntax_spans_with_lang(xml_str.as_ref().unwrap(), category_fn);
         if !spans.is_empty() {
             return format!("{}\n", highlight_lines(&lines_vec, &spans, m.line, m.end_line));
         }

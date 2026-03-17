@@ -1,6 +1,7 @@
 //! XPath 3.1 query engine implementation
 
 use super::{Match, XPathError};
+use super::match_result::XmlNode;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::cell::RefCell;
@@ -101,6 +102,59 @@ fn parse_location_attr(value: &str) -> Option<(u32, u32)> {
     Some((line, col))
 }
 
+/// Walk an xot node tree and build a native `XmlNode` IR.
+fn xot_node_to_xml_node(xot: &Xot, node: Node) -> XmlNode {
+    match xot.value(node) {
+        Value::Element(element) => {
+            let name = xot.local_name_str(element.name()).to_string();
+            let attributes: Vec<(String, String)> = xot
+                .attributes(node)
+                .iter()
+                .map(|(name_id, value)| {
+                    (xot.local_name_str(name_id).to_string(), value.to_string())
+                })
+                .collect();
+            let children: Vec<XmlNode> = xot
+                .children(node)
+                .map(|child| xot_node_to_xml_node(xot, child))
+                .collect();
+            XmlNode::Element { name, attributes, children }
+        }
+        Value::Text(text) => {
+            XmlNode::Text(text.get().to_string())
+        }
+        Value::Comment(comment) => {
+            XmlNode::Comment(comment.get().to_string())
+        }
+        Value::ProcessingInstruction(pi) => {
+            XmlNode::ProcessingInstruction {
+                target: xot.local_name_str(pi.target()).to_string(),
+                data: pi.data().map(|d| d.to_string()),
+            }
+        }
+        Value::Document => {
+            // For document nodes, collect children into a wrapper element
+            let children: Vec<XmlNode> = xot
+                .children(node)
+                .map(|child| xot_node_to_xml_node(xot, child))
+                .collect();
+            if children.len() == 1 {
+                children.into_iter().next().unwrap()
+            } else {
+                XmlNode::Element {
+                    name: "_document_".to_string(),
+                    attributes: Vec::new(),
+                    children,
+                }
+            }
+        }
+        _ => {
+            // Namespace nodes etc — emit as empty text
+            XmlNode::Text(String::new())
+        }
+    }
+}
+
 /// Convert an XPath Function (map or array) to a JSON string representation.
 fn function_to_json_string(func: &xee_xpath::function::Function, xot: &mut Xot) -> String {
     use xee_interpreter::sequence::QNameOrString;
@@ -180,8 +234,8 @@ fn execute_direct_query(
                     let ts0 = Instant::now();
                     let value = xot.string_value(node);
                     let ts1 = Instant::now();
-                    // Serialize to XML only for the fragment (still needed for xml output)
-                    let xml_fragment = xot.to_string(node).unwrap_or_default();
+                    // Build native XmlNode IR (no XML string serialization)
+                    let xml_node = xot_node_to_xml_node(xot, node);
                     let ts2 = Instant::now();
 
                     string_value_time += (ts1 - ts0).as_micros() as u64;
@@ -195,7 +249,7 @@ fn execute_direct_query(
                         end_col,
                         value,
                         Arc::clone(&source_lines),
-                    ).with_xml_fragment(xml_fragment);
+                    ).with_xml_node(xml_node);
 
                     matches.push(m);
                 }
