@@ -1,0 +1,9 @@
+matches:
+- file: tests/integration/formats/sample.cs
+  line: 1
+  tree:
+  - Foo
+- file: tests/integration/formats/sample.cs
+  line: 1
+  tree:
+  - Qux

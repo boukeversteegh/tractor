@@ -1,0 +1,18 @@
+{
+  "matches": [
+    {
+      "file": "tests/integration/formats/sample.cs",
+      "line": 1,
+      "tree": {
+        "name": "Foo"
+      }
+    },
+    {
+      "file": "tests/integration/formats/sample.cs",
+      "line": 1,
+      "tree": {
+        "name": "Qux"
+      }
+    }
+  ]
+}

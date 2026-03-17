@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report>
+  <matches>
+    <match file="tests/integration/formats/sample.cs" line="1" column="1">
+      <tree>
+        [
+          "Foo"
+        ]
+      </tree>
+    </match>
+    <match file="tests/integration/formats/sample.cs" line="1" column="1">
+      <tree>
+        [
+          "Qux"
+        ]
+      </tree>
+    </match>
+  </matches>
+</report>
