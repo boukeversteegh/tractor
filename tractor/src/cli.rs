@@ -180,6 +180,7 @@ Report view [default: tree]
   source    Exact matched source text
   lines     Full source lines containing each match
   count     Total match count
+  query     The XPath query as received by tractor
   schema    Structural overview of element types")]
     pub view: Option<String>,
 
@@ -227,6 +228,7 @@ Report view [default: tree]
   source    Exact matched source text
   lines     Full source lines containing each match
   count     Total match count
+  query     The XPath query as received by tractor
   schema    Structural overview of element types")]
     pub view: Option<String>,
 
@@ -278,6 +280,7 @@ Report view [default: tree]
   source    Exact matched source text
   lines     Full source lines containing each match
   count     Total match count
+  query     The XPath query as received by tractor
   schema    Structural overview of element types")]
     pub view: Option<String>,
 
