@@ -158,6 +158,10 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
         "check", "tests/integration/formats/sample.cs", "-x", "class",
         "--reason", "class found", "--color", "always",
     ]),
+    // --help snapshots: track changes to CLI help text per subcommand
+    ("help/query.txt", &["query", "--help"]),
+    ("help/check.txt", &["check", "--help"]),
+    ("help/test.txt",  &["test",  "--help"]),
 ];
 
 fn main() {
