@@ -3,17 +3,23 @@
 use std::sync::Arc;
 
 // ---------------------------------------------------------------------------
-// XmlNode — native IR for matched XML fragments
+// XmlNode — native IR for matched XML fragments and XPath data types
 // ---------------------------------------------------------------------------
 
-/// A native representation of an XML node tree, replacing serialized XML strings.
+/// A native representation of an XML node tree or XPath value.
 ///
-/// This avoids the serialize-then-reparse roundtrip: instead of calling
-/// `xot.to_string(node)` and later parsing the string back, we walk the xot
-/// tree once and build an `XmlNode` that downstream renderers can consume
-/// directly.
-#[derive(Debug, Clone)]
+/// For XML nodes this avoids the serialize-then-reparse roundtrip: instead of
+/// calling `xot.to_string(node)` and later parsing the string back, we walk
+/// the xot tree once and build an `XmlNode` that downstream renderers can
+/// consume directly.
+///
+/// For XPath maps and arrays, the structured data is represented natively
+/// rather than stored as a JSON string — enabling renderers to work with
+/// real typed data without deferred parsing.
+#[derive(Debug, Clone, PartialEq)]
 pub enum XmlNode {
+    // --- XML node variants ---
+
     /// An XML element with tag name, attributes, and children.
     Element {
         name: String,
@@ -29,6 +35,20 @@ pub enum XmlNode {
         target: String,
         data: Option<String>,
     },
+
+    // --- XPath data variants (maps, arrays, scalars) ---
+
+    /// An XPath map: ordered sequence of key–value pairs.
+    /// Keys are always strings (from XPath map constructors).
+    Map { entries: Vec<(String, XmlNode)> },
+    /// An XPath array: ordered sequence of values.
+    Array { items: Vec<XmlNode> },
+    /// A numeric value (integer or float).
+    Number(f64),
+    /// A boolean value.
+    Boolean(bool),
+    /// An explicit null / empty-sequence value.
+    Null,
 }
 
 // ---------------------------------------------------------------------------
@@ -52,7 +72,7 @@ pub struct Match {
     pub value: String,
     /// Original source lines for location-based output (Arc for cheap cloning)
     pub source_lines: Arc<Vec<String>>,
-    /// The matched XML node tree (native IR, replaces xml_fragment string)
+    /// The matched XML node tree or XPath structured data (map/array).
     pub xml_node: Option<XmlNode>,
 }
 
