@@ -183,7 +183,7 @@ mod tests {
         ]);
         let summary = Summary {
             passed: true, total: 1, files_affected: 1,
-            errors: 0, warnings: 0, expected: None,
+            errors: 0, warnings: 0, expected: None, query: None,
         };
         let report = Report::query(vec![rm], summary);
         let view = ViewSet::new(vec![ViewField::File, ViewField::Tree]);
