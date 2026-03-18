@@ -71,6 +71,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
         errors: 0,
         warnings: 0,
         expected: Some(expect.clone()),
+        query: None,
     };
 
     let report = Report::test(report_matches, summary);

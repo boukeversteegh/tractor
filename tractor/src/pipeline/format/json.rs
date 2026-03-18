@@ -6,9 +6,9 @@ pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderO
     let mut root = serde_json::Map::new();
 
     // Summary: always present for check/test reports (structural, not view-gated).
-    // For query reports, only include if explicitly requested via -v summary.
+    // For query reports, only include if explicitly requested via -v summary or -v query.
     let show_summary = if matches!(report.kind, ReportKind::Query) {
-        view.has(ViewField::Summary)
+        view.has(ViewField::Summary) || view.has(ViewField::Query)
     } else {
         true
     };
@@ -22,6 +22,9 @@ pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderO
             s.insert("warnings".into(), json!(summary.warnings));
             if let Some(ref expected) = summary.expected {
                 s.insert("expected".into(), json!(expected));
+            }
+            if let Some(ref query) = summary.query {
+                s.insert("query".into(), json!(query));
             }
             root.insert("summary".into(), Value::Object(s));
         }
