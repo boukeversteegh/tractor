@@ -1,17 +1,17 @@
 {
   "matches": [
     {
-      "file": "tests/integration/formats/sample.cs",
+      "file": "tests/integration/formats/sample-classes.cs",
       "line": 1,
       "tree": [
-        "Foo"
+        "Calculator"
       ]
     },
     {
-      "file": "tests/integration/formats/sample.cs",
+      "file": "tests/integration/formats/sample-classes.cs",
       "line": 1,
       "tree": [
-        "Qux"
+        "Greeter"
       ]
     }
   ]

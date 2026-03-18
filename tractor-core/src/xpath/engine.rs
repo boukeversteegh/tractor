@@ -174,12 +174,16 @@ fn function_to_json_string(func: &xee_xpath::function::Function, xot: &mut Xot) 
 /// API for inspecting map/array contents) and our native IR. The JSON string
 /// is parsed exactly once at query time; downstream renderers work with the
 /// structured `XmlNode` directly.
+///
+/// Map keys are sorted lexicographically so that output is deterministic
+/// regardless of xee's internal hash-map iteration order.
 fn json_value_to_xml_node(val: &serde_json::Value) -> XmlNode {
     match val {
         serde_json::Value::Object(map) => {
-            let entries = map.iter()
+            let mut entries: Vec<_> = map.iter()
                 .map(|(k, v)| (k.clone(), json_value_to_xml_node(v)))
                 .collect();
+            entries.sort_by(|(a, _), (b, _)| a.cmp(b));
             XmlNode::Map { entries }
         }
         serde_json::Value::Array(arr) => {

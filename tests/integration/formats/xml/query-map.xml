@@ -1,17 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <report>
   <matches>
-    <match file="tests/integration/formats/sample.cs" line="1" column="1">
+    <match file="tests/integration/formats/sample-classes.cs" line="1" column="1">
       <tree>
         {
-          "name": "Foo"
+          "methods": [
+            "Add",
+            "Subtract",
+            "Multiply"
+          ],
+          "name": "Calculator"
         }
       </tree>
     </match>
-    <match file="tests/integration/formats/sample.cs" line="1" column="1">
+    <match file="tests/integration/formats/sample-classes.cs" line="1" column="1">
       <tree>
         {
-          "name": "Qux"
+          "methods": [
+            "Hello",
+            "Goodbye"
+          ],
+          "name": "Greeter"
         }
       </tree>
     </match>

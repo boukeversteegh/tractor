@@ -119,29 +119,34 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
         "check", "tests/integration/formats/sample.cs", "-x", "class",
         "--reason", "class found", "-v", "tree,reason,severity", "-f", "xml", "--depth", "1",
     ]),
-    // map/array constructor output: XPath 3.1 structured results rendered natively
+    // map/array constructor output: XPath 3.1 structured results rendered natively.
+    // Uses sample-classes.cs (Calculator + Greeter, each with multiple methods) so
+    // the output is realistic and easy to inspect visually.
     ("json/query-map.json", &[
-        "query", "tests/integration/formats/sample.cs", "-l", "csharp",
-        "-x", r#"//class ! map { "name": string(name) }"#, "-f", "json",
+        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
+        "-x", r#"//class ! map { "name": string(name), "methods": array { body/method/name/string(.) } }"#,
+        "-f", "json",
     ]),
     ("json/query-array.json", &[
-        "query", "tests/integration/formats/sample.cs", "-l", "csharp",
+        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
         "-x", r#"//class ! array { string(name) }"#, "-f", "json",
     ]),
     ("yaml/query-map.yaml", &[
-        "query", "tests/integration/formats/sample.cs", "-l", "csharp",
-        "-x", r#"//class ! map { "name": string(name) }"#, "-f", "yaml",
+        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
+        "-x", r#"//class ! map { "name": string(name), "methods": array { body/method/name/string(.) } }"#,
+        "-f", "yaml",
     ]),
     ("yaml/query-array.yaml", &[
-        "query", "tests/integration/formats/sample.cs", "-l", "csharp",
+        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
         "-x", r#"//class ! array { string(name) }"#, "-f", "yaml",
     ]),
     ("xml/query-map.xml", &[
-        "query", "tests/integration/formats/sample.cs", "-l", "csharp",
-        "-x", r#"//class ! map { "name": string(name) }"#, "-f", "xml",
+        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
+        "-x", r#"//class ! map { "name": string(name), "methods": array { body/method/name/string(.) } }"#,
+        "-f", "xml",
     ]),
     ("xml/query-array.xml", &[
-        "query", "tests/integration/formats/sample.cs", "-l", "csharp",
+        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
         "-x", r#"//class ! array { string(name) }"#, "-f", "xml",
     ]),
     // -g file (group-by) snapshots: query mode with multi-file grouping

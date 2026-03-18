@@ -1,9 +1,16 @@
 matches:
-- file: tests/integration/formats/sample.cs
+- file: tests/integration/formats/sample-classes.cs
   line: 1
   tree:
-    name: Foo
-- file: tests/integration/formats/sample.cs
+    methods:
+    - Add
+    - Subtract
+    - Multiply
+    name: Calculator
+- file: tests/integration/formats/sample-classes.cs
   line: 1
   tree:
-    name: Qux
+    methods:
+    - Hello
+    - Goodbye
+    name: Greeter
