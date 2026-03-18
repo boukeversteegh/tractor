@@ -175,15 +175,34 @@ fn function_to_json_string(func: &xee_xpath::function::Function, xot: &mut Xot) 
 /// is parsed exactly once at query time; downstream renderers work with the
 /// structured `XmlNode` directly.
 ///
-/// Map keys are sorted lexicographically so that output is deterministic
-/// regardless of xee's internal hash-map iteration order.
+/// Map keys are sorted to maximise readability: scalar values (strings,
+/// numbers, booleans, null) appear first, then nested map values, then
+/// arrays/lists. Within each tier the keys are ordered lexicographically.
+/// This places identifying fields like `name` before large child collections
+/// like `methods`, mirroring the typical top-to-bottom reading order used in
+/// source code. The ordering is fully deterministic regardless of xee's
+/// internal hash-map iteration order.
 fn json_value_to_xml_node(val: &serde_json::Value) -> XmlNode {
+    /// Assign a display tier to a value so that scalars print before maps
+    /// and maps print before arrays.
+    fn value_tier(v: &XmlNode) -> u8 {
+        match v {
+            XmlNode::Text(_) | XmlNode::Number(_) | XmlNode::Boolean(_) | XmlNode::Null => 0,
+            XmlNode::Map { .. } => 1,
+            XmlNode::Array { .. } => 2,
+            // XML node types (Element, Comment, ProcessingInstruction) cannot
+            // appear in a JSON-derived tree; treat them as complex (tier 1).
+            XmlNode::Element { .. } | XmlNode::Comment(_) | XmlNode::ProcessingInstruction { .. } => 1,
+        }
+    }
     match val {
         serde_json::Value::Object(map) => {
             let mut entries: Vec<_> = map.iter()
                 .map(|(k, v)| (k.clone(), json_value_to_xml_node(v)))
                 .collect();
-            entries.sort_by(|(a, _), (b, _)| a.cmp(b));
+            entries.sort_by(|(a, av), (b, bv)| {
+                value_tier(av).cmp(&value_tier(bv)).then_with(|| a.cmp(b))
+            });
             XmlNode::Map { entries }
         }
         serde_json::Value::Array(arr) => {

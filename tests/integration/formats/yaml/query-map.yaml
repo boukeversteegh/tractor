@@ -3,12 +3,12 @@ matches:
   line: 1
   tree:
     classes:
-    - methods:
+    - name: Calculator
+      methods:
       - Add
       - Subtract
       - Multiply
-      name: Calculator
-    - methods:
+    - name: Greeter
+      methods:
       - Hello
       - Goodbye
-      name: Greeter

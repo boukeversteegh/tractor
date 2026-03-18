@@ -6,19 +6,19 @@
       "tree": {
         "classes": [
           {
+            "name": "Calculator",
             "methods": [
               "Add",
               "Subtract",
               "Multiply"
-            ],
-            "name": "Calculator"
+            ]
           },
           {
+            "name": "Greeter",
             "methods": [
               "Hello",
               "Goodbye"
-            ],
-            "name": "Greeter"
+            ]
           }
         ]
       }
