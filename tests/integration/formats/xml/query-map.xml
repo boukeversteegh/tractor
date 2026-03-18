@@ -4,23 +4,23 @@
     <match file="tests/integration/formats/sample-classes.cs" line="1" column="1">
       <tree>
         {
-          "methods": [
-            "Add",
-            "Subtract",
-            "Multiply"
-          ],
-          "name": "Calculator"
-        }
-      </tree>
-    </match>
-    <match file="tests/integration/formats/sample-classes.cs" line="1" column="1">
-      <tree>
-        {
-          "methods": [
-            "Hello",
-            "Goodbye"
-          ],
-          "name": "Greeter"
+          "classes": [
+            {
+              "methods": [
+                "Add",
+                "Subtract",
+                "Multiply"
+              ],
+              "name": "Calculator"
+            },
+            {
+              "methods": [
+                "Hello",
+                "Goodbye"
+              ],
+              "name": "Greeter"
+            }
+          ]
         }
       </tree>
     </match>

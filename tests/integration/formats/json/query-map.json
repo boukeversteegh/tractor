@@ -4,23 +4,23 @@
       "file": "tests/integration/formats/sample-classes.cs",
       "line": 1,
       "tree": {
-        "methods": [
-          "Add",
-          "Subtract",
-          "Multiply"
-        ],
-        "name": "Calculator"
-      }
-    },
-    {
-      "file": "tests/integration/formats/sample-classes.cs",
-      "line": 1,
-      "tree": {
-        "methods": [
-          "Hello",
-          "Goodbye"
-        ],
-        "name": "Greeter"
+        "classes": [
+          {
+            "methods": [
+              "Add",
+              "Subtract",
+              "Multiply"
+            ],
+            "name": "Calculator"
+          },
+          {
+            "methods": [
+              "Hello",
+              "Goodbye"
+            ],
+            "name": "Greeter"
+          }
+        ]
       }
     }
   ]
