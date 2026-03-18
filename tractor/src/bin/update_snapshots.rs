@@ -47,6 +47,10 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
         "query", "tests/integration/formats/sample.cs", "-x", "class",
         "-v", "summary",
     ]),
+    ("text/query-query.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-v", "query",
+    ]),
     ("text/query-location.txt", &[
         "query", "tests/integration/formats/sample.cs", "-x", "class",
         "-v", "file,line",
@@ -83,6 +87,10 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
     ("json/query-summary.json", &[
         "query", "tests/integration/formats/sample.cs", "-x", "class",
         "-v", "summary", "-f", "json",
+    ]),
+    ("json/query-query.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-v", "query", "-f", "json",
     ]),
     // -f xml
     ("xml/query.xml", &[
