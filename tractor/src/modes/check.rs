@@ -52,6 +52,7 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
         errors: if matches!(severity, Severity::Error) { total } else { 0 },
         warnings: if matches!(severity, Severity::Warning) { total } else { 0 },
         expected: None,
+        query: None,
     };
 
     let report = Report::check(report_matches, summary);

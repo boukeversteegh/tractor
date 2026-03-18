@@ -46,9 +46,9 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         append_match(&mut out, rm, view, render_opts, *group_file);
     }
 
-    // Summary: always for check/test; gated on -v summary for query
+    // Summary: always for check/test; gated on -v summary or -v query for query
     let show_summary = match report.kind {
-        ReportKind::Query => view.has(ViewField::Summary),
+        ReportKind::Query => view.has(ViewField::Summary) || view.has(ViewField::Query),
         ReportKind::Check | ReportKind::Test => true,
     };
     if show_summary {
@@ -152,7 +152,13 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
 }
 
 fn format_summary(summary: &Summary, kind: ReportKind) -> String {
-    match kind {
+    let mut out = String::new();
+
+    if let Some(ref query) = summary.query {
+        out.push_str(&format!("Query: {}\n", query));
+    }
+
+    let count_line = match kind {
         ReportKind::Query => {
             let f = summary.files_affected;
             if f <= 1 {
@@ -179,5 +185,7 @@ fn format_summary(summary: &Summary, kind: ReportKind) -> String {
         ReportKind::Test => {
             if summary.passed { "passed\n".to_string() } else { "failed\n".to_string() }
         }
-    }
+    };
+    out.push_str(&count_line);
+    out
 }

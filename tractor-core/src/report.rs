@@ -130,6 +130,10 @@ pub struct Summary {
     /// The expected value string for test assertions (`none`, `some`, or a number).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub expected: Option<String>,
+
+    /// The XPath query as received by tractor (set when `-v query` is used).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub query: Option<String>,
 }
 
 // ---------------------------------------------------------------------------
@@ -267,6 +271,7 @@ mod tests {
             errors: 1,
             warnings: 1,
             expected: None,
+            query: None,
         };
         let report = Report::check(vec![m1, m2], summary);
         let json = report.to_json();
@@ -298,6 +303,7 @@ mod tests {
             errors: 0,
             warnings: 0,
             expected: Some("some".to_string()),
+            query: None,
         };
         let report = Report::test(vec![m], summary);
         let json = report.to_json();
