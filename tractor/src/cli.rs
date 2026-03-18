@@ -65,6 +65,15 @@ EXAMPLES:
     # JSON report output
     tractor check "src/**/*.cs" -x "//comment[contains(.,'TODO')]" --reason "TODO" -f json
 
+    # Scan for invisible/malicious Unicode (GlassWorm, Trojan Source)
+    tractor scan "src/**/*.rs"
+
+    # Scan with GitHub Actions annotations
+    tractor scan "src/**/*.js" -f github
+
+    # Scan only for GlassWorm-style variation selectors
+    tractor scan "src/**/*" --category variation-selector,supplementary-private-use
+
     # Whitespace-insensitive matching
     tractor file.cs -x "//type[.='Dictionary<string,int>']" -W
 
@@ -89,6 +98,8 @@ pub enum Command {
     Test(TestArgs),
     /// Set matched node values (modify files in-place)
     Set(SetArgs),
+    /// Scan files for invisible/malicious Unicode characters (GlassWorm, Trojan Source)
+    Scan(ScanArgs),
 }
 
 /// Shared arguments available in all modes
@@ -315,4 +326,52 @@ pub struct SetArgs {
     /// Value to set matched nodes to
     #[arg(long = "value", help_heading = "Set")]
     pub value: String,
+}
+
+/// Scan mode: detect invisible/malicious Unicode characters
+#[derive(Args, Debug)]
+pub struct ScanArgs {
+    /// Files to process (supports glob patterns like "src/**/*.rs")
+    #[arg()]
+    pub files: Vec<String>,
+
+    /// Output format [default: gcc]
+    #[arg(short = 'f', long = "format", default_value = "gcc", help_heading = "Format",
+        long_help = "\
+Output format [default: gcc]
+  gcc       file:line:col: severity: reason (default for scan)
+  github    GitHub Actions annotation (::error file=...)
+  json      JSON report envelope
+  yaml      YAML report envelope
+  text      Human-readable plain text")]
+    pub format: String,
+
+    /// Color output: auto (default), always, never
+    #[arg(long = "color", default_value = "auto", help_heading = "Format")]
+    pub color: String,
+
+    /// Disable color output
+    #[arg(long = "no-color", help_heading = "Format")]
+    pub no_color: bool,
+
+    /// Number of parallel workers
+    #[arg(short = 'c', long = "concurrency", help_heading = "Advanced")]
+    pub concurrency: Option<usize>,
+
+    /// Show verbose output
+    #[arg(long = "verbose", help_heading = "Advanced")]
+    pub verbose: bool,
+
+    /// Threat categories to scan for (default: all)
+    #[arg(long = "category", help_heading = "Scan",
+        long_help = "\
+Threat categories to scan for (comma-separated, default: all)
+  bidi-control             Bidirectional text controls (Trojan Source)
+  zero-width               Zero-width invisible characters
+  variation-selector       Variation selectors (GlassWorm payloads)
+  tag-character            Unicode tag characters
+  supplementary-private-use  Supplementary Private Use Area
+  invisible-formatting     Other invisible formatting characters
+  homoglyph                Characters resembling ASCII (Cyrillic/Greek)")]
+    pub category: Option<String>,
 }

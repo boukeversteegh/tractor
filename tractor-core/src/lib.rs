@@ -18,6 +18,7 @@ pub mod parallel;
 pub mod xot_builder;
 pub mod xot_transform;
 pub mod report;
+pub mod unicode_safety;
 
 // Language transforms - available for both native and WASM
 pub mod languages;
