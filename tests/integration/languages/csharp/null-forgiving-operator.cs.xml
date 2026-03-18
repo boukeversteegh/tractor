@@ -2,8 +2,8 @@ tests/integration/languages/csharp/null-forgiving-operator.cs:1
 <Files>
   <file>tests/integration/languages/csharp/null-forgiving-operator.cs</file>
   <unit>
-    <comment>// Test: C# null-forgiving operator (!) should parse as postfix_unary_expression</comment>
-    <comment>// This was historically misidentified as broken due to shell escaping issues (! -&gt; \!)</comment>
+    <comment>// Test: C# null-forgiving operator (!) should parse as postfix_unary_expression
+// This was historically misidentified as broken due to shell escaping issues (! -&gt; \!)</comment>
     <class>
       <public/>
       class
@@ -39,7 +39,10 @@ tests/integration/languages/csharp/null-forgiving-operator.cs:1
                 </variable>
                 ;
               </local>
-              <comment>// Simple null-forgiving</comment>
+              <comment>
+                <leading/>
+                // Simple null-forgiving
+              </comment>
               <local>
                 <variable>
                   <implicit_type>var</implicit_type>
@@ -60,7 +63,10 @@ tests/integration/languages/csharp/null-forgiving-operator.cs:1
                 </variable>
                 ;
               </local>
-              <comment>// Chained member access</comment>
+              <comment>
+                <leading/>
+                // Chained member access
+              </comment>
               <local>
                 <variable>
                   <implicit_type>var</implicit_type>
@@ -92,7 +98,10 @@ tests/integration/languages/csharp/null-forgiving-operator.cs:1
                 </variable>
                 ;
               </local>
-              <comment>// In method call</comment>
+              <comment>
+                <leading/>
+                // In method call
+              </comment>
               <expression_statement>
                 <call>
                   <ref>Process</ref>
@@ -111,7 +120,10 @@ tests/integration/languages/csharp/null-forgiving-operator.cs:1
                 </call>
                 ;
               </expression_statement>
-              <comment>// Multiple on same line</comment>
+              <comment>
+                <leading/>
+                // Multiple on same line
+              </comment>
               <local>
                 <variable>
                   <implicit_type>var</implicit_type>
