@@ -1,0 +1,10 @@
+{
+  "matches": [
+    {
+      "value": "{\"name\":\"Calculator\"}"
+    },
+    {
+      "value": "{\"name\":\"Greeter\"}"
+    }
+  ]
+}

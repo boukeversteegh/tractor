@@ -216,6 +216,29 @@ fn json_value_to_xml_node(val: &serde_json::Value) -> XmlNode {
     }
 }
 
+/// Convert an XPath atomic value into the most specific `XmlNode` variant.
+///
+/// - Booleans → `XmlNode::Boolean`
+/// - Numeric types → `XmlNode::Number` (parsed from the canonical string value)
+/// - Everything else (strings, dates, QNames, …) → `XmlNode::Text`
+///
+/// `string_val` is the pre-computed canonical string value from
+/// `Item::string_value()`, passed in to avoid a second call.
+fn atomic_to_xml_node(atomic: &xee_xpath::Atomic, string_val: &str) -> XmlNode {
+    use xee_xpath::Atomic as A;
+    match atomic {
+        A::Boolean(b) => XmlNode::Boolean(*b),
+        A::Integer(_, _) | A::Decimal(_) | A::Float(_) | A::Double(_) => {
+            // The canonical string representation of numeric types (e.g. "1.5", "INF", "NaN")
+            // may not always parse back to f64 if the value is special (INF, NaN).
+            // Fall back to XmlNode::Text so the value is still visible in output.
+            string_val.parse::<f64>().map(XmlNode::Number)
+                .unwrap_or_else(|_| XmlNode::Text(string_val.to_string()))
+        }
+        _ => XmlNode::Text(string_val.to_string()),
+    }
+}
+
 // Thread-local cache for compiled XPath queries
 // Each thread gets its own compiled query to avoid RefCell conflicts
 thread_local! {
@@ -300,9 +323,18 @@ fn execute_direct_query(
 
                     matches.push(m);
                 }
-                xee_xpath::Item::Atomic(atomic) => {
-                    let value = atomic.xpath_representation();
-                    matches.push(Match::new(file_path.to_string(), value));
+                xee_xpath::Item::Atomic(ref atomic) => {
+                    // Use string_value() via Item for the plain value (no XPath syntax
+                    // quotes around strings, no "true()" for booleans, etc.).
+                    let xot = documents.xot();
+                    let value = item.string_value(xot)
+                        .unwrap_or_else(|_| atomic.xpath_representation());
+                    // Build a typed XmlNode so the value is accessible in tree-based
+                    // output fields (e.g. "-f json" default view includes tree).
+                    let xml_node = atomic_to_xml_node(&atomic, &value);
+                    let mut m = Match::new(file_path.to_string(), value);
+                    m.xml_node = Some(xml_node);
+                    matches.push(m);
                 }
                 xee_xpath::Item::Function(func) => {
                     let json_str = function_to_json_string(&func, documents.xot_mut());
@@ -541,15 +573,16 @@ mod tests {
         assert!(matches!(matches[0].xml_node, Some(XmlNode::Element { .. })),
             "Node results should have XmlNode::Element in tree");
 
-        // Atomic results should have no tree
+        // Atomic results should now have a typed XmlNode (Text/Number/Boolean)
         let matches = engine.query_documents(
             &mut result.documents, result.doc_handle,
             "string(//name)",
             Arc::new(vec![]), "test.xml"
         ).unwrap();
         assert_eq!(matches.len(), 1);
-        assert!(matches[0].xml_node.is_none(),
-            "Atomic results should have no tree");
+        assert_eq!(matches[0].value, "foo", "Atomic string value should be unquoted");
+        assert!(matches!(matches[0].xml_node, Some(XmlNode::Text(_))),
+            "Atomic string results should have XmlNode::Text in tree, got: {:?}", matches[0].xml_node);
     }
 
     #[test]

@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use rayon::prelude::*;
 use tractor_core::{
-    XPathEngine, Match,
+    XPathEngine, Match, XmlNode, xml_node_to_json,
     SchemaCollector,
     output::{render_document, RenderOptions},
     parse_to_documents, parse_string_to_documents,
@@ -27,16 +27,35 @@ pub fn match_to_report_match(
     message: Option<String>,
 ) -> ReportMatch {
     // Always keep structured data (Map/Array) — it's the only representation.
-    // For XML elements, only keep when the view requests tree.
+    // For XML elements and scalars (Text/Number/Boolean), only keep when the view requests tree.
     let tree = match &m.xml_node {
         Some(node) if matches!(node,
-            tractor_core::xpath::XmlNode::Map { .. } |
-            tractor_core::xpath::XmlNode::Array { .. }
+            XmlNode::Map { .. } |
+            XmlNode::Array { .. }
         ) => m.xml_node.clone(),
         _ => if view.has(ViewField::Tree) { m.xml_node.clone() } else { None },
     };
-    let value  = view.has(ViewField::Value)
-                     .then(|| m.value.clone());
+    // Build the value field: use the match string value for atomics; for Map/Array
+    // (which have no string-value) serialize to compact JSON so `-v value` is useful.
+    let value = if view.has(ViewField::Value) {
+        if !m.value.is_empty() {
+            Some(m.value.clone())
+        } else if let Some(ref node) = m.xml_node {
+            if matches!(node, XmlNode::Map { .. } | XmlNode::Array { .. }) {
+                let json = xml_node_to_json(node, None);
+                // serde_json::to_string can only fail on non-finite floats
+                // (JSON has no NaN/Infinity). Produce an empty string rather
+                // than silently dropping the match.
+                Some(serde_json::to_string(&json).unwrap_or_else(|_| String::new()))
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    } else {
+        None
+    };
     let source = view.has(ViewField::Source)
                      .then(|| m.extract_source_snippet());
     let lines  = view.has(ViewField::Lines)

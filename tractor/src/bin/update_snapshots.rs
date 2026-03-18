@@ -190,6 +190,16 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
         "check", "tests/integration/formats/sample.cs", "-x", "class",
         "--reason", "class found", "--color", "always",
     ]),
+    // atomic scalar results in -f json: string() produces XmlNode::Text in tree
+    ("json/query-atomic-string.json", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
+        "-x", r#"//class ! string(name)"#, "-f", "json",
+    ]),
+    // map constructor with -v value: Map serialized as compact JSON string
+    ("json/query-map-value.json", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
+        "-x", r#"//class ! map { "name": string(name) }"#, "-v", "value", "-f", "json",
+    ]),
     // --help snapshots: track changes to CLI help text per subcommand
     ("help/query.txt", &["query", "--help"]),
     ("help/check.txt", &["check", "--help"]),
