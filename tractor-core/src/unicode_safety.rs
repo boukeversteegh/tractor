@@ -33,6 +33,8 @@ pub enum ThreatCategory {
     InvisibleFormatting,
     /// Homoglyph: character visually similar to common ASCII
     Homoglyph,
+    /// Double BOM at file start
+    DoubleBom,
 }
 
 impl ThreatCategory {
@@ -45,6 +47,7 @@ impl ThreatCategory {
             ThreatCategory::SupplementaryPrivateUse => "supplementary-private-use",
             ThreatCategory::InvisibleFormatting => "invisible-formatting",
             ThreatCategory::Homoglyph => "homoglyph",
+            ThreatCategory::DoubleBom => "double-bom",
         }
     }
 
@@ -57,6 +60,7 @@ impl ThreatCategory {
             ThreatCategory::SupplementaryPrivateUse => "Supplementary Private Use Area character (GlassWorm payload carrier)",
             ThreatCategory::InvisibleFormatting => "Invisible formatting character has no visible rendering",
             ThreatCategory::Homoglyph => "Character visually resembles ASCII but has a different codepoint",
+            ThreatCategory::DoubleBom => "File starts with a double BOM (byte order mark)",
         }
     }
 
@@ -69,6 +73,7 @@ impl ThreatCategory {
             ThreatCategory::SupplementaryPrivateUse => "error",
             ThreatCategory::InvisibleFormatting => "warning",
             ThreatCategory::Homoglyph => "warning",
+            ThreatCategory::DoubleBom => "warning",
         }
     }
 }
@@ -255,13 +260,26 @@ pub fn scan_content(content: &str) -> Vec<UnicodeFinding> {
     let mut findings = Vec::new();
     let mut line: u32 = 1;
     let mut column: u32 = 1;
-    let mut byte_offset: usize = 0;
+    let mut char_offset: usize = 0;
+    let mut had_bom = false;
 
     for ch in content.chars() {
-        // Skip BOM at file start (byte offset 0) — that's legitimate
-        if ch == '\u{FEFF}' && byte_offset == 0 {
-            byte_offset += ch.len_utf8();
-            column += 1;
+        // Skip BOM at file start (char offset 0) — that's legitimate
+        if ch == '\u{FEFF}' && char_offset == 0 {
+            char_offset += 1;
+            had_bom = true;
+            continue;
+        }
+
+        // Double BOM: report as a distinct file-level finding at line 1, column 0
+        if ch == '\u{FEFF}' && char_offset == 1 && had_bom {
+            findings.push(UnicodeFinding {
+                line: 1,
+                column: 0,
+                codepoint: ch,
+                category: ThreatCategory::DoubleBom,
+            });
+            char_offset += 1;
             continue;
         }
 
@@ -280,7 +298,7 @@ pub fn scan_content(content: &str) -> Vec<UnicodeFinding> {
         } else {
             column += 1;
         }
-        byte_offset += ch.len_utf8();
+        char_offset += 1;
     }
 
     findings
@@ -371,6 +389,16 @@ mod tests {
         let findings = scan_content(content);
         assert_eq!(findings.len(), 1);
         assert_eq!(findings[0].category, ThreatCategory::ZeroWidth);
+    }
+
+    #[test]
+    fn test_double_bom_detected() {
+        let content = "\u{FEFF}\u{FEFF}let x = 1;";
+        let findings = scan_content(content);
+        assert_eq!(findings.len(), 1);
+        assert_eq!(findings[0].category, ThreatCategory::DoubleBom);
+        assert_eq!(findings[0].line, 1);
+        assert_eq!(findings[0].column, 0);
     }
 
     #[test]
