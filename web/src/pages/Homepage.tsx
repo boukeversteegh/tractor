@@ -95,7 +95,7 @@ export function Homepage() {
             {platform === 'windows' && (
               <div className="install-step">
                 <span className="step-label">2. Install</span>
-                <pre className="install-cmd"><code>move tractor-windows-x86_64.exe C:\Windows\tractor.exe</code></pre>
+                <pre className="install-cmd"><code>mkdir "%USERPROFILE%\bin"{'\n'}move tractor-windows-x86_64.exe "%USERPROFILE%\bin\tractor.exe"{'\n'}setx PATH "%PATH%;%USERPROFILE%\bin"</code></pre>
               </div>
             )}
           </div>
