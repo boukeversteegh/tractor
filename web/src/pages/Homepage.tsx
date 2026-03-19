@@ -2,10 +2,25 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MiniPlayground } from '../components/MiniPlayground';
 
-type Platform = 'unix' | 'windows';
+type Platform = 'linux' | 'macos' | 'windows';
+
+const RELEASE_BASE = 'https://github.com/boukeversteegh/tractor/releases/latest/download';
+
+const DOWNLOADS: Record<Platform, { url: string; filename: string }> = {
+  linux: { url: `${RELEASE_BASE}/tractor-linux-x86_64`, filename: 'tractor-linux-x86_64' },
+  macos: { url: `${RELEASE_BASE}/tractor-macos-arm64`, filename: 'tractor-macos-arm64' },
+  windows: { url: `${RELEASE_BASE}/tractor-windows-x86_64.exe`, filename: 'tractor-windows-x86_64.exe' },
+};
+
+function detectPlatform(): Platform {
+  const ua = navigator.userAgent.toLowerCase();
+  if (ua.includes('win')) return 'windows';
+  if (ua.includes('mac')) return 'macos';
+  return 'linux';
+}
 
 export function Homepage() {
-  const [platform, setPlatform] = useState<Platform>('unix');
+  const [platform, setPlatform] = useState<Platform>(detectPlatform);
 
   return (
     <div className="homepage">
@@ -37,13 +52,19 @@ export function Homepage() {
       <section className="install-section-wrapper">
         <div className="install-section">
           <div className="install-header">
-            <span>Setup</span>
+            <span>Install</span>
             <div className="platform-switch">
               <button
-                className={`platform-btn ${platform === 'unix' ? 'active' : ''}`}
-                onClick={() => setPlatform('unix')}
+                className={`platform-btn ${platform === 'linux' ? 'active' : ''}`}
+                onClick={() => setPlatform('linux')}
               >
-                Linux / macOS
+                Linux
+              </button>
+              <button
+                className={`platform-btn ${platform === 'macos' ? 'active' : ''}`}
+                onClick={() => setPlatform('macos')}
+              >
+                macOS
               </button>
               <button
                 className={`platform-btn ${platform === 'windows' ? 'active' : ''}`}
@@ -56,17 +77,27 @@ export function Homepage() {
 
           <div className="install-steps">
             <div className="install-step">
-              <span className="step-label">1. Install Rust</span>
-              {platform === 'unix' ? (
-                <pre className="install-cmd"><code>curl -fsSL https://sh.rustup.rs | sh</code></pre>
-              ) : (
-                <pre className="install-cmd"><code>winget install Rustlang.Rustup</code></pre>
-              )}
+              <span className="step-label">1. Download</span>
+              <pre className="install-cmd"><code><a href={DOWNLOADS[platform].url} className="download-link">{DOWNLOADS[platform].filename}</a></code></pre>
             </div>
-            <div className="install-step">
-              <span className="step-label">2. Install Tractor</span>
-              <pre className="install-cmd"><code>cargo install --git https://github.com/boukeversteegh/tractor tractor</code></pre>
-            </div>
+            {platform === 'linux' && (
+              <div className="install-step">
+                <span className="step-label">2. Install</span>
+                <pre className="install-cmd"><code>chmod +x tractor-linux-x86_64{'\n'}sudo mv tractor-linux-x86_64 /usr/local/bin/tractor</code></pre>
+              </div>
+            )}
+            {platform === 'macos' && (
+              <div className="install-step">
+                <span className="step-label">2. Install</span>
+                <pre className="install-cmd"><code>xattr -d com.apple.quarantine tractor-macos-arm64{'\n'}chmod +x tractor-macos-arm64{'\n'}sudo mv tractor-macos-arm64 /usr/local/bin/tractor</code></pre>
+              </div>
+            )}
+            {platform === 'windows' && (
+              <div className="install-step">
+                <span className="step-label">2. Install</span>
+                <pre className="install-cmd"><code>move tractor-windows-x86_64.exe C:\Windows\tractor.exe</code></pre>
+              </div>
+            )}
           </div>
         </div>
       </section>
