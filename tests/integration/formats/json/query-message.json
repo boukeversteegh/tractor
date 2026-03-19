@@ -12,23 +12,18 @@
             {
               "$type": "property",
               "public": true,
+              "type": "int",
               "name": "Bar",
-              "children": [
-                {
-                  "type": "int"
-                },
-                {
-                  "$type": "accessors",
-                  "children": [
-                    {
-                      "accessor": "get;"
-                    },
-                    {
-                      "accessor": "set;"
-                    }
-                  ]
-                }
-              ]
+              "accessors": {
+                "children": [
+                  {
+                    "accessor": "get;"
+                  },
+                  {
+                    "accessor": "set;"
+                  }
+                ]
+              }
             },
             {
               "$type": "method",
@@ -37,18 +32,10 @@
                 "type": "void"
               },
               "name": "Baz",
+              "parameters": "()",
               "body": {
-                "children": [
-                  {
-                    "block": "{ }"
-                  }
-                ]
-              },
-              "children": [
-                {
-                  "parameters": "()"
-                }
-              ]
+                "block": "{ }"
+              }
             }
           ]
         }

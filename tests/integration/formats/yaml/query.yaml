@@ -9,10 +9,9 @@ matches:
       children:
       - $type: property
         public: true
+        type: int
         name: Bar
-        children:
-        - type: int
-        - $type: accessors
+        accessors:
           children:
           - accessor: get;
           - accessor: set;
@@ -21,11 +20,9 @@ matches:
         returns:
           type: void
         name: Baz
+        parameters: ()
         body:
-          children:
-          - block: '{ }'
-        children:
-        - parameters: ()
+          block: '{ }'
 - file: tests/integration/formats/sample.cs
   line: 7
   tree:

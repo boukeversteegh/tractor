@@ -230,6 +230,15 @@ impl<'a> TreeBuilder<'a> {
                 let field_attr = self.get_name("field");
                 self.xot.attributes_mut(wrapper).insert(field_attr, field.to_string());
 
+                // Mark the inner element as a singleton child so the JSON
+                // serializer can lift it as a direct property on the wrapper.
+                // The wrapper guarantees exactly one semantic child.
+                let inner_name = self.xot.element(element)
+                    .map(|e| self.xot.local_name_str(e.name()).to_string());
+                if let Some(name_str) = inner_name {
+                    self.xot.attributes_mut(element).insert(field_attr, name_str);
+                }
+
                 self.xot.append(wrapper, element)?;
                 self.xot.append(parent, wrapper)?;
             } else {
@@ -348,6 +357,13 @@ impl<'a> TreeBuilder<'a> {
                 // Mark wrapper as field-backed for JSON property lifting
                 let field_attr = self.get_name("field");
                 self.xot.attributes_mut(wrapper).insert(field_attr, field.to_string());
+
+                // Mark the inner element as a singleton child
+                let inner_name = self.xot.element(element)
+                    .map(|e| self.xot.local_name_str(e.name()).to_string());
+                if let Some(name_str) = inner_name {
+                    self.xot.attributes_mut(element).insert(field_attr, name_str);
+                }
 
                 self.xot.append(wrapper, element)?;
                 self.xot.append(parent, wrapper)?;
@@ -596,13 +612,6 @@ impl XeeBuilder {
                     .ok_or_else(|| xot::Error::Io("Failed to get document node".to_string()))?;
                 let transform_fn = crate::languages::get_transform(lang);
                 crate::xot_transform::walk_transform(self.documents.xot_mut(), doc_node, transform_fn)?;
-                // Post-transform: lift singleton wrapper children
-                let singletons = crate::languages::get_singleton_wrappers(lang);
-                if !singletons.is_empty() {
-                    crate::xot_transform::helpers::lift_singleton_children(
-                        self.documents.xot_mut(), doc_node, singletons,
-                    );
-                }
             }
         }
         let t2 = Instant::now();
