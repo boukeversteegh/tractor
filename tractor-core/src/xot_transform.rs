@@ -425,7 +425,9 @@ pub mod helpers {
         "consequence",  // if true branch
         "alternative",  // if else branch
         "returns",      // return type
-        "body",         // function/class/loop body
+        // Note: "body" excluded — after transforms inline declaration lists,
+        // body can contain multiple children. Lifting the first child would
+        // violate cardinality-independence (issue #34).
     ];
 
     /// Mark the first element child of singleton wrappers with `field`.

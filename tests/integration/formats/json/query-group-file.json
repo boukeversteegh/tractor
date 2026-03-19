@@ -10,27 +10,28 @@
             "public": true,
             "name": "Foo",
             "body": {
-              "property": {
-                "public": true,
-                "name": "Bar",
-                "children": [
-                  {
-                    "type": "int"
-                  },
-                  {
-                    "$type": "accessors",
-                    "children": [
-                      {
-                        "accessor": "get;"
-                      },
-                      {
-                        "accessor": "set;"
-                      }
-                    ]
-                  }
-                ]
-              },
               "children": [
+                {
+                  "$type": "property",
+                  "public": true,
+                  "name": "Bar",
+                  "children": [
+                    {
+                      "type": "int"
+                    },
+                    {
+                      "$type": "accessors",
+                      "children": [
+                        {
+                          "accessor": "get;"
+                        },
+                        {
+                          "accessor": "set;"
+                        }
+                      ]
+                    }
+                  ]
+                },
                 {
                   "$type": "method",
                   "public": true,
@@ -39,7 +40,11 @@
                   },
                   "name": "Baz",
                   "body": {
-                    "block": "{ }"
+                    "children": [
+                      {
+                        "block": "{ }"
+                      }
+                    ]
                   },
                   "children": [
                     {
@@ -72,26 +77,29 @@
             "public": true,
             "name": "Alpha",
             "body": {
-              "property": {
-                "public": true,
-                "name": "Name",
-                "children": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "$type": "accessors",
-                    "children": [
-                      {
-                        "accessor": "get;"
-                      },
-                      {
-                        "accessor": "set;"
-                      }
-                    ]
-                  }
-                ]
-              }
+              "children": [
+                {
+                  "$type": "property",
+                  "public": true,
+                  "name": "Name",
+                  "children": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "$type": "accessors",
+                      "children": [
+                        {
+                          "accessor": "get;"
+                        },
+                        {
+                          "accessor": "set;"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
             }
           }
         }
