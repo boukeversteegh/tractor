@@ -12,7 +12,6 @@ AppPublisher=Tractor Contributors
 AppPublisherURL=https://github.com/boukeversteegh/tractor
 AppSupportURL=https://github.com/boukeversteegh/tractor/issues
 DefaultDirName={autopf}\Tractor
-DefaultGroupName=Tractor
 OutputBaseFilename=tractor-{#VERSION}-windows-x86_64-setup
 Compression=lzma2
 SolidCompression=yes
@@ -29,10 +28,6 @@ WizardStyle=modern
 
 [Files]
 Source: "tractor.exe"; DestDir: "{app}"; Flags: ignoreversion
-
-[Icons]
-Name: "{group}\Tractor (Command Prompt)"; Filename: "{cmd}"; Parameters: "/k tractor --help"; WorkingDir: "{%USERPROFILE}"
-Name: "{group}\Uninstall Tractor"; Filename: "{uninstallexe}"
 
 [Code]
 procedure CurStepChanged(CurStep: TSetupStep);
