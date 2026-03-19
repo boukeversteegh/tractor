@@ -141,6 +141,8 @@ jobs:
             cp "$dir/$name" "release/$name"
           done
           chmod +x release/tractor-linux-* release/tractor-macos-* || true
+          # Create a stable filename for the Windows installer
+          find release -maxdepth 1 -name 'tractor-*-windows-x86_64-setup.exe' -exec cp {} release/tractor-windows-x86_64-setup.exe \;
           ls -la release/
 
       - name: Create or update release

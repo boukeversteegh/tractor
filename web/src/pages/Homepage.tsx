@@ -9,7 +9,7 @@ const RELEASE_BASE = 'https://github.com/boukeversteegh/tractor/releases/latest/
 const DOWNLOADS: Record<Platform, { url: string; filename: string }> = {
   linux: { url: `${RELEASE_BASE}/tractor-linux-x86_64`, filename: 'tractor-linux-x86_64' },
   macos: { url: `${RELEASE_BASE}/tractor-macos-arm64`, filename: 'tractor-macos-arm64' },
-  windows: { url: `${RELEASE_BASE}/tractor-windows-x86_64.exe`, filename: 'tractor-windows-x86_64.exe' },
+  windows: { url: `${RELEASE_BASE}/tractor-windows-x86_64-setup.exe`, filename: 'tractor-windows-x86_64-setup.exe' },
 };
 
 function detectPlatform(): Platform {
@@ -95,7 +95,7 @@ export function Homepage() {
             {platform === 'windows' && (
               <div className="install-step">
                 <span className="step-label">2. Install</span>
-                <pre className="install-cmd"><code>mkdir "%USERPROFILE%\bin"{'\n'}move tractor-windows-x86_64.exe "%USERPROFILE%\bin\tractor.exe"{'\n'}setx PATH "%PATH%;%USERPROFILE%\bin"</code></pre>
+                <pre className="install-cmd"><code>.\tractor-windows-x86_64-setup.exe</code></pre>
               </div>
             )}
           </div>
