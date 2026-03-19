@@ -8,6 +8,7 @@ on:
       - 'Cargo.toml'
       - 'Cargo.lock'
       - 'tests/**'
+      - 'installer/**'
       - '.github/workflows/ci.yml'
 
 concurrency:

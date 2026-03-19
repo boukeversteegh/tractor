@@ -5,6 +5,7 @@ on:
     paths:
       - 'tractor/**'
       - 'tractor-core/**'
+      - 'installer/**'
       - '.github/workflows/lint.yml'
 
 concurrency:
