@@ -122,6 +122,17 @@ jobs:
           name: tractor-windows-x86_64.exe
           path: tractor-windows-x86_64.exe
 
+      - name: Build Windows installer
+        shell: pwsh
+        run: |
+          Copy-Item target/release/tractor.exe installer/windows/tractor.exe
+          Copy-Item web/public/favicon.ico installer/windows/tractor.ico
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DVERSION=${{ needs.version.outputs.tag }} installer/windows/tractor.iss
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tractor-${{ needs.version.outputs.tag }}-windows-x86_64-setup.exe
+          path: installer/windows/output/tractor-${{ needs.version.outputs.tag }}-windows-x86_64-setup.exe
+
   release:
     needs: [version, build-linux, build-macos, build-windows]
     runs-on: ubuntu-latest
