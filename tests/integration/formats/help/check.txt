@@ -17,8 +17,13 @@ Extract:
   -x, --extract <XPATH>
           XPath expression to extract matching AST nodes
 
-      --raw
-          Use raw tree-sitter AST instead of semantic (changes what -x queries)
+  -t, --tree <TREE>
+          Tree mode [default: auto]
+            raw        Raw tree-sitter AST (no semantic transforms)
+            structure  Semantic syntax tree (default for code languages)
+            data       Data projection (default for JSON/YAML)
+          
+          When omitted, auto-selects: data for JSON/YAML, structure for everything else.
 
   -W, --ignore-whitespace
           Ignore whitespace in XPath string matching (strips whitespace from text nodes)

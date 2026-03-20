@@ -12,6 +12,7 @@ pub use crate::languages;
 use std::path::Path;
 use std::fs;
 use thiserror::Error;
+use crate::tree_mode::TreeMode;
 
 /// Supported languages and their extensions
 pub static SUPPORTED_LANGUAGES: &[(&str, &[&str])] = &[
@@ -306,15 +307,15 @@ fn check_ambiguous_extension(path: &Path) -> Result<(), ParseError> {
 }
 
 /// Parse a file and return an xot document (new pipeline)
-pub fn parse_file_to_xot(path: &Path, lang_override: Option<&str>, raw_mode: bool) -> Result<XotParseResult, ParseError> {
-    parse_file_to_xot_with_options(path, lang_override, raw_mode, false)
+pub fn parse_file_to_xot(path: &Path, lang_override: Option<&str>, tree_mode: Option<TreeMode>) -> Result<XotParseResult, ParseError> {
+    parse_file_to_xot_with_options(path, lang_override, tree_mode, false)
 }
 
 /// Parse a file and return an xot document with options (new pipeline)
 pub fn parse_file_to_xot_with_options(
     path: &Path,
     lang_override: Option<&str>,
-    raw_mode: bool,
+    tree_mode: Option<TreeMode>,
     ignore_whitespace: bool,
 ) -> Result<XotParseResult, ParseError> {
     if lang_override.is_none() {
@@ -322,22 +323,28 @@ pub fn parse_file_to_xot_with_options(
     }
     let source = fs::read_to_string(path)?;
     let lang = lang_override.unwrap_or_else(|| detect_language(path.to_str().unwrap_or("")));
-    parse_string_to_xot_with_options(&source, lang, path.to_string_lossy().to_string(), raw_mode, ignore_whitespace)
+    parse_string_to_xot_with_options(&source, lang, path.to_string_lossy().to_string(), tree_mode, ignore_whitespace)
 }
 
 /// Parse a source string and return an xot document (new pipeline)
-pub fn parse_string_to_xot(source: &str, lang: &str, file_path: String, raw_mode: bool) -> Result<XotParseResult, ParseError> {
-    parse_string_to_xot_with_options(source, lang, file_path, raw_mode, false)
+pub fn parse_string_to_xot(source: &str, lang: &str, file_path: String, tree_mode: Option<TreeMode>) -> Result<XotParseResult, ParseError> {
+    parse_string_to_xot_with_options(source, lang, file_path, tree_mode, false)
 }
 
 /// Parse a source string and return an xot document with options (new pipeline)
+///
+/// Note: the Xot pipeline only supports Raw and Structure modes (no dual-branch).
+/// For data-aware languages, Structure uses the syntax transform (ast_transform).
 pub fn parse_string_to_xot_with_options(
     source: &str,
     lang: &str,
     file_path: String,
-    raw_mode: bool,
+    tree_mode: Option<TreeMode>,
     ignore_whitespace: bool,
 ) -> Result<XotParseResult, ParseError> {
+    let resolved = TreeMode::resolve(tree_mode, lang)
+        .map_err(ParseError::Parse)?;
+
     let language = get_tree_sitter_language(lang)?;
 
     let mut parser = tree_sitter::Parser::new();
@@ -354,8 +361,8 @@ pub fn parse_string_to_xot_with_options(
 
     let mut xot = builder.into_xot();
 
-    // Apply semantic transforms if not in raw mode
-    if !raw_mode {
+    // Apply semantic transforms based on tree mode
+    if resolved != TreeMode::Raw {
         let transform_fn = languages::get_transform(lang);
         crate::xot_transform::walk_transform(&mut xot, root, transform_fn)
             .map_err(|e| ParseError::Parse(e.to_string()))?;
@@ -392,9 +399,9 @@ pub fn parse_string_to_xee(
     source: &str,
     lang: &str,
     file_path: String,
-    raw_mode: bool,
+    tree_mode: Option<TreeMode>,
 ) -> Result<XeeParseResult, ParseError> {
-    parse_string_to_xee_with_options(source, lang, file_path, raw_mode, false, None)
+    parse_string_to_xee_with_options(source, lang, file_path, tree_mode, false, None)
 }
 
 /// Parse a source string directly into Documents with options
@@ -441,12 +448,14 @@ pub fn parse_string_to_xee_with_options(
     source: &str,
     lang: &str,
     file_path: String,
-    raw_mode: bool,
+    tree_mode: Option<TreeMode>,
     ignore_whitespace: bool,
     max_depth: Option<usize>,
 ) -> Result<XeeParseResult, ParseError> {
     use std::time::Instant;
 
+    let resolved = TreeMode::resolve(tree_mode, lang)
+        .map_err(ParseError::Parse)?;
     let language = get_tree_sitter_language(lang)?;
 
     let t0 = Instant::now();
@@ -460,7 +469,7 @@ pub fn parse_string_to_xee_with_options(
 
     // Build directly into Documents using XeeBuilder
     let mut builder = XeeBuilder::new();
-    let doc_handle = builder.build_with_options(tree.root_node(), source, &file_path, lang, raw_mode, ignore_whitespace, max_depth)
+    let doc_handle = builder.build_with_options(tree.root_node(), source, &file_path, lang, resolved, ignore_whitespace, max_depth)
         .map_err(|e| ParseError::Parse(e.to_string()))?;
 
     let documents = builder.into_documents();
@@ -488,16 +497,16 @@ pub fn parse_string_to_xee_with_options(
 pub fn parse_file_to_xee(
     path: &Path,
     lang_override: Option<&str>,
-    raw_mode: bool,
+    tree_mode: Option<TreeMode>,
 ) -> Result<XeeParseResult, ParseError> {
-    parse_file_to_xee_with_options(path, lang_override, raw_mode, false)
+    parse_file_to_xee_with_options(path, lang_override, tree_mode, false)
 }
 
 /// Parse a file directly into Documents with options
 pub fn parse_file_to_xee_with_options(
     path: &Path,
     lang_override: Option<&str>,
-    raw_mode: bool,
+    tree_mode: Option<TreeMode>,
     ignore_whitespace: bool,
 ) -> Result<XeeParseResult, ParseError> {
     if lang_override.is_none() {
@@ -505,7 +514,7 @@ pub fn parse_file_to_xee_with_options(
     }
     let source = fs::read_to_string(path)?;
     let lang = lang_override.unwrap_or_else(|| detect_language(path.to_str().unwrap_or("")));
-    parse_string_to_xee_with_options(&source, lang, path.to_string_lossy().to_string(), raw_mode, ignore_whitespace, None)
+    parse_string_to_xee_with_options(&source, lang, path.to_string_lossy().to_string(), tree_mode, ignore_whitespace, None)
 }
 
 // ============================================================================
@@ -550,7 +559,7 @@ pub fn load_xml_file_to_documents(path: &Path) -> Result<XeeParseResult, ParseEr
 pub fn parse_to_documents(
     path: &Path,
     lang_override: Option<&str>,
-    raw_mode: bool,
+    tree_mode: Option<TreeMode>,
     ignore_whitespace: bool,
     max_depth: Option<usize>,
 ) -> Result<XeeParseResult, ParseError> {
@@ -565,7 +574,7 @@ pub fn parse_to_documents(
     } else {
         // Source code: TreeSitter → XeeBuilder → Documents
         let source = fs::read_to_string(path)?;
-        parse_string_to_xee_with_options(&source, lang, path.to_string_lossy().to_string(), raw_mode, ignore_whitespace, max_depth)
+        parse_string_to_xee_with_options(&source, lang, path.to_string_lossy().to_string(), tree_mode, ignore_whitespace, max_depth)
     }
 }
 
@@ -574,7 +583,7 @@ pub fn parse_string_to_documents(
     source: &str,
     lang: &str,
     file_path: String,
-    raw_mode: bool,
+    tree_mode: Option<TreeMode>,
     ignore_whitespace: bool,
 ) -> Result<XeeParseResult, ParseError> {
     if lang == "xml" {
@@ -582,7 +591,7 @@ pub fn parse_string_to_documents(
         load_xml_string_to_documents(source, file_path)
     } else {
         // Source code: TreeSitter → XeeBuilder → Documents
-        parse_string_to_xee_with_options(source, lang, file_path, raw_mode, ignore_whitespace, None)
+        parse_string_to_xee_with_options(source, lang, file_path, tree_mode, ignore_whitespace, None)
     }
 }
 
@@ -605,7 +614,7 @@ mod tests {
         use crate::output::{render_node, RenderOptions};
 
         let result = parse_string_to_documents(
-            "public class Foo { }", "csharp", "<test>".to_string(), false, false
+            "public class Foo { }", "csharp", "<test>".to_string(), None, false
         ).unwrap();
 
         let doc_node = result.documents.document_node(result.doc_handle).unwrap();

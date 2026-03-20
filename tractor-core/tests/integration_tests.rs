@@ -118,7 +118,7 @@ fn test_snapshot_matches_current_output() {
     }
 
     // Parse the fixture using unified pipeline
-    let parsed = parse_to_documents(&fixture_path, None, false, false, None)
+    let parsed = parse_to_documents(&fixture_path, None, None, false, None)
         .expect("Should parse fixture");
     let current_xml = render_to_xml(&parsed);
 
@@ -179,7 +179,7 @@ fn test_xpath_structure_assertions() {
         return;
     }
 
-    let mut parsed = parse_to_documents(&fixture_path, None, false, false, None)
+    let mut parsed = parse_to_documents(&fixture_path, None, None, false, None)
         .expect("Should parse fixture");
 
     let engine = XPathEngine::new();
@@ -274,7 +274,7 @@ fn test_multi_language_snapshots() {
 fn test_xpath_string_value_preserves_whitespace() {
     // Test that inter-token whitespace is preserved in string-value
     let source = "let mut batches = Vec::new();";
-    let mut result = parse_string_to_documents(source, "rust", "<test>".to_string(), true, false)
+    let mut result = parse_string_to_documents(source, "rust", "<test>".to_string(), Some(tractor_core::TreeMode::Raw), false)
         .expect("Should parse Rust");
 
     let engine = XPathEngine::new();
@@ -311,7 +311,7 @@ fn test_xpath_string_value_preserves_whitespace() {
 fn test_xpath_exact_string_match_without_formatting_whitespace() {
     // Test that exact string matching works (no extra formatting whitespace)
     let source = "class T { List<string> x; }";
-    let mut result = parse_string_to_documents(source, "csharp", "<test>".to_string(), false, false)
+    let mut result = parse_string_to_documents(source, "csharp", "<test>".to_string(), None, false)
         .expect("Should parse C#");
 
     let engine = XPathEngine::new();
@@ -333,7 +333,7 @@ fn test_csharp_null_forgiving_operator() {
     // Test that C# null-forgiving operator (!) is parsed correctly as postfix_unary_expression
     // This was historically broken due to shell escaping issues during testing (! -> \!)
     let source = "class T { void M() { var x = name!.Length; } }";
-    let mut result = parse_string_to_documents(source, "csharp", "<test>".to_string(), false, false)
+    let mut result = parse_string_to_documents(source, "csharp", "<test>".to_string(), None, false)
         .expect("Should parse C#");
 
     let engine = XPathEngine::new();
@@ -374,77 +374,84 @@ fn test_csharp_null_forgiving_operator() {
 // ============================================================================
 
 #[test]
-fn test_json_dual_branch_structure() {
-    // Verify JSON produces both <syntax> and <data> branches under <File>
+fn test_json_default_is_data_tree() {
+    // Default tree mode for JSON should produce data tree (no syntax/data wrappers)
     let source = r#"{"name": "John", "age": 30}"#;
-    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), false, false)
+    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), None, false)
         .expect("Should parse JSON");
 
     let engine = XPathEngine::new();
 
-    // Both branches should exist
-    let ast_matches = engine.query_documents(
+    // Should NOT have syntax/data wrapper branches
+    let syntax = engine.query_documents(
         &mut result.documents, result.doc_handle,
         "//File/syntax", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
-    assert_eq!(ast_matches.len(), 1, "Should have one <syntax> branch");
+    assert_eq!(syntax.len(), 0, "Should not have <syntax> wrapper");
 
-    let data_matches = engine.query_documents(
+    let data = engine.query_documents(
         &mut result.documents, result.doc_handle,
         "//File/data", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
-    assert_eq!(data_matches.len(), 1, "Should have one <data> branch");
+    assert_eq!(data.len(), 0, "Should not have <data> wrapper");
 
+    // Data-projected content should be directly under File
+    let matches = engine.query_documents(
+        &mut result.documents, result.doc_handle,
+        "//name", result.source_lines.clone(), &result.file_path,
+    ).expect("Query should succeed");
+    assert_eq!(matches.len(), 1, "Should find data-projected <name> element");
+    assert_eq!(matches[0].value, "John");
 }
 
 #[test]
-fn test_json_syntax_vocabulary() {
-    // Verify JSON syntax branch uses normalized vocabulary
+fn test_json_structure_mode_vocabulary() {
+    // Verify JSON structure mode uses normalized syntax vocabulary
     let source = r#"{"name": "John", "age": 30, "active": true, "x": null}"#;
-    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), false, false)
+    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), Some(tractor_core::TreeMode::Structure), false)
         .expect("Should parse JSON");
 
     let engine = XPathEngine::new();
 
-    // object at root of syntax branch
+    // object at root
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//syntax/object", result.source_lines.clone(), &result.file_path,
+        "//object", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
-    assert_eq!(matches.len(), 1, "Syntax should have <object> root");
+    assert_eq!(matches.len(), 1, "Structure should have <object> root");
 
     // properties
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//syntax//property", result.source_lines.clone(), &result.file_path,
+        "//property", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 4, "Should have 4 properties");
 
     // key/value structure
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//syntax//property/key/string", result.source_lines.clone(), &result.file_path,
+        "//property/key/string", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 4, "Each property should have key/string");
 
     // typed values
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//syntax//property[key/string='age']/value/number", result.source_lines.clone(), &result.file_path,
+        "//property[key/string='age']/value/number", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "age should have number value");
     assert_eq!(matches[0].value, "30");
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//syntax//bool", result.source_lines.clone(), &result.file_path,
+        "//bool", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should have one bool");
     assert_eq!(matches[0].value, "true");
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//syntax//null", result.source_lines.clone(), &result.file_path,
+        "//null", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should have one null");
 }
@@ -453,7 +460,7 @@ fn test_json_syntax_vocabulary() {
 fn test_json_data_view_simple() {
     // Verify JSON data view has key-as-element-name projection
     let source = r#"{"user": {"name": "John", "age": 30}}"#;
-    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), false, false)
+    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), None, false)
         .expect("Should parse JSON");
 
     let engine = XPathEngine::new();
@@ -461,14 +468,14 @@ fn test_json_data_view_simple() {
     // Navigate by key names
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/user/name", result.source_lines.clone(), &result.file_path,
+        "//user/name", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1);
     assert_eq!(matches[0].value, "John");
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/user/age", result.source_lines.clone(), &result.file_path,
+        "//user/age", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1);
     assert_eq!(matches[0].value, "30");
@@ -478,7 +485,7 @@ fn test_json_data_view_simple() {
 fn test_json_data_view_arrays() {
     // Verify array handling in data view
     let source = r#"{"tags": ["math", "science"]}"#;
-    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), false, false)
+    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), None, false)
         .expect("Should parse JSON");
 
     let engine = XPathEngine::new();
@@ -486,7 +493,7 @@ fn test_json_data_view_arrays() {
     // Arrays repeat the parent key element
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/tags", result.source_lines.clone(), &result.file_path,
+        "//tags", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 2, "Should have 2 repeated tags elements");
     assert_eq!(matches[0].value, "math");
@@ -495,7 +502,7 @@ fn test_json_data_view_arrays() {
     // Index access
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/tags[2]", result.source_lines.clone(), &result.file_path,
+        "//tags[2]", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1);
     assert_eq!(matches[0].value, "science");
@@ -503,23 +510,23 @@ fn test_json_data_view_arrays() {
 
 #[test]
 fn test_json_data_view_top_level_array() {
-    // Top-level arrays should use <item> directly under <data>
+    // Top-level arrays should use <item> directly under File
     let source = r#"[1, "two", [3, 4]]"#;
-    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), false, false)
+    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), None, false)
         .expect("Should parse JSON");
 
     let engine = XPathEngine::new();
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/item", result.source_lines.clone(), &result.file_path,
+        "//File/item", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 3, "Top-level array should have 3 items");
 
     // Nested array items
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/item[3]/item", result.source_lines.clone(), &result.file_path,
+        "//item[3]/item", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 2, "Nested array should have 2 items");
 }
@@ -528,21 +535,21 @@ fn test_json_data_view_top_level_array() {
 fn test_json_data_view_objects_in_array() {
     // Objects inside arrays get <item> wrappers with nested key elements
     let source = r#"[{"a": 1}, {"b": 2}]"#;
-    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), false, false)
+    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), None, false)
         .expect("Should parse JSON");
 
     let engine = XPathEngine::new();
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/item[1]/a", result.source_lines.clone(), &result.file_path,
+        "//item[1]/a", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1);
     assert_eq!(matches[0].value, "1");
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/item[2]/b", result.source_lines.clone(), &result.file_path,
+        "//item[2]/b", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1);
     assert_eq!(matches[0].value, "2");
@@ -552,14 +559,14 @@ fn test_json_data_view_objects_in_array() {
 fn test_json_source_output_from_data() {
     // -o source should work from data branch nodes via span attributes
     let source = r#"{"name": "John", "age": 30}"#;
-    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), false, false)
+    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), None, false)
         .expect("Should parse JSON");
 
     let engine = XPathEngine::new();
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/name", result.source_lines.clone(), &result.file_path,
+        "//name", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1);
 
@@ -576,7 +583,7 @@ fn test_json_source_output_from_data() {
 fn test_json_data_view_spans_point_to_values() {
     // Data view spans should point to the VALUE, not the whole property
     let source = r#"{"user": {"name": "John"}, "age": 30}"#;
-    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), false, false)
+    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), None, false)
         .expect("Should parse JSON");
 
     let engine = XPathEngine::new();
@@ -584,7 +591,7 @@ fn test_json_data_view_spans_point_to_values() {
     // //data/user/name span should cover "John" (the value including quotes)
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/user/name", result.source_lines.clone(), &result.file_path,
+        "//user/name", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1);
     let snippet = matches[0].extract_source_snippet();
@@ -593,7 +600,7 @@ fn test_json_data_view_spans_point_to_values() {
     // //data/user span should cover the entire object {...}
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/user", result.source_lines.clone(), &result.file_path,
+        "//user", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1);
     let snippet = matches[0].extract_source_snippet();
@@ -603,7 +610,7 @@ fn test_json_data_view_spans_point_to_values() {
     // //data/age span should cover the number value 30
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/age", result.source_lines.clone(), &result.file_path,
+        "//age", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1);
     let snippet = matches[0].extract_source_snippet();
@@ -614,7 +621,7 @@ fn test_json_data_view_spans_point_to_values() {
 fn test_json_data_view_escape_decoding() {
     // Data view should decode JSON escape sequences
     let source = r#"{"greeting": "hello\nworld", "tab": "a\tb", "quote": "say \"hi\""}"#;
-    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), false, false)
+    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), None, false)
         .expect("Should parse JSON");
 
     let engine = XPathEngine::new();
@@ -622,7 +629,7 @@ fn test_json_data_view_escape_decoding() {
     // \n should be decoded to actual newline
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/greeting", result.source_lines.clone(), &result.file_path,
+        "//greeting", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1);
     assert_eq!(matches[0].value, "hello\nworld", "\\n should be decoded to newline");
@@ -630,7 +637,7 @@ fn test_json_data_view_escape_decoding() {
     // \t should be decoded to actual tab
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/tab", result.source_lines.clone(), &result.file_path,
+        "//tab", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1);
     assert_eq!(matches[0].value, "a\tb", "\\t should be decoded to tab");
@@ -638,7 +645,7 @@ fn test_json_data_view_escape_decoding() {
     // \" should be decoded to literal quote
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/quote", result.source_lines.clone(), &result.file_path,
+        "//quote", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1);
     assert_eq!(matches[0].value, "say \"hi\"", "\\\" should be decoded to quote");
@@ -648,7 +655,7 @@ fn test_json_data_view_escape_decoding() {
 fn test_json_data_view_null_handling() {
     // Null values should appear as "null" text in data view
     let source = r#"{"name": "John", "nickname": null, "active": true, "count": false}"#;
-    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), false, false)
+    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), None, false)
         .expect("Should parse JSON");
 
     let engine = XPathEngine::new();
@@ -656,7 +663,7 @@ fn test_json_data_view_null_handling() {
     // null value should have "null" as text content
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/nickname", result.source_lines.clone(), &result.file_path,
+        "//nickname", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1);
     assert_eq!(matches[0].value, "null", "null should appear as text 'null'");
@@ -664,13 +671,13 @@ fn test_json_data_view_null_handling() {
     // boolean values
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/active[.='true']", result.source_lines.clone(), &result.file_path,
+        "//active[.='true']", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "true should be queryable as text");
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/count[.='false']", result.source_lines.clone(), &result.file_path,
+        "//count[.='false']", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "false should be queryable as text");
 }
@@ -679,7 +686,7 @@ fn test_json_data_view_null_handling() {
 fn test_yaml_data_view_spans_point_to_values() {
     // YAML data view spans should point to values
     let source = "name: John\nage: 30";
-    let mut result = parse_string_to_documents(source, "yaml", "<test>".to_string(), false, false)
+    let mut result = parse_string_to_documents(source, "yaml", "<test>".to_string(), None, false)
         .expect("Should parse YAML");
 
     let engine = XPathEngine::new();
@@ -687,7 +694,7 @@ fn test_yaml_data_view_spans_point_to_values() {
     // //data/name span should cover "John" (the value)
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/name", result.source_lines.clone(), &result.file_path,
+        "//name", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1);
     let snippet = matches[0].extract_source_snippet();
@@ -696,7 +703,7 @@ fn test_yaml_data_view_spans_point_to_values() {
     // //data/age span should cover "30"
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/age", result.source_lines.clone(), &result.file_path,
+        "//age", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1);
     let snippet = matches[0].extract_source_snippet();
@@ -707,21 +714,21 @@ fn test_yaml_data_view_spans_point_to_values() {
 fn test_yaml_data_view_null_handling() {
     // YAML null values should appear as "null" text in data view
     let source = "name: John\nnickname: null\nempty: ~";
-    let mut result = parse_string_to_documents(source, "yaml", "<test>".to_string(), false, false)
+    let mut result = parse_string_to_documents(source, "yaml", "<test>".to_string(), None, false)
         .expect("Should parse YAML");
 
     let engine = XPathEngine::new();
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/nickname", result.source_lines.clone(), &result.file_path,
+        "//nickname", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1);
     assert_eq!(matches[0].value, "null", "null should appear as text 'null'");
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/empty", result.source_lines.clone(), &result.file_path,
+        "//empty", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1);
     assert_eq!(matches[0].value, "~", "tilde null should be queryable");
@@ -731,7 +738,7 @@ fn test_yaml_data_view_null_handling() {
 fn test_json_raw_mode_unchanged() {
     // --raw mode should produce single tree (no syntax/data branches)
     let source = r#"{"a": 1}"#;
-    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), true, false)
+    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), Some(tractor_core::TreeMode::Raw), false)
         .expect("Should parse JSON in raw mode");
 
     let engine = XPathEngine::new();
@@ -752,65 +759,73 @@ fn test_json_raw_mode_unchanged() {
 }
 
 #[test]
-fn test_yaml_dual_branch_structure() {
-    // Verify YAML produces both <syntax> and <data> branches
+fn test_yaml_default_is_data_tree() {
+    // Default tree mode for YAML should produce data tree (no wrappers)
     let source = "name: John\nage: 30";
-    let mut result = parse_string_to_documents(source, "yaml", "<test>".to_string(), false, false)
+    let mut result = parse_string_to_documents(source, "yaml", "<test>".to_string(), None, false)
         .expect("Should parse YAML");
 
     let engine = XPathEngine::new();
 
+    // Should NOT have syntax/data wrapper branches
     let syntax = engine.query_documents(
         &mut result.documents, result.doc_handle,
         "//File/syntax", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
-    assert_eq!(syntax.len(), 1, "Should have <syntax> branch");
+    assert_eq!(syntax.len(), 0, "Should not have <syntax> wrapper");
 
     let data = engine.query_documents(
         &mut result.documents, result.doc_handle,
         "//File/data", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
-    assert_eq!(data.len(), 1, "Should have <data> branch");
+    assert_eq!(data.len(), 0, "Should not have <data> wrapper");
 
+    // Data-projected content should be queryable directly
+    let matches = engine.query_documents(
+        &mut result.documents, result.doc_handle,
+        "//name", result.source_lines.clone(), &result.file_path,
+    ).expect("Query should succeed");
+    assert_eq!(matches.len(), 1, "Should find data-projected <name> element");
+    assert_eq!(matches[0].value, "John");
 }
 
 #[test]
-fn test_yaml_syntax_vocabulary() {
-    // Verify YAML syntax uses same vocabulary as JSON syntax
+fn test_yaml_structure_mode_vocabulary() {
+    // Verify YAML structure mode uses same vocabulary as JSON structure mode
     let source = "name: John\ncount: 42\nactive: true\nempty: null";
-    let mut result = parse_string_to_documents(source, "yaml", "<test>".to_string(), false, false)
+    let mut result = parse_string_to_documents(source, "yaml", "<test>".to_string(), Some(tractor_core::TreeMode::Structure), false)
         .expect("Should parse YAML");
 
     let engine = XPathEngine::new();
 
-    // Syntax branch should have object/property/key/value/string/number/bool/null
+    // Structure should have document/object/property hierarchy
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//syntax/document/object", result.source_lines.clone(), &result.file_path,
+        "//document/object", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
-    assert_eq!(matches.len(), 1, "Syntax should have document/object");
+    assert_eq!(matches.len(), 1, "Structure should have document/object");
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//syntax//property", result.source_lines.clone(), &result.file_path,
+        "//property", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 4, "Should have 4 properties");
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//syntax//property[key/string='count']/value/number", result.source_lines.clone(), &result.file_path,
+        "//property[key/string='count']/value/number", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "count should be a number");
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//syntax//bool", result.source_lines.clone(), &result.file_path,
+        "//bool", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should have one bool");
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//syntax//null", result.source_lines.clone(), &result.file_path,
+        "//null", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should have one null");
 }
@@ -818,23 +833,23 @@ fn test_yaml_syntax_vocabulary() {
 #[test]
 fn test_yaml_data_view() {
     // Verify YAML data view navigation
-    // Single-doc YAML has <document> flattened, so //data/user works directly
+    // Default data mode: single-doc YAML has <document> flattened
     let source = "user:\n  name: John\n  age: 30\n  tags:\n    - math\n    - science";
-    let mut result = parse_string_to_documents(source, "yaml", "<test>".to_string(), false, false)
+    let mut result = parse_string_to_documents(source, "yaml", "<test>".to_string(), None, false)
         .expect("Should parse YAML");
 
     let engine = XPathEngine::new();
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/user/name", result.source_lines.clone(), &result.file_path,
+        "//user/name", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1);
     assert_eq!(matches[0].value, "John");
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//data/user/tags", result.source_lines.clone(), &result.file_path,
+        "//user/tags", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 2, "Should have 2 repeated tags elements");
     assert_eq!(matches[0].value, "math");
@@ -845,7 +860,7 @@ fn test_yaml_data_view() {
 fn test_typescript_not_affected() {
     // Non-data languages should not have dual branches
     let source = "let x = 1;";
-    let mut result = parse_string_to_documents(source, "typescript", "<test>".to_string(), false, false)
+    let mut result = parse_string_to_documents(source, "typescript", "<test>".to_string(), None, false)
         .expect("Should parse TypeScript");
 
     let engine = XPathEngine::new();
@@ -866,31 +881,33 @@ fn test_typescript_not_affected() {
 
 #[test]
 fn test_json_empty_structures() {
-    // Empty objects and arrays
+    // Empty objects and arrays in structure mode
     let source = r#"{"obj": {}, "arr": []}"#;
-    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), false, false)
+    let mut result_structure = parse_string_to_documents(source, "json", "<test>".to_string(), Some(tractor_core::TreeMode::Structure), false)
         .expect("Should parse JSON");
 
     let engine = XPathEngine::new();
 
-    // Empty object in syntax branch
+    // Empty object in structure mode
     let matches = engine.query_documents(
-        &mut result.documents, result.doc_handle,
-        "//syntax//property[key/string='obj']/value/object", result.source_lines.clone(), &result.file_path,
+        &mut result_structure.documents, result_structure.doc_handle,
+        "//property[key/string='obj']/value/object", result_structure.source_lines.clone(), &result_structure.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should find empty object");
 
-    // Empty array in syntax branch
+    // Empty array in structure mode
     let matches = engine.query_documents(
-        &mut result.documents, result.doc_handle,
-        "//syntax//property[key/string='arr']/value/array", result.source_lines.clone(), &result.file_path,
+        &mut result_structure.documents, result_structure.doc_handle,
+        "//property[key/string='arr']/value/array", result_structure.source_lines.clone(), &result_structure.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should find empty array");
 
-    // Data view: empty containers become empty elements
+    // Data mode: empty containers become empty elements
+    let mut result_data = parse_string_to_documents(source, "json", "<test>".to_string(), None, false)
+        .expect("Should parse JSON");
     let matches = engine.query_documents(
-        &mut result.documents, result.doc_handle,
-        "//data/obj", result.source_lines.clone(), &result.file_path,
+        &mut result_data.documents, result_data.doc_handle,
+        "//obj", result_data.source_lines.clone(), &result_data.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 1, "Should find obj in data view");
 }
@@ -906,7 +923,7 @@ fn test_schema_collector_from_xot() {
         class Foo { void Bar() {} }
         class Baz { void Qux() {} int x; }
     "#;
-    let result = parse_string_to_documents(source, "csharp", "<test>".to_string(), false, false)
+    let result = parse_string_to_documents(source, "csharp", "<test>".to_string(), None, false)
         .expect("Should parse C#");
 
     let doc_node = result.documents.document_node(result.doc_handle).unwrap();
@@ -948,7 +965,7 @@ fn test_schema_collector_from_xml_string() {
 fn test_schema_depth_limit() {
     // Test that depth limit works
     let source = "class Foo { void Bar() { int x = 1; } }";
-    let result = parse_string_to_documents(source, "csharp", "<test>".to_string(), false, false)
+    let result = parse_string_to_documents(source, "csharp", "<test>".to_string(), None, false)
         .expect("Should parse C#");
 
     let doc_node = result.documents.document_node(result.doc_handle).unwrap();
@@ -987,7 +1004,7 @@ fn test_schema_multiple_values_truncation() {
         class A { } class B { } class C { } class D { }
         class E { } class F { } class G { }
     "#;
-    let result = parse_string_to_documents(source, "csharp", "<test>".to_string(), false, false)
+    let result = parse_string_to_documents(source, "csharp", "<test>".to_string(), None, false)
         .expect("Should parse C#");
 
     let doc_node = result.documents.document_node(result.doc_handle).unwrap();

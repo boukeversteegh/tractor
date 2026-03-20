@@ -19,6 +19,7 @@ pub mod parallel;
 pub mod xot_builder;
 pub mod xot_transform;
 pub mod report;
+pub mod tree_mode;
 
 // Language transforms - available for both native and WASM
 pub mod languages;
@@ -48,3 +49,4 @@ pub use report::{Report, ReportKind, ReportMatch, Summary, Severity};
 #[cfg(feature = "native")]
 pub use parallel::{expand_globs, filter_supported_files};
 pub use xot_builder::{XotBuilder, XeeBuilder};
+pub use tree_mode::TreeMode;

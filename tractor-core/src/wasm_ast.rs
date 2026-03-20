@@ -79,7 +79,12 @@ pub struct ParseRequest {
     #[serde(default = "default_file_path")]
     pub file_path: String,
 
-    /// Whether to output raw (untransformed) XML
+    /// Tree mode: "raw", "structure", "data" (default: auto-detect by language)
+    /// For backwards compatibility, if absent defaults to auto-detect.
+    #[serde(default)]
+    pub tree_mode: Option<String>,
+
+    /// Whether to output raw (untransformed) XML [DEPRECATED: use tree_mode]
     #[serde(default)]
     pub raw_mode: bool,
 

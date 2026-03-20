@@ -730,7 +730,7 @@ public class Foo {
     public void Bar() { }
 }
 "#;
-        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), false).unwrap();
+        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), None).unwrap();
 
         let options = RenderOptions::default();
         let xml = render_document(&result.xot, result.root, &options);
@@ -748,7 +748,7 @@ public class Foo {
     #[test]
     fn test_trailing_comment() {
         let source = "public class Foo {\n    int x; // trailing\n}\n";
-        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), false).unwrap();
+        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), None).unwrap();
         let xml = render_document(&result.xot, result.root, &RenderOptions::default());
         assert!(
             xml.contains("<trailing/>"),
@@ -759,7 +759,7 @@ public class Foo {
     #[test]
     fn test_leading_comment() {
         let source = "public class Foo {\n    // describes y\n    int y;\n}\n";
-        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), false).unwrap();
+        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), None).unwrap();
         let xml = render_document(&result.xot, result.root, &RenderOptions::default());
         assert!(
             xml.contains("<leading/>"),
@@ -771,7 +771,7 @@ public class Foo {
     fn test_floating_comment() {
         // Comment with blank line before next declaration = floating (no marker)
         let source = "public class Foo {\n    // floating\n\n    int y;\n}\n";
-        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), false).unwrap();
+        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), None).unwrap();
         let xml = render_document(&result.xot, result.root, &RenderOptions::default());
         assert!(
             !xml.contains("<trailing/>") && !xml.contains("<leading/>"),
@@ -783,7 +783,7 @@ public class Foo {
     #[test]
     fn test_comment_block_grouping() {
         let source = "public class Foo {\n    // line 1\n    // line 2\n    // line 3\n    int y;\n}\n";
-        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), false).unwrap();
+        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), None).unwrap();
         let xml = render_document(&result.xot, result.root, &RenderOptions::default());
         // Should be grouped into a single comment
         let comment_count = xml.matches("<comment>").count() + xml.matches("<comment ").count();
@@ -802,7 +802,7 @@ public class Foo {
     fn test_trailing_not_grouped_with_following() {
         // Trailing comment should NOT absorb the following line comments
         let source = "public class Foo {\n    int x; // trailing\n    // block 1\n    // block 2\n    int y;\n}\n";
-        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), false).unwrap();
+        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), None).unwrap();
         let xml = render_document(&result.xot, result.root, &RenderOptions::default());
         // Should have 2 comments: one trailing, one grouped leading block
         let comment_count = xml.matches("<comment>").count() + xml.matches("<comment ").count();
@@ -821,7 +821,7 @@ public class Foo {
     fn test_block_comment_not_grouped() {
         // /* */ style comments should NOT be grouped with // comments
         let source = "public class Foo {\n    /* block */\n    // line\n    int y;\n}\n";
-        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), false).unwrap();
+        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), None).unwrap();
         let xml = render_document(&result.xot, result.root, &RenderOptions::default());
         let comment_count = xml.matches("<comment>").count() + xml.matches("<comment ").count();
         assert!(
@@ -834,7 +834,7 @@ public class Foo {
     fn test_leading_comment_at_unit_level() {
         // Comment at compilation_unit level, before a class
         let source = "// describes Foo\npublic class Foo { }\n";
-        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), false).unwrap();
+        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), None).unwrap();
         let xml = render_document(&result.xot, result.root, &RenderOptions::default());
         assert!(
             xml.contains("<leading/>"),
@@ -851,7 +851,7 @@ public static class Mapper {
     public static UserDto Map(this User user) { return new UserDto(); }
 }
 "#;
-        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), false).unwrap();
+        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), None).unwrap();
 
         let options = RenderOptions::default();
         let xml = render_document(&result.xot, result.root, &options);

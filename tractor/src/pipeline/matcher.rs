@@ -99,7 +99,7 @@ pub fn query_inline_source(
     xpath_expr: &str,
 ) -> Result<Vec<Match>, Box<dyn std::error::Error>> {
     let mut result = parse_string_to_documents(
-        source, lang, "<stdin>".to_string(), ctx.raw, ctx.ignore_whitespace
+        source, lang, "<stdin>".to_string(), ctx.tree_mode, ctx.ignore_whitespace
     )?;
 
     let engine = XPathEngine::new()
@@ -145,7 +145,7 @@ pub fn query_files_batched(
                 let mut result = match parse_to_documents(
                     std::path::Path::new(file_path),
                     ctx.lang.as_deref(),
-                    ctx.raw,
+                    ctx.tree_mode,
                     ctx.ignore_whitespace,
                     ctx.parse_depth,
                 ) {
@@ -227,7 +227,7 @@ pub fn run_debug(ctx: &RunContext, files: &[String], xpath_expr: &str) -> Result
         let mut result = match parse_to_documents(
             std::path::Path::new(file_path),
             ctx.lang.as_deref(),
-            ctx.raw,
+            ctx.tree_mode,
             ctx.ignore_whitespace,
             ctx.parse_depth,
         ) {

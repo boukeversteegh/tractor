@@ -67,6 +67,11 @@ pub fn get_data_transforms(lang: &str) -> Option<(TransformFn, TransformFn)> {
     }
 }
 
+/// Check whether a language supports the data tree projection.
+pub fn supports_data_tree(lang: &str) -> bool {
+    matches!(lang, "json" | "yaml" | "yml")
+}
+
 /// Get the syntax category function for a language
 /// This maps transformed element names to syntax categories for highlighting
 pub fn get_syntax_category(lang: &str) -> SyntaxCategoryFn {
