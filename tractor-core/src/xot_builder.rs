@@ -559,7 +559,7 @@ impl XeeBuilder {
     /// Build a document from TreeSitter AST directly into Documents
     ///
     /// This is the fast path that avoids XML serialization/parsing.
-    /// Use `raw_mode=true` to skip semantic transforms (faster but less normalized).
+    /// `tree_mode` controls which tree representation is produced.
     #[cfg(feature = "native")]
     pub fn build(
         &mut self,
@@ -567,17 +567,18 @@ impl XeeBuilder {
         source: &str,
         file_path: &str,
         lang: &str,
-        raw_mode: bool,
+        tree_mode: crate::tree_mode::TreeMode,
     ) -> Result<DocumentHandle, xot::Error> {
-        self.build_with_options(ts_node, source, file_path, lang, raw_mode, false, None)
+        self.build_with_options(ts_node, source, file_path, lang, tree_mode, false, None)
     }
 
     /// Build a document from TreeSitter AST with options
     ///
     /// This is the fast path that avoids XML serialization/parsing.
-    /// Use `raw_mode=true` to skip semantic transforms (faster but less normalized).
-    /// Use `ignore_whitespace=true` to strip whitespace from text nodes.
-    /// Use `max_depth` to limit tree building depth (skip deeper nodes for speed).
+    /// `tree_mode` controls which tree representation is produced:
+    /// - `Raw`: skip all transforms, output raw tree-sitter AST
+    /// - `Structure`: apply syntax transform only (single branch)
+    /// - `Data`: apply data transform only (single branch, data-aware languages only)
     #[cfg(feature = "native")]
     pub fn build_with_options(
         &mut self,
@@ -585,10 +586,11 @@ impl XeeBuilder {
         source: &str,
         file_path: &str,
         lang: &str,
-        raw_mode: bool,
+        tree_mode: crate::tree_mode::TreeMode,
         ignore_whitespace: bool,
         max_depth: Option<usize>,
     ) -> Result<DocumentHandle, xot::Error> {
+        use crate::tree_mode::TreeMode;
         use std::time::Instant;
         use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -601,17 +603,30 @@ impl XeeBuilder {
         let doc_handle = self.build_raw_with_options(ts_node, source, file_path, ignore_whitespace, max_depth)?;
         let t1 = Instant::now();
 
-        // Apply semantic transforms if not in raw mode
-        if !raw_mode {
-            if let Some((syntax_fn, data_fn)) = crate::languages::get_data_transforms(lang) {
-                // Data-aware language: build dual-branch (syntax + data)
-                self.apply_data_transforms(doc_handle, syntax_fn, data_fn)?;
-            } else {
-                // Programming language: single transform
+        // Apply transforms based on tree mode
+        match tree_mode {
+            TreeMode::Raw => {
+                // No transforms — keep raw tree-sitter AST
+            }
+            TreeMode::Structure => {
+                // Single-branch syntax transform
                 let doc_node = self.documents.document_node(doc_handle)
                     .ok_or_else(|| xot::Error::Io("Failed to get document node".to_string()))?;
-                let transform_fn = crate::languages::get_transform(lang);
+                let transform_fn = if let Some((syntax_fn, _)) = crate::languages::get_data_transforms(lang) {
+                    // Data-aware language: use the syntax (ast) transform
+                    syntax_fn
+                } else {
+                    crate::languages::get_transform(lang)
+                };
                 crate::xot_transform::walk_transform(self.documents.xot_mut(), doc_node, transform_fn)?;
+            }
+            TreeMode::Data => {
+                // Single-branch data transform (caller already validated lang supports it)
+                let doc_node = self.documents.document_node(doc_handle)
+                    .ok_or_else(|| xot::Error::Io("Failed to get document node".to_string()))?;
+                let (_, data_fn) = crate::languages::get_data_transforms(lang)
+                    .expect("Data mode requires a data-aware language");
+                crate::xot_transform::walk_transform(self.documents.xot_mut(), doc_node, data_fn)?;
             }
         }
         let t2 = Instant::now();
@@ -699,6 +714,10 @@ impl XeeBuilder {
 
     // /specs/tractor-parse/dual-view/xml-structure.md: XML Structure
     /// Build dual-branch (syntax + data) tree for data-aware languages.
+    ///
+    /// Note: This is no longer used by the main pipeline (replaced by single-branch
+    /// TreeMode::Data and TreeMode::Structure), but kept for potential web UI use.
+    #[allow(dead_code)]
     ///
     /// Takes the raw tree under <File>, clones it, applies the syntax transform
     /// to one copy and the data transform to the other, then wraps each in

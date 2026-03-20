@@ -1,6 +1,7 @@
 use tractor_core::{
     output::should_use_color,
     output::RenderOptions,
+    TreeMode,
 };
 use crate::cli::SharedArgs;
 use crate::xpath_utils::normalize_xpath;
@@ -22,7 +23,8 @@ pub struct RunContext {
     pub depth: Option<usize>,
     pub parse_depth: Option<usize>,
     pub meta: bool,
-    pub raw: bool,
+    /// Tree mode from `-t`. None means auto-detect at parse time.
+    pub tree_mode: Option<TreeMode>,
     pub no_pretty: bool,
     pub ignore_whitespace: bool,
     pub verbose: bool,
@@ -72,6 +74,16 @@ impl RunContext {
             None => default_group_by_file,
         };
 
+        let tree_mode = match shared.tree.as_deref() {
+            Some("raw") => Some(TreeMode::Raw),
+            Some("structure") => Some(TreeMode::Structure),
+            Some("data") => Some(TreeMode::Data),
+            Some(other) => return Err(format!(
+                "invalid --tree value '{}': use 'raw', 'structure', or 'data'", other
+            ).into()),
+            None => None, // auto-detect at parse time
+        };
+
         let concurrency = shared.concurrency.unwrap_or_else(|| num_cpus::get());
         rayon::ThreadPoolBuilder::new()
             .num_threads(concurrency)
@@ -90,7 +102,7 @@ impl RunContext {
             depth: shared.depth,
             parse_depth: shared.parse_depth,
             meta: shared.meta,
-            raw: shared.raw,
+            tree_mode,
             no_pretty: shared.no_pretty,
             ignore_whitespace: shared.ignore_whitespace,
             verbose: shared.verbose,

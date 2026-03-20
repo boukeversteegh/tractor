@@ -9,6 +9,7 @@ use crate::xot_builder::XotBuilder;
 use crate::xot_transform::walk_transform;
 use crate::languages::get_transform;
 use crate::output::RenderOptions;
+use crate::tree_mode::TreeMode;
 
 /// Initialize panic hook for better error messages in browser console
 #[wasm_bindgen(start)]
@@ -33,7 +34,9 @@ pub fn parse_to_xml(request_json: &str) -> Result<String, JsValue> {
     let request: ParseRequest = serde_json::from_str(request_json)
         .map_err(|e| JsValue::from_str(&format!("Failed to parse request: {}", e)))?;
 
-    let xml = parse_ast_to_xml(&request.ast, &request.source, &request.language, &request.file_path, request.raw_mode, request.include_locations, request.pretty_print)
+    // Resolve tree mode: explicit tree_mode takes precedence, then raw_mode for backwards compat
+    let tree_mode = resolve_wasm_tree_mode(request.tree_mode.as_deref(), request.raw_mode);
+    let xml = parse_ast_to_xml(&request.ast, &request.source, &request.language, &request.file_path, tree_mode, request.include_locations, request.pretty_print)
         .map_err(|e| JsValue::from_str(&e))?;
 
     let response = ParseResponse {
@@ -69,8 +72,21 @@ pub fn parse_ast_to_xml_simple(
     let ast: SerializedNode = serde_json::from_str(ast_json)
         .map_err(|e| JsValue::from_str(&format!("Failed to parse AST: {}", e)))?;
 
-    parse_ast_to_xml(&ast, source, language, "input", raw_mode, include_locations, pretty_print)
+    let tree_mode = resolve_wasm_tree_mode(None, raw_mode);
+    parse_ast_to_xml(&ast, source, language, "input", tree_mode, include_locations, pretty_print)
         .map_err(|e| JsValue::from_str(&e))
+}
+
+/// Resolve tree mode from WASM request parameters
+fn resolve_wasm_tree_mode(tree_mode_str: Option<&str>, raw_mode: bool) -> Option<TreeMode> {
+    match tree_mode_str {
+        Some("raw") => Some(TreeMode::Raw),
+        Some("structure") => Some(TreeMode::Structure),
+        Some("data") => Some(TreeMode::Data),
+        Some(_) => None, // invalid string → auto-detect
+        None if raw_mode => Some(TreeMode::Raw), // backwards compat
+        None => None, // auto-detect
+    }
 }
 
 /// Internal function to convert AST to XML
@@ -79,10 +95,12 @@ fn parse_ast_to_xml(
     source: &str,
     language: &str,
     file_path: &str,
-    raw_mode: bool,
+    tree_mode: Option<TreeMode>,
     include_locations: bool,
     pretty_print: bool,
 ) -> Result<String, String> {
+    let resolved = TreeMode::resolve(tree_mode, language)?;
+
     // Build the raw xot document
     let mut builder = XotBuilder::new();
     let root = builder.build_raw_from_serialized(ast, source, file_path)
@@ -90,8 +108,8 @@ fn parse_ast_to_xml(
 
     let mut xot = builder.into_xot();
 
-    // Apply transforms if not in raw mode
-    if !raw_mode {
+    // Apply transforms based on tree mode
+    if resolved != TreeMode::Raw {
         let transform_fn = get_transform(language);
         walk_transform(&mut xot, root, transform_fn)
             .map_err(|e| format!("Transform failed: {}", e))?;
@@ -131,6 +149,10 @@ pub fn get_schema_tree(
     let ast: crate::wasm_ast::SerializedNode = serde_json::from_str(ast_json)
         .map_err(|e| JsValue::from_str(&format!("Failed to parse AST: {}", e)))?;
 
+    let tree_mode = resolve_wasm_tree_mode(None, raw_mode);
+    let resolved = TreeMode::resolve(tree_mode, language)
+        .map_err(|e| JsValue::from_str(&e))?;
+
     // Build the xot document (same as parse_ast_to_xml)
     let mut builder = XotBuilder::new();
     let root = builder.build_raw_from_serialized(&ast, source, "input")
@@ -138,8 +160,8 @@ pub fn get_schema_tree(
 
     let mut xot = builder.into_xot();
 
-    // Apply transforms if not in raw mode
-    if !raw_mode {
+    // Apply transforms based on tree mode
+    if resolved != TreeMode::Raw {
         let transform_fn = get_transform(language);
         walk_transform(&mut xot, root, transform_fn)
             .map_err(|e| JsValue::from_str(&format!("Transform failed: {}", e)))?;

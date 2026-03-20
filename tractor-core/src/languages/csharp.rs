@@ -517,7 +517,7 @@ public class Foo {
     public void Bar() { }
 }
 "#;
-        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), false).unwrap();
+        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), None).unwrap();
 
         let options = RenderOptions::default();
         let xml = render_document(&result.xot, result.root, &options);
@@ -535,7 +535,7 @@ public static class Mapper {
     public static UserDto Map(this User user) { return new UserDto(); }
 }
 "#;
-        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), false).unwrap();
+        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), None).unwrap();
 
         let options = RenderOptions::default();
         let xml = render_document(&result.xot, result.root, &options);

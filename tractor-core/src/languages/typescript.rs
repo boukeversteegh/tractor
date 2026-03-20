@@ -316,7 +316,7 @@ mod tests {
     #[test]
     fn test_typescript_transform() {
         let source = "let x = 1 + 2;";
-        let result = parse_string_to_xot(source, "typescript", "<test>".to_string(), false).unwrap();
+        let result = parse_string_to_xot(source, "typescript", "<test>".to_string(), None).unwrap();
 
         let options = RenderOptions::default();
         let xml = render_document(&result.xot, result.root, &options);
@@ -330,7 +330,7 @@ mod tests {
     #[test]
     fn test_optional_parameter_marker() {
         let source = "function f(a: string, b?: number) {}";
-        let result = parse_string_to_xot(source, "typescript", "<test>".to_string(), false).unwrap();
+        let result = parse_string_to_xot(source, "typescript", "<test>".to_string(), None).unwrap();
 
         let options = RenderOptions::default();
         let xml = render_document(&result.xot, result.root, &options);

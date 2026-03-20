@@ -104,9 +104,16 @@ pub struct SharedArgs {
     #[arg(short = 'x', long = "extract", help_heading = "Extract")]
     pub xpath: Option<String>,
 
-    /// Use raw tree-sitter AST instead of semantic (changes what -x queries)
-    #[arg(long = "raw", help_heading = "Extract")]
-    pub raw: bool,
+    /// Tree mode: raw, structure, data [default: auto]
+    #[arg(short = 't', long = "tree", help_heading = "Extract",
+        long_help = "\
+Tree mode [default: auto]
+  raw        Raw tree-sitter AST (no semantic transforms)
+  structure  Semantic syntax tree (default for code languages)
+  data       Data projection (default for JSON/YAML)
+
+When omitted, auto-selects: data for JSON/YAML, structure for everything else.")]
+    pub tree: Option<String>,
 
     /// Ignore whitespace in XPath string matching (strips whitespace from text nodes)
     #[arg(short = 'W', long = "ignore-whitespace", help_heading = "Extract")]

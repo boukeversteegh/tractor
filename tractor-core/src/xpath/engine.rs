@@ -628,7 +628,7 @@ mod tests {
 
         let source = "let x = 1;";
         let mut result = parse_string_to_documents(
-            source, "typescript", "test.ts".to_string(), false, false
+            source, "typescript", "test.ts".to_string(), None, false
         ).unwrap();
 
         let engine = XPathEngine::new();

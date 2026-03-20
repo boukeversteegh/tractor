@@ -253,7 +253,7 @@ fn main() {
 
             // Raw TreeSitter XML
             let raw_xml_path = format!("{}.raw.xml", path_str);
-            let raw_output = run_tractor(&tractor_bin, &path_str, &["--raw"]);
+            let raw_output = run_tractor(&tractor_bin, &path_str, &["-t", "raw"]);
 
             if check_mode {
                 if let Ok(existing) = fs::read_to_string(&xml_path) {
