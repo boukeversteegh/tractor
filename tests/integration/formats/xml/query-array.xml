@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report>
+  <matches>
+    <match file="tests/integration/formats/sample-classes.cs" line="1" column="1">
+      <tree>
+        [
+          "Calculator"
+        ]
+      </tree>
+    </match>
+    <match file="tests/integration/formats/sample-classes.cs" line="1" column="1">
+      <tree>
+        [
+          "Greeter"
+        ]
+      </tree>
+    </match>
+  </matches>
+</report>

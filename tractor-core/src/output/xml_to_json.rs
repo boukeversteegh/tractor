@@ -20,7 +20,7 @@
 //! silently ignored — except `field` which drives the singleton detection.
 //! Whitespace-only text nodes are also dropped.
 
-use serde_json::{Map, Value};
+use serde_json::{json, Map, Value};
 use crate::xpath::XmlNode;
 
 const KEY_TYPE: &str = "$type";
@@ -138,6 +138,21 @@ fn xml_node_to_json_inner(node: &XmlNode, max_depth: Option<usize>, depth: usize
                 Value::String(trimmed.to_string())
             }
         }
+        XmlNode::Map { entries } => {
+            let mut obj = Map::new();
+            for (key, val) in entries {
+                obj.insert(key.clone(), xml_node_to_json_inner(val, max_depth, depth + 1));
+            }
+            Value::Object(obj)
+        }
+        XmlNode::Array { items } => {
+            Value::Array(items.iter()
+                .map(|item| xml_node_to_json_inner(item, max_depth, depth + 1))
+                .collect())
+        }
+        XmlNode::Number(n) => json!(*n),
+        XmlNode::Boolean(b) => Value::Bool(*b),
+        XmlNode::Null => Value::Null,
         _ => Value::Null,
     }
 }

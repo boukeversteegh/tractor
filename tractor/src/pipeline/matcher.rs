@@ -26,7 +26,15 @@ pub fn match_to_report_match(
     severity: Option<Severity>,
     message: Option<String>,
 ) -> ReportMatch {
-    let tree   = if view.has(ViewField::Tree) { m.xml_node.clone() } else { None };
+    // Always keep structured data (Map/Array) — it's the only representation.
+    // For XML elements, only keep when the view requests tree.
+    let tree = match &m.xml_node {
+        Some(node) if matches!(node,
+            tractor_core::xpath::XmlNode::Map { .. } |
+            tractor_core::xpath::XmlNode::Array { .. }
+        ) => m.xml_node.clone(),
+        _ => if view.has(ViewField::Tree) { m.xml_node.clone() } else { None },
+    };
     let value  = view.has(ViewField::Value)
                      .then(|| m.value.clone());
     let source = view.has(ViewField::Source)

@@ -6,9 +6,9 @@ pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderO
     let mut root = serde_json::Map::new();
 
     // Summary: always present for check/test reports (structural, not view-gated).
-    // For query reports, only include if explicitly requested via -v summary.
+    // For query reports, only include if explicitly requested via -v summary or -v query.
     let show_summary = if matches!(report.kind, ReportKind::Query) {
-        view.has(ViewField::Summary)
+        view.has(ViewField::Summary) || view.has(ViewField::Query)
     } else {
         true
     };
@@ -22,6 +22,9 @@ pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderO
             s.insert("warnings".into(), json!(summary.warnings));
             if let Some(ref expected) = summary.expected {
                 s.insert("expected".into(), json!(expected));
+            }
+            if let Some(ref query) = summary.query {
+                s.insert("query".into(), json!(query));
             }
             root.insert("summary".into(), Value::Object(s));
         }
@@ -113,4 +116,83 @@ pub fn match_to_value(
     }
 
     Value::Object(obj)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tractor_core::report::{Report, Summary};
+    use tractor_core::xpath::XmlNode;
+
+    fn make_plain_match(value: &str) -> ReportMatch {
+        ReportMatch {
+            file: "test.xml".to_string(),
+            line: 1, column: 1, end_line: 1, end_column: 1,
+            tree: None,
+            value: Some(value.to_string()),
+            source: None, lines: None, reason: None, severity: None,
+            message: None, rule_id: None,
+        }
+    }
+
+    fn make_map_match(entries: Vec<(&str, XmlNode)>) -> ReportMatch {
+        let tree = XmlNode::Map {
+            entries: entries.into_iter().map(|(k, v)| (k.to_string(), v)).collect(),
+        };
+        ReportMatch {
+            file: "test.xml".to_string(),
+            line: 1, column: 1, end_line: 1, end_column: 1,
+            tree: Some(tree),
+            value: None, // maps have no value — data is in tree
+            source: None, lines: None, reason: None, severity: None,
+            message: None, rule_id: None,
+        }
+    }
+
+    #[test]
+    fn test_map_tree_rendered_as_json_object() {
+        let rm = make_map_match(vec![
+            ("name", XmlNode::Text("foo".into())),
+            ("val", XmlNode::Text("1".into())),
+        ]);
+        let view = ViewSet::single(ViewField::Tree);
+        let opts = RenderOptions::new();
+        let val = match_to_value(&rm, &view, &opts, GroupBy::None);
+        let v = val.get("tree").unwrap();
+        assert!(v.is_object(), "Map tree should be a JSON object, got: {}", v);
+        assert_eq!(v["name"], "foo");
+        assert_eq!(v["val"], "1");
+    }
+
+    #[test]
+    fn test_plain_value_rendered_as_string() {
+        let rm = make_plain_match("hello world");
+        let view = ViewSet::single(ViewField::Value);
+        let opts = RenderOptions::new();
+        let val = match_to_value(&rm, &view, &opts, GroupBy::None);
+        let v = val.get("value").unwrap();
+        assert!(v.is_string(), "Regular value should be a string, got: {}", v);
+        assert_eq!(v.as_str().unwrap(), "hello world");
+    }
+
+    #[test]
+    fn test_map_tree_in_full_json_report() {
+        let rm = make_map_match(vec![
+            ("name", XmlNode::Text("foo".into())),
+            ("count", XmlNode::Number(3.0)),
+        ]);
+        let summary = Summary {
+            passed: true, total: 1, files_affected: 1,
+            errors: 0, warnings: 0, expected: None, query: None,
+        };
+        let report = Report::query(vec![rm], summary);
+        let view = ViewSet::new(vec![ViewField::File, ViewField::Tree]);
+        let opts = RenderOptions::new();
+        let output = render_json_report(&report, &view, &opts);
+        let parsed: serde_json::Value = serde_json::from_str(&output).unwrap();
+        let match_tree = &parsed["matches"][0]["tree"];
+        assert!(match_tree.is_object(), "Map tree should be a JSON object in report output, got: {}", match_tree);
+        assert_eq!(match_tree["name"], "foo");
+        assert_eq!(match_tree["count"], 3.0);
+    }
 }

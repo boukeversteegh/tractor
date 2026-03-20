@@ -157,17 +157,24 @@ pub mod helpers {
         xot.add_name(name)
     }
 
-    /// Rename an element node
-    /// Also removes redundant `field` attribute if it matches the new name
+    /// Rename an element node.
+    ///
+    /// The `field` attribute is always preserved — it carries the grammar-level
+    /// singleton signal that the JSON serializer relies on for property lifting.
+    /// If `field` matches the old element name, it is updated to the new name
+    /// so that it stays in sync after the rename.
     pub fn rename(xot: &mut Xot, node: XotNode, new_name: &str) {
+        let old_name = get_element_name(xot, node);
         let name_id = xot.add_name(new_name);
         if let Some(element) = xot.element_mut(node) {
             element.set_name(name_id);
         }
-        // Remove redundant field attribute if it matches the new element name
-        if let Some(field_value) = get_attr(xot, node, "field") {
-            if field_value == new_name {
-                remove_attr(xot, node, "field");
+        // Keep field in sync: if field matched the old name, update to new name
+        if let Some(old) = old_name {
+            if let Some(field_value) = get_attr(xot, node, "field") {
+                if field_value == old {
+                    set_attr(xot, node, "field", new_name);
+                }
             }
         }
     }
@@ -425,7 +432,9 @@ pub mod helpers {
         "consequence",  // if true branch
         "alternative",  // if else branch
         "returns",      // return type
-        "body",         // function/class/loop body
+        // Note: "body" excluded — after transforms inline declaration lists,
+        // body can contain multiple children. Lifting the first child would
+        // violate cardinality-independence (issue #34).
     ];
 
     /// Mark the first element child of singleton wrappers with `field`.

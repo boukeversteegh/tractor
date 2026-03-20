@@ -803,6 +803,21 @@ fn render_xml_node_recursive(
             if options.use_color { output.push_str(ansi::RESET); }
             if options.pretty_print { output.push('\n'); }
         }
+        // XPath data variants — render as pretty-printed JSON
+        XmlNode::Map { .. } | XmlNode::Array { .. } | XmlNode::Number(_)
+        | XmlNode::Boolean(_) | XmlNode::Null => {
+            let json_val = crate::output::xml_node_to_json(node, options.max_depth);
+            let rendered = serde_json::to_string_pretty(&json_val).unwrap_or_default();
+            if options.pretty_print {
+                for line in rendered.lines() {
+                    output.push_str(&indent);
+                    output.push_str(line);
+                    output.push('\n');
+                }
+            } else {
+                output.push_str(&rendered);
+            }
+        }
     }
 }
 
@@ -943,6 +958,12 @@ fn write_xml_compact(node: &XmlNode, out: &mut String) {
                 out.push_str(d);
             }
             out.push_str("?>");
+        }
+        // XPath data variants — compact JSON
+        XmlNode::Map { .. } | XmlNode::Array { .. } | XmlNode::Number(_)
+        | XmlNode::Boolean(_) | XmlNode::Null => {
+            let json_val = crate::output::xml_node_to_json(node, None);
+            out.push_str(&serde_json::to_string(&json_val).unwrap_or_default());
         }
     }
 }
