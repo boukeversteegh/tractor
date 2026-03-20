@@ -10,6 +10,7 @@
 pub mod parser;
 pub mod xpath;
 pub mod output;
+pub mod render;
 pub mod replace;
 pub mod source_utils;
 pub mod language_info;

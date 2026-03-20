@@ -11,7 +11,7 @@ mod modes;
 use std::process::ExitCode;
 use cli::{Cli, Command};
 use clap::Parser;
-use modes::{check::run_check, test::run_test, set::run_set, query::run_query};
+use modes::{check::run_check, test::run_test, set::run_set, query::run_query, render::run_render};
 
 /// An error that has already been reported to the user; main should exit with
 /// failure but not print an additional "error: ..." line.
@@ -53,6 +53,7 @@ fn main() -> ExitCode {
         Some(Command::Check(args)) => run_check(args),
         Some(Command::Test(args)) => run_test(args),
         Some(Command::Set(args)) => run_set(args),
+        Some(Command::Render(args)) => run_render(args),
         None => run_query(cli.query),
     };
 

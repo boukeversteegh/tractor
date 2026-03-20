@@ -89,6 +89,8 @@ pub enum Command {
     Test(TestArgs),
     /// Set matched node values (modify files in-place)
     Set(SetArgs),
+    /// [EXPERIMENTAL] Render XML AST back to source code
+    Render(RenderArgs),
 }
 
 /// Shared arguments available in all modes
@@ -322,4 +324,20 @@ pub struct SetArgs {
     /// Value to set matched nodes to
     #[arg(long = "value", help_heading = "Set")]
     pub value: String,
+}
+
+/// Render mode: convert XML AST back to source code
+#[derive(Args, Debug)]
+pub struct RenderArgs {
+    /// Target file (determines language from extension). If omitted, output goes to stdout.
+    #[arg()]
+    pub file: Option<String>,
+
+    /// Language (required when no file is given, e.g., csharp, rust)
+    #[arg(short = 'l', long = "lang")]
+    pub lang: Option<String>,
+
+    /// XML input string (alternative to stdin)
+    #[arg(short = 's', long = "string")]
+    pub input: Option<String>,
 }

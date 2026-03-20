@@ -42,7 +42,10 @@ tests/integration/languages/csharp/mapper-extension-method.cs:1
             </block>
           </body>
         </method>
-        <comment>// MATCH - missing 'this'</comment>
+        <comment>
+          <trailing/>
+          // MATCH - missing 'this'
+        </comment>
         <method>
           <public/>
           <static/>
@@ -77,7 +80,10 @@ tests/integration/languages/csharp/mapper-extension-method.cs:1
             </block>
           </body>
         </method>
-        <comment>// OK - is extension</comment>
+        <comment>
+          <trailing/>
+          // OK - is extension
+        </comment>
         <method>
           <public/>
           <static/>
@@ -116,7 +122,10 @@ tests/integration/languages/csharp/mapper-extension-method.cs:1
             </block>
           </body>
         </method>
-        <comment>// OK - 2 params</comment>
+        <comment>
+          <trailing/>
+          // OK - 2 params
+        </comment>
         }
       </body>
     </class>

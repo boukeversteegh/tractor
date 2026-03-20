@@ -1,11 +1,60 @@
-//! C# transform logic
+//! C# language definitions and transform logic
 //!
-//! This module owns ALL C#-specific transformation rules.
-//! No assumptions about other languages - this is self-contained.
+//! This module owns ALL C#-specific knowledge: element names, modifiers,
+//! and transformation rules. The renderer imports constants from here
+//! rather than defining its own.
 
 use xot::{Xot, Node as XotNode};
 use crate::xot_transform::{TransformAction, helpers::*};
 use crate::output::syntax_highlight::SyntaxCategory;
+
+use semantic::*;
+
+/// Semantic element names — tractor's C# XML vocabulary after transform.
+/// These are the names that appear in tractor's output and that the renderer reads.
+pub mod semantic {
+    // Top-level / structural
+    pub const UNIT: &str = "unit";
+    pub const NAMESPACE: &str = "namespace";
+    pub const IMPORT: &str = "import";
+    pub const BODY: &str = "body";
+
+    // Type declarations
+    pub const CLASS: &str = "class";
+    pub const STRUCT: &str = "struct";
+    pub const INTERFACE: &str = "interface";
+    pub const ENUM: &str = "enum";
+    pub const RECORD: &str = "record";
+
+    // Members
+    pub const METHOD: &str = "method";
+    pub const CONSTRUCTOR: &str = "constructor";
+    pub const PROPERTY: &str = "property";
+    pub const FIELD: &str = "field";
+    pub const COMMENT: &str = "comment";
+
+    // Shared children
+    pub const NAME: &str = "name";
+    pub const TYPE: &str = "type";
+    pub const ACCESSORS: &str = "accessors";
+    pub const ACCESSOR: &str = "accessor";
+    pub const ATTRIBUTES: &str = "attributes";
+    pub const ATTRIBUTE: &str = "attribute";
+    pub const ARGUMENTS: &str = "arguments";
+    pub const ARGUMENT: &str = "argument";
+    pub const PARAMETERS: &str = "parameters";
+    pub const PARAMETER: &str = "parameter";
+    pub const VARIABLE: &str = "variable";
+    pub const DECLARATOR: &str = "declarator";
+
+    // Type markers
+    pub const NULLABLE: &str = "nullable";
+    pub const GENERIC: &str = "generic";
+
+    // Comment markers
+    pub const TRAILING: &str = "trailing";
+    pub const LEADING: &str = "leading";
+}
 
 /// Check if kind is a declaration that has a name child
 /// Uses original TreeSitter kinds (from `kind` attribute) for robust detection
@@ -211,6 +260,45 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         // ---------------------------------------------------------------------
+        // Comments - detect attachment and group adjacent line comments
+        //
+        // Attachment classification:
+        //   <trailing/> — comment on same line as previous sibling's end
+        //   <leading/>  — comment (block) immediately followed by a declaration
+        //   (no marker) — floating/standalone comment
+        //
+        // Grouping: consecutive // line comments on adjacent lines are merged
+        // into a single <comment> with multiline text content.
+        // ---------------------------------------------------------------------
+        "comment" => {
+            // Skip if already consumed by a preceding comment's grouping
+            if xot.parent(node).is_none() {
+                return Ok(TransformAction::Done);
+            }
+
+            // Trailing comments are attached to the previous sibling — no grouping
+            if is_inline_node(xot, node) {
+                prepend_empty_element(xot, node, "trailing")?;
+                return Ok(TransformAction::Done);
+            }
+
+            // Group consecutive line comments into this node
+            let consumed = group_line_comments(xot, node)?;
+
+            // Classify the (possibly merged) comment
+            if is_leading_comment(xot, node) {
+                prepend_empty_element(xot, node, "leading")?;
+            }
+
+            // Detach consumed siblings (they've been merged into this node)
+            for sibling in consumed {
+                xot.detach(sibling)?;
+            }
+
+            Ok(TransformAction::Done)
+        }
+
+        // ---------------------------------------------------------------------
         // Other nodes - just rename if needed
         // ---------------------------------------------------------------------
         _ => {
@@ -222,9 +310,17 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
     }
 }
 
-/// Check if text is an access modifier keyword
+/// C# access modifiers in canonical declaration order
+pub const ACCESS_MODIFIERS: &[&str] = &["public", "private", "protected", "internal"];
+
+/// C# non-access modifiers in canonical declaration order
+pub const OTHER_MODIFIERS: &[&str] = &[
+    "static", "abstract", "virtual", "override", "sealed",
+    "readonly", "const", "partial", "async", "extern", "unsafe", "new",
+];
+
 fn is_access_modifier(text: &str) -> bool {
-    matches!(text, "public" | "private" | "protected" | "internal")
+    ACCESS_MODIFIERS.contains(&text)
 }
 
 /// Check if a declaration node has any access modifier children (using raw kind)
@@ -269,35 +365,31 @@ fn default_access_modifier(xot: &Xot, node: XotNode) -> &'static str {
     "internal"
 }
 
-/// Known C# modifiers
+/// Known C# modifiers (access + other + "this" for extension methods)
 fn is_known_modifier(text: &str) -> bool {
-    matches!(text,
-        "public" | "private" | "protected" | "internal" |
-        "static" | "async" | "abstract" | "virtual" | "override" |
-        "sealed" | "readonly" | "const" | "partial" | "this"
-    )
+    ACCESS_MODIFIERS.contains(&text) || OTHER_MODIFIERS.contains(&text) || text == "this"
 }
 
 /// Map tree-sitter node kinds to semantic element names
 fn map_element_name(kind: &str) -> Option<&'static str> {
     match kind {
-        "compilation_unit" => Some("unit"),
-        "class_declaration" => Some("class"),
-        "struct_declaration" => Some("struct"),
-        "interface_declaration" => Some("interface"),
-        "enum_declaration" => Some("enum"),
-        "record_declaration" => Some("record"),
-        "method_declaration" => Some("method"),
-        "constructor_declaration" => Some("constructor"),
-        "property_declaration" => Some("property"),
-        "field_declaration" => Some("field"),
-        "namespace_declaration" => Some("namespace"),
-        "parameter_list" => Some("parameters"),
-        "parameter" => Some("parameter"),
-        "argument_list" => Some("arguments"),
-        "argument" => Some("argument"),
+        "compilation_unit" => Some(UNIT),
+        "class_declaration" => Some(CLASS),
+        "struct_declaration" => Some(STRUCT),
+        "interface_declaration" => Some(INTERFACE),
+        "enum_declaration" => Some(ENUM),
+        "record_declaration" => Some(RECORD),
+        "method_declaration" => Some(METHOD),
+        "constructor_declaration" => Some(CONSTRUCTOR),
+        "property_declaration" => Some(PROPERTY),
+        "field_declaration" => Some(FIELD),
+        "namespace_declaration" => Some(NAMESPACE),
+        "parameter_list" => Some(PARAMETERS),
+        "parameter" => Some(PARAMETER),
+        "argument_list" => Some(ARGUMENTS),
+        "argument" => Some(ARGUMENT),
         // generic_name is handled specially - becomes <type><generic/>Name<arguments>...</arguments></type>
-        "type_argument_list" => Some("arguments"),
+        "type_argument_list" => Some(ARGUMENTS),
         // nullable_type is handled specially - becomes <type>X<nullable/></type>
         "array_type" => Some("array"),
         "block" => Some("block"),
@@ -320,21 +412,21 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "conditional_expression" => Some("ternary"),
         "lambda_expression" => Some("lambda"),
         "await_expression" => Some("await"),
-        "variable_declaration" => Some("variable"),
-        "variable_declarator" => Some("declarator"),
+        "variable_declaration" => Some(VARIABLE),
+        "variable_declarator" => Some(DECLARATOR),
         "local_declaration_statement" => Some("local"),
         "string_literal" => Some("string"),
         "integer_literal" => Some("int"),
         "real_literal" => Some("float"),
         "boolean_literal" => Some("bool"),
         "null_literal" => Some("null"),
-        "attribute_list" => Some("attributes"),
-        "attribute" => Some("attribute"),
-        "attribute_argument_list" => Some("arguments"),
-        "attribute_argument" => Some("argument"),
-        "accessor_list" => Some("accessors"),
-        "accessor_declaration" => Some("accessor"),
-        "using_directive" => Some("import"),
+        "attribute_list" => Some(ATTRIBUTES),
+        "attribute" => Some(ATTRIBUTE),
+        "attribute_argument_list" => Some(ARGUMENTS),
+        "attribute_argument" => Some(ARGUMENT),
+        "accessor_list" => Some(ACCESSORS),
+        "accessor_declaration" => Some(ACCESSOR),
+        "using_directive" => Some(IMPORT),
         _ => None,
     }
 }
@@ -440,6 +532,127 @@ fn is_in_namespace_context(xot: &Xot, node: XotNode) -> bool {
     false
 }
 
+// =============================================================================
+// Comment attachment helpers
+// =============================================================================
+
+/// Check if a comment (or comment block) immediately precedes a non-comment sibling.
+/// "Immediately" means the next non-comment element sibling starts on the line
+/// right after this comment ends, with no blank-line gap.
+fn is_leading_comment(xot: &Xot, node: XotNode) -> bool {
+    let comment_end_line = match get_line(xot, node, "end") {
+        Some(l) => l,
+        None => return false,
+    };
+
+    // Find next element sibling that is NOT a comment (skip self — following_siblings includes node)
+    let next = xot.following_siblings(node)
+        .filter(|&s| s != node)
+        .find(|&s| {
+            xot.element(s).is_some()
+                && get_kind(xot, s).as_deref() != Some("comment")
+        });
+
+    match next {
+        Some(next) => {
+            let next_start_line = get_line(xot, next, "start").unwrap_or(0);
+            // Next declaration starts on the very next line (no blank line gap)
+            next_start_line == comment_end_line + 1
+        }
+        None => false,
+    }
+}
+
+/// Group consecutive `//` line comments on adjacent lines into a single comment node.
+///
+/// Merges the text content of following comment siblings into `node` and returns
+/// the consumed sibling nodes (caller should detach them after classification).
+///
+/// Only groups `//` style comments (not `/* */` block comments).
+fn group_line_comments(xot: &mut Xot, node: XotNode) -> Result<Vec<XotNode>, xot::Error> {
+    let text = match get_text_content(xot, node) {
+        Some(t) => t,
+        None => return Ok(Vec::new()),
+    };
+
+    // Only group line comments (start with //)
+    let trimmed = text.trim();
+    if !trimmed.starts_with("//") {
+        return Ok(Vec::new());
+    }
+
+    let mut end_line = match get_line(xot, node, "end") {
+        Some(l) => l,
+        None => return Ok(Vec::new()),
+    };
+
+    let mut consumed: Vec<XotNode> = Vec::new();
+    let mut merged_text = text.clone();
+
+    // Walk following siblings looking for adjacent // comments (skip self)
+    let following: Vec<XotNode> = xot.following_siblings(node)
+        .filter(|&s| s != node && xot.element(s).is_some())
+        .collect();
+
+    for sibling in following {
+        let sibling_kind = match get_kind(xot, sibling) {
+            Some(k) => k,
+            None => break,
+        };
+        if sibling_kind != "comment" {
+            break;
+        }
+
+        let sibling_text = match get_text_content(xot, sibling) {
+            Some(t) => t,
+            None => break,
+        };
+
+        // Must also be a // comment
+        if !sibling_text.trim().starts_with("//") {
+            break;
+        }
+
+        let sibling_start_line = match get_line(xot, sibling, "start") {
+            Some(l) => l,
+            None => break,
+        };
+
+        // Must be on the very next line (adjacent)
+        if sibling_start_line != end_line + 1 {
+            break;
+        }
+
+        // Merge: append text with newline
+        merged_text.push('\n');
+        merged_text.push_str(&sibling_text);
+
+        // Update end line to the consumed sibling's end
+        end_line = get_line(xot, sibling, "end").unwrap_or(end_line + 1);
+
+        consumed.push(sibling);
+    }
+
+    if !consumed.is_empty() {
+        // Replace text content of node with merged text
+        // Remove existing text children
+        let text_children: Vec<XotNode> = xot.children(node)
+            .filter(|&c| xot.text_str(c).is_some())
+            .collect();
+        for child in text_children {
+            xot.detach(child)?;
+        }
+        // Add merged text
+        let new_text = xot.new_text(&merged_text);
+        xot.append(node, new_text)?;
+
+        // Update end attribute to reflect the last consumed comment
+        set_attr(xot, node, "end", &format!("{}:{}", end_line, 1));
+    }
+
+    Ok(consumed)
+}
+
 /// Map a transformed element name to a syntax category for highlighting
 /// This is called by the highlighter to determine what color to use
 pub fn syntax_category(element: &str) -> SyntaxCategory {
@@ -527,6 +740,109 @@ public class Foo {
         assert!(xml.contains("<method"), "method_declaration should be renamed");
         assert!(xml.contains("<public"), "public modifier should be extracted");
     }
+
+    // =========================================================================
+    // Comment attachment tests
+    // =========================================================================
+
+    #[test]
+    fn test_trailing_comment() {
+        let source = "public class Foo {\n    int x; // trailing\n}\n";
+        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), false).unwrap();
+        let xml = render_document(&result.xot, result.root, &RenderOptions::default());
+        assert!(
+            xml.contains("<trailing/>"),
+            "same-line comment should get <trailing/> marker, got:\n{}", xml
+        );
+    }
+
+    #[test]
+    fn test_leading_comment() {
+        let source = "public class Foo {\n    // describes y\n    int y;\n}\n";
+        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), false).unwrap();
+        let xml = render_document(&result.xot, result.root, &RenderOptions::default());
+        assert!(
+            xml.contains("<leading/>"),
+            "comment above declaration should get <leading/> marker, got:\n{}", xml
+        );
+    }
+
+    #[test]
+    fn test_floating_comment() {
+        // Comment with blank line before next declaration = floating (no marker)
+        let source = "public class Foo {\n    // floating\n\n    int y;\n}\n";
+        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), false).unwrap();
+        let xml = render_document(&result.xot, result.root, &RenderOptions::default());
+        assert!(
+            !xml.contains("<trailing/>") && !xml.contains("<leading/>"),
+            "floating comment should have no marker, got:\n{}", xml
+        );
+        assert!(xml.contains("<comment>"), "comment should still be present");
+    }
+
+    #[test]
+    fn test_comment_block_grouping() {
+        let source = "public class Foo {\n    // line 1\n    // line 2\n    // line 3\n    int y;\n}\n";
+        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), false).unwrap();
+        let xml = render_document(&result.xot, result.root, &RenderOptions::default());
+        // Should be grouped into a single comment
+        let comment_count = xml.matches("<comment>").count() + xml.matches("<comment ").count();
+        assert_eq!(
+            comment_count, 1,
+            "three adjacent // comments should be grouped into one, got {} comments in:\n{}", comment_count, xml
+        );
+        // Should contain all lines
+        assert!(xml.contains("// line 1"), "merged comment should contain line 1");
+        assert!(xml.contains("// line 3"), "merged comment should contain line 3");
+        // Should be leading (immediately before int y)
+        assert!(xml.contains("<leading/>"), "grouped comment block should be leading");
+    }
+
+    #[test]
+    fn test_trailing_not_grouped_with_following() {
+        // Trailing comment should NOT absorb the following line comments
+        let source = "public class Foo {\n    int x; // trailing\n    // block 1\n    // block 2\n    int y;\n}\n";
+        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), false).unwrap();
+        let xml = render_document(&result.xot, result.root, &RenderOptions::default());
+        // Should have 2 comments: one trailing, one grouped leading block
+        let comment_count = xml.matches("<comment>").count() + xml.matches("<comment ").count();
+        assert_eq!(
+            comment_count, 2,
+            "should have trailing + grouped block = 2 comments, got {} in:\n{}", comment_count, xml
+        );
+        assert!(xml.contains("<trailing/>"), "first comment should be trailing");
+        assert!(xml.contains("<leading/>"), "block comment should be leading");
+        // Block should contain both lines
+        assert!(xml.contains("// block 1"), "block should contain line 1");
+        assert!(xml.contains("// block 2"), "block should contain line 2");
+    }
+
+    #[test]
+    fn test_block_comment_not_grouped() {
+        // /* */ style comments should NOT be grouped with // comments
+        let source = "public class Foo {\n    /* block */\n    // line\n    int y;\n}\n";
+        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), false).unwrap();
+        let xml = render_document(&result.xot, result.root, &RenderOptions::default());
+        let comment_count = xml.matches("<comment>").count() + xml.matches("<comment ").count();
+        assert!(
+            comment_count >= 2,
+            "/* */ and // comments should not be grouped, got {} comments in:\n{}", comment_count, xml
+        );
+    }
+
+    #[test]
+    fn test_leading_comment_at_unit_level() {
+        // Comment at compilation_unit level, before a class
+        let source = "// describes Foo\npublic class Foo { }\n";
+        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), false).unwrap();
+        let xml = render_document(&result.xot, result.root, &RenderOptions::default());
+        assert!(
+            xml.contains("<leading/>"),
+            "top-level comment before class should be leading, got:\n{}", xml
+        );
+    }
+
+    // =========================================================================
 
     #[test]
     fn test_extension_method_this_modifier() {

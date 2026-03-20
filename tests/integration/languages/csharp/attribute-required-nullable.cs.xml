@@ -28,7 +28,10 @@ tests/integration/languages/csharp/attribute-required-nullable.cs:1
             }
           </accessors>
         </property>
-        <comment>// ERROR - Required on non-nullable Guid</comment>
+        <comment>
+          <trailing/>
+          // ERROR - Required on non-nullable Guid
+        </comment>
         <property>
           <attributes>
             [
@@ -52,7 +55,10 @@ tests/integration/languages/csharp/attribute-required-nullable.cs:1
             }
           </accessors>
         </property>
-        <comment>// OK - nullable Guid</comment>
+        <comment>
+          <trailing/>
+          // OK - nullable Guid
+        </comment>
         <property>
           <attributes>
             [
@@ -73,7 +79,10 @@ tests/integration/languages/csharp/attribute-required-nullable.cs:1
             }
           </accessors>
         </property>
-        <comment>// OK - string is reference type</comment>
+        <comment>
+          <trailing/>
+          // OK - string is reference type
+        </comment>
         }
       </body>
     </class>
