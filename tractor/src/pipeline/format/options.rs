@@ -57,6 +57,7 @@ pub enum ViewField {
     Summary,
     Count,
     Schema,
+    Query,
 }
 
 impl ViewField {
@@ -74,12 +75,13 @@ impl ViewField {
             "summary"      => Ok(ViewField::Summary),
             "count"        => Ok(ViewField::Count),
             "schema"       => Ok(ViewField::Schema),
+            "query"        => Ok(ViewField::Query),
             "gcc" | "github" => Err(format!(
                 "'{}' is a format, not a view. Use -f {} instead of -v {}", s, s, s,
             )),
             _ => Err(format!(
                 "invalid view '{}'. Valid views: tree, value, source, lines, file, line, column, \
-                 reason, severity, summary, count, schema",
+                 reason, severity, summary, count, schema, query",
                 s,
             )),
         }

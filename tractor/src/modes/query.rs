@@ -83,6 +83,7 @@ pub(crate) fn build_query_report(matches: Vec<tractor_core::Match>, ctx: &RunCon
         errors: 0,
         warnings: 0,
         expected: None,
+        query: ctx.view.has(ViewField::Query).then(|| ctx.xpath.clone()).flatten(),
     };
     Report::query(report_matches, summary)
 }

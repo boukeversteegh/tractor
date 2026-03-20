@@ -141,6 +141,17 @@ tasks:
       - cargo build --release
       - cp target/release/tractor.exe {{.DIST_DIR}}/windows-x64/
 
+  dist:windows-installer:
+    desc: Build Windows installer (requires Inno Setup and Windows)
+    deps: [dist:windows]
+    vars:
+      VERSION: '{{.VERSION | default "dev"}}'
+    cmds:
+      - cp {{.DIST_DIR}}/windows-x64/tractor.exe installer/windows/tractor.exe
+      - cp web/public/favicon.ico installer/windows/tractor.ico
+      - iscc /DVERSION={{.VERSION}} installer/windows/tractor.iss
+      - cp installer/windows/output/tractor-{{.VERSION}}-windows-x86_64-setup.exe {{.DIST_DIR}}/
+
   # === Setup ===
 
   setup:sccache:

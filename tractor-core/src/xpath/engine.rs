@@ -158,7 +158,6 @@ fn xot_node_to_xml_node(xot: &Xot, node: Node) -> XmlNode {
 /// Convert an XPath Function (map or array) to a JSON string representation.
 fn function_to_json_string(func: &xee_xpath::function::Function, xot: &mut Xot) -> String {
     use xee_interpreter::sequence::QNameOrString;
-    // Wrap the function item in a Sequence and use xee's JSON serializer
     let item = xee_xpath::Item::Function(func.clone());
     let seq = Sequence::from(item);
     let mut params = SerializationParameters::new();
@@ -166,6 +165,54 @@ fn function_to_json_string(func: &xee_xpath::function::Function, xot: &mut Xot) 
     match seq.serialize(params, xot) {
         Ok(json) => json,
         Err(_) => format!("{:?}", func),
+    }
+}
+
+/// Convert a `serde_json::Value` into an `XmlNode` tree.
+///
+/// This is the robust bridge between xee's JSON serializer (the only public
+/// API for inspecting map/array contents) and our native IR. The JSON string
+/// is parsed exactly once at query time; downstream renderers work with the
+/// structured `XmlNode` directly.
+///
+/// Map keys are sorted to maximise readability: scalar values (strings,
+/// numbers, booleans, null) appear first, then nested map values, then
+/// arrays/lists. Within each tier the keys are ordered lexicographically.
+/// This places identifying fields like `name` before large child collections
+/// like `methods`, mirroring the typical top-to-bottom reading order used in
+/// source code. The ordering is fully deterministic regardless of xee's
+/// internal hash-map iteration order.
+fn json_value_to_xml_node(val: &serde_json::Value) -> XmlNode {
+    /// Assign a display tier to a value so that scalars print before maps
+    /// and maps print before arrays.
+    fn value_tier(v: &XmlNode) -> u8 {
+        match v {
+            XmlNode::Text(_) | XmlNode::Number(_) | XmlNode::Boolean(_) | XmlNode::Null => 0,
+            XmlNode::Map { .. } => 1,
+            XmlNode::Array { .. } => 2,
+            // XML node types (Element, Comment, ProcessingInstruction) cannot
+            // appear in a JSON-derived tree; treat them as complex (tier 1).
+            XmlNode::Element { .. } | XmlNode::Comment(_) | XmlNode::ProcessingInstruction { .. } => 1,
+        }
+    }
+    match val {
+        serde_json::Value::Object(map) => {
+            let mut entries: Vec<_> = map.iter()
+                .map(|(k, v)| (k.clone(), json_value_to_xml_node(v)))
+                .collect();
+            entries.sort_by(|(a, av), (b, bv)| {
+                value_tier(av).cmp(&value_tier(bv)).then_with(|| a.cmp(b))
+            });
+            XmlNode::Map { entries }
+        }
+        serde_json::Value::Array(arr) => {
+            let items = arr.iter().map(json_value_to_xml_node).collect();
+            XmlNode::Array { items }
+        }
+        serde_json::Value::String(s) => XmlNode::Text(s.clone()),
+        serde_json::Value::Number(n) => XmlNode::Number(n.as_f64().unwrap_or(0.0)),
+        serde_json::Value::Bool(b) => XmlNode::Boolean(*b),
+        serde_json::Value::Null => XmlNode::Null,
     }
 }
 
@@ -258,8 +305,14 @@ fn execute_direct_query(
                     matches.push(Match::new(file_path.to_string(), value));
                 }
                 xee_xpath::Item::Function(func) => {
-                    let value = function_to_json_string(&func, documents.xot_mut());
-                    matches.push(Match::new(file_path.to_string(), value));
+                    let json_str = function_to_json_string(&func, documents.xot_mut());
+                    let mut m = Match::new(file_path.to_string(), String::new());
+                    // Parse the JSON into structured XmlNode IR — value stays empty,
+                    // all data lives in the tree field.
+                    if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&json_str) {
+                        m.xml_node = Some(json_value_to_xml_node(&parsed));
+                    }
+                    matches.push(m);
                 }
             }
         }
@@ -424,9 +477,14 @@ mod tests {
         assert!(matches.is_ok(), "Map constructor should parse: {:?}", matches.err());
         let m = matches.unwrap();
         assert_eq!(m.len(), 2, "Should get 2 maps");
-        // Verify JSON-formatted output
-        assert!(m[0].value.contains("\"n\""), "Map value should contain key 'n', got: {}", m[0].value);
-        assert!(m[0].value.contains("\"v\""), "Map value should contain key 'v', got: {}", m[0].value);
+        // Verify structured tree
+        match &m[0].xml_node {
+            Some(XmlNode::Map { entries }) => {
+                assert!(entries.iter().any(|(k, _)| k == "n"), "Map should have key 'n'");
+                assert!(entries.iter().any(|(k, _)| k == "v"), "Map should have key 'v'");
+            }
+            other => panic!("Expected XmlNode::Map, got: {:?}", other),
+        }
     }
 
     #[test]
@@ -443,11 +501,96 @@ mod tests {
             Arc::new(vec![]), "test.xml"
         ).unwrap();
         assert_eq!(matches.len(), 1);
-        // Should be valid JSON
-        let parsed: serde_json::Value = serde_json::from_str(&matches[0].value)
-            .expect(&format!("Map value should be valid JSON, got: {}", matches[0].value));
-        assert_eq!(parsed["name"], "foo");
-        assert_eq!(parsed["val"], "1");
+        // Tree should be a structured Map
+        match &matches[0].xml_node {
+            Some(XmlNode::Map { entries }) => {
+                let name_entry = entries.iter().find(|(k, _)| k == "name").expect("key 'name'");
+                let val_entry = entries.iter().find(|(k, _)| k == "val").expect("key 'val'");
+                assert_eq!(name_entry.1, XmlNode::Text("foo".into()));
+                assert_eq!(val_entry.1, XmlNode::Text("1".into()));
+            }
+            other => panic!("Expected XmlNode::Map, got: {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_map_result_has_structured_tree() {
+        use crate::parser::load_xml_string_to_documents;
+
+        let xml = r#"<root><item><name>foo</name><value>1</value></item></root>"#;
+        let mut result = load_xml_string_to_documents(xml, "test.xml".to_string()).unwrap();
+        let engine = XPathEngine::new();
+
+        // Map results should have a Map variant in xml_node
+        let matches = engine.query_documents(
+            &mut result.documents, result.doc_handle,
+            r#"//item ! map { "name": string(name) }"#,
+            Arc::new(vec![]), "test.xml"
+        ).unwrap();
+        assert_eq!(matches.len(), 1);
+        assert!(matches!(matches[0].xml_node, Some(XmlNode::Map { .. })),
+            "Map results should have XmlNode::Map in tree, got: {:?}", matches[0].xml_node);
+
+        // Node results should have an Element variant
+        let matches = engine.query_documents(
+            &mut result.documents, result.doc_handle,
+            "//name",
+            Arc::new(vec![]), "test.xml"
+        ).unwrap();
+        assert_eq!(matches.len(), 1);
+        assert!(matches!(matches[0].xml_node, Some(XmlNode::Element { .. })),
+            "Node results should have XmlNode::Element in tree");
+
+        // Atomic results should have no tree
+        let matches = engine.query_documents(
+            &mut result.documents, result.doc_handle,
+            "string(//name)",
+            Arc::new(vec![]), "test.xml"
+        ).unwrap();
+        assert_eq!(matches.len(), 1);
+        assert!(matches[0].xml_node.is_none(),
+            "Atomic results should have no tree");
+    }
+
+    #[test]
+    fn test_map_with_node_values() {
+        use crate::parser::load_xml_string_to_documents;
+
+        let xml = r#"<root><item><name>foo</name><value>1</value></item></root>"#;
+        let mut result = load_xml_string_to_documents(xml, "test.xml".to_string()).unwrap();
+        let engine = XPathEngine::new();
+
+        // Map with node values (not string() wrapped) — xee serializes nodes
+        // as their XML representation, then we parse back to XmlNode::Map
+        let matches = engine.query_documents(
+            &mut result.documents, result.doc_handle,
+            r#"//item ! map { "name": name, "val": value }"#,
+            Arc::new(vec![]), "test.xml"
+        ).unwrap();
+        assert_eq!(matches.len(), 1);
+        // Should have structured Map in tree
+        match &matches[0].xml_node {
+            Some(XmlNode::Map { entries }) => {
+                assert_eq!(entries.len(), 2);
+                // Look up by key (order depends on serde_json's BTreeMap)
+                let name_val = entries.iter().find(|(k, _)| k == "name")
+                    .expect("Should have 'name' key");
+                let val_val = entries.iter().find(|(k, _)| k == "val")
+                    .expect("Should have 'val' key");
+                // Node values become Text strings (from xee's XML serialization)
+                if let XmlNode::Text(ref s) = name_val.1 {
+                    assert!(s.contains("foo"), "Node value should contain 'foo', got: {}", s);
+                } else {
+                    panic!("Expected Text for 'name' value, got: {:?}", name_val.1);
+                }
+                if let XmlNode::Text(ref s) = val_val.1 {
+                    assert!(s.contains("1"), "Node value should contain '1', got: {}", s);
+                } else {
+                    panic!("Expected Text for 'val' value, got: {:?}", val_val.1);
+                }
+            }
+            other => panic!("Expected XmlNode::Map, got: {:?}", other),
+        }
     }
 
     #[test]
