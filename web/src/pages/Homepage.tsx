@@ -1,11 +1,49 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MiniPlayground } from '../components/MiniPlayground';
 
-type Platform = 'unix' | 'windows';
+type Platform = 'linux' | 'macos' | 'windows';
+
+interface GitHubReleaseAsset {
+  name: string;
+  browser_download_url: string;
+}
+
+interface GitHubRelease {
+  assets?: GitHubReleaseAsset[];
+}
+
+const RELEASE_BASE = 'https://github.com/boukeversteegh/tractor/releases/latest/download';
+const RELEASES_PAGE = 'https://github.com/boukeversteegh/tractor/releases/latest';
+const GITHUB_API_LATEST = 'https://api.github.com/repos/boukeversteegh/tractor/releases/latest';
+
+const STATIC_DOWNLOADS: Record<'linux' | 'macos', { url: string; filename: string }> = {
+  linux: { url: `${RELEASE_BASE}/tractor-linux-x86_64`, filename: 'tractor-linux-x86_64' },
+  macos: { url: `${RELEASE_BASE}/tractor-macos-arm64`, filename: 'tractor-macos-arm64' },
+};
+
+function detectPlatform(): Platform {
+  const ua = navigator.userAgent.toLowerCase();
+  if (ua.includes('win')) return 'windows';
+  if (ua.includes('mac')) return 'macos';
+  return 'linux';
+}
 
 export function Homepage() {
-  const [platform, setPlatform] = useState<Platform>('unix');
+  const [platform, setPlatform] = useState<Platform>(detectPlatform);
+  const [windowsInstaller, setWindowsInstaller] = useState<{ url: string; filename: string } | null>(null);
+
+  useEffect(() => {
+    fetch(GITHUB_API_LATEST)
+      .then(r => r.json())
+      .then((release: GitHubRelease) => {
+        const asset = release.assets?.find(a => /tractor-.*-windows-x86_64-setup\.exe$/.test(a.name));
+        if (asset) {
+          setWindowsInstaller({ url: asset.browser_download_url, filename: asset.name });
+        }
+      })
+      .catch(() => { /* fall back to releases page link */ });
+  }, []);
 
   return (
     <div className="homepage">
@@ -37,13 +75,19 @@ export function Homepage() {
       <section className="install-section-wrapper">
         <div className="install-section">
           <div className="install-header">
-            <span>Setup</span>
+            <span>Install</span>
             <div className="platform-switch">
               <button
-                className={`platform-btn ${platform === 'unix' ? 'active' : ''}`}
-                onClick={() => setPlatform('unix')}
+                className={`platform-btn ${platform === 'linux' ? 'active' : ''}`}
+                onClick={() => setPlatform('linux')}
               >
-                Linux / macOS
+                Linux
+              </button>
+              <button
+                className={`platform-btn ${platform === 'macos' ? 'active' : ''}`}
+                onClick={() => setPlatform('macos')}
+              >
+                macOS
               </button>
               <button
                 className={`platform-btn ${platform === 'windows' ? 'active' : ''}`}
@@ -56,17 +100,35 @@ export function Homepage() {
 
           <div className="install-steps">
             <div className="install-step">
-              <span className="step-label">1. Install Rust</span>
-              {platform === 'unix' ? (
-                <pre className="install-cmd"><code>curl -fsSL https://sh.rustup.rs | sh</code></pre>
+              <span className="step-label">1. Download</span>
+              {platform === 'windows' ? (
+                windowsInstaller ? (
+                  <pre className="install-cmd"><code><a href={windowsInstaller.url} className="download-link">{windowsInstaller.filename}</a></code></pre>
+                ) : (
+                  <pre className="install-cmd"><code><a href={RELEASES_PAGE} className="download-link">Latest release (GitHub)</a></code></pre>
+                )
               ) : (
-                <pre className="install-cmd"><code>winget install Rustlang.Rustup</code></pre>
+                <pre className="install-cmd"><code><a href={STATIC_DOWNLOADS[platform].url} className="download-link">{STATIC_DOWNLOADS[platform].filename}</a></code></pre>
               )}
             </div>
-            <div className="install-step">
-              <span className="step-label">2. Install Tractor</span>
-              <pre className="install-cmd"><code>cargo install --git https://github.com/boukeversteegh/tractor tractor</code></pre>
-            </div>
+            {platform === 'linux' && (
+              <div className="install-step">
+                <span className="step-label">2. Install</span>
+                <pre className="install-cmd"><code>chmod +x tractor-linux-x86_64{'\n'}sudo mv tractor-linux-x86_64 /usr/local/bin/tractor</code></pre>
+              </div>
+            )}
+            {platform === 'macos' && (
+              <div className="install-step">
+                <span className="step-label">2. Install</span>
+                <pre className="install-cmd"><code>xattr -d com.apple.quarantine tractor-macos-arm64{'\n'}chmod +x tractor-macos-arm64{'\n'}sudo mv tractor-macos-arm64 /usr/local/bin/tractor</code></pre>
+              </div>
+            )}
+            {platform === 'windows' && (
+              <div className="install-step">
+                <span className="step-label">2. Install</span>
+                <pre className="install-cmd"><code>{windowsInstaller ? `.\\${windowsInstaller.filename}` : 'Run the downloaded installer'}</code></pre>
+              </div>
+            )}
           </div>
         </div>
       </section>
