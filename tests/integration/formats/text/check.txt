@@ -1,6 +1,12 @@
 class found
 error
+public class Foo
+{
+    public int Bar { get; set; }
+    public void Baz() { }
+}
 
 class found
 error
+public class Qux { }
 2 errors in 1 file

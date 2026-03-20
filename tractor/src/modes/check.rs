@@ -13,7 +13,7 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     let ctx = RunContext::build(
         &args.shared, args.files, args.shared.xpath.clone(),
-        &args.format, &[ViewField::Reason, ViewField::Severity], args.view.as_deref(), args.message, None, false, true,
+        &args.format, &[ViewField::Reason, ViewField::Severity, ViewField::Lines], args.view.as_deref(), args.message, None, false, true,
     )?;
 
     let xpath_expr = ctx.xpath.as_ref()

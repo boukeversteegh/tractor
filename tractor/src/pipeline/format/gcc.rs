@@ -1,5 +1,5 @@
-use tractor_core::{report::{Report, ReportMatch}, Match};
-use super::shared::{to_absolute_path, append_source_context};
+use tractor_core::report::{Report, ReportMatch};
+use super::shared::to_absolute_path;
 
 /// Render report matches in gcc format: `file:line:col: severity: reason`
 pub fn render_gcc(report: &Report) -> String {
@@ -27,9 +27,7 @@ fn render_gcc_match(out: &mut String, rm: &ReportMatch, group_file: Option<&str>
         "{}:{}:{}: {}: {}\n",
         to_absolute_path(file), rm.line, rm.column, severity, reason
     ));
-    // Reconstruct a minimal Match for source context rendering
-    let m = make_context_match(rm);
-    append_source_context(out, &m);
+    append_source_context(out, rm);
 }
 
 
@@ -48,22 +46,54 @@ pub fn render_gcc_report_with_template(matches: &[ReportMatch], template: &str, 
             "{}:{}:{}: {}: {}\n",
             to_absolute_path(&rm.file), rm.line, rm.column, severity, msg
         ));
-        let m = make_context_match(rm);
-        append_source_context(&mut out, &m);
+        append_source_context(&mut out, rm);
     }
     out
 }
 
-/// Construct a minimal Match for source-context rendering.
-/// source_lines is empty (already consumed at report-build time), so context
-/// is suppressed — this is acceptable since gcc format is CI-oriented.
-fn make_context_match(rm: &ReportMatch) -> Match {
-    use std::sync::Arc;
-    Match::with_location(
-        rm.file.clone(),
-        rm.line, rm.column,
-        rm.end_line, rm.end_column,
-        rm.value.clone().unwrap_or_default(),
-        Arc::new(vec![]),
-    )
+/// Append source context with line-number gutter and caret mark beneath the
+/// diagnostic line.  Only emits when the report match carries `lines` data.
+fn append_source_context(output: &mut String, rm: &ReportMatch) {
+    let lines = match rm.lines {
+        Some(ref ls) if !ls.is_empty() => ls,
+        _ => return,
+    };
+    if rm.line == 0 { return; }
+
+    let start_line     = rm.line as usize;
+    let end_line       = (rm.end_line as usize).min(start_line + lines.len() - 1);
+    let line_count     = end_line.saturating_sub(start_line) + 1;
+    let line_num_width = end_line.to_string().len();
+
+    if line_count == 1 {
+        let source_line   = &lines[0];
+        let underline_len = (rm.end_column as usize).saturating_sub(rm.column as usize).max(1);
+        let padding       = " ".repeat(line_num_width + 3 + (rm.column as usize).saturating_sub(1));
+        let underline     = format!("^{}", "~".repeat(underline_len.saturating_sub(1)));
+        output.push_str(&format!("{:>width$} | {}\n", start_line, source_line, width = line_num_width));
+        output.push_str(&format!("{}{}\n", padding, underline));
+    } else if line_count <= 6 {
+        for (i, line) in lines.iter().enumerate().take(line_count) {
+            let lineno = start_line + i;
+            let marker = if lineno == start_line || lineno == end_line { ">" } else { " " };
+            output.push_str(&format!("{:>width$} {}| {}\n", lineno, marker, line, width = line_num_width));
+        }
+    } else {
+        // First 2 lines
+        for i in 0..2 {
+            let lineno = start_line + i;
+            if i < lines.len() {
+                output.push_str(&format!("{:>width$} >| {}\n", lineno, &lines[i], width = line_num_width));
+            }
+        }
+        output.push_str(&format!("{:>width$}  | ... ({} more lines)\n", "...", line_count - 4, width = line_num_width));
+        // Last 2 lines
+        for i in (line_count - 2)..line_count {
+            let lineno = start_line + i;
+            if i < lines.len() {
+                output.push_str(&format!("{:>width$} >| {}\n", lineno, &lines[i], width = line_num_width));
+            }
+        }
+    }
+    output.push('\n');
 }
