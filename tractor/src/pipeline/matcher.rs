@@ -33,7 +33,12 @@ pub fn match_to_report_match(
             tractor_core::xpath::XmlNode::Map { .. } |
             tractor_core::xpath::XmlNode::Array { .. }
         ) => m.xml_node.clone(),
-        _ => if view.has(ViewField::Tree) { m.xml_node.clone() } else { None },
+        // Keep tree when explicitly requested OR when lines are selected (needed for syntax highlighting).
+        _ => if view.has(ViewField::Tree) || view.has(ViewField::Lines) || view.has(ViewField::Source) {
+            m.xml_node.clone()
+        } else {
+            None
+        },
     };
     let value  = view.has(ViewField::Value)
                      .then(|| m.value.clone());

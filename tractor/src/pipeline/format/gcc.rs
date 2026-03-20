@@ -1,25 +1,24 @@
-use tractor_core::{report::{Report, ReportMatch}, Match};
-use super::shared::{to_absolute_path, append_source_context};
+use tractor_core::{render_lines, report::{Report, ReportMatch}, RenderOptions};
+use super::shared::to_absolute_path;
 
 /// Render report matches in gcc format: `file:line:col: severity: reason`
-pub fn render_gcc(report: &Report) -> String {
+pub fn render_gcc(report: &Report, opts: &RenderOptions) -> String {
     let mut out = String::new();
-    // Render from flat matches or grouped matches, whichever is populated.
     if let Some(ref groups) = report.groups {
         for g in groups {
             for rm in &g.matches {
-                render_gcc_match(&mut out, rm, Some(&g.file));
+                render_gcc_match(&mut out, rm, Some(&g.file), opts);
             }
         }
     } else {
         for rm in &report.matches {
-            render_gcc_match(&mut out, rm, None);
+            render_gcc_match(&mut out, rm, None, opts);
         }
     }
     out
 }
 
-fn render_gcc_match(out: &mut String, rm: &ReportMatch, group_file: Option<&str>) {
+fn render_gcc_match(out: &mut String, rm: &ReportMatch, group_file: Option<&str>, opts: &RenderOptions) {
     let reason   = rm.reason.as_deref().unwrap_or("violation");
     let severity = rm.severity.map_or("error", |s| s.as_str());
     let file = group_file.unwrap_or(&rm.file);
@@ -27,18 +26,21 @@ fn render_gcc_match(out: &mut String, rm: &ReportMatch, group_file: Option<&str>
         "{}:{}:{}: {}: {}\n",
         to_absolute_path(file), rm.line, rm.column, severity, reason
     ));
-    // Reconstruct a minimal Match for source context rendering
-    let m = make_context_match(rm);
-    append_source_context(out, &m);
+    if let Some(ref ls) = rm.lines {
+        out.push_str(&render_lines(
+            ls, rm.tree.as_ref(),
+            rm.line, rm.column, rm.end_line, rm.end_column,
+            opts,
+        ));
+    }
 }
 
 
 /// Render ReportMatches in gcc format using a message template (for `test --error`).
-pub fn render_gcc_report_with_template(matches: &[ReportMatch], template: &str, is_warning: bool) -> String {
+pub fn render_gcc_report_with_template(matches: &[ReportMatch], template: &str, is_warning: bool, opts: &RenderOptions) -> String {
     let severity = if is_warning { "warning" } else { "error" };
     let mut out = String::new();
     for rm in matches {
-        // Build the message from the template using available fields
         let msg = template
             .replace("{file}", &tractor_core::normalize_path(&rm.file))
             .replace("{line}", &rm.line.to_string())
@@ -48,22 +50,13 @@ pub fn render_gcc_report_with_template(matches: &[ReportMatch], template: &str, 
             "{}:{}:{}: {}: {}\n",
             to_absolute_path(&rm.file), rm.line, rm.column, severity, msg
         ));
-        let m = make_context_match(rm);
-        append_source_context(&mut out, &m);
+        if let Some(ref ls) = rm.lines {
+            out.push_str(&render_lines(
+                ls, rm.tree.as_ref(),
+                rm.line, rm.column, rm.end_line, rm.end_column,
+                opts,
+            ));
+        }
     }
     out
-}
-
-/// Construct a minimal Match for source-context rendering.
-/// source_lines is empty (already consumed at report-build time), so context
-/// is suppressed — this is acceptable since gcc format is CI-oriented.
-fn make_context_match(rm: &ReportMatch) -> Match {
-    use std::sync::Arc;
-    Match::with_location(
-        rm.file.clone(),
-        rm.line, rm.column,
-        rm.end_line, rm.end_column,
-        rm.value.clone().unwrap_or_default(),
-        Arc::new(vec![]),
-    )
 }

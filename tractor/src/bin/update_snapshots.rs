@@ -298,7 +298,8 @@ fn main() {
         // Make ANSI escape codes visible as \e so color snapshots are readable in text editors.
         let output = raw
             .replace(&cwd_prefix, "")
-            .replace('\x1b', "\\e");
+            .replace('\x1b', "\\e")
+            .replace("tractor.exe", "tractor");
 
         if check_mode {
             if let Ok(existing) = fs::read_to_string(&snap_path) {
@@ -335,6 +336,8 @@ fn main() {
 }
 
 fn find_tractor_bin() -> String {
+    // Prefer the most recently built binary so snapshots always reflect the
+    // current source, regardless of which profile was used to build.
     let candidates = if cfg!(windows) {
         vec![
             "target/release/tractor.exe".to_string(),
@@ -347,14 +350,26 @@ fn find_tractor_bin() -> String {
         ]
     };
 
+    let mut found: Vec<(String, std::time::SystemTime)> = Vec::new();
     for c in &candidates {
-        if Path::new(c).is_file() {
-            return c.clone();
+        let p = Path::new(c);
+        if p.is_file() {
+            if let Ok(meta) = p.metadata() {
+                if let Ok(mtime) = meta.modified() {
+                    found.push((c.clone(), mtime));
+                }
+            }
         }
     }
 
-    eprintln!("error: tractor binary not found — run `cargo build --release` first");
-    process::exit(1);
+    if found.is_empty() {
+        eprintln!("error: tractor binary not found — run `cargo build` first");
+        process::exit(1);
+    }
+
+    // Most recently modified first
+    found.sort_by(|a, b| b.1.cmp(&a.1));
+    found[0].0.clone()
 }
 
 fn run_tractor(bin: &str, fixture: &str, extra_args: &[&str]) -> String {

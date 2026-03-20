@@ -47,16 +47,6 @@ impl RunContext {
         let xpath         = xpath.as_ref().map(|x| normalize_xpath(x));
         let output_format = OutputFormat::from_str(format)?;
 
-        // gcc and github have a fixed output schema — -v is not compatible.
-        if matches!(output_format, OutputFormat::Gcc | OutputFormat::Github) {
-            if user_view.is_some() {
-                return Err(format!(
-                    "-v is not compatible with -f {}; {} has a fixed output schema",
-                    format, format
-                ).into());
-            }
-        }
-
         let view = if let Some(s) = user_view {
             parse_view_set(s)?
         } else {

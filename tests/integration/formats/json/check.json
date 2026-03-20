@@ -12,11 +12,21 @@
       "matches": [
         {
           "reason": "class found",
-          "severity": "error"
+          "severity": "error",
+          "lines": [
+            "public class Foo",
+            "{",
+            "    public int Bar { get; set; }",
+            "    public void Baz() { }",
+            "}"
+          ]
         },
         {
           "reason": "class found",
-          "severity": "error"
+          "severity": "error",
+          "lines": [
+            "public class Qux { }"
+          ]
         }
       ]
     }

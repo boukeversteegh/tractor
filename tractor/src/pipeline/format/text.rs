@@ -8,7 +8,7 @@
 
 use tractor_core::{
     render_xml_node, normalize_path,
-    render_source_precomputed, render_lines_precomputed,
+    render_source_precomputed, render_lines,
     report::{Report, ReportKind, ReportMatch, Summary},
     RenderOptions,
 };
@@ -124,10 +124,10 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
             }
             ViewField::Lines => {
                 if let Some(ref ls) = rm.lines {
-                    out.push_str(&render_lines_precomputed(
+                    out.push_str(&render_lines(
                         ls,
                         rm.tree.as_ref(),
-                        rm.line, rm.end_line,
+                        rm.line, rm.column, rm.end_line, rm.end_column,
                         render_opts,
                     ));
                 }
