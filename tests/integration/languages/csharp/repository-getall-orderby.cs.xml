@@ -52,7 +52,10 @@ tests/integration/languages/csharp/repository-getall-orderby.cs:1
             </block>
           </body>
         </method>
-        <comment>// MATCH - missing OrderBy</comment>
+        <comment>
+          <trailing/>
+          // MATCH - missing OrderBy
+        </comment>
         <method>
           <public/>
           <returns>
@@ -126,7 +129,10 @@ tests/integration/languages/csharp/repository-getall-orderby.cs:1
             </block>
           </body>
         </method>
-        <comment>// OK</comment>
+        <comment>
+          <trailing/>
+          // OK
+        </comment>
         }
       </body>
     </class>
@@ -174,7 +180,10 @@ tests/integration/languages/csharp/repository-getall-orderby.cs:1
             </block>
           </body>
         </method>
-        <comment>// Skip - Mock class</comment>
+        <comment>
+          <trailing/>
+          // Skip - Mock class
+        </comment>
         }
       </body>
     </class>

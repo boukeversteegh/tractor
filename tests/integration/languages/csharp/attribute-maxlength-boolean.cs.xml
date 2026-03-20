@@ -35,7 +35,10 @@ tests/integration/languages/csharp/attribute-maxlength-boolean.cs:1
             }
           </accessors>
         </property>
-        <comment>// ERROR - MaxLength on bool</comment>
+        <comment>
+          <trailing/>
+          // ERROR - MaxLength on bool
+        </comment>
         <property>
           <attributes>
             [
@@ -63,7 +66,10 @@ tests/integration/languages/csharp/attribute-maxlength-boolean.cs:1
             }
           </accessors>
         </property>
-        <comment>// OK - MaxLength on string</comment>
+        <comment>
+          <trailing/>
+          // OK - MaxLength on string
+        </comment>
         }
       </body>
     </class>

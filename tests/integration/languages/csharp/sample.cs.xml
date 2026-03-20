@@ -2,7 +2,10 @@ tests/integration/languages/csharp/sample.cs:1
 <Files>
   <file>tests/integration/languages/csharp/sample.cs</file>
   <unit>
-    <comment>// Simple C# example</comment>
+    <comment>
+      <leading/>
+      // Simple C# example
+    </comment>
     <import>
       using
       <ref>System</ref>

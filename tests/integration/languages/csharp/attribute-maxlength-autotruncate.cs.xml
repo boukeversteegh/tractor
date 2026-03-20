@@ -35,7 +35,10 @@ tests/integration/languages/csharp/attribute-maxlength-autotruncate.cs:1
             }
           </accessors>
         </property>
-        <comment>// MATCH - missing AutoTruncate</comment>
+        <comment>
+          <trailing/>
+          // MATCH - missing AutoTruncate
+        </comment>
         <property>
           <attributes>
             [
@@ -72,7 +75,10 @@ tests/integration/languages/csharp/attribute-maxlength-autotruncate.cs:1
             }
           </accessors>
         </property>
-        <comment>// OK - has AutoTruncate</comment>
+        <comment>
+          <trailing/>
+          // OK - has AutoTruncate
+        </comment>
         <property>
           <public/>
           <type>string</type>
@@ -84,7 +90,10 @@ tests/integration/languages/csharp/attribute-maxlength-autotruncate.cs:1
             }
           </accessors>
         </property>
-        <comment>// OK - no MaxLength</comment>
+        <comment>
+          <trailing/>
+          // OK - no MaxLength
+        </comment>
         }
       </body>
     </class>

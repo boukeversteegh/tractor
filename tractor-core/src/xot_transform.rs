@@ -292,6 +292,41 @@ pub mod helpers {
         if text.is_empty() { None } else { Some(text) }
     }
 
+    /// Extract a line number from a position attribute (format "row:col").
+    /// Position attributes are set by the xot builder from tree-sitter positions.
+    /// E.g. `get_line(xot, node, "start")` on a node with `start="3:5"` returns `Some(3)`.
+    pub fn get_line(xot: &Xot, node: XotNode, attr: &str) -> Option<usize> {
+        get_attr(xot, node, attr)?
+            .split(':')
+            .next()?
+            .parse()
+            .ok()
+    }
+
+    /// Check if a node starts on the same line as its previous element sibling ends.
+    /// Useful for detecting inline/trailing constructs (e.g. trailing comments).
+    /// Returns false if there is no previous element sibling or position data is missing.
+    ///
+    /// Note: `xot.preceding_siblings()` includes the node itself, so we skip it.
+    pub fn is_inline_node(xot: &Xot, node: XotNode) -> bool {
+        let start_line = match get_line(xot, node, "start") {
+            Some(l) => l,
+            None => return false,
+        };
+
+        let prev = xot.preceding_siblings(node)
+            .filter(|&s| s != node)
+            .find(|&s| xot.element(s).is_some());
+
+        match prev {
+            Some(prev) => {
+                let prev_end_line = get_line(xot, prev, "end").unwrap_or(0);
+                prev_end_line == start_line
+            }
+            None => false,
+        }
+    }
+
     /// Prepend an empty element as first child
     pub fn prepend_empty_element(xot: &mut Xot, parent: XotNode, name: &str) -> Result<XotNode, xot::Error> {
         let name_id = xot.add_name(name);
