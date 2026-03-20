@@ -2,21 +2,34 @@ name: CI
 
 on:
   pull_request:
-    paths:
-      - 'tractor/**'
-      - 'tractor-core/**'
-      - 'Cargo.toml'
-      - 'Cargo.lock'
-      - 'tests/**'
-      - 'installer/**'
-      - '.github/workflows/ci.yml'
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            code:
+              - 'tractor/**'
+              - 'tractor-core/**'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+              - 'tests/**'
+              - 'installer/**'
+              - '.github/workflows/ci.yml'
+
   test:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,3 +49,35 @@ jobs:
 
       - name: Run snapshot tests
         run: cargo run --release --bin update-snapshots -- --check
+
+  lint:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: mozilla-actions/sccache-action@v0.0.7
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build tractor
+        run: cargo build --release -p tractor
+
+      - name: Lint - no TODO comments
+        run: |
+          ./target/release/tractor test "tractor-core/src/**/*.rs" "tractor/src/**/*.rs" \
+            -x '//line_comment[contains(.,"TODO")]' \
+            -f github -m "TODO comment: {value}" \
+            --expect none
+
+  gate:
+    needs: [test, lint]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            echo "One or more jobs failed or were cancelled"
+            exit 1
+          fi
