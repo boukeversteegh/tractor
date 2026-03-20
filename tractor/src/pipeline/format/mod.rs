@@ -17,7 +17,7 @@ pub use text::render_text_report;
 
 use tractor_core::{
     render_xml_node,
-    render_source_precomputed, render_lines_precomputed,
+    render_source_precomputed, render_lines,
     report::Report,
 };
 use crate::pipeline::context::RunContext;
@@ -36,7 +36,7 @@ pub fn render_query_report(
         OutputFormat::Json   => print!("{}", render_json_report(report, &ctx.view, &ctx.render_options())),
         OutputFormat::Yaml   => print!("{}", render_yaml_report(report, &ctx.view, &ctx.render_options())),
         OutputFormat::Xml    => print!("{}", render_xml_report(report, &ctx.view, &ctx.render_options())),
-        OutputFormat::Gcc    => print!("{}", render_gcc(report)),
+        OutputFormat::Gcc    => print!("{}", render_gcc(report, &ctx.render_options())),
         OutputFormat::Github => print!("{}", render_github(report)),
         OutputFormat::Text   => print!("{}", render_text_report(report, &ctx.view, &ctx.render_options())),
     }
@@ -58,7 +58,7 @@ pub fn render_check_report(
         OutputFormat::Json   => print!("{}", render_json_report(report, &ctx.view, &ctx.render_options())),
         OutputFormat::Yaml   => print!("{}", render_yaml_report(report, &ctx.view, &ctx.render_options())),
         OutputFormat::Xml    => print!("{}", render_xml_report(report, &ctx.view, &ctx.render_options())),
-        OutputFormat::Gcc    => { print!("{}", render_gcc(report)); print_check_summary(summary); }
+        OutputFormat::Gcc    => { print!("{}", render_gcc(report, &ctx.render_options())); print_check_summary(summary); }
         OutputFormat::Github => print!("{}", render_github(report)),
         OutputFormat::Text   => print!("{}", render_text_report(report, &ctx.view, &ctx.render_options())),
     }
@@ -126,7 +126,7 @@ pub fn render_test_report(
 
     if !summary.passed && !report.matches.is_empty() {
         if let Some(ref error_tmpl) = error_template {
-            let out = render_gcc_report_with_template(&report.matches, error_tmpl, false);
+            let out = render_gcc_report_with_template(&report.matches, error_tmpl, false, &ctx.render_options());
             for line in out.lines() {
                 if ctx.use_color {
                     println!("  {}{}{}", color, line, test_colors::RESET);
@@ -144,7 +144,7 @@ pub fn render_test_report(
                         &opts,
                     )
                 } else if let Some(ref ls) = rm.lines {
-                    render_lines_precomputed(ls, rm.tree.as_ref(), rm.line, rm.end_line, &opts)
+                    render_lines(ls, rm.tree.as_ref(), rm.line, rm.column, rm.end_line, rm.end_column, &opts)
                 } else if let Some(ref v) = rm.value {
                     format!("{}\n", v)
                 } else if let Some(ref node) = rm.tree {

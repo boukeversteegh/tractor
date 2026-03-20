@@ -29,6 +29,7 @@ impl OutputFormat {
             )),
         }
     }
+
 }
 
 pub const FORMAT_TEXT:   &str = "text";

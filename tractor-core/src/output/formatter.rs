@@ -108,33 +108,93 @@ pub fn render_source_precomputed(
     format!("{}\n", snippet)
 }
 
-/// Render pre-computed source lines with optional syntax highlighting.
+/// Render source lines with line-number gutter, caret mark, and optional
+/// syntax highlighting.
 ///
-/// Lines should have trailing `\r` already stripped. When `xml_node` is `Some`,
-/// uses it to extract syntax spans for highlighting.
-pub fn render_lines_precomputed(
+/// Lines should have trailing `\r` already stripped. When `xml_node` is
+/// `Some`, syntax spans are extracted for highlighting.
+///
+/// Output for a single-line match:
+/// ```text
+/// 7 | public class Qux { }
+///     ^~~~~~~~~~~~~~~~~~~~
+/// ```
+///
+/// Multi-line (≤6 lines):
+/// ```text
+/// 1 >| public class Foo
+/// 2  | {
+/// 5 >| }
+/// ```
+pub fn render_lines(
     lines: &[String],
     xml_node: Option<&XmlNode>,
     start_line: u32,
+    column: u32,
     end_line: u32,
+    end_column: u32,
     opts: &RenderOptions,
 ) -> String {
-    if opts.use_color {
-        if let Some(node) = xml_node {
+    if lines.is_empty() || start_line == 0 {
+        return String::new();
+    }
+
+    // Apply syntax highlighting to the lines if possible.
+    let highlighted: Option<Vec<String>> = if opts.use_color {
+        xml_node.and_then(|node| {
             let category_fn = get_syntax_category(opts.language.as_deref().unwrap_or(""));
             let spans = extract_syntax_spans_from_xml_node(node, category_fn);
-            if !spans.is_empty() {
-                return format!("{}\n", highlight_lines(lines, &spans, start_line, end_line));
+            if spans.is_empty() {
+                None
+            } else {
+                let h = highlight_lines(lines, &spans, start_line, end_line);
+                Some(h.split('\n').map(|s| s.to_string()).collect())
+            }
+        })
+    } else {
+        None
+    };
+    let display: &[String] = highlighted.as_deref().unwrap_or(lines);
+
+    let sl = start_line as usize;
+    let el = (end_line as usize).min(sl + lines.len() - 1);
+    let line_count = el.saturating_sub(sl) + 1;
+    let lnw = el.to_string().len(); // line-number width
+
+    let mut out = String::new();
+
+    if line_count == 1 {
+        let src = display.first().map(|s| s.as_str()).unwrap_or("");
+        out.push_str(&format!("{:>w$} | {}\n", sl, src, w = lnw));
+        let ul_len = (end_column as usize).saturating_sub(column as usize).max(1);
+        let padding = " ".repeat(lnw + 3 + (column as usize).saturating_sub(1));
+        let underline = format!("^{}", "~".repeat(ul_len.saturating_sub(1)));
+        out.push_str(&format!("{}{}\n", padding, underline));
+    } else if line_count <= 6 {
+        for (i, line) in display.iter().enumerate().take(line_count) {
+            let lineno = sl + i;
+            let marker = if lineno == sl || lineno == el { ">" } else { " " };
+            out.push_str(&format!("{:>w$} {}| {}\n", lineno, marker, line, w = lnw));
+        }
+    } else {
+        // First 2 lines
+        for i in 0..2 {
+            if i < display.len() {
+                out.push_str(&format!("{:>w$} >| {}\n", sl + i, &display[i], w = lnw));
+            }
+        }
+        out.push_str(&format!("{:>w$}  | ... ({} more lines)\n", "...", line_count - 4, w = lnw));
+        // Last 2 lines
+        for i in (line_count - 2)..line_count {
+            if i < display.len() {
+                out.push_str(&format!("{:>w$} >| {}\n", sl + i, &display[i], w = lnw));
             }
         }
     }
-    let mut out = String::new();
-    for line in lines {
-        out.push_str(line);
-        out.push('\n');
-    }
+    out.push('\n');
     out
 }
+
 
 /// Format a message template by replacing placeholders ({value}, {line}, {col}, {file}).
 pub fn format_message(template: &str, m: &Match) -> String {
