@@ -298,7 +298,8 @@ fn main() {
         // Make ANSI escape codes visible as \e so color snapshots are readable in text editors.
         let output = raw
             .replace(&cwd_prefix, "")
-            .replace('\x1b', "\\e");
+            .replace('\x1b', "\\e")
+            .replace("tractor.exe", "tractor");
 
         if check_mode {
             if let Ok(existing) = fs::read_to_string(&snap_path) {
