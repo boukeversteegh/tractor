@@ -94,6 +94,130 @@ fn line_col_to_byte_offset(content: &str, line: u32, col: u32) -> Option<usize> 
     None
 }
 
+/// Apply replacements to a content string in memory, returning the modified content.
+///
+/// All `matches` are treated as belonging to the same source content (the file
+/// path stored in each match is used only for error messages). Matches are
+/// sorted, deduplicated, and validated before applying.
+///
+/// The replacement value is used literally — no escaping or formatting is applied.
+///
+/// # Errors
+///
+/// Returns an error if two matches overlap, making replacement ambiguous.
+pub fn apply_replacements_to_content(
+    content: &str,
+    matches: &[Match],
+    new_value: &str,
+) -> Result<String, ReplaceError> {
+    let file_label = matches.first().map(|m| m.file.as_str()).unwrap_or("<source>");
+    let file_matches: Vec<&Match> = matches.iter().collect();
+    let (result, _) = apply_to_content_str(content, file_matches, new_value, file_label)?;
+    Ok(result)
+}
+
+/// Compute replacements for a list of files and return modified content without
+/// writing to disk. Returns one `(file_path, modified_content)` pair per input
+/// file, in order. Files with no matches are returned with their original content.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - A file cannot be read
+/// - Two matches in the same file overlap
+pub fn compute_replacements_stdout(
+    files: &[String],
+    matches: &[Match],
+    new_value: &str,
+) -> Result<Vec<(String, String)>, ReplaceError> {
+    // Group matches by file path
+    let mut by_file: HashMap<&str, Vec<&Match>> = HashMap::new();
+    for m in matches {
+        by_file.entry(m.file.as_str()).or_default().push(m);
+    }
+
+    let mut results = Vec::with_capacity(files.len());
+    for file_path in files {
+        let content = fs::read_to_string(file_path).map_err(|e| ReplaceError::Io {
+            path: file_path.clone(),
+            source: e,
+        })?;
+        let file_matches = by_file.get(file_path.as_str()).cloned().unwrap_or_default();
+        let (modified, _) = apply_to_content_str(&content, file_matches, new_value, file_path)?;
+        results.push((file_path.clone(), modified));
+    }
+    Ok(results)
+}
+
+/// Internal: apply sorted, validated matches to a content string and return the
+/// modified result along with the number of replacements applied.
+/// `file_path` is used only in error/warning messages.
+fn apply_to_content_str(
+    content: &str,
+    mut file_matches: Vec<&Match>,
+    new_value: &str,
+    file_path: &str,
+) -> Result<(String, usize), ReplaceError> {
+    // Sort by position ascending for single-pass replacement
+    file_matches.sort_by(|a, b| (a.line, a.column).cmp(&(b.line, b.column)));
+
+    // Deduplicate matches at identical positions
+    file_matches.dedup_by(|a, b| {
+        a.line == b.line
+            && a.column == b.column
+            && a.end_line == b.end_line
+            && a.end_column == b.end_column
+    });
+
+    // Check for overlapping matches
+    for i in 0..file_matches.len().saturating_sub(1) {
+        let current = file_matches[i];
+        let next = file_matches[i + 1];
+        if (current.end_line, current.end_column) > (next.line, next.column) {
+            return Err(ReplaceError::OverlappingMatches {
+                file: file_path.to_string(),
+                first: (current.line, current.column),
+                second: (next.line, next.column),
+            });
+        }
+    }
+
+    // Pre-compute byte ranges on the original content
+    let mut byte_ranges: Vec<(usize, usize)> = Vec::new();
+    for m in &file_matches {
+        let start = line_col_to_byte_offset(content, m.line, m.column);
+        let end = line_col_to_byte_offset(content, m.end_line, m.end_column);
+        match (start, end) {
+            (Some(s), Some(e)) if s <= e && e <= content.len() => {
+                byte_ranges.push((s, e));
+            }
+            _ => {
+                eprintln!(
+                    "warning: {}: position {}:{}-{}:{} out of bounds, skipping",
+                    file_path, m.line, m.column, m.end_line, m.end_column
+                );
+            }
+        }
+    }
+
+    if byte_ranges.is_empty() {
+        return Ok((content.to_string(), 0));
+    }
+
+    // Build the result string in a single pass
+    let mut result = String::with_capacity(content.len());
+    let mut last_end = 0;
+
+    for &(start, end) in &byte_ranges {
+        result.push_str(&content[last_end..start]);
+        result.push_str(new_value);
+        last_end = end;
+    }
+    result.push_str(&content[last_end..]);
+
+    Ok((result, byte_ranges.len()))
+}
+
 /// Apply replacements to files based on XPath match positions.
 ///
 /// Each match's source range `[line:column, end_line:end_column)` is replaced
@@ -135,71 +259,15 @@ pub fn apply_replacements(matches: &[Match], new_value: &str) -> Result<ReplaceS
     let mut files_modified = 0;
     let mut replacements_made = 0;
 
-    for (file_path, mut file_matches) in by_file {
-        // Sort by position ascending for single-pass replacement
-        file_matches.sort_by(|a, b| (a.line, a.column).cmp(&(b.line, b.column)));
-
-        // Deduplicate matches at identical positions
-        file_matches.dedup_by(|a, b| {
-            a.line == b.line
-                && a.column == b.column
-                && a.end_line == b.end_line
-                && a.end_column == b.end_column
-        });
-
-        // Check for overlapping matches
-        for i in 0..file_matches.len().saturating_sub(1) {
-            let current = file_matches[i];
-            let next = file_matches[i + 1];
-            if (current.end_line, current.end_column) > (next.line, next.column) {
-                return Err(ReplaceError::OverlappingMatches {
-                    file: file_path.to_string(),
-                    first: (current.line, current.column),
-                    second: (next.line, next.column),
-                });
-            }
-        }
-
+    for (file_path, file_matches) in by_file {
         // Read the original file content
         let content = fs::read_to_string(file_path).map_err(|e| ReplaceError::Io {
             path: file_path.to_string(),
             source: e,
         })?;
 
-        // Pre-compute byte ranges on the original content
-        let mut byte_ranges: Vec<(usize, usize)> = Vec::new();
-        for m in &file_matches {
-            let start = line_col_to_byte_offset(&content, m.line, m.column);
-            let end = line_col_to_byte_offset(&content, m.end_line, m.end_column);
-            match (start, end) {
-                (Some(s), Some(e)) if s <= e && e <= content.len() => {
-                    byte_ranges.push((s, e));
-                }
-                _ => {
-                    eprintln!(
-                        "warning: {}: position {}:{}-{}:{} out of bounds, skipping",
-                        file_path, m.line, m.column, m.end_line, m.end_column
-                    );
-                }
-            }
-        }
-
-        if byte_ranges.is_empty() {
-            continue;
-        }
-
-        // Build the result string in a single pass
-        let mut result = String::with_capacity(content.len());
-        let mut last_end = 0;
-
-        for &(start, end) in &byte_ranges {
-            result.push_str(&content[last_end..start]);
-            result.push_str(new_value);
-            last_end = end;
-        }
-        result.push_str(&content[last_end..]);
-
-        replacements_made += byte_ranges.len();
+        let (result, count) = apply_to_content_str(&content, file_matches, new_value, file_path)?;
+        replacements_made += count;
 
         // Write back only if content actually changed
         if result != content {

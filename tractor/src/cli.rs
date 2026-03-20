@@ -324,6 +324,10 @@ pub struct SetArgs {
     /// Value to set matched nodes to
     #[arg(long = "value", help_heading = "Set")]
     pub value: String,
+
+    /// Write output to stdout instead of modifying files in-place
+    #[arg(long = "stdout", help_heading = "Set")]
+    pub stdout: bool,
 }
 
 /// Render mode: convert XML AST back to source code
