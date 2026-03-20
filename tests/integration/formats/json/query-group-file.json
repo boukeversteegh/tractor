@@ -10,15 +10,13 @@
             "public": true,
             "name": "Foo",
             "body": {
-              "property": {
-                "public": true,
-                "name": "Bar",
-                "children": [
-                  {
-                    "type": "int"
-                  },
-                  {
-                    "$type": "accessors",
+              "children": [
+                {
+                  "$type": "property",
+                  "public": true,
+                  "type": "int",
+                  "name": "Bar",
+                  "accessors": {
                     "children": [
                       {
                         "accessor": "get;"
@@ -28,9 +26,7 @@
                       }
                     ]
                   }
-                ]
-              },
-              "children": [
+                },
                 {
                   "$type": "method",
                   "public": true,
@@ -38,14 +34,10 @@
                     "type": "void"
                   },
                   "name": "Baz",
+                  "parameters": "()",
                   "body": {
                     "block": "{ }"
-                  },
-                  "children": [
-                    {
-                      "parameters": "()"
-                    }
-                  ]
+                  }
                 }
               ]
             }
@@ -72,15 +64,13 @@
             "public": true,
             "name": "Alpha",
             "body": {
-              "property": {
-                "public": true,
-                "name": "Name",
-                "children": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "$type": "accessors",
+              "children": [
+                {
+                  "$type": "property",
+                  "public": true,
+                  "type": "string",
+                  "name": "Name",
+                  "accessors": {
                     "children": [
                       {
                         "accessor": "get;"
@@ -90,8 +80,8 @@
                       }
                     ]
                   }
-                ]
-              }
+                }
+              ]
             }
           }
         }
