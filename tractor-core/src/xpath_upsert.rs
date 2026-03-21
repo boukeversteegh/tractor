@@ -269,6 +269,7 @@ struct InsertPoint {
     /// Newline string detected from the source.
     newline: String,
     /// Whether the object is on a single line (compact style).
+    #[allow(dead_code)]
     is_compact: bool,
 }
 
@@ -395,11 +396,10 @@ fn find_json_insert_point(
     })
 }
 
-/// Render a JSON fragment for the missing key path with a value.
+/// Build an XmlNode tree for the missing key path and value, then render it
+/// using the JSON renderer.
 ///
-/// `insert.indent` is the indentation of sibling properties (i.e., the indent
-/// level where the first missing key should appear). Nested keys get additional
-/// indentation.
+/// Returns just the property fragment to splice (without outer `{}`).
 ///
 /// Given keys `["db", "host"]`, value `"localhost"`, sibling indent `"  "`:
 /// ```text
@@ -410,120 +410,91 @@ fn render_json_fragment(
     value: &str,
     insert: &InsertPoint,
 ) -> String {
-    if insert.is_compact {
-        return render_json_fragment_compact(keys, value, insert);
-    }
+    use crate::render::{self, RenderOptions};
+    use crate::xpath::XmlNode;
 
-    let sibling_indent = &insert.indent;
-    let nl = &insert.newline;
-
-    // Detect the indent unit (single level of indentation).
-    // If sibling_indent is e.g. "    " (4 spaces) and the brace is at "" (0),
-    // then the unit is "    ". We just use sibling_indent as the unit.
-    let indent_unit = if sibling_indent.is_empty() {
-        "  ".to_string()
+    // Build the XmlNode tree: nest keys as property elements with the value
+    // at the deepest level.
+    //
+    // The `value` parameter is a raw JSON literal: `"hello"` (with quotes) for strings,
+    // `30` for numbers, `true`/`false` for booleans. We need to unwrap string quotes
+    // since the renderer will add them back.
+    let text_value = if value.starts_with('"') && value.ends_with('"') && value.len() >= 2 {
+        // Unwrap JSON string quotes — the renderer's render_scalar will re-add them
+        let inner = &value[1..value.len() - 1];
+        // Unescape JSON escapes so the renderer can re-escape properly
+        inner
+            .replace("\\\"", "\"")
+            .replace("\\\\", "\\")
+            .replace("\\n", "\n")
+            .replace("\\r", "\r")
+            .replace("\\t", "\t")
     } else {
-        sibling_indent.clone()
+        value.to_string()
+    };
+    let leaf_value = XmlNode::Text(text_value);
+    let mut node = XmlNode::Element {
+        name: keys.last().unwrap().clone(),
+        attributes: vec![("field".to_string(), "property".to_string())],
+        children: vec![leaf_value],
     };
 
-    let mut result = String::new();
+    // Wrap in intermediate objects (from inside out)
+    for key in keys[..keys.len() - 1].iter().rev() {
+        node = XmlNode::Element {
+            name: key.clone(),
+            attributes: vec![("field".to_string(), "property".to_string())],
+            children: vec![node],
+        };
+    }
 
-    // Add comma after last existing property if needed
+    // Determine indent unit from the insertion context
+    let indent_unit = if insert.indent.is_empty() {
+        "  ".to_string()
+    } else {
+        insert.indent.clone()
+    };
+
+    // Calculate the indent level for the outermost new property.
+    // insert.indent is the sibling indent (e.g., "    " for 4-space at level 1).
+    // The indent level = sibling_indent / indent_unit.
+    let indent_level = if !indent_unit.is_empty() && !insert.indent.is_empty() {
+        insert.indent.len() / indent_unit.len()
+    } else {
+        1
+    };
+
+    // Render using the JSON renderer — wraps in a container to get proper object
+    let container = XmlNode::Element {
+        name: "_container_".to_string(),
+        attributes: vec![],
+        children: vec![node],
+    };
+
+    let opts = RenderOptions {
+        indent: indent_unit.clone(),
+        indent_level: indent_level.saturating_sub(1),
+        newline: insert.newline.clone(),
+    };
+
+    let rendered = render::json::render_node(&container, &opts)
+        .unwrap_or_else(|_| "{}".to_string());
+
+    // Extract just the inner content (between the outer `{` and `}`)
+    // The rendered output looks like:
+    //   {\n  "key": value\n}
+    // We want:
+    //   \n  "key": value\n
+    let inner = extract_object_inner(&rendered);
+
+    // Build the fragment with comma prefix if needed
+    let mut result = String::new();
     if insert.has_siblings {
         result.push(',');
     }
-
-    let total_keys = keys.len();
-    for (i, key) in keys.iter().enumerate() {
-        // First key is at sibling_indent level, deeper keys get extra indent
-        let current_indent = if i == 0 {
-            sibling_indent.clone()
-        } else {
-            format!("{}{}", sibling_indent, indent_unit.repeat(i))
-        };
-
-        result.push_str(nl);
-        result.push_str(&current_indent);
-        result.push_str(&format!("\"{}\"", escape_json_string(key)));
-
-        if i == total_keys - 1 {
-            result.push_str(": ");
-            result.push_str(value);
-        } else {
-            result.push_str(": {");
-        }
-    }
-
-    // Close intermediate objects (in reverse)
-    for i in (0..total_keys - 1).rev() {
-        let current_indent = if i == 0 {
-            sibling_indent.clone()
-        } else {
-            format!("{}{}", sibling_indent, indent_unit.repeat(i))
-        };
-        result.push_str(nl);
-        result.push_str(&current_indent);
-        result.push('}');
-    }
-
-    // Final newline + brace indent (one level less than sibling)
-    // The closing `}` of the parent should be at one level less than sibling_indent.
-    // We just need a newline so the `}` stays where it was.
-    result.push_str(nl);
-
-    // Restore the indent before the parent's closing `}`.
-    // This is the brace indent = sibling_indent minus one unit.
-    let brace_indent = if sibling_indent.len() >= indent_unit.len() {
-        &sibling_indent[..sibling_indent.len() - indent_unit.len()]
-    } else {
-        ""
-    };
-    result.push_str(brace_indent);
+    result.push_str(inner);
 
     result
-}
-
-/// Render a compact (single-line) JSON fragment.
-fn render_json_fragment_compact(
-    keys: &[String],
-    value: &str,
-    insert: &InsertPoint,
-) -> String {
-    let mut result = String::new();
-
-    if insert.has_siblings {
-        result.push_str(", ");
-    } else {
-        result.push(' ');
-    }
-
-    let total = keys.len();
-    for (i, key) in keys.iter().enumerate() {
-        result.push_str(&format!("\"{}\"", escape_json_string(key)));
-        if i == total - 1 {
-            result.push_str(": ");
-            result.push_str(value);
-        } else {
-            result.push_str(": { ");
-        }
-    }
-
-    // Close intermediate objects
-    for _ in 0..total - 1 {
-        result.push_str(" }");
-    }
-
-    result.push(' ');
-    result
-}
-
-/// Escape a string for use in a JSON key.
-fn escape_json_string(s: &str) -> String {
-    s.replace('\\', "\\\\")
-        .replace('"', "\\\"")
-        .replace('\n', "\\n")
-        .replace('\r', "\\r")
-        .replace('\t', "\\t")
 }
 
 /// Detect the newline style used in the source.
@@ -570,6 +541,19 @@ fn detect_indent_at(source: &str, offset: usize) -> String {
     let line = &source[line_start..offset];
     let indent_len = line.len() - line.trim_start().len();
     line[..indent_len].to_string()
+}
+
+/// Extract the inner content of a rendered JSON object (between `{` and `}`).
+///
+/// Given `"{\n  \"key\": value\n}\n"`, returns `"\n  \"key\": value\n"`.
+fn extract_object_inner(rendered: &str) -> &str {
+    let trimmed = rendered.trim();
+    if let Some(start) = trimmed.find('{') {
+        if let Some(end) = trimmed.rfind('}') {
+            return &trimmed[start + 1..end];
+        }
+    }
+    rendered
 }
 
 /// Parse a "line:col" position string.

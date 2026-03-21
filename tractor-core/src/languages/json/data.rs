@@ -88,6 +88,10 @@ fn transform_data_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
     if let Some(key_text) = extract_pair_key_text(xot, node) {
         let safe_name = rename_to_key(xot, node, &key_text);
 
+        // Mark as a property (key-value pair) so renderers can distinguish
+        // properties from array items / collection elements.
+        set_attr(xot, node, "field", "property");
+
         // Remove the key child and colon/punctuation text
         let children: Vec<XotNode> = xot.children(node).collect();
         for child in children {

@@ -8,6 +8,7 @@
 //! for its constructs. The renderer operates on `XmlNode` trees.
 
 pub mod csharp;
+pub mod json;
 
 use crate::xpath::XmlNode;
 
@@ -284,6 +285,7 @@ pub fn parse_input(input: &str) -> Result<XmlNode, RenderError> {
 pub fn render(node: &XmlNode, lang: &str, opts: &RenderOptions) -> Result<String, RenderError> {
     match lang {
         "csharp" => csharp::render_node(node, opts),
+        "json" => json::render_node(node, opts),
         _ => Err(RenderError::UnsupportedLanguage(lang.to_string())),
     }
 }
