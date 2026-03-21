@@ -64,8 +64,8 @@ fn render_value(
             if element_children.is_empty() {
                 // Leaf node — render as scalar value
                 if let Some(text) = &text {
-                    let scalar_type = get_attr(attributes, "type");
-                    render_scalar(text, scalar_type.as_deref(), buf);
+                    let kind = get_attr(attributes, "kind");
+                    render_scalar(text, kind.as_deref(), buf);
                 } else {
                     // Empty element with no text — render as empty object
                     buf.push_str("{}");
@@ -135,8 +135,8 @@ fn render_object(
 
             if element_kids.is_empty() {
                 if let Some(text) = &text {
-                    let scalar_type = get_attr(attributes, "type");
-                    render_scalar(text, scalar_type.as_deref(), buf);
+                    let kind = get_attr(attributes, "kind");
+                    render_scalar(text, kind.as_deref(), buf);
                 } else {
                     buf.push_str("{}");
                 }
@@ -411,12 +411,12 @@ mod tests {
             .unwrap_or_else(|e| panic!("invalid JSON: {}\n{}", e, result));
     }
 
-    fn make_typed_prop(name: &str, text: &str, scalar_type: &str) -> XmlNode {
+    fn make_typed_prop(name: &str, text: &str, kind: &str) -> XmlNode {
         XmlNode::Element {
             name: name.to_string(),
             attributes: vec![
                 ("field".to_string(), name.to_string()),
-                ("type".to_string(), scalar_type.to_string()),
+                ("kind".to_string(), kind.to_string()),
             ],
             children: vec![XmlNode::Text(text.to_string())],
         }
