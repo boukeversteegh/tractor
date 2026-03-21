@@ -18,6 +18,7 @@ pub mod language_info;
 pub mod parallel;
 pub mod xot_builder;
 pub mod xot_transform;
+pub mod xpath_xml_builder;
 pub mod report;
 pub mod tree_mode;
 
