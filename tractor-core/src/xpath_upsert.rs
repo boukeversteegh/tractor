@@ -71,21 +71,19 @@ pub enum UpsertError {
 /// `value`. If the XPath does not match, the minimal structure is created and
 /// inserted.
 ///
-/// `lang` must be a data-aware language (`"json"` or `"yaml"`). Currently only
-/// `"json"` is implemented.
+/// The update path (replacing existing values) is language-agnostic: it works
+/// for any language that has a parser and data tree with source spans. The
+/// insert path (creating new structure) currently only supports JSON.
 ///
-/// `value` is a raw literal: `"hello"` for a JSON string (with quotes), `42`
-/// for a number, `true`/`false` for booleans.
+/// `value` is a raw literal in the target language's syntax: `"hello"` for a
+/// JSON string (with quotes), `42` for a number, `true`/`false` for booleans.
 pub fn upsert(
     source: &str,
     lang: &str,
     xpath: &str,
     value: &str,
 ) -> Result<UpsertResult, UpsertError> {
-    match lang {
-        "json" => upsert_json(source, xpath, value),
-        _ => Err(UpsertError::UnsupportedLanguage(lang.to_string())),
-    }
+    upsert_impl(source, lang, xpath, value)
 }
 
 // ---------------------------------------------------------------------------
@@ -127,8 +125,9 @@ fn extract_element_chain(xml: &str, names: &mut Vec<String>) {
     }
 }
 
-fn upsert_json(
+fn upsert_impl(
     source: &str,
+    lang: &str,
     xpath: &str,
     value: &str,
 ) -> Result<UpsertResult, UpsertError> {
@@ -147,7 +146,7 @@ fn upsert_json(
     // Parse source into data tree
     let mut result = parse_string_to_documents(
         source,
-        "json",
+        lang,
         "<upsert>".to_string(),
         Some(TreeMode::Data),
         false,
@@ -167,11 +166,19 @@ fn upsert_json(
         .map_err(|e| UpsertError::Query(e.to_string()))?;
 
     if !existing.is_empty() {
-        // Update: replace existing value
-        return upsert_json_update(source, &existing[0], value);
+        // Update: surgical replacement (language-agnostic)
+        return surgical_update(source, lang, &existing[0], value);
     }
 
     // Insert: walk the data tree to find what exists
+    // Currently only JSON supports insertion.
+    if lang != "json" {
+        return Err(UpsertError::NoInsertionPoint(format!(
+            "XPath '{}' did not match any node — insertion is only supported for JSON",
+            xpath,
+        )));
+    }
+
     let doc_node = result
         .documents
         .document_node(result.doc_handle)
@@ -218,44 +225,113 @@ fn upsert_json(
     })
 }
 
-/// Update an existing match's value in the source.
-fn upsert_json_update(
+/// Surgically update an existing node's value in the source.
+///
+/// This is language-agnostic: it works by formatting the new value through
+/// the parse→render pipeline, then splicing the rendered text into the
+/// original source at the matched node's span.
+///
+/// Algorithm (similar to surgical YAML node replacement):
+/// 1. Record the original node's byte range from source spans
+/// 2. Build a synthetic document containing just `{"_k": VALUE}` (or equivalent)
+/// 3. Parse the synthetic doc → data tree with source spans
+/// 4. Extract the value's rendered text from the synthetic doc using the span
+/// 5. Splice into original source at the original byte range
+fn surgical_update(
     source: &str,
+    lang: &str,
     matched: &crate::xpath::Match,
     value: &str,
 ) -> Result<UpsertResult, UpsertError> {
-    // The match has source location — replace the text content range
-    let start = line_col_to_byte_offset(source, matched.line, matched.column)
+    // 1. Record original byte range
+    let orig_start = line_col_to_byte_offset(source, matched.line, matched.column)
         .ok_or_else(|| UpsertError::NoInsertionPoint("start position out of bounds".into()))?;
-    let end = line_col_to_byte_offset(source, matched.end_line, matched.end_column)
+    let orig_end = line_col_to_byte_offset(source, matched.end_line, matched.end_column)
         .ok_or_else(|| UpsertError::NoInsertionPoint("end position out of bounds".into()))?;
 
-    // The matched range covers the element (e.g. `"old_value"`). We need to
-    // find the actual value portion in the source. For a JSON pair like
-    // `"key": "old"`, the match span covers from the key through the value.
-    // We need to find just the value part after the colon.
-    let matched_text = &source[start..end];
+    // 2-4. Format the value through the parse pipeline
+    let formatted_value = format_value_for_lang(lang, value)?;
 
-    // Find the colon separator — everything after `: ` is the value
-    let value_start = if let Some(colon_pos) = matched_text.find(':') {
-        let after_colon = &matched_text[colon_pos + 1..];
-        let trimmed_len = after_colon.len() - after_colon.trim_start().len();
-        start + colon_pos + 1 + trimmed_len
-    } else {
-        // No colon — this is a leaf text node, replace entire match
-        start
-    };
-
+    // 5. Splice into original
     let mut new_source = String::with_capacity(source.len());
-    new_source.push_str(&source[..value_start]);
-    new_source.push_str(value);
-    new_source.push_str(&source[end..]);
+    new_source.push_str(&source[..orig_start]);
+    new_source.push_str(&formatted_value);
+    new_source.push_str(&source[orig_end..]);
 
     Ok(UpsertResult {
         source: new_source,
         inserted: false,
         description: "updated existing value".into(),
     })
+}
+
+/// Format a raw value for a target language by round-tripping it through
+/// the parse → data tree → span extraction pipeline.
+///
+/// Builds a synthetic document containing the value, parses it to get
+/// source spans, then extracts the value text at the span. This ensures
+/// the value is correctly formatted for the target language (quotes,
+/// escaping, etc.) without any language-specific formatting logic.
+fn format_value_for_lang(lang: &str, value: &str) -> Result<String, UpsertError> {
+    use crate::parser::parse_string_to_documents;
+    use crate::tree_mode::TreeMode;
+    use crate::xpath::XPathEngine;
+    use std::sync::Arc;
+
+    // Build a synthetic document wrapping the value
+    let synthetic = wrap_value_in_document(lang, value)?;
+
+    // Parse it into a data tree
+    let mut result = parse_string_to_documents(
+        &synthetic,
+        lang,
+        "<format>".to_string(),
+        Some(TreeMode::Data),
+        false,
+    )
+    .map_err(|e| UpsertError::Parse(format!("failed to parse synthetic document: {}", e)))?;
+
+    // Query for the wrapper key to find the value's span
+    let engine = XPathEngine::new();
+    let matches = engine
+        .query_documents(
+            &mut result.documents,
+            result.doc_handle,
+            "//_k",
+            Arc::new(vec![]),
+            "<format>",
+        )
+        .map_err(|e| UpsertError::Query(format!("failed to query synthetic document: {}", e)))?;
+
+    if matches.is_empty() {
+        return Err(UpsertError::Parse(
+            "value did not produce a queryable node in synthetic document".into(),
+        ));
+    }
+
+    // Extract the value text from the synthetic source at the span
+    let m = &matches[0];
+    let start = line_col_to_byte_offset(&synthetic, m.line, m.column)
+        .ok_or_else(|| UpsertError::Parse("synthetic span start out of bounds".into()))?;
+    let end = line_col_to_byte_offset(&synthetic, m.end_line, m.end_column)
+        .ok_or_else(|| UpsertError::Parse("synthetic span end out of bounds".into()))?;
+
+    Ok(synthetic[start..end].to_string())
+}
+
+/// Wrap a raw value in a minimal syntactically valid document for the given language.
+///
+/// Returns a document like `{"_k": VALUE}` for JSON, which can be parsed to
+/// extract the value's correctly formatted text via source spans.
+fn wrap_value_in_document(lang: &str, value: &str) -> Result<String, UpsertError> {
+    match lang {
+        "json" => Ok(format!(r#"{{"_k": {}}}"#, value)),
+        "yaml" => Ok(format!("_k: {}", value)),
+        _ => Err(UpsertError::UnsupportedLanguage(format!(
+            "value formatting not yet supported for '{}'",
+            lang
+        ))),
+    }
 }
 
 /// Information about where to insert a new JSON property.

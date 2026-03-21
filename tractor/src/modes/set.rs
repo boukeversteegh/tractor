@@ -1,6 +1,8 @@
-use tractor_core::apply_replacements;
+use tractor_core::xpath_upsert::upsert;
+use tractor_core::detect_language;
 use crate::cli::SetArgs;
-use crate::pipeline::{RunContext, ViewField, InputMode, query_files_batched};
+use crate::pipeline::{InputMode, ViewField};
+use crate::pipeline::context::RunContext;
 
 pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
     let ctx = RunContext::build(
@@ -18,15 +20,38 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    let (_, matches) = query_files_batched(&ctx, files, xpath_expr, true)?;
+    let lang_override = ctx.lang.as_deref();
+    let mut files_modified = 0;
+    let mut total_ops = 0;
 
-    let summary = apply_replacements(&matches, &args.value)?;
-    eprintln!(
-        "Set {} match{} in {} file{}",
-        summary.replacements_made,
-        if summary.replacements_made == 1 { "" } else { "es" },
-        summary.files_modified,
-        if summary.files_modified == 1 { "" } else { "s" },
-    );
+    for file_path in files {
+        let lang = lang_override
+            .unwrap_or_else(|| detect_language(file_path));
+
+        let source = std::fs::read_to_string(file_path)
+            .map_err(|e| format!("{}: {}", file_path, e))?;
+
+        let result = upsert(&source, lang, xpath_expr, &args.value)
+            .map_err(|e| format!("{}: {}", file_path, e))?;
+
+        if result.source != source {
+            std::fs::write(file_path, &result.source)
+                .map_err(|e| format!("{}: {}", file_path, e))?;
+            files_modified += 1;
+            total_ops += 1;
+            let action = if result.inserted { "Inserted" } else { "Updated" };
+            eprintln!("{} in {}: {}", action, file_path, result.description);
+        }
+    }
+
+    if total_ops == 0 {
+        eprintln!("No changes made");
+    } else {
+        eprintln!(
+            "Modified {} file{}",
+            files_modified,
+            if files_modified == 1 { "" } else { "s" },
+        );
+    }
     Ok(())
 }
