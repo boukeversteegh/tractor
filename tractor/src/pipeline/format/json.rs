@@ -50,8 +50,23 @@ pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderO
             let group_matches: Vec<Value> = g.matches.iter()
                 // file is on the group — omit it from individual matches
                 .map(|rm| match_to_value(rm, view, render_opts, GroupBy::File))
+                // skip empty match objects (e.g. stdout mode with only Output in view)
+                .filter(|v| !v.as_object().map(|o| o.is_empty()).unwrap_or(false))
                 .collect();
-            json!({ "file": g.file, "matches": group_matches })
+            let mut group_obj = serde_json::Map::new();
+            if !g.file.is_empty() {
+                group_obj.insert("file".into(), json!(g.file));
+            }
+            // Group-level output (set stdout mode): placed before matches in output
+            if view.has(ViewField::Output) {
+                if let Some(ref content) = g.output {
+                    group_obj.insert("output".into(), json!(content));
+                }
+            }
+            if !group_matches.is_empty() {
+                group_obj.insert("matches".into(), Value::Array(group_matches));
+            }
+            Value::Object(group_obj)
         }).collect();
         root.insert("groups".into(), Value::Array(groups_json));
     }

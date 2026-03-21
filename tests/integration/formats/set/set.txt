@@ -1,3 +1,2 @@
-tests/integration/formats/set/sample.yaml:2
-updated
+tests/integration/formats/set/sample.yaml:2: updated
 Set 1 match in 1 file

@@ -163,6 +163,9 @@ pub enum ReportKind {
 pub struct FileGroup {
     pub file: String,
     pub matches: Vec<ReportMatch>,
+    /// Full modified file content for set stdout mode — placed at group (file) level.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub output: Option<String>,
 }
 
 /// The normalized output of a tractor command.
@@ -212,13 +215,27 @@ impl Report {
         for mut rm in self.matches.drain(..) {
             let file = normalize_path(&rm.file);
             let idx = file_index.entry(file.clone()).or_insert_with(|| {
-                groups.push(FileGroup { file: file.clone(), matches: Vec::new() });
+                groups.push(FileGroup { file: file.clone(), matches: Vec::new(), output: None });
                 groups.len() - 1
             });
             rm.file = String::new();
             groups[*idx].matches.push(rm);
         }
         self.groups = Some(groups);
+        self
+    }
+
+    /// Attach pre-computed file outputs to groups (set stdout mode).
+    /// Must be called after `with_groups()`. Groups whose file is not in `outputs`
+    /// are left with `output = None`.
+    pub fn with_file_outputs(mut self, outputs: &std::collections::HashMap<String, String>) -> Self {
+        if let Some(ref mut groups) = self.groups {
+            for group in groups.iter_mut() {
+                if let Some(content) = outputs.get(&group.file) {
+                    group.output = Some(content.clone());
+                }
+            }
+        }
         self
     }
 }

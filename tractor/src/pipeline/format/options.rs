@@ -128,6 +128,18 @@ impl ViewSet {
             self.fields.push(field);
         }
     }
+
+    /// Returns true if the view contains any per-match content fields
+    /// (fields that produce content on individual match entries, not groups).
+    pub fn has_per_match_fields(&self) -> bool {
+        self.has(ViewField::Status)
+            || self.has(ViewField::Value)
+            || self.has(ViewField::Source)
+            || self.has(ViewField::Lines)
+            || self.has(ViewField::Reason)
+            || self.has(ViewField::Severity)
+            || self.has(ViewField::Tree)
+    }
 }
 
 /// Parse a comma-separated view expression into a `ViewSet`, preserving order.

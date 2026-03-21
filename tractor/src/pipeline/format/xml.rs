@@ -52,9 +52,22 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
     if let Some(ref groups) = report.groups {
         body.push_str("  <groups>\n");
         for g in groups {
-            body.push_str(&format!("    <group file=\"{}\">\n", escape_attr(&g.file)));
+            if g.file.is_empty() {
+                body.push_str("    <group>\n");
+            } else {
+                body.push_str(&format!("    <group file=\"{}\">\n", escape_attr(&g.file)));
+            }
+            // Group-level output (set stdout mode)
+            if view.has(ViewField::Output) {
+                if let Some(ref content) = g.output {
+                    body.push_str(&format!("      <output>{}</output>\n", escape(content)));
+                }
+            }
             for rm in &g.matches {
-                append_match(&mut body, rm, view, "      ", &tree_opts);
+                // Skip matches with no visible per-match content
+                if view.has_per_match_fields() {
+                    append_match(&mut body, rm, view, "      ", &tree_opts);
+                }
             }
             body.push_str("    </group>\n");
         }

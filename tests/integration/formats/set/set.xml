@@ -6,9 +6,11 @@
     <updated>1</updated>
     <unchanged>0</unchanged>
   </summary>
-  <matches>
-    <match file="tests/integration/formats/set/sample.yaml" line="2" column="9" end_line="2" end_column="18">
-      <status>updated</status>
-    </match>
-  </matches>
+  <groups>
+    <group file="tests/integration/formats/set/sample.yaml">
+      <match line="2" column="9" end_line="2" end_column="18">
+        <status>updated</status>
+      </match>
+    </group>
+  </groups>
 </report>

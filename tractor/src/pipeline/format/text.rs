@@ -17,6 +17,29 @@ use super::options::{ViewField, ViewSet};
 pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions) -> String {
     let mut out = String::new();
 
+    // Set stdout mode: groups with output field — render group by group.
+    // Per-match info (file:line: status) is printed before each group's output.
+    if matches!(report.kind, ReportKind::Set) && view.has(ViewField::Output) {
+        if let Some(ref groups) = report.groups {
+            for group in groups {
+                // Per-match lines (file:line: status etc.) if location/status in view
+                let has_location = view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
+                let has_per_match = has_location || view.has(ViewField::Status);
+                if has_per_match {
+                    for rm in &group.matches {
+                        append_match(&mut out, rm, view, render_opts, Some(&group.file));
+                    }
+                }
+                // Group-level output (the full modified file content)
+                if let Some(ref content) = group.output {
+                    out.push_str(content);
+                }
+            }
+        }
+        // No summary for stdout output mode
+        return out;
+    }
+
     // Collect matches with optional group file — groups take priority
     let matches: Vec<(Option<&str>, &ReportMatch)> = if let Some(ref groups) = report.groups {
         groups.iter().flat_map(|g| g.matches.iter().map(move |rm| (Some(g.file.as_str()), rm))).collect()
@@ -27,13 +50,12 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
     // Blank line between matches when a single match produces more than one output line.
     // File/line/column are combined onto one location line — they don't count individually.
     // In message-template mode all matches render as single lines — no separator.
-    // In output mode (stdout), each match's output field is printed as-is — no separator.
     let message_mode = matches.first().map_or(false, |(_, rm)| rm.message.is_some());
-    let output_only = view.fields.len() == 1 && view.has(ViewField::Output);
     let has_location = view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
-    let single_line_fields = [ViewField::Value, ViewField::Reason, ViewField::Severity, ViewField::Status]
+    // Status is now inline on the location line, so it doesn't produce an extra line
+    let single_line_fields = [ViewField::Value, ViewField::Reason, ViewField::Severity]
         .iter().filter(|&&f| view.has(f)).count();
-    let needs_separator = !message_mode && !output_only && (
+    let needs_separator = !message_mode && (
         view.has(ViewField::Tree)
         || view.has(ViewField::Lines)
         || view.has(ViewField::Source)
@@ -48,17 +70,11 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         append_match(&mut out, rm, view, render_opts, *group_file);
     }
 
-    // Summary: always for check/test; for set only when not in output mode;
+    // Summary: always for check/test/set (unless output view active, handled above);
     // gated on -v summary or -v query for query
-    let output_only_set = matches!(report.kind, ReportKind::Set) && output_only;
-    let output_in_set = matches!(report.kind, ReportKind::Set) && view.has(ViewField::Output);
-    let show_summary = if output_only_set || output_in_set {
-        false
-    } else {
-        match report.kind {
-            ReportKind::Query => view.has(ViewField::Summary) || view.has(ViewField::Query),
-            ReportKind::Check | ReportKind::Test | ReportKind::Set => true,
-        }
+    let show_summary = match report.kind {
+        ReportKind::Query => view.has(ViewField::Summary) || view.has(ViewField::Query),
+        ReportKind::Check | ReportKind::Test | ReportKind::Set => true,
     };
     if show_summary {
         if let Some(ref summary) = report.summary {
@@ -83,6 +99,7 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
     }
 
     // Location prefix: file, line, and/or column — combined on one line as file:line:col
+    // Status is appended inline when both a location and a status are present (GCC-style).
     if view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column) {
         let mut loc = String::new();
         if view.has(ViewField::File) {
@@ -96,6 +113,13 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
         if view.has(ViewField::Column) {
             loc.push(':');
             loc.push_str(&rm.column.to_string());
+        }
+        // Append status inline on the location line (GCC-style: file:line: status)
+        if view.has(ViewField::Status) {
+            if let Some(ref status) = rm.status {
+                loc.push_str(": ");
+                loc.push_str(status);
+            }
         }
         out.push_str(&loc);
         out.push('\n');
@@ -154,15 +178,21 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
                 }
             }
             ViewField::Status => {
-                if let Some(ref status) = rm.status {
-                    out.push_str(status);
-                    out.push('\n');
+                // Status is printed inline on the location line when a location is present.
+                // Only print it as a standalone line if no location fields are in view.
+                let has_location = view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
+                if !has_location {
+                    if let Some(ref status) = rm.status {
+                        out.push_str(status);
+                        out.push('\n');
+                    }
                 }
             }
             ViewField::Output => {
-                if let Some(ref output) = rm.output {
-                    // Print raw content as-is (no trailing newline added — content already has one)
-                    out.push_str(output);
+                // Output is at group level for set reports; nothing to print here.
+                // (If a match has output directly, print it as a fallback.)
+                if let Some(ref content) = rm.output {
+                    out.push_str(content);
                 }
             }
             // File/Line/Column handled above as combined location line
