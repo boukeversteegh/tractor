@@ -5,7 +5,7 @@ use super::options::{GroupBy, ViewField, ViewSet};
 pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions) -> String {
     let mut root = serde_json::Map::new();
 
-    // Summary: always present for check/test reports (structural, not view-gated).
+    // Summary: always present for check/test/set reports (structural, not view-gated).
     // For query reports, only include if explicitly requested via -v summary or -v query.
     let show_summary = if matches!(report.kind, ReportKind::Query) {
         view.has(ViewField::Summary) || view.has(ViewField::Query)
@@ -15,16 +15,24 @@ pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderO
     if show_summary {
         if let Some(ref summary) = report.summary {
             let mut s = serde_json::Map::new();
-            s.insert("passed".into(),   json!(summary.passed));
-            s.insert("total".into(),    json!(summary.total));
-            s.insert("files".into(),    json!(summary.files_affected));
-            s.insert("errors".into(),   json!(summary.errors));
-            s.insert("warnings".into(), json!(summary.warnings));
-            if let Some(ref expected) = summary.expected {
-                s.insert("expected".into(), json!(expected));
-            }
-            if let Some(ref query) = summary.query {
-                s.insert("query".into(), json!(query));
+            if matches!(report.kind, ReportKind::Set) {
+                // For set reports, use "updated"/"unchanged" instead of "errors"/"warnings"
+                s.insert("total".into(),     json!(summary.total));
+                s.insert("files".into(),     json!(summary.files_affected));
+                s.insert("updated".into(),   json!(summary.errors));
+                s.insert("unchanged".into(), json!(summary.warnings));
+            } else {
+                s.insert("passed".into(),   json!(summary.passed));
+                s.insert("total".into(),    json!(summary.total));
+                s.insert("files".into(),    json!(summary.files_affected));
+                s.insert("errors".into(),   json!(summary.errors));
+                s.insert("warnings".into(), json!(summary.warnings));
+                if let Some(ref expected) = summary.expected {
+                    s.insert("expected".into(), json!(expected));
+                }
+                if let Some(ref query) = summary.query {
+                    s.insert("query".into(), json!(query));
+                }
             }
             root.insert("summary".into(), Value::Object(s));
         }
@@ -96,6 +104,16 @@ pub fn match_to_value(
                     obj.insert("severity".into(), json!(sv.as_str()));
                 }
             }
+            ViewField::Status => {
+                if let Some(ref st) = rm.status {
+                    obj.insert("status".into(), json!(st));
+                }
+            }
+            ViewField::Output => {
+                if let Some(ref output) = rm.output {
+                    obj.insert("output".into(), json!(output));
+                }
+            }
             ViewField::Tree => {
                 if let Some(ref node) = rm.tree {
                     obj.insert("tree".into(), xml_node_to_json(node, render_opts.max_depth));
@@ -131,7 +149,7 @@ mod tests {
             tree: None,
             value: Some(value.to_string()),
             source: None, lines: None, reason: None, severity: None,
-            message: None, rule_id: None,
+            message: None, rule_id: None, status: None, output: None,
         }
     }
 
@@ -145,7 +163,7 @@ mod tests {
             tree: Some(tree),
             value: None, // maps have no value — data is in tree
             source: None, lines: None, reason: None, severity: None,
-            message: None, rule_id: None,
+            message: None, rule_id: None, status: None, output: None,
         }
     }
 

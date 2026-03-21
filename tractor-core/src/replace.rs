@@ -94,38 +94,39 @@ fn line_col_to_byte_offset(content: &str, line: u32, col: u32) -> Option<usize> 
     None
 }
 
-/// Apply replacements to a content string in memory, returning the modified content.
+/// Apply a set operation to an in-memory string, returning the modified string.
 ///
-/// All `matches` are treated as belonging to the same source content (the file
+/// All `matches` are treated as belonging to the same source string (the file
 /// path stored in each match is used only for error messages). Matches are
 /// sorted, deduplicated, and validated before applying.
 ///
-/// The replacement value is used literally — no escaping or formatting is applied.
+/// The new value is used literally — no escaping or formatting is applied.
 ///
 /// # Errors
 ///
 /// Returns an error if two matches overlap, making replacement ambiguous.
-pub fn apply_replacements_to_content(
-    content: &str,
+pub fn apply_set_to_string(
+    source: &str,
     matches: &[Match],
     new_value: &str,
 ) -> Result<String, ReplaceError> {
     let file_label = matches.first().map(|m| m.file.as_str()).unwrap_or("<source>");
     let file_matches: Vec<&Match> = matches.iter().collect();
-    let (result, _) = apply_to_content_str(content, file_matches, new_value, file_label)?;
+    let (result, _) = apply_to_content_str(source, file_matches, new_value, file_label)?;
     Ok(result)
 }
 
-/// Compute replacements for a list of files and return modified content without
-/// writing to disk. Returns one `(file_path, modified_content)` pair per input
-/// file, in order. Files with no matches are returned with their original content.
+/// Compute the output of a set operation for a list of files without writing to disk.
+///
+/// Returns one `(file_path, modified_content)` pair per input file, in order.
+/// Files with no matches are returned with their original content unchanged.
 ///
 /// # Errors
 ///
 /// Returns an error if:
 /// - A file cannot be read
 /// - Two matches in the same file overlap
-pub fn compute_replacements_stdout(
+pub fn compute_set_output(
     files: &[String],
     matches: &[Match],
     new_value: &str,

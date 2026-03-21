@@ -23,4 +23,8 @@ for suite in string-input replace xpath-expressions; do
     echo ""
 done
 
+# Format snapshot tests
+bash "tests/integration/formats/set/test.sh" || exit 1
+echo ""
+
 echo -e "${BLUE}All tests passed!${NC}"

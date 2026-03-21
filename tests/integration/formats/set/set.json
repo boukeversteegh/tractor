@@ -1,0 +1,15 @@
+{
+  "summary": {
+    "total": 1,
+    "files": 1,
+    "updated": 1,
+    "unchanged": 0
+  },
+  "matches": [
+    {
+      "file": "tests/integration/formats/set/sample.yaml",
+      "line": 2,
+      "status": "updated"
+    }
+  ]
+}

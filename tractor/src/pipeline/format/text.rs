@@ -27,11 +27,13 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
     // Blank line between matches when a single match produces more than one output line.
     // File/line/column are combined onto one location line — they don't count individually.
     // In message-template mode all matches render as single lines — no separator.
+    // In output mode (stdout), each match's output field is printed as-is — no separator.
     let message_mode = matches.first().map_or(false, |(_, rm)| rm.message.is_some());
+    let output_only = view.fields.len() == 1 && view.has(ViewField::Output);
     let has_location = view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
-    let single_line_fields = [ViewField::Value, ViewField::Reason, ViewField::Severity]
+    let single_line_fields = [ViewField::Value, ViewField::Reason, ViewField::Severity, ViewField::Status]
         .iter().filter(|&&f| view.has(f)).count();
-    let needs_separator = !message_mode && (
+    let needs_separator = !message_mode && !output_only && (
         view.has(ViewField::Tree)
         || view.has(ViewField::Lines)
         || view.has(ViewField::Source)
@@ -46,10 +48,17 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         append_match(&mut out, rm, view, render_opts, *group_file);
     }
 
-    // Summary: always for check/test; gated on -v summary or -v query for query
-    let show_summary = match report.kind {
-        ReportKind::Query => view.has(ViewField::Summary) || view.has(ViewField::Query),
-        ReportKind::Check | ReportKind::Test => true,
+    // Summary: always for check/test; for set only when not in output mode;
+    // gated on -v summary or -v query for query
+    let output_only_set = matches!(report.kind, ReportKind::Set) && output_only;
+    let output_in_set = matches!(report.kind, ReportKind::Set) && view.has(ViewField::Output);
+    let show_summary = if output_only_set || output_in_set {
+        false
+    } else {
+        match report.kind {
+            ReportKind::Query => view.has(ViewField::Summary) || view.has(ViewField::Query),
+            ReportKind::Check | ReportKind::Test | ReportKind::Set => true,
+        }
     };
     if show_summary {
         if let Some(ref summary) = report.summary {
@@ -144,6 +153,18 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
                     out.push('\n');
                 }
             }
+            ViewField::Status => {
+                if let Some(ref status) = rm.status {
+                    out.push_str(status);
+                    out.push('\n');
+                }
+            }
+            ViewField::Output => {
+                if let Some(ref output) = rm.output {
+                    // Print raw content as-is (no trailing newline added — content already has one)
+                    out.push_str(output);
+                }
+            }
             // File/Line/Column handled above as combined location line
             // Summary/Count/Schema handled outside match loop
             _ => {}
@@ -184,6 +205,23 @@ fn format_summary(summary: &Summary, kind: ReportKind) -> String {
         }
         ReportKind::Test => {
             if summary.passed { "passed\n".to_string() } else { "failed\n".to_string() }
+        }
+        ReportKind::Set => {
+            let updated = summary.errors; // we reuse errors field for "updated" count
+            let unchanged = summary.warnings; // we reuse warnings field for "unchanged" count
+            let f = summary.files_affected;
+            if updated == 0 && unchanged == 0 {
+                "No matches\n".to_string()
+            } else if unchanged == 0 {
+                format!("Set {} match{} in {} file{}\n",
+                    updated, if updated == 1 { "" } else { "es" },
+                    f, if f == 1 { "" } else { "s" })
+            } else {
+                format!("Set {} match{} in {} file{} ({} unchanged)\n",
+                    updated, if updated == 1 { "" } else { "es" },
+                    f, if f == 1 { "" } else { "s" },
+                    unchanged)
+            }
         }
     };
     out.push_str(&count_line);

@@ -64,6 +64,8 @@ pub fn match_to_report_match(
         severity,
         message,
         rule_id: None,
+        status:  None,
+        output:  None,
     }
 }
 

@@ -44,7 +44,7 @@ pub use parser::{
 };
 pub use xpath::{XPathEngine, Match, XmlNode, print_timing_stats, Documents, DocumentHandle};
 pub use output::{render_tree_match, render_source_match, render_lines_match, render_source_precomputed, render_lines, format_message, normalize_path, render_node, render_document, render_xml_string, render_xml_node, xml_node_to_string, RenderOptions, format_schema, SchemaCollector, xml_node_to_json, extract_syntax_spans_from_xml_node};
-pub use replace::{apply_replacements, apply_replacements_to_content, compute_replacements_stdout, ReplaceSummary, ReplaceError};
+pub use replace::{apply_replacements, apply_set_to_string, compute_set_output, ReplaceSummary, ReplaceError};
 pub use report::{Report, ReportKind, ReportMatch, Summary, Severity};
 #[cfg(feature = "native")]
 pub use parallel::{expand_globs, filter_supported_files};

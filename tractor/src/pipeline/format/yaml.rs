@@ -15,13 +15,23 @@ pub fn render_yaml_report(report: &Report, view: &ViewSet, render_opts: &RenderO
     };
     if show_summary {
         if let Some(ref summary) = report.summary {
-            root.insert("summary".into(), serde_json::json!({
-                "passed":   summary.passed,
-                "total":    summary.total,
-                "files":    summary.files_affected,
-                "errors":   summary.errors,
-                "warnings": summary.warnings,
-            }));
+            let summary_val = if matches!(report.kind, ReportKind::Set) {
+                serde_json::json!({
+                    "total":     summary.total,
+                    "files":     summary.files_affected,
+                    "updated":   summary.errors,
+                    "unchanged": summary.warnings,
+                })
+            } else {
+                serde_json::json!({
+                    "passed":   summary.passed,
+                    "total":    summary.total,
+                    "files":    summary.files_affected,
+                    "errors":   summary.errors,
+                    "warnings": summary.warnings,
+                })
+            };
+            root.insert("summary".into(), summary_val);
         }
     }
 

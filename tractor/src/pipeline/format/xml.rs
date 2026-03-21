@@ -23,13 +23,20 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
     if show_summary {
         if let Some(ref summary) = report.summary {
             body.push_str("  <summary>\n");
-            body.push_str(&format!("    <passed>{}</passed>\n", summary.passed));
-            body.push_str(&format!("    <total>{}</total>\n", summary.total));
-            body.push_str(&format!("    <files>{}</files>\n", summary.files_affected));
-            body.push_str(&format!("    <errors>{}</errors>\n", summary.errors));
-            body.push_str(&format!("    <warnings>{}</warnings>\n", summary.warnings));
-            if let Some(ref expected) = summary.expected {
-                body.push_str(&format!("    <expected>{}</expected>\n", escape(expected)));
+            if matches!(report.kind, ReportKind::Set) {
+                body.push_str(&format!("    <total>{}</total>\n", summary.total));
+                body.push_str(&format!("    <files>{}</files>\n", summary.files_affected));
+                body.push_str(&format!("    <updated>{}</updated>\n", summary.errors));
+                body.push_str(&format!("    <unchanged>{}</unchanged>\n", summary.warnings));
+            } else {
+                body.push_str(&format!("    <passed>{}</passed>\n", summary.passed));
+                body.push_str(&format!("    <total>{}</total>\n", summary.total));
+                body.push_str(&format!("    <files>{}</files>\n", summary.files_affected));
+                body.push_str(&format!("    <errors>{}</errors>\n", summary.errors));
+                body.push_str(&format!("    <warnings>{}</warnings>\n", summary.warnings));
+                if let Some(ref expected) = summary.expected {
+                    body.push_str(&format!("    <expected>{}</expected>\n", escape(expected)));
+                }
             }
             body.push_str("  </summary>\n");
         }
@@ -77,12 +84,20 @@ fn append_match(
     render_opts: &RenderOptions,
 ) {
     let file_str = normalize_path(&rm.file);
+    // Only include line/column attributes when they carry meaningful position info (non-zero)
+    let has_position = rm.line > 0;
     if file_str.is_empty() {
-        out.push_str(&format!("{}<match line=\"{}\" column=\"{}\"", indent, rm.line, rm.column));
-    } else {
+        if has_position {
+            out.push_str(&format!("{}<match line=\"{}\" column=\"{}\"", indent, rm.line, rm.column));
+        } else {
+            out.push_str(&format!("{}<match", indent));
+        }
+    } else if has_position {
         out.push_str(&format!("{}<match file=\"{}\" line=\"{}\" column=\"{}\"", indent, escape_attr(&file_str), rm.line, rm.column));
+    } else {
+        out.push_str(&format!("{}<match file=\"{}\"", indent, escape_attr(&file_str)));
     }
-    if rm.end_line != rm.line || rm.end_column != rm.column {
+    if has_position && (rm.end_line != rm.line || rm.end_column != rm.column) {
         out.push_str(&format!(" end_line=\"{}\" end_column=\"{}\"", rm.end_line, rm.end_column));
     }
     out.push_str(">\n");
@@ -120,6 +135,16 @@ fn append_match(
             ViewField::Severity => {
                 if let Some(severity) = rm.severity {
                     out.push_str(&format!("{}<severity>{}</severity>\n", inner, severity.as_str()));
+                }
+            }
+            ViewField::Status => {
+                if let Some(ref status) = rm.status {
+                    out.push_str(&format!("{}<status>{}</status>\n", inner, escape(status)));
+                }
+            }
+            ViewField::Output => {
+                if let Some(ref output) = rm.output {
+                    out.push_str(&format!("{}<output>{}</output>\n", inner, escape(output)));
                 }
             }
             ViewField::Tree => {

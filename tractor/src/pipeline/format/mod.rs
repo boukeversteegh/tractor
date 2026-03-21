@@ -44,6 +44,29 @@ pub fn render_query_report(
 }
 
 // ---------------------------------------------------------------------------
+// Set report renderer — dispatches to format-specific renderers
+// ---------------------------------------------------------------------------
+
+/// Render a set-command report to stdout.
+///
+/// In text format, the summary is printed to stderr (not stdout) so that
+/// stdout is clean for piping when stdout mode is active.
+pub fn render_set_report(
+    report: &Report,
+    ctx: &RunContext,
+) -> Result<(), Box<dyn std::error::Error>> {
+    match ctx.output_format {
+        OutputFormat::Json   => print!("{}", render_json_report(report, &ctx.view, &ctx.render_options())),
+        OutputFormat::Yaml   => print!("{}", render_yaml_report(report, &ctx.view, &ctx.render_options())),
+        OutputFormat::Xml    => print!("{}", render_xml_report(report, &ctx.view, &ctx.render_options())),
+        OutputFormat::Text | OutputFormat::Gcc | OutputFormat::Github => {
+            print!("{}", render_text_report(report, &ctx.view, &ctx.render_options()))
+        }
+    }
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
 // Check report renderer — dispatches to format-specific renderers
 // ---------------------------------------------------------------------------
 
