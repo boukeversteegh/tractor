@@ -52,6 +52,7 @@ pub fn data_transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
         // /specs/tractor-parse/dual-view/data-branch/scalars.md: Scalar Values
         // string: extract decoded content (handles escape sequences), flatten to parent
         "string" => {
+            propagate_type_to_property(xot, node, "string");
             let content = extract_decoded_string_content(xot, node);
             let all_children: Vec<XotNode> = xot.children(node).collect();
             for c in all_children {
@@ -70,11 +71,13 @@ pub fn data_transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
 
         // number: flatten to promote text to parent
         "number" => {
+            propagate_type_to_property(xot, node, "number");
             Ok(TransformAction::Flatten)
         }
 
         // true/false/null: flatten text to parent
         "true" | "false" | "null" => {
+            propagate_type_to_property(xot, node, &kind);
             Ok(TransformAction::Flatten)
         }
 
@@ -128,6 +131,32 @@ fn transform_data_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
     }
 
     Ok(TransformAction::Continue)
+}
+
+/// Propagate the scalar type up to the nearest property ancestor.
+///
+/// When a scalar (string, number, true, false, null) is about to be flattened,
+/// we walk up through the `<value>` wrapper to find the `pair` (property element)
+/// and set `type=<kind>` on it. This preserves scalar type information for
+/// round-trip rendering.
+fn propagate_type_to_property(xot: &mut Xot, node: XotNode, scalar_type: &str) {
+    // Walk up: scalar → value wrapper → pair
+    // The pair has kind="pair", and after transform will have field=<name>
+    let mut ancestor = get_parent(xot, node);
+    for _ in 0..3 {
+        // Walk up at most 3 levels to find the pair
+        if let Some(a) = ancestor {
+            if let Some(k) = get_kind(xot, a) {
+                if k == "pair" {
+                    set_attr(xot, a, "type", scalar_type);
+                    return;
+                }
+            }
+            ancestor = get_parent(xot, a);
+        } else {
+            break;
+        }
+    }
 }
 
 /// Extract key text from a pair's key child (string with field="key")
