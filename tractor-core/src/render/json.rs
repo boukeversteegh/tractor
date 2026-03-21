@@ -230,11 +230,6 @@ fn escape_json_string(s: &str) -> String {
     result
 }
 
-/// Check if an element has a specific attribute value.
-fn has_attr(attributes: &[(String, String)], name: &str, value: &str) -> bool {
-    attributes.iter().any(|(k, v)| k == name && v == value)
-}
-
 /// Get an attribute value.
 fn get_attr(attributes: &[(String, String)], name: &str) -> Option<String> {
     attributes
@@ -243,9 +238,9 @@ fn get_attr(attributes: &[(String, String)], name: &str) -> Option<String> {
         .map(|(_, v)| v.clone())
 }
 
-/// Check if an XmlNode element has field="property".
+/// Check if an XmlNode element has a `field` attribute (marks it as a property).
 fn is_property_element(node: &XmlNode) -> bool {
-    matches!(node, XmlNode::Element { attributes, .. } if has_attr(attributes, "field", "property"))
+    matches!(node, XmlNode::Element { attributes, .. } if get_attr(attributes, "field").is_some())
 }
 
 /// Get all element children from a list of XmlNode children.
@@ -278,7 +273,7 @@ mod tests {
     fn make_prop(name: &str, text: &str) -> XmlNode {
         XmlNode::Element {
             name: name.to_string(),
-            attributes: vec![("field".to_string(), "property".to_string())],
+            attributes: vec![("field".to_string(), name.to_string())],
             children: vec![XmlNode::Text(text.to_string())],
         }
     }
@@ -286,7 +281,7 @@ mod tests {
     fn make_prop_obj(name: &str, children: Vec<XmlNode>) -> XmlNode {
         XmlNode::Element {
             name: name.to_string(),
-            attributes: vec![("field".to_string(), "property".to_string())],
+            attributes: vec![("field".to_string(), name.to_string())],
             children,
         }
     }
@@ -403,7 +398,7 @@ mod tests {
             vec![XmlNode::Element {
                 name: "my_key".to_string(),
                 attributes: vec![
-                    ("field".to_string(), "property".to_string()),
+                    ("field".to_string(), "my_key".to_string()),
                     ("key".to_string(), "my-key".to_string()),
                 ],
                 children: vec![XmlNode::Text("value".to_string())],

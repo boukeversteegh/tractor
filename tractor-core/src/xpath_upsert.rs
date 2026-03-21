@@ -433,9 +433,10 @@ fn render_json_fragment(
         value.to_string()
     };
     let leaf_value = XmlNode::Text(text_value);
+    let last_key = keys.last().unwrap().clone();
     let mut node = XmlNode::Element {
-        name: keys.last().unwrap().clone(),
-        attributes: vec![("field".to_string(), "property".to_string())],
+        name: last_key.clone(),
+        attributes: vec![("field".to_string(), last_key)],
         children: vec![leaf_value],
     };
 
@@ -443,7 +444,7 @@ fn render_json_fragment(
     for key in keys[..keys.len() - 1].iter().rev() {
         node = XmlNode::Element {
             name: key.clone(),
-            attributes: vec![("field".to_string(), "property".to_string())],
+            attributes: vec![("field".to_string(), key.clone())],
             children: vec![node],
         };
     }
