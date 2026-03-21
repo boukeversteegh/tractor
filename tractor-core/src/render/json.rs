@@ -55,7 +55,7 @@ fn render_value(
     match node {
         XmlNode::Element {
             name: _,
-            attributes: _,
+            attributes,
             children,
         } => {
             let element_children = element_children(children);
@@ -64,7 +64,8 @@ fn render_value(
             if element_children.is_empty() {
                 // Leaf node — render as scalar value
                 if let Some(text) = &text {
-                    render_scalar(text, buf);
+                    let scalar_type = get_attr(attributes, "type");
+                    render_scalar(text, scalar_type.as_deref(), buf);
                 } else {
                     // Empty element with no text — render as empty object
                     buf.push_str("{}");
@@ -85,7 +86,7 @@ fn render_value(
             Ok(())
         }
         XmlNode::Text(text) => {
-            render_scalar(text, buf);
+            render_scalar(text, None, buf);
             Ok(())
         }
         _ => Ok(()),
@@ -134,7 +135,8 @@ fn render_object(
 
             if element_kids.is_empty() {
                 if let Some(text) = &text {
-                    render_scalar(text, buf);
+                    let scalar_type = get_attr(attributes, "type");
+                    render_scalar(text, scalar_type.as_deref(), buf);
                 } else {
                     buf.push_str("{}");
                 }
@@ -187,25 +189,45 @@ fn render_array(
     Ok(())
 }
 
-/// Render a scalar text value, auto-detecting type.
+/// Render a scalar text value using the `type` attribute when available,
+/// falling back to heuristic auto-detection.
 ///
+/// With `type` attribute:
+/// - `"string"` → JSON string
+/// - `"number"` → JSON number (bare)
 /// - `"true"` / `"false"` → JSON boolean
 /// - `"null"` → JSON null
+///
+/// Without `type` (fallback heuristic):
+/// - `"true"` / `"false"` / `"null"` → literal
 /// - Parseable as number → JSON number
-/// - Otherwise → JSON string with escaping
-fn render_scalar(text: &str, buf: &mut String) {
-    match text {
-        "true" | "false" | "null" => buf.push_str(text),
+/// - Otherwise → JSON string
+fn render_scalar(text: &str, scalar_type: Option<&str>, buf: &mut String) {
+    match scalar_type {
+        Some("string") => {
+            buf.push('"');
+            buf.push_str(&escape_json_string(text));
+            buf.push('"');
+        }
+        Some("number") => {
+            buf.push_str(text);
+        }
+        Some("true") | Some("false") | Some("null") => {
+            buf.push_str(text);
+        }
         _ => {
-            // Try parsing as number
-            if text.parse::<f64>().is_ok() && !text.is_empty() {
-                // Preserve original number representation
-                buf.push_str(text);
-            } else {
-                // String value
-                buf.push('"');
-                buf.push_str(&escape_json_string(text));
-                buf.push('"');
+            // Fallback: heuristic auto-detection for trees without type info
+            match text {
+                "true" | "false" | "null" => buf.push_str(text),
+                _ => {
+                    if text.parse::<f64>().is_ok() && !text.is_empty() {
+                        buf.push_str(text);
+                    } else {
+                        buf.push('"');
+                        buf.push_str(&escape_json_string(text));
+                        buf.push('"');
+                    }
+                }
             }
         }
     }
@@ -387,6 +409,44 @@ mod tests {
         // Must be valid JSON
         let _: serde_json::Value = serde_json::from_str(&result)
             .unwrap_or_else(|e| panic!("invalid JSON: {}\n{}", e, result));
+    }
+
+    fn make_typed_prop(name: &str, text: &str, scalar_type: &str) -> XmlNode {
+        XmlNode::Element {
+            name: name.to_string(),
+            attributes: vec![
+                ("field".to_string(), name.to_string()),
+                ("type".to_string(), scalar_type.to_string()),
+            ],
+            children: vec![XmlNode::Text(text.to_string())],
+        }
+    }
+
+    #[test]
+    fn type_attribute_overrides_heuristic() {
+        // Without type attr, "true" would render as bare `true` (boolean).
+        // With type="string", it must render as `"true"` (string).
+        let root = make_container(
+            "File",
+            vec![
+                make_typed_prop("flag", "true", "string"),      // string "true", not boolean
+                make_typed_prop("count", "42", "string"),        // string "42", not number
+                make_typed_prop("nothing", "null", "string"),    // string "null", not null
+                make_typed_prop("active", "true", "true"),       // boolean true
+                make_typed_prop("pi", "3.14", "number"),         // number
+                make_typed_prop("empty", "null", "null"),        // null
+            ],
+        );
+        let result = render_node(&root, &opts()).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
+        // type="string" forces quoting even for "true", "42", "null"
+        assert_eq!(parsed["flag"], "true");
+        assert_eq!(parsed["count"], "42");
+        assert_eq!(parsed["nothing"], "null");
+        // type="true"/"number"/"null" renders as bare values
+        assert_eq!(parsed["active"], true);
+        assert_eq!(parsed["pi"], 3.14);
+        assert!(parsed["empty"].is_null());
     }
 
     #[test]
