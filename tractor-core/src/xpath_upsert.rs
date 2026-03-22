@@ -75,6 +75,7 @@ pub fn upsert(
     lang: &str,
     xpath: &str,
     value: &str,
+    limit: Option<usize>,
 ) -> Result<UpsertResult, UpsertError> {
     // Verify the language has a renderer
     let test_render = render::render(
@@ -114,7 +115,12 @@ pub fn upsert(
 
     if !existing.is_empty() {
         // Update path — handle all matches in a single pass
-        update_existing(source, lang, value, &existing, result)
+        let matches = if let Some(n) = limit {
+            &existing[..n.min(existing.len())]
+        } else {
+            &existing
+        };
+        update_existing(source, lang, value, matches, result)
     } else {
         // Insert path
         insert_new(source, lang, xpath, value, result)
@@ -545,7 +551,7 @@ mod tests {
     #[test]
     fn update_existing_string() {
         let source = r#"{"name": "Alice", "age": 30}"#;
-        let result = upsert(source, "json", "//name", "Bob").unwrap();
+        let result = upsert(source, "json", "//name", "Bob", None).unwrap();
         assert!(!result.inserted);
         assert!(result.source.contains("Bob"));
         assert!(result.source.contains("30"));
@@ -556,7 +562,7 @@ mod tests {
     #[test]
     fn update_existing_number() {
         let source = r#"{"name": "Alice", "age": 30}"#;
-        let result = upsert(source, "json", "//age", "31").unwrap();
+        let result = upsert(source, "json", "//age", "31", None).unwrap();
         assert!(!result.inserted);
         assert!(result.source.contains("31"));
         assert!(result.source.contains("Alice"));
@@ -565,7 +571,7 @@ mod tests {
     #[test]
     fn update_preserves_surrounding_formatting() {
         let source = "{\n    \"name\": \"Alice\",\n    \"age\": 30\n}";
-        let result = upsert(source, "json", "//name", "Bob").unwrap();
+        let result = upsert(source, "json", "//name", "Bob", None).unwrap();
         // Surrounding formatting (the 4-space indent, other fields) preserved
         assert!(result.source.contains("Bob"));
         assert!(result.source.contains("    \"age\": 30"));
@@ -578,7 +584,7 @@ mod tests {
     #[test]
     fn insert_simple_property() {
         let source = r#"{"name": "Alice"}"#;
-        let result = upsert(source, "json", "//age", "30").unwrap();
+        let result = upsert(source, "json", "//age", "30", None).unwrap();
         assert!(result.inserted);
         let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
         assert_eq!(parsed["name"], "Alice");
@@ -589,7 +595,7 @@ mod tests {
     #[test]
     fn insert_string_value() {
         let source = r#"{"name": "Alice"}"#;
-        let result = upsert(source, "json", "//city", "NYC").unwrap();
+        let result = upsert(source, "json", "//city", "NYC", None).unwrap();
         assert!(result.inserted);
         let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
         assert_eq!(parsed["name"], "Alice");
@@ -599,7 +605,7 @@ mod tests {
     #[test]
     fn insert_boolean_value() {
         let source = r#"{"name": "Alice"}"#;
-        let result = upsert(source, "json", "//active", "true").unwrap();
+        let result = upsert(source, "json", "//active", "true", None).unwrap();
         assert!(result.inserted);
         let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
         // New values are always inserted as strings
@@ -609,7 +615,7 @@ mod tests {
     #[test]
     fn insert_into_multiline() {
         let source = "{\n  \"name\": \"Alice\"\n}";
-        let result = upsert(source, "json", "//age", "30").unwrap();
+        let result = upsert(source, "json", "//age", "30", None).unwrap();
         assert!(result.inserted);
         let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
         assert_eq!(parsed["name"], "Alice");
@@ -620,7 +626,7 @@ mod tests {
     #[test]
     fn insert_nested_property() {
         let source = r#"{"name": "Alice"}"#;
-        let result = upsert(source, "json", "//db/host", "localhost").unwrap();
+        let result = upsert(source, "json", "//db/host", "localhost", None).unwrap();
         assert!(result.inserted);
         let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
         assert_eq!(parsed["name"], "Alice");
@@ -630,7 +636,7 @@ mod tests {
     #[test]
     fn insert_into_existing_parent() {
         let source = r#"{"db": {"host": "localhost"}}"#;
-        let result = upsert(source, "json", "//db/port", "5432").unwrap();
+        let result = upsert(source, "json", "//db/port", "5432", None).unwrap();
         assert!(result.inserted);
         let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
         assert_eq!(parsed["db"]["host"], "localhost");
@@ -640,7 +646,7 @@ mod tests {
 
     #[test]
     fn unsupported_language_error() {
-        let result = upsert("{}", "brainfuck", "//x", "1");
+        let result = upsert("{}", "brainfuck", "//x", "1", None);
         assert!(result.is_err());
         assert!(matches!(result.unwrap_err(), UpsertError::UnsupportedLanguage(_)));
     }
@@ -652,7 +658,7 @@ mod tests {
     #[test]
     fn yaml_update_existing_string() {
         let source = "name: Alice\nage: 30\n";
-        let result = upsert(source, "yaml", "//name", "Bob").unwrap();
+        let result = upsert(source, "yaml", "//name", "Bob", None).unwrap();
         assert!(!result.inserted);
         assert!(result.source.contains("Bob"));
         assert!(result.source.contains("age: 30"));
@@ -661,7 +667,7 @@ mod tests {
     #[test]
     fn yaml_update_existing_number() {
         let source = "name: Alice\nage: 30\n";
-        let result = upsert(source, "yaml", "//age", "31").unwrap();
+        let result = upsert(source, "yaml", "//age", "31", None).unwrap();
         assert!(!result.inserted);
         assert!(result.source.contains("31"));
         assert!(result.source.contains("Alice"));
@@ -670,7 +676,7 @@ mod tests {
     #[test]
     fn yaml_update_preserves_surrounding_formatting() {
         let source = "name: Alice\ndatabase:\n  host: localhost\n  port: 5432\n";
-        let result = upsert(source, "yaml", "//database/host", "db.example.com").unwrap();
+        let result = upsert(source, "yaml", "//database/host", "db.example.com", None).unwrap();
         assert!(!result.inserted);
         assert!(result.source.contains("db.example.com"));
         assert!(result.source.contains("  port: 5432"));
@@ -679,7 +685,7 @@ mod tests {
     #[test]
     fn yaml_update_nested() {
         let source = "db:\n  host: localhost\n  port: 5432\n";
-        let result = upsert(source, "yaml", "//db/host", "db.example.com").unwrap();
+        let result = upsert(source, "yaml", "//db/host", "db.example.com", None).unwrap();
         assert!(!result.inserted);
         assert!(result.source.contains("db.example.com"));
         assert!(result.source.contains("port: 5432"));
@@ -692,7 +698,7 @@ mod tests {
     #[test]
     fn yaml_insert_into_existing_parent() {
         let source = "db:\n  host: localhost\n";
-        let result = upsert(source, "yaml", "//db/port", "5432").unwrap();
+        let result = upsert(source, "yaml", "//db/port", "5432", None).unwrap();
         assert!(result.inserted, "source: {:?}", result.source);
         assert!(result.source.contains("host: localhost"), "source: {:?}", result.source);
         assert!(result.source.contains("port: 5432"), "source: {:?}", result.source);
@@ -701,7 +707,7 @@ mod tests {
     #[test]
     fn yaml_insert_simple_property() {
         let source = "name: Alice\n";
-        let result = upsert(source, "yaml", "//age", "30").unwrap();
+        let result = upsert(source, "yaml", "//age", "30", None).unwrap();
         assert!(result.inserted, "source: {:?}", result.source);
         assert!(result.source.contains("name: Alice"), "source: {:?}", result.source);
         assert!(result.source.contains("age: 30"), "source: {:?}", result.source);
@@ -710,7 +716,7 @@ mod tests {
     #[test]
     fn yaml_insert_nested_property() {
         let source = "name: Alice\n";
-        let result = upsert(source, "yaml", "//db/host", "localhost").unwrap();
+        let result = upsert(source, "yaml", "//db/host", "localhost", None).unwrap();
         assert!(result.inserted, "source: {:?}", result.source);
         assert!(result.source.contains("name: Alice"), "source: {:?}", result.source);
         assert!(result.source.contains("host: localhost"), "source: {:?}", result.source);
@@ -752,7 +758,7 @@ mod tests {
     #[test]
     fn yaml_update_with_value_predicate() {
         let source = "servers:\n  - name: web-1\n    port: 8080\n  - name: web-2\n    port: 8080\n  - name: web-3\n    port: 9090\n";
-        let result = upsert(source, "yaml", "//servers/port[.='8080']", "3000").unwrap();
+        let result = upsert(source, "yaml", "//servers/port[.='8080']", "3000", None).unwrap();
         assert!(result.source.contains("port: 3000"), "first match should be updated: {}", result.source);
     }
 
@@ -763,7 +769,7 @@ mod tests {
     #[test]
     fn json_update_all_matches_in_single_call() {
         let source = r#"{"items": [{"val": 1}, {"val": 1}, {"val": 2}]}"#;
-        let result = upsert(source, "json", "//items/val", "99").unwrap();
+        let result = upsert(source, "json", "//items/val", "99", None).unwrap();
         assert!(!result.inserted);
         assert_eq!(result.matches_updated, 3, "should update all 3 val nodes");
         // All values should be updated
@@ -776,7 +782,7 @@ mod tests {
     #[test]
     fn yaml_update_all_matches_in_single_call() {
         let source = "servers:\n  - name: web-1\n    port: 8080\n  - name: web-2\n    port: 8080\n  - name: web-3\n    port: 9090\n";
-        let result = upsert(source, "yaml", "//servers/port", "3000").unwrap();
+        let result = upsert(source, "yaml", "//servers/port", "3000", None).unwrap();
         assert!(!result.inserted);
         assert_eq!(result.matches_updated, 3, "should update all 3 port nodes");
         // All ports should now be 3000
@@ -792,7 +798,7 @@ mod tests {
     #[test]
     fn json_update_preserves_2space_indent() {
         let source = "{\n  \"name\": \"Alice\",\n  \"age\": 30\n}\n";
-        let result = upsert(source, "json", "//name", "Bob").unwrap();
+        let result = upsert(source, "json", "//name", "Bob", None).unwrap();
         assert!(!result.inserted);
         assert_eq!(result.source, "{\n  \"name\": \"Bob\",\n  \"age\": 30\n}\n",
             "2-space indent should be preserved: {:?}", result.source);
@@ -801,7 +807,7 @@ mod tests {
     #[test]
     fn json_update_preserves_4space_indent() {
         let source = "{\n    \"name\": \"Alice\",\n    \"age\": 30\n}\n";
-        let result = upsert(source, "json", "//name", "Bob").unwrap();
+        let result = upsert(source, "json", "//name", "Bob", None).unwrap();
         assert!(!result.inserted);
         assert_eq!(result.source, "{\n    \"name\": \"Bob\",\n    \"age\": 30\n}\n",
             "4-space indent should be preserved: {:?}", result.source);
@@ -810,7 +816,7 @@ mod tests {
     #[test]
     fn json_update_preserves_tab_indent() {
         let source = "{\n\t\"name\": \"Alice\",\n\t\"age\": 30\n}\n";
-        let result = upsert(source, "json", "//name", "Bob").unwrap();
+        let result = upsert(source, "json", "//name", "Bob", None).unwrap();
         assert!(!result.inserted);
         assert_eq!(result.source, "{\n\t\"name\": \"Bob\",\n\t\"age\": 30\n}\n",
             "tab indent should be preserved: {:?}", result.source);
@@ -819,7 +825,7 @@ mod tests {
     #[test]
     fn json_insert_matches_2space_indent() {
         let source = "{\n  \"name\": \"Alice\"\n}\n";
-        let result = upsert(source, "json", "//age", "30").unwrap();
+        let result = upsert(source, "json", "//age", "30", None).unwrap();
         assert!(result.inserted);
         let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
         assert_eq!(parsed["name"], "Alice");
@@ -832,7 +838,7 @@ mod tests {
     #[test]
     fn json_insert_matches_4space_indent() {
         let source = "{\n    \"name\": \"Alice\"\n}\n";
-        let result = upsert(source, "json", "//age", "30").unwrap();
+        let result = upsert(source, "json", "//age", "30", None).unwrap();
         assert!(result.inserted);
         let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
         assert_eq!(parsed["name"], "Alice");
@@ -845,7 +851,7 @@ mod tests {
     #[test]
     fn json_insert_matches_tab_indent() {
         let source = "{\n\t\"name\": \"Alice\"\n}\n";
-        let result = upsert(source, "json", "//age", "30").unwrap();
+        let result = upsert(source, "json", "//age", "30", None).unwrap();
         assert!(result.inserted);
         let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
         assert_eq!(parsed["name"], "Alice");
@@ -858,7 +864,7 @@ mod tests {
     #[test]
     fn json_nested_insert_preserves_indent_depth() {
         let source = "{\n  \"db\": {\n    \"host\": \"localhost\"\n  }\n}\n";
-        let result = upsert(source, "json", "//db/port", "5432").unwrap();
+        let result = upsert(source, "json", "//db/port", "5432", None).unwrap();
         assert!(result.inserted);
         let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
         assert_eq!(parsed["db"]["host"], "localhost");
@@ -871,7 +877,7 @@ mod tests {
     #[test]
     fn json_update_preserves_crlf_newlines() {
         let source = "{\r\n  \"name\": \"Alice\",\r\n  \"age\": 30\r\n}\r\n";
-        let result = upsert(source, "json", "//name", "Bob").unwrap();
+        let result = upsert(source, "json", "//name", "Bob", None).unwrap();
         assert!(!result.inserted);
         assert!(result.source.contains("\r\n"),
             "CRLF newlines should be preserved: {:?}", result.source);
@@ -886,7 +892,7 @@ mod tests {
     fn json_update_minified_stays_minified() {
         // Minified JSON with no whitespace
         let source = r#"{"name":"Alice","age":30}"#;
-        let result = upsert(source, "json", "//name", "Bob").unwrap();
+        let result = upsert(source, "json", "//name", "Bob", None).unwrap();
         assert!(!result.inserted);
         eprintln!("minified update result: {:?}", result.source);
         // Update via splice should preserve the compact style
@@ -898,7 +904,7 @@ mod tests {
     fn json_insert_into_minified() {
         // What happens when we insert into minified JSON?
         let source = r#"{"name":"Alice"}"#;
-        let result = upsert(source, "json", "//age", "30").unwrap();
+        let result = upsert(source, "json", "//age", "30", None).unwrap();
         assert!(result.inserted);
         eprintln!("minified insert result: {:?}", result.source);
         // Should still produce valid JSON
@@ -911,7 +917,7 @@ mod tests {
     fn json_update_inline_object_stays_inline() {
         // Object that fits on one line with spaces
         let source = r#"{"items": [{"name": "a", "val": 1}, {"name": "b", "val": 2}]}"#;
-        let result = upsert(source, "json", "//items/val", "99").unwrap();
+        let result = upsert(source, "json", "//items/val", "99", None).unwrap();
         assert!(!result.inserted);
         eprintln!("inline update result: {:?}", result.source);
         // Updates via splice should preserve the inline style

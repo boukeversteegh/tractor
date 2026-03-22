@@ -60,16 +60,16 @@ string that contains the modification with correct formatting — quotes,
 delimiters, escaping, indentation, and all other syntax concerns are
 handled by the renderer.
 
-### Step 5: Re-parse and re-query
+### Step 5: Read spans from rendered output
 
-Parse the re-rendered source into a new data tree. Query it with the
-**same XPath expression**. The query must now match exactly the node that
-was modified or inserted. Extract the **new source span** of this node
-from the re-rendered source.
+The renderer tracks byte spans of each node it emits, keyed by the
+node's original position (line:column). After rendering, look up each
+modified node's span directly in the renderer's span map — no re-parsing
+or re-querying is needed.
 
 For the **insert path**, the splice node is the deepest pre-existing
-ancestor, so re-query its XPath (not the leaf's) to find the re-rendered
-span of the entire subtree that was modified.
+ancestor, so look up the ancestor's span in the rendered output to get
+the byte range of the entire modified subtree.
 
 ### Step 6: Splice
 
@@ -101,17 +101,14 @@ Original source          Data tree (xot)         Modified tree
  └──────────────┘                                      │
                                                  render│
                                                        ▼
- Spliced result          Re-parsed tree          Re-rendered source
- ┌──────────────┐       ┌──────────────┐       ┌──────────────┐
- │ { "name":    │splice │ <File>       │ parse │ {            │
- │   "Alice",  │<──────│  <name>      │<──────│   "name":    │
- │   "age": 30 │       │   Alice      │       │     "Alice", │
- │ }            │       │  </name>     │       │   "age": 30  │
- │              │       │  <age>       │       │ }            │
- │              │       │   30         │       └──────────────┘
- │              │       │  </age>      │
- └──────────────┘       │ </File>      │  query: find <File>
-                        └──────────────┘  new span: [1:1, 4:2]
+ Spliced result                                  Re-rendered source
+ ┌──────────────┐                               ┌──────────────┐
+ │ { "name":    │         span map:             │ {            │
+ │   "Alice",  │<─splice─ 1:1 → [0, 42]  ◄────│   "name":    │
+ │   "age": 30 │                                │     "Alice", │
+ │ }            │                                │   "age": 30  │
+ │              │                                │ }            │
+ └──────────────┘                                └──────────────┘
 ```
 
 ## Why re-render the full tree?
@@ -129,13 +126,14 @@ By re-rendering the full tree, all of these concerns are handled by the
 renderer, which already knows the language's rules. The patching algorithm
 remains a simple span replacement.
 
-## Why re-parse after rendering?
+## Why does the renderer track spans?
 
 The renderer produces a complete source string, but we only want to splice
 the *changed region* into the original source. We need to know the byte
-range of the modified node in the rendered output. Re-parsing and
-re-querying with the same XPath gives us this range via the source spans
-that the parser attaches to every node.
+range of the modified node in the rendered output. The renderer records
+each node's byte span as it emits text, keyed by the node's original
+position. This avoids the cost and fragility of re-parsing and
+re-querying the rendered output.
 
 ## Splice node selection
 
@@ -176,7 +174,7 @@ To support patching for a new language, only two things are needed:
    line:column on each node) — this already exists for all supported
    languages via tree-sitter.
 2. A **renderer** that converts a data tree back to source code — this
-   must be implemented per language (currently exists for C# and JSON).
+   must be implemented per language (currently exists for JSON and YAML).
 
 No changes to the patching algorithm are required.
 
@@ -187,11 +185,7 @@ The architecture depends on these properties of the pipeline:
 - **Source spans**: The parser must attach start/end positions to every
   node in the data tree. These positions must be byte-accurate and
   consistent between parse runs on the same input.
-- **Roundtrip fidelity**: Parsing followed by rendering must produce
-  output that, when re-parsed, yields an equivalent tree. The rendered
-  output need not be identical to the original source, but the tree
-  structure and values must be preserved.
-- **XPath stability**: The same XPath expression must match the same
-  logical node in both the original tree and the re-parsed tree. Node
-  names, attributes used in predicates, and tree structure must be
-  consistent across parse-render-parse cycles.
+- **Renderer span tracking**: The renderer must record the byte span
+  (start, end) of each node it emits, keyed by the node's original
+  position. This allows the patching algorithm to locate modified nodes
+  in the rendered output without re-parsing.

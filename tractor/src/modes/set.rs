@@ -33,7 +33,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
 
         let source = std::fs::read_to_string(file_path)?;
 
-        match upsert(&source, lang, xpath_expr, &args.value) {
+        match upsert(&source, lang, xpath_expr, &args.value, ctx.limit) {
             Ok(result) => {
                 if result.source != source {
                     std::fs::write(file_path, &result.source)?;
