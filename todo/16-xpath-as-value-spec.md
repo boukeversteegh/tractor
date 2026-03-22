@@ -8,30 +8,41 @@ declarative spec: "ensure this is true after the set completes."
 
 ## Syntax
 
-The natural way to set a property is with an attribute predicate on the parent:
+The natural way to set a property is with a child-element predicate on the
+parent node. In XPath, `db[host='localhost']` means "db node that has a
+child element `host` with text value 'localhost'" — the `./` is implicit,
+so `db[./host='localhost']` is equivalent but redundant.
 
 ```sh
 # Set db's host to "localhost"
-tractor set -x "//db[@host='localhost']"
+tractor set -x "//db[host='localhost']"
 
 # Set server's port to 8080
-tractor set -x "//server[@port='8080']"
+tractor set -x "//server[port='8080']"
 
 # Set nested value
-tractor set -x "//database[@connection='postgres://...']"
+tractor set -x "//database[connection='postgres://...']"
 ```
 
 This reads as: "find (or create) `db` and ensure it has `host = localhost`."
 
-The `[@key='value']` predicate on the parent is more natural than using a
-child path with a dot-predicate:
+Note: `@host` (attribute syntax) is not appropriate here — `@` refers to
+XML attributes, which don't exist in YAML/TOML/JSON. The child-element
+predicate `[host='value']` is semantically correct for config files where
+`host` is a child key of `db`.
 
 ```sh
-# Less natural (child path + value predicate):
-tractor set -x "//db/host[.='localhost']"
+# Correct for config files (child element predicate):
+tractor set -x "//db[host='localhost']"
 
-# More natural (attribute predicate on parent):
+# Less natural (explicit relative path, redundant ./):
+tractor set -x "//db[./host='localhost']"
+
+# Wrong semantics (@ = XML attribute, not a child key):
 tractor set -x "//db[@host='localhost']"
+
+# Also works but more verbose (child path + self predicate):
+tractor set -x "//db/host[.='localhost']"
 ```
 
 ## Semantics
@@ -54,9 +65,9 @@ it should fail with a clear error.
 
 ## Implementation notes
 
-- Extend the insert path's XPath parsing to extract `[@key='value']`
+- Extend the insert path's XPath parsing to extract `[key='value']`
   predicates as key-value pairs
 - The update path already handles arbitrary XPath via the full xee engine;
   value extraction is only needed when `--value` is omitted
 - Consider supporting multiple predicates:
-  `//db[@host='localhost'][@port='5432']` to set several properties at once
+  `//db[host='localhost'][port='5432']` to set several properties at once
