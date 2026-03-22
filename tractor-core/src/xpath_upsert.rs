@@ -731,4 +731,11 @@ mod tests {
             vec!["item", "name"]
         );
     }
+
+    #[test]
+    fn yaml_update_with_value_predicate() {
+        let source = "servers:\n  - name: web-1\n    port: 8080\n  - name: web-2\n    port: 8080\n  - name: web-3\n    port: 9090\n";
+        let result = upsert(source, "yaml", "//servers/port[.='8080']", "3000").unwrap();
+        assert!(result.source.contains("port: 3000"), "first match should be updated: {}", result.source);
+    }
 }

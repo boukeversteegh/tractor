@@ -68,6 +68,10 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
                     fallback_files.push(file_path.clone());
                     break;
                 }
+                Err(tractor_core::xpath_upsert::UpsertError::NoInsertionPoint(_)) if file_ops > 0 => {
+                    // All matches already updated; XPath no longer matches
+                    break;
+                }
                 Err(e) => return Err(e.into()),
             }
         }
