@@ -157,7 +157,11 @@ fn update_existing(
     let rendered = render::render(&xml_node, lang, &render_opts)
         .map_err(|e| UpsertError::Render(e.to_string()))?;
 
-    // Step 5: Re-parse and re-query to find the new span
+    // Step 5: Re-parse and re-query to find the new span.
+    // Replace value predicates [.='old'] with [.='new'] so the re-query finds
+    // the updated node, not the old value.
+    let requery_xpath = replace_value_predicates(xpath, value);
+
     let mut new_result = parse_string_to_documents(
         &rendered, lang, "<upsert>".to_string(), Some(TreeMode::Data), false,
     ).map_err(|e| UpsertError::Parse(format!("re-parse failed: {}", e)))?;
@@ -166,7 +170,7 @@ fn update_existing(
         .query_documents(
             &mut new_result.documents,
             new_result.doc_handle,
-            xpath,
+            &requery_xpath,
             Arc::new(vec![]),
             "<upsert>",
         )
@@ -502,6 +506,51 @@ fn xpath_to_key_path(xpath: &str) -> Result<Vec<String>, UpsertError> {
     }
 
     Ok(keys)
+}
+
+/// Replace value predicates `[.='old']` with `[.='new']` in an XPath expression.
+///
+/// After updating a node's value, the original XPath predicate (which matched
+/// the old value) won't find the modified node. This rewrites those predicates
+/// to match the new value so the re-query step can locate the updated node.
+fn replace_value_predicates(xpath: &str, new_value: &str) -> String {
+    // Match [.='...'] or [.="..."] patterns
+    let mut result = String::with_capacity(xpath.len());
+    let mut chars = xpath.chars().peekable();
+
+    while let Some(c) = chars.next() {
+        if c == '[' {
+            // Check if this is a value predicate [.='...'] or [.="..."]
+            let rest: String = chars.clone().collect();
+            if rest.starts_with(".='") || rest.starts_with(".=\"") {
+                let quote = if rest.starts_with(".='") { '\'' } else { '"' };
+                // Skip past .='
+                chars.next(); // .
+                chars.next(); // =
+                chars.next(); // quote
+                // Skip the old value
+                while let Some(&ch) = chars.peek() {
+                    chars.next();
+                    if ch == quote {
+                        break;
+                    }
+                }
+                // Skip closing ]
+                if chars.peek() == Some(&']') {
+                    chars.next();
+                }
+                // Write the replacement predicate with the new value
+                let escaped = new_value.replace('\'', "''");
+                result.push_str(&format!("[.='{}']", escaped));
+            } else {
+                result.push(c);
+            }
+        } else {
+            result.push(c);
+        }
+    }
+
+    result
 }
 
 // ---------------------------------------------------------------------------
