@@ -7,9 +7,13 @@
 //! 2. Query with XPath to determine update vs insert
 //! 3. Identify the splice node and record its original source span
 //! 4. Mutate the data tree (update value or insert new children)
-//! 5. Re-render the full modified tree to source code
-//! 6. Re-parse and re-query to find the splice node's new span
+//! 5. Re-render the full modified tree with span tracking
+//! 6. Look up the splice node's new span from the renderer's span map
 //! 7. Splice the new span into the original source
+//!
+//! The renderer annotates each node with its byte span in the output,
+//! keyed by the node's original source position (`start` attribute).
+//! This avoids re-parsing and re-querying entirely.
 //!
 //! All language-specific knowledge lives in the parser and renderer.
 //! The upsert algorithm itself is language-agnostic.
@@ -115,21 +119,26 @@ pub fn upsert(
     }
 }
 
-/// Update an existing node's value using the render-reparse-splice approach.
+/// Update an existing node's value using render-with-spans-splice.
+///
+/// Instead of re-parsing and re-querying the rendered output, we use the
+/// renderer's span map to locate the modified node directly. The node is
+/// identified by its original source position (`start` attribute), which
+/// survives the tree mutation (only text children change, not the element).
 fn update_existing(
     source: &str,
     lang: &str,
-    xpath: &str,
+    _xpath: &str,
     value: &str,
     matched: &Match,
 ) -> Result<UpsertResult, UpsertError> {
-    // Step 2: Record the original source span of the matched node
+    // Step 1: Record the original source span of the matched node
     let orig_start = line_col_to_byte_offset(source, matched.line, matched.column)
         .ok_or_else(|| UpsertError::NoInsertionPoint("start position out of bounds".into()))?;
     let orig_end = line_col_to_byte_offset(source, matched.end_line, matched.end_column)
         .ok_or_else(|| UpsertError::NoInsertionPoint("end position out of bounds".into()))?;
 
-    // Step 3: Mutate the data tree — re-parse, find the node, update its text
+    // Step 2: Mutate the data tree — re-parse, find the node, update its text
     let mut result = parse_string_to_documents(
         source, lang, "<upsert>".to_string(), Some(TreeMode::Data), false,
     ).map_err(|e| UpsertError::Parse(e.to_string()))?;
@@ -137,61 +146,31 @@ fn update_existing(
     let doc_node = result.documents.document_node(result.doc_handle)
         .ok_or_else(|| UpsertError::Parse("no document node".into()))?;
 
-    // Find the File element (container for rendering)
     let file_node = find_file_node(result.documents.xot(), doc_node)
         .ok_or_else(|| UpsertError::NoInsertionPoint("no File node found".into()))?;
 
-    // Find the matched node in the xot tree by its source span
     let target = find_node_by_span(result.documents.xot(), file_node, matched.line, matched.column)
         .ok_or_else(|| UpsertError::NoInsertionPoint("could not locate matched node in tree".into()))?;
 
-    // Replace the text content, preserving the existing node's kind
     replace_text_content(result.documents.xot_mut(), target, value)?;
 
-    // Record the original span of the File node (splice node for update = matched node,
-    // but we render the whole File to get correct context)
-
-    // Step 4: Re-render the full modified tree
+    // Step 3: Re-render with span tracking
     let xml_node = xot_node_to_xml_node(result.documents.xot(), file_node);
     let render_opts = detect_render_options(source);
-    let rendered = render::render(&xml_node, lang, &render_opts)
+    let (rendered, span_map) = render::render_with_spans(&xml_node, lang, &render_opts)
         .map_err(|e| UpsertError::Render(e.to_string()))?;
 
-    // Step 5: Re-parse and re-query to find the new span.
-    // Replace value predicates [.='old'] with [.='new'] so the re-query finds
-    // the updated node, not the old value.
-    let requery_xpath = replace_value_predicates(xpath, value);
+    // Step 4: Look up the modified node's new span from the renderer's span map
+    let span_key = format!("{}:{}", matched.line, matched.column);
+    let (new_start, new_end) = span_map.get(&span_key)
+        .ok_or_else(|| UpsertError::NoInsertionPoint(
+            format!("node at {} not found in rendered output span map", span_key),
+        ))?;
 
-    let mut new_result = parse_string_to_documents(
-        &rendered, lang, "<upsert>".to_string(), Some(TreeMode::Data), false,
-    ).map_err(|e| UpsertError::Parse(format!("re-parse failed: {}", e)))?;
-
-    let new_matches = XPathEngine::new()
-        .query_documents(
-            &mut new_result.documents,
-            new_result.doc_handle,
-            &requery_xpath,
-            Arc::new(vec![]),
-            "<upsert>",
-        )
-        .map_err(|e| UpsertError::Query(format!("re-query failed: {}", e)))?;
-
-    if new_matches.is_empty() {
-        return Err(UpsertError::NoInsertionPoint(
-            "modified node not found after re-render".into(),
-        ));
-    }
-
-    let new_match = &new_matches[0];
-    let new_start = line_col_to_byte_offset(&rendered, new_match.line, new_match.column)
-        .ok_or_else(|| UpsertError::NoInsertionPoint("new start position out of bounds".into()))?;
-    let new_end = line_col_to_byte_offset(&rendered, new_match.end_line, new_match.end_column)
-        .ok_or_else(|| UpsertError::NoInsertionPoint("new end position out of bounds".into()))?;
-
-    // Step 6: Splice
+    // Step 5: Splice
     let mut new_source = String::with_capacity(source.len());
     new_source.push_str(&source[..orig_start]);
-    new_source.push_str(&rendered[new_start..new_end]);
+    new_source.push_str(&rendered[*new_start..*new_end]);
     new_source.push_str(&source[orig_end..]);
 
     Ok(UpsertResult {
@@ -508,50 +487,6 @@ fn xpath_to_key_path(xpath: &str) -> Result<Vec<String>, UpsertError> {
     Ok(keys)
 }
 
-/// Replace value predicates `[.='old']` with `[.='new']` in an XPath expression.
-///
-/// After updating a node's value, the original XPath predicate (which matched
-/// the old value) won't find the modified node. This rewrites those predicates
-/// to match the new value so the re-query step can locate the updated node.
-fn replace_value_predicates(xpath: &str, new_value: &str) -> String {
-    // Match [.='...'] or [.="..."] patterns
-    let mut result = String::with_capacity(xpath.len());
-    let mut chars = xpath.chars().peekable();
-
-    while let Some(c) = chars.next() {
-        if c == '[' {
-            // Check if this is a value predicate [.='...'] or [.="..."]
-            let rest: String = chars.clone().collect();
-            if rest.starts_with(".='") || rest.starts_with(".=\"") {
-                let quote = if rest.starts_with(".='") { '\'' } else { '"' };
-                // Skip past .='
-                chars.next(); // .
-                chars.next(); // =
-                chars.next(); // quote
-                // Skip the old value
-                while let Some(&ch) = chars.peek() {
-                    chars.next();
-                    if ch == quote {
-                        break;
-                    }
-                }
-                // Skip closing ]
-                if chars.peek() == Some(&']') {
-                    chars.next();
-                }
-                // Write the replacement predicate with the new value
-                let escaped = new_value.replace('\'', "''");
-                result.push_str(&format!("[.='{}']", escaped));
-            } else {
-                result.push(c);
-            }
-        } else {
-            result.push(c);
-        }
-    }
-
-    result
-}
 
 // ---------------------------------------------------------------------------
 // Source utilities

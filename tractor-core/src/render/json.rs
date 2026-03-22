@@ -32,7 +32,7 @@
 //! }
 //! ```
 
-use super::RenderOptions;
+use super::{RenderOptions, SpanMap};
 use crate::xpath::XmlNode;
 
 /// Render a data-tree XmlNode to JSON source code.
@@ -41,9 +41,22 @@ use crate::xpath::XmlNode;
 /// are the top-level properties/items.
 pub fn render_node(node: &XmlNode, opts: &RenderOptions) -> Result<String, super::RenderError> {
     let mut buf = String::new();
-    render_value(node, opts, &mut buf)?;
+    let mut span_map = SpanMap::new();
+    render_value(node, opts, &mut buf, &mut span_map)?;
     buf.push_str(&opts.newline);
     Ok(buf)
+}
+
+/// Render a data-tree XmlNode to JSON source code, tracking value spans.
+pub fn render_node_tracked(
+    node: &XmlNode,
+    opts: &RenderOptions,
+) -> Result<(String, SpanMap), super::RenderError> {
+    let mut buf = String::new();
+    let mut span_map = SpanMap::new();
+    render_value(node, opts, &mut buf, &mut span_map)?;
+    buf.push_str(&opts.newline);
+    Ok((buf, span_map))
 }
 
 /// Render a node as a JSON value (object, array, or scalar).
@@ -51,6 +64,7 @@ fn render_value(
     node: &XmlNode,
     opts: &RenderOptions,
     buf: &mut String,
+    span_map: &mut SpanMap,
 ) -> Result<(), super::RenderError> {
     match node {
         XmlNode::Element {
@@ -60,6 +74,9 @@ fn render_value(
         } => {
             let element_children = element_children(children);
             let text = text_content(children);
+
+            // Track the value span for elements with a `start` attribute
+            let start_pos = buf.len();
 
             if element_children.is_empty() {
                 // Leaf node — render as scalar value
@@ -77,12 +94,14 @@ fn render_value(
                     .all(|c| is_property_element(c));
 
                 if all_properties {
-                    render_object(&element_children, opts, buf)?;
+                    render_object(&element_children, opts, buf, span_map)?;
                 } else {
                     // Mixed or no properties — render as array
-                    render_array(&element_children, opts, buf)?;
+                    render_array(&element_children, opts, buf, span_map)?;
                 }
             }
+
+            record_span(attributes, start_pos, buf.len(), span_map);
             Ok(())
         }
         XmlNode::Text(text) => {
@@ -98,6 +117,7 @@ fn render_object(
     properties: &[&XmlNode],
     opts: &RenderOptions,
     buf: &mut String,
+    span_map: &mut SpanMap,
 ) -> Result<(), super::RenderError> {
     if properties.is_empty() {
         buf.push_str("{}");
@@ -133,6 +153,9 @@ fn render_object(
             let element_kids = element_children(children);
             let text = text_content(children);
 
+            // Track value span (starts after "key": )
+            let value_start = buf.len();
+
             if element_kids.is_empty() {
                 if let Some(text) = &text {
                     let kind = get_attr(attributes, "kind");
@@ -143,11 +166,13 @@ fn render_object(
             } else {
                 let all_props = element_kids.iter().all(|c| is_property_element(c));
                 if all_props {
-                    render_object(&element_kids, &inner_opts, buf)?;
+                    render_object(&element_kids, &inner_opts, buf, span_map)?;
                 } else {
-                    render_array(&element_kids, &inner_opts, buf)?;
+                    render_array(&element_kids, &inner_opts, buf, span_map)?;
                 }
             }
+
+            record_span(attributes, value_start, buf.len(), span_map);
         }
     }
 
@@ -162,6 +187,7 @@ fn render_array(
     items: &[&XmlNode],
     opts: &RenderOptions,
     buf: &mut String,
+    span_map: &mut SpanMap,
 ) -> Result<(), super::RenderError> {
     if items.is_empty() {
         buf.push_str("[]");
@@ -180,13 +206,25 @@ fn render_array(
         }
         buf.push_str(&opts.newline);
         buf.push_str(&indent);
-        render_value(item, &inner_opts, buf)?;
+        render_value(item, &inner_opts, buf, span_map)?;
     }
 
     buf.push_str(&opts.newline);
     buf.push_str(&outer_indent);
     buf.push(']');
     Ok(())
+}
+
+/// Record the byte span of a node's value in the span map, if it has a `start` attribute.
+fn record_span(
+    attributes: &[(String, String)],
+    start: usize,
+    end: usize,
+    span_map: &mut SpanMap,
+) {
+    if let Some(pos) = get_attr(attributes, "start") {
+        span_map.insert(pos, (start, end));
+    }
 }
 
 /// Render a scalar text value using the `type` attribute when available,
@@ -466,5 +504,26 @@ mod tests {
         );
         let result = render_node(&root, &opts()).unwrap();
         assert!(result.contains("\"my-key\""), "should use original key from key attr");
+    }
+
+    #[test]
+    fn tracked_render_records_spans() {
+        let root = make_container(
+            "File",
+            vec![
+                XmlNode::Element {
+                    name: "name".to_string(),
+                    attributes: vec![
+                        ("field".to_string(), "name".to_string()),
+                        ("start".to_string(), "1:10".to_string()),
+                    ],
+                    children: vec![XmlNode::Text("Alice".to_string())],
+                },
+            ],
+        );
+        let (rendered, spans) = render_node_tracked(&root, &opts()).unwrap();
+        let (start, end) = spans["1:10"];
+        // The value span should cover the rendered scalar "Alice"
+        assert_eq!(&rendered[start..end], "\"Alice\"");
     }
 }
