@@ -217,7 +217,7 @@ fn insert_new(
         ));
     }
 
-    // Record the splice node's original span and build the re-query XPath.
+    // Record the splice node's original span.
     // When existing_depth == 0, the splice node is the File container (the whole
     // document), so the entire source is replaced with the full re-render.
     let is_root_splice = existing_depth == 0;
@@ -231,25 +231,14 @@ fn insert_new(
             ))?
     };
 
-    let ancestor_xpath = if is_root_splice {
-        String::new() // not needed — we use the full rendered output
-    } else {
-        let mut xp = String::new();
-        for key in &key_path[..existing_depth] {
-            xp.push_str("//");
-            xp.push_str(key);
-        }
-        xp
-    };
-
     // Step 3: Mutate the tree — add missing children
     let xot = result.documents.xot_mut();
     add_nested_children(xot, ancestor_node, missing_keys, value)?;
 
-    // Step 4: Re-render the full modified tree
+    // Step 4: Re-render the full modified tree with span tracking
     let xml_node = xot_node_to_xml_node(result.documents.xot(), file_node);
     let render_opts = detect_render_options(source);
-    let rendered = render::render(&xml_node, lang, &render_opts)
+    let (rendered, span_map) = render::render_with_spans(&xml_node, lang, &render_opts)
         .map_err(|e| UpsertError::Render(e.to_string()))?;
 
     // Step 5: Determine the new splice content
@@ -257,34 +246,16 @@ fn insert_new(
         // Full re-render replaces the entire source
         rendered.trim_end().to_string()
     } else {
-        // Re-parse and re-query to find the splice node's new span
-        let mut new_result = parse_string_to_documents(
-            &rendered, lang, "<upsert>".to_string(), Some(TreeMode::Data), false,
-        ).map_err(|e| UpsertError::Parse(format!("re-parse failed: {}", e)))?;
-
-        let new_matches = XPathEngine::new()
-            .query_documents(
-                &mut new_result.documents,
-                new_result.doc_handle,
-                &ancestor_xpath,
-                Arc::new(vec![]),
-                "<upsert>",
-            )
-            .map_err(|e| UpsertError::Query(format!("re-query failed: {}", e)))?;
-
-        if new_matches.is_empty() {
-            return Err(UpsertError::NoInsertionPoint(
-                "splice node not found after re-render".into(),
-            ));
-        }
-
-        let new_match = &new_matches[0];
-        let new_start = line_col_to_byte_offset(&rendered, new_match.line, new_match.column)
-            .ok_or_else(|| UpsertError::NoInsertionPoint("new start out of bounds".into()))?;
-        let new_end = line_col_to_byte_offset(&rendered, new_match.end_line, new_match.end_column)
-            .ok_or_else(|| UpsertError::NoInsertionPoint("new end out of bounds".into()))?;
-
-        rendered[new_start..new_end].to_string()
+        // Look up the ancestor node's new span from the renderer's span map
+        let span_key = get_attr(result.documents.xot(), ancestor_node, "start")
+            .ok_or_else(|| UpsertError::NoInsertionPoint(
+                "splice node has no start attribute for span lookup".into(),
+            ))?;
+        let (new_start, new_end) = span_map.get(&span_key)
+            .ok_or_else(|| UpsertError::NoInsertionPoint(
+                format!("ancestor node at {} not found in rendered output span map", span_key),
+            ))?;
+        rendered[*new_start..*new_end].to_string()
     };
 
     // Step 6: Splice
