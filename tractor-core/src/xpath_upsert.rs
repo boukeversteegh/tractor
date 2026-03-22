@@ -455,20 +455,15 @@ fn add_nested_children(
     Ok(())
 }
 
-/// Detect the JSON value kind from a raw literal and return (kind, content).
+/// Detect the value kind from a raw literal and return (kind, content).
 ///
-/// The value may be passed as a JSON literal (e.g. `"hello"` with quotes for
-/// strings, `42` for numbers). Returns the kind and the decoded content that
-/// should be stored as text in the data tree.
+/// Strings are the default — users pass bare text without quotes.
+/// Numbers, booleans, and null are detected automatically.
 fn decode_value_literal(value: &str) -> (&str, String) {
     match value {
         "true" => ("true", "true".to_string()),
         "false" => ("false", "false".to_string()),
         "null" => ("null", "null".to_string()),
-        _ if value.starts_with('"') && value.ends_with('"') && value.len() >= 2 => {
-            // JSON-quoted string: strip the surrounding quotes
-            ("string", value[1..value.len() - 1].to_string())
-        }
         _ if value.parse::<f64>().is_ok() && !value.is_empty() => {
             ("number", value.to_string())
         }
