@@ -784,4 +784,97 @@ mod tests {
         assert!(!result.source.contains("9090"), "source: {}", result.source);
         assert_eq!(result.source.matches("port: 3000").count(), 3, "source: {}", result.source);
     }
+
+    // ---------------------------------------------------------------------------
+    // Formatting preservation tests
+    // ---------------------------------------------------------------------------
+
+    #[test]
+    fn json_update_preserves_2space_indent() {
+        let source = "{\n  \"name\": \"Alice\",\n  \"age\": 30\n}\n";
+        let result = upsert(source, "json", "//name", "Bob").unwrap();
+        assert!(!result.inserted);
+        assert_eq!(result.source, "{\n  \"name\": \"Bob\",\n  \"age\": 30\n}\n",
+            "2-space indent should be preserved: {:?}", result.source);
+    }
+
+    #[test]
+    fn json_update_preserves_4space_indent() {
+        let source = "{\n    \"name\": \"Alice\",\n    \"age\": 30\n}\n";
+        let result = upsert(source, "json", "//name", "Bob").unwrap();
+        assert!(!result.inserted);
+        assert_eq!(result.source, "{\n    \"name\": \"Bob\",\n    \"age\": 30\n}\n",
+            "4-space indent should be preserved: {:?}", result.source);
+    }
+
+    #[test]
+    fn json_update_preserves_tab_indent() {
+        let source = "{\n\t\"name\": \"Alice\",\n\t\"age\": 30\n}\n";
+        let result = upsert(source, "json", "//name", "Bob").unwrap();
+        assert!(!result.inserted);
+        assert_eq!(result.source, "{\n\t\"name\": \"Bob\",\n\t\"age\": 30\n}\n",
+            "tab indent should be preserved: {:?}", result.source);
+    }
+
+    #[test]
+    fn json_insert_matches_2space_indent() {
+        let source = "{\n  \"name\": \"Alice\"\n}\n";
+        let result = upsert(source, "json", "//age", "30").unwrap();
+        assert!(result.inserted);
+        let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
+        assert_eq!(parsed["name"], "Alice");
+        assert_eq!(parsed["age"], "30");
+        // Inserted property should use 2-space indent like existing content
+        assert!(result.source.contains("\n  \"age\""),
+            "inserted property should use 2-space indent: {:?}", result.source);
+    }
+
+    #[test]
+    fn json_insert_matches_4space_indent() {
+        let source = "{\n    \"name\": \"Alice\"\n}\n";
+        let result = upsert(source, "json", "//age", "30").unwrap();
+        assert!(result.inserted);
+        let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
+        assert_eq!(parsed["name"], "Alice");
+        assert_eq!(parsed["age"], "30");
+        // Inserted property should use 4-space indent like existing content
+        assert!(result.source.contains("\n    \"age\""),
+            "inserted property should use 4-space indent: {:?}", result.source);
+    }
+
+    #[test]
+    fn json_insert_matches_tab_indent() {
+        let source = "{\n\t\"name\": \"Alice\"\n}\n";
+        let result = upsert(source, "json", "//age", "30").unwrap();
+        assert!(result.inserted);
+        let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
+        assert_eq!(parsed["name"], "Alice");
+        assert_eq!(parsed["age"], "30");
+        // Inserted property should use tab indent like existing content
+        assert!(result.source.contains("\n\t\"age\""),
+            "inserted property should use tab indent: {:?}", result.source);
+    }
+
+    #[test]
+    fn json_nested_insert_preserves_indent_depth() {
+        let source = "{\n  \"db\": {\n    \"host\": \"localhost\"\n  }\n}\n";
+        let result = upsert(source, "json", "//db/port", "5432").unwrap();
+        assert!(result.inserted);
+        let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
+        assert_eq!(parsed["db"]["host"], "localhost");
+        assert_eq!(parsed["db"]["port"], "5432");
+        // Nested insert should use 4 spaces (2 levels deep)
+        assert!(result.source.contains("\n    \"port\""),
+            "nested insert should use 2 levels of 2-space indent: {:?}", result.source);
+    }
+
+    #[test]
+    fn json_update_preserves_crlf_newlines() {
+        let source = "{\r\n  \"name\": \"Alice\",\r\n  \"age\": 30\r\n}\r\n";
+        let result = upsert(source, "json", "//name", "Bob").unwrap();
+        assert!(!result.inserted);
+        assert!(result.source.contains("\r\n"),
+            "CRLF newlines should be preserved: {:?}", result.source);
+        assert!(result.source.contains("Bob"));
+    }
 }
