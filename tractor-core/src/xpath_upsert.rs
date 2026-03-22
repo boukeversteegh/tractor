@@ -145,8 +145,10 @@ fn update_existing(
     let target = find_node_by_span(result.documents.xot(), file_node, matched.line, matched.column)
         .ok_or_else(|| UpsertError::NoInsertionPoint("could not locate matched node in tree".into()))?;
 
-    // Replace the text content of the target node
-    replace_text_content(result.documents.xot_mut(), target, value)?;
+    // Replace the text content and update the kind attribute
+    let (kind, content) = decode_value_literal(value);
+    replace_text_content(result.documents.xot_mut(), target, &content)?;
+    set_attr(result.documents.xot_mut(), target, "kind", kind);
 
     // Record the original span of the File node (splice node for update = matched node,
     // but we render the whole File to get correct context)
@@ -438,11 +440,10 @@ fn add_nested_children(
 
         if i == keys.len() - 1 {
             // Leaf: set value as text content and kind attribute
-            let text_node = xot.new_text(leaf_value);
+            let (kind, content) = decode_value_literal(leaf_value);
+            let text_node = xot.new_text(&content);
             xot.append(element, text_node)?;
 
-            // Determine kind from the value
-            let kind = detect_value_kind(leaf_value);
             let kind_attr = xot.add_name("kind");
             xot.attributes_mut(element).insert(kind_attr, kind.to_string());
         }
@@ -454,14 +455,24 @@ fn add_nested_children(
     Ok(())
 }
 
-/// Detect the JSON value kind from a raw literal.
-fn detect_value_kind(value: &str) -> &str {
+/// Detect the JSON value kind from a raw literal and return (kind, content).
+///
+/// The value may be passed as a JSON literal (e.g. `"hello"` with quotes for
+/// strings, `42` for numbers). Returns the kind and the decoded content that
+/// should be stored as text in the data tree.
+fn decode_value_literal(value: &str) -> (&str, String) {
     match value {
-        "true" => "true",
-        "false" => "false",
-        "null" => "null",
-        _ if value.parse::<f64>().is_ok() && !value.is_empty() => "number",
-        _ => "string",
+        "true" => ("true", "true".to_string()),
+        "false" => ("false", "false".to_string()),
+        "null" => ("null", "null".to_string()),
+        _ if value.starts_with('"') && value.ends_with('"') && value.len() >= 2 => {
+            // JSON-quoted string: strip the surrounding quotes
+            ("string", value[1..value.len() - 1].to_string())
+        }
+        _ if value.parse::<f64>().is_ok() && !value.is_empty() => {
+            ("number", value.to_string())
+        }
+        _ => ("string", value.to_string()),
     }
 }
 
