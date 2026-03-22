@@ -18,6 +18,8 @@ pub mod language_info;
 pub mod parallel;
 pub mod xot_builder;
 pub mod xot_transform;
+#[cfg(feature = "native")]
+pub mod xpath_upsert;
 pub mod report;
 pub mod tree_mode;
 

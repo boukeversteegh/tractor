@@ -88,6 +88,10 @@ fn transform_data_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
     if let Some(key_text) = extract_pair_key_text(xot, node) {
         let safe_name = rename_to_key(xot, node, &key_text);
 
+        // Mark as a property (key-value pair) so renderers can distinguish
+        // properties from array items.
+        set_attr(xot, node, "field", &safe_name);
+
         // Remove the key child and colon/punctuation text
         let children: Vec<XotNode> = xot.children(node).collect();
         for child in children {
@@ -112,6 +116,20 @@ fn transform_data_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
                     flatten_node(xot, child)?;
                     break;
                 }
+            }
+        }
+
+        // Set kind to the scalar value type so the renderer knows how to
+        // format the value (string vs number vs boolean vs null).
+        let value_kind = xot.children(node)
+            .find(|&c| xot.element(c).is_some())
+            .and_then(|c| get_kind(xot, c));
+        if let Some(ref vk) = value_kind {
+            match vk.as_str() {
+                "string" | "number" | "true" | "false" | "null" => {
+                    set_attr(xot, node, "kind", vk);
+                }
+                _ => {}
             }
         }
 
