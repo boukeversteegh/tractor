@@ -3,22 +3,22 @@
 //! Implements the language-agnostic patching architecture described in
 //! `specs/patching.md`. The algorithm:
 //!
-//! 1. Parse the source into a data tree with source spans
+//! 1. Parse the source once into a data tree with source spans
 //! 2. Query with XPath to determine update vs insert
-//! 3. Identify the splice node and record its original source span
+//! 3. Record the splice node's original source span
 //! 4. Mutate the data tree (update value or insert new children)
-//! 5. Re-render the full modified tree with span tracking
+//! 5. Render the modified tree with span tracking
 //! 6. Look up the splice node's new span from the renderer's span map
 //! 7. Splice the new span into the original source
 //!
-//! The renderer annotates each node with its byte span in the output,
-//! keyed by the node's original source position (`start` attribute).
-//! This avoids re-parsing and re-querying entirely.
+//! The source is parsed exactly once. The renderer annotates each node
+//! with its byte span in the output, keyed by the node's original source
+//! position (`start` attribute). This avoids any re-parsing or re-querying.
 //!
 //! All language-specific knowledge lives in the parser and renderer.
 //! The upsert algorithm itself is language-agnostic.
 
-use crate::parser::parse_string_to_documents;
+use crate::parser::{parse_string_to_documents, XeeParseResult};
 use crate::render::{self, RenderOptions};
 use crate::tree_mode::TreeMode;
 use crate::xpath::xot_node_to_xml_node;
@@ -112,10 +112,10 @@ pub fn upsert(
 
     if !existing.is_empty() {
         // Update path
-        update_existing(source, lang, xpath, value, &existing[0])
+        update_existing(source, lang, value, &existing[0], result)
     } else {
         // Insert path
-        insert_new(source, lang, xpath, value)
+        insert_new(source, lang, xpath, value, result)
     }
 }
 
@@ -128,9 +128,9 @@ pub fn upsert(
 fn update_existing(
     source: &str,
     lang: &str,
-    _xpath: &str,
     value: &str,
     matched: &Match,
+    mut result: XeeParseResult,
 ) -> Result<UpsertResult, UpsertError> {
     // Step 1: Record the original source span of the matched node
     let orig_start = line_col_to_byte_offset(source, matched.line, matched.column)
@@ -138,11 +138,7 @@ fn update_existing(
     let orig_end = line_col_to_byte_offset(source, matched.end_line, matched.end_column)
         .ok_or_else(|| UpsertError::NoInsertionPoint("end position out of bounds".into()))?;
 
-    // Step 2: Mutate the data tree — re-parse, find the node, update its text
-    let mut result = parse_string_to_documents(
-        source, lang, "<upsert>".to_string(), Some(TreeMode::Data), false,
-    ).map_err(|e| UpsertError::Parse(e.to_string()))?;
-
+    // Step 2: Mutate the data tree — find the matched node, update its text
     let doc_node = result.documents.document_node(result.doc_handle)
         .ok_or_else(|| UpsertError::Parse("no document node".into()))?;
 
@@ -180,12 +176,13 @@ fn update_existing(
     })
 }
 
-/// Insert new structure using the render-reparse-splice approach.
+/// Insert new structure using render-with-spans-splice.
 fn insert_new(
     source: &str,
     lang: &str,
     xpath: &str,
     value: &str,
+    mut result: XeeParseResult,
 ) -> Result<UpsertResult, UpsertError> {
     // Parse the XPath into key steps
     let key_path = xpath_to_key_path(xpath)?;
@@ -195,11 +192,7 @@ fn insert_new(
         ));
     }
 
-    // Step 1: Parse and walk the tree to find the deepest existing ancestor
-    let mut result = parse_string_to_documents(
-        source, lang, "<upsert>".to_string(), Some(TreeMode::Data), false,
-    ).map_err(|e| UpsertError::Parse(e.to_string()))?;
-
+    // Step 1: Walk the tree to find the deepest existing ancestor
     let doc_node = result.documents.document_node(result.doc_handle)
         .ok_or_else(|| UpsertError::Parse("no document node".into()))?;
 
