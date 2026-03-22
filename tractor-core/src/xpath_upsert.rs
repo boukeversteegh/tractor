@@ -877,4 +877,47 @@ mod tests {
             "CRLF newlines should be preserved: {:?}", result.source);
         assert!(result.source.contains("Bob"));
     }
+
+    // ---------------------------------------------------------------------------
+    // Edge case formatting tests: minified, inline, mixed styles
+    // ---------------------------------------------------------------------------
+
+    #[test]
+    fn json_update_minified_stays_minified() {
+        // Minified JSON with no whitespace
+        let source = r#"{"name":"Alice","age":30}"#;
+        let result = upsert(source, "json", "//name", "Bob").unwrap();
+        assert!(!result.inserted);
+        eprintln!("minified update result: {:?}", result.source);
+        // Update via splice should preserve the compact style
+        assert_eq!(result.source, r#"{"name":"Bob","age":30}"#,
+            "minified JSON should stay minified on update: {:?}", result.source);
+    }
+
+    #[test]
+    fn json_insert_into_minified() {
+        // What happens when we insert into minified JSON?
+        let source = r#"{"name":"Alice"}"#;
+        let result = upsert(source, "json", "//age", "30").unwrap();
+        assert!(result.inserted);
+        eprintln!("minified insert result: {:?}", result.source);
+        // Should still produce valid JSON
+        let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
+        assert_eq!(parsed["name"], "Alice");
+        assert_eq!(parsed["age"], "30");
+    }
+
+    #[test]
+    fn json_update_inline_object_stays_inline() {
+        // Object that fits on one line with spaces
+        let source = r#"{"items": [{"name": "a", "val": 1}, {"name": "b", "val": 2}]}"#;
+        let result = upsert(source, "json", "//items/val", "99").unwrap();
+        assert!(!result.inserted);
+        eprintln!("inline update result: {:?}", result.source);
+        // Updates via splice should preserve the inline style
+        let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
+        for item in parsed["items"].as_array().unwrap() {
+            assert_eq!(item["val"], 99);
+        }
+    }
 }
