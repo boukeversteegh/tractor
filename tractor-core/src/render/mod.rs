@@ -9,6 +9,7 @@
 
 pub mod csharp;
 pub mod json;
+pub mod yaml;
 
 use crate::xpath::XmlNode;
 
@@ -286,6 +287,7 @@ pub fn render(node: &XmlNode, lang: &str, opts: &RenderOptions) -> Result<String
     match lang {
         "csharp" => csharp::render_node(node, opts),
         "json" => json::render_node(node, opts),
+        "yaml" | "yml" => yaml::render_node(node, opts),
         _ => Err(RenderError::UnsupportedLanguage(lang.to_string())),
     }
 }

@@ -392,14 +392,32 @@ fn replace_text_content(xot: &mut Xot, node: xot::Node, new_text: &str) -> Resul
 }
 
 /// Walk the data tree to find the deepest existing element matching the key path.
+///
+/// Before matching user keys, descends through structural wrapper nodes
+/// (e.g., `<document>` in YAML) that aren't part of the user's key path.
 fn find_deepest_ancestor(
     xot: &Xot,
     container: xot::Node,
     key_path: &[String],
 ) -> (usize, xot::Node) {
+    // Descend through structural wrappers that the user doesn't address in XPath.
+    // e.g., YAML's <document> sits between <File> and the actual mapping keys.
     let mut current = container;
-    let mut depth = 0;
+    loop {
+        let element_children: Vec<_> = xot.children(current)
+            .filter(|&c| xot.element(c).is_some())
+            .collect();
+        if element_children.len() == 1 {
+            let child_name = get_element_name(xot, element_children[0]);
+            if matches!(child_name.as_deref(), Some("document")) {
+                current = element_children[0];
+                continue;
+            }
+        }
+        break;
+    }
 
+    let mut depth = 0;
     for key in key_path {
         let found = xot.children(current).find(|&child| {
             get_element_name(xot, child)
@@ -660,6 +678,77 @@ mod tests {
         let result = upsert("{}", "brainfuck", "//x", "1");
         assert!(result.is_err());
         assert!(matches!(result.unwrap_err(), UpsertError::UnsupportedLanguage(_)));
+    }
+
+    // ---------------------------------------------------------------------------
+    // YAML update tests
+    // ---------------------------------------------------------------------------
+
+    #[test]
+    fn yaml_update_existing_string() {
+        let source = "name: Alice\nage: 30\n";
+        let result = upsert(source, "yaml", "//name", "Bob").unwrap();
+        assert!(!result.inserted);
+        assert!(result.source.contains("Bob"));
+        assert!(result.source.contains("age: 30"));
+    }
+
+    #[test]
+    fn yaml_update_existing_number() {
+        let source = "name: Alice\nage: 30\n";
+        let result = upsert(source, "yaml", "//age", "31").unwrap();
+        assert!(!result.inserted);
+        assert!(result.source.contains("31"));
+        assert!(result.source.contains("Alice"));
+    }
+
+    #[test]
+    fn yaml_update_preserves_surrounding_formatting() {
+        let source = "name: Alice\ndatabase:\n  host: localhost\n  port: 5432\n";
+        let result = upsert(source, "yaml", "//database/host", "db.example.com").unwrap();
+        assert!(!result.inserted);
+        assert!(result.source.contains("db.example.com"));
+        assert!(result.source.contains("  port: 5432"));
+    }
+
+    #[test]
+    fn yaml_update_nested() {
+        let source = "db:\n  host: localhost\n  port: 5432\n";
+        let result = upsert(source, "yaml", "//db/host", "db.example.com").unwrap();
+        assert!(!result.inserted);
+        assert!(result.source.contains("db.example.com"));
+        assert!(result.source.contains("port: 5432"));
+    }
+
+    // ---------------------------------------------------------------------------
+    // YAML insert tests
+    // ---------------------------------------------------------------------------
+
+    #[test]
+    fn yaml_insert_into_existing_parent() {
+        let source = "db:\n  host: localhost\n";
+        let result = upsert(source, "yaml", "//db/port", "5432").unwrap();
+        assert!(result.inserted, "source: {:?}", result.source);
+        assert!(result.source.contains("host: localhost"), "source: {:?}", result.source);
+        assert!(result.source.contains("port: 5432"), "source: {:?}", result.source);
+    }
+
+    #[test]
+    fn yaml_insert_simple_property() {
+        let source = "name: Alice\n";
+        let result = upsert(source, "yaml", "//age", "30").unwrap();
+        assert!(result.inserted, "source: {:?}", result.source);
+        assert!(result.source.contains("name: Alice"), "source: {:?}", result.source);
+        assert!(result.source.contains("age: 30"), "source: {:?}", result.source);
+    }
+
+    #[test]
+    fn yaml_insert_nested_property() {
+        let source = "name: Alice\n";
+        let result = upsert(source, "yaml", "//db/host", "localhost").unwrap();
+        assert!(result.inserted, "source: {:?}", result.source);
+        assert!(result.source.contains("name: Alice"), "source: {:?}", result.source);
+        assert!(result.source.contains("host: localhost"), "source: {:?}", result.source);
     }
 
     // ---------------------------------------------------------------------------
