@@ -145,10 +145,8 @@ fn update_existing(
     let target = find_node_by_span(result.documents.xot(), file_node, matched.line, matched.column)
         .ok_or_else(|| UpsertError::NoInsertionPoint("could not locate matched node in tree".into()))?;
 
-    // Replace the text content and update the kind attribute
-    let (kind, content) = decode_value_literal(value);
-    replace_text_content(result.documents.xot_mut(), target, &content)?;
-    set_attr(result.documents.xot_mut(), target, "kind", kind);
+    // Replace the text content, preserving the existing node's kind
+    replace_text_content(result.documents.xot_mut(), target, value)?;
 
     // Record the original span of the File node (splice node for update = matched node,
     // but we render the whole File to get correct context)
@@ -439,13 +437,12 @@ fn add_nested_children(
         xot.attributes_mut(element).insert(field_attr, key.clone());
 
         if i == keys.len() - 1 {
-            // Leaf: set value as text content and kind attribute
-            let (kind, content) = decode_value_literal(leaf_value);
-            let text_node = xot.new_text(&content);
+            // Leaf: set value as text content, default to string kind
+            let text_node = xot.new_text(leaf_value);
             xot.append(element, text_node)?;
 
             let kind_attr = xot.add_name("kind");
-            xot.attributes_mut(element).insert(kind_attr, kind.to_string());
+            xot.attributes_mut(element).insert(kind_attr, "string".to_string());
         }
 
         xot.append(current, element)?;
@@ -453,22 +450,6 @@ fn add_nested_children(
     }
 
     Ok(())
-}
-
-/// Detect the value kind from a raw literal and return (kind, content).
-///
-/// Strings are the default — users pass bare text without quotes.
-/// Numbers, booleans, and null are detected automatically.
-fn decode_value_literal(value: &str) -> (&str, String) {
-    match value {
-        "true" => ("true", "true".to_string()),
-        "false" => ("false", "false".to_string()),
-        "null" => ("null", "null".to_string()),
-        _ if value.parse::<f64>().is_ok() && !value.is_empty() => {
-            ("number", value.to_string())
-        }
-        _ => ("string", value.to_string()),
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -618,7 +599,8 @@ mod tests {
         assert!(result.inserted);
         let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
         assert_eq!(parsed["name"], "Alice");
-        assert_eq!(parsed["age"], 30);
+        // New values are always inserted as strings
+        assert_eq!(parsed["age"], "30");
     }
 
     #[test]
@@ -637,7 +619,8 @@ mod tests {
         let result = upsert(source, "json", "//active", "true").unwrap();
         assert!(result.inserted);
         let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
-        assert_eq!(parsed["active"], true);
+        // New values are always inserted as strings
+        assert_eq!(parsed["active"], "true");
     }
 
     #[test]
@@ -647,7 +630,8 @@ mod tests {
         assert!(result.inserted);
         let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
         assert_eq!(parsed["name"], "Alice");
-        assert_eq!(parsed["age"], 30);
+        // New values are always inserted as strings
+        assert_eq!(parsed["age"], "30");
     }
 
     #[test]
@@ -667,7 +651,8 @@ mod tests {
         assert!(result.inserted);
         let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
         assert_eq!(parsed["db"]["host"], "localhost");
-        assert_eq!(parsed["db"]["port"], 5432);
+        // New values are always inserted as strings
+        assert_eq!(parsed["db"]["port"], "5432");
     }
 
     #[test]
