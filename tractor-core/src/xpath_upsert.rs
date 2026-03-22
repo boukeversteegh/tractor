@@ -34,6 +34,8 @@ pub struct UpsertResult {
     pub source: String,
     /// Whether an insertion was made (vs. an update of existing value).
     pub inserted: bool,
+    /// Number of matches that were updated (0 for inserts).
+    pub matches_updated: usize,
     /// Human-readable description of what was done.
     pub description: String,
 }
@@ -111,68 +113,82 @@ pub fn upsert(
         .map_err(|e| UpsertError::Query(e.to_string()))?;
 
     if !existing.is_empty() {
-        // Update path
-        update_existing(source, lang, value, &existing[0], result)
+        // Update path — handle all matches in a single pass
+        update_existing(source, lang, value, &existing, result)
     } else {
         // Insert path
         insert_new(source, lang, xpath, value, result)
     }
 }
 
-/// Update an existing node's value using render-with-spans-splice.
+/// Update existing nodes' values using render-with-spans-splice.
 ///
-/// Instead of re-parsing and re-querying the rendered output, we use the
-/// renderer's span map to locate the modified node directly. The node is
-/// identified by its original source position (`start` attribute), which
-/// survives the tree mutation (only text children change, not the element).
+/// Handles all matches in a single pass: mutates all matched nodes in the
+/// tree, re-renders once, then splices all modified spans back into the
+/// original source (applied in reverse order to preserve byte offsets).
 fn update_existing(
     source: &str,
     lang: &str,
     value: &str,
-    matched: &Match,
+    matches: &[Match],
     mut result: XeeParseResult,
 ) -> Result<UpsertResult, UpsertError> {
-    // Step 1: Record the original source span of the matched node
-    let orig_start = line_col_to_byte_offset(source, matched.line, matched.column)
-        .ok_or_else(|| UpsertError::NoInsertionPoint("start position out of bounds".into()))?;
-    let orig_end = line_col_to_byte_offset(source, matched.end_line, matched.end_column)
-        .ok_or_else(|| UpsertError::NoInsertionPoint("end position out of bounds".into()))?;
-
-    // Step 2: Mutate the data tree — find the matched node, update its text
     let doc_node = result.documents.document_node(result.doc_handle)
         .ok_or_else(|| UpsertError::Parse("no document node".into()))?;
 
     let file_node = find_file_node(result.documents.xot(), doc_node)
         .ok_or_else(|| UpsertError::NoInsertionPoint("no File node found".into()))?;
 
-    let target = find_node_by_span(result.documents.xot(), file_node, matched.line, matched.column)
-        .ok_or_else(|| UpsertError::NoInsertionPoint("could not locate matched node in tree".into()))?;
+    // Step 1: Record original byte spans and mutate all matched nodes
+    let mut splice_info: Vec<(usize, usize, String)> = Vec::new(); // (orig_start, orig_end, span_key)
 
-    replace_text_content(result.documents.xot_mut(), target, value)?;
+    for matched in matches {
+        let orig_start = line_col_to_byte_offset(source, matched.line, matched.column)
+            .ok_or_else(|| UpsertError::NoInsertionPoint("start position out of bounds".into()))?;
+        let orig_end = line_col_to_byte_offset(source, matched.end_line, matched.end_column)
+            .ok_or_else(|| UpsertError::NoInsertionPoint("end position out of bounds".into()))?;
 
-    // Step 3: Re-render with span tracking
+        let target = find_node_by_span(result.documents.xot(), file_node, matched.line, matched.column)
+            .ok_or_else(|| UpsertError::NoInsertionPoint("could not locate matched node in tree".into()))?;
+
+        replace_text_content(result.documents.xot_mut(), target, value)?;
+
+        let span_key = format!("{}:{}", matched.line, matched.column);
+        splice_info.push((orig_start, orig_end, span_key));
+    }
+
+    // Step 2: Re-render once with span tracking
     let xml_node = xot_node_to_xml_node(result.documents.xot(), file_node);
     let render_opts = detect_render_options(source);
     let (rendered, span_map) = render::render_with_spans(&xml_node, lang, &render_opts)
         .map_err(|e| UpsertError::Render(e.to_string()))?;
 
-    // Step 4: Look up the modified node's new span from the renderer's span map
-    let span_key = format!("{}:{}", matched.line, matched.column);
-    let (new_start, new_end) = span_map.get(&span_key)
-        .ok_or_else(|| UpsertError::NoInsertionPoint(
-            format!("node at {} not found in rendered output span map", span_key),
-        ))?;
+    // Step 3: Sort splices by position descending and apply from end to start
+    // to preserve byte offsets
+    splice_info.sort_by(|a, b| b.0.cmp(&a.0));
 
-    // Step 5: Splice
-    let mut new_source = String::with_capacity(source.len());
-    new_source.push_str(&source[..orig_start]);
-    new_source.push_str(&rendered[*new_start..*new_end]);
-    new_source.push_str(&source[orig_end..]);
+    // Deduplicate by position (same node matched multiple times)
+    splice_info.dedup_by(|a, b| a.0 == b.0 && a.1 == b.1);
 
+    let mut new_source = source.to_string();
+    let mut applied = 0;
+
+    for (orig_start, orig_end, span_key) in &splice_info {
+        let (new_start, new_end) = span_map.get(span_key)
+            .ok_or_else(|| UpsertError::NoInsertionPoint(
+                format!("node at {} not found in rendered output span map", span_key),
+            ))?;
+
+        new_source.replace_range(*orig_start..*orig_end, &rendered[*new_start..*new_end]);
+        applied += 1;
+    }
+
+    let count = applied;
     Ok(UpsertResult {
         source: new_source,
         inserted: false,
-        description: "updated existing value".into(),
+        matches_updated: count,
+        description: format!("updated {} existing value{}", count, if count == 1 { "" } else { "s" }),
     })
 }
 
@@ -265,6 +281,7 @@ fn insert_new(
     Ok(UpsertResult {
         source: new_source,
         inserted: true,
+        matches_updated: 0,
         description,
     })
 }
@@ -737,5 +754,34 @@ mod tests {
         let source = "servers:\n  - name: web-1\n    port: 8080\n  - name: web-2\n    port: 8080\n  - name: web-3\n    port: 9090\n";
         let result = upsert(source, "yaml", "//servers/port[.='8080']", "3000").unwrap();
         assert!(result.source.contains("port: 3000"), "first match should be updated: {}", result.source);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Multi-match batch update tests
+    // ---------------------------------------------------------------------------
+
+    #[test]
+    fn json_update_all_matches_in_single_call() {
+        let source = r#"{"items": [{"val": 1}, {"val": 1}, {"val": 2}]}"#;
+        let result = upsert(source, "json", "//items/val", "99").unwrap();
+        assert!(!result.inserted);
+        assert_eq!(result.matches_updated, 3, "should update all 3 val nodes");
+        // All values should be updated
+        let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
+        for item in parsed["items"].as_array().unwrap() {
+            assert_eq!(item["val"], 99, "source: {}", result.source);
+        }
+    }
+
+    #[test]
+    fn yaml_update_all_matches_in_single_call() {
+        let source = "servers:\n  - name: web-1\n    port: 8080\n  - name: web-2\n    port: 8080\n  - name: web-3\n    port: 9090\n";
+        let result = upsert(source, "yaml", "//servers/port", "3000").unwrap();
+        assert!(!result.inserted);
+        assert_eq!(result.matches_updated, 3, "should update all 3 port nodes");
+        // All ports should now be 3000
+        assert!(!result.source.contains("8080"), "source: {}", result.source);
+        assert!(!result.source.contains("9090"), "source: {}", result.source);
+        assert_eq!(result.source.matches("port: 3000").count(), 3, "source: {}", result.source);
     }
 }

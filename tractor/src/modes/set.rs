@@ -27,61 +27,27 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
     let mut total_ops = 0;
     let mut fallback_files: Vec<String> = Vec::new();
 
-    let limit = ctx.limit;
-
     for file_path in files {
         let lang = lang_override
             .unwrap_or_else(|| detect_language(file_path));
 
-        let mut source = std::fs::read_to_string(file_path)?;
-        let mut file_ops = 0;
-        let mut file_changed = false;
-        let mut last_inserted = false;
+        let source = std::fs::read_to_string(file_path)?;
 
-        // Loop to handle multiple matches. Each upsert call handles one match,
-        // re-parsing the modified source each time. Stop when no more matches
-        // are found or the limit is reached.
-        loop {
-            if let Some(lim) = limit {
-                if file_ops >= lim {
-                    break;
+        match upsert(&source, lang, xpath_expr, &args.value) {
+            Ok(result) => {
+                if result.source != source {
+                    std::fs::write(file_path, &result.source)?;
+                    files_modified += 1;
+                    let ops = if result.inserted { 1 } else { result.matches_updated };
+                    total_ops += ops;
+                    let action = if result.inserted { "Inserted" } else { "Updated" };
+                    eprintln!("{} {} match(es) in {}", action, ops, file_path);
                 }
             }
-
-            match upsert(&source, lang, xpath_expr, &args.value) {
-                Ok(result) => {
-                    if result.source == source {
-                        // No change — either value was already correct or no match
-                        break;
-                    }
-                    source = result.source;
-                    file_changed = true;
-                    file_ops += 1;
-                    last_inserted = result.inserted;
-
-                    // Inserts only happen once (XPath now matches after insert)
-                    if result.inserted {
-                        break;
-                    }
-                }
-                Err(tractor_core::xpath_upsert::UpsertError::UnsupportedLanguage(_)) => {
-                    fallback_files.push(file_path.clone());
-                    break;
-                }
-                Err(tractor_core::xpath_upsert::UpsertError::NoInsertionPoint(_)) if file_ops > 0 => {
-                    // All matches already updated; XPath no longer matches
-                    break;
-                }
-                Err(e) => return Err(e.into()),
+            Err(tractor_core::xpath_upsert::UpsertError::UnsupportedLanguage(_)) => {
+                fallback_files.push(file_path.clone());
             }
-        }
-
-        if file_changed {
-            std::fs::write(file_path, &source)?;
-            files_modified += 1;
-            total_ops += file_ops;
-            let action = if last_inserted { "Inserted" } else { "Updated" };
-            eprintln!("{} {} match(es) in {}", action, file_ops, file_path);
+            Err(e) => return Err(e.into()),
         }
     }
 
