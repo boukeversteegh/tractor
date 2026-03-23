@@ -79,7 +79,10 @@ tests/integration/languages/typescript/sample.ts:1
             =
             <value>
               <call>
-                <type>add</type>
+                <function>
+                  <ref/>
+                  add
+                </function>
                 <arguments>
                   <arguments>
                     (
@@ -94,11 +97,19 @@ tests/integration/languages/typescript/sample.ts:1
             ;
           </variable>
           <call>
-            <member>
-              <type>console</type>
-              .
-              <type>log</type>
-            </member>
+            <function>
+              <member>
+                <object>
+                  <ref/>
+                  console
+                </object>
+                .
+                <property>
+                  <ref/>
+                  log
+                </property>
+              </member>
+            </function>
             <arguments>
               <arguments>
                 (
@@ -122,7 +133,10 @@ tests/integration/languages/typescript/sample.ts:1
       </body>
     </function>
     <call>
-      <type>main</type>
+      <function>
+        <ref/>
+        main
+      </function>
       <arguments>
         <arguments>()</arguments>
       </arguments>
@@ -292,11 +306,19 @@ tests/integration/languages/typescript/sample.ts:1
         <block>
           {
           <call>
-            <member>
-              <type>console</type>
-              .
-              <type>log</type>
-            </member>
+            <function>
+              <member>
+                <object>
+                  <ref/>
+                  console
+                </object>
+                .
+                <property>
+                  <ref/>
+                  log
+                </property>
+              </member>
+            </function>
             <arguments>
               <arguments>
                 (
