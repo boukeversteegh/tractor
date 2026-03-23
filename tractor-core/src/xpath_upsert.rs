@@ -513,7 +513,8 @@ fn add_nested_children(
 /// Parse an XPath into a simple key path (element names from root to leaf).
 ///
 /// Handles simple paths like `//name`, `//db/host`, `/Files/File/name`.
-/// Strips axis prefixes (`//`, `/`) and ignores predicates for now.
+/// Strips axis prefixes (`//`, `/`). Returns an error if predicates are
+/// present, since the insert path cannot honour them.
 fn xpath_to_key_path(xpath: &str) -> Result<Vec<String>, UpsertError> {
     let mut keys = Vec::new();
     let trimmed = xpath.trim();
@@ -525,15 +526,18 @@ fn xpath_to_key_path(xpath: &str) -> Result<Vec<String>, UpsertError> {
             continue;
         }
 
-        // Strip predicates: `name[@attr='val']` → `name`
-        let name = if let Some(bracket_pos) = segment.find('[') {
-            &segment[..bracket_pos]
-        } else {
-            segment
-        };
+        // Reject predicates — insert cannot honour them
+        if segment.contains('[') {
+            return Err(UpsertError::NoInsertionPoint(
+                format!(
+                    "cannot insert: XPath contains predicate '{}' which cannot be applied during node creation",
+                    segment,
+                ),
+            ));
+        }
 
-        if !name.is_empty() && name != "*" {
-            keys.push(name.to_string());
+        if !segment.is_empty() && segment != "*" {
+            keys.push(segment.to_string());
         }
     }
 
@@ -814,11 +818,10 @@ mod tests {
     }
 
     #[test]
-    fn xpath_to_key_path_strips_predicates() {
-        assert_eq!(
-            xpath_to_key_path("//item[@type='x']/name").unwrap(),
-            vec!["item", "name"]
-        );
+    fn xpath_to_key_path_rejects_predicates() {
+        let result = xpath_to_key_path("//item[@type='x']/name");
+        assert!(result.is_err(), "predicates should be rejected during insert");
+        assert!(result.unwrap_err().to_string().contains("predicate"));
     }
 
     #[test]
