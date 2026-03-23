@@ -164,6 +164,14 @@ fn flatten(node: &PathNode, prefix: &str, ops: &mut Vec<SetOp>) {
                 format!("{}/{}", prefix, name)
             };
 
+            if predicates.is_empty() {
+                // Bare leaf node — ensure it exists with empty value (marker)
+                ops.push(SetOp {
+                    xpath: current_path.clone(),
+                    value: String::new(),
+                });
+            }
+
             for pred in predicates {
                 match pred {
                     Predicate::Assign { path, value } => {
@@ -182,7 +190,8 @@ fn flatten(node: &PathNode, prefix: &str, ops: &mut Vec<SetOp>) {
         PathNode::Path(segments) => {
             // Build the full prefix from all segments, flattening predicates at each level
             let mut current = prefix.to_string();
-            for seg in segments {
+            let last_idx = segments.len().saturating_sub(1);
+            for (i, seg) in segments.iter().enumerate() {
                 match seg {
                     PathNode::Segment { name, predicates } => {
                         current = if current == "/" {
@@ -190,6 +199,16 @@ fn flatten(node: &PathNode, prefix: &str, ops: &mut Vec<SetOp>) {
                         } else {
                             format!("{}/{}", current, name)
                         };
+
+                        // Only the terminal segment in a path is a leaf marker;
+                        // intermediate segments are structural containers.
+                        if predicates.is_empty() && i == last_idx {
+                            ops.push(SetOp {
+                                xpath: current.clone(),
+                                value: String::new(),
+                            });
+                        }
+
                         for pred in predicates {
                             match pred {
                                 Predicate::Assign { path, value } => {
@@ -445,8 +464,12 @@ mod tests {
 
     #[test]
     fn parse_bare_path() {
+        // The terminal segment is a marker (empty value)
         let ops = parse_set_expr("database/host").unwrap();
-        assert_eq!(ops, vec![]);
+        assert_eq!(ops, vec![SetOp {
+            xpath: "//database/host".into(),
+            value: "".into(),
+        }]);
     }
 
     #[test]
@@ -467,6 +490,25 @@ mod tests {
             xpath: "//a/b/c/d".into(),
             value: "deep".into(),
         }]);
+    }
+
+    #[test]
+    fn parse_marker_node() {
+        // [sub[marker]] — marker is a bare leaf, should produce empty-value op
+        let ops = parse_set_expr("parent[sub[marker]]").unwrap();
+        assert_eq!(ops, vec![SetOp {
+            xpath: "//parent/sub/marker".into(),
+            value: "".into(),
+        }]);
+    }
+
+    #[test]
+    fn parse_marker_with_siblings() {
+        let ops = parse_set_expr("config[enabled][name='test']").unwrap();
+        assert_eq!(ops, vec![
+            SetOp { xpath: "//config/enabled".into(), value: "".into() },
+            SetOp { xpath: "//config/name".into(), value: "test".into() },
+        ]);
     }
 
     #[test]
@@ -569,8 +611,10 @@ mod tests {
     }
 
     #[test]
-    fn declarative_set_no_value_no_predicates_error() {
-        let result = declarative_set("{}", "json", "database/host", None);
-        assert!(result.is_err());
+    fn declarative_set_bare_path_creates_marker() {
+        let result = declarative_set("{}", "json", "database/host", None).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
+        // Bare path creates structure — the node exists (value may be empty object or string)
+        assert!(!parsed["database"]["host"].is_null(), "source: {}", result.source);
     }
 }
