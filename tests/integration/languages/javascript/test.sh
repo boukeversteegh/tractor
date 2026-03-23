@@ -9,4 +9,13 @@ run_test tractor test sample.js -x "function[name='main']" --expect 1 -m "main f
 run_test tractor test sample.js -x "program" --expect 1 -m "program element exists"
 run_test tractor test sample.js -x "call" --expect 3 -m "call expressions renamed to call"
 
+# Call structure: function references should not be <type>
+run_test tractor test sample.js -x "call/function" --expect 3 -m "call has function child for callee"
+run_test tractor test sample.js -x "call/function[identifier]" --expect 2 -m "direct calls have identifier marker"
+run_test tractor test sample.js -x "call/function/member" --expect 1 -m "member call has member inside function"
+
+# Member expression structure: object/property roles should be distinct
+run_test tractor test sample.js -x "member/object" --expect 1 -m "member has object child"
+run_test tractor test sample.js -x "member/property" --expect 1 -m "member has property child"
+
 report
