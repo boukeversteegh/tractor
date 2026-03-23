@@ -603,6 +603,49 @@ pub mod helpers {
         false
     }
 
+    /// Promote a `field` attribute to a wrapper element.
+    ///
+    /// Given `<identifier field="function">require</identifier>`, produces
+    /// `<function><identifier>require</identifier></function>`.
+    ///
+    /// - Creates a wrapper element named after the field value
+    /// - Copies source location attributes to the wrapper
+    /// - Marks the wrapper with `field` for JSON property lifting
+    /// - Removes `field` from the inner element
+    /// - Returns the wrapper node, or `None` if the node has no matching field
+    ///
+    /// The caller specifies which field values to promote (e.g., `&["function", "object", "property"]`).
+    pub fn promote_field_to_wrapper(
+        xot: &mut Xot,
+        node: XotNode,
+        fields: &[&str],
+    ) -> Result<Option<XotNode>, xot::Error> {
+        let field_value = match get_attr(xot, node, "field") {
+            Some(f) if fields.contains(&f.as_str()) => f,
+            _ => return Ok(None),
+        };
+
+        // Create wrapper element
+        let wrapper_name = get_name(xot, &field_value);
+        let wrapper = xot.new_element(wrapper_name);
+
+        // Copy source location to wrapper
+        copy_source_location(xot, node, wrapper);
+
+        // Mark wrapper as field-backed for JSON property lifting
+        set_attr(xot, wrapper, "field", &field_value);
+
+        // Remove field from inner element
+        remove_attr(xot, node, "field");
+
+        // Insert wrapper where node is, then move node inside
+        xot.insert_before(node, wrapper)?;
+        xot.detach(node)?;
+        xot.append(wrapper, node)?;
+
+        Ok(Some(wrapper))
+    }
+
     /// Rename an element to a marker: renames, removes text children.
     /// Preserves `start`/`end` and `kind` attributes (source location for keyword-based markers).
     pub fn rename_to_marker(xot: &mut Xot, node: XotNode, name: &str) -> Result<(), xot::Error> {
