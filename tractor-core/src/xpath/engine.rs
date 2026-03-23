@@ -103,7 +103,7 @@ fn parse_location_attr(value: &str) -> Option<(u32, u32)> {
 }
 
 /// Walk an xot node tree and build a native `XmlNode` IR.
-fn xot_node_to_xml_node(xot: &Xot, node: Node) -> XmlNode {
+pub fn xot_node_to_xml_node(xot: &Xot, node: Node) -> XmlNode {
     match xot.value(node) {
         Value::Element(element) => {
             let name = xot.local_name_str(element.name()).to_string();

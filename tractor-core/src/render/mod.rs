@@ -8,8 +8,18 @@
 //! for its constructs. The renderer operates on `XmlNode` trees.
 
 pub mod csharp;
+pub mod json;
+pub mod yaml;
 
 use crate::xpath::XmlNode;
+use std::collections::HashMap;
+
+/// Maps original source position (e.g. "3:5") to byte span `(start, end)` in rendered output.
+///
+/// Keys are the `start` attribute values from XmlNode elements (which encode the
+/// original source line:column). Values are the byte offsets in the rendered string
+/// where that node's *value* was written.
+pub type SpanMap = HashMap<String, (usize, usize)>;
 
 /// Errors that can occur during rendering
 #[derive(Debug, thiserror::Error)]
@@ -284,7 +294,31 @@ pub fn parse_input(input: &str) -> Result<XmlNode, RenderError> {
 pub fn render(node: &XmlNode, lang: &str, opts: &RenderOptions) -> Result<String, RenderError> {
     match lang {
         "csharp" => csharp::render_node(node, opts),
+        "json" => json::render_node(node, opts),
+        "yaml" | "yml" => yaml::render_node(node, opts),
         _ => Err(RenderError::UnsupportedLanguage(lang.to_string())),
+    }
+}
+
+/// Render an XmlNode tree to source code, tracking byte spans for each node.
+///
+/// Returns the rendered string plus a [`SpanMap`] that maps each node's original
+/// source position (`start` attribute) to its value's byte range in the output.
+/// This allows callers to locate any node in the rendered output without
+/// re-parsing.
+pub fn render_with_spans(
+    node: &XmlNode,
+    lang: &str,
+    opts: &RenderOptions,
+) -> Result<(String, SpanMap), RenderError> {
+    match lang {
+        "json" => json::render_node_tracked(node, opts),
+        "yaml" | "yml" => yaml::render_node_tracked(node, opts),
+        _ => {
+            // Fall back to untracked render for languages that don't support span tracking
+            let rendered = render(node, lang, opts)?;
+            Ok((rendered, SpanMap::new()))
+        }
     }
 }
 

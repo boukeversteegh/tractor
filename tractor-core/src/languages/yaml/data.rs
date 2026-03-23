@@ -145,6 +145,10 @@ fn transform_mapping_pair(xot: &mut Xot, node: XotNode) -> Result<TransformActio
     if let Some(key) = extract_key_text(xot, node) {
         let safe_name = rename_to_key(xot, node, &key);
 
+        // Mark as a property (key-value pair) so renderers can distinguish
+        // properties from array items — same convention as JSON data transform.
+        set_attr(xot, node, "field", &safe_name);
+
         // /specs/tractor-parse/dual-view/data-branch/source-spans.md: Value-Oriented Source Spans
         // The value child is the first non-key, non-text element child.
         let value_child = get_element_children(xot, node).into_iter()
@@ -162,6 +166,30 @@ fn transform_mapping_pair(xot: &mut Xot, node: XotNode) -> Result<TransformActio
                 if field == "key" {
                     xot.detach(child)?;
                 }
+            }
+        }
+
+        // Set kind to the scalar value type so the renderer knows how to
+        // format the value — same convention as JSON data transform.
+        let value_kind = xot.children(node)
+            .find(|&c| xot.element(c).is_some())
+            .and_then(|c| get_kind(xot, c));
+        if let Some(ref vk) = value_kind {
+            match vk.as_str() {
+                "string_scalar" | "double_quote_scalar" | "single_quote_scalar"
+                | "block_scalar" => {
+                    set_attr(xot, node, "kind", "string");
+                }
+                "integer_scalar" | "float_scalar" => {
+                    set_attr(xot, node, "kind", "number");
+                }
+                "boolean_scalar" => {
+                    set_attr(xot, node, "kind", "boolean");
+                }
+                "null_scalar" => {
+                    set_attr(xot, node, "kind", "null");
+                }
+                _ => {}
             }
         }
 
