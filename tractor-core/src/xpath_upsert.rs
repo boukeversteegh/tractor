@@ -134,14 +134,28 @@ pub fn update_only(
 /// `value`. If the XPath does not match, the minimal structure is created and
 /// inserted.
 ///
-/// `value` is a raw literal in the target language's syntax: `"hello"` for a
-/// JSON string (with quotes), `42` for a number, `true`/`false` for booleans.
+/// `value_kind` controls the type annotation on inserted leaf nodes:
+///   - `Some("string")` — force string (default for `--value`)
+///   - `Some("null")` / `Some("number")` etc. — force that kind
+///   - `None` — let the renderer auto-detect from the value text
 pub fn upsert(
     source: &str,
     lang: &str,
     xpath: &str,
     value: &str,
     limit: Option<usize>,
+) -> Result<UpsertResult, UpsertError> {
+    upsert_typed(source, lang, xpath, value, limit, Some("string"))
+}
+
+/// Like [`upsert`] but with explicit control over the value kind annotation.
+pub fn upsert_typed(
+    source: &str,
+    lang: &str,
+    xpath: &str,
+    value: &str,
+    limit: Option<usize>,
+    value_kind: Option<&str>,
 ) -> Result<UpsertResult, UpsertError> {
     // Verify the language has a renderer
     let test_render = render::render(
@@ -189,7 +203,7 @@ pub fn upsert(
         update_existing(source, lang, value, matches, result)
     } else {
         // Insert path
-        insert_new(source, lang, xpath, value, result)
+        insert_new(source, lang, xpath, value, value_kind, result)
     }
 }
 
@@ -270,6 +284,7 @@ fn insert_new(
     lang: &str,
     xpath: &str,
     value: &str,
+    value_kind: Option<&str>,
     mut result: XeeParseResult,
 ) -> Result<UpsertResult, UpsertError> {
     // Parse the XPath into key steps (bare names) and raw segments (with predicates)
@@ -371,7 +386,7 @@ fn insert_new(
 
     // Step 3: Mutate the tree — add missing children
     let xot = result.documents.xot_mut();
-    add_nested_children(xot, ancestor_node, missing_keys, value)?;
+    add_nested_children(xot, ancestor_node, missing_keys, value, value_kind)?;
 
     // Step 4: Re-render the full modified tree with span tracking
     let xml_node = xot_node_to_xml_node(result.documents.xot(), file_node);
@@ -505,11 +520,15 @@ fn descend_structural_wrappers(xot: &Xot, container: xot::Node) -> xot::Node {
 }
 
 /// Add nested children to a node for the missing key path steps.
+///
+/// `value_kind`: `Some("string")` forces string, `Some("null")` forces null,
+/// `None` omits the kind attribute so the renderer auto-detects from the text.
 fn add_nested_children(
     xot: &mut Xot,
     parent: xot::Node,
     keys: &[String],
     leaf_value: &str,
+    value_kind: Option<&str>,
 ) -> Result<(), xot::Error> {
     let mut current = parent;
 
@@ -522,12 +541,16 @@ fn add_nested_children(
         xot.attributes_mut(element).insert(field_attr, key.clone());
 
         if i == keys.len() - 1 {
-            // Leaf: set value as text content, default to string kind
+            // Leaf: set value as text content
             let text_node = xot.new_text(leaf_value);
             xot.append(element, text_node)?;
 
-            let kind_attr = xot.add_name("kind");
-            xot.attributes_mut(element).insert(kind_attr, "string".to_string());
+            // Set kind attribute if explicitly specified; omit to let
+            // the renderer auto-detect (null, number, boolean, string).
+            if let Some(kind) = value_kind {
+                let kind_attr = xot.add_name("kind");
+                xot.attributes_mut(element).insert(kind_attr, kind.to_string());
+            }
         }
 
         xot.append(current, element)?;

@@ -10,13 +10,14 @@
 //! The expression is parsed into a tree, then flattened into (xpath, value)
 //! pairs which are applied as sequential upserts.
 
-use crate::xpath_upsert::{upsert, UpsertError};
+use crate::xpath_upsert::{upsert, upsert_typed, UpsertError};
 
 /// A single set operation: an XPath targeting a leaf node and its value.
+/// `value` is `None` for marker/null nodes, `Some(s)` for valued nodes.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SetOp {
     pub xpath: String,
-    pub value: String,
+    pub value: Option<String>,
 }
 
 /// Result of applying a declarative set expression.
@@ -92,13 +93,19 @@ pub fn declarative_set(
         });
     }
 
-    // Apply each set operation sequentially
+    // Apply each set operation sequentially.
+    // Valued ops use auto-detect kind (None) so numbers/booleans render natively.
+    // Marker ops (value=None) use "null" text with auto-detect → renders as null.
     let mut current_source = source.to_string();
     let mut descriptions = Vec::new();
     let mut ops_applied = 0;
 
     for op in &ops {
-        let result = upsert(&current_source, lang, &op.xpath, &op.value, None)?;
+        let (value_str, kind) = match &op.value {
+            Some(v) => (v.as_str(), None),              // auto-detect kind from text
+            None => ("null", Some("null")),              // explicit null marker
+        };
+        let result = upsert_typed(&current_source, lang, &op.xpath, value_str, None, kind)?;
         if result.source != current_source {
             ops_applied += 1;
             descriptions.push(result.description);
@@ -165,10 +172,10 @@ fn flatten(node: &PathNode, prefix: &str, ops: &mut Vec<SetOp>) {
             };
 
             if predicates.is_empty() {
-                // Bare leaf node — ensure it exists with empty value (marker)
+                // Bare leaf node — marker (null)
                 ops.push(SetOp {
                     xpath: current_path.clone(),
-                    value: String::new(),
+                    value: None,
                 });
             }
 
@@ -178,7 +185,7 @@ fn flatten(node: &PathNode, prefix: &str, ops: &mut Vec<SetOp>) {
                         let leaf_xpath = append_path(&current_path, path);
                         ops.push(SetOp {
                             xpath: leaf_xpath,
-                            value: value.clone(),
+                            value: Some(value.clone()),
                         });
                     }
                     Predicate::Structure(sub) => {
@@ -205,7 +212,7 @@ fn flatten(node: &PathNode, prefix: &str, ops: &mut Vec<SetOp>) {
                         if predicates.is_empty() && i == last_idx {
                             ops.push(SetOp {
                                 xpath: current.clone(),
-                                value: String::new(),
+                                value: None,
                             });
                         }
 
@@ -215,7 +222,7 @@ fn flatten(node: &PathNode, prefix: &str, ops: &mut Vec<SetOp>) {
                                     let leaf_xpath = append_path(&current, path);
                                     ops.push(SetOp {
                                         xpath: leaf_xpath,
-                                        value: value.clone(),
+                                        value: Some(value.clone()),
                                     });
                                 }
                                 Predicate::Structure(sub) => {
@@ -437,7 +444,7 @@ mod tests {
         let ops = parse_set_expr("database[host='localhost']").unwrap();
         assert_eq!(ops, vec![SetOp {
             xpath: "//database/host".into(),
-            value: "localhost".into(),
+            value: Some("localhost".into()),
         }]);
     }
 
@@ -445,8 +452,8 @@ mod tests {
     fn parse_multiple_predicates() {
         let ops = parse_set_expr("database[host='localhost'][port=5432]").unwrap();
         assert_eq!(ops, vec![
-            SetOp { xpath: "//database/host".into(), value: "localhost".into() },
-            SetOp { xpath: "//database/port".into(), value: "5432".into() },
+            SetOp { xpath: "//database/host".into(), value: Some("localhost".into()) },
+            SetOp { xpath: "//database/port".into(), value: Some("5432".into()) },
         ]);
     }
 
@@ -456,19 +463,19 @@ mod tests {
             "database[host='localhost'][user[name='admin'][password='secret']]"
         ).unwrap();
         assert_eq!(ops, vec![
-            SetOp { xpath: "//database/host".into(), value: "localhost".into() },
-            SetOp { xpath: "//database/user/name".into(), value: "admin".into() },
-            SetOp { xpath: "//database/user/password".into(), value: "secret".into() },
+            SetOp { xpath: "//database/host".into(), value: Some("localhost".into()) },
+            SetOp { xpath: "//database/user/name".into(), value: Some("admin".into()) },
+            SetOp { xpath: "//database/user/password".into(), value: Some("secret".into()) },
         ]);
     }
 
     #[test]
     fn parse_bare_path() {
-        // The terminal segment is a marker (empty value)
+        // The terminal segment is a marker (null)
         let ops = parse_set_expr("database/host").unwrap();
         assert_eq!(ops, vec![SetOp {
             xpath: "//database/host".into(),
-            value: "".into(),
+            value: None,
         }]);
     }
 
@@ -477,7 +484,7 @@ mod tests {
         let ops = parse_set_expr("database/host[port=8080]").unwrap();
         assert_eq!(ops, vec![SetOp {
             xpath: "//database/host/port".into(),
-            value: "8080".into(),
+            value: Some("8080".into()),
         }]);
     }
 
@@ -488,17 +495,17 @@ mod tests {
         ).unwrap();
         assert_eq!(ops, vec![SetOp {
             xpath: "//a/b/c/d".into(),
-            value: "deep".into(),
+            value: Some("deep".into()),
         }]);
     }
 
     #[test]
     fn parse_marker_node() {
-        // [sub[marker]] — marker is a bare leaf, should produce empty-value op
+        // [sub[marker]] — marker is a bare leaf, should produce null-value op
         let ops = parse_set_expr("parent[sub[marker]]").unwrap();
         assert_eq!(ops, vec![SetOp {
             xpath: "//parent/sub/marker".into(),
-            value: "".into(),
+            value: None,
         }]);
     }
 
@@ -506,8 +513,8 @@ mod tests {
     fn parse_marker_with_siblings() {
         let ops = parse_set_expr("config[enabled][name='test']").unwrap();
         assert_eq!(ops, vec![
-            SetOp { xpath: "//config/enabled".into(), value: "".into() },
-            SetOp { xpath: "//config/name".into(), value: "test".into() },
+            SetOp { xpath: "//config/enabled".into(), value: None },
+            SetOp { xpath: "//config/name".into(), value: Some("test".into()) },
         ]);
     }
 
@@ -516,7 +523,7 @@ mod tests {
         let ops = parse_set_expr(r#"db[host="localhost"]"#).unwrap();
         assert_eq!(ops, vec![SetOp {
             xpath: "//db/host".into(),
-            value: "localhost".into(),
+            value: Some("localhost".into()),
         }]);
     }
 
@@ -526,10 +533,10 @@ mod tests {
             "database[host='localhost'][port=1234][user[name='dbadmin'][password='1234']]"
         ).unwrap();
         assert_eq!(ops, vec![
-            SetOp { xpath: "//database/host".into(), value: "localhost".into() },
-            SetOp { xpath: "//database/port".into(), value: "1234".into() },
-            SetOp { xpath: "//database/user/name".into(), value: "dbadmin".into() },
-            SetOp { xpath: "//database/user/password".into(), value: "1234".into() },
+            SetOp { xpath: "//database/host".into(), value: Some("localhost".into()) },
+            SetOp { xpath: "//database/port".into(), value: Some("1234".into()) },
+            SetOp { xpath: "//database/user/name".into(), value: Some("dbadmin".into()) },
+            SetOp { xpath: "//database/user/password".into(), value: Some("1234".into()) },
         ]);
     }
 
@@ -554,7 +561,7 @@ mod tests {
         ).unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
         assert_eq!(parsed["database"]["host"], "localhost");
-        assert_eq!(parsed["database"]["port"], "5432");
+        assert_eq!(parsed["database"]["port"], 5432);  // auto-detected as number
         assert_eq!(result.ops_applied, 2);
     }
 
@@ -614,7 +621,7 @@ mod tests {
     fn declarative_set_bare_path_creates_marker() {
         let result = declarative_set("{}", "json", "database/host", None).unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
-        // Bare path creates structure — the node exists (value may be empty object or string)
-        assert!(!parsed["database"]["host"].is_null(), "source: {}", result.source);
+        // Bare path creates structure with null leaf (marker)
+        assert!(parsed["database"]["host"].is_null(), "expected null, source: {}", result.source);
     }
 }
