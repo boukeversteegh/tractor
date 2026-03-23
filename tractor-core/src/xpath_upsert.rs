@@ -272,8 +272,8 @@ fn insert_new(
     value: &str,
     mut result: XeeParseResult,
 ) -> Result<UpsertResult, UpsertError> {
-    // Parse the XPath into key steps
-    let key_path = xpath_to_key_path(xpath)?;
+    // Parse the XPath into key steps (bare names) and raw segments (with predicates)
+    let (key_path, raw_segments) = xpath_to_key_path(xpath)?;
     if key_path.is_empty() {
         return Err(UpsertError::NoInsertionPoint(
             "XPath resolves to empty path".into(),
@@ -301,7 +301,6 @@ fn insert_new(
     // Check that segments we need to *create* don't contain predicates —
     // predicates on existing ancestors are fine (the XPath engine resolves
     // them), but we can't materialise attributes/conditions on new nodes.
-    let raw_segments = xpath_raw_segments(xpath);
     for raw_seg in raw_segments.iter().skip(existing_depth) {
         if raw_seg.contains('[') {
             return Err(UpsertError::NoInsertionPoint(
@@ -525,13 +524,14 @@ fn add_nested_children(
 // XPath parsing
 // ---------------------------------------------------------------------------
 
-/// Parse an XPath into a simple key path (element names from root to leaf).
+/// Parse an XPath into paired key-path entries: bare element names (for tree
+/// walking) alongside the original raw segments (for predicate checking).
 ///
 /// Handles simple paths like `//name`, `//db/host`, `/Files/File/name`.
 /// Strips axis prefixes (`//`, `/`) and predicates (e.g. `[@attr='val']`).
-/// The returned names are bare element names suitable for tree walking.
-fn xpath_to_key_path(xpath: &str) -> Result<Vec<String>, UpsertError> {
+fn xpath_to_key_path(xpath: &str) -> Result<(Vec<String>, Vec<String>), UpsertError> {
     let mut keys = Vec::new();
+    let mut raw = Vec::new();
     let trimmed = xpath.trim();
 
     // Split on `/` and filter out empty segments and structural names
@@ -550,26 +550,11 @@ fn xpath_to_key_path(xpath: &str) -> Result<Vec<String>, UpsertError> {
 
         if !name.is_empty() && name != "*" {
             keys.push(name.to_string());
+            raw.push(segment.to_string());
         }
     }
 
-    Ok(keys)
-}
-
-/// Parse XPath segments and return the raw (un-stripped) segments, excluding
-/// structural names like `Files`/`File` and empty parts.
-fn xpath_raw_segments(xpath: &str) -> Vec<String> {
-    let mut segs = Vec::new();
-    for segment in xpath.trim().split('/') {
-        let segment = segment.trim();
-        if segment.is_empty() || segment == "Files" || segment == "File" {
-            continue;
-        }
-        if segment != "*" {
-            segs.push(segment.to_string());
-        }
-    }
-    segs
+    Ok((keys, raw))
 }
 
 
@@ -845,40 +830,31 @@ mod tests {
 
     #[test]
     fn xpath_to_key_path_simple() {
-        assert_eq!(xpath_to_key_path("//name").unwrap(), vec!["name"]);
+        let (keys, raw) = xpath_to_key_path("//name").unwrap();
+        assert_eq!(keys, vec!["name"]);
+        assert_eq!(raw, vec!["name"]);
     }
 
     #[test]
     fn xpath_to_key_path_nested() {
-        assert_eq!(
-            xpath_to_key_path("//db/host").unwrap(),
-            vec!["db", "host"]
-        );
+        let (keys, raw) = xpath_to_key_path("//db/host").unwrap();
+        assert_eq!(keys, vec!["db", "host"]);
+        assert_eq!(raw, vec!["db", "host"]);
     }
 
     #[test]
     fn xpath_to_key_path_strips_structural() {
-        assert_eq!(
-            xpath_to_key_path("/Files/File/name").unwrap(),
-            vec!["name"]
-        );
+        let (keys, _) = xpath_to_key_path("/Files/File/name").unwrap();
+        assert_eq!(keys, vec!["name"]);
     }
 
     #[test]
-    fn xpath_to_key_path_strips_predicates() {
-        // xpath_to_key_path strips predicates to get bare element names
-        assert_eq!(
-            xpath_to_key_path("//item[@type='x']/name").unwrap(),
-            vec!["item", "name"]
-        );
-    }
-
-    #[test]
-    fn xpath_raw_segments_preserves_predicates() {
-        assert_eq!(
-            xpath_raw_segments("//item[@type='x']/name"),
-            vec!["item[@type='x']", "name"]
-        );
+    fn xpath_to_key_path_with_predicates() {
+        let (keys, raw) = xpath_to_key_path("//item[@type='x']/name").unwrap();
+        // keys have predicates stripped for tree walking
+        assert_eq!(keys, vec!["item", "name"]);
+        // raw preserves predicates for later checking
+        assert_eq!(raw, vec!["item[@type='x']", "name"]);
     }
 
     #[test]
