@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use rayon::prelude::*;
 use tractor_core::{
-    XPathEngine, Match,
+    Match,
     SchemaCollector,
     output::{render_document, RenderOptions},
     parse_to_documents, parse_string_to_documents,
@@ -104,17 +104,7 @@ pub fn query_inline_source(
         source, lang, "<stdin>".to_string(), ctx.tree_mode, ctx.ignore_whitespace
     )?;
 
-    let engine = XPathEngine::new()
-        .with_verbose(ctx.verbose)
-        .with_ignore_whitespace(ctx.ignore_whitespace);
-
-    let matches = engine.query_documents(
-        &mut result.documents,
-        result.doc_handle,
-        xpath_expr,
-        result.source_lines.clone(),
-        &result.file_path,
-    )?;
+    let matches = result.query(xpath_expr)?;
 
     let matches = if let Some(limit) = ctx.limit {
         matches.into_iter().take(limit).collect()
@@ -160,16 +150,7 @@ pub fn query_files_batched(
                     }
                 };
 
-                let engine = XPathEngine::new()
-                    .with_verbose(ctx.verbose)
-                    .with_ignore_whitespace(ctx.ignore_whitespace);
-                match engine.query_documents(
-                    &mut result.documents,
-                    result.doc_handle,
-                    xpath_expr,
-                    result.source_lines.clone(),
-                    &result.file_path,
-                ) {
+                match result.query(xpath_expr) {
                     Ok(matches) => Some(matches),
                     Err(e) => {
                         if ctx.verbose {
@@ -242,17 +223,7 @@ pub fn run_debug(ctx: &RunContext, files: &[String], xpath_expr: &str) -> Result
             }
         };
 
-        let engine = XPathEngine::new()
-            .with_verbose(ctx.verbose)
-            .with_ignore_whitespace(ctx.ignore_whitespace);
-
-        match engine.query_documents(
-            &mut result.documents,
-            result.doc_handle,
-            xpath_expr,
-            result.source_lines.clone(),
-            &result.file_path,
-        ) {
+        match result.query(xpath_expr) {
             Ok(matches) if !matches.is_empty() => {
                 let matches: Vec<_> = if let Some(limit) = remaining_limit {
                     let take = limit.min(matches.len());

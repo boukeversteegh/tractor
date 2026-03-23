@@ -22,9 +22,8 @@ use crate::parser::{parse_string_to_documents, XeeParseResult};
 use crate::render::{self, RenderOptions};
 use crate::tree_mode::TreeMode;
 use crate::xpath::xot_node_to_xml_node;
-use crate::xpath::{XPathEngine, Match};
+use crate::xpath::Match;
 use crate::xot_transform::helpers::*;
-use std::sync::Arc;
 use xot::Xot;
 
 /// Result of an upsert operation.
@@ -99,15 +98,7 @@ pub fn update_only(
     .map_err(|e| UpsertError::Parse(e.to_string()))?;
 
     // Query with XPath
-    let engine = XPathEngine::new();
-    let existing = engine
-        .query_documents(
-            &mut result.documents,
-            result.doc_handle,
-            xpath,
-            Arc::new(vec![]),
-            "<update>",
-        )
+    let existing = result.query(xpath)
         .map_err(|e| UpsertError::Query(e.to_string()))?;
 
     if existing.is_empty() {
@@ -182,15 +173,7 @@ pub fn upsert_typed(
     .map_err(|e| UpsertError::Parse(e.to_string()))?;
 
     // Query with XPath to determine update vs insert
-    let engine = XPathEngine::new();
-    let existing = engine
-        .query_documents(
-            &mut result.documents,
-            result.doc_handle,
-            xpath,
-            Arc::new(vec![]),
-            "<upsert>",
-        )
+    let existing = result.query(xpath)
         .map_err(|e| UpsertError::Query(e.to_string()))?;
 
     if !existing.is_empty() {
@@ -306,7 +289,6 @@ fn insert_new(
     // Step 1: Use the real XPath engine to find the deepest matching prefix.
     // Try progressively shorter prefixes (from N-1 segments down to 1) until
     // one matches. This honours predicates, axes, and any valid XPath.
-    let engine = XPathEngine::new();
     let doc_node = result.documents.document_node(result.doc_handle)
         .ok_or_else(|| UpsertError::Parse("no document node".into()))?;
     let file_node = find_file_node(result.documents.xot(), doc_node)
@@ -324,14 +306,7 @@ fn insert_new(
             xpath_prefix,
             raw_segments[..depth].join("/"),
         );
-        let matches = engine
-            .query_documents(
-                &mut result.documents,
-                result.doc_handle,
-                &prefix_xpath,
-                Arc::new(vec![]),
-                "<upsert>",
-            )
+        let matches = result.query(&prefix_xpath)
             .unwrap_or_default();
 
         if let Some(matched) = matches.first() {
