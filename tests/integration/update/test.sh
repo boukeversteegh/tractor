@@ -82,42 +82,50 @@ else
     ((FAILED++))
 fi
 
-# --- Update with no matches does NOT create nodes ---
+# --- Update with no matches does NOT create nodes and fails ---
 cat > /tmp/tractor-update-test-nocreate.yaml << 'EOF'
 name: my-app
 EOF
 
-tractor update /tmp/tractor-update-test-nocreate.yaml -x "//database/host" --value "localhost" 2>/dev/null
-ACTUAL=$(cat /tmp/tractor-update-test-nocreate.yaml)
-EXPECTED='name: my-app'
-if [ "$ACTUAL" = "$EXPECTED" ]; then
-    echo "  ✓ update does not create missing nodes"
-    ((PASSED++))
-else
-    echo "  ✗ update does not create missing nodes"
-    echo "    expected: $EXPECTED"
-    echo "    actual: $ACTUAL"
+if tractor update /tmp/tractor-update-test-nocreate.yaml -x "//database/host" --value "localhost" 2>/dev/null; then
+    echo "  ✗ update with no match should fail"
     ((FAILED++))
+else
+    ACTUAL=$(cat /tmp/tractor-update-test-nocreate.yaml)
+    EXPECTED='name: my-app'
+    if [ "$ACTUAL" = "$EXPECTED" ]; then
+        echo "  ✓ update with no match fails and does not create nodes"
+        ((PASSED++))
+    else
+        echo "  ✗ update with no match fails but modified the file"
+        echo "    expected: $EXPECTED"
+        echo "    actual: $ACTUAL"
+        ((FAILED++))
+    fi
 fi
 
-# --- Update with partial path does NOT create leaf ---
+# --- Update with partial path does NOT create leaf and fails ---
 cat > /tmp/tractor-update-test-partial.yaml << 'EOF'
 database:
   host: localhost
 EOF
 
-tractor update /tmp/tractor-update-test-partial.yaml -x "//database/port" --value "5432" 2>/dev/null
-ACTUAL=$(cat /tmp/tractor-update-test-partial.yaml)
-EXPECTED='database:
-  host: localhost'
-if [ "$ACTUAL" = "$EXPECTED" ]; then
-    echo "  ✓ update does not create leaf under existing parent"
-    ((PASSED++))
-else
-    echo "  ✗ update does not create leaf under existing parent"
-    echo "    expected: $EXPECTED"
-    echo "    actual: $ACTUAL"
+if tractor update /tmp/tractor-update-test-partial.yaml -x "//database/port" --value "5432" 2>/dev/null; then
+    echo "  ✗ update with partial path should fail"
     ((FAILED++))
+else
+    ACTUAL=$(cat /tmp/tractor-update-test-partial.yaml)
+    EXPECTED='database:
+  host: localhost'
+    if [ "$ACTUAL" = "$EXPECTED" ]; then
+        echo "  ✓ update with partial path fails and does not create leaf"
+        ((PASSED++))
+    else
+        echo "  ✗ update with partial path fails but modified the file"
+        echo "    expected: $EXPECTED"
+        echo "    actual: $ACTUAL"
+        ((FAILED++))
+    fi
 fi
 
 echo ""
@@ -151,26 +159,30 @@ else
     ((FAILED++))
 fi
 
-# --- JSON update with no match does NOT create ---
+# --- JSON update with no match does NOT create and fails ---
 cat > /tmp/tractor-update-test-nocreate.json << 'EOF'
 {
   "name": "my-app"
 }
 EOF
 
-tractor update /tmp/tractor-update-test-nocreate.json -x "//database/host" --value "localhost" 2>/dev/null
-ACTUAL=$(cat /tmp/tractor-update-test-nocreate.json)
-EXPECTED='{
+if tractor update /tmp/tractor-update-test-nocreate.json -x "//database/host" --value "localhost" 2>/dev/null; then
+    echo "  ✗ JSON update with no match should fail"
+    ((FAILED++))
+else
+    ACTUAL=$(cat /tmp/tractor-update-test-nocreate.json)
+    EXPECTED='{
   "name": "my-app"
 }'
-if [ "$ACTUAL" = "$EXPECTED" ]; then
-    echo "  ✓ JSON update does not create missing nodes"
-    ((PASSED++))
-else
-    echo "  ✗ JSON update does not create missing nodes"
-    echo "    expected: $EXPECTED"
-    echo "    actual: $ACTUAL"
-    ((FAILED++))
+    if [ "$ACTUAL" = "$EXPECTED" ]; then
+        echo "  ✓ JSON update with no match fails and does not create nodes"
+        ((PASSED++))
+    else
+        echo "  ✗ JSON update with no match fails but modified the file"
+        echo "    expected: $EXPECTED"
+        echo "    actual: $ACTUAL"
+        ((FAILED++))
+    fi
 fi
 
 echo ""
@@ -194,13 +206,13 @@ else
     ((PASSED++))
 fi
 
-# --- Update with no matches should succeed (exit 0) ---
+# --- Update with no matches should fail ---
 if tractor update /tmp/tractor-update-test.json -x "//nonexistent" --value "x" 2>/dev/null; then
-    echo "  ✓ update with no matches succeeds"
-    ((PASSED++))
-else
-    echo "  ✗ update with no matches should succeed"
+    echo "  ✗ update with no matches should fail"
     ((FAILED++))
+else
+    echo "  ✓ update with no matches fails"
+    ((PASSED++))
 fi
 
 # Cleanup

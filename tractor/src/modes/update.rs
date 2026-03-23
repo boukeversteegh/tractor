@@ -57,6 +57,10 @@ pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
         total_ops += summary.replacements_made;
     }
 
+    if total_ops == 0 {
+        return Err("update matched no nodes".into());
+    }
+
     eprintln!(
         "Updated {} match{} in {} file{}",
         total_ops,
