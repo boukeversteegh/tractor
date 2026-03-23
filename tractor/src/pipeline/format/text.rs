@@ -17,6 +17,29 @@ use super::options::{ViewField, ViewSet};
 pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions) -> String {
     let mut out = String::new();
 
+    // Set stdout mode: groups with output field — render group by group.
+    // Per-match info (file:line: status) is printed before each group's output.
+    if matches!(report.kind, ReportKind::Set) && view.has(ViewField::Output) {
+        if let Some(ref groups) = report.groups {
+            for group in groups {
+                // Per-match lines (file:line: status etc.) if location/status in view
+                let has_location = view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
+                let has_per_match = has_location || view.has(ViewField::Status);
+                if has_per_match {
+                    for rm in &group.matches {
+                        append_match(&mut out, rm, view, render_opts, Some(&group.file));
+                    }
+                }
+                // Group-level output (the full modified file content)
+                if let Some(ref content) = group.output {
+                    out.push_str(content);
+                }
+            }
+        }
+        // No summary for stdout output mode
+        return out;
+    }
+
     // Collect matches with optional group file — groups take priority
     let matches: Vec<(Option<&str>, &ReportMatch)> = if let Some(ref groups) = report.groups {
         groups.iter().flat_map(|g| g.matches.iter().map(move |rm| (Some(g.file.as_str()), rm))).collect()
@@ -29,6 +52,7 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
     // In message-template mode all matches render as single lines — no separator.
     let message_mode = matches.first().map_or(false, |(_, rm)| rm.message.is_some());
     let has_location = view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
+    // Status is now inline on the location line, so it doesn't produce an extra line
     let single_line_fields = [ViewField::Value, ViewField::Reason, ViewField::Severity]
         .iter().filter(|&&f| view.has(f)).count();
     let needs_separator = !message_mode && (
@@ -46,10 +70,11 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         append_match(&mut out, rm, view, render_opts, *group_file);
     }
 
-    // Summary: always for check/test; gated on -v summary or -v query for query
+    // Summary: always for check/test/set (unless output view active, handled above);
+    // gated on -v summary or -v query for query
     let show_summary = match report.kind {
         ReportKind::Query => view.has(ViewField::Summary) || view.has(ViewField::Query),
-        ReportKind::Check | ReportKind::Test => true,
+        ReportKind::Check | ReportKind::Test | ReportKind::Set => true,
     };
     if show_summary {
         if let Some(ref summary) = report.summary {
@@ -74,6 +99,7 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
     }
 
     // Location prefix: file, line, and/or column — combined on one line as file:line:col
+    // Status is appended inline when both a location and a status are present (GCC-style).
     if view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column) {
         let mut loc = String::new();
         if view.has(ViewField::File) {
@@ -87,6 +113,13 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
         if view.has(ViewField::Column) {
             loc.push(':');
             loc.push_str(&rm.column.to_string());
+        }
+        // Append status inline on the location line (GCC-style: file:line: status)
+        if view.has(ViewField::Status) {
+            if let Some(ref status) = rm.status {
+                loc.push_str(": ");
+                loc.push_str(status);
+            }
         }
         out.push_str(&loc);
         out.push('\n');
@@ -144,6 +177,24 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
                     out.push('\n');
                 }
             }
+            ViewField::Status => {
+                // Status is printed inline on the location line when a location is present.
+                // Only print it as a standalone line if no location fields are in view.
+                let has_location = view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
+                if !has_location {
+                    if let Some(ref status) = rm.status {
+                        out.push_str(status);
+                        out.push('\n');
+                    }
+                }
+            }
+            ViewField::Output => {
+                // Output is at group level for set reports; nothing to print here.
+                // (If a match has output directly, print it as a fallback.)
+                if let Some(ref content) = rm.output {
+                    out.push_str(content);
+                }
+            }
             // File/Line/Column handled above as combined location line
             // Summary/Count/Schema handled outside match loop
             _ => {}
@@ -184,6 +235,23 @@ fn format_summary(summary: &Summary, kind: ReportKind) -> String {
         }
         ReportKind::Test => {
             if summary.passed { "passed\n".to_string() } else { "failed\n".to_string() }
+        }
+        ReportKind::Set => {
+            let updated = summary.errors; // we reuse errors field for "updated" count
+            let unchanged = summary.warnings; // we reuse warnings field for "unchanged" count
+            let f = summary.files_affected;
+            if updated == 0 && unchanged == 0 {
+                "No matches\n".to_string()
+            } else if unchanged == 0 {
+                format!("Set {} match{} in {} file{}\n",
+                    updated, if updated == 1 { "" } else { "es" },
+                    f, if f == 1 { "" } else { "s" })
+            } else {
+                format!("Set {} match{} in {} file{} ({} unchanged)\n",
+                    updated, if updated == 1 { "" } else { "es" },
+                    f, if f == 1 { "" } else { "s" },
+                    unchanged)
+            }
         }
     };
     out.push_str(&count_line);

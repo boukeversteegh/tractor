@@ -1,0 +1,19 @@
+{
+  "summary": {
+    "total": 1,
+    "files": 1,
+    "updated": 1,
+    "unchanged": 0
+  },
+  "groups": [
+    {
+      "file": "tests/integration/formats/set/sample.yaml",
+      "matches": [
+        {
+          "line": 2,
+          "status": "updated"
+        }
+      ]
+    }
+  ]
+}

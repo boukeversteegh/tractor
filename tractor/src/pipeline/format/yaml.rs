@@ -15,13 +15,23 @@ pub fn render_yaml_report(report: &Report, view: &ViewSet, render_opts: &RenderO
     };
     if show_summary {
         if let Some(ref summary) = report.summary {
-            root.insert("summary".into(), serde_json::json!({
-                "passed":   summary.passed,
-                "total":    summary.total,
-                "files":    summary.files_affected,
-                "errors":   summary.errors,
-                "warnings": summary.warnings,
-            }));
+            let summary_val = if matches!(report.kind, ReportKind::Set) {
+                serde_json::json!({
+                    "total":     summary.total,
+                    "files":     summary.files_affected,
+                    "updated":   summary.errors,
+                    "unchanged": summary.warnings,
+                })
+            } else {
+                serde_json::json!({
+                    "passed":   summary.passed,
+                    "total":    summary.total,
+                    "files":    summary.files_affected,
+                    "errors":   summary.errors,
+                    "warnings": summary.warnings,
+                })
+            };
+            root.insert("summary".into(), summary_val);
         }
     }
 
@@ -37,8 +47,22 @@ pub fn render_yaml_report(report: &Report, view: &ViewSet, render_opts: &RenderO
             let group_matches: Vec<Value> = g.matches.iter()
                 // file is on the group — omit it from individual matches
                 .map(|rm| match_to_value(rm, view, render_opts, GroupBy::File))
+                // skip empty match objects (e.g. stdout mode with only Output in view)
+                .filter(|v| !v.as_object().map(|o| o.is_empty()).unwrap_or(false))
                 .collect();
-            serde_json::json!({ "file": g.file, "matches": group_matches })
+            let mut group_obj = serde_json::Map::new();
+            if !g.file.is_empty() {
+                group_obj.insert("file".into(), serde_json::json!(g.file));
+            }
+            if view.has(ViewField::Output) {
+                if let Some(ref content) = g.output {
+                    group_obj.insert("output".into(), serde_json::json!(content));
+                }
+            }
+            if !group_matches.is_empty() {
+                group_obj.insert("matches".into(), Value::Array(group_matches));
+            }
+            Value::Object(group_obj)
         }).collect();
         root.insert("groups".into(), Value::Array(groups_yaml));
     }

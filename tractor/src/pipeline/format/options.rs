@@ -59,6 +59,10 @@ pub enum ViewField {
     Count,
     Schema,
     Query,
+    /// Set-command status: "updated" or "unchanged" (default for set mode).
+    Status,
+    /// Full modified file/string content (set command stdout mode).
+    Output,
 }
 
 impl ViewField {
@@ -77,12 +81,14 @@ impl ViewField {
             "count"        => Ok(ViewField::Count),
             "schema"       => Ok(ViewField::Schema),
             "query"        => Ok(ViewField::Query),
+            "status"       => Ok(ViewField::Status),
+            "output"       => Ok(ViewField::Output),
             "gcc" | "github" => Err(format!(
                 "'{}' is a format, not a view. Use -f {} instead of -v {}", s, s, s,
             )),
             _ => Err(format!(
                 "invalid view '{}'. Valid views: tree, value, source, lines, file, line, column, \
-                 reason, severity, summary, count, schema, query",
+                 reason, severity, summary, count, schema, query, status, output",
                 s,
             )),
         }
@@ -121,6 +127,18 @@ impl ViewSet {
         if !self.has(field) {
             self.fields.push(field);
         }
+    }
+
+    /// Returns true if the view contains any per-match content fields
+    /// (fields that produce content on individual match entries, not groups).
+    pub fn has_per_match_fields(&self) -> bool {
+        self.has(ViewField::Status)
+            || self.has(ViewField::Value)
+            || self.has(ViewField::Source)
+            || self.has(ViewField::Lines)
+            || self.has(ViewField::Reason)
+            || self.has(ViewField::Severity)
+            || self.has(ViewField::Tree)
     }
 }
 

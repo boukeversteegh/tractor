@@ -12,4 +12,4 @@ pub use matcher::{
     run_debug,
     match_to_report_match,
 };
-pub use format::{render_check_report, render_test_report};
+pub use format::{render_check_report, render_test_report, render_set_report};

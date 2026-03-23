@@ -114,6 +114,40 @@ else
 fi
 
 echo ""
+echo "Set (stdout mode):"
+
+# --- stdin with --lang writes to stdout (implicit stdout mode) ---
+RESULT=$(echo "name: test" | tractor set -l yaml -x "//name" --value "newvalue" 2>/dev/null)
+EXPECTED="name: newvalue"
+if [ "$RESULT" = "$EXPECTED" ]; then
+    echo "  ✓ set with stdin writes to stdout (implicit stdout mode)"
+    ((PASSED++))
+else
+    echo "  ✗ set with stdin should write to stdout"
+    echo "    expected: $EXPECTED"
+    echo "    actual: $RESULT"
+    ((FAILED++))
+fi
+
+# --- explicit --stdout flag writes to stdout without modifying file ---
+cat > /tmp/tractor-set-stdout.yaml << 'EOF'
+host: localhost
+EOF
+
+RESULT=$(tractor set /tmp/tractor-set-stdout.yaml -x "//host" --value "example.com" --stdout 2>/dev/null)
+ORIGINAL=$(cat /tmp/tractor-set-stdout.yaml)
+if [ "$RESULT" = "host: example.com" ] && [ "$ORIGINAL" = "host: localhost" ]; then
+    echo "  ✓ --stdout outputs to stdout without modifying file"
+    ((PASSED++))
+else
+    echo "  ✗ --stdout should output to stdout without modifying file"
+    echo "    result: $RESULT"
+    echo "    original (should be unchanged): $ORIGINAL"
+    ((FAILED++))
+fi
+rm -f /tmp/tractor-set-stdout.yaml
+
+echo ""
 echo "Set (error cases):"
 
 # --- Set without XPath should fail ---
@@ -122,15 +156,6 @@ if tractor set /tmp/tractor-set-test.json --value "foo" 2>/dev/null; then
     ((FAILED++))
 else
     echo "  ✓ set without xpath fails"
-    ((PASSED++))
-fi
-
-# --- Set with stdin should fail ---
-if echo "name: test" | tractor set --lang yaml -x "//name" --value "name: new" 2>/dev/null; then
-    echo "  ✗ set with stdin should fail"
-    ((FAILED++))
-else
-    echo "  ✓ set with stdin fails"
     ((PASSED++))
 fi
 

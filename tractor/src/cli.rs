@@ -333,6 +333,27 @@ pub struct SetArgs {
     /// Value to set matched nodes to (optional when path expression contains values)
     #[arg(long = "value", help_heading = "Set")]
     pub value: Option<String>,
+
+    /// Write output to stdout instead of modifying files in-place
+    #[arg(long = "stdout", help_heading = "Set")]
+    pub stdout: bool,
+
+    /// Report view [default: file,line,status]
+    #[arg(short = 'v', long = "view", help_heading = "View",
+        long_help = "\
+Report view [default: file,line,status]
+  status    Whether each match was updated or unchanged (default)
+  output    Full modified content (used with --stdout)
+  file      File path of the match
+  line      Line number of the match
+  value     Original value of the matched node
+  source    Exact matched source text
+  lines     Full source lines containing each match")]
+    pub view: Option<String>,
+
+    /// Output format: text (default), json, yaml, xml
+    #[arg(short = 'f', long = "format", default_value = "text", help_heading = "Format")]
+    pub format: String,
 }
 
 /// Update mode: modify only existing matched node values (no creation)

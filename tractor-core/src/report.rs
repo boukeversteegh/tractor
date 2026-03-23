@@ -67,6 +67,10 @@ pub struct ReportMatch {
     pub message:  Option<String>,
     /// Rule identifier for multi-rule reports (future: `--rules` flag).
     pub rule_id:  Option<String>,
+    /// Set-command status: "updated" or "unchanged".
+    pub status:   Option<String>,
+    /// Full modified file content, used by the set command's stdout mode.
+    pub output:   Option<String>,
 }
 
 impl Serialize for ReportMatch {
@@ -78,7 +82,9 @@ impl Serialize for ReportMatch {
             + self.reason.as_ref().map_or(0, |_| 1)
             + self.severity.as_ref().map_or(0, |_| 1)
             + self.message.as_ref().map_or(0, |_| 1)
-            + self.rule_id.as_ref().map_or(0, |_| 1);
+            + self.rule_id.as_ref().map_or(0, |_| 1)
+            + self.status.as_ref().map_or(0, |_| 1)
+            + self.output.as_ref().map_or(0, |_| 1);
         let has_file = !self.file.is_empty();
         let core_count = if has_file { 5 } else { 4 };
         let mut map = serializer.serialize_map(Some(core_count + optional_count))?;
@@ -99,6 +105,8 @@ impl Serialize for ReportMatch {
         if let Some(ref v) = self.severity { map.serialize_entry("severity", v)?; }
         if let Some(ref v) = self.message  { map.serialize_entry("message", v)?; }
         if let Some(ref v) = self.rule_id  { map.serialize_entry("rule_id", v)?; }
+        if let Some(ref v) = self.status   { map.serialize_entry("status", v)?; }
+        if let Some(ref v) = self.output   { map.serialize_entry("output", v)?; }
 
         map.end()
     }
@@ -147,6 +155,7 @@ pub enum ReportKind {
     Query,
     Check,
     Test,
+    Set,
 }
 
 /// Matches grouped by source file.
@@ -154,6 +163,9 @@ pub enum ReportKind {
 pub struct FileGroup {
     pub file: String,
     pub matches: Vec<ReportMatch>,
+    /// Full modified file content for set stdout mode — placed at group (file) level.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub output: Option<String>,
 }
 
 /// The normalized output of a tractor command.
@@ -172,6 +184,10 @@ pub struct Report {
 }
 
 impl Report {
+    pub fn set(matches: Vec<ReportMatch>, summary: Summary) -> Self {
+        Report { kind: ReportKind::Set, matches, summary: Some(summary), groups: None }
+    }
+
     pub fn query(matches: Vec<ReportMatch>, summary: Summary) -> Self {
         Report { kind: ReportKind::Query, matches, summary: Some(summary), groups: None }
     }
@@ -199,13 +215,27 @@ impl Report {
         for mut rm in self.matches.drain(..) {
             let file = normalize_path(&rm.file);
             let idx = file_index.entry(file.clone()).or_insert_with(|| {
-                groups.push(FileGroup { file: file.clone(), matches: Vec::new() });
+                groups.push(FileGroup { file: file.clone(), matches: Vec::new(), output: None });
                 groups.len() - 1
             });
             rm.file = String::new();
             groups[*idx].matches.push(rm);
         }
         self.groups = Some(groups);
+        self
+    }
+
+    /// Attach pre-computed file outputs to groups (set stdout mode).
+    /// Must be called after `with_groups()`. Groups whose file is not in `outputs`
+    /// are left with `output = None`.
+    pub fn with_file_outputs(mut self, outputs: &std::collections::HashMap<String, String>) -> Self {
+        if let Some(ref mut groups) = self.groups {
+            for group in groups.iter_mut() {
+                if let Some(content) = outputs.get(&group.file) {
+                    group.output = Some(content.clone());
+                }
+            }
+        }
         self
     }
 }
@@ -229,6 +259,8 @@ mod tests {
             severity: None,
             message: None,
             rule_id: None,
+            status: None,
+            output: None,
         }
     }
 
@@ -248,6 +280,8 @@ mod tests {
             severity: Some(Severity::Error),
             message: None,
             rule_id: None,
+            status: None,
+            output: None,
         };
         let m2 = ReportMatch {
             file: "src/lib.rs".to_string(),
@@ -263,6 +297,8 @@ mod tests {
             severity: Some(Severity::Warning),
             message: None,
             rule_id: None,
+            status: None,
+            output: None,
         };
         let summary = Summary {
             passed: false,
