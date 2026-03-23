@@ -298,6 +298,21 @@ fn insert_new(
         ));
     }
 
+    // Check that segments we need to *create* don't contain predicates —
+    // predicates on existing ancestors are fine (the XPath engine resolves
+    // them), but we can't materialise attributes/conditions on new nodes.
+    let raw_segments = xpath_raw_segments(xpath);
+    for raw_seg in raw_segments.iter().skip(existing_depth) {
+        if raw_seg.contains('[') {
+            return Err(UpsertError::NoInsertionPoint(
+                format!(
+                    "cannot insert: segment '{}' contains a predicate which cannot be applied during node creation",
+                    raw_seg,
+                ),
+            ));
+        }
+    }
+
     // Record the splice node's original span.
     // When existing_depth == 0, the splice node is the File container (the whole
     // document), so the entire source is replaced with the full re-render.
@@ -513,8 +528,8 @@ fn add_nested_children(
 /// Parse an XPath into a simple key path (element names from root to leaf).
 ///
 /// Handles simple paths like `//name`, `//db/host`, `/Files/File/name`.
-/// Strips axis prefixes (`//`, `/`). Returns an error if predicates are
-/// present, since the insert path cannot honour them.
+/// Strips axis prefixes (`//`, `/`) and predicates (e.g. `[@attr='val']`).
+/// The returned names are bare element names suitable for tree walking.
 fn xpath_to_key_path(xpath: &str) -> Result<Vec<String>, UpsertError> {
     let mut keys = Vec::new();
     let trimmed = xpath.trim();
@@ -526,22 +541,35 @@ fn xpath_to_key_path(xpath: &str) -> Result<Vec<String>, UpsertError> {
             continue;
         }
 
-        // Reject predicates — insert cannot honour them
-        if segment.contains('[') {
-            return Err(UpsertError::NoInsertionPoint(
-                format!(
-                    "cannot insert: XPath contains predicate '{}' which cannot be applied during node creation",
-                    segment,
-                ),
-            ));
-        }
+        // Strip predicates: `name[@attr='val']` → `name`
+        let name = if let Some(bracket_pos) = segment.find('[') {
+            &segment[..bracket_pos]
+        } else {
+            segment
+        };
 
-        if !segment.is_empty() && segment != "*" {
-            keys.push(segment.to_string());
+        if !name.is_empty() && name != "*" {
+            keys.push(name.to_string());
         }
     }
 
     Ok(keys)
+}
+
+/// Parse XPath segments and return the raw (un-stripped) segments, excluding
+/// structural names like `Files`/`File` and empty parts.
+fn xpath_raw_segments(xpath: &str) -> Vec<String> {
+    let mut segs = Vec::new();
+    for segment in xpath.trim().split('/') {
+        let segment = segment.trim();
+        if segment.is_empty() || segment == "Files" || segment == "File" {
+            continue;
+        }
+        if segment != "*" {
+            segs.push(segment.to_string());
+        }
+    }
+    segs
 }
 
 
@@ -818,10 +846,20 @@ mod tests {
     }
 
     #[test]
-    fn xpath_to_key_path_rejects_predicates() {
-        let result = xpath_to_key_path("//item[@type='x']/name");
-        assert!(result.is_err(), "predicates should be rejected during insert");
-        assert!(result.unwrap_err().to_string().contains("predicate"));
+    fn xpath_to_key_path_strips_predicates() {
+        // xpath_to_key_path strips predicates to get bare element names
+        assert_eq!(
+            xpath_to_key_path("//item[@type='x']/name").unwrap(),
+            vec!["item", "name"]
+        );
+    }
+
+    #[test]
+    fn xpath_raw_segments_preserves_predicates() {
+        assert_eq!(
+            xpath_raw_segments("//item[@type='x']/name"),
+            vec!["item[@type='x']", "name"]
+        );
     }
 
     #[test]
