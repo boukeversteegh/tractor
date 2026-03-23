@@ -95,7 +95,7 @@ cat > /tmp/tractor-set-test.json << 'EOF'
 }
 EOF
 
-tractor set /tmp/tractor-set-test.json -x "//database/host" --value '"db.example.com"' 2>/dev/null
+tractor set /tmp/tractor-set-test.json -x "//database/host" --value db.example.com 2>/dev/null
 ACTUAL=$(cat /tmp/tractor-set-test.json)
 EXPECTED='{
   "database": {

@@ -87,8 +87,10 @@ pub enum Command {
     Check(CheckArgs),
     /// Test expectations against match counts
     Test(TestArgs),
-    /// Set matched node values (modify files in-place)
+    /// Set matched node values (modify files in-place, create missing nodes)
     Set(SetArgs),
+    /// Update matched node values (modify files in-place, skip if not found)
+    Update(UpdateArgs),
     /// [EXPERIMENTAL] Render XML AST back to source code
     Render(RenderArgs),
 }
@@ -312,18 +314,25 @@ Report view [default: tree]
 }
 
 /// Set mode: modify matched node values in-place
+///
+/// Examples:
+///   tractor set config.yaml -x "//database/host" --value "localhost"
+///   tractor set config.yaml "database[host='localhost'][port=5432]"
+///   tractor set config.yaml "database/host" --value "localhost"
 #[derive(Args, Debug)]
 pub struct SetArgs {
-    /// Files to process (supports glob patterns like "src/**/*.cs")
+    /// Files to process and optional path expression.
+    /// When -x is not given, the last argument that isn't an existing file
+    /// is treated as the path expression.
     #[arg()]
-    pub files: Vec<String>,
+    pub args: Vec<String>,
 
     #[command(flatten)]
     pub shared: SharedArgs,
 
-    /// Value to set matched nodes to
+    /// Value to set matched nodes to (optional when path expression contains values)
     #[arg(long = "value", help_heading = "Set")]
-    pub value: String,
+    pub value: Option<String>,
 
     /// Write output to stdout instead of modifying files in-place
     #[arg(long = "stdout", help_heading = "Set")]
@@ -345,6 +354,21 @@ Report view [default: file,line,status]
     /// Output format: text (default), json, yaml, xml
     #[arg(short = 'f', long = "format", default_value = "text", help_heading = "Format")]
     pub format: String,
+}
+
+/// Update mode: modify only existing matched node values (no creation)
+#[derive(Args, Debug)]
+pub struct UpdateArgs {
+    /// Files to process (supports glob patterns like "src/**/*.cs")
+    #[arg()]
+    pub files: Vec<String>,
+
+    #[command(flatten)]
+    pub shared: SharedArgs,
+
+    /// Value to set matched nodes to
+    #[arg(long = "value", help_heading = "Update")]
+    pub value: String,
 }
 
 /// Render mode: convert XML AST back to source code
