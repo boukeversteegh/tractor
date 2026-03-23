@@ -20,6 +20,8 @@ pub mod xot_builder;
 pub mod xot_transform;
 #[cfg(feature = "native")]
 pub mod xpath_upsert;
+#[cfg(feature = "native")]
+pub mod declarative_set;
 pub mod report;
 pub mod tree_mode;
 

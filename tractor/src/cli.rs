@@ -314,18 +314,25 @@ Report view [default: tree]
 }
 
 /// Set mode: modify matched node values in-place
+///
+/// Examples:
+///   tractor set config.yaml -x "//database/host" --value "localhost"
+///   tractor set config.yaml "database[host='localhost'][port=5432]"
+///   tractor set config.yaml "database/host" --value "localhost"
 #[derive(Args, Debug)]
 pub struct SetArgs {
-    /// Files to process (supports glob patterns like "src/**/*.cs")
+    /// Files to process and optional path expression.
+    /// When -x is not given, the last argument that isn't an existing file
+    /// is treated as the path expression.
     #[arg()]
-    pub files: Vec<String>,
+    pub args: Vec<String>,
 
     #[command(flatten)]
     pub shared: SharedArgs,
 
-    /// Value to set matched nodes to
+    /// Value to set matched nodes to (optional when path expression contains values)
     #[arg(long = "value", help_heading = "Set")]
-    pub value: String,
+    pub value: Option<String>,
 }
 
 /// Update mode: modify only existing matched node values (no creation)
