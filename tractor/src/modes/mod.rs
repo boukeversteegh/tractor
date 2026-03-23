@@ -3,3 +3,4 @@ pub mod query;
 pub mod render;
 pub mod set;
 pub mod test;
+pub mod update;

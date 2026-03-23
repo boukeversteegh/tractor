@@ -62,6 +62,72 @@ pub enum UpsertError {
     Query(String),
 }
 
+/// Update-only: modify existing matched nodes without creating new structure.
+///
+/// Like [`upsert`], but if the XPath does not match any existing nodes, no
+/// changes are made (no intermediate nodes are created). Returns an
+/// `UpsertResult` with `matches_updated == 0` when nothing matched.
+pub fn update_only(
+    source: &str,
+    lang: &str,
+    xpath: &str,
+    value: &str,
+    limit: Option<usize>,
+) -> Result<UpsertResult, UpsertError> {
+    // Verify the language has a renderer
+    let test_render = render::render(
+        &crate::xpath::XmlNode::Element {
+            name: "test".to_string(),
+            attributes: vec![],
+            children: vec![],
+        },
+        lang,
+        &RenderOptions::default(),
+    );
+    if let Err(render::RenderError::UnsupportedLanguage(_)) = test_render {
+        return Err(UpsertError::UnsupportedLanguage(lang.to_string()));
+    }
+
+    // Parse source into data tree
+    let mut result = parse_string_to_documents(
+        source,
+        lang,
+        "<update>".to_string(),
+        Some(TreeMode::Data),
+        false,
+    )
+    .map_err(|e| UpsertError::Parse(e.to_string()))?;
+
+    // Query with XPath
+    let engine = XPathEngine::new();
+    let existing = engine
+        .query_documents(
+            &mut result.documents,
+            result.doc_handle,
+            xpath,
+            Arc::new(vec![]),
+            "<update>",
+        )
+        .map_err(|e| UpsertError::Query(e.to_string()))?;
+
+    if existing.is_empty() {
+        // No matches — return unchanged source, zero updates
+        return Ok(UpsertResult {
+            source: source.to_string(),
+            inserted: false,
+            matches_updated: 0,
+            description: "no matches found".to_string(),
+        });
+    }
+
+    let matches = if let Some(n) = limit {
+        &existing[..n.min(existing.len())]
+    } else {
+        &existing
+    };
+    update_existing(source, lang, value, matches, result)
+}
+
 /// Upsert a value into a source string at the path given by an XPath expression.
 ///
 /// If the XPath already matches an element, its text content is replaced with
@@ -911,6 +977,119 @@ mod tests {
         let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
         assert_eq!(parsed["name"], "Alice");
         assert_eq!(parsed["age"], "30");
+    }
+
+    // ---------------------------------------------------------------------------
+    // update_only tests
+    // ---------------------------------------------------------------------------
+
+    #[test]
+    fn update_only_existing_string() {
+        let source = r#"{"name": "Alice", "age": 30}"#;
+        let result = update_only(source, "json", "//name", "Bob", None).unwrap();
+        assert!(!result.inserted);
+        assert_eq!(result.matches_updated, 1);
+        assert!(result.source.contains("Bob"));
+        assert!(result.source.contains("30"));
+    }
+
+    #[test]
+    fn update_only_no_match_returns_unchanged() {
+        let source = r#"{"name": "Alice"}"#;
+        let result = update_only(source, "json", "//nonexistent", "value", None).unwrap();
+        assert!(!result.inserted);
+        assert_eq!(result.matches_updated, 0);
+        assert_eq!(result.source, source, "source should be unchanged when no match");
+    }
+
+    #[test]
+    fn update_only_does_not_create_missing_path() {
+        let source = r#"{"name": "Alice"}"#;
+        let result = update_only(source, "json", "//db/host", "localhost", None).unwrap();
+        assert!(!result.inserted);
+        assert_eq!(result.matches_updated, 0);
+        assert_eq!(result.source, source, "should not create //db/host");
+        // Verify no db key was added
+        let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
+        assert!(parsed.get("db").is_none(), "db key should not exist");
+    }
+
+    #[test]
+    fn update_only_multiple_matches() {
+        let source = r#"{"items": [{"val": 1}, {"val": 2}, {"val": 3}]}"#;
+        let result = update_only(source, "json", "//items/val", "99", None).unwrap();
+        assert!(!result.inserted);
+        assert_eq!(result.matches_updated, 3);
+        let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
+        for item in parsed["items"].as_array().unwrap() {
+            assert_eq!(item["val"], 99);
+        }
+    }
+
+    #[test]
+    fn update_only_respects_limit() {
+        let source = r#"{"items": [{"val": 1}, {"val": 2}, {"val": 3}]}"#;
+        let result = update_only(source, "json", "//items/val", "99", Some(1)).unwrap();
+        assert!(!result.inserted);
+        assert_eq!(result.matches_updated, 1);
+        let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
+        let vals: Vec<_> = parsed["items"].as_array().unwrap()
+            .iter().map(|i| i["val"].as_i64().unwrap()).collect();
+        assert_eq!(vals[0], 99, "first should be updated");
+        // At least one should remain unchanged
+        assert!(vals[1] != 99 || vals[2] != 99, "limit should prevent updating all");
+    }
+
+    #[test]
+    fn update_only_unsupported_language() {
+        let result = update_only("{}", "brainfuck", "//x", "1", None);
+        assert!(matches!(result.unwrap_err(), UpsertError::UnsupportedLanguage(_)));
+    }
+
+    #[test]
+    fn yaml_update_only_existing() {
+        let source = "name: Alice\nage: 30\n";
+        let result = update_only(source, "yaml", "//name", "Bob", None).unwrap();
+        assert!(!result.inserted);
+        assert_eq!(result.matches_updated, 1);
+        assert!(result.source.contains("Bob"));
+        assert!(result.source.contains("age: 30"));
+    }
+
+    #[test]
+    fn yaml_update_only_no_match() {
+        let source = "name: Alice\n";
+        let result = update_only(source, "yaml", "//nonexistent", "value", None).unwrap();
+        assert_eq!(result.matches_updated, 0);
+        assert_eq!(result.source, source);
+    }
+
+    #[test]
+    fn yaml_update_only_does_not_create_missing_path() {
+        let source = "name: Alice\n";
+        let result = update_only(source, "yaml", "//db/host", "localhost", None).unwrap();
+        assert_eq!(result.matches_updated, 0);
+        assert_eq!(result.source, source, "should not create //db/host");
+        assert!(!result.source.contains("db"), "db key should not be created");
+        assert!(!result.source.contains("host"), "host key should not be created");
+    }
+
+    #[test]
+    fn yaml_update_only_nested_existing() {
+        let source = "db:\n  host: localhost\n  port: 5432\n";
+        let result = update_only(source, "yaml", "//db/host", "db.example.com", None).unwrap();
+        assert_eq!(result.matches_updated, 1);
+        assert!(result.source.contains("db.example.com"));
+        assert!(result.source.contains("port: 5432"));
+    }
+
+    #[test]
+    fn yaml_update_only_partial_path_no_create() {
+        // db exists but port doesn't — update_only should NOT create port
+        let source = "db:\n  host: localhost\n";
+        let result = update_only(source, "yaml", "//db/port", "5432", None).unwrap();
+        assert_eq!(result.matches_updated, 0);
+        assert_eq!(result.source, source, "should not create missing port under existing db");
     }
 
     #[test]
