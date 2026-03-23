@@ -280,16 +280,59 @@ fn insert_new(
         ));
     }
 
-    // Step 1: Walk the tree to find the deepest existing ancestor
+    // Detect the XPath axis prefix (e.g. "//" or "/") so we can reconstruct
+    // valid prefix queries for the engine.
+    let xpath_prefix = if xpath.trim().starts_with("//") {
+        "//"
+    } else {
+        "/"
+    };
+
+    // Step 1: Use the real XPath engine to find the deepest matching prefix.
+    // Try progressively shorter prefixes (from N-1 segments down to 1) until
+    // one matches. This honours predicates, axes, and any valid XPath.
+    let engine = XPathEngine::new();
     let doc_node = result.documents.document_node(result.doc_handle)
         .ok_or_else(|| UpsertError::Parse("no document node".into()))?;
-
     let file_node = find_file_node(result.documents.xot(), doc_node)
         .ok_or_else(|| UpsertError::NoInsertionPoint("no File node found".into()))?;
 
-    // Step 2: Find the deepest existing ancestor and record its span
-    let (existing_depth, ancestor_node) =
-        find_deepest_ancestor(result.documents.xot(), file_node, &key_path);
+    let mut existing_depth = 0usize;
+    // When no prefix matches, insert under the document wrapper (not the raw
+    // File node). Descend through structural wrappers like <document>.
+    let mut ancestor_node = descend_structural_wrappers(result.documents.xot(), file_node);
+
+    // Try prefixes from longest (all but last segment) to shortest (1 segment)
+    for depth in (1..raw_segments.len()).rev() {
+        let prefix_xpath = format!(
+            "{}{}",
+            xpath_prefix,
+            raw_segments[..depth].join("/"),
+        );
+        let matches = engine
+            .query_documents(
+                &mut result.documents,
+                result.doc_handle,
+                &prefix_xpath,
+                Arc::new(vec![]),
+                "<upsert>",
+            )
+            .unwrap_or_default();
+
+        if let Some(matched) = matches.first() {
+            // Found deepest matching prefix — locate the xot node
+            if let Some(node) = find_node_by_span(
+                result.documents.xot(),
+                file_node,
+                matched.line,
+                matched.column,
+            ) {
+                existing_depth = depth;
+                ancestor_node = node;
+                break;
+            }
+        }
+    }
 
     let missing_keys = &key_path[existing_depth..];
     if missing_keys.is_empty() {
@@ -299,7 +342,7 @@ fn insert_new(
     }
 
     // Check that segments we need to *create* don't contain predicates —
-    // predicates on existing ancestors are fine (the XPath engine resolves
+    // predicates on existing ancestors are fine (the XPath engine resolved
     // them), but we can't materialise attributes/conditions on new nodes.
     for raw_seg in raw_segments.iter().skip(existing_depth) {
         if raw_seg.contains('[') {
@@ -441,17 +484,9 @@ fn replace_text_content(xot: &mut Xot, node: xot::Node, new_text: &str) -> Resul
     Ok(())
 }
 
-/// Walk the data tree to find the deepest existing element matching the key path.
-///
-/// Before matching user keys, descends through structural wrapper nodes
-/// (e.g., `<document>` in YAML) that aren't part of the user's key path.
-fn find_deepest_ancestor(
-    xot: &Xot,
-    container: xot::Node,
-    key_path: &[String],
-) -> (usize, xot::Node) {
-    // Descend through structural wrappers that the user doesn't address in XPath.
-    // e.g., YAML's <document> sits between <File> and the actual mapping keys.
+/// Descend through structural wrapper nodes (e.g., `<document>` in YAML)
+/// that sit between the File container and the actual user data.
+fn descend_structural_wrappers(xot: &Xot, container: xot::Node) -> xot::Node {
     let mut current = container;
     loop {
         let element_children: Vec<_> = xot.children(current)
@@ -466,25 +501,7 @@ fn find_deepest_ancestor(
         }
         break;
     }
-
-    let mut depth = 0;
-    for key in key_path {
-        let found = xot.children(current).find(|&child| {
-            get_element_name(xot, child)
-                .map(|n| n == *key)
-                .unwrap_or(false)
-        });
-
-        match found {
-            Some(child) => {
-                current = child;
-                depth += 1;
-            }
-            None => break,
-        }
-    }
-
-    (depth, current)
+    current
 }
 
 /// Add nested children to a node for the missing key path steps.
