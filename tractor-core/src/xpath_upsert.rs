@@ -803,6 +803,25 @@ mod tests {
     }
 
     #[test]
+    fn insert_with_predicate_on_existing_parent() {
+        // Predicates on existing ancestors are fine — only the new leaf is created
+        let source = "user:\n  name: john\n";
+        let result = upsert(source, "yaml", "//user[name='john']/age", "30", None).unwrap();
+        assert!(result.inserted, "source: {:?}", result.source);
+        assert!(result.source.contains("name: john"), "source: {:?}", result.source);
+        assert!(result.source.contains("age: 30"), "source: {:?}", result.source);
+    }
+
+    #[test]
+    fn insert_rejects_predicate_on_new_segment() {
+        // Predicates on segments that need creation should error
+        let source = "name: Alice\n";
+        let result = upsert(source, "yaml", "//item[@type='x']/value", "42", None);
+        assert!(result.is_err(), "should reject predicate on to-be-created segment");
+        assert!(result.unwrap_err().to_string().contains("predicate"));
+    }
+
+    #[test]
     fn yaml_insert_simple_property() {
         let source = "name: Alice\n";
         let result = upsert(source, "yaml", "//age", "30", None).unwrap();
