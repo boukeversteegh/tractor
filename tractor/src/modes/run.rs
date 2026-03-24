@@ -1,6 +1,7 @@
 //! Run mode: execute a tractor config file containing mixed operations.
 
-use crate::executor::{self, ExecuteOptions, OperationResult};
+use tractor_core::report::ReportKind;
+use crate::executor::{self, ExecuteOptions, Operation};
 use crate::tractor_config::load_tractor_config;
 use crate::cli::RunArgs;
 
@@ -11,13 +12,22 @@ pub fn run_run(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {
         return Err(format!("config file not found: {}", args.config).into());
     }
 
-    let operations = load_tractor_config(config_path)?;
+    let mut operations = load_tractor_config(config_path)?;
 
     if operations.is_empty() {
         if args.shared.verbose {
             eprintln!("no operations found in {}", args.config);
         }
         return Ok(());
+    }
+
+    // Apply CLI --verify flag to all set operations.
+    if args.verify {
+        for op in &mut operations {
+            if let Operation::Set(ref mut set_op) = op {
+                set_op.verify = true;
+            }
+        }
     }
 
     // Resolve base_dir: use the config file's parent directory so that
@@ -27,67 +37,69 @@ pub fn run_run(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {
         .map(|p| p.canonicalize().unwrap_or_else(|_| p.to_path_buf()));
 
     let options = ExecuteOptions {
-        verify: args.verify,
         verbose: args.shared.verbose,
         base_dir,
     };
 
-    let result = executor::execute(&operations, &options)?;
+    let reports = executor::execute(&operations, &options)?;
 
-    // Report results
+    // Report results from each operation
     let mut check_violations = 0usize;
     let mut set_files_modified = 0usize;
     let mut set_drift_files = 0usize;
+    let mut all_passed = true;
 
-    for op_result in result.results.iter() {
-        match op_result {
-            OperationResult::Check(check) => {
-                for violation in &check.violations {
+    for report in &reports {
+        let summary = match report.summary.as_ref() {
+            Some(s) => s,
+            None => continue,
+        };
+
+        if !summary.passed {
+            all_passed = false;
+        }
+
+        match report.kind {
+            ReportKind::Check => {
+                for m in &report.matches {
                     eprintln!(
-                        "{}:{}:{}: {}: {} [{}]",
-                        violation.file,
-                        violation.line,
-                        violation.column,
-                        match violation.severity {
-                            tractor_core::report::Severity::Error => "error",
-                            tractor_core::report::Severity::Warning => "warning",
-                        },
-                        violation.reason,
-                        violation.rule_id,
+                        "{}:{}:{}: {}: {} {}",
+                        m.file,
+                        m.line,
+                        m.column,
+                        m.severity.map_or("error", |s| s.as_str()),
+                        m.reason.as_deref().unwrap_or("check failed"),
+                        m.rule_id.as_deref().map_or(String::new(), |id| format!("[{}]", id)),
                     );
                 }
-                check_violations += check.violations.len();
+                check_violations += report.matches.len();
             }
-            OperationResult::Set(set) => {
-                for change in &set.changes {
-                    if change.was_modified {
+            ReportKind::Set => {
+                for m in &report.matches {
+                    let status = m.status.as_deref().unwrap_or("unknown");
+                    if status == "updated" {
                         if args.verify {
                             eprintln!(
-                                "drift: {} ({} mapping{} would change)",
-                                change.file,
-                                change.mappings_applied,
-                                if change.mappings_applied == 1 { "" } else { "s" },
+                                "drift: {} ({})",
+                                m.file,
+                                m.output.as_deref().unwrap_or("would change"),
                             );
                             set_drift_files += 1;
                         } else {
                             if args.shared.verbose {
-                                eprintln!(
-                                    "updated: {} ({} mapping{})",
-                                    change.file,
-                                    change.mappings_applied,
-                                    if change.mappings_applied == 1 { "" } else { "s" },
-                                );
+                                eprintln!("updated: {}", m.file);
                             }
                             set_files_modified += 1;
                         }
                     }
                 }
             }
+            _ => {}
         }
     }
 
     // Summary
-    if args.shared.verbose || !result.success() {
+    if args.shared.verbose || !all_passed {
         if check_violations > 0 {
             eprintln!(
                 "{} check violation{}",
@@ -111,7 +123,7 @@ pub fn run_run(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    if result.success() {
+    if all_passed {
         Ok(())
     } else {
         Err(crate::SilentExit.into())

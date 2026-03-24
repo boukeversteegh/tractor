@@ -6,7 +6,7 @@ use tractor_core::{
     SchemaCollector,
     output::{render_document, RenderOptions},
     parse_to_documents, parse_string_to_documents,
-    report::{ReportMatch, Severity},
+    report::{Report, ReportMatch, Severity},
     rule::{RuleSet, GlobMatcher},
 };
 
@@ -383,4 +383,74 @@ pub fn run_rules(
     });
 
     Ok(all_matches)
+}
+
+// ---------------------------------------------------------------------------
+// Report post-processing helpers
+// ---------------------------------------------------------------------------
+
+/// Project a report to only contain the fields requested by the view.
+///
+/// The executor populates all content fields. This function prunes
+/// fields that are not in the view, ensuring renderers see `None`
+/// for unselected fields (matching the behaviour of `match_to_report_match`).
+pub fn project_report(report: &mut Report, view: &ViewSet) {
+    for m in &mut report.matches {
+        // Map/Array nodes are always kept — they're the only representation for data formats.
+        // For other nodes, keep when tree/lines/source is selected (needed for rendering).
+        let keep_tree = match &m.tree {
+            Some(node) if matches!(
+                node,
+                tractor_core::xpath::XmlNode::Map { .. }
+                    | tractor_core::xpath::XmlNode::Array { .. }
+            ) => true,
+            _ => view.has(ViewField::Tree) || view.has(ViewField::Lines) || view.has(ViewField::Source),
+        };
+        if !keep_tree {
+            m.tree = None;
+        }
+        if !view.has(ViewField::Value) {
+            m.value = None;
+        }
+        if !view.has(ViewField::Source) {
+            m.source = None;
+        }
+        if !view.has(ViewField::Lines) {
+            m.lines = None;
+        }
+        if !view.has(ViewField::Reason) {
+            m.reason = None;
+        }
+        if !view.has(ViewField::Severity) {
+            m.severity = None;
+        }
+        if !view.has(ViewField::Status) {
+            m.status = None;
+        }
+    }
+}
+
+/// Apply a CLI-level message template (`-m`) to all matches in a report.
+///
+/// This overwrites any existing message (e.g. from rule-level templates).
+/// Placeholders: `{file}`, `{line}`, `{col}`, `{value}`.
+pub fn apply_message_template(report: &mut Report, template: &str) {
+    if !template.contains('{') {
+        // Static template — same for every match.
+        let msg = template.to_string();
+        for m in &mut report.matches {
+            m.message = Some(msg.clone());
+        }
+        return;
+    }
+
+    for m in &mut report.matches {
+        m.message = Some(
+            template
+                .replace("{file}", &tractor_core::output::normalize_path(&m.file))
+                .replace("{line}", &m.line.to_string())
+                .replace("{col}", &m.column.to_string())
+                .replace("{value}", m.value.as_deref().unwrap_or(""))
+        );
+    }
 }

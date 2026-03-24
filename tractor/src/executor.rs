@@ -1,14 +1,23 @@
 //! Batch executor for tractor operations.
 //!
-//! The `Operation` enum is the stable entry point for programmatic use.
-//! Operations can be constructed from a config file or built directly in code.
-//! The executor takes a list of operations and returns structured results.
+//! The executor is the core engine of tractor. It takes a list of operations
+//! and returns a `Report` for each one. Operations can come from:
+//!
+//! - A config file (`tractor run config.yaml`)
+//! - CLI commands (`tractor check`, `tractor query`, etc.)
+//! - Programmatic construction
+//!
+//! Each operation is self-contained: it declares the files, xpath/rules, and
+//! options it needs. The executor handles file resolution, parsing, querying,
+//! and produces a unified `Report` that can be rendered in any format.
 
 use std::path::PathBuf;
+use std::collections::HashSet;
+use rayon::prelude::*;
 use tractor_core::rule::{Rule, RuleSet};
-use tractor_core::report::Severity;
+use tractor_core::report::{Report, ReportMatch, Severity, Summary};
 use tractor_core::tree_mode::TreeMode;
-use tractor_core::{expand_globs, filter_supported_files, detect_language};
+use tractor_core::{expand_globs, filter_supported_files, detect_language, parse_to_documents, Match};
 use tractor_core::xpath_upsert::upsert;
 
 use crate::pipeline::run_rules;
@@ -18,12 +27,34 @@ use crate::pipeline::run_rules;
 // ---------------------------------------------------------------------------
 
 /// A single operation to execute. This is the stable intermediate
-/// representation — config files parse into this, and the executor
-/// consumes it.
+/// representation — config files parse into this, CLI commands construct
+/// it, and the executor consumes it.
 #[derive(Debug, Clone)]
 pub enum Operation {
+    Query(QueryOperation),
     Check(CheckOperation),
     Set(SetOperation),
+}
+
+/// A query operation: run an XPath expression against files, return matches.
+#[derive(Debug, Clone)]
+pub struct QueryOperation {
+    /// File glob patterns to include.
+    pub files: Vec<String>,
+    /// File glob patterns to exclude.
+    pub exclude: Vec<String>,
+    /// XPath expression to evaluate.
+    pub xpath: String,
+    /// Tree mode override for parsing.
+    pub tree_mode: Option<TreeMode>,
+    /// Language override for parsing.
+    pub language: Option<String>,
+    /// Maximum number of matches to return.
+    pub limit: Option<usize>,
+    /// Ignore whitespace-only text nodes during parsing.
+    pub ignore_whitespace: bool,
+    /// Maximum parse depth.
+    pub parse_depth: Option<usize>,
 }
 
 /// A check operation: run XPath rules against files, report violations.
@@ -39,6 +70,10 @@ pub struct CheckOperation {
     pub tree_mode: Option<TreeMode>,
     /// Default language for all rules (rules can override).
     pub language: Option<String>,
+    /// Ignore whitespace-only text nodes during parsing.
+    pub ignore_whitespace: bool,
+    /// Maximum parse depth.
+    pub parse_depth: Option<usize>,
 }
 
 /// A set operation: ensure values exist at specified XPaths.
@@ -54,6 +89,9 @@ pub struct SetOperation {
     pub tree_mode: Option<TreeMode>,
     /// Language override for parsing.
     pub language: Option<String>,
+    /// If true, check for drift without writing files.
+    /// The report's summary.passed will be false if any files would change.
+    pub verify: bool,
 }
 
 /// A single xpath → value mapping for set operations.
@@ -70,10 +108,6 @@ pub struct SetMapping {
 /// Options controlling how operations are executed.
 #[derive(Debug, Clone)]
 pub struct ExecuteOptions {
-    /// If true, set operations check for drift without writing files.
-    /// Check operations run normally. The overall result fails if any
-    /// set would produce changes.
-    pub verify: bool,
     /// Print verbose diagnostics to stderr.
     pub verbose: bool,
     /// Base directory for resolving relative file paths.
@@ -84,7 +118,6 @@ pub struct ExecuteOptions {
 impl Default for ExecuteOptions {
     fn default() -> Self {
         ExecuteOptions {
-            verify: false,
             verbose: false,
             base_dir: None,
         }
@@ -92,111 +125,62 @@ impl Default for ExecuteOptions {
 }
 
 // ---------------------------------------------------------------------------
-// Execution results
-// ---------------------------------------------------------------------------
-
-/// Result of executing a batch of operations.
-#[derive(Debug)]
-pub struct ExecutionResult {
-    pub results: Vec<OperationResult>,
-}
-
-impl ExecutionResult {
-    /// Returns true if all operations passed (no violations, no drift).
-    pub fn success(&self) -> bool {
-        self.results.iter().all(|r| r.success())
-    }
-}
-
-/// Result of a single operation.
-#[derive(Debug)]
-pub enum OperationResult {
-    Check(CheckResult),
-    Set(SetResult),
-}
-
-impl OperationResult {
-    pub fn success(&self) -> bool {
-        match self {
-            OperationResult::Check(r) => r.passed,
-            OperationResult::Set(r) => !r.has_drift(),
-        }
-    }
-}
-
-/// Result of a check operation.
-#[derive(Debug)]
-pub struct CheckResult {
-    /// Whether all checks passed (no error-severity violations).
-    pub passed: bool,
-    /// Violations found.
-    pub violations: Vec<Violation>,
-}
-
-/// A single check violation.
-#[derive(Debug)]
-pub struct Violation {
-    pub rule_id: String,
-    pub file: String,
-    pub line: u32,
-    pub column: u32,
-    pub reason: String,
-    pub severity: Severity,
-}
-
-/// Result of a set operation.
-#[derive(Debug)]
-pub struct SetResult {
-    /// Per-file change details.
-    pub changes: Vec<FileChange>,
-    /// Whether we were in verify mode (dry-run).
-    pub verify_mode: bool,
-}
-
-impl SetResult {
-    /// Returns true if any file would be (or was) modified.
-    pub fn has_drift(&self) -> bool {
-        self.verify_mode && self.changes.iter().any(|c| c.was_modified)
-    }
-
-    /// Number of files modified (or that would be modified).
-    pub fn files_modified(&self) -> usize {
-        self.changes.iter().filter(|c| c.was_modified).count()
-    }
-}
-
-/// Details about changes to a single file.
-#[derive(Debug)]
-pub struct FileChange {
-    pub file: String,
-    pub mappings_applied: usize,
-    pub was_modified: bool,
-}
-
-// ---------------------------------------------------------------------------
 // Executor
 // ---------------------------------------------------------------------------
 
-/// Execute a list of operations and return structured results.
+/// Execute a list of operations and return a `Report` for each one.
 pub fn execute(
     operations: &[Operation],
     options: &ExecuteOptions,
-) -> Result<ExecutionResult, Box<dyn std::error::Error>> {
-    let mut results = Vec::with_capacity(operations.len());
+) -> Result<Vec<Report>, Box<dyn std::error::Error>> {
+    let mut reports = Vec::with_capacity(operations.len());
 
     for op in operations {
-        let result = match op {
-            Operation::Check(check_op) => {
-                OperationResult::Check(execute_check(check_op, options)?)
-            }
-            Operation::Set(set_op) => {
-                OperationResult::Set(execute_set(set_op, options)?)
-            }
-        };
-        results.push(result);
+        reports.push(match op {
+            Operation::Query(q) => execute_query(q, options)?,
+            Operation::Check(c) => execute_check(c, options)?,
+            Operation::Set(s) => execute_set(s, options)?,
+        });
     }
 
-    Ok(ExecutionResult { results })
+    Ok(reports)
+}
+
+// ---------------------------------------------------------------------------
+// Query execution
+// ---------------------------------------------------------------------------
+
+fn execute_query(
+    op: &QueryOperation,
+    options: &ExecuteOptions,
+) -> Result<Report, Box<dyn std::error::Error>> {
+    let files = resolve_files(&op.files, &op.exclude, options);
+
+    if files.is_empty() {
+        return Ok(Report::query(vec![], empty_summary()));
+    }
+
+    let matches = query_files(
+        &files, &op.xpath, op.language.as_deref(),
+        op.tree_mode, op.ignore_whitespace, op.parse_depth,
+        op.limit, options.verbose,
+    )?;
+
+    let total = matches.len();
+    let files_affected = count_unique_files(&matches);
+    let report_matches = matches.into_iter()
+        .map(match_to_full_report_match)
+        .collect();
+
+    Ok(Report::query(report_matches, Summary {
+        passed: true,
+        total,
+        files_affected,
+        errors: 0,
+        warnings: 0,
+        expected: None,
+        query: None,
+    }))
 }
 
 // ---------------------------------------------------------------------------
@@ -206,23 +190,23 @@ pub fn execute(
 fn execute_check(
     op: &CheckOperation,
     options: &ExecuteOptions,
-) -> Result<CheckResult, Box<dyn std::error::Error>> {
+) -> Result<Report, Box<dyn std::error::Error>> {
     if op.rules.is_empty() {
-        return Ok(CheckResult { passed: true, violations: vec![] });
+        return Ok(Report::check(vec![], empty_summary()));
     }
 
-    // Expand file globs and filter to supported files
     let files = resolve_files(&op.files, &op.exclude, options);
 
     if files.is_empty() {
-        return Ok(CheckResult { passed: true, violations: vec![] });
+        return Ok(Report::check(vec![], empty_summary()));
     }
 
-    // Build a RuleSet from the operation
+    // Build a RuleSet from the operation. File-level include/exclude are already
+    // resolved; per-rule include/exclude still participate in glob matching.
     let ruleset = RuleSet {
         rules: op.rules.clone(),
-        include: vec![], // already resolved
-        exclude: vec![], // already resolved
+        include: vec![],
+        exclude: vec![],
         default_tree_mode: op.tree_mode,
         default_language: op.language.clone(),
     };
@@ -231,34 +215,56 @@ fn execute_check(
         &ruleset,
         &files,
         op.tree_mode,
-        false, // ignore_whitespace
-        None,  // parse_depth
+        op.ignore_whitespace,
+        op.parse_depth,
         options.verbose,
     )?;
 
-    let mut violations = Vec::new();
-    let mut has_error = false;
+    let mut files_affected = HashSet::new();
+    let mut errors = 0usize;
+    let mut warnings = 0usize;
 
-    for rm in rule_matches {
-        let rule = &ruleset.rules[rm.rule_index];
-        let severity = rule.severity;
-        if severity == Severity::Error {
-            has_error = true;
-        }
-        violations.push(Violation {
-            rule_id: rule.id.clone(),
-            file: rm.m.file.clone(),
-            line: rm.m.line,
-            column: rm.m.column,
-            reason: rule.reason.clone().unwrap_or_else(|| format!("[{}] check failed", rule.id)),
-            severity,
-        });
-    }
+    let report_matches: Vec<ReportMatch> = rule_matches
+        .into_iter()
+        .map(|rm| {
+            let rule = &ruleset.rules[rm.rule_index];
+            let reason = rule
+                .reason
+                .clone()
+                .unwrap_or_else(|| format!("[{}] check failed", rule.id));
+            let severity = rule.severity;
 
-    Ok(CheckResult {
-        passed: !has_error,
-        violations,
-    })
+            match severity {
+                Severity::Error => errors += 1,
+                Severity::Warning => warnings += 1,
+            }
+            files_affected.insert(rm.m.file.clone());
+
+            // Apply rule-level message template (if the rule defines one)
+            let message = rule
+                .message
+                .as_deref()
+                .map(|t| tractor_core::format_message(t, &rm.m));
+
+            let mut report_match = match_to_full_report_match(rm.m);
+            report_match.reason = Some(reason);
+            report_match.severity = Some(severity);
+            report_match.rule_id = Some(rule.id.clone());
+            report_match.message = message;
+            report_match
+        })
+        .collect();
+
+    let total = report_matches.len();
+    Ok(Report::check(report_matches, Summary {
+        passed: errors == 0,
+        total,
+        files_affected: files_affected.len(),
+        errors,
+        warnings,
+        expected: None,
+        query: None,
+    }))
 }
 
 // ---------------------------------------------------------------------------
@@ -268,9 +274,12 @@ fn execute_check(
 fn execute_set(
     op: &SetOperation,
     options: &ExecuteOptions,
-) -> Result<SetResult, Box<dyn std::error::Error>> {
+) -> Result<Report, Box<dyn std::error::Error>> {
     let files = resolve_files(&op.files, &op.exclude, options);
-    let mut changes = Vec::new();
+    let mut report_matches = Vec::new();
+    let mut files_affected = HashSet::new();
+    let mut updated_count = 0usize;
+    let mut unchanged_count = 0usize;
 
     for file_path in &files {
         let lang_override = op.language.as_deref();
@@ -292,26 +301,158 @@ fn execute_set(
         let was_modified = current != source;
 
         // Write the file unless we're in verify mode
-        if was_modified && !options.verify {
+        if was_modified && !op.verify {
             std::fs::write(file_path, &current)?;
         }
 
-        changes.push(FileChange {
+        let status_str = if was_modified { "updated" } else { "unchanged" };
+        if was_modified {
+            updated_count += 1;
+            files_affected.insert(file_path.clone());
+        } else {
+            unchanged_count += 1;
+        }
+
+        report_matches.push(ReportMatch {
             file: file_path.clone(),
-            mappings_applied,
-            was_modified,
+            line: 1,
+            column: 1,
+            end_line: 1,
+            end_column: 1,
+            tree: None,
+            value: None,
+            source: None,
+            lines: None,
+            reason: None,
+            severity: None,
+            message: None,
+            rule_id: None,
+            status: Some(status_str.to_string()),
+            output: if was_modified && op.verify {
+                Some(format!("{} mapping{} would change", mappings_applied, if mappings_applied == 1 { "" } else { "s" }))
+            } else {
+                None
+            },
         });
     }
 
-    Ok(SetResult {
-        changes,
-        verify_mode: options.verify,
-    })
+    let total = report_matches.len();
+    let passed = if op.verify { updated_count == 0 } else { true };
+
+    Ok(Report::set(report_matches, Summary {
+        passed,
+        total,
+        files_affected: files_affected.len(),
+        errors: updated_count,
+        warnings: unchanged_count,
+        expected: None,
+        query: None,
+    }))
 }
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+fn empty_summary() -> Summary {
+    Summary {
+        passed: true,
+        total: 0,
+        files_affected: 0,
+        errors: 0,
+        warnings: 0,
+        expected: None,
+        query: None,
+    }
+}
+
+fn count_unique_files(matches: &[Match]) -> usize {
+    let mut seen = HashSet::new();
+    for m in matches {
+        seen.insert(&m.file);
+    }
+    seen.len()
+}
+
+/// Convert a raw `Match` into a `ReportMatch` with all content fields populated.
+/// Operation-specific fields (reason, severity, rule_id, status, message) are
+/// left as None and must be set by the caller.
+fn match_to_full_report_match(m: Match) -> ReportMatch {
+    ReportMatch {
+        file: m.file.clone(),
+        line: m.line,
+        column: m.column,
+        end_line: m.end_line,
+        end_column: m.end_column,
+        tree: m.xml_node.clone(),
+        value: Some(m.value.clone()),
+        source: Some(m.extract_source_snippet()),
+        lines: Some(
+            m.get_source_lines_range()
+                .into_iter()
+                .map(|l| l.trim_end_matches('\r').to_owned())
+                .collect(),
+        ),
+        reason: None,
+        severity: None,
+        message: None,
+        rule_id: None,
+        status: None,
+        output: None,
+    }
+}
+
+/// Parse and query files in parallel, returning sorted matches.
+fn query_files(
+    files: &[String],
+    xpath_expr: &str,
+    lang: Option<&str>,
+    tree_mode: Option<TreeMode>,
+    ignore_whitespace: bool,
+    parse_depth: Option<usize>,
+    limit: Option<usize>,
+    verbose: bool,
+) -> Result<Vec<Match>, Box<dyn std::error::Error>> {
+    let mut all_matches: Vec<Match> = files
+        .par_iter()
+        .filter_map(|file_path| {
+            let mut result = match parse_to_documents(
+                std::path::Path::new(file_path),
+                lang,
+                tree_mode,
+                ignore_whitespace,
+                parse_depth,
+            ) {
+                Ok(r) => r,
+                Err(e) => {
+                    if verbose {
+                        eprintln!("warning: {}: {}", file_path, e);
+                    }
+                    return None;
+                }
+            };
+
+            match result.query(xpath_expr) {
+                Ok(matches) => Some(matches),
+                Err(e) => {
+                    if verbose {
+                        eprintln!("warning: {}: query error: {}", file_path, e);
+                    }
+                    None
+                }
+            }
+        })
+        .flatten()
+        .collect();
+
+    all_matches.sort_by(|a, b| (&a.file, a.line, a.column).cmp(&(&b.file, b.line, b.column)));
+
+    if let Some(limit) = limit {
+        all_matches.truncate(limit);
+    }
+
+    Ok(all_matches)
+}
 
 fn resolve_files(
     file_globs: &[String],
@@ -376,6 +517,70 @@ mod tests {
     }
 
     // -----------------------------------------------------------------------
+    // Query operation tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn query_returns_matches() {
+        let (_dir, path) = temp_json_file(r#"{"name": "alice", "age": 30}"#);
+
+        let ops = vec![Operation::Query(QueryOperation {
+            files: vec![path.clone()],
+            exclude: vec![],
+            xpath: "//name".into(),
+            tree_mode: None,
+            language: None,
+            limit: None,
+            ignore_whitespace: false,
+            parse_depth: None,
+        })];
+
+        let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
+        assert_eq!(reports.len(), 1);
+        let report = &reports[0];
+        assert!(report.summary.as_ref().unwrap().passed);
+        assert_eq!(report.matches.len(), 1);
+        assert_eq!(report.matches[0].value.as_deref(), Some("alice"));
+    }
+
+    #[test]
+    fn query_with_limit() {
+        let (_dir, path) = temp_json_file(r#"{"a": 1, "b": 2, "c": 3}"#);
+
+        let ops = vec![Operation::Query(QueryOperation {
+            files: vec![path.clone()],
+            exclude: vec![],
+            xpath: "//*[number(.) > 0]".into(),
+            tree_mode: None,
+            language: None,
+            limit: Some(2),
+            ignore_whitespace: false,
+            parse_depth: None,
+        })];
+
+        let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
+        assert!(reports[0].matches.len() <= 2);
+    }
+
+    #[test]
+    fn query_empty_files() {
+        let ops = vec![Operation::Query(QueryOperation {
+            files: vec![],
+            exclude: vec![],
+            xpath: "//x".into(),
+            tree_mode: None,
+            language: None,
+            limit: None,
+            ignore_whitespace: false,
+            parse_depth: None,
+        })];
+
+        let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
+        assert_eq!(reports[0].matches.len(), 0);
+        assert!(reports[0].summary.as_ref().unwrap().passed);
+    }
+
+    // -----------------------------------------------------------------------
     // Set operation tests
     // -----------------------------------------------------------------------
 
@@ -392,10 +597,11 @@ mod tests {
             }],
             tree_mode: None,
             language: None,
+            verify: false,
         })];
 
-        let result = execute(&ops, &ExecuteOptions::default()).unwrap();
-        assert!(result.success());
+        let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
+        assert!(reports[0].summary.as_ref().unwrap().passed);
 
         let content = std::fs::read_to_string(&path).unwrap();
         assert!(content.contains("new-host"), "file should contain new value: {}", content);
@@ -415,10 +621,11 @@ mod tests {
             }],
             tree_mode: None,
             language: None,
+            verify: false,
         })];
 
-        let result = execute(&ops, &ExecuteOptions::default()).unwrap();
-        assert!(result.success());
+        let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
+        assert!(reports[0].summary.as_ref().unwrap().passed);
 
         let content = std::fs::read_to_string(&path).unwrap();
         assert!(content.contains("localhost"), "missing node should be created: {}", content);
@@ -437,10 +644,11 @@ mod tests {
             ],
             tree_mode: None,
             language: None,
+            verify: false,
         })];
 
-        let result = execute(&ops, &ExecuteOptions::default()).unwrap();
-        assert!(result.success());
+        let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
+        assert!(reports[0].summary.as_ref().unwrap().passed);
 
         let content = std::fs::read_to_string(&path).unwrap();
         assert!(content.contains("new-host"), "host should be updated: {}", content);
@@ -465,18 +673,14 @@ mod tests {
             }],
             tree_mode: None,
             language: None,
+            verify: false,
         })];
 
-        let result = execute(&ops, &ExecuteOptions::default()).unwrap();
-        assert!(result.success());
+        let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
+        assert!(reports[0].summary.as_ref().unwrap().passed);
 
-        // File should be unchanged
-        if let OperationResult::Set(ref set_result) = result.results[0] {
-            assert_eq!(set_result.changes[0].was_modified, false);
-            assert_eq!(set_result.changes[0].mappings_applied, 0);
-        } else {
-            panic!("expected SetResult");
-        }
+        // Check status is "unchanged"
+        assert_eq!(reports[0].matches[0].status.as_deref(), Some("unchanged"));
     }
 
     // -----------------------------------------------------------------------
@@ -496,13 +700,13 @@ mod tests {
             }],
             tree_mode: None,
             language: None,
+            verify: true,
         })];
 
-        let options = ExecuteOptions { verify: true, ..Default::default() };
-        let result = execute(&ops, &options).unwrap();
+        let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
 
         // Should fail: drift detected
-        assert!(!result.success(), "verify should detect drift");
+        assert!(!reports[0].summary.as_ref().unwrap().passed, "verify should detect drift");
 
         // File should NOT be modified
         let content = std::fs::read_to_string(&path).unwrap();
@@ -526,12 +730,11 @@ mod tests {
             }],
             tree_mode: None,
             language: None,
+            verify: true,
         })];
 
-        let options = ExecuteOptions { verify: true, ..Default::default() };
-        let result = execute(&ops, &options).unwrap();
-
-        assert!(result.success(), "verify should pass when values are in sync");
+        let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
+        assert!(reports[0].summary.as_ref().unwrap().passed, "verify should pass when values are in sync");
     }
 
     // -----------------------------------------------------------------------
@@ -552,18 +755,17 @@ mod tests {
             ],
             tree_mode: None,
             language: None,
+            ignore_whitespace: false,
+            parse_depth: None,
         })];
 
-        let result = execute(&ops, &ExecuteOptions::default()).unwrap();
-        assert!(!result.success(), "check should fail when violations found");
-
-        if let OperationResult::Check(ref check_result) = result.results[0] {
-            assert!(!check_result.passed);
-            assert_eq!(check_result.violations.len(), 1);
-            assert_eq!(check_result.violations[0].rule_id, "no-debug");
-        } else {
-            panic!("expected CheckResult");
-        }
+        let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
+        let report = &reports[0];
+        let summary = report.summary.as_ref().unwrap();
+        assert!(!summary.passed, "check should fail when violations found");
+        assert_eq!(report.matches.len(), 1);
+        assert_eq!(report.matches[0].rule_id.as_deref(), Some("no-debug"));
+        assert_eq!(report.matches[0].reason.as_deref(), Some("debug should not be enabled"));
     }
 
     #[test]
@@ -579,10 +781,12 @@ mod tests {
             ],
             tree_mode: None,
             language: None,
+            ignore_whitespace: false,
+            parse_depth: None,
         })];
 
-        let result = execute(&ops, &ExecuteOptions::default()).unwrap();
-        assert!(result.success());
+        let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
+        assert!(reports[0].summary.as_ref().unwrap().passed);
     }
 
     // -----------------------------------------------------------------------
@@ -611,6 +815,8 @@ mod tests {
                 ],
                 tree_mode: None,
                 language: None,
+                ignore_whitespace: false,
+                parse_depth: None,
             }),
             Operation::Set(SetOperation {
                 files: vec![config_path.to_str().unwrap().into()],
@@ -621,12 +827,14 @@ mod tests {
                 }],
                 tree_mode: None,
                 language: None,
+                verify: false,
             }),
         ];
 
-        let result = execute(&ops, &ExecuteOptions::default()).unwrap();
-        assert!(result.success());
-        assert_eq!(result.results.len(), 2);
+        let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
+        assert_eq!(reports.len(), 2);
+        assert!(reports[0].summary.as_ref().unwrap().passed);
+        assert!(reports[1].summary.as_ref().unwrap().passed);
 
         // Config should be updated
         let content = std::fs::read_to_string(&config_path).unwrap();
@@ -646,10 +854,11 @@ mod tests {
             }],
             tree_mode: None,
             language: None,
+            verify: false,
         })];
 
-        let result = execute(&ops, &ExecuteOptions::default()).unwrap();
-        assert!(result.success());
+        let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
+        assert!(reports[0].summary.as_ref().unwrap().passed);
 
         let content = std::fs::read_to_string(&path).unwrap();
         assert!(content.contains("new-host"), "yaml host should be updated: {}", content);

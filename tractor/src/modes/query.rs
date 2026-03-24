@@ -2,7 +2,12 @@ use std::collections::HashSet;
 use tractor_core::report::{Report, Summary};
 use clap::CommandFactory;
 use crate::cli::{Cli, QueryArgs};
-use crate::pipeline::{RunContext, ViewField, InputMode, query_inline_source, query_files_batched, run_debug, match_to_report_match};
+use crate::executor::{self, ExecuteOptions, Operation, QueryOperation};
+use crate::pipeline::{
+    RunContext, ViewField, InputMode,
+    query_inline_source, run_debug, match_to_report_match,
+    project_report, apply_message_template,
+};
 use crate::pipeline::format::render_query_report;
 
 pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
@@ -19,19 +24,19 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    // Debug mode
+    // Debug mode — needs the full parsed document, stays on existing pipeline.
     if ctx.debug {
         if let (Some(ref xpath), InputMode::Files(ref files)) = (&ctx.xpath, &ctx.input) {
             return run_debug(&ctx, files, xpath);
         }
     }
 
-    // Explore (no XPath) = query with implicit "/*" — selects the document root of each file.
-    // Same pipeline, same output, same -f/-v flags.
+    // Explore (no XPath) = query with implicit "/*" — selects the document root.
     let xpath_expr = ctx.xpath.as_deref().unwrap_or("/*");
 
     match &ctx.input {
         InputMode::InlineSource { source, lang } => {
+            // Inline source stays on existing pipeline (no files to resolve).
             let matches = query_inline_source(&ctx, source, lang, xpath_expr)?;
             if ctx.view.has(ViewField::Count) {
                 println!("{}", matches.len());
@@ -44,13 +49,53 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         InputMode::Files(files) => {
-            let (count, matches) = query_files_batched(&ctx, files, xpath_expr, true)?;
+            // Delegate file-based queries to the executor.
+            let op = Operation::Query(QueryOperation {
+                files: files.clone(),
+                exclude: vec![],
+                xpath: xpath_expr.to_string(),
+                tree_mode: ctx.tree_mode,
+                language: ctx.lang.clone(),
+                limit: ctx.limit,
+                ignore_whitespace: ctx.ignore_whitespace,
+                parse_depth: ctx.parse_depth,
+            });
+
+            let options = ExecuteOptions {
+                verbose: ctx.verbose,
+                ..Default::default()
+            };
+
+            let reports = executor::execute(&[op], &options)?;
+            let mut report = reports.into_iter().next().unwrap();
+
             if ctx.view.has(ViewField::Count) {
-                println!("{}", count);
+                println!("{}", report.summary.as_ref().unwrap().total);
             } else if ctx.view.has(ViewField::Schema) {
-                crate::pipeline::print_schema_from_matches(&matches, ctx.schema_depth(), ctx.use_color);
+                // Extract xml_nodes from report matches for schema collection.
+                let nodes: Vec<_> = report.matches.iter()
+                    .filter_map(|m| m.tree.as_ref())
+                    .collect();
+                let mut collector = tractor_core::SchemaCollector::new();
+                for node in nodes {
+                    collector.collect_from_xml_node(node);
+                }
+                print!("{}", collector.format(ctx.schema_depth(), ctx.use_color));
             } else {
-                let report = build_query_report(matches, &ctx);
+                // Set the query field in summary if requested.
+                if ctx.view.has(ViewField::Query) {
+                    if let Some(ref mut summary) = report.summary {
+                        summary.query = ctx.xpath.clone();
+                    }
+                }
+
+                // Apply CLI message template if provided.
+                if let Some(ref template) = ctx.message {
+                    apply_message_template(&mut report, template);
+                }
+
+                // Project for the requested view and render.
+                project_report(&mut report, &ctx.view);
                 let report = if ctx.group_by_file { report.with_groups() } else { report };
                 render_query_report(&report, &ctx)?;
             }
@@ -59,7 +104,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-/// Build a Report from query matches (no reason/severity — query mode).
+/// Build a Report from query matches for inline source mode (existing pipeline).
 pub(crate) fn build_query_report(matches: Vec<tractor_core::Match>, ctx: &RunContext) -> Report {
     let message_template = ctx.message.as_deref();
     let mut files_seen = HashSet::new();

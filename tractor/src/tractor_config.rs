@@ -174,6 +174,8 @@ fn convert_check(config: CheckConfig) -> Result<Operation, Box<dyn std::error::E
         rules,
         tree_mode,
         language: config.language,
+        ignore_whitespace: false,
+        parse_depth: None,
     }))
 }
 
@@ -193,6 +195,7 @@ fn convert_set(config: SetConfig) -> Result<Operation, Box<dyn std::error::Error
         mappings,
         tree_mode,
         language: config.language,
+        verify: false,
     }))
 }
 
