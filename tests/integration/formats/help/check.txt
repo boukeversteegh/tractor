@@ -95,3 +95,6 @@ Check:
           Severity level: error (default) or warning
           
           [default: error]
+
+      --rules <RULES>
+          Path to a TOML rules file for batch checking
