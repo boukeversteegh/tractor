@@ -1,0 +1,13 @@
+operations:
+  - check:
+      files: ["settings.yaml"]
+      rules:
+        - id: has-app-name
+          xpath: "//app/name[.='']"
+          reason: "app name must not be empty"
+          severity: error
+  - set:
+      files: ["app-config.json"]
+      mappings:
+        - xpath: "//database/host"
+          value: "db.prod.internal"

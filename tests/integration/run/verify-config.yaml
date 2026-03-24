@@ -1,0 +1,7 @@
+set:
+  files: ["app-config.json"]
+  mappings:
+    - xpath: "//database/host"
+      value: "localhost"
+    - xpath: "//database/port"
+      value: "5432"
