@@ -70,7 +70,7 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
 // ---------------------------------------------------------------------------
 
 fn run_check_rules(args: CheckArgs, rules_path: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let ruleset = crate::rules_toml::load_rules_toml(std::path::Path::new(rules_path))?;
+    let ruleset = crate::rules_config::load_rules(std::path::Path::new(rules_path))?;
 
     if ruleset.rules.is_empty() {
         return Ok(());

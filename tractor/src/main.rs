@@ -7,7 +7,7 @@ mod version;
 mod xpath_utils;
 mod pipeline;
 mod modes;
-mod rules_toml;
+mod rules_config;
 
 use std::process::ExitCode;
 use cli::{Cli, Command};
