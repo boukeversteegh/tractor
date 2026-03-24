@@ -17,7 +17,7 @@ use rayon::prelude::*;
 use tractor_core::rule::{Rule, RuleSet};
 use tractor_core::report::{Report, ReportMatch, Severity, Summary};
 use tractor_core::tree_mode::TreeMode;
-use tractor_core::{expand_globs, filter_supported_files, detect_language, parse_to_documents, Match, apply_replacements};
+use tractor_core::{expand_globs, filter_supported_files, detect_language, parse_to_documents, parse_string_to_documents, Match, apply_replacements};
 use tractor_core::xpath_upsert::{upsert, update_only};
 
 use crate::pipeline::run_rules;
@@ -39,6 +39,10 @@ pub enum Operation {
 }
 
 /// A query operation: run an XPath expression against files, return matches.
+///
+/// Supports two input modes:
+/// - **Files**: set `files` (and optionally `exclude`). This is the default.
+/// - **Inline source**: set `inline_source` and `inline_lang`. Files are ignored.
 #[derive(Debug, Clone)]
 pub struct QueryOperation {
     /// File glob patterns to include.
@@ -57,6 +61,10 @@ pub struct QueryOperation {
     pub ignore_whitespace: bool,
     /// Maximum parse depth.
     pub parse_depth: Option<usize>,
+    /// Inline source string to parse instead of files.
+    pub inline_source: Option<String>,
+    /// Language for inline source (required when inline_source is set).
+    pub inline_lang: Option<String>,
 }
 
 /// A check operation: run XPath rules against files, report violations.
@@ -106,6 +114,10 @@ pub struct TestOperation {
     pub ignore_whitespace: bool,
     /// Maximum parse depth.
     pub parse_depth: Option<usize>,
+    /// Inline source string to parse instead of files.
+    pub inline_source: Option<String>,
+    /// Language for inline source (required when inline_source is set).
+    pub inline_lang: Option<String>,
 }
 
 /// An update operation: modify existing matched nodes without creating new structure.
@@ -212,6 +224,14 @@ fn execute_query(
     op: &QueryOperation,
     options: &ExecuteOptions,
 ) -> Result<Report, Box<dyn std::error::Error>> {
+    // Inline source mode: parse a string instead of files.
+    if let Some(ref source) = op.inline_source {
+        let lang = op.inline_lang.as_deref()
+            .or(op.language.as_deref())
+            .ok_or("inline source requires a language (--lang)")?;
+        return execute_query_inline(source, lang, op);
+    }
+
     let files = resolve_files(&op.files, &op.exclude, options);
 
     if files.is_empty() {
@@ -223,6 +243,38 @@ fn execute_query(
         op.tree_mode, op.ignore_whitespace, op.parse_depth,
         op.limit, options.verbose,
     )?;
+
+    let total = matches.len();
+    let files_affected = count_unique_files(&matches);
+    let report_matches = matches.into_iter()
+        .map(match_to_full_report_match)
+        .collect();
+
+    Ok(Report::query(report_matches, Summary {
+        passed: true,
+        total,
+        files_affected,
+        errors: 0,
+        warnings: 0,
+        expected: None,
+        query: None,
+    }))
+}
+
+/// Inline source query: parse a string and run the XPath expression.
+fn execute_query_inline(
+    source: &str,
+    lang: &str,
+    op: &QueryOperation,
+) -> Result<Report, Box<dyn std::error::Error>> {
+    let mut result = parse_string_to_documents(
+        source, lang, "<stdin>".to_string(), op.tree_mode, op.ignore_whitespace,
+    )?;
+
+    let mut matches = result.query(&op.xpath)?;
+    if let Some(limit) = op.limit {
+        matches.truncate(limit);
+    }
 
     let total = matches.len();
     let files_affected = count_unique_files(&matches);
@@ -416,6 +468,32 @@ fn execute_test(
     op: &TestOperation,
     options: &ExecuteOptions,
 ) -> Result<Report, Box<dyn std::error::Error>> {
+    // Inline source mode: parse a string instead of files.
+    if let Some(ref source) = op.inline_source {
+        let lang = op.inline_lang.as_deref()
+            .or(op.language.as_deref())
+            .ok_or("inline source requires a language (--lang)")?;
+        let query_report = execute_query_inline(source, lang, &QueryOperation {
+            files: vec![], exclude: vec![],
+            xpath: op.xpath.clone(),
+            tree_mode: op.tree_mode,
+            language: op.language.clone(),
+            limit: op.limit,
+            ignore_whitespace: op.ignore_whitespace,
+            parse_depth: op.parse_depth,
+            inline_source: op.inline_source.clone(),
+            inline_lang: op.inline_lang.clone(),
+        })?;
+        let total = query_report.summary.as_ref().unwrap().total;
+        let files_affected = query_report.summary.as_ref().unwrap().files_affected;
+        let passed = check_expectation(&op.expect, total)?;
+        return Ok(Report::test(query_report.matches, Summary {
+            passed, total, files_affected,
+            errors: 0, warnings: 0,
+            expected: Some(op.expect.clone()), query: None,
+        }));
+    }
+
     let files = resolve_files(&op.files, &op.exclude, options);
 
     if files.is_empty() {
@@ -713,6 +791,8 @@ mod tests {
             limit: None,
             ignore_whitespace: false,
             parse_depth: None,
+            inline_source: None,
+            inline_lang: None,
         })];
 
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
@@ -736,6 +816,8 @@ mod tests {
             limit: Some(2),
             ignore_whitespace: false,
             parse_depth: None,
+            inline_source: None,
+            inline_lang: None,
         })];
 
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
@@ -753,6 +835,8 @@ mod tests {
             limit: None,
             ignore_whitespace: false,
             parse_depth: None,
+            inline_source: None,
+            inline_lang: None,
         })];
 
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();

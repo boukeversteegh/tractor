@@ -8,9 +8,7 @@ pub use context::RunContext;
 pub use format::ViewField;
 pub use matcher::{
     query_files_batched, query_inline_source,
-    print_schema_from_matches,
     run_debug,
-    match_to_report_match,
     run_rules,
     project_report,
     apply_message_template,
