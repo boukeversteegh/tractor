@@ -17,8 +17,8 @@ use rayon::prelude::*;
 use tractor_core::rule::{Rule, RuleSet};
 use tractor_core::report::{Report, ReportMatch, Severity, Summary};
 use tractor_core::tree_mode::TreeMode;
-use tractor_core::{expand_globs, filter_supported_files, detect_language, parse_to_documents, Match};
-use tractor_core::xpath_upsert::upsert;
+use tractor_core::{expand_globs, filter_supported_files, detect_language, parse_to_documents, Match, apply_replacements};
+use tractor_core::xpath_upsert::{upsert, update_only};
 
 use crate::pipeline::run_rules;
 
@@ -33,7 +33,9 @@ use crate::pipeline::run_rules;
 pub enum Operation {
     Query(QueryOperation),
     Check(CheckOperation),
+    Test(TestOperation),
     Set(SetOperation),
+    Update(UpdateOperation),
 }
 
 /// A query operation: run an XPath expression against files, return matches.
@@ -70,6 +72,60 @@ pub struct CheckOperation {
     pub tree_mode: Option<TreeMode>,
     /// Default language for all rules (rules can override).
     pub language: Option<String>,
+    /// Ignore whitespace-only text nodes during parsing.
+    pub ignore_whitespace: bool,
+    /// Maximum parse depth.
+    pub parse_depth: Option<usize>,
+    /// Ruleset-level include patterns for per-rule glob matching.
+    /// Used by rules-file configs; empty for single-xpath checks.
+    #[doc(hidden)]
+    pub ruleset_include: Vec<String>,
+    /// Ruleset-level exclude patterns for per-rule glob matching.
+    #[doc(hidden)]
+    pub ruleset_exclude: Vec<String>,
+}
+
+/// A test operation: run an XPath query and check match count against an expectation.
+#[derive(Debug, Clone)]
+pub struct TestOperation {
+    /// File glob patterns to include.
+    pub files: Vec<String>,
+    /// File glob patterns to exclude.
+    pub exclude: Vec<String>,
+    /// XPath expression to evaluate.
+    pub xpath: String,
+    /// Expected match count: "none", "some", or a number.
+    pub expect: String,
+    /// Tree mode override for parsing.
+    pub tree_mode: Option<TreeMode>,
+    /// Language override for parsing.
+    pub language: Option<String>,
+    /// Maximum number of matches to return.
+    pub limit: Option<usize>,
+    /// Ignore whitespace-only text nodes during parsing.
+    pub ignore_whitespace: bool,
+    /// Maximum parse depth.
+    pub parse_depth: Option<usize>,
+}
+
+/// An update operation: modify existing matched nodes without creating new structure.
+/// Unlike set, update fails if the XPath does not match any existing nodes.
+#[derive(Debug, Clone)]
+pub struct UpdateOperation {
+    /// File glob patterns to include.
+    pub files: Vec<String>,
+    /// File glob patterns to exclude.
+    pub exclude: Vec<String>,
+    /// XPath expression to match nodes to update.
+    pub xpath: String,
+    /// New value for matched nodes.
+    pub value: String,
+    /// Tree mode override for parsing.
+    pub tree_mode: Option<TreeMode>,
+    /// Language override for parsing.
+    pub language: Option<String>,
+    /// Maximum number of matches to update per file.
+    pub limit: Option<usize>,
     /// Ignore whitespace-only text nodes during parsing.
     pub ignore_whitespace: bool,
     /// Maximum parse depth.
@@ -139,7 +195,9 @@ pub fn execute(
         reports.push(match op {
             Operation::Query(q) => execute_query(q, options)?,
             Operation::Check(c) => execute_check(c, options)?,
+            Operation::Test(t) => execute_test(t, options)?,
             Operation::Set(s) => execute_set(s, options)?,
+            Operation::Update(u) => execute_update(u, options)?,
         });
     }
 
@@ -201,12 +259,12 @@ fn execute_check(
         return Ok(Report::check(vec![], empty_summary()));
     }
 
-    // Build a RuleSet from the operation. File-level include/exclude are already
-    // resolved; per-rule include/exclude still participate in glob matching.
+    // Build a RuleSet from the operation. Ruleset-level include/exclude
+    // come from rules files; per-rule patterns still participate in glob matching.
     let ruleset = RuleSet {
         rules: op.rules.clone(),
-        include: vec![],
-        exclude: vec![],
+        include: op.ruleset_include.clone(),
+        exclude: op.ruleset_exclude.clone(),
         default_tree_mode: op.tree_mode,
         default_language: op.language.clone(),
     };
@@ -351,8 +409,130 @@ fn execute_set(
 }
 
 // ---------------------------------------------------------------------------
+// Test execution
+// ---------------------------------------------------------------------------
+
+fn execute_test(
+    op: &TestOperation,
+    options: &ExecuteOptions,
+) -> Result<Report, Box<dyn std::error::Error>> {
+    let files = resolve_files(&op.files, &op.exclude, options);
+
+    if files.is_empty() {
+        let passed = check_expectation(&op.expect, 0)?;
+        return Ok(Report::test(vec![], Summary {
+            passed,
+            total: 0,
+            files_affected: 0,
+            errors: 0,
+            warnings: 0,
+            expected: Some(op.expect.clone()),
+            query: None,
+        }));
+    }
+
+    let matches = query_files(
+        &files, &op.xpath, op.language.as_deref(),
+        op.tree_mode, op.ignore_whitespace, op.parse_depth,
+        op.limit, options.verbose,
+    )?;
+
+    let total = matches.len();
+    let files_affected = count_unique_files(&matches);
+    let passed = check_expectation(&op.expect, total)?;
+
+    let report_matches = matches.into_iter()
+        .map(match_to_full_report_match)
+        .collect();
+
+    Ok(Report::test(report_matches, Summary {
+        passed,
+        total,
+        files_affected,
+        errors: 0,
+        warnings: 0,
+        expected: Some(op.expect.clone()),
+        query: None,
+    }))
+}
+
+// ---------------------------------------------------------------------------
+// Update execution
+// ---------------------------------------------------------------------------
+
+fn execute_update(
+    op: &UpdateOperation,
+    options: &ExecuteOptions,
+) -> Result<Report, Box<dyn std::error::Error>> {
+    let files = resolve_files(&op.files, &op.exclude, options);
+    let mut total_updated = 0usize;
+    let mut files_modified = HashSet::new();
+    let mut fallback_files = Vec::new();
+
+    for file_path in &files {
+        let lang = op.language.as_deref()
+            .unwrap_or_else(|| detect_language(file_path));
+        let source = std::fs::read_to_string(file_path)?;
+
+        match update_only(&source, lang, &op.xpath, &op.value, op.limit) {
+            Ok(result) => {
+                if result.source != source {
+                    std::fs::write(file_path, &result.source)?;
+                    total_updated += result.matches_updated;
+                    files_modified.insert(file_path.clone());
+                }
+            }
+            Err(tractor_core::xpath_upsert::UpsertError::UnsupportedLanguage(_)) => {
+                fallback_files.push(file_path.clone());
+            }
+            Err(e) => return Err(e.into()),
+        }
+    }
+
+    // Legacy fallback for languages without renderers
+    if !fallback_files.is_empty() {
+        let matches = query_files(
+            &fallback_files, &op.xpath, op.language.as_deref(),
+            op.tree_mode, op.ignore_whitespace, op.parse_depth,
+            None, options.verbose,
+        )?;
+        if !matches.is_empty() {
+            let summary = apply_replacements(&matches, &op.value)?;
+            total_updated += summary.replacements_made;
+            for m in &matches {
+                files_modified.insert(m.file.clone());
+            }
+        }
+    }
+
+    Ok(Report::set(vec![], Summary {
+        passed: total_updated > 0,
+        total: total_updated,
+        files_affected: files_modified.len(),
+        errors: 0,
+        warnings: 0,
+        expected: None,
+        query: None,
+    }))
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/// Check whether an expectation is met.
+fn check_expectation(expect: &str, count: usize) -> Result<bool, Box<dyn std::error::Error>> {
+    let passed = match expect {
+        "none" => count == 0,
+        "some" => count > 0,
+        _ => {
+            let expected: usize = expect.parse()
+                .map_err(|_| format!("invalid expectation '{}': use 'none', 'some', or a number", expect))?;
+            count == expected
+        }
+    };
+    Ok(passed)
+}
 
 fn empty_summary() -> Summary {
     Summary {
@@ -757,6 +937,8 @@ mod tests {
             language: None,
             ignore_whitespace: false,
             parse_depth: None,
+            ruleset_include: vec![],
+            ruleset_exclude: vec![],
         })];
 
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
@@ -783,6 +965,8 @@ mod tests {
             language: None,
             ignore_whitespace: false,
             parse_depth: None,
+            ruleset_include: vec![],
+            ruleset_exclude: vec![],
         })];
 
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
@@ -817,6 +1001,8 @@ mod tests {
                 language: None,
                 ignore_whitespace: false,
                 parse_depth: None,
+                ruleset_include: vec![],
+                ruleset_exclude: vec![],
             }),
             Operation::Set(SetOperation {
                 files: vec![config_path.to_str().unwrap().into()],

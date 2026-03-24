@@ -176,6 +176,8 @@ fn convert_check(config: CheckConfig) -> Result<Operation, Box<dyn std::error::E
         language: config.language,
         ignore_whitespace: false,
         parse_depth: None,
+        ruleset_include: vec![],
+        ruleset_exclude: vec![],
     }))
 }
 
