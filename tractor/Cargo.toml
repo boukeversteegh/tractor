@@ -20,3 +20,5 @@ rayon.workspace = true
 num_cpus = "1.16"
 serde_json.workspace = true
 serde_yaml.workspace = true
+toml = "0.8"
+serde = { workspace = true }

@@ -266,6 +266,10 @@ Output format [default: gcc]
     /// Severity level: error (default) or warning
     #[arg(long = "severity", default_value = "error", help_heading = "Check")]
     pub severity: String,
+
+    /// Path to a TOML rules file for batch checking
+    #[arg(long = "rules", help_heading = "Check")]
+    pub rules: Option<String>,
 }
 
 /// Test mode: assert match count expectations

@@ -11,5 +11,6 @@ pub use matcher::{
     print_schema_from_matches,
     run_debug,
     match_to_report_match,
+    run_rules,
 };
 pub use format::{render_check_report, render_test_report, render_set_report};

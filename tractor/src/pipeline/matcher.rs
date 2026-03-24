@@ -7,6 +7,7 @@ use tractor_core::{
     output::{render_document, RenderOptions},
     parse_to_documents, parse_string_to_documents,
     report::{ReportMatch, Severity},
+    rule::{RuleSet, GlobMatcher},
 };
 
 use super::context::RunContext;
@@ -258,4 +259,128 @@ pub fn run_debug(ctx: &RunContext, files: &[String], xpath_expr: &str) -> Result
     }
 
     Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// Batch rule execution
+// ---------------------------------------------------------------------------
+
+/// A match tagged with its originating rule, ready for report building.
+pub struct RuleMatch {
+    pub rule_index: usize,
+    pub m: Match,
+}
+
+/// Precomputed per-rule state: the glob matcher and the XPath expression.
+struct CompiledRule {
+    glob: GlobMatcher,
+    xpath: String,
+}
+
+/// Execute all rules in a `RuleSet` against a list of files.
+///
+/// Each file is parsed once. Every applicable rule (determined by glob
+/// intersection) is run against the parsed document. Returns matches
+/// tagged with their originating rule index.
+///
+/// `verbose` controls whether parse/query warnings are printed to stderr.
+pub fn run_rules(
+    ruleset: &RuleSet,
+    files: &[String],
+    tree_mode: Option<tractor_core::TreeMode>,
+    ignore_whitespace: bool,
+    parse_depth: Option<usize>,
+    verbose: bool,
+) -> Result<Vec<RuleMatch>, Box<dyn std::error::Error>> {
+    // Compile glob matchers for each rule upfront.
+    let compiled: Vec<CompiledRule> = ruleset
+        .rules
+        .iter()
+        .map(|rule| {
+            let glob = ruleset.glob_matcher(rule)?;
+            Ok(CompiledRule {
+                glob,
+                xpath: rule.xpath.clone(),
+            })
+        })
+        .collect::<Result<Vec<_>, tractor_core::rule::GlobError>>()?;
+
+    // Process files in parallel. Each file is parsed once, then all
+    // applicable rules are queried against it.
+    let results: Vec<Vec<RuleMatch>> = files
+        .par_iter()
+        .filter_map(|file_path| {
+            // Determine which rules apply to this file.
+            let applicable: Vec<usize> = compiled
+                .iter()
+                .enumerate()
+                .filter(|(_, cr)| cr.glob.matches(file_path))
+                .map(|(i, _)| i)
+                .collect();
+
+            if applicable.is_empty() {
+                return None;
+            }
+
+            // Resolve per-file language/tree_mode. For now, use the first
+            // applicable rule's overrides or the ruleset defaults.
+            // TODO: group rules by (lang, tree_mode) and re-parse when needed.
+            let first_rule = &ruleset.rules[applicable[0]];
+            let lang_override = ruleset.effective_language(first_rule);
+            let effective_tree_mode = ruleset.effective_tree_mode(first_rule).or(tree_mode);
+
+            let mut result = match parse_to_documents(
+                std::path::Path::new(file_path),
+                lang_override,
+                effective_tree_mode,
+                ignore_whitespace,
+                parse_depth,
+            ) {
+                Ok(r) => r,
+                Err(e) => {
+                    if verbose {
+                        eprintln!("warning: {}: {}", file_path, e);
+                    }
+                    return None;
+                }
+            };
+
+            let mut file_matches = Vec::new();
+
+            for rule_idx in applicable {
+                match result.query(&compiled[rule_idx].xpath) {
+                    Ok(matches) => {
+                        for m in matches {
+                            file_matches.push(RuleMatch {
+                                rule_index: rule_idx,
+                                m,
+                            });
+                        }
+                    }
+                    Err(e) => {
+                        if verbose {
+                            eprintln!(
+                                "warning: {}: rule '{}' query error: {}",
+                                file_path, ruleset.rules[rule_idx].id, e
+                            );
+                        }
+                    }
+                }
+            }
+
+            if file_matches.is_empty() {
+                None
+            } else {
+                Some(file_matches)
+            }
+        })
+        .collect();
+
+    // Flatten and sort by file, line, column for stable output.
+    let mut all_matches: Vec<RuleMatch> = results.into_iter().flatten().collect();
+    all_matches.sort_by(|a, b| {
+        (&a.m.file, a.m.line, a.m.column).cmp(&(&b.m.file, b.m.line, b.m.column))
+    });
+
+    Ok(all_matches)
 }
