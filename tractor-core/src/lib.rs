@@ -53,6 +53,8 @@ pub use replace::{apply_replacements, apply_set_to_string, compute_set_output, R
 pub use report::{Report, ReportKind, ReportMatch, Summary, Severity};
 pub use rule::{Rule, RuleSet};
 #[cfg(feature = "native")]
+pub use rule::{GlobMatcher, GlobError};
+#[cfg(feature = "native")]
 pub use parallel::{expand_globs, filter_supported_files};
 pub use xot_builder::{XotBuilder, XeeBuilder};
 pub use tree_mode::TreeMode;
