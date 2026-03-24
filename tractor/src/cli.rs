@@ -93,6 +93,8 @@ pub enum Command {
     Update(UpdateArgs),
     /// [EXPERIMENTAL] Render XML AST back to source code
     Render(RenderArgs),
+    /// Execute a tractor config file (batch check/set operations)
+    Run(RunArgs),
 }
 
 /// Shared arguments available in all modes
@@ -373,6 +375,22 @@ pub struct UpdateArgs {
     /// Value to set matched nodes to
     #[arg(long = "value", help_heading = "Update")]
     pub value: String,
+}
+
+/// Run mode: execute a tractor config file with mixed operations
+#[derive(Args, Debug)]
+pub struct RunArgs {
+    /// Path to the tractor config file (.yaml, .yml, or .toml)
+    #[arg()]
+    pub config: String,
+
+    #[command(flatten)]
+    pub shared: SharedArgs,
+
+    /// Verify mode: check that all set operations are already applied (no drift).
+    /// Exits with failure if any files would be modified. Does not write files.
+    #[arg(long = "verify", help_heading = "Run")]
+    pub verify: bool,
 }
 
 /// Render mode: convert XML AST back to source code
