@@ -125,10 +125,9 @@ pub fn update_only(
 /// `value`. If the XPath does not match, the minimal structure is created and
 /// inserted.
 ///
-/// `value_kind` controls the type annotation on inserted leaf nodes:
-///   - `Some("string")` — force string (default for `--value`)
-///   - `Some("null")` / `Some("number")` etc. — force that kind
-///   - `None` — let the renderer auto-detect from the value text
+/// Internally parses with [`TreeMode::Data`] and renders back via the data-mode
+/// renderer. XPath expressions must therefore use data-level paths (e.g.
+/// `//database/host`), not AST-level node names.
 pub fn upsert(
     source: &str,
     lang: &str,
@@ -140,6 +139,11 @@ pub fn upsert(
 }
 
 /// Like [`upsert`] but with explicit control over the value kind annotation.
+///
+/// `value_kind` controls the type annotation on inserted leaf nodes:
+///   - `Some("string")` — force string (default for `--value`)
+///   - `Some("null")` / `Some("number")` etc. — force that kind
+///   - `None` — let the renderer auto-detect from the value text
 pub fn upsert_typed(
     source: &str,
     lang: &str,
