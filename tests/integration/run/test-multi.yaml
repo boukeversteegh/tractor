@@ -1,0 +1,7 @@
+test:
+  files: ["settings.yaml"]
+  assertions:
+    - xpath: "//app/name"
+      expect: some
+    - xpath: "//nonexistent"
+      expect: none

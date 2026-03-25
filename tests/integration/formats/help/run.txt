@@ -1,10 +1,10 @@
-Run checks and report violations (lint mode)
+Execute a tractor config file (batch check/set operations)
 
-Usage: tractor check [OPTIONS] [FILES]...
+Usage: tractor run [OPTIONS] <CONFIG>
 
 Arguments:
-  [FILES]...
-          Files to process (supports glob patterns like "src/**/*.cs")
+  <CONFIG>
+          Path to the tractor config file (.yaml, .yml, or .toml)
 
 Options:
   -l, --lang <LANG>
@@ -41,19 +41,6 @@ View:
   -g, --group <GROUP_BY>
           Group output by file
 
-  -v, --view <VIEW>
-          Report view [default: tree]
-            tree      Parsed source tree
-            value     Text content of matched nodes
-            source    Exact matched source text
-            lines     Full source lines containing each match
-            count     Total match count
-            query     Echo the XPath query as tractor received it (useful to detect shell/wrapper mangling)
-            schema    Structural overview of element types
-
-  -m, --message <MESSAGE>
-          Custom message template (supports {value}, {line}, {col}, {file})
-
 Format:
       --no-pretty
           Disable pretty printing (shows XML without formatting, as used by XPath)
@@ -66,17 +53,6 @@ Format:
       --no-color
           Disable color output
 
-  -f, --format <FORMAT>
-          Output format [default: gcc]
-            gcc       file:line:col: severity: reason (default for check)
-            github    GitHub Actions annotation (::error file=...)
-            text      Human-readable plain text
-            json      JSON report envelope
-            yaml      YAML report envelope
-            xml       XML report envelope
-          
-          [default: gcc]
-
 Advanced:
       --parse-depth <PARSE_DEPTH>
           [EXPERIMENTAL] Limit tree building depth (skip parsing deeper nodes for speed)
@@ -87,14 +63,14 @@ Advanced:
       --verbose
           Show verbose output
 
-Check:
-      --reason <REASON>
-          Reason message for each violation
-
-      --severity <SEVERITY>
-          Severity level: error (default) or warning
+Output:
+  -f, --format <FORMAT>
+          Output format: text, json, yaml, xml, gcc, github
           
-          [default: error]
+          [default: gcc]
 
-      --rules <RULES>
-          Path to a TOML rules file for batch checking
+  -v, --view <VIEW>
+          View fields to include (e.g. "tree,reason,severity")
+
+  -m, --message <MESSAGE>
+          Message template for matches (e.g. "{file}:{line}: {value}")

@@ -1,9 +1,19 @@
-use std::collections::HashSet;
-use tractor_core::report::{Report, Severity, Summary};
+use tractor_core::report::Severity;
+use tractor_core::rule::Rule;
 use crate::cli::CheckArgs;
-use crate::pipeline::{RunContext, ViewField, InputMode, query_files_batched, render_check_report, match_to_report_match};
+use crate::executor::{self, CheckOperation, ExecuteOptions, Operation};
+use crate::pipeline::{
+    RunContext, ViewField, InputMode,
+    render_check_report,
+    project_report, apply_message_template,
+};
 
 pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
+    if args.rules.is_some() {
+        let rules_path = args.rules.clone().unwrap();
+        return run_check_rules(args, &rules_path);
+    }
+
     let severity = match args.severity.as_str() {
         "error" => Severity::Error,
         "warning" => Severity::Warning,
@@ -11,6 +21,7 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
     };
     let reason = args.reason.clone().unwrap_or_else(|| "check failed".to_string());
 
+    // Build RunContext for input resolution + rendering config.
     let ctx = RunContext::build(
         &args.shared, args.files, args.shared.xpath.clone(),
         &args.format, &[ViewField::Reason, ViewField::Severity, ViewField::Lines], args.view.as_deref(), args.message, None, false, true,
@@ -30,32 +41,101 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
-    let (_, matches) = query_files_batched(&ctx, files, xpath_expr, true)?;
+    // Build a single-rule check operation and delegate to the executor.
+    let rule = Rule::new("_check", xpath_expr)
+        .with_reason(reason)
+        .with_severity(severity);
 
-    // Build ReportMatches with reason and severity, populating only selected fields
-    let message_template = ctx.message.clone();
-    let mut files_affected = HashSet::new();
-    for m in &matches {
-        files_affected.insert(m.file.clone());
-    }
-    let total = matches.len();
+    let op = Operation::Check(CheckOperation {
+        files: files.clone(),
+        exclude: vec![],
+        rules: vec![rule],
+        tree_mode: ctx.tree_mode,
+        language: ctx.lang.clone(),
+        ignore_whitespace: ctx.ignore_whitespace,
+        parse_depth: ctx.parse_depth,
+        ruleset_include: vec![],
+        ruleset_exclude: vec![],
+    });
 
-    let report_matches = matches.into_iter().map(|m| {
-        let message = message_template.as_deref().map(|t| tractor_core::format_message(t, &m));
-        match_to_report_match(m, &ctx.view, Some(reason.clone()), Some(severity), message)
-    }).collect();
-
-    let summary = Summary {
-        passed: total == 0,
-        total,
-        files_affected: files_affected.len(),
-        errors: if matches!(severity, Severity::Error) { total } else { 0 },
-        warnings: if matches!(severity, Severity::Warning) { total } else { 0 },
-        expected: None,
-        query: None,
+    let options = ExecuteOptions {
+        verbose: ctx.verbose,
+        ..Default::default()
     };
 
-    let report = Report::check(report_matches, summary);
+    let reports = executor::execute(&[op], &options)?;
+    let mut report = reports.into_iter().next().unwrap();
+
+    // Single-xpath check: don't expose internal rule ID in output.
+    for m in &mut report.matches {
+        m.rule_id = None;
+    }
+
+    // Apply CLI-level message template (-m) if provided.
+    if let Some(ref template) = ctx.message {
+        apply_message_template(&mut report, template);
+    }
+
+    // Project for the requested view and render.
+    project_report(&mut report, &ctx.view);
+    let report = if ctx.group_by_file { report.with_groups() } else { report };
+    render_check_report(&report, &ctx)
+}
+
+// ---------------------------------------------------------------------------
+// Rules-based batch check — delegates to executor
+// ---------------------------------------------------------------------------
+
+fn run_check_rules(args: CheckArgs, rules_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let ruleset = crate::rules_config::load_rules(std::path::Path::new(rules_path))?;
+
+    if ruleset.rules.is_empty() {
+        return Ok(());
+    }
+
+    let ctx = RunContext::build(
+        &args.shared, args.files, None, &args.format,
+        &[ViewField::Reason, ViewField::Severity, ViewField::Lines],
+        args.view.as_deref(), args.message, None, false, true,
+    )?;
+
+    let files = match &ctx.input {
+        InputMode::Files(files) => files.clone(),
+        InputMode::InlineSource { .. } => {
+            return Err("check --rules cannot be used with stdin input".into());
+        }
+    };
+
+    if files.is_empty() {
+        return Ok(());
+    }
+
+    let op = Operation::Check(CheckOperation {
+        files,
+        exclude: vec![],
+        rules: ruleset.rules.clone(),
+        tree_mode: ctx.tree_mode,
+        language: ctx.lang.clone(),
+        ignore_whitespace: ctx.ignore_whitespace,
+        parse_depth: ctx.parse_depth,
+        ruleset_include: ruleset.include.clone(),
+        ruleset_exclude: ruleset.exclude.clone(),
+    });
+
+    let options = ExecuteOptions {
+        verbose: ctx.verbose,
+        ..Default::default()
+    };
+
+    let reports = executor::execute(&[op], &options)?;
+    let mut report = reports.into_iter().next().unwrap();
+
+    // Apply CLI-level message template (-m) if provided.
+    if let Some(ref template) = ctx.message {
+        apply_message_template(&mut report, template);
+    }
+
+    project_report(&mut report, &ctx.view);
     let report = if ctx.group_by_file { report.with_groups() } else { report };
     render_check_report(&report, &ctx)
 }

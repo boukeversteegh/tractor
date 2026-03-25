@@ -1,0 +1,11 @@
+check:
+  files: ["settings.yaml"]
+  rules:
+    - id: no-debug
+      xpath: "//debug[.='true']"
+      reason: "debug should be disabled in production"
+      severity: error
+    - id: no-debug-loglevel
+      xpath: "//log_level[.='debug']"
+      reason: "log level should not be debug in production"
+      severity: warning

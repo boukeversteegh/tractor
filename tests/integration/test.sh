@@ -23,6 +23,10 @@ for suite in string-input replace update xpath-expressions; do
     echo ""
 done
 
+# Batch execution tests (tractor run)
+bash "tests/integration/run/test.sh" || exit 1
+echo ""
+
 # Format snapshot tests
 bash "tests/integration/formats/set/test.sh" || exit 1
 echo ""

@@ -45,6 +45,20 @@ pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         root.insert("matches".into(), Value::Array(matches_json));
     }
 
+    // Run report: emit sub-reports as "operations" array
+    if let Some(ref ops) = report.operations {
+        let ops_json: Vec<Value> = ops.iter().map(|sub| {
+            let sub_str = render_json_report(sub, view, render_opts);
+            let sub_obj: serde_json::Map<String, Value> = serde_json::from_str(&sub_str).unwrap_or_default();
+            // Put "kind" first by building a new ordered map
+            let mut ordered = serde_json::Map::new();
+            ordered.insert("kind".into(), json!(sub.kind.as_str()));
+            ordered.extend(sub_obj);
+            Value::Object(ordered)
+        }).collect();
+        root.insert("operations".into(), Value::Array(ops_json));
+    }
+
     if let Some(ref groups) = report.groups {
         let groups_json: Vec<Value> = groups.iter().map(|g| {
             let group_matches: Vec<Value> = g.matches.iter()

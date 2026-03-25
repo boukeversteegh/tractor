@@ -1,0 +1,7 @@
+check:
+  files: ["settings.yaml", "app-config.json"]
+  rules:
+    - id: no-debug
+      xpath: "//debug[.='true']"
+      reason: "debug mode must be disabled"
+      severity: error

@@ -1,4 +1,4 @@
-//! Code synthesis: render tractor XML back to source code
+//! Code synthesis: render tractor XML back to source code.
 //!
 //! This module provides the inverse of the parse+transform pipeline:
 //! given tractor's semantic XML (the same format output by `tractor -x ...`),
@@ -6,12 +6,21 @@
 //!
 //! Each language implements its own renderer that knows the syntax rules
 //! for its constructs. The renderer operates on `XmlNode` trees.
+//!
+//! ## Tree mode requirement
+//!
+//! The renderer only accepts trees produced with [`TreeMode::Data`].
+//! `TreeMode::Raw` and `TreeMode::Structure` produce AST-level node names
+//! and structure that the renderer does not understand. Supporting those
+//! modes would require a syntax-aware rewriter that preserves AST structure
+//! rather than the current approach of serializing from the data model.
 
 pub mod csharp;
 pub mod json;
 pub mod yaml;
 
 use crate::xpath::XmlNode;
+use crate::tree_mode::TreeMode;
 use std::collections::HashMap;
 
 /// Maps original source position (e.g. "3:5") to byte span `(start, end)` in rendered output.
@@ -26,6 +35,9 @@ pub type SpanMap = HashMap<String, (usize, usize)>;
 pub enum RenderError {
     #[error("unsupported language: {0}")]
     UnsupportedLanguage(String),
+
+    #[error("unsupported tree mode '{mode}' for language '{lang}': renderer only supports 'data' mode")]
+    UnsupportedTreeMode { lang: String, mode: String },
 
     #[error("unsupported node type: {0}")]
     UnsupportedNode(String),
@@ -290,8 +302,27 @@ pub fn parse_input(input: &str) -> Result<XmlNode, RenderError> {
     }
 }
 
-/// Render an XmlNode tree to source code for the given language
-pub fn render(node: &XmlNode, lang: &str, opts: &RenderOptions) -> Result<String, RenderError> {
+/// Check whether the renderer supports the given tree mode for a language.
+///
+/// Currently the renderer only supports [`TreeMode::Data`] for all languages.
+/// This function allows callers to check before attempting to render, and
+/// provides a single place to update when new tree modes are supported.
+pub fn supports_tree_mode(_lang: &str, mode: TreeMode) -> bool {
+    matches!(mode, TreeMode::Data)
+}
+
+/// Render an XmlNode tree to source code for the given language.
+///
+/// The `tree_mode` parameter must match the mode used to parse the tree.
+/// Returns [`RenderError::UnsupportedTreeMode`] if the renderer does not
+/// support the given mode. Use [`supports_tree_mode`] to check upfront.
+pub fn render(node: &XmlNode, lang: &str, tree_mode: TreeMode, opts: &RenderOptions) -> Result<String, RenderError> {
+    if !supports_tree_mode(lang, tree_mode) {
+        return Err(RenderError::UnsupportedTreeMode {
+            lang: lang.to_string(),
+            mode: format!("{:?}", tree_mode).to_lowercase(),
+        });
+    }
     match lang {
         "csharp" => csharp::render_node(node, opts),
         "json" => json::render_node(node, opts),
@@ -306,17 +337,27 @@ pub fn render(node: &XmlNode, lang: &str, opts: &RenderOptions) -> Result<String
 /// source position (`start` attribute) to its value's byte range in the output.
 /// This allows callers to locate any node in the rendered output without
 /// re-parsing.
+///
+/// Like [`render`], returns [`RenderError::UnsupportedTreeMode`] if the mode
+/// is not supported.
 pub fn render_with_spans(
     node: &XmlNode,
     lang: &str,
+    tree_mode: TreeMode,
     opts: &RenderOptions,
 ) -> Result<(String, SpanMap), RenderError> {
+    if !supports_tree_mode(lang, tree_mode) {
+        return Err(RenderError::UnsupportedTreeMode {
+            lang: lang.to_string(),
+            mode: format!("{:?}", tree_mode).to_lowercase(),
+        });
+    }
     match lang {
         "json" => json::render_node_tracked(node, opts),
         "yaml" | "yml" => yaml::render_node_tracked(node, opts),
         _ => {
             // Fall back to untracked render for languages that don't support span tracking
-            let rendered = render(node, lang, opts)?;
+            let rendered = render(node, lang, tree_mode, opts)?;
             Ok((rendered, SpanMap::new()))
         }
     }

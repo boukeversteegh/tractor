@@ -1,27 +1,16 @@
-use std::collections::HashSet;
-use tractor_core::report::{Report, Summary};
 use crate::cli::TestArgs;
-use crate::pipeline::{RunContext, ViewField, InputMode, query_inline_source, query_files_batched, render_test_report, match_to_report_match};
+use crate::executor::{self, ExecuteOptions, Operation, TestOperation, TestAssertion};
+use crate::pipeline::{
+    RunContext, ViewField, InputMode,
+    render_test_report,
+    project_report,
+};
 
 pub mod test_colors {
     pub const RESET: &str = "\x1b[0m";
     pub const GREEN: &str = "\x1b[32m";
     pub const RED: &str = "\x1b[31m";
     pub const BOLD: &str = "\x1b[1m";
-}
-
-/// Check whether an expectation is met.
-pub fn check_expectation(expect: &str, count: usize) -> Result<bool, Box<dyn std::error::Error>> {
-    let passed = match expect {
-        "none" => count == 0,
-        "some" => count > 0,
-        _ => {
-            let expected: usize = expect.parse()
-                .map_err(|_| format!("invalid expectation '{}': use 'none', 'some', or a number", expect))?;
-            count == expected
-        }
-    };
-    Ok(passed)
 }
 
 pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
@@ -37,44 +26,49 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
     let dot = ".".to_string();
     let xpath_expr = ctx.xpath.as_ref().unwrap_or(&dot);
 
-    let (count, matches) = match &ctx.input {
-        InputMode::InlineSource { source, lang } => {
-            let matches = query_inline_source(&ctx, source, lang, xpath_expr)?;
-            let count = matches.len();
-            (count, matches)
-        }
-        InputMode::Files(files) => {
-            query_files_batched(&ctx, files, xpath_expr, true)?
-        }
+    // Build the test operation for either files or inline source.
+    let op = match &ctx.input {
+        InputMode::Files(files) => Operation::Test(TestOperation {
+            files: files.clone(),
+            exclude: vec![],
+            assertions: vec![TestAssertion {
+                xpath: xpath_expr.to_string(),
+                expect: expect.clone(),
+            }],
+            tree_mode: ctx.tree_mode,
+            language: ctx.lang.clone(),
+            limit: ctx.limit,
+            ignore_whitespace: ctx.ignore_whitespace,
+            parse_depth: ctx.parse_depth,
+            inline_source: None,
+            inline_lang: None,
+        }),
+        InputMode::InlineSource { source, lang } => Operation::Test(TestOperation {
+            files: vec![],
+            exclude: vec![],
+            assertions: vec![TestAssertion {
+                xpath: xpath_expr.to_string(),
+                expect: expect.clone(),
+            }],
+            tree_mode: ctx.tree_mode,
+            language: None,
+            limit: ctx.limit,
+            ignore_whitespace: ctx.ignore_whitespace,
+            parse_depth: ctx.parse_depth,
+            inline_source: Some(source.clone()),
+            inline_lang: Some(lang.clone()),
+        }),
     };
 
-    // Check expectation
-    let passed = check_expectation(&expect, count)?;
-
-    // Build ReportMatches (no reason/severity for test matches)
-    let message_template = ctx.message.clone();
-    let mut files_affected = HashSet::new();
-    for m in &matches {
-        files_affected.insert(m.file.clone());
-    }
-    let files_count = files_affected.len();
-
-    let report_matches = matches.into_iter().map(|m| {
-        let msg = message_template.as_deref().map(|t| tractor_core::format_message(t, &m));
-        match_to_report_match(m, &ctx.view, None, None, msg)
-    }).collect();
-
-    let summary = Summary {
-        passed,
-        total: count,
-        files_affected: files_count,
-        errors: 0,
-        warnings: 0,
-        expected: Some(expect.clone()),
-        query: None,
+    let options = ExecuteOptions {
+        verbose: ctx.verbose,
+        ..Default::default()
     };
 
-    let report = Report::test(report_matches, summary);
+    let reports = executor::execute(&[op], &options)?;
+    let mut report = reports.into_iter().next().unwrap();
+
+    project_report(&mut report, &ctx.view);
     let report = if ctx.group_by_file { report.with_groups() } else { report };
     render_test_report(&report, &ctx, &message, &error_template)
 }

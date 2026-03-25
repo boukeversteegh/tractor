@@ -2,72 +2,15 @@ use std::collections::HashSet;
 
 use rayon::prelude::*;
 use tractor_core::{
-    XPathEngine, Match,
-    SchemaCollector,
+    Match,
     output::{render_document, RenderOptions},
     parse_to_documents, parse_string_to_documents,
-    report::{ReportMatch, Severity},
+    report::Report,
+    rule::{RuleSet, GlobMatcher},
 };
 
 use super::context::RunContext;
 use super::format::{ViewField, ViewSet};
-
-// ---------------------------------------------------------------------------
-// Report-match builder
-// ---------------------------------------------------------------------------
-
-/// Convert a raw `Match` into a `ReportMatch`, populating only the content
-/// fields that are present in `view`. The `Match` (including source_lines and
-/// xml_fragment) is consumed and dropped after extraction.
-pub fn match_to_report_match(
-    m: Match,
-    view: &ViewSet,
-    reason: Option<String>,
-    severity: Option<Severity>,
-    message: Option<String>,
-) -> ReportMatch {
-    // Always keep structured data (Map/Array) — it's the only representation.
-    // For XML elements, only keep when the view requests tree.
-    let tree = match &m.xml_node {
-        Some(node) if matches!(node,
-            tractor_core::xpath::XmlNode::Map { .. } |
-            tractor_core::xpath::XmlNode::Array { .. }
-        ) => m.xml_node.clone(),
-        // Keep tree when explicitly requested OR when lines are selected (needed for syntax highlighting).
-        _ => if view.has(ViewField::Tree) || view.has(ViewField::Lines) || view.has(ViewField::Source) {
-            m.xml_node.clone()
-        } else {
-            None
-        },
-    };
-    let value  = view.has(ViewField::Value)
-                     .then(|| m.value.clone());
-    let source = view.has(ViewField::Source)
-                     .then(|| m.extract_source_snippet());
-    let lines  = view.has(ViewField::Lines)
-                     .then(|| m.get_source_lines_range()
-                               .into_iter()
-                               .map(|l| l.trim_end_matches('\r').to_owned())
-                               .collect());
-
-    ReportMatch {
-        file:       m.file.clone(),
-        line:       m.line,
-        column:     m.column,
-        end_line:   m.end_line,
-        end_column: m.end_column,
-        tree,
-        value,
-        source,
-        lines,
-        reason,
-        severity,
-        message,
-        rule_id: None,
-        status:  None,
-        output:  None,
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Batch utility
@@ -104,17 +47,7 @@ pub fn query_inline_source(
         source, lang, "<stdin>".to_string(), ctx.tree_mode, ctx.ignore_whitespace
     )?;
 
-    let engine = XPathEngine::new()
-        .with_verbose(ctx.verbose)
-        .with_ignore_whitespace(ctx.ignore_whitespace);
-
-    let matches = engine.query_documents(
-        &mut result.documents,
-        result.doc_handle,
-        xpath_expr,
-        result.source_lines.clone(),
-        &result.file_path,
-    )?;
+    let matches = result.query(xpath_expr)?;
 
     let matches = if let Some(limit) = ctx.limit {
         matches.into_iter().take(limit).collect()
@@ -160,16 +93,7 @@ pub fn query_files_batched(
                     }
                 };
 
-                let engine = XPathEngine::new()
-                    .with_verbose(ctx.verbose)
-                    .with_ignore_whitespace(ctx.ignore_whitespace);
-                match engine.query_documents(
-                    &mut result.documents,
-                    result.doc_handle,
-                    xpath_expr,
-                    result.source_lines.clone(),
-                    &result.file_path,
-                ) {
+                match result.query(xpath_expr) {
                     Ok(matches) => Some(matches),
                     Err(e) => {
                         if ctx.verbose {
@@ -201,20 +125,6 @@ pub fn query_files_batched(
 }
 
 // ---------------------------------------------------------------------------
-// Output helpers
-// ---------------------------------------------------------------------------
-
-pub fn print_schema_from_matches(matches: &[Match], depth: Option<usize>, use_color: bool) {
-    let mut collector = SchemaCollector::new();
-    for m in matches {
-        if let Some(ref node) = m.xml_node {
-            collector.collect_from_xml_node(node);
-        }
-    }
-    print!("{}", collector.format(depth, use_color));
-}
-
-// ---------------------------------------------------------------------------
 // Debug mode
 // ---------------------------------------------------------------------------
 
@@ -242,17 +152,7 @@ pub fn run_debug(ctx: &RunContext, files: &[String], xpath_expr: &str) -> Result
             }
         };
 
-        let engine = XPathEngine::new()
-            .with_verbose(ctx.verbose)
-            .with_ignore_whitespace(ctx.ignore_whitespace);
-
-        match engine.query_documents(
-            &mut result.documents,
-            result.doc_handle,
-            xpath_expr,
-            result.source_lines.clone(),
-            &result.file_path,
-        ) {
+        match result.query(xpath_expr) {
             Ok(matches) if !matches.is_empty() => {
                 let matches: Vec<_> = if let Some(limit) = remaining_limit {
                     let take = limit.min(matches.len());
@@ -287,4 +187,200 @@ pub fn run_debug(ctx: &RunContext, files: &[String], xpath_expr: &str) -> Result
     }
 
     Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// Batch rule execution
+// ---------------------------------------------------------------------------
+
+/// A match tagged with its originating rule, ready for report building.
+pub struct RuleMatch {
+    pub rule_index: usize,
+    pub m: Match,
+}
+
+/// Precomputed per-rule state: the glob matcher and the XPath expression.
+struct CompiledRule {
+    glob: GlobMatcher,
+    xpath: String,
+}
+
+/// Execute all rules in a `RuleSet` against a list of files.
+///
+/// Each file is parsed once. Every applicable rule (determined by glob
+/// intersection) is run against the parsed document. Returns matches
+/// tagged with their originating rule index.
+///
+/// `verbose` controls whether parse/query warnings are printed to stderr.
+pub fn run_rules(
+    ruleset: &RuleSet,
+    files: &[String],
+    tree_mode: Option<tractor_core::TreeMode>,
+    ignore_whitespace: bool,
+    parse_depth: Option<usize>,
+    verbose: bool,
+) -> Result<Vec<RuleMatch>, Box<dyn std::error::Error>> {
+    // Compile glob matchers for each rule upfront.
+    let compiled: Vec<CompiledRule> = ruleset
+        .rules
+        .iter()
+        .map(|rule| {
+            let glob = ruleset.glob_matcher(rule)?;
+            Ok(CompiledRule {
+                glob,
+                xpath: rule.xpath.clone(),
+            })
+        })
+        .collect::<Result<Vec<_>, tractor_core::rule::GlobError>>()?;
+
+    // Process files in parallel. Each file is parsed once, then all
+    // applicable rules are queried against it.
+    let results: Vec<Vec<RuleMatch>> = files
+        .par_iter()
+        .filter_map(|file_path| {
+            // Determine which rules apply to this file.
+            let applicable: Vec<usize> = compiled
+                .iter()
+                .enumerate()
+                .filter(|(_, cr)| cr.glob.matches(file_path))
+                .map(|(i, _)| i)
+                .collect();
+
+            if applicable.is_empty() {
+                return None;
+            }
+
+            // Resolve per-file language/tree_mode. Uses the first applicable
+            // rule's overrides or the ruleset defaults. If rules specify
+            // different tree_mode/language for the same file, only the first
+            // rule's settings apply — a future improvement could group rules
+            // by (lang, tree_mode) and re-parse when needed.
+            let first_rule = &ruleset.rules[applicable[0]];
+            let lang_override = ruleset.effective_language(first_rule);
+            let effective_tree_mode = ruleset.effective_tree_mode(first_rule).or(tree_mode);
+
+            let mut result = match parse_to_documents(
+                std::path::Path::new(file_path),
+                lang_override,
+                effective_tree_mode,
+                ignore_whitespace,
+                parse_depth,
+            ) {
+                Ok(r) => r,
+                Err(e) => {
+                    if verbose {
+                        eprintln!("warning: {}: {}", file_path, e);
+                    }
+                    return None;
+                }
+            };
+
+            let mut file_matches = Vec::new();
+
+            for rule_idx in applicable {
+                match result.query(&compiled[rule_idx].xpath) {
+                    Ok(matches) => {
+                        for m in matches {
+                            file_matches.push(RuleMatch {
+                                rule_index: rule_idx,
+                                m,
+                            });
+                        }
+                    }
+                    Err(e) => {
+                        if verbose {
+                            eprintln!(
+                                "warning: {}: rule '{}' query error: {}",
+                                file_path, ruleset.rules[rule_idx].id, e
+                            );
+                        }
+                    }
+                }
+            }
+
+            if file_matches.is_empty() {
+                None
+            } else {
+                Some(file_matches)
+            }
+        })
+        .collect();
+
+    // Flatten and sort by file, line, column for stable output.
+    let mut all_matches: Vec<RuleMatch> = results.into_iter().flatten().collect();
+    all_matches.sort_by(|a, b| {
+        (&a.m.file, a.m.line, a.m.column).cmp(&(&b.m.file, b.m.line, b.m.column))
+    });
+
+    Ok(all_matches)
+}
+
+// ---------------------------------------------------------------------------
+// Report post-processing helpers
+// ---------------------------------------------------------------------------
+
+/// Project a report to only contain the fields requested by the view.
+///
+/// The executor populates all content fields. This function prunes
+/// fields that are not in the view, ensuring renderers see `None`
+/// for unselected fields (matching the behaviour of `match_to_report_match`).
+pub fn project_report(report: &mut Report, view: &ViewSet) {
+    for m in &mut report.matches {
+        // Map/Array nodes are always kept — they're the only representation for data formats.
+        // For other nodes, keep when tree/lines/source is selected (needed for rendering).
+        let keep_tree = match &m.tree {
+            Some(node) if matches!(
+                node,
+                tractor_core::xpath::XmlNode::Map { .. }
+                    | tractor_core::xpath::XmlNode::Array { .. }
+            ) => true,
+            _ => view.has(ViewField::Tree) || view.has(ViewField::Lines) || view.has(ViewField::Source),
+        };
+        if !keep_tree {
+            m.tree = None;
+        }
+        if !view.has(ViewField::Value) {
+            m.value = None;
+        }
+        if !view.has(ViewField::Source) {
+            m.source = None;
+        }
+        if !view.has(ViewField::Lines) {
+            m.lines = None;
+        }
+        if !view.has(ViewField::Reason) {
+            m.reason = None;
+        }
+        if !view.has(ViewField::Severity) {
+            m.severity = None;
+        }
+        if !view.has(ViewField::Status) {
+            m.status = None;
+        }
+    }
+}
+
+/// Apply a CLI-level message template (`-m`) to all matches in a report.
+///
+/// This overwrites any existing message (e.g. from rule-level templates).
+/// Placeholders: `{file}`, `{line}`, `{col}`, `{value}`.
+pub fn apply_message_template(report: &mut Report, template: &str) {
+    if !template.contains('{') {
+        // Static template — same for every match.
+        let msg = template.to_string();
+        for m in &mut report.matches {
+            m.message = Some(msg.clone());
+        }
+        return;
+    }
+
+    for m in &mut report.matches {
+        m.message = Some(
+            template
+                .replace("{file}", &tractor_core::output::normalize_path(&m.file))
+                .replace("{line}", &m.line.to_string())
+                .replace("{col}", &m.column.to_string())
+                .replace("{value}", m.value.as_deref().unwrap_or(""))
+        );
+    }
 }

@@ -7,11 +7,14 @@ mod version;
 mod xpath_utils;
 mod pipeline;
 mod modes;
+mod rules_config;
+mod tractor_config;
+mod executor;
 
 use std::process::ExitCode;
 use cli::{Cli, Command};
 use clap::Parser;
-use modes::{check::run_check, test::run_test, set::run_set, update::run_update, query::run_query, render::run_render};
+use modes::{check::run_check, test::run_test, set::run_set, update::run_update, query::run_query, render::run_render, run::run_run};
 
 /// An error that has already been reported to the user; main should exit with
 /// failure but not print an additional "error: ..." line.
@@ -55,6 +58,7 @@ fn main() -> ExitCode {
         Some(Command::Set(args)) => run_set(args),
         Some(Command::Update(args)) => run_update(args),
         Some(Command::Render(args)) => run_render(args),
+        Some(Command::Run(args)) => run_run(args),
         None => run_query(cli.query),
     };
 

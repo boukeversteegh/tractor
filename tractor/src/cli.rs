@@ -93,6 +93,8 @@ pub enum Command {
     Update(UpdateArgs),
     /// [EXPERIMENTAL] Render XML AST back to source code
     Render(RenderArgs),
+    /// Execute a tractor config file (batch check/set operations)
+    Run(RunArgs),
 }
 
 /// Shared arguments available in all modes
@@ -266,6 +268,10 @@ Output format [default: gcc]
     /// Severity level: error (default) or warning
     #[arg(long = "severity", default_value = "error", help_heading = "Check")]
     pub severity: String,
+
+    /// Path to a TOML rules file for batch checking
+    #[arg(long = "rules", help_heading = "Check")]
+    pub rules: Option<String>,
 }
 
 /// Test mode: assert match count expectations
@@ -369,6 +375,29 @@ pub struct UpdateArgs {
     /// Value to set matched nodes to
     #[arg(long = "value", help_heading = "Update")]
     pub value: String,
+}
+
+/// Run mode: execute a tractor config file with mixed operations
+#[derive(Args, Debug)]
+pub struct RunArgs {
+    /// Path to the tractor config file (.yaml, .yml, or .toml)
+    #[arg()]
+    pub config: String,
+
+    #[command(flatten)]
+    pub shared: SharedArgs,
+
+    /// Output format: text, json, yaml, xml, gcc, github
+    #[arg(short = 'f', long = "format", default_value = "gcc", help_heading = "Output")]
+    pub format: String,
+
+    /// View fields to include (e.g. "tree,reason,severity")
+    #[arg(short = 'v', long = "view", help_heading = "Output")]
+    pub view: Option<String>,
+
+    /// Message template for matches (e.g. "{file}:{line}: {value}")
+    #[arg(short = 'm', long = "message", help_heading = "Output")]
+    pub message: Option<String>,
 }
 
 /// Render mode: convert XML AST back to source code

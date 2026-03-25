@@ -22,9 +22,8 @@ use crate::parser::{parse_string_to_documents, XeeParseResult};
 use crate::render::{self, RenderOptions};
 use crate::tree_mode::TreeMode;
 use crate::xpath::xot_node_to_xml_node;
-use crate::xpath::{XPathEngine, Match};
+use crate::xpath::Match;
 use crate::xot_transform::helpers::*;
-use std::sync::Arc;
 use xot::Xot;
 
 /// Result of an upsert operation.
@@ -74,7 +73,7 @@ pub fn update_only(
     value: &str,
     limit: Option<usize>,
 ) -> Result<UpsertResult, UpsertError> {
-    // Verify the language has a renderer
+    // Verify the language has a renderer that supports data mode
     let test_render = render::render(
         &crate::xpath::XmlNode::Element {
             name: "test".to_string(),
@@ -82,6 +81,7 @@ pub fn update_only(
             children: vec![],
         },
         lang,
+        TreeMode::Data,
         &RenderOptions::default(),
     );
     if let Err(render::RenderError::UnsupportedLanguage(_)) = test_render {
@@ -99,15 +99,7 @@ pub fn update_only(
     .map_err(|e| UpsertError::Parse(e.to_string()))?;
 
     // Query with XPath
-    let engine = XPathEngine::new();
-    let existing = engine
-        .query_documents(
-            &mut result.documents,
-            result.doc_handle,
-            xpath,
-            Arc::new(vec![]),
-            "<update>",
-        )
+    let existing = result.query(xpath)
         .map_err(|e| UpsertError::Query(e.to_string()))?;
 
     if existing.is_empty() {
@@ -134,10 +126,9 @@ pub fn update_only(
 /// `value`. If the XPath does not match, the minimal structure is created and
 /// inserted.
 ///
-/// `value_kind` controls the type annotation on inserted leaf nodes:
-///   - `Some("string")` — force string (default for `--value`)
-///   - `Some("null")` / `Some("number")` etc. — force that kind
-///   - `None` — let the renderer auto-detect from the value text
+/// Internally parses with [`TreeMode::Data`] and renders back via the data-mode
+/// renderer. XPath expressions must therefore use data-level paths (e.g.
+/// `//database/host`), not AST-level node names.
 pub fn upsert(
     source: &str,
     lang: &str,
@@ -149,6 +140,11 @@ pub fn upsert(
 }
 
 /// Like [`upsert`] but with explicit control over the value kind annotation.
+///
+/// `value_kind` controls the type annotation on inserted leaf nodes:
+///   - `Some("string")` — force string (default for `--value`)
+///   - `Some("null")` / `Some("number")` etc. — force that kind
+///   - `None` — let the renderer auto-detect from the value text
 pub fn upsert_typed(
     source: &str,
     lang: &str,
@@ -157,7 +153,7 @@ pub fn upsert_typed(
     limit: Option<usize>,
     value_kind: Option<&str>,
 ) -> Result<UpsertResult, UpsertError> {
-    // Verify the language has a renderer
+    // Verify the language has a renderer that supports data mode
     let test_render = render::render(
         &crate::xpath::XmlNode::Element {
             name: "test".to_string(),
@@ -165,6 +161,7 @@ pub fn upsert_typed(
             children: vec![],
         },
         lang,
+        TreeMode::Data,
         &RenderOptions::default(),
     );
     if let Err(render::RenderError::UnsupportedLanguage(_)) = test_render {
@@ -182,15 +179,7 @@ pub fn upsert_typed(
     .map_err(|e| UpsertError::Parse(e.to_string()))?;
 
     // Query with XPath to determine update vs insert
-    let engine = XPathEngine::new();
-    let existing = engine
-        .query_documents(
-            &mut result.documents,
-            result.doc_handle,
-            xpath,
-            Arc::new(vec![]),
-            "<upsert>",
-        )
+    let existing = result.query(xpath)
         .map_err(|e| UpsertError::Query(e.to_string()))?;
 
     if !existing.is_empty() {
@@ -246,7 +235,7 @@ fn update_existing(
     // Step 2: Re-render once with span tracking
     let xml_node = xot_node_to_xml_node(result.documents.xot(), file_node);
     let render_opts = detect_render_options(source);
-    let (rendered, span_map) = render::render_with_spans(&xml_node, lang, &render_opts)
+    let (rendered, span_map) = render::render_with_spans(&xml_node, lang, TreeMode::Data, &render_opts)
         .map_err(|e| UpsertError::Render(e.to_string()))?;
 
     // Step 3: Sort splices by position descending and apply from end to start
@@ -306,7 +295,6 @@ fn insert_new(
     // Step 1: Use the real XPath engine to find the deepest matching prefix.
     // Try progressively shorter prefixes (from N-1 segments down to 1) until
     // one matches. This honours predicates, axes, and any valid XPath.
-    let engine = XPathEngine::new();
     let doc_node = result.documents.document_node(result.doc_handle)
         .ok_or_else(|| UpsertError::Parse("no document node".into()))?;
     let file_node = find_file_node(result.documents.xot(), doc_node)
@@ -324,14 +312,7 @@ fn insert_new(
             xpath_prefix,
             raw_segments[..depth].join("/"),
         );
-        let matches = engine
-            .query_documents(
-                &mut result.documents,
-                result.doc_handle,
-                &prefix_xpath,
-                Arc::new(vec![]),
-                "<upsert>",
-            )
+        let matches = result.query(&prefix_xpath)
             .unwrap_or_default();
 
         if let Some(matched) = matches.first() {
@@ -391,7 +372,7 @@ fn insert_new(
     // Step 4: Re-render the full modified tree with span tracking
     let xml_node = xot_node_to_xml_node(result.documents.xot(), file_node);
     let render_opts = detect_render_options(source);
-    let (rendered, span_map) = render::render_with_spans(&xml_node, lang, &render_opts)
+    let (rendered, span_map) = render::render_with_spans(&xml_node, lang, TreeMode::Data, &render_opts)
         .map_err(|e| UpsertError::Render(e.to_string()))?;
 
     // Step 5: Determine the new splice content

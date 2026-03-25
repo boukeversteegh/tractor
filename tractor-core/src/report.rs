@@ -156,6 +156,19 @@ pub enum ReportKind {
     Check,
     Test,
     Set,
+    Run,
+}
+
+impl ReportKind {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ReportKind::Query => "query",
+            ReportKind::Check => "check",
+            ReportKind::Test => "test",
+            ReportKind::Set => "set",
+            ReportKind::Run => "run",
+        }
+    }
 }
 
 /// Matches grouped by source file.
@@ -181,23 +194,72 @@ pub struct Report {
     /// Optional pre-grouped structure. Populated by `with_groups()`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub groups: Option<Vec<FileGroup>>,
+
+    /// Sub-reports for `ReportKind::Run`. Each entry is a complete report
+    /// from one operation in the config file.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub operations: Option<Vec<Report>>,
 }
 
 impl Report {
     pub fn set(matches: Vec<ReportMatch>, summary: Summary) -> Self {
-        Report { kind: ReportKind::Set, matches, summary: Some(summary), groups: None }
+        Report { kind: ReportKind::Set, matches, summary: Some(summary), groups: None, operations: None }
     }
 
     pub fn query(matches: Vec<ReportMatch>, summary: Summary) -> Self {
-        Report { kind: ReportKind::Query, matches, summary: Some(summary), groups: None }
+        Report { kind: ReportKind::Query, matches, summary: Some(summary), groups: None, operations: None }
     }
 
     pub fn check(matches: Vec<ReportMatch>, summary: Summary) -> Self {
-        Report { kind: ReportKind::Check, matches, summary: Some(summary), groups: None }
+        Report { kind: ReportKind::Check, matches, summary: Some(summary), groups: None, operations: None }
     }
 
     pub fn test(matches: Vec<ReportMatch>, summary: Summary) -> Self {
-        Report { kind: ReportKind::Test, matches, summary: Some(summary), groups: None }
+        Report { kind: ReportKind::Test, matches, summary: Some(summary), groups: None, operations: None }
+    }
+
+    /// Build a unified run report from multiple sub-reports.
+    /// Computes an aggregate summary across all operations.
+    /// Only check reports contribute to error/warning counts (set reports
+    /// reuse these fields for "updated"/"unchanged").
+    pub fn run(reports: Vec<Report>) -> Self {
+        let mut total = 0usize;
+        let mut errors = 0usize;
+        let mut warnings = 0usize;
+        let mut files_affected = 0usize;
+        let mut passed = true;
+
+        for r in &reports {
+            if let Some(ref s) = r.summary {
+                total += s.total;
+                files_affected += s.files_affected;
+                if !s.passed {
+                    passed = false;
+                }
+                // Only aggregate errors/warnings from check reports.
+                // Set reports reuse errors=updated, warnings=unchanged.
+                if matches!(r.kind, ReportKind::Check) {
+                    errors += s.errors;
+                    warnings += s.warnings;
+                }
+            }
+        }
+
+        Report {
+            kind: ReportKind::Run,
+            matches: vec![],
+            summary: Some(Summary {
+                passed,
+                total,
+                files_affected,
+                errors,
+                warnings,
+                expected: None,
+                query: None,
+            }),
+            groups: None,
+            operations: Some(reports),
+        }
     }
 
     /// Serialize this report to pretty-printed JSON.

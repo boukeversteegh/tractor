@@ -391,6 +391,23 @@ pub struct XeeParseResult {
     pub language: String,
 }
 
+impl XeeParseResult {
+    /// Execute an XPath query on the parsed document.
+    ///
+    /// This is a convenience method that creates an XPathEngine and calls
+    /// `query_documents`, avoiding the need to destructure the parse result.
+    pub fn query(&mut self, xpath: &str) -> Result<Vec<crate::xpath::Match>, crate::xpath::XPathError> {
+        let engine = crate::xpath::XPathEngine::new();
+        engine.query_documents(
+            &mut self.documents,
+            self.doc_handle,
+            xpath,
+            self.source_lines.clone(),
+            &self.file_path,
+        )
+    }
+}
+
 /// Parse a source string directly into Documents for fast XPath queries
 ///
 /// This is the fast path that avoids XML serialization/parsing roundtrip.

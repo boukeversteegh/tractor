@@ -1,0 +1,22 @@
+operations:
+  - check:
+      files: ["settings.yaml"]
+      rules:
+        - id: no-debug
+          xpath: "//debug[.='true']"
+          reason: "debug should be disabled"
+          severity: error
+  - query:
+      files: ["app-config.json"]
+      queries:
+        - xpath: "//database/host"
+  - test:
+      files: ["settings.yaml"]
+      assertions:
+        - xpath: "//app/name"
+          expect: some
+  - set:
+      files: ["app-config.json"]
+      mappings:
+        - xpath: "//database/host"
+          value: "db.prod.internal"

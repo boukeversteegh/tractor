@@ -1,0 +1,5 @@
+query:
+  files: ["settings.yaml"]
+  queries:
+    - xpath: "//debug"
+    - xpath: "//port"

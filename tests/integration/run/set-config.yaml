@@ -1,0 +1,7 @@
+set:
+  files: ["app-config.json"]
+  mappings:
+    - xpath: "//database/host"
+      value: "db.prod.internal"
+    - xpath: "//cache/ttl"
+      value: "600"
