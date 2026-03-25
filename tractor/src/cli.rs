@@ -156,6 +156,11 @@ When omitted, auto-selects: data for JSON/YAML, structure for everything else.")
     #[arg(short = 'g', long = "group", help_heading = "View")]
     pub group_by: Option<String>,
 
+    // -- Filter --
+    /// Only consider files changed in a git diff (e.g. "HEAD~3", "main..HEAD")
+    #[arg(long = "changed", help_heading = "Filter")]
+    pub changed: Option<String>,
+
     // -- Advanced --
     /// [EXPERIMENTAL] Limit tree building depth (skip parsing deeper nodes for speed)
     #[arg(long = "parse-depth", help_heading = "Advanced")]

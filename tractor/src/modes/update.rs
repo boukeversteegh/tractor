@@ -21,6 +21,7 @@ pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
     let op = Operation::Update(UpdateOperation {
         files: files.clone(),
         exclude: vec![],
+        changed: None,
         xpath: xpath_expr.clone(),
         value: args.value.clone(),
         tree_mode: ctx.tree_mode,
@@ -32,6 +33,7 @@ pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     let options = ExecuteOptions {
         verbose: ctx.verbose,
+        changed: args.shared.changed.clone(),
         ..Default::default()
     };
 

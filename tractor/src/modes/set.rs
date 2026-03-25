@@ -6,6 +6,7 @@ use tractor_core::declarative_set::declarative_set;
 use tractor_core::detect_language;
 use crate::cli::SetArgs;
 use crate::pipeline::{RunContext, ViewField, InputMode, query_files_batched, query_inline_source, render_set_report};
+use crate::pipeline::git;
 
 /// Separate positional args into files and an optional path expression.
 ///
@@ -34,6 +35,7 @@ fn split_files_and_expr(args: &[String], has_xpath: bool) -> (Vec<String>, Optio
 
 pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
     let has_xpath = args.shared.xpath.is_some();
+    let changed_spec = args.shared.changed.clone();
     let (files, expr) = split_files_and_expr(&args.args, has_xpath);
 
     // Declarative mode: path expression without -x
@@ -50,11 +52,12 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
             }
         };
 
+        let file_list = apply_changed_to_files(file_list.clone(), changed_spec.as_deref());
         let lang_override = ctx.lang.as_deref();
         let mut files_modified = 0;
         let mut total_ops = 0;
 
-        for file_path in file_list {
+        for file_path in &file_list {
             let lang = lang_override
                 .unwrap_or_else(|| detect_language(file_path));
 
@@ -114,11 +117,12 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     match &ctx.input {
         InputMode::Files(files) => {
-            let (_, matches) = query_files_batched(&ctx, files, xpath_expr, true)?;
+            let files = apply_changed_to_files(files.clone(), changed_spec.as_deref());
+            let (_, matches) = query_files_batched(&ctx, &files, xpath_expr, true)?;
 
             if stdout {
                 // Stdout mode: compute modified content per file without writing to disk.
-                let file_outputs = compute_set_output(files, &matches, value)?;
+                let file_outputs = compute_set_output(&files, &matches, value)?;
                 let output_map: HashMap<String, String> = file_outputs.into_iter().collect();
                 let report = build_set_report_matches(&matches, value, &ctx);
                 let report = report.with_groups().with_file_outputs(&output_map);
@@ -129,7 +133,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
                 let lang_override = ctx.lang.as_deref();
                 let mut fallback_files: Vec<String> = Vec::new();
 
-                for file_path in files {
+                for file_path in &files {
                     let lang = lang_override
                         .unwrap_or_else(|| detect_language(file_path));
                     let source = std::fs::read_to_string(file_path)?;
@@ -245,4 +249,21 @@ fn build_set_inline_report(modified: String, ctx: &RunContext) -> Report {
     let mut report = Report::set(vec![], summary);
     report.groups = Some(vec![group]);
     report
+}
+
+/// Apply --changed filter to a file list (set mode bypasses the executor).
+fn apply_changed_to_files(files: Vec<String>, spec: Option<&str>) -> Vec<String> {
+    match spec {
+        Some(spec) => {
+            let cwd = std::path::Path::new(".");
+            match git::git_changed_files(spec, cwd) {
+                Ok(changed) => git::intersect_changed(files, &changed),
+                Err(e) => {
+                    eprintln!("warning: --changed filter failed: {}", e);
+                    files
+                }
+            }
+        }
+        None => files,
+    }
 }
