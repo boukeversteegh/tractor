@@ -182,8 +182,8 @@ pub fn parse_view_with_defaults(s: &str, default_fields: &[ViewField]) -> Result
         return Err("view cannot be empty".to_string());
     }
 
-    let has_modifier  = tokens.iter().any(|p| p.starts_with('+') || p.starts_with('-'));
-    let has_plain     = tokens.iter().any(|p| !p.starts_with('+') && !p.starts_with('-'));
+    let has_modifier = tokens.iter().any(|p| p.starts_with('+') || p.starts_with('-'));
+    let has_plain = tokens.iter().any(|p| !p.starts_with('+') && !p.starts_with('-'));
 
     if has_modifier && has_plain {
         return Err(
