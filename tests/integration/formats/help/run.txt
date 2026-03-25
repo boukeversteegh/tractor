@@ -63,10 +63,6 @@ Advanced:
       --verbose
           Show verbose output
 
-Run:
-      --verify
-          Verify mode: check that all set operations are already applied (no drift). Exits with failure if any files would be modified. Does not write files
-
 Output:
   -f, --format <FORMAT>
           Output format: text, json, yaml, xml, gcc, github

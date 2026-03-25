@@ -387,11 +387,6 @@ pub struct RunArgs {
     #[command(flatten)]
     pub shared: SharedArgs,
 
-    /// Verify mode: check that all set operations are already applied (no drift).
-    /// Exits with failure if any files would be modified. Does not write files.
-    #[arg(long = "verify", help_heading = "Run")]
-    pub verify: bool,
-
     /// Output format: text, json, yaml, xml, gcc, github
     #[arg(short = 'f', long = "format", default_value = "gcc", help_heading = "Output")]
     pub format: String,

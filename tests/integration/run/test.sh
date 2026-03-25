@@ -111,19 +111,6 @@ run_set_and_check "set with --verbose reports updated files" \
     "set-config.yaml" --verbose
 
 echo ""
-echo "Run (verify mode):"
-
-run_set_and_check "verify passes when values are in sync" \
-    0 \
-    "$(printf 'app-config.json: unchanged')" \
-    "verify-config.yaml" --verify
-
-run_set_and_check "verify detects drift" \
-    1 \
-    "$(printf 'app-config.json: updated\n\n1 file out of sync')" \
-    "set-config.yaml" --verify
-
-echo ""
 echo "Run (mixed operations):"
 
 run_set_and_check "mixed check+set succeeds when check passes" \

@@ -247,7 +247,10 @@ fn convert_check(config: CheckConfig) -> Result<Operation, Box<dyn std::error::E
 }
 
 fn convert_set(config: SetConfig) -> Result<Operation, Box<dyn std::error::Error>> {
-    let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
+    // Validate tree_mode if provided (even though set doesn't use it yet)
+    if let Some(ref tm) = config.tree_mode {
+        parse_tree_mode(tm)?;
+    }
 
     let mappings = config.mappings.into_iter().map(|m| {
         SetMapping {
@@ -260,7 +263,6 @@ fn convert_set(config: SetConfig) -> Result<Operation, Box<dyn std::error::Error
         files: config.files,
         exclude: config.exclude,
         mappings,
-        tree_mode,
         language: config.language,
         verify: false,
     }))

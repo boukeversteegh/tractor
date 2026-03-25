@@ -1,7 +1,7 @@
 //! Run mode: execute a tractor config file containing mixed operations.
 
 use tractor_core::report::Report;
-use crate::executor::{self, ExecuteOptions, Operation};
+use crate::executor::{self, ExecuteOptions};
 use crate::tractor_config::load_tractor_config;
 use crate::cli::RunArgs;
 use crate::pipeline::{
@@ -17,22 +17,13 @@ pub fn run_run(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {
         return Err(format!("config file not found: {}", args.config).into());
     }
 
-    let mut operations = load_tractor_config(config_path)?;
+    let operations = load_tractor_config(config_path)?;
 
     if operations.is_empty() {
         if args.shared.verbose {
             eprintln!("no operations found in {}", args.config);
         }
         return Ok(());
-    }
-
-    // Apply CLI --verify flag to all set operations.
-    if args.verify {
-        for op in &mut operations {
-            if let Operation::Set(ref mut set_op) = op {
-                set_op.verify = true;
-            }
-        }
     }
 
     // Build RunContext for output formatting.

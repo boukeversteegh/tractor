@@ -173,8 +173,6 @@ pub struct SetOperation {
     pub exclude: Vec<String>,
     /// Mappings to apply.
     pub mappings: Vec<SetMapping>,
-    /// Tree mode override for parsing.
-    pub tree_mode: Option<TreeMode>,
     /// Language override for parsing.
     pub language: Option<String>,
     /// If true, check for drift without writing files.
@@ -930,7 +928,6 @@ mod tests {
                 xpath: "//database/host".into(),
                 value: "new-host".into(),
             }],
-            tree_mode: None,
             language: None,
             verify: false,
         })];
@@ -954,7 +951,6 @@ mod tests {
                 xpath: "//database/host".into(),
                 value: "localhost".into(),
             }],
-            tree_mode: None,
             language: None,
             verify: false,
         })];
@@ -977,7 +973,6 @@ mod tests {
                 SetMapping { xpath: "//database/host".into(), value: "new-host".into() },
                 SetMapping { xpath: "//database/port".into(), value: "5432".into() },
             ],
-            tree_mode: None,
             language: None,
             verify: false,
         })];
@@ -1006,7 +1001,6 @@ mod tests {
                 xpath: "//database/host".into(),
                 value: "localhost".into(),
             }],
-            tree_mode: None,
             language: None,
             verify: false,
         })];
@@ -1033,7 +1027,6 @@ mod tests {
                 xpath: "//database/host".into(),
                 value: "correct".into(),
             }],
-            tree_mode: None,
             language: None,
             verify: true,
         })];
@@ -1063,7 +1056,6 @@ mod tests {
                 xpath: "//database/host".into(),
                 value: "correct".into(),
             }],
-            tree_mode: None,
             language: None,
             verify: true,
         })];
@@ -1166,7 +1158,6 @@ mod tests {
                     xpath: "//host".into(),
                     value: "new-host".into(),
                 }],
-                tree_mode: None,
                 language: None,
                 verify: false,
             }),
@@ -1193,7 +1184,6 @@ mod tests {
                 xpath: "//database/host".into(),
                 value: "new-host".into(),
             }],
-            tree_mode: None,
             language: None,
             verify: false,
         })];
