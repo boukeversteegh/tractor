@@ -94,7 +94,38 @@ pub fn run_run(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
             }
-            _ => {}
+            ReportKind::Query => {
+                if args.shared.verbose {
+                    for m in &report.matches {
+                        eprintln!(
+                            "{}:{}:{}: {}",
+                            m.file,
+                            m.line,
+                            m.column,
+                            m.value.as_deref().unwrap_or(""),
+                        );
+                    }
+                }
+            }
+            ReportKind::Test => {
+                let passed = summary.passed;
+                let expected = summary.expected.as_deref().unwrap_or("?");
+                if !passed {
+                    eprintln!(
+                        "test failed: expected {}, got {} match{}",
+                        expected,
+                        summary.total,
+                        if summary.total == 1 { "" } else { "es" },
+                    );
+                } else if args.shared.verbose {
+                    eprintln!(
+                        "test passed: expected {}, got {} match{}",
+                        expected,
+                        summary.total,
+                        if summary.total == 1 { "" } else { "es" },
+                    );
+                }
+            }
         }
     }
 

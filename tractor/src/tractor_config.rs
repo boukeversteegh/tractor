@@ -34,7 +34,8 @@ use tractor_core::rule::Rule;
 use tractor_core::tree_mode::TreeMode;
 
 use crate::executor::{
-    CheckOperation, Operation, SetMapping, SetOperation,
+    CheckOperation, Operation, QueryExpr, QueryOperation,
+    SetMapping, SetOperation, TestAssertion, TestOperation,
 };
 
 // ---------------------------------------------------------------------------
@@ -51,6 +52,14 @@ struct ConfigFile {
     #[serde(default)]
     set: Option<SetConfig>,
 
+    /// Root-level query shorthand (single query operation).
+    #[serde(default)]
+    query: Option<QueryConfig>,
+
+    /// Root-level test shorthand (single test operation).
+    #[serde(default)]
+    test: Option<TestConfig>,
+
     /// Explicit ordered list of operations.
     #[serde(default)]
     operations: Vec<OperationEntry>,
@@ -62,12 +71,20 @@ struct ConfigFile {
 ///       files: [...]
 ///   - set:
 ///       files: [...]
+///   - query:
+///       files: [...]
+///   - test:
+///       files: [...]
 #[derive(Deserialize, Debug)]
 struct OperationEntry {
     #[serde(default)]
     check: Option<CheckConfig>,
     #[serde(default)]
     set: Option<SetConfig>,
+    #[serde(default)]
+    query: Option<QueryConfig>,
+    #[serde(default)]
+    test: Option<TestConfig>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -117,6 +134,54 @@ struct SetConfig {
 struct SetMappingConfig {
     xpath: String,
     value: String,
+}
+
+#[derive(Deserialize, Debug)]
+struct QueryConfig {
+    #[serde(default)]
+    files: Vec<String>,
+    #[serde(default)]
+    exclude: Vec<String>,
+    #[serde(default)]
+    queries: Vec<QueryExprConfig>,
+    #[serde(default)]
+    tree_mode: Option<String>,
+    #[serde(default)]
+    language: Option<String>,
+    #[serde(default)]
+    limit: Option<usize>,
+}
+
+#[derive(Deserialize, Debug)]
+struct QueryExprConfig {
+    xpath: String,
+}
+
+#[derive(Deserialize, Debug)]
+struct TestConfig {
+    #[serde(default)]
+    files: Vec<String>,
+    #[serde(default)]
+    exclude: Vec<String>,
+    #[serde(default)]
+    assertions: Vec<TestAssertionConfig>,
+    #[serde(default)]
+    tree_mode: Option<String>,
+    #[serde(default)]
+    language: Option<String>,
+    #[serde(default)]
+    limit: Option<usize>,
+}
+
+#[derive(Deserialize, Debug)]
+struct TestAssertionConfig {
+    xpath: String,
+    #[serde(default = "default_expect")]
+    expect: String,
+}
+
+fn default_expect() -> String {
+    "some".to_string()
 }
 
 fn default_severity() -> String {
@@ -201,6 +266,51 @@ fn convert_set(config: SetConfig) -> Result<Operation, Box<dyn std::error::Error
     }))
 }
 
+fn convert_query(config: QueryConfig) -> Result<Operation, Box<dyn std::error::Error>> {
+    let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
+
+    let queries = config.queries.into_iter().map(|q| {
+        QueryExpr { xpath: q.xpath }
+    }).collect();
+
+    Ok(Operation::Query(QueryOperation {
+        files: config.files,
+        exclude: config.exclude,
+        queries,
+        tree_mode,
+        language: config.language,
+        limit: config.limit,
+        ignore_whitespace: false,
+        parse_depth: None,
+        inline_source: None,
+        inline_lang: None,
+    }))
+}
+
+fn convert_test(config: TestConfig) -> Result<Operation, Box<dyn std::error::Error>> {
+    let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
+
+    let assertions = config.assertions.into_iter().map(|a| {
+        TestAssertion {
+            xpath: a.xpath,
+            expect: a.expect,
+        }
+    }).collect();
+
+    Ok(Operation::Test(TestOperation {
+        files: config.files,
+        exclude: config.exclude,
+        assertions,
+        tree_mode,
+        language: config.language,
+        limit: config.limit,
+        ignore_whitespace: false,
+        parse_depth: None,
+        inline_source: None,
+        inline_lang: None,
+    }))
+}
+
 fn config_to_operations(config: ConfigFile) -> Result<Vec<Operation>, Box<dyn std::error::Error>> {
     let mut ops = Vec::new();
 
@@ -211,6 +321,12 @@ fn config_to_operations(config: ConfigFile) -> Result<Vec<Operation>, Box<dyn st
     if let Some(set) = config.set {
         ops.push(convert_set(set)?);
     }
+    if let Some(query) = config.query {
+        ops.push(convert_query(query)?);
+    }
+    if let Some(test) = config.test {
+        ops.push(convert_test(test)?);
+    }
 
     // Then explicit operations list
     for entry in config.operations {
@@ -219,6 +335,12 @@ fn config_to_operations(config: ConfigFile) -> Result<Vec<Operation>, Box<dyn st
         }
         if let Some(s) = entry.set {
             ops.push(convert_set(s)?);
+        }
+        if let Some(q) = entry.query {
+            ops.push(convert_query(q)?);
+        }
+        if let Some(t) = entry.test {
+            ops.push(convert_test(t)?);
         }
     }
 
@@ -449,6 +571,88 @@ check:
 "#;
         let err = parse_config_yaml(yaml).unwrap_err();
         assert!(err.to_string().contains("invalid severity"));
+    }
+
+    #[test]
+    fn parse_yaml_root_level_query() {
+        let yaml = r#"
+query:
+  files: ["src/**/*.rs"]
+  queries:
+    - xpath: "//function"
+    - xpath: "//class"
+"#;
+        let ops = parse_config_yaml(yaml).unwrap();
+        assert_eq!(ops.len(), 1);
+        match &ops[0] {
+            Operation::Query(q) => {
+                assert_eq!(q.files, vec!["src/**/*.rs"]);
+                assert_eq!(q.queries.len(), 2);
+                assert_eq!(q.queries[0].xpath, "//function");
+                assert_eq!(q.queries[1].xpath, "//class");
+            }
+            _ => panic!("expected Query operation"),
+        }
+    }
+
+    #[test]
+    fn parse_yaml_root_level_test() {
+        let yaml = r#"
+test:
+  files: ["src/**/*.rs"]
+  assertions:
+    - xpath: "//function"
+      expect: some
+    - xpath: "//class"
+      expect: none
+"#;
+        let ops = parse_config_yaml(yaml).unwrap();
+        assert_eq!(ops.len(), 1);
+        match &ops[0] {
+            Operation::Test(t) => {
+                assert_eq!(t.files, vec!["src/**/*.rs"]);
+                assert_eq!(t.assertions.len(), 2);
+                assert_eq!(t.assertions[0].xpath, "//function");
+                assert_eq!(t.assertions[0].expect, "some");
+                assert_eq!(t.assertions[1].xpath, "//class");
+                assert_eq!(t.assertions[1].expect, "none");
+            }
+            _ => panic!("expected Test operation"),
+        }
+    }
+
+    #[test]
+    fn parse_yaml_test_default_expect() {
+        let yaml = r#"
+test:
+  files: ["*.json"]
+  assertions:
+    - xpath: "//name"
+"#;
+        let ops = parse_config_yaml(yaml).unwrap();
+        if let Operation::Test(t) = &ops[0] {
+            assert_eq!(t.assertions[0].expect, "some");
+        }
+    }
+
+    #[test]
+    fn parse_yaml_operations_with_query_and_test() {
+        let yaml = r#"
+operations:
+  - query:
+      files: ["*.json"]
+      queries:
+        - xpath: "//name"
+  - test:
+      files: ["*.json"]
+      assertions:
+        - xpath: "//name"
+          expect: some
+"#;
+        let ops = parse_config_yaml(yaml).unwrap();
+        assert_eq!(ops.len(), 2);
+        assert!(matches!(&ops[0], Operation::Query(_)));
+        assert!(matches!(&ops[1], Operation::Test(_)));
     }
 
     #[test]

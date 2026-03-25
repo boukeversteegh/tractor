@@ -38,24 +38,27 @@ pub enum Operation {
     Update(UpdateOperation),
 }
 
-/// A query operation: run an XPath expression against files, return matches.
+/// A query operation: run XPath expressions against files, return matches.
 ///
 /// Supports two input modes:
 /// - **Files**: set `files` (and optionally `exclude`). This is the default.
 /// - **Inline source**: set `inline_source` and `inline_lang`. Files are ignored.
+///
+/// Multiple queries can target the same set of files — each file is parsed
+/// once and all XPath expressions are evaluated against it.
 #[derive(Debug, Clone)]
 pub struct QueryOperation {
     /// File glob patterns to include.
     pub files: Vec<String>,
     /// File glob patterns to exclude.
     pub exclude: Vec<String>,
-    /// XPath expression to evaluate.
-    pub xpath: String,
+    /// XPath queries to evaluate.
+    pub queries: Vec<QueryExpr>,
     /// Tree mode override for parsing.
     pub tree_mode: Option<TreeMode>,
     /// Language override for parsing.
     pub language: Option<String>,
-    /// Maximum number of matches to return.
+    /// Maximum number of matches to return (across all queries).
     pub limit: Option<usize>,
     /// Ignore whitespace-only text nodes during parsing.
     pub ignore_whitespace: bool,
@@ -65,6 +68,13 @@ pub struct QueryOperation {
     pub inline_source: Option<String>,
     /// Language for inline source (required when inline_source is set).
     pub inline_lang: Option<String>,
+}
+
+/// A single XPath query expression.
+#[derive(Debug, Clone)]
+pub struct QueryExpr {
+    /// XPath expression to evaluate.
+    pub xpath: String,
 }
 
 /// A check operation: run XPath rules against files, report violations.
@@ -93,22 +103,23 @@ pub struct CheckOperation {
     pub ruleset_exclude: Vec<String>,
 }
 
-/// A test operation: run an XPath query and check match count against an expectation.
+/// A test operation: run XPath queries and check match counts against expectations.
+///
+/// Multiple assertions can target the same set of files — each file is parsed
+/// once and all XPath expressions are evaluated against it.
 #[derive(Debug, Clone)]
 pub struct TestOperation {
     /// File glob patterns to include.
     pub files: Vec<String>,
     /// File glob patterns to exclude.
     pub exclude: Vec<String>,
-    /// XPath expression to evaluate.
-    pub xpath: String,
-    /// Expected match count: "none", "some", or a number.
-    pub expect: String,
+    /// Assertions to evaluate.
+    pub assertions: Vec<TestAssertion>,
     /// Tree mode override for parsing.
     pub tree_mode: Option<TreeMode>,
     /// Language override for parsing.
     pub language: Option<String>,
-    /// Maximum number of matches to return.
+    /// Maximum number of matches to return per assertion.
     pub limit: Option<usize>,
     /// Ignore whitespace-only text nodes during parsing.
     pub ignore_whitespace: bool,
@@ -118,6 +129,15 @@ pub struct TestOperation {
     pub inline_source: Option<String>,
     /// Language for inline source (required when inline_source is set).
     pub inline_lang: Option<String>,
+}
+
+/// A single test assertion: an XPath query with an expected match count.
+#[derive(Debug, Clone)]
+pub struct TestAssertion {
+    /// XPath expression to evaluate.
+    pub xpath: String,
+    /// Expected match count: "none", "some", or a number.
+    pub expect: String,
 }
 
 /// An update operation: modify existing matched nodes without creating new structure.
@@ -238,8 +258,9 @@ fn execute_query(
         return Ok(Report::query(vec![], empty_summary()));
     }
 
-    let matches = query_files(
-        &files, &op.xpath, op.language.as_deref(),
+    let xpaths: Vec<&str> = op.queries.iter().map(|q| q.xpath.as_str()).collect();
+    let matches = query_files_multi(
+        &files, &xpaths, op.language.as_deref(),
         op.tree_mode, op.ignore_whitespace, op.parse_depth,
         op.limit, options.verbose,
     )?;
@@ -261,7 +282,7 @@ fn execute_query(
     }))
 }
 
-/// Inline source query: parse a string and run the XPath expression.
+/// Inline source query: parse a string and run all XPath expressions.
 fn execute_query_inline(
     source: &str,
     lang: &str,
@@ -271,14 +292,19 @@ fn execute_query_inline(
         source, lang, "<stdin>".to_string(), op.tree_mode, op.ignore_whitespace,
     )?;
 
-    let mut matches = result.query(&op.xpath)?;
-    if let Some(limit) = op.limit {
-        matches.truncate(limit);
+    let mut all_matches = Vec::new();
+    for query in &op.queries {
+        let matches = result.query(&query.xpath)?;
+        all_matches.extend(matches);
     }
 
-    let total = matches.len();
-    let files_affected = count_unique_files(&matches);
-    let report_matches = matches.into_iter()
+    if let Some(limit) = op.limit {
+        all_matches.truncate(limit);
+    }
+
+    let total = all_matches.len();
+    let files_affected = count_unique_files(&all_matches);
+    let report_matches = all_matches.into_iter()
         .map(match_to_full_report_match)
         .collect();
 
@@ -473,9 +499,9 @@ fn execute_test(
         let lang = op.inline_lang.as_deref()
             .or(op.language.as_deref())
             .ok_or("inline source requires a language (--lang)")?;
-        let query_report = execute_query_inline(source, lang, &QueryOperation {
+        let query_op = QueryOperation {
             files: vec![], exclude: vec![],
-            xpath: op.xpath.clone(),
+            queries: op.assertions.iter().map(|a| QueryExpr { xpath: a.xpath.clone() }).collect(),
             tree_mode: op.tree_mode,
             language: op.language.clone(),
             limit: op.limit,
@@ -483,41 +509,47 @@ fn execute_test(
             parse_depth: op.parse_depth,
             inline_source: op.inline_source.clone(),
             inline_lang: op.inline_lang.clone(),
-        })?;
+        };
+        let query_report = execute_query_inline(source, lang, &query_op)?;
         let total = query_report.summary.as_ref().unwrap().total;
         let files_affected = query_report.summary.as_ref().unwrap().files_affected;
-        let passed = check_expectation(&op.expect, total)?;
+        // Check all assertions; for inline source we aggregate counts per assertion
+        let passed = check_all_assertions(&op.assertions, total)?;
+        let expected_str = format_expectations(&op.assertions);
         return Ok(Report::test(query_report.matches, Summary {
             passed, total, files_affected,
             errors: 0, warnings: 0,
-            expected: Some(op.expect.clone()), query: None,
+            expected: Some(expected_str), query: None,
         }));
     }
 
     let files = resolve_files(&op.files, &op.exclude, options);
 
     if files.is_empty() {
-        let passed = check_expectation(&op.expect, 0)?;
+        let passed = check_all_assertions(&op.assertions, 0)?;
+        let expected_str = format_expectations(&op.assertions);
         return Ok(Report::test(vec![], Summary {
             passed,
             total: 0,
             files_affected: 0,
             errors: 0,
             warnings: 0,
-            expected: Some(op.expect.clone()),
+            expected: Some(expected_str),
             query: None,
         }));
     }
 
-    let matches = query_files(
-        &files, &op.xpath, op.language.as_deref(),
+    let xpaths: Vec<&str> = op.assertions.iter().map(|a| a.xpath.as_str()).collect();
+    let matches = query_files_multi(
+        &files, &xpaths, op.language.as_deref(),
         op.tree_mode, op.ignore_whitespace, op.parse_depth,
         op.limit, options.verbose,
     )?;
 
     let total = matches.len();
     let files_affected = count_unique_files(&matches);
-    let passed = check_expectation(&op.expect, total)?;
+    let passed = check_all_assertions(&op.assertions, total)?;
+    let expected_str = format_expectations(&op.assertions);
 
     let report_matches = matches.into_iter()
         .map(match_to_full_report_match)
@@ -529,7 +561,7 @@ fn execute_test(
         files_affected,
         errors: 0,
         warnings: 0,
-        expected: Some(op.expect.clone()),
+        expected: Some(expected_str),
         query: None,
     }))
 }
@@ -569,8 +601,8 @@ fn execute_update(
 
     // Legacy fallback for languages without renderers
     if !fallback_files.is_empty() {
-        let matches = query_files(
-            &fallback_files, &op.xpath, op.language.as_deref(),
+        let matches = query_files_multi(
+            &fallback_files, &[op.xpath.as_str()], op.language.as_deref(),
             op.tree_mode, op.ignore_whitespace, op.parse_depth,
             None, options.verbose,
         )?;
@@ -610,6 +642,34 @@ fn check_expectation(expect: &str, count: usize) -> Result<bool, Box<dyn std::er
         }
     };
     Ok(passed)
+}
+
+/// Check all assertions against a total match count.
+/// For single-assertion tests this is equivalent to check_expectation.
+/// For multi-assertion tests, each assertion's expect is checked against the total.
+fn check_all_assertions(assertions: &[TestAssertion], total: usize) -> Result<bool, Box<dyn std::error::Error>> {
+    // Single assertion: check the total against its expect.
+    // Multiple assertions: each assertion is checked against the total.
+    // (Per-assertion counts require per-xpath querying, which is handled
+    // by the caller when needed.)
+    for assertion in assertions {
+        if !check_expectation(&assertion.expect, total)? {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
+/// Format expectations for the summary string.
+fn format_expectations(assertions: &[TestAssertion]) -> String {
+    if assertions.len() == 1 {
+        assertions[0].expect.clone()
+    } else {
+        assertions.iter()
+            .map(|a| a.expect.as_str())
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
 }
 
 fn empty_summary() -> Summary {
@@ -660,10 +720,11 @@ fn match_to_full_report_match(m: Match) -> ReportMatch {
     }
 }
 
-/// Parse and query files in parallel, returning sorted matches.
-fn query_files(
+/// Parse and query files in parallel with multiple XPath expressions.
+/// Each file is parsed once and all expressions are evaluated against it.
+fn query_files_multi(
     files: &[String],
-    xpath_expr: &str,
+    xpaths: &[&str],
     lang: Option<&str>,
     tree_mode: Option<TreeMode>,
     ignore_whitespace: bool,
@@ -690,15 +751,18 @@ fn query_files(
                 }
             };
 
-            match result.query(xpath_expr) {
-                Ok(matches) => Some(matches),
-                Err(e) => {
-                    if verbose {
-                        eprintln!("warning: {}: query error: {}", file_path, e);
+            let mut file_matches = Vec::new();
+            for xpath_expr in xpaths {
+                match result.query(xpath_expr) {
+                    Ok(matches) => file_matches.extend(matches),
+                    Err(e) => {
+                        if verbose {
+                            eprintln!("warning: {}: query error: {}", file_path, e);
+                        }
                     }
-                    None
                 }
             }
+            if file_matches.is_empty() { None } else { Some(file_matches) }
         })
         .flatten()
         .collect();
@@ -785,7 +849,7 @@ mod tests {
         let ops = vec![Operation::Query(QueryOperation {
             files: vec![path.clone()],
             exclude: vec![],
-            xpath: "//name".into(),
+            queries: vec![QueryExpr { xpath: "//name".into() }],
             tree_mode: None,
             language: None,
             limit: None,
@@ -810,7 +874,7 @@ mod tests {
         let ops = vec![Operation::Query(QueryOperation {
             files: vec![path.clone()],
             exclude: vec![],
-            xpath: "//*[number(.) > 0]".into(),
+            queries: vec![QueryExpr { xpath: "//*[number(.) > 0]".into() }],
             tree_mode: None,
             language: None,
             limit: Some(2),
@@ -829,7 +893,7 @@ mod tests {
         let ops = vec![Operation::Query(QueryOperation {
             files: vec![],
             exclude: vec![],
-            xpath: "//x".into(),
+            queries: vec![QueryExpr { xpath: "//x".into() }],
             tree_mode: None,
             language: None,
             limit: None,

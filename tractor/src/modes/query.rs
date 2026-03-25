@@ -1,6 +1,6 @@
 use clap::CommandFactory;
 use crate::cli::{Cli, QueryArgs};
-use crate::executor::{self, ExecuteOptions, Operation, QueryOperation};
+use crate::executor::{self, ExecuteOptions, Operation, QueryOperation, QueryExpr};
 use crate::pipeline::{
     RunContext, ViewField, InputMode,
     run_debug,
@@ -37,7 +37,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
         InputMode::Files(files) => Operation::Query(QueryOperation {
             files: files.clone(),
             exclude: vec![],
-            xpath: xpath_expr.to_string(),
+            queries: vec![QueryExpr { xpath: xpath_expr.to_string() }],
             tree_mode: ctx.tree_mode,
             language: ctx.lang.clone(),
             limit: ctx.limit,
@@ -49,7 +49,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
         InputMode::InlineSource { source, lang } => Operation::Query(QueryOperation {
             files: vec![],
             exclude: vec![],
-            xpath: xpath_expr.to_string(),
+            queries: vec![QueryExpr { xpath: xpath_expr.to_string() }],
             tree_mode: ctx.tree_mode,
             language: None,
             limit: ctx.limit,

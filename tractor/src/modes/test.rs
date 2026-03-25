@@ -1,5 +1,5 @@
 use crate::cli::TestArgs;
-use crate::executor::{self, ExecuteOptions, Operation, TestOperation};
+use crate::executor::{self, ExecuteOptions, Operation, TestOperation, TestAssertion};
 use crate::pipeline::{
     RunContext, ViewField, InputMode,
     render_test_report,
@@ -31,8 +31,10 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
         InputMode::Files(files) => Operation::Test(TestOperation {
             files: files.clone(),
             exclude: vec![],
-            xpath: xpath_expr.to_string(),
-            expect: expect.clone(),
+            assertions: vec![TestAssertion {
+                xpath: xpath_expr.to_string(),
+                expect: expect.clone(),
+            }],
             tree_mode: ctx.tree_mode,
             language: ctx.lang.clone(),
             limit: ctx.limit,
@@ -44,8 +46,10 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
         InputMode::InlineSource { source, lang } => Operation::Test(TestOperation {
             files: vec![],
             exclude: vec![],
-            xpath: xpath_expr.to_string(),
-            expect: expect.clone(),
+            assertions: vec![TestAssertion {
+                xpath: xpath_expr.to_string(),
+                expect: expect.clone(),
+            }],
             tree_mode: ctx.tree_mode,
             language: None,
             limit: ctx.limit,
