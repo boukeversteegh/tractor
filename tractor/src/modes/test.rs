@@ -31,6 +31,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
         InputMode::Files(files) => Operation::Test(TestOperation {
             files: files.clone(),
             exclude: vec![],
+            changed: None,
             assertions: vec![TestAssertion {
                 xpath: xpath_expr.to_string(),
                 expect: expect.clone(),
@@ -46,6 +47,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
         InputMode::InlineSource { source, lang } => Operation::Test(TestOperation {
             files: vec![],
             exclude: vec![],
+            changed: None,
             assertions: vec![TestAssertion {
                 xpath: xpath_expr.to_string(),
                 expect: expect.clone(),
@@ -62,6 +64,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     let options = ExecuteOptions {
         verbose: ctx.verbose,
+        changed: args.shared.changed.clone(),
         ..Default::default()
     };
 

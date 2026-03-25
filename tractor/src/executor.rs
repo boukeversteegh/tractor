@@ -21,6 +21,7 @@ use tractor_core::{expand_globs, filter_supported_files, detect_language, parse_
 use tractor_core::xpath_upsert::{upsert, update_only};
 
 use crate::pipeline::run_rules;
+use crate::pipeline::git;
 
 // ---------------------------------------------------------------------------
 // Operation types (stable API)
@@ -52,6 +53,8 @@ pub struct QueryOperation {
     pub files: Vec<String>,
     /// File glob patterns to exclude.
     pub exclude: Vec<String>,
+    /// Git diff spec: only consider files changed in this diff.
+    pub changed: Option<String>,
     /// XPath queries to evaluate.
     pub queries: Vec<QueryExpr>,
     /// Tree mode override for parsing.
@@ -84,6 +87,8 @@ pub struct CheckOperation {
     pub files: Vec<String>,
     /// File glob patterns to exclude.
     pub exclude: Vec<String>,
+    /// Git diff spec: only consider files changed in this diff.
+    pub changed: Option<String>,
     /// Rules to check.
     pub rules: Vec<Rule>,
     /// Default tree mode for all rules (rules can override).
@@ -113,6 +118,8 @@ pub struct TestOperation {
     pub files: Vec<String>,
     /// File glob patterns to exclude.
     pub exclude: Vec<String>,
+    /// Git diff spec: only consider files changed in this diff.
+    pub changed: Option<String>,
     /// Assertions to evaluate.
     pub assertions: Vec<TestAssertion>,
     /// Tree mode override for parsing.
@@ -148,6 +155,8 @@ pub struct UpdateOperation {
     pub files: Vec<String>,
     /// File glob patterns to exclude.
     pub exclude: Vec<String>,
+    /// Git diff spec: only consider files changed in this diff.
+    pub changed: Option<String>,
     /// XPath expression to match nodes to update.
     pub xpath: String,
     /// New value for matched nodes.
@@ -171,6 +180,8 @@ pub struct SetOperation {
     pub files: Vec<String>,
     /// File glob patterns to exclude.
     pub exclude: Vec<String>,
+    /// Git diff spec: only consider files changed in this diff.
+    pub changed: Option<String>,
     /// Mappings to apply.
     pub mappings: Vec<SetMapping>,
     /// Language override for parsing.
@@ -199,6 +210,9 @@ pub struct ExecuteOptions {
     /// Base directory for resolving relative file paths.
     /// If None, uses the current working directory.
     pub base_dir: Option<PathBuf>,
+    /// Git diff spec for filtering to changed files (e.g. "HEAD~3", "main..HEAD").
+    /// When set, resolved files are intersected with the set of changed files.
+    pub changed: Option<String>,
 }
 
 impl Default for ExecuteOptions {
@@ -206,6 +220,7 @@ impl Default for ExecuteOptions {
         ExecuteOptions {
             verbose: false,
             base_dir: None,
+            changed: None,
         }
     }
 }
@@ -250,7 +265,7 @@ fn execute_query(
         return execute_query_inline(source, lang, op);
     }
 
-    let files = resolve_files(&op.files, &op.exclude, options);
+    let files = resolve_files(&op.files, &op.exclude, op.changed.as_deref(), options);
 
     if files.is_empty() {
         return Ok(Report::query(vec![], empty_summary()));
@@ -329,7 +344,7 @@ fn execute_check(
         return Ok(Report::check(vec![], empty_summary()));
     }
 
-    let files = resolve_files(&op.files, &op.exclude, options);
+    let files = resolve_files(&op.files, &op.exclude, op.changed.as_deref(), options);
 
     if files.is_empty() {
         return Ok(Report::check(vec![], empty_summary()));
@@ -409,7 +424,7 @@ fn execute_set(
     op: &SetOperation,
     options: &ExecuteOptions,
 ) -> Result<Report, Box<dyn std::error::Error>> {
-    let files = resolve_files(&op.files, &op.exclude, options);
+    let files = resolve_files(&op.files, &op.exclude, op.changed.as_deref(), options);
     let mut report_matches = Vec::new();
     let mut files_affected = HashSet::new();
     let mut updated_count = 0usize;
@@ -503,7 +518,7 @@ fn execute_test(
         return run_test_assertions_on_result(&mut result, &op.assertions, op.limit);
     }
 
-    let files = resolve_files(&op.files, &op.exclude, options);
+    let files = resolve_files(&op.files, &op.exclude, op.changed.as_deref(), options);
 
     if files.is_empty() {
         let mut passed = true;
@@ -595,7 +610,7 @@ fn execute_update(
     op: &UpdateOperation,
     options: &ExecuteOptions,
 ) -> Result<Report, Box<dyn std::error::Error>> {
-    let files = resolve_files(&op.files, &op.exclude, options);
+    let files = resolve_files(&op.files, &op.exclude, op.changed.as_deref(), options);
     let mut total_updated = 0usize;
     let mut files_modified = HashSet::new();
     let mut fallback_files = Vec::new();
@@ -784,6 +799,7 @@ fn query_files_multi(
 fn resolve_files(
     file_globs: &[String],
     exclude_globs: &[String],
+    op_changed: Option<&str>,
     options: &ExecuteOptions,
 ) -> Vec<String> {
     let mut files = if let Some(base) = &options.base_dir {
@@ -817,7 +833,30 @@ fn resolve_files(
         });
     }
 
-    filter_supported_files(files)
+    let files = filter_supported_files(files);
+
+    // Intersect with git changed files. Both global (ExecuteOptions) and
+    // per-operation changed specs apply — each narrows the file set further.
+    let cwd = options.base_dir.as_deref()
+        .unwrap_or_else(|| std::path::Path::new("."));
+
+    let files = apply_changed_filter(files, options.changed.as_deref(), cwd);
+    apply_changed_filter(files, op_changed, cwd)
+}
+
+fn apply_changed_filter(files: Vec<String>, spec: Option<&str>, cwd: &std::path::Path) -> Vec<String> {
+    match spec {
+        Some(spec) => {
+            match git::git_changed_files(spec, cwd) {
+                Ok(changed) => git::intersect_changed(files, &changed),
+                Err(e) => {
+                    eprintln!("warning: --changed filter failed: {}", e);
+                    files
+                }
+            }
+        }
+        None => files,
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -854,6 +893,7 @@ mod tests {
         let ops = vec![Operation::Query(QueryOperation {
             files: vec![path.clone()],
             exclude: vec![],
+            changed: None,
             queries: vec![QueryExpr { xpath: "//name".into() }],
             tree_mode: None,
             language: None,
@@ -879,6 +919,7 @@ mod tests {
         let ops = vec![Operation::Query(QueryOperation {
             files: vec![path.clone()],
             exclude: vec![],
+            changed: None,
             queries: vec![QueryExpr { xpath: "//*[number(.) > 0]".into() }],
             tree_mode: None,
             language: None,
@@ -898,6 +939,7 @@ mod tests {
         let ops = vec![Operation::Query(QueryOperation {
             files: vec![],
             exclude: vec![],
+            changed: None,
             queries: vec![QueryExpr { xpath: "//x".into() }],
             tree_mode: None,
             language: None,
@@ -924,6 +966,7 @@ mod tests {
         let ops = vec![Operation::Set(SetOperation {
             files: vec![path.clone()],
             exclude: vec![],
+            changed: None,
             mappings: vec![SetMapping {
                 xpath: "//database/host".into(),
                 value: "new-host".into(),
@@ -947,6 +990,7 @@ mod tests {
         let ops = vec![Operation::Set(SetOperation {
             files: vec![path.clone()],
             exclude: vec![],
+            changed: None,
             mappings: vec![SetMapping {
                 xpath: "//database/host".into(),
                 value: "localhost".into(),
@@ -969,6 +1013,7 @@ mod tests {
         let ops = vec![Operation::Set(SetOperation {
             files: vec![path.clone()],
             exclude: vec![],
+            changed: None,
             mappings: vec![
                 SetMapping { xpath: "//database/host".into(), value: "new-host".into() },
                 SetMapping { xpath: "//database/port".into(), value: "5432".into() },
@@ -997,6 +1042,7 @@ mod tests {
         let ops = vec![Operation::Set(SetOperation {
             files: vec![path.clone()],
             exclude: vec![],
+            changed: None,
             mappings: vec![SetMapping {
                 xpath: "//database/host".into(),
                 value: "localhost".into(),
@@ -1023,6 +1069,7 @@ mod tests {
         let ops = vec![Operation::Set(SetOperation {
             files: vec![path.clone()],
             exclude: vec![],
+            changed: None,
             mappings: vec![SetMapping {
                 xpath: "//database/host".into(),
                 value: "correct".into(),
@@ -1052,6 +1099,7 @@ mod tests {
         let ops = vec![Operation::Set(SetOperation {
             files: vec![path.clone()],
             exclude: vec![],
+            changed: None,
             mappings: vec![SetMapping {
                 xpath: "//database/host".into(),
                 value: "correct".into(),
@@ -1075,6 +1123,7 @@ mod tests {
         let ops = vec![Operation::Check(CheckOperation {
             files: vec![path.clone()],
             exclude: vec![],
+            changed: None,
             rules: vec![
                 Rule::new("no-debug", "//debug[.='true']")
                     .with_reason("debug should not be enabled")
@@ -1104,6 +1153,7 @@ mod tests {
         let ops = vec![Operation::Check(CheckOperation {
             files: vec![path.clone()],
             exclude: vec![],
+            changed: None,
             rules: vec![
                 Rule::new("no-debug", "//debug[.='true']")
                     .with_reason("debug should not be enabled"),
@@ -1140,6 +1190,7 @@ mod tests {
             Operation::Check(CheckOperation {
                 files: vec![data_path.to_str().unwrap().into()],
                 exclude: vec![],
+                changed: None,
                 rules: vec![
                     Rule::new("has-name", "//name[.='missing']")
                         .with_reason("name should not be 'missing'"),
@@ -1154,6 +1205,7 @@ mod tests {
             Operation::Set(SetOperation {
                 files: vec![config_path.to_str().unwrap().into()],
                 exclude: vec![],
+                changed: None,
                 mappings: vec![SetMapping {
                     xpath: "//host".into(),
                     value: "new-host".into(),
@@ -1180,6 +1232,7 @@ mod tests {
         let ops = vec![Operation::Set(SetOperation {
             files: vec![path.clone()],
             exclude: vec![],
+            changed: None,
             mappings: vec![SetMapping {
                 xpath: "//database/host".into(),
                 value: "new-host".into(),

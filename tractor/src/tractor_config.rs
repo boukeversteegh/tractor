@@ -44,6 +44,20 @@ use crate::executor::{
 
 #[derive(Deserialize, Debug)]
 struct ConfigFile {
+    /// Root-level file scope: glob patterns that constrain all operations.
+    /// Intersected with each operation's own `files`.
+    #[serde(default)]
+    files: Vec<String>,
+
+    /// Root-level exclude patterns applied to all operations.
+    #[serde(default)]
+    exclude: Vec<String>,
+
+    /// Root-level git diff spec: only consider files changed in this diff.
+    /// Intersected with every operation's resolved file set.
+    #[serde(default)]
+    changed: Option<String>,
+
     /// Root-level check shorthand (single check operation).
     #[serde(default)]
     check: Option<CheckConfig>,
@@ -94,6 +108,8 @@ struct CheckConfig {
     #[serde(default)]
     exclude: Vec<String>,
     #[serde(default)]
+    changed: Option<String>,
+    #[serde(default)]
     rules: Vec<CheckRuleConfig>,
     #[serde(default)]
     tree_mode: Option<String>,
@@ -123,6 +139,8 @@ struct SetConfig {
     files: Vec<String>,
     #[serde(default)]
     exclude: Vec<String>,
+    #[serde(default)]
+    changed: Option<String>,
     mappings: Vec<SetMappingConfig>,
     #[serde(default)]
     tree_mode: Option<String>,
@@ -142,6 +160,8 @@ struct QueryConfig {
     files: Vec<String>,
     #[serde(default)]
     exclude: Vec<String>,
+    #[serde(default)]
+    changed: Option<String>,
     #[serde(default)]
     queries: Vec<QueryExprConfig>,
     #[serde(default)]
@@ -163,6 +183,8 @@ struct TestConfig {
     files: Vec<String>,
     #[serde(default)]
     exclude: Vec<String>,
+    #[serde(default)]
+    changed: Option<String>,
     #[serde(default)]
     assertions: Vec<TestAssertionConfig>,
     #[serde(default)]
@@ -212,7 +234,15 @@ fn parse_tree_mode(s: &str) -> Result<TreeMode, String> {
     }
 }
 
-fn convert_check(config: CheckConfig) -> Result<Operation, Box<dyn std::error::Error>> {
+/// Root-level scope fields that constrain all operations.
+#[derive(Debug, Clone, Default)]
+struct RootScope {
+    files: Vec<String>,
+    exclude: Vec<String>,
+    changed: Option<String>,
+}
+
+fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<Operation, Box<dyn std::error::Error>> {
     let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
     let rules: Vec<Rule> = config.rules.into_iter().map(|r| {
@@ -233,9 +263,12 @@ fn convert_check(config: CheckConfig) -> Result<Operation, Box<dyn std::error::E
         Ok::<Rule, Box<dyn std::error::Error>>(rule)
     }).collect::<Result<_, _>>()?;
 
+    let (files, exclude, changed) = merge_scope(scope, config.files, config.exclude, config.changed);
+
     Ok(Operation::Check(CheckOperation {
-        files: config.files,
-        exclude: config.exclude,
+        files,
+        exclude,
+        changed,
         rules,
         tree_mode,
         language: config.language,
@@ -246,7 +279,7 @@ fn convert_check(config: CheckConfig) -> Result<Operation, Box<dyn std::error::E
     }))
 }
 
-fn convert_set(config: SetConfig) -> Result<Operation, Box<dyn std::error::Error>> {
+fn convert_set(config: SetConfig, scope: &RootScope) -> Result<Operation, Box<dyn std::error::Error>> {
     // Validate tree_mode if provided (even though set doesn't use it yet)
     if let Some(ref tm) = config.tree_mode {
         parse_tree_mode(tm)?;
@@ -259,25 +292,31 @@ fn convert_set(config: SetConfig) -> Result<Operation, Box<dyn std::error::Error
         }
     }).collect();
 
+    let (files, exclude, changed) = merge_scope(scope, config.files, config.exclude, config.changed);
+
     Ok(Operation::Set(SetOperation {
-        files: config.files,
-        exclude: config.exclude,
+        files,
+        exclude,
+        changed,
         mappings,
         language: config.language,
         verify: false,
     }))
 }
 
-fn convert_query(config: QueryConfig) -> Result<Operation, Box<dyn std::error::Error>> {
+fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<Operation, Box<dyn std::error::Error>> {
     let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
     let queries = config.queries.into_iter().map(|q| {
         QueryExpr { xpath: q.xpath }
     }).collect();
 
+    let (files, exclude, changed) = merge_scope(scope, config.files, config.exclude, config.changed);
+
     Ok(Operation::Query(QueryOperation {
-        files: config.files,
-        exclude: config.exclude,
+        files,
+        exclude,
+        changed,
         queries,
         tree_mode,
         language: config.language,
@@ -289,7 +328,7 @@ fn convert_query(config: QueryConfig) -> Result<Operation, Box<dyn std::error::E
     }))
 }
 
-fn convert_test(config: TestConfig) -> Result<Operation, Box<dyn std::error::Error>> {
+fn convert_test(config: TestConfig, scope: &RootScope) -> Result<Operation, Box<dyn std::error::Error>> {
     let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
     let assertions = config.assertions.into_iter().map(|a| {
@@ -299,9 +338,12 @@ fn convert_test(config: TestConfig) -> Result<Operation, Box<dyn std::error::Err
         }
     }).collect();
 
+    let (files, exclude, changed) = merge_scope(scope, config.files, config.exclude, config.changed);
+
     Ok(Operation::Test(TestOperation {
-        files: config.files,
-        exclude: config.exclude,
+        files,
+        exclude,
+        changed,
         assertions,
         tree_mode,
         language: config.language,
@@ -313,36 +355,69 @@ fn convert_test(config: TestConfig) -> Result<Operation, Box<dyn std::error::Err
     }))
 }
 
+/// Merge root-level scope with per-operation scope.
+///
+/// - `files`: operation files take precedence; root files are the fallback
+///   when an operation doesn't specify its own.
+/// - `exclude`: union of root and operation excludes (both narrow the scope).
+/// - `changed`: operation changed takes precedence; root changed is the
+///   fallback. CLI `--changed` is applied separately via `ExecuteOptions`.
+fn merge_scope(
+    scope: &RootScope,
+    op_files: Vec<String>,
+    op_exclude: Vec<String>,
+    op_changed: Option<String>,
+) -> (Vec<String>, Vec<String>, Option<String>) {
+    let files = if op_files.is_empty() {
+        scope.files.clone()
+    } else {
+        op_files
+    };
+
+    let mut exclude = scope.exclude.clone();
+    exclude.extend(op_exclude);
+
+    let changed = op_changed.or_else(|| scope.changed.clone());
+
+    (files, exclude, changed)
+}
+
 fn config_to_operations(config: ConfigFile) -> Result<Vec<Operation>, Box<dyn std::error::Error>> {
+    let scope = RootScope {
+        files: config.files,
+        exclude: config.exclude,
+        changed: config.changed,
+    };
+
     let mut ops = Vec::new();
 
     // Root-level shorthand keys first
     if let Some(check) = config.check {
-        ops.push(convert_check(check)?);
+        ops.push(convert_check(check, &scope)?);
     }
     if let Some(set) = config.set {
-        ops.push(convert_set(set)?);
+        ops.push(convert_set(set, &scope)?);
     }
     if let Some(query) = config.query {
-        ops.push(convert_query(query)?);
+        ops.push(convert_query(query, &scope)?);
     }
     if let Some(test) = config.test {
-        ops.push(convert_test(test)?);
+        ops.push(convert_test(test, &scope)?);
     }
 
     // Then explicit operations list
     for entry in config.operations {
         if let Some(c) = entry.check {
-            ops.push(convert_check(c)?);
+            ops.push(convert_check(c, &scope)?);
         }
         if let Some(s) = entry.set {
-            ops.push(convert_set(s)?);
+            ops.push(convert_set(s, &scope)?);
         }
         if let Some(q) = entry.query {
-            ops.push(convert_query(q)?);
+            ops.push(convert_query(q, &scope)?);
         }
         if let Some(t) = entry.test {
-            ops.push(convert_test(t)?);
+            ops.push(convert_test(t, &scope)?);
         }
     }
 
@@ -675,6 +750,136 @@ value = "localhost"
                 assert_eq!(s.mappings[0].value, "localhost");
             }
             _ => panic!("expected Set operation"),
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Root-level scope tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn root_files_inherited_when_operation_has_none() {
+        let yaml = r#"
+files: ["src/**/*.rs"]
+check:
+  rules:
+    - id: no-todo
+      xpath: "//comment"
+"#;
+        let ops = parse_config_yaml(yaml).unwrap();
+        if let Operation::Check(c) = &ops[0] {
+            assert_eq!(c.files, vec!["src/**/*.rs"]);
+        } else {
+            panic!("expected Check");
+        }
+    }
+
+    #[test]
+    fn root_files_overridden_by_operation_files() {
+        let yaml = r#"
+files: ["src/**/*.rs"]
+check:
+  files: ["test/**/*.rs"]
+  rules:
+    - id: no-todo
+      xpath: "//comment"
+"#;
+        let ops = parse_config_yaml(yaml).unwrap();
+        if let Operation::Check(c) = &ops[0] {
+            assert_eq!(c.files, vec!["test/**/*.rs"]);
+        } else {
+            panic!("expected Check");
+        }
+    }
+
+    #[test]
+    fn root_exclude_merged_with_operation_exclude() {
+        let yaml = r#"
+exclude: ["target/**"]
+check:
+  files: ["src/**/*.rs"]
+  exclude: ["src/generated/**"]
+  rules:
+    - id: no-todo
+      xpath: "//comment"
+"#;
+        let ops = parse_config_yaml(yaml).unwrap();
+        if let Operation::Check(c) = &ops[0] {
+            assert_eq!(c.exclude, vec!["target/**", "src/generated/**"]);
+        } else {
+            panic!("expected Check");
+        }
+    }
+
+    #[test]
+    fn root_changed_inherited_by_operations() {
+        let yaml = r#"
+changed: "main..HEAD"
+check:
+  files: ["src/**/*.rs"]
+  rules:
+    - id: no-todo
+      xpath: "//comment"
+"#;
+        let ops = parse_config_yaml(yaml).unwrap();
+        if let Operation::Check(c) = &ops[0] {
+            assert_eq!(c.changed.as_deref(), Some("main..HEAD"));
+        } else {
+            panic!("expected Check");
+        }
+    }
+
+    #[test]
+    fn operation_changed_overrides_root_changed() {
+        let yaml = r#"
+changed: "main..HEAD"
+check:
+  files: ["src/**/*.rs"]
+  changed: "HEAD~3"
+  rules:
+    - id: no-todo
+      xpath: "//comment"
+"#;
+        let ops = parse_config_yaml(yaml).unwrap();
+        if let Operation::Check(c) = &ops[0] {
+            assert_eq!(c.changed.as_deref(), Some("HEAD~3"));
+        } else {
+            panic!("expected Check");
+        }
+    }
+
+    #[test]
+    fn root_scope_applies_to_operations_list() {
+        let yaml = r#"
+files: ["src/**/*.rs"]
+exclude: ["vendor/**"]
+changed: "main..HEAD"
+operations:
+  - check:
+      rules:
+        - id: rule-a
+          xpath: "//a"
+  - query:
+      queries:
+        - xpath: "//b"
+"#;
+        let ops = parse_config_yaml(yaml).unwrap();
+        assert_eq!(ops.len(), 2);
+
+        if let Operation::Check(c) = &ops[0] {
+            assert_eq!(c.files, vec!["src/**/*.rs"]);
+            assert_eq!(c.exclude, vec!["vendor/**"]);
+            assert_eq!(c.changed.as_deref(), Some("main..HEAD"));
+        } else {
+            panic!("expected Check");
+        }
+
+        if let Operation::Query(q) = &ops[1] {
+            assert_eq!(q.files, vec!["src/**/*.rs"]);
+            assert_eq!(q.exclude, vec!["vendor/**"]);
+            assert_eq!(q.changed.as_deref(), Some("main..HEAD"));
+        } else {
+            panic!("expected Query");
         }
     }
 }
