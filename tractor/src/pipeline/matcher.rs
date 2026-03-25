@@ -250,9 +250,11 @@ pub fn run_rules(
                 return None;
             }
 
-            // Resolve per-file language/tree_mode. For now, use the first
-            // applicable rule's overrides or the ruleset defaults.
-            // TODO: group rules by (lang, tree_mode) and re-parse when needed.
+            // Resolve per-file language/tree_mode. Uses the first applicable
+            // rule's overrides or the ruleset defaults. If rules specify
+            // different tree_mode/language for the same file, only the first
+            // rule's settings apply — a future improvement could group rules
+            // by (lang, tree_mode) and re-parse when needed.
             let first_rule = &ruleset.rules[applicable[0]];
             let lang_override = ruleset.effective_language(first_rule);
             let effective_tree_mode = ruleset.effective_tree_mode(first_rule).or(tree_mode);
