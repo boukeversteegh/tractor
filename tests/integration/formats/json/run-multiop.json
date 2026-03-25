@@ -8,6 +8,7 @@
   },
   "operations": [
     {
+      "kind": "check",
       "summary": {
         "passed": false,
         "total": 3,
@@ -52,10 +53,10 @@
             }
           ]
         }
-      ],
-      "kind": "check"
+      ]
     },
     {
+      "kind": "test",
       "summary": {
         "passed": true,
         "total": 2,
@@ -86,8 +87,7 @@
             }
           ]
         }
-      ],
-      "kind": "test"
+      ]
     }
   ]
 }

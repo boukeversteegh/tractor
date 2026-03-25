@@ -39,9 +39,12 @@ pub fn render_yaml_report(report: &Report, view: &ViewSet, render_opts: &RenderO
     if let Some(ref ops) = report.operations {
         let ops_yaml: Vec<Value> = ops.iter().map(|sub| {
             let sub_str = render_yaml_report(sub, view, render_opts);
-            let mut sub_obj: serde_json::Map<String, Value> = serde_yaml::from_str(&sub_str).unwrap_or_default();
-            sub_obj.insert("kind".into(), serde_json::json!(sub.kind.as_str()));
-            Value::Object(sub_obj)
+            let sub_obj: serde_json::Map<String, Value> = serde_yaml::from_str(&sub_str).unwrap_or_default();
+            // Put "kind" first by building a new ordered map
+            let mut ordered = serde_json::Map::new();
+            ordered.insert("kind".into(), serde_json::json!(sub.kind.as_str()));
+            ordered.extend(sub_obj);
+            Value::Object(ordered)
         }).collect();
         root.insert("operations".into(), Value::Array(ops_yaml));
     }
