@@ -18,7 +18,7 @@ for suite in rust python typescript javascript go java csharp ruby xml yaml mark
 done
 
 # Feature tests
-for suite in string-input replace update xpath-expressions; do
+for suite in string-input replace update xpath-expressions view-modifiers; do
     bash "tests/integration/$suite/test.sh" || exit 1
     echo ""
 done

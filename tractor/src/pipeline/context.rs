@@ -6,7 +6,7 @@ use tractor_core::{
 use crate::cli::SharedArgs;
 use crate::xpath_utils::normalize_xpath;
 use super::input::{InputMode, resolve_input};
-use super::format::{OutputFormat, ViewField, ViewSet, parse_view_set};
+use super::format::{OutputFormat, ViewField, ViewSet, parse_view_with_defaults};
 
 pub struct RunContext {
     pub xpath: Option<String>,
@@ -50,7 +50,7 @@ impl RunContext {
         let output_format = OutputFormat::from_str(format)?;
 
         let view = if let Some(s) = user_view {
-            parse_view_set(s)?
+            parse_view_with_defaults(s, default_view)?
         } else {
             ViewSet::from_fields(default_view.to_vec())
         };

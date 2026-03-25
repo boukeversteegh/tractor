@@ -161,6 +161,64 @@ pub fn parse_view_set(s: &str) -> Result<ViewSet, String> {
     Ok(ViewSet::new(fields))
 }
 
+/// Parse a view expression relative to a set of default fields.
+///
+/// If every non-empty token starts with `+` or `-`, the expression is treated
+/// as a modifier list applied to `default_fields`:
+/// - `+field` — add `field` if not already present
+/// - `-field` — remove `field` if present
+///
+/// Otherwise the expression is treated as an explicit full field list
+/// (same as `parse_view_set`).
+///
+/// Mixing plain field names with `+`/`-` prefixed modifiers is an error.
+pub fn parse_view_with_defaults(s: &str, default_fields: &[ViewField]) -> Result<ViewSet, String> {
+    let tokens: Vec<&str> = s.split(',')
+        .map(|p| p.trim())
+        .filter(|p| !p.is_empty())
+        .collect();
+
+    if tokens.is_empty() {
+        return Err("view cannot be empty".to_string());
+    }
+
+    let has_modifier  = tokens.iter().any(|p| p.starts_with('+') || p.starts_with('-'));
+    let has_plain     = tokens.iter().any(|p| !p.starts_with('+') && !p.starts_with('-'));
+
+    if has_modifier && has_plain {
+        return Err(
+            "cannot mix plain field names with +/- modifiers in -v. \
+             Use either an explicit list (e.g. -v file,line,reason) \
+             or only modifiers (e.g. -v -lines,+source)."
+                .to_string(),
+        );
+    }
+
+    if !has_modifier {
+        return parse_view_set(s);
+    }
+
+    // Modifier mode: start from the defaults and apply each +/- token.
+    let mut fields: Vec<ViewField> = default_fields.to_vec();
+    for token in &tokens {
+        if let Some(field_str) = token.strip_prefix('+') {
+            let field = ViewField::from_str(&field_str.to_lowercase())?;
+            if !fields.contains(&field) {
+                fields.push(field);
+            }
+        } else if let Some(field_str) = token.strip_prefix('-') {
+            let field = ViewField::from_str(&field_str.to_lowercase())?;
+            fields.retain(|f| *f != field);
+        }
+    }
+
+    if fields.is_empty() {
+        return Err("view cannot be empty after applying modifiers".to_string());
+    }
+
+    Ok(ViewSet::new(fields))
+}
+
 // ---------------------------------------------------------------------------
 // GroupBy — controls whether the file field is emitted on individual matches
 // ---------------------------------------------------------------------------
