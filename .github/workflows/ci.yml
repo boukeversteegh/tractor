@@ -64,12 +64,8 @@ jobs:
       - name: Build tractor
         run: cargo build --release -p tractor
 
-      - name: Lint - no TODO comments
-        run: |
-          ./target/release/tractor test "tractor-core/src/**/*.rs" "tractor/src/**/*.rs" \
-            -x '//line_comment[contains(.,"TODO")]' \
-            -f github -m "TODO comment: {value}" \
-            --expect none
+      - name: Lint
+        run: ./target/release/tractor run .tractor.yml
 
   gate:
     needs: [test, lint]

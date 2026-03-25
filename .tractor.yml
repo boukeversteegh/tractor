@@ -1,0 +1,10 @@
+check:
+  files:
+    - "tractor-core/src/**/*.rs"
+    - "tractor/src/**/*.rs"
+  rules:
+    - id: no-todo
+      xpath: "//line_comment[contains(.,'TODO')]"
+      reason: "TODO comment"
+      severity: error
+      message: "{value}"
