@@ -50,6 +50,7 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
         files: files.clone(),
         exclude: vec![],
         changed: None,
+        diff: None,
         rules: vec![rule],
         tree_mode: ctx.tree_mode,
         language: ctx.lang.clone(),
@@ -62,6 +63,7 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
     let options = ExecuteOptions {
         verbose: ctx.verbose,
         changed: args.shared.changed.clone(),
+        diff: args.shared.diff.clone(),
         ..Default::default()
     };
 
@@ -116,6 +118,7 @@ fn run_check_rules(args: CheckArgs, rules_path: &str) -> Result<(), Box<dyn std:
         files,
         exclude: vec![],
         changed: None,
+        diff: None,
         rules: ruleset.rules.clone(),
         tree_mode: ctx.tree_mode,
         language: ctx.lang.clone(),
@@ -128,6 +131,7 @@ fn run_check_rules(args: CheckArgs, rules_path: &str) -> Result<(), Box<dyn std:
     let options = ExecuteOptions {
         verbose: ctx.verbose,
         changed: args.shared.changed.clone(),
+        diff: args.shared.diff.clone(),
         ..Default::default()
     };
 

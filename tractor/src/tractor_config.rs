@@ -58,6 +58,10 @@ struct ConfigFile {
     #[serde(default)]
     changed: Option<String>,
 
+    /// Root-level git diff spec: only include matches in changed hunks.
+    #[serde(default)]
+    diff: Option<String>,
+
     /// Root-level check shorthand (single check operation).
     #[serde(default)]
     check: Option<CheckConfig>,
@@ -110,6 +114,8 @@ struct CheckConfig {
     #[serde(default)]
     changed: Option<String>,
     #[serde(default)]
+    diff: Option<String>,
+    #[serde(default)]
     rules: Vec<CheckRuleConfig>,
     #[serde(default)]
     tree_mode: Option<String>,
@@ -141,6 +147,8 @@ struct SetConfig {
     exclude: Vec<String>,
     #[serde(default)]
     changed: Option<String>,
+    #[serde(default)]
+    diff: Option<String>,
     mappings: Vec<SetMappingConfig>,
     #[serde(default)]
     tree_mode: Option<String>,
@@ -162,6 +170,8 @@ struct QueryConfig {
     exclude: Vec<String>,
     #[serde(default)]
     changed: Option<String>,
+    #[serde(default)]
+    diff: Option<String>,
     #[serde(default)]
     queries: Vec<QueryExprConfig>,
     #[serde(default)]
@@ -185,6 +195,8 @@ struct TestConfig {
     exclude: Vec<String>,
     #[serde(default)]
     changed: Option<String>,
+    #[serde(default)]
+    diff: Option<String>,
     #[serde(default)]
     assertions: Vec<TestAssertionConfig>,
     #[serde(default)]
@@ -240,6 +252,7 @@ struct RootScope {
     files: Vec<String>,
     exclude: Vec<String>,
     changed: Option<String>,
+    diff: Option<String>,
 }
 
 fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<Operation, Box<dyn std::error::Error>> {
@@ -263,12 +276,13 @@ fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<Operation, Bo
         Ok::<Rule, Box<dyn std::error::Error>>(rule)
     }).collect::<Result<_, _>>()?;
 
-    let (files, exclude, changed) = merge_scope(scope, config.files, config.exclude, config.changed);
+    let (files, exclude, changed, diff) = merge_scope(scope, config.files, config.exclude, config.changed, config.diff);
 
     Ok(Operation::Check(CheckOperation {
         files,
         exclude,
         changed,
+        diff,
         rules,
         tree_mode,
         language: config.language,
@@ -292,12 +306,13 @@ fn convert_set(config: SetConfig, scope: &RootScope) -> Result<Operation, Box<dy
         }
     }).collect();
 
-    let (files, exclude, changed) = merge_scope(scope, config.files, config.exclude, config.changed);
+    let (files, exclude, changed, diff) = merge_scope(scope, config.files, config.exclude, config.changed, config.diff);
 
     Ok(Operation::Set(SetOperation {
         files,
         exclude,
         changed,
+        diff,
         mappings,
         language: config.language,
         verify: false,
@@ -311,12 +326,13 @@ fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<Operation, Bo
         QueryExpr { xpath: q.xpath }
     }).collect();
 
-    let (files, exclude, changed) = merge_scope(scope, config.files, config.exclude, config.changed);
+    let (files, exclude, changed, diff) = merge_scope(scope, config.files, config.exclude, config.changed, config.diff);
 
     Ok(Operation::Query(QueryOperation {
         files,
         exclude,
         changed,
+        diff,
         queries,
         tree_mode,
         language: config.language,
@@ -338,12 +354,13 @@ fn convert_test(config: TestConfig, scope: &RootScope) -> Result<Operation, Box<
         }
     }).collect();
 
-    let (files, exclude, changed) = merge_scope(scope, config.files, config.exclude, config.changed);
+    let (files, exclude, changed, diff) = merge_scope(scope, config.files, config.exclude, config.changed, config.diff);
 
     Ok(Operation::Test(TestOperation {
         files,
         exclude,
         changed,
+        diff,
         assertions,
         tree_mode,
         language: config.language,
@@ -360,14 +377,15 @@ fn convert_test(config: TestConfig, scope: &RootScope) -> Result<Operation, Box<
 /// - `files`: operation files take precedence; root files are the fallback
 ///   when an operation doesn't specify its own.
 /// - `exclude`: union of root and operation excludes (both narrow the scope).
-/// - `changed`: operation changed takes precedence; root changed is the
-///   fallback. CLI `--changed` is applied separately via `ExecuteOptions`.
+/// - `changed`/`diff`: operation takes precedence; root is the fallback.
+///   CLI flags are applied separately via `ExecuteOptions`.
 fn merge_scope(
     scope: &RootScope,
     op_files: Vec<String>,
     op_exclude: Vec<String>,
     op_changed: Option<String>,
-) -> (Vec<String>, Vec<String>, Option<String>) {
+    op_diff: Option<String>,
+) -> (Vec<String>, Vec<String>, Option<String>, Option<String>) {
     let files = if op_files.is_empty() {
         scope.files.clone()
     } else {
@@ -378,8 +396,9 @@ fn merge_scope(
     exclude.extend(op_exclude);
 
     let changed = op_changed.or_else(|| scope.changed.clone());
+    let diff = op_diff.or_else(|| scope.diff.clone());
 
-    (files, exclude, changed)
+    (files, exclude, changed, diff)
 }
 
 fn config_to_operations(config: ConfigFile) -> Result<Vec<Operation>, Box<dyn std::error::Error>> {
@@ -387,6 +406,7 @@ fn config_to_operations(config: ConfigFile) -> Result<Vec<Operation>, Box<dyn st
         files: config.files,
         exclude: config.exclude,
         changed: config.changed,
+        diff: config.diff,
     };
 
     let mut ops = Vec::new();

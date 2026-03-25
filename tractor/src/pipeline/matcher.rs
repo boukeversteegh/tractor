@@ -8,6 +8,7 @@ use tractor_core::{
     report::Report,
     rule::{RuleSet, GlobMatcher},
 };
+use crate::filter::ResultFilter;
 
 use super::context::RunContext;
 use super::format::{ViewField, ViewSet};
@@ -219,6 +220,7 @@ pub fn run_rules(
     ignore_whitespace: bool,
     parse_depth: Option<usize>,
     verbose: bool,
+    filters: &[&dyn ResultFilter],
 ) -> Result<Vec<RuleMatch>, Box<dyn std::error::Error>> {
     // Compile glob matchers for each rule upfront.
     let compiled: Vec<CompiledRule> = ruleset
@@ -296,6 +298,11 @@ pub fn run_rules(
                         }
                     }
                 }
+            }
+
+            // Apply result filters at the query engine level.
+            if !filters.is_empty() {
+                file_matches.retain(|rm| filters.iter().all(|f| f.include(&rm.m)));
             }
 
             if file_matches.is_empty() {

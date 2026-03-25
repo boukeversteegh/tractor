@@ -50,6 +50,7 @@ pub fn run_run(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {
         verbose: args.shared.verbose,
         base_dir,
         changed: args.shared.changed.clone(),
+        diff: args.shared.diff.clone(),
     };
 
     let reports = executor::execute(&operations, &options)?;

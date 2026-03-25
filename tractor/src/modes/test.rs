@@ -32,6 +32,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
             files: files.clone(),
             exclude: vec![],
             changed: None,
+            diff: None,
             assertions: vec![TestAssertion {
                 xpath: xpath_expr.to_string(),
                 expect: expect.clone(),
@@ -48,6 +49,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
             files: vec![],
             exclude: vec![],
             changed: None,
+            diff: None,
             assertions: vec![TestAssertion {
                 xpath: xpath_expr.to_string(),
                 expect: expect.clone(),
@@ -65,6 +67,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
     let options = ExecuteOptions {
         verbose: ctx.verbose,
         changed: args.shared.changed.clone(),
+        diff: args.shared.diff.clone(),
         ..Default::default()
     };
 

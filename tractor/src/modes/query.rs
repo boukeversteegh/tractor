@@ -38,6 +38,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
             files: files.clone(),
             exclude: vec![],
             changed: None,
+            diff: None,
             queries: vec![QueryExpr { xpath: xpath_expr.to_string() }],
             tree_mode: ctx.tree_mode,
             language: ctx.lang.clone(),
@@ -51,6 +52,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
             files: vec![],
             exclude: vec![],
             changed: None,
+            diff: None,
             queries: vec![QueryExpr { xpath: xpath_expr.to_string() }],
             tree_mode: ctx.tree_mode,
             language: None,
@@ -65,6 +67,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     let options = ExecuteOptions {
         verbose: ctx.verbose,
         changed: args.shared.changed.clone(),
+        diff: args.shared.diff.clone(),
         ..Default::default()
     };
 

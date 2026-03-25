@@ -161,6 +161,10 @@ When omitted, auto-selects: data for JSON/YAML, structure for everything else.")
     #[arg(long = "changed", help_heading = "Filter")]
     pub changed: Option<String>,
 
+    /// Only consider matches in changed hunks of a git diff (e.g. "HEAD~3", "main..HEAD")
+    #[arg(long = "diff", help_heading = "Filter")]
+    pub diff: Option<String>,
+
     // -- Advanced --
     /// [EXPERIMENTAL] Limit tree building depth (skip parsing deeper nodes for speed)
     #[arg(long = "parse-depth", help_heading = "Advanced")]
