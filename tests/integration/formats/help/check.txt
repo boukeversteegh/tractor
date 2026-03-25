@@ -78,10 +78,10 @@ Format:
           [default: gcc]
 
 Filter:
-      --changed <CHANGED>
+      --diff-files <DIFF_FILES>
           Only consider files changed in a git diff (e.g. "HEAD~3", "main..HEAD")
 
-      --diff <DIFF>
+      --diff-lines <DIFF_LINES>
           Only consider matches in changed hunks of a git diff (e.g. "HEAD~3", "main..HEAD")
 
 Advanced:
