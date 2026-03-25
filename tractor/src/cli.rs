@@ -391,6 +391,18 @@ pub struct RunArgs {
     /// Exits with failure if any files would be modified. Does not write files.
     #[arg(long = "verify", help_heading = "Run")]
     pub verify: bool,
+
+    /// Output format: text, json, yaml, xml, gcc, github
+    #[arg(short = 'f', long = "format", default_value = "gcc", help_heading = "Output")]
+    pub format: String,
+
+    /// View fields to include (e.g. "tree,reason,severity")
+    #[arg(short = 'v', long = "view", help_heading = "Output")]
+    pub view: Option<String>,
+
+    /// Message template for matches (e.g. "{file}:{line}: {value}")
+    #[arg(short = 'm', long = "message", help_heading = "Output")]
+    pub message: Option<String>,
 }
 
 /// Render mode: convert XML AST back to source code

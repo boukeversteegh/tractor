@@ -494,64 +494,54 @@ fn execute_test(
     op: &TestOperation,
     options: &ExecuteOptions,
 ) -> Result<Report, Box<dyn std::error::Error>> {
-    // Inline source mode: parse a string instead of files.
+    // Inline source mode: parse a string and check each assertion individually.
     if let Some(ref source) = op.inline_source {
         let lang = op.inline_lang.as_deref()
             .or(op.language.as_deref())
             .ok_or("inline source requires a language (--lang)")?;
-        let query_op = QueryOperation {
-            files: vec![], exclude: vec![],
-            queries: op.assertions.iter().map(|a| QueryExpr { xpath: a.xpath.clone() }).collect(),
-            tree_mode: op.tree_mode,
-            language: op.language.clone(),
-            limit: op.limit,
-            ignore_whitespace: op.ignore_whitespace,
-            parse_depth: op.parse_depth,
-            inline_source: op.inline_source.clone(),
-            inline_lang: op.inline_lang.clone(),
-        };
-        let query_report = execute_query_inline(source, lang, &query_op)?;
-        let total = query_report.summary.as_ref().unwrap().total;
-        let files_affected = query_report.summary.as_ref().unwrap().files_affected;
-        // Check all assertions; for inline source we aggregate counts per assertion
-        let passed = check_all_assertions(&op.assertions, total)?;
-        let expected_str = format_expectations(&op.assertions);
-        return Ok(Report::test(query_report.matches, Summary {
-            passed, total, files_affected,
-            errors: 0, warnings: 0,
-            expected: Some(expected_str), query: None,
-        }));
+        let mut result = parse_string_to_documents(
+            source, lang, "<stdin>".to_string(), op.tree_mode, op.ignore_whitespace,
+        )?;
+        return run_test_assertions_on_result(&mut result, &op.assertions, op.limit);
     }
 
     let files = resolve_files(&op.files, &op.exclude, options);
 
     if files.is_empty() {
-        let passed = check_all_assertions(&op.assertions, 0)?;
+        let mut passed = true;
+        for assertion in &op.assertions {
+            if !check_expectation(&assertion.expect, 0)? {
+                passed = false;
+            }
+        }
         let expected_str = format_expectations(&op.assertions);
         return Ok(Report::test(vec![], Summary {
-            passed,
-            total: 0,
-            files_affected: 0,
-            errors: 0,
-            warnings: 0,
-            expected: Some(expected_str),
-            query: None,
+            passed, total: 0, files_affected: 0,
+            errors: 0, warnings: 0,
+            expected: Some(expected_str), query: None,
         }));
     }
 
-    let xpaths: Vec<&str> = op.assertions.iter().map(|a| a.xpath.as_str()).collect();
-    let matches = query_files_multi(
-        &files, &xpaths, op.language.as_deref(),
-        op.tree_mode, op.ignore_whitespace, op.parse_depth,
-        op.limit, options.verbose,
-    )?;
+    // Query each assertion's xpath individually to get per-assertion counts.
+    let mut all_matches = Vec::new();
+    let mut passed = true;
+    for assertion in &op.assertions {
+        let matches = query_files_multi(
+            &files, &[assertion.xpath.as_str()], op.language.as_deref(),
+            op.tree_mode, op.ignore_whitespace, op.parse_depth,
+            op.limit, options.verbose,
+        )?;
+        if !check_expectation(&assertion.expect, matches.len())? {
+            passed = false;
+        }
+        all_matches.extend(matches);
+    }
 
-    let total = matches.len();
-    let files_affected = count_unique_files(&matches);
-    let passed = check_all_assertions(&op.assertions, total)?;
+    let total = all_matches.len();
+    let files_affected = count_unique_files(&all_matches);
     let expected_str = format_expectations(&op.assertions);
 
-    let report_matches = matches.into_iter()
+    let report_matches = all_matches.into_iter()
         .map(match_to_full_report_match)
         .collect();
 
@@ -563,6 +553,39 @@ fn execute_test(
         warnings: 0,
         expected: Some(expected_str),
         query: None,
+    }))
+}
+
+/// Run test assertions against a single parsed document (inline source).
+fn run_test_assertions_on_result(
+    result: &mut tractor_core::XeeParseResult,
+    assertions: &[TestAssertion],
+    limit: Option<usize>,
+) -> Result<Report, Box<dyn std::error::Error>> {
+    let mut all_matches = Vec::new();
+    let mut passed = true;
+    for assertion in assertions {
+        let mut matches = result.query(&assertion.xpath)?;
+        if let Some(limit) = limit {
+            matches.truncate(limit);
+        }
+        if !check_expectation(&assertion.expect, matches.len())? {
+            passed = false;
+        }
+        all_matches.extend(matches);
+    }
+
+    let total = all_matches.len();
+    let files_affected = count_unique_files(&all_matches);
+    let expected_str = format_expectations(assertions);
+    let report_matches = all_matches.into_iter()
+        .map(match_to_full_report_match)
+        .collect();
+
+    Ok(Report::test(report_matches, Summary {
+        passed, total, files_affected,
+        errors: 0, warnings: 0,
+        expected: Some(expected_str), query: None,
     }))
 }
 
@@ -642,22 +665,6 @@ fn check_expectation(expect: &str, count: usize) -> Result<bool, Box<dyn std::er
         }
     };
     Ok(passed)
-}
-
-/// Check all assertions against a total match count.
-/// For single-assertion tests this is equivalent to check_expectation.
-/// For multi-assertion tests, each assertion's expect is checked against the total.
-fn check_all_assertions(assertions: &[TestAssertion], total: usize) -> Result<bool, Box<dyn std::error::Error>> {
-    // Single assertion: check the total against its expect.
-    // Multiple assertions: each assertion is checked against the total.
-    // (Per-assertion counts require per-xpath querying, which is handled
-    // by the caller when needed.)
-    for assertion in assertions {
-        if !check_expectation(&assertion.expect, total)? {
-            return Ok(false);
-        }
-    }
-    Ok(true)
 }
 
 /// Format expectations for the summary string.

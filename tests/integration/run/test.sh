@@ -4,7 +4,7 @@ source "$(dirname "$0")/../common.sh"
 
 FIXTURE_DIR="$SCRIPT_DIR"
 
-# Helper: run tractor run, capture stderr (where run reports go),
+# Helper: run tractor run, capture stdout+stderr (merged),
 # normalize absolute paths to relative for stable comparison.
 run_and_check() {
     local desc="$1"
@@ -14,7 +14,7 @@ run_and_check() {
     local args=("$@")
 
     local actual
-    actual=$(tractor run "${args[@]}" 2>&1)
+    actual=$(tractor run "${args[@]}" --no-color 2>&1)
     local actual_exit=$?
 
     # Normalize absolute paths to fixture-relative
@@ -57,7 +57,7 @@ run_set_and_check() {
     cp "$FIXTURE_DIR/$config" "$tmpdir/"
 
     local actual
-    actual=$(tractor run "$tmpdir/$config" "${extra_args[@]}" 2>&1)
+    actual=$(tractor run "$tmpdir/$config" "${extra_args[@]}" --no-color 2>&1)
     local actual_exit=$?
 
     # Normalize temp paths
@@ -89,43 +89,46 @@ echo "Run (check operations):"
 
 run_and_check "multirule check finds violations with correct severity" \
     1 \
-    "$(printf 'settings.yaml:3:10: error: debug should be disabled in production [no-debug]\nsettings.yaml:4:14: warning: log level should not be debug in production [no-debug-loglevel]\n2 check violations')" \
+    "$(printf 'settings.yaml:3:10: error: debug should be disabled in production\n3 |   debug: true\n             ^~~~\n\nsettings.yaml:4:14: warning: log level should not be debug in production\n4 |   log_level: debug\n                 ^~~~~\n\n\n1 check violation')" \
     "$FIXTURE_DIR/check-multirule.yaml"
 
 run_and_check "multifile check scans multiple files" \
     1 \
-    "$(printf 'settings.yaml:3:10: error: debug mode must be disabled [no-debug]\n1 check violation')" \
+    "$(printf 'settings.yaml:3:10: error: debug mode must be disabled\n3 |   debug: true\n             ^~~~\n\n\n1 check violation')" \
     "$FIXTURE_DIR/check-multifile.yaml"
 
 echo ""
 echo "Run (set operations):"
 
 run_set_and_check "set applies mappings to files" \
-    0 "" \
+    0 \
+    "$(printf 'app-config.json: updated\n\nupdated 1 file')" \
     "set-config.yaml"
 
 run_set_and_check "set with --verbose reports updated files" \
     0 \
-    "$(printf 'updated: app-config.json\nupdated 1 file')" \
+    "$(printf 'app-config.json: updated\n\nupdated 1 file')" \
     "set-config.yaml" --verbose
 
 echo ""
 echo "Run (verify mode):"
 
 run_set_and_check "verify passes when values are in sync" \
-    0 "" \
+    0 \
+    "$(printf 'app-config.json: unchanged')" \
     "verify-config.yaml" --verify
 
 run_set_and_check "verify detects drift" \
     1 \
-    "$(printf 'drift: app-config.json (2 mappings would change)\n1 file out of sync')" \
+    "$(printf 'app-config.json: updated\n\n1 file out of sync')" \
     "set-config.yaml" --verify
 
 echo ""
 echo "Run (mixed operations):"
 
 run_set_and_check "mixed check+set succeeds when check passes" \
-    0 "" \
+    0 \
+    "$(printf 'app-config.json: updated\n\nupdated 1 file')" \
     "mixed-ops.yaml"
 
 report

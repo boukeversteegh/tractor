@@ -193,6 +193,133 @@ pub fn render_test_report(
     Ok(())
 }
 
+// ---------------------------------------------------------------------------
+// Run report renderer — dispatches to format-specific renderers
+// ---------------------------------------------------------------------------
+
+/// Render a unified run report (multiple operations) to stdout.
+pub fn render_run_report(
+    report: &Report,
+    ctx: &RunContext,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use tractor_core::report::ReportKind;
+
+    let summary = report.summary.as_ref().expect("run report must have summary");
+
+    match ctx.output_format {
+        OutputFormat::Json   => print!("{}", render_json_report(report, &ctx.view, &ctx.render_options())),
+        OutputFormat::Yaml   => print!("{}", render_yaml_report(report, &ctx.view, &ctx.render_options())),
+        OutputFormat::Xml    => print!("{}", render_xml_report(report, &ctx.view, &ctx.render_options())),
+        OutputFormat::Gcc | OutputFormat::Github | OutputFormat::Text => {
+            // For text-based formats, render each sub-report inline.
+            if let Some(ref ops) = report.operations {
+                for sub in ops {
+                    match sub.kind {
+                        ReportKind::Check => {
+                            match ctx.output_format {
+                                OutputFormat::Gcc => print!("{}", render_gcc(sub, &ctx.render_options())),
+                                OutputFormat::Github => print!("{}", render_github(sub)),
+                                OutputFormat::Text => print!("{}", render_text_report(sub, &ctx.view, &ctx.render_options())),
+                                _ => unreachable!(),
+                            }
+                        }
+                        ReportKind::Query => {
+                            match ctx.output_format {
+                                OutputFormat::Text => print!("{}", render_text_report(sub, &ctx.view, &ctx.render_options())),
+                                _ => print!("{}", render_gcc(sub, &ctx.render_options())),
+                            }
+                        }
+                        ReportKind::Test => {
+                            let sub_summary = sub.summary.as_ref();
+                            if let Some(s) = sub_summary {
+                                let expected = s.expected.as_deref().unwrap_or("?");
+                                if s.passed {
+                                    eprintln!("test passed: expected {}, got {} match{}", expected, s.total, if s.total == 1 { "" } else { "es" });
+                                } else {
+                                    eprintln!("test failed: expected {}, got {} match{}", expected, s.total, if s.total == 1 { "" } else { "es" });
+                                }
+                            }
+                        }
+                        ReportKind::Set => {
+                            match ctx.output_format {
+                                OutputFormat::Text => print!("{}", render_text_report(sub, &ctx.view, &ctx.render_options())),
+                                _ => {
+                                    // Gcc-style set output: render using groups if available
+                                    let matches: Vec<&tractor_core::report::ReportMatch> = if let Some(ref groups) = sub.groups {
+                                        groups.iter().flat_map(|g| g.matches.iter()).collect()
+                                    } else {
+                                        sub.matches.iter().collect()
+                                    };
+                                    for rm in matches {
+                                        let file = if rm.file.is_empty() {
+                                            // Get file from group
+                                            sub.groups.as_ref()
+                                                .and_then(|gs| gs.first())
+                                                .map(|g| g.file.as_str())
+                                                .unwrap_or("")
+                                        } else {
+                                            &rm.file
+                                        };
+                                        let status = rm.status.as_deref().unwrap_or("unknown");
+                                        eprintln!("{}: {}", file, status);
+                                    }
+                                }
+                            }
+                        }
+                        ReportKind::Run => {} // nested run not expected
+                    }
+                }
+            }
+            // Print run-level summary
+            print_run_summary(summary, report.operations.as_deref());
+        }
+    }
+
+    if !summary.passed {
+        return Err(Box::new(crate::SilentExit));
+    }
+    Ok(())
+}
+
+fn print_run_summary(summary: &tractor_core::report::Summary, operations: Option<&[Report]>) {
+    use tractor_core::report::ReportKind;
+    let mut parts = Vec::new();
+
+    if summary.errors > 0 {
+        parts.push(format!("{} check violation{}", summary.errors,
+            if summary.errors == 1 { "" } else { "s" }));
+    }
+
+    // Count set updates from sub-reports
+    if let Some(ops) = operations {
+        let set_updated: usize = ops.iter()
+            .filter(|r| matches!(r.kind, ReportKind::Set))
+            .filter_map(|r| r.summary.as_ref())
+            .map(|s| s.errors) // errors = updated count for set
+            .sum();
+        let set_drift: usize = ops.iter()
+            .filter(|r| matches!(r.kind, ReportKind::Set))
+            .filter_map(|r| r.summary.as_ref())
+            .filter(|s| !s.passed)
+            .map(|s| s.files_affected)
+            .sum();
+        if set_drift > 0 {
+            parts.push(format!("{} file{} out of sync", set_drift,
+                if set_drift == 1 { "" } else { "s" }));
+        } else if set_updated > 0 {
+            parts.push(format!("updated {} file{}", set_updated,
+                if set_updated == 1 { "" } else { "s" }));
+        }
+    }
+
+    if !parts.is_empty() {
+        eprintln!();
+        for part in &parts {
+            eprintln!("{}", part);
+        }
+    }
+}
+
 fn print_check_summary(summary: &tractor_core::report::Summary) {
     if summary.total > 0 {
         eprintln!();

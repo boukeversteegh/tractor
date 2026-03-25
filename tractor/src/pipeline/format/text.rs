@@ -74,7 +74,7 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
     // gated on -v summary or -v query for query
     let show_summary = match report.kind {
         ReportKind::Query => view.has(ViewField::Summary) || view.has(ViewField::Query),
-        ReportKind::Check | ReportKind::Test | ReportKind::Set => true,
+        ReportKind::Check | ReportKind::Test | ReportKind::Set | ReportKind::Run => true,
     };
     if show_summary {
         if let Some(ref summary) = report.summary {
@@ -251,6 +251,24 @@ fn format_summary(summary: &Summary, kind: ReportKind) -> String {
                     updated, if updated == 1 { "" } else { "es" },
                     f, if f == 1 { "" } else { "s" },
                     unchanged)
+            }
+        }
+        ReportKind::Run => {
+            if summary.passed {
+                format!("{} matches across {} files\n", summary.total, summary.files_affected)
+            } else {
+                let mut parts = Vec::new();
+                if summary.errors > 0 {
+                    parts.push(format!("{} error{}", summary.errors, if summary.errors == 1 { "" } else { "s" }));
+                }
+                if summary.warnings > 0 {
+                    parts.push(format!("{} warning{}", summary.warnings, if summary.warnings == 1 { "" } else { "s" }));
+                }
+                if parts.is_empty() {
+                    "failed\n".to_string()
+                } else {
+                    format!("{}\n", parts.join(", "))
+                }
             }
         }
     };

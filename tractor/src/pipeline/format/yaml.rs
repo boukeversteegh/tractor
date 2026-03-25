@@ -35,6 +35,17 @@ pub fn render_yaml_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         }
     }
 
+    // Run report: emit sub-reports as "operations" array
+    if let Some(ref ops) = report.operations {
+        let ops_yaml: Vec<Value> = ops.iter().map(|sub| {
+            let sub_str = render_yaml_report(sub, view, render_opts);
+            let mut sub_obj: serde_json::Map<String, Value> = serde_yaml::from_str(&sub_str).unwrap_or_default();
+            sub_obj.insert("kind".into(), serde_json::json!(sub.kind.as_str()));
+            Value::Object(sub_obj)
+        }).collect();
+        root.insert("operations".into(), Value::Array(ops_yaml));
+    }
+
     if !report.matches.is_empty() {
         let matches_yaml: Vec<Value> = report.matches.iter()
             .map(|rm| match_to_value(rm, view, render_opts, GroupBy::None))

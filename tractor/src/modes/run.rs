@@ -1,9 +1,14 @@
 //! Run mode: execute a tractor config file containing mixed operations.
 
-use tractor_core::report::ReportKind;
+use tractor_core::report::Report;
 use crate::executor::{self, ExecuteOptions, Operation};
 use crate::tractor_config::load_tractor_config;
 use crate::cli::RunArgs;
+use crate::pipeline::{
+    RunContext, ViewField,
+    project_report, apply_message_template,
+};
+use crate::pipeline::format::render_run_report;
 
 pub fn run_run(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {
     let config_path = std::path::Path::new(&args.config);
@@ -30,6 +35,20 @@ pub fn run_run(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
+    // Build RunContext for output formatting.
+    let ctx = RunContext::build(
+        &args.shared,
+        vec![],           // no files — they come from the config
+        None,             // no xpath — they come from the config
+        &args.format,
+        &[ViewField::Reason, ViewField::Severity, ViewField::Lines, ViewField::Status, ViewField::Value],
+        args.view.as_deref(),
+        args.message,
+        None,             // no content
+        false,            // no debug
+        true,             // group by file
+    )?;
+
     // Resolve base_dir: use the config file's parent directory so that
     // relative file globs in the config are resolved relative to it.
     let base_dir = config_path.parent()
@@ -43,120 +62,17 @@ pub fn run_run(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     let reports = executor::execute(&operations, &options)?;
 
-    // Report results from each operation
-    let mut check_violations = 0usize;
-    let mut set_files_modified = 0usize;
-    let mut set_drift_files = 0usize;
-    let mut all_passed = true;
-
-    for report in &reports {
-        let summary = match report.summary.as_ref() {
-            Some(s) => s,
-            None => continue,
-        };
-
-        if !summary.passed {
-            all_passed = false;
+    // Apply view projection and grouping to each sub-report.
+    let sub_reports: Vec<Report> = reports.into_iter().map(|mut r| {
+        // Apply message template if provided.
+        if let Some(ref template) = ctx.message {
+            apply_message_template(&mut r, template);
         }
+        project_report(&mut r, &ctx.view);
+        if ctx.group_by_file { r.with_groups() } else { r }
+    }).collect();
 
-        match report.kind {
-            ReportKind::Check => {
-                for m in &report.matches {
-                    eprintln!(
-                        "{}:{}:{}: {}: {} {}",
-                        m.file,
-                        m.line,
-                        m.column,
-                        m.severity.map_or("error", |s| s.as_str()),
-                        m.reason.as_deref().unwrap_or("check failed"),
-                        m.rule_id.as_deref().map_or(String::new(), |id| format!("[{}]", id)),
-                    );
-                }
-                check_violations += report.matches.len();
-            }
-            ReportKind::Set => {
-                for m in &report.matches {
-                    let status = m.status.as_deref().unwrap_or("unknown");
-                    if status == "updated" {
-                        if args.verify {
-                            eprintln!(
-                                "drift: {} ({})",
-                                m.file,
-                                m.output.as_deref().unwrap_or("would change"),
-                            );
-                            set_drift_files += 1;
-                        } else {
-                            if args.shared.verbose {
-                                eprintln!("updated: {}", m.file);
-                            }
-                            set_files_modified += 1;
-                        }
-                    }
-                }
-            }
-            ReportKind::Query => {
-                if args.shared.verbose {
-                    for m in &report.matches {
-                        eprintln!(
-                            "{}:{}:{}: {}",
-                            m.file,
-                            m.line,
-                            m.column,
-                            m.value.as_deref().unwrap_or(""),
-                        );
-                    }
-                }
-            }
-            ReportKind::Test => {
-                let passed = summary.passed;
-                let expected = summary.expected.as_deref().unwrap_or("?");
-                if !passed {
-                    eprintln!(
-                        "test failed: expected {}, got {} match{}",
-                        expected,
-                        summary.total,
-                        if summary.total == 1 { "" } else { "es" },
-                    );
-                } else if args.shared.verbose {
-                    eprintln!(
-                        "test passed: expected {}, got {} match{}",
-                        expected,
-                        summary.total,
-                        if summary.total == 1 { "" } else { "es" },
-                    );
-                }
-            }
-        }
-    }
+    let report = Report::run(sub_reports);
 
-    // Summary
-    if args.shared.verbose || !all_passed {
-        if check_violations > 0 {
-            eprintln!(
-                "{} check violation{}",
-                check_violations,
-                if check_violations == 1 { "" } else { "s" },
-            );
-        }
-        if args.verify && set_drift_files > 0 {
-            eprintln!(
-                "{} file{} out of sync",
-                set_drift_files,
-                if set_drift_files == 1 { "" } else { "s" },
-            );
-        }
-        if !args.verify && set_files_modified > 0 {
-            eprintln!(
-                "updated {} file{}",
-                set_files_modified,
-                if set_files_modified == 1 { "" } else { "s" },
-            );
-        }
-    }
-
-    if all_passed {
-        Ok(())
-    } else {
-        Err(crate::SilentExit.into())
-    }
+    render_run_report(&report, &ctx)
 }
