@@ -20,6 +20,7 @@ use tractor_core::tree_mode::TreeMode;
 use tractor_core::{expand_globs, filter_supported_files, detect_language, parse_to_documents, parse_string_to_documents, Match, apply_replacements};
 use tractor_core::xpath_upsert::{upsert, update_only};
 
+use crate::filter::ResultFilter;
 use crate::pipeline::run_rules;
 use crate::pipeline::git;
 
@@ -54,7 +55,9 @@ pub struct QueryOperation {
     /// File glob patterns to exclude.
     pub exclude: Vec<String>,
     /// Git diff spec: only consider files changed in this diff.
-    pub changed: Option<String>,
+    pub diff_files: Option<String>,
+    /// Git diff spec: only include matches in changed hunks.
+    pub diff_lines: Option<String>,
     /// XPath queries to evaluate.
     pub queries: Vec<QueryExpr>,
     /// Tree mode override for parsing.
@@ -88,7 +91,9 @@ pub struct CheckOperation {
     /// File glob patterns to exclude.
     pub exclude: Vec<String>,
     /// Git diff spec: only consider files changed in this diff.
-    pub changed: Option<String>,
+    pub diff_files: Option<String>,
+    /// Git diff spec: only include matches in changed hunks.
+    pub diff_lines: Option<String>,
     /// Rules to check.
     pub rules: Vec<Rule>,
     /// Default tree mode for all rules (rules can override).
@@ -119,7 +124,9 @@ pub struct TestOperation {
     /// File glob patterns to exclude.
     pub exclude: Vec<String>,
     /// Git diff spec: only consider files changed in this diff.
-    pub changed: Option<String>,
+    pub diff_files: Option<String>,
+    /// Git diff spec: only include matches in changed hunks.
+    pub diff_lines: Option<String>,
     /// Assertions to evaluate.
     pub assertions: Vec<TestAssertion>,
     /// Tree mode override for parsing.
@@ -156,7 +163,9 @@ pub struct UpdateOperation {
     /// File glob patterns to exclude.
     pub exclude: Vec<String>,
     /// Git diff spec: only consider files changed in this diff.
-    pub changed: Option<String>,
+    pub diff_files: Option<String>,
+    /// Git diff spec: only include matches in changed hunks.
+    pub diff_lines: Option<String>,
     /// XPath expression to match nodes to update.
     pub xpath: String,
     /// New value for matched nodes.
@@ -181,7 +190,9 @@ pub struct SetOperation {
     /// File glob patterns to exclude.
     pub exclude: Vec<String>,
     /// Git diff spec: only consider files changed in this diff.
-    pub changed: Option<String>,
+    pub diff_files: Option<String>,
+    /// Git diff spec: only include matches in changed hunks.
+    pub diff_lines: Option<String>,
     /// Mappings to apply.
     pub mappings: Vec<SetMapping>,
     /// Language override for parsing.
@@ -212,7 +223,10 @@ pub struct ExecuteOptions {
     pub base_dir: Option<PathBuf>,
     /// Git diff spec for filtering to changed files (e.g. "HEAD~3", "main..HEAD").
     /// When set, resolved files are intersected with the set of changed files.
-    pub changed: Option<String>,
+    pub diff_files: Option<String>,
+    /// Git diff spec for filtering matches to changed hunks.
+    /// When set, only matches whose lines overlap with changed hunks are included.
+    pub diff_lines: Option<String>,
 }
 
 impl Default for ExecuteOptions {
@@ -220,7 +234,8 @@ impl Default for ExecuteOptions {
         ExecuteOptions {
             verbose: false,
             base_dir: None,
-            changed: None,
+            diff_files: None,
+            diff_lines: None,
         }
     }
 }
@@ -228,6 +243,50 @@ impl Default for ExecuteOptions {
 // ---------------------------------------------------------------------------
 // Executor
 // ---------------------------------------------------------------------------
+
+/// Build result filters from global and per-operation diff specs.
+///
+/// Both global (ExecuteOptions) and per-operation diff specs are applied.
+/// Each produces a separate filter; all must pass for a match to be included.
+fn build_filters(
+    global_diff: Option<&str>,
+    op_diff: Option<&str>,
+    cwd: &std::path::Path,
+) -> Vec<Box<dyn ResultFilter>> {
+    let mut filters: Vec<Box<dyn ResultFilter>> = Vec::new();
+
+    for spec in [global_diff, op_diff].into_iter().flatten() {
+        match git::DiffHunkFilter::from_spec(spec, cwd) {
+            Ok(f) => filters.push(Box::new(f)),
+            Err(e) => eprintln!("warning: --diff-lines filter failed: {}", e),
+        }
+    }
+
+    filters
+}
+
+/// Resolve files and build result filters for an operation.
+///
+/// Combines diff-files (file-level) and diff-lines (hunk-level) filtering
+/// with glob expansion and exclude patterns.
+fn resolve_op_files(
+    files: &[String],
+    exclude: &[String],
+    diff_files: Option<&str>,
+    diff_lines: Option<&str>,
+    options: &ExecuteOptions,
+) -> (Vec<String>, Vec<Box<dyn ResultFilter>>) {
+    let cwd = options.base_dir.as_deref()
+        .unwrap_or_else(|| std::path::Path::new("."));
+    let filters = build_filters(options.diff_lines.as_deref(), diff_lines, cwd);
+    let files = resolve_files(files, exclude, diff_files, &filters, options);
+    (files, filters)
+}
+
+/// Convert owned filters to borrowed references for passing to query engine.
+fn filter_refs(filters: &[Box<dyn ResultFilter>]) -> Vec<&dyn ResultFilter> {
+    filters.iter().map(|f| f.as_ref()).collect()
+}
 
 /// Execute a list of operations and return a `Report` for each one.
 pub fn execute(
@@ -265,7 +324,9 @@ fn execute_query(
         return execute_query_inline(source, lang, op);
     }
 
-    let files = resolve_files(&op.files, &op.exclude, op.changed.as_deref(), options);
+    let (files, filters) = resolve_op_files(
+        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), options,
+    );
 
     if files.is_empty() {
         return Ok(Report::query(vec![], empty_summary()));
@@ -275,7 +336,7 @@ fn execute_query(
     let matches = query_files_multi(
         &files, &xpaths, op.language.as_deref(),
         op.tree_mode, op.ignore_whitespace, op.parse_depth,
-        op.limit, options.verbose,
+        op.limit, options.verbose, &filter_refs(&filters),
     )?;
 
     let total = matches.len();
@@ -344,7 +405,9 @@ fn execute_check(
         return Ok(Report::check(vec![], empty_summary()));
     }
 
-    let files = resolve_files(&op.files, &op.exclude, op.changed.as_deref(), options);
+    let (files, filters) = resolve_op_files(
+        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), options,
+    );
 
     if files.is_empty() {
         return Ok(Report::check(vec![], empty_summary()));
@@ -367,6 +430,7 @@ fn execute_check(
         op.ignore_whitespace,
         op.parse_depth,
         options.verbose,
+        &filter_refs(&filters),
     )?;
 
     let mut files_affected = HashSet::new();
@@ -424,7 +488,9 @@ fn execute_set(
     op: &SetOperation,
     options: &ExecuteOptions,
 ) -> Result<Report, Box<dyn std::error::Error>> {
-    let files = resolve_files(&op.files, &op.exclude, op.changed.as_deref(), options);
+    let (files, _filters) = resolve_op_files(
+        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), options,
+    );
     let mut report_matches = Vec::new();
     let mut files_affected = HashSet::new();
     let mut updated_count = 0usize;
@@ -518,7 +584,9 @@ fn execute_test(
         return run_test_assertions_on_result(&mut result, &op.assertions, op.limit);
     }
 
-    let files = resolve_files(&op.files, &op.exclude, op.changed.as_deref(), options);
+    let (files, filters) = resolve_op_files(
+        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), options,
+    );
 
     if files.is_empty() {
         let mut passed = true;
@@ -538,11 +606,12 @@ fn execute_test(
     // Query each assertion's xpath individually to get per-assertion counts.
     let mut all_matches = Vec::new();
     let mut passed = true;
+    let refs = filter_refs(&filters);
     for assertion in &op.assertions {
         let matches = query_files_multi(
             &files, &[assertion.xpath.as_str()], op.language.as_deref(),
             op.tree_mode, op.ignore_whitespace, op.parse_depth,
-            op.limit, options.verbose,
+            op.limit, options.verbose, &refs,
         )?;
         if !check_expectation(&assertion.expect, matches.len())? {
             passed = false;
@@ -610,7 +679,9 @@ fn execute_update(
     op: &UpdateOperation,
     options: &ExecuteOptions,
 ) -> Result<Report, Box<dyn std::error::Error>> {
-    let files = resolve_files(&op.files, &op.exclude, op.changed.as_deref(), options);
+    let (files, filters) = resolve_op_files(
+        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), options,
+    );
     let mut total_updated = 0usize;
     let mut files_modified = HashSet::new();
     let mut fallback_files = Vec::new();
@@ -640,7 +711,7 @@ fn execute_update(
         let matches = query_files_multi(
             &fallback_files, &[op.xpath.as_str()], op.language.as_deref(),
             op.tree_mode, op.ignore_whitespace, op.parse_depth,
-            None, options.verbose,
+            None, options.verbose, &filter_refs(&filters),
         )?;
         if !matches.is_empty() {
             let summary = apply_replacements(&matches, &op.value)?;
@@ -751,6 +822,7 @@ fn query_files_multi(
     parse_depth: Option<usize>,
     limit: Option<usize>,
     verbose: bool,
+    filters: &[&dyn ResultFilter],
 ) -> Result<Vec<Match>, Box<dyn std::error::Error>> {
     let mut all_matches: Vec<Match> = files
         .par_iter()
@@ -782,6 +854,12 @@ fn query_files_multi(
                     }
                 }
             }
+
+            // Apply result filters at the query engine level.
+            if !filters.is_empty() {
+                file_matches.retain(|m| filters.iter().all(|f| f.include(m)));
+            }
+
             if file_matches.is_empty() { None } else { Some(file_matches) }
         })
         .flatten()
@@ -799,7 +877,8 @@ fn query_files_multi(
 fn resolve_files(
     file_globs: &[String],
     exclude_globs: &[String],
-    op_changed: Option<&str>,
+    op_diff_files: Option<&str>,
+    filters: &[Box<dyn ResultFilter>],
     options: &ExecuteOptions,
 ) -> Vec<String> {
     let mut files = if let Some(base) = &options.base_dir {
@@ -835,22 +914,30 @@ fn resolve_files(
 
     let files = filter_supported_files(files);
 
-    // Intersect with git changed files. Both global (ExecuteOptions) and
-    // per-operation changed specs apply — each narrows the file set further.
+    // Intersect with git diff-files. Both global (ExecuteOptions) and
+    // per-operation specs apply — each narrows the file set further.
     let cwd = options.base_dir.as_deref()
         .unwrap_or_else(|| std::path::Path::new("."));
 
-    let files = apply_changed_filter(files, options.changed.as_deref(), cwd);
-    apply_changed_filter(files, op_changed, cwd)
+    let files = apply_diff_files_filter(files, options.diff_files.as_deref(), cwd);
+    let mut files = apply_diff_files_filter(files, op_diff_files, cwd);
+
+    // Apply file-level filtering from result filters (e.g. DiffHunkFilter
+    // skips files that have no changed hunks).
+    if !filters.is_empty() {
+        files.retain(|f| filters.iter().all(|filter| filter.include_file(f)));
+    }
+
+    files
 }
 
-fn apply_changed_filter(files: Vec<String>, spec: Option<&str>, cwd: &std::path::Path) -> Vec<String> {
+fn apply_diff_files_filter(files: Vec<String>, spec: Option<&str>, cwd: &std::path::Path) -> Vec<String> {
     match spec {
         Some(spec) => {
             match git::git_changed_files(spec, cwd) {
                 Ok(changed) => git::intersect_changed(files, &changed),
                 Err(e) => {
-                    eprintln!("warning: --changed filter failed: {}", e);
+                    eprintln!("warning: --diff-files filter failed: {}", e);
                     files
                 }
             }
@@ -893,7 +980,8 @@ mod tests {
         let ops = vec![Operation::Query(QueryOperation {
             files: vec![path.clone()],
             exclude: vec![],
-            changed: None,
+            diff_files: None,
+            diff_lines: None,
             queries: vec![QueryExpr { xpath: "//name".into() }],
             tree_mode: None,
             language: None,
@@ -919,7 +1007,8 @@ mod tests {
         let ops = vec![Operation::Query(QueryOperation {
             files: vec![path.clone()],
             exclude: vec![],
-            changed: None,
+            diff_files: None,
+            diff_lines: None,
             queries: vec![QueryExpr { xpath: "//*[number(.) > 0]".into() }],
             tree_mode: None,
             language: None,
@@ -939,7 +1028,8 @@ mod tests {
         let ops = vec![Operation::Query(QueryOperation {
             files: vec![],
             exclude: vec![],
-            changed: None,
+            diff_files: None,
+            diff_lines: None,
             queries: vec![QueryExpr { xpath: "//x".into() }],
             tree_mode: None,
             language: None,
@@ -966,7 +1056,8 @@ mod tests {
         let ops = vec![Operation::Set(SetOperation {
             files: vec![path.clone()],
             exclude: vec![],
-            changed: None,
+            diff_files: None,
+            diff_lines: None,
             mappings: vec![SetMapping {
                 xpath: "//database/host".into(),
                 value: "new-host".into(),
@@ -990,7 +1081,8 @@ mod tests {
         let ops = vec![Operation::Set(SetOperation {
             files: vec![path.clone()],
             exclude: vec![],
-            changed: None,
+            diff_files: None,
+            diff_lines: None,
             mappings: vec![SetMapping {
                 xpath: "//database/host".into(),
                 value: "localhost".into(),
@@ -1013,7 +1105,8 @@ mod tests {
         let ops = vec![Operation::Set(SetOperation {
             files: vec![path.clone()],
             exclude: vec![],
-            changed: None,
+            diff_files: None,
+            diff_lines: None,
             mappings: vec![
                 SetMapping { xpath: "//database/host".into(), value: "new-host".into() },
                 SetMapping { xpath: "//database/port".into(), value: "5432".into() },
@@ -1042,7 +1135,8 @@ mod tests {
         let ops = vec![Operation::Set(SetOperation {
             files: vec![path.clone()],
             exclude: vec![],
-            changed: None,
+            diff_files: None,
+            diff_lines: None,
             mappings: vec![SetMapping {
                 xpath: "//database/host".into(),
                 value: "localhost".into(),
@@ -1069,7 +1163,8 @@ mod tests {
         let ops = vec![Operation::Set(SetOperation {
             files: vec![path.clone()],
             exclude: vec![],
-            changed: None,
+            diff_files: None,
+            diff_lines: None,
             mappings: vec![SetMapping {
                 xpath: "//database/host".into(),
                 value: "correct".into(),
@@ -1099,7 +1194,8 @@ mod tests {
         let ops = vec![Operation::Set(SetOperation {
             files: vec![path.clone()],
             exclude: vec![],
-            changed: None,
+            diff_files: None,
+            diff_lines: None,
             mappings: vec![SetMapping {
                 xpath: "//database/host".into(),
                 value: "correct".into(),
@@ -1123,7 +1219,8 @@ mod tests {
         let ops = vec![Operation::Check(CheckOperation {
             files: vec![path.clone()],
             exclude: vec![],
-            changed: None,
+            diff_files: None,
+            diff_lines: None,
             rules: vec![
                 Rule::new("no-debug", "//debug[.='true']")
                     .with_reason("debug should not be enabled")
@@ -1153,7 +1250,8 @@ mod tests {
         let ops = vec![Operation::Check(CheckOperation {
             files: vec![path.clone()],
             exclude: vec![],
-            changed: None,
+            diff_files: None,
+            diff_lines: None,
             rules: vec![
                 Rule::new("no-debug", "//debug[.='true']")
                     .with_reason("debug should not be enabled"),
@@ -1190,7 +1288,8 @@ mod tests {
             Operation::Check(CheckOperation {
                 files: vec![data_path.to_str().unwrap().into()],
                 exclude: vec![],
-                changed: None,
+                diff_files: None,
+                diff_lines: None,
                 rules: vec![
                     Rule::new("has-name", "//name[.='missing']")
                         .with_reason("name should not be 'missing'"),
@@ -1205,7 +1304,8 @@ mod tests {
             Operation::Set(SetOperation {
                 files: vec![config_path.to_str().unwrap().into()],
                 exclude: vec![],
-                changed: None,
+                diff_files: None,
+                diff_lines: None,
                 mappings: vec![SetMapping {
                     xpath: "//host".into(),
                     value: "new-host".into(),
@@ -1232,7 +1332,8 @@ mod tests {
         let ops = vec![Operation::Set(SetOperation {
             files: vec![path.clone()],
             exclude: vec![],
-            changed: None,
+            diff_files: None,
+            diff_lines: None,
             mappings: vec![SetMapping {
                 xpath: "//database/host".into(),
                 value: "new-host".into(),

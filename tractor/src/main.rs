@@ -10,6 +10,7 @@ mod modes;
 mod rules_config;
 mod tractor_config;
 mod executor;
+mod filter;
 
 use std::process::ExitCode;
 use cli::{Cli, Command};
