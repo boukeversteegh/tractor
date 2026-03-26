@@ -296,8 +296,9 @@ mod tests {
 
     #[test]
     fn git_changed_files_in_repo() {
+        // Use "HEAD HEAD" (empty diff) to avoid failures in shallow clones (CI).
         let cwd = Path::new(".");
-        let result = git_changed_files("HEAD~1 HEAD", cwd);
+        let result = git_changed_files("HEAD HEAD", cwd);
         assert!(result.is_ok(), "git_changed_files should succeed: {:?}", result.err());
     }
 
@@ -431,8 +432,9 @@ mod tests {
 
     #[test]
     fn git_diff_hunks_in_repo() {
+        // Use "HEAD HEAD" (empty diff) to avoid failures in shallow clones (CI).
         let cwd = Path::new(".");
-        let result = DiffHunkFilter::from_spec("HEAD~1 HEAD", cwd);
+        let result = DiffHunkFilter::from_spec("HEAD HEAD", cwd);
         assert!(result.is_ok(), "DiffHunkFilter::from_spec should succeed: {:?}", result.err());
     }
 }
