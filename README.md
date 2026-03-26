@@ -17,10 +17,10 @@ cargo install tractor
 tractor Program.cs
 
 # Find code patterns
-tractor src/**/*.cs -x "method[async][type='void']"
+tractor src/**/*.cs -x "method[async][returns/type='void']"
 
 # Enforce conventions in CI
-tractor src/**/*.cs -x "method[async][type='void']" --expect none \
+tractor src/**/*.cs -x "method[async][returns/type='void']" --expect none \
     --format gcc --message "async void is dangerous"
 ```
 
@@ -47,7 +47,7 @@ tractor src/**/*.cs -x "method/name"
 tractor src/**/*.cs -x "method[public][async]"
 
 # Find methods with more than 3 parameters
-tractor src/**/*.cs -x "method[count(params/param) > 3]"
+tractor src/**/*.cs -x "method[count(parameters/parameter) > 3]"
 
 # Count classes per file
 tractor src/**/*.cs -x "count(class)"
@@ -62,7 +62,7 @@ Define rules and run them in CI:
 
 ```bash
 # Fail the build if any async void methods exist
-tractor check src/**/*.cs -x "method[async][type='void']" \
+tractor check src/**/*.cs -x "method[async][returns/type='void']" \
     --expect none --format gcc --message "async void is dangerous"
 
 # Assert expected match counts
