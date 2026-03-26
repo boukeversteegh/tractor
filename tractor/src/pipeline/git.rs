@@ -294,12 +294,102 @@ mod tests {
         assert_eq!(result, files);
     }
 
+    /// Helper: create a temp git repo with an initial commit, return the dir.
+    fn init_test_repo() -> tempfile::TempDir {
+        let dir = tempfile::tempdir().unwrap();
+        let run = |args: &[&str]| {
+            let output = Command::new("git")
+                .args(args)
+                .current_dir(dir.path())
+                .env("GIT_AUTHOR_NAME", "test")
+                .env("GIT_AUTHOR_EMAIL", "test@test")
+                .env("GIT_COMMITTER_NAME", "test")
+                .env("GIT_COMMITTER_EMAIL", "test@test")
+                .output()
+                .unwrap();
+            assert!(output.status.success(), "git {:?} failed: {}",
+                args, String::from_utf8_lossy(&output.stderr));
+        };
+
+        run(&["init"]);
+        run(&["-c", "commit.gpgsign=false", "commit", "--allow-empty", "-m", "initial"]);
+        dir
+    }
+
     #[test]
-    fn git_changed_files_in_repo() {
-        // Use "HEAD HEAD" (empty diff) to avoid failures in shallow clones (CI).
-        let cwd = Path::new(".");
-        let result = git_changed_files("HEAD HEAD", cwd);
-        assert!(result.is_ok(), "git_changed_files should succeed: {:?}", result.err());
+    fn git_changed_files_detects_changed_file() {
+        let dir = init_test_repo();
+        let cwd = dir.path();
+
+        // Create a file and commit it
+        std::fs::write(cwd.join("a.rs"), "fn main() {}").unwrap();
+        let run = |args: &[&str]| {
+            Command::new("git").args(args).current_dir(cwd)
+                .env("GIT_AUTHOR_NAME", "test").env("GIT_AUTHOR_EMAIL", "test@test")
+                .env("GIT_COMMITTER_NAME", "test").env("GIT_COMMITTER_EMAIL", "test@test")
+                .output().unwrap();
+        };
+        run(&["add", "a.rs"]);
+        run(&["-c", "commit.gpgsign=false", "commit", "-m", "add a.rs"]);
+
+        // Modify the file and commit
+        std::fs::write(cwd.join("a.rs"), "fn main() { println!(\"hello\"); }").unwrap();
+        std::fs::write(cwd.join("b.rs"), "fn other() {}").unwrap();
+        run(&["add", "."]);
+        run(&["-c", "commit.gpgsign=false", "commit", "-m", "modify a.rs, add b.rs"]);
+
+        let changed = git_changed_files("HEAD~1 HEAD", cwd).unwrap();
+        let a_canon = std::fs::canonicalize(cwd.join("a.rs")).unwrap();
+        let b_canon = std::fs::canonicalize(cwd.join("b.rs")).unwrap();
+
+        assert!(changed.contains(&a_canon), "a.rs should be in changed set");
+        assert!(changed.contains(&b_canon), "b.rs should be in changed set");
+        assert_eq!(changed.len(), 2);
+    }
+
+    #[test]
+    fn diff_hunk_filter_from_spec_with_real_repo() {
+        let dir = init_test_repo();
+        let cwd = dir.path();
+
+        // Create a file with 10 lines and commit
+        let original = (1..=10).map(|i| format!("line {}", i)).collect::<Vec<_>>().join("\n");
+        std::fs::write(cwd.join("test.rs"), &original).unwrap();
+        let run = |args: &[&str]| {
+            Command::new("git").args(args).current_dir(cwd)
+                .env("GIT_AUTHOR_NAME", "test").env("GIT_AUTHOR_EMAIL", "test@test")
+                .env("GIT_COMMITTER_NAME", "test").env("GIT_COMMITTER_EMAIL", "test@test")
+                .output().unwrap();
+        };
+        run(&["add", "."]);
+        run(&["-c", "commit.gpgsign=false", "commit", "-m", "initial file"]);
+
+        // Modify lines 3 and 7, commit
+        let modified = original
+            .replace("line 3", "line 3 CHANGED")
+            .replace("line 7", "line 7 CHANGED");
+        std::fs::write(cwd.join("test.rs"), &modified).unwrap();
+        run(&["add", "."]);
+        run(&["-c", "commit.gpgsign=false", "commit", "-m", "modify lines 3 and 7"]);
+
+        let filter = DiffHunkFilter::from_spec("HEAD~1 HEAD", cwd).unwrap();
+        let test_canon = std::fs::canonicalize(cwd.join("test.rs")).unwrap();
+
+        // File should be included
+        assert!(filter.include_file(cwd.join("test.rs").to_str().unwrap()));
+
+        // Match on line 3 should be included
+        let m = Match::new(test_canon.to_str().unwrap().to_string(), "x".into());
+        let m3 = Match { line: 3, end_line: 3, ..m.clone() };
+        assert!(filter.include(&m3), "line 3 should be in a changed hunk");
+
+        // Match on line 7 should be included
+        let m7 = Match { line: 7, end_line: 7, ..m.clone() };
+        assert!(filter.include(&m7), "line 7 should be in a changed hunk");
+
+        // Match on line 5 (unchanged) should be excluded
+        let m5 = Match { line: 5, end_line: 5, ..m };
+        assert!(!filter.include(&m5), "line 5 should NOT be in a changed hunk");
     }
 
     // -----------------------------------------------------------------------
@@ -431,10 +521,31 @@ mod tests {
     }
 
     #[test]
-    fn git_diff_hunks_in_repo() {
-        // Use "HEAD HEAD" (empty diff) to avoid failures in shallow clones (CI).
-        let cwd = Path::new(".");
-        let result = DiffHunkFilter::from_spec("HEAD HEAD", cwd);
-        assert!(result.is_ok(), "DiffHunkFilter::from_spec should succeed: {:?}", result.err());
+    fn git_changed_files_excludes_deleted_files() {
+        let dir = init_test_repo();
+        let cwd = dir.path();
+
+        let run = |args: &[&str]| {
+            Command::new("git").args(args).current_dir(cwd)
+                .env("GIT_AUTHOR_NAME", "test").env("GIT_AUTHOR_EMAIL", "test@test")
+                .env("GIT_COMMITTER_NAME", "test").env("GIT_COMMITTER_EMAIL", "test@test")
+                .output().unwrap();
+        };
+
+        // Create two files and commit
+        std::fs::write(cwd.join("keep.rs"), "keep").unwrap();
+        std::fs::write(cwd.join("delete.rs"), "delete").unwrap();
+        run(&["add", "."]);
+        run(&["-c", "commit.gpgsign=false", "commit", "-m", "add files"]);
+
+        // Delete one file, commit
+        std::fs::remove_file(cwd.join("delete.rs")).unwrap();
+        run(&["add", "."]);
+        run(&["-c", "commit.gpgsign=false", "commit", "-m", "delete file"]);
+
+        let changed = git_changed_files("HEAD~1 HEAD", cwd).unwrap();
+
+        // delete.rs should NOT appear (--diff-filter=ACMR excludes deletions)
+        assert!(changed.is_empty(), "deleted files should be excluded, got: {:?}", changed);
     }
 }
