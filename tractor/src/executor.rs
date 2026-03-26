@@ -265,6 +265,29 @@ fn build_filters(
     filters
 }
 
+/// Resolve files and build result filters for an operation.
+///
+/// Combines diff-files (file-level) and diff-lines (hunk-level) filtering
+/// with glob expansion and exclude patterns.
+fn resolve_op_files(
+    files: &[String],
+    exclude: &[String],
+    diff_files: Option<&str>,
+    diff_lines: Option<&str>,
+    options: &ExecuteOptions,
+) -> (Vec<String>, Vec<Box<dyn ResultFilter>>) {
+    let cwd = options.base_dir.as_deref()
+        .unwrap_or_else(|| std::path::Path::new("."));
+    let filters = build_filters(options.diff_lines.as_deref(), diff_lines, cwd);
+    let files = resolve_files(files, exclude, diff_files, &filters, options);
+    (files, filters)
+}
+
+/// Convert owned filters to borrowed references for passing to query engine.
+fn filter_refs(filters: &[Box<dyn ResultFilter>]) -> Vec<&dyn ResultFilter> {
+    filters.iter().map(|f| f.as_ref()).collect()
+}
+
 /// Execute a list of operations and return a `Report` for each one.
 pub fn execute(
     operations: &[Operation],
@@ -301,20 +324,19 @@ fn execute_query(
         return execute_query_inline(source, lang, op);
     }
 
-    let cwd = options.base_dir.as_deref().unwrap_or_else(|| std::path::Path::new("."));
-    let filters = build_filters(options.diff_lines.as_deref(), op.diff_lines.as_deref(), cwd);
-    let files = resolve_files(&op.files, &op.exclude, op.diff_files.as_deref(), &filters, options);
+    let (files, filters) = resolve_op_files(
+        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), options,
+    );
 
     if files.is_empty() {
         return Ok(Report::query(vec![], empty_summary()));
     }
 
     let xpaths: Vec<&str> = op.queries.iter().map(|q| q.xpath.as_str()).collect();
-    let filter_refs: Vec<&dyn ResultFilter> = filters.iter().map(|f| f.as_ref()).collect();
     let matches = query_files_multi(
         &files, &xpaths, op.language.as_deref(),
         op.tree_mode, op.ignore_whitespace, op.parse_depth,
-        op.limit, options.verbose, &filter_refs,
+        op.limit, options.verbose, &filter_refs(&filters),
     )?;
 
     let total = matches.len();
@@ -383,9 +405,9 @@ fn execute_check(
         return Ok(Report::check(vec![], empty_summary()));
     }
 
-    let cwd = options.base_dir.as_deref().unwrap_or_else(|| std::path::Path::new("."));
-    let filters = build_filters(options.diff_lines.as_deref(), op.diff_lines.as_deref(), cwd);
-    let files = resolve_files(&op.files, &op.exclude, op.diff_files.as_deref(), &filters, options);
+    let (files, filters) = resolve_op_files(
+        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), options,
+    );
 
     if files.is_empty() {
         return Ok(Report::check(vec![], empty_summary()));
@@ -401,7 +423,6 @@ fn execute_check(
         default_language: op.language.clone(),
     };
 
-    let filter_refs: Vec<&dyn ResultFilter> = filters.iter().map(|f| f.as_ref()).collect();
     let rule_matches = run_rules(
         &ruleset,
         &files,
@@ -409,7 +430,7 @@ fn execute_check(
         op.ignore_whitespace,
         op.parse_depth,
         options.verbose,
-        &filter_refs,
+        &filter_refs(&filters),
     )?;
 
     let mut files_affected = HashSet::new();
@@ -467,9 +488,9 @@ fn execute_set(
     op: &SetOperation,
     options: &ExecuteOptions,
 ) -> Result<Report, Box<dyn std::error::Error>> {
-    let cwd = options.base_dir.as_deref().unwrap_or_else(|| std::path::Path::new("."));
-    let filters = build_filters(options.diff_lines.as_deref(), op.diff_lines.as_deref(), cwd);
-    let files = resolve_files(&op.files, &op.exclude, op.diff_files.as_deref(), &filters, options);
+    let (files, _filters) = resolve_op_files(
+        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), options,
+    );
     let mut report_matches = Vec::new();
     let mut files_affected = HashSet::new();
     let mut updated_count = 0usize;
@@ -563,9 +584,9 @@ fn execute_test(
         return run_test_assertions_on_result(&mut result, &op.assertions, op.limit);
     }
 
-    let cwd = options.base_dir.as_deref().unwrap_or_else(|| std::path::Path::new("."));
-    let filters = build_filters(options.diff_lines.as_deref(), op.diff_lines.as_deref(), cwd);
-    let files = resolve_files(&op.files, &op.exclude, op.diff_files.as_deref(), &filters, options);
+    let (files, filters) = resolve_op_files(
+        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), options,
+    );
 
     if files.is_empty() {
         let mut passed = true;
@@ -585,12 +606,12 @@ fn execute_test(
     // Query each assertion's xpath individually to get per-assertion counts.
     let mut all_matches = Vec::new();
     let mut passed = true;
-    let filter_refs: Vec<&dyn ResultFilter> = filters.iter().map(|f| f.as_ref()).collect();
+    let refs = filter_refs(&filters);
     for assertion in &op.assertions {
         let matches = query_files_multi(
             &files, &[assertion.xpath.as_str()], op.language.as_deref(),
             op.tree_mode, op.ignore_whitespace, op.parse_depth,
-            op.limit, options.verbose, &filter_refs,
+            op.limit, options.verbose, &refs,
         )?;
         if !check_expectation(&assertion.expect, matches.len())? {
             passed = false;
@@ -658,9 +679,9 @@ fn execute_update(
     op: &UpdateOperation,
     options: &ExecuteOptions,
 ) -> Result<Report, Box<dyn std::error::Error>> {
-    let cwd = options.base_dir.as_deref().unwrap_or_else(|| std::path::Path::new("."));
-    let filters = build_filters(options.diff_lines.as_deref(), op.diff_lines.as_deref(), cwd);
-    let files = resolve_files(&op.files, &op.exclude, op.diff_files.as_deref(), &filters, options);
+    let (files, filters) = resolve_op_files(
+        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), options,
+    );
     let mut total_updated = 0usize;
     let mut files_modified = HashSet::new();
     let mut fallback_files = Vec::new();
@@ -687,11 +708,10 @@ fn execute_update(
 
     // Legacy fallback for languages without renderers
     if !fallback_files.is_empty() {
-        let filter_refs: Vec<&dyn ResultFilter> = filters.iter().map(|f| f.as_ref()).collect();
         let matches = query_files_multi(
             &fallback_files, &[op.xpath.as_str()], op.language.as_deref(),
             op.tree_mode, op.ignore_whitespace, op.parse_depth,
-            None, options.verbose, &filter_refs,
+            None, options.verbose, &filter_refs(&filters),
         )?;
         if !matches.is_empty() {
             let summary = apply_replacements(&matches, &op.value)?;
