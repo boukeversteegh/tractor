@@ -158,11 +158,11 @@ When omitted, auto-selects: data for JSON/YAML, structure for everything else.")
 
     // -- Filter --
     /// Only consider files changed in a git diff (e.g. "HEAD~3", "main..HEAD")
-    #[arg(long = "diff-files", help_heading = "Filter")]
+    #[arg(long = "diff-files", value_name = "RANGE", help_heading = "Filter")]
     pub diff_files: Option<String>,
 
     /// Only consider matches in changed hunks of a git diff (e.g. "HEAD~3", "main..HEAD")
-    #[arg(long = "diff-lines", help_heading = "Filter")]
+    #[arg(long = "diff-lines", value_name = "RANGE", help_heading = "Filter")]
     pub diff_lines: Option<String>,
 
     // -- Advanced --
