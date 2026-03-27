@@ -137,6 +137,17 @@ struct CheckRuleConfig {
     include: Vec<String>,
     #[serde(default)]
     exclude: Vec<String>,
+    #[serde(default)]
+    expect: Vec<CheckExpectEntry>,
+}
+
+/// A single expectation entry for check rules in tractor config files.
+#[derive(Deserialize, Debug)]
+struct CheckExpectEntry {
+    #[serde(default)]
+    valid: Option<String>,
+    #[serde(default)]
+    invalid: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -272,6 +283,14 @@ fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<Operation, Bo
         }
         if !r.exclude.is_empty() {
             rule = rule.with_exclude(r.exclude);
+        }
+        let valid_examples: Vec<String> = r.expect.iter().filter_map(|e| e.valid.clone()).collect();
+        let invalid_examples: Vec<String> = r.expect.iter().filter_map(|e| e.invalid.clone()).collect();
+        if !valid_examples.is_empty() {
+            rule = rule.with_valid_examples(valid_examples);
+        }
+        if !invalid_examples.is_empty() {
+            rule = rule.with_invalid_examples(invalid_examples);
         }
         Ok::<Rule, Box<dyn std::error::Error>>(rule)
     }).collect::<Result<_, _>>()?;
@@ -918,6 +937,27 @@ operations:
             assert_eq!(q.diff_files.as_deref(), Some("main..HEAD"));
         } else {
             panic!("expected Query");
+        }
+    }
+
+    #[test]
+    fn parse_yaml_check_with_expect_examples() {
+        let yaml = r#"
+check:
+  files: ["src/**/*.rs"]
+  rules:
+    - id: no-todo
+      xpath: "//comment[contains(.,'TODO')]"
+      expect:
+        - valid: "fn main() {}"
+        - invalid: "// TODO: fix"
+"#;
+        let ops = parse_config_yaml(yaml).unwrap();
+        if let Operation::Check(c) = &ops[0] {
+            assert_eq!(c.rules[0].valid_examples, vec!["fn main() {}"]);
+            assert_eq!(c.rules[0].invalid_examples, vec!["// TODO: fix"]);
+        } else {
+            panic!("expected Check");
         }
     }
 }

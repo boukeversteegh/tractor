@@ -405,13 +405,17 @@ fn execute_check(
         return Ok(Report::check(vec![], empty_summary()));
     }
 
+    // --- Phase 1: Validate rule examples via TestOperations ---
+    // NOTE: This generates separate test reports and hoists failures into the
+    // check report. A future unified report model would let mixed operation
+    // types coexist in a single report without this conversion step.
+    let (mut example_matches, example_errors) =
+        validate_rule_examples(&op.rules, op.language.as_deref(), op.tree_mode, options)?;
+
+    // --- Phase 2: Run the actual file check ---
     let (files, filters) = resolve_op_files(
         &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), options,
     );
-
-    if files.is_empty() {
-        return Ok(Report::check(vec![], empty_summary()));
-    }
 
     // Build a RuleSet from the operation. Ruleset-level include/exclude
     // come from rules files; per-rule patterns still participate in glob matching.
@@ -423,23 +427,22 @@ fn execute_check(
         default_language: op.language.clone(),
     };
 
-    let rule_matches = run_rules(
-        &ruleset,
-        &files,
-        op.tree_mode,
-        op.ignore_whitespace,
-        op.parse_depth,
-        options.verbose,
-        &filter_refs(&filters),
-    )?;
-
     let mut files_affected = HashSet::new();
-    let mut errors = 0usize;
+    let mut errors = example_errors;
     let mut warnings = 0usize;
 
-    let report_matches: Vec<ReportMatch> = rule_matches
-        .into_iter()
-        .map(|rm| {
+    if !files.is_empty() {
+        let rule_matches = run_rules(
+            &ruleset,
+            &files,
+            op.tree_mode,
+            op.ignore_whitespace,
+            op.parse_depth,
+            options.verbose,
+            &filter_refs(&filters),
+        )?;
+
+        for rm in rule_matches {
             let rule = &ruleset.rules[rm.rule_index];
             let reason = rule
                 .reason
@@ -464,12 +467,12 @@ fn execute_check(
             report_match.severity = Some(severity);
             report_match.rule_id = Some(rule.id.clone());
             report_match.message = message;
-            report_match
-        })
-        .collect();
+            example_matches.push(report_match);
+        }
+    }
 
-    let total = report_matches.len();
-    Ok(Report::check(report_matches, Summary {
+    let total = example_matches.len();
+    Ok(Report::check(example_matches, Summary {
         passed: errors == 0,
         total,
         files_affected: files_affected.len(),
@@ -478,6 +481,127 @@ fn execute_check(
         expected: None,
         query: None,
     }))
+}
+
+/// Validate rule examples by generating TestOperations and executing them.
+///
+/// For each rule with examples, builds a TestOperation with inline source and
+/// runs it through `execute_test()`. Returns check-style ReportMatch entries
+/// for any failed expectations.
+///
+/// Returns `(report_matches, error_count)`.
+fn validate_rule_examples(
+    rules: &[Rule],
+    default_language: Option<&str>,
+    default_tree_mode: Option<TreeMode>,
+    options: &ExecuteOptions,
+) -> Result<(Vec<ReportMatch>, usize), Box<dyn std::error::Error>> {
+    let mut all_matches = Vec::new();
+    let mut error_count = 0usize;
+
+    for rule in rules {
+        if !rule.has_examples() {
+            continue;
+        }
+
+        let lang = rule.language.as_deref()
+            .or(default_language)
+            .ok_or_else(|| format!(
+                "rule '{}' has examples but no language specified (set language on the rule or check operation)",
+                rule.id
+            ))?;
+
+        let tree_mode = rule.tree_mode.or(default_tree_mode);
+
+        // Validate valid examples: expect "none" (query should NOT match valid code)
+        for (i, example) in rule.valid_examples.iter().enumerate() {
+            let test_op = TestOperation {
+                files: vec![],
+                exclude: vec![],
+                diff_files: None,
+                diff_lines: None,
+                assertions: vec![TestAssertion {
+                    xpath: rule.xpath.clone(),
+                    expect: "none".to_string(),
+                }],
+                tree_mode,
+                language: Some(lang.to_string()),
+                limit: None,
+                ignore_whitespace: false,
+                parse_depth: None,
+                inline_source: Some(example.clone()),
+                inline_lang: Some(lang.to_string()),
+            };
+
+            let report = execute_test(&test_op, options)?;
+            if !report.summary.as_ref().map_or(true, |s| s.passed) {
+                error_count += 1;
+                all_matches.push(example_failure_match(
+                    &rule.id,
+                    &format!(
+                        "[{}] valid example {} unexpectedly matched query",
+                        rule.id, i + 1
+                    ),
+                ));
+            }
+        }
+
+        // Validate invalid examples: expect "some" (query SHOULD match invalid code)
+        for (i, example) in rule.invalid_examples.iter().enumerate() {
+            let test_op = TestOperation {
+                files: vec![],
+                exclude: vec![],
+                diff_files: None,
+                diff_lines: None,
+                assertions: vec![TestAssertion {
+                    xpath: rule.xpath.clone(),
+                    expect: "some".to_string(),
+                }],
+                tree_mode,
+                language: Some(lang.to_string()),
+                limit: None,
+                ignore_whitespace: false,
+                parse_depth: None,
+                inline_source: Some(example.clone()),
+                inline_lang: Some(lang.to_string()),
+            };
+
+            let report = execute_test(&test_op, options)?;
+            if !report.summary.as_ref().map_or(true, |s| s.passed) {
+                error_count += 1;
+                all_matches.push(example_failure_match(
+                    &rule.id,
+                    &format!(
+                        "[{}] invalid example {} did not match query",
+                        rule.id, i + 1
+                    ),
+                ));
+            }
+        }
+    }
+
+    Ok((all_matches, error_count))
+}
+
+/// Build a synthetic ReportMatch for a failed example validation.
+fn example_failure_match(rule_id: &str, reason: &str) -> ReportMatch {
+    ReportMatch {
+        file: "<example>".to_string(),
+        line: 0,
+        column: 0,
+        end_line: 0,
+        end_column: 0,
+        tree: None,
+        value: None,
+        source: None,
+        lines: None,
+        reason: Some(reason.to_string()),
+        severity: Some(Severity::Error),
+        message: None,
+        rule_id: Some(rule_id.to_string()),
+        status: None,
+        output: None,
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1348,5 +1472,89 @@ mod tests {
         let content = std::fs::read_to_string(&path).unwrap();
         assert!(content.contains("new-host"), "yaml host should be updated: {}", content);
         assert!(content.contains("5432"), "yaml port should be preserved: {}", content);
+    }
+
+    // -----------------------------------------------------------------------
+    // Example validation tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_validate_examples_pass_and_fail_correct() {
+        // Valid example has no comments → expect "none" passes
+        // Invalid example has a comment → expect "some" passes
+        let rules = vec![
+            Rule::new("no-comments", "//line_comment")
+                .with_language("rust")
+                .with_valid_examples(vec!["fn main() {}".to_string()])
+                .with_invalid_examples(vec!["// hello\nfn main() {}".to_string()]),
+        ];
+        let options = ExecuteOptions::default();
+        let (matches, errors) = validate_rule_examples(&rules, None, None, &options).unwrap();
+        assert!(matches.is_empty(), "expected no failures: {:?}", matches);
+        assert_eq!(errors, 0);
+    }
+
+    #[test]
+    fn test_validate_examples_valid_unexpectedly_matches() {
+        // Valid example has a comment but rule looks for comments → should fail
+        let rules = vec![
+            Rule::new("no-comments", "//line_comment")
+                .with_language("rust")
+                .with_valid_examples(vec!["// oops this is a comment".to_string()]),
+        ];
+        let options = ExecuteOptions::default();
+        let (matches, errors) = validate_rule_examples(&rules, None, None, &options).unwrap();
+        assert_eq!(errors, 1);
+        assert_eq!(matches.len(), 1);
+        assert!(matches[0].reason.as_ref().unwrap().contains("valid example 1 unexpectedly matched"));
+    }
+
+    #[test]
+    fn test_validate_examples_invalid_does_not_match() {
+        // Invalid example has no comment but rule looks for comments → should fail
+        let rules = vec![
+            Rule::new("no-comments", "//line_comment")
+                .with_language("rust")
+                .with_invalid_examples(vec!["fn main() {}".to_string()]),
+        ];
+        let options = ExecuteOptions::default();
+        let (matches, errors) = validate_rule_examples(&rules, None, None, &options).unwrap();
+        assert_eq!(errors, 1);
+        assert_eq!(matches.len(), 1);
+        assert!(matches[0].reason.as_ref().unwrap().contains("invalid example 1 did not match"));
+    }
+
+    #[test]
+    fn test_validate_examples_language_from_operation() {
+        // Rule has no language but operation default is "rust"
+        let rules = vec![
+            Rule::new("no-comments", "//line_comment")
+                .with_valid_examples(vec!["fn main() {}".to_string()]),
+        ];
+        let options = ExecuteOptions::default();
+        let (matches, errors) = validate_rule_examples(&rules, Some("rust"), None, &options).unwrap();
+        assert_eq!(errors, 0);
+        assert!(matches.is_empty());
+    }
+
+    #[test]
+    fn test_validate_examples_no_language_errors() {
+        // Rule has examples but no language anywhere → error
+        let rules = vec![
+            Rule::new("no-comments", "//line_comment")
+                .with_valid_examples(vec!["fn main() {}".to_string()]),
+        ];
+        let options = ExecuteOptions::default();
+        let err = validate_rule_examples(&rules, None, None, &options).unwrap_err();
+        assert!(err.to_string().contains("no language specified"));
+    }
+
+    #[test]
+    fn test_validate_examples_no_examples_is_noop() {
+        let rules = vec![Rule::new("simple", "//function")];
+        let options = ExecuteOptions::default();
+        let (matches, errors) = validate_rule_examples(&rules, None, None, &options).unwrap();
+        assert!(matches.is_empty());
+        assert_eq!(errors, 0);
     }
 }
