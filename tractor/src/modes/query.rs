@@ -37,6 +37,8 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
         InputMode::Files(files) => Operation::Query(QueryOperation {
             files: files.clone(),
             exclude: vec![],
+            diff_files: None,
+            diff_lines: None,
             queries: vec![QueryExpr { xpath: xpath_expr.to_string() }],
             tree_mode: ctx.tree_mode,
             language: ctx.lang.clone(),
@@ -49,6 +51,8 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
         InputMode::InlineSource { source, lang } => Operation::Query(QueryOperation {
             files: vec![],
             exclude: vec![],
+            diff_files: None,
+            diff_lines: None,
             queries: vec![QueryExpr { xpath: xpath_expr.to_string() }],
             tree_mode: ctx.tree_mode,
             language: None,
@@ -62,6 +66,8 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     let options = ExecuteOptions {
         verbose: ctx.verbose,
+        diff_files: args.shared.diff_files.clone(),
+        diff_lines: args.shared.diff_lines.clone(),
         ..Default::default()
     };
 

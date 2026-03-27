@@ -77,6 +77,13 @@ Format:
           
           [default: gcc]
 
+Filter:
+      --diff-files <RANGE>
+          Only consider files changed in a git diff (e.g. "HEAD~3", "main..HEAD")
+
+      --diff-lines <RANGE>
+          Only consider matches in changed hunks of a git diff (e.g. "HEAD~3", "main..HEAD")
+
 Advanced:
       --parse-depth <PARSE_DEPTH>
           [EXPERIMENTAL] Limit tree building depth (skip parsing deeper nodes for speed)
@@ -98,3 +105,9 @@ Check:
 
       --rules <RULES>
           Path to a TOML rules file for batch checking
+
+      --expect-valid <EXPECT_VALID>
+          A code example that should pass the check (no matches expected)
+
+      --expect-invalid <EXPECT_INVALID>
+          A code example that should fail the check (matches expected)

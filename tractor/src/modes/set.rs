@@ -6,6 +6,7 @@ use tractor_core::declarative_set::declarative_set;
 use tractor_core::detect_language;
 use crate::cli::SetArgs;
 use crate::pipeline::{RunContext, ViewField, InputMode, query_files_batched, query_inline_source, render_set_report};
+use crate::pipeline::git;
 
 /// Separate positional args into files and an optional path expression.
 ///
@@ -34,6 +35,8 @@ fn split_files_and_expr(args: &[String], has_xpath: bool) -> (Vec<String>, Optio
 
 pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
     let has_xpath = args.shared.xpath.is_some();
+    let diff_files_spec = args.shared.diff_files.clone();
+    let diff_lines_spec = args.shared.diff_lines.clone();
     let (files, expr) = split_files_and_expr(&args.args, has_xpath);
 
     // Declarative mode: path expression without -x
@@ -50,11 +53,12 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
             }
         };
 
+        let file_list = apply_file_filters(file_list.clone(), diff_files_spec.as_deref(), diff_lines_spec.as_deref());
         let lang_override = ctx.lang.as_deref();
         let mut files_modified = 0;
         let mut total_ops = 0;
 
-        for file_path in file_list {
+        for file_path in &file_list {
             let lang = lang_override
                 .unwrap_or_else(|| detect_language(file_path));
 
@@ -114,11 +118,12 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     match &ctx.input {
         InputMode::Files(files) => {
-            let (_, matches) = query_files_batched(&ctx, files, xpath_expr, true)?;
+            let files = apply_file_filters(files.clone(), diff_files_spec.as_deref(), diff_lines_spec.as_deref());
+            let (_, matches) = query_files_batched(&ctx, &files, xpath_expr, true)?;
 
             if stdout {
                 // Stdout mode: compute modified content per file without writing to disk.
-                let file_outputs = compute_set_output(files, &matches, value)?;
+                let file_outputs = compute_set_output(&files, &matches, value)?;
                 let output_map: HashMap<String, String> = file_outputs.into_iter().collect();
                 let report = build_set_report_matches(&matches, value, &ctx);
                 let report = report.with_groups().with_file_outputs(&output_map);
@@ -129,7 +134,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
                 let lang_override = ctx.lang.as_deref();
                 let mut fallback_files: Vec<String> = Vec::new();
 
-                for file_path in files {
+                for file_path in &files {
                     let lang = lang_override
                         .unwrap_or_else(|| detect_language(file_path));
                     let source = std::fs::read_to_string(file_path)?;
@@ -245,4 +250,38 @@ fn build_set_inline_report(modified: String, ctx: &RunContext) -> Report {
     let mut report = Report::set(vec![], summary);
     report.groups = Some(vec![group]);
     report
+}
+
+/// Apply --diff-files and --diff-lines file-level filters (set mode bypasses the executor).
+fn apply_file_filters(files: Vec<String>, diff_files_spec: Option<&str>, diff_lines_spec: Option<&str>) -> Vec<String> {
+    let cwd = std::path::Path::new(".");
+
+    let files = match diff_files_spec {
+        Some(spec) => {
+            match git::git_changed_files(spec, cwd) {
+                Ok(changed) => git::intersect_changed(files, &changed),
+                Err(e) => {
+                    eprintln!("warning: --diff-files filter failed: {}", e);
+                    files
+                }
+            }
+        }
+        None => files,
+    };
+
+    match diff_lines_spec {
+        Some(spec) => {
+            match git::DiffHunkFilter::from_spec(spec, cwd) {
+                Ok(filter) => {
+                    use crate::filter::ResultFilter;
+                    files.into_iter().filter(|f| filter.include_file(f)).collect()
+                }
+                Err(e) => {
+                    eprintln!("warning: --diff-lines filter failed: {}", e);
+                    files
+                }
+            }
+        }
+        None => files,
+    }
 }

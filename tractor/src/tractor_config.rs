@@ -44,6 +44,24 @@ use crate::executor::{
 
 #[derive(Deserialize, Debug)]
 struct ConfigFile {
+    /// Root-level file scope: glob patterns that constrain all operations.
+    /// Intersected with each operation's own `files`.
+    #[serde(default)]
+    files: Vec<String>,
+
+    /// Root-level exclude patterns applied to all operations.
+    #[serde(default)]
+    exclude: Vec<String>,
+
+    /// Root-level git diff spec: only consider files changed in this diff.
+    /// Intersected with every operation's resolved file set.
+    #[serde(default, rename = "diff-files")]
+    diff_files: Option<String>,
+
+    /// Root-level git diff spec: only include matches in changed hunks.
+    #[serde(default, rename = "diff-lines")]
+    diff_lines: Option<String>,
+
     /// Root-level check shorthand (single check operation).
     #[serde(default)]
     check: Option<CheckConfig>,
@@ -93,6 +111,10 @@ struct CheckConfig {
     files: Vec<String>,
     #[serde(default)]
     exclude: Vec<String>,
+    #[serde(default, rename = "diff-files")]
+    diff_files: Option<String>,
+    #[serde(default, rename = "diff-lines")]
+    diff_lines: Option<String>,
     #[serde(default)]
     rules: Vec<CheckRuleConfig>,
     #[serde(default)]
@@ -115,6 +137,17 @@ struct CheckRuleConfig {
     include: Vec<String>,
     #[serde(default)]
     exclude: Vec<String>,
+    #[serde(default)]
+    expect: Vec<CheckExpectEntry>,
+}
+
+/// A single expectation entry for check rules in tractor config files.
+#[derive(Deserialize, Debug)]
+struct CheckExpectEntry {
+    #[serde(default)]
+    valid: Option<String>,
+    #[serde(default)]
+    invalid: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -123,6 +156,10 @@ struct SetConfig {
     files: Vec<String>,
     #[serde(default)]
     exclude: Vec<String>,
+    #[serde(default, rename = "diff-files")]
+    diff_files: Option<String>,
+    #[serde(default, rename = "diff-lines")]
+    diff_lines: Option<String>,
     mappings: Vec<SetMappingConfig>,
     #[serde(default)]
     tree_mode: Option<String>,
@@ -142,6 +179,10 @@ struct QueryConfig {
     files: Vec<String>,
     #[serde(default)]
     exclude: Vec<String>,
+    #[serde(default, rename = "diff-files")]
+    diff_files: Option<String>,
+    #[serde(default, rename = "diff-lines")]
+    diff_lines: Option<String>,
     #[serde(default)]
     queries: Vec<QueryExprConfig>,
     #[serde(default)]
@@ -163,6 +204,10 @@ struct TestConfig {
     files: Vec<String>,
     #[serde(default)]
     exclude: Vec<String>,
+    #[serde(default, rename = "diff-files")]
+    diff_files: Option<String>,
+    #[serde(default, rename = "diff-lines")]
+    diff_lines: Option<String>,
     #[serde(default)]
     assertions: Vec<TestAssertionConfig>,
     #[serde(default)]
@@ -212,7 +257,16 @@ fn parse_tree_mode(s: &str) -> Result<TreeMode, String> {
     }
 }
 
-fn convert_check(config: CheckConfig) -> Result<Operation, Box<dyn std::error::Error>> {
+/// Root-level scope fields that constrain all operations.
+#[derive(Debug, Clone, Default)]
+struct RootScope {
+    files: Vec<String>,
+    exclude: Vec<String>,
+    diff_files: Option<String>,
+    diff_lines: Option<String>,
+}
+
+fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<Operation, Box<dyn std::error::Error>> {
     let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
     let rules: Vec<Rule> = config.rules.into_iter().map(|r| {
@@ -230,12 +284,24 @@ fn convert_check(config: CheckConfig) -> Result<Operation, Box<dyn std::error::E
         if !r.exclude.is_empty() {
             rule = rule.with_exclude(r.exclude);
         }
+        let valid_examples: Vec<String> = r.expect.iter().filter_map(|e| e.valid.clone()).collect();
+        let invalid_examples: Vec<String> = r.expect.iter().filter_map(|e| e.invalid.clone()).collect();
+        if !valid_examples.is_empty() {
+            rule = rule.with_valid_examples(valid_examples);
+        }
+        if !invalid_examples.is_empty() {
+            rule = rule.with_invalid_examples(invalid_examples);
+        }
         Ok::<Rule, Box<dyn std::error::Error>>(rule)
     }).collect::<Result<_, _>>()?;
 
+    let (files, exclude, diff_files, diff_lines) = merge_scope(scope, config.files, config.exclude, config.diff_files, config.diff_lines);
+
     Ok(Operation::Check(CheckOperation {
-        files: config.files,
-        exclude: config.exclude,
+        files,
+        exclude,
+        diff_files,
+        diff_lines,
         rules,
         tree_mode,
         language: config.language,
@@ -246,7 +312,7 @@ fn convert_check(config: CheckConfig) -> Result<Operation, Box<dyn std::error::E
     }))
 }
 
-fn convert_set(config: SetConfig) -> Result<Operation, Box<dyn std::error::Error>> {
+fn convert_set(config: SetConfig, scope: &RootScope) -> Result<Operation, Box<dyn std::error::Error>> {
     // Validate tree_mode if provided (even though set doesn't use it yet)
     if let Some(ref tm) = config.tree_mode {
         parse_tree_mode(tm)?;
@@ -259,25 +325,33 @@ fn convert_set(config: SetConfig) -> Result<Operation, Box<dyn std::error::Error
         }
     }).collect();
 
+    let (files, exclude, diff_files, diff_lines) = merge_scope(scope, config.files, config.exclude, config.diff_files, config.diff_lines);
+
     Ok(Operation::Set(SetOperation {
-        files: config.files,
-        exclude: config.exclude,
+        files,
+        exclude,
+        diff_files,
+        diff_lines,
         mappings,
         language: config.language,
         verify: false,
     }))
 }
 
-fn convert_query(config: QueryConfig) -> Result<Operation, Box<dyn std::error::Error>> {
+fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<Operation, Box<dyn std::error::Error>> {
     let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
     let queries = config.queries.into_iter().map(|q| {
         QueryExpr { xpath: q.xpath }
     }).collect();
 
+    let (files, exclude, diff_files, diff_lines) = merge_scope(scope, config.files, config.exclude, config.diff_files, config.diff_lines);
+
     Ok(Operation::Query(QueryOperation {
-        files: config.files,
-        exclude: config.exclude,
+        files,
+        exclude,
+        diff_files,
+        diff_lines,
         queries,
         tree_mode,
         language: config.language,
@@ -289,7 +363,7 @@ fn convert_query(config: QueryConfig) -> Result<Operation, Box<dyn std::error::E
     }))
 }
 
-fn convert_test(config: TestConfig) -> Result<Operation, Box<dyn std::error::Error>> {
+fn convert_test(config: TestConfig, scope: &RootScope) -> Result<Operation, Box<dyn std::error::Error>> {
     let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
     let assertions = config.assertions.into_iter().map(|a| {
@@ -299,9 +373,13 @@ fn convert_test(config: TestConfig) -> Result<Operation, Box<dyn std::error::Err
         }
     }).collect();
 
+    let (files, exclude, diff_files, diff_lines) = merge_scope(scope, config.files, config.exclude, config.diff_files, config.diff_lines);
+
     Ok(Operation::Test(TestOperation {
-        files: config.files,
-        exclude: config.exclude,
+        files,
+        exclude,
+        diff_files,
+        diff_lines,
         assertions,
         tree_mode,
         language: config.language,
@@ -313,36 +391,72 @@ fn convert_test(config: TestConfig) -> Result<Operation, Box<dyn std::error::Err
     }))
 }
 
+/// Merge root-level scope with per-operation scope.
+///
+/// - `files`: operation files take precedence; root files are the fallback
+///   when an operation doesn't specify its own.
+/// - `exclude`: union of root and operation excludes (both narrow the scope).
+/// - `diff-files`/`diff-lines`: operation takes precedence; root is the
+///   fallback. CLI flags are applied separately via `ExecuteOptions`.
+fn merge_scope(
+    scope: &RootScope,
+    op_files: Vec<String>,
+    op_exclude: Vec<String>,
+    op_diff_files: Option<String>,
+    op_diff_lines: Option<String>,
+) -> (Vec<String>, Vec<String>, Option<String>, Option<String>) {
+    let files = if op_files.is_empty() {
+        scope.files.clone()
+    } else {
+        op_files
+    };
+
+    let mut exclude = scope.exclude.clone();
+    exclude.extend(op_exclude);
+
+    let diff_files = op_diff_files.or_else(|| scope.diff_files.clone());
+    let diff_lines = op_diff_lines.or_else(|| scope.diff_lines.clone());
+
+    (files, exclude, diff_files, diff_lines)
+}
+
 fn config_to_operations(config: ConfigFile) -> Result<Vec<Operation>, Box<dyn std::error::Error>> {
+    let scope = RootScope {
+        files: config.files,
+        exclude: config.exclude,
+        diff_files: config.diff_files,
+        diff_lines: config.diff_lines,
+    };
+
     let mut ops = Vec::new();
 
     // Root-level shorthand keys first
     if let Some(check) = config.check {
-        ops.push(convert_check(check)?);
+        ops.push(convert_check(check, &scope)?);
     }
     if let Some(set) = config.set {
-        ops.push(convert_set(set)?);
+        ops.push(convert_set(set, &scope)?);
     }
     if let Some(query) = config.query {
-        ops.push(convert_query(query)?);
+        ops.push(convert_query(query, &scope)?);
     }
     if let Some(test) = config.test {
-        ops.push(convert_test(test)?);
+        ops.push(convert_test(test, &scope)?);
     }
 
     // Then explicit operations list
     for entry in config.operations {
         if let Some(c) = entry.check {
-            ops.push(convert_check(c)?);
+            ops.push(convert_check(c, &scope)?);
         }
         if let Some(s) = entry.set {
-            ops.push(convert_set(s)?);
+            ops.push(convert_set(s, &scope)?);
         }
         if let Some(q) = entry.query {
-            ops.push(convert_query(q)?);
+            ops.push(convert_query(q, &scope)?);
         }
         if let Some(t) = entry.test {
-            ops.push(convert_test(t)?);
+            ops.push(convert_test(t, &scope)?);
         }
     }
 
@@ -675,6 +789,175 @@ value = "localhost"
                 assert_eq!(s.mappings[0].value, "localhost");
             }
             _ => panic!("expected Set operation"),
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Root-level scope tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn root_files_inherited_when_operation_has_none() {
+        let yaml = r#"
+files: ["src/**/*.rs"]
+check:
+  rules:
+    - id: no-todo
+      xpath: "//comment"
+"#;
+        let ops = parse_config_yaml(yaml).unwrap();
+        if let Operation::Check(c) = &ops[0] {
+            assert_eq!(c.files, vec!["src/**/*.rs"]);
+        } else {
+            panic!("expected Check");
+        }
+    }
+
+    #[test]
+    fn root_files_overridden_by_operation_files() {
+        let yaml = r#"
+files: ["src/**/*.rs"]
+check:
+  files: ["test/**/*.rs"]
+  rules:
+    - id: no-todo
+      xpath: "//comment"
+"#;
+        let ops = parse_config_yaml(yaml).unwrap();
+        if let Operation::Check(c) = &ops[0] {
+            assert_eq!(c.files, vec!["test/**/*.rs"]);
+        } else {
+            panic!("expected Check");
+        }
+    }
+
+    #[test]
+    fn root_exclude_merged_with_operation_exclude() {
+        let yaml = r#"
+exclude: ["target/**"]
+check:
+  files: ["src/**/*.rs"]
+  exclude: ["src/generated/**"]
+  rules:
+    - id: no-todo
+      xpath: "//comment"
+"#;
+        let ops = parse_config_yaml(yaml).unwrap();
+        if let Operation::Check(c) = &ops[0] {
+            assert_eq!(c.exclude, vec!["target/**", "src/generated/**"]);
+        } else {
+            panic!("expected Check");
+        }
+    }
+
+    #[test]
+    fn root_diff_files_inherited_by_operations() {
+        let yaml = r#"
+diff-files: "main..HEAD"
+check:
+  files: ["src/**/*.rs"]
+  rules:
+    - id: no-todo
+      xpath: "//comment"
+"#;
+        let ops = parse_config_yaml(yaml).unwrap();
+        if let Operation::Check(c) = &ops[0] {
+            assert_eq!(c.diff_files.as_deref(), Some("main..HEAD"));
+        } else {
+            panic!("expected Check");
+        }
+    }
+
+    #[test]
+    fn operation_diff_files_overrides_root() {
+        let yaml = r#"
+diff-files: "main..HEAD"
+check:
+  files: ["src/**/*.rs"]
+  diff-files: "HEAD~3"
+  rules:
+    - id: no-todo
+      xpath: "//comment"
+"#;
+        let ops = parse_config_yaml(yaml).unwrap();
+        if let Operation::Check(c) = &ops[0] {
+            assert_eq!(c.diff_files.as_deref(), Some("HEAD~3"));
+        } else {
+            panic!("expected Check");
+        }
+    }
+
+    #[test]
+    fn root_diff_lines_inherited_by_operations() {
+        let yaml = r#"
+diff-lines: "main..HEAD"
+check:
+  files: ["src/**/*.rs"]
+  rules:
+    - id: no-todo
+      xpath: "//comment"
+"#;
+        let ops = parse_config_yaml(yaml).unwrap();
+        if let Operation::Check(c) = &ops[0] {
+            assert_eq!(c.diff_lines.as_deref(), Some("main..HEAD"));
+        } else {
+            panic!("expected Check");
+        }
+    }
+
+    #[test]
+    fn root_scope_applies_to_operations_list() {
+        let yaml = r#"
+files: ["src/**/*.rs"]
+exclude: ["vendor/**"]
+diff-files: "main..HEAD"
+operations:
+  - check:
+      rules:
+        - id: rule-a
+          xpath: "//a"
+  - query:
+      queries:
+        - xpath: "//b"
+"#;
+        let ops = parse_config_yaml(yaml).unwrap();
+        assert_eq!(ops.len(), 2);
+
+        if let Operation::Check(c) = &ops[0] {
+            assert_eq!(c.files, vec!["src/**/*.rs"]);
+            assert_eq!(c.exclude, vec!["vendor/**"]);
+            assert_eq!(c.diff_files.as_deref(), Some("main..HEAD"));
+        } else {
+            panic!("expected Check");
+        }
+
+        if let Operation::Query(q) = &ops[1] {
+            assert_eq!(q.files, vec!["src/**/*.rs"]);
+            assert_eq!(q.exclude, vec!["vendor/**"]);
+            assert_eq!(q.diff_files.as_deref(), Some("main..HEAD"));
+        } else {
+            panic!("expected Query");
+        }
+    }
+
+    #[test]
+    fn parse_yaml_check_with_expect_examples() {
+        let yaml = r#"
+check:
+  files: ["src/**/*.rs"]
+  rules:
+    - id: no-todo
+      xpath: "//comment[contains(.,'TODO')]"
+      expect:
+        - valid: "fn main() {}"
+        - invalid: "// TODO: fix"
+"#;
+        let ops = parse_config_yaml(yaml).unwrap();
+        if let Operation::Check(c) = &ops[0] {
+            assert_eq!(c.rules[0].valid_examples, vec!["fn main() {}"]);
+            assert_eq!(c.rules[0].invalid_examples, vec!["// TODO: fix"]);
+        } else {
+            panic!("expected Check");
         }
     }
 }

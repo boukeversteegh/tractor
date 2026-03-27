@@ -845,9 +845,20 @@ body {
 }
 
 .hero .tagline {
-  color: var(--text-secondary);
-  font-size: 1.25rem;
+  color: var(--accent-yellow);
+  font-size: 1.35rem;
   margin-top: 0.5rem;
+  font-weight: 500;
+}
+
+.hero-description {
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  margin-top: 0.75rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.6;
 }
 
 .use-cases {
@@ -1207,7 +1218,7 @@ body {
 }
 
 .mini-query::before {
-  content: "XPath: ";
+  content: "Query: ";
   color: var(--text-secondary);
   font-size: 0.75rem;
 }

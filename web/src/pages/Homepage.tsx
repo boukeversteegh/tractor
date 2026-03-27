@@ -48,12 +48,15 @@ export function Homepage() {
   return (
     <div className="homepage">
       <header className="hero">
-        <h1><span className="logo">&#x1F69C;&#x1F4A8;</span> Tractor</h1>
-        <p className="tagline">Extract patterns from your code</p>
+        <h1><span className="logo">&#x1F69C;</span> Tractor</h1>
+        <p className="tagline">Write a rule once. Enforce it everywhere.</p>
+        <p className="hero-description">
+          Query your code structure across 20+ languages. Find patterns, enforce conventions, and catch issues — with one tool.
+        </p>
         <ul className="use-cases">
-          <li>Find code patterns</li>
-          <li>Build custom linters</li>
-          <li>Enforce conventions</li>
+          <li>Enforce conventions in CI</li>
+          <li>Find structural patterns</li>
+          <li>Build custom lint rules</li>
         </ul>
       </header>
 
@@ -137,19 +140,19 @@ export function Homepage() {
         <div className="feature-grid">
           <div className="feature">
             <h3>Transparent</h3>
-            <p>Run <code>tractor file.cs</code> to see exactly what you're querying. No hidden structure.</p>
+            <p>Run <code>tractor file.cs</code> to see exactly what you're querying. No hidden structure, no guessing.</p>
           </div>
           <div className="feature">
-            <h3>Standard</h3>
-            <p>XPath is a W3C standard. Millions know it. Stack Overflow has 50k+ answers.</p>
+            <h3>AI-Friendly</h3>
+            <p>Uses standard query syntax that AI tools already know. Get working queries from ChatGPT or Claude on the first try.</p>
           </div>
           <div className="feature">
-            <h3>Readable</h3>
-            <p><code>//method[public][async]</code> reads like English. No DSL to memorize.</p>
+            <h3>Multi-Language</h3>
+            <p>One tool, one syntax, 20+ languages. Learn it once, apply it to C#, TypeScript, Python, Rust, Go, and more.</p>
           </div>
           <div className="feature">
-            <h3>CI Ready</h3>
-            <p>Ban patterns, require conventions, ensure coverage. Fail builds on violations.</p>
+            <h3>CI-Native</h3>
+            <p>Enforce conventions in your pipeline. GCC and GitHub Actions output, exit codes, and match expectations built in.</p>
           </div>
         </div>
       </section>

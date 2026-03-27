@@ -156,6 +156,15 @@ When omitted, auto-selects: data for JSON/YAML, structure for everything else.")
     #[arg(short = 'g', long = "group", help_heading = "View")]
     pub group_by: Option<String>,
 
+    // -- Filter --
+    /// Only consider files changed in a git diff (e.g. "HEAD~3", "main..HEAD")
+    #[arg(long = "diff-files", value_name = "RANGE", help_heading = "Filter")]
+    pub diff_files: Option<String>,
+
+    /// Only consider matches in changed hunks of a git diff (e.g. "HEAD~3", "main..HEAD")
+    #[arg(long = "diff-lines", value_name = "RANGE", help_heading = "Filter")]
+    pub diff_lines: Option<String>,
+
     // -- Advanced --
     /// [EXPERIMENTAL] Limit tree building depth (skip parsing deeper nodes for speed)
     #[arg(long = "parse-depth", help_heading = "Advanced")]
@@ -272,6 +281,14 @@ Output format [default: gcc]
     /// Path to a TOML rules file for batch checking
     #[arg(long = "rules", help_heading = "Check")]
     pub rules: Option<String>,
+
+    /// A code example that should pass the check (no matches expected)
+    #[arg(long = "expect-valid", help_heading = "Check")]
+    pub expect_valid: Option<String>,
+
+    /// A code example that should fail the check (matches expected)
+    #[arg(long = "expect-invalid", help_heading = "Check")]
+    pub expect_invalid: Option<String>,
 }
 
 /// Test mode: assert match count expectations

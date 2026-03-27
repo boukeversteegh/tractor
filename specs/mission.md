@@ -5,15 +5,7 @@ type: note
 
 # Mission
 
-<!-- TODO: one-liner mission statement. Candidates so far:
-  - "Learn it once. Apply it forever."
-  - "Every lesson your team learns should become a rule your codebase follows."
-  - "Stop re-learning the same lessons. Start embedding them."
-  - "Make team knowledge permanent."
-  - "Your codebase should remember what your team knows."
-  None of these landed yet. Looking for something punchy, natural,
-  not cringy. A sales director should accept it.
--->
+**Write a rule once. Enforce it everywhere.**
 
 Give development teams the power to turn their hard-won lessons into
 living rules that guide the entire codebase.
@@ -23,12 +15,11 @@ incidents, conventions that keep code maintainable. But knowledge that
 isn't embedded in the codebase fades, and teams find themselves
 re-learning the same lessons.
 
-What if conventions could be expressed as programmable rules - so
-standards are upheld automatically, and developers get immediate
-feedback when something drifts?
+Tractor makes coding conventions executable. Express standards as
+rules, get immediate feedback when something drifts, and let CI
+enforce what reviews can't always catch.
 
-Tractor's aspiration is to make all coding conventions executable.
-Where that's not yet possible, clear documentation with examples
+Where automation isn't yet possible, clear documentation with examples
 bridges the gap.
 
 This mission is intended to remain stable for 10-20+ years.

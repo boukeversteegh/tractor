@@ -80,6 +80,13 @@ Format:
           
           [default: text]
 
+Filter:
+      --diff-files <RANGE>
+          Only consider files changed in a git diff (e.g. "HEAD~3", "main..HEAD")
+
+      --diff-lines <RANGE>
+          Only consider matches in changed hunks of a git diff (e.g. "HEAD~3", "main..HEAD")
+
 Advanced:
       --parse-depth <PARSE_DEPTH>
           [EXPERIMENTAL] Limit tree building depth (skip parsing deeper nodes for speed)

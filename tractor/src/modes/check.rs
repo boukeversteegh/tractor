@@ -42,13 +42,22 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Build a single-rule check operation and delegate to the executor.
-    let rule = Rule::new("_check", xpath_expr)
+    let mut rule = Rule::new("_check", xpath_expr)
         .with_reason(reason)
         .with_severity(severity);
+
+    if let Some(ref ex) = args.expect_valid {
+        rule = rule.with_valid_examples(vec![ex.clone()]);
+    }
+    if let Some(ref ex) = args.expect_invalid {
+        rule = rule.with_invalid_examples(vec![ex.clone()]);
+    }
 
     let op = Operation::Check(CheckOperation {
         files: files.clone(),
         exclude: vec![],
+        diff_files: None,
+        diff_lines: None,
         rules: vec![rule],
         tree_mode: ctx.tree_mode,
         language: ctx.lang.clone(),
@@ -60,6 +69,8 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     let options = ExecuteOptions {
         verbose: ctx.verbose,
+        diff_files: args.shared.diff_files.clone(),
+        diff_lines: args.shared.diff_lines.clone(),
         ..Default::default()
     };
 
@@ -113,6 +124,8 @@ fn run_check_rules(args: CheckArgs, rules_path: &str) -> Result<(), Box<dyn std:
     let op = Operation::Check(CheckOperation {
         files,
         exclude: vec![],
+        diff_files: None,
+        diff_lines: None,
         rules: ruleset.rules.clone(),
         tree_mode: ctx.tree_mode,
         language: ctx.lang.clone(),
@@ -124,6 +137,8 @@ fn run_check_rules(args: CheckArgs, rules_path: &str) -> Result<(), Box<dyn std:
 
     let options = ExecuteOptions {
         verbose: ctx.verbose,
+        diff_files: args.shared.diff_files.clone(),
+        diff_lines: args.shared.diff_lines.clone(),
         ..Default::default()
     };
 

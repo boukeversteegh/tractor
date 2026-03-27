@@ -2,6 +2,7 @@ pub mod input;
 pub mod context;
 pub mod matcher;
 pub mod format;
+pub mod git;
 
 pub use input::InputMode;
 pub use context::RunContext;

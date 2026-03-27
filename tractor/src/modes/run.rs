@@ -49,6 +49,8 @@ pub fn run_run(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {
     let options = ExecuteOptions {
         verbose: args.shared.verbose,
         base_dir,
+        diff_files: args.shared.diff_files.clone(),
+        diff_lines: args.shared.diff_lines.clone(),
     };
 
     let reports = executor::execute(&operations, &options)?;
