@@ -180,13 +180,13 @@ pub struct Rule {
     /// None means use the default (auto-detect per language).
     pub tree_mode: Option<TreeMode>,
 
-    /// Code examples that should PASS the check (no matches expected).
-    /// In config files these appear as `expect: [{valid: "..."}]`.
-    pub pass_examples: Vec<String>,
+    /// Code examples that should pass the check (no matches expected).
+    /// In config files: `expect: [{valid: "..."}]`, CLI: `--expect-valid`.
+    pub valid_examples: Vec<String>,
 
-    /// Code examples that should FAIL the check (1+ matches expected).
-    /// In config files these appear as `expect: [{invalid: "..."}]`.
-    pub fail_examples: Vec<String>,
+    /// Code examples that should fail the check (1+ matches expected).
+    /// In config files: `expect: [{invalid: "..."}]`, CLI: `--expect-invalid`.
+    pub invalid_examples: Vec<String>,
 }
 
 impl Rule {
@@ -202,8 +202,8 @@ impl Rule {
             exclude: Vec::new(),
             language: None,
             tree_mode: None,
-            pass_examples: Vec::new(),
-            fail_examples: Vec::new(),
+            valid_examples: Vec::new(),
+            invalid_examples: Vec::new(),
         }
     }
 
@@ -249,21 +249,21 @@ impl Rule {
         self
     }
 
-    /// Set pass examples (code that should NOT trigger the check).
-    pub fn with_pass_examples(mut self, examples: Vec<String>) -> Self {
-        self.pass_examples = examples;
+    /// Set valid examples (code that should NOT trigger the check).
+    pub fn with_valid_examples(mut self, examples: Vec<String>) -> Self {
+        self.valid_examples = examples;
         self
     }
 
-    /// Set fail examples (code that SHOULD trigger the check).
-    pub fn with_fail_examples(mut self, examples: Vec<String>) -> Self {
-        self.fail_examples = examples;
+    /// Set invalid examples (code that SHOULD trigger the check).
+    pub fn with_invalid_examples(mut self, examples: Vec<String>) -> Self {
+        self.invalid_examples = examples;
         self
     }
 
     /// Returns true if this rule has any examples to validate.
     pub fn has_examples(&self) -> bool {
-        !self.pass_examples.is_empty() || !self.fail_examples.is_empty()
+        !self.valid_examples.is_empty() || !self.invalid_examples.is_empty()
     }
 }
 

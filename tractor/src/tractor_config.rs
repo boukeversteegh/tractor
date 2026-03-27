@@ -284,13 +284,13 @@ fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<Operation, Bo
         if !r.exclude.is_empty() {
             rule = rule.with_exclude(r.exclude);
         }
-        let pass_examples: Vec<String> = r.expect.iter().filter_map(|e| e.valid.clone()).collect();
-        let fail_examples: Vec<String> = r.expect.iter().filter_map(|e| e.invalid.clone()).collect();
-        if !pass_examples.is_empty() {
-            rule = rule.with_pass_examples(pass_examples);
+        let valid_examples: Vec<String> = r.expect.iter().filter_map(|e| e.valid.clone()).collect();
+        let invalid_examples: Vec<String> = r.expect.iter().filter_map(|e| e.invalid.clone()).collect();
+        if !valid_examples.is_empty() {
+            rule = rule.with_valid_examples(valid_examples);
         }
-        if !fail_examples.is_empty() {
-            rule = rule.with_fail_examples(fail_examples);
+        if !invalid_examples.is_empty() {
+            rule = rule.with_invalid_examples(invalid_examples);
         }
         Ok::<Rule, Box<dyn std::error::Error>>(rule)
     }).collect::<Result<_, _>>()?;
@@ -954,8 +954,8 @@ check:
 "#;
         let ops = parse_config_yaml(yaml).unwrap();
         if let Operation::Check(c) = &ops[0] {
-            assert_eq!(c.rules[0].pass_examples, vec!["fn main() {}"]);
-            assert_eq!(c.rules[0].fail_examples, vec!["// TODO: fix"]);
+            assert_eq!(c.rules[0].valid_examples, vec!["fn main() {}"]);
+            assert_eq!(c.rules[0].invalid_examples, vec!["// TODO: fix"]);
         } else {
             panic!("expected Check");
         }

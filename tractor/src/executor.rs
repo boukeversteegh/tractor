@@ -513,8 +513,8 @@ fn validate_rule_examples(
 
         let tree_mode = rule.tree_mode.or(default_tree_mode);
 
-        // Validate pass examples: expect "none" (query should NOT match valid code)
-        for (i, example) in rule.pass_examples.iter().enumerate() {
+        // Validate valid examples: expect "none" (query should NOT match valid code)
+        for (i, example) in rule.valid_examples.iter().enumerate() {
             let test_op = TestOperation {
                 files: vec![],
                 exclude: vec![],
@@ -546,8 +546,8 @@ fn validate_rule_examples(
             }
         }
 
-        // Validate fail examples: expect "some" (query SHOULD match invalid code)
-        for (i, example) in rule.fail_examples.iter().enumerate() {
+        // Validate invalid examples: expect "some" (query SHOULD match invalid code)
+        for (i, example) in rule.invalid_examples.iter().enumerate() {
             let test_op = TestOperation {
                 files: vec![],
                 exclude: vec![],
@@ -1485,8 +1485,8 @@ mod tests {
         let rules = vec![
             Rule::new("no-comments", "//line_comment")
                 .with_language("rust")
-                .with_pass_examples(vec!["fn main() {}".to_string()])
-                .with_fail_examples(vec!["// hello\nfn main() {}".to_string()]),
+                .with_valid_examples(vec!["fn main() {}".to_string()])
+                .with_invalid_examples(vec!["// hello\nfn main() {}".to_string()]),
         ];
         let options = ExecuteOptions::default();
         let (matches, errors) = validate_rule_examples(&rules, None, None, &options).unwrap();
@@ -1500,7 +1500,7 @@ mod tests {
         let rules = vec![
             Rule::new("no-comments", "//line_comment")
                 .with_language("rust")
-                .with_pass_examples(vec!["// oops this is a comment".to_string()]),
+                .with_valid_examples(vec!["// oops this is a comment".to_string()]),
         ];
         let options = ExecuteOptions::default();
         let (matches, errors) = validate_rule_examples(&rules, None, None, &options).unwrap();
@@ -1515,7 +1515,7 @@ mod tests {
         let rules = vec![
             Rule::new("no-comments", "//line_comment")
                 .with_language("rust")
-                .with_fail_examples(vec!["fn main() {}".to_string()]),
+                .with_invalid_examples(vec!["fn main() {}".to_string()]),
         ];
         let options = ExecuteOptions::default();
         let (matches, errors) = validate_rule_examples(&rules, None, None, &options).unwrap();
@@ -1529,7 +1529,7 @@ mod tests {
         // Rule has no language but operation default is "rust"
         let rules = vec![
             Rule::new("no-comments", "//line_comment")
-                .with_pass_examples(vec!["fn main() {}".to_string()]),
+                .with_valid_examples(vec!["fn main() {}".to_string()]),
         ];
         let options = ExecuteOptions::default();
         let (matches, errors) = validate_rule_examples(&rules, Some("rust"), None, &options).unwrap();
@@ -1542,7 +1542,7 @@ mod tests {
         // Rule has examples but no language anywhere → error
         let rules = vec![
             Rule::new("no-comments", "//line_comment")
-                .with_pass_examples(vec!["fn main() {}".to_string()]),
+                .with_valid_examples(vec!["fn main() {}".to_string()]),
         ];
         let options = ExecuteOptions::default();
         let err = validate_rule_examples(&rules, None, None, &options).unwrap_err();

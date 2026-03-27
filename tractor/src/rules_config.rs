@@ -122,13 +122,13 @@ fn config_to_ruleset(config: RulesConfig) -> Result<RuleSet, Box<dyn std::error:
             rule = rule.with_tree_mode(tm);
         }
 
-        let pass_examples: Vec<String> = r.expect.iter().filter_map(|e| e.valid.clone()).collect();
-        let fail_examples: Vec<String> = r.expect.iter().filter_map(|e| e.invalid.clone()).collect();
-        if !pass_examples.is_empty() {
-            rule = rule.with_pass_examples(pass_examples);
+        let valid_examples: Vec<String> = r.expect.iter().filter_map(|e| e.valid.clone()).collect();
+        let invalid_examples: Vec<String> = r.expect.iter().filter_map(|e| e.invalid.clone()).collect();
+        if !valid_examples.is_empty() {
+            rule = rule.with_valid_examples(valid_examples);
         }
-        if !fail_examples.is_empty() {
-            rule = rule.with_fail_examples(fail_examples);
+        if !invalid_examples.is_empty() {
+            rule = rule.with_invalid_examples(invalid_examples);
         }
 
         rules.push(rule);
@@ -411,8 +411,8 @@ rules:
 "#;
         let rs = parse_rules_yaml(yaml).unwrap();
         assert_eq!(rs.rules.len(), 1);
-        assert_eq!(rs.rules[0].pass_examples, vec!["fn main() {}"]);
-        assert_eq!(rs.rules[0].fail_examples, vec!["// TODO: fix this", "// TODO: refactor"]);
+        assert_eq!(rs.rules[0].valid_examples, vec!["fn main() {}"]);
+        assert_eq!(rs.rules[0].invalid_examples, vec!["// TODO: fix this", "// TODO: refactor"]);
     }
 
     #[test]
@@ -431,8 +431,8 @@ invalid = "// TODO: fix this"
 "#;
         let rs = parse_rules_toml(toml).unwrap();
         assert_eq!(rs.rules.len(), 1);
-        assert_eq!(rs.rules[0].pass_examples, vec!["fn main() {}"]);
-        assert_eq!(rs.rules[0].fail_examples, vec!["// TODO: fix this"]);
+        assert_eq!(rs.rules[0].valid_examples, vec!["fn main() {}"]);
+        assert_eq!(rs.rules[0].invalid_examples, vec!["// TODO: fix this"]);
     }
 
     #[test]
@@ -443,7 +443,7 @@ rules:
     xpath: "//function"
 "#;
         let rs = parse_rules_yaml(yaml).unwrap();
-        assert!(rs.rules[0].pass_examples.is_empty());
-        assert!(rs.rules[0].fail_examples.is_empty());
+        assert!(rs.rules[0].valid_examples.is_empty());
+        assert!(rs.rules[0].invalid_examples.is_empty());
     }
 }

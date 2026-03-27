@@ -47,10 +47,10 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
         .with_severity(severity);
 
     if let Some(ref ex) = args.expect_valid {
-        rule = rule.with_pass_examples(vec![ex.clone()]);
+        rule = rule.with_valid_examples(vec![ex.clone()]);
     }
     if let Some(ref ex) = args.expect_invalid {
-        rule = rule.with_fail_examples(vec![ex.clone()]);
+        rule = rule.with_invalid_examples(vec![ex.clone()]);
     }
 
     let op = Operation::Check(CheckOperation {
