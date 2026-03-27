@@ -1,58 +1,45 @@
-# Check rule examples (expect valid/invalid)
+# Unified report model for mixed operation batches
 
 ## Problem
 
-Check rules have no way to verify that their XPath query actually matches
-what it should. When tractor updates its parser, queries can silently
-break. Users also lack a built-in way to document what a rule catches
-versus what it allows.
+When `execute_check()` validates rule examples, it generates `TestOperation`s
+and runs them through `execute_test()`. The test results are then manually
+hoisted into the check report by converting test failures into synthetic
+`ReportMatch` entries (see `validate_rule_examples()` and
+`example_failure_match()` in `executor.rs`).
 
-## Solution
+This works but is a workaround. The check report was not designed to carry
+test results, so the conversion loses information (e.g. expected vs actual
+match counts) and uses synthetic `<example>` file paths.
 
-Add `expect` entries to check rules — code examples annotated as `valid`
-(should not trigger the check) or `invalid` (should trigger the check).
-Tractor validates these by reusing the existing `TestOperation` system
-with inline source.
+## Desired state
 
-## Config format
+A unified report model where a single batch execution can contain mixed
+operation types (check, test, query) and the report renders them all
+coherently. Example validation would just be test operations prepended to
+the operation list — no special hoisting or conversion needed.
 
-```yaml
-rules:
-  - id: no-todo
-    xpath: "//comment[contains(.,'TODO')]"
-    language: rust
-    expect:
-      - valid: "// This is a regular comment"
-      - invalid: "// TODO: fix this"
-```
+This would also benefit `tractor run`, which already executes mixed
+operation batches but currently produces separate reports per operation.
 
-Each entry is an object with optional `valid` and/or `invalid` fields.
+## What needs to change
 
-## CLI
+- `Report` needs to support heterogeneous result types, or the different
+  report kinds (check, test, query) need a common base that renderers can
+  handle uniformly
+- The summary model needs to aggregate across operation types
+- Renderers (gcc, github, json, yaml, xml, text) need to handle mixed
+  content without losing type-specific fields (e.g. `expected` for tests,
+  `severity` for checks)
 
-```bash
-tractor check "src/**/*.rs" -x "//query" --reason "..." -l rust \
-  --expect-valid "good code" \
-  --expect-invalid "bad code"
-```
+## Location
 
-## Implementation
+- `tractor-core/src/report.rs` — report and summary types
+- `tractor/src/executor.rs` — `validate_rule_examples()` conversion logic
+- `tractor/src/pipeline/format/` — renderers
 
-- `Rule` struct gains `pass_examples` / `fail_examples` Vec fields
-- `execute_check()` generates `TestOperation`s from examples before
-  running the file check, converting failures into check report matches
-- Config parsers (`rules_config.rs`, `tractor_config.rs`) deserialize
-  `expect` entries into the Rule fields
-- Language resolution: rule `language` → operation `language` → error
+## Impact
 
-## Future
-
-- Minimal pairs: entries with both `valid` and `invalid` for side-by-side
-  documentation and mutual exclusivity validation
-- Virtual files: embed examples as snippets within source files for
-  richer output (highlighting the example in context)
-
-## References
-
-- `specs/rules.md` — "Valid/Invalid Examples" section
-- `docs/usecase-integration-test-framework-linting.md` — real-world use case
+Medium — this is an architectural improvement that simplifies the executor
+and enables richer output for example validation. Not urgent since the
+current hoisting approach works correctly.
