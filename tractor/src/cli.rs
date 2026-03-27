@@ -281,6 +281,14 @@ Output format [default: gcc]
     /// Path to a TOML rules file for batch checking
     #[arg(long = "rules", help_heading = "Check")]
     pub rules: Option<String>,
+
+    /// A code example that should pass the check (no matches expected)
+    #[arg(long = "expect-valid", help_heading = "Check")]
+    pub expect_valid: Option<String>,
+
+    /// A code example that should fail the check (matches expected)
+    #[arg(long = "expect-invalid", help_heading = "Check")]
+    pub expect_invalid: Option<String>,
 }
 
 /// Test mode: assert match count expectations

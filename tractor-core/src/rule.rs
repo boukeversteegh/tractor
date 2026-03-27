@@ -179,6 +179,14 @@ pub struct Rule {
     /// Tree mode override for this rule.
     /// None means use the default (auto-detect per language).
     pub tree_mode: Option<TreeMode>,
+
+    /// Code examples that should PASS the check (no matches expected).
+    /// In config files these appear as `expect: [{valid: "..."}]`.
+    pub pass_examples: Vec<String>,
+
+    /// Code examples that should FAIL the check (1+ matches expected).
+    /// In config files these appear as `expect: [{invalid: "..."}]`.
+    pub fail_examples: Vec<String>,
 }
 
 impl Rule {
@@ -194,6 +202,8 @@ impl Rule {
             exclude: Vec::new(),
             language: None,
             tree_mode: None,
+            pass_examples: Vec::new(),
+            fail_examples: Vec::new(),
         }
     }
 
@@ -237,6 +247,23 @@ impl Rule {
     pub fn with_tree_mode(mut self, tree_mode: TreeMode) -> Self {
         self.tree_mode = Some(tree_mode);
         self
+    }
+
+    /// Set pass examples (code that should NOT trigger the check).
+    pub fn with_pass_examples(mut self, examples: Vec<String>) -> Self {
+        self.pass_examples = examples;
+        self
+    }
+
+    /// Set fail examples (code that SHOULD trigger the check).
+    pub fn with_fail_examples(mut self, examples: Vec<String>) -> Self {
+        self.fail_examples = examples;
+        self
+    }
+
+    /// Returns true if this rule has any examples to validate.
+    pub fn has_examples(&self) -> bool {
+        !self.pass_examples.is_empty() || !self.fail_examples.is_empty()
     }
 }
 

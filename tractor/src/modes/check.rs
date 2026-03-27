@@ -42,9 +42,16 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Build a single-rule check operation and delegate to the executor.
-    let rule = Rule::new("_check", xpath_expr)
+    let mut rule = Rule::new("_check", xpath_expr)
         .with_reason(reason)
         .with_severity(severity);
+
+    if let Some(ref ex) = args.expect_valid {
+        rule = rule.with_pass_examples(vec![ex.clone()]);
+    }
+    if let Some(ref ex) = args.expect_invalid {
+        rule = rule.with_fail_examples(vec![ex.clone()]);
+    }
 
     let op = Operation::Check(CheckOperation {
         files: files.clone(),

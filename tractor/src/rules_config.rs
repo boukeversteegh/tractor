@@ -46,6 +46,17 @@ struct ConfigRule {
     language: Option<String>,
     #[serde(default)]
     tree_mode: Option<String>,
+    #[serde(default)]
+    expect: Vec<ExpectEntry>,
+}
+
+/// A single expectation entry: an optional valid and/or invalid code example.
+#[derive(Deserialize)]
+struct ExpectEntry {
+    #[serde(default)]
+    valid: Option<String>,
+    #[serde(default)]
+    invalid: Option<String>,
 }
 
 fn default_severity() -> String {
@@ -109,6 +120,15 @@ fn config_to_ruleset(config: RulesConfig) -> Result<RuleSet, Box<dyn std::error:
         }
         if let Some(tm) = tree_mode {
             rule = rule.with_tree_mode(tm);
+        }
+
+        let pass_examples: Vec<String> = r.expect.iter().filter_map(|e| e.valid.clone()).collect();
+        let fail_examples: Vec<String> = r.expect.iter().filter_map(|e| e.invalid.clone()).collect();
+        if !pass_examples.is_empty() {
+            rule = rule.with_pass_examples(pass_examples);
+        }
+        if !fail_examples.is_empty() {
+            rule = rule.with_fail_examples(fail_examples);
         }
 
         rules.push(rule);
@@ -373,5 +393,57 @@ rules:
         assert_eq!(from_toml.rules[0].xpath, from_yaml.rules[0].xpath);
         assert_eq!(from_toml.rules[0].reason, from_yaml.rules[0].reason);
         assert_eq!(from_toml.rules[0].severity, from_yaml.rules[0].severity);
+    }
+
+    // -- Expect examples --
+
+    #[test]
+    fn test_parse_yaml_expect_examples() {
+        let yaml = r#"
+rules:
+  - id: no-todo
+    xpath: "//comment[contains(.,'TODO')]"
+    language: rust
+    expect:
+      - valid: "fn main() {}"
+      - invalid: "// TODO: fix this"
+      - invalid: "// TODO: refactor"
+"#;
+        let rs = parse_rules_yaml(yaml).unwrap();
+        assert_eq!(rs.rules.len(), 1);
+        assert_eq!(rs.rules[0].pass_examples, vec!["fn main() {}"]);
+        assert_eq!(rs.rules[0].fail_examples, vec!["// TODO: fix this", "// TODO: refactor"]);
+    }
+
+    #[test]
+    fn test_parse_toml_expect_examples() {
+        let toml = r#"
+[[rules]]
+id = "no-todo"
+xpath = "//comment[contains(.,'TODO')]"
+language = "rust"
+
+[[rules.expect]]
+valid = "fn main() {}"
+
+[[rules.expect]]
+invalid = "// TODO: fix this"
+"#;
+        let rs = parse_rules_toml(toml).unwrap();
+        assert_eq!(rs.rules.len(), 1);
+        assert_eq!(rs.rules[0].pass_examples, vec!["fn main() {}"]);
+        assert_eq!(rs.rules[0].fail_examples, vec!["// TODO: fix this"]);
+    }
+
+    #[test]
+    fn test_parse_yaml_no_expect() {
+        let yaml = r#"
+rules:
+  - id: simple
+    xpath: "//function"
+"#;
+        let rs = parse_rules_yaml(yaml).unwrap();
+        assert!(rs.rules[0].pass_examples.is_empty());
+        assert!(rs.rules[0].fail_examples.is_empty());
     }
 }
