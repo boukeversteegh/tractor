@@ -1,8 +1,16 @@
 ---
-title: CodeXPath
+title: CodeXPath (Legacy)
+status: archived
 ---
 
-CLI tool that converts C# source code to XML using Roslyn and allows querying with XPath expressions.
+> **Note:** CodeXPath was the original name for Tractor when it was a C#-only
+> tool using Roslyn. The project has since evolved into a multi-language tool
+> using TreeSitter. This spec is preserved for historical reference only.
+>
+> For current documentation, see:
+> - [Mission](./mission.md)
+> - [Vision](./vision.md)
+> - [Strategy](./strategy.md)
 
-Parses C# syntax trees and generates XML representations where element names are in PascalCase
-(e.g., ClassDecl, MethodDecl, InvocationExpr) and attributes capture location and metadata.
+Original description: CLI tool that converts C# source code to XML using
+Roslyn and allows querying with XPath expressions.
