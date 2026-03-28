@@ -48,10 +48,12 @@ README showing example commands.
 a path will think the tool is broken. Print a warning to stderr when the
 file glob matches zero files.
 
-### Add a CHANGELOG
-No CHANGELOG.md exists. HN readers like to see what's changed and how
-active the project is. Doesn't need to be exhaustive — cover the major
-features and recent highlights.
+### Polish GitHub release notes
+No need for a committed CHANGELOG.md file — it goes stale too easily at
+this stage. Instead, edit the auto-generated release notes on each GitHub
+release: add a short human-written summary (3-5 bullet points) at the
+top. Make sure at least the latest release looks good before posting,
+since HN readers will click through to the releases page.
 
 ### Query diagnostics for empty results
 This was discussed as the single biggest DX improvement. When a query
