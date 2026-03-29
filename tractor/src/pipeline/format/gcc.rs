@@ -1,21 +1,41 @@
-use tractor_core::{render_lines, report::{Report, ReportMatch}, RenderOptions};
+use tractor_core::{render_lines, report::{Report, ReportMatch, ResultItem}, RenderOptions};
 use super::shared::to_absolute_path;
 
 /// Render report matches in gcc format: `file:line:col: severity: reason`
 pub fn render_gcc(report: &Report, opts: &RenderOptions) -> String {
     let mut out = String::new();
-    if let Some(ref groups) = report.groups {
-        for g in groups {
-            for rm in &g.matches {
-                render_gcc_match(&mut out, rm, Some(&g.file), opts);
+    render_gcc_results(&mut out, &report.results, None, opts);
+    // Fallback to old fields if results is empty
+    if out.is_empty() {
+        if let Some(ref groups) = report.groups {
+            for g in groups {
+                for rm in &g.matches {
+                    render_gcc_match(&mut out, rm, Some(&g.file), opts);
+                }
             }
-        }
-    } else {
-        for rm in &report.matches {
-            render_gcc_match(&mut out, rm, None, opts);
+        } else {
+            for rm in &report.matches {
+                render_gcc_match(&mut out, rm, None, opts);
+            }
         }
     }
     out
+}
+
+/// Walk the results tree recursively, rendering matches in gcc format.
+fn render_gcc_results(out: &mut String, items: &[ResultItem], parent_file: Option<&str>, opts: &RenderOptions) {
+    for item in items {
+        match item {
+            ResultItem::Match(rm) => {
+                render_gcc_match(out, rm, parent_file, opts);
+            }
+            ResultItem::Group(g) => {
+                // If this group has a file, use it as context for child matches
+                let file = g.file.as_deref().or(parent_file);
+                render_gcc_results(out, &g.results, file, opts);
+            }
+        }
+    }
 }
 
 fn render_gcc_match(out: &mut String, rm: &ReportMatch, group_file: Option<&str>, opts: &RenderOptions) {

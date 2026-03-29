@@ -9,7 +9,7 @@
 use tractor_core::{
     render_xml_node, normalize_path,
     render_source_precomputed, render_lines,
-    report::{Report, ReportKind, ReportMatch, Totals},
+    report::{Report, ReportKind, ReportMatch, ResultItem, Totals},
     RenderOptions,
 };
 use super::options::{ViewField, ViewSet};
@@ -18,30 +18,36 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
     let mut out = String::new();
 
     // Set stdout mode: groups with output field — render group by group.
-    // Per-match info (file:line: status) is printed before each group's output.
     if matches!(report.kind, ReportKind::Set) && view.has(ViewField::Output) {
-        if let Some(ref groups) = report.groups {
+        // Try new results first, fallback to old groups
+        let rendered = if !report.results.is_empty() {
+            render_set_stdout_results(&report.results, view, render_opts)
+        } else if let Some(ref groups) = report.groups {
+            let mut s = String::new();
             for group in groups {
-                // Per-match lines (file:line: status etc.) if location/status in view
                 let has_location = view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
                 let has_per_match = has_location || view.has(ViewField::Status);
                 if has_per_match {
                     for rm in &group.matches {
-                        append_match(&mut out, rm, view, render_opts, Some(&group.file));
+                        append_match(&mut s, rm, view, render_opts, Some(&group.file));
                     }
                 }
-                // Group-level output (the full modified file content)
                 if let Some(ref content) = group.output {
-                    out.push_str(content);
+                    s.push_str(content);
                 }
             }
-        }
-        // No summary for stdout output mode
+            s
+        } else {
+            String::new()
+        };
+        out.push_str(&rendered);
         return out;
     }
 
-    // Collect matches with optional group file — groups take priority
-    let matches: Vec<(Option<&str>, &ReportMatch)> = if let Some(ref groups) = report.groups {
+    // Collect matches with optional group file context
+    let matches: Vec<(Option<&str>, &ReportMatch)> = if !report.results.is_empty() {
+        collect_matches_with_file(&report.results, None)
+    } else if let Some(ref groups) = report.groups {
         groups.iter().flat_map(|g| g.matches.iter().map(move |rm| (Some(g.file.as_str()), rm))).collect()
     } else {
         report.matches.iter().map(|rm| (None, rm)).collect()
@@ -271,5 +277,50 @@ fn format_summary(totals: &Totals, success: Option<bool>, kind: ReportKind) -> S
         }
     };
     out.push_str(&count_line);
+    out
+}
+
+// ---------------------------------------------------------------------------
+// ResultItem helpers for text rendering
+// ---------------------------------------------------------------------------
+
+/// Collect leaf matches with their inherited file context from the results tree.
+fn collect_matches_with_file<'a>(items: &'a [ResultItem], parent_file: Option<&'a str>) -> Vec<(Option<&'a str>, &'a ReportMatch)> {
+    let mut out = Vec::new();
+    for item in items {
+        match item {
+            ResultItem::Match(rm) => out.push((parent_file, rm)),
+            ResultItem::Group(g) => {
+                let file = g.file.as_deref().or(parent_file);
+                out.extend(collect_matches_with_file(&g.results, file));
+            }
+        }
+    }
+    out
+}
+
+/// Render set stdout mode from results tree (groups with output_content).
+fn render_set_stdout_results(items: &[ResultItem], view: &ViewSet, render_opts: &RenderOptions) -> String {
+    let mut out = String::new();
+    let has_location = view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
+    let has_per_match = has_location || view.has(ViewField::Status);
+
+    for item in items {
+        if let ResultItem::Group(g) = item {
+            let file = g.file.as_deref();
+            if has_per_match {
+                // Render leaf matches within this group
+                for child in &g.results {
+                    if let ResultItem::Match(rm) = child {
+                        append_match(&mut out, rm, view, render_opts, file);
+                    }
+                }
+            }
+            // Group-level output (the full modified file content)
+            if let Some(ref content) = g.output_content {
+                out.push_str(content);
+            }
+        }
+    }
     out
 }

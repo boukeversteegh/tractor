@@ -1,11 +1,11 @@
 use serde_json::{json, Value};
-use tractor_core::{report::{Report, ReportKind, ReportMatch}, normalize_path, xml_node_to_json, RenderOptions};
+use tractor_core::{report::{Report, ReportKind, ReportMatch, ResultItem}, normalize_path, xml_node_to_json, RenderOptions};
 use super::options::{GroupBy, ViewField, ViewSet};
 
 pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions) -> String {
     let mut root = serde_json::Map::new();
 
-    // Passed + totals: top-level fields on the report (not wrapped in "summary").
+    // success + totals: top-level fields on the report.
     // Always present for check/test/set reports (structural, not view-gated).
     // For query reports, only include if explicitly requested via -v summary or -v query.
     let show_totals = if matches!(report.kind, ReportKind::Query) {
@@ -14,83 +14,122 @@ pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         true
     };
     if show_totals {
-        if let Some(passed) = report.success {
-            root.insert("success".into(), json!(passed));
-        }
-        if let Some(ref totals) = report.totals {
-            let mut t = serde_json::Map::new();
-            t.insert("results".into(), json!(totals.results));
-            t.insert("files".into(),   json!(totals.files));
-            if totals.errors > 0 {
-                t.insert("errors".into(), json!(totals.errors));
-            }
-            if totals.warnings > 0 {
-                t.insert("warnings".into(), json!(totals.warnings));
-            }
-            if totals.updated > 0 {
-                t.insert("updated".into(), json!(totals.updated));
-            }
-            if totals.unchanged > 0 {
-                t.insert("unchanged".into(), json!(totals.unchanged));
-            }
-            root.insert("totals".into(), Value::Object(t));
-        }
-        if let Some(ref expected) = report.expected {
-            root.insert("expected".into(), json!(expected));
-        }
-        if let Some(ref query) = report.query {
-            root.insert("query".into(), json!(query));
-        }
+        emit_report_metadata(&mut root, report);
     }
 
-    if !report.matches.is_empty() {
-        let matches_json: Vec<Value> = report.matches.iter()
-            .map(|rm| match_to_value(rm, view, render_opts, GroupBy::None))
-            .collect();
-        root.insert("matches".into(), Value::Array(matches_json));
-    }
-
-    // Run report: emit sub-reports as "operations" array
-    if let Some(ref ops) = report.operations {
-        let ops_json: Vec<Value> = ops.iter().map(|sub| {
-            let sub_str = render_json_report(sub, view, render_opts);
-            let sub_obj: serde_json::Map<String, Value> = serde_json::from_str(&sub_str).unwrap_or_default();
-            // Put "kind" first by building a new ordered map
-            let mut ordered = serde_json::Map::new();
-            ordered.insert("kind".into(), json!(sub.kind.as_str()));
-            ordered.extend(sub_obj);
-            Value::Object(ordered)
-        }).collect();
-        root.insert("operations".into(), Value::Array(ops_json));
-    }
-
-    if let Some(ref groups) = report.groups {
-        let groups_json: Vec<Value> = groups.iter().map(|g| {
-            let group_matches: Vec<Value> = g.matches.iter()
-                // file is on the group — omit it from individual matches
-                .map(|rm| match_to_value(rm, view, render_opts, GroupBy::File))
-                // skip empty match objects (e.g. stdout mode with only Output in view)
-                .filter(|v| !v.as_object().map(|o| o.is_empty()).unwrap_or(false))
+    // Render results from the new structure if populated, otherwise fall back to old fields
+    if !report.results.is_empty() {
+        let results_json = render_results_json(&report.results, view, render_opts);
+        if !results_json.is_empty() {
+            root.insert("results".into(), Value::Array(results_json));
+        }
+        // Emit group key if present
+        if let Some(ref group) = report.group {
+            root.insert("group".into(), json!(group));
+        }
+    } else {
+        // Fallback to old fields
+        if !report.matches.is_empty() {
+            let matches_json: Vec<Value> = report.matches.iter()
+                .map(|rm| match_to_value(rm, view, render_opts, GroupBy::None))
                 .collect();
-            let mut group_obj = serde_json::Map::new();
-            if !g.file.is_empty() {
-                group_obj.insert("file".into(), json!(g.file));
-            }
-            // Group-level output (set stdout mode): placed before matches in output
-            if view.has(ViewField::Output) {
-                if let Some(ref content) = g.output {
-                    group_obj.insert("output".into(), json!(content));
+            root.insert("matches".into(), Value::Array(matches_json));
+        }
+
+        if let Some(ref ops) = report.operations {
+            let ops_json: Vec<Value> = ops.iter().map(|sub| {
+                let sub_str = render_json_report(sub, view, render_opts);
+                let sub_obj: serde_json::Map<String, Value> = serde_json::from_str(&sub_str).unwrap_or_default();
+                let mut ordered = serde_json::Map::new();
+                ordered.insert("kind".into(), json!(sub.kind.as_str()));
+                ordered.extend(sub_obj);
+                Value::Object(ordered)
+            }).collect();
+            root.insert("operations".into(), Value::Array(ops_json));
+        }
+
+        if let Some(ref groups) = report.groups {
+            let groups_json: Vec<Value> = groups.iter().map(|g| {
+                let group_matches: Vec<Value> = g.matches.iter()
+                    .map(|rm| match_to_value(rm, view, render_opts, GroupBy::File))
+                    .filter(|v| !v.as_object().map(|o| o.is_empty()).unwrap_or(false))
+                    .collect();
+                let mut group_obj = serde_json::Map::new();
+                if !g.file.is_empty() {
+                    group_obj.insert("file".into(), json!(g.file));
                 }
-            }
-            if !group_matches.is_empty() {
-                group_obj.insert("matches".into(), Value::Array(group_matches));
-            }
-            Value::Object(group_obj)
-        }).collect();
-        root.insert("groups".into(), Value::Array(groups_json));
+                if view.has(ViewField::Output) {
+                    if let Some(ref content) = g.output {
+                        group_obj.insert("output".into(), json!(content));
+                    }
+                }
+                if !group_matches.is_empty() {
+                    group_obj.insert("matches".into(), Value::Array(group_matches));
+                }
+                Value::Object(group_obj)
+            }).collect();
+            root.insert("groups".into(), Value::Array(groups_json));
+        }
     }
 
     serde_json::to_string_pretty(&Value::Object(root)).unwrap_or_else(|_| "{}".to_string())
+}
+
+/// Emit success, totals, expected, query as top-level fields.
+pub fn emit_report_metadata(root: &mut serde_json::Map<String, Value>, report: &Report) {
+    if let Some(success) = report.success {
+        root.insert("success".into(), json!(success));
+    }
+    if let Some(ref totals) = report.totals {
+        let mut t = serde_json::Map::new();
+        t.insert("results".into(), json!(totals.results));
+        t.insert("files".into(),   json!(totals.files));
+        if totals.errors > 0 { t.insert("errors".into(), json!(totals.errors)); }
+        if totals.warnings > 0 { t.insert("warnings".into(), json!(totals.warnings)); }
+        if totals.updated > 0 { t.insert("updated".into(), json!(totals.updated)); }
+        if totals.unchanged > 0 { t.insert("unchanged".into(), json!(totals.unchanged)); }
+        root.insert("totals".into(), Value::Object(t));
+    }
+    if let Some(ref expected) = report.expected {
+        root.insert("expected".into(), json!(expected));
+    }
+    if let Some(ref query) = report.query {
+        root.insert("query".into(), json!(query));
+    }
+}
+
+/// Render a results list recursively as JSON.
+pub fn render_results_json(items: &[ResultItem], view: &ViewSet, render_opts: &RenderOptions) -> Vec<Value> {
+    items.iter().map(|item| {
+        match item {
+            ResultItem::Match(rm) => match_to_value(rm, view, render_opts, GroupBy::None),
+            ResultItem::Group(sub) => {
+                let mut obj = serde_json::Map::new();
+                // Hoisted file
+                if let Some(ref file) = sub.file {
+                    obj.insert("file".into(), json!(file));
+                }
+                // Group-level output (set stdout mode)
+                if view.has(ViewField::Output) {
+                    if let Some(ref content) = sub.output_content {
+                        obj.insert("output".into(), json!(content));
+                    }
+                }
+                // Sub-group metadata
+                if let Some(ref group) = sub.group {
+                    obj.insert("group".into(), json!(group));
+                }
+                // Sub-report metadata (success, totals, expected)
+                emit_report_metadata(&mut obj, sub);
+                // Recurse into sub-results
+                let sub_results = render_results_json(&sub.results, view, render_opts);
+                if !sub_results.is_empty() {
+                    obj.insert("results".into(), Value::Array(sub_results));
+                }
+                Value::Object(obj)
+            }
+        }
+    }).collect()
 }
 
 /// Shared match serialization — reused by yaml.rs.

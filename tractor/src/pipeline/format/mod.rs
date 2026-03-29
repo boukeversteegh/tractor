@@ -148,7 +148,8 @@ pub fn render_test_report(
         println!("{} {} (expected {}, got {})", symbol, label, expected_str, totals.results);
     }
 
-    if !success && !report.matches.is_empty() {
+    let all_matches = report.all_matches();
+    if !success && !all_matches.is_empty() {
         if let Some(ref error_tmpl) = error_template {
             let out = render_gcc_report_with_template(&report.matches, error_tmpl, false, &ctx.render_options());
             for line in out.lines() {
@@ -160,7 +161,7 @@ pub fn render_test_report(
             }
         } else {
             let opts = ctx.render_options();
-            for rm in &report.matches {
+            for rm in &all_matches {
                 let rendered = if let Some(ref s) = rm.source {
                     render_source_precomputed(
                         s, rm.tree.as_ref(),

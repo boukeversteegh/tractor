@@ -1,4 +1,4 @@
-use tractor_core::{report::Report, normalize_path, render_xml_string, render_xml_node, RenderOptions};
+use tractor_core::{report::{Report, ResultItem}, normalize_path, render_xml_string, render_xml_node, RenderOptions};
 use super::options::{ViewField, ViewSet};
 
 pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions) -> String {
@@ -51,7 +51,15 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
         }
     }
 
-    if !report.matches.is_empty() {
+    // Render from new results if populated, otherwise fall back to old fields
+    if !report.results.is_empty() {
+        if let Some(ref group) = report.group {
+            body.push_str(&format!("  <group-by>{}</group-by>\n", escape(group)));
+        }
+        body.push_str("  <results>\n");
+        render_xml_results(&mut body, &report.results, view, "    ", &tree_opts);
+        body.push_str("  </results>\n");
+    } else if !report.matches.is_empty() {
         body.push_str("  <matches>\n");
         for rm in &report.matches {
             append_match(&mut body, rm, view, "    ", &tree_opts);
@@ -259,6 +267,43 @@ fn append_match(
     }
 
     out.push_str(&format!("{}</match>\n", indent));
+}
+
+/// Render results list recursively as XML.
+fn render_xml_results(
+    out: &mut String,
+    items: &[ResultItem],
+    view: &ViewSet,
+    indent: &str,
+    tree_opts: &RenderOptions,
+) {
+    let inner = format!("{}  ", indent);
+    for item in items {
+        match item {
+            ResultItem::Match(rm) => {
+                if view.has_per_match_fields() || rm.message.is_some() {
+                    append_match(out, rm, view, indent, tree_opts);
+                }
+            }
+            ResultItem::Group(sub) => {
+                // Build group element with hoisted attributes
+                let mut attrs = String::new();
+                if let Some(ref file) = sub.file {
+                    attrs.push_str(&format!(" file=\"{}\"", escape_attr(file)));
+                }
+                out.push_str(&format!("{}<group{}>\n", indent, attrs));
+                // Group-level output (set stdout mode)
+                if view.has(ViewField::Output) {
+                    if let Some(ref content) = sub.output_content {
+                        out.push_str(&format!("{}<output>{}</output>\n", inner, escape(content)));
+                    }
+                }
+                // Recurse
+                render_xml_results(out, &sub.results, view, &inner, tree_opts);
+                out.push_str(&format!("{}</group>\n", indent));
+            }
+        }
+    }
 }
 
 fn escape(s: &str) -> String {

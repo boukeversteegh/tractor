@@ -16,10 +16,10 @@
         "errors": 2,
         "warnings": 1
       },
-      "groups": [
+      "results": [
         {
           "file": "tests/integration/formats/sample.cs",
-          "matches": [
+          "results": [
             {
               "reason": "class declaration found",
               "severity": "error",
@@ -56,7 +56,8 @@
             }
           ]
         }
-      ]
+      ],
+      "group": "file"
     },
     {
       "kind": "test",
@@ -66,10 +67,10 @@
         "files": 1
       },
       "expected": "some, none",
-      "groups": [
+      "results": [
         {
           "file": "tests/integration/formats/sample.cs",
-          "matches": [
+          "results": [
             {
               "lines": [
                 "public class Foo",
@@ -90,7 +91,8 @@
             }
           ]
         }
-      ]
+      ],
+      "group": "file"
     }
   ]
 }
