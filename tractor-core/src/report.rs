@@ -283,19 +283,23 @@ pub struct Report {
 
 impl Report {
     pub fn set(matches: Vec<ReportMatch>, success: bool, totals: Totals) -> Self {
-        Report { kind: ReportKind::Set, matches, success: Some(success), totals: Some(totals), expected: None, query: None, groups: None, operations: None, results: vec![], group: None, file: None, output_content: None }
+        let results = matches.iter().cloned().map(ResultItem::Match).collect();
+        Report { kind: ReportKind::Set, matches, success: Some(success), totals: Some(totals), expected: None, query: None, groups: None, operations: None, results, group: None, file: None, output_content: None }
     }
 
     pub fn query(matches: Vec<ReportMatch>, totals: Totals) -> Self {
-        Report { kind: ReportKind::Query, matches, success: None, totals: Some(totals), expected: None, query: None, groups: None, operations: None, results: vec![], group: None, file: None, output_content: None }
+        let results = matches.iter().cloned().map(ResultItem::Match).collect();
+        Report { kind: ReportKind::Query, matches, success: None, totals: Some(totals), expected: None, query: None, groups: None, operations: None, results, group: None, file: None, output_content: None }
     }
 
     pub fn check(matches: Vec<ReportMatch>, success: bool, totals: Totals) -> Self {
-        Report { kind: ReportKind::Check, matches, success: Some(success), totals: Some(totals), expected: None, query: None, groups: None, operations: None, results: vec![], group: None, file: None, output_content: None }
+        let results = matches.iter().cloned().map(ResultItem::Match).collect();
+        Report { kind: ReportKind::Check, matches, success: Some(success), totals: Some(totals), expected: None, query: None, groups: None, operations: None, results, group: None, file: None, output_content: None }
     }
 
     pub fn test(matches: Vec<ReportMatch>, success: bool, totals: Totals) -> Self {
-        Report { kind: ReportKind::Test, matches, success: Some(success), totals: Some(totals), expected: None, query: None, groups: None, operations: None, results: vec![], group: None, file: None, output_content: None }
+        let results = matches.iter().cloned().map(ResultItem::Match).collect();
+        Report { kind: ReportKind::Test, matches, success: Some(success), totals: Some(totals), expected: None, query: None, groups: None, operations: None, results, group: None, file: None, output_content: None }
     }
 
     /// Build a unified run report from multiple sub-reports.
@@ -338,8 +342,8 @@ impl Report {
             expected: None,
             query: None,
             groups: None,
+            results: reports.iter().map(|r| ResultItem::Group(Box::new(r.clone()))).collect(),
             operations: Some(reports),
-            results: vec![],
             group: None,
             file: None,
             output_content: None,
