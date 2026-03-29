@@ -162,16 +162,19 @@ pub fn match_to_value(
         }
     }
 
-    // command: only emitted when view includes Command (not part of default single-command views)
-    if view.has(ViewField::Command) && !rm.command.is_empty() {
+    // command: view-gated AND skip if hoisted to a group
+    if view.has(ViewField::Command) && !skip_dims.contains(&"command") && !rm.command.is_empty() {
         obj.insert("command".into(), json!(rm.command));
     }
-    // message and rule_id are always emitted when present (annotations, not view-gated)
+    // message: always emitted when present (annotation, not view-gated)
     if let Some(ref msg) = rm.message {
         obj.insert("message".into(), json!(msg));
     }
-    if let Some(ref rule_id) = rm.rule_id {
-        obj.insert("rule_id".into(), json!(rule_id));
+    // rule_id: always emitted when present, unless hoisted to a group
+    if !skip_dims.contains(&"rule_id") {
+        if let Some(ref rule_id) = rm.rule_id {
+            obj.insert("rule_id".into(), json!(rule_id));
+        }
     }
 
     Value::Object(obj)
