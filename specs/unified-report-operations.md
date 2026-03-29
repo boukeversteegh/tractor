@@ -52,7 +52,35 @@ operation), given the same `-v`, `-f`, `-g` flags.
 
 ## Design
 
-### 1. ReportMatch gains `command`
+### 1. The report is a group
+
+A report is not a special top-level container — it is a group. The
+root group, sub-groups, and leaf results all share the same recursive
+structure. Every level can carry totals, a grouping declaration for
+its children, and a results list.
+
+```rust
+pub struct Report {
+    pub passed: Option<bool>,
+    pub totals: Option<Totals>,
+    pub group: Option<String>,       // what `results` is grouped by
+    pub results: Vec<ResultItem>,
+}
+
+pub enum ResultItem {
+    Match(ReportMatch),
+    Group(Report),  // same structure, recursively
+}
+```
+
+A group that has `group: "file"` declares that its `results` are
+grouped by file. Each child group carries the hoisted `file` field.
+If `group` is absent, `results` contains leaf matches.
+
+This replaces the current `Report`, `FileGroup`, and the nested
+`operations: Vec<Report>`. One recursive type for everything.
+
+### 2. ReportMatch gains `command`
 
 Every match carries the command (operation type) that produced it:
 
@@ -84,247 +112,102 @@ pub struct ReportMatch {
 
 `command` is always populated. In structured output (JSON/YAML/XML)
 it is always emitted. When grouped by command, it is hoisted to the
-group level and omitted from individual results (see section 4).
+group level and omitted from individual results.
 
-### 2. Report becomes command-agnostic
+### 3. Group key lives on the parent
 
-```rust
-pub struct Report {
-    pub summary: Option<Summary>,
-    pub results: Vec<ResultItem>,
+The grouping dimension is declared on the parent, not repeated on
+each child. The parent says "my results are grouped by X" and each
+child carries only the X value.
+
+**Not this** (redundant):
+```json
+{
+  "results": [
+    { "group": "file", "file": "src/Foo.cs", "results": [...] },
+    { "group": "file", "file": "src/Bar.cs", "results": [...] }
+  ]
 }
 ```
 
-`results` is a list that contains either individual matches or
-groups (see section 4). This single field replaces the current
-`matches`, `groups`, and `operations` fields.
+**This** (group key on parent):
+```json
+{
+  "group": "file",
+  "results": [
+    { "file": "src/Foo.cs", "results": [...] },
+    { "file": "src/Bar.cs", "results": [...] }
+  ]
+}
+```
 
-Removed:
-- **`kind: ReportKind`** — the command type is on each match, not
-  the report. A report is a container, not typed.
-- **`operations: Option<Vec<Report>>`** — no nested reports. All
-  matches from all operations are flattened into one list.
-- **Separate `matches` / `groups` fields** — unified into `results`.
+For multi-level grouping, each level declares its own sub-grouping:
 
-The constructors `Report::check()`, `Report::query()`, etc. remain
-as convenience functions. They set `command` on each match and compute
-the summary. But they all produce the same `Report` type.
+```json
+{
+  "group": "command",
+  "results": [
+    {
+      "command": "check",
+      "group": "file",
+      "results": [
+        { "file": "src/Foo.cs", "results": [...] },
+        { "file": "src/Bar.cs", "results": [...] }
+      ]
+    }
+  ]
+}
+```
 
-`Report::run()` changes from wrapping sub-reports to **merging** them:
-it takes `Vec<Report>`, drains all matches into one flat list, and
-computes an aggregate summary.
+### 4. Totals
 
-### 3. Summary: root aggregates + per-command breakdown
+The `totals` object carries all numeric aggregates. It appears on
+the root group and optionally on any sub-group. The structure is
+the same at every level.
 
 ```rust
-pub struct Summary {
-    /// Did the batch as a whole succeed?
-    pub passed: bool,
-    /// Total result count across all commands.
-    pub total: usize,
-    /// Distinct files across all commands.
+pub struct Totals {
+    /// Number of results at or below this group.
+    pub results: usize,
+    /// Distinct files at or below this group.
     pub files: usize,
-
-    /// Per-command breakdown. Only commands that were actually
-    /// executed appear here.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub check: Option<CheckSummary>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub set: Option<SetSummary>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub test: Option<TestSummary>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub query: Option<QuerySummary>,
-}
-
-pub struct CheckSummary {
-    pub total: usize,
+    /// Check-specific counts (present when check results exist).
+    #[serde(skip_serializing_if = "is_zero")]
     pub errors: usize,
+    #[serde(skip_serializing_if = "is_zero")]
     pub warnings: usize,
-    pub files: usize,
-}
-
-pub struct SetSummary {
-    pub total: usize,
+    /// Set-specific counts (present when set results exist).
+    #[serde(skip_serializing_if = "is_zero")]
     pub updated: usize,
+    #[serde(skip_serializing_if = "is_zero")]
     pub unchanged: usize,
-    pub files: usize,
-}
-
-pub struct TestSummary {
-    pub total: usize,
-    pub passed: usize,
-    pub failed: usize,
-}
-
-pub struct QuerySummary {
-    pub total: usize,
-    pub files: usize,
 }
 ```
 
 Key properties:
-- **Root `total` and `files`** are always the aggregate across all
-  commands. For a single `tractor check`, these equal
-  `check.total` and `check.files`.
-- **Per-command sub-summaries** carry command-specific fields with
-  proper names (`updated`/`unchanged` instead of overloading
-  `errors`/`warnings`). Only commands that produced results appear.
-- **`passed`** is top-level only: false if any check errors, any
-  test failures, or any set drift (verify mode). Queries don't
-  affect `passed`.
-- **Reconcilable**: `check.errors + check.warnings = check.total`,
-  `set.updated + set.unchanged = set.total`, sub-totals sum to
-  root `total`.
+- **No per-command sub-objects in totals.** If you want per-command
+  breakdown, group by command — each command group carries its own
+  `totals`. This avoids duplication: root `totals.check.errors`
+  would just duplicate the check group's `totals.errors`.
+- **Zero-valued fields are omitted.** A pure check report's totals
+  won't have `updated`/`unchanged`.
+- **Reconcilable**: `errors + warnings` = total check results,
+  `updated + unchanged` = total set results, group totals sum to
+  parent totals.
 
-Single check example:
-```json
-{
-  "summary": {
-    "passed": false,
-    "total": 3,
-    "files": 2,
-    "check": { "total": 3, "errors": 3, "warnings": 0, "files": 2 }
-  }
-}
-```
+### 5. `passed`
 
-Mixed batch example:
-```json
-{
-  "summary": {
-    "passed": false,
-    "total": 6,
-    "files": 4,
-    "check": { "total": 3, "errors": 3, "warnings": 0, "files": 2 },
-    "set": { "total": 3, "updated": 2, "unchanged": 1, "files": 2 }
-  }
-}
-```
+`passed` is a top-level boolean on the root group. It is the
+aggregate verdict:
+- false if any check errors exist
+- false if any test assertions failed
+- false if any set drift detected (verify mode)
+- queries don't affect `passed`
 
-### 4. Recursive results with multi-level grouping
+`passed` lives alongside `totals`, not inside it — it's a verdict,
+not a count.
 
-`results` is a list where each item is either an individual match
-or a group. Groups are distinguished by the presence of a `group`
-field that names the grouping dimension.
-
-```rust
-pub enum ResultItem {
-    Match(ReportMatch),
-    Group {
-        /// Grouping dimension: "file", "command", "rule_id", etc.
-        group: String,
-        /// The hoisted field value. Serialized as the field itself,
-        /// e.g. {group: "file", file: "src/Foo.cs"}.
-        // (In Rust, stored as a (key, value) pair and serialized
-        // dynamically. The key matches the group dimension.)
-        /// Per-group summary (optional, for structured formats).
-        summary: Option<Summary>,
-        /// Nested results: either matches or sub-groups.
-        results: Vec<ResultItem>,
-    },
-}
-```
-
-The hoisted field is serialized as-is — the same field name as on
-a match. This keeps the data contract consistent: `file` means
-the same thing whether it appears on a match or on a group.
-
-**`-g file`** (single level):
-```json
-{
-  "results": [
-    {
-      "group": "file",
-      "file": "src/Foo.cs",
-      "results": [
-        { "command": "check", "line": 12, "reason": "TODO", "severity": "error" }
-      ]
-    }
-  ]
-}
-```
-
-**`-g command`** (single level):
-```json
-{
-  "results": [
-    {
-      "group": "command",
-      "command": "check",
-      "results": [
-        { "file": "src/Foo.cs", "line": 12, "reason": "TODO", "severity": "error" }
-      ]
-    }
-  ]
-}
-```
-
-**`-g command,file`** (multi-level):
-```json
-{
-  "results": [
-    {
-      "group": "command",
-      "command": "check",
-      "results": [
-        {
-          "group": "file",
-          "file": "src/Foo.cs",
-          "results": [
-            { "line": 12, "reason": "TODO", "severity": "error" },
-            { "line": 47, "reason": "TODO", "severity": "error" }
-          ]
-        },
-        {
-          "group": "file",
-          "file": "src/Bar.cs",
-          "results": [
-            { "line": 3, "reason": "TODO", "severity": "error" }
-          ]
-        }
-      ]
-    },
-    {
-      "group": "command",
-      "command": "set",
-      "results": [
-        {
-          "group": "file",
-          "file": "config.json",
-          "results": [
-            { "line": 1, "status": "updated" }
-          ]
-        }
-      ]
-    }
-  ]
-}
-```
-
-**`-g none`** (flat):
-```json
-{
-  "results": [
-    { "command": "check", "file": "src/Foo.cs", "line": 12, "reason": "TODO", "severity": "error" },
-    { "command": "set", "file": "config.json", "line": 1, "status": "updated" }
-  ]
-}
-```
-
-Each level hoists one field. Leaf-level results carry only the
-fields not hoisted by any ancestor group. The structure is
-self-describing: a consumer checks for the `group` key to
-distinguish groups from matches.
-
-XML follows the same pattern:
-```xml
-<group file="src/Foo.cs">
-  <result line="12" command="check">...</result>
-</group>
-```
-
-### 5. Format is a report-level decision
+### 6. Format is a report-level decision
 
 The output format (`-f`) is set at the CLI level and applies to the
 entire report. Config files do not specify format — they declare
@@ -337,10 +220,10 @@ tractor run config.yaml -f text     # everything as human-readable text
 ```
 
 The same config file can be rendered in any format. This prevents
-mixed-format output (XML matches interleaved with JSON matches)
+mixed-format output (XML results interleaved with JSON results)
 which would be unparseable.
 
-### 6. GCC renders all command types
+### 7. GCC renders all command types
 
 GCC format uses the `note` severity level (standard in GCC/Clang)
 for non-check results. Every result has a file and line, so the
@@ -353,16 +236,6 @@ for non-check results. Every result has a file and line, so the
 | query   | note            | `value` field                    |
 | test    | note/error      | assertion result                 |
 
-Example mixed batch output:
-```
-src/Foo.cs:12:5: error[no-todos]: TODO found
-src/Foo.cs:47:5: error[no-todos]: TODO found
-src/Bar.cs:3:1: error[no-todos]: TODO found
-config.json:1:1: note[set]: updated
-
-3 errors in 2 files, 1 file updated
-```
-
 Tractor maps its severity levels to gcc as:
 - `error` → `error`
 - `warning` → `warning`
@@ -371,7 +244,63 @@ Tractor maps its severity levels to gcc as:
 The `info` severity is a common log level but `note` is the
 established term in GCC/Clang diagnostic output.
 
-### 7. Default format and grouping per entry point
+### 8. Rule validation in the report
+
+When `tractor check` runs rules that have valid/invalid examples,
+the validation results are included in the main report as
+`command: "test"` results. They are not separated into stderr or
+a side channel.
+
+Rationale:
+- Tractor always respects the chosen output format. Structured output
+  is essential for downstream processing and CI/CD pipelines.
+- Validation failures need GitHub annotations pointing to the rule
+  file — this requires file/line/reason in the standard report
+  structure.
+- Composability: all orthogonal settings (`-f`, `-v`, `-g`) apply
+  uniformly, including to error results.
+- Validation errors are structurally identical to regular match
+  results — file (the rule file), line, reason, severity.
+
+With `-g file` as default, validation results naturally separate
+from check results because they reference different files (rule
+files vs source files):
+
+```
+rules/tractor.yaml:3:1: note[test]: valid example passed (no-todos)
+rules/tractor.yaml:5:1: error[test]: invalid example failed (no-todos)
+src/Foo.cs:12:5: error[no-todos]: TODO found
+src/Bar.cs:3:1: error[no-todos]: TODO found
+
+1 validation error, 2 check errors in 3 files
+```
+
+In JSON with `-g file`, the rule file gets its own file group:
+```json
+{
+  "group": "file",
+  "results": [
+    {
+      "file": "rules/tractor.yaml",
+      "results": [
+        { "command": "test", "line": 3, "severity": "note", ... },
+        { "command": "test", "line": 5, "severity": "error", ... }
+      ]
+    },
+    {
+      "file": "src/Foo.cs",
+      "results": [
+        { "command": "check", "line": 12, ... }
+      ]
+    }
+  ]
+}
+```
+
+No extra nesting level. No dynamic grouping. File-based grouping
+naturally separates concerns.
+
+### 9. Default format and grouping per entry point
 
 | CLI command | Default `-g`    | Default `-f` | Rationale                           |
 |-------------|-----------------|--------------|-------------------------------------|
@@ -379,13 +308,13 @@ established term in GCC/Clang diagnostic output.
 | `check`     | `file`          | `gcc`        | Lint output, file context needed    |
 | `test`      | `none`          | `text`       | Pass/fail per assertion             |
 | `set`       | `file`          | `text`       | File-level mutations                |
-| `run`       | `file`          | `text`       | Universal format for mixed commands |
+| `run`       | `command,file`  | `text`       | Mixed commands, separated naturally |
 
-The `run` command defaults to `-f text` because text can render all
-command types sensibly. GCC is also viable (see section 6) and can
-be used explicitly with `-f gcc`.
+Single-command entry points use single-level grouping. `run` uses
+`command,file` to separate different operation types, with file
+sub-grouping within each.
 
-This means `tractor check -f json -g file` and
+With the same explicit flags, `tractor check -f json -g file` and
 `tractor run config.yaml -f json -g file` (one check op) produce
 identical JSON. The data is the same; only the default flags differ
 between entry points.
@@ -403,12 +332,8 @@ tractor check "src/**/*.cs" -x "//comment[contains(.,'TODO')]" \
 
 ```json
 {
-  "summary": {
-    "passed": false,
-    "total": 3,
-    "files": 2,
-    "check": { "total": 3, "errors": 3, "warnings": 0, "files": 2 }
-  },
+  "passed": false,
+  "totals": { "results": 3, "files": 2, "errors": 3 },
   "results": [
     { "command": "check", "file": "src/Foo.cs", "line": 12, "column": 5, "reason": "TODO found", "severity": "error" },
     { "command": "check", "file": "src/Foo.cs", "line": 47, "column": 5, "reason": "TODO found", "severity": "error" },
@@ -435,12 +360,8 @@ tractor run tractor.yaml -f json -g none
 
 ```json
 {
-  "summary": {
-    "passed": false,
-    "total": 3,
-    "files": 2,
-    "check": { "total": 3, "errors": 3, "warnings": 0, "files": 2 }
-  },
+  "passed": false,
+  "totals": { "results": 3, "files": 2, "errors": 3 },
   "results": [
     { "command": "check", "file": "src/Foo.cs", "line": 12, "column": 5, "reason": "TODO found", "severity": "error", "rule_id": "no-todos" },
     { "command": "check", "file": "src/Foo.cs", "line": 47, "column": 5, "reason": "TODO found", "severity": "error", "rule_id": "no-todos" },
@@ -461,24 +382,21 @@ tractor check "src/**/*.cs" -x "//comment[contains(.,'TODO')]" \
 
 ```json
 {
-  "summary": {
-    "passed": false,
-    "total": 3,
-    "files": 2,
-    "check": { "total": 3, "errors": 3, "warnings": 0, "files": 2 }
-  },
+  "passed": false,
+  "totals": { "results": 3, "files": 2, "errors": 3 },
+  "group": "file",
   "results": [
     {
-      "group": "file",
       "file": "src/Foo.cs",
+      "totals": { "results": 2, "errors": 2 },
       "results": [
         { "command": "check", "line": 12, "column": 5, "reason": "TODO found", "severity": "error" },
         { "command": "check", "line": 47, "column": 5, "reason": "TODO found", "severity": "error" }
       ]
     },
     {
-      "group": "file",
       "file": "src/Bar.cs",
+      "totals": { "results": 1, "errors": 1 },
       "results": [
         { "command": "check", "line": 3, "column": 1, "reason": "TODO found", "severity": "error" }
       ]
@@ -487,7 +405,7 @@ tractor check "src/**/*.cs" -x "//comment[contains(.,'TODO')]" \
 }
 ```
 
-### Mixed batch — grouped by file (default for run)
+### Mixed batch — grouped by file
 
 ```yaml
 # tractor.yaml
@@ -506,37 +424,33 @@ operations:
 ```
 
 ```
-tractor run tractor.yaml -f json
+tractor run tractor.yaml -f json -g file
 ```
 
 ```json
 {
-  "summary": {
-    "passed": false,
-    "total": 4,
-    "files": 3,
-    "check": { "total": 3, "errors": 3, "warnings": 0, "files": 2 },
-    "set": { "total": 1, "updated": 1, "unchanged": 0, "files": 1 }
-  },
+  "passed": false,
+  "totals": { "results": 4, "files": 3, "errors": 3, "updated": 1 },
+  "group": "file",
   "results": [
     {
-      "group": "file",
       "file": "src/Foo.cs",
+      "totals": { "results": 2, "errors": 2 },
       "results": [
         { "command": "check", "line": 12, "reason": "TODO found", "severity": "error", "rule_id": "no-todos" },
         { "command": "check", "line": 47, "reason": "TODO found", "severity": "error", "rule_id": "no-todos" }
       ]
     },
     {
-      "group": "file",
       "file": "src/Bar.cs",
+      "totals": { "results": 1, "errors": 1 },
       "results": [
         { "command": "check", "line": 3, "reason": "TODO found", "severity": "error", "rule_id": "no-todos" }
       ]
     },
     {
-      "group": "file",
       "file": "config.json",
+      "totals": { "results": 1, "updated": 1 },
       "results": [
         { "command": "set", "line": 1, "status": "updated" }
       ]
@@ -545,37 +459,34 @@ tractor run tractor.yaml -f json
 }
 ```
 
-### Mixed batch — grouped by command, then file
+### Mixed batch — grouped by command, then file (default for run)
 
 ```
-tractor run tractor.yaml -f json -g command,file
+tractor run tractor.yaml -f json
 ```
 
 ```json
 {
-  "summary": {
-    "passed": false,
-    "total": 4,
-    "files": 3,
-    "check": { "total": 3, "errors": 3, "warnings": 0, "files": 2 },
-    "set": { "total": 1, "updated": 1, "unchanged": 0, "files": 1 }
-  },
+  "passed": false,
+  "totals": { "results": 4, "files": 3, "errors": 3, "updated": 1 },
+  "group": "command",
   "results": [
     {
-      "group": "command",
       "command": "check",
+      "totals": { "results": 3, "files": 2, "errors": 3 },
+      "group": "file",
       "results": [
         {
-          "group": "file",
           "file": "src/Foo.cs",
+          "totals": { "results": 2, "errors": 2 },
           "results": [
             { "line": 12, "reason": "TODO found", "severity": "error", "rule_id": "no-todos" },
             { "line": 47, "reason": "TODO found", "severity": "error", "rule_id": "no-todos" }
           ]
         },
         {
-          "group": "file",
           "file": "src/Bar.cs",
+          "totals": { "results": 1, "errors": 1 },
           "results": [
             { "line": 3, "reason": "TODO found", "severity": "error", "rule_id": "no-todos" }
           ]
@@ -583,16 +494,56 @@ tractor run tractor.yaml -f json -g command,file
       ]
     },
     {
-      "group": "command",
       "command": "set",
+      "totals": { "results": 1, "files": 1, "updated": 1 },
+      "group": "file",
       "results": [
         {
-          "group": "file",
           "file": "config.json",
+          "totals": { "results": 1, "updated": 1 },
           "results": [
             { "line": 1, "status": "updated" }
           ]
         }
+      ]
+    }
+  ]
+}
+```
+
+### Check with rule validation — grouped by file (default)
+
+```
+tractor check --rules rules/tractor.yaml "src/**/*.cs" -f json
+```
+
+```json
+{
+  "passed": false,
+  "totals": { "results": 5, "files": 3, "errors": 4 },
+  "group": "file",
+  "results": [
+    {
+      "file": "rules/tractor.yaml",
+      "totals": { "results": 2, "errors": 1 },
+      "results": [
+        { "command": "test", "line": 3, "severity": "note", "reason": "valid example passed", "rule_id": "no-todos" },
+        { "command": "test", "line": 5, "severity": "error", "reason": "invalid example failed: expected some, got 0", "rule_id": "no-todos" }
+      ]
+    },
+    {
+      "file": "src/Foo.cs",
+      "totals": { "results": 2, "errors": 2 },
+      "results": [
+        { "command": "check", "line": 12, "reason": "TODO found", "severity": "error", "rule_id": "no-todos" },
+        { "command": "check", "line": 47, "reason": "TODO found", "severity": "error", "rule_id": "no-todos" }
+      ]
+    },
+    {
+      "file": "src/Bar.cs",
+      "totals": { "results": 1, "errors": 1 },
+      "results": [
+        { "command": "check", "line": 3, "reason": "TODO found", "severity": "error", "rule_id": "no-todos" }
       ]
     }
   ]
@@ -628,9 +579,62 @@ config.json:1:1: note[set]: updated
 3 errors in 2 files, 1 file updated
 ```
 
+### gcc output — check with validation failure
+
+```
+tractor check --rules rules/tractor.yaml "src/**/*.cs"
+```
+
+```
+rules/tractor.yaml:5:1: error[test]: invalid example failed: expected some, got 0 (no-todos)
+src/Foo.cs:12:5: error[no-todos]: TODO found
+src/Foo.cs:47:5: error[no-todos]: TODO found
+src/Bar.cs:3:1: error[no-todos]: TODO found
+
+1 validation error, 3 check errors in 3 files
+```
+
 ---
 
 ## Decisions
+
+### The report is a group
+
+The root report and sub-groups share the same structure: `passed`,
+`totals`, `group` (declaring what children are grouped by), and
+`results`. There is no separate `Summary` wrapper — `passed` and
+`totals` are direct fields on the group. This makes the report
+self-similar at every level.
+
+### Group key lives on the parent
+
+The grouping dimension is declared on the parent group, not repeated
+on each child. The parent says `group: "file"` and each child
+carries only `file: "src/Foo.cs"`. A consumer reads the parent's
+`group` field to know how to interpret the children. No redundancy.
+
+### Hoisted fields use the same name at group and match level
+
+When grouping hoists a field, the group carries the field with its
+original name — not a generic `value` property. `{file: "src/Foo.cs"}`
+on a group, same as on a match. A consumer looking for `file` finds
+it the same way at any level. No polymorphism, no indirection.
+
+### No per-command breakdown in totals
+
+Per-command stats (check errors, set updates) are not nested inside
+`totals` as sub-objects. If you want per-command breakdown, group by
+command — each command group carries its own `totals` with the
+relevant fields. This avoids duplication: a root-level
+`totals.check.errors` would just duplicate the check group's
+`totals.errors`.
+
+### Totals use command-specific field names
+
+`totals` has flat fields: `results`, `files`, `errors`, `warnings`,
+`updated`, `unchanged`. Zero-valued fields are omitted. A pure check
+report shows `errors` and `warnings`; a pure set report shows
+`updated` and `unchanged`. Mixed reports show all relevant fields.
 
 ### Format is CLI-level only
 
@@ -648,14 +652,6 @@ so that gcc format can render all command types in a consistent
 template. This is the standard term in compiler diagnostics — `info`
 is more common in logging but not in gcc-style output.
 
-### Hoisted fields use the same name at group and match level
-
-When grouping hoists a field, the group carries the field with its
-original name — not a generic `value` property. `{group: "file",
-file: "src/Foo.cs"}`, not `{group: "file", value: "src/Foo.cs"}`.
-A consumer looking for `file` finds it the same way whether on a
-match or on a group. No polymorphism, no indirection.
-
 ### Recursive `results`, not named containers
 
 Each group has a `results` list (not `commands`, `files`, `operations`,
@@ -664,11 +660,20 @@ child properties for every other group type. Since grouping is
 arbitrarily composable (`-g file`, `-g command,file`, `-g file,command`),
 uniform `results` is the only viable approach.
 
-### Group-level summaries fit naturally
+### Rule validation results go in the report
 
-Each group can carry an optional `summary` scoped to its contents.
-This enables per-file error counts, per-command totals, etc. Design
-and implementation deferred — the structure supports it when needed.
+When `tractor check` validates rule examples, the validation results
+are included in the main report as `command: "test"` results pointing
+to the rule file with line numbers. This preserves structured output,
+enables CI/CD annotations, and maintains composability. With file-based
+grouping, validation results naturally separate from check results
+because they reference different files (rule files vs source files).
+
+### Group-level totals
+
+Each group can carry `totals` scoped to its contents. This enables
+per-file error counts, per-command totals, etc. The structure is
+the same `Totals` type at every level.
 
 ---
 
@@ -687,45 +692,53 @@ Add `command: String` to `ReportMatch`. Populate it in each
 Include `command` in JSON/YAML/XML serialization. No behavior change
 for existing output formats — `command` is a new field.
 
-### Step 2: Restructure Summary
+### Step 2: Introduce `Totals` and `passed`
 
-Replace the flat `Summary` with root aggregates + per-command
-sub-summaries. Add proper `CheckSummary`, `SetSummary`, etc.
-Remove the `errors`/`warnings` overloading hack for set reports
-and the `if matches!(report.kind, ReportKind::Set)` special case
-in `json.rs`.
+Replace the flat `Summary` with `Totals` (counts only) and a
+top-level `passed` boolean. `Totals` has `results`, `files`, plus
+command-specific fields (`errors`, `warnings`, `updated`,
+`unchanged`). Remove the `errors`/`warnings` overloading hack for
+set reports and the `if matches!(report.kind, ReportKind::Set)`
+special case in `json.rs`.
 
-### Step 3: Unify `results` list
+### Step 3: Unify into recursive `results`
 
 Replace the separate `matches`, `groups`, and `operations` fields
 with a single `results: Vec<ResultItem>` where items are either
-matches or groups. This is the core structural change.
+matches or groups. Groups have the same structure as the root
+report. This is the core structural change.
 
-### Step 4: Flatten Report::run()
+### Step 4: Group key on parent
+
+Move the `group` field from each child to the parent. The parent
+declares `group: "file"` and children carry only `file: "..."`.
+
+### Step 5: Flatten Report::run()
 
 Change `Report::run(reports: Vec<Report>)` to merge all matches
 into one flat `results` list instead of wrapping as sub-reports.
-Compute the aggregate summary from the merged results.
+Compute the aggregate `totals` and `passed` from the merged results.
 
-### Step 5: Remove ReportKind
+### Step 6: Remove ReportKind
 
 With `command` on each match and no nested reports, `ReportKind` is
 redundant. Remove it. Update constructors and any code that pattern-
 matches on `kind`.
 
-### Step 6: Multi-level grouping
+### Step 7: Multi-level grouping
 
-Implement `-g command,file` syntax. Extend `with_groups()` to apply
-grouping dimensions in order, producing nested group structures.
-Each level hoists one field from the matches below it.
+Implement `-g command,file` syntax. Extend grouping to apply
+dimensions in order, producing nested group structures. Each level
+hoists one field from the results below it. Each group carries its
+own `totals`.
 
-### Step 7: Unify renderers
+### Step 8: Unify renderers
 
 Replace the per-command render functions (`render_check_report`,
 `render_query_report`, `render_set_report`, `render_run_report`)
 with a single `render_report()`. The unified renderer walks the
-`results` tree and uses the match's `command` field to select
-per-match templates. Command-specific defaults (format, view,
+`results` tree recursively and uses the match's `command` field to
+select per-match templates. Command-specific defaults (format, view,
 grouping) stay in the CLI layer.
 
 ---
@@ -736,8 +749,7 @@ grouping) stay in the CLI layer.
    assertion `expected` and pass/fail. With multiple test assertions
    in a batch, we need per-assertion tracking. Leaning toward making
    `expected` a match-level field for test results, similar to how
-   `status` is match-level for set. `TestSummary` tracks aggregate
-   `passed`/`failed` counts.
+   `status` is match-level for set.
 
 2. **Operation IDs.** Config entries currently don't have IDs (only
    rules within check operations have `id`). Adding per-operation IDs
@@ -750,13 +762,13 @@ grouping) stay in the CLI layer.
    (subcommands are "commands") and is unambiguous. It also parallels
    `rule_id` — both are annotations about what produced the match.
 
-4. **`-v` field selection DSL.** With summary sub-sections
-   (`summary.check.errors`) and the recursive `results` structure,
-   simple flat view names (`-v errors`) become ambiguous. Full XPath
-   on the report (`-v summary/check/errors`) conflicts with relative
-   syntax (`+source,-lines`). This is a presentation concern — the
-   data model doesn't depend on it. Deferred; pragmatic short names
-   for now.
+4. **`-v` field selection DSL.** With `totals` as a nested object
+   and the recursive `results` structure, the `-v` parameter needs
+   to address nested fields. `-v totals` selects the totals object.
+   Full XPath-style paths (`totals/errors`) vs flat short names
+   (`errors`) vs relative syntax (`+source,-lines`) — these are
+   presentation concerns. The data model doesn't depend on it.
+   Deferred; pragmatic short names for now.
 
 5. **`run` default format.** Text is the safe default since it handles
    all command types. GCC is also viable since `note` level covers
