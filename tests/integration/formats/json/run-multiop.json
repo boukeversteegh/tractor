@@ -1,6 +1,6 @@
 {
-  "summary": {
-    "passed": false,
+  "passed": false,
+  "totals": {
     "results": 5,
     "files": 2,
     "errors": 2,
@@ -9,8 +9,8 @@
   "operations": [
     {
       "kind": "check",
-      "summary": {
-        "passed": false,
+      "passed": false,
+      "totals": {
         "results": 3,
         "files": 1,
         "errors": 2,
@@ -60,12 +60,12 @@
     },
     {
       "kind": "test",
-      "summary": {
-        "passed": true,
+      "passed": true,
+      "totals": {
         "results": 2,
-        "files": 1,
-        "expected": "some, none"
+        "files": 1
       },
+      "expected": "some, none",
       "groups": [
         {
           "file": "tests/integration/formats/sample.cs",

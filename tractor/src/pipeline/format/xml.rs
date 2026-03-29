@@ -9,9 +9,10 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
     let mut tree_opts = render_opts.clone();
     tree_opts.use_color = false;
 
-    // Summary: always present for check/test reports (structural, not view-gated).
+    // Passed + totals: top-level elements (not wrapped in <summary>).
+    // Always present for check/test reports (structural, not view-gated).
     // For query reports, only include if explicitly requested via -v summary.
-    let show_summary = if matches!(report.kind, ReportKind::Query) {
+    let show_totals = if matches!(report.kind, ReportKind::Query) {
         view.has(ViewField::Summary)
     } else {
         true
@@ -20,12 +21,12 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
     let mut body = String::new();
     body.push_str("<report>\n");
 
-    if show_summary {
+    if show_totals {
+        if let Some(passed) = report.passed {
+            body.push_str(&format!("  <passed>{}</passed>\n", passed));
+        }
         if let Some(ref totals) = report.totals {
-            body.push_str("  <summary>\n");
-            if let Some(passed) = report.passed {
-                body.push_str(&format!("    <passed>{}</passed>\n", passed));
-            }
+            body.push_str("  <totals>\n");
             body.push_str(&format!("    <results>{}</results>\n", totals.results));
             body.push_str(&format!("    <files>{}</files>\n", totals.files));
             if totals.errors > 0 {
@@ -40,13 +41,13 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
             if totals.unchanged > 0 {
                 body.push_str(&format!("    <unchanged>{}</unchanged>\n", totals.unchanged));
             }
-            if let Some(ref expected) = report.expected {
-                body.push_str(&format!("    <expected>{}</expected>\n", escape(expected)));
-            }
-            if let Some(ref query) = report.query {
-                body.push_str(&format!("    <query>{}</query>\n", escape(query)));
-            }
-            body.push_str("  </summary>\n");
+            body.push_str("  </totals>\n");
+        }
+        if let Some(ref expected) = report.expected {
+            body.push_str(&format!("  <expected>{}</expected>\n", escape(expected)));
+        }
+        if let Some(ref query) = report.query {
+            body.push_str(&format!("  <query>{}</query>\n", escape(query)));
         }
     }
 
@@ -87,12 +88,12 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
         body.push_str("  <operations>\n");
         for sub in ops {
             body.push_str(&format!("    <operation kind=\"{}\">\n", sub.kind.as_str()));
-            // Sub-report summary
+            // Sub-report passed + totals
+            if let Some(passed) = sub.passed {
+                body.push_str(&format!("      <passed>{}</passed>\n", passed));
+            }
             if let Some(ref t) = sub.totals {
-                body.push_str("      <summary>\n");
-                if let Some(passed) = sub.passed {
-                    body.push_str(&format!("        <passed>{}</passed>\n", passed));
-                }
+                body.push_str("      <totals>\n");
                 body.push_str(&format!("        <results>{}</results>\n", t.results));
                 body.push_str(&format!("        <files>{}</files>\n", t.files));
                 if t.errors > 0 {
@@ -107,10 +108,10 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
                 if t.unchanged > 0 {
                     body.push_str(&format!("        <unchanged>{}</unchanged>\n", t.unchanged));
                 }
-                if let Some(ref expected) = sub.expected {
-                    body.push_str(&format!("        <expected>{}</expected>\n", escape(expected)));
-                }
-                body.push_str("      </summary>\n");
+                body.push_str("      </totals>\n");
+            }
+            if let Some(ref expected) = sub.expected {
+                body.push_str(&format!("      <expected>{}</expected>\n", escape(expected)));
             }
             // Sub-report groups (or flat matches)
             if let Some(ref groups) = sub.groups {

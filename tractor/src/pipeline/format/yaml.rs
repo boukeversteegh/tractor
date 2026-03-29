@@ -6,40 +6,39 @@ use super::json::match_to_value;
 pub fn render_yaml_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions) -> String {
     let mut root = serde_json::Map::new();
 
-    // Summary: always present for check/test reports (structural, not view-gated).
-    // For query reports, only include if explicitly requested via -v summary.
-    let show_summary = if matches!(report.kind, ReportKind::Query) {
+    // Passed + totals: top-level fields (not wrapped in "summary").
+    let show_totals = if matches!(report.kind, ReportKind::Query) {
         view.has(ViewField::Summary)
     } else {
         true
     };
-    if show_summary {
+    if show_totals {
+        if let Some(passed) = report.passed {
+            root.insert("passed".into(), serde_json::json!(passed));
+        }
         if let Some(ref totals) = report.totals {
-            let mut s = serde_json::Map::new();
-            if let Some(passed) = report.passed {
-                s.insert("passed".into(), serde_json::json!(passed));
-            }
-            s.insert("results".into(), serde_json::json!(totals.results));
-            s.insert("files".into(),   serde_json::json!(totals.files));
+            let mut t = serde_json::Map::new();
+            t.insert("results".into(), serde_json::json!(totals.results));
+            t.insert("files".into(),   serde_json::json!(totals.files));
             if totals.errors > 0 {
-                s.insert("errors".into(), serde_json::json!(totals.errors));
+                t.insert("errors".into(), serde_json::json!(totals.errors));
             }
             if totals.warnings > 0 {
-                s.insert("warnings".into(), serde_json::json!(totals.warnings));
+                t.insert("warnings".into(), serde_json::json!(totals.warnings));
             }
             if totals.updated > 0 {
-                s.insert("updated".into(), serde_json::json!(totals.updated));
+                t.insert("updated".into(), serde_json::json!(totals.updated));
             }
             if totals.unchanged > 0 {
-                s.insert("unchanged".into(), serde_json::json!(totals.unchanged));
+                t.insert("unchanged".into(), serde_json::json!(totals.unchanged));
             }
-            if let Some(ref expected) = report.expected {
-                s.insert("expected".into(), serde_json::json!(expected));
-            }
-            if let Some(ref query) = report.query {
-                s.insert("query".into(), serde_json::json!(query));
-            }
-            root.insert("summary".into(), serde_json::json!(s));
+            root.insert("totals".into(), serde_json::json!(t));
+        }
+        if let Some(ref expected) = report.expected {
+            root.insert("expected".into(), serde_json::json!(expected));
+        }
+        if let Some(ref query) = report.query {
+            root.insert("query".into(), serde_json::json!(query));
         }
     }
 
