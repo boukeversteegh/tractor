@@ -3,14 +3,12 @@
     {
       "tree": {
         "$type": "class"
-      },
-      "command": "query"
+      }
     },
     {
       "tree": {
         "$type": "class"
-      },
-      "command": "query"
+      }
     }
   ]
 }

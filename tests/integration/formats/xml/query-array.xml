@@ -7,7 +7,6 @@
           "Calculator"
         ]
       </tree>
-      <command>query</command>
     </match>
     <match file="tests/integration/formats/sample-classes.cs" line="1" column="1">
       <tree>
@@ -15,7 +14,6 @@
           "Greeter"
         ]
       </tree>
-      <command>query</command>
     </match>
   </matches>
 </report>

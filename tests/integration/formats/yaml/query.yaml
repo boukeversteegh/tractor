@@ -23,7 +23,6 @@ matches:
         parameters: ()
         body:
           block: '{ }'
-  command: query
 - file: tests/integration/formats/sample.cs
   line: 7
   tree:
@@ -31,4 +30,3 @@ matches:
     public: true
     name: Qux
     body: '{ }'
-  command: query

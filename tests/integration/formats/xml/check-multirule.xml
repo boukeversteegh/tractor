@@ -19,7 +19,6 @@
         <line>    public void Baz() { }</line>
         <line>}</line>
         </lines>
-        <command>check</command>
         <rule-id>no-class</rule-id>
       </match>
       <match line="4" column="5" end_line="4" end_column="26">
@@ -28,7 +27,6 @@
         <lines>
         <line>    public void Baz() { }</line>
         </lines>
-        <command>check</command>
         <rule-id>no-void-method</rule-id>
       </match>
       <match line="7" column="1" end_line="7" end_column="21">
@@ -37,7 +35,6 @@
         <lines>
         <line>public class Qux { }</line>
         </lines>
-        <command>check</command>
         <rule-id>no-class</rule-id>
       </match>
     </group>

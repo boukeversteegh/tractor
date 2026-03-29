@@ -19,16 +19,14 @@
             "    public int Bar { get; set; }",
             "    public void Baz() { }",
             "}"
-          ],
-          "command": "check"
+          ]
         },
         {
           "reason": "class found",
           "severity": "error",
           "lines": [
             "public class Qux { }"
-          ],
-          "command": "check"
+          ]
         }
       ]
     }

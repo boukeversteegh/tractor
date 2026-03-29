@@ -8,11 +8,7 @@
     "query": "//class"
   },
   "matches": [
-    {
-      "command": "query"
-    },
-    {
-      "command": "query"
-    }
+    {},
+    {}
   ]
 }

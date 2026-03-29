@@ -63,6 +63,8 @@ pub enum ViewField {
     Status,
     /// Full modified file/string content (set command stdout mode).
     Output,
+    /// Operation type: "check", "query", "test", "set", "update".
+    Command,
 }
 
 impl ViewField {
@@ -83,12 +85,13 @@ impl ViewField {
             "query"        => Ok(ViewField::Query),
             "status"       => Ok(ViewField::Status),
             "output"       => Ok(ViewField::Output),
+            "command"      => Ok(ViewField::Command),
             "gcc" | "github" => Err(format!(
                 "'{}' is a format, not a view. Use -f {} instead of -v {}", s, s, s,
             )),
             _ => Err(format!(
                 "invalid view '{}'. Valid views: tree, value, source, lines, file, line, column, \
-                 reason, severity, summary, count, schema, query, status, output",
+                 reason, severity, summary, count, schema, query, status, output, command",
                 s,
             )),
         }

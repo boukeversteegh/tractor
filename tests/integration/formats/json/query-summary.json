@@ -7,11 +7,7 @@
     "warnings": 0
   },
   "matches": [
-    {
-      "command": "query"
-    },
-    {
-      "command": "query"
-    }
+    {},
+    {}
   ]
 }

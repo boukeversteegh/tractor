@@ -232,10 +232,11 @@ fn append_match(
         }
     }
 
-    // command, message and rule_id always emitted when present (annotations, not view-gated)
-    if !rm.command.is_empty() {
+    // command: only emitted when view includes Command
+    if view.has(ViewField::Command) && !rm.command.is_empty() {
         out.push_str(&format!("{}<command>{}</command>\n", inner, escape(&rm.command)));
     }
+    // message and rule_id always emitted when present (annotations, not view-gated)
     if let Some(ref message) = rm.message {
         out.push_str(&format!("{}<message>{}</message>\n", inner, escape(message)));
     }

@@ -40,7 +40,6 @@
           ]
         }
       },
-      "command": "query",
       "message": "tests/integration/formats/sample.cs:1"
     },
     {
@@ -52,7 +51,6 @@
         "name": "Qux",
         "body": "{ }"
       },
-      "command": "query",
       "message": "tests/integration/formats/sample.cs:7"
     }
   ]

@@ -32,7 +32,7 @@ pub fn run_run(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {
         vec![],           // no files — they come from the config
         None,             // no xpath — they come from the config
         &args.format,
-        &[ViewField::Reason, ViewField::Severity, ViewField::Lines, ViewField::Status, ViewField::Value],
+        &[ViewField::Command, ViewField::Reason, ViewField::Severity, ViewField::Lines, ViewField::Status, ViewField::Value],
         args.view.as_deref(),
         args.message,
         None,             // no content

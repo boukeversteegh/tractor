@@ -39,8 +39,7 @@
             }
           ]
         }
-      },
-      "command": "query"
+      }
     },
     {
       "file": "tests/integration/formats/sample.cs",
@@ -50,8 +49,7 @@
         "public": true,
         "name": "Qux",
         "body": "{ }"
-      },
-      "command": "query"
+      }
     }
   ]
 }

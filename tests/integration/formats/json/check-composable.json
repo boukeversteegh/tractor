@@ -49,8 +49,7 @@
             }
           },
           "reason": "class found",
-          "severity": "error",
-          "command": "check"
+          "severity": "error"
         },
         {
           "tree": {
@@ -60,8 +59,7 @@
             "body": "{ }"
           },
           "reason": "class found",
-          "severity": "error",
-          "command": "check"
+          "severity": "error"
         }
       ]
     }

@@ -12,4 +12,3 @@ matches:
       methods:
       - Hello
       - Goodbye
-  command: query

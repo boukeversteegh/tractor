@@ -154,10 +154,11 @@ pub fn match_to_value(
         }
     }
 
-    // command, message and rule_id are always emitted when present (not ViewFields, but annotations)
-    if !rm.command.is_empty() {
+    // command: only emitted when view includes Command (not part of default single-command views)
+    if view.has(ViewField::Command) && !rm.command.is_empty() {
         obj.insert("command".into(), json!(rm.command));
     }
+    // message and rule_id are always emitted when present (annotations, not view-gated)
     if let Some(ref msg) = rm.message {
         obj.insert("message".into(), json!(msg));
     }
