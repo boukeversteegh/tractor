@@ -5,7 +5,7 @@ use crate::pipeline::{RunContext, ViewField, InputMode};
 pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
     let ctx = RunContext::build(
         &args.shared, args.files, args.shared.xpath.clone(),
-        "text", &[ViewField::Tree], None, None, None, false, false,
+        "text", &[ViewField::Tree], None, None, None, false, &[],
     )?;
 
     let xpath_expr = ctx.xpath.as_ref()

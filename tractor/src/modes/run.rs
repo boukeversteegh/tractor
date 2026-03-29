@@ -7,6 +7,7 @@ use crate::cli::RunArgs;
 use crate::pipeline::{
     RunContext, ViewField,
     project_report, apply_message_template,
+    GroupDimension,
 };
 use crate::pipeline::format::render_run_report;
 
@@ -37,7 +38,7 @@ pub fn run_run(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {
         args.message,
         None,             // no content
         false,            // no debug
-        true,             // group by file
+        &[GroupDimension::Command, GroupDimension::File],  // group by command then file
     )?;
 
     // Resolve base_dir: use the config file's parent directory so that
@@ -65,7 +66,8 @@ pub fn run_run(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {
     project_report(&mut report, &ctx.view);
 
     // Apply grouping
-    let report = if ctx.group_by_file { report.with_groups() } else { report };
+    let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
+    let report = report.with_grouping(&dims);
 
     render_run_report(&report, &ctx)
 }

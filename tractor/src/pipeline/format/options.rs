@@ -165,16 +165,53 @@ pub fn parse_view_set(s: &str) -> Result<ViewSet, String> {
 }
 
 // ---------------------------------------------------------------------------
-// GroupBy — controls whether the file field is emitted on individual matches
+// GroupDimension — grouping dimensions for multi-level grouping
 // ---------------------------------------------------------------------------
 
-/// Describes how matches are grouped in the output.
-/// When grouped by file, the file is on the parent — individual matches omit it.
+/// A single dimension to group results by.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GroupDimension {
+    /// Group by source file path.
+    File,
+    /// Group by operation type (command field on matches).
+    Command,
+}
+
+impl GroupDimension {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            GroupDimension::File => "file",
+            GroupDimension::Command => "command",
+        }
+    }
+}
+
+/// Parse a `-g` flag value into a list of group dimensions.
+/// Supports: "none", "file", "command", "command,file", "file,command", etc.
+pub fn parse_group_by(s: &str) -> Result<Vec<GroupDimension>, String> {
+    if s == "none" {
+        return Ok(vec![]);
+    }
+    let mut dims = Vec::new();
+    for part in s.split(',') {
+        let part = part.trim();
+        match part {
+            "file" => dims.push(GroupDimension::File),
+            "command" => dims.push(GroupDimension::Command),
+            other => return Err(format!(
+                "invalid --group value '{}': use 'none', 'file', 'command', or comma-separated (e.g. 'command,file')",
+                other
+            )),
+        }
+    }
+    Ok(dims)
+}
+
+/// Legacy GroupBy for json.rs match_to_value (file field omission).
+/// Will be removed when match_to_value no longer needs it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GroupBy {
-    /// Matches are not grouped; include the `file` field on each match.
     None,
-    /// Matches are grouped by file; omit `file` from individual matches.
     File,
 }
 

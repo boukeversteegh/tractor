@@ -8,62 +8,77 @@
   },
   "results": [
     {
-      "file": "tests/integration/formats/sample.cs",
+      "group": "file",
       "results": [
         {
-          "reason": "class declaration found",
-          "severity": "error",
-          "lines": [
-            "public class Foo",
-            "{",
-            "    public int Bar { get; set; }",
-            "    public void Baz() { }",
-            "}"
-          ],
-          "value": " class Foo\n{\n     int Bar { get; set; }\n     void Baz() { }\n}",
-          "command": "check",
-          "rule_id": "no-class"
-        },
+          "file": "tests/integration/formats/sample.cs",
+          "results": [
+            {
+              "reason": "class declaration found",
+              "severity": "error",
+              "lines": [
+                "public class Foo",
+                "{",
+                "    public int Bar { get; set; }",
+                "    public void Baz() { }",
+                "}"
+              ],
+              "value": " class Foo\n{\n     int Bar { get; set; }\n     void Baz() { }\n}",
+              "command": "check",
+              "rule_id": "no-class"
+            },
+            {
+              "reason": "void method found",
+              "severity": "warning",
+              "lines": [
+                "    public void Baz() { }"
+              ],
+              "value": " void Baz() { }",
+              "command": "check",
+              "rule_id": "no-void-method"
+            },
+            {
+              "reason": "class declaration found",
+              "severity": "error",
+              "lines": [
+                "public class Qux { }"
+              ],
+              "value": " class Qux { }",
+              "command": "check",
+              "rule_id": "no-class"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "group": "file",
+      "results": [
         {
-          "reason": "void method found",
-          "severity": "warning",
-          "lines": [
-            "    public void Baz() { }"
-          ],
-          "value": " void Baz() { }",
-          "command": "check",
-          "rule_id": "no-void-method"
-        },
-        {
-          "reason": "class declaration found",
-          "severity": "error",
-          "lines": [
-            "public class Qux { }"
-          ],
-          "value": " class Qux { }",
-          "command": "check",
-          "rule_id": "no-class"
-        },
-        {
-          "lines": [
-            "public class Foo",
-            "{",
-            "    public int Bar { get; set; }",
-            "    public void Baz() { }",
-            "}"
-          ],
-          "value": " class Foo\n{\n     int Bar { get; set; }\n     void Baz() { }\n}",
-          "command": "test"
-        },
-        {
-          "lines": [
-            "public class Qux { }"
-          ],
-          "value": " class Qux { }",
-          "command": "test"
+          "file": "tests/integration/formats/sample.cs",
+          "results": [
+            {
+              "lines": [
+                "public class Foo",
+                "{",
+                "    public int Bar { get; set; }",
+                "    public void Baz() { }",
+                "}"
+              ],
+              "value": " class Foo\n{\n     int Bar { get; set; }\n     void Baz() { }\n}",
+              "command": "test"
+            },
+            {
+              "lines": [
+                "public class Qux { }"
+              ],
+              "value": " class Qux { }",
+              "command": "test"
+            }
+          ]
         }
       ]
     }
   ],
-  "group": "file"
+  "group": "command"
 }

@@ -386,6 +386,94 @@ impl Report {
         self
     }
 
+    /// Group flat results by command (operation type).
+    /// Drains leaf matches from `results`, groups them by `command` into sub-group Reports.
+    /// Sets `group: Some("command")` on self.
+    pub fn with_command_groups(mut self) -> Self {
+        let mut groups: Vec<ResultItem> = Vec::new();
+        let mut cmd_index: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+
+        let old_results = std::mem::take(&mut self.results);
+        for item in old_results {
+            if let ResultItem::Match(rm) = item {
+                let cmd = rm.command.clone();
+                let idx = *cmd_index.entry(cmd.clone()).or_insert_with(|| {
+                    let mut sub = Report::empty();
+                    sub.file = None;
+                    // command is stored on the group level — not as a field on Report
+                    // (it's the hoisted value, accessed via the match's command field)
+                    groups.push(ResultItem::Group(Box::new(sub)));
+                    groups.len() - 1
+                });
+                if let ResultItem::Group(ref mut g) = groups[idx] {
+                    g.results.push(ResultItem::Match(rm));
+                }
+            } else {
+                groups.push(item);
+            }
+        }
+
+        // Set command value on each group (hoisted field)
+        for (cmd, idx) in &cmd_index {
+            if let ResultItem::Group(ref mut g) = groups[*idx] {
+                // Store the command as metadata — renderers read all_matches()[0].command
+                // to determine the group's command value. We don't add a separate
+                // "command" field on Report — it's implicit from the group key.
+            }
+        }
+
+        self.results = groups;
+        self.group = Some("command".to_string());
+        self
+    }
+
+    /// Apply multi-level grouping. Each dimension partitions results into
+    /// groups, with nested dimensions applied recursively within each group.
+    pub fn with_grouping(mut self, dimensions: &[&str]) -> Self {
+        if dimensions.is_empty() {
+            return self;
+        }
+
+        let dim = dimensions[0];
+        let rest = &dimensions[1..];
+
+        // Apply the first dimension
+        self = match dim {
+            "file" => self.with_groups(),
+            "command" => self.with_command_groups(),
+            _ => self,
+        };
+
+        // Apply remaining dimensions recursively to each sub-group
+        if !rest.is_empty() {
+            self.results = self.results.into_iter().map(|item| {
+                match item {
+                    ResultItem::Group(mut g) => {
+                        *g = g.with_grouping(rest);
+                        ResultItem::Group(g)
+                    }
+                    other => other,
+                }
+            }).collect();
+        }
+
+        self
+    }
+
+    /// Create an empty report (used for sub-groups).
+    fn empty() -> Self {
+        Report {
+            success: None,
+            totals: None,
+            expected: None,
+            query: None,
+            results: vec![],
+            group: None,
+            file: None,
+            output_content: None,
+        }
+    }
+
     /// Attach pre-computed file outputs to file groups (set stdout mode).
     /// Must be called after `with_groups()`.
     pub fn with_file_outputs(mut self, outputs: &std::collections::HashMap<String, String>) -> Self {

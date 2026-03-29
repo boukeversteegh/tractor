@@ -5,7 +5,7 @@ use tractor_core::xpath_upsert::upsert;
 use tractor_core::declarative_set::declarative_set;
 use tractor_core::detect_language;
 use crate::cli::SetArgs;
-use crate::pipeline::{RunContext, ViewField, InputMode, query_files_batched, query_inline_source, render_set_report};
+use crate::pipeline::{RunContext, ViewField, InputMode, query_files_batched, query_inline_source, render_set_report, GroupDimension};
 use crate::pipeline::git;
 
 /// Separate positional args into files and an optional path expression.
@@ -43,7 +43,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(expr) = &expr {
         let ctx = RunContext::build(
             &args.shared, files, None,
-            "text", &[ViewField::Tree], None, None, None, false, false,
+            "text", &[ViewField::Tree], None, None, None, false, &[GroupDimension::File],
         )?;
 
         let file_list = match &ctx.input {
@@ -107,7 +107,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     let ctx = RunContext::build(
         &args.shared, files, args.shared.xpath.clone(),
-        &args.format, default_view, args.view.as_deref(), None, None, false, false,
+        &args.format, default_view, args.view.as_deref(), None, None, false, &[GroupDimension::File],
     )?;
 
     let xpath_expr = ctx.xpath.as_ref()
@@ -126,7 +126,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
                 let file_outputs = compute_set_output(&files, &matches, value)?;
                 let output_map: HashMap<String, String> = file_outputs.into_iter().collect();
                 let report = build_set_report_matches(&matches, value, &ctx);
-                let report = report.with_groups().with_file_outputs(&output_map);
+                let report = report.with_grouping(&["file"]).with_file_outputs(&output_map);
                 render_set_report(&report, &ctx)?;
             } else {
                 // In-place mode: try upsert (language-aware) for each file; fall back to
@@ -163,7 +163,8 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
                 }
 
                 let report = build_set_report_matches(&matches, value, &ctx);
-                let report = report.with_groups();
+                let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
+                let report = report.with_grouping(&dims);
                 render_set_report(&report, &ctx)?;
             }
         }

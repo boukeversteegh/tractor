@@ -6,6 +6,7 @@ use crate::pipeline::{
     RunContext, ViewField, InputMode,
     render_check_report,
     project_report, apply_message_template,
+    GroupDimension,
 };
 
 pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
@@ -24,7 +25,7 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
     // Build RunContext for input resolution + rendering config.
     let ctx = RunContext::build(
         &args.shared, args.files, args.shared.xpath.clone(),
-        &args.format, &[ViewField::Reason, ViewField::Severity, ViewField::Lines], args.view.as_deref(), args.message, None, false, true,
+        &args.format, &[ViewField::Reason, ViewField::Severity, ViewField::Lines], args.view.as_deref(), args.message, None, false, &[GroupDimension::File],
     )?;
 
     let xpath_expr = ctx.xpath.as_ref()
@@ -89,7 +90,10 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     // Project for the requested view and render.
     project_report(&mut report, &ctx.view);
-    let report = if ctx.group_by_file { report.with_groups() } else { report };
+    let report = {
+        let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
+        report.with_grouping(&dims)
+    };
     render_check_report(&report, &ctx)
 }
 
@@ -107,7 +111,7 @@ fn run_check_rules(args: CheckArgs, rules_path: &str) -> Result<(), Box<dyn std:
     let ctx = RunContext::build(
         &args.shared, args.files, None, &args.format,
         &[ViewField::Reason, ViewField::Severity, ViewField::Lines],
-        args.view.as_deref(), args.message, None, false, true,
+        args.view.as_deref(), args.message, None, false, &[GroupDimension::File],
     )?;
 
     let files = match &ctx.input {
@@ -151,6 +155,9 @@ fn run_check_rules(args: CheckArgs, rules_path: &str) -> Result<(), Box<dyn std:
     }
 
     project_report(&mut report, &ctx.view);
-    let report = if ctx.group_by_file { report.with_groups() } else { report };
+    let report = {
+        let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
+        report.with_grouping(&dims)
+    };
     render_check_report(&report, &ctx)
 }

@@ -11,7 +11,7 @@ use crate::pipeline::format::render_query_report;
 pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     let ctx = RunContext::build(
         &args.shared, args.files, args.shared.xpath.clone(),
-        &args.format, &[ViewField::File, ViewField::Line, ViewField::Tree], args.view.as_deref(), args.message, args.content, args.debug, false,
+        &args.format, &[ViewField::File, ViewField::Line, ViewField::Tree], args.view.as_deref(), args.message, args.content, args.debug, &[],
     )?;
 
     if let InputMode::Files(ref files) = ctx.input {
@@ -97,7 +97,8 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
 
         // Project for the requested view and render.
         project_report(&mut report, &ctx.view);
-        let report = if ctx.group_by_file { report.with_groups() } else { report };
+        let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
+        let report = report.with_grouping(&dims);
         render_query_report(&report, &ctx)?;
     }
 

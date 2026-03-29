@@ -6,7 +6,7 @@ pub mod git;
 
 pub use input::InputMode;
 pub use context::RunContext;
-pub use format::ViewField;
+pub use format::{ViewField, GroupDimension};
 pub use matcher::{
     query_files_batched, query_inline_source,
     run_debug,
