@@ -2,7 +2,7 @@
 <report>
   <summary>
     <passed>false</passed>
-    <total>3</total>
+    <results>3</results>
     <files>1</files>
     <errors>2</errors>
     <warnings>1</warnings>

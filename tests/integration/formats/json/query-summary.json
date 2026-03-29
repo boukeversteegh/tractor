@@ -1,10 +1,7 @@
 {
   "summary": {
-    "passed": true,
-    "total": 2,
-    "files": 1,
-    "errors": 0,
-    "warnings": 0
+    "results": 2,
+    "files": 1
   },
   "matches": [
     {},

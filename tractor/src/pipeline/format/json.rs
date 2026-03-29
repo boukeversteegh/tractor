@@ -13,26 +13,30 @@ pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         true
     };
     if show_summary {
-        if let Some(ref summary) = report.summary {
+        if let Some(ref totals) = report.totals {
             let mut s = serde_json::Map::new();
-            if matches!(report.kind, ReportKind::Set) {
-                // For set reports, use "updated"/"unchanged" instead of "errors"/"warnings"
-                s.insert("total".into(),     json!(summary.total));
-                s.insert("files".into(),     json!(summary.files_affected));
-                s.insert("updated".into(),   json!(summary.errors));
-                s.insert("unchanged".into(), json!(summary.warnings));
-            } else {
-                s.insert("passed".into(),   json!(summary.passed));
-                s.insert("total".into(),    json!(summary.total));
-                s.insert("files".into(),    json!(summary.files_affected));
-                s.insert("errors".into(),   json!(summary.errors));
-                s.insert("warnings".into(), json!(summary.warnings));
-                if let Some(ref expected) = summary.expected {
-                    s.insert("expected".into(), json!(expected));
-                }
-                if let Some(ref query) = summary.query {
-                    s.insert("query".into(), json!(query));
-                }
+            if let Some(passed) = report.passed {
+                s.insert("passed".into(), json!(passed));
+            }
+            s.insert("results".into(), json!(totals.results));
+            s.insert("files".into(),   json!(totals.files));
+            if totals.errors > 0 {
+                s.insert("errors".into(), json!(totals.errors));
+            }
+            if totals.warnings > 0 {
+                s.insert("warnings".into(), json!(totals.warnings));
+            }
+            if totals.updated > 0 {
+                s.insert("updated".into(), json!(totals.updated));
+            }
+            if totals.unchanged > 0 {
+                s.insert("unchanged".into(), json!(totals.unchanged));
+            }
+            if let Some(ref expected) = report.expected {
+                s.insert("expected".into(), json!(expected));
+            }
+            if let Some(ref query) = report.query {
+                s.insert("query".into(), json!(query));
             }
             root.insert("summary".into(), Value::Object(s));
         }
@@ -172,7 +176,7 @@ pub fn match_to_value(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tractor_core::report::{Report, Summary};
+    use tractor_core::report::{Report, Totals};
     use tractor_core::xpath::XmlNode;
 
     fn make_plain_match(value: &str) -> ReportMatch {
@@ -234,11 +238,11 @@ mod tests {
             ("name", XmlNode::Text("foo".into())),
             ("count", XmlNode::Number(3.0)),
         ]);
-        let summary = Summary {
-            passed: true, total: 1, files_affected: 1,
-            errors: 0, warnings: 0, expected: None, query: None,
+        let totals = Totals {
+            results: 1, files: 1,
+            errors: 0, warnings: 0, updated: 0, unchanged: 0,
         };
-        let report = Report::query(vec![rm], summary);
+        let report = Report::query(vec![rm], totals);
         let view = ViewSet::new(vec![ViewField::File, ViewField::Tree]);
         let opts = RenderOptions::new();
         let output = render_json_report(&report, &view, &opts);

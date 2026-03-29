@@ -75,7 +75,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     let mut report = reports.into_iter().next().unwrap();
 
     if ctx.view.has(ViewField::Count) {
-        println!("{}", report.summary.as_ref().unwrap().total);
+        println!("{}", report.totals.as_ref().unwrap().results);
     } else if ctx.view.has(ViewField::Schema) {
         let mut collector = tractor_core::SchemaCollector::new();
         for m in &report.matches {
@@ -85,11 +85,9 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
         }
         print!("{}", collector.format(ctx.schema_depth(), ctx.use_color));
     } else {
-        // Set the query field in summary if requested.
+        // Set the query field on the report if requested.
         if ctx.view.has(ViewField::Query) {
-            if let Some(ref mut summary) = report.summary {
-                summary.query = ctx.xpath.clone();
-            }
+            report.query = ctx.xpath.clone();
         }
 
         // Apply CLI message template if provided.

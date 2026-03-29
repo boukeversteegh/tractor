@@ -14,24 +14,32 @@ pub fn render_yaml_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         true
     };
     if show_summary {
-        if let Some(ref summary) = report.summary {
-            let summary_val = if matches!(report.kind, ReportKind::Set) {
-                serde_json::json!({
-                    "total":     summary.total,
-                    "files":     summary.files_affected,
-                    "updated":   summary.errors,
-                    "unchanged": summary.warnings,
-                })
-            } else {
-                serde_json::json!({
-                    "passed":   summary.passed,
-                    "total":    summary.total,
-                    "files":    summary.files_affected,
-                    "errors":   summary.errors,
-                    "warnings": summary.warnings,
-                })
-            };
-            root.insert("summary".into(), summary_val);
+        if let Some(ref totals) = report.totals {
+            let mut s = serde_json::Map::new();
+            if let Some(passed) = report.passed {
+                s.insert("passed".into(), serde_json::json!(passed));
+            }
+            s.insert("results".into(), serde_json::json!(totals.results));
+            s.insert("files".into(),   serde_json::json!(totals.files));
+            if totals.errors > 0 {
+                s.insert("errors".into(), serde_json::json!(totals.errors));
+            }
+            if totals.warnings > 0 {
+                s.insert("warnings".into(), serde_json::json!(totals.warnings));
+            }
+            if totals.updated > 0 {
+                s.insert("updated".into(), serde_json::json!(totals.updated));
+            }
+            if totals.unchanged > 0 {
+                s.insert("unchanged".into(), serde_json::json!(totals.unchanged));
+            }
+            if let Some(ref expected) = report.expected {
+                s.insert("expected".into(), serde_json::json!(expected));
+            }
+            if let Some(ref query) = report.query {
+                s.insert("query".into(), serde_json::json!(query));
+            }
+            root.insert("summary".into(), serde_json::json!(s));
         }
     }
 

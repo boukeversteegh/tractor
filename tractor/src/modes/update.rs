@@ -41,18 +41,17 @@ pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     let reports = executor::execute(&[op], &options)?;
     let report = &reports[0];
-    let summary = report.summary.as_ref().unwrap();
-
-    if !summary.passed {
+    if report.passed == Some(false) {
         return Err("update matched no nodes".into());
     }
 
+    let totals = report.totals.as_ref().unwrap();
     eprintln!(
         "Updated {} match{} in {} file{}",
-        summary.total,
-        if summary.total == 1 { "" } else { "es" },
-        summary.files_affected,
-        if summary.files_affected == 1 { "" } else { "s" },
+        totals.results,
+        if totals.results == 1 { "" } else { "es" },
+        totals.files,
+        if totals.files == 1 { "" } else { "s" },
     );
     Ok(())
 }

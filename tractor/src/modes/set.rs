@@ -1,6 +1,6 @@
 use std::collections::{HashSet, HashMap};
 use tractor_core::{apply_replacements, apply_set_to_string, compute_set_output};
-use tractor_core::report::{Report, ReportMatch, Summary};
+use tractor_core::report::{Report, ReportMatch, Totals};
 use tractor_core::xpath_upsert::upsert;
 use tractor_core::declarative_set::declarative_set;
 use tractor_core::detect_language;
@@ -219,16 +219,15 @@ fn build_set_report_matches(
         }
     }).collect();
 
-    let summary = Summary {
-        passed: true,
-        total: matches.len(),
-        files_affected: files_affected.len(),
-        errors: updated_count,
-        warnings: unchanged_count,
-        expected: None,
-        query: None,
+    let totals = Totals {
+        results: matches.len(),
+        files: files_affected.len(),
+        errors: 0,
+        warnings: 0,
+        updated: updated_count,
+        unchanged: unchanged_count,
     };
-    Report::set(report_matches, summary)
+    Report::set(report_matches, true, totals)
 }
 
 /// Build a set report for inline (stdin) stdout mode.
@@ -239,16 +238,15 @@ fn build_set_inline_report(modified: String, ctx: &RunContext) -> Report {
     let output = if ctx.view.has(ViewField::Output) { Some(modified) } else { None };
     let group = FileGroup { file: String::new(), matches: vec![], output };
 
-    let summary = Summary {
-        passed: true,
-        total: 1,
-        files_affected: 0,
+    let totals = Totals {
+        results: 1,
+        files: 0,
         errors: 0,
         warnings: 0,
-        expected: None,
-        query: None,
+        updated: 0,
+        unchanged: 0,
     };
-    let mut report = Report::set(vec![], summary);
+    let mut report = Report::set(vec![], true, totals);
     report.groups = Some(vec![group]);
     report
 }

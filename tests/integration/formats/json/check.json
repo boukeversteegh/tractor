@@ -1,10 +1,9 @@
 {
   "summary": {
     "passed": false,
-    "total": 2,
+    "results": 2,
     "files": 1,
-    "errors": 2,
-    "warnings": 0
+    "errors": 2
   },
   "groups": [
     {

@@ -121,35 +121,36 @@ impl Serialize for ReportMatch {
 }
 
 // ---------------------------------------------------------------------------
-// Summary
+// Totals
 // ---------------------------------------------------------------------------
 
-/// Aggregated result summary. Present in check and test reports.
-#[derive(Debug, Serialize)]
-pub struct Summary {
-    /// Did the command succeed (no error-severity violations / expectation met)?
-    pub passed: bool,
+fn is_zero(v: &usize) -> bool { *v == 0 }
 
-    /// Total number of matches.
-    pub total: usize,
+/// Numeric aggregates for a report or group. Contains only counts —
+/// the verdict (`passed`) lives on the Report itself.
+#[derive(Debug, Clone, Serialize)]
+pub struct Totals {
+    /// Number of results (matches).
+    pub results: usize,
 
-    /// Number of distinct files that had at least one match.
-    #[serde(rename = "files")]
-    pub files_affected: usize,
+    /// Number of distinct files with at least one result.
+    pub files: usize,
 
-    /// Error-severity match count (check only).
+    /// Error-severity count (check).
+    #[serde(skip_serializing_if = "is_zero")]
     pub errors: usize,
 
-    /// Warning-severity match count (check only).
+    /// Warning-severity count (check).
+    #[serde(skip_serializing_if = "is_zero")]
     pub warnings: usize,
 
-    /// The expected value string for test assertions (`none`, `some`, or a number).
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub expected: Option<String>,
+    /// Files/mappings that were changed (set).
+    #[serde(skip_serializing_if = "is_zero")]
+    pub updated: usize,
 
-    /// The XPath query as received by tractor (set when `-v query` is used).
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub query: Option<String>,
+    /// Files/mappings already in sync (set).
+    #[serde(skip_serializing_if = "is_zero")]
+    pub unchanged: usize,
 }
 
 // ---------------------------------------------------------------------------
@@ -195,9 +196,21 @@ pub struct Report {
     pub kind: ReportKind,
     pub matches: Vec<ReportMatch>,
 
-    /// Present for check and test reports; absent for query.
+    /// Did the command succeed? False if check errors, test failures, or set drift.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub summary: Option<Summary>,
+    pub passed: Option<bool>,
+
+    /// Numeric aggregates (result count, file count, command-specific counts).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub totals: Option<Totals>,
+
+    /// Test-specific: the expected value string (`none`, `some`, or a number).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expected: Option<String>,
+
+    /// The XPath query as received by tractor (set when `-v query` is used).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub query: Option<String>,
 
     /// Optional pre-grouped structure. Populated by `with_groups()`.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -210,61 +223,61 @@ pub struct Report {
 }
 
 impl Report {
-    pub fn set(matches: Vec<ReportMatch>, summary: Summary) -> Self {
-        Report { kind: ReportKind::Set, matches, summary: Some(summary), groups: None, operations: None }
+    pub fn set(matches: Vec<ReportMatch>, passed: bool, totals: Totals) -> Self {
+        Report { kind: ReportKind::Set, matches, passed: Some(passed), totals: Some(totals), expected: None, query: None, groups: None, operations: None }
     }
 
-    pub fn query(matches: Vec<ReportMatch>, summary: Summary) -> Self {
-        Report { kind: ReportKind::Query, matches, summary: Some(summary), groups: None, operations: None }
+    pub fn query(matches: Vec<ReportMatch>, totals: Totals) -> Self {
+        Report { kind: ReportKind::Query, matches, passed: None, totals: Some(totals), expected: None, query: None, groups: None, operations: None }
     }
 
-    pub fn check(matches: Vec<ReportMatch>, summary: Summary) -> Self {
-        Report { kind: ReportKind::Check, matches, summary: Some(summary), groups: None, operations: None }
+    pub fn check(matches: Vec<ReportMatch>, passed: bool, totals: Totals) -> Self {
+        Report { kind: ReportKind::Check, matches, passed: Some(passed), totals: Some(totals), expected: None, query: None, groups: None, operations: None }
     }
 
-    pub fn test(matches: Vec<ReportMatch>, summary: Summary) -> Self {
-        Report { kind: ReportKind::Test, matches, summary: Some(summary), groups: None, operations: None }
+    pub fn test(matches: Vec<ReportMatch>, passed: bool, totals: Totals) -> Self {
+        Report { kind: ReportKind::Test, matches, passed: Some(passed), totals: Some(totals), expected: None, query: None, groups: None, operations: None }
     }
 
     /// Build a unified run report from multiple sub-reports.
-    /// Computes an aggregate summary across all operations.
-    /// Only check reports contribute to error/warning counts (set reports
-    /// reuse these fields for "updated"/"unchanged").
+    /// Computes aggregate totals across all operations.
     pub fn run(reports: Vec<Report>) -> Self {
         let mut total = 0usize;
         let mut errors = 0usize;
         let mut warnings = 0usize;
-        let mut files_affected = 0usize;
+        let mut updated = 0usize;
+        let mut unchanged = 0usize;
+        let mut files = 0usize;
         let mut passed = true;
 
         for r in &reports {
-            if let Some(ref s) = r.summary {
-                total += s.total;
-                files_affected += s.files_affected;
-                if !s.passed {
-                    passed = false;
-                }
-                // Only aggregate errors/warnings from check reports.
-                // Set reports reuse errors=updated, warnings=unchanged.
-                if matches!(r.kind, ReportKind::Check) {
-                    errors += s.errors;
-                    warnings += s.warnings;
-                }
+            if let Some(ref t) = r.totals {
+                total += t.results;
+                files += t.files;
+                errors += t.errors;
+                warnings += t.warnings;
+                updated += t.updated;
+                unchanged += t.unchanged;
+            }
+            if let Some(p) = r.passed {
+                if !p { passed = false; }
             }
         }
 
         Report {
             kind: ReportKind::Run,
             matches: vec![],
-            summary: Some(Summary {
-                passed,
-                total,
-                files_affected,
+            passed: Some(passed),
+            totals: Some(Totals {
+                results: total,
+                files,
                 errors,
                 warnings,
-                expected: None,
-                query: None,
+                updated,
+                unchanged,
             }),
+            expected: None,
+            query: None,
             groups: None,
             operations: Some(reports),
         }
@@ -373,26 +386,24 @@ mod tests {
             status: None,
             output: None,
         };
-        let summary = Summary {
-            passed: false,
-            total: 2,
-            files_affected: 2,
+        let totals = Totals {
+            results: 2,
+            files: 2,
             errors: 1,
             warnings: 1,
-            expected: None,
-            query: None,
+            updated: 0,
+            unchanged: 0,
         };
-        let report = Report::check(vec![m1, m2], summary);
+        let report = Report::check(vec![m1, m2], false, totals);
         let json = report.to_json();
         let v: serde_json::Value = serde_json::from_str(&json).unwrap();
 
-        // Summary
-        assert_eq!(v["summary"]["passed"], false);
-        assert_eq!(v["summary"]["total"], 2);
-        assert_eq!(v["summary"]["files"], 2);
-        assert_eq!(v["summary"]["errors"], 1);
-        assert_eq!(v["summary"]["warnings"], 1);
-        assert!(v["summary"]["expected"].is_null());
+        // Totals + passed
+        assert_eq!(v["passed"], false);
+        assert_eq!(v["totals"]["results"], 2);
+        assert_eq!(v["totals"]["files"], 2);
+        assert_eq!(v["totals"]["errors"], 1);
+        assert_eq!(v["totals"]["warnings"], 1);
 
         // Matches
         assert_eq!(v["matches"].as_array().unwrap().len(), 2);
@@ -405,22 +416,22 @@ mod tests {
     #[test]
     fn test_test_report_json() {
         let m = make_report_match("test.cs", 1, 1, "x");
-        let summary = Summary {
-            passed: true,
-            total: 1,
-            files_affected: 1,
+        let totals = Totals {
+            results: 1,
+            files: 1,
             errors: 0,
             warnings: 0,
-            expected: Some("some".to_string()),
-            query: None,
+            updated: 0,
+            unchanged: 0,
         };
-        let report = Report::test(vec![m], summary);
+        let mut report = Report::test(vec![m], true, totals);
+        report.expected = Some("some".to_string());
         let json = report.to_json();
         let v: serde_json::Value = serde_json::from_str(&json).unwrap();
 
         assert_eq!(v["kind"], "test");
-        assert_eq!(v["summary"]["passed"], true);
-        assert_eq!(v["summary"]["expected"], "some");
+        assert_eq!(v["passed"], true);
+        assert_eq!(v["expected"], "some");
         // No reason/severity on plain match
         assert!(v["matches"][0].get("reason").is_none());
         assert!(v["matches"][0].get("severity").is_none());

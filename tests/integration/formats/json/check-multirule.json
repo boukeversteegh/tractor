@@ -1,7 +1,7 @@
 {
   "summary": {
     "passed": false,
-    "total": 3,
+    "results": 3,
     "files": 1,
     "errors": 2,
     "warnings": 1

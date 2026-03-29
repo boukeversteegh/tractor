@@ -21,22 +21,30 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
     body.push_str("<report>\n");
 
     if show_summary {
-        if let Some(ref summary) = report.summary {
+        if let Some(ref totals) = report.totals {
             body.push_str("  <summary>\n");
-            if matches!(report.kind, ReportKind::Set) {
-                body.push_str(&format!("    <total>{}</total>\n", summary.total));
-                body.push_str(&format!("    <files>{}</files>\n", summary.files_affected));
-                body.push_str(&format!("    <updated>{}</updated>\n", summary.errors));
-                body.push_str(&format!("    <unchanged>{}</unchanged>\n", summary.warnings));
-            } else {
-                body.push_str(&format!("    <passed>{}</passed>\n", summary.passed));
-                body.push_str(&format!("    <total>{}</total>\n", summary.total));
-                body.push_str(&format!("    <files>{}</files>\n", summary.files_affected));
-                body.push_str(&format!("    <errors>{}</errors>\n", summary.errors));
-                body.push_str(&format!("    <warnings>{}</warnings>\n", summary.warnings));
-                if let Some(ref expected) = summary.expected {
-                    body.push_str(&format!("    <expected>{}</expected>\n", escape(expected)));
-                }
+            if let Some(passed) = report.passed {
+                body.push_str(&format!("    <passed>{}</passed>\n", passed));
+            }
+            body.push_str(&format!("    <results>{}</results>\n", totals.results));
+            body.push_str(&format!("    <files>{}</files>\n", totals.files));
+            if totals.errors > 0 {
+                body.push_str(&format!("    <errors>{}</errors>\n", totals.errors));
+            }
+            if totals.warnings > 0 {
+                body.push_str(&format!("    <warnings>{}</warnings>\n", totals.warnings));
+            }
+            if totals.updated > 0 {
+                body.push_str(&format!("    <updated>{}</updated>\n", totals.updated));
+            }
+            if totals.unchanged > 0 {
+                body.push_str(&format!("    <unchanged>{}</unchanged>\n", totals.unchanged));
+            }
+            if let Some(ref expected) = report.expected {
+                body.push_str(&format!("    <expected>{}</expected>\n", escape(expected)));
+            }
+            if let Some(ref query) = report.query {
+                body.push_str(&format!("    <query>{}</query>\n", escape(query)));
             }
             body.push_str("  </summary>\n");
         }
@@ -80,22 +88,27 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
         for sub in ops {
             body.push_str(&format!("    <operation kind=\"{}\">\n", sub.kind.as_str()));
             // Sub-report summary
-            if let Some(ref s) = sub.summary {
+            if let Some(ref t) = sub.totals {
                 body.push_str("      <summary>\n");
-                if matches!(sub.kind, ReportKind::Set) {
-                    body.push_str(&format!("        <total>{}</total>\n", s.total));
-                    body.push_str(&format!("        <files>{}</files>\n", s.files_affected));
-                    body.push_str(&format!("        <updated>{}</updated>\n", s.errors));
-                    body.push_str(&format!("        <unchanged>{}</unchanged>\n", s.warnings));
-                } else {
-                    body.push_str(&format!("        <passed>{}</passed>\n", s.passed));
-                    body.push_str(&format!("        <total>{}</total>\n", s.total));
-                    body.push_str(&format!("        <files>{}</files>\n", s.files_affected));
-                    body.push_str(&format!("        <errors>{}</errors>\n", s.errors));
-                    body.push_str(&format!("        <warnings>{}</warnings>\n", s.warnings));
-                    if let Some(ref expected) = s.expected {
-                        body.push_str(&format!("        <expected>{}</expected>\n", escape(expected)));
-                    }
+                if let Some(passed) = sub.passed {
+                    body.push_str(&format!("        <passed>{}</passed>\n", passed));
+                }
+                body.push_str(&format!("        <results>{}</results>\n", t.results));
+                body.push_str(&format!("        <files>{}</files>\n", t.files));
+                if t.errors > 0 {
+                    body.push_str(&format!("        <errors>{}</errors>\n", t.errors));
+                }
+                if t.warnings > 0 {
+                    body.push_str(&format!("        <warnings>{}</warnings>\n", t.warnings));
+                }
+                if t.updated > 0 {
+                    body.push_str(&format!("        <updated>{}</updated>\n", t.updated));
+                }
+                if t.unchanged > 0 {
+                    body.push_str(&format!("        <unchanged>{}</unchanged>\n", t.unchanged));
+                }
+                if let Some(ref expected) = sub.expected {
+                    body.push_str(&format!("        <expected>{}</expected>\n", escape(expected)));
                 }
                 body.push_str("      </summary>\n");
             }

@@ -75,18 +75,18 @@ pub fn render_check_report(
     report: &Report,
     ctx: &RunContext,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let summary = report.summary.as_ref().expect("check report must have summary");
+    let totals = report.totals.as_ref().expect("check report must have totals");
 
     match ctx.output_format {
         OutputFormat::Json   => print!("{}", render_json_report(report, &ctx.view, &ctx.render_options())),
         OutputFormat::Yaml   => print!("{}", render_yaml_report(report, &ctx.view, &ctx.render_options())),
         OutputFormat::Xml    => print!("{}", render_xml_report(report, &ctx.view, &ctx.render_options())),
-        OutputFormat::Gcc    => { print!("{}", render_gcc(report, &ctx.render_options())); print_check_summary(summary); }
+        OutputFormat::Gcc    => { print!("{}", render_gcc(report, &ctx.render_options())); print_check_summary(totals); }
         OutputFormat::Github => print!("{}", render_github(report)),
         OutputFormat::Text   => print!("{}", render_text_report(report, &ctx.view, &ctx.render_options())),
     }
 
-    if summary.errors > 0 {
+    if totals.errors > 0 {
         return Err(Box::new(crate::SilentExit));
     }
     Ok(())
@@ -103,7 +103,8 @@ pub fn render_test_report(
     message: &Option<String>,
     error_template: &Option<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let summary = report.summary.as_ref().expect("test report must have summary");
+    let passed = report.passed.unwrap_or(true);
+    let totals = report.totals.as_ref().expect("test report must have totals");
 
     match ctx.output_format {
         OutputFormat::Json | OutputFormat::Yaml | OutputFormat::Xml => {
@@ -113,7 +114,7 @@ pub fn render_test_report(
                 OutputFormat::Xml  => print!("{}", render_xml_report(report, &ctx.view, &ctx.render_options())),
                 _ => unreachable!(),
             }
-            if !summary.passed {
+            if !passed {
                 return Err(Box::new(crate::SilentExit));
             }
             return Ok(());
@@ -122,32 +123,32 @@ pub fn render_test_report(
     }
 
     // Text/gcc/github: colored pass/fail line
-    let (symbol, color) = if summary.passed {
+    let (symbol, color) = if passed {
         ("✓", test_colors::GREEN)
     } else {
         ("✗", test_colors::RED)
     };
 
     let label        = message.as_deref().unwrap_or("");
-    let expected_str = summary.expected.as_deref().unwrap_or("?");
+    let expected_str = report.expected.as_deref().unwrap_or("?");
 
     if ctx.use_color {
         if label.is_empty() {
-            println!("{}{}{} {} matches{}", test_colors::BOLD, color, symbol, summary.total, test_colors::RESET);
-        } else if summary.passed {
+            println!("{}{}{} {} matches{}", test_colors::BOLD, color, symbol, totals.results, test_colors::RESET);
+        } else if passed {
             println!("{}{}{} {}{}", test_colors::BOLD, color, symbol, label, test_colors::RESET);
         } else {
-            println!("{}{}{} {} {}(expected {}, got {}){}", test_colors::BOLD, color, symbol, label, test_colors::RESET, expected_str, summary.total, test_colors::RESET);
+            println!("{}{}{} {} {}(expected {}, got {}){}", test_colors::BOLD, color, symbol, label, test_colors::RESET, expected_str, totals.results, test_colors::RESET);
         }
     } else if label.is_empty() {
-        println!("{} {} matches", symbol, summary.total);
-    } else if summary.passed {
+        println!("{} {} matches", symbol, totals.results);
+    } else if passed {
         println!("{} {}", symbol, label);
     } else {
-        println!("{} {} (expected {}, got {})", symbol, label, expected_str, summary.total);
+        println!("{} {} (expected {}, got {})", symbol, label, expected_str, totals.results);
     }
 
-    if !summary.passed && !report.matches.is_empty() {
+    if !passed && !report.matches.is_empty() {
         if let Some(ref error_tmpl) = error_template {
             let out = render_gcc_report_with_template(&report.matches, error_tmpl, false, &ctx.render_options());
             for line in out.lines() {
@@ -187,7 +188,7 @@ pub fn render_test_report(
         }
     }
 
-    if !summary.passed {
+    if !passed {
         return Err(Box::new(crate::SilentExit));
     }
     Ok(())
@@ -204,7 +205,8 @@ pub fn render_run_report(
 ) -> Result<(), Box<dyn std::error::Error>> {
     use tractor_core::report::ReportKind;
 
-    let summary = report.summary.as_ref().expect("run report must have summary");
+    let passed = report.passed.unwrap_or(true);
+    let totals = report.totals.as_ref().expect("run report must have totals");
 
     match ctx.output_format {
         OutputFormat::Json   => print!("{}", render_json_report(report, &ctx.view, &ctx.render_options())),
@@ -230,13 +232,13 @@ pub fn render_run_report(
                             }
                         }
                         ReportKind::Test => {
-                            let sub_summary = sub.summary.as_ref();
-                            if let Some(s) = sub_summary {
-                                let expected = s.expected.as_deref().unwrap_or("?");
-                                if s.passed {
-                                    eprintln!("test passed: expected {}, got {} match{}", expected, s.total, if s.total == 1 { "" } else { "es" });
+                            if let Some(ref t) = sub.totals {
+                                let sub_passed = sub.passed.unwrap_or(true);
+                                let expected = sub.expected.as_deref().unwrap_or("?");
+                                if sub_passed {
+                                    eprintln!("test passed: expected {}, got {} match{}", expected, t.results, if t.results == 1 { "" } else { "es" });
                                 } else {
-                                    eprintln!("test failed: expected {}, got {} match{}", expected, s.total, if s.total == 1 { "" } else { "es" });
+                                    eprintln!("test failed: expected {}, got {} match{}", expected, t.results, if t.results == 1 { "" } else { "es" });
                                 }
                             }
                         }
@@ -271,37 +273,37 @@ pub fn render_run_report(
                 }
             }
             // Print run-level summary
-            print_run_summary(summary, report.operations.as_deref());
+            print_run_summary(totals, report.operations.as_deref());
         }
     }
 
-    if !summary.passed {
+    if !passed {
         return Err(Box::new(crate::SilentExit));
     }
     Ok(())
 }
 
-fn print_run_summary(summary: &tractor_core::report::Summary, operations: Option<&[Report]>) {
+fn print_run_summary(totals: &tractor_core::report::Totals, operations: Option<&[Report]>) {
     use tractor_core::report::ReportKind;
     let mut parts = Vec::new();
 
-    if summary.errors > 0 {
-        parts.push(format!("{} check violation{}", summary.errors,
-            if summary.errors == 1 { "" } else { "s" }));
+    if totals.errors > 0 {
+        parts.push(format!("{} check violation{}", totals.errors,
+            if totals.errors == 1 { "" } else { "s" }));
     }
 
     // Count set updates from sub-reports
     if let Some(ops) = operations {
         let set_updated: usize = ops.iter()
             .filter(|r| matches!(r.kind, ReportKind::Set))
-            .filter_map(|r| r.summary.as_ref())
-            .map(|s| s.errors) // errors = updated count for set
+            .filter_map(|r| r.totals.as_ref())
+            .map(|t| t.updated)
             .sum();
         let set_drift: usize = ops.iter()
             .filter(|r| matches!(r.kind, ReportKind::Set))
-            .filter_map(|r| r.summary.as_ref())
-            .filter(|s| !s.passed)
-            .map(|s| s.files_affected)
+            .filter(|r| !r.passed.unwrap_or(true))
+            .filter_map(|r| r.totals.as_ref())
+            .map(|t| t.files)
             .sum();
         if set_drift > 0 {
             parts.push(format!("{} file{} out of sync", set_drift,
@@ -320,14 +322,14 @@ fn print_run_summary(summary: &tractor_core::report::Summary, operations: Option
     }
 }
 
-fn print_check_summary(summary: &tractor_core::report::Summary) {
-    if summary.total > 0 {
+fn print_check_summary(totals: &tractor_core::report::Totals) {
+    if totals.results > 0 {
         eprintln!();
-        let kind = if summary.errors > 0 {
-            format!("{} error{}", summary.errors, if summary.errors == 1 { "" } else { "s" })
+        let kind = if totals.errors > 0 {
+            format!("{} error{}", totals.errors, if totals.errors == 1 { "" } else { "s" })
         } else {
-            format!("{} warning{}", summary.warnings, if summary.warnings == 1 { "" } else { "s" })
+            format!("{} warning{}", totals.warnings, if totals.warnings == 1 { "" } else { "s" })
         };
-        eprintln!("{} in {} file{}", kind, summary.files_affected, if summary.files_affected == 1 { "" } else { "s" });
+        eprintln!("{} in {} file{}", kind, totals.files, if totals.files == 1 { "" } else { "s" });
     }
 }

@@ -1,10 +1,9 @@
 {
   "summary": {
     "passed": false,
-    "total": 3,
+    "results": 3,
     "files": 2,
-    "errors": 3,
-    "warnings": 0
+    "errors": 3
   },
   "matches": [
     {

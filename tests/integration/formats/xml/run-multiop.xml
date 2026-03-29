@@ -2,7 +2,7 @@
 <report>
   <summary>
     <passed>false</passed>
-    <total>5</total>
+    <results>5</results>
     <files>2</files>
     <errors>2</errors>
     <warnings>1</warnings>
@@ -11,7 +11,7 @@
     <operation kind="check">
       <summary>
         <passed>false</passed>
-        <total>3</total>
+        <results>3</results>
         <files>1</files>
         <errors>2</errors>
         <warnings>1</warnings>
@@ -62,10 +62,8 @@
     <operation kind="test">
       <summary>
         <passed>true</passed>
-        <total>2</total>
+        <results>2</results>
         <files>1</files>
-        <errors>0</errors>
-        <warnings>0</warnings>
         <expected>some, none</expected>
       </summary>
       <groups>

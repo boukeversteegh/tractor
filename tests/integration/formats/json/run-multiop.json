@@ -1,7 +1,7 @@
 {
   "summary": {
     "passed": false,
-    "total": 5,
+    "results": 5,
     "files": 2,
     "errors": 2,
     "warnings": 1
@@ -11,7 +11,7 @@
       "kind": "check",
       "summary": {
         "passed": false,
-        "total": 3,
+        "results": 3,
         "files": 1,
         "errors": 2,
         "warnings": 1
@@ -62,10 +62,8 @@
       "kind": "test",
       "summary": {
         "passed": true,
-        "total": 2,
+        "results": 2,
         "files": 1,
-        "errors": 0,
-        "warnings": 0,
         "expected": "some, none"
       },
       "groups": [

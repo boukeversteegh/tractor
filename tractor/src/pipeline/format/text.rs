@@ -9,7 +9,7 @@
 use tractor_core::{
     render_xml_node, normalize_path,
     render_source_precomputed, render_lines,
-    report::{Report, ReportKind, ReportMatch, Summary},
+    report::{Report, ReportKind, ReportMatch, Totals},
     RenderOptions,
 };
 use super::options::{ViewField, ViewSet};
@@ -77,11 +77,11 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         ReportKind::Check | ReportKind::Test | ReportKind::Set | ReportKind::Run => true,
     };
     if show_summary {
-        if let Some(ref summary) = report.summary {
+        if let Some(ref totals) = report.totals {
             if !out.is_empty() && !out.ends_with('\n') {
                 out.push('\n');
             }
-            out.push_str(&format_summary(summary, report.kind));
+            out.push_str(&format_summary(totals, report.passed, report.kind));
         }
     }
 
@@ -202,44 +202,42 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
     }
 }
 
-fn format_summary(summary: &Summary, kind: ReportKind) -> String {
+fn format_summary(totals: &Totals, passed: Option<bool>, kind: ReportKind) -> String {
     let mut out = String::new();
 
-    if let Some(ref query) = summary.query {
-        out.push_str(&format!("Query: {}\n", query));
-    }
+    let passed_val = passed.unwrap_or(true);
 
     let count_line = match kind {
         ReportKind::Query => {
-            let f = summary.files_affected;
+            let f = totals.files;
             if f <= 1 {
-                format!("{} matches\n", summary.total)
+                format!("{} matches\n", totals.results)
             } else {
-                format!("{} matches in {} files\n", summary.total, f)
+                format!("{} matches in {} files\n", totals.results, f)
             }
         }
         ReportKind::Check => {
-            if summary.passed {
+            if passed_val {
                 "All checks passed\n".to_string()
-            } else if summary.errors > 0 {
-                let f = summary.files_affected;
+            } else if totals.errors > 0 {
+                let f = totals.files;
                 format!("{} error{} in {} file{}\n",
-                    summary.errors, if summary.errors == 1 { "" } else { "s" },
+                    totals.errors, if totals.errors == 1 { "" } else { "s" },
                     f, if f == 1 { "" } else { "s" })
             } else {
-                let f = summary.files_affected;
+                let f = totals.files;
                 format!("{} warning{} in {} file{}\n",
-                    summary.warnings, if summary.warnings == 1 { "" } else { "s" },
+                    totals.warnings, if totals.warnings == 1 { "" } else { "s" },
                     f, if f == 1 { "" } else { "s" })
             }
         }
         ReportKind::Test => {
-            if summary.passed { "passed\n".to_string() } else { "failed\n".to_string() }
+            if passed_val { "passed\n".to_string() } else { "failed\n".to_string() }
         }
         ReportKind::Set => {
-            let updated = summary.errors; // we reuse errors field for "updated" count
-            let unchanged = summary.warnings; // we reuse warnings field for "unchanged" count
-            let f = summary.files_affected;
+            let updated = totals.updated;
+            let unchanged = totals.unchanged;
+            let f = totals.files;
             if updated == 0 && unchanged == 0 {
                 "No matches\n".to_string()
             } else if unchanged == 0 {
@@ -254,15 +252,15 @@ fn format_summary(summary: &Summary, kind: ReportKind) -> String {
             }
         }
         ReportKind::Run => {
-            if summary.passed {
-                format!("{} matches across {} files\n", summary.total, summary.files_affected)
+            if passed_val {
+                format!("{} matches across {} files\n", totals.results, totals.files)
             } else {
                 let mut parts = Vec::new();
-                if summary.errors > 0 {
-                    parts.push(format!("{} error{}", summary.errors, if summary.errors == 1 { "" } else { "s" }));
+                if totals.errors > 0 {
+                    parts.push(format!("{} error{}", totals.errors, if totals.errors == 1 { "" } else { "s" }));
                 }
-                if summary.warnings > 0 {
-                    parts.push(format!("{} warning{}", summary.warnings, if summary.warnings == 1 { "" } else { "s" }));
+                if totals.warnings > 0 {
+                    parts.push(format!("{} warning{}", totals.warnings, if totals.warnings == 1 { "" } else { "s" }));
                 }
                 if parts.is_empty() {
                     "failed\n".to_string()

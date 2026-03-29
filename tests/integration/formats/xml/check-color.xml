@@ -2,10 +2,9 @@
 \e[2m<\e[0m\e[34mreport\e[0m\e[2m>\e[0m
   \e[2m<\e[0m\e[34msummary\e[0m\e[2m>\e[0m
     \e[2m<\e[0m\e[34mpassed\e[0m\e[2m>false\e[2m</\e[0m\e[34mpassed\e[0m\e[2m>\e[0m
-    \e[2m<\e[0m\e[34mtotal\e[0m\e[2m>2\e[2m</\e[0m\e[34mtotal\e[0m\e[2m>\e[0m
+    \e[2m<\e[0m\e[34mresults\e[0m\e[2m>2\e[2m</\e[0m\e[34mresults\e[0m\e[2m>\e[0m
     \e[2m<\e[0m\e[34mfiles\e[0m\e[2m>1\e[2m</\e[0m\e[34mfiles\e[0m\e[2m>\e[0m
     \e[2m<\e[0m\e[34merrors\e[0m\e[2m>2\e[2m</\e[0m\e[34merrors\e[0m\e[2m>\e[0m
-    \e[2m<\e[0m\e[34mwarnings\e[0m\e[2m>0\e[2m</\e[0m\e[34mwarnings\e[0m\e[2m>\e[0m
   \e[2m</\e[0m\e[34msummary\e[0m\e[2m>\e[0m
   \e[2m<\e[0m\e[34mgroups\e[0m\e[2m>\e[0m
     \e[2m<\e[0m\e[34mgroup\e[0m \e[36mfile\e[0m\e[2m="\e[0m\e[33mtests/integration/formats/sample.cs\e[0m\e[2m"\e[0m\e[2m>\e[0m
