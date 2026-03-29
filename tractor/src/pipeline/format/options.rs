@@ -211,11 +211,4 @@ pub fn parse_group_by(s: &str) -> Result<Vec<GroupDimension>, String> {
     Ok(dims)
 }
 
-/// Legacy GroupBy for json.rs match_to_value (file field omission).
-/// Will be removed when match_to_value no longer needs it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum GroupBy {
-    None,
-    File,
-}
 

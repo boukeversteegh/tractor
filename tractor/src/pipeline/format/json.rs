@@ -1,6 +1,6 @@
 use serde_json::{json, Value};
 use tractor_core::{report::{Report, ReportMatch, ResultItem}, normalize_path, xml_node_to_json, RenderOptions};
-use super::options::{GroupBy, ViewField, ViewSet};
+use super::options::{ViewField, ViewSet};
 
 pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions) -> String {
     let mut root = serde_json::Map::new();
@@ -58,7 +58,7 @@ pub fn emit_report_metadata(root: &mut serde_json::Map<String, Value>, report: &
 pub fn render_results_json(items: &[ResultItem], view: &ViewSet, render_opts: &RenderOptions) -> Vec<Value> {
     items.iter().map(|item| {
         match item {
-            ResultItem::Match(rm) => match_to_value(rm, view, render_opts, GroupBy::None),
+            ResultItem::Match(rm) => match_to_value(rm, view, render_opts),
             ResultItem::Group(sub) => {
                 let mut obj = serde_json::Map::new();
                 // Hoisted group key values — same field names as on a match
@@ -101,14 +101,13 @@ pub fn match_to_value(
     rm: &ReportMatch,
     view: &ViewSet,
     render_opts: &RenderOptions,
-    group_by: GroupBy,
 ) -> Value {
     let mut obj = serde_json::Map::new();
 
     for field in &view.fields {
         match field {
             ViewField::File => {
-                if group_by == GroupBy::None {
+                if !rm.file.is_empty() {
                     obj.insert("file".into(), json!(normalize_path(&rm.file)));
                 }
             }
@@ -216,7 +215,7 @@ mod tests {
         ]);
         let view = ViewSet::single(ViewField::Tree);
         let opts = RenderOptions::new();
-        let val = match_to_value(&rm, &view, &opts, GroupBy::None);
+        let val = match_to_value(&rm, &view, &opts);
         let v = val.get("tree").unwrap();
         assert!(v.is_object(), "Map tree should be a JSON object, got: {}", v);
         assert_eq!(v["name"], "foo");
@@ -228,7 +227,7 @@ mod tests {
         let rm = make_plain_match("hello world");
         let view = ViewSet::single(ViewField::Value);
         let opts = RenderOptions::new();
-        let val = match_to_value(&rm, &view, &opts, GroupBy::None);
+        let val = match_to_value(&rm, &view, &opts);
         let v = val.get("value").unwrap();
         assert!(v.is_string(), "Regular value should be a string, got: {}", v);
         assert_eq!(v.as_str().unwrap(), "hello world");
