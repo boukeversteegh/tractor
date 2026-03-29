@@ -195,6 +195,12 @@ fn render_xml_results(
                 if let Some(ref file) = sub.file {
                     attrs.push_str(&format!(" file=\"{}\"", escape_attr(file)));
                 }
+                if let Some(ref command) = sub.command {
+                    attrs.push_str(&format!(" command=\"{}\"", escape_attr(command)));
+                }
+                if let Some(ref rule_id) = sub.rule_id {
+                    attrs.push_str(&format!(" rule-id=\"{}\"", escape_attr(rule_id)));
+                }
                 out.push_str(&format!("{}<group{}>\n", indent, attrs));
                 // Group-level output (set stdout mode)
                 if view.has(ViewField::Output) {

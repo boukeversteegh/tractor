@@ -61,9 +61,15 @@ pub fn render_results_json(items: &[ResultItem], view: &ViewSet, render_opts: &R
             ResultItem::Match(rm) => match_to_value(rm, view, render_opts, GroupBy::None),
             ResultItem::Group(sub) => {
                 let mut obj = serde_json::Map::new();
-                // Hoisted file
+                // Hoisted group key values — same field names as on a match
                 if let Some(ref file) = sub.file {
                     obj.insert("file".into(), json!(file));
+                }
+                if let Some(ref command) = sub.command {
+                    obj.insert("command".into(), json!(command));
+                }
+                if let Some(ref rule_id) = sub.rule_id {
+                    obj.insert("rule_id".into(), json!(rule_id));
                 }
                 // Group-level output (set stdout mode)
                 if view.has(ViewField::Output) {

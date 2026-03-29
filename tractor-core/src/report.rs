@@ -219,22 +219,27 @@ pub struct Report {
     // ---- New unified fields (Step 3) ----
 
     /// Unified results list. Contains either leaf matches or sub-groups.
-    /// Populated by `build_results()` or `with_results_grouped()`.
-    /// During migration, may be empty while old fields are still in use.
     #[serde(skip)]
     pub results: Vec<ResultItem>,
 
-    /// What the children in `results` are grouped by ("file", "command").
+    /// What the children in `results` are grouped by ("file", "command", "rule_id").
     /// None when `results` contains ungrouped leaf matches.
     #[serde(skip)]
     pub group: Option<String>,
 
-    /// Hoisted file path when this Report represents a file group.
+    /// Hoisted file path (when this Report is a file group).
     #[serde(skip)]
     pub file: Option<String>,
 
+    /// Hoisted command (when this Report is a command group).
+    #[serde(skip)]
+    pub command: Option<String>,
+
+    /// Hoisted rule_id (when this Report is a rule group).
+    #[serde(skip)]
+    pub rule_id: Option<String>,
+
     /// Full modified file content for set stdout mode (group-level).
-    /// Moved from FileGroup to Report so groups can be represented as Reports.
     #[serde(skip)]
     pub output_content: Option<String>,
 }
@@ -242,22 +247,22 @@ pub struct Report {
 impl Report {
     pub fn set(matches: Vec<ReportMatch>, success: bool, totals: Totals) -> Self {
         let results = matches.into_iter().map(ResultItem::Match).collect();
-        Report { success: Some(success), totals: Some(totals), expected: None, query: None, results, group: None, file: None, output_content: None }
+        Report { success: Some(success), totals: Some(totals), expected: None, query: None, results, group: None, file: None, command: None, rule_id: None, output_content: None }
     }
 
     pub fn query(matches: Vec<ReportMatch>, totals: Totals) -> Self {
         let results = matches.into_iter().map(ResultItem::Match).collect();
-        Report { success: None, totals: Some(totals), expected: None, query: None, results, group: None, file: None, output_content: None }
+        Report { success: None, totals: Some(totals), expected: None, query: None, results, group: None, file: None, command: None, rule_id: None, output_content: None }
     }
 
     pub fn check(matches: Vec<ReportMatch>, success: bool, totals: Totals) -> Self {
         let results = matches.into_iter().map(ResultItem::Match).collect();
-        Report { success: Some(success), totals: Some(totals), expected: None, query: None, results, group: None, file: None, output_content: None }
+        Report { success: Some(success), totals: Some(totals), expected: None, query: None, results, group: None, file: None, command: None, rule_id: None, output_content: None }
     }
 
     pub fn test(matches: Vec<ReportMatch>, success: bool, totals: Totals) -> Self {
         let results = matches.into_iter().map(ResultItem::Match).collect();
-        Report { success: Some(success), totals: Some(totals), expected: None, query: None, results, group: None, file: None, output_content: None }
+        Report { success: Some(success), totals: Some(totals), expected: None, query: None, results, group: None, file: None, command: None, rule_id: None, output_content: None }
     }
 
     /// Build a unified run report by flattening all sub-reports into one.
@@ -304,6 +309,8 @@ impl Report {
             results: all_results,
             group: None,
             file: None,
+            command: None,
+            rule_id: None,
             output_content: None,
         }
     }
@@ -347,31 +354,48 @@ impl Report {
         }
     }
 
-    /// Group flat results by source file.
-    /// Drains leaf matches from `results`, groups them by file into sub-group Reports.
-    /// Sets `group: Some("file")` on self.
-    pub fn with_groups(mut self) -> Self {
+    /// Group results by a single dimension.
+    ///
+    /// Extracts a key from each leaf match, partitions into sub-groups,
+    /// hoists the key value to the group, and clears it from individual matches.
+    /// Non-match items (existing sub-groups) pass through ungrouped.
+    pub fn group_by(mut self, dimension: &str) -> Self {
         let mut groups: Vec<ResultItem> = Vec::new();
-        let mut file_index: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+        let mut index: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
 
         let old_results = std::mem::take(&mut self.results);
         for item in old_results {
             if let ResultItem::Match(mut rm) = item {
-                let file = normalize_path(&rm.file);
-                let idx = *file_index.entry(file.clone()).or_insert_with(|| {
-                    groups.push(ResultItem::Group(Box::new(Report {
-                        success: None,
-                        totals: None,
-                        expected: None,
-                        query: None,
-                        results: vec![],
-                        group: None,
-                        file: Some(file.clone()),
-                        output_content: None,
-                    })));
+                let key = match dimension {
+                    "file" => normalize_path(&rm.file),
+                    "command" => rm.command.clone(),
+                    "rule_id" => rm.rule_id.clone().unwrap_or_default(),
+                    _ => String::new(),
+                };
+                if key.is_empty() && dimension != "file" {
+                    // No key value — leave ungrouped
+                    groups.push(ResultItem::Match(rm));
+                    continue;
+                }
+                let idx = *index.entry(key.clone()).or_insert_with(|| {
+                    let mut sub = Report::empty();
+                    // Hoist the key value to the group — same field name as on a match
+                    match dimension {
+                        "file" => sub.file = Some(key.clone()),
+                        "command" => sub.command = Some(key.clone()),
+                        "rule_id" => sub.rule_id = Some(key.clone()),
+                        _ => {}
+                    }
+                    groups.push(ResultItem::Group(Box::new(sub)));
                     groups.len() - 1
                 });
-                rm.file = String::new();
+                // Clear the hoisted field from the match
+                match dimension {
+                    "file" => rm.file = String::new(),
+                    "command" => rm.command = String::new(),
+                    "rule_id" => rm.rule_id = None,
+                    _ => {}
+                }
                 if let ResultItem::Group(ref mut g) = groups[idx] {
                     g.results.push(ResultItem::Match(rm));
                 }
@@ -382,48 +406,7 @@ impl Report {
         }
 
         self.results = groups;
-        self.group = Some("file".to_string());
-        self
-    }
-
-    /// Group flat results by command (operation type).
-    /// Drains leaf matches from `results`, groups them by `command` into sub-group Reports.
-    /// Sets `group: Some("command")` on self.
-    pub fn with_command_groups(mut self) -> Self {
-        let mut groups: Vec<ResultItem> = Vec::new();
-        let mut cmd_index: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
-
-        let old_results = std::mem::take(&mut self.results);
-        for item in old_results {
-            if let ResultItem::Match(rm) = item {
-                let cmd = rm.command.clone();
-                let idx = *cmd_index.entry(cmd.clone()).or_insert_with(|| {
-                    let mut sub = Report::empty();
-                    sub.file = None;
-                    // command is stored on the group level — not as a field on Report
-                    // (it's the hoisted value, accessed via the match's command field)
-                    groups.push(ResultItem::Group(Box::new(sub)));
-                    groups.len() - 1
-                });
-                if let ResultItem::Group(ref mut g) = groups[idx] {
-                    g.results.push(ResultItem::Match(rm));
-                }
-            } else {
-                groups.push(item);
-            }
-        }
-
-        // Set command value on each group (hoisted field)
-        for (cmd, idx) in &cmd_index {
-            if let ResultItem::Group(ref mut g) = groups[*idx] {
-                // Store the command as metadata — renderers read all_matches()[0].command
-                // to determine the group's command value. We don't add a separate
-                // "command" field on Report — it's implicit from the group key.
-            }
-        }
-
-        self.results = groups;
-        self.group = Some("command".to_string());
+        self.group = Some(dimension.to_string());
         self
     }
 
@@ -437,12 +420,7 @@ impl Report {
         let dim = dimensions[0];
         let rest = &dimensions[1..];
 
-        // Apply the first dimension
-        self = match dim {
-            "file" => self.with_groups(),
-            "command" => self.with_command_groups(),
-            _ => self,
-        };
+        self = self.group_by(dim);
 
         // Apply remaining dimensions recursively to each sub-group
         if !rest.is_empty() {
@@ -470,6 +448,8 @@ impl Report {
             results: vec![],
             group: None,
             file: None,
+            command: None,
+            rule_id: None,
             output_content: None,
         }
     }

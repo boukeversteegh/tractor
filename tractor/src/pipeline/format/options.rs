@@ -175,6 +175,8 @@ pub enum GroupDimension {
     File,
     /// Group by operation type (command field on matches).
     Command,
+    /// Group by rule identifier.
+    RuleId,
 }
 
 impl GroupDimension {
@@ -182,6 +184,7 @@ impl GroupDimension {
         match self {
             GroupDimension::File => "file",
             GroupDimension::Command => "command",
+            GroupDimension::RuleId => "rule_id",
         }
     }
 }
@@ -198,8 +201,9 @@ pub fn parse_group_by(s: &str) -> Result<Vec<GroupDimension>, String> {
         match part {
             "file" => dims.push(GroupDimension::File),
             "command" => dims.push(GroupDimension::Command),
+            "rule" | "rule_id" => dims.push(GroupDimension::RuleId),
             other => return Err(format!(
-                "invalid --group value '{}': use 'none', 'file', 'command', or comma-separated (e.g. 'command,file')",
+                "invalid --group value '{}': use 'none', 'file', 'command', 'rule', or comma-separated (e.g. 'command,file')",
                 other
             )),
         }

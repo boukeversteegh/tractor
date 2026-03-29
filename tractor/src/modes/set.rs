@@ -255,6 +255,8 @@ fn build_set_inline_report(modified: String, ctx: &RunContext) -> Report {
         results: vec![],
         group: None,
         file: Some(String::new()),
+        command: None,
+        rule_id: None,
         output_content,
     }))];
     report.group = Some("file".to_string());
