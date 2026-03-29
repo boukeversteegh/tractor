@@ -2,20 +2,13 @@ use tractor_core::{report::{Report, ResultItem}, normalize_path, render_xml_stri
 use super::options::{ViewField, ViewSet};
 
 pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions) -> String {
-    use tractor_core::report::ReportKind;
-
-    // Tree fragments inside <tree> are built without color. The entire report is colorized
-    // in one pass at the end via render_xml_string — keeping coloring at the serialization layer.
     let mut tree_opts = render_opts.clone();
     tree_opts.use_color = false;
 
-    // Passed + totals: top-level elements (not wrapped in <summary>).
-    // Always present for check/test reports (structural, not view-gated).
-    // For query reports, only include if explicitly requested via -v summary.
-    let show_totals = if matches!(report.kind, ReportKind::Query) {
-        view.has(ViewField::Summary)
-    } else {
+    let show_totals = if report.success.is_some() {
         true
+    } else {
+        view.has(ViewField::Summary)
     };
 
     let mut body = String::new();

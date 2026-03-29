@@ -157,29 +157,6 @@ pub struct Totals {
 // Report
 // ---------------------------------------------------------------------------
 
-/// Which command produced this report.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub enum ReportKind {
-    Query,
-    Check,
-    Test,
-    Set,
-    Run,
-}
-
-impl ReportKind {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            ReportKind::Query => "query",
-            ReportKind::Check => "check",
-            ReportKind::Test => "test",
-            ReportKind::Set => "set",
-            ReportKind::Run => "run",
-        }
-    }
-}
-
 // ---------------------------------------------------------------------------
 // ResultItem — recursive result type
 // ---------------------------------------------------------------------------
@@ -223,8 +200,6 @@ impl ResultItem {
 /// the same type. `results` contains either leaf matches or sub-groups.
 #[derive(Debug, Clone, Serialize)]
 pub struct Report {
-    pub kind: ReportKind,
-
     /// Did the command succeed? False if check errors, test failures, or set drift.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub success: Option<bool>,
@@ -267,22 +242,22 @@ pub struct Report {
 impl Report {
     pub fn set(matches: Vec<ReportMatch>, success: bool, totals: Totals) -> Self {
         let results = matches.into_iter().map(ResultItem::Match).collect();
-        Report { kind: ReportKind::Set, success: Some(success), totals: Some(totals), expected: None, query: None, results, group: None, file: None, output_content: None }
+        Report { success: Some(success), totals: Some(totals), expected: None, query: None, results, group: None, file: None, output_content: None }
     }
 
     pub fn query(matches: Vec<ReportMatch>, totals: Totals) -> Self {
         let results = matches.into_iter().map(ResultItem::Match).collect();
-        Report { kind: ReportKind::Query, success: None, totals: Some(totals), expected: None, query: None, results, group: None, file: None, output_content: None }
+        Report { success: None, totals: Some(totals), expected: None, query: None, results, group: None, file: None, output_content: None }
     }
 
     pub fn check(matches: Vec<ReportMatch>, success: bool, totals: Totals) -> Self {
         let results = matches.into_iter().map(ResultItem::Match).collect();
-        Report { kind: ReportKind::Check, success: Some(success), totals: Some(totals), expected: None, query: None, results, group: None, file: None, output_content: None }
+        Report { success: Some(success), totals: Some(totals), expected: None, query: None, results, group: None, file: None, output_content: None }
     }
 
     pub fn test(matches: Vec<ReportMatch>, success: bool, totals: Totals) -> Self {
         let results = matches.into_iter().map(ResultItem::Match).collect();
-        Report { kind: ReportKind::Test, success: Some(success), totals: Some(totals), expected: None, query: None, results, group: None, file: None, output_content: None }
+        Report { success: Some(success), totals: Some(totals), expected: None, query: None, results, group: None, file: None, output_content: None }
     }
 
     /// Build a unified run report by flattening all sub-reports into one.
@@ -315,8 +290,7 @@ impl Report {
         }
 
         Report {
-            kind: ReportKind::Run,
-            success: Some(success),
+                       success: Some(success),
             totals: Some(Totals {
                 results: total,
                 files,
@@ -386,7 +360,6 @@ impl Report {
                 let file = normalize_path(&rm.file);
                 let idx = *file_index.entry(file.clone()).or_insert_with(|| {
                     groups.push(ResultItem::Group(Box::new(Report {
-                        kind: self.kind,
                         success: None,
                         totals: None,
                         expected: None,
@@ -534,7 +507,6 @@ mod tests {
         let json = report.to_json();
         let v: serde_json::Value = serde_json::from_str(&json).unwrap();
 
-        assert_eq!(v["kind"], "test");
         assert_eq!(v["success"], true);
         assert_eq!(v["expected"], "some");
         // No reason/severity on plain match

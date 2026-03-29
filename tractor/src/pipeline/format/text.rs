@@ -9,7 +9,7 @@
 use tractor_core::{
     render_xml_node, normalize_path,
     render_source_precomputed, render_lines,
-    report::{Report, ReportKind, ReportMatch, ResultItem, Totals},
+    report::{Report, ReportMatch, ResultItem, Totals},
     RenderOptions,
 };
 use super::options::{ViewField, ViewSet};
@@ -17,8 +17,11 @@ use super::options::{ViewField, ViewSet};
 pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions) -> String {
     let mut out = String::new();
 
-    // Set stdout mode: groups with output field — render group by group.
-    if matches!(report.kind, ReportKind::Set) && view.has(ViewField::Output) {
+    // Set stdout mode: groups with output_content — render group by group.
+    let has_group_output = view.has(ViewField::Output) && report.results.iter().any(|item| {
+        matches!(item, ResultItem::Group(g) if g.output_content.is_some())
+    });
+    if has_group_output {
         out.push_str(&render_set_stdout_results(&report.results, view, render_opts));
         return out;
     }
@@ -51,16 +54,18 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
 
     // Summary: always for check/test/set (unless output view active, handled above);
     // gated on -v summary or -v query for query
-    let show_summary = match report.kind {
-        ReportKind::Query => view.has(ViewField::Summary) || view.has(ViewField::Query),
-        ReportKind::Check | ReportKind::Test | ReportKind::Set | ReportKind::Run => true,
+    // Show summary: always when report has a verdict, opt-in for queries
+    let show_summary = if report.success.is_some() {
+        true
+    } else {
+        view.has(ViewField::Summary) || view.has(ViewField::Query)
     };
     if show_summary {
         if let Some(ref totals) = report.totals {
             if !out.is_empty() && !out.ends_with('\n') {
                 out.push('\n');
             }
-            out.push_str(&format_summary(totals, report.success, report.kind));
+            out.push_str(&format_summary(totals, report.success, report.expected.as_deref()));
         }
     }
 
@@ -181,76 +186,81 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
     }
 }
 
-fn format_summary(totals: &Totals, success: Option<bool>, kind: ReportKind) -> String {
-    let mut out = String::new();
-
+/// Format summary text, deriving wording from totals fields and success.
+/// No longer depends on ReportKind — the data itself determines the output.
+fn format_summary(totals: &Totals, success: Option<bool>, expected: Option<&str>) -> String {
     let success_val = success.unwrap_or(true);
+    let has_check = totals.errors > 0 || totals.warnings > 0;
+    let has_set = totals.updated > 0 || totals.unchanged > 0;
+    let has_test = expected.is_some();
+    let f = totals.files;
 
-    let count_line = match kind {
-        ReportKind::Query => {
-            let f = totals.files;
-            if f <= 1 {
-                format!("{} matches\n", totals.results)
-            } else {
-                format!("{} matches in {} files\n", totals.results, f)
-            }
+    // Test assertions
+    if has_test && !has_check && !has_set {
+        return if success_val { "passed\n".to_string() } else { "failed\n".to_string() };
+    }
+
+    // Check violations
+    if has_check && !has_set {
+        if success_val {
+            return "All checks passed\n".to_string();
         }
-        ReportKind::Check => {
-            if success_val {
-                "All checks passed\n".to_string()
-            } else if totals.errors > 0 {
-                let f = totals.files;
-                format!("{} error{} in {} file{}\n",
-                    totals.errors, if totals.errors == 1 { "" } else { "s" },
-                    f, if f == 1 { "" } else { "s" })
-            } else {
-                let f = totals.files;
-                format!("{} warning{} in {} file{}\n",
-                    totals.warnings, if totals.warnings == 1 { "" } else { "s" },
-                    f, if f == 1 { "" } else { "s" })
-            }
+        let mut parts = Vec::new();
+        if totals.errors > 0 {
+            parts.push(format!("{} error{}", totals.errors, if totals.errors == 1 { "" } else { "s" }));
         }
-        ReportKind::Test => {
-            if success_val { "passed\n".to_string() } else { "failed\n".to_string() }
+        if totals.warnings > 0 {
+            parts.push(format!("{} warning{}", totals.warnings, if totals.warnings == 1 { "" } else { "s" }));
         }
-        ReportKind::Set => {
-            let updated = totals.updated;
-            let unchanged = totals.unchanged;
-            let f = totals.files;
-            if updated == 0 && unchanged == 0 {
-                "No matches\n".to_string()
-            } else if unchanged == 0 {
-                format!("Set {} match{} in {} file{}\n",
-                    updated, if updated == 1 { "" } else { "es" },
-                    f, if f == 1 { "" } else { "s" })
-            } else {
-                format!("Set {} match{} in {} file{} ({} unchanged)\n",
-                    updated, if updated == 1 { "" } else { "es" },
-                    f, if f == 1 { "" } else { "s" },
-                    unchanged)
-            }
+        return format!("{} in {} file{}\n", parts.join(", "), f, if f == 1 { "" } else { "s" });
+    }
+
+    // Set operations
+    if has_set && !has_check {
+        let updated = totals.updated;
+        let unchanged = totals.unchanged;
+        if updated == 0 && unchanged == 0 {
+            return "No matches\n".to_string();
+        } else if unchanged == 0 {
+            return format!("Set {} match{} in {} file{}\n",
+                updated, if updated == 1 { "" } else { "es" },
+                f, if f == 1 { "" } else { "s" });
+        } else {
+            return format!("Set {} match{} in {} file{} ({} unchanged)\n",
+                updated, if updated == 1 { "" } else { "es" },
+                f, if f == 1 { "" } else { "s" },
+                unchanged);
         }
-        ReportKind::Run => {
-            if success_val {
-                format!("{} matches across {} files\n", totals.results, totals.files)
-            } else {
-                let mut parts = Vec::new();
-                if totals.errors > 0 {
-                    parts.push(format!("{} error{}", totals.errors, if totals.errors == 1 { "" } else { "s" }));
-                }
-                if totals.warnings > 0 {
-                    parts.push(format!("{} warning{}", totals.warnings, if totals.warnings == 1 { "" } else { "s" }));
-                }
-                if parts.is_empty() {
-                    "failed\n".to_string()
-                } else {
-                    format!("{}\n", parts.join(", "))
-                }
-            }
+    }
+
+    // Mixed or pure query — generic summary
+    if success.is_none() {
+        // Query (no verdict)
+        if f <= 1 {
+            return format!("{} matches\n", totals.results);
         }
-    };
-    out.push_str(&count_line);
-    out
+        return format!("{} matches in {} files\n", totals.results, f);
+    }
+
+    // Mixed operations or generic verdict
+    if success_val {
+        return format!("{} matches across {} files\n", totals.results, f);
+    }
+    let mut parts = Vec::new();
+    if totals.errors > 0 {
+        parts.push(format!("{} error{}", totals.errors, if totals.errors == 1 { "" } else { "s" }));
+    }
+    if totals.warnings > 0 {
+        parts.push(format!("{} warning{}", totals.warnings, if totals.warnings == 1 { "" } else { "s" }));
+    }
+    if totals.updated > 0 {
+        parts.push(format!("{} updated", totals.updated));
+    }
+    if parts.is_empty() {
+        "failed\n".to_string()
+    } else {
+        format!("{}\n", parts.join(", "))
+    }
 }
 
 // ---------------------------------------------------------------------------

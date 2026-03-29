@@ -247,7 +247,6 @@ fn build_set_inline_report(modified: String, ctx: &RunContext) -> Report {
     };
     let mut report = Report::set(vec![], true, totals);
     report.results = vec![ResultItem::Group(Box::new(Report {
-        kind: tractor_core::report::ReportKind::Set,
         success: None,
         totals: None,
         expected: None,

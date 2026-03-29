@@ -1,17 +1,17 @@
 use serde_json::{json, Value};
-use tractor_core::{report::{Report, ReportKind, ReportMatch, ResultItem}, normalize_path, xml_node_to_json, RenderOptions};
+use tractor_core::{report::{Report, ReportMatch, ResultItem}, normalize_path, xml_node_to_json, RenderOptions};
 use super::options::{GroupBy, ViewField, ViewSet};
 
 pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions) -> String {
     let mut root = serde_json::Map::new();
 
     // success + totals: top-level fields on the report.
-    // Always present for check/test/set reports (structural, not view-gated).
-    // For query reports, only include if explicitly requested via -v summary or -v query.
-    let show_totals = if matches!(report.kind, ReportKind::Query) {
-        view.has(ViewField::Summary) || view.has(ViewField::Query)
-    } else {
+    // Always present when report has a verdict (success is Some).
+    // For query reports (success is None), only include if explicitly requested.
+    let show_totals = if report.success.is_some() {
         true
+    } else {
+        view.has(ViewField::Summary) || view.has(ViewField::Query)
     };
     if show_totals {
         emit_report_metadata(&mut root, report);
