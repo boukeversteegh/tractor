@@ -6,6 +6,7 @@
     "errors": 2,
     "warnings": 1
   },
+  "group": "file",
   "results": [
     {
       "file": "tests/integration/formats/sample.cs",
@@ -40,6 +41,5 @@
         }
       ]
     }
-  ],
-  "group": "file"
+  ]
 }

@@ -6,6 +6,7 @@
     "errors": 2,
     "warnings": 1
   },
+  "group": "command",
   "results": [
     {
       "command": "check",
@@ -81,6 +82,5 @@
         }
       ]
     }
-  ],
-  "group": "command"
+  ]
 }

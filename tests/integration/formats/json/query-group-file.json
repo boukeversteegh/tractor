@@ -1,4 +1,5 @@
 {
+  "group": "file",
   "results": [
     {
       "file": "tests/integration/formats/sample.cs",
@@ -87,6 +88,5 @@
         }
       ]
     }
-  ],
-  "group": "file"
+  ]
 }
