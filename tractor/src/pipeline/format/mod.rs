@@ -18,7 +18,7 @@ pub use text::render_text_report;
 use tractor_core::{
     render_xml_node,
     render_source_precomputed, render_lines,
-    report::Report,
+    report::{Report, ReportMatch},
 };
 use crate::pipeline::context::RunContext;
 use crate::modes::test::test_colors;
@@ -151,7 +151,10 @@ pub fn render_test_report(
     let all_matches = report.all_matches();
     if !success && !all_matches.is_empty() {
         if let Some(ref error_tmpl) = error_template {
-            let out = render_gcc_report_with_template(&report.matches, error_tmpl, false, &ctx.render_options());
+            // Collect matches for template rendering (test reports are always ungrouped)
+            let flat_matches: Vec<&ReportMatch> = report.all_matches();
+            let matches_for_template: Vec<ReportMatch> = flat_matches.into_iter().cloned().collect();
+            let out = render_gcc_report_with_template(&matches_for_template, error_tmpl, false, &ctx.render_options());
             for line in out.lines() {
                 if ctx.use_color {
                     println!("  {}{}{}", color, line, test_colors::RESET);
@@ -215,8 +218,8 @@ pub fn render_run_report(
         OutputFormat::Xml    => print!("{}", render_xml_report(report, &ctx.view, &ctx.render_options())),
         OutputFormat::Gcc | OutputFormat::Github | OutputFormat::Text => {
             // For text-based formats, render each sub-report inline.
-            if let Some(ref ops) = report.operations {
-                for sub in ops {
+            for item in &report.results {
+                if let tractor_core::report::ResultItem::Group(sub) = item {
                     match sub.kind {
                         ReportKind::Check => {
                             match ctx.output_format {
@@ -247,19 +250,9 @@ pub fn render_run_report(
                             match ctx.output_format {
                                 OutputFormat::Text => print!("{}", render_text_report(sub, &ctx.view, &ctx.render_options())),
                                 _ => {
-                                    // Gcc-style set output: render using groups if available
-                                    let matches: Vec<&tractor_core::report::ReportMatch> = if let Some(ref groups) = sub.groups {
-                                        groups.iter().flat_map(|g| g.matches.iter()).collect()
-                                    } else {
-                                        sub.matches.iter().collect()
-                                    };
-                                    for rm in matches {
+                                    for rm in sub.all_matches() {
                                         let file = if rm.file.is_empty() {
-                                            // Get file from group
-                                            sub.groups.as_ref()
-                                                .and_then(|gs| gs.first())
-                                                .map(|g| g.file.as_str())
-                                                .unwrap_or("")
+                                            sub.file.as_deref().unwrap_or("")
                                         } else {
                                             &rm.file
                                         };
@@ -274,7 +267,7 @@ pub fn render_run_report(
                 }
             }
             // Print run-level summary
-            print_run_summary(totals, report.operations.as_deref());
+            print_run_summary(totals);
         }
     }
 
@@ -284,8 +277,7 @@ pub fn render_run_report(
     Ok(())
 }
 
-fn print_run_summary(totals: &tractor_core::report::Totals, operations: Option<&[Report]>) {
-    use tractor_core::report::ReportKind;
+fn print_run_summary(totals: &tractor_core::report::Totals) {
     let mut parts = Vec::new();
 
     if totals.errors > 0 {
@@ -293,26 +285,9 @@ fn print_run_summary(totals: &tractor_core::report::Totals, operations: Option<&
             if totals.errors == 1 { "" } else { "s" }));
     }
 
-    // Count set updates from sub-reports
-    if let Some(ops) = operations {
-        let set_updated: usize = ops.iter()
-            .filter(|r| matches!(r.kind, ReportKind::Set))
-            .filter_map(|r| r.totals.as_ref())
-            .map(|t| t.updated)
-            .sum();
-        let set_drift: usize = ops.iter()
-            .filter(|r| matches!(r.kind, ReportKind::Set))
-            .filter(|r| !r.success.unwrap_or(true))
-            .filter_map(|r| r.totals.as_ref())
-            .map(|t| t.files)
-            .sum();
-        if set_drift > 0 {
-            parts.push(format!("{} file{} out of sync", set_drift,
-                if set_drift == 1 { "" } else { "s" }));
-        } else if set_updated > 0 {
-            parts.push(format!("updated {} file{}", set_updated,
-                if set_updated == 1 { "" } else { "s" }));
-        }
+    if totals.updated > 0 {
+        parts.push(format!("updated {} file{}", totals.updated,
+            if totals.updated == 1 { "" } else { "s" }));
     }
 
     if !parts.is_empty() {

@@ -19,39 +19,12 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
 
     // Set stdout mode: groups with output field — render group by group.
     if matches!(report.kind, ReportKind::Set) && view.has(ViewField::Output) {
-        // Try new results first, fallback to old groups
-        let rendered = if !report.results.is_empty() {
-            render_set_stdout_results(&report.results, view, render_opts)
-        } else if let Some(ref groups) = report.groups {
-            let mut s = String::new();
-            for group in groups {
-                let has_location = view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
-                let has_per_match = has_location || view.has(ViewField::Status);
-                if has_per_match {
-                    for rm in &group.matches {
-                        append_match(&mut s, rm, view, render_opts, Some(&group.file));
-                    }
-                }
-                if let Some(ref content) = group.output {
-                    s.push_str(content);
-                }
-            }
-            s
-        } else {
-            String::new()
-        };
-        out.push_str(&rendered);
+        out.push_str(&render_set_stdout_results(&report.results, view, render_opts));
         return out;
     }
 
     // Collect matches with optional group file context
-    let matches: Vec<(Option<&str>, &ReportMatch)> = if !report.results.is_empty() {
-        collect_matches_with_file(&report.results, None)
-    } else if let Some(ref groups) = report.groups {
-        groups.iter().flat_map(|g| g.matches.iter().map(move |rm| (Some(g.file.as_str()), rm))).collect()
-    } else {
-        report.matches.iter().map(|rm| (None, rm)).collect()
-    };
+    let matches: Vec<(Option<&str>, &ReportMatch)> = collect_matches_with_file(&report.results, None);
 
     // Blank line between matches when a single match produces more than one output line.
     // File/line/column are combined onto one location line — they don't count individually.

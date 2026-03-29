@@ -17,59 +17,15 @@ pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         emit_report_metadata(&mut root, report);
     }
 
-    // Render results from the new structure if populated, otherwise fall back to old fields
+    // Render results
     if !report.results.is_empty() {
         let results_json = render_results_json(&report.results, view, render_opts);
         if !results_json.is_empty() {
             root.insert("results".into(), Value::Array(results_json));
         }
-        // Emit group key if present
-        if let Some(ref group) = report.group {
-            root.insert("group".into(), json!(group));
-        }
-    } else {
-        // Fallback to old fields
-        if !report.matches.is_empty() {
-            let matches_json: Vec<Value> = report.matches.iter()
-                .map(|rm| match_to_value(rm, view, render_opts, GroupBy::None))
-                .collect();
-            root.insert("matches".into(), Value::Array(matches_json));
-        }
-
-        if let Some(ref ops) = report.operations {
-            let ops_json: Vec<Value> = ops.iter().map(|sub| {
-                let sub_str = render_json_report(sub, view, render_opts);
-                let sub_obj: serde_json::Map<String, Value> = serde_json::from_str(&sub_str).unwrap_or_default();
-                let mut ordered = serde_json::Map::new();
-                ordered.insert("kind".into(), json!(sub.kind.as_str()));
-                ordered.extend(sub_obj);
-                Value::Object(ordered)
-            }).collect();
-            root.insert("operations".into(), Value::Array(ops_json));
-        }
-
-        if let Some(ref groups) = report.groups {
-            let groups_json: Vec<Value> = groups.iter().map(|g| {
-                let group_matches: Vec<Value> = g.matches.iter()
-                    .map(|rm| match_to_value(rm, view, render_opts, GroupBy::File))
-                    .filter(|v| !v.as_object().map(|o| o.is_empty()).unwrap_or(false))
-                    .collect();
-                let mut group_obj = serde_json::Map::new();
-                if !g.file.is_empty() {
-                    group_obj.insert("file".into(), json!(g.file));
-                }
-                if view.has(ViewField::Output) {
-                    if let Some(ref content) = g.output {
-                        group_obj.insert("output".into(), json!(content));
-                    }
-                }
-                if !group_matches.is_empty() {
-                    group_obj.insert("matches".into(), Value::Array(group_matches));
-                }
-                Value::Object(group_obj)
-            }).collect();
-            root.insert("groups".into(), Value::Array(groups_json));
-        }
+    }
+    if let Some(ref group) = report.group {
+        root.insert("group".into(), json!(group));
     }
 
     serde_json::to_string_pretty(&Value::Object(root)).unwrap_or_else(|_| "{}".to_string())
@@ -287,7 +243,7 @@ mod tests {
         let opts = RenderOptions::new();
         let output = render_json_report(&report, &view, &opts);
         let parsed: serde_json::Value = serde_json::from_str(&output).unwrap();
-        let match_tree = &parsed["matches"][0]["tree"];
+        let match_tree = &parsed["results"][0]["tree"];
         assert!(match_tree.is_object(), "Map tree should be a JSON object in report output, got: {}", match_tree);
         assert_eq!(match_tree["name"], "foo");
         assert_eq!(match_tree["count"], 3.0);

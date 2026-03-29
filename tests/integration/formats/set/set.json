@@ -5,10 +5,11 @@
     "files": 1,
     "updated": 1
   },
-  "groups": [
+  "group": "file",
+  "results": [
     {
       "file": "tests/integration/formats/set/sample.yaml",
-      "matches": [
+      "results": [
         {
           "line": 2,
           "status": "updated"

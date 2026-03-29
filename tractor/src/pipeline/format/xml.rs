@@ -51,103 +51,14 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
         }
     }
 
-    // Render from new results if populated, otherwise fall back to old fields
+    // Render results
+    if let Some(ref group) = report.group {
+        body.push_str(&format!("  <group-by>{}</group-by>\n", escape(group)));
+    }
     if !report.results.is_empty() {
-        if let Some(ref group) = report.group {
-            body.push_str(&format!("  <group-by>{}</group-by>\n", escape(group)));
-        }
         body.push_str("  <results>\n");
         render_xml_results(&mut body, &report.results, view, "    ", &tree_opts);
         body.push_str("  </results>\n");
-    } else if !report.matches.is_empty() {
-        body.push_str("  <matches>\n");
-        for rm in &report.matches {
-            append_match(&mut body, rm, view, "    ", &tree_opts);
-        }
-        body.push_str("  </matches>\n");
-    }
-    if let Some(ref groups) = report.groups {
-        body.push_str("  <groups>\n");
-        for g in groups {
-            if g.file.is_empty() {
-                body.push_str("    <group>\n");
-            } else {
-                body.push_str(&format!("    <group file=\"{}\">\n", escape_attr(&g.file)));
-            }
-            // Group-level output (set stdout mode)
-            if view.has(ViewField::Output) {
-                if let Some(ref content) = g.output {
-                    body.push_str(&format!("      <output>{}</output>\n", escape(content)));
-                }
-            }
-            for rm in &g.matches {
-                // Skip matches with no visible per-match content
-                if view.has_per_match_fields() {
-                    append_match(&mut body, rm, view, "      ", &tree_opts);
-                }
-            }
-            body.push_str("    </group>\n");
-        }
-        body.push_str("  </groups>\n");
-    }
-
-    // Run report: emit sub-reports as <operations>
-    if let Some(ref ops) = report.operations {
-        body.push_str("  <operations>\n");
-        for sub in ops {
-            body.push_str(&format!("    <operation kind=\"{}\">\n", sub.kind.as_str()));
-            // Sub-report passed + totals
-            if let Some(passed) = sub.success {
-                body.push_str(&format!("      <success>{}</success>\n", passed));
-            }
-            if let Some(ref t) = sub.totals {
-                body.push_str("      <totals>\n");
-                body.push_str(&format!("        <results>{}</results>\n", t.results));
-                body.push_str(&format!("        <files>{}</files>\n", t.files));
-                if t.errors > 0 {
-                    body.push_str(&format!("        <errors>{}</errors>\n", t.errors));
-                }
-                if t.warnings > 0 {
-                    body.push_str(&format!("        <warnings>{}</warnings>\n", t.warnings));
-                }
-                if t.updated > 0 {
-                    body.push_str(&format!("        <updated>{}</updated>\n", t.updated));
-                }
-                if t.unchanged > 0 {
-                    body.push_str(&format!("        <unchanged>{}</unchanged>\n", t.unchanged));
-                }
-                body.push_str("      </totals>\n");
-            }
-            if let Some(ref expected) = sub.expected {
-                body.push_str(&format!("      <expected>{}</expected>\n", escape(expected)));
-            }
-            // Sub-report groups (or flat matches)
-            if let Some(ref groups) = sub.groups {
-                body.push_str("      <groups>\n");
-                for g in groups {
-                    if g.file.is_empty() {
-                        body.push_str("        <group>\n");
-                    } else {
-                        body.push_str(&format!("        <group file=\"{}\">\n", escape_attr(&g.file)));
-                    }
-                    for rm in &g.matches {
-                        if view.has_per_match_fields() {
-                            append_match(&mut body, rm, view, "          ", &tree_opts);
-                        }
-                    }
-                    body.push_str("        </group>\n");
-                }
-                body.push_str("      </groups>\n");
-            } else if !sub.matches.is_empty() {
-                body.push_str("      <matches>\n");
-                for rm in &sub.matches {
-                    append_match(&mut body, rm, view, "        ", &tree_opts);
-                }
-                body.push_str("      </matches>\n");
-            }
-            body.push_str("    </operation>\n");
-        }
-        body.push_str("  </operations>\n");
     }
 
     body.push_str("</report>\n");

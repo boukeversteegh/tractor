@@ -18,14 +18,16 @@
             "    public int Bar { get; set; }",
             "    public void Baz() { }",
             "}"
-          ]
+          ],
+          "rule_id": "_check"
         },
         {
           "reason": "class found",
           "severity": "error",
           "lines": [
             "public class Qux { }"
-          ]
+          ],
+          "rule_id": "_check"
         }
       ]
     }

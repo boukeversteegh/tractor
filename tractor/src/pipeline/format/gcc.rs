@@ -5,20 +5,6 @@ use super::shared::to_absolute_path;
 pub fn render_gcc(report: &Report, opts: &RenderOptions) -> String {
     let mut out = String::new();
     render_gcc_results(&mut out, &report.results, None, opts);
-    // Fallback to old fields if results is empty
-    if out.is_empty() {
-        if let Some(ref groups) = report.groups {
-            for g in groups {
-                for rm in &g.matches {
-                    render_gcc_match(&mut out, rm, Some(&g.file), opts);
-                }
-            }
-        } else {
-            for rm in &report.matches {
-                render_gcc_match(&mut out, rm, None, opts);
-            }
-        }
-    }
     out
 }
 

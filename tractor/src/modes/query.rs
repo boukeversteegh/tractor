@@ -78,7 +78,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
         println!("{}", report.totals.as_ref().unwrap().results);
     } else if ctx.view.has(ViewField::Schema) {
         let mut collector = tractor_core::SchemaCollector::new();
-        for m in &report.matches {
+        for m in report.all_matches() {
             if let Some(ref node) = m.tree {
                 collector.collect_from_xml_node(node);
             }

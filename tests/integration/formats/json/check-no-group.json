@@ -5,7 +5,7 @@
     "files": 2,
     "errors": 3
   },
-  "matches": [
+  "results": [
     {
       "reason": "class found",
       "severity": "error",

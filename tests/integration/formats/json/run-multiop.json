@@ -6,9 +6,9 @@
     "errors": 2,
     "warnings": 1
   },
-  "operations": [
+  "results": [
     {
-      "kind": "check",
+      "group": "file",
       "success": false,
       "totals": {
         "results": 3,
@@ -56,11 +56,10 @@
             }
           ]
         }
-      ],
-      "group": "file"
+      ]
     },
     {
-      "kind": "test",
+      "group": "file",
       "success": true,
       "totals": {
         "results": 2,
@@ -91,8 +90,7 @@
             }
           ]
         }
-      ],
-      "group": "file"
+      ]
     }
   ]
 }

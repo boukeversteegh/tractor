@@ -78,7 +78,7 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
     let mut report = reports.into_iter().next().unwrap();
 
     // Single-xpath check: don't expose internal rule ID in output.
-    for m in &mut report.matches {
+    for m in report.all_matches_mut() {
         m.rule_id = None;
     }
 

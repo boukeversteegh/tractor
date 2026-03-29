@@ -4,20 +4,6 @@ use tractor_core::{report::{Report, ResultItem}, normalize_path};
 pub fn render_github(report: &Report) -> String {
     let mut out = String::new();
     render_github_results(&mut out, &report.results, None);
-    // Fallback to old fields if results is empty
-    if out.is_empty() {
-        if let Some(ref groups) = report.groups {
-            for g in groups {
-                for rm in &g.matches {
-                    render_github_match(&mut out, rm, Some(&g.file));
-                }
-            }
-        } else {
-            for rm in &report.matches {
-                render_github_match(&mut out, rm, None);
-            }
-        }
-    }
     out
 }
 
