@@ -22,8 +22,8 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
     body.push_str("<report>\n");
 
     if show_totals {
-        if let Some(passed) = report.passed {
-            body.push_str(&format!("  <passed>{}</passed>\n", passed));
+        if let Some(passed) = report.success {
+            body.push_str(&format!("  <success>{}</success>\n", passed));
         }
         if let Some(ref totals) = report.totals {
             body.push_str("  <totals>\n");
@@ -89,8 +89,8 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
         for sub in ops {
             body.push_str(&format!("    <operation kind=\"{}\">\n", sub.kind.as_str()));
             // Sub-report passed + totals
-            if let Some(passed) = sub.passed {
-                body.push_str(&format!("      <passed>{}</passed>\n", passed));
+            if let Some(passed) = sub.success {
+                body.push_str(&format!("      <success>{}</success>\n", passed));
             }
             if let Some(ref t) = sub.totals {
                 body.push_str("      <totals>\n");

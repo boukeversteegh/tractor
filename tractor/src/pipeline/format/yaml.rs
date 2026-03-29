@@ -13,8 +13,8 @@ pub fn render_yaml_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         true
     };
     if show_totals {
-        if let Some(passed) = report.passed {
-            root.insert("passed".into(), serde_json::json!(passed));
+        if let Some(success) = report.success {
+            root.insert("success".into(), serde_json::json!(success));
         }
         if let Some(ref totals) = report.totals {
             let mut t = serde_json::Map::new();

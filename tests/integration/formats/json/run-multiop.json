@@ -1,5 +1,5 @@
 {
-  "passed": false,
+  "success": false,
   "totals": {
     "results": 5,
     "files": 2,
@@ -9,7 +9,7 @@
   "operations": [
     {
       "kind": "check",
-      "passed": false,
+      "success": false,
       "totals": {
         "results": 3,
         "files": 1,
@@ -60,7 +60,7 @@
     },
     {
       "kind": "test",
-      "passed": true,
+      "success": true,
       "totals": {
         "results": 2,
         "files": 1

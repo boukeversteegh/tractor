@@ -41,7 +41,7 @@ pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     let reports = executor::execute(&[op], &options)?;
     let report = &reports[0];
-    if report.passed == Some(false) {
+    if report.success == Some(false) {
         return Err("update matched no nodes".into());
     }
 

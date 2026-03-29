@@ -61,7 +61,7 @@ its children, and a results list.
 
 ```rust
 pub struct Report {
-    pub passed: Option<bool>,
+    pub success: Option<bool>,
     pub totals: Option<Totals>,
     pub group: Option<String>,       // what `results` is grouped by
     pub results: Vec<ResultItem>,
@@ -195,16 +195,16 @@ Key properties:
   `updated + unchanged` = total set results, group totals sum to
   parent totals.
 
-### 5. `passed`
+### 5. `success`
 
-`passed` is a top-level boolean on the root group. It is the
+`success` is a top-level boolean on the root group. It is the
 aggregate verdict:
 - false if any check errors exist
 - false if any test assertions failed
 - false if any set drift detected (verify mode)
-- queries don't affect `passed`
+- queries don't affect `success`
 
-`passed` lives alongside `totals`, not inside it — it's a verdict,
+`success` lives alongside `totals`, not inside it — it's a verdict,
 not a count.
 
 ### 6. Format is a report-level decision
@@ -332,7 +332,7 @@ tractor check "src/**/*.cs" -x "//comment[contains(.,'TODO')]" \
 
 ```json
 {
-  "passed": false,
+  "success": false,
   "totals": { "results": 3, "files": 2, "errors": 3 },
   "results": [
     { "command": "check", "file": "src/Foo.cs", "line": 12, "column": 5, "reason": "TODO found", "severity": "error" },
@@ -360,7 +360,7 @@ tractor run tractor.yaml -f json -g none
 
 ```json
 {
-  "passed": false,
+  "success": false,
   "totals": { "results": 3, "files": 2, "errors": 3 },
   "results": [
     { "command": "check", "file": "src/Foo.cs", "line": 12, "column": 5, "reason": "TODO found", "severity": "error", "rule_id": "no-todos" },
@@ -382,7 +382,7 @@ tractor check "src/**/*.cs" -x "//comment[contains(.,'TODO')]" \
 
 ```json
 {
-  "passed": false,
+  "success": false,
   "totals": { "results": 3, "files": 2, "errors": 3 },
   "group": "file",
   "results": [
@@ -429,7 +429,7 @@ tractor run tractor.yaml -f json -g file
 
 ```json
 {
-  "passed": false,
+  "success": false,
   "totals": { "results": 4, "files": 3, "errors": 3, "updated": 1 },
   "group": "file",
   "results": [
@@ -467,7 +467,7 @@ tractor run tractor.yaml -f json
 
 ```json
 {
-  "passed": false,
+  "success": false,
   "totals": { "results": 4, "files": 3, "errors": 3, "updated": 1 },
   "group": "command",
   "results": [
@@ -519,7 +519,7 @@ tractor check --rules rules/tractor.yaml "src/**/*.cs" -f json
 
 ```json
 {
-  "passed": false,
+  "success": false,
   "totals": { "results": 5, "files": 3, "errors": 4 },
   "group": "file",
   "results": [
@@ -600,9 +600,9 @@ src/Bar.cs:3:1: error[no-todos]: TODO found
 
 ### The report is a group
 
-The root report and sub-groups share the same structure: `passed`,
+The root report and sub-groups share the same structure: `success`,
 `totals`, `group` (declaring what children are grouped by), and
-`results`. There is no separate `Summary` wrapper — `passed` and
+`results`. There is no separate `Summary` wrapper — `success` and
 `totals` are direct fields on the group. This makes the report
 self-similar at every level.
 
@@ -692,10 +692,10 @@ Add `command: String` to `ReportMatch`. Populate it in each
 Include `command` in JSON/YAML/XML serialization. No behavior change
 for existing output formats — `command` is a new field.
 
-### Step 2: Introduce `Totals` and `passed`
+### Step 2: Introduce `Totals` and `success`
 
 Replace the flat `Summary` with `Totals` (counts only) and a
-top-level `passed` boolean. `Totals` has `results`, `files`, plus
+top-level `success` boolean. `Totals` has `results`, `files`, plus
 command-specific fields (`errors`, `warnings`, `updated`,
 `unchanged`). Remove the `errors`/`warnings` overloading hack for
 set reports and the `if matches!(report.kind, ReportKind::Set)`
@@ -717,7 +717,7 @@ declares `group: "file"` and children carry only `file: "..."`.
 
 Change `Report::run(reports: Vec<Report>)` to merge all matches
 into one flat `results` list instead of wrapping as sub-reports.
-Compute the aggregate `totals` and `passed` from the merged results.
+Compute the aggregate `totals` and `success` from the merged results.
 
 ### Step 6: Remove ReportKind
 

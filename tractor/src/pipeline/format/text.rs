@@ -81,7 +81,7 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
             if !out.is_empty() && !out.ends_with('\n') {
                 out.push('\n');
             }
-            out.push_str(&format_summary(totals, report.passed, report.kind));
+            out.push_str(&format_summary(totals, report.success, report.kind));
         }
     }
 
@@ -202,10 +202,10 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
     }
 }
 
-fn format_summary(totals: &Totals, passed: Option<bool>, kind: ReportKind) -> String {
+fn format_summary(totals: &Totals, success: Option<bool>, kind: ReportKind) -> String {
     let mut out = String::new();
 
-    let passed_val = passed.unwrap_or(true);
+    let success_val = success.unwrap_or(true);
 
     let count_line = match kind {
         ReportKind::Query => {
@@ -217,7 +217,7 @@ fn format_summary(totals: &Totals, passed: Option<bool>, kind: ReportKind) -> St
             }
         }
         ReportKind::Check => {
-            if passed_val {
+            if success_val {
                 "All checks passed\n".to_string()
             } else if totals.errors > 0 {
                 let f = totals.files;
@@ -232,7 +232,7 @@ fn format_summary(totals: &Totals, passed: Option<bool>, kind: ReportKind) -> St
             }
         }
         ReportKind::Test => {
-            if passed_val { "passed\n".to_string() } else { "failed\n".to_string() }
+            if success_val { "passed\n".to_string() } else { "failed\n".to_string() }
         }
         ReportKind::Set => {
             let updated = totals.updated;
@@ -252,7 +252,7 @@ fn format_summary(totals: &Totals, passed: Option<bool>, kind: ReportKind) -> St
             }
         }
         ReportKind::Run => {
-            if passed_val {
+            if success_val {
                 format!("{} matches across {} files\n", totals.results, totals.files)
             } else {
                 let mut parts = Vec::new();

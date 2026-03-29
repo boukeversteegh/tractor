@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <report>
-  <passed>false</passed>
+  <success>false</success>
   <totals>
     <results>5</results>
     <files>2</files>
@@ -9,7 +9,7 @@
   </totals>
   <operations>
     <operation kind="check">
-      <passed>false</passed>
+      <success>false</success>
       <totals>
         <results>3</results>
         <files>1</files>
@@ -60,7 +60,7 @@
       </groups>
     </operation>
     <operation kind="test">
-      <passed>true</passed>
+      <success>true</success>
       <totals>
         <results>2</results>
         <files>1</files>

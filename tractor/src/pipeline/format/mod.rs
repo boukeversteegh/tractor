@@ -103,7 +103,7 @@ pub fn render_test_report(
     message: &Option<String>,
     error_template: &Option<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let passed = report.passed.unwrap_or(true);
+    let success = report.success.unwrap_or(true);
     let totals = report.totals.as_ref().expect("test report must have totals");
 
     match ctx.output_format {
@@ -114,7 +114,7 @@ pub fn render_test_report(
                 OutputFormat::Xml  => print!("{}", render_xml_report(report, &ctx.view, &ctx.render_options())),
                 _ => unreachable!(),
             }
-            if !passed {
+            if !success {
                 return Err(Box::new(crate::SilentExit));
             }
             return Ok(());
@@ -123,7 +123,7 @@ pub fn render_test_report(
     }
 
     // Text/gcc/github: colored pass/fail line
-    let (symbol, color) = if passed {
+    let (symbol, color) = if success {
         ("✓", test_colors::GREEN)
     } else {
         ("✗", test_colors::RED)
@@ -135,20 +135,20 @@ pub fn render_test_report(
     if ctx.use_color {
         if label.is_empty() {
             println!("{}{}{} {} matches{}", test_colors::BOLD, color, symbol, totals.results, test_colors::RESET);
-        } else if passed {
+        } else if success {
             println!("{}{}{} {}{}", test_colors::BOLD, color, symbol, label, test_colors::RESET);
         } else {
             println!("{}{}{} {} {}(expected {}, got {}){}", test_colors::BOLD, color, symbol, label, test_colors::RESET, expected_str, totals.results, test_colors::RESET);
         }
     } else if label.is_empty() {
         println!("{} {} matches", symbol, totals.results);
-    } else if passed {
+    } else if success {
         println!("{} {}", symbol, label);
     } else {
         println!("{} {} (expected {}, got {})", symbol, label, expected_str, totals.results);
     }
 
-    if !passed && !report.matches.is_empty() {
+    if !success && !report.matches.is_empty() {
         if let Some(ref error_tmpl) = error_template {
             let out = render_gcc_report_with_template(&report.matches, error_tmpl, false, &ctx.render_options());
             for line in out.lines() {
@@ -188,7 +188,7 @@ pub fn render_test_report(
         }
     }
 
-    if !passed {
+    if !success {
         return Err(Box::new(crate::SilentExit));
     }
     Ok(())
@@ -205,7 +205,7 @@ pub fn render_run_report(
 ) -> Result<(), Box<dyn std::error::Error>> {
     use tractor_core::report::ReportKind;
 
-    let passed = report.passed.unwrap_or(true);
+    let success = report.success.unwrap_or(true);
     let totals = report.totals.as_ref().expect("run report must have totals");
 
     match ctx.output_format {
@@ -233,9 +233,9 @@ pub fn render_run_report(
                         }
                         ReportKind::Test => {
                             if let Some(ref t) = sub.totals {
-                                let sub_passed = sub.passed.unwrap_or(true);
+                                let sub_success = sub.success.unwrap_or(true);
                                 let expected = sub.expected.as_deref().unwrap_or("?");
-                                if sub_passed {
+                                if sub_success {
                                     eprintln!("test passed: expected {}, got {} match{}", expected, t.results, if t.results == 1 { "" } else { "es" });
                                 } else {
                                     eprintln!("test failed: expected {}, got {} match{}", expected, t.results, if t.results == 1 { "" } else { "es" });
@@ -277,7 +277,7 @@ pub fn render_run_report(
         }
     }
 
-    if !passed {
+    if !success {
         return Err(Box::new(crate::SilentExit));
     }
     Ok(())
@@ -301,7 +301,7 @@ fn print_run_summary(totals: &tractor_core::report::Totals, operations: Option<&
             .sum();
         let set_drift: usize = ops.iter()
             .filter(|r| matches!(r.kind, ReportKind::Set))
-            .filter(|r| !r.passed.unwrap_or(true))
+            .filter(|r| !r.success.unwrap_or(true))
             .filter_map(|r| r.totals.as_ref())
             .map(|t| t.files)
             .sum();

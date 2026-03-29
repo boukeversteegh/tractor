@@ -531,7 +531,7 @@ fn validate_rule_examples(
             };
 
             let report = execute_test(&test_op, options)?;
-            if !report.passed.unwrap_or(true) {
+            if !report.success.unwrap_or(true) {
                 error_count += 1;
                 all_matches.push(example_failure_match(
                     &rule.id,
@@ -564,7 +564,7 @@ fn validate_rule_examples(
             };
 
             let report = execute_test(&test_op, options)?;
-            if !report.passed.unwrap_or(true) {
+            if !report.success.unwrap_or(true) {
                 error_count += 1;
                 all_matches.push(example_failure_match(
                     &rule.id,
@@ -1121,7 +1121,7 @@ mod tests {
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
         assert_eq!(reports.len(), 1);
         let report = &reports[0];
-        assert!(report.passed.is_none()); // query reports have no pass/fail
+        assert!(report.success.is_none()); // query reports have no pass/fail
         assert_eq!(report.matches.len(), 1);
         assert_eq!(report.matches[0].value.as_deref(), Some("alice"));
     }
@@ -1168,7 +1168,7 @@ mod tests {
 
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
         assert_eq!(reports[0].matches.len(), 0);
-        assert!(reports[0].passed.is_none()); // query reports have no pass/fail
+        assert!(reports[0].success.is_none()); // query reports have no pass/fail
     }
 
     // -----------------------------------------------------------------------
@@ -1193,7 +1193,7 @@ mod tests {
         })];
 
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
-        assert!(reports[0].passed.unwrap());
+        assert!(reports[0].success.unwrap());
 
         let content = std::fs::read_to_string(&path).unwrap();
         assert!(content.contains("new-host"), "file should contain new value: {}", content);
@@ -1218,7 +1218,7 @@ mod tests {
         })];
 
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
-        assert!(reports[0].passed.unwrap());
+        assert!(reports[0].success.unwrap());
 
         let content = std::fs::read_to_string(&path).unwrap();
         assert!(content.contains("localhost"), "missing node should be created: {}", content);
@@ -1242,7 +1242,7 @@ mod tests {
         })];
 
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
-        assert!(reports[0].passed.unwrap());
+        assert!(reports[0].success.unwrap());
 
         let content = std::fs::read_to_string(&path).unwrap();
         assert!(content.contains("new-host"), "host should be updated: {}", content);
@@ -1272,7 +1272,7 @@ mod tests {
         })];
 
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
-        assert!(reports[0].passed.unwrap());
+        assert!(reports[0].success.unwrap());
 
         // Check status is "unchanged"
         assert_eq!(reports[0].matches[0].status.as_deref(), Some("unchanged"));
@@ -1302,7 +1302,7 @@ mod tests {
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
 
         // Should fail: drift detected
-        assert!(!reports[0].passed.unwrap(), "verify should detect drift");
+        assert!(!reports[0].success.unwrap(), "verify should detect drift");
 
         // File should NOT be modified
         let content = std::fs::read_to_string(&path).unwrap();
@@ -1331,7 +1331,7 @@ mod tests {
         })];
 
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
-        assert!(reports[0].passed.unwrap(), "verify should pass when values are in sync");
+        assert!(reports[0].success.unwrap(), "verify should pass when values are in sync");
     }
 
     // -----------------------------------------------------------------------
@@ -1362,7 +1362,7 @@ mod tests {
 
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
         let report = &reports[0];
-        assert!(!report.passed.unwrap(), "check should fail when violations found");
+        assert!(!report.success.unwrap(), "check should fail when violations found");
         assert_eq!(report.matches.len(), 1);
         assert_eq!(report.matches[0].rule_id.as_deref(), Some("no-debug"));
         assert_eq!(report.matches[0].reason.as_deref(), Some("debug should not be enabled"));
@@ -1390,7 +1390,7 @@ mod tests {
         })];
 
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
-        assert!(reports[0].passed.unwrap());
+        assert!(reports[0].success.unwrap());
     }
 
     // -----------------------------------------------------------------------
@@ -1442,8 +1442,8 @@ mod tests {
 
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
         assert_eq!(reports.len(), 2);
-        assert!(reports[0].passed.unwrap());
-        assert!(reports[1].passed.unwrap());
+        assert!(reports[0].success.unwrap());
+        assert!(reports[1].success.unwrap());
 
         // Config should be updated
         let content = std::fs::read_to_string(&config_path).unwrap();
@@ -1468,7 +1468,7 @@ mod tests {
         })];
 
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
-        assert!(reports[0].passed.unwrap());
+        assert!(reports[0].success.unwrap());
 
         let content = std::fs::read_to_string(&path).unwrap();
         assert!(content.contains("new-host"), "yaml host should be updated: {}", content);

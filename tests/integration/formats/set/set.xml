@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <report>
-  <passed>true</passed>
+  <success>true</success>
   <totals>
     <results>1</results>
     <files>1</files>

@@ -198,7 +198,7 @@ pub struct Report {
 
     /// Did the command succeed? False if check errors, test failures, or set drift.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub passed: Option<bool>,
+    pub success: Option<bool>,
 
     /// Numeric aggregates (result count, file count, command-specific counts).
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -223,20 +223,20 @@ pub struct Report {
 }
 
 impl Report {
-    pub fn set(matches: Vec<ReportMatch>, passed: bool, totals: Totals) -> Self {
-        Report { kind: ReportKind::Set, matches, passed: Some(passed), totals: Some(totals), expected: None, query: None, groups: None, operations: None }
+    pub fn set(matches: Vec<ReportMatch>, success: bool, totals: Totals) -> Self {
+        Report { kind: ReportKind::Set, matches, success: Some(success), totals: Some(totals), expected: None, query: None, groups: None, operations: None }
     }
 
     pub fn query(matches: Vec<ReportMatch>, totals: Totals) -> Self {
-        Report { kind: ReportKind::Query, matches, passed: None, totals: Some(totals), expected: None, query: None, groups: None, operations: None }
+        Report { kind: ReportKind::Query, matches, success: None, totals: Some(totals), expected: None, query: None, groups: None, operations: None }
     }
 
-    pub fn check(matches: Vec<ReportMatch>, passed: bool, totals: Totals) -> Self {
-        Report { kind: ReportKind::Check, matches, passed: Some(passed), totals: Some(totals), expected: None, query: None, groups: None, operations: None }
+    pub fn check(matches: Vec<ReportMatch>, success: bool, totals: Totals) -> Self {
+        Report { kind: ReportKind::Check, matches, success: Some(success), totals: Some(totals), expected: None, query: None, groups: None, operations: None }
     }
 
-    pub fn test(matches: Vec<ReportMatch>, passed: bool, totals: Totals) -> Self {
-        Report { kind: ReportKind::Test, matches, passed: Some(passed), totals: Some(totals), expected: None, query: None, groups: None, operations: None }
+    pub fn test(matches: Vec<ReportMatch>, success: bool, totals: Totals) -> Self {
+        Report { kind: ReportKind::Test, matches, success: Some(success), totals: Some(totals), expected: None, query: None, groups: None, operations: None }
     }
 
     /// Build a unified run report from multiple sub-reports.
@@ -248,7 +248,7 @@ impl Report {
         let mut updated = 0usize;
         let mut unchanged = 0usize;
         let mut files = 0usize;
-        let mut passed = true;
+        let mut success = true;
 
         for r in &reports {
             if let Some(ref t) = r.totals {
@@ -259,15 +259,15 @@ impl Report {
                 updated += t.updated;
                 unchanged += t.unchanged;
             }
-            if let Some(p) = r.passed {
-                if !p { passed = false; }
+            if let Some(s) = r.success {
+                if !s { success = false; }
             }
         }
 
         Report {
             kind: ReportKind::Run,
             matches: vec![],
-            passed: Some(passed),
+            success: Some(success),
             totals: Some(Totals {
                 results: total,
                 files,
@@ -399,7 +399,7 @@ mod tests {
         let v: serde_json::Value = serde_json::from_str(&json).unwrap();
 
         // Totals + passed
-        assert_eq!(v["passed"], false);
+        assert_eq!(v["success"], false);
         assert_eq!(v["totals"]["results"], 2);
         assert_eq!(v["totals"]["files"], 2);
         assert_eq!(v["totals"]["errors"], 1);
@@ -430,7 +430,7 @@ mod tests {
         let v: serde_json::Value = serde_json::from_str(&json).unwrap();
 
         assert_eq!(v["kind"], "test");
-        assert_eq!(v["passed"], true);
+        assert_eq!(v["success"], true);
         assert_eq!(v["expected"], "some");
         // No reason/severity on plain match
         assert!(v["matches"][0].get("reason").is_none());

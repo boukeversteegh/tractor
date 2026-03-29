@@ -14,8 +14,8 @@ pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         true
     };
     if show_totals {
-        if let Some(passed) = report.passed {
-            root.insert("passed".into(), json!(passed));
+        if let Some(passed) = report.success {
+            root.insert("success".into(), json!(passed));
         }
         if let Some(ref totals) = report.totals {
             let mut t = serde_json::Map::new();

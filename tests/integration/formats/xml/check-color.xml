@@ -1,6 +1,6 @@
 \e[2m<?xml version="1.0" encoding="UTF-8"?>\e[0m
 \e[2m<\e[0m\e[34mreport\e[0m\e[2m>\e[0m
-  \e[2m<\e[0m\e[34mpassed\e[0m\e[2m>false\e[2m</\e[0m\e[34mpassed\e[0m\e[2m>\e[0m
+  \e[2m<\e[0m\e[34msuccess\e[0m\e[2m>false\e[2m</\e[0m\e[34msuccess\e[0m\e[2m>\e[0m
   \e[2m<\e[0m\e[34mtotals\e[0m\e[2m>\e[0m
     \e[2m<\e[0m\e[34mresults\e[0m\e[2m>2\e[2m</\e[0m\e[34mresults\e[0m\e[2m>\e[0m
     \e[2m<\e[0m\e[34mfiles\e[0m\e[2m>1\e[2m</\e[0m\e[34mfiles\e[0m\e[2m>\e[0m
