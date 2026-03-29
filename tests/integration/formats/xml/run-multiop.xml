@@ -7,74 +7,69 @@
     <errors>2</errors>
     <warnings>1</warnings>
   </totals>
+  <group-by>file</group-by>
   <results>
-    <group>
-      <group file="tests/integration/formats/sample.cs">
-        <match line="1" column="1" end_line="5" end_column="2">
-          <reason>class declaration found</reason>
-          <severity>error</severity>
-          <lines>
-          <line>public class Foo</line>
-          <line>{</line>
-          <line>    public int Bar { get; set; }</line>
-          <line>    public void Baz() { }</line>
-          <line>}</line>
-          </lines>
-          <value> class Foo
+    <group file="tests/integration/formats/sample.cs">
+      <match line="1" column="1" end_line="5" end_column="2">
+        <reason>class declaration found</reason>
+        <severity>error</severity>
+        <lines>
+        <line>public class Foo</line>
+        <line>{</line>
+        <line>    public int Bar { get; set; }</line>
+        <line>    public void Baz() { }</line>
+        <line>}</line>
+        </lines>
+        <value> class Foo
 {
      int Bar { get; set; }
      void Baz() { }
 }</value>
-          <command>check</command>
-          <rule-id>no-class</rule-id>
-        </match>
-        <match line="4" column="5" end_line="4" end_column="26">
-          <reason>void method found</reason>
-          <severity>warning</severity>
-          <lines>
-          <line>    public void Baz() { }</line>
-          </lines>
-          <value> void Baz() { }</value>
-          <command>check</command>
-          <rule-id>no-void-method</rule-id>
-        </match>
-        <match line="7" column="1" end_line="7" end_column="21">
-          <reason>class declaration found</reason>
-          <severity>error</severity>
-          <lines>
-          <line>public class Qux { }</line>
-          </lines>
-          <value> class Qux { }</value>
-          <command>check</command>
-          <rule-id>no-class</rule-id>
-        </match>
-      </group>
-    </group>
-    <group>
-      <group file="tests/integration/formats/sample.cs">
-        <match line="1" column="1" end_line="5" end_column="2">
-          <lines>
-          <line>public class Foo</line>
-          <line>{</line>
-          <line>    public int Bar { get; set; }</line>
-          <line>    public void Baz() { }</line>
-          <line>}</line>
-          </lines>
-          <value> class Foo
+        <command>check</command>
+        <rule-id>no-class</rule-id>
+      </match>
+      <match line="4" column="5" end_line="4" end_column="26">
+        <reason>void method found</reason>
+        <severity>warning</severity>
+        <lines>
+        <line>    public void Baz() { }</line>
+        </lines>
+        <value> void Baz() { }</value>
+        <command>check</command>
+        <rule-id>no-void-method</rule-id>
+      </match>
+      <match line="7" column="1" end_line="7" end_column="21">
+        <reason>class declaration found</reason>
+        <severity>error</severity>
+        <lines>
+        <line>public class Qux { }</line>
+        </lines>
+        <value> class Qux { }</value>
+        <command>check</command>
+        <rule-id>no-class</rule-id>
+      </match>
+      <match line="1" column="1" end_line="5" end_column="2">
+        <lines>
+        <line>public class Foo</line>
+        <line>{</line>
+        <line>    public int Bar { get; set; }</line>
+        <line>    public void Baz() { }</line>
+        <line>}</line>
+        </lines>
+        <value> class Foo
 {
      int Bar { get; set; }
      void Baz() { }
 }</value>
-          <command>test</command>
-        </match>
-        <match line="7" column="1" end_line="7" end_column="21">
-          <lines>
-          <line>public class Qux { }</line>
-          </lines>
-          <value> class Qux { }</value>
-          <command>test</command>
-        </match>
-      </group>
+        <command>test</command>
+      </match>
+      <match line="7" column="1" end_line="7" end_column="21">
+        <lines>
+        <line>public class Qux { }</line>
+        </lines>
+        <value> class Qux { }</value>
+        <command>test</command>
+      </match>
     </group>
   </results>
 </report>

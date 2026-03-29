@@ -285,9 +285,11 @@ impl Report {
         Report { kind: ReportKind::Test, success: Some(success), totals: Some(totals), expected: None, query: None, results, group: None, file: None, output_content: None }
     }
 
-    /// Build a unified run report from multiple sub-reports.
-    /// Computes aggregate totals across all operations.
+    /// Build a unified run report by flattening all sub-reports into one.
+    /// Drains leaf matches from each sub-report into a single flat results list.
+    /// Computes aggregate totals from the merged results.
     pub fn run(reports: Vec<Report>) -> Self {
+        let mut all_results = Vec::new();
         let mut total = 0usize;
         let mut errors = 0usize;
         let mut warnings = 0usize;
@@ -296,7 +298,7 @@ impl Report {
         let mut files = 0usize;
         let mut success = true;
 
-        for r in &reports {
+        for r in reports {
             if let Some(ref t) = r.totals {
                 total += t.results;
                 files += t.files;
@@ -308,11 +310,13 @@ impl Report {
             if let Some(s) = r.success {
                 if !s { success = false; }
             }
+            // Drain all results from the sub-report into the flat list
+            all_results.extend(r.results);
         }
 
         Report {
             kind: ReportKind::Run,
-                       success: Some(success),
+            success: Some(success),
             totals: Some(Totals {
                 results: total,
                 files,
@@ -323,7 +327,7 @@ impl Report {
             }),
             expected: None,
             query: None,
-            results: reports.into_iter().map(|r| ResultItem::Group(Box::new(r))).collect(),
+            results: all_results,
             group: None,
             file: None,
             output_content: None,

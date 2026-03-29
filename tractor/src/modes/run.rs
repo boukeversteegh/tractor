@@ -55,17 +55,17 @@ pub fn run_run(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     let reports = executor::execute(&operations, &options)?;
 
-    // Apply view projection and grouping to each sub-report.
-    let sub_reports: Vec<Report> = reports.into_iter().map(|mut r| {
-        // Apply message template if provided.
-        if let Some(ref template) = ctx.message {
-            apply_message_template(&mut r, template);
-        }
-        project_report(&mut r, &ctx.view);
-        if ctx.group_by_file { r.with_groups() } else { r }
-    }).collect();
+    // Merge all sub-reports into a single flat report.
+    let mut report = Report::run(reports);
 
-    let report = Report::run(sub_reports);
+    // Apply message template and view projection on the merged report.
+    if let Some(ref template) = ctx.message {
+        apply_message_template(&mut report, template);
+    }
+    project_report(&mut report, &ctx.view);
+
+    // Apply grouping
+    let report = if ctx.group_by_file { report.with_groups() } else { report };
 
     render_run_report(&report, &ctx)
 }

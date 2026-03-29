@@ -203,12 +203,12 @@ pub fn render_test_report(
 // ---------------------------------------------------------------------------
 
 /// Render a unified run report (multiple operations) to stdout.
+/// After flattening, a run report has the same structure as any other report —
+/// flat matches or file-grouped matches. Render it uniformly.
 pub fn render_run_report(
     report: &Report,
     ctx: &RunContext,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    use tractor_core::report::ReportKind;
-
     let success = report.success.unwrap_or(true);
     let totals = report.totals.as_ref().expect("run report must have totals");
 
@@ -216,59 +216,9 @@ pub fn render_run_report(
         OutputFormat::Json   => print!("{}", render_json_report(report, &ctx.view, &ctx.render_options())),
         OutputFormat::Yaml   => print!("{}", render_yaml_report(report, &ctx.view, &ctx.render_options())),
         OutputFormat::Xml    => print!("{}", render_xml_report(report, &ctx.view, &ctx.render_options())),
-        OutputFormat::Gcc | OutputFormat::Github | OutputFormat::Text => {
-            // For text-based formats, render each sub-report inline.
-            for item in &report.results {
-                if let tractor_core::report::ResultItem::Group(sub) = item {
-                    match sub.kind {
-                        ReportKind::Check => {
-                            match ctx.output_format {
-                                OutputFormat::Gcc => print!("{}", render_gcc(sub, &ctx.render_options())),
-                                OutputFormat::Github => print!("{}", render_github(sub)),
-                                OutputFormat::Text => print!("{}", render_text_report(sub, &ctx.view, &ctx.render_options())),
-                                _ => unreachable!(),
-                            }
-                        }
-                        ReportKind::Query => {
-                            match ctx.output_format {
-                                OutputFormat::Text => print!("{}", render_text_report(sub, &ctx.view, &ctx.render_options())),
-                                _ => print!("{}", render_gcc(sub, &ctx.render_options())),
-                            }
-                        }
-                        ReportKind::Test => {
-                            if let Some(ref t) = sub.totals {
-                                let sub_success = sub.success.unwrap_or(true);
-                                let expected = sub.expected.as_deref().unwrap_or("?");
-                                if sub_success {
-                                    eprintln!("test passed: expected {}, got {} match{}", expected, t.results, if t.results == 1 { "" } else { "es" });
-                                } else {
-                                    eprintln!("test failed: expected {}, got {} match{}", expected, t.results, if t.results == 1 { "" } else { "es" });
-                                }
-                            }
-                        }
-                        ReportKind::Set => {
-                            match ctx.output_format {
-                                OutputFormat::Text => print!("{}", render_text_report(sub, &ctx.view, &ctx.render_options())),
-                                _ => {
-                                    for rm in sub.all_matches() {
-                                        let file = if rm.file.is_empty() {
-                                            sub.file.as_deref().unwrap_or("")
-                                        } else {
-                                            &rm.file
-                                        };
-                                        let status = rm.status.as_deref().unwrap_or("unknown");
-                                        eprintln!("{}: {}", file, status);
-                                    }
-                                }
-                            }
-                        }
-                        ReportKind::Run => {} // nested run not expected
-                    }
-                }
-            }
-            // Print run-level summary
-            print_run_summary(totals);
-        }
+        OutputFormat::Gcc    => { print!("{}", render_gcc(report, &ctx.render_options())); print_run_summary(totals); }
+        OutputFormat::Github => print!("{}", render_github(report)),
+        OutputFormat::Text   => print!("{}", render_text_report(report, &ctx.view, &ctx.render_options())),
     }
 
     if !success {
