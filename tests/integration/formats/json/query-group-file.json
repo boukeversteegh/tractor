@@ -4,6 +4,7 @@
       "file": "tests/integration/formats/sample.cs",
       "results": [
         {
+          "file": "tests/integration/formats/sample.cs",
           "line": 1,
           "tree": {
             "$type": "class",
@@ -44,6 +45,7 @@
           }
         },
         {
+          "file": "tests/integration/formats/sample.cs",
           "line": 7,
           "tree": {
             "$type": "class",
@@ -58,6 +60,7 @@
       "file": "tests/integration/formats/sample2.cs",
       "results": [
         {
+          "file": "tests/integration/formats/sample2.cs",
           "line": 1,
           "tree": {
             "$type": "class",

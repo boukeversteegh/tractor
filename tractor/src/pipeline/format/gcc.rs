@@ -16,7 +16,6 @@ fn render_gcc_results(out: &mut String, items: &[ResultItem], parent_file: Optio
                 render_gcc_match(out, rm, parent_file, opts);
             }
             ResultItem::Group(g) => {
-                // If this group has a file, use it as context for child matches
                 let file = g.file.as_deref().or(parent_file);
                 render_gcc_results(out, &g.results, file, opts);
             }
@@ -25,19 +24,38 @@ fn render_gcc_results(out: &mut String, items: &[ResultItem], parent_file: Optio
 }
 
 fn render_gcc_match(out: &mut String, rm: &ReportMatch, group_file: Option<&str>, opts: &RenderOptions) {
-    let reason   = rm.reason.as_deref().unwrap_or("violation");
-    let severity = rm.severity.map_or("error", |s| s.as_str());
     let file = group_file.unwrap_or(&rm.file);
-    out.push_str(&format!(
-        "{}:{}:{}: {}: {}\n",
-        to_absolute_path(file), rm.line, rm.column, severity, reason
-    ));
-    if let Some(ref ls) = rm.lines {
-        out.push_str(&render_lines(
-            ls, rm.tree.as_ref(),
-            rm.line, rm.column, rm.end_line, rm.end_column,
-            opts,
-        ));
+
+    match rm.command.as_str() {
+        "set" => {
+            // Set matches: file: status
+            let status = rm.status.as_deref().unwrap_or("unknown");
+            out.push_str(&format!("{}: {}\n", to_absolute_path(file), status));
+        }
+        "query" => {
+            // Query matches: file:line:col: note: value
+            let value = rm.value.as_deref().unwrap_or("");
+            out.push_str(&format!(
+                "{}:{}:{}: note: {}\n",
+                to_absolute_path(file), rm.line, rm.column, value
+            ));
+        }
+        _ => {
+            // Check and other matches: file:line:col: severity: reason
+            let reason   = rm.reason.as_deref().unwrap_or("violation");
+            let severity = rm.severity.map_or("error", |s| s.as_str());
+            out.push_str(&format!(
+                "{}:{}:{}: {}: {}\n",
+                to_absolute_path(file), rm.line, rm.column, severity, reason
+            ));
+            if let Some(ref ls) = rm.lines {
+                out.push_str(&render_lines(
+                    ls, rm.tree.as_ref(),
+                    rm.line, rm.column, rm.end_line, rm.end_column,
+                    opts,
+                ));
+            }
+        }
     }
 }
 

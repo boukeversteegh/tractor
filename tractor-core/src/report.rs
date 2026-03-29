@@ -357,15 +357,15 @@ impl Report {
     /// Group results by a single dimension.
     ///
     /// Extracts a key from each leaf match, partitions into sub-groups,
-    /// hoists the key value to the group, and clears it from individual matches.
-    /// Non-match items (existing sub-groups) pass through ungrouped.
+    /// and hoists the key value to the group. Matches retain all their fields
+    /// — the renderer decides whether to omit redundant fields from output.
     pub fn group_by(mut self, dimension: &str) -> Self {
         let mut groups: Vec<ResultItem> = Vec::new();
         let mut index: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
 
         let old_results = std::mem::take(&mut self.results);
         for item in old_results {
-            if let ResultItem::Match(mut rm) = item {
+            if let ResultItem::Match(rm) = item {
                 let key = match dimension {
                     "file" => normalize_path(&rm.file),
                     "command" => rm.command.clone(),
@@ -389,13 +389,6 @@ impl Report {
                     groups.push(ResultItem::Group(Box::new(sub)));
                     groups.len() - 1
                 });
-                // Clear the hoisted field from the match
-                match dimension {
-                    "file" => rm.file = String::new(),
-                    "command" => rm.command = String::new(),
-                    "rule_id" => rm.rule_id = None,
-                    _ => {}
-                }
                 if let ResultItem::Group(ref mut g) = groups[idx] {
                     g.results.push(ResultItem::Match(rm));
                 }
@@ -412,7 +405,19 @@ impl Report {
 
     /// Apply multi-level grouping. Each dimension partitions results into
     /// groups, with nested dimensions applied recursively within each group.
+    /// After grouping, clears hoisted fields from matches so renderers
+    /// don't need to track group context.
     pub fn with_grouping(mut self, dimensions: &[&str]) -> Self {
+        if dimensions.is_empty() {
+            return self;
+        }
+
+        self = self.apply_grouping(dimensions);
+        self.prepare_for_rendering();
+        self
+    }
+
+    fn apply_grouping(mut self, dimensions: &[&str]) -> Self {
         if dimensions.is_empty() {
             return self;
         }
@@ -422,12 +427,11 @@ impl Report {
 
         self = self.group_by(dim);
 
-        // Apply remaining dimensions recursively to each sub-group
         if !rest.is_empty() {
             self.results = self.results.into_iter().map(|item| {
                 match item {
                     ResultItem::Group(mut g) => {
-                        *g = g.with_grouping(rest);
+                        *g = g.apply_grouping(rest);
                         ResultItem::Group(g)
                     }
                     other => other,
@@ -436,6 +440,51 @@ impl Report {
         }
 
         self
+    }
+
+    /// Clear hoisted fields from matches for rendering.
+    ///
+    /// Walks the results tree. For each group, clears the group's dimension
+    /// field from all child matches (since it's redundant — the group carries
+    /// the value). Call this once before handing the report to a renderer.
+    pub fn prepare_for_rendering(&mut self) {
+        Self::clear_hoisted_fields(&mut self.results, self.group.as_deref());
+    }
+
+    /// `hoisted_dim`: the dimension hoisted by the parent. Matches at this
+    /// level have that field cleared. Groups recurse with their own dimension.
+    fn clear_hoisted_fields(items: &mut [ResultItem], hoisted_dim: Option<&str>) {
+        for item in items {
+            match item {
+                ResultItem::Match(rm) => {
+                    if let Some(dim) = hoisted_dim {
+                        Self::clear_field(rm, dim);
+                    }
+                }
+                ResultItem::Group(g) => {
+                    // The group's direct children should clear the *same* hoisted dim
+                    // (they're inside this group, which hoists that dim).
+                    // But also, if this group itself groups by another dim, its
+                    // grandchildren need that cleared too — handled by recursion.
+                    //
+                    // For a group with group=Some("file"):
+                    //   its children clear "file" from matches
+                    // For a group with group=None (leaf group in single-level grouping):
+                    //   its children clear whatever was hoisted by the parent (hoisted_dim)
+                    let child_dim = g.group.as_deref().or(hoisted_dim);
+                    Self::clear_hoisted_fields(&mut g.results, child_dim);
+                }
+            }
+        }
+    }
+
+    fn clear_field(rm: &mut ReportMatch, dim: &str) {
+        match dim {
+            "file" => rm.file = String::new(),
+            "command" => rm.command = String::new(),
+            "rule_id" => rm.rule_id = None,
+            _ => {}
+        }
     }
 
     /// Create an empty report (used for sub-groups).

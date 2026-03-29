@@ -83,7 +83,7 @@ pub fn render_results_json(items: &[ResultItem], view: &ViewSet, render_opts: &R
                 }
                 // Sub-report metadata (success, totals, expected)
                 emit_report_metadata(&mut obj, sub);
-                // Recurse into sub-results
+                // Recurse — children skip the field this group is grouped by
                 let sub_results = render_results_json(&sub.results, view, render_opts);
                 if !sub_results.is_empty() {
                     obj.insert("results".into(), Value::Array(sub_results));
@@ -95,7 +95,6 @@ pub fn render_results_json(items: &[ResultItem], view: &ViewSet, render_opts: &R
 }
 
 /// Shared match serialization — reused by yaml.rs.
-/// `group_by`: when `File`, omits the `file` field (already on the parent group).
 /// Fields are emitted in ViewSet declaration order.
 pub fn match_to_value(
     rm: &ReportMatch,

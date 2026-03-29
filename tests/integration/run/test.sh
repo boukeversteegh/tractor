@@ -83,12 +83,12 @@ echo "Run (check operations):"
 
 run_and_check "multirule check finds violations with correct severity" \
     1 \
-    "$(printf 'settings.yaml:3:10: error: debug should be disabled in production\n3 |   debug: true\n             ^~~~\n\nsettings.yaml:4:14: warning: log level should not be debug in production\n4 |   log_level: debug\n                 ^~~~~\n\n\n1 check violation')" \
+    "$(printf 'settings.yaml:3:10: error: debug should be disabled in production\n3 |   debug: true\n             ^~~~\n\nsettings.yaml:4:14: warning: log level should not be debug in production\n4 |   log_level: debug\n                 ^~~~~\n\n\n1 error in 1 file')" \
     "$FIXTURE_DIR/check-multirule.yaml"
 
 run_and_check "multifile check scans multiple files" \
     1 \
-    "$(printf 'settings.yaml:3:10: error: debug mode must be disabled\n3 |   debug: true\n             ^~~~\n\n\n1 check violation')" \
+    "$(printf 'settings.yaml:3:10: error: debug mode must be disabled\n3 |   debug: true\n             ^~~~\n\n\n1 error in 1 file')" \
     "$FIXTURE_DIR/check-multifile.yaml"
 
 echo ""

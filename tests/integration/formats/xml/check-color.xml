@@ -9,7 +9,7 @@
   \e[2m<\e[0m\e[34mgroup-by\e[0m\e[2m>file\e[2m</\e[0m\e[34mgroup-by\e[0m\e[2m>\e[0m
   \e[2m<\e[0m\e[34mresults\e[0m\e[2m>\e[0m
     \e[2m<\e[0m\e[34mgroup\e[0m \e[36mfile\e[0m\e[2m="\e[0m\e[33mtests/integration/formats/sample.cs\e[0m\e[2m"\e[0m\e[2m>\e[0m
-      \e[2m<\e[0m\e[34mmatch\e[0m \e[36mline\e[0m\e[2m="\e[0m\e[33m1\e[0m\e[2m"\e[0m \e[36mcolumn\e[0m\e[2m="\e[0m\e[33m1\e[0m\e[2m"\e[0m \e[36mend_line\e[0m\e[2m="\e[0m\e[33m5\e[0m\e[2m"\e[0m \e[36mend_column\e[0m\e[2m="\e[0m\e[33m2\e[0m\e[2m"\e[0m\e[2m>\e[0m
+      \e[2m<\e[0m\e[34mmatch\e[0m \e[36mfile\e[0m\e[2m="\e[0m\e[33mtests/integration/formats/sample.cs\e[0m\e[2m"\e[0m \e[36mline\e[0m\e[2m="\e[0m\e[33m1\e[0m\e[2m"\e[0m \e[36mcolumn\e[0m\e[2m="\e[0m\e[33m1\e[0m\e[2m"\e[0m \e[36mend_line\e[0m\e[2m="\e[0m\e[33m5\e[0m\e[2m"\e[0m \e[36mend_column\e[0m\e[2m="\e[0m\e[33m2\e[0m\e[2m"\e[0m\e[2m>\e[0m
         \e[2m<\e[0m\e[34mreason\e[0m\e[2m>class found\e[2m</\e[0m\e[34mreason\e[0m\e[2m>\e[0m
         \e[2m<\e[0m\e[34mseverity\e[0m\e[2m>error\e[2m</\e[0m\e[34mseverity\e[0m\e[2m>\e[0m
         \e[2m<\e[0m\e[34mlines\e[0m\e[2m>\e[0m
@@ -20,7 +20,7 @@
           \e[2m<\e[0m\e[34mline\e[0m\e[2m>}\e[2m</\e[0m\e[34mline\e[0m\e[2m>\e[0m
         \e[2m</\e[0m\e[34mlines\e[0m\e[2m>\e[0m
       \e[2m</\e[0m\e[34mmatch\e[0m\e[2m>\e[0m
-      \e[2m<\e[0m\e[34mmatch\e[0m \e[36mline\e[0m\e[2m="\e[0m\e[33m7\e[0m\e[2m"\e[0m \e[36mcolumn\e[0m\e[2m="\e[0m\e[33m1\e[0m\e[2m"\e[0m \e[36mend_line\e[0m\e[2m="\e[0m\e[33m7\e[0m\e[2m"\e[0m \e[36mend_column\e[0m\e[2m="\e[0m\e[33m21\e[0m\e[2m"\e[0m\e[2m>\e[0m
+      \e[2m<\e[0m\e[34mmatch\e[0m \e[36mfile\e[0m\e[2m="\e[0m\e[33mtests/integration/formats/sample.cs\e[0m\e[2m"\e[0m \e[36mline\e[0m\e[2m="\e[0m\e[33m7\e[0m\e[2m"\e[0m \e[36mcolumn\e[0m\e[2m="\e[0m\e[33m1\e[0m\e[2m"\e[0m \e[36mend_line\e[0m\e[2m="\e[0m\e[33m7\e[0m\e[2m"\e[0m \e[36mend_column\e[0m\e[2m="\e[0m\e[33m21\e[0m\e[2m"\e[0m\e[2m>\e[0m
         \e[2m<\e[0m\e[34mreason\e[0m\e[2m>class found\e[2m</\e[0m\e[34mreason\e[0m\e[2m>\e[0m
         \e[2m<\e[0m\e[34mseverity\e[0m\e[2m>error\e[2m</\e[0m\e[34mseverity\e[0m\e[2m>\e[0m
         \e[2m<\e[0m\e[34mlines\e[0m\e[2m>\e[0m
