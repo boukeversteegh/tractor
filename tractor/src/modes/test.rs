@@ -1,8 +1,8 @@
 use crate::cli::TestArgs;
 use crate::executor::{self, ExecuteOptions, Operation, TestOperation, TestAssertion};
 use crate::pipeline::{
-    RunContext, ViewField, InputMode,
-    render_test_report,
+    RunContext, ViewField, InputMode, TestRenderOptions,
+    render_report,
     project_report,
 };
 
@@ -77,5 +77,6 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
     project_report(&mut report, &ctx.view);
     let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
     let report = report.with_grouping(&dims);
-    render_test_report(&report, &ctx, &message, &error_template)
+    let test_opts = TestRenderOptions { message, error_template };
+    render_report(&report, &ctx, Some(&test_opts))
 }

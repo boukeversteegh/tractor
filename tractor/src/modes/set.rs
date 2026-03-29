@@ -5,7 +5,7 @@ use tractor_core::xpath_upsert::upsert;
 use tractor_core::declarative_set::declarative_set;
 use tractor_core::detect_language;
 use crate::cli::SetArgs;
-use crate::pipeline::{RunContext, ViewField, InputMode, query_files_batched, query_inline_source, render_set_report, GroupDimension};
+use crate::pipeline::{RunContext, ViewField, InputMode, query_files_batched, query_inline_source, render_report, GroupDimension};
 use crate::pipeline::git;
 
 /// Separate positional args into files and an optional path expression.
@@ -127,7 +127,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
                 let output_map: HashMap<String, String> = file_outputs.into_iter().collect();
                 let report = build_set_report_matches(&matches, value, &ctx);
                 let report = report.with_grouping(&["file"]).with_file_outputs(&output_map);
-                render_set_report(&report, &ctx)?;
+                render_report(&report, &ctx, None)?;
             } else {
                 // In-place mode: try upsert (language-aware) for each file; fall back to
                 // apply_replacements for languages without a renderer.
@@ -165,7 +165,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
                 let report = build_set_report_matches(&matches, value, &ctx);
                 let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
                 let report = report.with_grouping(&dims);
-                render_set_report(&report, &ctx)?;
+                render_report(&report, &ctx, None)?;
             }
         }
         InputMode::InlineSource { source, lang } => {
@@ -173,7 +173,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
             let matches = query_inline_source(&ctx, source, lang, xpath_expr)?;
             let modified = apply_set_to_string(source, &matches, value)?;
             let report = build_set_inline_report(modified, &ctx);
-            render_set_report(&report, &ctx)?;
+            render_report(&report, &ctx, None)?;
         }
     }
     Ok(())

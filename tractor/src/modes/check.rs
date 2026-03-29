@@ -4,7 +4,7 @@ use crate::cli::CheckArgs;
 use crate::executor::{self, CheckOperation, ExecuteOptions, Operation};
 use crate::pipeline::{
     RunContext, ViewField, InputMode,
-    render_check_report,
+    render_report,
     project_report, apply_message_template,
     GroupDimension,
 };
@@ -94,7 +94,7 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
         let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
         report.with_grouping(&dims)
     };
-    render_check_report(&report, &ctx)
+    render_report(&report, &ctx, None)
 }
 
 // ---------------------------------------------------------------------------
@@ -159,5 +159,5 @@ fn run_check_rules(args: CheckArgs, rules_path: &str) -> Result<(), Box<dyn std:
         let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
         report.with_grouping(&dims)
     };
-    render_check_report(&report, &ctx)
+    render_report(&report, &ctx, None)
 }

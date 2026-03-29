@@ -6,7 +6,7 @@ use crate::pipeline::{
     run_debug,
     project_report, apply_message_template,
 };
-use crate::pipeline::format::render_query_report;
+use crate::pipeline::render_report;
 
 pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     let ctx = RunContext::build(
@@ -99,7 +99,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
         project_report(&mut report, &ctx.view);
         let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
         let report = report.with_grouping(&dims);
-        render_query_report(&report, &ctx)?;
+        render_report(&report, &ctx, None)?;
     }
 
     Ok(())

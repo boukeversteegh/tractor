@@ -14,4 +14,4 @@ pub use matcher::{
     project_report,
     apply_message_template,
 };
-pub use format::{render_check_report, render_test_report, render_set_report};
+pub use format::{render_report, TestRenderOptions};

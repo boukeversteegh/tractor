@@ -9,7 +9,7 @@ use crate::pipeline::{
     project_report, apply_message_template,
     GroupDimension,
 };
-use crate::pipeline::format::render_run_report;
+use crate::pipeline::render_report;
 
 pub fn run_run(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {
     let config_path = std::path::Path::new(&args.config);
@@ -69,5 +69,5 @@ pub fn run_run(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {
     let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
     let report = report.with_grouping(&dims);
 
-    render_run_report(&report, &ctx)
+    render_report(&report, &ctx, None)
 }
