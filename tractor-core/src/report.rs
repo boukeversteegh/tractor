@@ -402,33 +402,64 @@ impl Report {
     }
 
     /// Consume flat `matches`, group them by source file, and clear the flat list.
-    /// After this call `matches` is empty and `groups` holds all the data.
-    /// Renderers can then unconditionally render whichever of the two is non-empty.
+    /// Populates both old `groups` field and new `results` field.
     pub fn with_groups(mut self) -> Self {
-        let mut groups: Vec<FileGroup> = Vec::new();
+        let mut old_groups: Vec<FileGroup> = Vec::new();
+        let mut new_groups: Vec<ResultItem> = Vec::new();
         let mut file_index: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
 
         for mut rm in self.matches.drain(..) {
             let file = normalize_path(&rm.file);
-            let idx = file_index.entry(file.clone()).or_insert_with(|| {
-                groups.push(FileGroup { file: file.clone(), matches: Vec::new(), output: None });
-                groups.len() - 1
+            let idx = *file_index.entry(file.clone()).or_insert_with(|| {
+                old_groups.push(FileGroup { file: file.clone(), matches: Vec::new(), output: None });
+                new_groups.push(ResultItem::Group(Box::new(Report {
+                    kind: self.kind,
+                    matches: vec![],
+                    success: None,
+                    totals: None,
+                    expected: None,
+                    query: None,
+                    groups: None,
+                    operations: None,
+                    results: vec![],
+                    group: None,
+                    file: Some(file.clone()),
+                    output_content: None,
+                })));
+                old_groups.len() - 1
             });
             rm.file = String::new();
-            groups[*idx].matches.push(rm);
+            old_groups[idx].matches.push(rm.clone());
+            // Add to new results structure
+            if let ResultItem::Group(ref mut g) = new_groups[idx] {
+                g.results.push(ResultItem::Match(rm));
+            }
         }
-        self.groups = Some(groups);
+
+        self.groups = Some(old_groups);
+        self.results = new_groups;
+        self.group = Some("file".to_string());
         self
     }
 
     /// Attach pre-computed file outputs to groups (set stdout mode).
-    /// Must be called after `with_groups()`. Groups whose file is not in `outputs`
-    /// are left with `output = None`.
+    /// Must be called after `with_groups()`. Updates both old and new structures.
     pub fn with_file_outputs(mut self, outputs: &std::collections::HashMap<String, String>) -> Self {
+        // Update old groups
         if let Some(ref mut groups) = self.groups {
             for group in groups.iter_mut() {
                 if let Some(content) = outputs.get(&group.file) {
                     group.output = Some(content.clone());
+                }
+            }
+        }
+        // Update new results
+        for item in &mut self.results {
+            if let ResultItem::Group(ref mut g) = item {
+                if let Some(ref file) = g.file {
+                    if let Some(content) = outputs.get(file.as_str()) {
+                        g.output_content = Some(content.clone());
+                    }
                 }
             }
         }
