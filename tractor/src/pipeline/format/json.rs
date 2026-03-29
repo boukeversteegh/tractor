@@ -19,7 +19,7 @@ pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderO
 
     // Render results
     if !report.results.is_empty() {
-        let results_json = render_results_json(&report.results, view, render_opts);
+        let results_json = render_results_json(&report.results, view, render_opts, report.group.as_deref());
         if !results_json.is_empty() {
             root.insert("results".into(), Value::Array(results_json));
         }
@@ -55,13 +55,20 @@ pub fn emit_report_metadata(root: &mut serde_json::Map<String, Value>, report: &
 }
 
 /// Render a results list recursively as JSON.
-pub fn render_results_json(items: &[ResultItem], view: &ViewSet, render_opts: &RenderOptions) -> Vec<Value> {
+/// `parent_group`: the dimension hoisted by the parent — that field is omitted
+/// from child matches (rendering concern, not data mutation).
+pub fn render_results_json(
+    items: &[ResultItem],
+    view: &ViewSet,
+    render_opts: &RenderOptions,
+    parent_group: Option<&str>,
+) -> Vec<Value> {
     items.iter().map(|item| {
         match item {
-            ResultItem::Match(rm) => match_to_value(rm, view, render_opts),
+            ResultItem::Match(rm) => match_to_value(rm, view, render_opts, parent_group),
             ResultItem::Group(sub) => {
                 let mut obj = serde_json::Map::new();
-                // Hoisted group key values — same field names as on a match
+                // Hoisted group key values
                 if let Some(ref file) = sub.file {
                     obj.insert("file".into(), json!(file));
                 }
@@ -81,10 +88,9 @@ pub fn render_results_json(items: &[ResultItem], view: &ViewSet, render_opts: &R
                 if let Some(ref group) = sub.group {
                     obj.insert("group".into(), json!(group));
                 }
-                // Sub-report metadata (success, totals, expected)
                 emit_report_metadata(&mut obj, sub);
-                // Recurse — children skip the field this group is grouped by
-                let sub_results = render_results_json(&sub.results, view, render_opts);
+                // Recurse — pass this group's dimension so children omit that field
+                let sub_results = render_results_json(&sub.results, view, render_opts, sub.group.as_deref());
                 if !sub_results.is_empty() {
                     obj.insert("results".into(), Value::Array(sub_results));
                 }
@@ -95,18 +101,20 @@ pub fn render_results_json(items: &[ResultItem], view: &ViewSet, render_opts: &R
 }
 
 /// Shared match serialization — reused by yaml.rs.
+/// `parent_group`: if set, that field is omitted (hoisted to parent group).
 /// Fields are emitted in ViewSet declaration order.
 pub fn match_to_value(
     rm: &ReportMatch,
     view: &ViewSet,
     render_opts: &RenderOptions,
+    parent_group: Option<&str>,
 ) -> Value {
     let mut obj = serde_json::Map::new();
 
     for field in &view.fields {
         match field {
             ViewField::File => {
-                if !rm.file.is_empty() {
+                if parent_group != Some("file") && !rm.file.is_empty() {
                     obj.insert("file".into(), json!(normalize_path(&rm.file)));
                 }
             }
@@ -214,7 +222,7 @@ mod tests {
         ]);
         let view = ViewSet::single(ViewField::Tree);
         let opts = RenderOptions::new();
-        let val = match_to_value(&rm, &view, &opts);
+        let val = match_to_value(&rm, &view, &opts, None);
         let v = val.get("tree").unwrap();
         assert!(v.is_object(), "Map tree should be a JSON object, got: {}", v);
         assert_eq!(v["name"], "foo");
@@ -226,7 +234,7 @@ mod tests {
         let rm = make_plain_match("hello world");
         let view = ViewSet::single(ViewField::Value);
         let opts = RenderOptions::new();
-        let val = match_to_value(&rm, &view, &opts);
+        let val = match_to_value(&rm, &view, &opts, None);
         let v = val.get("value").unwrap();
         assert!(v.is_string(), "Regular value should be a string, got: {}", v);
         assert_eq!(v.as_str().unwrap(), "hello world");

@@ -17,7 +17,7 @@ pub fn render_yaml_report(report: &Report, view: &ViewSet, render_opts: &RenderO
 
     // Render results
     if !report.results.is_empty() {
-        let results_json = render_results_json(&report.results, view, render_opts);
+        let results_json = render_results_json(&report.results, view, render_opts, report.group.as_deref());
         if !results_json.is_empty() {
             root.insert("results".into(), Value::Array(results_json));
         }

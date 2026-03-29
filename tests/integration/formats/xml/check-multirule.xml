@@ -10,7 +10,7 @@
   <group-by>file</group-by>
   <results>
     <group file="tests/integration/formats/sample.cs">
-      <match file="tests/integration/formats/sample.cs" line="1" column="1" end_line="5" end_column="2">
+      <match line="1" column="1" end_line="5" end_column="2">
         <reason>class declaration found</reason>
         <severity>error</severity>
         <lines>
@@ -22,7 +22,7 @@
         </lines>
         <rule-id>no-class</rule-id>
       </match>
-      <match file="tests/integration/formats/sample.cs" line="4" column="5" end_line="4" end_column="26">
+      <match line="4" column="5" end_line="4" end_column="26">
         <reason>void method found</reason>
         <severity>warning</severity>
         <lines>
@@ -30,7 +30,7 @@
         </lines>
         <rule-id>no-void-method</rule-id>
       </match>
-      <match file="tests/integration/formats/sample.cs" line="7" column="1" end_line="7" end_column="21">
+      <match line="7" column="1" end_line="7" end_column="21">
         <reason>class declaration found</reason>
         <severity>error</severity>
         <lines>

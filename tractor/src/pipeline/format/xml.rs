@@ -50,7 +50,7 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
     }
     if !report.results.is_empty() {
         body.push_str("  <results>\n");
-        render_xml_results(&mut body, &report.results, view, "    ", &tree_opts);
+        render_xml_results(&mut body, &report.results, view, "    ", &tree_opts, report.group.as_deref());
         body.push_str("  </results>\n");
     }
 
@@ -75,11 +75,12 @@ fn append_match(
     view: &ViewSet,
     indent: &str,
     render_opts: &RenderOptions,
+    parent_group: Option<&str>,
 ) {
     let file_str = normalize_path(&rm.file);
-    // Only include line/column attributes when they carry meaningful position info (non-zero)
+    let show_file = parent_group != Some("file") && !file_str.is_empty();
     let has_position = rm.line > 0;
-    if file_str.is_empty() {
+    if !show_file {
         if has_position {
             out.push_str(&format!("{}<match line=\"{}\" column=\"{}\"", indent, rm.line, rm.column));
         } else {
@@ -180,13 +181,14 @@ fn render_xml_results(
     view: &ViewSet,
     indent: &str,
     tree_opts: &RenderOptions,
+    parent_group: Option<&str>,
 ) {
     let inner = format!("{}  ", indent);
     for item in items {
         match item {
             ResultItem::Match(rm) => {
                 if view.has_per_match_fields() || rm.message.is_some() {
-                    append_match(out, rm, view, indent, tree_opts);
+                    append_match(out, rm, view, indent, tree_opts, parent_group);
                 }
             }
             ResultItem::Group(sub) => {
@@ -208,8 +210,8 @@ fn render_xml_results(
                         out.push_str(&format!("{}<output>{}</output>\n", inner, escape(content)));
                     }
                 }
-                // Recurse
-                render_xml_results(out, &sub.results, view, &inner, tree_opts);
+                // Recurse — pass this group's dimension for child field omission
+                render_xml_results(out, &sub.results, view, &inner, tree_opts, sub.group.as_deref());
                 out.push_str(&format!("{}</group>\n", indent));
             }
         }
