@@ -58,7 +58,7 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
     let show_summary = if report.success.is_some() {
         true
     } else {
-        view.has(ViewField::Summary) || view.has(ViewField::Query)
+        view.has(ViewField::Totals) || view.has(ViewField::Query)
     };
     if show_summary {
         if let Some(ref totals) = report.totals {

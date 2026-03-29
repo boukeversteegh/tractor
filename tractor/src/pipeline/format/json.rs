@@ -11,7 +11,7 @@ pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderO
     let show_totals = if report.success.is_some() {
         true
     } else {
-        view.has(ViewField::Summary) || view.has(ViewField::Query)
+        view.has(ViewField::Totals) || view.has(ViewField::Query)
     };
     if show_totals {
         emit_report_metadata(&mut root, report);

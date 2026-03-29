@@ -8,7 +8,7 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
     let show_totals = if report.success.is_some() {
         true
     } else {
-        view.has(ViewField::Summary)
+        view.has(ViewField::Totals)
     };
 
     let mut body = String::new();

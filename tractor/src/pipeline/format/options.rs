@@ -55,7 +55,7 @@ pub enum ViewField {
     Column,
     Reason,
     Severity,
-    Summary,
+    Totals,
     Count,
     Schema,
     Query,
@@ -79,7 +79,7 @@ impl ViewField {
             "column"       => Ok(ViewField::Column),
             "reason"       => Ok(ViewField::Reason),
             "severity"     => Ok(ViewField::Severity),
-            "summary"      => Ok(ViewField::Summary),
+            "totals" | "summary" => Ok(ViewField::Totals),
             "count"        => Ok(ViewField::Count),
             "schema"       => Ok(ViewField::Schema),
             "query"        => Ok(ViewField::Query),
@@ -91,7 +91,7 @@ impl ViewField {
             )),
             _ => Err(format!(
                 "invalid view '{}'. Valid views: tree, value, source, lines, file, line, column, \
-                 reason, severity, summary, count, schema, query, status, output, command",
+                 reason, severity, totals, count, schema, query, status, output, command",
                 s,
             )),
         }

@@ -20,7 +20,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     let ctx = RunContext::build(
         &args.shared, args.files, args.shared.xpath.clone(),
-        &args.format, &[ViewField::Summary], args.view.as_deref(), args.message, args.content, false, &[],
+        &args.format, &[ViewField::Totals], args.view.as_deref(), args.message, args.content, false, &[],
     )?;
 
     let dot = ".".to_string();
