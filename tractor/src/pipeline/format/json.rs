@@ -2,7 +2,7 @@ use serde_json::{json, Value};
 use tractor_core::{report::{Report, ReportMatch, ResultItem}, normalize_path, xml_node_to_json, RenderOptions};
 use super::options::{ViewField, ViewSet};
 
-pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions) -> String {
+pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, dimensions: &[&str]) -> String {
     let mut root = serde_json::Map::new();
 
     // success + totals: top-level fields on the report.
@@ -19,7 +19,7 @@ pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderO
 
     // Render results
     if !report.results.is_empty() {
-        let results_json = render_results_json(&report.results, view, render_opts, report.group.as_deref());
+        let results_json = render_results_json(&report.results, view, render_opts, dimensions);
         if !results_json.is_empty() {
             root.insert("results".into(), Value::Array(results_json));
         }
@@ -54,30 +54,24 @@ pub fn emit_report_metadata(root: &mut serde_json::Map<String, Value>, report: &
     }
 }
 
-/// Render a results list recursively as JSON.
-/// `parent_group`: the dimension hoisted by the parent — that field is omitted
-/// from child matches (rendering concern, not data mutation).
+/// Render a results list as JSON.
+/// `dimensions`: the grouping chain (e.g. ["command", "file"]). Level 0
+/// groups carry dimension[0] as their key. Leaf matches skip all dimensions.
 pub fn render_results_json(
     items: &[ResultItem],
     view: &ViewSet,
     render_opts: &RenderOptions,
-    parent_group: Option<&str>,
+    dimensions: &[&str],
 ) -> Vec<Value> {
     items.iter().map(|item| {
         match item {
-            ResultItem::Match(rm) => match_to_value(rm, view, render_opts, parent_group),
+            ResultItem::Match(rm) => match_to_value(rm, view, render_opts, dimensions),
             ResultItem::Group(sub) => {
                 let mut obj = serde_json::Map::new();
-                // Hoisted group key values
-                if let Some(ref file) = sub.file {
-                    obj.insert("file".into(), json!(file));
-                }
-                if let Some(ref command) = sub.command {
-                    obj.insert("command".into(), json!(command));
-                }
-                if let Some(ref rule_id) = sub.rule_id {
-                    obj.insert("rule_id".into(), json!(rule_id));
-                }
+                // Hoisted group key — the value of the current dimension
+                if let Some(ref file) = sub.file { obj.insert("file".into(), json!(file)); }
+                if let Some(ref command) = sub.command { obj.insert("command".into(), json!(command)); }
+                if let Some(ref rule_id) = sub.rule_id { obj.insert("rule_id".into(), json!(rule_id)); }
                 // Group-level output (set stdout mode)
                 if view.has(ViewField::Output) {
                     if let Some(ref content) = sub.output_content {
@@ -89,8 +83,8 @@ pub fn render_results_json(
                     obj.insert("group".into(), json!(group));
                 }
                 emit_report_metadata(&mut obj, sub);
-                // Recurse — pass this group's dimension so children omit that field
-                let sub_results = render_results_json(&sub.results, view, render_opts, sub.group.as_deref());
+                // Recurse — pass full dimensions so leaf matches skip all hoisted fields
+                let sub_results = render_results_json(&sub.results, view, render_opts, dimensions);
                 if !sub_results.is_empty() {
                     obj.insert("results".into(), Value::Array(sub_results));
                 }
@@ -101,20 +95,20 @@ pub fn render_results_json(
 }
 
 /// Shared match serialization — reused by yaml.rs.
-/// `parent_group`: if set, that field is omitted (hoisted to parent group).
-/// Fields are emitted in ViewSet declaration order.
+/// `skip_dims`: all grouping dimensions — these fields are omitted from the match
+/// since they're hoisted to ancestor groups.
 pub fn match_to_value(
     rm: &ReportMatch,
     view: &ViewSet,
     render_opts: &RenderOptions,
-    parent_group: Option<&str>,
+    skip_dims: &[&str],
 ) -> Value {
     let mut obj = serde_json::Map::new();
 
     for field in &view.fields {
         match field {
             ViewField::File => {
-                if parent_group != Some("file") && !rm.file.is_empty() {
+                if !skip_dims.contains(&"file") && !rm.file.is_empty() {
                     obj.insert("file".into(), json!(normalize_path(&rm.file)));
                 }
             }
@@ -222,7 +216,7 @@ mod tests {
         ]);
         let view = ViewSet::single(ViewField::Tree);
         let opts = RenderOptions::new();
-        let val = match_to_value(&rm, &view, &opts, None);
+        let val = match_to_value(&rm, &view, &opts, &[]);
         let v = val.get("tree").unwrap();
         assert!(v.is_object(), "Map tree should be a JSON object, got: {}", v);
         assert_eq!(v["name"], "foo");
@@ -234,7 +228,7 @@ mod tests {
         let rm = make_plain_match("hello world");
         let view = ViewSet::single(ViewField::Value);
         let opts = RenderOptions::new();
-        let val = match_to_value(&rm, &view, &opts, None);
+        let val = match_to_value(&rm, &view, &opts, &[]);
         let v = val.get("value").unwrap();
         assert!(v.is_string(), "Regular value should be a string, got: {}", v);
         assert_eq!(v.as_str().unwrap(), "hello world");
@@ -253,7 +247,7 @@ mod tests {
         let report = Report::query(vec![rm], totals);
         let view = ViewSet::new(vec![ViewField::File, ViewField::Tree]);
         let opts = RenderOptions::new();
-        let output = render_json_report(&report, &view, &opts);
+        let output = render_json_report(&report, &view, &opts, &[]);
         let parsed: serde_json::Value = serde_json::from_str(&output).unwrap();
         let match_tree = &parsed["results"][0]["tree"];
         assert!(match_tree.is_object(), "Map tree should be a JSON object in report output, got: {}", match_tree);

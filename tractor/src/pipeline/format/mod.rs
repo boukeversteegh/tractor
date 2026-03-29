@@ -49,10 +49,11 @@ pub fn render_report(
     }
 
     // Standard format dispatch — same for all report types.
+    let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
     match ctx.output_format {
-        OutputFormat::Json   => print!("{}", render_json_report(report, &ctx.view, &ctx.render_options())),
-        OutputFormat::Yaml   => print!("{}", render_yaml_report(report, &ctx.view, &ctx.render_options())),
-        OutputFormat::Xml    => print!("{}", render_xml_report(report, &ctx.view, &ctx.render_options())),
+        OutputFormat::Json   => print!("{}", render_json_report(report, &ctx.view, &ctx.render_options(), &dims)),
+        OutputFormat::Yaml   => print!("{}", render_yaml_report(report, &ctx.view, &ctx.render_options(), &dims)),
+        OutputFormat::Xml    => print!("{}", render_xml_report(report, &ctx.view, &ctx.render_options(), &dims)),
         OutputFormat::Gcc    => {
             print!("{}", render_gcc(report, &ctx.render_options()));
             if let Some(ref totals) = report.totals {

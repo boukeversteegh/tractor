@@ -1,7 +1,7 @@
 use tractor_core::{report::{Report, ResultItem}, normalize_path, render_xml_string, render_xml_node, RenderOptions};
 use super::options::{ViewField, ViewSet};
 
-pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions) -> String {
+pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, dimensions: &[&str]) -> String {
     let mut tree_opts = render_opts.clone();
     tree_opts.use_color = false;
 
@@ -50,7 +50,7 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
     }
     if !report.results.is_empty() {
         body.push_str("  <results>\n");
-        render_xml_results(&mut body, &report.results, view, "    ", &tree_opts, report.group.as_deref());
+        render_xml_results(&mut body, &report.results, view, "    ", &tree_opts, dimensions);
         body.push_str("  </results>\n");
     }
 
@@ -75,10 +75,10 @@ fn append_match(
     view: &ViewSet,
     indent: &str,
     render_opts: &RenderOptions,
-    parent_group: Option<&str>,
+    skip_dims: &[&str],
 ) {
     let file_str = normalize_path(&rm.file);
-    let show_file = parent_group != Some("file") && !file_str.is_empty();
+    let show_file = !skip_dims.contains(&"file") && !file_str.is_empty();
     let has_position = rm.line > 0;
     if !show_file {
         if has_position {
@@ -181,14 +181,14 @@ fn render_xml_results(
     view: &ViewSet,
     indent: &str,
     tree_opts: &RenderOptions,
-    parent_group: Option<&str>,
+    dimensions: &[&str],
 ) {
     let inner = format!("{}  ", indent);
     for item in items {
         match item {
             ResultItem::Match(rm) => {
                 if view.has_per_match_fields() || rm.message.is_some() {
-                    append_match(out, rm, view, indent, tree_opts, parent_group);
+                    append_match(out, rm, view, indent, tree_opts, dimensions);
                 }
             }
             ResultItem::Group(sub) => {
@@ -210,8 +210,9 @@ fn render_xml_results(
                         out.push_str(&format!("{}<output>{}</output>\n", inner, escape(content)));
                     }
                 }
-                // Recurse — pass this group's dimension for child field omission
-                render_xml_results(out, &sub.results, view, &inner, tree_opts, sub.group.as_deref());
+                // Recurse — this group's children skip the same field that was hoisted
+                // to create this group. If this group has sub-grouping, that applies too.
+                render_xml_results(out, &sub.results, view, &inner, tree_opts, dimensions);
                 out.push_str(&format!("{}</group>\n", indent));
             }
         }

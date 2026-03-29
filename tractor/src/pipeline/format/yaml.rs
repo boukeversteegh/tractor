@@ -3,7 +3,7 @@ use tractor_core::{report::Report, RenderOptions};
 use super::options::{ViewField, ViewSet};
 use super::json::{render_results_json, emit_report_metadata};
 
-pub fn render_yaml_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions) -> String {
+pub fn render_yaml_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, dimensions: &[&str]) -> String {
     let mut root = serde_json::Map::new();
 
     let show_totals = if report.success.is_some() {
@@ -17,7 +17,7 @@ pub fn render_yaml_report(report: &Report, view: &ViewSet, render_opts: &RenderO
 
     // Render results
     if !report.results.is_empty() {
-        let results_json = render_results_json(&report.results, view, render_opts, report.group.as_deref());
+        let results_json = render_results_json(&report.results, view, render_opts, dimensions);
         if !results_json.is_empty() {
             root.insert("results".into(), Value::Array(results_json));
         }
