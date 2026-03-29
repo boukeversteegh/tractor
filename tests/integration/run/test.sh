@@ -32,10 +32,7 @@ run_and_check() {
         ((PASSED++))
     else
         echo "  ✗ $desc"
-        echo "    expected:"
-        echo "$expected_output" | sed 's/^/      /'
-        echo "    actual:"
-        echo "$actual" | sed 's/^/      /'
+        diff <(echo "$expected_output") <(echo "$actual") --color=always -u --label expected --label actual | sed 's/^/      /'
         ((FAILED++))
     fi
 }
@@ -77,10 +74,7 @@ run_set_and_check() {
         ((PASSED++))
     else
         echo "  ✗ $desc"
-        echo "    expected:"
-        echo "$expected_output" | sed 's/^/      /'
-        echo "    actual:"
-        echo "$actual" | sed 's/^/      /'
+        diff <(echo "$expected_output") <(echo "$actual") --color=always -u --label expected --label actual | sed 's/^/      /'
         ((FAILED++))
     fi
 }

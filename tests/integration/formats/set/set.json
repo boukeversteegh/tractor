@@ -1,9 +1,9 @@
 {
   "summary": {
-    "total": 1,
+    "passed": true,
+    "results": 1,
     "files": 1,
-    "updated": 1,
-    "unchanged": 0
+    "updated": 1
   },
   "groups": [
     {
