@@ -180,6 +180,43 @@ impl ReportKind {
     }
 }
 
+// ---------------------------------------------------------------------------
+// ResultItem — recursive result type
+// ---------------------------------------------------------------------------
+
+/// An item in a report's `results` list: either a leaf match or a sub-group.
+#[derive(Debug, Clone)]
+pub enum ResultItem {
+    Match(ReportMatch),
+    Group(Box<Report>),
+}
+
+impl ResultItem {
+    /// Get a reference to the match if this is a Match variant.
+    pub fn as_match(&self) -> Option<&ReportMatch> {
+        match self {
+            ResultItem::Match(m) => Some(m),
+            ResultItem::Group(_) => None,
+        }
+    }
+
+    /// Get a mutable reference to the match if this is a Match variant.
+    pub fn as_match_mut(&mut self) -> Option<&mut ReportMatch> {
+        match self {
+            ResultItem::Match(m) => Some(m),
+            ResultItem::Group(_) => None,
+        }
+    }
+
+    /// Get a reference to the sub-group report if this is a Group variant.
+    pub fn as_group(&self) -> Option<&Report> {
+        match self {
+            ResultItem::Match(_) => None,
+            ResultItem::Group(r) => Some(r),
+        }
+    }
+}
+
 /// Matches grouped by source file.
 #[derive(Debug, Clone, Serialize)]
 pub struct FileGroup {
@@ -191,7 +228,7 @@ pub struct FileGroup {
 }
 
 /// The normalized output of a tractor command.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Report {
     pub kind: ReportKind,
     pub matches: Vec<ReportMatch>,
@@ -220,23 +257,45 @@ pub struct Report {
     /// from one operation in the config file.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub operations: Option<Vec<Report>>,
+
+    // ---- New unified fields (Step 3) ----
+
+    /// Unified results list. Contains either leaf matches or sub-groups.
+    /// Populated by `build_results()` or `with_results_grouped()`.
+    /// During migration, may be empty while old fields are still in use.
+    #[serde(skip)]
+    pub results: Vec<ResultItem>,
+
+    /// What the children in `results` are grouped by ("file", "command").
+    /// None when `results` contains ungrouped leaf matches.
+    #[serde(skip)]
+    pub group: Option<String>,
+
+    /// Hoisted file path when this Report represents a file group.
+    #[serde(skip)]
+    pub file: Option<String>,
+
+    /// Full modified file content for set stdout mode (group-level).
+    /// Moved from FileGroup to Report so groups can be represented as Reports.
+    #[serde(skip)]
+    pub output_content: Option<String>,
 }
 
 impl Report {
     pub fn set(matches: Vec<ReportMatch>, success: bool, totals: Totals) -> Self {
-        Report { kind: ReportKind::Set, matches, success: Some(success), totals: Some(totals), expected: None, query: None, groups: None, operations: None }
+        Report { kind: ReportKind::Set, matches, success: Some(success), totals: Some(totals), expected: None, query: None, groups: None, operations: None, results: vec![], group: None, file: None, output_content: None }
     }
 
     pub fn query(matches: Vec<ReportMatch>, totals: Totals) -> Self {
-        Report { kind: ReportKind::Query, matches, success: None, totals: Some(totals), expected: None, query: None, groups: None, operations: None }
+        Report { kind: ReportKind::Query, matches, success: None, totals: Some(totals), expected: None, query: None, groups: None, operations: None, results: vec![], group: None, file: None, output_content: None }
     }
 
     pub fn check(matches: Vec<ReportMatch>, success: bool, totals: Totals) -> Self {
-        Report { kind: ReportKind::Check, matches, success: Some(success), totals: Some(totals), expected: None, query: None, groups: None, operations: None }
+        Report { kind: ReportKind::Check, matches, success: Some(success), totals: Some(totals), expected: None, query: None, groups: None, operations: None, results: vec![], group: None, file: None, output_content: None }
     }
 
     pub fn test(matches: Vec<ReportMatch>, success: bool, totals: Totals) -> Self {
-        Report { kind: ReportKind::Test, matches, success: Some(success), totals: Some(totals), expected: None, query: None, groups: None, operations: None }
+        Report { kind: ReportKind::Test, matches, success: Some(success), totals: Some(totals), expected: None, query: None, groups: None, operations: None, results: vec![], group: None, file: None, output_content: None }
     }
 
     /// Build a unified run report from multiple sub-reports.
@@ -280,12 +339,66 @@ impl Report {
             query: None,
             groups: None,
             operations: Some(reports),
+            results: vec![],
+            group: None,
+            file: None,
+            output_content: None,
         }
     }
 
     /// Serialize this report to pretty-printed JSON.
     pub fn to_json(&self) -> String {
         serde_json::to_string_pretty(self).unwrap_or_else(|_| "{}".to_string())
+    }
+
+    // ---- ResultItem helpers ----
+
+    /// Collect references to all leaf matches, recursing into groups.
+    /// Prefers `results` if populated, falls back to old fields.
+    pub fn all_matches(&self) -> Vec<&ReportMatch> {
+        if !self.results.is_empty() {
+            let mut out = Vec::new();
+            Self::collect_matches_recursive(&self.results, &mut out);
+            return out;
+        }
+        // Fallback to old fields
+        if let Some(ref groups) = self.groups {
+            return groups.iter().flat_map(|g| g.matches.iter()).collect();
+        }
+        self.matches.iter().collect()
+    }
+
+    /// Collect mutable references to all leaf matches, recursing into groups.
+    /// Prefers `results` if populated, falls back to old fields.
+    pub fn all_matches_mut(&mut self) -> Vec<&mut ReportMatch> {
+        if !self.results.is_empty() {
+            let mut out = Vec::new();
+            Self::collect_matches_mut_recursive(&mut self.results, &mut out);
+            return out;
+        }
+        // Fallback to old fields
+        if let Some(ref mut groups) = self.groups {
+            return groups.iter_mut().flat_map(|g| g.matches.iter_mut()).collect();
+        }
+        self.matches.iter_mut().collect()
+    }
+
+    fn collect_matches_recursive<'a>(items: &'a [ResultItem], out: &mut Vec<&'a ReportMatch>) {
+        for item in items {
+            match item {
+                ResultItem::Match(m) => out.push(m),
+                ResultItem::Group(g) => Self::collect_matches_recursive(&g.results, out),
+            }
+        }
+    }
+
+    fn collect_matches_mut_recursive<'a>(items: &'a mut [ResultItem], out: &mut Vec<&'a mut ReportMatch>) {
+        for item in items {
+            match item {
+                ResultItem::Match(m) => out.push(m),
+                ResultItem::Group(g) => Self::collect_matches_mut_recursive(&mut g.results, out),
+            }
+        }
     }
 
     /// Consume flat `matches`, group them by source file, and clear the flat list.
