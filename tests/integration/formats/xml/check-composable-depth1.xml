@@ -22,7 +22,6 @@
         </tree>
         <reason>class found</reason>
         <severity>error</severity>
-        <rule-id>_check</rule-id>
       </match>
       <match line="7" column="1" end_line="7" end_column="21">
         <tree>
@@ -35,7 +34,6 @@
         </tree>
         <reason>class found</reason>
         <severity>error</severity>
-        <rule-id>_check</rule-id>
       </match>
     </group>
   </results>

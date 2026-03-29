@@ -48,8 +48,7 @@
             }
           },
           "reason": "class found",
-          "severity": "error",
-          "rule_id": "_check"
+          "severity": "error"
         },
         {
           "tree": {
@@ -59,8 +58,7 @@
             "body": "{ }"
           },
           "reason": "class found",
-          "severity": "error",
-          "rule_id": "_check"
+          "severity": "error"
         }
       ]
     }

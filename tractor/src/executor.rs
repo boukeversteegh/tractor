@@ -1122,8 +1122,8 @@ mod tests {
         assert_eq!(reports.len(), 1);
         let report = &reports[0];
         assert!(report.success.is_none()); // query reports have no pass/fail
-        assert_eq!(report.matches.len(), 1);
-        assert_eq!(report.matches[0].value.as_deref(), Some("alice"));
+        assert_eq!(report.all_matches().len(), 1);
+        assert_eq!(report.all_matches()[0].value.as_deref(), Some("alice"));
     }
 
     #[test]
@@ -1146,7 +1146,7 @@ mod tests {
         })];
 
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
-        assert!(reports[0].matches.len() <= 2);
+        assert!(reports[0].all_matches().len() <= 2);
     }
 
     #[test]
@@ -1167,7 +1167,7 @@ mod tests {
         })];
 
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
-        assert_eq!(reports[0].matches.len(), 0);
+        assert_eq!(reports[0].all_matches().len(), 0);
         assert!(reports[0].success.is_none()); // query reports have no pass/fail
     }
 
@@ -1275,7 +1275,7 @@ mod tests {
         assert!(reports[0].success.unwrap());
 
         // Check status is "unchanged"
-        assert_eq!(reports[0].matches[0].status.as_deref(), Some("unchanged"));
+        assert_eq!(reports[0].all_matches()[0].status.as_deref(), Some("unchanged"));
     }
 
     // -----------------------------------------------------------------------
@@ -1363,9 +1363,10 @@ mod tests {
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
         let report = &reports[0];
         assert!(!report.success.unwrap(), "check should fail when violations found");
-        assert_eq!(report.matches.len(), 1);
-        assert_eq!(report.matches[0].rule_id.as_deref(), Some("no-debug"));
-        assert_eq!(report.matches[0].reason.as_deref(), Some("debug should not be enabled"));
+        let matches = report.all_matches();
+        assert_eq!(matches.len(), 1);
+        assert_eq!(matches[0].rule_id.as_deref(), Some("no-debug"));
+        assert_eq!(matches[0].reason.as_deref(), Some("debug should not be enabled"));
     }
 
     #[test]

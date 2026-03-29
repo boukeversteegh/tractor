@@ -233,11 +233,9 @@ fn build_set_report_matches(
 /// Build a set report for inline (stdin) stdout mode.
 /// Creates a single group with no file path and `output` = the modified string.
 fn build_set_inline_report(modified: String, ctx: &RunContext) -> Report {
-    use tractor_core::report::{FileGroup, ResultItem};
+    use tractor_core::report::ResultItem;
 
-    let output = if ctx.view.has(ViewField::Output) { Some(modified.clone()) } else { None };
     let output_content = if ctx.view.has(ViewField::Output) { Some(modified) } else { None };
-    let group = FileGroup { file: String::new(), matches: vec![], output };
 
     let totals = Totals {
         results: 1,
@@ -248,17 +246,12 @@ fn build_set_inline_report(modified: String, ctx: &RunContext) -> Report {
         unchanged: 0,
     };
     let mut report = Report::set(vec![], true, totals);
-    report.groups = Some(vec![group]);
-    // Also populate new results structure
     report.results = vec![ResultItem::Group(Box::new(Report {
         kind: tractor_core::report::ReportKind::Set,
-        matches: vec![],
         success: None,
         totals: None,
         expected: None,
         query: None,
-        groups: None,
-        operations: None,
         results: vec![],
         group: None,
         file: Some(String::new()),

@@ -217,21 +217,13 @@ impl ResultItem {
     }
 }
 
-/// Matches grouped by source file.
-#[derive(Debug, Clone, Serialize)]
-pub struct FileGroup {
-    pub file: String,
-    pub matches: Vec<ReportMatch>,
-    /// Full modified file content for set stdout mode — placed at group (file) level.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub output: Option<String>,
-}
-
 /// The normalized output of a tractor command.
+///
+/// A Report is a recursive group structure. The root and sub-groups share
+/// the same type. `results` contains either leaf matches or sub-groups.
 #[derive(Debug, Clone, Serialize)]
 pub struct Report {
     pub kind: ReportKind,
-    pub matches: Vec<ReportMatch>,
 
     /// Did the command succeed? False if check errors, test failures, or set drift.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -248,15 +240,6 @@ pub struct Report {
     /// The XPath query as received by tractor (set when `-v query` is used).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub query: Option<String>,
-
-    /// Optional pre-grouped structure. Populated by `with_groups()`.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub groups: Option<Vec<FileGroup>>,
-
-    /// Sub-reports for `ReportKind::Run`. Each entry is a complete report
-    /// from one operation in the config file.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub operations: Option<Vec<Report>>,
 
     // ---- New unified fields (Step 3) ----
 
@@ -283,23 +266,23 @@ pub struct Report {
 
 impl Report {
     pub fn set(matches: Vec<ReportMatch>, success: bool, totals: Totals) -> Self {
-        let results = matches.iter().cloned().map(ResultItem::Match).collect();
-        Report { kind: ReportKind::Set, matches, success: Some(success), totals: Some(totals), expected: None, query: None, groups: None, operations: None, results, group: None, file: None, output_content: None }
+        let results = matches.into_iter().map(ResultItem::Match).collect();
+        Report { kind: ReportKind::Set, success: Some(success), totals: Some(totals), expected: None, query: None, results, group: None, file: None, output_content: None }
     }
 
     pub fn query(matches: Vec<ReportMatch>, totals: Totals) -> Self {
-        let results = matches.iter().cloned().map(ResultItem::Match).collect();
-        Report { kind: ReportKind::Query, matches, success: None, totals: Some(totals), expected: None, query: None, groups: None, operations: None, results, group: None, file: None, output_content: None }
+        let results = matches.into_iter().map(ResultItem::Match).collect();
+        Report { kind: ReportKind::Query, success: None, totals: Some(totals), expected: None, query: None, results, group: None, file: None, output_content: None }
     }
 
     pub fn check(matches: Vec<ReportMatch>, success: bool, totals: Totals) -> Self {
-        let results = matches.iter().cloned().map(ResultItem::Match).collect();
-        Report { kind: ReportKind::Check, matches, success: Some(success), totals: Some(totals), expected: None, query: None, groups: None, operations: None, results, group: None, file: None, output_content: None }
+        let results = matches.into_iter().map(ResultItem::Match).collect();
+        Report { kind: ReportKind::Check, success: Some(success), totals: Some(totals), expected: None, query: None, results, group: None, file: None, output_content: None }
     }
 
     pub fn test(matches: Vec<ReportMatch>, success: bool, totals: Totals) -> Self {
-        let results = matches.iter().cloned().map(ResultItem::Match).collect();
-        Report { kind: ReportKind::Test, matches, success: Some(success), totals: Some(totals), expected: None, query: None, groups: None, operations: None, results, group: None, file: None, output_content: None }
+        let results = matches.into_iter().map(ResultItem::Match).collect();
+        Report { kind: ReportKind::Test, success: Some(success), totals: Some(totals), expected: None, query: None, results, group: None, file: None, output_content: None }
     }
 
     /// Build a unified run report from multiple sub-reports.
@@ -329,8 +312,7 @@ impl Report {
 
         Report {
             kind: ReportKind::Run,
-            matches: vec![],
-            success: Some(success),
+                       success: Some(success),
             totals: Some(Totals {
                 results: total,
                 files,
@@ -341,9 +323,7 @@ impl Report {
             }),
             expected: None,
             query: None,
-            groups: None,
-            results: reports.iter().map(|r| ResultItem::Group(Box::new(r.clone()))).collect(),
-            operations: Some(reports),
+            results: reports.into_iter().map(|r| ResultItem::Group(Box::new(r))).collect(),
             group: None,
             file: None,
             output_content: None,
@@ -358,33 +338,17 @@ impl Report {
     // ---- ResultItem helpers ----
 
     /// Collect references to all leaf matches, recursing into groups.
-    /// Prefers `results` if populated, falls back to old fields.
     pub fn all_matches(&self) -> Vec<&ReportMatch> {
-        if !self.results.is_empty() {
-            let mut out = Vec::new();
-            Self::collect_matches_recursive(&self.results, &mut out);
-            return out;
-        }
-        // Fallback to old fields
-        if let Some(ref groups) = self.groups {
-            return groups.iter().flat_map(|g| g.matches.iter()).collect();
-        }
-        self.matches.iter().collect()
+        let mut out = Vec::new();
+        Self::collect_matches_recursive(&self.results, &mut out);
+        out
     }
 
     /// Collect mutable references to all leaf matches, recursing into groups.
-    /// Prefers `results` if populated, falls back to old fields.
     pub fn all_matches_mut(&mut self) -> Vec<&mut ReportMatch> {
-        if !self.results.is_empty() {
-            let mut out = Vec::new();
-            Self::collect_matches_mut_recursive(&mut self.results, &mut out);
-            return out;
-        }
-        // Fallback to old fields
-        if let Some(ref mut groups) = self.groups {
-            return groups.iter_mut().flat_map(|g| g.matches.iter_mut()).collect();
-        }
-        self.matches.iter_mut().collect()
+        let mut out = Vec::new();
+        Self::collect_matches_mut_recursive(&mut self.results, &mut out);
+        out
     }
 
     fn collect_matches_recursive<'a>(items: &'a [ResultItem], out: &mut Vec<&'a ReportMatch>) {
@@ -405,59 +369,49 @@ impl Report {
         }
     }
 
-    /// Consume flat `matches`, group them by source file, and clear the flat list.
-    /// Populates both old `groups` field and new `results` field.
+    /// Group flat results by source file.
+    /// Drains leaf matches from `results`, groups them by file into sub-group Reports.
+    /// Sets `group: Some("file")` on self.
     pub fn with_groups(mut self) -> Self {
-        let mut old_groups: Vec<FileGroup> = Vec::new();
-        let mut new_groups: Vec<ResultItem> = Vec::new();
+        let mut groups: Vec<ResultItem> = Vec::new();
         let mut file_index: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
 
-        for mut rm in self.matches.drain(..) {
-            let file = normalize_path(&rm.file);
-            let idx = *file_index.entry(file.clone()).or_insert_with(|| {
-                old_groups.push(FileGroup { file: file.clone(), matches: Vec::new(), output: None });
-                new_groups.push(ResultItem::Group(Box::new(Report {
-                    kind: self.kind,
-                    matches: vec![],
-                    success: None,
-                    totals: None,
-                    expected: None,
-                    query: None,
-                    groups: None,
-                    operations: None,
-                    results: vec![],
-                    group: None,
-                    file: Some(file.clone()),
-                    output_content: None,
-                })));
-                old_groups.len() - 1
-            });
-            rm.file = String::new();
-            old_groups[idx].matches.push(rm.clone());
-            // Add to new results structure
-            if let ResultItem::Group(ref mut g) = new_groups[idx] {
-                g.results.push(ResultItem::Match(rm));
+        let old_results = std::mem::take(&mut self.results);
+        for item in old_results {
+            if let ResultItem::Match(mut rm) = item {
+                let file = normalize_path(&rm.file);
+                let idx = *file_index.entry(file.clone()).or_insert_with(|| {
+                    groups.push(ResultItem::Group(Box::new(Report {
+                        kind: self.kind,
+                        success: None,
+                        totals: None,
+                        expected: None,
+                        query: None,
+                        results: vec![],
+                        group: None,
+                        file: Some(file.clone()),
+                        output_content: None,
+                    })));
+                    groups.len() - 1
+                });
+                rm.file = String::new();
+                if let ResultItem::Group(ref mut g) = groups[idx] {
+                    g.results.push(ResultItem::Match(rm));
+                }
+            } else {
+                // Non-match items (sub-groups) pass through
+                groups.push(item);
             }
         }
 
-        self.groups = Some(old_groups);
-        self.results = new_groups;
+        self.results = groups;
         self.group = Some("file".to_string());
         self
     }
 
-    /// Attach pre-computed file outputs to groups (set stdout mode).
-    /// Must be called after `with_groups()`. Updates both old and new structures.
+    /// Attach pre-computed file outputs to file groups (set stdout mode).
+    /// Must be called after `with_groups()`.
     pub fn with_file_outputs(mut self, outputs: &std::collections::HashMap<String, String>) -> Self {
-        // Update old groups
-        if let Some(ref mut groups) = self.groups {
-            for group in groups.iter_mut() {
-                if let Some(content) = outputs.get(&group.file) {
-                    group.output = Some(content.clone());
-                }
-            }
-        }
-        // Update new results
         for item in &mut self.results {
             if let ResultItem::Group(ref mut g) = item {
                 if let Some(ref file) = g.file {
@@ -553,12 +507,11 @@ mod tests {
         assert_eq!(v["totals"]["errors"], 1);
         assert_eq!(v["totals"]["warnings"], 1);
 
-        // Matches
-        assert_eq!(v["matches"].as_array().unwrap().len(), 2);
-        // Backslash normalized to forward slash
-        assert_eq!(v["matches"][0]["file"], "src/main.rs");
-        assert_eq!(v["matches"][0]["severity"], "error");
-        assert_eq!(v["matches"][1]["severity"], "warning");
+        // Matches (via all_matches helper since results is the sole storage)
+        let matches = report.all_matches();
+        assert_eq!(matches.len(), 2);
+        assert_eq!(matches[0].severity.unwrap().as_str(), "error");
+        assert_eq!(matches[1].severity.unwrap().as_str(), "warning");
     }
 
     #[test]
@@ -581,7 +534,9 @@ mod tests {
         assert_eq!(v["success"], true);
         assert_eq!(v["expected"], "some");
         // No reason/severity on plain match
-        assert!(v["matches"][0].get("reason").is_none());
-        assert!(v["matches"][0].get("severity").is_none());
+        let matches = report.all_matches();
+        assert_eq!(matches.len(), 1);
+        assert!(matches[0].reason.is_none());
+        assert!(matches[0].severity.is_none());
     }
 }

@@ -19,7 +19,6 @@
         <line>    public void Baz() { }</line>
         <line>}</line>
         </lines>
-        <rule-id>_check</rule-id>
       </match>
       <match line="7" column="1" end_line="7" end_column="21">
         <reason>class found</reason>
@@ -27,7 +26,6 @@
         <lines>
         <line>public class Qux { }</line>
         </lines>
-        <rule-id>_check</rule-id>
       </match>
     </group>
   </results>
