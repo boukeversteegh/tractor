@@ -6,7 +6,8 @@
         "public": true,
         "name": "Foo",
         "body": {}
-      }
+      },
+      "command": "query"
     },
     {
       "tree": {
@@ -14,7 +15,8 @@
         "public": true,
         "name": "Qux",
         "body": "{ }"
-      }
+      },
+      "command": "query"
     }
   ]
 }

@@ -41,7 +41,8 @@
                 }
               ]
             }
-          }
+          },
+          "command": "query"
         },
         {
           "line": 7,
@@ -50,7 +51,8 @@
             "public": true,
             "name": "Qux",
             "body": "{ }"
-          }
+          },
+          "command": "query"
         }
       ]
     },
@@ -83,7 +85,8 @@
                 }
               ]
             }
-          }
+          },
+          "command": "query"
         }
       ]
     }

@@ -154,7 +154,10 @@ pub fn match_to_value(
         }
     }
 
-    // message and rule_id are always emitted when present (not ViewFields, but annotations)
+    // command, message and rule_id are always emitted when present (not ViewFields, but annotations)
+    if !rm.command.is_empty() {
+        obj.insert("command".into(), json!(rm.command));
+    }
     if let Some(ref msg) = rm.message {
         obj.insert("message".into(), json!(msg));
     }
@@ -175,6 +178,7 @@ mod tests {
         ReportMatch {
             file: "test.xml".to_string(),
             line: 1, column: 1, end_line: 1, end_column: 1,
+            command: String::new(),
             tree: None,
             value: Some(value.to_string()),
             source: None, lines: None, reason: None, severity: None,
@@ -189,6 +193,7 @@ mod tests {
         ReportMatch {
             file: "test.xml".to_string(),
             line: 1, column: 1, end_line: 1, end_column: 1,
+            command: String::new(),
             tree: Some(tree),
             value: None, // maps have no value — data is in tree
             source: None, lines: None, reason: None, severity: None,

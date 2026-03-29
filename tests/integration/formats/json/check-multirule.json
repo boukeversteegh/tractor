@@ -20,6 +20,7 @@
             "    public void Baz() { }",
             "}"
           ],
+          "command": "check",
           "rule_id": "no-class"
         },
         {
@@ -28,6 +29,7 @@
           "lines": [
             "    public void Baz() { }"
           ],
+          "command": "check",
           "rule_id": "no-void-method"
         },
         {
@@ -36,6 +38,7 @@
           "lines": [
             "public class Qux { }"
           ],
+          "command": "check",
           "rule_id": "no-class"
         }
       ]

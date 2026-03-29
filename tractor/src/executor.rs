@@ -342,7 +342,7 @@ fn execute_query(
     let total = matches.len();
     let files_affected = count_unique_files(&matches);
     let report_matches = matches.into_iter()
-        .map(match_to_full_report_match)
+        .map(|m| match_to_full_report_match_with_command(m, "query"))
         .collect();
 
     Ok(Report::query(report_matches, Summary {
@@ -379,7 +379,7 @@ fn execute_query_inline(
     let total = all_matches.len();
     let files_affected = count_unique_files(&all_matches);
     let report_matches = all_matches.into_iter()
-        .map(match_to_full_report_match)
+        .map(|m| match_to_full_report_match_with_command(m, "query"))
         .collect();
 
     Ok(Report::query(report_matches, Summary {
@@ -462,7 +462,7 @@ fn execute_check(
                 .as_deref()
                 .map(|t| tractor_core::format_message(t, &rm.m));
 
-            let mut report_match = match_to_full_report_match(rm.m);
+            let mut report_match = match_to_full_report_match_with_command(rm.m, "check");
             report_match.reason = Some(reason);
             report_match.severity = Some(severity);
             report_match.rule_id = Some(rule.id.clone());
@@ -591,6 +591,7 @@ fn example_failure_match(rule_id: &str, reason: &str) -> ReportMatch {
         column: 0,
         end_line: 0,
         end_column: 0,
+        command: "test".to_string(),
         tree: None,
         value: None,
         source: None,
@@ -658,6 +659,7 @@ fn execute_set(
             column: 1,
             end_line: 1,
             end_column: 1,
+            command: "set".to_string(),
             tree: None,
             value: None,
             source: None,
@@ -748,7 +750,7 @@ fn execute_test(
     let expected_str = format_expectations(&op.assertions);
 
     let report_matches = all_matches.into_iter()
-        .map(match_to_full_report_match)
+        .map(|m| match_to_full_report_match_with_command(m, "test"))
         .collect();
 
     Ok(Report::test(report_matches, Summary {
@@ -785,7 +787,7 @@ fn run_test_assertions_on_result(
     let files_affected = count_unique_files(&all_matches);
     let expected_str = format_expectations(assertions);
     let report_matches = all_matches.into_iter()
-        .map(match_to_full_report_match)
+        .map(|m| match_to_full_report_match_with_command(m, "test"))
         .collect();
 
     Ok(Report::test(report_matches, Summary {
@@ -910,13 +912,14 @@ fn count_unique_files(matches: &[Match]) -> usize {
 /// Convert a raw `Match` into a `ReportMatch` with all content fields populated.
 /// Operation-specific fields (reason, severity, rule_id, status, message) are
 /// left as None and must be set by the caller.
-fn match_to_full_report_match(m: Match) -> ReportMatch {
+fn match_to_full_report_match_with_command(m: Match, command: &str) -> ReportMatch {
     ReportMatch {
         file: m.file.clone(),
         line: m.line,
         column: m.column,
         end_line: m.end_line,
         end_column: m.end_column,
+        command: command.to_string(),
         tree: m.xml_node.clone(),
         value: Some(m.value.clone()),
         source: Some(m.extract_source_snippet()),

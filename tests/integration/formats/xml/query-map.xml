@@ -23,6 +23,7 @@
           ]
         }
       </tree>
+      <command>query</command>
     </match>
   </matches>
 </report>

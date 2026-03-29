@@ -232,7 +232,10 @@ fn append_match(
         }
     }
 
-    // message and rule_id always emitted when present (annotations, not view-gated)
+    // command, message and rule_id always emitted when present (annotations, not view-gated)
+    if !rm.command.is_empty() {
+        out.push_str(&format!("{}<command>{}</command>\n", inner, escape(&rm.command)));
+    }
     if let Some(ref message) = rm.message {
         out.push_str(&format!("{}<message>{}</message>\n", inner, escape(message)));
     }

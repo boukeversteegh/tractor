@@ -5,14 +5,16 @@
       "line": 1,
       "tree": [
         "Calculator"
-      ]
+      ],
+      "command": "query"
     },
     {
       "file": "tests/integration/formats/sample-classes.cs",
       "line": 1,
       "tree": [
         "Greeter"
-      ]
+      ],
+      "command": "query"
     }
   ]
 }

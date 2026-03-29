@@ -1,10 +1,12 @@
 {
   "matches": [
     {
-      "value": " class Foo\n{\n     int Bar { get; set; }\n     void Baz() { }\n}"
+      "value": " class Foo\n{\n     int Bar { get; set; }\n     void Baz() { }\n}",
+      "command": "query"
     },
     {
-      "value": " class Qux { }"
+      "value": " class Qux { }",
+      "command": "query"
     }
   ]
 }

@@ -201,6 +201,7 @@ fn build_set_report_matches(
             column: m.column,
             end_line: m.end_line,
             end_column: m.end_column,
+            command: "set".to_string(),
             tree: None,
             value: if ctx.view.has(ViewField::Value) { Some(m.value.clone()) } else { None },
             source: if ctx.view.has(ViewField::Source) { Some(m.extract_source_snippet()) } else { None },

@@ -35,6 +35,7 @@
           \e[2m</\e[0m\e[34mbody\e[0m\e[2m>\e[0m
         \e[2m</\e[0m\e[34mclass\e[0m\e[2m>\e[0m
       \e[2m</\e[0m\e[34mtree\e[0m\e[2m>\e[0m
+      \e[2m<\e[0m\e[34mcommand\e[0m\e[2m>query\e[2m</\e[0m\e[34mcommand\e[0m\e[2m>\e[0m
     \e[2m</\e[0m\e[34mmatch\e[0m\e[2m>\e[0m
     \e[2m<\e[0m\e[34mmatch\e[0m \e[36mfile\e[0m\e[2m="\e[0m\e[33mtests/integration/formats/sample.cs\e[0m\e[2m"\e[0m \e[36mline\e[0m\e[2m="\e[0m\e[33m7\e[0m\e[2m"\e[0m \e[36mcolumn\e[0m\e[2m="\e[0m\e[33m1\e[0m\e[2m"\e[0m \e[36mend_line\e[0m\e[2m="\e[0m\e[33m7\e[0m\e[2m"\e[0m \e[36mend_column\e[0m\e[2m="\e[0m\e[33m21\e[0m\e[2m"\e[0m\e[2m>\e[0m
       \e[2m<\e[0m\e[34mtree\e[0m\e[2m>\e[0m
@@ -45,6 +46,7 @@
           \e[2m<\e[0m\e[34mbody\e[0m\e[2m>{ }\e[2m</\e[0m\e[34mbody\e[0m\e[2m>\e[0m
         \e[2m</\e[0m\e[34mclass\e[0m\e[2m>\e[0m
       \e[2m</\e[0m\e[34mtree\e[0m\e[2m>\e[0m
+      \e[2m<\e[0m\e[34mcommand\e[0m\e[2m>query\e[2m</\e[0m\e[34mcommand\e[0m\e[2m>\e[0m
     \e[2m</\e[0m\e[34mmatch\e[0m\e[2m>\e[0m
   \e[2m</\e[0m\e[34mmatches\e[0m\e[2m>\e[0m
 \e[2m</\e[0m\e[34mreport\e[0m\e[2m>\e[0m

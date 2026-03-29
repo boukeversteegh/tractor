@@ -53,6 +53,9 @@ pub struct ReportMatch {
     pub end_line: u32,
     pub end_column: u32,
 
+    /// Operation type that produced this match ("check", "query", "test", "set", "update").
+    pub command: String,
+
     // Content fields — Some only if selected by resolved ViewSet
     /// Native XML node tree; renderers convert directly (text → pretty-print, json → object).
     pub tree:     Option<XmlNode>,
@@ -86,8 +89,10 @@ impl Serialize for ReportMatch {
             + self.status.as_ref().map_or(0, |_| 1)
             + self.output.as_ref().map_or(0, |_| 1);
         let has_file = !self.file.is_empty();
+        let has_command = !self.command.is_empty();
         let core_count = if has_file { 5 } else { 4 };
-        let mut map = serializer.serialize_map(Some(core_count + optional_count))?;
+        let command_count = if has_command { 1 } else { 0 };
+        let mut map = serializer.serialize_map(Some(core_count + command_count + optional_count))?;
 
         if has_file {
             map.serialize_entry("file", &normalize_path(&self.file))?;
@@ -96,6 +101,9 @@ impl Serialize for ReportMatch {
         map.serialize_entry("column", &self.column)?;
         map.serialize_entry("end_line", &self.end_line)?;
         map.serialize_entry("end_column", &self.end_column)?;
+        if has_command {
+            map.serialize_entry("command", &self.command)?;
+        }
 
         if let Some(ref v) = self.tree     { map.serialize_entry("tree", &xml_node_to_string(v))?; }
         if let Some(ref v) = self.value    { map.serialize_entry("value", v)?; }
@@ -313,6 +321,7 @@ mod tests {
             column: col,
             end_line: line,
             end_column: col + value.len() as u32,
+            command: String::new(),
             tree: None,
             value: Some(value.to_string()),
             source: None,
@@ -334,6 +343,7 @@ mod tests {
             column: 5,
             end_line: 10,
             end_column: 8,
+            command: "check".to_string(),
             tree: None,
             value: Some("foo".to_string()),
             source: None,
@@ -351,6 +361,7 @@ mod tests {
             column: 1,
             end_line: 3,
             end_column: 4,
+            command: "check".to_string(),
             tree: None,
             value: Some("bar".to_string()),
             source: None,

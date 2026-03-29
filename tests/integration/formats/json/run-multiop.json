@@ -31,6 +31,7 @@
                 "}"
               ],
               "value": " class Foo\n{\n     int Bar { get; set; }\n     void Baz() { }\n}",
+              "command": "check",
               "rule_id": "no-class"
             },
             {
@@ -40,6 +41,7 @@
                 "    public void Baz() { }"
               ],
               "value": " void Baz() { }",
+              "command": "check",
               "rule_id": "no-void-method"
             },
             {
@@ -49,6 +51,7 @@
                 "public class Qux { }"
               ],
               "value": " class Qux { }",
+              "command": "check",
               "rule_id": "no-class"
             }
           ]
@@ -77,13 +80,15 @@
                 "    public void Baz() { }",
                 "}"
               ],
-              "value": " class Foo\n{\n     int Bar { get; set; }\n     void Baz() { }\n}"
+              "value": " class Foo\n{\n     int Bar { get; set; }\n     void Baz() { }\n}",
+              "command": "test"
             },
             {
               "lines": [
                 "public class Qux { }"
               ],
-              "value": " class Qux { }"
+              "value": " class Qux { }",
+              "command": "test"
             }
           ]
         }

@@ -36,6 +36,7 @@
             </body>
           </class>
         </tree>
+        <command>query</command>
       </match>
       <match line="7" column="1" end_line="7" end_column="21">
         <tree>
@@ -46,6 +47,7 @@
             <body>{ }</body>
           </class>
         </tree>
+        <command>query</command>
       </match>
     </group>
     <group file="tests/integration/formats/sample2.cs">
@@ -72,6 +74,7 @@
             </body>
           </class>
         </tree>
+        <command>query</command>
       </match>
     </group>
   </groups>
