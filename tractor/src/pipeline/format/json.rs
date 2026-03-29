@@ -17,15 +17,17 @@ pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         emit_report_metadata(&mut root, report);
     }
 
+    // Group dimension (before results, so readers see the grouping context first)
+    if let Some(ref group) = report.group {
+        root.insert("group".into(), json!(group));
+    }
+
     // Render results
     if !report.results.is_empty() {
         let results_json = render_results_json(&report.results, view, render_opts, dimensions);
         if !results_json.is_empty() {
             root.insert("results".into(), Value::Array(results_json));
         }
-    }
-    if let Some(ref group) = report.group {
-        root.insert("group".into(), json!(group));
     }
 
     serde_json::to_string_pretty(&Value::Object(root)).unwrap_or_else(|_| "{}".to_string())
@@ -68,22 +70,22 @@ pub fn render_results_json(
             ResultItem::Match(rm) => match_to_value(rm, view, render_opts, dimensions),
             ResultItem::Group(sub) => {
                 let mut obj = serde_json::Map::new();
-                // Hoisted group key — the value of the current dimension
+                // Hoisted group key
                 if let Some(ref file) = sub.file { obj.insert("file".into(), json!(file)); }
                 if let Some(ref command) = sub.command { obj.insert("command".into(), json!(command)); }
                 if let Some(ref rule_id) = sub.rule_id { obj.insert("rule_id".into(), json!(rule_id)); }
+                emit_report_metadata(&mut obj, sub);
+                // Sub-grouping dimension (before nested results)
+                if let Some(ref group) = sub.group {
+                    obj.insert("group".into(), json!(group));
+                }
                 // Group-level output (set stdout mode)
                 if view.has(ViewField::Output) {
                     if let Some(ref content) = sub.output_content {
                         obj.insert("output".into(), json!(content));
                     }
                 }
-                // Sub-group metadata
-                if let Some(ref group) = sub.group {
-                    obj.insert("group".into(), json!(group));
-                }
-                emit_report_metadata(&mut obj, sub);
-                // Recurse — pass full dimensions so leaf matches skip all hoisted fields
+                // Recurse
                 let sub_results = render_results_json(&sub.results, view, render_opts, dimensions);
                 if !sub_results.is_empty() {
                     obj.insert("results".into(), Value::Array(sub_results));

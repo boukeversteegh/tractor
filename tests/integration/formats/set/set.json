@@ -5,6 +5,7 @@
     "files": 1,
     "updated": 1
   },
+  "group": "file",
   "results": [
     {
       "file": "tests/integration/formats/set/sample.yaml",
@@ -15,6 +16,5 @@
         }
       ]
     }
-  ],
-  "group": "file"
+  ]
 }
