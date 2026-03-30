@@ -1,7 +1,9 @@
 use tractor_core::{report::{Report, ResultItem}, normalize_path};
 
 /// Render report matches as GitHub Actions annotations: `::error file=...,line=...::reason`
-pub fn render_github(report: &Report) -> String {
+/// GitHub annotations are self-contained — grouping affects ordering only,
+/// not field omission. Every annotation includes all fields.
+pub fn render_github(report: &Report, _dimensions: &[&str]) -> String {
     let mut out = String::new();
     render_github_results(&mut out, &report.results, None);
     out

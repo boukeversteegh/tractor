@@ -55,13 +55,13 @@ pub fn render_report(
         OutputFormat::Yaml   => print!("{}", render_yaml_report(report, &ctx.view, &ctx.render_options(), &dims)),
         OutputFormat::Xml    => print!("{}", render_xml_report(report, &ctx.view, &ctx.render_options(), &dims)),
         OutputFormat::Gcc    => {
-            print!("{}", render_gcc(report, &ctx.render_options()));
+            print!("{}", render_gcc(report, &ctx.render_options(), &dims));
             if let Some(ref totals) = report.totals {
                 print_gcc_summary(totals);
             }
         }
-        OutputFormat::Github => print!("{}", render_github(report)),
-        OutputFormat::Text   => print!("{}", render_text_report(report, &ctx.view, &ctx.render_options())),
+        OutputFormat::Github => print!("{}", render_github(report, &dims)),
+        OutputFormat::Text   => print!("{}", render_text_report(report, &ctx.view, &ctx.render_options(), &dims)),
     }
 
     // Exit code: fail when success is explicitly false.

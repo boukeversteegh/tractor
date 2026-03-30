@@ -17,6 +17,17 @@ pub fn to_absolute_path(path: &str) -> String {
     normalize_path(&absolute.to_string_lossy())
 }
 
+/// Whether totals/metadata should be shown for this report.
+/// Always shown when the report has a verdict (success is Some).
+/// For query reports (no verdict), only shown if explicitly requested via view.
+pub fn should_show_totals(report: &tractor_core::report::Report, view: &ViewSet) -> bool {
+    if report.success.is_some() {
+        true
+    } else {
+        view.has(ViewField::Totals) || view.has(ViewField::Query)
+    }
+}
+
 /// Determine whether a field should be rendered for this match.
 /// A field is shown when:
 ///   - it is selected in the view (for view-gated fields)

@@ -2,7 +2,9 @@ use tractor_core::{render_lines, report::{Report, ReportMatch, ResultItem}, Rend
 use super::shared::to_absolute_path;
 
 /// Render report matches in gcc format: `file:line:col: severity: reason`
-pub fn render_gcc(report: &Report, opts: &RenderOptions) -> String {
+/// GCC is a flat per-line format — grouping affects match ordering only,
+/// not field omission. Every match includes all fields.
+pub fn render_gcc(report: &Report, opts: &RenderOptions, _dimensions: &[&str]) -> String {
     let mut out = String::new();
     render_gcc_results(&mut out, &report.results, None, opts);
     out

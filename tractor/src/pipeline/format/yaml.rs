@@ -1,17 +1,13 @@
 use serde_json::Value;
 use tractor_core::{report::Report, RenderOptions};
-use super::options::{ViewField, ViewSet};
+use super::options::{ViewSet};
 use super::json::{render_results_json, emit_report_metadata};
+use super::shared::should_show_totals;
 
 pub fn render_yaml_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, dimensions: &[&str]) -> String {
     let mut root = serde_json::Map::new();
 
-    let show_totals = if report.success.is_some() {
-        true
-    } else {
-        view.has(ViewField::Totals)
-    };
-    if show_totals {
+    if should_show_totals(report, view) {
         emit_report_metadata(&mut root, report);
     }
 

@@ -1,21 +1,15 @@
 use tractor_core::{report::{Report, ResultItem}, normalize_path, render_xml_string, render_xml_node, RenderOptions};
 use super::options::{ViewField, ViewSet};
-use super::shared::{should_emit_file, should_emit_command, should_emit_rule_id};
+use super::shared::{should_show_totals, should_emit_file, should_emit_command, should_emit_rule_id};
 
 pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, dimensions: &[&str]) -> String {
     let mut tree_opts = render_opts.clone();
     tree_opts.use_color = false;
 
-    let show_totals = if report.success.is_some() {
-        true
-    } else {
-        view.has(ViewField::Totals)
-    };
-
     let mut body = String::new();
     body.push_str("<report>\n");
 
-    if show_totals {
+    if should_show_totals(report, view) {
         if let Some(passed) = report.success {
             body.push_str(&format!("  <success>{}</success>\n", passed));
         }

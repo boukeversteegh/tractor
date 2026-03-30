@@ -13,8 +13,11 @@ use tractor_core::{
     RenderOptions,
 };
 use super::options::{ViewField, ViewSet};
+use super::shared::should_show_totals;
 
-pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions) -> String {
+/// Text is human-readable — grouping affects display structure but matches
+/// are rendered with inherited file context from groups, not field omission.
+pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, _dimensions: &[&str]) -> String {
     let mut out = String::new();
 
     // Set stdout mode: groups with output_content — render group by group.
@@ -52,15 +55,7 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         append_match(&mut out, rm, view, render_opts, *group_file);
     }
 
-    // Summary: always for check/test/set (unless output view active, handled above);
-    // gated on -v summary or -v query for query
-    // Show summary: always when report has a verdict, opt-in for queries
-    let show_summary = if report.success.is_some() {
-        true
-    } else {
-        view.has(ViewField::Totals) || view.has(ViewField::Query)
-    };
-    if show_summary {
+    if should_show_totals(report, view) {
         if let Some(ref totals) = report.totals {
             if !out.is_empty() && !out.ends_with('\n') {
                 out.push('\n');
