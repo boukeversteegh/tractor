@@ -55,7 +55,7 @@ pub enum ViewField {
     Column,
     Reason,
     Severity,
-    Summary,
+    Totals,
     Count,
     Schema,
     Query,
@@ -63,6 +63,8 @@ pub enum ViewField {
     Status,
     /// Full modified file/string content (set command stdout mode).
     Output,
+    /// Operation type: "check", "query", "test", "set", "update".
+    Command,
 }
 
 impl ViewField {
@@ -77,18 +79,19 @@ impl ViewField {
             "column"       => Ok(ViewField::Column),
             "reason"       => Ok(ViewField::Reason),
             "severity"     => Ok(ViewField::Severity),
-            "summary"      => Ok(ViewField::Summary),
+            "totals" | "summary" => Ok(ViewField::Totals),
             "count"        => Ok(ViewField::Count),
             "schema"       => Ok(ViewField::Schema),
             "query"        => Ok(ViewField::Query),
             "status"       => Ok(ViewField::Status),
             "output"       => Ok(ViewField::Output),
+            "command"      => Ok(ViewField::Command),
             "gcc" | "github" => Err(format!(
                 "'{}' is a format, not a view. Use -f {} instead of -v {}", s, s, s,
             )),
             _ => Err(format!(
                 "invalid view '{}'. Valid views: tree, value, source, lines, file, line, column, \
-                 reason, severity, summary, count, schema, query, status, output",
+                 reason, severity, totals, count, schema, query, status, output, command",
                 s,
             )),
         }
@@ -220,16 +223,50 @@ pub fn parse_view_with_defaults(s: &str, default_fields: &[ViewField]) -> Result
 }
 
 // ---------------------------------------------------------------------------
-// GroupBy — controls whether the file field is emitted on individual matches
+// GroupDimension — grouping dimensions for multi-level grouping
 // ---------------------------------------------------------------------------
 
-/// Describes how matches are grouped in the output.
-/// When grouped by file, the file is on the parent — individual matches omit it.
+/// A single dimension to group results by.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum GroupBy {
-    /// Matches are not grouped; include the `file` field on each match.
-    None,
-    /// Matches are grouped by file; omit `file` from individual matches.
+pub enum GroupDimension {
+    /// Group by source file path.
     File,
+    /// Group by operation type (command field on matches).
+    Command,
+    /// Group by rule identifier.
+    RuleId,
 }
+
+impl GroupDimension {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            GroupDimension::File => "file",
+            GroupDimension::Command => "command",
+            GroupDimension::RuleId => "rule_id",
+        }
+    }
+}
+
+/// Parse a `-g` flag value into a list of group dimensions.
+/// Supports: "none", "file", "command", "command,file", "file,command", etc.
+pub fn parse_group_by(s: &str) -> Result<Vec<GroupDimension>, String> {
+    if s == "none" {
+        return Ok(vec![]);
+    }
+    let mut dims = Vec::new();
+    for part in s.split(',') {
+        let part = part.trim();
+        match part {
+            "file" => dims.push(GroupDimension::File),
+            "command" => dims.push(GroupDimension::Command),
+            "rule" | "rule_id" => dims.push(GroupDimension::RuleId),
+            other => return Err(format!(
+                "invalid --group value '{}': use 'none', 'file', 'command', 'rule', or comma-separated (e.g. 'command,file')",
+                other
+            )),
+        }
+    }
+    Ok(dims)
+}
+
 

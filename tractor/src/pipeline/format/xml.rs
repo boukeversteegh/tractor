@@ -1,131 +1,52 @@
-use tractor_core::{report::Report, normalize_path, render_xml_string, render_xml_node, RenderOptions};
+use tractor_core::{report::{Report, ResultItem}, normalize_path, render_xml_string, render_xml_node, RenderOptions};
 use super::options::{ViewField, ViewSet};
+use super::shared::{should_show_totals, should_emit_file, should_emit_command, should_emit_rule_id};
 
-pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions) -> String {
-    use tractor_core::report::ReportKind;
-
-    // Tree fragments inside <tree> are built without color. The entire report is colorized
-    // in one pass at the end via render_xml_string — keeping coloring at the serialization layer.
+pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, dimensions: &[&str]) -> String {
     let mut tree_opts = render_opts.clone();
     tree_opts.use_color = false;
-
-    // Summary: always present for check/test reports (structural, not view-gated).
-    // For query reports, only include if explicitly requested via -v summary.
-    let show_summary = if matches!(report.kind, ReportKind::Query) {
-        view.has(ViewField::Summary)
-    } else {
-        true
-    };
 
     let mut body = String::new();
     body.push_str("<report>\n");
 
-    if show_summary {
-        if let Some(ref summary) = report.summary {
-            body.push_str("  <summary>\n");
-            if matches!(report.kind, ReportKind::Set) {
-                body.push_str(&format!("    <total>{}</total>\n", summary.total));
-                body.push_str(&format!("    <files>{}</files>\n", summary.files_affected));
-                body.push_str(&format!("    <updated>{}</updated>\n", summary.errors));
-                body.push_str(&format!("    <unchanged>{}</unchanged>\n", summary.warnings));
-            } else {
-                body.push_str(&format!("    <passed>{}</passed>\n", summary.passed));
-                body.push_str(&format!("    <total>{}</total>\n", summary.total));
-                body.push_str(&format!("    <files>{}</files>\n", summary.files_affected));
-                body.push_str(&format!("    <errors>{}</errors>\n", summary.errors));
-                body.push_str(&format!("    <warnings>{}</warnings>\n", summary.warnings));
-                if let Some(ref expected) = summary.expected {
-                    body.push_str(&format!("    <expected>{}</expected>\n", escape(expected)));
-                }
+    if should_show_totals(report, view) {
+        if let Some(passed) = report.success {
+            body.push_str(&format!("  <success>{}</success>\n", passed));
+        }
+        if let Some(ref totals) = report.totals {
+            body.push_str("  <totals>\n");
+            body.push_str(&format!("    <results>{}</results>\n", totals.results));
+            body.push_str(&format!("    <files>{}</files>\n", totals.files));
+            if totals.errors > 0 {
+                body.push_str(&format!("    <errors>{}</errors>\n", totals.errors));
             }
-            body.push_str("  </summary>\n");
+            if totals.warnings > 0 {
+                body.push_str(&format!("    <warnings>{}</warnings>\n", totals.warnings));
+            }
+            if totals.updated > 0 {
+                body.push_str(&format!("    <updated>{}</updated>\n", totals.updated));
+            }
+            if totals.unchanged > 0 {
+                body.push_str(&format!("    <unchanged>{}</unchanged>\n", totals.unchanged));
+            }
+            body.push_str("  </totals>\n");
+        }
+        if let Some(ref expected) = report.expected {
+            body.push_str(&format!("  <expected>{}</expected>\n", escape(expected)));
+        }
+        if let Some(ref query) = report.query {
+            body.push_str(&format!("  <query>{}</query>\n", escape(query)));
         }
     }
 
-    if !report.matches.is_empty() {
-        body.push_str("  <matches>\n");
-        for rm in &report.matches {
-            append_match(&mut body, rm, view, "    ", &tree_opts);
-        }
-        body.push_str("  </matches>\n");
+    // Render results
+    if let Some(ref group) = report.group {
+        body.push_str(&format!("  <group-by>{}</group-by>\n", escape(group)));
     }
-    if let Some(ref groups) = report.groups {
-        body.push_str("  <groups>\n");
-        for g in groups {
-            if g.file.is_empty() {
-                body.push_str("    <group>\n");
-            } else {
-                body.push_str(&format!("    <group file=\"{}\">\n", escape_attr(&g.file)));
-            }
-            // Group-level output (set stdout mode)
-            if view.has(ViewField::Output) {
-                if let Some(ref content) = g.output {
-                    body.push_str(&format!("      <output>{}</output>\n", escape(content)));
-                }
-            }
-            for rm in &g.matches {
-                // Skip matches with no visible per-match content
-                if view.has_per_match_fields() {
-                    append_match(&mut body, rm, view, "      ", &tree_opts);
-                }
-            }
-            body.push_str("    </group>\n");
-        }
-        body.push_str("  </groups>\n");
-    }
-
-    // Run report: emit sub-reports as <operations>
-    if let Some(ref ops) = report.operations {
-        body.push_str("  <operations>\n");
-        for sub in ops {
-            body.push_str(&format!("    <operation kind=\"{}\">\n", sub.kind.as_str()));
-            // Sub-report summary
-            if let Some(ref s) = sub.summary {
-                body.push_str("      <summary>\n");
-                if matches!(sub.kind, ReportKind::Set) {
-                    body.push_str(&format!("        <total>{}</total>\n", s.total));
-                    body.push_str(&format!("        <files>{}</files>\n", s.files_affected));
-                    body.push_str(&format!("        <updated>{}</updated>\n", s.errors));
-                    body.push_str(&format!("        <unchanged>{}</unchanged>\n", s.warnings));
-                } else {
-                    body.push_str(&format!("        <passed>{}</passed>\n", s.passed));
-                    body.push_str(&format!("        <total>{}</total>\n", s.total));
-                    body.push_str(&format!("        <files>{}</files>\n", s.files_affected));
-                    body.push_str(&format!("        <errors>{}</errors>\n", s.errors));
-                    body.push_str(&format!("        <warnings>{}</warnings>\n", s.warnings));
-                    if let Some(ref expected) = s.expected {
-                        body.push_str(&format!("        <expected>{}</expected>\n", escape(expected)));
-                    }
-                }
-                body.push_str("      </summary>\n");
-            }
-            // Sub-report groups (or flat matches)
-            if let Some(ref groups) = sub.groups {
-                body.push_str("      <groups>\n");
-                for g in groups {
-                    if g.file.is_empty() {
-                        body.push_str("        <group>\n");
-                    } else {
-                        body.push_str(&format!("        <group file=\"{}\">\n", escape_attr(&g.file)));
-                    }
-                    for rm in &g.matches {
-                        if view.has_per_match_fields() {
-                            append_match(&mut body, rm, view, "          ", &tree_opts);
-                        }
-                    }
-                    body.push_str("        </group>\n");
-                }
-                body.push_str("      </groups>\n");
-            } else if !sub.matches.is_empty() {
-                body.push_str("      <matches>\n");
-                for rm in &sub.matches {
-                    append_match(&mut body, rm, view, "        ", &tree_opts);
-                }
-                body.push_str("      </matches>\n");
-            }
-            body.push_str("    </operation>\n");
-        }
-        body.push_str("  </operations>\n");
+    if !report.results.is_empty() {
+        body.push_str("  <results>\n");
+        render_xml_results(&mut body, &report.results, view, "    ", &tree_opts, dimensions);
+        body.push_str("  </results>\n");
     }
 
     body.push_str("</report>\n");
@@ -149,11 +70,12 @@ fn append_match(
     view: &ViewSet,
     indent: &str,
     render_opts: &RenderOptions,
+    skip_dims: &[&str],
 ) {
     let file_str = normalize_path(&rm.file);
-    // Only include line/column attributes when they carry meaningful position info (non-zero)
+    let show_file = should_emit_file(rm, skip_dims);
     let has_position = rm.line > 0;
-    if file_str.is_empty() {
+    if !show_file {
         if has_position {
             out.push_str(&format!("{}<match line=\"{}\" column=\"{}\"", indent, rm.line, rm.column));
         } else {
@@ -232,15 +154,65 @@ fn append_match(
         }
     }
 
-    // message and rule_id always emitted when present (annotations, not view-gated)
+    if should_emit_command(rm, view, skip_dims) {
+        out.push_str(&format!("{}<command>{}</command>\n", inner, escape(&rm.command)));
+    }
     if let Some(ref message) = rm.message {
         out.push_str(&format!("{}<message>{}</message>\n", inner, escape(message)));
     }
-    if let Some(ref rule_id) = rm.rule_id {
-        out.push_str(&format!("{}<rule-id>{}</rule-id>\n", inner, escape(rule_id)));
+    if should_emit_rule_id(rm, skip_dims) {
+        out.push_str(&format!("{}<rule-id>{}</rule-id>\n", inner, escape(rm.rule_id.as_deref().unwrap())));
     }
 
     out.push_str(&format!("{}</match>\n", indent));
+}
+
+/// Render results list recursively as XML.
+fn render_xml_results(
+    out: &mut String,
+    items: &[ResultItem],
+    view: &ViewSet,
+    indent: &str,
+    tree_opts: &RenderOptions,
+    dimensions: &[&str],
+) {
+    let inner = format!("{}  ", indent);
+    for item in items {
+        match item {
+            ResultItem::Match(rm) => {
+                if view.has_per_match_fields() || rm.message.is_some() {
+                    append_match(out, rm, view, indent, tree_opts, dimensions);
+                }
+            }
+            ResultItem::Group(sub) => {
+                // Build group element with hoisted attributes
+                let mut attrs = String::new();
+                if let Some(ref file) = sub.file {
+                    attrs.push_str(&format!(" file=\"{}\"", escape_attr(file)));
+                }
+                if let Some(ref command) = sub.command {
+                    attrs.push_str(&format!(" command=\"{}\"", escape_attr(command)));
+                }
+                if let Some(ref rule_id) = sub.rule_id {
+                    attrs.push_str(&format!(" rule-id=\"{}\"", escape_attr(rule_id)));
+                }
+                out.push_str(&format!("{}<group{}>\n", indent, attrs));
+                // Sub-group's own grouping dimension
+                if let Some(ref group) = sub.group {
+                    out.push_str(&format!("{}<group-by>{}</group-by>\n", inner, escape(group)));
+                }
+                if view.has(ViewField::Output) {
+                    if let Some(ref content) = sub.output_content {
+                        out.push_str(&format!("{}<output>{}</output>\n", inner, escape(content)));
+                    }
+                }
+                // Recurse — this group's children skip the same field that was hoisted
+                // to create this group. If this group has sub-grouping, that applies too.
+                render_xml_results(out, &sub.results, view, &inner, tree_opts, dimensions);
+                out.push_str(&format!("{}</group>\n", indent));
+            }
+        }
+    }
 }
 
 fn escape(s: &str) -> String {

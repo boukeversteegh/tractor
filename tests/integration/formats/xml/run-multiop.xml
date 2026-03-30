@@ -1,94 +1,78 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <report>
-  <summary>
-    <passed>false</passed>
-    <total>5</total>
+  <success>false</success>
+  <totals>
+    <results>5</results>
     <files>2</files>
     <errors>2</errors>
     <warnings>1</warnings>
-  </summary>
-  <operations>
-    <operation kind="check">
-      <summary>
-        <passed>false</passed>
-        <total>3</total>
-        <files>1</files>
-        <errors>2</errors>
-        <warnings>1</warnings>
-      </summary>
-      <groups>
-        <group file="tests/integration/formats/sample.cs">
-          <match line="1" column="1" end_line="5" end_column="2">
-            <reason>class declaration found</reason>
-            <severity>error</severity>
-            <lines>
-            <line>public class Foo</line>
-            <line>{</line>
-            <line>    public int Bar { get; set; }</line>
-            <line>    public void Baz() { }</line>
-            <line>}</line>
-            </lines>
-            <value> class Foo
+  </totals>
+  <group-by>command</group-by>
+  <results>
+    <group command="check">
+      <group-by>file</group-by>
+      <group file="tests/integration/formats/sample.cs">
+        <match line="1" column="1" end_line="5" end_column="2">
+          <reason>class declaration found</reason>
+          <severity>error</severity>
+          <lines>
+          <line>public class Foo</line>
+          <line>{</line>
+          <line>    public int Bar { get; set; }</line>
+          <line>    public void Baz() { }</line>
+          <line>}</line>
+          </lines>
+          <value> class Foo
 {
      int Bar { get; set; }
      void Baz() { }
 }</value>
-            <rule-id>no-class</rule-id>
-          </match>
-          <match line="4" column="5" end_line="4" end_column="26">
-            <reason>void method found</reason>
-            <severity>warning</severity>
-            <lines>
-            <line>    public void Baz() { }</line>
-            </lines>
-            <value> void Baz() { }</value>
-            <rule-id>no-void-method</rule-id>
-          </match>
-          <match line="7" column="1" end_line="7" end_column="21">
-            <reason>class declaration found</reason>
-            <severity>error</severity>
-            <lines>
-            <line>public class Qux { }</line>
-            </lines>
-            <value> class Qux { }</value>
-            <rule-id>no-class</rule-id>
-          </match>
-        </group>
-      </groups>
-    </operation>
-    <operation kind="test">
-      <summary>
-        <passed>true</passed>
-        <total>2</total>
-        <files>1</files>
-        <errors>0</errors>
-        <warnings>0</warnings>
-        <expected>some, none</expected>
-      </summary>
-      <groups>
-        <group file="tests/integration/formats/sample.cs">
-          <match line="1" column="1" end_line="5" end_column="2">
-            <lines>
-            <line>public class Foo</line>
-            <line>{</line>
-            <line>    public int Bar { get; set; }</line>
-            <line>    public void Baz() { }</line>
-            <line>}</line>
-            </lines>
-            <value> class Foo
+          <rule-id>no-class</rule-id>
+        </match>
+        <match line="4" column="5" end_line="4" end_column="26">
+          <reason>void method found</reason>
+          <severity>warning</severity>
+          <lines>
+          <line>    public void Baz() { }</line>
+          </lines>
+          <value> void Baz() { }</value>
+          <rule-id>no-void-method</rule-id>
+        </match>
+        <match line="7" column="1" end_line="7" end_column="21">
+          <reason>class declaration found</reason>
+          <severity>error</severity>
+          <lines>
+          <line>public class Qux { }</line>
+          </lines>
+          <value> class Qux { }</value>
+          <rule-id>no-class</rule-id>
+        </match>
+      </group>
+    </group>
+    <group command="test">
+      <group-by>file</group-by>
+      <group file="tests/integration/formats/sample.cs">
+        <match line="1" column="1" end_line="5" end_column="2">
+          <lines>
+          <line>public class Foo</line>
+          <line>{</line>
+          <line>    public int Bar { get; set; }</line>
+          <line>    public void Baz() { }</line>
+          <line>}</line>
+          </lines>
+          <value> class Foo
 {
      int Bar { get; set; }
      void Baz() { }
 }</value>
-          </match>
-          <match line="7" column="1" end_line="7" end_column="21">
-            <lines>
-            <line>public class Qux { }</line>
-            </lines>
-            <value> class Qux { }</value>
-          </match>
-        </group>
-      </groups>
-    </operation>
-  </operations>
+        </match>
+        <match line="7" column="1" end_line="7" end_column="21">
+          <lines>
+          <line>public class Qux { }</line>
+          </lines>
+          <value> class Qux { }</value>
+        </match>
+      </group>
+    </group>
+  </results>
 </report>

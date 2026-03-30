@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <report>
-  <summary>
-    <passed>false</passed>
-    <total>2</total>
+  <success>false</success>
+  <totals>
+    <results>2</results>
     <files>1</files>
     <errors>2</errors>
-    <warnings>0</warnings>
-  </summary>
-  <groups>
+  </totals>
+  <group-by>file</group-by>
+  <results>
     <group file="tests/integration/formats/sample.cs">
       <match line="1" column="1" end_line="5" end_column="2">
         <tree>
@@ -36,5 +36,5 @@
         <severity>error</severity>
       </match>
     </group>
-  </groups>
+  </results>
 </report>

@@ -1,5 +1,5 @@
 {
-  "matches": [
+  "results": [
     {
       "value": " class Foo\n{\n     int Bar { get; set; }\n     void Baz() { }\n}"
     },

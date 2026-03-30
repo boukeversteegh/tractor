@@ -1,14 +1,15 @@
 {
-  "summary": {
-    "total": 1,
+  "success": true,
+  "totals": {
+    "results": 1,
     "files": 1,
-    "updated": 1,
-    "unchanged": 0
+    "updated": 1
   },
-  "groups": [
+  "group": "file",
+  "results": [
     {
       "file": "tests/integration/formats/set/sample.yaml",
-      "matches": [
+      "results": [
         {
           "line": 2,
           "status": "updated"

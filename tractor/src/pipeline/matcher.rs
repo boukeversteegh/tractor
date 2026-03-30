@@ -332,7 +332,7 @@ pub fn run_rules(
 /// fields that are not in the view, ensuring renderers see `None`
 /// for unselected fields (matching the behaviour of `match_to_report_match`).
 pub fn project_report(report: &mut Report, view: &ViewSet) {
-    for m in &mut report.matches {
+    for m in report.all_matches_mut() {
         // Map/Array nodes are always kept — they're the only representation for data formats.
         // For other nodes, keep when tree/lines/source is selected (needed for rendering).
         let keep_tree = match &m.tree {
@@ -375,13 +375,13 @@ pub fn apply_message_template(report: &mut Report, template: &str) {
     if !template.contains('{') {
         // Static template — same for every match.
         let msg = template.to_string();
-        for m in &mut report.matches {
+        for m in report.all_matches_mut() {
             m.message = Some(msg.clone());
         }
         return;
     }
 
-    for m in &mut report.matches {
+    for m in report.all_matches_mut() {
         m.message = Some(
             template
                 .replace("{file}", &tractor_core::output::normalize_path(&m.file))

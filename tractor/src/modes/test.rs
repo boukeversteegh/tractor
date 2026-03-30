@@ -1,8 +1,8 @@
 use crate::cli::TestArgs;
 use crate::executor::{self, ExecuteOptions, Operation, TestOperation, TestAssertion};
 use crate::pipeline::{
-    RunContext, ViewField, InputMode,
-    render_test_report,
+    RunContext, ViewField, InputMode, TestRenderOptions,
+    render_report,
     project_report,
 };
 
@@ -20,7 +20,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     let ctx = RunContext::build(
         &args.shared, args.files, args.shared.xpath.clone(),
-        &args.format, &[ViewField::Summary], args.view.as_deref(), args.message, args.content, false, false,
+        &args.format, &[ViewField::Totals], args.view.as_deref(), args.message, args.content, false, &[],
     )?;
 
     let dot = ".".to_string();
@@ -75,6 +75,8 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
     let mut report = reports.into_iter().next().unwrap();
 
     project_report(&mut report, &ctx.view);
-    let report = if ctx.group_by_file { report.with_groups() } else { report };
-    render_test_report(&report, &ctx, &message, &error_template)
+    let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
+    let report = report.with_grouping(&dims);
+    let test_opts = TestRenderOptions { message, error_template };
+    render_report(&report, &ctx, Some(&test_opts))
 }

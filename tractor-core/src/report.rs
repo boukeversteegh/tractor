@@ -53,6 +53,9 @@ pub struct ReportMatch {
     pub end_line: u32,
     pub end_column: u32,
 
+    /// Operation type that produced this match ("check", "query", "test", "set", "update").
+    pub command: String,
+
     // Content fields — Some only if selected by resolved ViewSet
     /// Native XML node tree; renderers convert directly (text → pretty-print, json → object).
     pub tree:     Option<XmlNode>,
@@ -86,8 +89,10 @@ impl Serialize for ReportMatch {
             + self.status.as_ref().map_or(0, |_| 1)
             + self.output.as_ref().map_or(0, |_| 1);
         let has_file = !self.file.is_empty();
+        let has_command = !self.command.is_empty();
         let core_count = if has_file { 5 } else { 4 };
-        let mut map = serializer.serialize_map(Some(core_count + optional_count))?;
+        let command_count = if has_command { 1 } else { 0 };
+        let mut map = serializer.serialize_map(Some(core_count + command_count + optional_count))?;
 
         if has_file {
             map.serialize_entry("file", &normalize_path(&self.file))?;
@@ -96,6 +101,9 @@ impl Serialize for ReportMatch {
         map.serialize_entry("column", &self.column)?;
         map.serialize_entry("end_line", &self.end_line)?;
         map.serialize_entry("end_column", &self.end_column)?;
+        if has_command {
+            map.serialize_entry("command", &self.command)?;
+        }
 
         if let Some(ref v) = self.tree     { map.serialize_entry("tree", &xml_node_to_string(v))?; }
         if let Some(ref v) = self.value    { map.serialize_entry("value", v)?; }
@@ -113,152 +121,197 @@ impl Serialize for ReportMatch {
 }
 
 // ---------------------------------------------------------------------------
-// Summary
+// Totals
 // ---------------------------------------------------------------------------
 
-/// Aggregated result summary. Present in check and test reports.
-#[derive(Debug, Serialize)]
-pub struct Summary {
-    /// Did the command succeed (no error-severity violations / expectation met)?
-    pub passed: bool,
+fn is_zero(v: &usize) -> bool { *v == 0 }
 
-    /// Total number of matches.
-    pub total: usize,
+/// Numeric aggregates for a report or group. Contains only counts —
+/// the verdict (`passed`) lives on the Report itself.
+#[derive(Debug, Clone, Serialize)]
+pub struct Totals {
+    /// Number of results (matches).
+    pub results: usize,
 
-    /// Number of distinct files that had at least one match.
-    #[serde(rename = "files")]
-    pub files_affected: usize,
+    /// Number of distinct files with at least one result.
+    pub files: usize,
 
-    /// Error-severity match count (check only).
+    /// Error-severity count (check).
+    #[serde(skip_serializing_if = "is_zero")]
     pub errors: usize,
 
-    /// Warning-severity match count (check only).
+    /// Warning-severity count (check).
+    #[serde(skip_serializing_if = "is_zero")]
     pub warnings: usize,
 
-    /// The expected value string for test assertions (`none`, `some`, or a number).
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub expected: Option<String>,
+    /// Files/mappings that were changed (set).
+    #[serde(skip_serializing_if = "is_zero")]
+    pub updated: usize,
 
-    /// The XPath query as received by tractor (set when `-v query` is used).
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub query: Option<String>,
+    /// Files/mappings already in sync (set).
+    #[serde(skip_serializing_if = "is_zero")]
+    pub unchanged: usize,
 }
 
 // ---------------------------------------------------------------------------
 // Report
 // ---------------------------------------------------------------------------
 
-/// Which command produced this report.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub enum ReportKind {
-    Query,
-    Check,
-    Test,
-    Set,
-    Run,
+// ---------------------------------------------------------------------------
+// ResultItem — recursive result type
+// ---------------------------------------------------------------------------
+
+/// An item in a report's `results` list: either a leaf match or a sub-group.
+#[derive(Debug, Clone)]
+pub enum ResultItem {
+    Match(ReportMatch),
+    Group(Box<Report>),
 }
 
-impl ReportKind {
-    pub fn as_str(&self) -> &'static str {
+impl ResultItem {
+    /// Get a reference to the match if this is a Match variant.
+    pub fn as_match(&self) -> Option<&ReportMatch> {
         match self {
-            ReportKind::Query => "query",
-            ReportKind::Check => "check",
-            ReportKind::Test => "test",
-            ReportKind::Set => "set",
-            ReportKind::Run => "run",
+            ResultItem::Match(m) => Some(m),
+            ResultItem::Group(_) => None,
         }
     }
-}
 
-/// Matches grouped by source file.
-#[derive(Debug, Clone, Serialize)]
-pub struct FileGroup {
-    pub file: String,
-    pub matches: Vec<ReportMatch>,
-    /// Full modified file content for set stdout mode — placed at group (file) level.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub output: Option<String>,
+    /// Get a mutable reference to the match if this is a Match variant.
+    pub fn as_match_mut(&mut self) -> Option<&mut ReportMatch> {
+        match self {
+            ResultItem::Match(m) => Some(m),
+            ResultItem::Group(_) => None,
+        }
+    }
+
+    /// Get a reference to the sub-group report if this is a Group variant.
+    pub fn as_group(&self) -> Option<&Report> {
+        match self {
+            ResultItem::Match(_) => None,
+            ResultItem::Group(r) => Some(r),
+        }
+    }
 }
 
 /// The normalized output of a tractor command.
-#[derive(Debug, Serialize)]
+///
+/// A Report is a recursive group structure. The root and sub-groups share
+/// the same type. `results` contains either leaf matches or sub-groups.
+#[derive(Debug, Clone, Serialize)]
 pub struct Report {
-    pub kind: ReportKind,
-    pub matches: Vec<ReportMatch>,
-
-    /// Present for check and test reports; absent for query.
+    /// Did the command succeed? False if check errors, test failures, or set drift.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub summary: Option<Summary>,
+    pub success: Option<bool>,
 
-    /// Optional pre-grouped structure. Populated by `with_groups()`.
+    /// Numeric aggregates (result count, file count, command-specific counts).
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub groups: Option<Vec<FileGroup>>,
+    pub totals: Option<Totals>,
 
-    /// Sub-reports for `ReportKind::Run`. Each entry is a complete report
-    /// from one operation in the config file.
+    /// Test-specific: the expected value string (`none`, `some`, or a number).
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub operations: Option<Vec<Report>>,
+    pub expected: Option<String>,
+
+    /// The XPath query as received by tractor (set when `-v query` is used).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub query: Option<String>,
+
+    // ---- New unified fields (Step 3) ----
+
+    /// Unified results list. Contains either leaf matches or sub-groups.
+    #[serde(skip)]
+    pub results: Vec<ResultItem>,
+
+    /// What the children in `results` are grouped by ("file", "command", "rule_id").
+    /// None when `results` contains ungrouped leaf matches.
+    #[serde(skip)]
+    pub group: Option<String>,
+
+    /// Hoisted file path (when this Report is a file group).
+    #[serde(skip)]
+    pub file: Option<String>,
+
+    /// Hoisted command (when this Report is a command group).
+    #[serde(skip)]
+    pub command: Option<String>,
+
+    /// Hoisted rule_id (when this Report is a rule group).
+    #[serde(skip)]
+    pub rule_id: Option<String>,
+
+    /// Full modified file content for set stdout mode (group-level).
+    #[serde(skip)]
+    pub output_content: Option<String>,
 }
 
 impl Report {
-    pub fn set(matches: Vec<ReportMatch>, summary: Summary) -> Self {
-        Report { kind: ReportKind::Set, matches, summary: Some(summary), groups: None, operations: None }
+    pub fn set(matches: Vec<ReportMatch>, success: bool, totals: Totals) -> Self {
+        let results = matches.into_iter().map(ResultItem::Match).collect();
+        Report { success: Some(success), totals: Some(totals), expected: None, query: None, results, group: None, file: None, command: None, rule_id: None, output_content: None }
     }
 
-    pub fn query(matches: Vec<ReportMatch>, summary: Summary) -> Self {
-        Report { kind: ReportKind::Query, matches, summary: Some(summary), groups: None, operations: None }
+    pub fn query(matches: Vec<ReportMatch>, totals: Totals) -> Self {
+        let results = matches.into_iter().map(ResultItem::Match).collect();
+        Report { success: None, totals: Some(totals), expected: None, query: None, results, group: None, file: None, command: None, rule_id: None, output_content: None }
     }
 
-    pub fn check(matches: Vec<ReportMatch>, summary: Summary) -> Self {
-        Report { kind: ReportKind::Check, matches, summary: Some(summary), groups: None, operations: None }
+    pub fn check(matches: Vec<ReportMatch>, success: bool, totals: Totals) -> Self {
+        let results = matches.into_iter().map(ResultItem::Match).collect();
+        Report { success: Some(success), totals: Some(totals), expected: None, query: None, results, group: None, file: None, command: None, rule_id: None, output_content: None }
     }
 
-    pub fn test(matches: Vec<ReportMatch>, summary: Summary) -> Self {
-        Report { kind: ReportKind::Test, matches, summary: Some(summary), groups: None, operations: None }
+    pub fn test(matches: Vec<ReportMatch>, success: bool, totals: Totals) -> Self {
+        let results = matches.into_iter().map(ResultItem::Match).collect();
+        Report { success: Some(success), totals: Some(totals), expected: None, query: None, results, group: None, file: None, command: None, rule_id: None, output_content: None }
     }
 
-    /// Build a unified run report from multiple sub-reports.
-    /// Computes an aggregate summary across all operations.
-    /// Only check reports contribute to error/warning counts (set reports
-    /// reuse these fields for "updated"/"unchanged").
+    /// Build a unified run report by flattening all sub-reports into one.
+    /// Drains leaf matches from each sub-report into a single flat results list.
+    /// Computes aggregate totals from the merged results.
     pub fn run(reports: Vec<Report>) -> Self {
+        let mut all_results = Vec::new();
         let mut total = 0usize;
         let mut errors = 0usize;
         let mut warnings = 0usize;
-        let mut files_affected = 0usize;
-        let mut passed = true;
+        let mut updated = 0usize;
+        let mut unchanged = 0usize;
+        let mut files = 0usize;
+        let mut success = true;
 
-        for r in &reports {
-            if let Some(ref s) = r.summary {
-                total += s.total;
-                files_affected += s.files_affected;
-                if !s.passed {
-                    passed = false;
-                }
-                // Only aggregate errors/warnings from check reports.
-                // Set reports reuse errors=updated, warnings=unchanged.
-                if matches!(r.kind, ReportKind::Check) {
-                    errors += s.errors;
-                    warnings += s.warnings;
-                }
+        for r in reports {
+            if let Some(ref t) = r.totals {
+                total += t.results;
+                files += t.files;
+                errors += t.errors;
+                warnings += t.warnings;
+                updated += t.updated;
+                unchanged += t.unchanged;
             }
+            if let Some(s) = r.success {
+                if !s { success = false; }
+            }
+            // Drain all results from the sub-report into the flat list
+            all_results.extend(r.results);
         }
 
         Report {
-            kind: ReportKind::Run,
-            matches: vec![],
-            summary: Some(Summary {
-                passed,
-                total,
-                files_affected,
+                       success: Some(success),
+            totals: Some(Totals {
+                results: total,
+                files,
                 errors,
                 warnings,
-                expected: None,
-                query: None,
+                updated,
+                unchanged,
             }),
-            groups: None,
-            operations: Some(reports),
+            expected: None,
+            query: None,
+            results: all_results,
+            group: None,
+            file: None,
+            command: None,
+            rule_id: None,
+            output_content: None,
         }
     }
 
@@ -267,34 +320,142 @@ impl Report {
         serde_json::to_string_pretty(self).unwrap_or_else(|_| "{}".to_string())
     }
 
-    /// Consume flat `matches`, group them by source file, and clear the flat list.
-    /// After this call `matches` is empty and `groups` holds all the data.
-    /// Renderers can then unconditionally render whichever of the two is non-empty.
-    pub fn with_groups(mut self) -> Self {
-        let mut groups: Vec<FileGroup> = Vec::new();
-        let mut file_index: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+    // ---- ResultItem helpers ----
 
-        for mut rm in self.matches.drain(..) {
-            let file = normalize_path(&rm.file);
-            let idx = file_index.entry(file.clone()).or_insert_with(|| {
-                groups.push(FileGroup { file: file.clone(), matches: Vec::new(), output: None });
-                groups.len() - 1
-            });
-            rm.file = String::new();
-            groups[*idx].matches.push(rm);
+    /// Collect references to all leaf matches, recursing into groups.
+    pub fn all_matches(&self) -> Vec<&ReportMatch> {
+        let mut out = Vec::new();
+        Self::collect_matches_recursive(&self.results, &mut out);
+        out
+    }
+
+    /// Collect mutable references to all leaf matches, recursing into groups.
+    pub fn all_matches_mut(&mut self) -> Vec<&mut ReportMatch> {
+        let mut out = Vec::new();
+        Self::collect_matches_mut_recursive(&mut self.results, &mut out);
+        out
+    }
+
+    fn collect_matches_recursive<'a>(items: &'a [ResultItem], out: &mut Vec<&'a ReportMatch>) {
+        for item in items {
+            match item {
+                ResultItem::Match(m) => out.push(m),
+                ResultItem::Group(g) => Self::collect_matches_recursive(&g.results, out),
+            }
         }
-        self.groups = Some(groups);
+    }
+
+    fn collect_matches_mut_recursive<'a>(items: &'a mut [ResultItem], out: &mut Vec<&'a mut ReportMatch>) {
+        for item in items {
+            match item {
+                ResultItem::Match(m) => out.push(m),
+                ResultItem::Group(g) => Self::collect_matches_mut_recursive(&mut g.results, out),
+            }
+        }
+    }
+
+    /// Group results by a single dimension.
+    ///
+    /// Extracts a key from each leaf match, partitions into sub-groups,
+    /// and hoists the key value to the group. Matches retain all their fields
+    /// — the renderer decides whether to omit redundant fields from output.
+    pub fn group_by(mut self, dimension: &str) -> Self {
+        let mut groups: Vec<ResultItem> = Vec::new();
+        let mut index: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+
+        let old_results = std::mem::take(&mut self.results);
+        for item in old_results {
+            if let ResultItem::Match(rm) = item {
+                let key = match dimension {
+                    "file" => normalize_path(&rm.file),
+                    "command" => rm.command.clone(),
+                    "rule_id" => rm.rule_id.clone().unwrap_or_default(),
+                    _ => String::new(),
+                };
+                if key.is_empty() && dimension != "file" {
+                    // No key value — leave ungrouped
+                    groups.push(ResultItem::Match(rm));
+                    continue;
+                }
+                let idx = *index.entry(key.clone()).or_insert_with(|| {
+                    let mut sub = Report::empty();
+                    // Hoist the key value to the group — same field name as on a match
+                    match dimension {
+                        "file" => sub.file = Some(key.clone()),
+                        "command" => sub.command = Some(key.clone()),
+                        "rule_id" => sub.rule_id = Some(key.clone()),
+                        _ => {}
+                    }
+                    groups.push(ResultItem::Group(Box::new(sub)));
+                    groups.len() - 1
+                });
+                if let ResultItem::Group(ref mut g) = groups[idx] {
+                    g.results.push(ResultItem::Match(rm));
+                }
+            } else {
+                // Non-match items (sub-groups) pass through
+                groups.push(item);
+            }
+        }
+
+        self.results = groups;
+        self.group = Some(dimension.to_string());
         self
     }
 
-    /// Attach pre-computed file outputs to groups (set stdout mode).
-    /// Must be called after `with_groups()`. Groups whose file is not in `outputs`
-    /// are left with `output = None`.
+    /// Apply multi-level grouping. Each dimension partitions results into
+    /// groups, with nested dimensions applied recursively within each group.
+    /// Matches retain all their fields — renderers decide what to omit.
+    pub fn with_grouping(mut self, dimensions: &[&str]) -> Self {
+        if dimensions.is_empty() {
+            return self;
+        }
+
+        let dim = dimensions[0];
+        let rest = &dimensions[1..];
+
+        self = self.group_by(dim);
+
+        if !rest.is_empty() {
+            self.results = self.results.into_iter().map(|item| {
+                match item {
+                    ResultItem::Group(mut g) => {
+                        *g = g.with_grouping(rest);
+                        ResultItem::Group(g)
+                    }
+                    other => other,
+                }
+            }).collect();
+        }
+
+        self
+    }
+
+    /// Create an empty report (used for sub-groups).
+    fn empty() -> Self {
+        Report {
+            success: None,
+            totals: None,
+            expected: None,
+            query: None,
+            results: vec![],
+            group: None,
+            file: None,
+            command: None,
+            rule_id: None,
+            output_content: None,
+        }
+    }
+
+    /// Attach pre-computed file outputs to file groups (set stdout mode).
+    /// Must be called after `with_groups()`.
     pub fn with_file_outputs(mut self, outputs: &std::collections::HashMap<String, String>) -> Self {
-        if let Some(ref mut groups) = self.groups {
-            for group in groups.iter_mut() {
-                if let Some(content) = outputs.get(&group.file) {
-                    group.output = Some(content.clone());
+        for item in &mut self.results {
+            if let ResultItem::Group(ref mut g) = item {
+                if let Some(ref file) = g.file {
+                    if let Some(content) = outputs.get(file.as_str()) {
+                        g.output_content = Some(content.clone());
+                    }
                 }
             }
         }
@@ -313,6 +474,7 @@ mod tests {
             column: col,
             end_line: line,
             end_column: col + value.len() as u32,
+            command: String::new(),
             tree: None,
             value: Some(value.to_string()),
             source: None,
@@ -334,6 +496,7 @@ mod tests {
             column: 5,
             end_line: 10,
             end_column: 8,
+            command: "check".to_string(),
             tree: None,
             value: Some("foo".to_string()),
             source: None,
@@ -351,6 +514,7 @@ mod tests {
             column: 1,
             end_line: 3,
             end_column: 4,
+            command: "check".to_string(),
             tree: None,
             value: Some("bar".to_string()),
             source: None,
@@ -362,56 +526,54 @@ mod tests {
             status: None,
             output: None,
         };
-        let summary = Summary {
-            passed: false,
-            total: 2,
-            files_affected: 2,
+        let totals = Totals {
+            results: 2,
+            files: 2,
             errors: 1,
             warnings: 1,
-            expected: None,
-            query: None,
+            updated: 0,
+            unchanged: 0,
         };
-        let report = Report::check(vec![m1, m2], summary);
+        let report = Report::check(vec![m1, m2], false, totals);
         let json = report.to_json();
         let v: serde_json::Value = serde_json::from_str(&json).unwrap();
 
-        // Summary
-        assert_eq!(v["summary"]["passed"], false);
-        assert_eq!(v["summary"]["total"], 2);
-        assert_eq!(v["summary"]["files"], 2);
-        assert_eq!(v["summary"]["errors"], 1);
-        assert_eq!(v["summary"]["warnings"], 1);
-        assert!(v["summary"]["expected"].is_null());
+        // Totals + passed
+        assert_eq!(v["success"], false);
+        assert_eq!(v["totals"]["results"], 2);
+        assert_eq!(v["totals"]["files"], 2);
+        assert_eq!(v["totals"]["errors"], 1);
+        assert_eq!(v["totals"]["warnings"], 1);
 
-        // Matches
-        assert_eq!(v["matches"].as_array().unwrap().len(), 2);
-        // Backslash normalized to forward slash
-        assert_eq!(v["matches"][0]["file"], "src/main.rs");
-        assert_eq!(v["matches"][0]["severity"], "error");
-        assert_eq!(v["matches"][1]["severity"], "warning");
+        // Matches (via all_matches helper since results is the sole storage)
+        let matches = report.all_matches();
+        assert_eq!(matches.len(), 2);
+        assert_eq!(matches[0].severity.unwrap().as_str(), "error");
+        assert_eq!(matches[1].severity.unwrap().as_str(), "warning");
     }
 
     #[test]
     fn test_test_report_json() {
         let m = make_report_match("test.cs", 1, 1, "x");
-        let summary = Summary {
-            passed: true,
-            total: 1,
-            files_affected: 1,
+        let totals = Totals {
+            results: 1,
+            files: 1,
             errors: 0,
             warnings: 0,
-            expected: Some("some".to_string()),
-            query: None,
+            updated: 0,
+            unchanged: 0,
         };
-        let report = Report::test(vec![m], summary);
+        let mut report = Report::test(vec![m], true, totals);
+        report.expected = Some("some".to_string());
         let json = report.to_json();
         let v: serde_json::Value = serde_json::from_str(&json).unwrap();
 
-        assert_eq!(v["kind"], "test");
-        assert_eq!(v["summary"]["passed"], true);
-        assert_eq!(v["summary"]["expected"], "some");
+        assert_eq!(v["success"], true);
+        assert_eq!(v["expected"], "some");
         // No reason/severity on plain match
-        assert!(v["matches"][0].get("reason").is_none());
-        assert!(v["matches"][0].get("severity").is_none());
+        let matches = report.all_matches();
+        assert_eq!(matches.len(), 1);
+        assert!(matches[0].reason.is_none());
+        assert!(matches[0].severity.is_none());
     }
 }

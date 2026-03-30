@@ -1,0 +1,22 @@
+# Lint rules for tractor's own renderer consistency.
+# Run: tractor run tractor/tractor-lint.yaml
+#
+# Checks structural properties of renderer implementations to ensure
+# they follow the unified report system's conventions. Applies to all
+# .rs files in the format directory except infrastructure files.
+
+check:
+  files:
+    - "src/pipeline/format/*.rs"
+  exclude:
+    - "**/mod.rs"
+    - "**/options.rs"
+    - "**/shared.rs"
+  rules:
+    # Every renderer's main entry point (public function taking &Report)
+    # must accept a dimensions parameter. This ensures all formats can
+    # participate in the grouping system, even if they ignore dimensions.
+    - id: renderer-accepts-dimensions
+      xpath: "//function[pub][starts-with(name,'render_')][contains(params,'&Report')][not(contains(params,'dimensions'))]"
+      reason: "public render function taking &Report must accept dimensions parameter"
+      severity: error
