@@ -65,6 +65,9 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
             if !out.is_empty() && !out.ends_with('\n') {
                 out.push('\n');
             }
+            if let Some(ref query) = report.query {
+                out.push_str(&format!("Query: {}\n", query));
+            }
             out.push_str(&format_summary(totals, report.success, report.expected.as_deref()));
         }
     }
