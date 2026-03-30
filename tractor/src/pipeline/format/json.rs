@@ -1,6 +1,7 @@
 use serde_json::{json, Value};
 use tractor_core::{report::{Report, ReportMatch, ResultItem}, normalize_path, xml_node_to_json, RenderOptions};
 use super::options::{ViewField, ViewSet};
+use super::shared::{should_emit_file, should_emit_command, should_emit_rule_id};
 
 pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, dimensions: &[&str]) -> String {
     let mut root = serde_json::Map::new();
@@ -110,7 +111,7 @@ pub fn match_to_value(
     for field in &view.fields {
         match field {
             ViewField::File => {
-                if !skip_dims.contains(&"file") && !rm.file.is_empty() {
+                if should_emit_file(rm, skip_dims) {
                     obj.insert("file".into(), json!(normalize_path(&rm.file)));
                 }
             }
@@ -162,19 +163,14 @@ pub fn match_to_value(
         }
     }
 
-    // command: view-gated AND skip if hoisted to a group
-    if view.has(ViewField::Command) && !skip_dims.contains(&"command") && !rm.command.is_empty() {
+    if should_emit_command(rm, view, skip_dims) {
         obj.insert("command".into(), json!(rm.command));
     }
-    // message: always emitted when present (annotation, not view-gated)
     if let Some(ref msg) = rm.message {
         obj.insert("message".into(), json!(msg));
     }
-    // rule_id: always emitted when present, unless hoisted to a group
-    if !skip_dims.contains(&"rule_id") {
-        if let Some(ref rule_id) = rm.rule_id {
-            obj.insert("rule_id".into(), json!(rule_id));
-        }
+    if should_emit_rule_id(rm, skip_dims) {
+        obj.insert("rule_id".into(), json!(rm.rule_id.as_deref().unwrap()));
     }
 
     Value::Object(obj)

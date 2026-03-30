@@ -1,5 +1,6 @@
 use tractor_core::{report::{Report, ResultItem}, normalize_path, render_xml_string, render_xml_node, RenderOptions};
 use super::options::{ViewField, ViewSet};
+use super::shared::{should_emit_file, should_emit_command, should_emit_rule_id};
 
 pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, dimensions: &[&str]) -> String {
     let mut tree_opts = render_opts.clone();
@@ -78,7 +79,7 @@ fn append_match(
     skip_dims: &[&str],
 ) {
     let file_str = normalize_path(&rm.file);
-    let show_file = !skip_dims.contains(&"file") && !file_str.is_empty();
+    let show_file = should_emit_file(rm, skip_dims);
     let has_position = rm.line > 0;
     if !show_file {
         if has_position {
@@ -159,19 +160,14 @@ fn append_match(
         }
     }
 
-    // command: view-gated, skip if hoisted to a group
-    if view.has(ViewField::Command) && !skip_dims.contains(&"command") && !rm.command.is_empty() {
+    if should_emit_command(rm, view, skip_dims) {
         out.push_str(&format!("{}<command>{}</command>\n", inner, escape(&rm.command)));
     }
-    // message: always emitted when present
     if let Some(ref message) = rm.message {
         out.push_str(&format!("{}<message>{}</message>\n", inner, escape(message)));
     }
-    // rule_id: always emitted when present, unless hoisted
-    if !skip_dims.contains(&"rule_id") {
-        if let Some(ref rule_id) = rm.rule_id {
-            out.push_str(&format!("{}<rule-id>{}</rule-id>\n", inner, escape(rule_id)));
-        }
+    if should_emit_rule_id(rm, skip_dims) {
+        out.push_str(&format!("{}<rule-id>{}</rule-id>\n", inner, escape(rm.rule_id.as_deref().unwrap())));
     }
 
     out.push_str(&format!("{}</match>\n", indent));
