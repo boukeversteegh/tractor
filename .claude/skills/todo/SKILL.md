@@ -52,6 +52,13 @@ Use this structure for new todos:
 ```markdown
 # {Short title}
 
+## Context
+
+{How this was discovered — what real scenario or user workflow exposed
+the issue. Be specific: "While running tractor check on a 500-file
+repo..." not "There is a performance issue." This grounds the todo in
+real-world value and helps future readers judge priority.}
+
 ## Problem
 
 {What's wrong or what's needed — 1-3 paragraphs}
@@ -64,6 +71,11 @@ Use this structure for new todos:
 
 {Optional: implementation hints, related files, impact, priority}
 ```
+
+The **Context** section is important — it answers "why should anyone
+care?" by showing the real situation where the limitation was hit.
+Without it, todos become abstract technical debt that's hard to
+prioritize.
 
 Keep it concise. The title in the filename slug should be a few
 hyphenated keywords (e.g., `21-query-diagnostics-empty-results.md`).
