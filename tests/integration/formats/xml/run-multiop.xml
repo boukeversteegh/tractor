@@ -26,7 +26,6 @@
      int Bar { get; set; }
      void Baz() { }
 }</value>
-          <command>check</command>
           <rule-id>no-class</rule-id>
         </match>
         <match line="4" column="5" end_line="4" end_column="26">
@@ -36,7 +35,6 @@
           <line>    public void Baz() { }</line>
           </lines>
           <value> void Baz() { }</value>
-          <command>check</command>
           <rule-id>no-void-method</rule-id>
         </match>
         <match line="7" column="1" end_line="7" end_column="21">
@@ -46,7 +44,6 @@
           <line>public class Qux { }</line>
           </lines>
           <value> class Qux { }</value>
-          <command>check</command>
           <rule-id>no-class</rule-id>
         </match>
       </group>
@@ -66,14 +63,12 @@
      int Bar { get; set; }
      void Baz() { }
 }</value>
-          <command>test</command>
         </match>
         <match line="7" column="1" end_line="7" end_column="21">
           <lines>
           <line>public class Qux { }</line>
           </lines>
           <value> class Qux { }</value>
-          <command>test</command>
         </match>
       </group>
     </group>

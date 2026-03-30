@@ -159,16 +159,19 @@ fn append_match(
         }
     }
 
-    // command: only emitted when view includes Command
-    if view.has(ViewField::Command) && !rm.command.is_empty() {
+    // command: view-gated, skip if hoisted to a group
+    if view.has(ViewField::Command) && !skip_dims.contains(&"command") && !rm.command.is_empty() {
         out.push_str(&format!("{}<command>{}</command>\n", inner, escape(&rm.command)));
     }
-    // message and rule_id always emitted when present (annotations, not view-gated)
+    // message: always emitted when present
     if let Some(ref message) = rm.message {
         out.push_str(&format!("{}<message>{}</message>\n", inner, escape(message)));
     }
-    if let Some(ref rule_id) = rm.rule_id {
-        out.push_str(&format!("{}<rule-id>{}</rule-id>\n", inner, escape(rule_id)));
+    // rule_id: always emitted when present, unless hoisted
+    if !skip_dims.contains(&"rule_id") {
+        if let Some(ref rule_id) = rm.rule_id {
+            out.push_str(&format!("{}<rule-id>{}</rule-id>\n", inner, escape(rule_id)));
+        }
     }
 
     out.push_str(&format!("{}</match>\n", indent));

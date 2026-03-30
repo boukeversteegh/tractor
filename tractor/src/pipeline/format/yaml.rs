@@ -15,15 +15,17 @@ pub fn render_yaml_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         emit_report_metadata(&mut root, report);
     }
 
+    // Group dimension (before results)
+    if let Some(ref group) = report.group {
+        root.insert("group".into(), serde_json::json!(group));
+    }
+
     // Render results
     if !report.results.is_empty() {
         let results_json = render_results_json(&report.results, view, render_opts, dimensions);
         if !results_json.is_empty() {
             root.insert("results".into(), Value::Array(results_json));
         }
-    }
-    if let Some(ref group) = report.group {
-        root.insert("group".into(), serde_json::json!(group));
     }
 
     serde_yaml::to_string(&Value::Object(root)).unwrap_or_else(|_| "{}\n".to_string())
