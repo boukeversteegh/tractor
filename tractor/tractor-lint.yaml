@@ -1,0 +1,39 @@
+# Lint rules for tractor's own renderer consistency.
+# Run: tractor run tractor/tractor-lint.yaml
+#
+# Ensures structured format renderers (JSON, XML, YAML) use the shared
+# field emission helpers from shared.rs, preventing drift where one
+# format gets a fix and another doesn't.
+
+files:
+  - "tractor/src/pipeline/format/json.rs"
+  - "tractor/src/pipeline/format/xml.rs"
+  - "tractor/src/pipeline/format/yaml.rs"
+
+check:
+  rules:
+    - id: renderer-imports-should-show-totals
+      xpath: "//file[not(.//use[contains(.,'should_show_totals')])]"
+      reason: "structured renderer must import should_show_totals from shared"
+      severity: error
+
+    - id: renderer-imports-should-emit-file
+      xpath: "//file[not(.//use[contains(.,'should_emit_file')])]"
+      reason: "structured renderer must import should_emit_file from shared"
+      severity: error
+      exclude:
+        - "tractor/src/pipeline/format/yaml.rs"  # delegates to json's match_to_value
+
+    - id: renderer-imports-should-emit-command
+      xpath: "//file[not(.//use[contains(.,'should_emit_command')])]"
+      reason: "structured renderer must import should_emit_command from shared"
+      severity: error
+      exclude:
+        - "tractor/src/pipeline/format/yaml.rs"
+
+    - id: renderer-imports-should-emit-rule-id
+      xpath: "//file[not(.//use[contains(.,'should_emit_rule_id')])]"
+      reason: "structured renderer must import should_emit_rule_id from shared"
+      severity: error
+      exclude:
+        - "tractor/src/pipeline/format/yaml.rs"
