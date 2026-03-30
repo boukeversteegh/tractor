@@ -197,7 +197,10 @@ fn render_xml_results(
                     attrs.push_str(&format!(" rule-id=\"{}\"", escape_attr(rule_id)));
                 }
                 out.push_str(&format!("{}<group{}>\n", indent, attrs));
-                // Group-level output (set stdout mode)
+                // Sub-group's own grouping dimension
+                if let Some(ref group) = sub.group {
+                    out.push_str(&format!("{}<group-by>{}</group-by>\n", inner, escape(group)));
+                }
                 if view.has(ViewField::Output) {
                     if let Some(ref content) = sub.output_content {
                         out.push_str(&format!("{}<output>{}</output>\n", inner, escape(content)));
