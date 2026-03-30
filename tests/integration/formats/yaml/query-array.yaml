@@ -1,4 +1,4 @@
-matches:
+results:
 - file: tests/integration/formats/sample-classes.cs
   line: 1
   tree:

@@ -1,108 +1,109 @@
 use serde_json::{json, Value};
-use tractor_core::{report::{Report, ReportKind, ReportMatch}, normalize_path, xml_node_to_json, RenderOptions};
-use super::options::{GroupBy, ViewField, ViewSet};
+use tractor_core::{report::{Report, ReportMatch, ResultItem}, normalize_path, xml_node_to_json, RenderOptions};
+use super::options::{ViewField, ViewSet};
+use super::shared::{should_show_totals, should_emit_file, should_emit_command, should_emit_rule_id};
 
-pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions) -> String {
+pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, dimensions: &[&str]) -> String {
     let mut root = serde_json::Map::new();
 
-    // Summary: always present for check/test/set reports (structural, not view-gated).
-    // For query reports, only include if explicitly requested via -v summary or -v query.
-    let show_summary = if matches!(report.kind, ReportKind::Query) {
-        view.has(ViewField::Summary) || view.has(ViewField::Query)
-    } else {
-        true
-    };
-    if show_summary {
-        if let Some(ref summary) = report.summary {
-            let mut s = serde_json::Map::new();
-            if matches!(report.kind, ReportKind::Set) {
-                // For set reports, use "updated"/"unchanged" instead of "errors"/"warnings"
-                s.insert("total".into(),     json!(summary.total));
-                s.insert("files".into(),     json!(summary.files_affected));
-                s.insert("updated".into(),   json!(summary.errors));
-                s.insert("unchanged".into(), json!(summary.warnings));
-            } else {
-                s.insert("passed".into(),   json!(summary.passed));
-                s.insert("total".into(),    json!(summary.total));
-                s.insert("files".into(),    json!(summary.files_affected));
-                s.insert("errors".into(),   json!(summary.errors));
-                s.insert("warnings".into(), json!(summary.warnings));
-                if let Some(ref expected) = summary.expected {
-                    s.insert("expected".into(), json!(expected));
-                }
-                if let Some(ref query) = summary.query {
-                    s.insert("query".into(), json!(query));
-                }
-            }
-            root.insert("summary".into(), Value::Object(s));
+    if should_show_totals(report, view) {
+        emit_report_metadata(&mut root, report);
+    }
+
+    // Group dimension (before results, so readers see the grouping context first)
+    if let Some(ref group) = report.group {
+        root.insert("group".into(), json!(group));
+    }
+
+    // Render results
+    if !report.results.is_empty() {
+        let results_json = render_results_json(&report.results, view, render_opts, dimensions);
+        if !results_json.is_empty() {
+            root.insert("results".into(), Value::Array(results_json));
         }
-    }
-
-    if !report.matches.is_empty() {
-        let matches_json: Vec<Value> = report.matches.iter()
-            .map(|rm| match_to_value(rm, view, render_opts, GroupBy::None))
-            .collect();
-        root.insert("matches".into(), Value::Array(matches_json));
-    }
-
-    // Run report: emit sub-reports as "operations" array
-    if let Some(ref ops) = report.operations {
-        let ops_json: Vec<Value> = ops.iter().map(|sub| {
-            let sub_str = render_json_report(sub, view, render_opts);
-            let sub_obj: serde_json::Map<String, Value> = serde_json::from_str(&sub_str).unwrap_or_default();
-            // Put "kind" first by building a new ordered map
-            let mut ordered = serde_json::Map::new();
-            ordered.insert("kind".into(), json!(sub.kind.as_str()));
-            ordered.extend(sub_obj);
-            Value::Object(ordered)
-        }).collect();
-        root.insert("operations".into(), Value::Array(ops_json));
-    }
-
-    if let Some(ref groups) = report.groups {
-        let groups_json: Vec<Value> = groups.iter().map(|g| {
-            let group_matches: Vec<Value> = g.matches.iter()
-                // file is on the group — omit it from individual matches
-                .map(|rm| match_to_value(rm, view, render_opts, GroupBy::File))
-                // skip empty match objects (e.g. stdout mode with only Output in view)
-                .filter(|v| !v.as_object().map(|o| o.is_empty()).unwrap_or(false))
-                .collect();
-            let mut group_obj = serde_json::Map::new();
-            if !g.file.is_empty() {
-                group_obj.insert("file".into(), json!(g.file));
-            }
-            // Group-level output (set stdout mode): placed before matches in output
-            if view.has(ViewField::Output) {
-                if let Some(ref content) = g.output {
-                    group_obj.insert("output".into(), json!(content));
-                }
-            }
-            if !group_matches.is_empty() {
-                group_obj.insert("matches".into(), Value::Array(group_matches));
-            }
-            Value::Object(group_obj)
-        }).collect();
-        root.insert("groups".into(), Value::Array(groups_json));
     }
 
     serde_json::to_string_pretty(&Value::Object(root)).unwrap_or_else(|_| "{}".to_string())
 }
 
+/// Emit success, totals, expected, query as top-level fields.
+pub fn emit_report_metadata(root: &mut serde_json::Map<String, Value>, report: &Report) {
+    if let Some(success) = report.success {
+        root.insert("success".into(), json!(success));
+    }
+    if let Some(ref totals) = report.totals {
+        let mut t = serde_json::Map::new();
+        t.insert("results".into(), json!(totals.results));
+        t.insert("files".into(),   json!(totals.files));
+        if totals.errors > 0 { t.insert("errors".into(), json!(totals.errors)); }
+        if totals.warnings > 0 { t.insert("warnings".into(), json!(totals.warnings)); }
+        if totals.updated > 0 { t.insert("updated".into(), json!(totals.updated)); }
+        if totals.unchanged > 0 { t.insert("unchanged".into(), json!(totals.unchanged)); }
+        root.insert("totals".into(), Value::Object(t));
+    }
+    if let Some(ref expected) = report.expected {
+        root.insert("expected".into(), json!(expected));
+    }
+    if let Some(ref query) = report.query {
+        root.insert("query".into(), json!(query));
+    }
+}
+
+/// Render a results list as JSON.
+/// `dimensions`: the grouping chain (e.g. ["command", "file"]). Level 0
+/// groups carry dimension[0] as their key. Leaf matches skip all dimensions.
+pub fn render_results_json(
+    items: &[ResultItem],
+    view: &ViewSet,
+    render_opts: &RenderOptions,
+    dimensions: &[&str],
+) -> Vec<Value> {
+    items.iter().map(|item| {
+        match item {
+            ResultItem::Match(rm) => match_to_value(rm, view, render_opts, dimensions),
+            ResultItem::Group(sub) => {
+                let mut obj = serde_json::Map::new();
+                // Hoisted group key
+                if let Some(ref file) = sub.file { obj.insert("file".into(), json!(file)); }
+                if let Some(ref command) = sub.command { obj.insert("command".into(), json!(command)); }
+                if let Some(ref rule_id) = sub.rule_id { obj.insert("rule_id".into(), json!(rule_id)); }
+                emit_report_metadata(&mut obj, sub);
+                // Sub-grouping dimension (before nested results)
+                if let Some(ref group) = sub.group {
+                    obj.insert("group".into(), json!(group));
+                }
+                // Group-level output (set stdout mode)
+                if view.has(ViewField::Output) {
+                    if let Some(ref content) = sub.output_content {
+                        obj.insert("output".into(), json!(content));
+                    }
+                }
+                // Recurse
+                let sub_results = render_results_json(&sub.results, view, render_opts, dimensions);
+                if !sub_results.is_empty() {
+                    obj.insert("results".into(), Value::Array(sub_results));
+                }
+                Value::Object(obj)
+            }
+        }
+    }).collect()
+}
+
 /// Shared match serialization — reused by yaml.rs.
-/// `group_by`: when `File`, omits the `file` field (already on the parent group).
-/// Fields are emitted in ViewSet declaration order.
+/// `skip_dims`: all grouping dimensions — these fields are omitted from the match
+/// since they're hoisted to ancestor groups.
 pub fn match_to_value(
     rm: &ReportMatch,
     view: &ViewSet,
     render_opts: &RenderOptions,
-    group_by: GroupBy,
+    skip_dims: &[&str],
 ) -> Value {
     let mut obj = serde_json::Map::new();
 
     for field in &view.fields {
         match field {
             ViewField::File => {
-                if group_by == GroupBy::None {
+                if should_emit_file(rm, skip_dims) {
                     obj.insert("file".into(), json!(normalize_path(&rm.file)));
                 }
             }
@@ -154,12 +155,14 @@ pub fn match_to_value(
         }
     }
 
-    // message and rule_id are always emitted when present (not ViewFields, but annotations)
+    if should_emit_command(rm, view, skip_dims) {
+        obj.insert("command".into(), json!(rm.command));
+    }
     if let Some(ref msg) = rm.message {
         obj.insert("message".into(), json!(msg));
     }
-    if let Some(ref rule_id) = rm.rule_id {
-        obj.insert("rule_id".into(), json!(rule_id));
+    if should_emit_rule_id(rm, skip_dims) {
+        obj.insert("rule_id".into(), json!(rm.rule_id.as_deref().unwrap()));
     }
 
     Value::Object(obj)
@@ -168,13 +171,14 @@ pub fn match_to_value(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tractor_core::report::{Report, Summary};
+    use tractor_core::report::{Report, Totals};
     use tractor_core::xpath::XmlNode;
 
     fn make_plain_match(value: &str) -> ReportMatch {
         ReportMatch {
             file: "test.xml".to_string(),
             line: 1, column: 1, end_line: 1, end_column: 1,
+            command: String::new(),
             tree: None,
             value: Some(value.to_string()),
             source: None, lines: None, reason: None, severity: None,
@@ -189,6 +193,7 @@ mod tests {
         ReportMatch {
             file: "test.xml".to_string(),
             line: 1, column: 1, end_line: 1, end_column: 1,
+            command: String::new(),
             tree: Some(tree),
             value: None, // maps have no value — data is in tree
             source: None, lines: None, reason: None, severity: None,
@@ -204,7 +209,7 @@ mod tests {
         ]);
         let view = ViewSet::single(ViewField::Tree);
         let opts = RenderOptions::new();
-        let val = match_to_value(&rm, &view, &opts, GroupBy::None);
+        let val = match_to_value(&rm, &view, &opts, &[]);
         let v = val.get("tree").unwrap();
         assert!(v.is_object(), "Map tree should be a JSON object, got: {}", v);
         assert_eq!(v["name"], "foo");
@@ -216,7 +221,7 @@ mod tests {
         let rm = make_plain_match("hello world");
         let view = ViewSet::single(ViewField::Value);
         let opts = RenderOptions::new();
-        let val = match_to_value(&rm, &view, &opts, GroupBy::None);
+        let val = match_to_value(&rm, &view, &opts, &[]);
         let v = val.get("value").unwrap();
         assert!(v.is_string(), "Regular value should be a string, got: {}", v);
         assert_eq!(v.as_str().unwrap(), "hello world");
@@ -228,16 +233,16 @@ mod tests {
             ("name", XmlNode::Text("foo".into())),
             ("count", XmlNode::Number(3.0)),
         ]);
-        let summary = Summary {
-            passed: true, total: 1, files_affected: 1,
-            errors: 0, warnings: 0, expected: None, query: None,
+        let totals = Totals {
+            results: 1, files: 1,
+            errors: 0, warnings: 0, updated: 0, unchanged: 0,
         };
-        let report = Report::query(vec![rm], summary);
+        let report = Report::query(vec![rm], totals);
         let view = ViewSet::new(vec![ViewField::File, ViewField::Tree]);
         let opts = RenderOptions::new();
-        let output = render_json_report(&report, &view, &opts);
+        let output = render_json_report(&report, &view, &opts, &[]);
         let parsed: serde_json::Value = serde_json::from_str(&output).unwrap();
-        let match_tree = &parsed["matches"][0]["tree"];
+        let match_tree = &parsed["results"][0]["tree"];
         assert!(match_tree.is_object(), "Map tree should be a JSON object in report output, got: {}", match_tree);
         assert_eq!(match_tree["name"], "foo");
         assert_eq!(match_tree["count"], 3.0);

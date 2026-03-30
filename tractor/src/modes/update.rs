@@ -5,7 +5,7 @@ use crate::pipeline::{RunContext, ViewField, InputMode};
 pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
     let ctx = RunContext::build(
         &args.shared, args.files, args.shared.xpath.clone(),
-        "text", &[ViewField::Tree], None, None, None, false, false,
+        "text", &[ViewField::Tree], None, None, None, false, &[],
     )?;
 
     let xpath_expr = ctx.xpath.as_ref()
@@ -41,18 +41,17 @@ pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     let reports = executor::execute(&[op], &options)?;
     let report = &reports[0];
-    let summary = report.summary.as_ref().unwrap();
-
-    if !summary.passed {
+    if report.success == Some(false) {
         return Err("update matched no nodes".into());
     }
 
+    let totals = report.totals.as_ref().unwrap();
     eprintln!(
         "Updated {} match{} in {} file{}",
-        summary.total,
-        if summary.total == 1 { "" } else { "es" },
-        summary.files_affected,
-        if summary.files_affected == 1 { "" } else { "s" },
+        totals.results,
+        if totals.results == 1 { "" } else { "es" },
+        totals.files,
+        if totals.files == 1 { "" } else { "s" },
     );
     Ok(())
 }

@@ -4,6 +4,9 @@ target/
 # dotenv files
 .env
 
+# Claude Code local settings
+.claude/settings.local.json
+
 # IDE
 .vs/
 .vscode/*

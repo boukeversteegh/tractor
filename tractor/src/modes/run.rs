@@ -7,8 +7,9 @@ use crate::cli::RunArgs;
 use crate::pipeline::{
     RunContext, ViewField,
     project_report, apply_message_template,
+    GroupDimension,
 };
-use crate::pipeline::format::render_run_report;
+use crate::pipeline::render_report;
 
 pub fn run_run(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {
     let config_path = std::path::Path::new(&args.config);
@@ -32,12 +33,12 @@ pub fn run_run(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {
         vec![],           // no files — they come from the config
         None,             // no xpath — they come from the config
         &args.format,
-        &[ViewField::Reason, ViewField::Severity, ViewField::Lines, ViewField::Status, ViewField::Value],
+        &[ViewField::Command, ViewField::Reason, ViewField::Severity, ViewField::Lines, ViewField::Status, ViewField::Value],
         args.view.as_deref(),
         args.message,
         None,             // no content
         false,            // no debug
-        true,             // group by file
+        &[GroupDimension::Command, GroupDimension::File],  // group by command then file
     )?;
 
     // Resolve base_dir: use the config file's parent directory so that
@@ -55,17 +56,18 @@ pub fn run_run(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     let reports = executor::execute(&operations, &options)?;
 
-    // Apply view projection and grouping to each sub-report.
-    let sub_reports: Vec<Report> = reports.into_iter().map(|mut r| {
-        // Apply message template if provided.
-        if let Some(ref template) = ctx.message {
-            apply_message_template(&mut r, template);
-        }
-        project_report(&mut r, &ctx.view);
-        if ctx.group_by_file { r.with_groups() } else { r }
-    }).collect();
+    // Merge all sub-reports into a single flat report.
+    let mut report = Report::run(reports);
 
-    let report = Report::run(sub_reports);
+    // Apply message template and view projection on the merged report.
+    if let Some(ref template) = ctx.message {
+        apply_message_template(&mut report, template);
+    }
+    project_report(&mut report, &ctx.view);
 
-    render_run_report(&report, &ctx)
+    // Apply grouping
+    let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
+    let report = report.with_grouping(&dims);
+
+    render_report(&report, &ctx, None)
 }

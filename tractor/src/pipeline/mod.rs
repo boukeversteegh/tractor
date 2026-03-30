@@ -6,7 +6,7 @@ pub mod git;
 
 pub use input::InputMode;
 pub use context::RunContext;
-pub use format::ViewField;
+pub use format::{ViewField, GroupDimension};
 pub use matcher::{
     query_files_batched, query_inline_source,
     run_debug,
@@ -14,4 +14,4 @@ pub use matcher::{
     project_report,
     apply_message_template,
 };
-pub use format::{render_check_report, render_test_report, render_set_report};
+pub use format::{render_report, TestRenderOptions};

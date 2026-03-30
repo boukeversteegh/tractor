@@ -1,25 +1,20 @@
 {
-  "summary": {
-    "passed": false,
-    "total": 5,
+  "success": false,
+  "totals": {
+    "results": 5,
     "files": 2,
     "errors": 2,
     "warnings": 1
   },
-  "operations": [
+  "group": "command",
+  "results": [
     {
-      "kind": "check",
-      "summary": {
-        "passed": false,
-        "total": 3,
-        "files": 1,
-        "errors": 2,
-        "warnings": 1
-      },
-      "groups": [
+      "command": "check",
+      "group": "file",
+      "results": [
         {
           "file": "tests/integration/formats/sample.cs",
-          "matches": [
+          "results": [
             {
               "reason": "class declaration found",
               "severity": "error",
@@ -56,19 +51,12 @@
       ]
     },
     {
-      "kind": "test",
-      "summary": {
-        "passed": true,
-        "total": 2,
-        "files": 1,
-        "errors": 0,
-        "warnings": 0,
-        "expected": "some, none"
-      },
-      "groups": [
+      "command": "test",
+      "group": "file",
+      "results": [
         {
           "file": "tests/integration/formats/sample.cs",
-          "matches": [
+          "results": [
             {
               "lines": [
                 "public class Foo",

@@ -15,7 +15,7 @@ use std::path::PathBuf;
 use std::collections::HashSet;
 use rayon::prelude::*;
 use tractor_core::rule::{Rule, RuleSet};
-use tractor_core::report::{Report, ReportMatch, Severity, Summary};
+use tractor_core::report::{Report, ReportMatch, Severity, Totals};
 use tractor_core::tree_mode::TreeMode;
 use tractor_core::{expand_globs, filter_supported_files, detect_language, parse_to_documents, parse_string_to_documents, Match, apply_replacements};
 use tractor_core::xpath_upsert::{upsert, update_only};
@@ -329,7 +329,7 @@ fn execute_query(
     );
 
     if files.is_empty() {
-        return Ok(Report::query(vec![], empty_summary()));
+        return Ok(Report::query(vec![], empty_totals()));
     }
 
     let xpaths: Vec<&str> = op.queries.iter().map(|q| q.xpath.as_str()).collect();
@@ -342,17 +342,16 @@ fn execute_query(
     let total = matches.len();
     let files_affected = count_unique_files(&matches);
     let report_matches = matches.into_iter()
-        .map(match_to_full_report_match)
+        .map(|m| match_to_report_match(m, "query"))
         .collect();
 
-    Ok(Report::query(report_matches, Summary {
-        passed: true,
-        total,
-        files_affected,
+    Ok(Report::query(report_matches, Totals {
+        results: total,
+        files: files_affected,
         errors: 0,
         warnings: 0,
-        expected: None,
-        query: None,
+        updated: 0,
+        unchanged: 0,
     }))
 }
 
@@ -379,17 +378,16 @@ fn execute_query_inline(
     let total = all_matches.len();
     let files_affected = count_unique_files(&all_matches);
     let report_matches = all_matches.into_iter()
-        .map(match_to_full_report_match)
+        .map(|m| match_to_report_match(m, "query"))
         .collect();
 
-    Ok(Report::query(report_matches, Summary {
-        passed: true,
-        total,
-        files_affected,
+    Ok(Report::query(report_matches, Totals {
+        results: total,
+        files: files_affected,
         errors: 0,
         warnings: 0,
-        expected: None,
-        query: None,
+        updated: 0,
+        unchanged: 0,
     }))
 }
 
@@ -402,7 +400,7 @@ fn execute_check(
     options: &ExecuteOptions,
 ) -> Result<Report, Box<dyn std::error::Error>> {
     if op.rules.is_empty() {
-        return Ok(Report::check(vec![], empty_summary()));
+        return Ok(Report::check(vec![], true, empty_totals()));
     }
 
     // --- Phase 1: Validate rule examples via TestOperations ---
@@ -462,7 +460,7 @@ fn execute_check(
                 .as_deref()
                 .map(|t| tractor_core::format_message(t, &rm.m));
 
-            let mut report_match = match_to_full_report_match(rm.m);
+            let mut report_match = match_to_report_match(rm.m, "check");
             report_match.reason = Some(reason);
             report_match.severity = Some(severity);
             report_match.rule_id = Some(rule.id.clone());
@@ -472,14 +470,13 @@ fn execute_check(
     }
 
     let total = example_matches.len();
-    Ok(Report::check(example_matches, Summary {
-        passed: errors == 0,
-        total,
-        files_affected: files_affected.len(),
+    Ok(Report::check(example_matches, errors == 0, Totals {
+        results: total,
+        files: files_affected.len(),
         errors,
         warnings,
-        expected: None,
-        query: None,
+        updated: 0,
+        unchanged: 0,
     }))
 }
 
@@ -534,7 +531,7 @@ fn validate_rule_examples(
             };
 
             let report = execute_test(&test_op, options)?;
-            if !report.summary.as_ref().map_or(true, |s| s.passed) {
+            if !report.success.unwrap_or(true) {
                 error_count += 1;
                 all_matches.push(example_failure_match(
                     &rule.id,
@@ -567,7 +564,7 @@ fn validate_rule_examples(
             };
 
             let report = execute_test(&test_op, options)?;
-            if !report.summary.as_ref().map_or(true, |s| s.passed) {
+            if !report.success.unwrap_or(true) {
                 error_count += 1;
                 all_matches.push(example_failure_match(
                     &rule.id,
@@ -591,6 +588,7 @@ fn example_failure_match(rule_id: &str, reason: &str) -> ReportMatch {
         column: 0,
         end_line: 0,
         end_column: 0,
+        command: "test".to_string(),
         tree: None,
         value: None,
         source: None,
@@ -658,6 +656,7 @@ fn execute_set(
             column: 1,
             end_line: 1,
             end_column: 1,
+            command: "set".to_string(),
             tree: None,
             value: None,
             source: None,
@@ -678,14 +677,13 @@ fn execute_set(
     let total = report_matches.len();
     let passed = if op.verify { updated_count == 0 } else { true };
 
-    Ok(Report::set(report_matches, Summary {
-        passed,
-        total,
-        files_affected: files_affected.len(),
-        errors: updated_count,
-        warnings: unchanged_count,
-        expected: None,
-        query: None,
+    Ok(Report::set(report_matches, passed, Totals {
+        results: total,
+        files: files_affected.len(),
+        errors: 0,
+        warnings: 0,
+        updated: updated_count,
+        unchanged: unchanged_count,
     }))
 }
 
@@ -720,11 +718,13 @@ fn execute_test(
             }
         }
         let expected_str = format_expectations(&op.assertions);
-        return Ok(Report::test(vec![], Summary {
-            passed, total: 0, files_affected: 0,
+        let mut report = Report::test(vec![], passed, Totals {
+            results: 0, files: 0,
             errors: 0, warnings: 0,
-            expected: Some(expected_str), query: None,
-        }));
+            updated: 0, unchanged: 0,
+        });
+        report.expected = Some(expected_str);
+        return Ok(report);
     }
 
     // Query each assertion's xpath individually to get per-assertion counts.
@@ -748,18 +748,19 @@ fn execute_test(
     let expected_str = format_expectations(&op.assertions);
 
     let report_matches = all_matches.into_iter()
-        .map(match_to_full_report_match)
+        .map(|m| match_to_report_match(m, "test"))
         .collect();
 
-    Ok(Report::test(report_matches, Summary {
-        passed,
-        total,
-        files_affected,
+    let mut report = Report::test(report_matches, passed, Totals {
+        results: total,
+        files: files_affected,
         errors: 0,
         warnings: 0,
-        expected: Some(expected_str),
-        query: None,
-    }))
+        updated: 0,
+        unchanged: 0,
+    });
+    report.expected = Some(expected_str);
+    Ok(report)
 }
 
 /// Run test assertions against a single parsed document (inline source).
@@ -785,14 +786,16 @@ fn run_test_assertions_on_result(
     let files_affected = count_unique_files(&all_matches);
     let expected_str = format_expectations(assertions);
     let report_matches = all_matches.into_iter()
-        .map(match_to_full_report_match)
+        .map(|m| match_to_report_match(m, "test"))
         .collect();
 
-    Ok(Report::test(report_matches, Summary {
-        passed, total, files_affected,
+    let mut report = Report::test(report_matches, passed, Totals {
+        results: total, files: files_affected,
         errors: 0, warnings: 0,
-        expected: Some(expected_str), query: None,
-    }))
+        updated: 0, unchanged: 0,
+    });
+    report.expected = Some(expected_str);
+    Ok(report)
 }
 
 // ---------------------------------------------------------------------------
@@ -846,14 +849,13 @@ fn execute_update(
         }
     }
 
-    Ok(Report::set(vec![], Summary {
-        passed: total_updated > 0,
-        total: total_updated,
-        files_affected: files_modified.len(),
+    Ok(Report::set(vec![], total_updated > 0, Totals {
+        results: total_updated,
+        files: files_modified.len(),
         errors: 0,
         warnings: 0,
-        expected: None,
-        query: None,
+        updated: total_updated,
+        unchanged: 0,
     }))
 }
 
@@ -887,15 +889,14 @@ fn format_expectations(assertions: &[TestAssertion]) -> String {
     }
 }
 
-fn empty_summary() -> Summary {
-    Summary {
-        passed: true,
-        total: 0,
-        files_affected: 0,
+fn empty_totals() -> Totals {
+    Totals {
+        results: 0,
+        files: 0,
         errors: 0,
         warnings: 0,
-        expected: None,
-        query: None,
+        updated: 0,
+        unchanged: 0,
     }
 }
 
@@ -910,13 +911,14 @@ fn count_unique_files(matches: &[Match]) -> usize {
 /// Convert a raw `Match` into a `ReportMatch` with all content fields populated.
 /// Operation-specific fields (reason, severity, rule_id, status, message) are
 /// left as None and must be set by the caller.
-fn match_to_full_report_match(m: Match) -> ReportMatch {
+fn match_to_report_match(m: Match, command: &str) -> ReportMatch {
     ReportMatch {
         file: m.file.clone(),
         line: m.line,
         column: m.column,
         end_line: m.end_line,
         end_column: m.end_column,
+        command: command.to_string(),
         tree: m.xml_node.clone(),
         value: Some(m.value.clone()),
         source: Some(m.extract_source_snippet()),
@@ -1119,9 +1121,9 @@ mod tests {
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
         assert_eq!(reports.len(), 1);
         let report = &reports[0];
-        assert!(report.summary.as_ref().unwrap().passed);
-        assert_eq!(report.matches.len(), 1);
-        assert_eq!(report.matches[0].value.as_deref(), Some("alice"));
+        assert!(report.success.is_none()); // query reports have no pass/fail
+        assert_eq!(report.all_matches().len(), 1);
+        assert_eq!(report.all_matches()[0].value.as_deref(), Some("alice"));
     }
 
     #[test]
@@ -1144,7 +1146,7 @@ mod tests {
         })];
 
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
-        assert!(reports[0].matches.len() <= 2);
+        assert!(reports[0].all_matches().len() <= 2);
     }
 
     #[test]
@@ -1165,8 +1167,8 @@ mod tests {
         })];
 
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
-        assert_eq!(reports[0].matches.len(), 0);
-        assert!(reports[0].summary.as_ref().unwrap().passed);
+        assert_eq!(reports[0].all_matches().len(), 0);
+        assert!(reports[0].success.is_none()); // query reports have no pass/fail
     }
 
     // -----------------------------------------------------------------------
@@ -1191,7 +1193,7 @@ mod tests {
         })];
 
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
-        assert!(reports[0].summary.as_ref().unwrap().passed);
+        assert!(reports[0].success.unwrap());
 
         let content = std::fs::read_to_string(&path).unwrap();
         assert!(content.contains("new-host"), "file should contain new value: {}", content);
@@ -1216,7 +1218,7 @@ mod tests {
         })];
 
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
-        assert!(reports[0].summary.as_ref().unwrap().passed);
+        assert!(reports[0].success.unwrap());
 
         let content = std::fs::read_to_string(&path).unwrap();
         assert!(content.contains("localhost"), "missing node should be created: {}", content);
@@ -1240,7 +1242,7 @@ mod tests {
         })];
 
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
-        assert!(reports[0].summary.as_ref().unwrap().passed);
+        assert!(reports[0].success.unwrap());
 
         let content = std::fs::read_to_string(&path).unwrap();
         assert!(content.contains("new-host"), "host should be updated: {}", content);
@@ -1270,10 +1272,10 @@ mod tests {
         })];
 
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
-        assert!(reports[0].summary.as_ref().unwrap().passed);
+        assert!(reports[0].success.unwrap());
 
         // Check status is "unchanged"
-        assert_eq!(reports[0].matches[0].status.as_deref(), Some("unchanged"));
+        assert_eq!(reports[0].all_matches()[0].status.as_deref(), Some("unchanged"));
     }
 
     // -----------------------------------------------------------------------
@@ -1300,7 +1302,7 @@ mod tests {
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
 
         // Should fail: drift detected
-        assert!(!reports[0].summary.as_ref().unwrap().passed, "verify should detect drift");
+        assert!(!reports[0].success.unwrap(), "verify should detect drift");
 
         // File should NOT be modified
         let content = std::fs::read_to_string(&path).unwrap();
@@ -1329,7 +1331,7 @@ mod tests {
         })];
 
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
-        assert!(reports[0].summary.as_ref().unwrap().passed, "verify should pass when values are in sync");
+        assert!(reports[0].success.unwrap(), "verify should pass when values are in sync");
     }
 
     // -----------------------------------------------------------------------
@@ -1360,11 +1362,11 @@ mod tests {
 
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
         let report = &reports[0];
-        let summary = report.summary.as_ref().unwrap();
-        assert!(!summary.passed, "check should fail when violations found");
-        assert_eq!(report.matches.len(), 1);
-        assert_eq!(report.matches[0].rule_id.as_deref(), Some("no-debug"));
-        assert_eq!(report.matches[0].reason.as_deref(), Some("debug should not be enabled"));
+        assert!(!report.success.unwrap(), "check should fail when violations found");
+        let matches = report.all_matches();
+        assert_eq!(matches.len(), 1);
+        assert_eq!(matches[0].rule_id.as_deref(), Some("no-debug"));
+        assert_eq!(matches[0].reason.as_deref(), Some("debug should not be enabled"));
     }
 
     #[test]
@@ -1389,7 +1391,7 @@ mod tests {
         })];
 
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
-        assert!(reports[0].summary.as_ref().unwrap().passed);
+        assert!(reports[0].success.unwrap());
     }
 
     // -----------------------------------------------------------------------
@@ -1441,8 +1443,8 @@ mod tests {
 
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
         assert_eq!(reports.len(), 2);
-        assert!(reports[0].summary.as_ref().unwrap().passed);
-        assert!(reports[1].summary.as_ref().unwrap().passed);
+        assert!(reports[0].success.unwrap());
+        assert!(reports[1].success.unwrap());
 
         // Config should be updated
         let content = std::fs::read_to_string(&config_path).unwrap();
@@ -1467,7 +1469,7 @@ mod tests {
         })];
 
         let reports = execute(&ops, &ExecuteOptions::default()).unwrap();
-        assert!(reports[0].summary.as_ref().unwrap().passed);
+        assert!(reports[0].success.unwrap());
 
         let content = std::fs::read_to_string(&path).unwrap();
         assert!(content.contains("new-host"), "yaml host should be updated: {}", content);

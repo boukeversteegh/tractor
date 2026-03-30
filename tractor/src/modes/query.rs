@@ -6,12 +6,12 @@ use crate::pipeline::{
     run_debug,
     project_report, apply_message_template,
 };
-use crate::pipeline::format::render_query_report;
+use crate::pipeline::render_report;
 
 pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     let ctx = RunContext::build(
         &args.shared, args.files, args.shared.xpath.clone(),
-        &args.format, &[ViewField::File, ViewField::Line, ViewField::Tree], args.view.as_deref(), args.message, args.content, args.debug, false,
+        &args.format, &[ViewField::File, ViewField::Line, ViewField::Tree], args.view.as_deref(), args.message, args.content, args.debug, &[],
     )?;
 
     if let InputMode::Files(ref files) = ctx.input {
@@ -75,21 +75,19 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     let mut report = reports.into_iter().next().unwrap();
 
     if ctx.view.has(ViewField::Count) {
-        println!("{}", report.summary.as_ref().unwrap().total);
+        println!("{}", report.totals.as_ref().unwrap().results);
     } else if ctx.view.has(ViewField::Schema) {
         let mut collector = tractor_core::SchemaCollector::new();
-        for m in &report.matches {
+        for m in report.all_matches() {
             if let Some(ref node) = m.tree {
                 collector.collect_from_xml_node(node);
             }
         }
         print!("{}", collector.format(ctx.schema_depth(), ctx.use_color));
     } else {
-        // Set the query field in summary if requested.
+        // Set the query field on the report if requested.
         if ctx.view.has(ViewField::Query) {
-            if let Some(ref mut summary) = report.summary {
-                summary.query = ctx.xpath.clone();
-            }
+            report.query = ctx.xpath.clone();
         }
 
         // Apply CLI message template if provided.
@@ -99,8 +97,9 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
 
         // Project for the requested view and render.
         project_report(&mut report, &ctx.view);
-        let report = if ctx.group_by_file { report.with_groups() } else { report };
-        render_query_report(&report, &ctx)?;
+        let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
+        let report = report.with_grouping(&dims);
+        render_report(&report, &ctx, None)?;
     }
 
     Ok(())

@@ -1,11 +1,11 @@
 use std::collections::{HashSet, HashMap};
 use tractor_core::{apply_replacements, apply_set_to_string, compute_set_output};
-use tractor_core::report::{Report, ReportMatch, Summary};
+use tractor_core::report::{Report, ReportMatch, Totals};
 use tractor_core::xpath_upsert::upsert;
 use tractor_core::declarative_set::declarative_set;
 use tractor_core::detect_language;
 use crate::cli::SetArgs;
-use crate::pipeline::{RunContext, ViewField, InputMode, query_files_batched, query_inline_source, render_set_report};
+use crate::pipeline::{RunContext, ViewField, InputMode, query_files_batched, query_inline_source, render_report, GroupDimension};
 use crate::pipeline::git;
 
 /// Separate positional args into files and an optional path expression.
@@ -43,7 +43,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(expr) = &expr {
         let ctx = RunContext::build(
             &args.shared, files, None,
-            "text", &[ViewField::Tree], None, None, None, false, false,
+            "text", &[ViewField::Tree], None, None, None, false, &[GroupDimension::File],
         )?;
 
         let file_list = match &ctx.input {
@@ -107,7 +107,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     let ctx = RunContext::build(
         &args.shared, files, args.shared.xpath.clone(),
-        &args.format, default_view, args.view.as_deref(), None, None, false, false,
+        &args.format, default_view, args.view.as_deref(), None, None, false, &[GroupDimension::File],
     )?;
 
     let xpath_expr = ctx.xpath.as_ref()
@@ -126,8 +126,8 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
                 let file_outputs = compute_set_output(&files, &matches, value)?;
                 let output_map: HashMap<String, String> = file_outputs.into_iter().collect();
                 let report = build_set_report_matches(&matches, value, &ctx);
-                let report = report.with_groups().with_file_outputs(&output_map);
-                render_set_report(&report, &ctx)?;
+                let report = report.with_grouping(&["file"]).with_file_outputs(&output_map);
+                render_report(&report, &ctx, None)?;
             } else {
                 // In-place mode: try upsert (language-aware) for each file; fall back to
                 // apply_replacements for languages without a renderer.
@@ -163,8 +163,9 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
                 }
 
                 let report = build_set_report_matches(&matches, value, &ctx);
-                let report = report.with_groups();
-                render_set_report(&report, &ctx)?;
+                let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
+                let report = report.with_grouping(&dims);
+                render_report(&report, &ctx, None)?;
             }
         }
         InputMode::InlineSource { source, lang } => {
@@ -172,7 +173,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
             let matches = query_inline_source(&ctx, source, lang, xpath_expr)?;
             let modified = apply_set_to_string(source, &matches, value)?;
             let report = build_set_inline_report(modified, &ctx);
-            render_set_report(&report, &ctx)?;
+            render_report(&report, &ctx, None)?;
         }
     }
     Ok(())
@@ -201,6 +202,7 @@ fn build_set_report_matches(
             column: m.column,
             end_line: m.end_line,
             end_column: m.end_column,
+            command: "set".to_string(),
             tree: None,
             value: if ctx.view.has(ViewField::Value) { Some(m.value.clone()) } else { None },
             source: if ctx.view.has(ViewField::Source) { Some(m.extract_source_snippet()) } else { None },
@@ -218,37 +220,46 @@ fn build_set_report_matches(
         }
     }).collect();
 
-    let summary = Summary {
-        passed: true,
-        total: matches.len(),
-        files_affected: files_affected.len(),
-        errors: updated_count,
-        warnings: unchanged_count,
-        expected: None,
-        query: None,
+    let totals = Totals {
+        results: matches.len(),
+        files: files_affected.len(),
+        errors: 0,
+        warnings: 0,
+        updated: updated_count,
+        unchanged: unchanged_count,
     };
-    Report::set(report_matches, summary)
+    Report::set(report_matches, true, totals)
 }
 
 /// Build a set report for inline (stdin) stdout mode.
 /// Creates a single group with no file path and `output` = the modified string.
 fn build_set_inline_report(modified: String, ctx: &RunContext) -> Report {
-    use tractor_core::report::FileGroup;
+    use tractor_core::report::ResultItem;
 
-    let output = if ctx.view.has(ViewField::Output) { Some(modified) } else { None };
-    let group = FileGroup { file: String::new(), matches: vec![], output };
+    let output_content = if ctx.view.has(ViewField::Output) { Some(modified) } else { None };
 
-    let summary = Summary {
-        passed: true,
-        total: 1,
-        files_affected: 0,
+    let totals = Totals {
+        results: 1,
+        files: 0,
         errors: 0,
         warnings: 0,
+        updated: 0,
+        unchanged: 0,
+    };
+    let mut report = Report::set(vec![], true, totals);
+    report.results = vec![ResultItem::Group(Box::new(Report {
+        success: None,
+        totals: None,
         expected: None,
         query: None,
-    };
-    let mut report = Report::set(vec![], summary);
-    report.groups = Some(vec![group]);
+        results: vec![],
+        group: None,
+        file: Some(String::new()),
+        command: None,
+        rule_id: None,
+        output_content,
+    }))];
+    report.group = Some("file".to_string());
     report
 }
 

@@ -1,37 +1,63 @@
-use tractor_core::{render_lines, report::{Report, ReportMatch}, RenderOptions};
+use tractor_core::{render_lines, report::{Report, ReportMatch, ResultItem}, RenderOptions};
 use super::shared::to_absolute_path;
 
 /// Render report matches in gcc format: `file:line:col: severity: reason`
-pub fn render_gcc(report: &Report, opts: &RenderOptions) -> String {
+/// GCC is a flat per-line format — grouping affects match ordering only,
+/// not field omission. Every match includes all fields.
+pub fn render_gcc(report: &Report, opts: &RenderOptions, _dimensions: &[&str]) -> String {
     let mut out = String::new();
-    if let Some(ref groups) = report.groups {
-        for g in groups {
-            for rm in &g.matches {
-                render_gcc_match(&mut out, rm, Some(&g.file), opts);
-            }
-        }
-    } else {
-        for rm in &report.matches {
-            render_gcc_match(&mut out, rm, None, opts);
-        }
-    }
+    render_gcc_results(&mut out, &report.results, None, opts);
     out
 }
 
+/// Walk the results tree recursively, rendering matches in gcc format.
+fn render_gcc_results(out: &mut String, items: &[ResultItem], parent_file: Option<&str>, opts: &RenderOptions) {
+    for item in items {
+        match item {
+            ResultItem::Match(rm) => {
+                render_gcc_match(out, rm, parent_file, opts);
+            }
+            ResultItem::Group(g) => {
+                let file = g.file.as_deref().or(parent_file);
+                render_gcc_results(out, &g.results, file, opts);
+            }
+        }
+    }
+}
+
 fn render_gcc_match(out: &mut String, rm: &ReportMatch, group_file: Option<&str>, opts: &RenderOptions) {
-    let reason   = rm.reason.as_deref().unwrap_or("violation");
-    let severity = rm.severity.map_or("error", |s| s.as_str());
     let file = group_file.unwrap_or(&rm.file);
-    out.push_str(&format!(
-        "{}:{}:{}: {}: {}\n",
-        to_absolute_path(file), rm.line, rm.column, severity, reason
-    ));
-    if let Some(ref ls) = rm.lines {
-        out.push_str(&render_lines(
-            ls, rm.tree.as_ref(),
-            rm.line, rm.column, rm.end_line, rm.end_column,
-            opts,
-        ));
+
+    match rm.command.as_str() {
+        "set" => {
+            // Set matches: file: status
+            let status = rm.status.as_deref().unwrap_or("unknown");
+            out.push_str(&format!("{}: {}\n", to_absolute_path(file), status));
+        }
+        "query" => {
+            // Query matches: file:line:col: note: value
+            let value = rm.value.as_deref().unwrap_or("");
+            out.push_str(&format!(
+                "{}:{}:{}: note: {}\n",
+                to_absolute_path(file), rm.line, rm.column, value
+            ));
+        }
+        _ => {
+            // Check and other matches: file:line:col: severity: reason
+            let reason   = rm.reason.as_deref().unwrap_or("violation");
+            let severity = rm.severity.map_or("error", |s| s.as_str());
+            out.push_str(&format!(
+                "{}:{}:{}: {}: {}\n",
+                to_absolute_path(file), rm.line, rm.column, severity, reason
+            ));
+            if let Some(ref ls) = rm.lines {
+                out.push_str(&render_lines(
+                    ls, rm.tree.as_ref(),
+                    rm.line, rm.column, rm.end_line, rm.end_column,
+                    opts,
+                ));
+            }
+        }
     }
 }
 

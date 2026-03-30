@@ -28,10 +28,7 @@ check_set_snapshot() {
         ((PASSED++))
     else
         echo "  ✗ $desc"
-        echo "    expected:"
-        echo "$expected" | sed 's/^/      /'
-        echo "    actual:"
-        echo "$actual" | sed 's/^/      /'
+        diff <(echo "$expected") <(echo "$actual") --color=always -u --label expected --label actual | sed 's/^/      /'
         ((FAILED++))
     fi
     rm -f /tmp/tractor-set-snap.yaml
