@@ -146,36 +146,17 @@ impl ViewSet {
 }
 
 /// Parse a comma-separated view expression into a `ViewSet`, preserving order.
-/// Duplicate fields are silently ignored.
-pub fn parse_view_set(s: &str) -> Result<ViewSet, String> {
-    let mut fields = Vec::new();
-    let mut seen = std::collections::HashSet::new();
-    for part in s.split(',') {
-        let part = part.trim().to_lowercase();
-        if part.is_empty() { continue; }
-        let field = ViewField::from_str(&part)?;
-        if seen.insert(field) {
-            fields.push(field);
-        }
-    }
-    if fields.is_empty() {
-        return Err("view cannot be empty".to_string());
-    }
-    Ok(ViewSet::new(fields))
-}
-
-/// Parse a view expression relative to a set of default fields.
 ///
 /// If every non-empty token starts with `+` or `-`, the expression is treated
 /// as a modifier list applied to `default_fields`:
 /// - `+field` — add `field` if not already present
 /// - `-field` — remove `field` if present
 ///
-/// Otherwise the expression is treated as an explicit full field list
-/// (same as `parse_view_set`).
+/// Otherwise the expression is treated as an explicit full field list and
+/// `default_fields` is ignored. Duplicate fields are silently ignored.
 ///
 /// Mixing plain field names with `+`/`-` prefixed modifiers is an error.
-pub fn parse_view_with_defaults(s: &str, default_fields: &[ViewField]) -> Result<ViewSet, String> {
+pub fn parse_view_set(s: &str, default_fields: &[ViewField]) -> Result<ViewSet, String> {
     let tokens: Vec<&str> = s.split(',')
         .map(|p| p.trim())
         .filter(|p| !p.is_empty())
@@ -197,29 +178,36 @@ pub fn parse_view_with_defaults(s: &str, default_fields: &[ViewField]) -> Result
         );
     }
 
-    if !has_modifier {
-        return parse_view_set(s);
-    }
-
-    // Modifier mode: start from the defaults and apply each +/- token.
-    let mut fields: Vec<ViewField> = default_fields.to_vec();
-    for token in &tokens {
-        if let Some(field_str) = token.strip_prefix('+') {
-            let field = ViewField::from_str(&field_str.to_lowercase())?;
-            if !fields.contains(&field) {
+    if has_modifier {
+        // Modifier mode: start from the defaults and apply each +/- token.
+        let mut fields: Vec<ViewField> = default_fields.to_vec();
+        for token in &tokens {
+            if let Some(field_str) = token.strip_prefix('+') {
+                let field = ViewField::from_str(&field_str.to_lowercase())?;
+                if !fields.contains(&field) {
+                    fields.push(field);
+                }
+            } else if let Some(field_str) = token.strip_prefix('-') {
+                let field = ViewField::from_str(&field_str.to_lowercase())?;
+                fields.retain(|f| *f != field);
+            }
+        }
+        if fields.is_empty() {
+            return Err("view cannot be empty after applying modifiers".to_string());
+        }
+        Ok(ViewSet::new(fields))
+    } else {
+        // Explicit list mode: ignore defaults, parse the fields directly.
+        let mut fields = Vec::new();
+        let mut seen = std::collections::HashSet::new();
+        for token in &tokens {
+            let field = ViewField::from_str(&token.to_lowercase())?;
+            if seen.insert(field) {
                 fields.push(field);
             }
-        } else if let Some(field_str) = token.strip_prefix('-') {
-            let field = ViewField::from_str(&field_str.to_lowercase())?;
-            fields.retain(|f| *f != field);
         }
+        Ok(ViewSet::new(fields))
     }
-
-    if fields.is_empty() {
-        return Err("view cannot be empty after applying modifiers".to_string());
-    }
-
-    Ok(ViewSet::new(fields))
 }
 
 // ---------------------------------------------------------------------------
