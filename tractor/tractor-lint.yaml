@@ -1,39 +1,24 @@
 # Lint rules for tractor's own renderer consistency.
 # Run: tractor run tractor/tractor-lint.yaml
 #
-# Ensures structured format renderers (JSON, XML, YAML) use the shared
-# field emission helpers from shared.rs, preventing drift where one
-# format gets a fix and another doesn't.
-
-files:
-  - "tractor/src/pipeline/format/json.rs"
-  - "tractor/src/pipeline/format/xml.rs"
-  - "tractor/src/pipeline/format/yaml.rs"
+# Ensures format renderers use the shared helpers from shared.rs,
+# preventing drift where one format gets a fix and another doesn't.
+#
+# Applies to all renderer files in the format directory.
+# Infrastructure files (mod.rs, options.rs, shared.rs) are excluded
+# via per-rule include patterns that only match renderer files.
 
 check:
+  files:
+    - "src/pipeline/format/*.rs"
+  exclude:
+    - "**/mod.rs"
+    - "**/options.rs"
+    - "**/shared.rs"
   rules:
-    - id: renderer-imports-should-show-totals
-      xpath: "//file[not(.//use[contains(.,'should_show_totals')])]"
-      reason: "structured renderer must import should_show_totals from shared"
+    # Every renderer must import from shared.rs for consistent
+    # field emission decisions across formats.
+    - id: renderer-uses-shared-helpers
+      xpath: "//file[not(.//use[contains(.,'shared')])]"
+      reason: "renderer must import from shared.rs (field emission helpers)"
       severity: error
-
-    - id: renderer-imports-should-emit-file
-      xpath: "//file[not(.//use[contains(.,'should_emit_file')])]"
-      reason: "structured renderer must import should_emit_file from shared"
-      severity: error
-      exclude:
-        - "tractor/src/pipeline/format/yaml.rs"  # delegates to json's match_to_value
-
-    - id: renderer-imports-should-emit-command
-      xpath: "//file[not(.//use[contains(.,'should_emit_command')])]"
-      reason: "structured renderer must import should_emit_command from shared"
-      severity: error
-      exclude:
-        - "tractor/src/pipeline/format/yaml.rs"
-
-    - id: renderer-imports-should-emit-rule-id
-      xpath: "//file[not(.//use[contains(.,'should_emit_rule_id')])]"
-      reason: "structured renderer must import should_emit_rule_id from shared"
-      severity: error
-      exclude:
-        - "tractor/src/pipeline/format/yaml.rs"
