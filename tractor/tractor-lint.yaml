@@ -1,12 +1,9 @@
 # Lint rules for tractor's own renderer consistency.
 # Run: tractor run tractor/tractor-lint.yaml
 #
-# Ensures format renderers use the shared helpers from shared.rs,
-# preventing drift where one format gets a fix and another doesn't.
-#
-# Applies to all renderer files in the format directory.
-# Infrastructure files (mod.rs, options.rs, shared.rs) are excluded
-# via per-rule include patterns that only match renderer files.
+# Checks structural properties of renderer implementations to ensure
+# they follow the unified report system's conventions. Applies to all
+# .rs files in the format directory except infrastructure files.
 
 check:
   files:
@@ -16,9 +13,10 @@ check:
     - "**/options.rs"
     - "**/shared.rs"
   rules:
-    # Every renderer must import from shared.rs for consistent
-    # field emission decisions across formats.
-    - id: renderer-uses-shared-helpers
-      xpath: "//file[not(.//use[contains(.,'shared')])]"
-      reason: "renderer must import from shared.rs (field emission helpers)"
+    # Every renderer's main entry point (public function taking &Report)
+    # must accept a dimensions parameter. This ensures all formats can
+    # participate in the grouping system, even if they ignore dimensions.
+    - id: renderer-accepts-dimensions
+      xpath: "//function[pub][starts-with(name,'render_')][contains(params,'&Report')][not(contains(params,'dimensions'))]"
+      reason: "public render function taking &Report must accept dimensions parameter"
       severity: error

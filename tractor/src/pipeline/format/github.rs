@@ -1,5 +1,4 @@
 use tractor_core::{report::{Report, ResultItem}, normalize_path};
-use super::shared::to_absolute_path;
 
 /// Render report matches as GitHub Actions annotations: `::error file=...,line=...::reason`
 /// GitHub annotations are self-contained — grouping affects ordering only,
