@@ -17,7 +17,7 @@ use cli::{Cli, Command};
 use clap::Parser;
 use modes::{check::run_check, test::run_test, set::run_set, update::run_update, query::run_query, render::run_render, run::run_run};
 use tractor_core::{Diagnostic, DiagnosticError};
-use pipeline::format::{OutputFormat, ViewField, ViewSet, render_gcc, render_json_report, render_yaml_report, render_xml_report, render_github};
+use pipeline::format::{OutputFormat, ViewField, ViewSet, render_gcc, render_json_report, render_yaml_report, render_xml_report, render_github, render_text_report};
 use tractor_core::output::{should_use_color, RenderOptions};
 
 /// An error that has already been reported to the user; main should exit with
@@ -43,7 +43,7 @@ fn render_error_report(
     use_color: bool,
 ) {
     let view = ViewSet::new(vec![
-        ViewField::Origin, ViewField::Reason, ViewField::Severity, ViewField::Source, ViewField::Lines,
+        ViewField::Origin, ViewField::Reason, ViewField::Severity, ViewField::Lines,
     ]);
     let render_opts = RenderOptions::new().with_color(use_color);
     match format {
@@ -51,7 +51,10 @@ fn render_error_report(
         OutputFormat::Yaml   => eprint!("{}", render_yaml_report(report, &view, &render_opts, &[])),
         OutputFormat::Xml    => eprint!("{}", render_xml_report(report, &view, &render_opts, &[])),
         OutputFormat::Github => eprint!("{}", render_github(report, &[])),
-        OutputFormat::Gcc | OutputFormat::Text => {
+        OutputFormat::Text => {
+            eprint!("{}", render_text_report(report, &view, &render_opts, &[]));
+        }
+        OutputFormat::Gcc => {
             eprint!("{}", render_gcc(report, &render_opts, &[]));
         }
     }

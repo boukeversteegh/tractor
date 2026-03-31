@@ -89,7 +89,7 @@ impl Diagnostic {
     pub fn source_lines(self, lines: Vec<String>) -> Self;
 
     // CLI convenience
-    pub fn cli_source(self) -> Self;                  // file="<cli>", source=joined argv
+    pub fn cli_source(self) -> Self;                  // leave file empty, capture CLI invocation in source/origin
     pub fn cli_highlight(self, needle: &str) -> Self; // find needle in argv, set column span
 
     // Terminal methods

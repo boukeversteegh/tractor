@@ -25,12 +25,19 @@ fn render_github_results(out: &mut String, items: &[ResultItem], parent_file: Op
 
 fn render_github_match(out: &mut String, rm: &tractor_core::report::ReportMatch, group_file: Option<&str>) {
     let reason = rm.reason.as_deref().unwrap_or("violation");
-    let level  = rm.severity.map_or("error", |s| s.as_str());
+    // GitHub Actions only supports error, warning, notice — map our severity levels
+    let level = match rm.severity.map(|s| s.as_str()) {
+        Some("fatal") => "error",
+        Some("info")  => "notice",
+        Some(other)   => other,
+        None          => "error",
+    };
     let file   = group_file.unwrap_or(&rm.file);
     let message = match &rm.hint {
         Some(hint) => format!("{} (hint: {})", reason, hint),
         None => reason.to_string(),
     };
+    let message = escape_github_message(&message);
     if file.is_empty() {
         // No real file — annotations don't make sense, just log the error.
         // GitHub Actions captures stderr/stdout in the action logs.
@@ -49,4 +56,9 @@ fn render_github_match(out: &mut String, rm: &tractor_core::report::ReportMatch,
             message  = message,
         ));
     }
+}
+
+/// Escape characters that break GitHub Actions workflow command parsing.
+fn escape_github_message(s: &str) -> String {
+    s.replace('%', "%25").replace('\r', "%0D").replace('\n', "%0A")
 }

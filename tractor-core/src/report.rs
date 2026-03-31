@@ -407,11 +407,12 @@ impl Report {
         }
 
         let has_failures = fatals > 0 || errors > 0;
+        let total = matches.len();
         let results = matches.into_iter().map(ResultItem::Match).collect();
         Report {
             success: Some(!has_failures),
             totals: Some(Totals {
-                results: fatals + errors + warnings + infos,
+                results: total,
                 files: file_set.len(),
                 fatals,
                 errors,

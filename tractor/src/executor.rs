@@ -431,8 +431,10 @@ fn execute_check(
     };
 
     let mut files_affected = HashSet::new();
+    let mut fatals = 0usize;
     let mut errors = example_errors;
     let mut warnings = 0usize;
+    let mut infos = 0usize;
 
     if !files.is_empty() {
         let rule_matches = run_rules(
@@ -454,10 +456,10 @@ fn execute_check(
             let severity = rule.severity;
 
             match severity {
-                Severity::Fatal => errors += 1,
+                Severity::Fatal => fatals += 1,
                 Severity::Error => errors += 1,
                 Severity::Warning => warnings += 1,
-                Severity::Info => {}
+                Severity::Info => infos += 1,
             }
             files_affected.insert(rm.m.file.clone());
 
@@ -477,13 +479,13 @@ fn execute_check(
     }
 
     let total = example_matches.len();
-    Ok(Report::check(example_matches, errors == 0, Totals {
+    Ok(Report::check(example_matches, fatals == 0 && errors == 0, Totals {
         results: total,
         files: files_affected.len(),
-        fatals: 0,
+        fatals,
         errors,
         warnings,
-        infos: 0,
+        infos,
         updated: 0,
         unchanged: 0,
     }))
@@ -976,7 +978,7 @@ fn query_files_multi(
     // Validate all XPath expressions upfront
     let mut diagnostics = Vec::new();
     for xpath in xpaths {
-        if let Some(diag) = validate_xpath_diagnostic(xpath, "check") {
+        if let Some(diag) = validate_xpath_diagnostic(xpath, "query") {
             diagnostics.push(diag);
         }
     }
