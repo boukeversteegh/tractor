@@ -177,6 +177,15 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
                     out.push_str(content);
                 }
             }
+            ViewField::Origin => {
+                // Only show origin when there's no file (it replaces the file context)
+                if rm.file.is_empty() {
+                    if let Some(origin) = rm.origin {
+                        out.push_str(origin.as_str());
+                        out.push('\n');
+                    }
+                }
+            }
             // File/Line/Column handled above as combined location line
             // Summary/Count/Schema handled outside match loop
             _ => {}

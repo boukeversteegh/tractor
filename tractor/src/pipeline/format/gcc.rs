@@ -47,8 +47,9 @@ fn render_gcc_match(out: &mut String, rm: &ReportMatch, group_file: Option<&str>
             let reason   = rm.reason.as_deref().unwrap_or("violation");
             let severity = rm.severity.map_or("error", |s| s.as_str());
             if file.is_empty() {
-                // No file — use tool name prefix (like gcc's "cc1: error: ...")
-                out.push_str(&format!("tractor: {}: {}\n", severity, reason));
+                // No file — use origin or tool name as prefix (like gcc's "cc1: error: ...")
+                let prefix = rm.origin.map_or("tractor", |o| o.as_str());
+                out.push_str(&format!("{}: {}: {}\n", prefix, severity, reason));
             } else {
                 out.push_str(&format!(
                     "{}:{}:{}: {}: {}\n",

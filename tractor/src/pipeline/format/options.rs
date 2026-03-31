@@ -65,6 +65,8 @@ pub enum ViewField {
     Output,
     /// Operation type: "check", "query", "test", "set", "update".
     Command,
+    /// Diagnostic origin: "xpath", "cli", "config", "input".
+    Origin,
 }
 
 impl ViewField {
@@ -86,12 +88,13 @@ impl ViewField {
             "status"       => Ok(ViewField::Status),
             "output"       => Ok(ViewField::Output),
             "command"      => Ok(ViewField::Command),
+            "origin"       => Ok(ViewField::Origin),
             "gcc" | "github" => Err(format!(
                 "'{}' is a format, not a view. Use -f {} instead of -v {}", s, s, s,
             )),
             _ => Err(format!(
                 "invalid view '{}'. Valid views: tree, value, source, lines, file, line, column, \
-                 reason, severity, totals, count, schema, query, status, output, command",
+                 reason, severity, totals, count, schema, query, status, output, command, origin",
                 s,
             )),
         }

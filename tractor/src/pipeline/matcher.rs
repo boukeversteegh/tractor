@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use rayon::prelude::*;
 use tractor_core::{
-    Match, Diagnostic, DiagnosticError,
+    Match, Diagnostic, DiagnosticError, DiagnosticOrigin,
     output::{render_document, RenderOptions},
     parse_to_documents, parse_string_to_documents,
     report::{Report, ReportMatch},
@@ -50,7 +50,7 @@ pub fn validate_xpath_diagnostic(xpath_expr: &str, command: &str) -> Option<Repo
     }
 
     let reason = result.error.as_deref().unwrap_or("invalid XPath expression");
-    let mut diag = Diagnostic::fatal(reason).command(command);
+    let mut diag = Diagnostic::fatal(reason).command(command).origin(DiagnosticOrigin::Xpath);
 
     // Use the XPath string itself as the source for highlighting.
     // File stays empty — there's no real file to point at.

@@ -155,6 +155,13 @@ fn append_match(
                     out.push_str(&format!("{}</tree>\n", inner));
                 }
             }
+            ViewField::Origin => {
+                if rm.file.is_empty() {
+                    if let Some(origin) = rm.origin {
+                        out.push_str(&format!("{}<origin>{}</origin>\n", inner, origin.as_str()));
+                    }
+                }
+            }
             // File/Line/Column are attributes, not child elements; Summary/Count/Schema handled elsewhere
             _ => {}
         }

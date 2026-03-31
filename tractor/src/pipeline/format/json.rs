@@ -151,6 +151,13 @@ pub fn match_to_value(
                     obj.insert("tree".into(), xml_node_to_json(node, render_opts.max_depth));
                 }
             }
+            ViewField::Origin => {
+                if rm.file.is_empty() {
+                    if let Some(origin) = rm.origin {
+                        obj.insert("origin".into(), json!(origin.as_str()));
+                    }
+                }
+            }
             // rule_id: emitted if present regardless of ViewSet (it's an annotation)
             // Summary/Count/Schema: handled outside match iteration
             _ => {}
@@ -187,7 +194,7 @@ mod tests {
             tree: None,
             value: Some(value.to_string()),
             source: None, lines: None, reason: None, severity: None,
-            message: None, hint: None, rule_id: None, status: None, output: None,
+            message: None, hint: None, origin: None, rule_id: None, status: None, output: None,
         }
     }
 
@@ -202,7 +209,7 @@ mod tests {
             tree: Some(tree),
             value: None, // maps have no value — data is in tree
             source: None, lines: None, reason: None, severity: None,
-            message: None, hint: None, rule_id: None, status: None, output: None,
+            message: None, hint: None, origin: None, rule_id: None, status: None, output: None,
         }
     }
 

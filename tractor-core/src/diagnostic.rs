@@ -35,7 +35,7 @@
 //!     .into_report();
 //! ```
 
-use crate::report::{ReportMatch, Report, Severity};
+use crate::report::{ReportMatch, Report, Severity, DiagnosticOrigin};
 
 // ---------------------------------------------------------------------------
 // DiagnosticError — wraps a Report for propagation through Box<dyn Error>
@@ -70,6 +70,7 @@ pub struct Diagnostic {
     severity: Severity,
     reason: String,
     hint: Option<String>,
+    origin: Option<DiagnosticOrigin>,
     command: String,
     file: String,
     line: u32,
@@ -96,6 +97,7 @@ impl Diagnostic {
             severity,
             reason: reason.to_string(),
             hint: None,
+            origin: None,
             command: String::new(),
             file: String::new(),
             line: 0,
@@ -110,6 +112,12 @@ impl Diagnostic {
     /// Set the command that was intended (e.g. "check", "query").
     pub fn command(mut self, cmd: &str) -> Self {
         self.command = cmd.to_string();
+        self
+    }
+
+    /// Set the diagnostic origin (what input was being processed).
+    pub fn origin(mut self, origin: DiagnosticOrigin) -> Self {
+        self.origin = Some(origin);
         self
     }
 
@@ -184,6 +192,7 @@ impl Diagnostic {
             severity: Some(self.severity),
             message: None,
             hint: self.hint,
+            origin: self.origin,
             rule_id: None,
             status: None,
             output: None,

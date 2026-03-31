@@ -43,7 +43,7 @@ fn render_error_report(
     use_color: bool,
 ) {
     let view = ViewSet::new(vec![
-        ViewField::Reason, ViewField::Severity, ViewField::Source, ViewField::Lines,
+        ViewField::Origin, ViewField::Reason, ViewField::Severity, ViewField::Source, ViewField::Lines,
     ]);
     let render_opts = RenderOptions::new().with_color(use_color);
     match format {

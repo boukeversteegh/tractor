@@ -606,6 +606,7 @@ fn example_failure_match(rule_id: &str, reason: &str) -> ReportMatch {
         severity: Some(Severity::Error),
         message: None,
         hint: None,
+        origin: None,
         rule_id: Some(rule_id.to_string()),
         status: None,
         output: None,
@@ -675,6 +676,7 @@ fn execute_set(
             severity: None,
             message: None,
             hint: None,
+            origin: None,
             rule_id: None,
             status: Some(status_str.to_string()),
             output: if was_modified && op.verify {
@@ -951,6 +953,7 @@ fn match_to_report_match(m: Match, command: &str) -> ReportMatch {
         severity: None,
         message: None,
         hint: None,
+        origin: None,
         rule_id: None,
         status: None,
         output: None,

@@ -49,6 +49,38 @@ impl Severity {
 }
 
 // ---------------------------------------------------------------------------
+// DiagnosticOrigin
+// ---------------------------------------------------------------------------
+
+/// Where a diagnostic (fatal/info) originated — what input was being processed.
+///
+/// Only meaningful when `file` is empty (no real file to point at).
+/// Renderers display this in place of the file path for context.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum DiagnosticOrigin {
+    /// The XPath expression itself was invalid.
+    Xpath,
+    /// A CLI argument was invalid or missing.
+    Cli,
+    /// A tractor config file had an error.
+    Config,
+    /// A source file couldn't be parsed.
+    Input,
+}
+
+impl DiagnosticOrigin {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            DiagnosticOrigin::Xpath => "xpath",
+            DiagnosticOrigin::Cli => "cli",
+            DiagnosticOrigin::Config => "config",
+            DiagnosticOrigin::Input => "input",
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // ReportMatch
 // ---------------------------------------------------------------------------
 
@@ -83,6 +115,8 @@ pub struct ReportMatch {
     pub message:  Option<String>,
     /// Suggested fix or hint (e.g. "did you mean: //function_item").
     pub hint:     Option<String>,
+    /// Where a diagnostic originated (shown when file is empty).
+    pub origin:   Option<DiagnosticOrigin>,
     /// Rule identifier for multi-rule reports (future: `--rules` flag).
     pub rule_id:  Option<String>,
     /// Set-command status: "updated" or "unchanged".
@@ -101,6 +135,7 @@ impl Serialize for ReportMatch {
             + self.severity.as_ref().map_or(0, |_| 1)
             + self.message.as_ref().map_or(0, |_| 1)
             + self.hint.as_ref().map_or(0, |_| 1)
+            + self.origin.as_ref().map_or(0, |_| 1)
             + self.rule_id.as_ref().map_or(0, |_| 1)
             + self.status.as_ref().map_or(0, |_| 1)
             + self.output.as_ref().map_or(0, |_| 1);
@@ -129,6 +164,7 @@ impl Serialize for ReportMatch {
         if let Some(ref v) = self.severity { map.serialize_entry("severity", v)?; }
         if let Some(ref v) = self.message  { map.serialize_entry("message", v)?; }
         if let Some(ref v) = self.hint     { map.serialize_entry("hint", v)?; }
+        if let Some(ref v) = self.origin   { map.serialize_entry("origin", v)?; }
         if let Some(ref v) = self.rule_id  { map.serialize_entry("rule_id", v)?; }
         if let Some(ref v) = self.status   { map.serialize_entry("status", v)?; }
         if let Some(ref v) = self.output   { map.serialize_entry("output", v)?; }
@@ -563,6 +599,7 @@ mod tests {
             severity: None,
             message: None,
             hint: None,
+            origin: None,
             rule_id: None,
             status: None,
             output: None,
@@ -586,6 +623,7 @@ mod tests {
             severity: Some(Severity::Error),
             message: None,
             hint: None,
+            origin: None,
             rule_id: None,
             status: None,
             output: None,
@@ -605,6 +643,7 @@ mod tests {
             severity: Some(Severity::Warning),
             message: None,
             hint: None,
+            origin: None,
             rule_id: None,
             status: None,
             output: None,
