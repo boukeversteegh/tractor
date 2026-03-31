@@ -52,11 +52,11 @@ pub fn validate_xpath_diagnostic(xpath_expr: &str, command: &str) -> Option<Repo
     let reason = result.error.as_deref().unwrap_or("invalid XPath expression");
     let mut diag = Diagnostic::fatal(reason).command(command);
 
-    // Use the XPath string itself as the source for highlighting
+    // Use the XPath string itself as the source for highlighting.
+    // File stays empty — there's no real file to point at.
     diag = diag
         .source(xpath_expr)
         .source_lines(vec![xpath_expr.to_string()])
-        .file("<xpath>")
         .location(1, 1, 1, xpath_expr.len() as u32 + 1);
 
     // If we have error position info, narrow the highlight to the error span

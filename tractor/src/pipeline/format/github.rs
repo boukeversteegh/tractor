@@ -31,9 +31,10 @@ fn render_github_match(out: &mut String, rm: &tractor_core::report::ReportMatch,
         Some(hint) => format!("{} (hint: {})", reason, hint),
         None => reason.to_string(),
     };
-    if file.is_empty() || rm.line == 0 {
-        // No source location — emit without file/line attributes
-        out.push_str(&format!("::{level}::{message}\n", level = level, message = message));
+    if file.is_empty() {
+        // No real file — annotations don't make sense, just log the error.
+        // GitHub Actions captures stderr/stdout in the action logs.
+        out.push_str(&format!("tractor: {}: {}\n", level, message));
     } else {
         let file = normalize_path(file);
         out.push_str(&format!(

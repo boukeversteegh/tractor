@@ -146,9 +146,9 @@ impl Diagnostic {
         self
     }
 
-    /// Set file to `<cli>` and source to the reconstructed CLI invocation.
+    /// Set source to the reconstructed CLI invocation.
+    /// File stays empty — the CLI invocation is not a real file.
     pub fn cli_source(mut self) -> Self {
-        self.file = "<cli>".to_string();
         self.source = Some(cli_invocation());
         self.line = 1;
         self.end_line = 1;
