@@ -17,11 +17,17 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
             body.push_str("  <totals>\n");
             body.push_str(&format!("    <results>{}</results>\n", totals.results));
             body.push_str(&format!("    <files>{}</files>\n", totals.files));
+            if totals.fatals > 0 {
+                body.push_str(&format!("    <fatals>{}</fatals>\n", totals.fatals));
+            }
             if totals.errors > 0 {
                 body.push_str(&format!("    <errors>{}</errors>\n", totals.errors));
             }
             if totals.warnings > 0 {
                 body.push_str(&format!("    <warnings>{}</warnings>\n", totals.warnings));
+            }
+            if totals.infos > 0 {
+                body.push_str(&format!("    <infos>{}</infos>\n", totals.infos));
             }
             if totals.updated > 0 {
                 body.push_str(&format!("    <updated>{}</updated>\n", totals.updated));
@@ -159,6 +165,9 @@ fn append_match(
     }
     if let Some(ref message) = rm.message {
         out.push_str(&format!("{}<message>{}</message>\n", inner, escape(message)));
+    }
+    if let Some(ref hint) = rm.hint {
+        out.push_str(&format!("{}<hint>{}</hint>\n", inner, escape(hint)));
     }
     if should_emit_rule_id(rm, skip_dims) {
         out.push_str(&format!("{}<rule-id>{}</rule-id>\n", inner, escape(rm.rule_id.as_deref().unwrap())));

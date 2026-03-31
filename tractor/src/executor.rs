@@ -348,8 +348,10 @@ fn execute_query(
     Ok(Report::query(report_matches, Totals {
         results: total,
         files: files_affected,
+        fatals: 0,
         errors: 0,
         warnings: 0,
+        infos: 0,
         updated: 0,
         unchanged: 0,
     }))
@@ -384,8 +386,10 @@ fn execute_query_inline(
     Ok(Report::query(report_matches, Totals {
         results: total,
         files: files_affected,
+        fatals: 0,
         errors: 0,
         warnings: 0,
+        infos: 0,
         updated: 0,
         unchanged: 0,
     }))
@@ -449,8 +453,10 @@ fn execute_check(
             let severity = rule.severity;
 
             match severity {
+                Severity::Fatal => errors += 1,
                 Severity::Error => errors += 1,
                 Severity::Warning => warnings += 1,
+                Severity::Info => {}
             }
             files_affected.insert(rm.m.file.clone());
 
@@ -473,8 +479,10 @@ fn execute_check(
     Ok(Report::check(example_matches, errors == 0, Totals {
         results: total,
         files: files_affected.len(),
+        fatals: 0,
         errors,
         warnings,
+        infos: 0,
         updated: 0,
         unchanged: 0,
     }))
@@ -596,6 +604,7 @@ fn example_failure_match(rule_id: &str, reason: &str) -> ReportMatch {
         reason: Some(reason.to_string()),
         severity: Some(Severity::Error),
         message: None,
+        hint: None,
         rule_id: Some(rule_id.to_string()),
         status: None,
         output: None,
@@ -664,6 +673,7 @@ fn execute_set(
             reason: None,
             severity: None,
             message: None,
+            hint: None,
             rule_id: None,
             status: Some(status_str.to_string()),
             output: if was_modified && op.verify {
@@ -680,8 +690,10 @@ fn execute_set(
     Ok(Report::set(report_matches, passed, Totals {
         results: total,
         files: files_affected.len(),
+        fatals: 0,
         errors: 0,
         warnings: 0,
+        infos: 0,
         updated: updated_count,
         unchanged: unchanged_count,
     }))
@@ -720,7 +732,7 @@ fn execute_test(
         let expected_str = format_expectations(&op.assertions);
         let mut report = Report::test(vec![], passed, Totals {
             results: 0, files: 0,
-            errors: 0, warnings: 0,
+            fatals: 0, errors: 0, warnings: 0, infos: 0,
             updated: 0, unchanged: 0,
         });
         report.expected = Some(expected_str);
@@ -754,8 +766,10 @@ fn execute_test(
     let mut report = Report::test(report_matches, passed, Totals {
         results: total,
         files: files_affected,
+        fatals: 0,
         errors: 0,
         warnings: 0,
+        infos: 0,
         updated: 0,
         unchanged: 0,
     });
@@ -791,7 +805,7 @@ fn run_test_assertions_on_result(
 
     let mut report = Report::test(report_matches, passed, Totals {
         results: total, files: files_affected,
-        errors: 0, warnings: 0,
+        fatals: 0, errors: 0, warnings: 0, infos: 0,
         updated: 0, unchanged: 0,
     });
     report.expected = Some(expected_str);
@@ -852,8 +866,10 @@ fn execute_update(
     Ok(Report::set(vec![], total_updated > 0, Totals {
         results: total_updated,
         files: files_modified.len(),
+        fatals: 0,
         errors: 0,
         warnings: 0,
+        infos: 0,
         updated: total_updated,
         unchanged: 0,
     }))
@@ -893,8 +909,10 @@ fn empty_totals() -> Totals {
     Totals {
         results: 0,
         files: 0,
+        fatals: 0,
         errors: 0,
         warnings: 0,
+        infos: 0,
         updated: 0,
         unchanged: 0,
     }
@@ -931,6 +949,7 @@ fn match_to_report_match(m: Match, command: &str) -> ReportMatch {
         reason: None,
         severity: None,
         message: None,
+        hint: None,
         rule_id: None,
         status: None,
         output: None,

@@ -182,13 +182,20 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
             _ => {}
         }
     }
+
+    // Hint is always shown when present (it's diagnostic metadata, not a view field)
+    if let Some(ref hint) = rm.hint {
+        out.push_str("  hint: ");
+        out.push_str(hint);
+        out.push('\n');
+    }
 }
 
 /// Format summary text, deriving wording from totals fields and success.
 /// No longer depends on ReportKind — the data itself determines the output.
 fn format_summary(totals: &Totals, success: Option<bool>, expected: Option<&str>) -> String {
     let success_val = success.unwrap_or(true);
-    let has_check = totals.errors > 0 || totals.warnings > 0;
+    let has_check = totals.fatals > 0 || totals.errors > 0 || totals.warnings > 0;
     let has_set = totals.updated > 0 || totals.unchanged > 0;
     let has_test = expected.is_some();
     let f = totals.files;
@@ -204,6 +211,9 @@ fn format_summary(totals: &Totals, success: Option<bool>, expected: Option<&str>
             return "All checks passed\n".to_string();
         }
         let mut parts = Vec::new();
+        if totals.fatals > 0 {
+            parts.push(format!("{} fatal{}", totals.fatals, if totals.fatals == 1 { "" } else { "s" }));
+        }
         if totals.errors > 0 {
             parts.push(format!("{} error{}", totals.errors, if totals.errors == 1 { "" } else { "s" }));
         }
@@ -245,6 +255,9 @@ fn format_summary(totals: &Totals, success: Option<bool>, expected: Option<&str>
         return format!("{} matches across {} files\n", totals.results, f);
     }
     let mut parts = Vec::new();
+    if totals.fatals > 0 {
+        parts.push(format!("{} fatal{}", totals.fatals, if totals.fatals == 1 { "" } else { "s" }));
+    }
     if totals.errors > 0 {
         parts.push(format!("{} error{}", totals.errors, if totals.errors == 1 { "" } else { "s" }));
     }

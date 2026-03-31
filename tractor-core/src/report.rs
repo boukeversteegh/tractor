@@ -18,19 +18,32 @@ use crate::xpath::XmlNode;
 // Severity
 // ---------------------------------------------------------------------------
 
-/// Severity level for check violations.
+/// Severity level for report matches.
+///
+/// Four levels, ordered by priority:
+/// - `Fatal` — tractor itself broke (invalid input, missing tool). Always `success: false`.
+/// - `Error` — user-defined rule violation at error level.
+/// - `Warning` — user-defined rule violation at warning level.
+/// - `Info` — helpful tractor feedback (e.g. 0 matches, suggestions). Does not affect success.
+///
+/// Users can set `--severity error|warning` on their rules. `Fatal` and `Info` are
+/// reserved for tractor-generated diagnostics.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Severity {
+    Fatal,
     Error,
     Warning,
+    Info,
 }
 
 impl Severity {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Severity::Fatal => "fatal",
             Severity::Error => "error",
             Severity::Warning => "warning",
+            Severity::Info => "info",
         }
     }
 }
@@ -68,6 +81,8 @@ pub struct ReportMatch {
     pub reason:   Option<String>,
     pub severity: Option<Severity>,
     pub message:  Option<String>,
+    /// Suggested fix or hint (e.g. "did you mean: //function_item").
+    pub hint:     Option<String>,
     /// Rule identifier for multi-rule reports (future: `--rules` flag).
     pub rule_id:  Option<String>,
     /// Set-command status: "updated" or "unchanged".
@@ -85,6 +100,7 @@ impl Serialize for ReportMatch {
             + self.reason.as_ref().map_or(0, |_| 1)
             + self.severity.as_ref().map_or(0, |_| 1)
             + self.message.as_ref().map_or(0, |_| 1)
+            + self.hint.as_ref().map_or(0, |_| 1)
             + self.rule_id.as_ref().map_or(0, |_| 1)
             + self.status.as_ref().map_or(0, |_| 1)
             + self.output.as_ref().map_or(0, |_| 1);
@@ -112,6 +128,7 @@ impl Serialize for ReportMatch {
         if let Some(ref v) = self.reason   { map.serialize_entry("reason", v)?; }
         if let Some(ref v) = self.severity { map.serialize_entry("severity", v)?; }
         if let Some(ref v) = self.message  { map.serialize_entry("message", v)?; }
+        if let Some(ref v) = self.hint     { map.serialize_entry("hint", v)?; }
         if let Some(ref v) = self.rule_id  { map.serialize_entry("rule_id", v)?; }
         if let Some(ref v) = self.status   { map.serialize_entry("status", v)?; }
         if let Some(ref v) = self.output   { map.serialize_entry("output", v)?; }
@@ -136,6 +153,10 @@ pub struct Totals {
     /// Number of distinct files with at least one result.
     pub files: usize,
 
+    /// Fatal-severity count (tractor errors).
+    #[serde(skip_serializing_if = "is_zero")]
+    pub fatals: usize,
+
     /// Error-severity count (check).
     #[serde(skip_serializing_if = "is_zero")]
     pub errors: usize,
@@ -143,6 +164,10 @@ pub struct Totals {
     /// Warning-severity count (check).
     #[serde(skip_serializing_if = "is_zero")]
     pub warnings: usize,
+
+    /// Info-severity count (tractor feedback).
+    #[serde(skip_serializing_if = "is_zero")]
+    pub infos: usize,
 
     /// Files/mappings that were changed (set).
     #[serde(skip_serializing_if = "is_zero")]
@@ -271,8 +296,10 @@ impl Report {
     pub fn run(reports: Vec<Report>) -> Self {
         let mut all_results = Vec::new();
         let mut total = 0usize;
+        let mut fatals = 0usize;
         let mut errors = 0usize;
         let mut warnings = 0usize;
+        let mut infos = 0usize;
         let mut updated = 0usize;
         let mut unchanged = 0usize;
         let mut files = 0usize;
@@ -282,8 +309,10 @@ impl Report {
             if let Some(ref t) = r.totals {
                 total += t.results;
                 files += t.files;
+                fatals += t.fatals;
                 errors += t.errors;
                 warnings += t.warnings;
+                infos += t.infos;
                 updated += t.updated;
                 unchanged += t.unchanged;
             }
@@ -295,18 +324,69 @@ impl Report {
         }
 
         Report {
-                       success: Some(success),
+            success: Some(success),
             totals: Some(Totals {
                 results: total,
                 files,
+                fatals,
                 errors,
                 warnings,
+                infos,
                 updated,
                 unchanged,
             }),
             expected: None,
             query: None,
             results: all_results,
+            group: None,
+            file: None,
+            command: None,
+            rule_id: None,
+            output_content: None,
+        }
+    }
+
+    /// Build a report from diagnostic matches (fatal/info).
+    ///
+    /// Computes totals from severity counts. Sets `success: Some(false)`
+    /// if any fatal or error matches exist.
+    pub fn from_diagnostics(matches: Vec<ReportMatch>) -> Self {
+        let mut fatals = 0usize;
+        let mut errors = 0usize;
+        let mut warnings = 0usize;
+        let mut infos = 0usize;
+        let mut file_set = std::collections::HashSet::new();
+
+        for m in &matches {
+            match m.severity {
+                Some(Severity::Fatal) => fatals += 1,
+                Some(Severity::Error) => errors += 1,
+                Some(Severity::Warning) => warnings += 1,
+                Some(Severity::Info) => infos += 1,
+                None => {}
+            }
+            if !m.file.is_empty() {
+                file_set.insert(m.file.clone());
+            }
+        }
+
+        let has_failures = fatals > 0 || errors > 0;
+        let results = matches.into_iter().map(ResultItem::Match).collect();
+        Report {
+            success: Some(!has_failures),
+            totals: Some(Totals {
+                results: fatals + errors + warnings + infos,
+                files: file_set.len(),
+                fatals,
+                errors,
+                warnings,
+                infos,
+                updated: 0,
+                unchanged: 0,
+            }),
+            expected: None,
+            query: None,
+            results,
             group: None,
             file: None,
             command: None,
@@ -482,6 +562,7 @@ mod tests {
             reason: None,
             severity: None,
             message: None,
+            hint: None,
             rule_id: None,
             status: None,
             output: None,
@@ -504,6 +585,7 @@ mod tests {
             reason: Some("no foo allowed".to_string()),
             severity: Some(Severity::Error),
             message: None,
+            hint: None,
             rule_id: None,
             status: None,
             output: None,
@@ -522,6 +604,7 @@ mod tests {
             reason: Some("no bar allowed".to_string()),
             severity: Some(Severity::Warning),
             message: None,
+            hint: None,
             rule_id: None,
             status: None,
             output: None,
@@ -529,8 +612,10 @@ mod tests {
         let totals = Totals {
             results: 2,
             files: 2,
+            fatals: 0,
             errors: 1,
             warnings: 1,
+            infos: 0,
             updated: 0,
             unchanged: 0,
         };
@@ -558,8 +643,10 @@ mod tests {
         let totals = Totals {
             results: 1,
             files: 1,
+            fatals: 0,
             errors: 0,
             warnings: 0,
+            infos: 0,
             updated: 0,
             unchanged: 0,
         };

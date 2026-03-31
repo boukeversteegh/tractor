@@ -35,8 +35,10 @@ pub fn emit_report_metadata(root: &mut serde_json::Map<String, Value>, report: &
         let mut t = serde_json::Map::new();
         t.insert("results".into(), json!(totals.results));
         t.insert("files".into(),   json!(totals.files));
+        if totals.fatals > 0 { t.insert("fatals".into(), json!(totals.fatals)); }
         if totals.errors > 0 { t.insert("errors".into(), json!(totals.errors)); }
         if totals.warnings > 0 { t.insert("warnings".into(), json!(totals.warnings)); }
+        if totals.infos > 0 { t.insert("infos".into(), json!(totals.infos)); }
         if totals.updated > 0 { t.insert("updated".into(), json!(totals.updated)); }
         if totals.unchanged > 0 { t.insert("unchanged".into(), json!(totals.unchanged)); }
         root.insert("totals".into(), Value::Object(t));
@@ -161,6 +163,9 @@ pub fn match_to_value(
     if let Some(ref msg) = rm.message {
         obj.insert("message".into(), json!(msg));
     }
+    if let Some(ref hint) = rm.hint {
+        obj.insert("hint".into(), json!(hint));
+    }
     if should_emit_rule_id(rm, skip_dims) {
         obj.insert("rule_id".into(), json!(rm.rule_id.as_deref().unwrap()));
     }
@@ -182,7 +187,7 @@ mod tests {
             tree: None,
             value: Some(value.to_string()),
             source: None, lines: None, reason: None, severity: None,
-            message: None, rule_id: None, status: None, output: None,
+            message: None, hint: None, rule_id: None, status: None, output: None,
         }
     }
 
@@ -197,7 +202,7 @@ mod tests {
             tree: Some(tree),
             value: None, // maps have no value — data is in tree
             source: None, lines: None, reason: None, severity: None,
-            message: None, rule_id: None, status: None, output: None,
+            message: None, hint: None, rule_id: None, status: None, output: None,
         }
     }
 
@@ -235,7 +240,7 @@ mod tests {
         ]);
         let totals = Totals {
             results: 1, files: 1,
-            errors: 0, warnings: 0, updated: 0, unchanged: 0,
+            fatals: 0, errors: 0, warnings: 0, infos: 0, updated: 0, unchanged: 0,
         };
         let report = Report::query(vec![rm], totals);
         let view = ViewSet::new(vec![ViewField::File, ViewField::Tree]);

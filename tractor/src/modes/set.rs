@@ -214,6 +214,7 @@ fn build_set_report_matches(
             reason: None,
             severity: None,
             message: None,
+            hint: None,
             rule_id: None,
             status: if ctx.view.has(ViewField::Status) { Some(status_str.to_string()) } else { None },
             output: None, // output is at group level for stdout mode
@@ -223,8 +224,10 @@ fn build_set_report_matches(
     let totals = Totals {
         results: matches.len(),
         files: files_affected.len(),
+        fatals: 0,
         errors: 0,
         warnings: 0,
+        infos: 0,
         updated: updated_count,
         unchanged: unchanged_count,
     };
@@ -241,8 +244,10 @@ fn build_set_inline_report(modified: String, ctx: &RunContext) -> Report {
     let totals = Totals {
         results: 1,
         files: 0,
+        fatals: 0,
         errors: 0,
         warnings: 0,
+        infos: 0,
         updated: 0,
         unchanged: 0,
     };
