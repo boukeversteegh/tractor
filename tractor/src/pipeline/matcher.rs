@@ -2,11 +2,12 @@ use std::collections::HashSet;
 
 use rayon::prelude::*;
 use tractor_core::{
-    Match,
+    Match, Diagnostic, DiagnosticError,
     output::{render_document, RenderOptions},
     parse_to_documents, parse_string_to_documents,
-    report::Report,
+    report::{Report, ReportMatch},
     rule::{RuleSet, GlobMatcher},
+    xpath::validate_xpath,
 };
 use crate::filter::ResultFilter;
 
@@ -35,6 +36,40 @@ pub fn exponential_batches<T>(items: &[T], num_threads: usize) -> Vec<&[T]> {
 }
 
 // ---------------------------------------------------------------------------
+// XPath validation
+// ---------------------------------------------------------------------------
+
+/// Validate an XPath expression upfront and return a fatal diagnostic if invalid.
+///
+/// Builds a `ReportMatch` with `Severity::Fatal`, the XPath string as source,
+/// and the error position highlighted. Returns `None` if the XPath is valid.
+pub fn validate_xpath_diagnostic(xpath_expr: &str, command: &str) -> Option<ReportMatch> {
+    let result = validate_xpath(xpath_expr);
+    if result.valid {
+        return None;
+    }
+
+    let reason = result.error.as_deref().unwrap_or("invalid XPath expression");
+    let mut diag = Diagnostic::fatal(reason).command(command);
+
+    // Use the XPath string itself as the source for highlighting
+    diag = diag
+        .source(xpath_expr)
+        .source_lines(vec![xpath_expr.to_string()])
+        .file("<xpath>")
+        .location(1, 1, 1, xpath_expr.len() as u32 + 1);
+
+    // If we have error position info, narrow the highlight to the error span
+    if let (Some(start), Some(end)) = (result.error_start, result.error_end) {
+        let col = start as u32 + 1; // 1-based
+        let end_col = if end > start { end as u32 + 1 } else { col + 1 };
+        diag = diag.location(1, col, 1, end_col);
+    }
+
+    Some(diag.build())
+}
+
+// ---------------------------------------------------------------------------
 // Query pipeline
 // ---------------------------------------------------------------------------
 
@@ -44,6 +79,12 @@ pub fn query_inline_source(
     lang: &str,
     xpath_expr: &str,
 ) -> Result<Vec<Match>, Box<dyn std::error::Error>> {
+    // Validate XPath upfront
+    if let Some(diag) = validate_xpath_diagnostic(xpath_expr, "query") {
+        let report = Report::from_diagnostics(vec![diag]);
+        return Err(Box::new(DiagnosticError(report)));
+    }
+
     let mut result = parse_string_to_documents(
         source, lang, "<stdin>".to_string(), ctx.tree_mode, ctx.ignore_whitespace
     )?;
@@ -65,6 +106,12 @@ pub fn query_files_batched(
     xpath_expr: &str,
     collect: bool,
 ) -> Result<(usize, Vec<Match>), Box<dyn std::error::Error>> {
+    // Validate XPath upfront
+    if let Some(diag) = validate_xpath_diagnostic(xpath_expr, "query") {
+        let report = Report::from_diagnostics(vec![diag]);
+        return Err(Box::new(DiagnosticError(report)));
+    }
+
     let batches = exponential_batches(files, ctx.concurrency);
     let mut total_matches = 0usize;
     let mut remaining_limit = ctx.limit;
@@ -222,6 +269,17 @@ pub fn run_rules(
     verbose: bool,
     filters: &[&dyn ResultFilter],
 ) -> Result<Vec<RuleMatch>, Box<dyn std::error::Error>> {
+    // Validate all XPath expressions upfront
+    let mut diagnostics = Vec::new();
+    for rule in &ruleset.rules {
+        if let Some(diag) = validate_xpath_diagnostic(&rule.xpath, "check") {
+            diagnostics.push(diag);
+        }
+    }
+    if !diagnostics.is_empty() {
+        return Err(Box::new(DiagnosticError(Report::from_diagnostics(diagnostics))));
+    }
+
     // Compile glob matchers for each rule upfront.
     let compiled: Vec<CompiledRule> = ruleset
         .rules

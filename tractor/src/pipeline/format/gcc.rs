@@ -49,6 +49,12 @@ fn render_gcc_match(out: &mut String, rm: &ReportMatch, group_file: Option<&str>
             if file.is_empty() || rm.line == 0 {
                 // No source location — use tool name prefix (like gcc's "cc1: error: ...")
                 out.push_str(&format!("tractor: {}: {}\n", severity, reason));
+            } else if file.starts_with('<') {
+                // Virtual file (e.g. <xpath>, <cli>) — don't resolve to absolute path
+                out.push_str(&format!(
+                    "{}:{}:{}: {}: {}\n",
+                    file, rm.line, rm.column, severity, reason
+                ));
             } else {
                 out.push_str(&format!(
                     "{}:{}:{}: {}: {}\n",

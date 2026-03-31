@@ -17,10 +17,11 @@ use rayon::prelude::*;
 use tractor_core::rule::{Rule, RuleSet};
 use tractor_core::report::{Report, ReportMatch, Severity, Totals};
 use tractor_core::tree_mode::TreeMode;
-use tractor_core::{expand_globs, filter_supported_files, detect_language, parse_to_documents, parse_string_to_documents, Match, apply_replacements};
+use tractor_core::{expand_globs, filter_supported_files, detect_language, parse_to_documents, parse_string_to_documents, Match, apply_replacements, DiagnosticError};
 use tractor_core::xpath_upsert::{upsert, update_only};
 
 use crate::filter::ResultFilter;
+use crate::pipeline::matcher::validate_xpath_diagnostic;
 use crate::pipeline::run_rules;
 use crate::pipeline::git;
 
@@ -969,6 +970,17 @@ fn query_files_multi(
     verbose: bool,
     filters: &[&dyn ResultFilter],
 ) -> Result<Vec<Match>, Box<dyn std::error::Error>> {
+    // Validate all XPath expressions upfront
+    let mut diagnostics = Vec::new();
+    for xpath in xpaths {
+        if let Some(diag) = validate_xpath_diagnostic(xpath, "check") {
+            diagnostics.push(diag);
+        }
+    }
+    if !diagnostics.is_empty() {
+        return Err(Box::new(DiagnosticError(Report::from_diagnostics(diagnostics))));
+    }
+
     let mut all_matches: Vec<Match> = files
         .par_iter()
         .filter_map(|file_path| {

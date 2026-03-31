@@ -37,6 +37,34 @@
 
 use crate::report::{ReportMatch, Report, Severity};
 
+// ---------------------------------------------------------------------------
+// DiagnosticError — wraps a Report for propagation through Box<dyn Error>
+// ---------------------------------------------------------------------------
+
+/// An error that carries a pre-built diagnostic `Report`.
+///
+/// Used to propagate structured errors through `Result<T, Box<dyn Error>>`
+/// while preserving the full report for format-aware rendering in `main()`.
+pub struct DiagnosticError(pub Report);
+
+impl std::fmt::Display for DiagnosticError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Extract the first reason for the Display impl (used as fallback)
+        if let Some(m) = self.0.all_matches().first() {
+            if let Some(ref reason) = m.reason {
+                return write!(f, "{}", reason);
+            }
+        }
+        write!(f, "diagnostic error")
+    }
+}
+impl std::fmt::Debug for DiagnosticError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "DiagnosticError({})", self)
+    }
+}
+impl std::error::Error for DiagnosticError {}
+
 /// Builder for constructing diagnostic `ReportMatch` items.
 pub struct Diagnostic {
     severity: Severity,

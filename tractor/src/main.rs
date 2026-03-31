@@ -16,7 +16,7 @@ use std::process::ExitCode;
 use cli::{Cli, Command};
 use clap::Parser;
 use modes::{check::run_check, test::run_test, set::run_set, update::run_update, query::run_query, render::run_render, run::run_run};
-use tractor_core::Diagnostic;
+use tractor_core::{Diagnostic, DiagnosticError};
 use pipeline::format::{OutputFormat, ViewField, ViewSet, render_gcc, render_json_report, render_yaml_report, render_xml_report, render_github};
 use tractor_core::output::{should_use_color, RenderOptions};
 
@@ -43,7 +43,7 @@ fn render_error_report(
     use_color: bool,
 ) {
     let view = ViewSet::new(vec![
-        ViewField::Reason, ViewField::Severity, ViewField::Lines,
+        ViewField::Reason, ViewField::Severity, ViewField::Source, ViewField::Lines,
     ]);
     let render_opts = RenderOptions::new().with_color(use_color);
     match format {
@@ -116,12 +116,17 @@ fn main() -> ExitCode {
     };
 
     if let Err(e) = result {
+        // DiagnosticError — already has a structured Report with source highlighting
+        if let Some(diag_err) = e.downcast_ref::<DiagnosticError>() {
+            render_error_report(&diag_err.0, fallback_format, fallback_color);
+            return ExitCode::FAILURE;
+        }
         let msg = e.to_string();
         if msg.is_empty() {
             // SilentExit — already reported
             return ExitCode::FAILURE;
         }
-        // Render the error through the report pipeline in the user's requested format
+        // Generic error — wrap in a minimal diagnostic report
         let report = Diagnostic::fatal(&msg).into_report();
         render_error_report(&report, fallback_format, fallback_color);
         return ExitCode::FAILURE;
