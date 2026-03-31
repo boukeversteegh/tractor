@@ -26,19 +26,25 @@ fn render_github_results(out: &mut String, items: &[ResultItem], parent_file: Op
 fn render_github_match(out: &mut String, rm: &tractor_core::report::ReportMatch, group_file: Option<&str>) {
     let reason = rm.reason.as_deref().unwrap_or("violation");
     let level  = rm.severity.map_or("error", |s| s.as_str());
-    let file   = normalize_path(group_file.unwrap_or(&rm.file));
+    let file   = group_file.unwrap_or(&rm.file);
     let message = match &rm.hint {
         Some(hint) => format!("{} (hint: {})", reason, hint),
         None => reason.to_string(),
     };
-    out.push_str(&format!(
-        "::{level} file={file},line={line},endLine={end_line},col={col},endColumn={end_col}::{message}\n",
-        level    = level,
-        file     = file,
-        line     = rm.line,
-        end_line = rm.end_line,
-        col      = rm.column,
-        end_col  = rm.end_column,
-        message  = message,
-    ));
+    if file.is_empty() || rm.line == 0 {
+        // No source location — emit without file/line attributes
+        out.push_str(&format!("::{level}::{message}\n", level = level, message = message));
+    } else {
+        let file = normalize_path(file);
+        out.push_str(&format!(
+            "::{level} file={file},line={line},endLine={end_line},col={col},endColumn={end_col}::{message}\n",
+            level    = level,
+            file     = file,
+            line     = rm.line,
+            end_line = rm.end_line,
+            col      = rm.column,
+            end_col  = rm.end_column,
+            message  = message,
+        ));
+    }
 }

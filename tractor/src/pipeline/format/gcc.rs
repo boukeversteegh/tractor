@@ -46,10 +46,15 @@ fn render_gcc_match(out: &mut String, rm: &ReportMatch, group_file: Option<&str>
             // Check and other matches: file:line:col: severity: reason
             let reason   = rm.reason.as_deref().unwrap_or("violation");
             let severity = rm.severity.map_or("error", |s| s.as_str());
-            out.push_str(&format!(
-                "{}:{}:{}: {}: {}\n",
-                to_absolute_path(file), rm.line, rm.column, severity, reason
-            ));
+            if file.is_empty() || rm.line == 0 {
+                // No source location — use tool name prefix (like gcc's "cc1: error: ...")
+                out.push_str(&format!("tractor: {}: {}\n", severity, reason));
+            } else {
+                out.push_str(&format!(
+                    "{}:{}:{}: {}: {}\n",
+                    to_absolute_path(file), rm.line, rm.column, severity, reason
+                ));
+            }
             if let Some(ref hint) = rm.hint {
                 out.push_str(&format!("  note: {}\n", hint));
             }
