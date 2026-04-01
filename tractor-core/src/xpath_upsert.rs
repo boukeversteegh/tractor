@@ -22,7 +22,7 @@ use crate::parser::{parse_string_to_documents, XeeParseResult};
 use crate::render::{self, RenderOptions};
 use crate::tree_mode::TreeMode;
 use crate::xpath::xot_node_to_xml_node;
-use crate::xpath::Match;
+pub use crate::xpath::Match;
 use crate::xot_transform::helpers::*;
 use xot::Xot;
 
@@ -35,6 +35,9 @@ pub struct UpsertResult {
     pub inserted: bool,
     /// Number of matches that were updated (0 for inserts).
     pub matches_updated: usize,
+    /// The matches that were updated (with original locations).
+    /// Empty for inserts or when no matches were found.
+    pub matches: Vec<Match>,
     /// Human-readable description of what was done.
     pub description: String,
 }
@@ -108,6 +111,7 @@ pub fn update_only(
             source: source.to_string(),
             inserted: false,
             matches_updated: 0,
+            matches: vec![],
             description: "no matches found".to_string(),
         });
     }
@@ -263,6 +267,7 @@ fn update_existing(
         source: new_source,
         inserted: false,
         matches_updated: count,
+        matches: matches.to_vec(),
         description: format!("updated {} existing value{}", count, if count == 1 { "" } else { "s" }),
     })
 }
@@ -407,6 +412,7 @@ fn insert_new(
         source: new_source,
         inserted: true,
         matches_updated: 0,
+        matches: vec![],
         description,
     })
 }

@@ -242,7 +242,7 @@ fn build_set_inline_report(modified: String, ctx: &RunContext) -> Report {
     };
     // Inline set is a special case: a pre-grouped report with output at group level.
     // We construct the Report directly since ReportBuilder produces flat matches.
-    let mut report = Report {
+    let report = Report {
         success: Some(true),
         totals: Some(totals),
         expected: None,

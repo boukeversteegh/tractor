@@ -722,18 +722,10 @@ fn execute_update(
                 if result.source != source {
                     std::fs::write(file_path, &result.source)?;
                     files_modified.insert(file_path.clone());
-                    // Add a synthetic match per updated file so totals reflect actual work
-                    for _ in 0..result.matches_updated {
-                        report.add(ReportMatch {
-                            file: file_path.clone(),
-                            line: 0, column: 0, end_line: 0, end_column: 0,
-                            command: "update".to_string(),
-                            tree: None, value: None, source: None, lines: None,
-                            reason: None, severity: None, message: None,
-                            hint: None, origin: None, rule_id: None,
-                            status: Some("updated".to_string()),
-                            output: None,
-                        });
+                    for m in &result.matches {
+                        let mut rm = match_to_report_match(m.clone(), "update");
+                        rm.status = Some("updated".to_string());
+                        report.add(rm);
                     }
                 }
             }
