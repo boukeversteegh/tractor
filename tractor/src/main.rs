@@ -52,8 +52,8 @@ fn render_error_report(
         OutputFormat::Yaml   => print!("{}", render_yaml_report(report, &view, &render_opts, &[])),
         OutputFormat::Xml    => print!("{}", render_xml_report(report, &view, &render_opts, &[])),
         OutputFormat::Github => print!("{}", render_github(report, &[])),
-        OutputFormat::Gcc    => eprint!("{}", render_gcc(report, &render_opts, &[])),
-        OutputFormat::Text   => eprint!("{}", render_text_report(report, &view, &render_opts, &[])),
+        OutputFormat::Gcc    => print!("{}", render_gcc(report, &render_opts, &[])),
+        OutputFormat::Text   => print!("{}", render_text_report(report, &view, &render_opts, &[])),
     }
 }
 
