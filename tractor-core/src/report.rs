@@ -306,132 +306,6 @@ pub struct Report {
 }
 
 impl Report {
-    pub fn set(matches: Vec<ReportMatch>, success: bool, totals: Totals) -> Self {
-        let results = matches.into_iter().map(ResultItem::Match).collect();
-        Report { success: Some(success), totals: Some(totals), expected: None, query: None, results, group: None, file: None, command: None, rule_id: None, output_content: None }
-    }
-
-    pub fn query(matches: Vec<ReportMatch>, totals: Totals) -> Self {
-        let results = matches.into_iter().map(ResultItem::Match).collect();
-        Report { success: None, totals: Some(totals), expected: None, query: None, results, group: None, file: None, command: None, rule_id: None, output_content: None }
-    }
-
-    pub fn check(matches: Vec<ReportMatch>, success: bool, totals: Totals) -> Self {
-        let results = matches.into_iter().map(ResultItem::Match).collect();
-        Report { success: Some(success), totals: Some(totals), expected: None, query: None, results, group: None, file: None, command: None, rule_id: None, output_content: None }
-    }
-
-    pub fn test(matches: Vec<ReportMatch>, success: bool, totals: Totals) -> Self {
-        let results = matches.into_iter().map(ResultItem::Match).collect();
-        Report { success: Some(success), totals: Some(totals), expected: None, query: None, results, group: None, file: None, command: None, rule_id: None, output_content: None }
-    }
-
-    /// Build a unified run report by flattening all sub-reports into one.
-    /// Drains leaf matches from each sub-report into a single flat results list.
-    /// Computes aggregate totals from the merged results.
-    pub fn run(reports: Vec<Report>) -> Self {
-        let mut all_results = Vec::new();
-        let mut total = 0usize;
-        let mut fatals = 0usize;
-        let mut errors = 0usize;
-        let mut warnings = 0usize;
-        let mut infos = 0usize;
-        let mut updated = 0usize;
-        let mut unchanged = 0usize;
-        let mut files = 0usize;
-        let mut success = true;
-
-        for r in reports {
-            if let Some(ref t) = r.totals {
-                total += t.results;
-                files += t.files;
-                fatals += t.fatals;
-                errors += t.errors;
-                warnings += t.warnings;
-                infos += t.infos;
-                updated += t.updated;
-                unchanged += t.unchanged;
-            }
-            if let Some(s) = r.success {
-                if !s { success = false; }
-            }
-            // Drain all results from the sub-report into the flat list
-            all_results.extend(r.results);
-        }
-
-        Report {
-            success: Some(success),
-            totals: Some(Totals {
-                results: total,
-                files,
-                fatals,
-                errors,
-                warnings,
-                infos,
-                updated,
-                unchanged,
-            }),
-            expected: None,
-            query: None,
-            results: all_results,
-            group: None,
-            file: None,
-            command: None,
-            rule_id: None,
-            output_content: None,
-        }
-    }
-
-    /// Build a report from diagnostic matches (fatal/info).
-    ///
-    /// Computes totals from severity counts. Sets `success: Some(false)`
-    /// if any fatal or error matches exist.
-    pub fn from_diagnostics(matches: Vec<ReportMatch>) -> Self {
-        let mut fatals = 0usize;
-        let mut errors = 0usize;
-        let mut warnings = 0usize;
-        let mut infos = 0usize;
-        let mut file_set = std::collections::HashSet::new();
-
-        for m in &matches {
-            match m.severity {
-                Some(Severity::Fatal) => fatals += 1,
-                Some(Severity::Error) => errors += 1,
-                Some(Severity::Warning) => warnings += 1,
-                Some(Severity::Info) => infos += 1,
-                None => {}
-            }
-            if !m.file.is_empty() {
-                file_set.insert(m.file.clone());
-            }
-        }
-
-        let has_failures = fatals > 0 || errors > 0;
-        let total = matches.len();
-        let results = matches.into_iter().map(ResultItem::Match).collect();
-        Report {
-            success: Some(!has_failures),
-            totals: Some(Totals {
-                results: total,
-                files: file_set.len(),
-                fatals,
-                errors,
-                warnings,
-                infos,
-                updated: 0,
-                unchanged: 0,
-            }),
-            expected: None,
-            query: None,
-            results,
-            group: None,
-            file: None,
-            command: None,
-            rule_id: None,
-            output_content: None,
-        }
-    }
-
     /// Serialize this report to pretty-printed JSON.
     pub fn to_json(&self) -> String {
         serde_json::to_string_pretty(self).unwrap_or_else(|_| "{}".to_string())
@@ -580,6 +454,149 @@ impl Report {
     }
 }
 
+// ---------------------------------------------------------------------------
+// ReportBuilder — collector pattern for accumulating matches
+// ---------------------------------------------------------------------------
+
+/// How the builder determines the `success` field on `build()`.
+enum SuccessMode {
+    /// Derive from match severities: false if any Fatal/Error, true otherwise.
+    Derive,
+    /// No verdict (query mode): success = None.
+    NoVerdict,
+}
+
+/// Accumulates `ReportMatch` entries and builds a `Report` with derived totals.
+///
+/// Executors push matches into the builder. The mode function creates the
+/// builder, passes it to the executor, and calls `build()` to finalize.
+pub struct ReportBuilder {
+    matches: Vec<ReportMatch>,
+    failed: bool,
+    success_mode: SuccessMode,
+    expected: Option<String>,
+    query: Option<String>,
+}
+
+impl ReportBuilder {
+    pub fn new() -> Self {
+        ReportBuilder {
+            matches: Vec::new(),
+            failed: false,
+            success_mode: SuccessMode::Derive,
+            expected: None,
+            query: None,
+        }
+    }
+
+    /// Add a single match to the report.
+    pub fn add(&mut self, rm: ReportMatch) {
+        self.matches.push(rm);
+    }
+
+    /// Add multiple matches to the report.
+    pub fn add_all(&mut self, rms: impl IntoIterator<Item = ReportMatch>) {
+        self.matches.extend(rms);
+    }
+
+    /// Signal that the operation failed (e.g. test expectations unmet).
+    /// This forces `success` to `Some(false)` regardless of match severities.
+    pub fn fail(&mut self) {
+        self.failed = true;
+    }
+
+    /// Set query mode: no pass/fail verdict (success = None).
+    pub fn set_no_verdict(&mut self) {
+        self.success_mode = SuccessMode::NoVerdict;
+    }
+
+    /// Set the expected value string (test mode).
+    pub fn set_expected(&mut self, expected: String) {
+        self.expected = Some(expected);
+    }
+
+    /// Set the XPath query string (shown with `-v query`).
+    pub fn set_query(&mut self, query: String) {
+        self.query = Some(query);
+    }
+
+    /// Check if any fatal-severity matches have been added.
+    pub fn has_fatals(&self) -> bool {
+        self.matches.iter().any(|m| m.severity == Some(Severity::Fatal))
+    }
+
+    /// Consume the builder and produce a finalized Report.
+    ///
+    /// Totals are derived from the accumulated matches:
+    /// - results, files from match count and unique file paths
+    /// - fatals/errors/warnings/infos from severity field
+    /// - updated/unchanged from status field
+    ///
+    /// Success is determined by SuccessMode:
+    /// - Derive: false if any Fatal/Error matches or `fail()` was called
+    /// - NoVerdict: None (query mode)
+    pub fn build(self) -> Report {
+        let mut file_set = std::collections::HashSet::new();
+        let mut fatals = 0usize;
+        let mut errors = 0usize;
+        let mut warnings = 0usize;
+        let mut infos = 0usize;
+        let mut updated = 0usize;
+        let mut unchanged = 0usize;
+
+        for m in &self.matches {
+            if !m.file.is_empty() {
+                file_set.insert(m.file.as_str());
+            }
+            match m.severity {
+                Some(Severity::Fatal) => fatals += 1,
+                Some(Severity::Error) => errors += 1,
+                Some(Severity::Warning) => warnings += 1,
+                Some(Severity::Info) => infos += 1,
+                None => {}
+            }
+            match m.status.as_deref() {
+                Some("updated") => updated += 1,
+                Some("unchanged") => unchanged += 1,
+                _ => {}
+            }
+        }
+
+        let totals = Totals {
+            results: self.matches.len(),
+            files: file_set.len(),
+            fatals,
+            errors,
+            warnings,
+            infos,
+            updated,
+            unchanged,
+        };
+
+        let success = match self.success_mode {
+            SuccessMode::NoVerdict => None,
+            SuccessMode::Derive => {
+                let has_failures = fatals > 0 || errors > 0 || self.failed;
+                Some(!has_failures)
+            }
+        };
+
+        let results = self.matches.into_iter().map(ResultItem::Match).collect();
+        Report {
+            success,
+            totals: Some(totals),
+            expected: self.expected,
+            query: self.query,
+            results,
+            group: None,
+            file: None,
+            command: None,
+            rule_id: None,
+            output_content: None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -649,17 +666,10 @@ mod tests {
             status: None,
             output: None,
         };
-        let totals = Totals {
-            results: 2,
-            files: 2,
-            fatals: 0,
-            errors: 1,
-            warnings: 1,
-            infos: 0,
-            updated: 0,
-            unchanged: 0,
-        };
-        let report = Report::check(vec![m1, m2], false, totals);
+        let mut builder = ReportBuilder::new();
+        builder.add(m1);
+        builder.add(m2);
+        let report = builder.build();
         let json = report.to_json();
         let v: serde_json::Value = serde_json::from_str(&json).unwrap();
 
@@ -680,18 +690,10 @@ mod tests {
     #[test]
     fn test_test_report_json() {
         let m = make_report_match("test.cs", 1, 1, "x");
-        let totals = Totals {
-            results: 1,
-            files: 1,
-            fatals: 0,
-            errors: 0,
-            warnings: 0,
-            infos: 0,
-            updated: 0,
-            unchanged: 0,
-        };
-        let mut report = Report::test(vec![m], true, totals);
-        report.expected = Some("some".to_string());
+        let mut builder = ReportBuilder::new();
+        builder.add(m);
+        builder.set_expected("some".to_string());
+        let report = builder.build();
         let json = report.to_json();
         let v: serde_json::Value = serde_json::from_str(&json).unwrap();
 

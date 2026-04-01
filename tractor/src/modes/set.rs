@@ -1,6 +1,6 @@
-use std::collections::{HashSet, HashMap};
+use std::collections::HashMap;
 use tractor_core::{apply_replacements, apply_set_to_string, compute_set_output};
-use tractor_core::report::{Report, ReportMatch, Totals};
+use tractor_core::report::{Report, ReportBuilder, ReportMatch};
 use tractor_core::xpath_upsert::upsert;
 use tractor_core::declarative_set::declarative_set;
 use tractor_core::detect_language;
@@ -186,17 +186,13 @@ fn build_set_report_matches(
     new_value: &str,
     ctx: &RunContext,
 ) -> Report {
-    let mut files_affected = HashSet::new();
-    let mut updated_count = 0usize;
-    let mut unchanged_count = 0usize;
+    let mut builder = ReportBuilder::new();
 
-    let report_matches: Vec<ReportMatch> = matches.iter().map(|m| {
-        files_affected.insert(m.file.clone());
+    for m in matches {
         let is_unchanged = m.value == new_value;
         let status_str = if is_unchanged { "unchanged" } else { "updated" };
-        if is_unchanged { unchanged_count += 1; } else { updated_count += 1; }
 
-        ReportMatch {
+        builder.add(ReportMatch {
             file: m.file.clone(),
             line: m.line,
             column: m.column,
@@ -218,27 +214,17 @@ fn build_set_report_matches(
             origin: None,
             rule_id: None,
             status: if ctx.view.has(ViewField::Status) { Some(status_str.to_string()) } else { None },
-            output: None, // output is at group level for stdout mode
-        }
-    }).collect();
+            output: None,
+        });
+    }
 
-    let totals = Totals {
-        results: matches.len(),
-        files: files_affected.len(),
-        fatals: 0,
-        errors: 0,
-        warnings: 0,
-        infos: 0,
-        updated: updated_count,
-        unchanged: unchanged_count,
-    };
-    Report::set(report_matches, true, totals)
+    builder.build()
 }
 
 /// Build a set report for inline (stdin) stdout mode.
 /// Creates a single group with no file path and `output` = the modified string.
 fn build_set_inline_report(modified: String, ctx: &RunContext) -> Report {
-    use tractor_core::report::ResultItem;
+    use tractor_core::report::{ResultItem, Totals};
 
     let output_content = if ctx.view.has(ViewField::Output) { Some(modified) } else { None };
 
@@ -252,20 +238,31 @@ fn build_set_inline_report(modified: String, ctx: &RunContext) -> Report {
         updated: 0,
         unchanged: 0,
     };
-    let mut report = Report::set(vec![], true, totals);
-    report.results = vec![ResultItem::Group(Box::new(Report {
-        success: None,
-        totals: None,
+    // Inline set is a special case: a pre-grouped report with output at group level.
+    // We construct the Report directly since ReportBuilder produces flat matches.
+    let mut report = Report {
+        success: Some(true),
+        totals: Some(totals),
         expected: None,
         query: None,
-        results: vec![],
-        group: None,
-        file: Some(String::new()),
+        results: vec![ResultItem::Group(Box::new(Report {
+            success: None,
+            totals: None,
+            expected: None,
+            query: None,
+            results: vec![],
+            group: None,
+            file: Some(String::new()),
+            command: None,
+            rule_id: None,
+            output_content,
+        }))],
+        group: Some("file".to_string()),
+        file: None,
         command: None,
         rule_id: None,
-        output_content,
-    }))];
-    report.group = Some("file".to_string());
+        output_content: None,
+    };
     report
 }
 

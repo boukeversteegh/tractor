@@ -245,11 +245,10 @@ mod tests {
             ("name", XmlNode::Text("foo".into())),
             ("count", XmlNode::Number(3.0)),
         ]);
-        let totals = Totals {
-            results: 1, files: 1,
-            fatals: 0, errors: 0, warnings: 0, infos: 0, updated: 0, unchanged: 0,
-        };
-        let report = Report::query(vec![rm], totals);
+        let mut builder = tractor_core::ReportBuilder::new();
+        builder.set_no_verdict();
+        builder.add(rm);
+        let report = builder.build();
         let view = ViewSet::new(vec![ViewField::File, ViewField::Tree]);
         let opts = RenderOptions::new();
         let output = render_json_report(&report, &view, &opts, &[]);

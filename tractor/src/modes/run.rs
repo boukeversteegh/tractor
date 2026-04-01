@@ -1,6 +1,5 @@
 //! Run mode: execute a tractor config file containing mixed operations.
 
-use tractor_core::report::Report;
 use crate::executor::{self, ExecuteOptions};
 use crate::tractor_config::load_tractor_config;
 use crate::cli::RunArgs;
@@ -54,10 +53,9 @@ pub fn run_run(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {
         diff_lines: args.shared.diff_lines.clone(),
     };
 
-    let reports = executor::execute(&operations, &options)?;
-
-    // Merge all sub-reports into a single flat report.
-    let mut report = Report::run(reports);
+    let mut builder = tractor_core::ReportBuilder::new();
+    executor::execute(&operations, &options, &mut builder)?;
+    let mut report = builder.build();
 
     // Apply message template and view projection on the merged report.
     if let Some(ref template) = ctx.message {

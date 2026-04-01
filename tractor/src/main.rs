@@ -16,7 +16,7 @@ use std::process::ExitCode;
 use cli::{Cli, Command};
 use clap::Parser;
 use modes::{check::run_check, test::run_test, set::run_set, update::run_update, query::run_query, render::run_render, run::run_run};
-use tractor_core::report::{Report, ReportMatch, Severity, DiagnosticOrigin};
+use tractor_core::report::{ReportBuilder, ReportMatch, Severity, DiagnosticOrigin};
 use pipeline::format::{OutputFormat, ViewField, ViewSet, render_gcc, render_text_report, render_json_report, render_yaml_report, render_xml_report, render_github};
 use tractor_core::output::{should_use_color, RenderOptions};
 
@@ -39,7 +39,7 @@ impl std::error::Error for SilentExit {}
 /// Used as fallback when errors reach main() before a RunContext is built.
 /// Machine-consumed formats go to stdout for consistency with normal output.
 fn render_error_report(
-    report: &Report,
+    report: &tractor_core::report::Report,
     format: OutputFormat,
     use_color: bool,
 ) {
@@ -133,7 +133,9 @@ fn main() -> ExitCode {
             origin: Some(DiagnosticOrigin::Cli),
             rule_id: None, status: None, output: None,
         };
-        let report = Report::from_diagnostics(vec![rm]);
+        let mut builder = ReportBuilder::new();
+        builder.add(rm);
+        let report = builder.build();
         render_error_report(&report, fallback_format, fallback_color);
         return ExitCode::FAILURE;
     }
