@@ -19,20 +19,21 @@ The goal is to route errors through the same `Report`/`ReportMatch`/formatter pi
 - **DiagnosticOrigin**: Enum on `ReportMatch` for non-file sources (Xpath, Cli, Config, Input). Renderers display this in place of the file path when `file` is empty — avoids fake file strings like `<cli>` or `<stdin>`.
 - **Keep `ReportMatch`** as the struct name — it's polymorphic enough to hold findings, errors, and info.
 - **No Diagnostic builder in tractor-core** — `tractor-core` compiles to WASM and must not depend on CLI concepts (`std::env::args`, etc). Diagnostic `ReportMatch` items are constructed directly at call sites.
-- **Errors absorbed into Report** — execution functions (executor) catch expected failures (e.g. invalid XPath) and return them as fatal matches in the Report via `Report::from_diagnostics()`. No special error type needed for propagation. Unexpected errors that reach `main()` are wrapped in a minimal fatal report for format-aware rendering.
+- **Errors absorbed into Report** — execution functions (executor) catch expected failures (e.g. invalid XPath) and add them as fatal `ReportMatch` entries to the `ReportBuilder`. No special error type needed for propagation. Unexpected errors that reach `main()` are wrapped in a minimal fatal report for format-aware rendering.
 - **Validation consolidated at executor level** — XPath validation happens once in `execute_query`/`execute_check`, not scattered across lower-level query/rule functions.
+- **ReportBuilder collector** — a single `ReportBuilder` accumulates matches across all operations. Totals and success are derived from match data on `build()`. Executors are pure match producers.
 
 ## Error Flow
 
 1. Executor validates inputs (XPath expressions, etc.) before running queries.
-2. On validation failure: construct `ReportMatch` with `Severity::Fatal` and return `Ok(Report::from_diagnostics(...))`.
-3. On unexpected errors that reach `main()`: wrap in a fatal `ReportMatch` and render via `render_error_report()`.
+2. On validation failure: add `ReportMatch` with `Severity::Fatal` to the builder and return early.
+3. On unexpected errors that reach `main()`: wrap in a fatal `ReportMatch` via `ReportBuilder` and render via `render_error_report()`.
 4. Machine-consumed formats (JSON, YAML, XML, GitHub) render to stdout; human formats (text, gcc) render to stderr.
 
 ## Renderer Behavior
 
 - **GitHub**: Maps `Fatal → error`, `Info → notice` (GitHub Actions only supports `error`, `warning`, `notice`).
-- **GCC**: Uses `origin.as_str()` as prefix when file is empty (like gcc's `cc1: error: ...`). Renders `hint` as `note:` line.
+- **GCC**: Maps `Fatal → error`, `Info → note` (standard gcc severity labels). Uses `origin.as_str()` as prefix when file is empty (like gcc's `cc1: error: ...`). Renders `hint` as `note:` line.
 - **Text**: Renders `hint` as `  hint: ...` after match content. Shows `origin` when file is empty.
 - **JSON/YAML/XML**: Include `hint`, `origin`, `fatals`, `infos` when present.
 

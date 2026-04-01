@@ -49,8 +49,8 @@ pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
     let totals = report.totals.as_ref().unwrap();
     eprintln!(
         "Updated {} match{} in {} file{}",
-        totals.results,
-        if totals.results == 1 { "" } else { "es" },
+        totals.updated,
+        if totals.updated == 1 { "" } else { "es" },
         totals.files,
         if totals.files == 1 { "" } else { "s" },
     );

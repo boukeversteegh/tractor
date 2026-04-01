@@ -532,7 +532,7 @@ fn validate_rule_examples(
 /// Build a synthetic ReportMatch for a failed example validation.
 fn example_failure_match(rule_id: &str, reason: &str) -> ReportMatch {
     ReportMatch {
-        file: "<example>".to_string(),
+        file: String::new(),
         line: 0,
         column: 0,
         end_line: 0,
@@ -709,8 +709,8 @@ fn execute_update(
     let (files, filters) = resolve_op_files(
         &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), options,
     );
-    let mut total_updated = 0usize;
     let mut fallback_files = Vec::new();
+    let mut files_modified = std::collections::HashSet::new();
 
     for file_path in &files {
         let lang = op.language.as_deref()
@@ -721,7 +721,20 @@ fn execute_update(
             Ok(result) => {
                 if result.source != source {
                     std::fs::write(file_path, &result.source)?;
-                    total_updated += result.matches_updated;
+                    files_modified.insert(file_path.clone());
+                    // Add a synthetic match per updated file so totals reflect actual work
+                    for _ in 0..result.matches_updated {
+                        report.add(ReportMatch {
+                            file: file_path.clone(),
+                            line: 0, column: 0, end_line: 0, end_column: 0,
+                            command: "update".to_string(),
+                            tree: None, value: None, source: None, lines: None,
+                            reason: None, severity: None, message: None,
+                            hint: None, origin: None, rule_id: None,
+                            status: Some("updated".to_string()),
+                            output: None,
+                        });
+                    }
                 }
             }
             Err(tractor_core::xpath_upsert::UpsertError::UnsupportedLanguage(_)) => {
@@ -740,11 +753,23 @@ fn execute_update(
         )?;
         if !matches.is_empty() {
             let summary = apply_replacements(&matches, &op.value)?;
-            total_updated += summary.replacements_made;
+            for m in &matches[..summary.replacements_made.min(matches.len())] {
+                report.add(ReportMatch {
+                    file: m.file.clone(),
+                    line: m.line, column: m.column, end_line: m.end_line, end_column: m.end_column,
+                    command: "update".to_string(),
+                    tree: None, value: None, source: None, lines: None,
+                    reason: None, severity: None, message: None,
+                    hint: None, origin: None, rule_id: None,
+                    status: Some("updated".to_string()),
+                    output: None,
+                });
+            }
         }
     }
 
-    if total_updated == 0 {
+    // No matches with "updated" status means nothing was changed
+    if !report.has_updates() {
         report.fail();
     }
 
@@ -767,18 +792,6 @@ fn check_expectation(expect: &str, count: usize) -> Result<bool, Box<dyn std::er
         }
     };
     Ok(passed)
-}
-
-/// Format expectations for the summary string.
-fn format_expectations(assertions: &[TestAssertion]) -> String {
-    if assertions.len() == 1 {
-        assertions[0].expect.clone()
-    } else {
-        assertions.iter()
-            .map(|a| a.expect.as_str())
-            .collect::<Vec<_>>()
-            .join(", ")
-    }
 }
 
 /// Convert a raw `Match` into a `ReportMatch` with all content fields populated.

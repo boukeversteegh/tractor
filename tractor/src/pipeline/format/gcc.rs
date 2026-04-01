@@ -45,7 +45,13 @@ fn render_gcc_match(out: &mut String, rm: &ReportMatch, group_file: Option<&str>
         _ => {
             // Check and other matches: file:line:col: severity: reason
             let reason   = rm.reason.as_deref().unwrap_or("violation");
-            let severity = rm.severity.map_or("error", |s| s.as_str());
+            // Map to gcc-compatible severity labels (Fatal→error, Info→note)
+            let severity = rm.severity.map_or("error", |s| match s {
+                tractor_core::report::Severity::Fatal => "error",
+                tractor_core::report::Severity::Error => "error",
+                tractor_core::report::Severity::Warning => "warning",
+                tractor_core::report::Severity::Info => "note",
+            });
             if file.is_empty() {
                 // No file — use origin or tool name as prefix (like gcc's "cc1: error: ...")
                 let prefix = rm.origin.map_or("tractor", |o| o.as_str());

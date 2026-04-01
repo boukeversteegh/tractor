@@ -525,6 +525,11 @@ impl ReportBuilder {
         self.matches.iter().any(|m| m.severity == Some(Severity::Fatal))
     }
 
+    /// Check if any matches with status="updated" have been added.
+    pub fn has_updates(&self) -> bool {
+        self.matches.iter().any(|m| m.status.as_deref() == Some("updated"))
+    }
+
     /// Consume the builder and produce a finalized Report.
     ///
     /// Totals are derived from the accumulated matches:
