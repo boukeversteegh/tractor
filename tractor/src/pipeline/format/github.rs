@@ -39,10 +39,12 @@ fn render_github_match(out: &mut String, rm: &tractor_core::report::ReportMatch,
     };
     let message = escape_github_message(&message);
     if file.is_empty() {
-        // No real file — annotations don't make sense, just log the error.
-        // GitHub Actions captures stderr/stdout in the action logs.
-        let prefix = rm.origin.map_or("tractor", |o| o.as_str());
-        out.push_str(&format!("{}: {}: {}\n", prefix, level, message));
+        // No real file — use file-less GitHub Actions annotation (::level::message)
+        let prefix_msg = match rm.origin {
+            Some(o) => format!("{}: {}", o.as_str(), message),
+            None => message.clone(),
+        };
+        out.push_str(&format!("::{level}::{message}\n", level = level, message = prefix_msg));
     } else {
         let file = normalize_path(file);
         out.push_str(&format!(
