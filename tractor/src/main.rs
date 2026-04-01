@@ -16,8 +16,8 @@ use std::process::ExitCode;
 use cli::{Cli, Command};
 use clap::Parser;
 use modes::{check::run_check, test::run_test, set::run_set, update::run_update, query::run_query, render::run_render, run::run_run};
-use tractor_core::{Diagnostic, DiagnosticError};
-use pipeline::format::{OutputFormat, ViewField, ViewSet, render_gcc, render_json_report, render_yaml_report, render_xml_report, render_github, render_text_report};
+use tractor_core::report::{Report, ReportMatch, Severity, DiagnosticOrigin};
+use pipeline::format::{OutputFormat, ViewField, ViewSet, render_gcc, render_text_report, render_json_report, render_yaml_report, render_xml_report, render_github};
 use tractor_core::output::{should_use_color, RenderOptions};
 
 /// An error that has already been reported to the user; main should exit with
@@ -37,8 +37,9 @@ impl std::error::Error for SilentExit {}
 
 /// Render a diagnostic report in the user's requested format.
 /// Used as fallback when errors reach main() before a RunContext is built.
+/// Machine-consumed formats go to stdout for consistency with normal output.
 fn render_error_report(
-    report: &tractor_core::report::Report,
+    report: &Report,
     format: OutputFormat,
     use_color: bool,
 ) {
@@ -47,16 +48,12 @@ fn render_error_report(
     ]);
     let render_opts = RenderOptions::new().with_color(use_color);
     match format {
-        OutputFormat::Json   => eprint!("{}", render_json_report(report, &view, &render_opts, &[])),
-        OutputFormat::Yaml   => eprint!("{}", render_yaml_report(report, &view, &render_opts, &[])),
-        OutputFormat::Xml    => eprint!("{}", render_xml_report(report, &view, &render_opts, &[])),
-        OutputFormat::Github => eprint!("{}", render_github(report, &[])),
-        OutputFormat::Text => {
-            eprint!("{}", render_text_report(report, &view, &render_opts, &[]));
-        }
-        OutputFormat::Gcc => {
-            eprint!("{}", render_gcc(report, &render_opts, &[]));
-        }
+        OutputFormat::Json   => print!("{}", render_json_report(report, &view, &render_opts, &[])),
+        OutputFormat::Yaml   => print!("{}", render_yaml_report(report, &view, &render_opts, &[])),
+        OutputFormat::Xml    => print!("{}", render_xml_report(report, &view, &render_opts, &[])),
+        OutputFormat::Github => print!("{}", render_github(report, &[])),
+        OutputFormat::Gcc    => eprint!("{}", render_gcc(report, &render_opts, &[])),
+        OutputFormat::Text   => eprint!("{}", render_text_report(report, &view, &render_opts, &[])),
     }
 }
 
@@ -119,18 +116,24 @@ fn main() -> ExitCode {
     };
 
     if let Err(e) = result {
-        // DiagnosticError — already has a structured Report with source highlighting
-        if let Some(diag_err) = e.downcast_ref::<DiagnosticError>() {
-            render_error_report(&diag_err.0, fallback_format, fallback_color);
-            return ExitCode::FAILURE;
-        }
         let msg = e.to_string();
         if msg.is_empty() {
             // SilentExit — already reported
             return ExitCode::FAILURE;
         }
-        // Generic error — wrap in a minimal diagnostic report
-        let report = Diagnostic::fatal(&msg).into_report();
+        // Wrap the error in a minimal fatal report for format-aware rendering
+        let rm = ReportMatch {
+            file: String::new(),
+            line: 0, column: 0, end_line: 0, end_column: 0,
+            command: String::new(),
+            tree: None, value: None, source: None, lines: None,
+            reason: Some(msg),
+            severity: Some(Severity::Fatal),
+            message: None, hint: None,
+            origin: Some(DiagnosticOrigin::Cli),
+            rule_id: None, status: None, output: None,
+        };
+        let report = Report::from_diagnostics(vec![rm]);
         render_error_report(&report, fallback_format, fallback_color);
         return ExitCode::FAILURE;
     }

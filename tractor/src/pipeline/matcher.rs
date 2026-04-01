@@ -2,10 +2,10 @@ use std::collections::HashSet;
 
 use rayon::prelude::*;
 use tractor_core::{
-    Match, Diagnostic, DiagnosticError, DiagnosticOrigin,
+    Match,
     output::{render_document, RenderOptions},
     parse_to_documents, parse_string_to_documents,
-    report::{Report, ReportMatch},
+    report::{Report, ReportMatch, Severity, DiagnosticOrigin},
     rule::{RuleSet, GlobMatcher},
     xpath::validate_xpath,
 };
@@ -49,24 +49,37 @@ pub fn validate_xpath_diagnostic(xpath_expr: &str, command: &str) -> Option<Repo
         return None;
     }
 
-    let reason = result.error.as_deref().unwrap_or("invalid XPath expression");
-    let mut diag = Diagnostic::fatal(reason).command(command).origin(DiagnosticOrigin::Xpath);
+    let reason = result.error.as_deref().unwrap_or("invalid XPath expression").to_string();
 
-    // Use the XPath string itself as the source for highlighting.
-    // File stays empty — there's no real file to point at.
-    diag = diag
-        .source(xpath_expr)
-        .source_lines(vec![xpath_expr.to_string()])
-        .location(1, 1, 1, xpath_expr.len() as u32 + 1);
+    // Default: highlight the entire expression
+    let line = 1u32;
+    let mut col = 1u32;
+    let end_line = 1u32;
+    let mut end_col = xpath_expr.len() as u32 + 1;
 
     // If we have error position info, narrow the highlight to the error span
     if let (Some(start), Some(end)) = (result.error_start, result.error_end) {
-        let col = start as u32 + 1; // 1-based
-        let end_col = if end > start { end as u32 + 1 } else { col + 1 };
-        diag = diag.location(1, col, 1, end_col);
+        col = start as u32 + 1; // 1-based
+        end_col = if end > start { end as u32 + 1 } else { col + 1 };
     }
 
-    Some(diag.build())
+    Some(ReportMatch {
+        file: String::new(),
+        line, column: col, end_line, end_column: end_col,
+        command: command.to_string(),
+        tree: None,
+        value: None,
+        source: Some(xpath_expr.to_string()),
+        lines: Some(vec![xpath_expr.to_string()]),
+        reason: Some(reason),
+        severity: Some(Severity::Fatal),
+        message: None,
+        hint: None,
+        origin: Some(DiagnosticOrigin::Xpath),
+        rule_id: None,
+        status: None,
+        output: None,
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -79,12 +92,6 @@ pub fn query_inline_source(
     lang: &str,
     xpath_expr: &str,
 ) -> Result<Vec<Match>, Box<dyn std::error::Error>> {
-    // Validate XPath upfront
-    if let Some(diag) = validate_xpath_diagnostic(xpath_expr, "query") {
-        let report = Report::from_diagnostics(vec![diag]);
-        return Err(Box::new(DiagnosticError(report)));
-    }
-
     let mut result = parse_string_to_documents(
         source, lang, "<stdin>".to_string(), ctx.tree_mode, ctx.ignore_whitespace
     )?;
@@ -106,12 +113,6 @@ pub fn query_files_batched(
     xpath_expr: &str,
     collect: bool,
 ) -> Result<(usize, Vec<Match>), Box<dyn std::error::Error>> {
-    // Validate XPath upfront
-    if let Some(diag) = validate_xpath_diagnostic(xpath_expr, "query") {
-        let report = Report::from_diagnostics(vec![diag]);
-        return Err(Box::new(DiagnosticError(report)));
-    }
-
     let batches = exponential_batches(files, ctx.concurrency);
     let mut total_matches = 0usize;
     let mut remaining_limit = ctx.limit;
@@ -269,17 +270,6 @@ pub fn run_rules(
     verbose: bool,
     filters: &[&dyn ResultFilter],
 ) -> Result<Vec<RuleMatch>, Box<dyn std::error::Error>> {
-    // Validate all XPath expressions upfront
-    let mut diagnostics = Vec::new();
-    for rule in &ruleset.rules {
-        if let Some(diag) = validate_xpath_diagnostic(&rule.xpath, "check") {
-            diagnostics.push(diag);
-        }
-    }
-    if !diagnostics.is_empty() {
-        return Err(Box::new(DiagnosticError(Report::from_diagnostics(diagnostics))));
-    }
-
     // Compile glob matchers for each rule upfront.
     let compiled: Vec<CompiledRule> = ruleset
         .rules

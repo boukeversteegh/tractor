@@ -78,8 +78,11 @@ pub fn render_lines_match(m: &Match, opts: &RenderOptions) -> String {
 }
 
 /// Normalize a file path to use forward slashes.
+/// Also strips the Windows extended-length path prefix (`\\?\`) that
+/// `std::fs::canonicalize` adds on Windows.
 pub fn normalize_path(path: &str) -> String {
-    path.replace('\\', "/")
+    let path = path.replace('\\', "/");
+    path.strip_prefix("//?/").unwrap_or(&path).to_string()
 }
 
 /// Render a pre-computed source snippet with optional syntax highlighting.

@@ -25,13 +25,13 @@ fn render_github_results(out: &mut String, items: &[ResultItem], parent_file: Op
 
 fn render_github_match(out: &mut String, rm: &tractor_core::report::ReportMatch, group_file: Option<&str>) {
     let reason = rm.reason.as_deref().unwrap_or("violation");
-    // GitHub Actions only supports error, warning, notice — map our severity levels
-    let level = match rm.severity.map(|s| s.as_str()) {
-        Some("fatal") => "error",
-        Some("info")  => "notice",
-        Some(other)   => other,
-        None          => "error",
-    };
+    // GitHub Actions only supports error, warning, notice
+    let level = rm.severity.map_or("error", |s| match s {
+        tractor_core::report::Severity::Fatal => "error",
+        tractor_core::report::Severity::Error => "error",
+        tractor_core::report::Severity::Warning => "warning",
+        tractor_core::report::Severity::Info => "notice",
+    });
     let file   = group_file.unwrap_or(&rm.file);
     let message = match &rm.hint {
         Some(hint) => format!("{} (hint: {})", reason, hint),

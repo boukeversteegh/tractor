@@ -17,7 +17,7 @@ use rayon::prelude::*;
 use tractor_core::rule::{Rule, RuleSet};
 use tractor_core::report::{Report, ReportMatch, Severity, Totals};
 use tractor_core::tree_mode::TreeMode;
-use tractor_core::{expand_globs, filter_supported_files, detect_language, parse_to_documents, parse_string_to_documents, Match, apply_replacements, DiagnosticError};
+use tractor_core::{expand_globs, filter_supported_files, detect_language, parse_to_documents, parse_string_to_documents, Match, apply_replacements};
 use tractor_core::xpath_upsert::{upsert, update_only};
 
 use crate::filter::ResultFilter;
@@ -334,6 +334,15 @@ fn execute_query(
     }
 
     let xpaths: Vec<&str> = op.queries.iter().map(|q| q.xpath.as_str()).collect();
+
+    // Validate all XPath expressions upfront — return a report with fatal matches on failure
+    let diagnostics: Vec<_> = xpaths.iter()
+        .filter_map(|xpath| validate_xpath_diagnostic(xpath, "query"))
+        .collect();
+    if !diagnostics.is_empty() {
+        return Ok(Report::from_diagnostics(diagnostics));
+    }
+
     let matches = query_files_multi(
         &files, &xpaths, op.language.as_deref(),
         op.tree_mode, op.ignore_whitespace, op.parse_depth,
@@ -364,6 +373,14 @@ fn execute_query_inline(
     lang: &str,
     op: &QueryOperation,
 ) -> Result<Report, Box<dyn std::error::Error>> {
+    // Validate all XPath expressions upfront
+    let diagnostics: Vec<_> = op.queries.iter()
+        .filter_map(|q| validate_xpath_diagnostic(&q.xpath, "query"))
+        .collect();
+    if !diagnostics.is_empty() {
+        return Ok(Report::from_diagnostics(diagnostics));
+    }
+
     let mut result = parse_string_to_documents(
         source, lang, "<stdin>".to_string(), op.tree_mode, op.ignore_whitespace,
     )?;
@@ -406,6 +423,14 @@ fn execute_check(
 ) -> Result<Report, Box<dyn std::error::Error>> {
     if op.rules.is_empty() {
         return Ok(Report::check(vec![], true, empty_totals()));
+    }
+
+    // --- Phase 0: Validate XPath expressions upfront ---
+    let diagnostics: Vec<_> = op.rules.iter()
+        .filter_map(|rule| validate_xpath_diagnostic(&rule.xpath, "check"))
+        .collect();
+    if !diagnostics.is_empty() {
+        return Ok(Report::from_diagnostics(diagnostics));
     }
 
     // --- Phase 1: Validate rule examples via TestOperations ---
@@ -456,10 +481,11 @@ fn execute_check(
             let severity = rule.severity;
 
             match severity {
-                Severity::Fatal => fatals += 1,
                 Severity::Error => errors += 1,
                 Severity::Warning => warnings += 1,
-                Severity::Info => infos += 1,
+                // Fatal/Info are for tractor diagnostics, not user rules.
+                // User rules can only be Error or Warning.
+                _ => {}
             }
             files_affected.insert(rm.m.file.clone());
 
@@ -975,17 +1001,6 @@ fn query_files_multi(
     verbose: bool,
     filters: &[&dyn ResultFilter],
 ) -> Result<Vec<Match>, Box<dyn std::error::Error>> {
-    // Validate all XPath expressions upfront
-    let mut diagnostics = Vec::new();
-    for xpath in xpaths {
-        if let Some(diag) = validate_xpath_diagnostic(xpath, "query") {
-            diagnostics.push(diag);
-        }
-    }
-    if !diagnostics.is_empty() {
-        return Err(Box::new(DiagnosticError(Report::from_diagnostics(diagnostics))));
-    }
-
     let mut all_matches: Vec<Match> = files
         .par_iter()
         .filter_map(|file_path| {
