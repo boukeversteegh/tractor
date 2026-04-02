@@ -85,18 +85,7 @@ strings in all output formats.
 
 ### 3. Fix duplicate results for aggregate expressions
 
-Expressions that return a single result (like `map { "k": "v" }` without a `for`)
-get duplicated once per xot node in scope. This is an xee `SequenceQuery` behavior
-issue — it evaluates the expression per context node.
-
-**Affected:** `sort()`, `for-each()`, `serialize(array{...})`, `true()`, `map{...}`
-**Not affected:** `for/return`, `count()`, `let/return`, `(true())`
-
-**What to do:** Investigate whether xee provides a way to evaluate an expression once
-against a document rather than per-node. Alternatively, deduplicate results for
-expressions that don't reference the context node.
-
-**Priority:** Medium. Users can work around this with `for/return` patterns.
+Moved to dedicated todo: `todo/22-aggregate-expression-duplicate-eval.md`
 
 ### 4. Improve atomic string rendering
 
