@@ -111,6 +111,7 @@ impl DiffHunkFilter {
     }
 
     /// Create a filter from pre-parsed hunks (for testing).
+    #[cfg(test)]
     pub fn from_hunks(hunks: HashMap<PathBuf, Vec<LineRange>>) -> Self {
         DiffHunkFilter { hunks }
     }
