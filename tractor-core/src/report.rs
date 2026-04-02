@@ -579,7 +579,11 @@ impl ReportBuilder {
         };
 
         let success = match self.success_mode {
-            SuccessMode::NoVerdict => None,
+            SuccessMode::NoVerdict => {
+                // No verdict on match results, but fatals are infrastructure
+                // errors (broken XPath, bad config) — always fail.
+                if fatals > 0 { Some(false) } else { None }
+            }
             SuccessMode::Derive => {
                 let has_failures = fatals > 0 || errors > 0 || self.failed;
                 Some(!has_failures)

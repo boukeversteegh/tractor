@@ -381,36 +381,44 @@ pub fn run_rules(
 /// for unselected fields (matching the behaviour of `match_to_report_match`).
 pub fn project_report(report: &mut Report, view: &ViewSet) {
     for m in report.all_matches_mut() {
-        // Map/Array nodes are always kept — they're the only representation for data formats.
-        // For other nodes, keep when tree/lines/source is selected (needed for rendering).
-        let keep_tree = match &m.tree {
-            Some(node) if matches!(
-                node,
-                tractor_core::xpath::XmlNode::Map { .. }
-                    | tractor_core::xpath::XmlNode::Array { .. }
-            ) => true,
-            _ => view.has(ViewField::Tree) || view.has(ViewField::Lines) || view.has(ViewField::Source),
-        };
-        if !keep_tree {
-            m.tree = None;
-        }
-        if !view.has(ViewField::Value) {
-            m.value = None;
-        }
-        if !view.has(ViewField::Source) {
-            m.source = None;
-        }
-        if !view.has(ViewField::Lines) {
-            m.lines = None;
-        }
-        if !view.has(ViewField::Reason) {
-            m.reason = None;
-        }
-        if !view.has(ViewField::Severity) {
-            m.severity = None;
-        }
-        if !view.has(ViewField::Status) {
-            m.status = None;
+        // Diagnostics (fatal/error) always keep their fields — the user needs
+        // to see why their query failed regardless of -v settings.
+        let is_diagnostic = matches!(
+            m.severity,
+            Some(Severity::Fatal) | Some(Severity::Error)
+        );
+        if !is_diagnostic {
+            // Map/Array nodes are always kept — they're the only representation for data formats.
+            // For other nodes, keep when tree/lines/source is selected (needed for rendering).
+            let keep_tree = match &m.tree {
+                Some(node) if matches!(
+                    node,
+                    tractor_core::xpath::XmlNode::Map { .. }
+                        | tractor_core::xpath::XmlNode::Array { .. }
+                ) => true,
+                _ => view.has(ViewField::Tree) || view.has(ViewField::Lines) || view.has(ViewField::Source),
+            };
+            if !keep_tree {
+                m.tree = None;
+            }
+            if !view.has(ViewField::Value) {
+                m.value = None;
+            }
+            if !view.has(ViewField::Source) {
+                m.source = None;
+            }
+            if !view.has(ViewField::Lines) {
+                m.lines = None;
+            }
+            if !view.has(ViewField::Reason) {
+                m.reason = None;
+            }
+            if !view.has(ViewField::Severity) {
+                m.severity = None;
+            }
+            if !view.has(ViewField::Status) {
+                m.status = None;
+            }
         }
     }
 }

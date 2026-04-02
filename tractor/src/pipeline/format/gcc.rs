@@ -28,6 +28,39 @@ fn render_gcc_results(out: &mut String, items: &[ResultItem], parent_file: Optio
 fn render_gcc_match(out: &mut String, rm: &ReportMatch, group_file: Option<&str>, opts: &RenderOptions) {
     let file = group_file.unwrap_or(&rm.file);
 
+    // Diagnostics (fatal/error) always render as severity: reason, regardless of command.
+    if rm.severity.map_or(false, |s| matches!(s,
+        tractor_core::report::Severity::Fatal | tractor_core::report::Severity::Error
+    )) {
+        let reason   = rm.reason.as_deref().unwrap_or("error");
+        let severity = rm.severity.map_or("error", |s| match s {
+            tractor_core::report::Severity::Fatal => "error",
+            tractor_core::report::Severity::Error => "error",
+            tractor_core::report::Severity::Warning => "warning",
+            tractor_core::report::Severity::Info => "note",
+        });
+        if file.is_empty() {
+            let prefix = rm.origin.map_or("tractor", |o| o.as_str());
+            out.push_str(&format!("{}: {}: {}\n", prefix, severity, reason));
+        } else {
+            out.push_str(&format!(
+                "{}:{}:{}: {}: {}\n",
+                to_absolute_path(file), rm.line, rm.column, severity, reason
+            ));
+        }
+        if let Some(ref hint) = rm.hint {
+            out.push_str(&format!("  note: {}\n", hint));
+        }
+        if let Some(ref ls) = rm.lines {
+            out.push_str(&render_lines(
+                ls, rm.tree.as_ref(),
+                rm.line, rm.column, rm.end_line, rm.end_column,
+                opts,
+            ));
+        }
+        return;
+    }
+
     match rm.command.as_str() {
         "set" => {
             // Set matches: file: status

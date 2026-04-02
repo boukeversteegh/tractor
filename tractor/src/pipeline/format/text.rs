@@ -107,8 +107,24 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
         out.push('\n');
     }
 
-    // Content fields — iterate ViewSet for declaration order
-    for field in &view.fields {
+    // Build render list: view-requested fields first (in user order),
+    // then any extra fields present on the match but not in the view.
+    // This is how diagnostic fields appear without the renderer knowing
+    // about diagnostics — project_report preserves them, we just render.
+    // Extra field priority: lines supersedes source (lines includes the caret).
+    let extra_fields: &[ViewField] = &[
+        ViewField::Severity, ViewField::Reason, ViewField::Origin,
+        ViewField::Lines, ViewField::Tree,
+        ViewField::Value, ViewField::Status,
+    ];
+    let mut render_fields: Vec<ViewField> = view.fields.clone();
+    for &f in extra_fields {
+        if !view.has(f) && match_has_field(rm, f) {
+            render_fields.push(f);
+        }
+    }
+
+    for field in &render_fields {
         match field {
             ViewField::Tree => {
                 if let Some(ref node) = rm.tree {
@@ -171,14 +187,11 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
                 }
             }
             ViewField::Output => {
-                // Output is at group level for set reports; nothing to print here.
-                // (If a match has output directly, print it as a fallback.)
                 if let Some(ref content) = rm.output {
                     out.push_str(content);
                 }
             }
             ViewField::Origin => {
-                // Only show origin when there's no file (it replaces the file context)
                 if rm.file.is_empty() {
                     if let Some(origin) = rm.origin {
                         out.push_str(origin.as_str());
@@ -197,6 +210,22 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
         out.push_str("  hint: ");
         out.push_str(hint);
         out.push('\n');
+    }
+}
+
+/// Check if a match has non-None data for a given view field.
+fn match_has_field(rm: &ReportMatch, field: ViewField) -> bool {
+    match field {
+        ViewField::Tree => rm.tree.is_some(),
+        ViewField::Value => rm.value.is_some(),
+        ViewField::Source => rm.source.is_some(),
+        ViewField::Lines => rm.lines.is_some(),
+        ViewField::Reason => rm.reason.is_some(),
+        ViewField::Severity => rm.severity.is_some(),
+        ViewField::Status => rm.status.is_some(),
+        ViewField::Origin => rm.origin.is_some(),
+        ViewField::Output => rm.output.is_some(),
+        _ => false,
     }
 }
 
