@@ -116,40 +116,6 @@ pub fn apply_set_to_string(
     Ok(result)
 }
 
-/// Compute the output of a set operation for a list of files without writing to disk.
-///
-/// Returns one `(file_path, modified_content)` pair per input file, in order.
-/// Files with no matches are returned with their original content unchanged.
-///
-/// # Errors
-///
-/// Returns an error if:
-/// - A file cannot be read
-/// - Two matches in the same file overlap
-pub fn compute_set_output(
-    files: &[String],
-    matches: &[Match],
-    new_value: &str,
-) -> Result<Vec<(String, String)>, ReplaceError> {
-    // Group matches by file path
-    let mut by_file: HashMap<&str, Vec<&Match>> = HashMap::new();
-    for m in matches {
-        by_file.entry(m.file.as_str()).or_default().push(m);
-    }
-
-    let mut results = Vec::with_capacity(files.len());
-    for file_path in files {
-        let content = fs::read_to_string(file_path).map_err(|e| ReplaceError::Io {
-            path: file_path.clone(),
-            source: e,
-        })?;
-        let file_matches = by_file.get(file_path.as_str()).cloned().unwrap_or_default();
-        let (modified, _) = apply_to_content_str(&content, file_matches, new_value, file_path)?;
-        results.push((file_path.clone(), modified));
-    }
-    Ok(results)
-}
-
 /// Internal: apply sorted, validated matches to a content string and return the
 /// modified result along with the number of replacements applied.
 /// `file_path` is used only in error/warning messages.
