@@ -29,31 +29,36 @@ export function QuerySyntax() {
     <DocLayout>
       <h1>Query Syntax</h1>
       <p className="doc-lead">
-        Tractor uses XPath expressions to query code. The syntax works like file paths — <code>/</code> for direct children, <code>//</code> to search anywhere.
+        Tractor uses XPath expressions to query code. Just name the element you want — tractor searches the whole tree. Use <code>/</code> to navigate to children, <code>//</code> to search deeper.
       </p>
 
       <h2>Path Basics</h2>
 
-      <h3>/ — Direct child</h3>
+      <h3>Searching by name (the default)</h3>
       <p>
-        A single slash selects direct children. <code>/program/function</code> matches <code>&lt;function&gt;</code> elements that are direct children of <code>&lt;program&gt;</code>.
-      </p>
-
-      <h3>// — Anywhere (descendant)</h3>
-      <p>
-        A double slash searches the entire tree. <code>//function</code> finds every <code>&lt;function&gt;</code> element no matter how deeply nested.
+        When you write <code>-x "function"</code>, tractor searches the entire tree for elements named <code>function</code>. This is the same as <code>//function</code> — tractor adds the <code>//</code> implicitly.
       </p>
       <p>
-        This is the most common way to start a query — you rarely need to spell out the full path from the root.
+        This is the most common way to query. You almost never need to write <code>//</code> explicitly at the start.
       </p>
 
       <Example
         file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
-        command={`tractor greeter.js -x "//function/name" -v value`}
+        command={`tractor greeter.js -x "function/name" -v value`}
         output={`greet\nadd`}
       />
       <p>
-        Here <code>//function</code> finds all functions anywhere, and <code>/name</code> selects their direct <code>&lt;name&gt;</code> child.
+        Here <code>function</code> finds all functions anywhere in the tree, and <code>/name</code> selects their direct <code>&lt;name&gt;</code> child.
+      </p>
+
+      <h3>/ — Direct child</h3>
+      <p>
+        A single slash selects direct children. <code>function/name</code> means "the <code>name</code> that is a direct child of <code>function</code>."
+      </p>
+
+      <h3>// — Descendant (search deeper)</h3>
+      <p>
+        A double slash searches all descendants, not just direct children. <code>class//method</code> finds methods anywhere inside a class, even if they're nested inside a <code>body</code> element.
       </p>
 
       <h3>Combining / and //</h3>
@@ -62,11 +67,11 @@ export function QuerySyntax() {
           <tr><th>Expression</th><th>Meaning</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>//function</code></td><td>All functions anywhere</td></tr>
-          <tr><td><code>//function/name</code></td><td>The name of every function</td></tr>
-          <tr><td><code>//class//method</code></td><td>All methods anywhere inside a class</td></tr>
-          <tr><td><code>//class/body/method</code></td><td>Methods that are direct children of a class body</td></tr>
-          <tr><td><code>//function/parameters//type</code></td><td>All types anywhere in function parameters</td></tr>
+          <tr><td><code>function</code></td><td>All functions anywhere (implicit <code>//</code>)</td></tr>
+          <tr><td><code>function/name</code></td><td>The name of every function</td></tr>
+          <tr><td><code>class//method</code></td><td>All methods anywhere inside a class</td></tr>
+          <tr><td><code>class/body/method</code></td><td>Methods that are direct children of a class body</td></tr>
+          <tr><td><code>function/parameters//type</code></td><td>All types anywhere in function parameters</td></tr>
         </tbody>
       </table>
 
