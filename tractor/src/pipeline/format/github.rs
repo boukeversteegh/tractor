@@ -33,10 +33,14 @@ fn render_github_match(out: &mut String, rm: &tractor_core::report::ReportMatch,
         tractor_core::report::Severity::Info => "notice",
     });
     let file   = group_file.unwrap_or(&rm.file);
-    let message = match &rm.hint {
-        Some(hint) => format!("{} (hint: {})", reason, hint),
-        None => reason.to_string(),
-    };
+    let mut message = reason.to_string();
+    // Include the source expression for diagnostics so the user knows what failed
+    if let Some(ref source) = rm.source {
+        message = format!("{}: {}", message, source);
+    }
+    if let Some(ref hint) = rm.hint {
+        message = format!("{} (hint: {})", message, hint);
+    }
     let message = escape_github_message(&message);
     if file.is_empty() {
         // No real file — use file-less GitHub Actions annotation (::level::message)
