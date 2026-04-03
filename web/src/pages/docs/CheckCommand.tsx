@@ -42,7 +42,6 @@ export function CheckCommand() {
         Use <code>--severity</code> to set the level. Warnings don't fail the build:
       </p>
       <Example
-        file={{ name: 'app.js', language: 'js', content: APP_JS }}
         command={`tractor check app.js -x "//comment[contains(.,'TODO')]" \\
     --reason "TODO comment found" --severity warning`}
         output={`app.js:1:1: warning: TODO comment found
@@ -66,7 +65,6 @@ export function CheckCommand() {
         Use <code>-f github</code> to produce annotations that show directly on pull requests:
       </p>
       <Example
-        file={{ name: 'app.js', language: 'js', content: APP_JS }}
         command={`tractor check app.js -x "//comment[contains(.,'TODO')]" \\
     --reason "TODO comment found" -f github`}
         output={`::error file=app.js,line=1,endLine=1,col=1,endColumn=24::TODO comment found`}

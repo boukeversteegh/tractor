@@ -48,7 +48,6 @@ export function SchemaGuide() {
         The default depth is 4 levels. Use <code>-d</code> to go deeper:
       </p>
       <Example
-        file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
         command={`tractor greeter.js -v schema -d 6`}
         output={`Files
 └─ File
@@ -71,7 +70,6 @@ export function SchemaGuide() {
         Combine <code>-x</code> with <code>-v schema</code> to see the structure inside matched elements. This is the most powerful way to explore:
       </p>
       <Example
-        file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
         command={`tractor greeter.js -x "//function" -v schema`}
         output={`function (2)  function
 ├─ body (2)
@@ -96,7 +94,6 @@ export function SchemaGuide() {
 
       <h2>Go Deeper with -d</h2>
       <Example
-        file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
         command={`tractor greeter.js -x "//function" -v schema -d 8`}
         output={`function (2)  function
 ├─ name (2)  greet, add

@@ -72,7 +72,6 @@ export function WritingQueries() {
         Combine <code>-x</code> with <code>-v schema</code> to see the structure inside matched elements:
       </p>
       <Example
-        file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
         command={`tractor greeter.js -x "//function" -v schema`}
         output={`function (2)  function
 ├─ body (2)
@@ -123,7 +122,6 @@ export function WritingQueries() {
 
       <h3>Filter by child element</h3>
       <Example
-        file={{ name: 'user-service.js', language: 'js', content: USER_SERVICE_JS }}
         command={`tractor user-service.js -x "//method[not(static)]/name" -v value`}
         output={`findById\nsave\n_log`}
       />
@@ -133,7 +131,6 @@ export function WritingQueries() {
 
       <h3>Filter by text content</h3>
       <Example
-        file={{ name: 'user-service.js', language: 'js', content: USER_SERVICE_JS }}
         command={`tractor user-service.js -x "//method[contains(name,'find')]/name" -v value`}
         output="findById"
       />

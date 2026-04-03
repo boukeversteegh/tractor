@@ -29,7 +29,6 @@ export function LintRulesGuide() {
 
       <h3>2. Turn it into a check</h3>
       <Example
-        file={{ name: 'app.js', language: 'js', content: APP_JS }}
         command={`tractor check app.js -x "//comment[contains(.,'TODO')]" \\
     --reason "TODO comments should be resolved"`}
         output={`app.js:1:1: error: TODO comments should be resolved

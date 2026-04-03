@@ -7,6 +7,7 @@ import { CheckCommand } from './pages/docs/CheckCommand';
 import { TestCommand } from './pages/docs/TestCommand';
 import { SetCommand } from './pages/docs/SetCommand';
 import { RunCommand } from './pages/docs/RunCommand';
+import { QuerySyntax } from './pages/docs/QuerySyntax';
 import { WritingQueries } from './pages/docs/WritingQueries';
 import { SchemaGuide } from './pages/docs/SchemaGuide';
 import { LintRulesGuide } from './pages/docs/LintRulesGuide';
@@ -24,6 +25,7 @@ export function App() {
         <Route path="/docs/commands/test" element={<TestCommand />} />
         <Route path="/docs/commands/set" element={<SetCommand />} />
         <Route path="/docs/commands/run" element={<RunCommand />} />
+        <Route path="/docs/guides/query-syntax" element={<QuerySyntax />} />
         <Route path="/docs/guides/writing-queries" element={<WritingQueries />} />
         <Route path="/docs/guides/schema" element={<SchemaGuide />} />
         <Route path="/docs/guides/lint-rules" element={<LintRulesGuide />} />

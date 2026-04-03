@@ -37,7 +37,6 @@ export function TestCommand() {
         Assert that a pattern does <em>not</em> appear:
       </p>
       <Example
-        file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
         command={`tractor test greeter.js -x "//class" --expect none \\
     -m "No classes expected"`}
         output={`✓ No classes expected`}
@@ -48,7 +47,6 @@ export function TestCommand() {
         Assert that at least one match exists:
       </p>
       <Example
-        file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
         command={`tractor test greeter.js -x "//function" --expect some \\
     -m "At least one function"`}
         output={`✓ At least one function`}
@@ -59,7 +57,6 @@ export function TestCommand() {
         When the expectation is not met, tractor reports the failure and exits with code <code>1</code>:
       </p>
       <Example
-        file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
         command={`tractor test greeter.js -x "//function" --expect none \\
     -m "No functions expected"`}
         output={`✗ No functions expected (expected none, got 2)`}

@@ -144,6 +144,10 @@ export function DocsOverview() {
 
       <h2>Guides</h2>
       <div className="doc-cards">
+        <Link to="/docs/guides/query-syntax" className="doc-card">
+          <h3>Query Syntax</h3>
+          <p>Reference for path expressions, predicates, functions, and text matching.</p>
+        </Link>
         <Link to="/docs/guides/writing-queries" className="doc-card">
           <h3>Writing Queries</h3>
           <p>Learn to write tractor queries step by step, from simple to advanced.</p>

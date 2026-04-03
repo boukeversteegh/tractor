@@ -119,7 +119,6 @@ tractor query [FILES] [OPTIONS]`} language="bash" />
         Use <code>-x</code> to query the tree and extract matching elements:
       </p>
       <Example
-        file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
         command={`tractor greeter.js -x "//function/name" -v value`}
         output={`greet\nadd`}
       />
@@ -132,7 +131,6 @@ tractor query [FILES] [OPTIONS]`} language="bash" />
       <h3>value</h3>
       <p>Extract the text content of matched nodes:</p>
       <Example
-        file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
         command={`tractor greeter.js -x "//function/name" -v value`}
         output={`greet\nadd`}
       />
@@ -140,7 +138,6 @@ tractor query [FILES] [OPTIONS]`} language="bash" />
       <h3>source</h3>
       <p>Get the exact source code of matched nodes:</p>
       <Example
-        file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
         command={`tractor greeter.js -x "//function" -v source`}
         outputLanguage="js"
         output={`function greet(name) {
@@ -155,7 +152,6 @@ function add(a, b) {
       <h3>lines</h3>
       <p>Show the full source lines containing each match:</p>
       <Example
-        file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
         command={`tractor greeter.js -x "//function/name" -v lines`}
         output={`1 | function greet(name) {
              ^~~~~
@@ -168,7 +164,6 @@ function add(a, b) {
       <h3>count</h3>
       <p>Count matches:</p>
       <Example
-        file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
         command={`tractor greeter.js -x "//function" -v count`}
         output="2"
       />
@@ -176,7 +171,6 @@ function add(a, b) {
       <h3>schema</h3>
       <p>See the structural overview of element types. Learn more in the <Link to="/docs/guides/schema">Schema guide</Link>.</p>
       <Example
-        file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
         command={`tractor greeter.js -x "//function" -v schema`}
         output={`function (2)  function
 ├─ body (2)
@@ -232,7 +226,6 @@ fn add(a: i32, b: i32) -> i32 {
       </table>
 
       <Example
-        file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
         command={`tractor greeter.js -x "//function/name" -v value -f json`}
         outputLanguage="json"
         output={`{

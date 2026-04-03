@@ -68,7 +68,6 @@ debug: true`}
 
       <h3>JSON</h3>
       <Example
-        file={{ name: 'config.json', language: 'json', content: CONFIG_JSON }}
         command={`tractor set config.json -x "//database/host" --value "localhost" --stdout`}
         outputLanguage="json"
         output={`{
@@ -81,7 +80,6 @@ debug: true`}
 
       <h3>YAML</h3>
       <Example
-        file={{ name: 'settings.yaml', language: 'yaml', content: SETTINGS_YAML }}
         command={`tractor set settings.yaml -x "//debug" --value "false" --stdout`}
         outputLanguage="yaml"
         output={`database:

@@ -26,6 +26,7 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
   {
     title: 'Guides',
     items: [
+      { label: 'Query Syntax', path: '/docs/guides/query-syntax' },
       { label: 'Writing Queries', path: '/docs/guides/writing-queries' },
       { label: 'Exploring with Schema', path: '/docs/guides/schema' },
       { label: 'Writing Lint Rules', path: '/docs/guides/lint-rules' },
