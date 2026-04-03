@@ -24,6 +24,12 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
     ],
   },
   {
+    title: 'Reference',
+    items: [
+      { label: 'CLI Options', path: '/docs/reference/cli' },
+    ],
+  },
+  {
     title: 'Guides',
     items: [
       { label: 'Query Syntax', path: '/docs/guides/query-syntax' },
