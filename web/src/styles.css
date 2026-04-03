@@ -1848,6 +1848,34 @@ body {
   color: var(--text-secondary);
 }
 
+/* Support tier badges */
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.badge-full {
+  background: rgba(92, 184, 92, 0.15);
+  color: var(--accent-light);
+  border: 1px solid rgba(92, 184, 92, 0.3);
+}
+
+.badge-good {
+  background: rgba(212, 170, 0, 0.12);
+  color: var(--accent-yellow);
+  border: 1px solid rgba(212, 170, 0, 0.25);
+}
+
+.badge-basic {
+  background: rgba(138, 170, 138, 0.1);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
 /* Responsive docs */
 @media (max-width: 768px) {
   .doc-container {

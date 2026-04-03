@@ -19,26 +19,26 @@ export function CodeLanguages() {
           <tr><th>Language</th><th>Extension</th><th>-l value</th><th>Support</th></tr>
         </thead>
         <tbody>
-          <tr><td>C#</td><td><code>.cs</code></td><td><code>csharp</code></td><td>Full</td></tr>
-          <tr><td>JavaScript</td><td><code>.js</code></td><td><code>javascript</code></td><td>Full</td></tr>
-          <tr><td>TypeScript</td><td><code>.ts</code></td><td><code>typescript</code></td><td>Full</td></tr>
-          <tr><td>TSX</td><td><code>.tsx</code></td><td><code>tsx</code></td><td>Full</td></tr>
-          <tr><td>Python</td><td><code>.py</code></td><td><code>python</code></td><td>Full</td></tr>
-          <tr><td>Go</td><td><code>.go</code></td><td><code>go</code></td><td>Full</td></tr>
-          <tr><td>Java</td><td><code>.java</code></td><td><code>java</code></td><td>Full</td></tr>
-          <tr><td>Rust</td><td><code>.rs</code></td><td><code>rust</code></td><td>Full</td></tr>
-          <tr><td>T-SQL</td><td><code>.sql</code></td><td><code>tsql</code></td><td>Full</td></tr>
-          <tr><td>Ruby</td><td><code>.rb</code></td><td><code>ruby</code></td><td>Good</td></tr>
-          <tr><td>C</td><td><code>.c</code></td><td><code>c</code></td><td>Basic</td></tr>
-          <tr><td>C++</td><td><code>.cpp</code></td><td><code>cpp</code></td><td>Basic</td></tr>
-          <tr><td>Bash</td><td><code>.sh</code></td><td><code>bash</code></td><td>Basic</td></tr>
-          <tr><td>PHP</td><td><code>.php</code></td><td><code>php</code></td><td>Basic</td></tr>
-          <tr><td>Scala</td><td><code>.scala</code></td><td><code>scala</code></td><td>Basic</td></tr>
-          <tr><td>Lua</td><td><code>.lua</code></td><td><code>lua</code></td><td>Basic</td></tr>
-          <tr><td>Haskell</td><td><code>.hs</code></td><td><code>haskell</code></td><td>Basic</td></tr>
-          <tr><td>OCaml</td><td><code>.ml</code></td><td><code>ocaml</code></td><td>Basic</td></tr>
-          <tr><td>R</td><td><code>.r</code></td><td><code>r</code></td><td>Basic</td></tr>
-          <tr><td>Julia</td><td><code>.jl</code></td><td><code>julia</code></td><td>Basic</td></tr>
+          <tr><td>C#</td><td><code>.cs</code></td><td><code>csharp</code></td><td><span className="badge badge-full">Full</span></td></tr>
+          <tr><td>JavaScript</td><td><code>.js</code></td><td><code>javascript</code></td><td><span className="badge badge-full">Full</span></td></tr>
+          <tr><td>TypeScript</td><td><code>.ts</code></td><td><code>typescript</code></td><td><span className="badge badge-full">Full</span></td></tr>
+          <tr><td>TSX</td><td><code>.tsx</code></td><td><code>tsx</code></td><td><span className="badge badge-full">Full</span></td></tr>
+          <tr><td>Python</td><td><code>.py</code></td><td><code>python</code></td><td><span className="badge badge-full">Full</span></td></tr>
+          <tr><td>Go</td><td><code>.go</code></td><td><code>go</code></td><td><span className="badge badge-full">Full</span></td></tr>
+          <tr><td>Java</td><td><code>.java</code></td><td><code>java</code></td><td><span className="badge badge-full">Full</span></td></tr>
+          <tr><td>Rust</td><td><code>.rs</code></td><td><code>rust</code></td><td><span className="badge badge-full">Full</span></td></tr>
+          <tr><td>T-SQL</td><td><code>.sql</code></td><td><code>tsql</code></td><td><span className="badge badge-full">Full</span></td></tr>
+          <tr><td>Ruby</td><td><code>.rb</code></td><td><code>ruby</code></td><td><span className="badge badge-good">Good</span></td></tr>
+          <tr><td>C</td><td><code>.c</code></td><td><code>c</code></td><td><span className="badge badge-basic">Basic</span></td></tr>
+          <tr><td>C++</td><td><code>.cpp</code></td><td><code>cpp</code></td><td><span className="badge badge-basic">Basic</span></td></tr>
+          <tr><td>Bash</td><td><code>.sh</code></td><td><code>bash</code></td><td><span className="badge badge-basic">Basic</span></td></tr>
+          <tr><td>PHP</td><td><code>.php</code></td><td><code>php</code></td><td><span className="badge badge-basic">Basic</span></td></tr>
+          <tr><td>Scala</td><td><code>.scala</code></td><td><code>scala</code></td><td><span className="badge badge-basic">Basic</span></td></tr>
+          <tr><td>Lua</td><td><code>.lua</code></td><td><code>lua</code></td><td><span className="badge badge-basic">Basic</span></td></tr>
+          <tr><td>Haskell</td><td><code>.hs</code></td><td><code>haskell</code></td><td><span className="badge badge-basic">Basic</span></td></tr>
+          <tr><td>OCaml</td><td><code>.ml</code></td><td><code>ocaml</code></td><td><span className="badge badge-basic">Basic</span></td></tr>
+          <tr><td>R</td><td><code>.r</code></td><td><code>r</code></td><td><span className="badge badge-basic">Basic</span></td></tr>
+          <tr><td>Julia</td><td><code>.jl</code></td><td><code>julia</code></td><td><span className="badge badge-basic">Basic</span></td></tr>
         </tbody>
       </table>
       <p>
