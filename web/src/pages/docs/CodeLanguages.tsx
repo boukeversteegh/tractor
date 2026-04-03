@@ -11,33 +11,41 @@ export function CodeLanguages() {
       </p>
 
       <h2>Supported Languages</h2>
+      <p>
+        Languages with <strong>full</strong> support have a semantic transform layer that renames nodes, extracts modifiers (like <code>public</code> and <code>static</code>), and structures the tree for intuitive querying. Languages with <strong>basic</strong> support use the raw parser output directly — still queryable, but element names follow the parser's conventions.
+      </p>
       <table className="doc-table">
         <thead>
-          <tr><th>Language</th><th>Extension</th><th>-l value</th></tr>
+          <tr><th>Language</th><th>Extension</th><th>-l value</th><th>Support</th></tr>
         </thead>
         <tbody>
-          <tr><td>JavaScript</td><td><code>.js</code></td><td><code>javascript</code></td></tr>
-          <tr><td>TypeScript</td><td><code>.ts</code></td><td><code>typescript</code></td></tr>
-          <tr><td>TSX</td><td><code>.tsx</code></td><td><code>tsx</code></td></tr>
-          <tr><td>C#</td><td><code>.cs</code></td><td><code>csharp</code></td></tr>
-          <tr><td>Rust</td><td><code>.rs</code></td><td><code>rust</code></td></tr>
-          <tr><td>Python</td><td><code>.py</code></td><td><code>python</code></td></tr>
-          <tr><td>Go</td><td><code>.go</code></td><td><code>go</code></td></tr>
-          <tr><td>Java</td><td><code>.java</code></td><td><code>java</code></td></tr>
-          <tr><td>Ruby</td><td><code>.rb</code></td><td><code>ruby</code></td></tr>
-          <tr><td>C++</td><td><code>.cpp</code></td><td><code>cpp</code></td></tr>
-          <tr><td>C</td><td><code>.c</code></td><td><code>c</code></td></tr>
-          <tr><td>PHP</td><td><code>.php</code></td><td><code>php</code></td></tr>
-          <tr><td>Scala</td><td><code>.scala</code></td><td><code>scala</code></td></tr>
-          <tr><td>Lua</td><td><code>.lua</code></td><td><code>lua</code></td></tr>
-          <tr><td>Haskell</td><td><code>.hs</code></td><td><code>haskell</code></td></tr>
-          <tr><td>OCaml</td><td><code>.ml</code></td><td><code>ocaml</code></td></tr>
-          <tr><td>R</td><td><code>.r</code></td><td><code>r</code></td></tr>
-          <tr><td>Julia</td><td><code>.jl</code></td><td><code>julia</code></td></tr>
-          <tr><td>Bash</td><td><code>.sh</code></td><td><code>bash</code></td></tr>
-          <tr><td>T-SQL</td><td><code>.sql</code></td><td><code>tsql</code></td></tr>
+          <tr><td>C#</td><td><code>.cs</code></td><td><code>csharp</code></td><td>Full</td></tr>
+          <tr><td>JavaScript</td><td><code>.js</code></td><td><code>javascript</code></td><td>Full</td></tr>
+          <tr><td>TypeScript</td><td><code>.ts</code></td><td><code>typescript</code></td><td>Full</td></tr>
+          <tr><td>TSX</td><td><code>.tsx</code></td><td><code>tsx</code></td><td>Full</td></tr>
+          <tr><td>Python</td><td><code>.py</code></td><td><code>python</code></td><td>Full</td></tr>
+          <tr><td>Go</td><td><code>.go</code></td><td><code>go</code></td><td>Full</td></tr>
+          <tr><td>Java</td><td><code>.java</code></td><td><code>java</code></td><td>Full</td></tr>
+          <tr><td>Rust</td><td><code>.rs</code></td><td><code>rust</code></td><td>Full</td></tr>
+          <tr><td>T-SQL</td><td><code>.sql</code></td><td><code>tsql</code></td><td>Full</td></tr>
+          <tr><td>Ruby</td><td><code>.rb</code></td><td><code>ruby</code></td><td>Good</td></tr>
+          <tr><td>C</td><td><code>.c</code></td><td><code>c</code></td><td>Basic</td></tr>
+          <tr><td>C++</td><td><code>.cpp</code></td><td><code>cpp</code></td><td>Basic</td></tr>
+          <tr><td>Bash</td><td><code>.sh</code></td><td><code>bash</code></td><td>Basic</td></tr>
+          <tr><td>PHP</td><td><code>.php</code></td><td><code>php</code></td><td>Basic</td></tr>
+          <tr><td>Scala</td><td><code>.scala</code></td><td><code>scala</code></td><td>Basic</td></tr>
+          <tr><td>Lua</td><td><code>.lua</code></td><td><code>lua</code></td><td>Basic</td></tr>
+          <tr><td>Haskell</td><td><code>.hs</code></td><td><code>haskell</code></td><td>Basic</td></tr>
+          <tr><td>OCaml</td><td><code>.ml</code></td><td><code>ocaml</code></td><td>Basic</td></tr>
+          <tr><td>R</td><td><code>.r</code></td><td><code>r</code></td><td>Basic</td></tr>
+          <tr><td>Julia</td><td><code>.jl</code></td><td><code>julia</code></td><td>Basic</td></tr>
         </tbody>
       </table>
+      <p>
+        <strong>Full</strong> — Semantic transforms: nodes renamed to intuitive names (<code>function</code>, <code>method</code>, <code>class</code>), modifiers extracted as marker elements (<code>[public]</code>, <code>[static]</code>), operators and accessors normalized.<br/>
+        <strong>Good</strong> — Partial transforms: common patterns covered, some raw parser names remain.<br/>
+        <strong>Basic</strong> — Raw parser output with minimal cleanup. Still fully queryable — use <code>-v schema</code> to discover element names. Contributions welcome.
+      </p>
 
       <h2>How Code Trees Work</h2>
       <p>
