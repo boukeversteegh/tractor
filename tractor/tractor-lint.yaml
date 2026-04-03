@@ -24,10 +24,11 @@ check:
     # See: https://github.com/boukeversteegh/tractor/issues/68
     - id: deserialize-deny-unknown-fields
       xpath: >-
-        //struct[
-          preceding-sibling::*[position()<=5][self::attribute_item][contains(.,"Deserialize")]
-        ][
-          not(preceding-sibling::*[position()<=5][self::attribute_item][contains(.,"deny_unknown_fields")])
+        //attribute_item[contains(.,"Deserialize")][
+          not(
+            following-sibling::*[1][self::attribute_item][contains(.,"deny_unknown_fields")]
+            or following-sibling::*[2][self::attribute_item][contains(.,"deny_unknown_fields")]
+          )
         ]
       reason: "Deserialize struct must have #[serde(deny_unknown_fields)] to reject typos"
       severity: error
