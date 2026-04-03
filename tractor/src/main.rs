@@ -82,6 +82,7 @@ fn main() -> ExitCode {
     }
 
     // Extract format and color settings before dispatch (for error fallback rendering).
+    // This duplicates the dispatch structure — see TODO/21-unified-pipeline-architecture.md.
     let format_str = match &cli.command {
         Some(Command::Check(a)) => a.format.as_str(),
         Some(Command::Query(a)) => a.format.as_str(),
