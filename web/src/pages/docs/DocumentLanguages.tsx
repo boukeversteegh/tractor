@@ -10,6 +10,18 @@ export function DocumentLanguages() {
         Markdown, CSS, and HTML are parsed into a structure tree — similar to code, but with elements specific to each format.
       </p>
 
+      <h2>Supported Formats</h2>
+      <table className="doc-table">
+        <thead>
+          <tr><th>Language</th><th>Extension</th><th>-l value</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Markdown</td><td><code>.md</code></td><td><code>markdown</code></td></tr>
+          <tr><td>CSS</td><td><code>.css</code></td><td><code>css</code></td></tr>
+          <tr><td>HTML</td><td><code>.html</code></td><td><code>html</code></td></tr>
+        </tbody>
+      </table>
+
       <h2>Markdown</h2>
       <p>
         Markdown is parsed into <code>section</code>, <code>heading</code>, <code>paragraph</code>, and <code>inline</code> nodes. Heading levels are represented as child markers like <code>h1</code>, <code>h2</code>, etc.
@@ -122,18 +134,6 @@ More text` }}
 
       <h3>Finding elements with a specific class</h3>
       <CodeBlock language="bash" code={`tractor page.html -x "//element[.//attribute_name='class'][contains(.//quoted_attribute_value,'app')]" -v source`} />
-
-      <h2>Supported Formats</h2>
-      <table className="doc-table">
-        <thead>
-          <tr><th>Language</th><th>Extension</th><th>-l value</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>Markdown</td><td><code>.md</code></td><td><code>markdown</code></td></tr>
-          <tr><td>CSS</td><td><code>.css</code></td><td><code>css</code></td></tr>
-          <tr><td>HTML</td><td><code>.html</code></td><td><code>html</code></td></tr>
-        </tbody>
-      </table>
 
       <div className="doc-next">
         <p>See also: <Link to="/docs/languages/code">Code Languages</Link> and <Link to="/docs/languages/data">Data Formats</Link>.</p>
