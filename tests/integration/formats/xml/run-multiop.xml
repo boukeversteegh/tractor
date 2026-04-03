@@ -16,11 +16,11 @@
           <reason>class declaration found</reason>
           <severity>error</severity>
           <lines>
-          <line>public class Foo</line>
-          <line>{</line>
-          <line>    public int Bar { get; set; }</line>
-          <line>    public void Baz() { }</line>
-          <line>}</line>
+            <line>public class Foo</line>
+            <line>{</line>
+            <line>    public int Bar { get; set; }</line>
+            <line>    public void Baz() { }</line>
+            <line>}</line>
           </lines>
           <value> class Foo
 {
@@ -33,7 +33,7 @@
           <reason>void method found</reason>
           <severity>warning</severity>
           <lines>
-          <line>    public void Baz() { }</line>
+            <line>    public void Baz() { }</line>
           </lines>
           <value> void Baz() { }</value>
           <rule-id>no-void-method</rule-id>
@@ -42,7 +42,7 @@
           <reason>class declaration found</reason>
           <severity>error</severity>
           <lines>
-          <line>public class Qux { }</line>
+            <line>public class Qux { }</line>
           </lines>
           <value> class Qux { }</value>
           <rule-id>no-class</rule-id>
@@ -54,11 +54,11 @@
       <group file="tests/integration/formats/sample.cs">
         <match line="1" column="1" end_line="5" end_column="2">
           <lines>
-          <line>public class Foo</line>
-          <line>{</line>
-          <line>    public int Bar { get; set; }</line>
-          <line>    public void Baz() { }</line>
-          <line>}</line>
+            <line>public class Foo</line>
+            <line>{</line>
+            <line>    public int Bar { get; set; }</line>
+            <line>    public void Baz() { }</line>
+            <line>}</line>
           </lines>
           <value> class Foo
 {
@@ -68,7 +68,7 @@
         </match>
         <match line="7" column="1" end_line="7" end_column="21">
           <lines>
-          <line>public class Qux { }</line>
+            <line>public class Qux { }</line>
           </lines>
           <value> class Qux { }</value>
         </match>

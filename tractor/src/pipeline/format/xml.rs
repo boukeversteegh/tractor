@@ -117,7 +117,7 @@ fn append_match(
                 if let Some(ref ls) = rm.lines {
                     out.push_str(&format!("{}<lines>\n", inner));
                     for line in ls {
-                        out.push_str(&format!("{}<line>{}</line>\n", inner, escape(line)));
+                        out.push_str(&format!("{}<line>{}</line>\n", deep, escape(line)));
                     }
                     out.push_str(&format!("{}</lines>\n", inner));
                 }
@@ -187,7 +187,7 @@ fn append_match(
         if let Some(ref ls) = rm.lines {
             out.push_str(&format!("{}<lines>\n", inner));
             for line in ls {
-                out.push_str(&format!("{}<line>{}</line>\n", inner, escape(line)));
+                out.push_str(&format!("{}<line>{}</line>\n", deep, escape(line)));
             }
             out.push_str(&format!("{}</lines>\n", inner));
         }

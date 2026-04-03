@@ -12,7 +12,7 @@
       <severity>fatal</severity>
       <origin>xpath</origin>
       <lines>
-      <line>//class[bad=(</line>
+        <line>//class[bad=(</line>
       </lines>
       <source>//class[bad=(</source>
     </match>
