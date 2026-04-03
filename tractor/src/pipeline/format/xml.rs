@@ -167,6 +167,37 @@ fn append_match(
         }
     }
 
+    // Extra fields: diagnostic fields present on the match but not in the view.
+    if !view.has(ViewField::Reason) {
+        if let Some(ref reason) = rm.reason {
+            out.push_str(&format!("{}<reason>{}</reason>\n", inner, escape(reason)));
+        }
+    }
+    if !view.has(ViewField::Severity) {
+        if let Some(severity) = rm.severity {
+            out.push_str(&format!("{}<severity>{}</severity>\n", inner, severity.as_str()));
+        }
+    }
+    if !view.has(ViewField::Origin) && rm.file.is_empty() {
+        if let Some(origin) = rm.origin {
+            out.push_str(&format!("{}<origin>{}</origin>\n", inner, origin.as_str()));
+        }
+    }
+    if !view.has(ViewField::Lines) {
+        if let Some(ref ls) = rm.lines {
+            out.push_str(&format!("{}<lines>\n", inner));
+            for line in ls {
+                out.push_str(&format!("{}<line>{}</line>\n", inner, escape(line)));
+            }
+            out.push_str(&format!("{}</lines>\n", inner));
+        }
+    }
+    if !view.has(ViewField::Source) {
+        if let Some(ref s) = rm.source {
+            out.push_str(&format!("{}<source>{}</source>\n", inner, escape(s)));
+        }
+    }
+
     if should_emit_command(rm, view, skip_dims) {
         out.push_str(&format!("{}<command>{}</command>\n", inner, escape(&rm.command)));
     }

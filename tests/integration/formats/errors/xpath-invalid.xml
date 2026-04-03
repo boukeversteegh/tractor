@@ -8,6 +8,13 @@
   </totals>
   <results>
     <match line="1" column="14" end_line="1" end_column="15">
+      <reason>Parse error</reason>
+      <severity>fatal</severity>
+      <origin>xpath</origin>
+      <lines>
+      <line>//class[bad=(</line>
+      </lines>
+      <source>//class[bad=(</source>
     </match>
   </results>
 </report>
