@@ -58,4 +58,15 @@ then be simplified to remove the `position()<=5` workaround.
 - Applies to structs, enums, functions, impl blocks, traits, etc.
 - Should only re-parent consecutive `attribute_item` siblings immediately
   before the annotated item — not all attributes in the file.
+- The adjacency detection logic is closely related to the C# renderer's
+  trailing vs leading comment classification:
+  - `is_inline_node()` in `tractor-core/src/xot_transform.rs:306` checks
+    if a node starts on the same line as its previous sibling ends.
+  - `is_leading_comment()` in `tractor-core/src/languages/csharp.rs:542`
+    checks if a comment immediately precedes a declaration (no blank line
+    gap), and `group_line_comments()` at line 572 merges consecutive
+    same-kind siblings before attaching them.
+  Both solve the same core problem: determining which consecutive sibling
+  nodes "belong to" an adjacent declaration. The attribute nesting
+  transform could reuse or generalize these adjacency heuristics.
 - Related: issue #68, `tractor/tractor-lint.yaml`
