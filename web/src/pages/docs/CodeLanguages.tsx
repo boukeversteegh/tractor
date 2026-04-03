@@ -47,54 +47,6 @@ export function CodeLanguages() {
         <strong>Basic</strong> — Raw parser output with minimal cleanup. Still fully queryable — use <code>-v schema</code> to discover element names. Contributions welcome.
       </p>
 
-      <h2>How Code Trees Work</h2>
-      <p>
-        Code is parsed into a semantic tree. Tractor applies transforms to make the tree more intuitive — for example, turning raw parser nodes into meaningful names like <code>function</code>, <code>class</code>, and <code>method</code>.
-      </p>
-      <p>
-        The best way to learn what's in the tree is to look at it:
-      </p>
-      <Example
-        file={{ name: 'greeter.js', language: 'js', content: `function greet(name) {
-  return "Hello, " + name;
-}
-
-function add(a, b) {
-  return a + b;
-}` }}
-        command={`tractor greeter.js -x "//function" -v schema`}
-        output={`function (2)  function
-├─ body (2)
-│  └─ block (2)  {…}
-│     └─ return (2)  return, ;
-│        └─ binary (2)  +
-│           └─ … (8 children)
-├─ parameters (2)
-│  └─ params (2)  (, ), ,
-│     └─ type (3)  name, a, b
-└─ name (2)  greet, add
-
-(use -d to increase depth, or -x to query specific elements)`}
-      />
-
-      <h3>Modifiers are marker elements</h3>
-      <p>
-        Access modifiers like <code>public</code>, <code>static</code>, <code>async</code> are represented as empty child elements. This makes querying natural:
-      </p>
-      <CodeBlock language="bash" code={`# Find public methods
-tractor "src/**/*.cs" -x "//method[public]/name" -v value
-
-# Find static methods
-tractor "src/**/*.js" -x "//method[static]/name" -v value
-
-# Find non-static methods
-tractor "src/**/*.js" -x "//method[not(static)]/name" -v value`} />
-
-      <h3>Text content matches source code</h3>
-      <p>
-        When you compare an element's text with a string, tractor flattens all the nested elements and compares against the source code as written. This means <code>contains(.,'console.log')</code> works even though the function call is represented as multiple nested elements in the tree.
-      </p>
-
       <h2>Language Auto-detection</h2>
       <p>
         When processing files, tractor detects the language from the file extension. No configuration needed:
