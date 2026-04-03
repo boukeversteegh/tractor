@@ -48,9 +48,6 @@ fn render_gcc_match(out: &mut String, rm: &ReportMatch, group_file: Option<&str>
                 to_absolute_path(file), rm.line, rm.column, severity, reason
             ));
         }
-        if let Some(ref hint) = rm.hint {
-            out.push_str(&format!("  note: {}\n", hint));
-        }
         if let Some(ref ls) = rm.lines {
             out.push_str(&render_lines(
                 ls, rm.tree.as_ref(),
@@ -94,9 +91,6 @@ fn render_gcc_match(out: &mut String, rm: &ReportMatch, group_file: Option<&str>
                     "{}:{}:{}: {}: {}\n",
                     to_absolute_path(file), rm.line, rm.column, severity, reason
                 ));
-            }
-            if let Some(ref hint) = rm.hint {
-                out.push_str(&format!("  note: {}\n", hint));
             }
             if let Some(ref ls) = rm.lines {
                 out.push_str(&render_lines(

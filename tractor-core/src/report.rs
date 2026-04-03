@@ -113,8 +113,6 @@ pub struct ReportMatch {
     pub reason:   Option<String>,
     pub severity: Option<Severity>,
     pub message:  Option<String>,
-    /// Suggested fix or hint (e.g. "did you mean: //function_item").
-    pub hint:     Option<String>,
     /// Where a diagnostic originated (shown when file is empty).
     pub origin:   Option<DiagnosticOrigin>,
     /// Rule identifier for multi-rule reports (future: `--rules` flag).
@@ -134,7 +132,6 @@ impl Serialize for ReportMatch {
             + self.reason.as_ref().map_or(0, |_| 1)
             + self.severity.as_ref().map_or(0, |_| 1)
             + self.message.as_ref().map_or(0, |_| 1)
-            + self.hint.as_ref().map_or(0, |_| 1)
             + self.origin.as_ref().map_or(0, |_| 1)
             + self.rule_id.as_ref().map_or(0, |_| 1)
             + self.status.as_ref().map_or(0, |_| 1)
@@ -163,7 +160,6 @@ impl Serialize for ReportMatch {
         if let Some(ref v) = self.reason   { map.serialize_entry("reason", v)?; }
         if let Some(ref v) = self.severity { map.serialize_entry("severity", v)?; }
         if let Some(ref v) = self.message  { map.serialize_entry("message", v)?; }
-        if let Some(ref v) = self.hint     { map.serialize_entry("hint", v)?; }
         if let Some(ref v) = self.origin   { map.serialize_entry("origin", v)?; }
         if let Some(ref v) = self.rule_id  { map.serialize_entry("rule_id", v)?; }
         if let Some(ref v) = self.status   { map.serialize_entry("status", v)?; }

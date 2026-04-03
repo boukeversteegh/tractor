@@ -74,7 +74,7 @@ pub fn validate_xpath_diagnostic(xpath_expr: &str, command: &str) -> Option<Repo
         reason: Some(reason),
         severity: Some(Severity::Fatal),
         message: None,
-        hint: None,
+       
         origin: Some(DiagnosticOrigin::Xpath),
         rule_id: None,
         status: None,

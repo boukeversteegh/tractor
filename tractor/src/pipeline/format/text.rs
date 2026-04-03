@@ -124,12 +124,6 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
         }
     }
 
-    // Hint is always shown when present (it's diagnostic metadata, not a view field)
-    if let Some(ref hint) = rm.hint {
-        out.push_str("  hint: ");
-        out.push_str(hint);
-        out.push('\n');
-    }
 }
 
 /// Render a single field from a match into the output buffer.

@@ -173,9 +173,6 @@ fn append_match(
     if let Some(ref message) = rm.message {
         out.push_str(&format!("{}<message>{}</message>\n", inner, escape(message)));
     }
-    if let Some(ref hint) = rm.hint {
-        out.push_str(&format!("{}<hint>{}</hint>\n", inner, escape(hint)));
-    }
     if should_emit_rule_id(rm, skip_dims) {
         out.push_str(&format!("{}<rule-id>{}</rule-id>\n", inner, escape(rm.rule_id.as_deref().unwrap())));
     }

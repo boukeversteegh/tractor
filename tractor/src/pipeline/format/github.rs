@@ -38,9 +38,6 @@ fn render_github_match(out: &mut String, rm: &tractor_core::report::ReportMatch,
     if let Some(ref source) = rm.source {
         message = format!("{} at col {}: {}", message, rm.column, source);
     }
-    if let Some(ref hint) = rm.hint {
-        message = format!("{} (hint: {})", message, hint);
-    }
     let message = escape_github_message(&message);
     if file.is_empty() {
         // No real file — use file-less GitHub Actions annotation (::level::message)

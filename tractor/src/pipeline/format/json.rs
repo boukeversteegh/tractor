@@ -171,9 +171,6 @@ pub fn match_to_value(
     if let Some(ref msg) = rm.message {
         obj.insert("message".into(), json!(msg));
     }
-    if let Some(ref hint) = rm.hint {
-        obj.insert("hint".into(), json!(hint));
-    }
     if should_emit_rule_id(rm, skip_dims) {
         obj.insert("rule_id".into(), json!(rm.rule_id.as_deref().unwrap()));
     }
@@ -195,7 +192,7 @@ mod tests {
             tree: None,
             value: Some(value.to_string()),
             source: None, lines: None, reason: None, severity: None,
-            message: None, hint: None, origin: None, rule_id: None, status: None, output: None,
+            message: None, origin: None, rule_id: None, status: None, output: None,
         }
     }
 
@@ -210,7 +207,7 @@ mod tests {
             tree: Some(tree),
             value: None, // maps have no value — data is in tree
             source: None, lines: None, reason: None, severity: None,
-            message: None, hint: None, origin: None, rule_id: None, status: None, output: None,
+            message: None, origin: None, rule_id: None, status: None, output: None,
         }
     }
 

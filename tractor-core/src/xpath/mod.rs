@@ -36,8 +36,6 @@ pub struct ValidationResult {
     pub error_start: Option<usize>,
     /// Error end position (end index in the query string)
     pub error_end: Option<usize>,
-    /// Warnings (non-fatal issues)
-    pub warnings: Vec<String>,
 }
 
 impl ValidationResult {
@@ -48,7 +46,6 @@ impl ValidationResult {
             error: None,
             error_start: None,
             error_end: None,
-            warnings: Vec::new(),
         }
     }
 
@@ -59,7 +56,6 @@ impl ValidationResult {
             error: Some(message),
             error_start: None,
             error_end: None,
-            warnings: Vec::new(),
         }
     }
 
@@ -70,14 +66,7 @@ impl ValidationResult {
             error: Some(message),
             error_start: Some(start),
             error_end: Some(end),
-            warnings: Vec::new(),
         }
-    }
-
-    /// Add a warning
-    pub fn with_warning(mut self, warning: String) -> Self {
-        self.warnings.push(warning);
-        self
     }
 }
 
@@ -97,23 +86,7 @@ pub fn validate_xpath(xpath: &str) -> ValidationResult {
     // Try to compile the query
     let queries = Queries::default();
     match queries.sequence(xpath) {
-        Ok(_) => {
-            let mut result = ValidationResult::ok();
-
-            // Add warnings for common issues
-            if trimmed.starts_with('/') && !trimmed.starts_with("//") {
-                // Absolute path - might not match if not starting from root
-                // This is not an error, just informational
-            }
-
-            if trimmed.contains("text()") {
-                result = result.with_warning(
-                    "text() selects text nodes; use string() to get text value".to_string()
-                );
-            }
-
-            result
-        }
+        Ok(_) => ValidationResult::ok(),
         Err(e) => {
             let error_msg = e.to_string();
             let (message, start, end) = parse_xpath_error(&error_msg);

@@ -545,7 +545,7 @@ fn example_failure_match(rule_id: &str, reason: &str) -> ReportMatch {
         reason: Some(reason.to_string()),
         severity: Some(Severity::Error),
         message: None,
-        hint: None,
+       
         origin: None,
         rule_id: Some(rule_id.to_string()),
         status: None,
@@ -611,7 +611,7 @@ fn execute_set(
             reason: None,
             severity: None,
             message: None,
-            hint: None,
+           
             origin: None,
             rule_id: None,
             status: Some(status_str.to_string()),
@@ -752,7 +752,7 @@ fn execute_update(
                     command: "update".to_string(),
                     tree: None, value: None, source: None, lines: None,
                     reason: None, severity: None, message: None,
-                    hint: None, origin: None, rule_id: None,
+                    origin: None, rule_id: None,
                     status: Some("updated".to_string()),
                     output: None,
                 });
@@ -809,7 +809,7 @@ fn match_to_report_match(m: Match, command: &str) -> ReportMatch {
         reason: None,
         severity: None,
         message: None,
-        hint: None,
+       
         origin: None,
         rule_id: None,
         status: None,

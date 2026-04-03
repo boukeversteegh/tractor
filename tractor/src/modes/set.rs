@@ -212,7 +212,7 @@ fn build_set_report_matches(
             reason: None,
             severity: None,
             message: None,
-            hint: None,
+           
             origin: None,
             rule_id: None,
             status: if ctx.view.has(ViewField::Status) { Some(status_str.to_string()) } else { None },

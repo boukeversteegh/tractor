@@ -129,7 +129,7 @@ fn main() -> ExitCode {
             tree: None, value: None, source: None, lines: None,
             reason: Some(msg),
             severity: Some(Severity::Fatal),
-            message: None, hint: None,
+            message: None,
             origin: Some(DiagnosticOrigin::Cli),
             rule_id: None, status: None, output: None,
         };
