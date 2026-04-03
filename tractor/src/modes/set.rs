@@ -1,11 +1,10 @@
-use std::collections::{HashSet, HashMap};
-use tractor_core::{apply_replacements, apply_set_to_string, compute_set_output};
-use tractor_core::report::{Report, ReportMatch, Totals};
+use tractor_core::{apply_replacements, apply_set_to_string};
+use tractor_core::report::{Report, ReportBuilder, ReportMatch};
 use tractor_core::xpath_upsert::upsert;
 use tractor_core::declarative_set::declarative_set;
 use tractor_core::detect_language;
 use crate::cli::SetArgs;
-use crate::pipeline::{RunContext, ViewField, InputMode, query_files_batched, query_inline_source, render_report, GroupDimension};
+use crate::pipeline::{RunContext, ViewField, InputMode, query_files_batched, query_inline_source, render_report, project_report, GroupDimension};
 use crate::pipeline::git;
 
 /// Separate positional args into files and an optional path expression.
@@ -96,14 +95,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
         && !atty::is(atty::Stream::Stdin);
     let stdout = args.stdout || stdin_source;
 
-    // Default view depends on mode:
-    //   stdout mode: only the raw output content (per file, at group level)
-    //   in-place mode: file path + line + set status per match
-    let default_view: &[ViewField] = if stdout {
-        &[ViewField::Output]
-    } else {
-        &[ViewField::File, ViewField::Line, ViewField::Status]
-    };
+    let default_view: &[ViewField] = &[ViewField::File, ViewField::Line, ViewField::Status];
 
     let ctx = RunContext::build(
         &args.shared, files, args.shared.xpath.clone(),
@@ -116,64 +108,74 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
     let value = args.value.as_ref()
         .ok_or("set with -x requires --value")?;
 
+    // Stdout mode: print modified content directly and exit. No report.
+    if stdout {
+        match &ctx.input {
+            InputMode::Files(files) => {
+                if files.len() > 1 {
+                    return Err("--stdout with multiple files is not supported".into());
+                }
+                let files = apply_file_filters(files.clone(), diff_files_spec.as_deref(), diff_lines_spec.as_deref());
+                let (_, matches) = query_files_batched(&ctx, &files, xpath_expr, true)?;
+                let modified = apply_set_to_string(
+                    &std::fs::read_to_string(&files[0])?, &matches, value,
+                )?;
+                print!("{}", modified);
+            }
+            InputMode::InlineSource { source, lang } => {
+                let matches = query_inline_source(&ctx, source, lang, xpath_expr)?;
+                let modified = apply_set_to_string(source, &matches, value)?;
+                print!("{}", modified);
+            }
+        }
+        return Ok(());
+    }
+
+    // In-place mode: modify files, report matches.
     match &ctx.input {
         InputMode::Files(files) => {
             let files = apply_file_filters(files.clone(), diff_files_spec.as_deref(), diff_lines_spec.as_deref());
             let (_, matches) = query_files_batched(&ctx, &files, xpath_expr, true)?;
 
-            if stdout {
-                // Stdout mode: compute modified content per file without writing to disk.
-                let file_outputs = compute_set_output(&files, &matches, value)?;
-                let output_map: HashMap<String, String> = file_outputs.into_iter().collect();
-                let report = build_set_report_matches(&matches, value, &ctx);
-                let report = report.with_grouping(&["file"]).with_file_outputs(&output_map);
-                render_report(&report, &ctx, None)?;
-            } else {
-                // In-place mode: try upsert (language-aware) for each file; fall back to
-                // apply_replacements for languages without a renderer.
-                let lang_override = ctx.lang.as_deref();
-                let mut fallback_files: Vec<String> = Vec::new();
+            let lang_override = ctx.lang.as_deref();
+            let mut fallback_files: Vec<String> = Vec::new();
 
-                for file_path in &files {
-                    let lang = lang_override
-                        .unwrap_or_else(|| detect_language(file_path));
-                    let source = std::fs::read_to_string(file_path)?;
-                    match upsert(&source, lang, xpath_expr, value, ctx.limit) {
-                        Ok(result) => {
-                            if result.source != source {
-                                std::fs::write(file_path, &result.source)?;
-                            }
+            for file_path in &files {
+                let lang = lang_override
+                    .unwrap_or_else(|| detect_language(file_path));
+                let source = std::fs::read_to_string(file_path)?;
+                match upsert(&source, lang, xpath_expr, value, ctx.limit) {
+                    Ok(result) => {
+                        if result.source != source {
+                            std::fs::write(file_path, &result.source)?;
                         }
-                        Err(tractor_core::xpath_upsert::UpsertError::UnsupportedLanguage(_)) => {
-                            fallback_files.push(file_path.clone());
-                        }
-                        Err(e) => return Err(e.into()),
                     }
-                }
-
-                // Legacy fallback for languages without renderers
-                if !fallback_files.is_empty() {
-                    let fallback_matches: Vec<_> = matches.iter()
-                        .filter(|m| fallback_files.contains(&m.file))
-                        .cloned()
-                        .collect();
-                    if !fallback_matches.is_empty() {
-                        apply_replacements(&fallback_matches, value)?;
+                    Err(tractor_core::xpath_upsert::UpsertError::UnsupportedLanguage(_)) => {
+                        fallback_files.push(file_path.clone());
                     }
+                    Err(e) => return Err(e.into()),
                 }
-
-                let report = build_set_report_matches(&matches, value, &ctx);
-                let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
-                let report = report.with_grouping(&dims);
-                render_report(&report, &ctx, None)?;
             }
-        }
-        InputMode::InlineSource { source, lang } => {
-            // Inline source is always stdout mode — one group (no file path), output = modified string.
-            let matches = query_inline_source(&ctx, source, lang, xpath_expr)?;
-            let modified = apply_set_to_string(source, &matches, value)?;
-            let report = build_set_inline_report(modified, &ctx);
+
+            // Legacy fallback for languages without renderers
+            if !fallback_files.is_empty() {
+                let fallback_matches: Vec<_> = matches.iter()
+                    .filter(|m| fallback_files.contains(&m.file))
+                    .cloned()
+                    .collect();
+                if !fallback_matches.is_empty() {
+                    apply_replacements(&fallback_matches, value)?;
+                }
+            }
+
+            let mut report = build_set_report_matches(&matches, value, &ctx);
+            project_report(&mut report, &ctx.view);
+            let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
+            let report = report.with_grouping(&dims);
             render_report(&report, &ctx, None)?;
+        }
+        InputMode::InlineSource { .. } => {
+            return Err("set without --stdout cannot be used with stdin input (no file to modify)".into());
         }
     }
     Ok(())
@@ -186,17 +188,13 @@ fn build_set_report_matches(
     new_value: &str,
     ctx: &RunContext,
 ) -> Report {
-    let mut files_affected = HashSet::new();
-    let mut updated_count = 0usize;
-    let mut unchanged_count = 0usize;
+    let mut builder = ReportBuilder::new();
 
-    let report_matches: Vec<ReportMatch> = matches.iter().map(|m| {
-        files_affected.insert(m.file.clone());
+    for m in matches {
         let is_unchanged = m.value == new_value;
         let status_str = if is_unchanged { "unchanged" } else { "updated" };
-        if is_unchanged { unchanged_count += 1; } else { updated_count += 1; }
 
-        ReportMatch {
+        builder.add(ReportMatch {
             file: m.file.clone(),
             line: m.line,
             column: m.column,
@@ -214,53 +212,15 @@ fn build_set_report_matches(
             reason: None,
             severity: None,
             message: None,
+           
+            origin: None,
             rule_id: None,
             status: if ctx.view.has(ViewField::Status) { Some(status_str.to_string()) } else { None },
-            output: None, // output is at group level for stdout mode
-        }
-    }).collect();
+            output: None,
+        });
+    }
 
-    let totals = Totals {
-        results: matches.len(),
-        files: files_affected.len(),
-        errors: 0,
-        warnings: 0,
-        updated: updated_count,
-        unchanged: unchanged_count,
-    };
-    Report::set(report_matches, true, totals)
-}
-
-/// Build a set report for inline (stdin) stdout mode.
-/// Creates a single group with no file path and `output` = the modified string.
-fn build_set_inline_report(modified: String, ctx: &RunContext) -> Report {
-    use tractor_core::report::ResultItem;
-
-    let output_content = if ctx.view.has(ViewField::Output) { Some(modified) } else { None };
-
-    let totals = Totals {
-        results: 1,
-        files: 0,
-        errors: 0,
-        warnings: 0,
-        updated: 0,
-        unchanged: 0,
-    };
-    let mut report = Report::set(vec![], true, totals);
-    report.results = vec![ResultItem::Group(Box::new(Report {
-        success: None,
-        totals: None,
-        expected: None,
-        query: None,
-        results: vec![],
-        group: None,
-        file: Some(String::new()),
-        command: None,
-        rule_id: None,
-        output_content,
-    }))];
-    report.group = Some("file".to_string());
-    report
+    builder.build()
 }
 
 /// Apply --diff-files and --diff-lines file-level filters (set mode bypasses the executor).

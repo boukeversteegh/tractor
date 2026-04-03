@@ -71,8 +71,10 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
         ..Default::default()
     };
 
-    let reports = executor::execute(&[op], &options)?;
-    let mut report = reports.into_iter().next().unwrap();
+    let mut builder = tractor_core::ReportBuilder::new();
+    builder.set_no_verdict();
+    executor::execute(&[op], &options, &mut builder)?;
+    let mut report = builder.build();
 
     if ctx.view.has(ViewField::Count) {
         println!("{}", report.totals.as_ref().unwrap().results);

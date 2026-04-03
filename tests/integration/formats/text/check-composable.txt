@@ -29,8 +29,7 @@
     }
   </body>
 </class>
-class found
-error
+error: class found
 
 <class>
   <public/>
@@ -38,6 +37,5 @@ error
   <name>Qux</name>
   <body>{ }</body>
 </class>
-class found
-error
+error: class found
 2 errors in 1 file

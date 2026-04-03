@@ -1,0 +1,5 @@
+xpath: error: Parse error
+1 | //class[bad=(
+                 ^
+
+1 fatal

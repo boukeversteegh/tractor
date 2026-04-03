@@ -9,3 +9,4 @@ tests/integration/formats/sample.cs:7:1: error: class found
 7 | public class Qux { }
     ^~~~~~~~~~~~~~~~~~~~
 
+2 errors in 1 file

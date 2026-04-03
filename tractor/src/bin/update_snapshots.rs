@@ -215,6 +215,35 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
     ("help/check.txt", &["check", "--help"]),
     ("help/test.txt",  &["test",  "--help"]),
     ("help/run.txt",   &["run",   "--help"]),
+    // Error/diagnostic snapshots: invalid XPath across all output formats.
+    ("errors/xpath-invalid-text.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "//class[bad=(",
+        "--no-color",
+    ]),
+    ("errors/xpath-invalid.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "//class[bad=(",
+        "-f", "json",
+    ]),
+    ("errors/xpath-invalid.yaml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "//class[bad=(",
+        "-f", "yaml",
+    ]),
+    ("errors/xpath-invalid-gcc.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "//class[bad=(",
+        "-f", "gcc", "--no-color",
+    ]),
+    ("errors/xpath-invalid-github.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "//class[bad=(",
+        "-f", "github",
+    ]),
+    ("errors/xpath-invalid.xml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "//class[bad=(",
+        "-f", "xml", "--no-color",
+    ]),
+    ("errors/xpath-invalid-check.txt", &[
+        "check", "tests/integration/formats/sample.cs", "-x", "//class[bad=(",
+        "--reason", "test", "--no-color",
+    ]),
 ];
 
 fn main() {
@@ -415,6 +444,7 @@ fn run_tractor(bin: &str, fixture: &str, extra_args: &[&str]) -> String {
 }
 
 /// Run tractor with an arbitrary list of args (for output-format cases).
+/// Stdout is captured as-is. Stderr lines are prefixed with ❌.
 fn run_tractor_args(bin: &str, args: &[&str]) -> String {
     let output = Command::new(bin)
         .args(args)
@@ -424,6 +454,13 @@ fn run_tractor_args(bin: &str, args: &[&str]) -> String {
             process::exit(1);
         });
 
-    // Non-zero exit is expected for check commands that find violations — capture stdout anyway.
-    String::from_utf8(output.stdout).expect("non-UTF8 tractor output")
+    let stderr = String::from_utf8(output.stderr).expect("non-UTF8 tractor stderr");
+    let stdout = String::from_utf8(output.stdout).expect("non-UTF8 tractor stdout");
+    let mut merged = stdout;
+    for line in stderr.lines() {
+        merged.push_str("❌ ");
+        merged.push_str(line);
+        merged.push('\n');
+    }
+    merged
 }

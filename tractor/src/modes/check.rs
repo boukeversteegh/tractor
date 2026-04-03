@@ -75,8 +75,9 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
         ..Default::default()
     };
 
-    let reports = executor::execute(&[op], &options)?;
-    let mut report = reports.into_iter().next().unwrap();
+    let mut builder = tractor_core::ReportBuilder::new();
+    executor::execute(&[op], &options, &mut builder)?;
+    let mut report = builder.build();
 
     // Single-xpath check: don't expose internal rule ID in output.
     for m in report.all_matches_mut() {
@@ -146,8 +147,9 @@ fn run_check_rules(args: CheckArgs, rules_path: &str) -> Result<(), Box<dyn std:
         ..Default::default()
     };
 
-    let reports = executor::execute(&[op], &options)?;
-    let mut report = reports.into_iter().next().unwrap();
+    let mut builder = tractor_core::ReportBuilder::new();
+    executor::execute(&[op], &options, &mut builder)?;
+    let mut report = builder.build();
 
     // Apply CLI-level message template (-m) if provided.
     if let Some(ref template) = ctx.message {

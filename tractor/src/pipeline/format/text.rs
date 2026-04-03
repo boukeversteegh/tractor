@@ -13,7 +13,7 @@ use tractor_core::{
     RenderOptions,
 };
 use super::options::{ViewField, ViewSet};
-use super::shared::should_show_totals;
+use super::shared::{should_show_totals, render_fields_for_match};
 
 /// Text is human-readable — grouping affects display structure but matches
 /// are rendered with inherited file context from groups, not field omission.
@@ -80,12 +80,16 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
         return;
     }
 
+    // Determine which fields to render: view-requested + diagnostic extras.
+    let (view_fields, extra_fields) = render_fields_for_match(view, rm);
+
     // Location prefix: file, line, and/or column — combined on one line as file:line:col
-    // Status is appended inline when both a location and a status are present (GCC-style).
-    if view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column) {
+    // Skip for file-less diagnostics (no meaningful location).
+    let file = group_file.unwrap_or(&rm.file);
+    let has_location = view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
+    if has_location && !file.is_empty() {
         let mut loc = String::new();
         if view.has(ViewField::File) {
-            let file = group_file.unwrap_or(&rm.file);
             loc.push_str(&normalize_path(file));
         }
         if view.has(ViewField::Line) {
@@ -96,7 +100,6 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
             loc.push(':');
             loc.push_str(&rm.column.to_string());
         }
-        // Append status inline on the location line (GCC-style: file:line: status)
         if view.has(ViewField::Status) {
             if let Some(ref status) = rm.status {
                 loc.push_str(": ");
@@ -107,80 +110,117 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
         out.push('\n');
     }
 
-    // Content fields — iterate ViewSet for declaration order
-    for field in &view.fields {
-        match field {
-            ViewField::Tree => {
-                if let Some(ref node) = rm.tree {
-                    let rendered = render_xml_node(node, render_opts);
-                    if render_opts.pretty_print && !rendered.ends_with('\n') {
-                        out.push_str(&rendered);
-                        out.push('\n');
-                    } else {
-                        out.push_str(&rendered);
+    // All fields to stdout: view-requested first, then extras.
+    // For text, Severity/Origin are rendered inline with Reason, and
+    // Source is redundant when Lines is present — skip these as extras.
+    // Severity/Origin are rendered inline with Reason — skip as standalone extras.
+    let text_skip = |f: &ViewField| -> bool {
+        matches!(f, ViewField::Severity | ViewField::Origin)
+            && !view.has(*f)
+    };
+    for field in view_fields.iter().chain(extra_fields.iter()) {
+        if !text_skip(field) {
+            render_field(out, field, rm, view, group_file, render_opts);
+        }
+    }
+
+}
+
+/// Render a single field from a match into the output buffer.
+fn render_field(
+    out: &mut String,
+    field: &ViewField,
+    rm: &ReportMatch,
+    view: &ViewSet,
+    _group_file: Option<&str>,
+    render_opts: &RenderOptions,
+) {
+    match field {
+        ViewField::Tree => {
+            if let Some(ref node) = rm.tree {
+                let rendered = render_xml_node(node, render_opts);
+                if render_opts.pretty_print && !rendered.ends_with('\n') {
+                    out.push_str(&rendered);
+                    out.push('\n');
+                } else {
+                    out.push_str(&rendered);
+                }
+            }
+        }
+        ViewField::Value => {
+            if let Some(ref v) = rm.value {
+                out.push_str(v);
+                out.push('\n');
+            }
+        }
+        ViewField::Source => {
+            if let Some(ref s) = rm.source {
+                out.push_str(&render_source_precomputed(
+                    s,
+                    rm.tree.as_ref(),
+                    rm.line, rm.column, rm.end_line, rm.end_column,
+                    render_opts,
+                ));
+            }
+        }
+        ViewField::Lines => {
+            if let Some(ref ls) = rm.lines {
+                out.push_str(&render_lines(
+                    ls,
+                    rm.tree.as_ref(),
+                    rm.line, rm.column, rm.end_line, rm.end_column,
+                    render_opts,
+                ));
+            }
+        }
+        ViewField::Reason => {
+            if let Some(ref reason) = rm.reason {
+                // Render as "severity(origin): reason" when available
+                if let Some(severity) = rm.severity {
+                    out.push_str(severity.as_str());
+                    if let Some(origin) = rm.origin {
+                        out.push('(');
+                        out.push_str(origin.as_str());
+                        out.push(')');
                     }
+                    out.push_str(": ");
                 }
+                out.push_str(reason);
+                out.push('\n');
             }
-            ViewField::Value => {
-                if let Some(ref v) = rm.value {
-                    out.push_str(v);
-                    out.push('\n');
-                }
-            }
-            ViewField::Source => {
-                if let Some(ref s) = rm.source {
-                    out.push_str(&render_source_precomputed(
-                        s,
-                        rm.tree.as_ref(),
-                        rm.line, rm.column, rm.end_line, rm.end_column,
-                        render_opts,
-                    ));
-                }
-            }
-            ViewField::Lines => {
-                if let Some(ref ls) = rm.lines {
-                    out.push_str(&render_lines(
-                        ls,
-                        rm.tree.as_ref(),
-                        rm.line, rm.column, rm.end_line, rm.end_column,
-                        render_opts,
-                    ));
-                }
-            }
-            ViewField::Reason => {
-                if let Some(ref reason) = rm.reason {
-                    out.push_str(reason);
-                    out.push('\n');
-                }
-            }
-            ViewField::Severity => {
+        }
+        ViewField::Severity => {
+            // Severity is rendered inline with reason; only standalone if reason absent.
+            if rm.reason.is_none() {
                 if let Some(severity) = rm.severity {
                     out.push_str(severity.as_str());
                     out.push('\n');
                 }
             }
-            ViewField::Status => {
-                // Status is printed inline on the location line when a location is present.
-                // Only print it as a standalone line if no location fields are in view.
-                let has_location = view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
-                if !has_location {
-                    if let Some(ref status) = rm.status {
-                        out.push_str(status);
-                        out.push('\n');
-                    }
-                }
-            }
-            ViewField::Output => {
-                // Output is at group level for set reports; nothing to print here.
-                // (If a match has output directly, print it as a fallback.)
-                if let Some(ref content) = rm.output {
-                    out.push_str(content);
-                }
-            }
-            // File/Line/Column handled above as combined location line
-            // Summary/Count/Schema handled outside match loop
-            _ => {}
         }
+        ViewField::Status => {
+            let has_location = view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
+            if !has_location {
+                if let Some(ref status) = rm.status {
+                    out.push_str(status);
+                    out.push('\n');
+                }
+            }
+        }
+        ViewField::Output => {
+            if let Some(ref content) = rm.output {
+                out.push_str(content);
+            }
+        }
+        ViewField::Origin => {
+            if rm.file.is_empty() {
+                if let Some(origin) = rm.origin {
+                    out.push_str(origin.as_str());
+                    out.push('\n');
+                }
+            }
+        }
+        _ => {}
     }
 }
 
@@ -188,7 +228,7 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
 /// No longer depends on ReportKind — the data itself determines the output.
 fn format_summary(totals: &Totals, success: Option<bool>, expected: Option<&str>) -> String {
     let success_val = success.unwrap_or(true);
-    let has_check = totals.errors > 0 || totals.warnings > 0;
+    let has_check = totals.fatals > 0 || totals.errors > 0 || totals.warnings > 0;
     let has_set = totals.updated > 0 || totals.unchanged > 0;
     let has_test = expected.is_some();
     let f = totals.files;
@@ -204,6 +244,9 @@ fn format_summary(totals: &Totals, success: Option<bool>, expected: Option<&str>
             return "All checks passed\n".to_string();
         }
         let mut parts = Vec::new();
+        if totals.fatals > 0 {
+            parts.push(format!("{} fatal{}", totals.fatals, if totals.fatals == 1 { "" } else { "s" }));
+        }
         if totals.errors > 0 {
             parts.push(format!("{} error{}", totals.errors, if totals.errors == 1 { "" } else { "s" }));
         }
@@ -245,6 +288,9 @@ fn format_summary(totals: &Totals, success: Option<bool>, expected: Option<&str>
         return format!("{} matches across {} files\n", totals.results, f);
     }
     let mut parts = Vec::new();
+    if totals.fatals > 0 {
+        parts.push(format!("{} fatal{}", totals.fatals, if totals.fatals == 1 { "" } else { "s" }));
+    }
     if totals.errors > 0 {
         parts.push(format!("{} error{}", totals.errors, if totals.errors == 1 { "" } else { "s" }));
     }

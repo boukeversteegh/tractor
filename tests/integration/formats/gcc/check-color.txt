@@ -9,3 +9,4 @@ tests/integration/formats/sample.cs:7:1: error: class found
 7 | \e[34mpublic class \e[0m\e[97mQux\e[0m\e[34m { }\e[0m
     ^~~~~~~~~~~~~~~~~~~~
 
+2 errors in 1 file

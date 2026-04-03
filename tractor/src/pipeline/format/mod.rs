@@ -163,10 +163,13 @@ fn render_test_text(
 fn print_gcc_summary(totals: &tractor_core::report::Totals) {
     let mut parts = Vec::new();
 
+    if totals.fatals > 0 {
+        parts.push(format!("{} fatal{}", totals.fatals, if totals.fatals == 1 { "" } else { "s" }));
+    }
     if totals.errors > 0 {
         parts.push(format!("{} error{}", totals.errors, if totals.errors == 1 { "" } else { "s" }));
     }
-    if totals.warnings > 0 && totals.errors == 0 {
+    if totals.warnings > 0 && totals.errors == 0 && totals.fatals == 0 {
         parts.push(format!("{} warning{}", totals.warnings, if totals.warnings == 1 { "" } else { "s" }));
     }
     if totals.updated > 0 {
@@ -175,12 +178,11 @@ fn print_gcc_summary(totals: &tractor_core::report::Totals) {
 
     if parts.is_empty() { return; }
 
-    let file_part = if totals.files > 0 && (totals.errors > 0 || totals.warnings > 0) {
+    let file_part = if totals.files > 0 && (totals.fatals > 0 || totals.errors > 0 || totals.warnings > 0) {
         format!(" in {} file{}", totals.files, if totals.files == 1 { "" } else { "s" })
     } else {
         String::new()
     };
 
-    eprintln!();
-    eprintln!("{}{}", parts.join(", "), file_part);
+    println!("{}{}", parts.join(", "), file_part);
 }

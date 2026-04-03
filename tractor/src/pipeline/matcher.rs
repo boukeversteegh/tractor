@@ -5,8 +5,9 @@ use tractor_core::{
     Match,
     output::{render_document, RenderOptions},
     parse_to_documents, parse_string_to_documents,
-    report::Report,
+    report::{Report, ReportMatch, Severity, DiagnosticOrigin},
     rule::{RuleSet, GlobMatcher},
+    xpath::validate_xpath,
 };
 use crate::filter::ResultFilter;
 
@@ -32,6 +33,53 @@ pub fn exponential_batches<T>(items: &[T], num_threads: usize) -> Vec<&[T]> {
     }
 
     batches
+}
+
+// ---------------------------------------------------------------------------
+// XPath validation
+// ---------------------------------------------------------------------------
+
+/// Validate an XPath expression upfront and return a fatal diagnostic if invalid.
+///
+/// Builds a `ReportMatch` with `Severity::Fatal`, the XPath string as source,
+/// and the error position highlighted. Returns `None` if the XPath is valid.
+pub fn validate_xpath_diagnostic(xpath_expr: &str, command: &str) -> Option<ReportMatch> {
+    let result = validate_xpath(xpath_expr);
+    if result.valid {
+        return None;
+    }
+
+    let reason = result.error.as_deref().unwrap_or("invalid XPath expression").to_string();
+
+    // Default: highlight the entire expression
+    let line = 1u32;
+    let mut col = 1u32;
+    let end_line = 1u32;
+    let mut end_col = xpath_expr.len() as u32 + 1;
+
+    // If we have error position info, narrow the highlight to the error span
+    if let (Some(start), Some(end)) = (result.error_start, result.error_end) {
+        col = start as u32 + 1; // 1-based
+        end_col = if end > start { end as u32 + 1 } else { col + 1 };
+    }
+
+    Some(ReportMatch {
+        file: String::new(),
+        line, column: col, end_line, end_column: end_col,
+        command: command.to_string(),
+        tree: None,
+        value: None,
+        source: Some(xpath_expr.to_string()),
+        lines: Some(vec![xpath_expr.to_string()]),
+        reason: Some(reason),
+        severity: Some(Severity::Fatal),
+        message: None,
+       
+        origin: Some(DiagnosticOrigin::Xpath),
+        rule_id: None,
+        status: None,
+        output: None,
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -333,36 +381,42 @@ pub fn run_rules(
 /// for unselected fields (matching the behaviour of `match_to_report_match`).
 pub fn project_report(report: &mut Report, view: &ViewSet) {
     for m in report.all_matches_mut() {
-        // Map/Array nodes are always kept — they're the only representation for data formats.
-        // For other nodes, keep when tree/lines/source is selected (needed for rendering).
-        let keep_tree = match &m.tree {
-            Some(node) if matches!(
-                node,
-                tractor_core::xpath::XmlNode::Map { .. }
-                    | tractor_core::xpath::XmlNode::Array { .. }
-            ) => true,
-            _ => view.has(ViewField::Tree) || view.has(ViewField::Lines) || view.has(ViewField::Source),
-        };
-        if !keep_tree {
-            m.tree = None;
-        }
-        if !view.has(ViewField::Value) {
-            m.value = None;
-        }
-        if !view.has(ViewField::Source) {
-            m.source = None;
-        }
-        if !view.has(ViewField::Lines) {
-            m.lines = None;
-        }
-        if !view.has(ViewField::Reason) {
-            m.reason = None;
-        }
-        if !view.has(ViewField::Severity) {
-            m.severity = None;
-        }
-        if !view.has(ViewField::Status) {
-            m.status = None;
+        // Fatal diagnostics (broken XPath, bad config) always keep their fields —
+        // the user needs to see why their query failed regardless of -v settings.
+        // Error/Warning matches from user rules are normal output, subject to view.
+        let is_diagnostic = matches!(m.severity, Some(Severity::Fatal));
+        if !is_diagnostic {
+            // Map/Array nodes are always kept — they're the only representation for data formats.
+            // For other nodes, keep when tree/lines/source is selected (needed for rendering).
+            let keep_tree = match &m.tree {
+                Some(node) if matches!(
+                    node,
+                    tractor_core::xpath::XmlNode::Map { .. }
+                        | tractor_core::xpath::XmlNode::Array { .. }
+                ) => true,
+                _ => view.has(ViewField::Tree) || view.has(ViewField::Lines) || view.has(ViewField::Source),
+            };
+            if !keep_tree {
+                m.tree = None;
+            }
+            if !view.has(ViewField::Value) {
+                m.value = None;
+            }
+            if !view.has(ViewField::Source) {
+                m.source = None;
+            }
+            if !view.has(ViewField::Lines) {
+                m.lines = None;
+            }
+            if !view.has(ViewField::Reason) {
+                m.reason = None;
+            }
+            if !view.has(ViewField::Severity) {
+                m.severity = None;
+            }
+            if !view.has(ViewField::Status) {
+                m.status = None;
+            }
         }
     }
 }

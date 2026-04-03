@@ -71,8 +71,11 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
         ..Default::default()
     };
 
-    let reports = executor::execute(&[op], &options)?;
-    let mut report = reports.into_iter().next().unwrap();
+    let mut builder = tractor_core::ReportBuilder::new();
+    executor::execute(&[op], &options, &mut builder)?;
+    // Set expected value for test summary rendering (test-mode only, not shared with run mode)
+    builder.set_expected(expect.clone());
+    let mut report = builder.build();
 
     project_report(&mut report, &ctx.view);
     let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();

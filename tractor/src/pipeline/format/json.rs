@@ -1,7 +1,7 @@
 use serde_json::{json, Value};
 use tractor_core::{report::{Report, ReportMatch, ResultItem}, normalize_path, xml_node_to_json, RenderOptions};
 use super::options::{ViewField, ViewSet};
-use super::shared::{should_show_totals, should_emit_file, should_emit_command, should_emit_rule_id};
+use super::shared::{should_show_totals, should_emit_file, should_emit_command, should_emit_rule_id, render_fields_for_match};
 
 pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, dimensions: &[&str]) -> String {
     let mut root = serde_json::Map::new();
@@ -35,8 +35,10 @@ pub fn emit_report_metadata(root: &mut serde_json::Map<String, Value>, report: &
         let mut t = serde_json::Map::new();
         t.insert("results".into(), json!(totals.results));
         t.insert("files".into(),   json!(totals.files));
+        if totals.fatals > 0 { t.insert("fatals".into(), json!(totals.fatals)); }
         if totals.errors > 0 { t.insert("errors".into(), json!(totals.errors)); }
         if totals.warnings > 0 { t.insert("warnings".into(), json!(totals.warnings)); }
+        if totals.infos > 0 { t.insert("infos".into(), json!(totals.infos)); }
         if totals.updated > 0 { t.insert("updated".into(), json!(totals.updated)); }
         if totals.unchanged > 0 { t.insert("unchanged".into(), json!(totals.unchanged)); }
         root.insert("totals".into(), Value::Object(t));
@@ -100,7 +102,10 @@ pub fn match_to_value(
 ) -> Value {
     let mut obj = serde_json::Map::new();
 
-    for field in &view.fields {
+    let (view_fields, extra_fields) = render_fields_for_match(view, rm);
+    let all_fields: Vec<ViewField> = view_fields.into_iter().chain(extra_fields).collect();
+
+    for field in &all_fields {
         match field {
             ViewField::File => {
                 if should_emit_file(rm, skip_dims) {
@@ -149,8 +154,13 @@ pub fn match_to_value(
                     obj.insert("tree".into(), xml_node_to_json(node, render_opts.max_depth));
                 }
             }
-            // rule_id: emitted if present regardless of ViewSet (it's an annotation)
-            // Summary/Count/Schema: handled outside match iteration
+            ViewField::Origin => {
+                if rm.file.is_empty() {
+                    if let Some(origin) = rm.origin {
+                        obj.insert("origin".into(), json!(origin.as_str()));
+                    }
+                }
+            }
             _ => {}
         }
     }
@@ -182,7 +192,7 @@ mod tests {
             tree: None,
             value: Some(value.to_string()),
             source: None, lines: None, reason: None, severity: None,
-            message: None, rule_id: None, status: None, output: None,
+            message: None, origin: None, rule_id: None, status: None, output: None,
         }
     }
 
@@ -197,7 +207,7 @@ mod tests {
             tree: Some(tree),
             value: None, // maps have no value — data is in tree
             source: None, lines: None, reason: None, severity: None,
-            message: None, rule_id: None, status: None, output: None,
+            message: None, origin: None, rule_id: None, status: None, output: None,
         }
     }
 
@@ -233,11 +243,10 @@ mod tests {
             ("name", XmlNode::Text("foo".into())),
             ("count", XmlNode::Number(3.0)),
         ]);
-        let totals = Totals {
-            results: 1, files: 1,
-            errors: 0, warnings: 0, updated: 0, unchanged: 0,
-        };
-        let report = Report::query(vec![rm], totals);
+        let mut builder = tractor_core::ReportBuilder::new();
+        builder.set_no_verdict();
+        builder.add(rm);
+        let report = builder.build();
         let view = ViewSet::new(vec![ViewField::File, ViewField::Tree]);
         let opts = RenderOptions::new();
         let output = render_json_report(&report, &view, &opts, &[]);

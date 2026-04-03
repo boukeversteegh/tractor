@@ -111,6 +111,7 @@ impl DiffHunkFilter {
     }
 
     /// Create a filter from pre-parsed hunks (for testing).
+    #[cfg(test)]
     pub fn from_hunks(hunks: HashMap<PathBuf, Vec<LineRange>>) -> Self {
         DiffHunkFilter { hunks }
     }
@@ -339,11 +340,11 @@ mod tests {
         run(&["-c", "commit.gpgsign=false", "commit", "-m", "modify a.rs, add b.rs"]);
 
         let changed = git_changed_files("HEAD~1 HEAD", cwd).unwrap();
-        let a_canon = std::fs::canonicalize(cwd.join("a.rs")).unwrap();
-        let b_canon = std::fs::canonicalize(cwd.join("b.rs")).unwrap();
+        let a_path = cwd.join("a.rs");
+        let b_path = cwd.join("b.rs");
 
-        assert!(changed.contains(&a_canon), "a.rs should be in changed set");
-        assert!(changed.contains(&b_canon), "b.rs should be in changed set");
+        assert!(changed.contains(&a_path), "a.rs should be in changed set");
+        assert!(changed.contains(&b_path), "b.rs should be in changed set");
         assert_eq!(changed.len(), 2);
     }
 

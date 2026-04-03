@@ -1,0 +1,19 @@
+{
+  "success": false,
+  "totals": {
+    "results": 1,
+    "files": 0,
+    "fatals": 1
+  },
+  "results": [
+    {
+      "line": 1,
+      "severity": "fatal",
+      "reason": "Parse error",
+      "origin": "xpath",
+      "lines": [
+        "//class[bad=("
+      ]
+    }
+  ]
+}

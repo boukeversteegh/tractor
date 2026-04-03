@@ -1,5 +1,4 @@
-class found
-error
+error: class found
 1 >| public class Foo
 2  | {
 3  |     public int Bar { get; set; }
@@ -7,8 +6,7 @@ error
 5 >| }
 
 
-class found
-error
+error: class found
 7 | public class Qux { }
     ^~~~~~~~~~~~~~~~~~~~
 

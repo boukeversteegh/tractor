@@ -220,7 +220,7 @@ pub fn get_web_languages() -> String {
 
 /// Validate an XPath expression without executing it
 ///
-/// Returns JSON with: { valid: boolean, error?: string, warnings: string[] }
+/// Returns JSON with: { valid: boolean, error?: string }
 #[wasm_bindgen(js_name = validateXPath)]
 pub fn validate_xpath(xpath: &str) -> String {
     let result = crate::xpath::validate_xpath(xpath);
