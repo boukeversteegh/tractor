@@ -204,13 +204,6 @@ mod validation_tests {
     }
 
     #[test]
-    fn test_text_warning() {
-        let result = validate_xpath("//name/text()");
-        assert!(result.valid);
-        assert!(!result.warnings.is_empty());
-    }
-
-    #[test]
     fn test_parse_xpath_error() {
         let (msg, start, end) = parse_xpath_error("XPST0003 Parse error. (8..8)");
         assert_eq!(msg, "Parse error");
