@@ -63,11 +63,12 @@ tractor file1.js file2.js`} />
         You can override the default. For example, use <code>-t structure</code> on a JSON file to see its full syntax tree instead of the data projection:
       </p>
       <Example
-        command={`echo '{"host": "localhost", "port": 5432}' | tractor -l json -t structure`}
+        file={{ name: 'config.json', language: 'json', content: '{"host": "localhost", "port": 5432}' }}
+        command={`tractor config.json -t structure`}
         outputLanguage="xml"
-        output={`<stdin>:1
+        output={`config.json:1
 <Files>
-  <file>&lt;stdin&gt;</file>
+  <file>config.json</file>
   <object>
     <property>
       <key>
@@ -90,11 +91,11 @@ tractor file1.js file2.js`} />
       />
       <p>Compare with the default <code>data</code> mode, where the same JSON becomes a clean data tree:</p>
       <Example
-        command={`echo '{"host": "localhost", "port": 5432}' | tractor -l json`}
+        command={`tractor config.json`}
         outputLanguage="xml"
-        output={`<stdin>:1
+        output={`config.json:1
 <Files>
-  <file>&lt;stdin&gt;</file>
+  <file>config.json</file>
   <host>localhost</host>
   <port>5432</port>
 </Files>`}
@@ -291,8 +292,9 @@ greeter.js:5
       <h3>--no-pretty</h3>
       <p>Disable pretty printing. Shows compact XML without indentation.</p>
       <Example
-        command={`echo '{"a":1}' | tractor -l json --no-pretty`}
-        output={`<stdin>:1\n<Files><file>&lt;stdin&gt;</file><a>1</a></Files>`}
+        file={{ name: 'small.json', language: 'json', content: '{"host": "localhost"}' }}
+        command={`tractor small.json --no-pretty`}
+        output={`small.json:1\n<Files><file>small.json</file><host>localhost</host></Files>`}
       />
 
       <h3>--color</h3>

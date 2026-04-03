@@ -27,6 +27,8 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
   {
     title: 'Languages',
     items: [
+      { label: 'Code', path: '/docs/languages/code' },
+      { label: 'Documents', path: '/docs/languages/documents' },
       { label: 'Data Formats', path: '/docs/languages/data' },
     ],
   },
