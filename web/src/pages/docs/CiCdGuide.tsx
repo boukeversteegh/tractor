@@ -68,7 +68,7 @@ jobs:
       <p>
         With <code>-f github</code>, violations produce GitHub annotation output:
       </p>
-      <OutputBlock output={`::error file=src/app.cs,line=1,endLine=1,col=1,endColumn=24::TODO comment found`} />
+      <OutputBlock output={`::error file=src/app.js,line=1,endLine=1,col=1,endColumn=24::TODO comment found`} />
       <p>
         These annotations appear inline on the pull request diff.
       </p>
@@ -131,14 +131,14 @@ jobs:
 
       <h2>Example Config</h2>
       <p>
-        A typical <code>.tractor.yml</code> for a C# project:
+        A typical <code>.tractor.yml</code> for a JavaScript project:
       </p>
       <CodeBlock
         language="yaml"
         title=".tractor.yml"
         code={`check:
   files:
-    - "src/**/*.cs"
+    - "src/**/*.js"
   exclude:
     - "src/generated/**"
   rules:
@@ -147,15 +147,15 @@ jobs:
       reason: "TODO comments should be resolved"
       severity: warning
       expect:
-        - valid: "public class Clean { }"
+        - valid: "class Clean { }"
         - invalid: "// TODO: fix this"
 
     - id: repository-needs-orderby
       xpath: >-
         //class[contains(name,'Repository')]
-        //method[contains(name,'GetAll')]
-        [not(contains(.,'OrderBy'))]/name
-      reason: "GetAll methods in repositories should use OrderBy"
+        //method[contains(name,'getAll')]
+        [not(contains(.,'orderBy'))]/name
+      reason: "getAll methods in repositories should use orderBy"
       severity: error`}
       />
 

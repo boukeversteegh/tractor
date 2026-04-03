@@ -1,6 +1,11 @@
 import { Link } from 'react-router-dom';
 import { DocLayout } from '../../components/DocLayout';
-import { CodeBlock, OutputBlock } from '../../components/CodeBlock';
+import { CodeBlock, Example } from '../../components/CodeBlock';
+
+const APP_JS = `// TODO: fix this later
+class App {
+  run() { }
+}`;
 
 export function LintRulesGuide() {
   return (
@@ -16,23 +21,24 @@ export function LintRulesGuide() {
       </p>
 
       <h3>1. Find the pattern</h3>
-      <CodeBlock
-        language="bash"
-        code={`tractor "src/**/*.cs" -x "//comment[contains(.,'TODO')]" -v value`}
+      <Example
+        file={{ name: 'app.js', language: 'js', content: APP_JS }}
+        command={`tractor app.js -x "//comment[contains(.,'TODO')]" -v value`}
+        output="// TODO: fix this later"
       />
 
       <h3>2. Turn it into a check</h3>
-      <CodeBlock
-        language="bash"
-        code={`tractor check "src/**/*.cs" -x "//comment[contains(.,'TODO')]" \\
+      <Example
+        file={{ name: 'app.js', language: 'js', content: APP_JS }}
+        command={`tractor check app.js -x "//comment[contains(.,'TODO')]" \\
     --reason "TODO comments should be resolved"`}
-      />
-      <OutputBlock output={`src/app.cs:1:1: error: TODO comments should be resolved
+        output={`app.js:1:1: error: TODO comments should be resolved
 1 | // TODO: fix this later
     ^~~~~~~~~~~~~~~~~~~~~~~
 
 
-1 error in 1 file`} />
+1 error in 1 file`}
+      />
 
       <h3>3. Add it to a config file</h3>
       <CodeBlock
@@ -40,7 +46,7 @@ export function LintRulesGuide() {
         title=".tractor.yml"
         code={`check:
   files:
-    - "src/**/*.cs"
+    - "src/**/*.js"
   rules:
     - id: no-todo
       xpath: "//comment[contains(.,'TODO')]"
@@ -59,32 +65,23 @@ export function LintRulesGuide() {
   severity: warning`}
       />
 
-      <h3>Repository methods must use OrderBy</h3>
+      <h3>Repository methods must use orderBy</h3>
       <CodeBlock
         language="yaml"
         code={`- id: repository-needs-orderby
   xpath: >-
     //class[contains(name,'Repository')]
-    //method[contains(name,'GetAll')]
-    [not(contains(.,'OrderBy'))]/name
-  reason: "GetAll methods in repositories should use OrderBy"
+    //method[contains(name,'getAll')]
+    [not(contains(.,'orderBy'))]/name
+  reason: "getAll methods in repositories should use orderBy"
   severity: error`}
-      />
-
-      <h3>Public methods should not return void</h3>
-      <CodeBlock
-        language="yaml"
-        code={`- id: no-public-void
-  xpath: "//method[public][returns/type='void']/name"
-  reason: "Public methods should return a value"
-  severity: warning`}
       />
 
       <h3>Functions should not have too many parameters</h3>
       <CodeBlock
         language="yaml"
         code={`- id: max-parameters
-  xpath: "//function[count(parameters/parameter) > 5]/name"
+  xpath: "//function[count(parameters/params/type) > 5]/name"
   reason: "Functions should have at most 5 parameters"
   severity: warning`}
       />
@@ -98,14 +95,14 @@ export function LintRulesGuide() {
         title=".tractor.yml"
         code={`check:
   files:
-    - "src/**/*.cs"
+    - "src/**/*.js"
   rules:
     - id: no-todo
       xpath: "//comment[contains(.,'TODO')]"
       reason: "TODO comments should be resolved"
       severity: error
       expect:
-        - valid: "public class Clean { }"
+        - valid: "class Clean { }"
         - invalid: "// TODO: fix this"`}
       />
       <p>
@@ -116,12 +113,12 @@ export function LintRulesGuide() {
       </p>
       <CodeBlock
         language="bash"
-        code={`tractor check "src/**/*.cs" \\
+        code={`tractor check "src/**/*.js" \\
     -x "//comment[contains(.,'TODO')]" \\
     --reason "No TODOs" \\
-    --expect-valid 'public class Clean { }' \\
+    --expect-valid 'class Clean { }' \\
     --expect-invalid '// TODO: fix' \\
-    -l csharp`}
+    -l javascript`}
       />
 
       <h2>Severity Levels</h2>
@@ -153,7 +150,7 @@ export function LintRulesGuide() {
 
 check:
   files:
-    - "src/**/*.cs"
+    - "src/**/*.js"
   rules:
     - id: no-todo
       xpath: "//comment[contains(.,'TODO')]"
@@ -171,20 +168,20 @@ check:
         code={`operations:
   - check:
       files:
-        - "src/**/*.cs"
+        - "src/**/*.js"
       rules:
-        - id: no-todo-cs
+        - id: no-todo-js
           xpath: "//comment[contains(.,'TODO')]"
-          reason: "TODO comment in C#"
+          reason: "TODO comment in JavaScript"
           severity: warning
 
   - check:
       files:
-        - "src/**/*.py"
+        - "src/**/*.rs"
       rules:
-        - id: no-todo-py
-          xpath: "//comment[contains(.,'TODO')]"
-          reason: "TODO comment in Python"
+        - id: no-todo-rs
+          xpath: "//line_comment[contains(.,'TODO')]"
+          reason: "TODO comment in Rust"
           severity: warning`}
       />
 

@@ -1693,6 +1693,40 @@ body {
   color: var(--text-secondary);
 }
 
+/* Syntax highlighting classes for code blocks */
+.hl-keyword    { color: var(--syntax-keyword); }
+.hl-type       { color: var(--syntax-type); }
+.hl-string     { color: var(--syntax-string); }
+.hl-number     { color: var(--syntax-string); }
+.hl-comment    { color: var(--syntax-comment); font-style: italic; }
+.hl-tag        { color: var(--syntax-keyword); }
+.hl-key        { color: var(--syntax-type); }
+.hl-flag       { color: var(--accent-light); }
+.hl-variable   { color: var(--syntax-type); }
+.hl-punctuation { color: var(--syntax-operator); }
+
+/* Example group: connected file → command → output blocks */
+.example-group {
+  margin: 0.75rem 0 1.25rem;
+}
+
+.example-group .codeblock {
+  margin: 0;
+  border-radius: 0;
+  border-bottom-width: 0;
+}
+
+.example-group .codeblock:first-child {
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+
+.example-group .codeblock:last-child {
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+  border-bottom-width: 1px;
+}
+
 /* Doc Tables */
 .doc-table {
   width: 100%;

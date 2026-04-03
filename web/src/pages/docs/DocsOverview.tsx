@@ -1,6 +1,19 @@
 import { Link } from 'react-router-dom';
 import { DocLayout } from '../../components/DocLayout';
-import { CodeBlock, OutputBlock } from '../../components/CodeBlock';
+import { Example } from '../../components/CodeBlock';
+
+const GREETER_JS = `function greet(name) {
+  return "Hello, " + name;
+}
+
+function add(a, b) {
+  return a + b;
+}`;
+
+const APP_JS = `// TODO: fix this later
+class App {
+  run() { }
+}`;
 
 export function DocsOverview() {
   return (
@@ -26,57 +39,85 @@ export function DocsOverview() {
       <p>
         Run <code>tractor</code> on a file to see its structure:
       </p>
-      <CodeBlock
-        language="bash"
-        code={`echo 'def greet(name):\n    return f"Hello, {name}"' | tractor -l python`}
-      />
-      <OutputBlock output={`<stdin>:1
+      <Example
+        file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
+        command="tractor greeter.js"
+        outputLanguage="xml"
+        output={`greeter.js:1
 <Files>
-  <file>&lt;stdin&gt;</file>
-  <unit>
+  <file>greeter.js</file>
+  <program>
     <function>
-      def
+      function
       <name>greet</name>
       <parameters>
-        (
-        <parameter>
-          <name>name</name>
-        </parameter>
-        )
+        <params>
+          (
+          <type>name</type>
+          )
+        </params>
       </parameters>
       <body>
-        :
-        <return>
-          return
-          ...
-        </return>
+        <block>
+          {
+          <return>
+            return
+            <binary>...</binary>
+            ;
+          </return>
+          }
+        </block>
       </body>
     </function>
-  </unit>
-</Files>`} />
+    <function>
+      function
+      <name>add</name>
+      ...
+    </function>
+  </program>
+</Files>`}
+      />
 
       <h3>3. Query for patterns</h3>
       <p>
         Use <code>-x</code> to find specific elements:
       </p>
-      <CodeBlock
-        language="bash"
-        code={`echo 'def greet(name):\n    return f"Hello, {name}"\n\ndef add(a, b):\n    return a + b' | tractor -l python -x "//function/name" -v value`}
+      <Example
+        file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
+        command={`tractor greeter.js -x "//function/name" -v value`}
+        output={`greet\nadd`}
       />
-      <OutputBlock output={`greet\nadd`} />
 
       <h3>4. Enforce conventions</h3>
       <p>
         Use <code>tractor check</code> to fail your build when patterns are found:
       </p>
-      <CodeBlock
-        language="bash"
-        code={`tractor check "src/**/*.cs" -x "//comment[contains(.,'TODO')]" \\
+      <Example
+        file={{ name: 'app.js', language: 'js', content: APP_JS }}
+        command={`tractor check app.js -x "//comment[contains(.,'TODO')]" \\
     --reason "TODO comments should be resolved"`}
-      />
-      <OutputBlock output={`src/app.cs:1:1: error: TODO comments should be resolved\n1 | // TODO: fix this later\n    ^~~~~~~~~~~~~~~~~~~~~~~\n\n\n1 error in 1 file`} />
+        output={`app.js:1:1: error: TODO comments should be resolved
+1 | // TODO: fix this later
+    ^~~~~~~~~~~~~~~~~~~~~~~
 
-      <h2>Core Concepts</h2>
+
+1 error in 1 file`}
+      />
+
+      <h2>How It Works</h2>
+      <p>
+        Tractor was designed to make querying code as simple as possible. Your code is parsed into a tree where:
+      </p>
+      <ul>
+        <li><strong>Everything is a node</strong> — you match by element name, not attributes. Modifiers like <code>public</code> or <code>static</code> are empty marker elements, so you can filter with <code>[public]</code> or <code>[not(static)]</code>.</li>
+        <li><strong>Text content is the source code</strong> — when you compare a node to a string, tractor ignores the XML tags and matches against the flattened source text. This means you can write <code>{'//method[contains(.,"exit(1)")]'}</code> and it matches even though the source code spans multiple nested elements.</li>
+        <li><strong>No attributes needed</strong> — the tree is structured so that nearly everything you'd want to query is a named element or text content, not a hidden attribute.</li>
+      </ul>
+      <p>
+        Run <code>tractor file.js</code> to see the tree for yourself — what you see is exactly what you query.
+      </p>
+
+      <h2>Commands</h2>
 
       <div className="doc-cards">
         <Link to="/docs/commands/query" className="doc-card">
@@ -90,6 +131,10 @@ export function DocsOverview() {
         <Link to="/docs/commands/test" className="doc-card">
           <h3>test</h3>
           <p>Assert match counts against expectations.</p>
+        </Link>
+        <Link to="/docs/commands/set" className="doc-card">
+          <h3>set</h3>
+          <p>Modify matched values in JSON, YAML, and other files.</p>
         </Link>
         <Link to="/docs/commands/run" className="doc-card">
           <h3>run</h3>

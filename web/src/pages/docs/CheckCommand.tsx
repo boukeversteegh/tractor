@@ -1,6 +1,11 @@
 import { Link } from 'react-router-dom';
 import { DocLayout } from '../../components/DocLayout';
-import { CodeBlock, OutputBlock } from '../../components/CodeBlock';
+import { CodeBlock, Example } from '../../components/CodeBlock';
+
+const APP_JS = `// TODO: fix this later
+class App {
+  run() { }
+}`;
 
 export function CheckCommand() {
   return (
@@ -17,18 +22,17 @@ export function CheckCommand() {
       <p>
         Flag code patterns that violate your conventions. Every match is a violation:
       </p>
-      <CodeBlock
-        language="bash"
-        title="Find TODO comments"
-        code={`tractor check "src/**/*.cs" -x "//comment[contains(.,'TODO')]" \\
+      <Example
+        file={{ name: 'app.js', language: 'js', content: APP_JS }}
+        command={`tractor check app.js -x "//comment[contains(.,'TODO')]" \\
     --reason "TODO comments should be resolved"`}
-      />
-      <OutputBlock output={`src/app.cs:1:1: error: TODO comments should be resolved
+        output={`app.js:1:1: error: TODO comments should be resolved
 1 | // TODO: fix this later
     ^~~~~~~~~~~~~~~~~~~~~~~
 
 
-1 error in 1 file`} />
+1 error in 1 file`}
+      />
       <p>
         The exit code is <code>1</code> when errors are found, <code>0</code> when the check passes.
       </p>
@@ -37,17 +41,17 @@ export function CheckCommand() {
       <p>
         Use <code>--severity</code> to set the level. Warnings don't fail the build:
       </p>
-      <CodeBlock
-        language="bash"
-        code={`tractor check "src/**/*.cs" -x "//comment[contains(.,'TODO')]" \\
+      <Example
+        file={{ name: 'app.js', language: 'js', content: APP_JS }}
+        command={`tractor check app.js -x "//comment[contains(.,'TODO')]" \\
     --reason "TODO comment found" --severity warning`}
-      />
-      <OutputBlock output={`src/app.cs:1:1: warning: TODO comment found
+        output={`app.js:1:1: warning: TODO comment found
 1 | // TODO: fix this later
     ^~~~~~~~~~~~~~~~~~~~~~~
 
 
-1 warning in 1 file`} />
+1 warning in 1 file`}
+      />
       <p>
         With <code>--severity warning</code>, the exit code is <code>0</code> even when matches are found.
       </p>
@@ -61,12 +65,12 @@ export function CheckCommand() {
       <p>
         Use <code>-f github</code> to produce annotations that show directly on pull requests:
       </p>
-      <CodeBlock
-        language="bash"
-        code={`tractor check "src/**/*.cs" -x "//comment[contains(.,'TODO')]" \\
+      <Example
+        file={{ name: 'app.js', language: 'js', content: APP_JS }}
+        command={`tractor check app.js -x "//comment[contains(.,'TODO')]" \\
     --reason "TODO comment found" -f github`}
+        output={`::error file=app.js,line=1,endLine=1,col=1,endColumn=24::TODO comment found`}
       />
-      <OutputBlock output={`::error file=src/app.cs,line=1,endLine=1,col=1,endColumn=24::TODO comment found`} />
 
       <h2>Rules Files</h2>
       <p>
@@ -84,14 +88,14 @@ export function CheckCommand() {
   - id: repository-needs-orderby
     xpath: >-
       //class[contains(name,'Repository')]
-      //method[contains(name,'GetAll')]
-      [not(contains(.,'OrderBy'))]/name
-    reason: "GetAll methods in repositories should use OrderBy"
+      //method[contains(name,'getAll')]
+      [not(contains(.,'orderBy'))]/name
+    reason: "getAll methods in repositories should use orderBy"
     severity: error`}
       />
       <CodeBlock
         language="bash"
-        code={`tractor check "src/**/*.cs" --rules rules.yaml`}
+        code={`tractor check "src/**/*.js" --rules rules.yaml`}
       />
 
       <h2>Testing Rules Inline</h2>
@@ -100,12 +104,12 @@ export function CheckCommand() {
       </p>
       <CodeBlock
         language="bash"
-        code={`tractor check "src/**/*.cs" \\
+        code={`tractor check "src/**/*.js" \\
     -x "//comment[contains(.,'TODO')]" \\
     --reason "No TODOs allowed" \\
-    --expect-valid 'public class Clean { }' \\
+    --expect-valid 'class Clean { }' \\
     --expect-invalid '// TODO: fix' \\
-    -l csharp`}
+    -l javascript`}
       />
       <p>
         If the expectations fail (e.g. <code>--expect-valid</code> matches), the check reports an error for the rule itself.
@@ -117,7 +121,7 @@ export function CheckCommand() {
       </p>
       <CodeBlock
         language="bash"
-        code={`tractor check "src/**/*.cs" \\
+        code={`tractor check "src/**/*.js" \\
     -x "//comment[contains(.,'TODO')]" \\
     --reason "TODO found" \\
     -m "{value}"`}

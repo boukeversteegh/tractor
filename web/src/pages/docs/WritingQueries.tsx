@@ -1,6 +1,28 @@
 import { Link } from 'react-router-dom';
 import { DocLayout } from '../../components/DocLayout';
-import { CodeBlock, OutputBlock } from '../../components/CodeBlock';
+import { CodeBlock, Example } from '../../components/CodeBlock';
+
+const GREETER_JS = `function greet(name) {
+  return "Hello, " + name;
+}
+
+function add(a, b) {
+  return a + b;
+}`;
+
+const USER_SERVICE_JS = `class UserService {
+  static findById(id) {
+    return null;
+  }
+
+  save(user) {
+    return user;
+  }
+
+  _log(msg) {
+    console.log(msg);
+  }
+}`;
 
 export function WritingQueries() {
   return (
@@ -26,63 +48,60 @@ export function WritingQueries() {
       <p>
         Start with the <Link to="/docs/guides/schema">schema view</Link> to see what element types exist:
       </p>
-      <CodeBlock
-        language="bash"
-        code={`echo 'public class Greeter {\n    public string Greet(string name) {\n        return "Hello, " + name;\n    }\n    public int Add(int a, int b) {\n        return a + b;\n    }\n}' | tractor -l csharp -v schema`}
-      />
-      <OutputBlock output={`Files
+      <Example
+        file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
+        command={`tractor greeter.js -v schema`}
+        output={`Files
 └─ File
-   └─ unit
-      └─ class  class
-         ├─ public
-         ├─ name  Greeter
-         └─ body  {…}
-            └─ … (21 children)
+   └─ program
+      └─ function (2)  function
+         ├─ name (2)  greet, add
+         ├─ body (2)
+         │  └─ … (11 children)
+         └─ parameters (2)
+            └─ … (2 children)
 
-(use -d to increase depth, or -x to query specific elements)`} />
-      <p>
-        You can see there's a <code>class</code> element with <code>name</code>, <code>public</code>, and a <code>body</code>. Let's look deeper.
-      </p>
-
-      <h2>Step 2: View the Full Tree</h2>
-      <p>
-        Inspect specific elements to see the exact structure:
-      </p>
-      <CodeBlock
-        language="bash"
-        code={`echo 'public class Greeter {\n    public string Greet(string name) {\n        return "Hello, " + name;\n    }\n    public int Add(int a, int b) {\n        return a + b;\n    }\n}' | tractor -l csharp -x "//method" -v schema`}
+(use -d to increase depth, or -x to query specific elements)`}
       />
-      <OutputBlock output={`method (2)
-├─ public (2)
-├─ returns (2)
-│  └─ type (2)  string, int
+      <p>
+        You can see there's a <code>function</code> element with <code>name</code>, <code>body</code>, and <code>parameters</code>. Let's look deeper.
+      </p>
+
+      <h2>Step 2: Zoom Into an Element</h2>
+      <p>
+        Combine <code>-x</code> with <code>-v schema</code> to see the structure inside matched elements:
+      </p>
+      <Example
+        file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
+        command={`tractor greeter.js -x "//function" -v schema`}
+        output={`function (2)  function
 ├─ body (2)
 │  └─ block (2)  {…}
 │     └─ return (2)  return, ;
 │        └─ binary (2)  +
 │           └─ … (8 children)
-├─ parameters (2)  (, ), ,
-│  └─ parameter (3)
-│     ├─ type (3)  string, int
-│     └─ name (3)  name, a, b
-└─ name (2)  Greet, Add
+├─ parameters (2)
+│  └─ params (2)  (, ), ,
+│     └─ type (3)  name, a, b
+└─ name (2)  greet, add
 
-(use -d to increase depth, or -x to query specific elements)`} />
+(use -d to increase depth, or -x to query specific elements)`}
+      />
       <p>
-        Now you can see each <code>method</code> has a <code>name</code>, <code>returns</code>, <code>parameters</code>, and <code>body</code>.
+        Now you can see each <code>function</code> has a <code>name</code>, <code>parameters</code>, and <code>body</code>.
       </p>
 
       <h2>Step 3: Select Elements</h2>
       <p>
-        Use <code>-x</code> with an XPath expression to select elements. The syntax uses path expressions, similar to file paths:
+        Use <code>-x</code> with a path expression to select elements. The syntax uses path expressions, similar to file paths:
       </p>
 
-      <h3>Select all methods</h3>
-      <CodeBlock
-        language="bash"
-        code={`echo 'public class UserService {\n    public static User FindById(int id) { return null; }\n    public User Save(User user) { return user; }\n    private void Log(string msg) { }\n}' | tractor -l csharp -x "//method/name" -v value`}
+      <h3>Select all method names</h3>
+      <Example
+        file={{ name: 'user-service.js', language: 'js', content: USER_SERVICE_JS }}
+        command={`tractor user-service.js -x "//method/name" -v value`}
+        output={`findById\nsave\n_log`}
       />
-      <OutputBlock output={`FindById\nSave\nLog`} />
 
       <h3>Common path expressions</h3>
       <table className="doc-table">
@@ -90,10 +109,10 @@ export function WritingQueries() {
           <tr><th>Expression</th><th>Meaning</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>//method</code></td><td>All methods anywhere in the tree</td></tr>
+          <tr><td><code>//function</code></td><td>All functions anywhere in the tree</td></tr>
           <tr><td><code>//class/name</code></td><td>Name of every class</td></tr>
           <tr><td><code>//class//method</code></td><td>All methods inside any class</td></tr>
-          <tr><td><code>//method/parameters/parameter</code></td><td>All parameters of all methods</td></tr>
+          <tr><td><code>//function/parameters/params/type</code></td><td>All parameters of all functions</td></tr>
         </tbody>
       </table>
 
@@ -103,21 +122,21 @@ export function WritingQueries() {
       </p>
 
       <h3>Filter by child element</h3>
-      <CodeBlock
-        language="bash"
-        code={`echo 'public class UserService {\n    public static User FindById(int id) { return null; }\n    public User Save(User user) { return user; }\n    private void Log(string msg) { }\n}' | tractor -l csharp -x "//method[public][not(static)]/name" -v value`}
+      <Example
+        file={{ name: 'user-service.js', language: 'js', content: USER_SERVICE_JS }}
+        command={`tractor user-service.js -x "//method[not(static)]/name" -v value`}
+        output={`findById\nsave\n_log`}
       />
-      <OutputBlock output="Save" />
       <p>
-        <code>[public]</code> means "has a <code>&lt;public/&gt;</code> child". <code>[not(static)]</code> means "does not have a <code>&lt;static/&gt;</code> child".
+        <code>[not(static)]</code> means "does not have a <code>&lt;static/&gt;</code> child".
       </p>
 
       <h3>Filter by text content</h3>
-      <CodeBlock
-        language="bash"
-        code={`echo 'public class UserService {\n    public static User FindById(int id) { return null; }\n    public User Save(User user) { return user; }\n    private void Log(string msg) { }\n}' | tractor -l csharp -x "//method[contains(name,'Find')]/name" -v value`}
+      <Example
+        file={{ name: 'user-service.js', language: 'js', content: USER_SERVICE_JS }}
+        command={`tractor user-service.js -x "//method[contains(name,'find')]/name" -v value`}
+        output="findById"
       />
-      <OutputBlock output="FindById" />
 
       <h3>Common predicates</h3>
       <table className="doc-table">
@@ -128,9 +147,9 @@ export function WritingQueries() {
           <tr><td><code>[public]</code></td><td>Has a <code>&lt;public/&gt;</code> child element</td></tr>
           <tr><td><code>[not(static)]</code></td><td>Does not have a <code>&lt;static/&gt;</code> child</td></tr>
           <tr><td><code>[name='Foo']</code></td><td>Has name equal to "Foo"</td></tr>
-          <tr><td><code>[contains(name,'Get')]</code></td><td>Name contains "Get"</td></tr>
-          <tr><td><code>[contains(.,'OrderBy')]</code></td><td>Full text of element contains "OrderBy"</td></tr>
-          <tr><td><code>[count(parameters/parameter) &gt; 3]</code></td><td>Has more than 3 parameters</td></tr>
+          <tr><td><code>[contains(name,'get')]</code></td><td>Name contains "get"</td></tr>
+          <tr><td><code>[contains(.,'orderBy')]</code></td><td>Full text of element contains "orderBy"</td></tr>
+          <tr><td><code>[count(parameters/params/type) &gt; 3]</code></td><td>Has more than 3 parameters</td></tr>
           <tr><td><code>[starts-with(name,'test')]</code></td><td>Name starts with "test"</td></tr>
         </tbody>
       </table>
@@ -155,34 +174,22 @@ export function WritingQueries() {
 
       <h2>Real-World Examples</h2>
 
-      <h3>Find public methods that return void</h3>
-      <CodeBlock
-        language="bash"
-        code={`tractor "src/**/*.cs" -x "//method[public][returns/type='void']/name" -v value`}
-      />
-
-      <h3>Find classes missing a constructor</h3>
-      <CodeBlock
-        language="bash"
-        code={`tractor "src/**/*.cs" -x "//class[not(constructor)]/name" -v value`}
-      />
+      <h3>Find all class names in a project</h3>
+      <CodeBlock language="bash" code={`tractor "src/**/*.js" -x "//class/name" -v value`} />
 
       <h3>Find functions with too many parameters</h3>
-      <CodeBlock
-        language="bash"
-        code={`tractor "src/**/*.py" -x "//function[count(parameters/parameter) > 5]/name" -v value`}
-      />
+      <CodeBlock language="bash" code={`tractor "src/**/*.js" -x "//function[count(parameters/params/type) > 5]/name" -v value`} />
 
       <h3>Query JSON configuration</h3>
-      <CodeBlock
-        language="bash"
-        code={`echo '{"database": {"host": "localhost", "port": 5432}}' | tractor -l json -x "//database/host" -v value`}
+      <Example
+        file={{ name: 'config.json', language: 'json', content: `{"database": {"host": "localhost", "port": 5432}}` }}
+        command={`tractor config.json -x "//database/host" -v value`}
+        output="localhost"
       />
-      <OutputBlock output="localhost" />
 
       <h2>Tips</h2>
       <ul>
-        <li>Always start by <strong>looking at the tree</strong> — run <code>tractor file.cs</code> first.</li>
+        <li>Always start by <strong>looking at the tree</strong> — run <code>tractor file.js</code> first.</li>
         <li>Use <code>-v schema</code> when querying multiple files to see element types at a glance.</li>
         <li>Use <code>-W</code> to ignore whitespace when matching formatted code.</li>
         <li>The <Link to="/playground">Playground</Link> lets you build queries visually.</li>

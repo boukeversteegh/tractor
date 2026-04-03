@@ -19,6 +19,7 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
       { label: 'query', path: '/docs/commands/query' },
       { label: 'check', path: '/docs/commands/check' },
       { label: 'test', path: '/docs/commands/test' },
+      { label: 'set', path: '/docs/commands/set' },
       { label: 'run', path: '/docs/commands/run' },
     ],
   },

@@ -1,6 +1,14 @@
 import { Link } from 'react-router-dom';
 import { DocLayout } from '../../components/DocLayout';
-import { CodeBlock, OutputBlock } from '../../components/CodeBlock';
+import { CodeBlock, Example } from '../../components/CodeBlock';
+
+const GREETER_JS = `function greet(name) {
+  return "Hello, " + name;
+}
+
+function add(a, b) {
+  return a + b;
+}`;
 
 export function SchemaGuide() {
   return (
@@ -19,124 +27,111 @@ export function SchemaGuide() {
       <p>
         Add <code>-v schema</code> to any tractor command:
       </p>
-      <CodeBlock
-        language="bash"
-        code={`echo 'public class Greeter {\n    public string Greet(string name) {\n        return "Hello, " + name;\n    }\n    public int Add(int a, int b) {\n        return a + b;\n    }\n}' | tractor -l csharp -v schema`}
-      />
-      <OutputBlock output={`Files
+      <Example
+        file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
+        command={`tractor greeter.js -v schema`}
+        output={`Files
 └─ File
-   └─ unit
-      └─ class  class
-         ├─ public
-         ├─ name  Greeter
-         └─ body  {…}
-            └─ … (21 children)
+   └─ program
+      └─ function (2)  function
+         ├─ name (2)  greet, add
+         ├─ body (2)
+         │  └─ … (11 children)
+         └─ parameters (2)
+            └─ … (2 children)
 
-(use -d to increase depth, or -x to query specific elements)`} />
+(use -d to increase depth, or -x to query specific elements)`}
+      />
 
       <h2>Controlling Depth</h2>
       <p>
         The default depth is 4 levels. Use <code>-d</code> to go deeper:
       </p>
-      <CodeBlock
-        language="bash"
-        code={`echo 'public class Greeter {\n    public string Greet(string name) {\n        return "Hello, " + name;\n    }\n}' | tractor -l csharp -v schema -d 6`}
-      />
-      <OutputBlock output={`Files
+      <Example
+        file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
+        command={`tractor greeter.js -v schema -d 6`}
+        output={`Files
 └─ File
-   └─ unit
-      └─ class  class
-         ├─ public
-         ├─ body  {…}
-         │  └─ method
-         │     ├─ name  Greet
-         │     ├─ parameters  (…)
-         │     │  └─ … (3 children)
-         │     ├─ body
-         │     │  └─ … (10 children)
-         │     ├─ returns
-         │     │  └─ … (1 children)
-         │     └─ public
-         └─ name  Greeter
+   └─ program
+      └─ function (2)  function
+         ├─ parameters (2)
+         │  └─ params (2)  (, ), ,
+         │     └─ type (3)  name, a, b
+         ├─ name (2)  greet, add
+         └─ body (2)
+            └─ block (2)  {…}
+               └─ return (2)  return, ;
+                  └─ … (9 children)
 
-(use -d to increase depth, or -x to query specific elements)`} />
+(use -d to increase depth, or -x to query specific elements)`}
+      />
 
       <h2>Schema on Query Results</h2>
       <p>
         Combine <code>-x</code> with <code>-v schema</code> to see the structure inside matched elements. This is the most powerful way to explore:
       </p>
-      <CodeBlock
-        language="bash"
-        code={`echo 'public class Greeter {\n    public string Greet(string name) {\n        return "Hello, " + name;\n    }\n    public int Add(int a, int b) {\n        return a + b;\n    }\n}' | tractor -l csharp -x "//method" -v schema`}
-      />
-      <OutputBlock output={`method (2)
-├─ public (2)
-├─ returns (2)
-│  └─ type (2)  string, int
+      <Example
+        file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
+        command={`tractor greeter.js -x "//function" -v schema`}
+        output={`function (2)  function
 ├─ body (2)
 │  └─ block (2)  {…}
 │     └─ return (2)  return, ;
 │        └─ binary (2)  +
 │           └─ … (8 children)
-├─ parameters (2)  (, ), ,
-│  └─ parameter (3)
-│     ├─ type (3)  string, int
-│     └─ name (3)  name, a, b
-└─ name (2)  Greet, Add
+├─ parameters (2)
+│  └─ params (2)  (, ), ,
+│     └─ type (3)  name, a, b
+└─ name (2)  greet, add
 
-(use -d to increase depth, or -x to query specific elements)`} />
+(use -d to increase depth, or -x to query specific elements)`}
+      />
 
       <h3>Reading the Output</h3>
       <ul>
         <li><strong>Numbers in parentheses</strong> like <code>(2)</code> — how many times this element appears across all matches</li>
-        <li><strong>Values after the name</strong> like <code>string, int</code> — unique text values found in these elements</li>
+        <li><strong>Values after the name</strong> like <code>greet, add</code> — unique text values found in these elements</li>
         <li><strong>Ellipsis</strong> — deeper children exist (increase <code>-d</code> to reveal them)</li>
       </ul>
 
       <h2>Go Deeper with -d</h2>
-      <CodeBlock
-        language="bash"
-        code={`echo 'public class Greeter {\n    public string Greet(string name) {\n        return "Hello, " + name;\n    }\n}' | tractor -l csharp -x "//method" -v schema -d 8`}
+      <Example
+        file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
+        command={`tractor greeter.js -x "//function" -v schema -d 8`}
+        output={`function (2)  function
+├─ name (2)  greet, add
+├─ parameters (2)
+│  └─ params (2)  (, ), ,
+│     └─ type (3)  name, a, b
+└─ body (2)
+   └─ block (2)  {…}
+      └─ return (2)  return, ;
+         └─ binary (2)  +
+            ├─ op (2)  +
+            │  └─ plus (2)
+            ├─ right (2)
+            │  └─ type (2)  name, b
+            └─ left (2)
+               ├─ string  "
+               │  └─ string_fragment  Hello,
+               └─ type  a`}
       />
-      <OutputBlock output={`method
-├─ name  Greet
-├─ public
-├─ returns
-│  └─ type  string
-├─ body
-│  └─ block  {…}
-│     └─ return  return, ;
-│        └─ binary  +
-│           ├─ left
-│           │  └─ string  "
-│           │     └─ string_literal_content  Hello,
-│           ├─ right
-│           │  └─ ref  name
-│           └─ op  +
-│              └─ plus
-└─ parameters  (…)
-   └─ parameter
-      ├─ name  name
-      └─ type  string`} />
 
       <h2>Across Multiple Files</h2>
       <p>
         Schema really shines when exploring a whole codebase:
       </p>
-      <CodeBlock
-        language="bash"
-        code={`tractor "src/**/*.cs" -v schema`}
-      />
+      <CodeBlock language="bash" code={`tractor "src/**/*.js" -v schema`} />
       <p>
-        This shows you every element type across all C# files in <code>src/</code>. From there, narrow down:
+        This shows you every element type across all JavaScript files in <code>src/</code>. From there, narrow down:
       </p>
       <CodeBlock
         language="bash"
         code={`# What do classes look like?
-tractor "src/**/*.cs" -x "//class" -v schema
+tractor "src/**/*.js" -x "//class" -v schema
 
-# What do methods have inside?
-tractor "src/**/*.cs" -x "//method" -v schema -d 6`}
+# What do functions have inside?
+tractor "src/**/*.js" -x "//function" -v schema -d 6`}
       />
 
       <h2>Workflow Summary</h2>

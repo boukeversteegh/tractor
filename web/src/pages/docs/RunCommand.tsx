@@ -1,6 +1,17 @@
 import { Link } from 'react-router-dom';
 import { DocLayout } from '../../components/DocLayout';
-import { CodeBlock, OutputBlock } from '../../components/CodeBlock';
+import { CodeBlock, OutputBlock, Example } from '../../components/CodeBlock';
+
+const EXAMPLE_JS = `// TODO: fix this later
+class UserRepository {
+  getAllUsers() {
+    return db.users;
+  }
+
+  saveUser(user) {
+    db.users.push(user);
+  }
+}`;
 
 export function RunCommand() {
   return (
@@ -24,18 +35,15 @@ export function RunCommand() {
         title=".tractor.yml"
         code={`check:
   files:
-    - "src/**/*.cs"
+    - "src/**/*.js"
   rules:
     - id: no-todo
       xpath: "//comment[contains(.,'TODO')]"
       reason: "TODO comments should be resolved"
       severity: warning`}
       />
-      <CodeBlock
-        language="bash"
-        code={`tractor run .tractor.yml`}
-      />
-      <OutputBlock output={`src/app.cs:1:1: warning: TODO comments should be resolved
+      <CodeBlock language="bash" code={`tractor run .tractor.yml`} />
+      <OutputBlock output={`src/app.js:1:1: warning: TODO comments should be resolved
 1 | // TODO: fix this later
     ^~~~~~~~~~~~~~~~~~~~~~~
 
@@ -43,12 +51,31 @@ export function RunCommand() {
 1 warning in 1 file`} />
 
       <h3>Multiple Rules</h3>
+      <Example
+        file={{ name: 'example.js', language: 'js', content: EXAMPLE_JS }}
+        command="tractor run .tractor.yml"
+        output={`app.js:1:1: warning: TODO comments should be resolved
+1 | // TODO: fix this later
+    ^~~~~~~~~~~~~~~~~~~~~~~
+
+example.js:1:1: warning: TODO comments should be resolved
+1 | // TODO: fix this later
+    ^~~~~~~~~~~~~~~~~~~~~~~
+
+example.js:3:3: error: getAll methods in repositories should use orderBy
+3 |   getAllUsers() {
+      ^~~~~~~~~~~
+
+
+1 error in 2 files`}
+      />
+      <p>With this config:</p>
       <CodeBlock
         language="yaml"
         title=".tractor.yml"
         code={`check:
   files:
-    - "src/**/*.cs"
+    - "*.js"
   rules:
     - id: no-todo
       xpath: "//comment[contains(.,'TODO')]"
@@ -58,25 +85,11 @@ export function RunCommand() {
     - id: repository-needs-orderby
       xpath: >-
         //class[contains(name,'Repository')]
-        //method[contains(name,'GetAll')]
-        [not(contains(.,'OrderBy'))]/name
-      reason: "GetAll methods in repositories should use OrderBy"
+        //method[contains(name,'getAll')]
+        [not(contains(.,'orderBy'))]/name
+      reason: "getAll methods in repositories should use orderBy"
       severity: error`}
       />
-      <OutputBlock output={`src/app.cs:1:1: warning: TODO comments should be resolved
-1 | // TODO: fix this later
-    ^~~~~~~~~~~~~~~~~~~~~~~
-
-src/example.cs:1:1: warning: TODO comments should be resolved
-1 | // TODO: fix this later
-    ^~~~~~~~~~~~~~~~~~~~~~~
-
-src/example.cs:3:23: error: GetAll methods in repositories should use OrderBy
-3 |     public List<User> GetAllUsers() {
-                          ^~~~~~~~~~~
-
-
-1 error in 2 files`} />
 
       <h2>Rule Properties</h2>
       <table className="doc-table">
@@ -104,14 +117,14 @@ src/example.cs:3:23: error: GetAll methods in repositories should use OrderBy
         title=".tractor.yml"
         code={`check:
   files:
-    - "src/**/*.cs"
+    - "src/**/*.js"
   rules:
     - id: no-todo
       xpath: "//comment[contains(.,'TODO')]"
       reason: "TODO comments should be resolved"
       severity: error
       expect:
-        - valid: "public class Clean { }"
+        - valid: "class Clean { }"
         - invalid: "// TODO: fix this"`}
       />
       <p>
@@ -126,7 +139,7 @@ src/example.cs:3:23: error: GetAll methods in repositories should use OrderBy
         language="yaml"
         title=".tractor.yml"
         code={`files:
-  - "src/**/*.cs"
+  - "src/**/*.js"
 
 operations:
   - check:
@@ -145,27 +158,28 @@ operations:
 
       <h2>Scope and File Resolution</h2>
       <p>
-        File patterns can be set at the root level (shared) or per-operation:
+        File patterns can be set at the root level (shared) or per-operation. Nested file scopes are intersections — the operation scope narrows the root scope, it does not replace it.
       </p>
       <CodeBlock
         language="yaml"
-        code={`# Root-level files apply to all operations
+        code={`# Root-level files: the broadest scope
 files:
-  - "src/**/*.cs"
+  - "src/**/*.js"
 exclude:
   - "src/generated/**"
 
 check:
-  # Operation-level files override root files
+  # Operation-level files intersect with root
+  # Only files matching BOTH patterns are checked
   files:
-    - "src/core/**/*.cs"
+    - "src/core/**/*.js"
   rules:
     - id: no-todo
       xpath: "//comment[contains(.,'TODO')]"
       reason: "No TODOs in core"`}
       />
       <ul>
-        <li><strong>files</strong>: Operation files override root files. Root files are the fallback.</li>
+        <li><strong>files</strong>: Operation files intersect with root files — both must match.</li>
         <li><strong>exclude</strong>: Union of root and operation excludes (both narrow the scope).</li>
       </ul>
 
@@ -180,7 +194,7 @@ diff-files: "main..HEAD"
 
 check:
   files:
-    - "src/**/*.cs"
+    - "src/**/*.js"
   rules:
     - id: no-todo
       xpath: "//comment[contains(.,'TODO')]"

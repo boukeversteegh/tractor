@@ -1,6 +1,14 @@
 import { Link } from 'react-router-dom';
 import { DocLayout } from '../../components/DocLayout';
-import { CodeBlock, OutputBlock } from '../../components/CodeBlock';
+import { CodeBlock, Example } from '../../components/CodeBlock';
+
+const GREETER_JS = `function greet(name) {
+  return "Hello, " + name;
+}
+
+function add(a, b) {
+  return a + b;
+}`;
 
 export function TestCommand() {
   return (
@@ -17,45 +25,45 @@ export function TestCommand() {
       <p>
         Assert that a query matches an exact number of times:
       </p>
-      <CodeBlock
-        language="bash"
-        code={`echo 'public class Foo { }\npublic class Bar { }' | tractor test -l csharp \\
-    -x "//class" --expect 2 -m "Expected 2 classes"`}
+      <Example
+        file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
+        command={`tractor test greeter.js -x "//function" --expect 2 \\
+    -m "Expected 2 functions"`}
+        output={`✓ Expected 2 functions`}
       />
-      <OutputBlock output={`✓ Expected 2 classes`} />
 
       <h2>Expect None</h2>
       <p>
         Assert that a pattern does <em>not</em> appear:
       </p>
-      <CodeBlock
-        language="bash"
-        code={`echo 'public class Foo { }' | tractor test -l csharp \\
-    -x "//interface" --expect none -m "No interfaces expected"`}
+      <Example
+        file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
+        command={`tractor test greeter.js -x "//class" --expect none \\
+    -m "No classes expected"`}
+        output={`✓ No classes expected`}
       />
-      <OutputBlock output={`✓ No interfaces expected`} />
 
       <h2>Expect Some</h2>
       <p>
         Assert that at least one match exists:
       </p>
-      <CodeBlock
-        language="bash"
-        code={`echo 'public class Foo { }' | tractor test -l csharp \\
-    -x "//class" --expect some -m "At least one class expected"`}
+      <Example
+        file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
+        command={`tractor test greeter.js -x "//function" --expect some \\
+    -m "At least one function"`}
+        output={`✓ At least one function`}
       />
-      <OutputBlock output={`✓ At least one class expected`} />
 
       <h2>Failed Assertions</h2>
       <p>
         When the expectation is not met, tractor reports the failure and exits with code <code>1</code>:
       </p>
-      <CodeBlock
-        language="bash"
-        code={`echo 'public class Foo { }' | tractor test -l csharp \\
-    -x "//class" --expect none -m "No classes expected"`}
+      <Example
+        file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
+        command={`tractor test greeter.js -x "//function" --expect none \\
+    -m "No functions expected"`}
+        output={`✗ No functions expected (expected none, got 2)`}
       />
-      <OutputBlock output={`✗ No classes expected (expected none, got 1)`} />
 
       <h2>Use Cases</h2>
       <ul>
