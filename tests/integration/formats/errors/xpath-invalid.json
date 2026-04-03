@@ -13,8 +13,7 @@
       "origin": "xpath",
       "lines": [
         "//class[bad=("
-      ],
-      "source": "//class[bad=("
+      ]
     }
   ]
 }

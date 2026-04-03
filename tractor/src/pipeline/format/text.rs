@@ -113,11 +113,10 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
     // All fields to stdout: view-requested first, then extras.
     // For text, Severity/Origin are rendered inline with Reason, and
     // Source is redundant when Lines is present — skip these as extras.
+    // Severity/Origin are rendered inline with Reason — skip as standalone extras.
     let text_skip = |f: &ViewField| -> bool {
-        matches!(f,
-            ViewField::Severity | ViewField::Origin
-            | ViewField::Source // lines includes the caret, source is redundant
-        ) && !view.has(*f) // only skip if it's an extra, not user-requested
+        matches!(f, ViewField::Severity | ViewField::Origin)
+            && !view.has(*f)
     };
     for field in view_fields.iter().chain(extra_fields.iter()) {
         if !text_skip(field) {

@@ -76,7 +76,7 @@ pub fn render_fields_for_match(view: &ViewSet, rm: &ReportMatch) -> (Vec<ViewFie
 
     let diagnostic_extras: &[ViewField] = &[
         ViewField::Severity, ViewField::Reason, ViewField::Origin,
-        ViewField::Lines, ViewField::Source,
+        ViewField::Lines,
     ];
     let extra: Vec<ViewField> = diagnostic_extras.iter()
         .filter(|&&f| !view.has(f) && match_has_field(rm, f))
