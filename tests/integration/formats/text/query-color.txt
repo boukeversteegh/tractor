@@ -1,40 +1,40 @@
 tests/integration/formats/sample.cs:1
-\e[2m<\e[0m\e[34mclass\e[0m\e[2m>\e[0m
-  \e[2m<\e[0m\e[34mpublic\e[0m\e[2m/>\e[0m
+🟫<🟫🟦class🟦🟫>🟫
+  🟫<🟫🟦public🟦🟫/>🟫
   class
-  \e[2m<\e[0m\e[34mname\e[0m\e[2m>Foo\e[2m</\e[0m\e[34mname\e[0m\e[2m>\e[0m
-  \e[2m<\e[0m\e[34mbody\e[0m\e[2m>\e[0m
+  🟫<🟫🟦name🟦🟫>Foo🟫🟫</🟫🟦name🟦🟫>🟫
+  🟫<🟫🟦body🟦🟫>🟫
     {
-    \e[2m<\e[0m\e[34mproperty\e[0m\e[2m>\e[0m
-      \e[2m<\e[0m\e[34mpublic\e[0m\e[2m/>\e[0m
-      \e[2m<\e[0m\e[34mtype\e[0m\e[2m>int\e[2m</\e[0m\e[34mtype\e[0m\e[2m>\e[0m
-      \e[2m<\e[0m\e[34mname\e[0m\e[2m>Bar\e[2m</\e[0m\e[34mname\e[0m\e[2m>\e[0m
-      \e[2m<\e[0m\e[34maccessors\e[0m\e[2m>\e[0m
+    🟫<🟫🟦property🟦🟫>🟫
+      🟫<🟫🟦public🟦🟫/>🟫
+      🟫<🟫🟦type🟦🟫>int🟫🟫</🟫🟦type🟦🟫>🟫
+      🟫<🟫🟦name🟦🟫>Bar🟫🟫</🟫🟦name🟦🟫>🟫
+      🟫<🟫🟦accessors🟦🟫>🟫
         {
-        \e[2m<\e[0m\e[34maccessor\e[0m\e[2m>get;\e[2m</\e[0m\e[34maccessor\e[0m\e[2m>\e[0m
-        \e[2m<\e[0m\e[34maccessor\e[0m\e[2m>set;\e[2m</\e[0m\e[34maccessor\e[0m\e[2m>\e[0m
+        🟫<🟫🟦accessor🟦🟫>get;🟫🟫</🟫🟦accessor🟦🟫>🟫
+        🟫<🟫🟦accessor🟦🟫>set;🟫🟫</🟫🟦accessor🟦🟫>🟫
         }
-      \e[2m</\e[0m\e[34maccessors\e[0m\e[2m>\e[0m
-    \e[2m</\e[0m\e[34mproperty\e[0m\e[2m>\e[0m
-    \e[2m<\e[0m\e[34mmethod\e[0m\e[2m>\e[0m
-      \e[2m<\e[0m\e[34mpublic\e[0m\e[2m/>\e[0m
-      \e[2m<\e[0m\e[34mreturns\e[0m\e[2m>\e[0m
-        \e[2m<\e[0m\e[34mtype\e[0m\e[2m>void\e[2m</\e[0m\e[34mtype\e[0m\e[2m>\e[0m
-      \e[2m</\e[0m\e[34mreturns\e[0m\e[2m>\e[0m
-      \e[2m<\e[0m\e[34mname\e[0m\e[2m>Baz\e[2m</\e[0m\e[34mname\e[0m\e[2m>\e[0m
-      \e[2m<\e[0m\e[34mparameters\e[0m\e[2m>()\e[2m</\e[0m\e[34mparameters\e[0m\e[2m>\e[0m
-      \e[2m<\e[0m\e[34mbody\e[0m\e[2m>\e[0m
-        \e[2m<\e[0m\e[34mblock\e[0m\e[2m>{ }\e[2m</\e[0m\e[34mblock\e[0m\e[2m>\e[0m
-      \e[2m</\e[0m\e[34mbody\e[0m\e[2m>\e[0m
-    \e[2m</\e[0m\e[34mmethod\e[0m\e[2m>\e[0m
+      🟫</🟫🟦accessors🟦🟫>🟫
+    🟫</🟫🟦property🟦🟫>🟫
+    🟫<🟫🟦method🟦🟫>🟫
+      🟫<🟫🟦public🟦🟫/>🟫
+      🟫<🟫🟦returns🟦🟫>🟫
+        🟫<🟫🟦type🟦🟫>void🟫🟫</🟫🟦type🟦🟫>🟫
+      🟫</🟫🟦returns🟦🟫>🟫
+      🟫<🟫🟦name🟦🟫>Baz🟫🟫</🟫🟦name🟦🟫>🟫
+      🟫<🟫🟦parameters🟦🟫>()🟫🟫</🟫🟦parameters🟦🟫>🟫
+      🟫<🟫🟦body🟦🟫>🟫
+        🟫<🟫🟦block🟦🟫>{ }🟫🟫</🟫🟦block🟦🟫>🟫
+      🟫</🟫🟦body🟦🟫>🟫
+    🟫</🟫🟦method🟦🟫>🟫
     }
-  \e[2m</\e[0m\e[34mbody\e[0m\e[2m>\e[0m
-\e[2m</\e[0m\e[34mclass\e[0m\e[2m>\e[0m
+  🟫</🟫🟦body🟦🟫>🟫
+🟫</🟫🟦class🟦🟫>🟫
 
 tests/integration/formats/sample.cs:7
-\e[2m<\e[0m\e[34mclass\e[0m\e[2m>\e[0m
-  \e[2m<\e[0m\e[34mpublic\e[0m\e[2m/>\e[0m
+🟫<🟫🟦class🟦🟫>🟫
+  🟫<🟫🟦public🟦🟫/>🟫
   class
-  \e[2m<\e[0m\e[34mname\e[0m\e[2m>Qux\e[2m</\e[0m\e[34mname\e[0m\e[2m>\e[0m
-  \e[2m<\e[0m\e[34mbody\e[0m\e[2m>{ }\e[2m</\e[0m\e[34mbody\e[0m\e[2m>\e[0m
-\e[2m</\e[0m\e[34mclass\e[0m\e[2m>\e[0m
+  🟫<🟫🟦name🟦🟫>Qux🟫🟫</🟫🟦name🟦🟫>🟫
+  🟫<🟫🟦body🟦🟫>{ }🟫🟫</🟫🟦body🟦🟫>🟫
+🟫</🟫🟦class🟦🟫>🟫
