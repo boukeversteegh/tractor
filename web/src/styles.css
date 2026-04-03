@@ -1519,6 +1519,7 @@ body {
   min-width: 0;
   padding: 2rem 2.5rem;
   max-width: 800px;
+  overflow-y: auto;
 }
 
 .doc-content h1 {

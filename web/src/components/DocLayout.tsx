@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { NavHeader } from './NavHeader';
 
@@ -24,6 +25,12 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
     ],
   },
   {
+    title: 'Languages',
+    items: [
+      { label: 'Data Formats', path: '/docs/languages/data' },
+    ],
+  },
+  {
     title: 'Reference',
     items: [
       { label: 'CLI Options', path: '/docs/reference/cli' },
@@ -47,6 +54,11 @@ interface DocLayoutProps {
 
 export function DocLayout({ children }: DocLayoutProps) {
   const location = useLocation();
+  const contentRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    contentRef.current?.scrollTo(0, 0);
+  }, [location.pathname]);
 
   return (
     <div className="doc-page">
@@ -71,7 +83,7 @@ export function DocLayout({ children }: DocLayoutProps) {
             </div>
           ))}
         </aside>
-        <main className="doc-content">
+        <main className="doc-content" ref={contentRef}>
           {children}
         </main>
       </div>

@@ -55,15 +55,50 @@ tractor file1.js file2.js`} />
         </thead>
         <tbody>
           <tr><td><code>structure</code></td><td>Semantic syntax tree with transforms</td><td>Code languages (JS, Rust, etc.)</td></tr>
-          <tr><td><code>data</code></td><td>Data projection (elements become values)</td><td>JSON, YAML</td></tr>
-          <tr><td><code>raw</code></td><td>Raw tree-sitter AST, no transforms</td><td>—</td></tr>
+          <tr><td><code>data</code></td><td>Data projection — keys become elements, values become text</td><td>JSON, YAML, TOML, INI</td></tr>
+          <tr><td><code>raw</code></td><td>Raw parser output, no transforms (advanced)</td><td>—</td></tr>
         </tbody>
       </table>
+      <p>
+        You can override the default. For example, use <code>-t structure</code> on a JSON file to see its full syntax tree instead of the data projection:
+      </p>
       <Example
-        command={`echo 'function greet(name) { return name; }' | tractor -l javascript -x "//identifier" -v value -t raw`}
-        output={`greet\nname\nname`}
+        command={`echo '{"host": "localhost", "port": 5432}' | tractor -l json -t structure`}
+        outputLanguage="xml"
+        output={`<stdin>:1
+<Files>
+  <file>&lt;stdin&gt;</file>
+  <object>
+    <property>
+      <key>
+        <string>host</string>
+      </key>
+      <value>
+        <string>localhost</string>
+      </value>
+    </property>
+    <property>
+      <key>
+        <string>port</string>
+      </key>
+      <value>
+        <number>5432</number>
+      </value>
+    </property>
+  </object>
+</Files>`}
       />
-      <p>In <code>raw</code> mode, you see the unmodified tree-sitter node types (e.g. <code>identifier</code> instead of <code>name</code>).</p>
+      <p>Compare with the default <code>data</code> mode, where the same JSON becomes a clean data tree:</p>
+      <Example
+        command={`echo '{"host": "localhost", "port": 5432}' | tractor -l json`}
+        outputLanguage="xml"
+        output={`<stdin>:1
+<Files>
+  <file>&lt;stdin&gt;</file>
+  <host>localhost</host>
+  <port>5432</port>
+</Files>`}
+      />
 
       <h3>-W, --ignore-whitespace</h3>
       <p>Ignore whitespace when comparing strings in XPath. Useful when source code has varying formatting.</p>

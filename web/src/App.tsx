@@ -7,6 +7,7 @@ import { CheckCommand } from './pages/docs/CheckCommand';
 import { TestCommand } from './pages/docs/TestCommand';
 import { SetCommand } from './pages/docs/SetCommand';
 import { RunCommand } from './pages/docs/RunCommand';
+import { DataLanguages } from './pages/docs/DataLanguages';
 import { CliReference } from './pages/docs/CliReference';
 import { QuerySyntax } from './pages/docs/QuerySyntax';
 import { WritingQueries } from './pages/docs/WritingQueries';
@@ -26,6 +27,7 @@ export function App() {
         <Route path="/docs/commands/test" element={<TestCommand />} />
         <Route path="/docs/commands/set" element={<SetCommand />} />
         <Route path="/docs/commands/run" element={<RunCommand />} />
+        <Route path="/docs/languages/data" element={<DataLanguages />} />
         <Route path="/docs/reference/cli" element={<CliReference />} />
         <Route path="/docs/guides/query-syntax" element={<QuerySyntax />} />
         <Route path="/docs/guides/writing-queries" element={<WritingQueries />} />

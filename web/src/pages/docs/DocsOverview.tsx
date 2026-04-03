@@ -142,6 +142,17 @@ export function DocsOverview() {
         </Link>
       </div>
 
+      <h2>Supported Languages</h2>
+      <p>
+        Tractor supports 27 languages. Code languages are parsed into a syntax tree. Data formats (JSON, YAML, TOML, INI) are parsed into a data tree where keys become elements.
+      </p>
+      <p>
+        <strong>Code:</strong> JavaScript, TypeScript, TSX, C#, Rust, Python, Go, Java, Ruby, C++, C, HTML, CSS, Bash, PHP, Scala, Lua, Haskell, OCaml, R, Julia, Markdown, T-SQL
+      </p>
+      <p>
+        <strong>Data:</strong> <Link to="/docs/languages/data">JSON, YAML, TOML, INI</Link>
+      </p>
+
       <h2>Guides</h2>
       <div className="doc-cards">
         <Link to="/docs/guides/query-syntax" className="doc-card">
