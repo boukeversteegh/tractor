@@ -1,0 +1,5 @@
+🔴 fatal(xpath): Parse error
+🔴 1 | //class[bad=(
+🔴                  ^
+🔴 
+1 fatal in 0 files

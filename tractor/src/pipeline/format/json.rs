@@ -164,6 +164,24 @@ pub fn match_to_value(
         }
     }
 
+    // Extra fields: present on the match but not in the view.
+    // Diagnostic fields preserved by project_report always appear in json.
+    if !view.has(ViewField::Reason) {
+        if let Some(ref r) = rm.reason { obj.insert("reason".into(), json!(r)); }
+    }
+    if !view.has(ViewField::Severity) {
+        if let Some(sv) = rm.severity { obj.insert("severity".into(), json!(sv.as_str())); }
+    }
+    if !view.has(ViewField::Origin) && rm.file.is_empty() {
+        if let Some(origin) = rm.origin { obj.insert("origin".into(), json!(origin.as_str())); }
+    }
+    if !view.has(ViewField::Lines) {
+        if let Some(ref ls) = rm.lines { obj.insert("lines".into(), json!(ls)); }
+    }
+    if !view.has(ViewField::Source) {
+        if let Some(ref s) = rm.source { obj.insert("source".into(), json!(s)); }
+    }
+
     if should_emit_command(rm, view, skip_dims) {
         obj.insert("command".into(), json!(rm.command));
     }

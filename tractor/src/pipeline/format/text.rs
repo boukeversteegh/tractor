@@ -80,129 +80,60 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
         return;
     }
 
-    // Location prefix: file, line, and/or column — combined on one line as file:line:col
-    // Status is appended inline when both a location and a status are present (GCC-style).
-    if view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column) {
-        let mut loc = String::new();
-        if view.has(ViewField::File) {
-            let file = group_file.unwrap_or(&rm.file);
-            loc.push_str(&normalize_path(file));
-        }
-        if view.has(ViewField::Line) {
-            if !loc.is_empty() { loc.push(':'); }
-            loc.push_str(&rm.line.to_string());
-        }
-        if view.has(ViewField::Column) {
-            loc.push(':');
-            loc.push_str(&rm.column.to_string());
-        }
-        // Append status inline on the location line (GCC-style: file:line: status)
-        if view.has(ViewField::Status) {
-            if let Some(ref status) = rm.status {
-                loc.push_str(": ");
-                loc.push_str(status);
+    // Diagnostics without a file have no meaningful location or view content
+    // for stdout — everything goes to stderr via extra fields below.
+    let file = group_file.unwrap_or(&rm.file);
+    let skip_stdout = rm.reason.is_some() && file.is_empty();
+
+    if !skip_stdout {
+        // Location prefix: file, line, and/or column — combined on one line as file:line:col
+        // Status is appended inline when both a location and a status are present (GCC-style).
+        if view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column) {
+            let mut loc = String::new();
+            if view.has(ViewField::File) {
+                loc.push_str(&normalize_path(file));
             }
+            if view.has(ViewField::Line) {
+                if !loc.is_empty() { loc.push(':'); }
+                loc.push_str(&rm.line.to_string());
+            }
+            if view.has(ViewField::Column) {
+                loc.push(':');
+                loc.push_str(&rm.column.to_string());
+            }
+            // Append status inline on the location line (GCC-style: file:line: status)
+            if view.has(ViewField::Status) {
+                if let Some(ref status) = rm.status {
+                    loc.push_str(": ");
+                    loc.push_str(status);
+                }
+            }
+            out.push_str(&loc);
+            out.push('\n');
         }
-        out.push_str(&loc);
-        out.push('\n');
+
+        // View-requested fields (in user order) → stdout
+        for field in &view.fields {
+            render_field(out, field, rm, view, group_file, render_opts);
+        }
     }
 
-    // Build render list: view-requested fields first (in user order),
-    // then any extra fields present on the match but not in the view.
-    // This is how diagnostic fields appear without the renderer knowing
-    // about diagnostics — project_report preserves them, we just render.
-    // Extra field priority: lines supersedes source (lines includes the caret).
+    // Extra fields: diagnostic fields present on the match but not in the view → stderr.
+    // Only render reason and lines as extras — these are essential for understanding
+    // what went wrong. Tree/value/status are normal match data, not diagnostics.
+    // Reason renders severity+origin inline, so those don't need separate entries.
+    // Lines supersedes source (lines includes the caret).
     let extra_fields: &[ViewField] = &[
-        ViewField::Severity, ViewField::Reason, ViewField::Origin,
-        ViewField::Lines, ViewField::Tree,
-        ViewField::Value, ViewField::Status,
+        ViewField::Reason, ViewField::Lines,
     ];
-    let mut render_fields: Vec<ViewField> = view.fields.clone();
+    let mut stderr_buf = String::new();
     for &f in extra_fields {
         if !view.has(f) && match_has_field(rm, f) {
-            render_fields.push(f);
+            render_field(&mut stderr_buf, &f, rm, view, group_file, render_opts);
         }
     }
-
-    for field in &render_fields {
-        match field {
-            ViewField::Tree => {
-                if let Some(ref node) = rm.tree {
-                    let rendered = render_xml_node(node, render_opts);
-                    if render_opts.pretty_print && !rendered.ends_with('\n') {
-                        out.push_str(&rendered);
-                        out.push('\n');
-                    } else {
-                        out.push_str(&rendered);
-                    }
-                }
-            }
-            ViewField::Value => {
-                if let Some(ref v) = rm.value {
-                    out.push_str(v);
-                    out.push('\n');
-                }
-            }
-            ViewField::Source => {
-                if let Some(ref s) = rm.source {
-                    out.push_str(&render_source_precomputed(
-                        s,
-                        rm.tree.as_ref(),
-                        rm.line, rm.column, rm.end_line, rm.end_column,
-                        render_opts,
-                    ));
-                }
-            }
-            ViewField::Lines => {
-                if let Some(ref ls) = rm.lines {
-                    out.push_str(&render_lines(
-                        ls,
-                        rm.tree.as_ref(),
-                        rm.line, rm.column, rm.end_line, rm.end_column,
-                        render_opts,
-                    ));
-                }
-            }
-            ViewField::Reason => {
-                if let Some(ref reason) = rm.reason {
-                    out.push_str(reason);
-                    out.push('\n');
-                }
-            }
-            ViewField::Severity => {
-                if let Some(severity) = rm.severity {
-                    out.push_str(severity.as_str());
-                    out.push('\n');
-                }
-            }
-            ViewField::Status => {
-                // Status is printed inline on the location line when a location is present.
-                // Only print it as a standalone line if no location fields are in view.
-                let has_location = view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
-                if !has_location {
-                    if let Some(ref status) = rm.status {
-                        out.push_str(status);
-                        out.push('\n');
-                    }
-                }
-            }
-            ViewField::Output => {
-                if let Some(ref content) = rm.output {
-                    out.push_str(content);
-                }
-            }
-            ViewField::Origin => {
-                if rm.file.is_empty() {
-                    if let Some(origin) = rm.origin {
-                        out.push_str(origin.as_str());
-                        out.push('\n');
-                    }
-                }
-            }
-            // File/Line/Column handled above as combined location line
-            // Summary/Count/Schema handled outside match loop
-            _ => {}
-        }
+    if !stderr_buf.is_empty() {
+        eprint!("{}", stderr_buf);
     }
 
     // Hint is always shown when present (it's diagnostic metadata, not a view field)
@@ -210,6 +141,104 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
         out.push_str("  hint: ");
         out.push_str(hint);
         out.push('\n');
+    }
+}
+
+/// Render a single field from a match into the output buffer.
+fn render_field(
+    out: &mut String,
+    field: &ViewField,
+    rm: &ReportMatch,
+    view: &ViewSet,
+    _group_file: Option<&str>,
+    render_opts: &RenderOptions,
+) {
+    match field {
+        ViewField::Tree => {
+            if let Some(ref node) = rm.tree {
+                let rendered = render_xml_node(node, render_opts);
+                if render_opts.pretty_print && !rendered.ends_with('\n') {
+                    out.push_str(&rendered);
+                    out.push('\n');
+                } else {
+                    out.push_str(&rendered);
+                }
+            }
+        }
+        ViewField::Value => {
+            if let Some(ref v) = rm.value {
+                out.push_str(v);
+                out.push('\n');
+            }
+        }
+        ViewField::Source => {
+            if let Some(ref s) = rm.source {
+                out.push_str(&render_source_precomputed(
+                    s,
+                    rm.tree.as_ref(),
+                    rm.line, rm.column, rm.end_line, rm.end_column,
+                    render_opts,
+                ));
+            }
+        }
+        ViewField::Lines => {
+            if let Some(ref ls) = rm.lines {
+                out.push_str(&render_lines(
+                    ls,
+                    rm.tree.as_ref(),
+                    rm.line, rm.column, rm.end_line, rm.end_column,
+                    render_opts,
+                ));
+            }
+        }
+        ViewField::Reason => {
+            if let Some(ref reason) = rm.reason {
+                // Render as "severity(origin): reason" when available
+                if let Some(severity) = rm.severity {
+                    out.push_str(severity.as_str());
+                    if let Some(origin) = rm.origin {
+                        out.push('(');
+                        out.push_str(origin.as_str());
+                        out.push(')');
+                    }
+                    out.push_str(": ");
+                }
+                out.push_str(reason);
+                out.push('\n');
+            }
+        }
+        ViewField::Severity => {
+            // Severity is rendered inline with reason; only standalone if reason absent.
+            if rm.reason.is_none() {
+                if let Some(severity) = rm.severity {
+                    out.push_str(severity.as_str());
+                    out.push('\n');
+                }
+            }
+        }
+        ViewField::Status => {
+            let has_location = view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
+            if !has_location {
+                if let Some(ref status) = rm.status {
+                    out.push_str(status);
+                    out.push('\n');
+                }
+            }
+        }
+        ViewField::Output => {
+            if let Some(ref content) = rm.output {
+                out.push_str(content);
+            }
+        }
+        ViewField::Origin => {
+            if rm.file.is_empty() {
+                if let Some(origin) = rm.origin {
+                    out.push_str(origin.as_str());
+                    out.push('\n');
+                }
+            }
+        }
+        _ => {}
     }
 }
 
