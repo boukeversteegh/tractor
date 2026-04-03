@@ -345,10 +345,20 @@ fn main() {
         }
         let raw = run_tractor_args(&tractor_bin, args);
         // Strip the absolute CWD prefix from gcc/text output so snapshots are portable.
-        // Make ANSI escape codes visible as \e so color snapshots are readable in text editors.
+        // Replace ANSI escape codes with colored emojis so color snapshots are readable.
+        // Fallback: any unknown escape codes are written as \e.
         let output = raw
             .replace(&cwd_prefix, "")
-            .replace('\x1b', "\\e")
+            .replace("\x1b[0m", "")       // RESET: remove (next color or EOL resets)
+            .replace("\x1b[1m", "🟥")     // BOLD
+            .replace("\x1b[2m", "🟫")     // DIM
+            .replace("\x1b[32m", "🟩")    // GREEN
+            .replace("\x1b[33m", "🟨")    // YELLOW
+            .replace("\x1b[34m", "🟦")    // BLUE
+            .replace("\x1b[36m", "🟪")    // CYAN
+            .replace("\x1b[43m", "🟧")    // BG_YELLOW
+            .replace("\x1b[97m", "🟧")    // WHITE (bright)
+            .replace('\x1b', "\\e")       // fallback for unknown codes
             .replace("tractor.exe", "tractor");
 
         if check_mode {

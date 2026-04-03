@@ -1,12 +1,12 @@
 tests/integration/formats/sample.cs:1:1: error: class found
-1 >| \e[34mpublic class \e[0m\e[97mFoo\e[0m
-2  | \e[34m{\e[0m
-3  | \e[34m    public \e[0m\e[36mint\e[0m\e[34m \e[0m\e[97mBar\e[0m\e[34m { get; set; }\e[0m
-4  | \e[34m    public\e[0m\e[36m void \e[0m\e[97mBaz\e[0m\e[36m() { }\e[0m
-5 >| \e[34m}\e[0m
+1 >| 🟦public class 🟧Foo
+2  | 🟦{
+3  | 🟦    public 🟪int🟦 🟧Bar🟦 { get; set; }
+4  | 🟦    public🟪 void 🟧Baz🟪() { }
+5 >| 🟦}
 
 tests/integration/formats/sample.cs:7:1: error: class found
-7 | \e[34mpublic class \e[0m\e[97mQux\e[0m\e[34m { }\e[0m
+7 | 🟦public class 🟧Qux🟦 { }
     ^~~~~~~~~~~~~~~~~~~~
 
 2 errors in 1 file

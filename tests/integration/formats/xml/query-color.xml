@@ -1,50 +1,50 @@
-\e[2m<?xml version="1.0" encoding="UTF-8"?>\e[0m
-\e[2m<\e[0m\e[34mreport\e[0m\e[2m>\e[0m
-  \e[2m<\e[0m\e[34mresults\e[0m\e[2m>\e[0m
-    \e[2m<\e[0m\e[34mmatch\e[0m \e[36mfile\e[0m\e[2m="\e[0m\e[33mtests/integration/formats/sample.cs\e[0m\e[2m"\e[0m \e[36mline\e[0m\e[2m="\e[0m\e[33m1\e[0m\e[2m"\e[0m \e[36mcolumn\e[0m\e[2m="\e[0m\e[33m1\e[0m\e[2m"\e[0m \e[36mend_line\e[0m\e[2m="\e[0m\e[33m5\e[0m\e[2m"\e[0m \e[36mend_column\e[0m\e[2m="\e[0m\e[33m2\e[0m\e[2m"\e[0m\e[2m>\e[0m
-      \e[2m<\e[0m\e[34mtree\e[0m\e[2m>\e[0m
-        \e[2m<\e[0m\e[34mclass\e[0m\e[2m>\e[0m
-          \e[2m<\e[0m\e[34mpublic\e[0m\e[2m/>\e[0m
+🟫<?xml version="1.0" encoding="UTF-8"?>
+🟫<🟦report🟫>
+  🟫<🟦results🟫>
+    🟫<🟦match 🟪file🟫="🟨tests/integration/formats/sample.cs🟫" 🟪line🟫="🟨1🟫" 🟪column🟫="🟨1🟫" 🟪end_line🟫="🟨5🟫" 🟪end_column🟫="🟨2🟫"🟫>
+      🟫<🟦tree🟫>
+        🟫<🟦class🟫>
+          🟫<🟦public🟫/>
           class
-          \e[2m<\e[0m\e[34mname\e[0m\e[2m>Foo\e[2m</\e[0m\e[34mname\e[0m\e[2m>\e[0m
-          \e[2m<\e[0m\e[34mbody\e[0m\e[2m>\e[0m
+          🟫<🟦name🟫>Foo🟫</🟦name🟫>
+          🟫<🟦body🟫>
             {
-            \e[2m<\e[0m\e[34mproperty\e[0m\e[2m>\e[0m
-              \e[2m<\e[0m\e[34mpublic\e[0m\e[2m/>\e[0m
-              \e[2m<\e[0m\e[34mtype\e[0m\e[2m>int\e[2m</\e[0m\e[34mtype\e[0m\e[2m>\e[0m
-              \e[2m<\e[0m\e[34mname\e[0m\e[2m>Bar\e[2m</\e[0m\e[34mname\e[0m\e[2m>\e[0m
-              \e[2m<\e[0m\e[34maccessors\e[0m\e[2m>\e[0m
+            🟫<🟦property🟫>
+              🟫<🟦public🟫/>
+              🟫<🟦type🟫>int🟫</🟦type🟫>
+              🟫<🟦name🟫>Bar🟫</🟦name🟫>
+              🟫<🟦accessors🟫>
                 {
-                \e[2m<\e[0m\e[34maccessor\e[0m\e[2m>get;\e[2m</\e[0m\e[34maccessor\e[0m\e[2m>\e[0m
-                \e[2m<\e[0m\e[34maccessor\e[0m\e[2m>set;\e[2m</\e[0m\e[34maccessor\e[0m\e[2m>\e[0m
+                🟫<🟦accessor🟫>get;🟫</🟦accessor🟫>
+                🟫<🟦accessor🟫>set;🟫</🟦accessor🟫>
                 }
-              \e[2m</\e[0m\e[34maccessors\e[0m\e[2m>\e[0m
-            \e[2m</\e[0m\e[34mproperty\e[0m\e[2m>\e[0m
-            \e[2m<\e[0m\e[34mmethod\e[0m\e[2m>\e[0m
-              \e[2m<\e[0m\e[34mpublic\e[0m\e[2m/>\e[0m
-              \e[2m<\e[0m\e[34mreturns\e[0m\e[2m>\e[0m
-                \e[2m<\e[0m\e[34mtype\e[0m\e[2m>void\e[2m</\e[0m\e[34mtype\e[0m\e[2m>\e[0m
-              \e[2m</\e[0m\e[34mreturns\e[0m\e[2m>\e[0m
-              \e[2m<\e[0m\e[34mname\e[0m\e[2m>Baz\e[2m</\e[0m\e[34mname\e[0m\e[2m>\e[0m
-              \e[2m<\e[0m\e[34mparameters\e[0m\e[2m>()\e[2m</\e[0m\e[34mparameters\e[0m\e[2m>\e[0m
-              \e[2m<\e[0m\e[34mbody\e[0m\e[2m>\e[0m
-                \e[2m<\e[0m\e[34mblock\e[0m\e[2m>{ }\e[2m</\e[0m\e[34mblock\e[0m\e[2m>\e[0m
-              \e[2m</\e[0m\e[34mbody\e[0m\e[2m>\e[0m
-            \e[2m</\e[0m\e[34mmethod\e[0m\e[2m>\e[0m
+              🟫</🟦accessors🟫>
+            🟫</🟦property🟫>
+            🟫<🟦method🟫>
+              🟫<🟦public🟫/>
+              🟫<🟦returns🟫>
+                🟫<🟦type🟫>void🟫</🟦type🟫>
+              🟫</🟦returns🟫>
+              🟫<🟦name🟫>Baz🟫</🟦name🟫>
+              🟫<🟦parameters🟫>()🟫</🟦parameters🟫>
+              🟫<🟦body🟫>
+                🟫<🟦block🟫>{ }🟫</🟦block🟫>
+              🟫</🟦body🟫>
+            🟫</🟦method🟫>
             }
-          \e[2m</\e[0m\e[34mbody\e[0m\e[2m>\e[0m
-        \e[2m</\e[0m\e[34mclass\e[0m\e[2m>\e[0m
-      \e[2m</\e[0m\e[34mtree\e[0m\e[2m>\e[0m
-    \e[2m</\e[0m\e[34mmatch\e[0m\e[2m>\e[0m
-    \e[2m<\e[0m\e[34mmatch\e[0m \e[36mfile\e[0m\e[2m="\e[0m\e[33mtests/integration/formats/sample.cs\e[0m\e[2m"\e[0m \e[36mline\e[0m\e[2m="\e[0m\e[33m7\e[0m\e[2m"\e[0m \e[36mcolumn\e[0m\e[2m="\e[0m\e[33m1\e[0m\e[2m"\e[0m \e[36mend_line\e[0m\e[2m="\e[0m\e[33m7\e[0m\e[2m"\e[0m \e[36mend_column\e[0m\e[2m="\e[0m\e[33m21\e[0m\e[2m"\e[0m\e[2m>\e[0m
-      \e[2m<\e[0m\e[34mtree\e[0m\e[2m>\e[0m
-        \e[2m<\e[0m\e[34mclass\e[0m\e[2m>\e[0m
-          \e[2m<\e[0m\e[34mpublic\e[0m\e[2m/>\e[0m
+          🟫</🟦body🟫>
+        🟫</🟦class🟫>
+      🟫</🟦tree🟫>
+    🟫</🟦match🟫>
+    🟫<🟦match 🟪file🟫="🟨tests/integration/formats/sample.cs🟫" 🟪line🟫="🟨7🟫" 🟪column🟫="🟨1🟫" 🟪end_line🟫="🟨7🟫" 🟪end_column🟫="🟨21🟫"🟫>
+      🟫<🟦tree🟫>
+        🟫<🟦class🟫>
+          🟫<🟦public🟫/>
           class
-          \e[2m<\e[0m\e[34mname\e[0m\e[2m>Qux\e[2m</\e[0m\e[34mname\e[0m\e[2m>\e[0m
-          \e[2m<\e[0m\e[34mbody\e[0m\e[2m>{ }\e[2m</\e[0m\e[34mbody\e[0m\e[2m>\e[0m
-        \e[2m</\e[0m\e[34mclass\e[0m\e[2m>\e[0m
-      \e[2m</\e[0m\e[34mtree\e[0m\e[2m>\e[0m
-    \e[2m</\e[0m\e[34mmatch\e[0m\e[2m>\e[0m
-  \e[2m</\e[0m\e[34mresults\e[0m\e[2m>\e[0m
-\e[2m</\e[0m\e[34mreport\e[0m\e[2m>\e[0m
+          🟫<🟦name🟫>Qux🟫</🟦name🟫>
+          🟫<🟦body🟫>{ }🟫</🟦body🟫>
+        🟫</🟦class🟫>
+      🟫</🟦tree🟫>
+    🟫</🟦match🟫>
+  🟫</🟦results🟫>
+🟫</🟦report🟫>
