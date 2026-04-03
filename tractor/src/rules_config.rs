@@ -15,6 +15,7 @@ use tractor_core::tree_mode::TreeMode;
 // ---------------------------------------------------------------------------
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct RulesConfig {
     #[serde(default)]
     include: Vec<String>,
@@ -29,6 +30,7 @@ struct RulesConfig {
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct ConfigRule {
     id: String,
     xpath: String,
@@ -52,6 +54,7 @@ struct ConfigRule {
 
 /// A single expectation entry: an optional valid and/or invalid code example.
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct ExpectEntry {
     #[serde(default)]
     valid: Option<String>,
@@ -433,6 +436,43 @@ invalid = "// TODO: fix this"
         assert_eq!(rs.rules.len(), 1);
         assert_eq!(rs.rules[0].valid_examples, vec!["fn main() {}"]);
         assert_eq!(rs.rules[0].invalid_examples, vec!["// TODO: fix this"]);
+    }
+
+    // -- Unknown fields are rejected --
+
+    #[test]
+    fn test_yaml_rejects_unknown_rule_fields() {
+        let yaml = r#"
+rules:
+  - id: eval-usage
+    xpath: "//call[function='eval']"
+    expect-valid: "JSON.parse(data)"
+"#;
+        let err = parse_rules_yaml(yaml).unwrap_err();
+        assert!(err.to_string().contains("unknown field"), "expected unknown field error, got: {err}");
+    }
+
+    #[test]
+    fn test_yaml_rejects_unknown_top_level_fields() {
+        let yaml = r#"
+rulez:
+  - id: foo
+    xpath: "//x"
+"#;
+        let err = parse_rules_yaml(yaml).unwrap_err();
+        assert!(err.to_string().contains("unknown field"), "expected unknown field error, got: {err}");
+    }
+
+    #[test]
+    fn test_toml_rejects_unknown_rule_fields() {
+        let toml = r#"
+[[rules]]
+id = "eval-usage"
+xpath = "//call[function='eval']"
+serverity = "error"
+"#;
+        let err = parse_rules_toml(toml).unwrap_err();
+        assert!(err.to_string().contains("unknown field"), "expected unknown field error, got: {err}");
     }
 
     #[test]

@@ -278,8 +278,18 @@ Output format [default: gcc]
     #[arg(long = "severity", default_value = "error", help_heading = "Check")]
     pub severity: String,
 
-    /// Path to a TOML rules file for batch checking
-    #[arg(long = "rules", help_heading = "Check")]
+    /// Path to a rules file (YAML/TOML) for batch checking.
+    ///
+    /// Example YAML rules file:
+    ///
+    ///   rules:
+    ///     - id: no-eval
+    ///       xpath: "//call[function='eval']"
+    ///       severity: error
+    ///       expect:
+    ///         - valid: "JSON.parse(data)"
+    ///         - invalid: "eval(userInput)"
+    #[arg(long = "rules", help_heading = "Check", verbatim_doc_comment)]
     pub rules: Option<String>,
 
     /// A code example that should pass the check (no matches expected)

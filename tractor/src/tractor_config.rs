@@ -43,6 +43,7 @@ use crate::executor::{
 // ---------------------------------------------------------------------------
 
 #[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 struct ConfigFile {
     /// Root-level file scope: glob patterns that constrain all operations.
     /// Intersected with each operation's own `files`.
@@ -94,6 +95,7 @@ struct ConfigFile {
 ///   - test:
 ///       files: [...]
 #[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 struct OperationEntry {
     #[serde(default)]
     check: Option<CheckConfig>,
@@ -106,6 +108,7 @@ struct OperationEntry {
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 struct CheckConfig {
     #[serde(default)]
     files: Vec<String>,
@@ -124,6 +127,7 @@ struct CheckConfig {
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 struct CheckRuleConfig {
     id: String,
     xpath: String,
@@ -143,6 +147,7 @@ struct CheckRuleConfig {
 
 /// A single expectation entry for check rules in tractor config files.
 #[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 struct CheckExpectEntry {
     #[serde(default)]
     valid: Option<String>,
@@ -151,6 +156,7 @@ struct CheckExpectEntry {
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 struct SetConfig {
     #[serde(default)]
     files: Vec<String>,
@@ -168,12 +174,14 @@ struct SetConfig {
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 struct SetMappingConfig {
     xpath: String,
     value: String,
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 struct QueryConfig {
     #[serde(default)]
     files: Vec<String>,
@@ -194,11 +202,13 @@ struct QueryConfig {
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 struct QueryExprConfig {
     xpath: String,
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 struct TestConfig {
     #[serde(default)]
     files: Vec<String>,
@@ -219,6 +229,7 @@ struct TestConfig {
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 struct TestAssertionConfig {
     xpath: String,
     #[serde(default = "default_expect")]
