@@ -96,12 +96,12 @@ echo "Run (set operations):"
 
 run_set_and_check "set applies mappings to files" \
     0 \
-    "$(printf 'app-config.json: updated\n\nupdated 1 file')" \
+    "$(printf 'app-config.json: updated\nupdated 1 file')" \
     "set-config.yaml"
 
 run_set_and_check "set with --verbose reports updated files" \
     0 \
-    "$(printf 'app-config.json: updated\n\nupdated 1 file')" \
+    "$(printf 'app-config.json: updated\nupdated 1 file')" \
     "set-config.yaml" --verbose
 
 echo ""
@@ -109,7 +109,7 @@ echo "Run (mixed operations):"
 
 run_set_and_check "mixed check+set succeeds when check passes" \
     0 \
-    "$(printf 'app-config.json: updated\n\nupdated 1 file')" \
+    "$(printf 'app-config.json: updated\nupdated 1 file')" \
     "mixed-ops.yaml"
 
 report
