@@ -1,3 +1,2 @@
-=== stdout ===
 Query: //class
 2 matches

@@ -457,14 +457,10 @@ fn run_tractor_args(bin: &str, args: &[&str]) -> String {
 
     let stderr = String::from_utf8(output.stderr).expect("non-UTF8 tractor stderr");
     let stdout = String::from_utf8(output.stdout).expect("non-UTF8 tractor stdout");
-    let mut merged = String::new();
+    let mut merged = stdout;
     if !stderr.is_empty() {
-        merged.push_str("=== stderr ===\n");
+        merged.push_str("❌ stderr\n");
         merged.push_str(&stderr);
-    }
-    if !stdout.is_empty() {
-        merged.push_str("=== stdout ===\n");
-        merged.push_str(&stdout);
     }
     merged
 }

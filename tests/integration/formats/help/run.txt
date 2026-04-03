@@ -1,4 +1,3 @@
-=== stdout ===
 Execute a tractor config file (batch check/set operations)
 
 Usage: tractor run [OPTIONS] <CONFIG>

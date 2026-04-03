@@ -1,4 +1,3 @@
-=== stdout ===
 Query source code ASTs with XPath (default when no subcommand given)
 
 Usage: tractor query [OPTIONS] [FILES]...

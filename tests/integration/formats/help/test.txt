@@ -1,4 +1,3 @@
-=== stdout ===
 Test expectations against match counts
 
 Usage: tractor test [OPTIONS] --expect <EXPECT> [FILES]...

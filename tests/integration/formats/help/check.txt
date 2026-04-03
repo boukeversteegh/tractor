@@ -1,4 +1,3 @@
-=== stdout ===
 Run checks and report violations (lint mode)
 
 Usage: tractor check [OPTIONS] [FILES]...

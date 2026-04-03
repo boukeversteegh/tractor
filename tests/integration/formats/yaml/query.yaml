@@ -1,4 +1,3 @@
-=== stdout ===
 results:
 - file: tests/integration/formats/sample.cs
   line: 1

@@ -1,4 +1,3 @@
-=== stdout ===
  class Foo
 {
      int Bar { get; set; }

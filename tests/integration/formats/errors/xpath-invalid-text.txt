@@ -1,7 +1,6 @@
-=== stderr ===
+1 fatal in 0 files
+❌ stderr
 fatal(xpath): Parse error
 1 | //class[bad=(
                  ^
 
-=== stdout ===
-1 fatal in 0 files

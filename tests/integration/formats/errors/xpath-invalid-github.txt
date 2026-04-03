@@ -1,2 +1,1 @@
-=== stdout ===
 ::error::xpath: Parse error

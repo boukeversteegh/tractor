@@ -1,4 +1,3 @@
-=== stdout ===
 tests/integration/formats/sample.cs:1
 <class>
   <public/>
