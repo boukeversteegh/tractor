@@ -1,40 +1,40 @@
 tests/integration/formats/sample.cs:1
-🟫<🟦class🟫>
-  🟫<🟦public🟫/>
+🟫<🟫🟦class🟦🟫>🟫
+  🟫<🟫🟦public🟦🟫/>🟫
   class
-  🟫<🟦name🟫>Foo🟫</🟦name🟫>
-  🟫<🟦body🟫>
+  🟫<🟫🟦name🟦🟫>Foo🟫🟫</🟫🟦name🟦🟫>🟫
+  🟫<🟫🟦body🟦🟫>🟫
     {
-    🟫<🟦property🟫>
-      🟫<🟦public🟫/>
-      🟫<🟦type🟫>int🟫</🟦type🟫>
-      🟫<🟦name🟫>Bar🟫</🟦name🟫>
-      🟫<🟦accessors🟫>
+    🟫<🟫🟦property🟦🟫>🟫
+      🟫<🟫🟦public🟦🟫/>🟫
+      🟫<🟫🟦type🟦🟫>int🟫🟫</🟫🟦type🟦🟫>🟫
+      🟫<🟫🟦name🟦🟫>Bar🟫🟫</🟫🟦name🟦🟫>🟫
+      🟫<🟫🟦accessors🟦🟫>🟫
         {
-        🟫<🟦accessor🟫>get;🟫</🟦accessor🟫>
-        🟫<🟦accessor🟫>set;🟫</🟦accessor🟫>
+        🟫<🟫🟦accessor🟦🟫>get;🟫🟫</🟫🟦accessor🟦🟫>🟫
+        🟫<🟫🟦accessor🟦🟫>set;🟫🟫</🟫🟦accessor🟦🟫>🟫
         }
-      🟫</🟦accessors🟫>
-    🟫</🟦property🟫>
-    🟫<🟦method🟫>
-      🟫<🟦public🟫/>
-      🟫<🟦returns🟫>
-        🟫<🟦type🟫>void🟫</🟦type🟫>
-      🟫</🟦returns🟫>
-      🟫<🟦name🟫>Baz🟫</🟦name🟫>
-      🟫<🟦parameters🟫>()🟫</🟦parameters🟫>
-      🟫<🟦body🟫>
-        🟫<🟦block🟫>{ }🟫</🟦block🟫>
-      🟫</🟦body🟫>
-    🟫</🟦method🟫>
+      🟫</🟫🟦accessors🟦🟫>🟫
+    🟫</🟫🟦property🟦🟫>🟫
+    🟫<🟫🟦method🟦🟫>🟫
+      🟫<🟫🟦public🟦🟫/>🟫
+      🟫<🟫🟦returns🟦🟫>🟫
+        🟫<🟫🟦type🟦🟫>void🟫🟫</🟫🟦type🟦🟫>🟫
+      🟫</🟫🟦returns🟦🟫>🟫
+      🟫<🟫🟦name🟦🟫>Baz🟫🟫</🟫🟦name🟦🟫>🟫
+      🟫<🟫🟦parameters🟦🟫>()🟫🟫</🟫🟦parameters🟦🟫>🟫
+      🟫<🟫🟦body🟦🟫>🟫
+        🟫<🟫🟦block🟦🟫>{ }🟫🟫</🟫🟦block🟦🟫>🟫
+      🟫</🟫🟦body🟦🟫>🟫
+    🟫</🟫🟦method🟦🟫>🟫
     }
-  🟫</🟦body🟫>
-🟫</🟦class🟫>
+  🟫</🟫🟦body🟦🟫>🟫
+🟫</🟫🟦class🟦🟫>🟫
 
 tests/integration/formats/sample.cs:7
-🟫<🟦class🟫>
-  🟫<🟦public🟫/>
+🟫<🟫🟦class🟦🟫>🟫
+  🟫<🟫🟦public🟦🟫/>🟫
   class
-  🟫<🟦name🟫>Qux🟫</🟦name🟫>
-  🟫<🟦body🟫>{ }🟫</🟦body🟫>
-🟫</🟦class🟫>
+  🟫<🟫🟦name🟦🟫>Qux🟫🟫</🟫🟦name🟦🟫>🟫
+  🟫<🟫🟦body🟦🟫>{ }🟫🟫</🟫🟦body🟦🟫>🟫
+🟫</🟫🟦class🟦🟫>🟫

@@ -345,21 +345,12 @@ fn main() {
         }
         let raw = run_tractor_args(&tractor_bin, args);
         // Strip the absolute CWD prefix from gcc/text output so snapshots are portable.
-        // Replace ANSI escape codes with colored emojis so color snapshots are readable.
-        // Fallback: any unknown escape codes are written as \e.
-        let output = raw
-            .replace(&cwd_prefix, "")
-            .replace("\x1b[0m", "")       // RESET: remove (next color or EOL resets)
-            .replace("\x1b[1m", "🟥")     // BOLD
-            .replace("\x1b[2m", "🟫")     // DIM
-            .replace("\x1b[32m", "🟩")    // GREEN
-            .replace("\x1b[33m", "🟨")    // YELLOW
-            .replace("\x1b[34m", "🟦")    // BLUE
-            .replace("\x1b[36m", "🟪")    // CYAN
-            .replace("\x1b[43m", "🟧")    // BG_YELLOW
-            .replace("\x1b[97m", "🟧")    // WHITE (bright)
-            .replace('\x1b', "\\e")       // fallback for unknown codes
-            .replace("tractor.exe", "tractor");
+        // Replace ANSI color spans with emoji pairs: 🟦text🟦 so you see where each color
+        // starts and ends. RESET just closes the current span without opening a new one.
+        let output = replace_ansi_with_emoji_spans(
+            &raw.replace(&cwd_prefix, "")
+                .replace("tractor.exe", "tractor"),
+        );
 
         if check_mode {
             if let Ok(existing) = fs::read_to_string(&snap_path) {
@@ -393,6 +384,77 @@ fn main() {
     } else {
         println!("\nUpdated {} fixture(s).", processed);
     }
+}
+
+/// Replace ANSI color sequences with emoji-bracketed spans.
+///
+/// Each `\x1b[Nm...` color sequence and the text it covers (up to the next
+/// escape or end-of-input) becomes `EMOJI text EMOJI`, e.g. `🟦name🟦`.
+/// RESET (`\x1b[0m`) just closes the current span without opening a new one.
+/// Unknown codes are written as `\e[…m` for visibility.
+fn replace_ansi_with_emoji_spans(input: &str) -> String {
+    fn code_to_emoji(code: &str) -> Option<&'static str> {
+        match code {
+            "1" => Some("🟥"),  // BOLD
+            "2" => Some("🟫"),  // DIM
+            "32" => Some("🟩"), // GREEN
+            "33" => Some("🟨"), // YELLOW
+            "34" => Some("🟦"), // BLUE
+            "36" => Some("🟪"), // CYAN
+            "43" => Some("🟧"), // BG_YELLOW
+            "97" => Some("🟧"), // WHITE (bright)
+            _ => None,
+        }
+    }
+
+    let mut out = String::with_capacity(input.len());
+    let mut rest = input;
+
+    while let Some(esc_pos) = rest.find('\x1b') {
+        // Copy text before this escape
+        out.push_str(&rest[..esc_pos]);
+        rest = &rest[esc_pos..];
+
+        // Try to parse \x1b[<digits>m
+        if rest.len() >= 3 && rest.as_bytes()[1] == b'[' {
+            if let Some(m_pos) = rest[2..].find('m') {
+                let code = &rest[2..2 + m_pos];
+                if code.bytes().all(|b| b.is_ascii_digit()) {
+                    rest = &rest[2 + m_pos + 1..]; // skip past 'm'
+
+                    if code == "0" {
+                        // RESET: just close current span (handled below as no-op;
+                        // the *previous* emoji is already emitted by the next block)
+                        continue;
+                    }
+
+                    if let Some(emoji) = code_to_emoji(code) {
+                        // Find the text this color covers (up to next \x1b or end)
+                        let end = rest.find('\x1b').unwrap_or(rest.len());
+                        let text = &rest[..end];
+                        out.push_str(emoji);
+                        out.push_str(text);
+                        out.push_str(emoji);
+                        rest = &rest[end..];
+                        continue;
+                    }
+
+                    // Unknown code — write escaped for visibility
+                    out.push_str("\\e[");
+                    out.push_str(code);
+                    out.push('m');
+                    continue;
+                }
+            }
+        }
+
+        // Not a recognized escape sequence — escape the ESC byte and move on
+        out.push_str("\\e");
+        rest = &rest[1..];
+    }
+
+    out.push_str(rest);
+    out
 }
 
 fn find_tractor_bin() -> String {
