@@ -120,15 +120,22 @@ export function QuerySyntax() {
 
       <h3>Check text content with contains()</h3>
       <p>
-        Use <code>contains()</code> to match against the text content of an element:
+        Use <code>contains()</code> to match against the text content of an element. Here we find the method whose name contains "find" and return its source:
       </p>
       <Example
-        command={`tractor user-service.js -x "//method[contains(name,'find')]/name" -v value`}
-        output="findById"
+        command={`tractor user-service.js -x "//method[contains(name,'find')]" -v source`}
+        output={`static findById(id) {
+    return null;
+  }`}
       />
+      <p>
+        You can also write this the other way — filter the name itself with the dot (<code>.</code>), which refers to the text of the current node:
+      </p>
+      <CodeBlock language="bash" code={`# Same result, different style
+tractor user-service.js -x "//method/name[contains(.,'find')]" -v value`} />
 
       <h3>Exact match with =</h3>
-      <CodeBlock language="bash" code={`tractor user-service.js -x "//method[name='save']/name" -v value`} />
+      <CodeBlock language="bash" code={`tractor user-service.js -x "//method[name='save']" -v source`} />
 
       <h3>The dot (.) — Current node's text</h3>
       <p>
