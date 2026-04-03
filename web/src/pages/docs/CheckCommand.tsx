@@ -75,7 +75,7 @@ export function CheckCommand() {
         Bundle multiple rules into a YAML file with <code>--rules</code>:
       </p>
       <p>
-        <em>Note: the rules file format is being unified with the <code>tractor run</code> config file. In a future release, you'll be able to use the same <code>.tractor.yml</code> for both.</em>
+        <em>Note: the rules file format is being unified with the <code>tractor run</code> config file. In a future release, you'll be able to use the same <code>.tractor.yml</code> for both. The file name is free to choose — any <code>.yaml</code> or <code>.toml</code> file works.</em>
       </p>
       <CodeBlock
         language="yaml"
