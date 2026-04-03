@@ -1,11 +1,11 @@
-{
-  "totals": {
-    "results": 2,
-    "files": 1
-  },
-  "query": "//class",
-  "results": [
-    {},
-    {}
-  ]
-}
+✅ {
+✅   "totals": {
+✅     "results": 2,
+✅     "files": 1
+✅   },
+✅   "query": "//class",
+✅   "results": [
+✅     {},
+✅     {}
+✅   ]
+✅ }

@@ -1,40 +1,40 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<report>
-  <success>false</success>
-  <totals>
-    <results>2</results>
-    <files>1</files>
-    <errors>2</errors>
-  </totals>
-  <group-by>file</group-by>
-  <results>
-    <group file="tests/integration/formats/sample.cs">
-      <match line="1" column="1" end_line="5" end_column="2">
-        <tree>
-          <class>
-            <public/>
-            class
-            <name>Foo</name>
-            <body>
-              <!-- ... (15 children) -->
-            </body>
-          </class>
-        </tree>
-        <reason>class found</reason>
-        <severity>error</severity>
-      </match>
-      <match line="7" column="1" end_line="7" end_column="21">
-        <tree>
-          <class>
-            <public/>
-            class
-            <name>Qux</name>
-            <body>{ }</body>
-          </class>
-        </tree>
-        <reason>class found</reason>
-        <severity>error</severity>
-      </match>
-    </group>
-  </results>
-</report>
+✅ <?xml version="1.0" encoding="UTF-8"?>
+✅ <report>
+✅   <success>false</success>
+✅   <totals>
+✅     <results>2</results>
+✅     <files>1</files>
+✅     <errors>2</errors>
+✅   </totals>
+✅   <group-by>file</group-by>
+✅   <results>
+✅     <group file="tests/integration/formats/sample.cs">
+✅       <match line="1" column="1" end_line="5" end_column="2">
+✅         <tree>
+✅           <class>
+✅             <public/>
+✅             class
+✅             <name>Foo</name>
+✅             <body>
+✅               <!-- ... (15 children) -->
+✅             </body>
+✅           </class>
+✅         </tree>
+✅         <reason>class found</reason>
+✅         <severity>error</severity>
+✅       </match>
+✅       <match line="7" column="1" end_line="7" end_column="21">
+✅         <tree>
+✅           <class>
+✅             <public/>
+✅             class
+✅             <name>Qux</name>
+✅             <body>{ }</body>
+✅           </class>
+✅         </tree>
+✅         <reason>class found</reason>
+✅         <severity>error</severity>
+✅       </match>
+✅     </group>
+✅   </results>
+✅ </report>

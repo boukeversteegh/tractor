@@ -1,32 +1,32 @@
-results:
-- file: tests/integration/formats/sample.cs
-  line: 1
-  tree:
-    $type: class
-    public: true
-    name: Foo
-    body:
-      children:
-      - $type: property
-        public: true
-        type: int
-        name: Bar
-        accessors:
-          children:
-          - accessor: get;
-          - accessor: set;
-      - $type: method
-        public: true
-        returns:
-          type: void
-        name: Baz
-        parameters: ()
-        body:
-          block: '{ }'
-- file: tests/integration/formats/sample.cs
-  line: 7
-  tree:
-    $type: class
-    public: true
-    name: Qux
-    body: '{ }'
+✅ results:
+✅ - file: tests/integration/formats/sample.cs
+✅   line: 1
+✅   tree:
+✅     $type: class
+✅     public: true
+✅     name: Foo
+✅     body:
+✅       children:
+✅       - $type: property
+✅         public: true
+✅         type: int
+✅         name: Bar
+✅         accessors:
+✅           children:
+✅           - accessor: get;
+✅           - accessor: set;
+✅       - $type: method
+✅         public: true
+✅         returns:
+✅           type: void
+✅         name: Baz
+✅         parameters: ()
+✅         body:
+✅           block: '{ }'
+✅ - file: tests/integration/formats/sample.cs
+✅   line: 7
+✅   tree:
+✅     $type: class
+✅     public: true
+✅     name: Qux
+✅     body: '{ }'

@@ -453,8 +453,10 @@ fn run_tractor_args(bin: &str, args: &[&str]) -> String {
             process::exit(1);
         });
 
-    // Capture both stderr and stdout. Prefix stderr lines with 🔴 so they
-    // are visually distinguishable in snapshot files.
+    // Capture both stderr and stdout with visual prefixes:
+    //   🔴 = stderr line
+    //   ✅ = stdout line
+    // This makes it easy to see which stream each line comes from in snapshots.
     let stderr = String::from_utf8(output.stderr).expect("non-UTF8 tractor stderr");
     let stdout = String::from_utf8(output.stdout).expect("non-UTF8 tractor stdout");
     let mut merged = String::new();
@@ -463,6 +465,10 @@ fn run_tractor_args(bin: &str, args: &[&str]) -> String {
         merged.push_str(line);
         merged.push('\n');
     }
-    merged.push_str(&stdout);
+    for line in stdout.lines() {
+        merged.push_str("✅ ");
+        merged.push_str(line);
+        merged.push('\n');
+    }
     merged
 }

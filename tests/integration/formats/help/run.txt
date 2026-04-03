@@ -1,83 +1,83 @@
-Execute a tractor config file (batch check/set operations)
-
-Usage: tractor run [OPTIONS] <CONFIG>
-
-Arguments:
-  <CONFIG>
-          Path to the tractor config file (.yaml, .yml, or .toml)
-
-Options:
-  -l, --lang <LANG>
-          Language for stdin input (e.g., csharp, rust, python)
-
-  -h, --help
-          Print help (see a summary with '-h')
-
-Extract:
-  -x, --extract <XPATH>
-          XPath expression to extract matching AST nodes
-
-  -t, --tree <TREE>
-          Tree mode [default: auto]
-            raw        Raw tree-sitter AST (no semantic transforms)
-            structure  Semantic syntax tree (default for code languages)
-            data       Data projection (default for JSON/YAML)
-          
-          When omitted, auto-selects: data for JSON/YAML, structure for everything else.
-
-  -W, --ignore-whitespace
-          Ignore whitespace in XPath string matching (strips whitespace from text nodes)
-
-View:
-  -n, --limit <LIMIT>
-          Limit output to first N matches
-
-  -d, --depth <DEPTH>
-          Limit XML output depth (useful for large ASTs)
-
-      --meta
-          Include metadata attributes (start/end, kind, field) in XML output
-
-  -g, --group <GROUP_BY>
-          Group output by file
-
-Format:
-      --no-pretty
-          Disable pretty printing (shows XML without formatting, as used by XPath)
-
-      --color <COLOR>
-          Color output: auto (default), always, never
-          
-          [default: auto]
-
-      --no-color
-          Disable color output
-
-Filter:
-      --diff-files <RANGE>
-          Only consider files changed in a git diff (e.g. "HEAD~3", "main..HEAD")
-
-      --diff-lines <RANGE>
-          Only consider matches in changed hunks of a git diff (e.g. "HEAD~3", "main..HEAD")
-
-Advanced:
-      --parse-depth <PARSE_DEPTH>
-          [EXPERIMENTAL] Limit tree building depth (skip parsing deeper nodes for speed)
-
-  -c, --concurrency <CONCURRENCY>
-          Number of parallel workers
-
-      --verbose
-          Show verbose output
-
-Output:
-  -f, --format <FORMAT>
-          Output format: text, json, yaml, xml, gcc, github
-          
-          [default: gcc]
-
-  -v, --view <VIEW>
-          View fields to include (e.g. "tree,reason,severity")
-
-  -m, --message <MESSAGE>
-          Message template for matches (e.g. "{file}:{line}: {value}")
+✅ Execute a tractor config file (batch check/set operations)
+✅ 
+✅ Usage: tractor run [OPTIONS] <CONFIG>
+✅ 
+✅ Arguments:
+✅   <CONFIG>
+✅           Path to the tractor config file (.yaml, .yml, or .toml)
+✅ 
+✅ Options:
+✅   -l, --lang <LANG>
+✅           Language for stdin input (e.g., csharp, rust, python)
+✅ 
+✅   -h, --help
+✅           Print help (see a summary with '-h')
+✅ 
+✅ Extract:
+✅   -x, --extract <XPATH>
+✅           XPath expression to extract matching AST nodes
+✅ 
+✅   -t, --tree <TREE>
+✅           Tree mode [default: auto]
+✅             raw        Raw tree-sitter AST (no semantic transforms)
+✅             structure  Semantic syntax tree (default for code languages)
+✅             data       Data projection (default for JSON/YAML)
+✅           
+✅           When omitted, auto-selects: data for JSON/YAML, structure for everything else.
+✅ 
+✅   -W, --ignore-whitespace
+✅           Ignore whitespace in XPath string matching (strips whitespace from text nodes)
+✅ 
+✅ View:
+✅   -n, --limit <LIMIT>
+✅           Limit output to first N matches
+✅ 
+✅   -d, --depth <DEPTH>
+✅           Limit XML output depth (useful for large ASTs)
+✅ 
+✅       --meta
+✅           Include metadata attributes (start/end, kind, field) in XML output
+✅ 
+✅   -g, --group <GROUP_BY>
+✅           Group output by file
+✅ 
+✅ Format:
+✅       --no-pretty
+✅           Disable pretty printing (shows XML without formatting, as used by XPath)
+✅ 
+✅       --color <COLOR>
+✅           Color output: auto (default), always, never
+✅           
+✅           [default: auto]
+✅ 
+✅       --no-color
+✅           Disable color output
+✅ 
+✅ Filter:
+✅       --diff-files <RANGE>
+✅           Only consider files changed in a git diff (e.g. "HEAD~3", "main..HEAD")
+✅ 
+✅       --diff-lines <RANGE>
+✅           Only consider matches in changed hunks of a git diff (e.g. "HEAD~3", "main..HEAD")
+✅ 
+✅ Advanced:
+✅       --parse-depth <PARSE_DEPTH>
+✅           [EXPERIMENTAL] Limit tree building depth (skip parsing deeper nodes for speed)
+✅ 
+✅   -c, --concurrency <CONCURRENCY>
+✅           Number of parallel workers
+✅ 
+✅       --verbose
+✅           Show verbose output
+✅ 
+✅ Output:
+✅   -f, --format <FORMAT>
+✅           Output format: text, json, yaml, xml, gcc, github
+✅           
+✅           [default: gcc]
+✅ 
+✅   -v, --view <VIEW>
+✅           View fields to include (e.g. "tree,reason,severity")
+✅ 
+✅   -m, --message <MESSAGE>
+✅           Message template for matches (e.g. "{file}:{line}: {value}")

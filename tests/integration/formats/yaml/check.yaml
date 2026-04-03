@@ -1,21 +1,21 @@
-success: false
-totals:
-  results: 2
-  files: 1
-  errors: 2
-group: file
-results:
-- file: tests/integration/formats/sample.cs
-  results:
-  - reason: class found
-    severity: error
-    lines:
-    - public class Foo
-    - '{'
-    - '    public int Bar { get; set; }'
-    - '    public void Baz() { }'
-    - '}'
-  - reason: class found
-    severity: error
-    lines:
-    - public class Qux { }
+✅ success: false
+✅ totals:
+✅   results: 2
+✅   files: 1
+✅   errors: 2
+✅ group: file
+✅ results:
+✅ - file: tests/integration/formats/sample.cs
+✅   results:
+✅   - reason: class found
+✅     severity: error
+✅     lines:
+✅     - public class Foo
+✅     - '{'
+✅     - '    public int Bar { get; set; }'
+✅     - '    public void Baz() { }'
+✅     - '}'
+✅   - reason: class found
+✅     severity: error
+✅     lines:
+✅     - public class Qux { }

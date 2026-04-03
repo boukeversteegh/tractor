@@ -1,17 +1,17 @@
 🔴 
 🔴 2 errors in 1 file
-tests/integration/formats/sample.cs:1:1: error: class declaration found
-1 >| public class Foo
-2  | {
-3  |     public int Bar { get; set; }
-4  |     public void Baz() { }
-5 >| }
-
-tests/integration/formats/sample.cs:4:5: warning: void method found
-4 |     public void Baz() { }
-        ^~~~~~~~~~~~~~~~~~~~~
-
-tests/integration/formats/sample.cs:7:1: error: class declaration found
-7 | public class Qux { }
-    ^~~~~~~~~~~~~~~~~~~~
-
+✅ tests/integration/formats/sample.cs:1:1: error: class declaration found
+✅ 1 >| public class Foo
+✅ 2  | {
+✅ 3  |     public int Bar { get; set; }
+✅ 4  |     public void Baz() { }
+✅ 5 >| }
+✅ 
+✅ tests/integration/formats/sample.cs:4:5: warning: void method found
+✅ 4 |     public void Baz() { }
+✅         ^~~~~~~~~~~~~~~~~~~~~
+✅ 
+✅ tests/integration/formats/sample.cs:7:1: error: class declaration found
+✅ 7 | public class Qux { }
+✅     ^~~~~~~~~~~~~~~~~~~~
+✅ 

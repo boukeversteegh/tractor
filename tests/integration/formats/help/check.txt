@@ -1,113 +1,113 @@
-Run checks and report violations (lint mode)
-
-Usage: tractor check [OPTIONS] [FILES]...
-
-Arguments:
-  [FILES]...
-          Files to process (supports glob patterns like "src/**/*.cs")
-
-Options:
-  -l, --lang <LANG>
-          Language for stdin input (e.g., csharp, rust, python)
-
-  -h, --help
-          Print help (see a summary with '-h')
-
-Extract:
-  -x, --extract <XPATH>
-          XPath expression to extract matching AST nodes
-
-  -t, --tree <TREE>
-          Tree mode [default: auto]
-            raw        Raw tree-sitter AST (no semantic transforms)
-            structure  Semantic syntax tree (default for code languages)
-            data       Data projection (default for JSON/YAML)
-          
-          When omitted, auto-selects: data for JSON/YAML, structure for everything else.
-
-  -W, --ignore-whitespace
-          Ignore whitespace in XPath string matching (strips whitespace from text nodes)
-
-View:
-  -n, --limit <LIMIT>
-          Limit output to first N matches
-
-  -d, --depth <DEPTH>
-          Limit XML output depth (useful for large ASTs)
-
-      --meta
-          Include metadata attributes (start/end, kind, field) in XML output
-
-  -g, --group <GROUP_BY>
-          Group output by file
-
-  -v, --view <VIEW>
-          Report view [default: tree]
-            tree      Parsed source tree
-            value     Text content of matched nodes
-            source    Exact matched source text
-            lines     Full source lines containing each match
-            count     Total match count
-            query     Echo the XPath query as tractor received it (useful to detect shell/wrapper mangling)
-            schema    Structural overview of element types
-
-  -m, --message <MESSAGE>
-          Custom message template (supports {value}, {line}, {col}, {file})
-
-Format:
-      --no-pretty
-          Disable pretty printing (shows XML without formatting, as used by XPath)
-
-      --color <COLOR>
-          Color output: auto (default), always, never
-          
-          [default: auto]
-
-      --no-color
-          Disable color output
-
-  -f, --format <FORMAT>
-          Output format [default: gcc]
-            gcc       file:line:col: severity: reason (default for check)
-            github    GitHub Actions annotation (::error file=...)
-            text      Human-readable plain text
-            json      JSON report envelope
-            yaml      YAML report envelope
-            xml       XML report envelope
-          
-          [default: gcc]
-
-Filter:
-      --diff-files <RANGE>
-          Only consider files changed in a git diff (e.g. "HEAD~3", "main..HEAD")
-
-      --diff-lines <RANGE>
-          Only consider matches in changed hunks of a git diff (e.g. "HEAD~3", "main..HEAD")
-
-Advanced:
-      --parse-depth <PARSE_DEPTH>
-          [EXPERIMENTAL] Limit tree building depth (skip parsing deeper nodes for speed)
-
-  -c, --concurrency <CONCURRENCY>
-          Number of parallel workers
-
-      --verbose
-          Show verbose output
-
-Check:
-      --reason <REASON>
-          Reason message for each violation
-
-      --severity <SEVERITY>
-          Severity level: error (default) or warning
-          
-          [default: error]
-
-      --rules <RULES>
-          Path to a TOML rules file for batch checking
-
-      --expect-valid <EXPECT_VALID>
-          A code example that should pass the check (no matches expected)
-
-      --expect-invalid <EXPECT_INVALID>
-          A code example that should fail the check (matches expected)
+✅ Run checks and report violations (lint mode)
+✅ 
+✅ Usage: tractor check [OPTIONS] [FILES]...
+✅ 
+✅ Arguments:
+✅   [FILES]...
+✅           Files to process (supports glob patterns like "src/**/*.cs")
+✅ 
+✅ Options:
+✅   -l, --lang <LANG>
+✅           Language for stdin input (e.g., csharp, rust, python)
+✅ 
+✅   -h, --help
+✅           Print help (see a summary with '-h')
+✅ 
+✅ Extract:
+✅   -x, --extract <XPATH>
+✅           XPath expression to extract matching AST nodes
+✅ 
+✅   -t, --tree <TREE>
+✅           Tree mode [default: auto]
+✅             raw        Raw tree-sitter AST (no semantic transforms)
+✅             structure  Semantic syntax tree (default for code languages)
+✅             data       Data projection (default for JSON/YAML)
+✅           
+✅           When omitted, auto-selects: data for JSON/YAML, structure for everything else.
+✅ 
+✅   -W, --ignore-whitespace
+✅           Ignore whitespace in XPath string matching (strips whitespace from text nodes)
+✅ 
+✅ View:
+✅   -n, --limit <LIMIT>
+✅           Limit output to first N matches
+✅ 
+✅   -d, --depth <DEPTH>
+✅           Limit XML output depth (useful for large ASTs)
+✅ 
+✅       --meta
+✅           Include metadata attributes (start/end, kind, field) in XML output
+✅ 
+✅   -g, --group <GROUP_BY>
+✅           Group output by file
+✅ 
+✅   -v, --view <VIEW>
+✅           Report view [default: tree]
+✅             tree      Parsed source tree
+✅             value     Text content of matched nodes
+✅             source    Exact matched source text
+✅             lines     Full source lines containing each match
+✅             count     Total match count
+✅             query     Echo the XPath query as tractor received it (useful to detect shell/wrapper mangling)
+✅             schema    Structural overview of element types
+✅ 
+✅   -m, --message <MESSAGE>
+✅           Custom message template (supports {value}, {line}, {col}, {file})
+✅ 
+✅ Format:
+✅       --no-pretty
+✅           Disable pretty printing (shows XML without formatting, as used by XPath)
+✅ 
+✅       --color <COLOR>
+✅           Color output: auto (default), always, never
+✅           
+✅           [default: auto]
+✅ 
+✅       --no-color
+✅           Disable color output
+✅ 
+✅   -f, --format <FORMAT>
+✅           Output format [default: gcc]
+✅             gcc       file:line:col: severity: reason (default for check)
+✅             github    GitHub Actions annotation (::error file=...)
+✅             text      Human-readable plain text
+✅             json      JSON report envelope
+✅             yaml      YAML report envelope
+✅             xml       XML report envelope
+✅           
+✅           [default: gcc]
+✅ 
+✅ Filter:
+✅       --diff-files <RANGE>
+✅           Only consider files changed in a git diff (e.g. "HEAD~3", "main..HEAD")
+✅ 
+✅       --diff-lines <RANGE>
+✅           Only consider matches in changed hunks of a git diff (e.g. "HEAD~3", "main..HEAD")
+✅ 
+✅ Advanced:
+✅       --parse-depth <PARSE_DEPTH>
+✅           [EXPERIMENTAL] Limit tree building depth (skip parsing deeper nodes for speed)
+✅ 
+✅   -c, --concurrency <CONCURRENCY>
+✅           Number of parallel workers
+✅ 
+✅       --verbose
+✅           Show verbose output
+✅ 
+✅ Check:
+✅       --reason <REASON>
+✅           Reason message for each violation
+✅ 
+✅       --severity <SEVERITY>
+✅           Severity level: error (default) or warning
+✅           
+✅           [default: error]
+✅ 
+✅       --rules <RULES>
+✅           Path to a TOML rules file for batch checking
+✅ 
+✅       --expect-valid <EXPECT_VALID>
+✅           A code example that should pass the check (no matches expected)
+✅ 
+✅       --expect-invalid <EXPECT_INVALID>
+✅           A code example that should fail the check (matches expected)

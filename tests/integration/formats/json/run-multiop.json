@@ -1,81 +1,81 @@
-{
-  "success": false,
-  "totals": {
-    "results": 5,
-    "files": 1,
-    "errors": 2,
-    "warnings": 1
-  },
-  "group": "command",
-  "results": [
-    {
-      "command": "check",
-      "group": "file",
-      "results": [
-        {
-          "file": "tests/integration/formats/sample.cs",
-          "results": [
-            {
-              "reason": "class declaration found",
-              "severity": "error",
-              "lines": [
-                "public class Foo",
-                "{",
-                "    public int Bar { get; set; }",
-                "    public void Baz() { }",
-                "}"
-              ],
-              "value": " class Foo\n{\n     int Bar { get; set; }\n     void Baz() { }\n}",
-              "rule_id": "no-class"
-            },
-            {
-              "reason": "void method found",
-              "severity": "warning",
-              "lines": [
-                "    public void Baz() { }"
-              ],
-              "value": " void Baz() { }",
-              "rule_id": "no-void-method"
-            },
-            {
-              "reason": "class declaration found",
-              "severity": "error",
-              "lines": [
-                "public class Qux { }"
-              ],
-              "value": " class Qux { }",
-              "rule_id": "no-class"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "command": "test",
-      "group": "file",
-      "results": [
-        {
-          "file": "tests/integration/formats/sample.cs",
-          "results": [
-            {
-              "lines": [
-                "public class Foo",
-                "{",
-                "    public int Bar { get; set; }",
-                "    public void Baz() { }",
-                "}"
-              ],
-              "value": " class Foo\n{\n     int Bar { get; set; }\n     void Baz() { }\n}"
-            },
-            {
-              "lines": [
-                "public class Qux { }"
-              ],
-              "value": " class Qux { }"
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
+✅ {
+✅   "success": false,
+✅   "totals": {
+✅     "results": 5,
+✅     "files": 1,
+✅     "errors": 2,
+✅     "warnings": 1
+✅   },
+✅   "group": "command",
+✅   "results": [
+✅     {
+✅       "command": "check",
+✅       "group": "file",
+✅       "results": [
+✅         {
+✅           "file": "tests/integration/formats/sample.cs",
+✅           "results": [
+✅             {
+✅               "reason": "class declaration found",
+✅               "severity": "error",
+✅               "lines": [
+✅                 "public class Foo",
+✅                 "{",
+✅                 "    public int Bar { get; set; }",
+✅                 "    public void Baz() { }",
+✅                 "}"
+✅               ],
+✅               "value": " class Foo\n{\n     int Bar { get; set; }\n     void Baz() { }\n}",
+✅               "rule_id": "no-class"
+✅             },
+✅             {
+✅               "reason": "void method found",
+✅               "severity": "warning",
+✅               "lines": [
+✅                 "    public void Baz() { }"
+✅               ],
+✅               "value": " void Baz() { }",
+✅               "rule_id": "no-void-method"
+✅             },
+✅             {
+✅               "reason": "class declaration found",
+✅               "severity": "error",
+✅               "lines": [
+✅                 "public class Qux { }"
+✅               ],
+✅               "value": " class Qux { }",
+✅               "rule_id": "no-class"
+✅             }
+✅           ]
+✅         }
+✅       ]
+✅     },
+✅     {
+✅       "command": "test",
+✅       "group": "file",
+✅       "results": [
+✅         {
+✅           "file": "tests/integration/formats/sample.cs",
+✅           "results": [
+✅             {
+✅               "lines": [
+✅                 "public class Foo",
+✅                 "{",
+✅                 "    public int Bar { get; set; }",
+✅                 "    public void Baz() { }",
+✅                 "}"
+✅               ],
+✅               "value": " class Foo\n{\n     int Bar { get; set; }\n     void Baz() { }\n}"
+✅             },
+✅             {
+✅               "lines": [
+✅                 "public class Qux { }"
+✅               ],
+✅               "value": " class Qux { }"
+✅             }
+✅           ]
+✅         }
+✅       ]
+✅     }
+✅   ]
+✅ }
