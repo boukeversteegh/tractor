@@ -444,6 +444,8 @@ fn run_tractor(bin: &str, fixture: &str, extra_args: &[&str]) -> String {
 }
 
 /// Run tractor with an arbitrary list of args (for output-format cases).
+/// Captures stdout (✅) and stderr (🔴) with visual prefixes.
+/// Stderr is shown first for deterministic snapshot ordering.
 fn run_tractor_args(bin: &str, args: &[&str]) -> String {
     let output = Command::new(bin)
         .args(args)
@@ -453,10 +455,6 @@ fn run_tractor_args(bin: &str, args: &[&str]) -> String {
             process::exit(1);
         });
 
-    // Capture both stderr and stdout with visual prefixes:
-    //   🔴 = stderr line
-    //   ✅ = stdout line
-    // This makes it easy to see which stream each line comes from in snapshots.
     let stderr = String::from_utf8(output.stderr).expect("non-UTF8 tractor stderr");
     let stdout = String::from_utf8(output.stdout).expect("non-UTF8 tractor stdout");
     let mut merged = String::new();
