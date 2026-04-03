@@ -50,7 +50,7 @@ impl RunContext {
         let output_format = OutputFormat::from_str(format)?;
 
         let view = if let Some(s) = user_view {
-            parse_view_set(s)?
+            parse_view_set(s, default_view)?
         } else {
             ViewSet::from_fields(default_view.to_vec())
         };
