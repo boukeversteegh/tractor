@@ -35,6 +35,30 @@ body {
   line-height: 1.5;
 }
 
+/* Thin, themed scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
 /* App layout */
 .app {
   display: flex;
@@ -1516,12 +1540,16 @@ body {
 }
 
 /* Documentation Content */
-.doc-content {
+/* Scroll wrapper: takes all remaining space, scrollbar at right edge */
+.doc-scroll {
   flex: 1;
   min-width: 0;
+  overflow-y: auto;
+}
+
+.doc-content {
   padding: 2rem 2.5rem;
   max-width: 800px;
-  overflow-y: auto;
 }
 
 .doc-content h1 {

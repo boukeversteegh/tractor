@@ -56,7 +56,7 @@ interface DocLayoutProps {
 
 export function DocLayout({ children }: DocLayoutProps) {
   const location = useLocation();
-  const contentRef = useRef<HTMLElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     contentRef.current?.scrollTo(0, 0);
@@ -86,9 +86,11 @@ export function DocLayout({ children }: DocLayoutProps) {
             </div>
           ))}
         </aside>
-        <main className="doc-content" ref={contentRef}>
-          {children}
-        </main>
+        <div className="doc-scroll" ref={contentRef}>
+          <main className="doc-content">
+            {children}
+          </main>
+        </div>
       </div>
     </div>
   );
