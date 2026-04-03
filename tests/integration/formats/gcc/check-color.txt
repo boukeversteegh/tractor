@@ -1,12 +1,12 @@
 tests/integration/formats/sample.cs:1:1: error: class found
-1 >| 🟦public class 🟦🟧Foo🟧
+1 >| 🟦public class 🟦⬜Foo⬜
 2  | 🟦{🟦
-3  | 🟦    public 🟦🟪int🟪🟦 🟦🟧Bar🟧🟦 { get; set; }🟦
-4  | 🟦    public🟦🟪 void 🟪🟧Baz🟧🟪() { }🟪
+3  | 🟦    public 🟦🟪int🟪🟦 🟦⬜Bar⬜🟦 { get; set; }🟦
+4  | 🟦    public🟦🟪 void 🟪⬜Baz⬜🟪() { }🟪
 5 >| 🟦}🟦
 
 tests/integration/formats/sample.cs:7:1: error: class found
-7 | 🟦public class 🟦🟧Qux🟧🟦 { }🟦
+7 | 🟦public class 🟦⬜Qux⬜🟦 { }🟦
     ^~~~~~~~~~~~~~~~~~~~
 
 2 errors in 1 file
