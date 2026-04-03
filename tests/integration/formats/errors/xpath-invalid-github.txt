@@ -1,1 +1,1 @@
-::error::xpath: Parse error: //class[bad=(
+::error::xpath: Parse error at col 14: //class[bad=(

@@ -34,9 +34,9 @@ fn render_github_match(out: &mut String, rm: &tractor_core::report::ReportMatch,
     });
     let file   = group_file.unwrap_or(&rm.file);
     let mut message = reason.to_string();
-    // Include the source expression for diagnostics so the user knows what failed
+    // Include the source expression and error position for diagnostics
     if let Some(ref source) = rm.source {
-        message = format!("{}: {}", message, source);
+        message = format!("{} at col {}: {}", message, rm.column, source);
     }
     if let Some(ref hint) = rm.hint {
         message = format!("{} (hint: {})", message, hint);
