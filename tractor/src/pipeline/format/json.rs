@@ -1,7 +1,7 @@
 use serde_json::{json, Value};
 use tractor_core::{report::{Report, ReportMatch, ResultItem}, normalize_path, xml_node_to_json, RenderOptions};
 use super::options::{ViewField, ViewSet};
-use super::shared::{should_show_totals, should_emit_file, should_emit_command, should_emit_rule_id};
+use super::shared::{should_show_totals, should_emit_file, should_emit_command, should_emit_rule_id, render_fields_for_match};
 
 pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, dimensions: &[&str]) -> String {
     let mut root = serde_json::Map::new();
@@ -102,7 +102,10 @@ pub fn match_to_value(
 ) -> Value {
     let mut obj = serde_json::Map::new();
 
-    for field in &view.fields {
+    let (view_fields, extra_fields) = render_fields_for_match(view, rm);
+    let all_fields: Vec<ViewField> = view_fields.into_iter().chain(extra_fields).collect();
+
+    for field in &all_fields {
         match field {
             ViewField::File => {
                 if should_emit_file(rm, skip_dims) {
@@ -158,28 +161,8 @@ pub fn match_to_value(
                     }
                 }
             }
-            // rule_id: emitted if present regardless of ViewSet (it's an annotation)
-            // Summary/Count/Schema: handled outside match iteration
             _ => {}
         }
-    }
-
-    // Extra fields: present on the match but not in the view.
-    // Diagnostic fields preserved by project_report always appear in json.
-    if !view.has(ViewField::Reason) {
-        if let Some(ref r) = rm.reason { obj.insert("reason".into(), json!(r)); }
-    }
-    if !view.has(ViewField::Severity) {
-        if let Some(sv) = rm.severity { obj.insert("severity".into(), json!(sv.as_str())); }
-    }
-    if !view.has(ViewField::Origin) && rm.file.is_empty() {
-        if let Some(origin) = rm.origin { obj.insert("origin".into(), json!(origin.as_str())); }
-    }
-    if !view.has(ViewField::Lines) {
-        if let Some(ref ls) = rm.lines { obj.insert("lines".into(), json!(ls)); }
-    }
-    if !view.has(ViewField::Source) {
-        if let Some(ref s) = rm.source { obj.insert("source".into(), json!(s)); }
     }
 
     if should_emit_command(rm, view, skip_dims) {

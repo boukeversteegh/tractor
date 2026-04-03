@@ -13,7 +13,7 @@ use tractor_core::{
     RenderOptions,
 };
 use super::options::{ViewField, ViewSet};
-use super::shared::should_show_totals;
+use super::shared::{should_show_totals, render_fields_for_match};
 
 /// Text is human-readable — grouping affects display structure but matches
 /// are rendered with inherited file context from groups, not field omission.
@@ -80,60 +80,49 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
         return;
     }
 
-    // Diagnostics without a file have no meaningful location or view content
-    // for stdout — everything goes to stderr via extra fields below.
+    // Determine which fields to render: view-requested + diagnostic extras.
+    let (view_fields, extra_fields) = render_fields_for_match(view, rm);
+
+    // Location prefix: file, line, and/or column — combined on one line as file:line:col
+    // Skip for file-less diagnostics (no meaningful location).
     let file = group_file.unwrap_or(&rm.file);
-    let skip_stdout = rm.reason.is_some() && file.is_empty();
-
-    if !skip_stdout {
-        // Location prefix: file, line, and/or column — combined on one line as file:line:col
-        // Status is appended inline when both a location and a status are present (GCC-style).
-        if view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column) {
-            let mut loc = String::new();
-            if view.has(ViewField::File) {
-                loc.push_str(&normalize_path(file));
-            }
-            if view.has(ViewField::Line) {
-                if !loc.is_empty() { loc.push(':'); }
-                loc.push_str(&rm.line.to_string());
-            }
-            if view.has(ViewField::Column) {
-                loc.push(':');
-                loc.push_str(&rm.column.to_string());
-            }
-            // Append status inline on the location line (GCC-style: file:line: status)
-            if view.has(ViewField::Status) {
-                if let Some(ref status) = rm.status {
-                    loc.push_str(": ");
-                    loc.push_str(status);
-                }
-            }
-            out.push_str(&loc);
-            out.push('\n');
+    let has_location = view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
+    if has_location && !file.is_empty() {
+        let mut loc = String::new();
+        if view.has(ViewField::File) {
+            loc.push_str(&normalize_path(file));
         }
+        if view.has(ViewField::Line) {
+            if !loc.is_empty() { loc.push(':'); }
+            loc.push_str(&rm.line.to_string());
+        }
+        if view.has(ViewField::Column) {
+            loc.push(':');
+            loc.push_str(&rm.column.to_string());
+        }
+        if view.has(ViewField::Status) {
+            if let Some(ref status) = rm.status {
+                loc.push_str(": ");
+                loc.push_str(status);
+            }
+        }
+        out.push_str(&loc);
+        out.push('\n');
+    }
 
-        // View-requested fields (in user order) → stdout
-        for field in &view.fields {
+    // All fields to stdout: view-requested first, then extras.
+    // For text, Severity/Origin are rendered inline with Reason, and
+    // Source is redundant when Lines is present — skip these as extras.
+    let text_skip = |f: &ViewField| -> bool {
+        matches!(f,
+            ViewField::Severity | ViewField::Origin
+            | ViewField::Source // lines includes the caret, source is redundant
+        ) && !view.has(*f) // only skip if it's an extra, not user-requested
+    };
+    for field in view_fields.iter().chain(extra_fields.iter()) {
+        if !text_skip(field) {
             render_field(out, field, rm, view, group_file, render_opts);
         }
-    }
-
-    // Extra fields: diagnostic fields present on the match but not in the view → stderr.
-    // Only render reason and lines as extras — these are essential for understanding
-    // what went wrong. Tree/value/status are normal match data, not diagnostics.
-    // Reason renders severity+origin inline, so those don't need separate entries.
-    // Lines supersedes source (lines includes the caret).
-    let extra_fields: &[ViewField] = &[
-        ViewField::Reason, ViewField::Lines,
-    ];
-    let mut stderr_buf = String::new();
-    for &f in extra_fields {
-        if !view.has(f) && match_has_field(rm, f) {
-            render_field(&mut stderr_buf, &f, rm, view, group_file, render_opts);
-        }
-    }
-    if !stderr_buf.is_empty() {
-        eprint!("{}", stderr_buf);
     }
 
     // Hint is always shown when present (it's diagnostic metadata, not a view field)
@@ -239,22 +228,6 @@ fn render_field(
             }
         }
         _ => {}
-    }
-}
-
-/// Check if a match has non-None data for a given view field.
-fn match_has_field(rm: &ReportMatch, field: ViewField) -> bool {
-    match field {
-        ViewField::Tree => rm.tree.is_some(),
-        ViewField::Value => rm.value.is_some(),
-        ViewField::Source => rm.source.is_some(),
-        ViewField::Lines => rm.lines.is_some(),
-        ViewField::Reason => rm.reason.is_some(),
-        ViewField::Severity => rm.severity.is_some(),
-        ViewField::Status => rm.status.is_some(),
-        ViewField::Origin => rm.origin.is_some(),
-        ViewField::Output => rm.output.is_some(),
-        _ => false,
     }
 }
 

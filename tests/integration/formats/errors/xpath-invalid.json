@@ -8,8 +8,8 @@
   "results": [
     {
       "line": 1,
-      "reason": "Parse error",
       "severity": "fatal",
+      "reason": "Parse error",
       "origin": "xpath",
       "lines": [
         "//class[bad=("

@@ -1,6 +1,6 @@
 use tractor_core::{report::{Report, ResultItem}, normalize_path, render_xml_string, render_xml_node, RenderOptions};
 use super::options::{ViewField, ViewSet};
-use super::shared::{should_show_totals, should_emit_file, should_emit_command, should_emit_rule_id};
+use super::shared::{should_show_totals, should_emit_file, should_emit_command, should_emit_rule_id, render_fields_for_match};
 
 pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, dimensions: &[&str]) -> String {
     let mut tree_opts = render_opts.clone();
@@ -100,8 +100,10 @@ fn append_match(
     let inner = &format!("{}  ", indent);
     let deep  = &format!("{}    ", indent);
 
-    // Iterate ViewSet for declaration order
-    for field in &view.fields {
+    let (view_fields, extra_fields) = render_fields_for_match(view, rm);
+    let all_fields: Vec<ViewField> = view_fields.into_iter().chain(extra_fields).collect();
+
+    for field in &all_fields {
         match field {
             ViewField::Value => {
                 if let Some(ref v) = rm.value {
@@ -144,7 +146,6 @@ fn append_match(
             }
             ViewField::Tree => {
                 if let Some(ref node) = rm.tree {
-                    // render_opts has use_color=false here; the outer colorization pass handles it
                     let rendered = render_xml_node(node, render_opts);
                     out.push_str(&format!("{}<tree>\n", inner));
                     for line in rendered.lines() {
@@ -162,39 +163,7 @@ fn append_match(
                     }
                 }
             }
-            // File/Line/Column are attributes, not child elements; Summary/Count/Schema handled elsewhere
             _ => {}
-        }
-    }
-
-    // Extra fields: diagnostic fields present on the match but not in the view.
-    if !view.has(ViewField::Reason) {
-        if let Some(ref reason) = rm.reason {
-            out.push_str(&format!("{}<reason>{}</reason>\n", inner, escape(reason)));
-        }
-    }
-    if !view.has(ViewField::Severity) {
-        if let Some(severity) = rm.severity {
-            out.push_str(&format!("{}<severity>{}</severity>\n", inner, severity.as_str()));
-        }
-    }
-    if !view.has(ViewField::Origin) && rm.file.is_empty() {
-        if let Some(origin) = rm.origin {
-            out.push_str(&format!("{}<origin>{}</origin>\n", inner, origin.as_str()));
-        }
-    }
-    if !view.has(ViewField::Lines) {
-        if let Some(ref ls) = rm.lines {
-            out.push_str(&format!("{}<lines>\n", inner));
-            for line in ls {
-                out.push_str(&format!("{}<line>{}</line>\n", deep, escape(line)));
-            }
-            out.push_str(&format!("{}</lines>\n", inner));
-        }
-    }
-    if !view.has(ViewField::Source) {
-        if let Some(ref s) = rm.source {
-            out.push_str(&format!("{}<source>{}</source>\n", inner, escape(s)));
         }
     }
 
