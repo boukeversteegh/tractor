@@ -60,6 +60,7 @@ export function DocLayout({ children }: DocLayoutProps) {
 
   useEffect(() => {
     contentRef.current?.scrollTo(0, 0);
+    window.scrollTo(0, 0);
   }, [location.pathname]);
 
   return (
