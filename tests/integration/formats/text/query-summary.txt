@@ -1,1 +1,2 @@
-✅ 2 matches
+=== stdout ===
+2 matches

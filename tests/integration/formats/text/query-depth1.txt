@@ -1,17 +1,18 @@
-✅ tests/integration/formats/sample.cs:1
-✅ <class>
-✅   <public/>
-✅   class
-✅   <name>Foo</name>
-✅   <body>
-✅     <!-- ... (15 children) -->
-✅   </body>
-✅ </class>
-✅ 
-✅ tests/integration/formats/sample.cs:7
-✅ <class>
-✅   <public/>
-✅   class
-✅   <name>Qux</name>
-✅   <body>{ }</body>
-✅ </class>
+=== stdout ===
+tests/integration/formats/sample.cs:1
+<class>
+  <public/>
+  class
+  <name>Foo</name>
+  <body>
+    <!-- ... (15 children) -->
+  </body>
+</class>
+
+tests/integration/formats/sample.cs:7
+<class>
+  <public/>
+  class
+  <name>Qux</name>
+  <body>{ }</body>
+</class>

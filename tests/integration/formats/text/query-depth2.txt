@@ -1,24 +1,25 @@
-✅ tests/integration/formats/sample.cs:1
-✅ <class>
-✅   <public/>
-✅   class
-✅   <name>Foo</name>
-✅   <body>
-✅     {
-✅     <property>
-✅       <!-- ... (6 children) -->
-✅     </property>
-✅     <method>
-✅       <!-- ... (7 children) -->
-✅     </method>
-✅     }
-✅   </body>
-✅ </class>
-✅ 
-✅ tests/integration/formats/sample.cs:7
-✅ <class>
-✅   <public/>
-✅   class
-✅   <name>Qux</name>
-✅   <body>{ }</body>
-✅ </class>
+=== stdout ===
+tests/integration/formats/sample.cs:1
+<class>
+  <public/>
+  class
+  <name>Foo</name>
+  <body>
+    {
+    <property>
+      <!-- ... (6 children) -->
+    </property>
+    <method>
+      <!-- ... (7 children) -->
+    </method>
+    }
+  </body>
+</class>
+
+tests/integration/formats/sample.cs:7
+<class>
+  <public/>
+  class
+  <name>Qux</name>
+  <body>{ }</body>
+</class>

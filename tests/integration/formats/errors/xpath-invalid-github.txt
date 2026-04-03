@@ -1,1 +1,2 @@
-✅ ::error::xpath: Parse error
+=== stdout ===
+::error::xpath: Parse error

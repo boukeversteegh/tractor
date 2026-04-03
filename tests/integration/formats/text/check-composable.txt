@@ -1,41 +1,42 @@
-✅ <class>
-✅   <public/>
-✅   class
-✅   <name>Foo</name>
-✅   <body>
-✅     {
-✅     <property>
-✅       <public/>
-✅       <type>int</type>
-✅       <name>Bar</name>
-✅       <accessors>
-✅         {
-✅         <accessor>get;</accessor>
-✅         <accessor>set;</accessor>
-✅         }
-✅       </accessors>
-✅     </property>
-✅     <method>
-✅       <public/>
-✅       <returns>
-✅         <type>void</type>
-✅       </returns>
-✅       <name>Baz</name>
-✅       <parameters>()</parameters>
-✅       <body>
-✅         <block>{ }</block>
-✅       </body>
-✅     </method>
-✅     }
-✅   </body>
-✅ </class>
-✅ error: class found
-✅ 
-✅ <class>
-✅   <public/>
-✅   class
-✅   <name>Qux</name>
-✅   <body>{ }</body>
-✅ </class>
-✅ error: class found
-✅ 2 errors in 1 file
+=== stdout ===
+<class>
+  <public/>
+  class
+  <name>Foo</name>
+  <body>
+    {
+    <property>
+      <public/>
+      <type>int</type>
+      <name>Bar</name>
+      <accessors>
+        {
+        <accessor>get;</accessor>
+        <accessor>set;</accessor>
+        }
+      </accessors>
+    </property>
+    <method>
+      <public/>
+      <returns>
+        <type>void</type>
+      </returns>
+      <name>Baz</name>
+      <parameters>()</parameters>
+      <body>
+        <block>{ }</block>
+      </body>
+    </method>
+    }
+  </body>
+</class>
+error: class found
+
+<class>
+  <public/>
+  class
+  <name>Qux</name>
+  <body>{ }</body>
+</class>
+error: class found
+2 errors in 1 file

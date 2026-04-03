@@ -1,18 +1,19 @@
-✅ {
-✅   "results": [
-✅     {
-✅       "file": "tests/integration/formats/sample-classes.cs",
-✅       "line": 1,
-✅       "tree": [
-✅         "Calculator"
-✅       ]
-✅     },
-✅     {
-✅       "file": "tests/integration/formats/sample-classes.cs",
-✅       "line": 1,
-✅       "tree": [
-✅         "Greeter"
-✅       ]
-✅     }
-✅   ]
-✅ }
+=== stdout ===
+{
+  "results": [
+    {
+      "file": "tests/integration/formats/sample-classes.cs",
+      "line": 1,
+      "tree": [
+        "Calculator"
+      ]
+    },
+    {
+      "file": "tests/integration/formats/sample-classes.cs",
+      "line": 1,
+      "tree": [
+        "Greeter"
+      ]
+    }
+  ]
+}

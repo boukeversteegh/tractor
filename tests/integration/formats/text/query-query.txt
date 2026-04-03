@@ -1,2 +1,3 @@
-✅ Query: //class
-✅ 2 matches
+=== stdout ===
+Query: //class
+2 matches

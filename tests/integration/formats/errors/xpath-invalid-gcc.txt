@@ -1,6 +1,8 @@
-🔴 
-🔴 1 fatal
-✅ xpath: error: Parse error
-✅ 1 | //class[bad=(
-✅                  ^
-✅ 
+=== stderr ===
+
+1 fatal
+=== stdout ===
+xpath: error: Parse error
+1 | //class[bad=(
+                 ^
+

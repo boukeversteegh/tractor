@@ -1,14 +1,15 @@
-✅ {
-✅   "results": [
-✅     {
-✅       "tree": {
-✅         "$type": "class"
-✅       }
-✅     },
-✅     {
-✅       "tree": {
-✅         "$type": "class"
-✅       }
-✅     }
-✅   ]
-✅ }
+=== stdout ===
+{
+  "results": [
+    {
+      "tree": {
+        "$type": "class"
+      }
+    },
+    {
+      "tree": {
+        "$type": "class"
+      }
+    }
+  ]
+}

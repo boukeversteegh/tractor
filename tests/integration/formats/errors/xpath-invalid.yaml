@@ -1,13 +1,14 @@
-✅ success: false
-✅ totals:
-✅   results: 1
-✅   files: 0
-✅   fatals: 1
-✅ results:
-✅ - line: 1
-✅   reason: Parse error
-✅   severity: fatal
-✅   origin: xpath
-✅   lines:
-✅   - //class[bad=(
-✅   source: //class[bad=(
+=== stdout ===
+success: false
+totals:
+  results: 1
+  files: 0
+  fatals: 1
+results:
+- line: 1
+  reason: Parse error
+  severity: fatal
+  origin: xpath
+  lines:
+  - //class[bad=(
+  source: //class[bad=(

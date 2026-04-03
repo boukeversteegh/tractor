@@ -1,99 +1,100 @@
-✅ Test expectations against match counts
-✅ 
-✅ Usage: tractor test [OPTIONS] --expect <EXPECT> [FILES]...
-✅ 
-✅ Arguments:
-✅   [FILES]...
-✅           Files to process (supports glob patterns like "src/**/*.cs")
-✅ 
-✅ Options:
-✅   -l, --lang <LANG>
-✅           Language for stdin input (e.g., csharp, rust, python)
-✅ 
-✅   -s, --string <CONTENT>
-✅           Source code string to parse (alternative to stdin, requires --lang)
-✅ 
-✅   -h, --help
-✅           Print help (see a summary with '-h')
-✅ 
-✅ Extract:
-✅   -x, --extract <XPATH>
-✅           XPath expression to extract matching AST nodes
-✅ 
-✅   -t, --tree <TREE>
-✅           Tree mode [default: auto]
-✅             raw        Raw tree-sitter AST (no semantic transforms)
-✅             structure  Semantic syntax tree (default for code languages)
-✅             data       Data projection (default for JSON/YAML)
-✅           
-✅           When omitted, auto-selects: data for JSON/YAML, structure for everything else.
-✅ 
-✅   -W, --ignore-whitespace
-✅           Ignore whitespace in XPath string matching (strips whitespace from text nodes)
-✅ 
-✅ View:
-✅   -n, --limit <LIMIT>
-✅           Limit output to first N matches
-✅ 
-✅   -d, --depth <DEPTH>
-✅           Limit XML output depth (useful for large ASTs)
-✅ 
-✅       --meta
-✅           Include metadata attributes (start/end, kind, field) in XML output
-✅ 
-✅   -g, --group <GROUP_BY>
-✅           Group output by file
-✅ 
-✅   -v, --view <VIEW>
-✅           Report view [default: tree]
-✅             tree      Parsed source tree (XML or JSON, depending on -f)
-✅             value     Text content of matched nodes
-✅             source    Exact matched source text
-✅             lines     Full source lines containing each match
-✅             count     Total match count
-✅             query     Echo the XPath query as tractor received it (useful to detect shell/wrapper mangling)
-✅             schema    Structural overview of element types
-✅ 
-✅   -m, --message <MESSAGE>
-✅           Custom message template (supports {value}, {line}, {col}, {file})
-✅ 
-✅ Format:
-✅       --no-pretty
-✅           Disable pretty printing (shows XML without formatting, as used by XPath)
-✅ 
-✅       --color <COLOR>
-✅           Color output: auto (default), always, never
-✅           
-✅           [default: auto]
-✅ 
-✅       --no-color
-✅           Disable color output
-✅ 
-✅   -f, --format <FORMAT>
-✅           Output format: text (default), json, yaml, gcc, github
-✅           
-✅           [default: text]
-✅ 
-✅ Filter:
-✅       --diff-files <RANGE>
-✅           Only consider files changed in a git diff (e.g. "HEAD~3", "main..HEAD")
-✅ 
-✅       --diff-lines <RANGE>
-✅           Only consider matches in changed hunks of a git diff (e.g. "HEAD~3", "main..HEAD")
-✅ 
-✅ Advanced:
-✅       --parse-depth <PARSE_DEPTH>
-✅           [EXPERIMENTAL] Limit tree building depth (skip parsing deeper nodes for speed)
-✅ 
-✅   -c, --concurrency <CONCURRENCY>
-✅           Number of parallel workers
-✅ 
-✅       --verbose
-✅           Show verbose output
-✅ 
-✅ Test:
-✅   -e, --expect <EXPECT>
-✅           Expected result: none, some, or a number
-✅ 
-✅       --error <ERROR>
-✅           Error message template for failed expectations (per-match, supports {file}, {line}, {name}, etc.)
+=== stdout ===
+Test expectations against match counts
+
+Usage: tractor test [OPTIONS] --expect <EXPECT> [FILES]...
+
+Arguments:
+  [FILES]...
+          Files to process (supports glob patterns like "src/**/*.cs")
+
+Options:
+  -l, --lang <LANG>
+          Language for stdin input (e.g., csharp, rust, python)
+
+  -s, --string <CONTENT>
+          Source code string to parse (alternative to stdin, requires --lang)
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+Extract:
+  -x, --extract <XPATH>
+          XPath expression to extract matching AST nodes
+
+  -t, --tree <TREE>
+          Tree mode [default: auto]
+            raw        Raw tree-sitter AST (no semantic transforms)
+            structure  Semantic syntax tree (default for code languages)
+            data       Data projection (default for JSON/YAML)
+          
+          When omitted, auto-selects: data for JSON/YAML, structure for everything else.
+
+  -W, --ignore-whitespace
+          Ignore whitespace in XPath string matching (strips whitespace from text nodes)
+
+View:
+  -n, --limit <LIMIT>
+          Limit output to first N matches
+
+  -d, --depth <DEPTH>
+          Limit XML output depth (useful for large ASTs)
+
+      --meta
+          Include metadata attributes (start/end, kind, field) in XML output
+
+  -g, --group <GROUP_BY>
+          Group output by file
+
+  -v, --view <VIEW>
+          Report view [default: tree]
+            tree      Parsed source tree (XML or JSON, depending on -f)
+            value     Text content of matched nodes
+            source    Exact matched source text
+            lines     Full source lines containing each match
+            count     Total match count
+            query     Echo the XPath query as tractor received it (useful to detect shell/wrapper mangling)
+            schema    Structural overview of element types
+
+  -m, --message <MESSAGE>
+          Custom message template (supports {value}, {line}, {col}, {file})
+
+Format:
+      --no-pretty
+          Disable pretty printing (shows XML without formatting, as used by XPath)
+
+      --color <COLOR>
+          Color output: auto (default), always, never
+          
+          [default: auto]
+
+      --no-color
+          Disable color output
+
+  -f, --format <FORMAT>
+          Output format: text (default), json, yaml, gcc, github
+          
+          [default: text]
+
+Filter:
+      --diff-files <RANGE>
+          Only consider files changed in a git diff (e.g. "HEAD~3", "main..HEAD")
+
+      --diff-lines <RANGE>
+          Only consider matches in changed hunks of a git diff (e.g. "HEAD~3", "main..HEAD")
+
+Advanced:
+      --parse-depth <PARSE_DEPTH>
+          [EXPERIMENTAL] Limit tree building depth (skip parsing deeper nodes for speed)
+
+  -c, --concurrency <CONCURRENCY>
+          Number of parallel workers
+
+      --verbose
+          Show verbose output
+
+Test:
+  -e, --expect <EXPECT>
+          Expected result: none, some, or a number
+
+      --error <ERROR>
+          Error message template for failed expectations (per-match, supports {file}, {line}, {name}, etc.)

@@ -1,11 +1,12 @@
-✅ {
-✅   "totals": {
-✅     "results": 2,
-✅     "files": 1
-✅   },
-✅   "query": "//class",
-✅   "results": [
-✅     {},
-✅     {}
-✅   ]
-✅ }
+=== stdout ===
+{
+  "totals": {
+    "results": 2,
+    "files": 1
+  },
+  "query": "//class",
+  "results": [
+    {},
+    {}
+  ]
+}

@@ -1,20 +1,21 @@
-✅ {
-✅   "results": [
-✅     {
-✅       "tree": {
-✅         "$type": "class",
-✅         "public": true,
-✅         "name": "Foo",
-✅         "body": {}
-✅       }
-✅     },
-✅     {
-✅       "tree": {
-✅         "$type": "class",
-✅         "public": true,
-✅         "name": "Qux",
-✅         "body": "{ }"
-✅       }
-✅     }
-✅   ]
-✅ }
+=== stdout ===
+{
+  "results": [
+    {
+      "tree": {
+        "$type": "class",
+        "public": true,
+        "name": "Foo",
+        "body": {}
+      }
+    },
+    {
+      "tree": {
+        "$type": "class",
+        "public": true,
+        "name": "Qux",
+        "body": "{ }"
+      }
+    }
+  ]
+}

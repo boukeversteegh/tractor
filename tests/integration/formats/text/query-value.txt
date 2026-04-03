@@ -1,6 +1,7 @@
-✅  class Foo
-✅ {
-✅      int Bar { get; set; }
-✅      void Baz() { }
-✅ }
-✅  class Qux { }
+=== stdout ===
+ class Foo
+{
+     int Bar { get; set; }
+     void Baz() { }
+}
+ class Qux { }
