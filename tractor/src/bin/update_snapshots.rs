@@ -408,7 +408,7 @@ fn replace_ansi_with_emoji_spans(input: &str) -> String {
             "33" => Some("🟨"), // YELLOW
             "34" => Some("🟦"), // BLUE
             "36" => Some("🟪"), // CYAN
-            "43" => Some("🟨"), // BG_YELLOW (match highlights)
+            "43" => Some("⚠️"), // BG_YELLOW (match highlights)
             "97" => Some("⬜"), // WHITE (bright)
             _ => None,
         }
