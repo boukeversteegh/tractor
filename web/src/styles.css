@@ -1687,6 +1687,8 @@ body {
 
 .codeblock-output pre {
   background: rgba(15, 26, 15, 0.8);
+  max-height: 300px;
+  overflow-y: auto;
 }
 
 .codeblock-output code {
