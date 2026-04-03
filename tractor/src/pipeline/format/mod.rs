@@ -184,6 +184,5 @@ fn print_gcc_summary(totals: &tractor_core::report::Totals) {
         String::new()
     };
 
-    eprintln!();
-    eprintln!("{}{}", parts.join(", "), file_part);
+    println!("{}{}", parts.join(", "), file_part);
 }
