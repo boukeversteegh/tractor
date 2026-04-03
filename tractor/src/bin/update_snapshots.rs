@@ -386,10 +386,17 @@ fn main() {
     }
 }
 
-/// Replace ANSI color sequences with emoji-bracketed spans.
+/// Replace ANSI color sequences with emoji-bracketed spans for readable snapshot diffs.
 ///
-/// Each `\x1b[Nm...` color sequence and the text it covers (up to the next
-/// escape or end-of-input) becomes `EMOJI text EMOJI`, e.g. `🟦name🟦`.
+/// Tractor's color output uses ANSI escape codes (`\x1b[34m` for blue, etc.) which are
+/// invisible bytes that make snapshot files hard to read and review in diffs. We want to
+/// test that colors are emitted correctly, but raw escape codes like `\e[34mname\e[0m`
+/// are hard to parse visually.
+///
+/// This function wraps each colored text span with a matching colored emoji on both sides,
+/// so `\x1b[34mname\x1b[0m` becomes `🟦name🟦`. This makes it immediately obvious which
+/// text is colored and in what color, both in the file and in PR diffs.
+///
 /// RESET (`\x1b[0m`) just closes the current span without opening a new one.
 /// Unknown codes are written as `\e[…m` for visibility.
 fn replace_ansi_with_emoji_spans(input: &str) -> String {
