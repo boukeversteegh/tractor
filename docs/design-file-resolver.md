@@ -89,11 +89,12 @@ The `resolve()` method contains the full resolution pipeline:
 2. **Intersect with root** (when operation has its own files and root is defined)
 3. **Intersect with CLI files** (when provided)
 4. **Apply excludes** (union of root and operation excludes)
-5. **Filter to supported languages**
-6. **Apply diff-files** (global from pre-computed set, per-operation runs git)
-7. **Apply diff-lines result filters**
-8. **Check max_files limit**
-9. **Check empty result** (fatal diagnostic)
+5. **Filter gitignored files** (when enabled)
+6. **Filter to supported languages**
+7. **Apply diff-files** (global from pre-computed set, per-operation runs git)
+8. **Apply diff-lines result filters**
+9. **Check max_files limit**
+10. **Check empty result** (fatal diagnostic)
 
 **Why**: All steps in one pipeline, in one place. The three cases (both root+op, op only, root only) are handled at step 1-2 instead of being spread across `merge_scope` and `resolve_files`.
 
@@ -203,6 +204,79 @@ be expressed as FileResolver operations so that:
 - The same caching and optimization applies
 - Verbose logging shows rule-level file narrowing
 - The pattern language is guaranteed consistent across all levels
+
+## Gitignore Support
+
+Gitignored files are almost never what you want to lint. The FileResolver
+should support filtering them out, controlled by a flag.
+
+### User interface
+
+```yaml
+# In config:
+gitignore: true  # exclude gitignored files from all operations
+```
+
+```bash
+# Or from CLI:
+tractor run config.yaml --gitignore
+tractor check "src/**/*.rs" --gitignore
+```
+
+Default: off (current behavior, explicit globs are respected as-is).
+When enabled, gitignored files are excluded early in the pipeline, before
+any operation-level patterns are applied.
+
+### Implementation options
+
+**Option A: `git ls-files`**
+
+Use `git ls-files --cached --others --exclude-standard` to get the set of
+non-ignored files, then intersect with the glob expansion result. This
+is the simplest approach and automatically respects `.gitignore`,
+`.git/info/exclude`, and global gitignore config.
+
+Pros:
+- Correct by definition (uses git's own ignore logic)
+- Handles nested `.gitignore` files, negation patterns, etc.
+- Already have git command infrastructure in `pipeline/git.rs`
+
+Cons:
+- Requires git to be installed and a git repo to exist
+- Spawns a subprocess (but we already do this for `diff-files`)
+
+**Option B: `ignore` crate**
+
+The `ignore` crate (from the ripgrep ecosystem) implements gitignore
+parsing natively in Rust. It can walk directories while respecting
+gitignore rules, without spawning git.
+
+Pros:
+- No git dependency
+- Works outside git repos (reads `.gitignore` files directly)
+- Could replace `glob::glob()` for directory walking (it's faster)
+
+Cons:
+- Additional dependency
+- Needs to match git's behavior exactly (edge cases)
+
+**Recommendation**: Start with Option A (`git ls-files`). It's correct by
+definition and the infrastructure exists. If we later need to work outside
+git repos or want faster walking, the `ignore` crate is a natural upgrade.
+
+### Where it fits in the pipeline
+
+Gitignore filtering is a shared scope concern -- it applies to all
+operations, like root files and CLI files. It should be computed once in
+`SharedFileScope` / `FileResolver::new()` and applied as an early
+intersection step, before operation-level patterns.
+
+```
+1. Expand root globs
+2. Expand CLI globs
+3. Compute gitignore set (git ls-files)  <-- new
+4. Per-operation: expand op globs, intersect with root, CLI, gitignore
+```
 
 ## Not in Scope
 
