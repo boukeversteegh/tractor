@@ -175,6 +175,10 @@ export function DocsOverview() {
           <h3>CI/CD Integration</h3>
           <p>Set up tractor in GitHub Actions, GitLab CI, and other pipelines.</p>
         </Link>
+        <Link to="/docs/guides/use-cases" className="doc-card">
+          <h3>Use Cases</h3>
+          <p>See how teams use tractor for conventions, security, architecture, AI guard railing, and config management.</p>
+        </Link>
       </div>
     </DocLayout>
   );
