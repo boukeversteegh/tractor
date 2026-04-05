@@ -8,213 +8,96 @@
 
 ## Current State (after #82)
 
-File resolution is now split across two dedicated modules:
+File resolution is split across two dedicated modules:
 
-- `tractor-core/src/files.rs` -- low-level primitives: `expand_globs_checked()`,
-  `filter_supported_files()`, `GlobExpansion`, safety limits
-- `tractor/src/pipeline/files.rs` -- high-level resolution: `SharedFileScope`
-  (pre-computes root, CLI, and global diff once), `resolve_op_files()`,
-  `resolve_files()` (expansion, intersection, exclusion, diff, limits)
+- `tractor-core/src/files.rs` -- low-level primitives: glob expansion,
+  language filtering, safety limits
+- `tractor/src/pipeline/files.rs` -- high-level resolution: shared scope
+  pre-computation, per-operation resolution, intersection, diff filtering
 
 Supporting modules:
-- `tractor/src/pipeline/git.rs` -- `git_changed_files()`, `intersect_changed()`, `DiffHunkFilter`
-- `tractor/src/pipeline/input.rs` -- CLI-mode input source detection (stdin/inline/files),
-  with its own glob expansion path separate from `pipeline/files.rs`
-- `tractor/src/tractor_config.rs` -- `merge_scope()` merges exclude/diff settings per operation;
-  no longer touches `files` (root files handled by `SharedFileScope`)
-- `tractor/src/pipeline/matcher.rs` -- `run_rules()` per-rule include/exclude glob matching
+- `tractor/src/pipeline/git.rs` -- git diff integration
+- `tractor/src/pipeline/input.rs` -- CLI-mode input source detection
+  (stdin/inline/files), with its own separate glob expansion path
+- `tractor/src/pipeline/matcher.rs` -- per-rule include/exclude matching
 
-## Remaining Problem
+The CLI and run paths still duplicate glob expansion and language
+filtering. Per-rule file matching uses the same pattern language as
+operation-level globs but is handled by separate code.
 
-The two file resolution paths (CLI modes via `pipeline/input.rs` and run mode
-via `pipeline/files.rs`) still duplicate glob expansion and language filtering.
-A `FileResolver` would unify them behind a single API with caching.
+---
 
-## Proposed: FileResolver
+## Design Goals
 
-### 1. Single FileResolver struct owns all file resolution
+### 1. Unified pattern language across all levels
 
-A `FileResolver` holds the shared state (root files, CLI files, global diff, base dir, limits) and provides a single `resolve()` method that operations call with their per-operation patterns.
+All file scope levels -- root, operation, rule, CLI -- use the same glob
+pattern language. A rule's `include: ["**/*Controller*"]` is the same
+language as an operation's `files: ["src/**/*.rs"]`. The system should
+treat them uniformly. Whether a pattern triggers a filesystem walk or
+an in-memory filter is an optimization choice, not a user-visible
+distinction.
 
-```rust
-pub struct FileResolver {
-    base_dir: Option<PathBuf>,
-    max_files: usize,
-    expansion_limit: usize,
-    verbose: bool,
+### 2. Composable scope operations
 
-    // Cache: original glob patterns -> expanded file set.
-    // Identical patterns across operations expand only once.
-    cache: HashMap<Vec<String>, Arc<HashSet<String>>>,
+File scopes compose through set operations: intersect, exclude, include.
+Each level narrows (or in future, re-includes) from its parent scope.
+The system should support expressing these operations declaratively,
+and choose the cheapest evaluation strategy internally.
 
-    // Pre-resolved shared scopes.
-    root: Option<Arc<HashSet<String>>>,
-    cli: Option<Arc<HashSet<String>>>,
-    global_diff: Option<HashSet<PathBuf>>,
-}
-```
+### 3. Ordered evaluation (gitignore-style)
 
-**Why**: One place for all expansion, caching, intersection, exclusion, diff filtering, limits, and verbose logging. Callers describe what they need; the resolver decides how.
-
-### 2. Declarative FileRequest instead of positional arguments
-
-Operations build a `FileRequest` describing their scope:
-
-```rust
-pub struct FileRequest<'a> {
-    pub files: &'a [String],         // operation-level glob patterns
-    pub exclude: &'a [String],       // operation-level exclusion patterns
-    pub diff_files: Option<&'a str>, // per-operation diff spec
-    pub diff_lines: Option<&'a str>, // per-operation diff-lines spec
-}
-```
-
-**Why**: The current `resolve_files` takes 8 positional parameters. A struct is self-documenting and extensible without breaking callers.
-
-### 3. Automatic glob expansion cache
-
-`FileResolver` caches expanded glob sets keyed by the original pattern list. Two operations with identical `files: ["**/*.ts"]` expand once.
-
-```rust
-fn expand_cached(&mut self, patterns: &[String]) -> &HashSet<String>
-```
-
-**Why**: In a config with 10 operations sharing the same file patterns, the current code expands globs 10 times. The cache eliminates redundant filesystem walks automatically.
-
-### 4. resolve() handles all three cases
-
-The `resolve()` method contains the full resolution pipeline:
-
-1. **Determine base files**: operation files (expand, possibly cached) or root files (pre-computed) as fallback
-2. **Intersect with root** (when operation has its own files and root is defined)
-3. **Intersect with CLI files** (when provided)
-4. **Apply excludes** (union of root and operation excludes)
-5. **Filter gitignored files** (when enabled)
-6. **Filter to supported languages**
-7. **Apply diff-files** (global from pre-computed set, per-operation runs git)
-8. **Apply diff-lines result filters**
-9. **Check max_files limit**
-10. **Check empty result** (fatal diagnostic)
-
-**Why**: All steps in one pipeline, in one place. The three cases (both root+op, op only, root only) are handled at step 1-2 instead of being spread across `merge_scope` and `resolve_files`.
-
-### 5. CLI modes can use FileResolver too
-
-`resolve_input()` in `pipeline/input.rs` currently duplicates glob expansion and language filtering. It could construct a `FileResolver` with no root/CLI scope and call `resolve()` with the CLI-provided patterns.
-
-**Why**: Unifies the two file resolution paths (CLI and run) under one implementation. Not required initially -- can be done incrementally.
-
-### 6. Per-rule include/exclude stays separate
-
-Rule-level `include` and `exclude` in `run_rules()` use `glob::Pattern::matches()` against an already-resolved file list. This is in-memory pattern matching, not filesystem glob expansion.
-
-**Why**: Different operation -- no filesystem walk, no caching benefit. Mixing it into FileResolver would add complexity without value. The rule-level matching operates on the output of FileResolver, not alongside it.
-
-## Mapping: Current Code -> FileResolver
-
-| Current | Proposed |
-|---|---|
-| `SharedFileScope::build()` in `pipeline/files.rs` | `FileResolver::new()` |
-| `resolve_files()` in `pipeline/files.rs` | `FileResolver::resolve()` |
-| `resolve_op_files()` in `pipeline/files.rs` | Removed -- callers build `FileRequest` directly |
-| `merge_scope()` exclude/diff logic | Stays (or moves into `FileRequest` construction) |
-| `resolve_input()` in `pipeline/input.rs` | Optional: can use `FileResolver` for consistency |
-| `expand_globs_checked()` in `tractor-core/src/files.rs` | Still the low-level primitive, called only from `FileResolver` |
-| `filter_supported_files()` in `tractor-core/src/files.rs` | Called inside `FileResolver::resolve()` |
-| Per-rule glob matching in `run_rules()` | Expressed as FileResolver operations (see below) |
-
-## Where It Lives
-
-`tractor/src/pipeline/files.rs` -- evolves the existing module. The `SharedFileScope` + `resolve_files` code there is the natural starting point for the `FileResolver` struct.
-
-The low-level primitives stay in `tractor-core/src/files.rs` because they are also used by the WASM web build.
-
-## Verbose Logging
-
-All file resolution logging goes through `FileResolver`. The log output follows a pipeline narrative:
-
-```
-  files: resolving relative to /home/user/project
-  files: max 10000 files, expansion limit 100000
-  files: expanding root scope "src/**/*.js" ...
-  files: root scope has 342 file(s)
-  files: expanding operation "src/core/**/*.js" ...
-  files: operation has 48 file(s)
-  files: 48 file(s) after root intersection (was 48)
-  files: 45 file(s) after excludes
-  files: 42 file(s) after language filter
-  files: 12 file(s) after diff-files filter
-```
-
-The "expanding ..." line prints before the glob walk starts, so runaway expansions are diagnosable (the user sees which pattern is stuck and can Ctrl+C).
-
-## Glob Pattern Arithmetic
-
-All file scope levels use the same glob pattern language. Whether a pattern
-triggers a filesystem walk or an in-memory filter is an optimization detail,
-not a semantic distinction. A rule's `include: ["**/*Controller*"]` is the
-same language as an operation's `files: ["src/**/*.rs"]`.
-
-The FileResolver should provide glob pattern operations that compose:
-
-```
-root_scope("src/**/*.rs")          -- filesystem expansion
-  .intersect("src/core/**/*.rs")   -- narrow (filesystem or in-memory)
-  .exclude("**/*_test.rs")         -- subtract
-  .intersect("**/*Controller*")    -- narrow further (rule include)
-  .exclude("**/generated/**")      -- subtract (rule exclude)
-```
-
-### Order matters
-
-Like `.gitignore`, include/exclude patterns are not commutative. A later
-include can re-include files that an earlier exclude removed. The current
-model (all excludes are subtractive, applied once) is simpler but less
-expressive. The FileResolver should support ordered filter chains:
+Like `.gitignore`, include/exclude patterns are not always commutative.
+A later include can re-include files that an earlier exclude removed.
+The current model (separate `files` and `exclude` fields) is a simplified
+case. The internal model should not preclude ordered evaluation:
 
 ```yaml
-# Hypothetical future syntax:
+# Future possibility:
 files:
-  - "src/**/*.rs"        # include
-  - "!src/generated/**"  # exclude
-  - "src/generated/api.rs"  # re-include specific file
+  - "src/**/*.rs"            # include
+  - "!src/generated/**"      # exclude
+  - "src/generated/api.rs"   # re-include specific file
 ```
 
-This is a future direction. The current implementation uses separate
-`files` and `exclude` fields without ordering. But the FileResolver's
-internal model should not preclude ordered evaluation.
+### 4. Shared computation, no redundant work
 
-### Implementation strategy
+Scopes that are shared across operations (root files, CLI files, global
+diff, gitignore) should be computed once. Identical glob patterns across
+operations should be expanded once (cached). The current `SharedFileScope`
+achieves this for root/CLI/diff; a cache would extend it to operation
+patterns.
 
-Given a resolved parent set, the resolver can choose the cheapest strategy:
-- **No parent set**: expand against filesystem (`glob::glob()`)
-- **Has parent set, pattern is a filter** (e.g. `**/*Controller*`):
-  in-memory `glob::Pattern::matches()` against the parent set
-- **Has parent set, pattern adds new paths**: expand against filesystem,
-  then union with parent set
+### 5. Single entry point for callers
 
-The caller doesn't need to know which strategy is used. They express intent
-(intersect, exclude, include); the resolver picks the implementation.
+Callers should describe *what files they need* (patterns, excludes, diff
+spec), not manage the resolution pipeline themselves. The current
+`resolve_files` takes 8 positional parameters; a declarative request
+struct would be clearer and extensible.
 
-### Per-rule patterns through FileResolver
+### 6. CLI and run paths share the same resolution
 
-Currently, per-rule `include`/`exclude` patterns are handled by
-`run_rules()` via `GlobMatcher` in `tractor-core`. These should eventually
-be expressed as FileResolver operations so that:
-- The same caching and optimization applies
-- Verbose logging shows rule-level file narrowing
-- The pattern language is guaranteed consistent across all levels
+`resolve_input()` and `resolve_files()` should use the same underlying
+system. CLI modes are just a simpler case (no root scope, no multi-operation
+config).
+
+### 7. Diagnosable
+
+Verbose logging shows each resolution step with patterns, base
+directories, and file counts. "Expanding ..." prints before the glob
+walk starts so runaway expansions are visible and the user can Ctrl+C.
+This is already implemented.
+
+---
 
 ## Gitignore Support
 
-Gitignored files are almost never what you want to lint. The FileResolver
-should support filtering them out, controlled by a flag.
-
-### User interface
+Gitignored files are almost never targets for linting. The file resolver
+should support excluding them, controlled by a flag:
 
 ```yaml
 # In config:
-gitignore: true  # exclude gitignored files from all operations
+gitignore: true
 ```
 
 ```bash
@@ -223,62 +106,62 @@ tractor run config.yaml --gitignore
 tractor check "src/**/*.rs" --gitignore
 ```
 
-Default: off (current behavior, explicit globs are respected as-is).
-When enabled, gitignored files are excluded early in the pipeline, before
-any operation-level patterns are applied.
+**Default**: off (current behavior -- explicit globs are respected as-is).
 
-### Implementation options
+When enabled, gitignored files are excluded early in the pipeline as a
+shared scope concern, computed once before operation-level resolution.
 
-**Option A: `git ls-files`**
+**Implementation is open.** Options include delegating to `git ls-files`,
+using a Rust crate like `ignore`, or a combination. The key requirement
+is correctness: the behavior should match what git considers ignored,
+including nested `.gitignore` files, global config, and negation patterns.
 
-Use `git ls-files --cached --others --exclude-standard` to get the set of
-non-ignored files, then intersect with the glob expansion result. This
-is the simplest approach and automatically respects `.gitignore`,
-`.git/info/exclude`, and global gitignore config.
+---
 
-Pros:
-- Correct by definition (uses git's own ignore logic)
-- Handles nested `.gitignore` files, negation patterns, etc.
-- Already have git command infrastructure in `pipeline/git.rs`
+## Per-rule Patterns
 
-Cons:
-- Requires git to be installed and a git repo to exist
-- Spawns a subprocess (but we already do this for `diff-files`)
+Currently, per-rule `include`/`exclude` is handled separately in
+`run_rules()` via `GlobMatcher`. This should eventually be expressed
+through the same file resolution system so that:
 
-**Option B: `ignore` crate**
+- The pattern language is guaranteed consistent across all levels
+- Caching and optimization apply uniformly
+- Verbose logging covers rule-level narrowing
 
-The `ignore` crate (from the ripgrep ecosystem) implements gitignore
-parsing natively in Rust. It can walk directories while respecting
-gitignore rules, without spawning git.
+---
 
-Pros:
-- No git dependency
-- Works outside git repos (reads `.gitignore` files directly)
-- Could replace `glob::glob()` for directory walking (it's faster)
+## Resolution Pipeline
 
-Cons:
-- Additional dependency
-- Needs to match git's behavior exactly (edge cases)
+The full pipeline, from broadest to narrowest:
 
-**Recommendation**: Start with Option A (`git ls-files`). It's correct by
-definition and the infrastructure exists. If we later need to work outside
-git repos or want faster walking, the `ignore` crate is a natural upgrade.
+1. **Root scope** -- config-level `files` (shared across all operations)
+2. **Operation scope** -- per-operation `files` (intersected with root)
+3. **CLI scope** -- positional file args (intersected with above)
+4. **Gitignore filter** -- when enabled
+5. **Exclude patterns** -- root + operation excludes
+6. **Language filter** -- only supported file types
+7. **Diff-files filter** -- global (pre-computed) + per-operation
+8. **Diff-lines filter** -- hunk-level result filtering
+9. **Rule include/exclude** -- per-rule narrowing within operation files
+10. **Safety limits** -- max_files, expansion limit, empty-set diagnostic
 
-### Where it fits in the pipeline
+Steps 1-3 use set intersection. Steps 4-8 are subtractive filters.
+Step 9 is per-rule narrowing. Step 10 is validation.
 
-Gitignore filtering is a shared scope concern -- it applies to all
-operations, like root files and CLI files. It should be computed once in
-`SharedFileScope` / `FileResolver::new()` and applied as an early
-intersection step, before operation-level patterns.
+---
 
-```
-1. Expand root globs
-2. Expand CLI globs
-3. Compute gitignore set (git ls-files)  <-- new
-4. Per-operation: expand op globs, intersect with root, CLI, gitignore
-```
+## Current Code -> Future FileResolver
+
+| Current | Direction |
+|---|---|
+| `SharedFileScope` in `pipeline/files.rs` | Evolves into `FileResolver` |
+| `resolve_files()` in `pipeline/files.rs` | Becomes `FileResolver::resolve()` |
+| `resolve_op_files()` in `pipeline/files.rs` | Callers build a request struct |
+| `resolve_input()` in `pipeline/input.rs` | Uses `FileResolver` for file resolution |
+| `expand_globs_checked()` in `tractor-core/src/files.rs` | Low-level primitive, stays |
+| Per-rule glob matching in `run_rules()` | Expressed through FileResolver |
 
 ## Not in Scope
 
-- **Cross-operation file deduplication for parsing**: Two operations targeting the same files still parse them independently. A shared parse cache is a separate optimization.
-- **Async/streaming glob expansion**: The `glob` crate is synchronous. Changing this would require a different crate and is not needed for the current performance profile.
+- **Cross-operation parse deduplication**: Two operations targeting the same files still parse independently. A shared parse cache is a separate concern.
+- **Async/streaming glob expansion**: Not needed for the current performance profile.
