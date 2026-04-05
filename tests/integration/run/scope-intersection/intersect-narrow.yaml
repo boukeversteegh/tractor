@@ -1,0 +1,8 @@
+files: ["**/*.yml"]
+check:
+  files: ["frontend/**/*.yml"]
+  rules:
+    - id: no-debug
+      xpath: "//debug[.='true']"
+      reason: "debug must be disabled"
+      severity: warning

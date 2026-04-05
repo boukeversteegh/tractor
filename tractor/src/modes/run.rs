@@ -17,7 +17,9 @@ pub fn run_run(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {
         return Err(format!("config file not found: {}", args.config).into());
     }
 
-    let operations = load_tractor_config(config_path)?;
+    let loaded = load_tractor_config(config_path)?;
+    let operations = loaded.operations;
+    let config_root_files = loaded.root_files;
 
     if operations.is_empty() {
         if args.shared.verbose {
@@ -53,6 +55,7 @@ pub fn run_run(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {
         diff_lines: args.shared.diff_lines.clone(),
         max_files: args.shared.max_files,
         cli_files: args.files.clone(),
+        config_root_files,
     };
 
     let mut builder = tractor_core::ReportBuilder::new();

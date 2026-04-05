@@ -235,6 +235,10 @@ pub struct ExecuteOptions {
     pub max_files: usize,
     /// CLI-provided file patterns, intersected with operation file globs.
     pub cli_files: Vec<String>,
+    /// Root-level file patterns from config, intersected with each operation's
+    /// file globs. When an operation specifies its own files, the resolved set
+    /// is narrowed to the intersection with these root patterns.
+    pub config_root_files: Vec<String>,
 }
 
 impl Default for ExecuteOptions {
@@ -246,6 +250,7 @@ impl Default for ExecuteOptions {
             diff_lines: None,
             max_files: DEFAULT_MAX_FILES,
             cli_files: Vec::new(),
+            config_root_files: Vec::new(),
         }
     }
 }
@@ -287,12 +292,13 @@ fn resolve_op_files(
     diff_lines: Option<&str>,
     command: &str,
     options: &ExecuteOptions,
+    shared: &SharedFileScope,
     report: &mut ReportBuilder,
 ) -> (Vec<String>, Vec<Box<dyn ResultFilter>>) {
     let cwd = options.base_dir.as_deref()
         .unwrap_or_else(|| std::path::Path::new("."));
     let filters = build_filters(options.diff_lines.as_deref(), diff_lines, cwd);
-    let files = resolve_files(files, exclude, diff_files, &filters, command, options, report);
+    let files = resolve_files(files, exclude, diff_files, &filters, command, options, shared, report);
     (files, filters)
 }
 
@@ -301,19 +307,165 @@ fn filter_refs(filters: &[Box<dyn ResultFilter>]) -> Vec<&dyn ResultFilter> {
     filters.iter().map(|f| f.as_ref()).collect()
 }
 
+/// Pre-computed shared file scope, expanded once before iterating operations.
+///
+/// Root-level `files`, CLI file args, and global `diff-files` are the same for
+/// every operation in a config. Expanding them once avoids redundant filesystem
+/// walks and git commands when a config has many operations.
+struct SharedFileScope {
+    /// Expanded root-level files (from config `files:`), or None if not set.
+    root_files: Option<std::collections::HashSet<String>>,
+    /// Expanded CLI file args, or None if not provided.
+    cli_files: Option<std::collections::HashSet<String>>,
+    /// Expanded global diff-files set, or None if not provided.
+    global_diff_files: Option<std::collections::HashSet<PathBuf>>,
+}
+
+impl SharedFileScope {
+    /// Build from ExecuteOptions, expanding shared globs once.
+    /// Returns Err with a fatal diagnostic message on expansion failure.
+    fn build(options: &ExecuteOptions) -> Result<Self, String> {
+        let expansion_limit = options.max_files * 10;
+
+        let resolve_globs = |patterns: &[String]| -> Vec<String> {
+            if let Some(base) = &options.base_dir {
+                patterns.iter().map(|g| {
+                    if std::path::Path::new(g).is_absolute() {
+                        g.clone()
+                    } else {
+                        base.join(g).to_string_lossy().to_string()
+                    }
+                }).collect()
+            } else {
+                patterns.to_vec()
+            }
+        };
+
+        let format_patterns = |patterns: &[String]| -> String {
+            patterns.iter().map(|g| format!("\"{}\"", g)).collect::<Vec<_>>().join(", ")
+        };
+
+        let base_dir_display = options.base_dir.as_ref()
+            .map(|b| b.display().to_string())
+            .unwrap_or_else(|| ".".to_string());
+
+        // Strip base_dir prefix from absolute paths to show relative paths in logs.
+        let relative_path = |path: &str| -> String {
+            if let Some(base) = &options.base_dir {
+                let base_str = base.display().to_string();
+                path.strip_prefix(&base_str)
+                    .and_then(|p| p.strip_prefix('\\').or(p.strip_prefix('/')))
+                    .unwrap_or(path)
+                    .to_string()
+            } else {
+                path.to_string()
+            }
+        };
+        let log_files = |files: &[String]| {
+            for f in files.iter().take(5) {
+                eprintln!("    {}", relative_path(f));
+            }
+            if files.len() > 5 {
+                eprintln!("    ... and {} more", files.len() - 5);
+            }
+        };
+
+        if options.verbose {
+            eprintln!("  files: resolving relative to {}", base_dir_display);
+            eprintln!("  files: max {} files, expansion limit {}", options.max_files, expansion_limit);
+        }
+
+        // --- Root scope ---
+        let root_files = if !options.config_root_files.is_empty() {
+            if options.verbose {
+                eprintln!("  files: expanding root scope {} ...",
+                    format_patterns(&options.config_root_files));
+            }
+            let root_globs = resolve_globs(&options.config_root_files);
+            let expansion = expand_globs_checked(&root_globs, expansion_limit)
+                .map_err(|e| {
+                    let base_hint = options.base_dir.as_ref()
+                        .map(|b| format!(" (resolved relative to {})", b.display()))
+                        .unwrap_or_default();
+                    format!(
+                        "root pattern \"{}\" expanded to over {} paths{} — use a more specific pattern or increase --max-files",
+                        e.pattern, e.limit, base_hint
+                    )
+                })?;
+            if options.verbose {
+                eprintln!("  files: root scope has {} file(s)", expansion.files.len());
+                log_files(&expansion.files);
+            }
+            Some(expansion.files.into_iter().collect())
+        } else {
+            None
+        };
+
+        // --- CLI files ---
+        let cli_files = if !options.cli_files.is_empty() {
+            if options.verbose {
+                eprintln!("  files: expanding CLI args {} (relative to cwd) ...",
+                    format_patterns(&options.cli_files));
+            }
+            let expansion = expand_globs_checked(&options.cli_files, expansion_limit)
+                .map_err(|e| format!(
+                    "CLI pattern \"{}\" expanded to over {} paths — use a more specific pattern or increase --max-files",
+                    e.pattern, e.limit
+                ))?;
+            if options.verbose {
+                eprintln!("  files: CLI args have {} file(s)", expansion.files.len());
+            }
+            Some(expansion.files.into_iter().collect())
+        } else {
+            None
+        };
+
+        // --- Global diff-files ---
+        let global_diff_files = if let Some(ref spec) = options.diff_files {
+            let cwd = options.base_dir.as_deref()
+                .unwrap_or_else(|| std::path::Path::new("."));
+            match git::git_changed_files(spec, cwd) {
+                Ok(changed) => {
+                    if options.verbose {
+                        eprintln!("  files: git diff \"{}\" has {} changed file(s)", spec, changed.len());
+                    }
+                    Some(changed.into_iter().collect())
+                }
+                Err(e) => {
+                    eprintln!("warning: --diff-files filter failed: {}", e);
+                    None
+                }
+            }
+        } else {
+            None
+        };
+
+        Ok(SharedFileScope { root_files, cli_files, global_diff_files })
+    }
+}
+
 /// Execute a list of operations, pushing results into the given `ReportBuilder`.
 pub fn execute(
     operations: &[Operation],
     options: &ExecuteOptions,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    // Pre-compute shared file scope once (root globs, CLI globs, global diff).
+    let shared = match SharedFileScope::build(options) {
+        Ok(s) => s,
+        Err(msg) => {
+            report.add(make_fatal_diagnostic("config", msg));
+            return Ok(());
+        }
+    };
+
     for op in operations {
         match op {
-            Operation::Query(q) => execute_query(q, options, report)?,
-            Operation::Check(c) => execute_check(c, options, report)?,
-            Operation::Test(t) => execute_test(t, options, report)?,
-            Operation::Set(s) => execute_set(s, options, report)?,
-            Operation::Update(u) => execute_update(u, options, report)?,
+            Operation::Query(q) => execute_query(q, options, &shared, report)?,
+            Operation::Check(c) => execute_check(c, options, &shared, report)?,
+            Operation::Test(t) => execute_test(t, options, &shared, report)?,
+            Operation::Set(s) => execute_set(s, options, &shared, report)?,
+            Operation::Update(u) => execute_update(u, options, &shared, report)?,
         }
     }
 
@@ -327,6 +479,7 @@ pub fn execute(
 fn execute_query(
     op: &QueryOperation,
     options: &ExecuteOptions,
+    shared: &SharedFileScope,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Inline source mode: parse a string instead of files.
@@ -338,7 +491,7 @@ fn execute_query(
     }
 
     let (files, filters) = resolve_op_files(
-        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), "query", options, report,
+        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), "query", options, shared, report,
     );
 
     if files.is_empty() {
@@ -409,6 +562,7 @@ fn execute_query_inline(
 fn execute_check(
     op: &CheckOperation,
     options: &ExecuteOptions,
+    shared: &SharedFileScope,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if op.rules.is_empty() {
@@ -429,7 +583,7 @@ fn execute_check(
 
     // --- Phase 2: Run the actual file check ---
     let (files, filters) = resolve_op_files(
-        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), "check", options, report,
+        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), "check", options, shared, report,
     );
 
     // Build a RuleSet from the operation. Ruleset-level include/exclude
@@ -572,10 +726,11 @@ fn example_failure_match(rule_id: &str, reason: &str) -> ReportMatch {
 fn execute_set(
     op: &SetOperation,
     options: &ExecuteOptions,
+    shared: &SharedFileScope,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let (files, _filters) = resolve_op_files(
-        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), "set", options, report,
+        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), "set", options, shared, report,
     );
 
     for file_path in &files {
@@ -645,6 +800,7 @@ fn execute_set(
 fn execute_test(
     op: &TestOperation,
     options: &ExecuteOptions,
+    shared: &SharedFileScope,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Inline source mode: parse a string and check each assertion individually.
@@ -659,7 +815,7 @@ fn execute_test(
     }
 
     let (files, filters) = resolve_op_files(
-        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), "test", options, report,
+        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), "test", options, shared, report,
     );
 
     if files.is_empty() {
@@ -716,10 +872,11 @@ fn run_test_assertions_on_result(
 fn execute_update(
     op: &UpdateOperation,
     options: &ExecuteOptions,
+    shared: &SharedFileScope,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let (files, filters) = resolve_op_files(
-        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), "update", options, report,
+        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), "update", options, shared, report,
     );
     let mut fallback_files = Vec::new();
     let mut files_modified = std::collections::HashSet::new();
@@ -899,12 +1056,48 @@ fn resolve_files(
     filters: &[Box<dyn ResultFilter>],
     command: &str,
     options: &ExecuteOptions,
+    shared: &SharedFileScope,
     report: &mut ReportBuilder,
 ) -> Vec<String> {
     let expansion_limit = options.max_files * 10;
 
-    // --- Expand operation/config globs ---
-    let (mut files, empty_patterns) = {
+    // --- Verbose logging helpers ---
+    let format_patterns = |patterns: &[String]| -> String {
+        patterns.iter().map(|g| format!("\"{}\"", g)).collect::<Vec<_>>().join(", ")
+    };
+    let relative_path = |path: &str| -> String {
+        if let Some(base) = &options.base_dir {
+            let base_str = base.display().to_string();
+            path.strip_prefix(&base_str)
+                .and_then(|p| p.strip_prefix('\\').or(p.strip_prefix('/')))
+                .unwrap_or(path)
+                .to_string()
+        } else {
+            path.to_string()
+        }
+    };
+    let log_files = |files: &[String]| {
+        for f in files.iter().take(5) {
+            eprintln!("    {}", relative_path(f));
+        }
+        if files.len() > 5 {
+            eprintln!("    ... and {} more", files.len() - 5);
+        }
+    };
+
+    // --- Resolve operation files ---
+    // Three cases:
+    //   1. Operation has files + root exists → expand op, intersect with root
+    //   2. Operation has files, no root      → expand op (no intersection)
+    //   3. Operation has no files, root exists → use root as base
+    //   4. Neither has files                  → empty set
+    let has_op_files = !file_globs.is_empty();
+
+    let (mut files, empty_patterns) = if has_op_files {
+        // Expand operation globs
+        if options.verbose {
+            eprintln!("  files: expanding operation {} ...", format_patterns(file_globs));
+        }
         let globs: Vec<String> = if let Some(base) = &options.base_dir {
             file_globs.iter().map(|g| {
                 if std::path::Path::new(g).is_absolute() {
@@ -917,7 +1110,7 @@ fn resolve_files(
             file_globs.to_vec()
         };
 
-        match expand_globs_checked(&globs, expansion_limit) {
+        let (mut files, empty_patterns) = match expand_globs_checked(&globs, expansion_limit) {
             Ok(result) => (result.files, result.empty_patterns),
             Err(e) => {
                 let base_hint = options.base_dir.as_ref()
@@ -932,26 +1125,41 @@ fn resolve_files(
                 ));
                 return Vec::new();
             }
+        };
+
+        if options.verbose {
+            eprintln!("  files: operation has {} file(s)", files.len());
+            log_files(&files);
         }
+
+        // Intersect with root scope (when both exist)
+        if let Some(ref root_set) = shared.root_files {
+            let before = files.len();
+            files.retain(|f| root_set.contains(f));
+            if options.verbose {
+                eprintln!("  files: {} file(s) after root intersection (was {})", files.len(), before);
+            }
+        }
+
+        (files, empty_patterns)
+    } else if let Some(ref root_set) = shared.root_files {
+        // No operation files — use root scope as base
+        if options.verbose {
+            eprintln!("  files: using root scope ({} file(s))", root_set.len());
+        }
+        (root_set.iter().cloned().collect(), vec![])
+    } else {
+        // Neither operation nor root has files
+        (vec![], vec![])
     };
 
-    // --- Intersect with CLI files if provided ---
-    if !options.cli_files.is_empty() {
-        let cli_expansion = match expand_globs_checked(&options.cli_files, expansion_limit) {
-            Ok(result) => result.files,
-            Err(e) => {
-                report.add(make_fatal_diagnostic(
-                    command,
-                    format!(
-                        "CLI pattern \"{}\" expanded to over {} paths — use a more specific pattern or increase --max-files",
-                        e.pattern, e.limit
-                    ),
-                ));
-                return Vec::new();
-            }
-        };
-        let cli_set: std::collections::HashSet<String> = cli_expansion.into_iter().collect();
+    // --- Intersect with pre-computed CLI files ---
+    if let Some(ref cli_set) = shared.cli_files {
+        let before = files.len();
         files.retain(|f| cli_set.contains(f));
+        if options.verbose {
+            eprintln!("  files: {} file(s) after CLI intersection (was {})", files.len(), before);
+        }
     }
 
     // --- Filter excludes ---
@@ -974,10 +1182,15 @@ fn resolve_files(
     let files = filter_supported_files(files);
 
     // --- Intersect with git diff-files ---
+    // Global diff-files is pre-computed in SharedFileScope; only filter here.
+    let files = if let Some(ref global_diff) = shared.global_diff_files {
+        git::intersect_changed(files, global_diff)
+    } else {
+        files
+    };
+    // Per-operation diff-files still needs to run each time.
     let cwd = options.base_dir.as_deref()
         .unwrap_or_else(|| std::path::Path::new("."));
-
-    let files = apply_diff_files_filter(files, options.diff_files.as_deref(), cwd);
     let mut files = apply_diff_files_filter(files, op_diff_files, cwd);
 
     // --- Apply file-level result filters ---

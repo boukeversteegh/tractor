@@ -1,0 +1,10 @@
+# Root: backend only. Operation: frontend only.
+# Intersection is empty -> 0 files, no violations.
+files: ["backend/**/*.yml"]
+check:
+  files: ["frontend/**/*.yml"]
+  rules:
+    - id: no-debug
+      xpath: "//debug[.='true']"
+      reason: "debug must be disabled"
+      severity: warning

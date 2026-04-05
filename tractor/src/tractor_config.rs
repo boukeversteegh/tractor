@@ -269,9 +269,10 @@ fn parse_tree_mode(s: &str) -> Result<TreeMode, String> {
 }
 
 /// Root-level scope fields that constrain all operations.
+/// Note: `files` is handled separately via `LoadedConfig.root_files` and
+/// `SharedFileScope` — it's not part of the per-operation merge.
 #[derive(Debug, Clone, Default)]
 struct RootScope {
-    files: Vec<String>,
     exclude: Vec<String>,
     diff_files: Option<String>,
     diff_lines: Option<String>,
@@ -404,8 +405,10 @@ fn convert_test(config: TestConfig, scope: &RootScope) -> Result<Operation, Box<
 
 /// Merge root-level scope with per-operation scope.
 ///
-/// - `files`: operation files take precedence; root files are the fallback
-///   when an operation doesn't specify its own.
+/// - `files`: operation keeps its own files (empty if not specified).
+///   Root-level files are handled separately via `SharedFileScope` at
+///   resolve time — intersection when both exist, root as fallback when
+///   the operation has none.
 /// - `exclude`: union of root and operation excludes (both narrow the scope).
 /// - `diff-files`/`diff-lines`: operation takes precedence; root is the
 ///   fallback. CLI flags are applied separately via `ExecuteOptions`.
@@ -416,24 +419,19 @@ fn merge_scope(
     op_diff_files: Option<String>,
     op_diff_lines: Option<String>,
 ) -> (Vec<String>, Vec<String>, Option<String>, Option<String>) {
-    let files = if op_files.is_empty() {
-        scope.files.clone()
-    } else {
-        op_files
-    };
-
     let mut exclude = scope.exclude.clone();
     exclude.extend(op_exclude);
 
     let diff_files = op_diff_files.or_else(|| scope.diff_files.clone());
     let diff_lines = op_diff_lines.or_else(|| scope.diff_lines.clone());
 
-    (files, exclude, diff_files, diff_lines)
+    (op_files, exclude, diff_files, diff_lines)
 }
 
-fn config_to_operations(config: ConfigFile) -> Result<Vec<Operation>, Box<dyn std::error::Error>> {
+fn config_to_operations(config: ConfigFile) -> Result<LoadedConfig, Box<dyn std::error::Error>> {
+    let root_files = config.files.clone();
+
     let scope = RootScope {
-        files: config.files,
         exclude: config.exclude,
         diff_files: config.diff_files,
         diff_lines: config.diff_lines,
@@ -471,16 +469,31 @@ fn config_to_operations(config: ConfigFile) -> Result<Vec<Operation>, Box<dyn st
         }
     }
 
-    Ok(ops)
+    Ok(LoadedConfig {
+        root_files,
+        operations: ops,
+    })
 }
 
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
-/// Parse a tractor config file into a list of operations.
+/// Parsed config with root-level file scope kept separate from operations.
+///
+/// Root-level `files` are intersected with each operation's files at resolve
+/// time, so they must be preserved independently rather than merged away.
+#[derive(Debug)]
+pub struct LoadedConfig {
+    /// Root-level file glob patterns that constrain all operations.
+    pub root_files: Vec<String>,
+    /// Parsed operations (with their own files, excludes, etc.).
+    pub operations: Vec<Operation>,
+}
+
+/// Parse a tractor config file into a `LoadedConfig`.
 /// Format is detected from the file extension.
-pub fn load_tractor_config(path: &Path) -> Result<Vec<Operation>, Box<dyn std::error::Error>> {
+pub fn load_tractor_config(path: &Path) -> Result<LoadedConfig, Box<dyn std::error::Error>> {
     let content = std::fs::read_to_string(path)
         .map_err(|e| format!("cannot read '{}': {}", path.display(), e))?;
 
@@ -496,14 +509,14 @@ pub fn load_tractor_config(path: &Path) -> Result<Vec<Operation>, Box<dyn std::e
 }
 
 /// Parse a tractor config from a YAML string.
-pub fn parse_config_yaml(content: &str) -> Result<Vec<Operation>, Box<dyn std::error::Error>> {
+pub fn parse_config_yaml(content: &str) -> Result<LoadedConfig, Box<dyn std::error::Error>> {
     let config: ConfigFile = serde_yaml::from_str(content)
         .map_err(|e| format!("invalid tractor config YAML: {}", e))?;
     config_to_operations(config)
 }
 
 /// Parse a tractor config from a TOML string.
-pub fn parse_config_toml(content: &str) -> Result<Vec<Operation>, Box<dyn std::error::Error>> {
+pub fn parse_config_toml(content: &str) -> Result<LoadedConfig, Box<dyn std::error::Error>> {
     let config: ConfigFile = toml::from_str(content)
         .map_err(|e| format!("invalid tractor config TOML: {}", e))?;
     config_to_operations(config)
@@ -527,7 +540,7 @@ check:
       xpath: "//comment[contains(.,'TODO')]"
       reason: "TODO found"
 "#;
-        let ops = parse_config_yaml(yaml).unwrap();
+        let ops = parse_config_yaml(yaml).unwrap().operations;
         assert_eq!(ops.len(), 1);
         match &ops[0] {
             Operation::Check(c) => {
@@ -551,7 +564,7 @@ set:
     - xpath: "//database/port"
       value: "5432"
 "#;
-        let ops = parse_config_yaml(yaml).unwrap();
+        let ops = parse_config_yaml(yaml).unwrap().operations;
         assert_eq!(ops.len(), 1);
         match &ops[0] {
             Operation::Set(s) => {
@@ -580,7 +593,7 @@ set:
     - xpath: "//host"
       value: "localhost"
 "#;
-        let ops = parse_config_yaml(yaml).unwrap();
+        let ops = parse_config_yaml(yaml).unwrap().operations;
         assert_eq!(ops.len(), 2);
         assert!(matches!(&ops[0], Operation::Check(_)));
         assert!(matches!(&ops[1], Operation::Set(_)));
@@ -606,7 +619,7 @@ operations:
         - id: rule-b
           xpath: "//b"
 "#;
-        let ops = parse_config_yaml(yaml).unwrap();
+        let ops = parse_config_yaml(yaml).unwrap().operations;
         assert_eq!(ops.len(), 3);
         assert!(matches!(&ops[0], Operation::Check(_)));
         assert!(matches!(&ops[1], Operation::Set(_)));
@@ -636,7 +649,7 @@ operations:
         - xpath: "//host"
           value: "localhost"
 "#;
-        let ops = parse_config_yaml(yaml).unwrap();
+        let ops = parse_config_yaml(yaml).unwrap().operations;
         assert_eq!(ops.len(), 2);
         // Root-level check comes first
         assert!(matches!(&ops[0], Operation::Check(_)));
@@ -657,7 +670,7 @@ check:
       xpath: "//y"
       severity: error
 "#;
-        let ops = parse_config_yaml(yaml).unwrap();
+        let ops = parse_config_yaml(yaml).unwrap().operations;
         if let Operation::Check(c) = &ops[0] {
             assert_eq!(c.rules[0].severity, Severity::Warning);
             assert_eq!(c.rules[1].severity, Severity::Error);
@@ -674,7 +687,7 @@ set:
     - xpath: "//version"
       value: "2.0"
 "#;
-        let ops = parse_config_yaml(yaml).unwrap();
+        let ops = parse_config_yaml(yaml).unwrap().operations;
         if let Operation::Set(s) = &ops[0] {
             assert_eq!(s.exclude, vec!["node_modules/**"]);
         }
@@ -683,7 +696,7 @@ set:
     #[test]
     fn parse_yaml_empty() {
         let yaml = "{}";
-        let ops = parse_config_yaml(yaml).unwrap();
+        let ops = parse_config_yaml(yaml).unwrap().operations;
         assert!(ops.is_empty());
     }
 
@@ -709,7 +722,7 @@ query:
     - xpath: "//function"
     - xpath: "//class"
 "#;
-        let ops = parse_config_yaml(yaml).unwrap();
+        let ops = parse_config_yaml(yaml).unwrap().operations;
         assert_eq!(ops.len(), 1);
         match &ops[0] {
             Operation::Query(q) => {
@@ -733,7 +746,7 @@ test:
     - xpath: "//class"
       expect: none
 "#;
-        let ops = parse_config_yaml(yaml).unwrap();
+        let ops = parse_config_yaml(yaml).unwrap().operations;
         assert_eq!(ops.len(), 1);
         match &ops[0] {
             Operation::Test(t) => {
@@ -756,7 +769,7 @@ test:
   assertions:
     - xpath: "//name"
 "#;
-        let ops = parse_config_yaml(yaml).unwrap();
+        let ops = parse_config_yaml(yaml).unwrap().operations;
         if let Operation::Test(t) = &ops[0] {
             assert_eq!(t.assertions[0].expect, "some");
         }
@@ -776,7 +789,7 @@ operations:
         - xpath: "//name"
           expect: some
 "#;
-        let ops = parse_config_yaml(yaml).unwrap();
+        let ops = parse_config_yaml(yaml).unwrap().operations;
         assert_eq!(ops.len(), 2);
         assert!(matches!(&ops[0], Operation::Query(_)));
         assert!(matches!(&ops[1], Operation::Test(_)));
@@ -792,7 +805,7 @@ files = ["config.json"]
 xpath = "//host"
 value = "localhost"
 "#;
-        let ops = parse_config_toml(toml).unwrap();
+        let ops = parse_config_toml(toml).unwrap().operations;
         assert_eq!(ops.len(), 1);
         match &ops[0] {
             Operation::Set(s) => {
@@ -808,7 +821,9 @@ value = "localhost"
     // -----------------------------------------------------------------------
 
     #[test]
-    fn root_files_inherited_when_operation_has_none() {
+    fn root_files_not_merged_into_operation() {
+        // Root files are kept in LoadedConfig.root_files and applied at
+        // resolve time via SharedFileScope — not copied into operations.
         let yaml = r#"
 files: ["src/**/*.rs"]
 check:
@@ -816,16 +831,17 @@ check:
     - id: no-todo
       xpath: "//comment"
 "#;
-        let ops = parse_config_yaml(yaml).unwrap();
-        if let Operation::Check(c) = &ops[0] {
-            assert_eq!(c.files, vec!["src/**/*.rs"]);
+        let loaded = parse_config_yaml(yaml).unwrap();
+        assert_eq!(loaded.root_files, vec!["src/**/*.rs"]);
+        if let Operation::Check(c) = &loaded.operations[0] {
+            assert!(c.files.is_empty(), "operation should have no files when not specified");
         } else {
             panic!("expected Check");
         }
     }
 
     #[test]
-    fn root_files_overridden_by_operation_files() {
+    fn operation_files_kept_independently_from_root() {
         let yaml = r#"
 files: ["src/**/*.rs"]
 check:
@@ -834,8 +850,9 @@ check:
     - id: no-todo
       xpath: "//comment"
 "#;
-        let ops = parse_config_yaml(yaml).unwrap();
-        if let Operation::Check(c) = &ops[0] {
+        let loaded = parse_config_yaml(yaml).unwrap();
+        assert_eq!(loaded.root_files, vec!["src/**/*.rs"]);
+        if let Operation::Check(c) = &loaded.operations[0] {
             assert_eq!(c.files, vec!["test/**/*.rs"]);
         } else {
             panic!("expected Check");
@@ -853,7 +870,7 @@ check:
     - id: no-todo
       xpath: "//comment"
 "#;
-        let ops = parse_config_yaml(yaml).unwrap();
+        let ops = parse_config_yaml(yaml).unwrap().operations;
         if let Operation::Check(c) = &ops[0] {
             assert_eq!(c.exclude, vec!["target/**", "src/generated/**"]);
         } else {
@@ -871,7 +888,7 @@ check:
     - id: no-todo
       xpath: "//comment"
 "#;
-        let ops = parse_config_yaml(yaml).unwrap();
+        let ops = parse_config_yaml(yaml).unwrap().operations;
         if let Operation::Check(c) = &ops[0] {
             assert_eq!(c.diff_files.as_deref(), Some("main..HEAD"));
         } else {
@@ -890,7 +907,7 @@ check:
     - id: no-todo
       xpath: "//comment"
 "#;
-        let ops = parse_config_yaml(yaml).unwrap();
+        let ops = parse_config_yaml(yaml).unwrap().operations;
         if let Operation::Check(c) = &ops[0] {
             assert_eq!(c.diff_files.as_deref(), Some("HEAD~3"));
         } else {
@@ -908,7 +925,7 @@ check:
     - id: no-todo
       xpath: "//comment"
 "#;
-        let ops = parse_config_yaml(yaml).unwrap();
+        let ops = parse_config_yaml(yaml).unwrap().operations;
         if let Operation::Check(c) = &ops[0] {
             assert_eq!(c.diff_lines.as_deref(), Some("main..HEAD"));
         } else {
@@ -931,11 +948,15 @@ operations:
       queries:
         - xpath: "//b"
 "#;
-        let ops = parse_config_yaml(yaml).unwrap();
+        let loaded = parse_config_yaml(yaml).unwrap();
+        let ops = &loaded.operations;
         assert_eq!(ops.len(), 2);
+        assert_eq!(loaded.root_files, vec!["src/**/*.rs"]);
 
+        // Operations have no files of their own — root files are applied
+        // at resolve time via SharedFileScope.
         if let Operation::Check(c) = &ops[0] {
-            assert_eq!(c.files, vec!["src/**/*.rs"]);
+            assert!(c.files.is_empty());
             assert_eq!(c.exclude, vec!["vendor/**"]);
             assert_eq!(c.diff_files.as_deref(), Some("main..HEAD"));
         } else {
@@ -943,11 +964,59 @@ operations:
         }
 
         if let Operation::Query(q) = &ops[1] {
-            assert_eq!(q.files, vec!["src/**/*.rs"]);
+            assert!(q.files.is_empty());
             assert_eq!(q.exclude, vec!["vendor/**"]);
             assert_eq!(q.diff_files.as_deref(), Some("main..HEAD"));
         } else {
             panic!("expected Query");
+        }
+    }
+
+    #[test]
+    fn loaded_config_root_files_populated() {
+        let yaml = r#"
+files: ["src/**/*.rs", "lib/**/*.rs"]
+check:
+  rules:
+    - id: no-todo
+      xpath: "//comment"
+"#;
+        let loaded = parse_config_yaml(yaml).unwrap();
+        assert_eq!(loaded.root_files, vec!["src/**/*.rs", "lib/**/*.rs"]);
+    }
+
+    #[test]
+    fn loaded_config_root_files_empty_when_not_specified() {
+        let yaml = r#"
+check:
+  files: ["src/**/*.rs"]
+  rules:
+    - id: no-todo
+      xpath: "//comment"
+"#;
+        let loaded = parse_config_yaml(yaml).unwrap();
+        assert!(loaded.root_files.is_empty());
+    }
+
+    #[test]
+    fn loaded_config_root_files_preserved_alongside_op_files() {
+        let yaml = r#"
+files: ["src/**/*.rs"]
+check:
+  files: ["test/**/*.rs"]
+  rules:
+    - id: no-todo
+      xpath: "//comment"
+"#;
+        let loaded = parse_config_yaml(yaml).unwrap();
+        // Root files are preserved for intersection at resolve time
+        assert_eq!(loaded.root_files, vec!["src/**/*.rs"]);
+        // Operation files are kept as-is (merge_scope overrides at parse time;
+        // actual intersection happens in resolve_files)
+        if let Operation::Check(c) = &loaded.operations[0] {
+            assert_eq!(c.files, vec!["test/**/*.rs"]);
+        } else {
+            panic!("expected Check");
         }
     }
 
@@ -963,7 +1032,7 @@ check:
         - valid: "fn main() {}"
         - invalid: "// TODO: fix"
 "#;
-        let ops = parse_config_yaml(yaml).unwrap();
+        let ops = parse_config_yaml(yaml).unwrap().operations;
         if let Operation::Check(c) = &ops[0] {
             assert_eq!(c.rules[0].valid_examples, vec!["fn main() {}"]);
             assert_eq!(c.rules[0].invalid_examples, vec!["// TODO: fix"]);
