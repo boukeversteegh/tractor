@@ -22,6 +22,7 @@
 //! This means `include` lists intersect (both must pass) while `exclude` lists
 //! union (either can reject).
 
+use crate::normalized_xpath::NormalizedXpath;
 use crate::report::Severity;
 use crate::tree_mode::TreeMode;
 
@@ -154,7 +155,7 @@ pub struct Rule {
     pub id: String,
 
     /// XPath expression to execute against each parsed document.
-    pub xpath: String,
+    pub xpath: NormalizedXpath,
 
     /// Human-readable explanation shown for each match (the "why").
     pub reason: Option<String>,
@@ -191,7 +192,7 @@ pub struct Rule {
 
 impl Rule {
     /// Create a rule with just an id and xpath. All other fields use defaults.
-    pub fn new(id: impl Into<String>, xpath: impl Into<String>) -> Self {
+    pub fn new(id: impl Into<String>, xpath: impl Into<NormalizedXpath>) -> Self {
         Rule {
             id: id.into(),
             xpath: xpath.into(),

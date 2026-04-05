@@ -6,6 +6,7 @@
 
 use std::path::Path;
 use serde::Deserialize;
+use tractor_core::normalized_xpath::NormalizedXpath;
 use tractor_core::report::Severity;
 use tractor_core::rule::{Rule, RuleSet};
 use tractor_core::tree_mode::TreeMode;
@@ -33,7 +34,7 @@ struct RulesConfig {
 #[serde(deny_unknown_fields)]
 struct ConfigRule {
     id: String,
-    xpath: String,
+    xpath: NormalizedXpath,
     #[serde(default)]
     reason: Option<String>,
     #[serde(default = "default_severity")]
@@ -485,5 +486,40 @@ rules:
         let rs = parse_rules_yaml(yaml).unwrap();
         assert!(rs.rules[0].valid_examples.is_empty());
         assert!(rs.rules[0].invalid_examples.is_empty());
+    }
+
+    // -- XPath normalization (implicit // prefix) --
+
+    #[test]
+    fn test_bare_xpath_gets_normalized_yaml() {
+        let yaml = r#"
+rules:
+  - id: find-debug
+    xpath: "debug"
+"#;
+        let rs = parse_rules_yaml(yaml).unwrap();
+        assert_eq!(rs.rules[0].xpath, "//debug");
+    }
+
+    #[test]
+    fn test_bare_xpath_gets_normalized_toml() {
+        let toml = r#"
+[[rules]]
+id = "find-debug"
+xpath = "debug"
+"#;
+        let rs = parse_rules_toml(toml).unwrap();
+        assert_eq!(rs.rules[0].xpath, "//debug");
+    }
+
+    #[test]
+    fn test_absolute_xpath_preserved_in_config() {
+        let yaml = r#"
+rules:
+  - id: find-debug
+    xpath: "//debug"
+"#;
+        let rs = parse_rules_yaml(yaml).unwrap();
+        assert_eq!(rs.rules[0].xpath, "//debug");
     }
 }

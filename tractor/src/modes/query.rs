@@ -1,4 +1,5 @@
 use clap::CommandFactory;
+use tractor_core::NormalizedXpath;
 use crate::cli::{Cli, QueryArgs};
 use crate::executor::{self, ExecuteOptions, Operation, QueryOperation, QueryExpr};
 use crate::pipeline::{
@@ -30,7 +31,8 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Explore (no XPath) = query with implicit "/*" — selects the document root.
-    let xpath_expr = ctx.xpath.as_deref().unwrap_or("/*");
+    let default_xpath = NormalizedXpath::new("/*");
+    let xpath_expr = ctx.xpath.as_ref().unwrap_or(&default_xpath);
 
     // Build the query operation for either files or inline source.
     let op = match &ctx.input {
@@ -39,7 +41,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
             exclude: vec![],
             diff_files: None,
             diff_lines: None,
-            queries: vec![QueryExpr { xpath: xpath_expr.to_string() }],
+            queries: vec![QueryExpr { xpath: xpath_expr.clone() }],
             tree_mode: ctx.tree_mode,
             language: ctx.lang.clone(),
             limit: ctx.limit,
@@ -53,7 +55,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
             exclude: vec![],
             diff_files: None,
             diff_lines: None,
-            queries: vec![QueryExpr { xpath: xpath_expr.to_string() }],
+            queries: vec![QueryExpr { xpath: xpath_expr.clone() }],
             tree_mode: ctx.tree_mode,
             language: None,
             limit: ctx.limit,

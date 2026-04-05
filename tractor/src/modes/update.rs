@@ -23,7 +23,7 @@ pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
         exclude: vec![],
         diff_files: None,
         diff_lines: None,
-        xpath: xpath_expr.clone(),
+        xpath: xpath_expr.to_string(),
         value: args.value.clone(),
         tree_mode: ctx.tree_mode,
         language: ctx.lang.clone(),

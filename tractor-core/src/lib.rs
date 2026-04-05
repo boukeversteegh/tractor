@@ -22,6 +22,7 @@ pub mod xot_transform;
 pub mod xpath_upsert;
 #[cfg(feature = "native")]
 pub mod declarative_set;
+pub mod normalized_xpath;
 pub mod report;
 pub mod rule;
 pub mod tree_mode;
@@ -57,4 +58,5 @@ pub use rule::{GlobMatcher, GlobError};
 #[cfg(feature = "native")]
 pub use files::{expand_globs, expand_globs_checked, filter_supported_files, GlobExpansion, GlobExpansionError};
 pub use xot_builder::{XotBuilder, XeeBuilder};
+pub use normalized_xpath::NormalizedXpath;
 pub use tree_mode::TreeMode;

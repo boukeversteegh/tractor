@@ -29,6 +29,7 @@
 
 use std::path::Path;
 use serde::Deserialize;
+use tractor_core::normalized_xpath::NormalizedXpath;
 use tractor_core::report::Severity;
 use tractor_core::rule::Rule;
 use tractor_core::tree_mode::TreeMode;
@@ -130,7 +131,7 @@ struct CheckConfig {
 #[serde(deny_unknown_fields)]
 struct CheckRuleConfig {
     id: String,
-    xpath: String,
+    xpath: NormalizedXpath,
     #[serde(default)]
     reason: Option<String>,
     #[serde(default = "default_severity")]
@@ -204,7 +205,7 @@ struct QueryConfig {
 #[derive(Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 struct QueryExprConfig {
-    xpath: String,
+    xpath: NormalizedXpath,
 }
 
 #[derive(Deserialize, Debug)]
@@ -231,7 +232,7 @@ struct TestConfig {
 #[derive(Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 struct TestAssertionConfig {
-    xpath: String,
+    xpath: NormalizedXpath,
     #[serde(default = "default_expect")]
     expect: String,
 }
@@ -1038,6 +1039,58 @@ check:
             assert_eq!(c.rules[0].invalid_examples, vec!["// TODO: fix"]);
         } else {
             panic!("expected Check");
+        }
+    }
+
+    // -- XPath normalization (implicit // prefix) --
+
+    #[test]
+    fn bare_xpath_normalized_in_check_rules() {
+        let yaml = r#"
+check:
+  files: ["*.json"]
+  rules:
+    - id: has-debug
+      xpath: "debug"
+"#;
+        let ops = parse_config_yaml(yaml).unwrap();
+        if let Operation::Check(c) = &ops[0] {
+            assert_eq!(c.rules[0].xpath, "//debug");
+        } else {
+            panic!("expected Check");
+        }
+    }
+
+    #[test]
+    fn bare_xpath_normalized_in_query() {
+        let yaml = r#"
+query:
+  files: ["*.json"]
+  queries:
+    - xpath: "debug"
+"#;
+        let ops = parse_config_yaml(yaml).unwrap();
+        if let Operation::Query(q) = &ops[0] {
+            assert_eq!(q.queries[0].xpath, "//debug");
+        } else {
+            panic!("expected Query");
+        }
+    }
+
+    #[test]
+    fn bare_xpath_normalized_in_test() {
+        let yaml = r#"
+test:
+  files: ["*.json"]
+  assertions:
+    - xpath: "debug"
+      expect: 1
+"#;
+        let ops = parse_config_yaml(yaml).unwrap();
+        if let Operation::Test(t) = &ops[0] {
+            assert_eq!(t.assertions[0].xpath, "//debug");
+        } else {
+            panic!("expected Test");
         }
     }
 }

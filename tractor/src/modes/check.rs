@@ -43,7 +43,7 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Build a single-rule check operation and delegate to the executor.
-    let mut rule = Rule::new("_check", xpath_expr)
+    let mut rule = Rule::new("_check", xpath_expr.clone())
         .with_reason(reason)
         .with_severity(severity);
 

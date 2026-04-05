@@ -1,15 +1,15 @@
 use tractor_core::{
     output::should_use_color,
     output::RenderOptions,
+    NormalizedXpath,
     TreeMode,
 };
 use crate::cli::SharedArgs;
-use crate::xpath_utils::normalize_xpath;
 use super::input::{InputMode, resolve_input};
 use super::format::{OutputFormat, GroupDimension, ViewField, ViewSet, parse_view_set, parse_group_by};
 
 pub struct RunContext {
-    pub xpath: Option<String>,
+    pub xpath: Option<NormalizedXpath>,
     /// Output format (-f).
     pub output_format: OutputFormat,
     /// View field selection (-v).
@@ -37,7 +37,7 @@ impl RunContext {
     pub fn build(
         shared: &SharedArgs,
         files: Vec<String>,
-        xpath: Option<String>,
+        xpath: Option<NormalizedXpath>,
         format: &str,
         default_view: &[ViewField],
         user_view: Option<&str>,
@@ -46,7 +46,6 @@ impl RunContext {
         debug: bool,
         default_group_by: &[GroupDimension],
     ) -> Result<Self, Box<dyn std::error::Error>> {
-        let xpath         = xpath.as_ref().map(|x| normalize_xpath(x));
         let output_format = OutputFormat::from_str(format)?;
 
         let view = if let Some(s) = user_view {

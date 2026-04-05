@@ -1,6 +1,7 @@
 //! CLI argument parsing using clap
 
 use clap::{Parser, Subcommand, Args};
+use tractor_core::NormalizedXpath;
 
 /// Multi-language code query tool using XPath 3.1
 #[derive(Parser, Debug)]
@@ -108,7 +109,7 @@ pub struct SharedArgs {
     // -- Extract --
     /// XPath expression to extract matching AST nodes
     #[arg(short = 'x', long = "extract", help_heading = "Extract")]
-    pub xpath: Option<String>,
+    pub xpath: Option<NormalizedXpath>,
 
     /// Tree mode: raw, structure, data [default: auto]
     #[arg(short = 't', long = "tree", help_heading = "Extract",
