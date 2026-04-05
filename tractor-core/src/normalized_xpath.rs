@@ -146,37 +146,132 @@ fn normalize(xpath: &str) -> String {
 mod tests {
     use super::*;
 
-    #[test]
-    fn bare_names_get_prefixed() {
-        assert_eq!(NormalizedXpath::new("function").as_str(), "//function");
-        assert_eq!(NormalizedXpath::new("debug").as_str(), "//debug");
-    }
+    // -- Bare element names get auto-prefixed with // --
 
     #[test]
-    fn absolute_paths_preserved() {
-        assert_eq!(NormalizedXpath::new("//function").as_str(), "//function");
+    fn auto_prefixes_bare_element_names() {
+        assert_eq!(NormalizedXpath::new("function"), "//function");
+        assert_eq!(NormalizedXpath::new("variable"), "//variable");
+        assert_eq!(NormalizedXpath::new("class"), "//class");
+        assert_eq!(NormalizedXpath::new("name"), "//name");
+        assert_eq!(NormalizedXpath::new("debug"), "//debug");
+    }
+
+    // -- Absolute paths preserved --
+
+    #[test]
+    fn preserves_absolute_paths() {
+        assert_eq!(NormalizedXpath::new("//function"), "//function");
+        assert_eq!(NormalizedXpath::new("//class[name='Foo']"), "//class[name='Foo']");
         if !is_msys_environment() {
-            assert_eq!(NormalizedXpath::new("/root").as_str(), "/root");
+            assert_eq!(NormalizedXpath::new("/root"), "/root");
         }
     }
 
+    // -- Parenthesized expressions --
+
     #[test]
-    fn expressions_preserved() {
-        assert_eq!(NormalizedXpath::new("(//a | //b)").as_str(), "(//a | //b)");
-        assert_eq!(NormalizedXpath::new(".").as_str(), ".");
-        assert_eq!(NormalizedXpath::new("$var").as_str(), "$var");
-        assert_eq!(NormalizedXpath::new("42").as_str(), "42");
-        assert_eq!(
-            NormalizedXpath::new("let $v := //x return $v").as_str(),
-            "let $v := //x return $v"
-        );
-        assert_eq!(NormalizedXpath::new("count(//item)").as_str(), "count(//item)");
+    fn preserves_parenthesized_expressions() {
+        assert_eq!(NormalizedXpath::new("(//a | //b)"), "(//a | //b)");
     }
+
+    // -- Dot --
+
+    #[test]
+    fn preserves_dot() {
+        assert_eq!(NormalizedXpath::new("."), ".");
+    }
+
+    // -- let / for / if / some / every expressions --
+
+    #[test]
+    fn preserves_let_expressions() {
+        assert_eq!(
+            NormalizedXpath::new("let $v := //function return $v/name"),
+            "let $v := //function return $v/name"
+        );
+        assert_eq!(
+            NormalizedXpath::new("let$v := //x return $v"),
+            "let$v := //x return $v"
+        );
+    }
+
+    #[test]
+    fn preserves_for_expressions() {
+        assert_eq!(
+            NormalizedXpath::new("for $v in //name return string($v)"),
+            "for $v in //name return string($v)"
+        );
+        assert_eq!(
+            NormalizedXpath::new("for$v in //name return $v"),
+            "for$v in //name return $v"
+        );
+    }
+
+    #[test]
+    fn preserves_if_expressions() {
+        assert_eq!(
+            NormalizedXpath::new("if (//x) then 1 else 0"),
+            "if (//x) then 1 else 0"
+        );
+        assert_eq!(
+            NormalizedXpath::new("if(//x) then 1 else 0"),
+            "if(//x) then 1 else 0"
+        );
+    }
+
+    #[test]
+    fn preserves_quantified_expressions() {
+        assert_eq!(
+            NormalizedXpath::new("some $v in //x satisfies $v/name"),
+            "some $v in //x satisfies $v/name"
+        );
+        assert_eq!(
+            NormalizedXpath::new("every $v in //x satisfies $v/name"),
+            "every $v in //x satisfies $v/name"
+        );
+    }
+
+    // -- Variable references --
+
+    #[test]
+    fn preserves_variable_references() {
+        assert_eq!(NormalizedXpath::new("$var"), "$var");
+    }
+
+    // -- String literals --
+
+    #[test]
+    fn preserves_string_literals() {
+        assert_eq!(NormalizedXpath::new("\"hello\""), "\"hello\"");
+        assert_eq!(NormalizedXpath::new("'hello'"), "'hello'");
+    }
+
+    // -- Numeric literals --
+
+    #[test]
+    fn preserves_numeric_literals() {
+        assert_eq!(NormalizedXpath::new("42"), "42");
+        assert_eq!(NormalizedXpath::new("3.14"), "3.14");
+    }
+
+    // -- Function calls --
+
+    #[test]
+    fn preserves_function_calls() {
+        assert_eq!(NormalizedXpath::new("count(//item)"), "count(//item)");
+        assert_eq!(NormalizedXpath::new("not(//x)"), "not(//x)");
+        assert_eq!(NormalizedXpath::new("string(//x)"), "string(//x)");
+        assert_eq!(NormalizedXpath::new("contains(//x, 'y')"), "contains(//x, 'y')");
+        assert_eq!(NormalizedXpath::new("starts-with(//x, 'y')"), "starts-with(//x, 'y')");
+    }
+
+    // -- FromStr / Display / Serde --
 
     #[test]
     fn from_str_normalizes() {
         let xpath: NormalizedXpath = "debug".parse().unwrap();
-        assert_eq!(xpath.as_str(), "//debug");
+        assert_eq!(xpath, "//debug");
     }
 
     #[test]
@@ -188,9 +283,9 @@ mod tests {
     #[test]
     fn serde_deserialize_normalizes() {
         let xpath: NormalizedXpath = serde_json::from_str("\"debug\"").unwrap();
-        assert_eq!(xpath.as_str(), "//debug");
+        assert_eq!(xpath, "//debug");
 
         let xpath: NormalizedXpath = serde_json::from_str("\"//already\"").unwrap();
-        assert_eq!(xpath.as_str(), "//already");
+        assert_eq!(xpath, "//already");
     }
 }
