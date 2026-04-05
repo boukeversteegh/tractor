@@ -156,6 +156,48 @@ operations:
           message: "At least one class expected"`}
       />
 
+      <h2>Set Operations</h2>
+      <p>
+        Use <code>set</code> to apply multiple value changes in a config file. Each mapping specifies an XPath expression and the value to set. This is the batch equivalent of the <Link to="/docs/commands/set">set command</Link>:
+      </p>
+      <CodeBlock
+        language="yaml"
+        title=".tractor.yml"
+        code={`set:
+  files: ["app-config.json"]
+  mappings:
+    - xpath: "//database/host"
+      value: "db.prod.internal"
+    - xpath: "//database/port"
+      value: "5432"
+    - xpath: "//cache/ttl"
+      value: "600"`}
+      />
+      <p>
+        All mappings apply to the matched files in a single operation. This is the recommended way to set multiple values at once — instead of running <code>tractor set</code> repeatedly for each value.
+      </p>
+      <p>
+        Set operations can also be mixed with other operation types using the <code>operations</code> list:
+      </p>
+      <CodeBlock
+        language="yaml"
+        title=".tractor.yml"
+        code={`operations:
+  - check:
+      files: ["settings.yaml"]
+      rules:
+        - id: no-debug
+          xpath: "//debug[.='true']"
+          reason: "debug should be disabled"
+  - set:
+      files: ["app-config.json"]
+      mappings:
+        - xpath: "//database/host"
+          value: "db.prod.internal"
+        - xpath: "//cache/ttl"
+          value: "600"`}
+      />
+
       <h2>Scope and File Resolution</h2>
       <p>
         File patterns can be set at the root level (shared) or per-operation. Nested file scopes are intersections — the operation scope narrows the root scope, it does not replace it.

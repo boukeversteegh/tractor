@@ -182,6 +182,28 @@ Set 2 values in 1 file`}
         <li><strong>CI/CD variable injection</strong> — replace placeholder values with environment-specific settings before deployment</li>
       </ul>
 
+      <h2>Multiple Mappings with tractor run</h2>
+      <p>
+        The <code>set</code> CLI command applies one XPath + value per invocation. To set multiple values at once, use <Link to="/docs/commands/run">tractor run</Link> with a config file:
+      </p>
+      <CodeBlock
+        language="yaml"
+        title=".tractor.yml"
+        code={`set:
+  files: ["config.json"]
+  mappings:
+    - xpath: "//database/host"
+      value: "db.prod.internal"
+    - xpath: "//database/port"
+      value: "5432"
+    - xpath: "//cache/ttl"
+      value: "600"`}
+      />
+      <CodeBlock language="bash" code={`tractor run .tractor.yml`} />
+      <p>
+        This applies all mappings to the matched files in a single operation. See the <Link to="/docs/commands/run">run command</Link> for more details on config files.
+      </p>
+
       <h2>Options Reference</h2>
       <table className="doc-table">
         <thead>
