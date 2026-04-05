@@ -1053,7 +1053,7 @@ check:
     - id: has-debug
       xpath: "debug"
 "#;
-        let ops = parse_config_yaml(yaml).unwrap();
+        let ops = parse_config_yaml(yaml).unwrap().operations;
         if let Operation::Check(c) = &ops[0] {
             assert_eq!(c.rules[0].xpath, "//debug");
         } else {
@@ -1069,7 +1069,7 @@ query:
   queries:
     - xpath: "debug"
 "#;
-        let ops = parse_config_yaml(yaml).unwrap();
+        let ops = parse_config_yaml(yaml).unwrap().operations;
         if let Operation::Query(q) = &ops[0] {
             assert_eq!(q.queries[0].xpath, "//debug");
         } else {
@@ -1086,7 +1086,7 @@ test:
     - xpath: "debug"
       expect: 1
 "#;
-        let ops = parse_config_yaml(yaml).unwrap();
+        let ops = parse_config_yaml(yaml).unwrap().operations;
         if let Operation::Test(t) = &ops[0] {
             assert_eq!(t.assertions[0].xpath, "//debug");
         } else {
