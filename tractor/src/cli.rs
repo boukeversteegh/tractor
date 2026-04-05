@@ -175,6 +175,10 @@ When omitted, auto-selects: data for JSON/YAML, structure for everything else.")
     #[arg(short = 'c', long = "concurrency", help_heading = "Advanced")]
     pub concurrency: Option<usize>,
 
+    /// Maximum number of files to process (default: 10000)
+    #[arg(long = "max-files", default_value = "10000", help_heading = "Advanced")]
+    pub max_files: usize,
+
     /// Show verbose output
     #[arg(long = "verbose", help_heading = "Advanced")]
     pub verbose: bool,
@@ -408,9 +412,14 @@ pub struct UpdateArgs {
 /// Run mode: execute a tractor config file with mixed operations
 #[derive(Args, Debug)]
 pub struct RunArgs {
-    /// Path to the tractor config file (.yaml, .yml, or .toml)
+    /// Path to the tractor config file (.yaml, .yml, or .toml).
+    /// File patterns in the config are resolved relative to the config file's directory.
     #[arg()]
     pub config: String,
+
+    /// Files to process (intersected with config file globs)
+    #[arg()]
+    pub files: Vec<String>,
 
     #[command(flatten)]
     pub shared: SharedArgs,

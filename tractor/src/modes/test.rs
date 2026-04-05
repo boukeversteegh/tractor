@@ -69,6 +69,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
         verbose: ctx.verbose,
         diff_files: args.shared.diff_files.clone(),
         diff_lines: args.shared.diff_lines.clone(),
+        max_files: args.shared.max_files,
         ..Default::default()
     };
 

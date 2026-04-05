@@ -1,0 +1,9 @@
+# Root: only backend .yml. Operation: no files (inherits root).
+# backend/config.yml has debug=false, no violation expected.
+files: ["backend/**/*.yml"]
+check:
+  rules:
+    - id: no-debug
+      xpath: "//debug[.='true']"
+      reason: "debug must be disabled"
+      severity: warning

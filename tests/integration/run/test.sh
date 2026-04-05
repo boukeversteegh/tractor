@@ -49,6 +49,8 @@ run_set_and_check() {
     # Copy fixtures to temp dir so set operations don't clobber originals
     local tmpdir
     tmpdir=$(mktemp -d)
+    # Normalize path for Windows (gitbash /tmp/... → C:/Users/.../Temp/...)
+    if command -v cygpath &>/dev/null; then tmpdir="$(cygpath -m "$tmpdir")"; fi
     cp "$FIXTURE_DIR"/*.json "$FIXTURE_DIR"/*.yaml "$tmpdir/" 2>/dev/null
     # Copy the config and adjust file paths (configs reference relative files)
     cp "$FIXTURE_DIR/$config" "$tmpdir/"
@@ -99,10 +101,30 @@ run_set_and_check "set applies mappings to files" \
     "$(printf 'app-config.json: updated\nupdated 1 file')" \
     "set-config.yaml"
 
-run_set_and_check "set with --verbose reports updated files" \
+run_set_and_check "set applies mappings (verbose)" \
     0 \
     "$(printf 'app-config.json: updated\nupdated 1 file')" \
-    "set-config.yaml" --verbose
+    "set-config.yaml"
+
+echo ""
+echo "Run (scope intersection):"
+
+SCOPE_DIR="$FIXTURE_DIR/scope-intersection"
+
+run_and_check "root ∩ operation narrows to intersection" \
+    0 \
+    "$(printf 'scope-intersection/frontend/config.yml:1:8: warning: debug must be disabled\n1 | debug: true\n           ^~~~\n\n1 warning in 1 file')" \
+    "$SCOPE_DIR/intersect-narrow.yaml"
+
+run_and_check "root used as base when operation has no files" \
+    0 \
+    "" \
+    "$SCOPE_DIR/intersect-fallback.yaml"
+
+run_and_check "disjoint root and operation yields empty set" \
+    0 \
+    "" \
+    "$SCOPE_DIR/intersect-disjoint.yaml"
 
 echo ""
 echo "Run (mixed operations):"

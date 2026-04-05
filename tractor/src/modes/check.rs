@@ -72,6 +72,7 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
         verbose: ctx.verbose,
         diff_files: args.shared.diff_files.clone(),
         diff_lines: args.shared.diff_lines.clone(),
+        max_files: args.shared.max_files,
         ..Default::default()
     };
 
@@ -144,6 +145,7 @@ fn run_check_rules(args: CheckArgs, rules_path: &str) -> Result<(), Box<dyn std:
         verbose: ctx.verbose,
         diff_files: args.shared.diff_files.clone(),
         diff_lines: args.shared.diff_lines.clone(),
+        max_files: args.shared.max_files,
         ..Default::default()
     };
 

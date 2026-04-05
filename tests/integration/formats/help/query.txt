@@ -94,6 +94,11 @@ Advanced:
   -c, --concurrency <CONCURRENCY>
           Number of parallel workers
 
+      --max-files <MAX_FILES>
+          Maximum number of files to process (default: 10000)
+          
+          [default: 10000]
+
       --verbose
           Show verbose output
 
