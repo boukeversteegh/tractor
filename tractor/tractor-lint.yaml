@@ -19,6 +19,25 @@ check:
         - "**/options.rs"
         - "**/shared.rs"
 
+    # Serde fields with underscores must have a rename attribute using dashes.
+    # Config files and CLI arguments use kebab-case (dashes), not snake_case.
+    # Without an explicit rename, serde uses the Rust field name as-is.
+    # See: https://github.com/boukeversteegh/tractor/issues/68
+    - id: serde-field-rename-dashes
+      xpath: >-
+        //struct[
+          preceding-sibling::*[1][self::attribute_item][contains(.,'Deserialize')]
+          or preceding-sibling::*[2][self::attribute_item][contains(.,'Deserialize')]
+        ]//field_declaration[
+          contains(name,'_')
+        ][
+          not(preceding-sibling::*[1][self::attribute_item][contains(.,'rename')])
+        ]
+      reason: "Deserialize field with underscore must have #[serde(rename = \"kebab-case\")] for config/CLI consistency"
+      severity: error
+      include:
+        - "src/**/*.rs"
+
     # Structs that derive Deserialize must also have
     # #[serde(deny_unknown_fields)] to catch typos in config files.
     # See: https://github.com/boukeversteegh/tractor/issues/68

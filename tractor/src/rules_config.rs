@@ -21,7 +21,7 @@ struct RulesConfig {
     include: Vec<String>,
     #[serde(default)]
     exclude: Vec<String>,
-    #[serde(default)]
+    #[serde(default, rename = "tree-mode")]
     tree_mode: Option<String>,
     #[serde(default)]
     language: Option<String>,
@@ -46,7 +46,7 @@ struct ConfigRule {
     exclude: Vec<String>,
     #[serde(default)]
     language: Option<String>,
-    #[serde(default)]
+    #[serde(default, rename = "tree-mode")]
     tree_mode: Option<String>,
     #[serde(default)]
     expect: Vec<ExpectEntry>,
@@ -84,7 +84,7 @@ fn parse_tree_mode(s: &str) -> Result<TreeMode, String> {
         "structure" => Ok(TreeMode::Structure),
         "data" => Ok(TreeMode::Data),
         other => Err(format!(
-            "invalid tree_mode '{}': use 'raw', 'structure', or 'data'",
+            "invalid tree-mode '{}': use 'raw', 'structure', or 'data'",
             other
         )),
     }
@@ -210,7 +210,7 @@ xpath = "//comment[contains(text(), 'TODO')]"
         let toml = r#"
 include = ["src/**/*.rs"]
 exclude = ["src/vendor/**"]
-tree_mode = "structure"
+tree-mode = "structure"
 language = "rust"
 
 [[rules]]
@@ -263,14 +263,14 @@ severity = "critical"
     #[test]
     fn test_parse_toml_invalid_tree_mode() {
         let toml = r#"
-tree_mode = "fancy"
+tree-mode = "fancy"
 
 [[rules]]
 id = "a"
 xpath = "//x"
 "#;
         let err = parse_rules_toml(toml).unwrap_err();
-        assert!(err.to_string().contains("invalid tree_mode"));
+        assert!(err.to_string().contains("invalid tree-mode"));
     }
 
     #[test]
@@ -303,7 +303,7 @@ include:
   - "src/**/*.rs"
 exclude:
   - "src/vendor/**"
-tree_mode: structure
+tree-mode: structure
 language: rust
 
 rules:
