@@ -8,7 +8,7 @@ that are almost identical but diverge in small ways:
 1. **Root scope naming**: rules file uses `include`/`exclude`, tractor config
    uses `files`/`exclude`.
 2. **Diff support**: `diff-files` and `diff-lines` exist only in tractor config.
-3. **Per-rule `language`/`tree_mode`**: exist only in the rules file, not in
+3. **Per-rule `language`/`tree-mode`**: exist only in the rules file, not in
    the tractor config's `CheckRuleConfig`.
 4. **Nesting**: rules file has `rules: [...]` at the root; tractor config nests
    it under `check: { rules: [...] }`.
@@ -49,7 +49,7 @@ simpler — one format to learn, one parser to maintain.
 
 - [ ] Remove `rules_config.rs` parser; make `check --rules` reuse
       `tractor_config.rs` parsing.
-- [ ] Reconcile field differences (add per-rule `language`/`tree_mode` to
+- [ ] Reconcile field differences (add per-rule `language`/`tree-mode` to
       `CheckRuleConfig`; drop `include` as root scope key or alias it to
       `files`).
 - [ ] Update integration tests and example files.

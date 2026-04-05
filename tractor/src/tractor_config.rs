@@ -120,7 +120,7 @@ struct CheckConfig {
     diff_lines: Option<String>,
     #[serde(default)]
     rules: Vec<CheckRuleConfig>,
-    #[serde(default)]
+    #[serde(default, rename = "tree-mode")]
     tree_mode: Option<String>,
     #[serde(default)]
     language: Option<String>,
@@ -167,7 +167,7 @@ struct SetConfig {
     #[serde(default, rename = "diff-lines")]
     diff_lines: Option<String>,
     mappings: Vec<SetMappingConfig>,
-    #[serde(default)]
+    #[serde(default, rename = "tree-mode")]
     tree_mode: Option<String>,
     #[serde(default)]
     language: Option<String>,
@@ -193,7 +193,7 @@ struct QueryConfig {
     diff_lines: Option<String>,
     #[serde(default)]
     queries: Vec<QueryExprConfig>,
-    #[serde(default)]
+    #[serde(default, rename = "tree-mode")]
     tree_mode: Option<String>,
     #[serde(default)]
     language: Option<String>,
@@ -220,7 +220,7 @@ struct TestConfig {
     diff_lines: Option<String>,
     #[serde(default)]
     assertions: Vec<TestAssertionConfig>,
-    #[serde(default)]
+    #[serde(default, rename = "tree-mode")]
     tree_mode: Option<String>,
     #[serde(default)]
     language: Option<String>,
@@ -262,7 +262,7 @@ fn parse_tree_mode(s: &str) -> Result<TreeMode, String> {
         "structure" => Ok(TreeMode::Structure),
         "data" => Ok(TreeMode::Data),
         other => Err(format!(
-            "invalid tree_mode '{}': use 'raw', 'structure', or 'data'",
+            "invalid tree-mode '{}': use 'raw', 'structure', or 'data'",
             other
         )),
     }

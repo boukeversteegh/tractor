@@ -122,7 +122,7 @@ while others are per-rule:
 | Global (shared)                        | Per-rule                    |
 |----------------------------------------|-----------------------------|
 | concurrency, color, verbose            | xpath expression            |
-| tree_mode, parse_depth                 | files glob                  |
+| tree-mode, parse-depth                 | files glob                  |
 | output_format                          | reason, severity            |
 | limit, depth                           | message template            |
 | ignore_whitespace                      | expect (test)               |
@@ -222,7 +222,7 @@ Connect batch execution to the CLI.
 Factor the context so batch mode and single-command mode share code cleanly.
 
 - [ ] Extract `BatchContext` struct with global settings (concurrency, color,
-      format, tree_mode, etc.)
+      format, tree-mode, etc.)
 - [ ] Extract `RuleContext` struct with per-rule settings (xpath, reason,
       severity, message, files)
 - [ ] Make existing `RunContext` composable from `BatchContext` + `RuleContext`
