@@ -1,4 +1,5 @@
 pub mod input;
+pub mod files;
 pub mod context;
 pub mod matcher;
 pub mod format;

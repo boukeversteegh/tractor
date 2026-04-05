@@ -1,4 +1,4 @@
-//! Parallel file processing utilities
+//! File discovery: glob expansion, language filtering, and safety limits.
 
 /// Error returned when glob expansion exceeds the path limit.
 #[derive(Debug, Clone)]
