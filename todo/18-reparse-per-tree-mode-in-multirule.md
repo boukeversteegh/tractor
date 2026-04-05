@@ -3,7 +3,7 @@
 ## Problem
 
 When running multi-rule checks (`run_rules`), each file is parsed once
-using the first applicable rule's `tree_mode` and `language` overrides.
+using the first applicable rule's `tree-mode` and `language` overrides.
 If different rules specify different overrides for the same file, only
 the first rule's settings are used — subsequent rules query against a
 tree that may not match their intended mode.
@@ -24,5 +24,5 @@ the tree it expects.
 ## Impact
 
 Low — this only matters when a ruleset contains rules with different
-`tree_mode` or `language` overrides that apply to overlapping files.
+`tree-mode` or `language` overrides that apply to overlapping files.
 Current real-world rulesets use a single mode for all rules.
