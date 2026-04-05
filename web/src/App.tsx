@@ -16,6 +16,7 @@ import { WritingQueries } from './pages/docs/WritingQueries';
 import { SchemaGuide } from './pages/docs/SchemaGuide';
 import { LintRulesGuide } from './pages/docs/LintRulesGuide';
 import { CiCdGuide } from './pages/docs/CiCdGuide';
+import { UseCases } from './pages/docs/UseCases';
 
 export function App() {
   return (
@@ -38,6 +39,7 @@ export function App() {
         <Route path="/docs/guides/schema" element={<SchemaGuide />} />
         <Route path="/docs/guides/lint-rules" element={<LintRulesGuide />} />
         <Route path="/docs/guides/ci-cd" element={<CiCdGuide />} />
+        <Route path="/docs/guides/use-cases" element={<UseCases />} />
       </Routes>
     </BrowserRouter>
   );
