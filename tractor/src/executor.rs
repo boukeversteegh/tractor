@@ -14,6 +14,7 @@
 
 use std::path::PathBuf;
 use rayon::prelude::*;
+use tractor_core::normalized_xpath::NormalizedXpath;
 use tractor_core::rule::{Rule, RuleSet};
 use tractor_core::report::{ReportBuilder, ReportMatch, Severity};
 use tractor_core::tree_mode::TreeMode;
@@ -81,7 +82,7 @@ pub struct QueryOperation {
 #[derive(Debug, Clone)]
 pub struct QueryExpr {
     /// XPath expression to evaluate.
-    pub xpath: String,
+    pub xpath: NormalizedXpath,
 }
 
 /// A check operation: run XPath rules against files, report violations.
@@ -150,7 +151,7 @@ pub struct TestOperation {
 #[derive(Debug, Clone)]
 pub struct TestAssertion {
     /// XPath expression to evaluate.
-    pub xpath: String,
+    pub xpath: NormalizedXpath,
     /// Expected match count: "none", "some", or a number.
     pub expect: String,
 }
@@ -335,9 +336,9 @@ fn execute_query(
 
     let xpaths: Vec<&str> = op.queries.iter().map(|q| q.xpath.as_str()).collect();
 
-    // Validate all XPath expressions upfront — add fatal diagnostics on failure
-    let diagnostics: Vec<_> = xpaths.iter()
-        .filter_map(|xpath| validate_xpath_diagnostic(xpath, "query"))
+    // Validate all XPath expressions upfront �� add fatal diagnostics on failure
+    let diagnostics: Vec<_> = op.queries.iter()
+        .filter_map(|q| validate_xpath_diagnostic(&q.xpath, "query"))
         .collect();
     if !diagnostics.is_empty() {
         report.add_all(diagnostics);
@@ -365,6 +366,7 @@ fn execute_query_inline(
     // Validate all XPath expressions upfront
     let diagnostics: Vec<_> = op.queries.iter()
         .filter_map(|q| validate_xpath_diagnostic(&q.xpath, "query"))
+
         .collect();
     if !diagnostics.is_empty() {
         report.add_all(diagnostics);
@@ -377,7 +379,7 @@ fn execute_query_inline(
 
     let mut all_matches = Vec::new();
     for query in &op.queries {
-        let matches = result.query(&query.xpath)?;
+        let matches = result.query(query.xpath.as_str())?;
         all_matches.extend(matches);
     }
 
@@ -496,7 +498,7 @@ fn validate_rule_examples(
             let mut result = parse_string_to_documents(
                 example, lang, "<stdin>".to_string(), tree_mode, false,
             )?;
-            let matches = result.query(&rule.xpath)?;
+            let matches = result.query(rule.xpath.as_str())?;
             if !check_expectation("none", matches.len())? {
                 report.add(example_failure_match(
                     &rule.id,
@@ -513,7 +515,7 @@ fn validate_rule_examples(
             let mut result = parse_string_to_documents(
                 example, lang, "<stdin>".to_string(), tree_mode, false,
             )?;
-            let matches = result.query(&rule.xpath)?;
+            let matches = result.query(rule.xpath.as_str())?;
             if !check_expectation("some", matches.len())? {
                 report.add(example_failure_match(
                     &rule.id,
@@ -684,7 +686,7 @@ fn run_test_assertions_on_result(
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
     for assertion in assertions {
-        let mut matches = result.query(&assertion.xpath)?;
+        let mut matches = result.query(assertion.xpath.as_str())?;
         if let Some(limit) = limit {
             matches.truncate(limit);
         }

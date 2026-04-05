@@ -1,3 +1,4 @@
+use tractor_core::NormalizedXpath;
 use crate::cli::TestArgs;
 use crate::executor::{self, ExecuteOptions, Operation, TestOperation, TestAssertion};
 use crate::pipeline::{
@@ -23,7 +24,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
         &args.format, &[ViewField::Totals], args.view.as_deref(), args.message, args.content, false, &[],
     )?;
 
-    let dot = ".".to_string();
+    let dot = NormalizedXpath::new(".");
     let xpath_expr = ctx.xpath.as_ref().unwrap_or(&dot);
 
     // Build the test operation for either files or inline source.
@@ -34,7 +35,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
             diff_files: None,
             diff_lines: None,
             assertions: vec![TestAssertion {
-                xpath: xpath_expr.to_string(),
+                xpath: xpath_expr.clone(),
                 expect: expect.clone(),
             }],
             tree_mode: ctx.tree_mode,
@@ -51,7 +52,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
             diff_files: None,
             diff_lines: None,
             assertions: vec![TestAssertion {
-                xpath: xpath_expr.to_string(),
+                xpath: xpath_expr.clone(),
                 expect: expect.clone(),
             }],
             tree_mode: ctx.tree_mode,
