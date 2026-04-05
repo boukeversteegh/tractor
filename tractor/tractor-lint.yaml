@@ -4,6 +4,7 @@
 check:
   files:
     - "src/**/*.rs"
+  language: rust
   rules:
     # Every renderer's main entry point (public function taking &Report)
     # must accept a dimensions parameter. This ensures all formats can
@@ -35,8 +36,21 @@ check:
         ]
       reason: "Deserialize field with underscore must have #[serde(rename = \"kebab-case\")] for config/CLI consistency"
       severity: error
-      include:
-        - "src/**/*.rs"
+      expect:
+        - valid: |
+            #[derive(Deserialize)]
+            #[serde(deny_unknown_fields)]
+            struct Config {
+                #[serde(default, rename = "tree-mode")]
+                tree_mode: Option<String>,
+            }
+        - invalid: |
+            #[derive(Deserialize)]
+            #[serde(deny_unknown_fields)]
+            struct Config {
+                #[serde(default)]
+                tree_mode: Option<String>,
+            }
 
     # Structs that derive Deserialize must also have
     # #[serde(deny_unknown_fields)] to catch typos in config files.
