@@ -41,7 +41,7 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
             body.push_str(&format!("  <expected>{}</expected>\n", escape(expected)));
         }
         if let Some(ref query) = report.query {
-            body.push_str(&format!("  <query>{}</query>\n", escape(query)));
+            body.push_str(&format!("  <query>{}</query>\n", escape(query.as_str())));
         }
     }
 

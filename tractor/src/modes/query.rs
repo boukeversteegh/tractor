@@ -91,7 +91,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     } else {
         // Set the query field on the report if requested.
         if ctx.view.has(ViewField::Query) {
-            report.query = ctx.xpath.as_ref().map(|x| x.to_string());
+            report.query = ctx.xpath.clone();
         }
 
         // Apply CLI message template if provided.

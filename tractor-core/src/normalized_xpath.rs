@@ -8,6 +8,7 @@ use std::fmt;
 use std::str::FromStr;
 
 use serde::de::{self, Deserialize, Deserializer};
+use serde::{Serialize, Serializer};
 
 /// An XPath expression that has been normalized (bare names → `//name`).
 ///
@@ -73,7 +74,13 @@ impl FromStr for NormalizedXpath {
     }
 }
 
-// ---- Serde Deserialize ----
+// ---- Serde Serialize / Deserialize ----
+
+impl Serialize for NormalizedXpath {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.0.serialize(serializer)
+    }
+}
 
 impl<'de> Deserialize<'de> for NormalizedXpath {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {

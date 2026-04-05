@@ -11,6 +11,7 @@
 use serde::{Serialize, Serializer};
 use serde::ser::SerializeMap;
 
+use crate::normalized_xpath::NormalizedXpath;
 use crate::output::{normalize_path, xml_node_to_string};
 use crate::xpath::XmlNode;
 
@@ -271,7 +272,7 @@ pub struct Report {
 
     /// The XPath query as received by tractor (set when `-v query` is used).
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub query: Option<String>,
+    pub query: Option<NormalizedXpath>,
 
     // ---- New unified fields (Step 3) ----
 
@@ -471,7 +472,7 @@ pub struct ReportBuilder {
     failed: bool,
     success_mode: SuccessMode,
     expected: Option<String>,
-    query: Option<String>,
+    query: Option<NormalizedXpath>,
 }
 
 impl ReportBuilder {
@@ -511,8 +512,8 @@ impl ReportBuilder {
         self.expected = Some(expected);
     }
 
-    /// Set the XPath query string (shown with `-v query`).
-    pub fn set_query(&mut self, query: String) {
+    /// Set the XPath query (shown with `-v query`).
+    pub fn set_query(&mut self, query: NormalizedXpath) {
         self.query = Some(query);
     }
 
