@@ -49,6 +49,8 @@ run_set_and_check() {
     # Copy fixtures to temp dir so set operations don't clobber originals
     local tmpdir
     tmpdir=$(mktemp -d)
+    # Normalize path for Windows (gitbash /tmp/... → C:/Users/.../Temp/...)
+    if command -v cygpath &>/dev/null; then tmpdir="$(cygpath -m "$tmpdir")"; fi
     cp "$FIXTURE_DIR"/*.json "$FIXTURE_DIR"/*.yaml "$tmpdir/" 2>/dev/null
     # Copy the config and adjust file paths (configs reference relative files)
     cp "$FIXTURE_DIR/$config" "$tmpdir/"

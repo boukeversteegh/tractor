@@ -9,6 +9,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[1]}")" && pwd)"
 _COMMON_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$_COMMON_DIR/../.." && pwd)"
 unset _COMMON_DIR
+
+# On Windows (gitbash/MSYS2), shell paths use /D/... but tractor outputs D:/...
+# Convert to the mixed format so sed replacements match tractor output.
+if command -v cygpath &>/dev/null; then
+    SCRIPT_DIR="$(cygpath -m "$SCRIPT_DIR")"
+    REPO_ROOT="$(cygpath -m "$REPO_ROOT")"
+fi
 export PATH="$REPO_ROOT/target/release:$PATH"
 
 cd "$SCRIPT_DIR"
