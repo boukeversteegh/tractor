@@ -107,6 +107,26 @@ run_set_and_check "set applies mappings (verbose)" \
     "set-config.yaml"
 
 echo ""
+echo "Run (scope intersection):"
+
+SCOPE_DIR="$FIXTURE_DIR/scope-intersection"
+
+run_and_check "root ∩ operation narrows to intersection" \
+    0 \
+    "$(printf 'scope-intersection/frontend/config.yml:1:8: warning: debug must be disabled\n1 | debug: true\n           ^~~~\n\n1 warning in 1 file')" \
+    "$SCOPE_DIR/intersect-narrow.yaml"
+
+run_and_check "root used as base when operation has no files" \
+    0 \
+    "" \
+    "$SCOPE_DIR/intersect-fallback.yaml"
+
+run_and_check "disjoint root and operation yields empty set" \
+    0 \
+    "" \
+    "$SCOPE_DIR/intersect-disjoint.yaml"
+
+echo ""
 echo "Run (mixed operations):"
 
 run_set_and_check "mixed check+set succeeds when check passes" \
