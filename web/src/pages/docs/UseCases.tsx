@@ -357,6 +357,58 @@ check:
         </tbody>
       </table>
 
+      <h3>Instant feedback with Claude Code hooks</h3>
+      <p>
+        For the tightest feedback loop, you can run tractor as an <strong>edit hook</strong> in Claude Code. Every time Claude edits a file, tractor checks just that file and reports violations immediately — before Claude moves on to the next change.
+      </p>
+      <p>
+        Add this to your project's <code>.claude/settings.json</code>:
+      </p>
+      <CodeBlock
+        language="json"
+        title=".claude/settings.json"
+        code={`{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(jq -r '.tool_input.file_path') && tractor check \\"$FILE\\" -x \\"//class[contains(name,'Controller')]/method[public][not(attrs[contains(.,'Authorize')])][not(attrs[contains(.,'AllowAnonymous')])]/name\\" --reason \\"Missing [Authorize] or [AllowAnonymous]\\" 2>&1 || true"
+          }
+        ]
+      }
+    ]
+  }
+}`}
+      />
+      <p>
+        Or point it at your rules file to run all rules at once — tractor only checks the edited file:
+      </p>
+      <CodeBlock
+        language="json"
+        title=".claude/settings.json"
+        code={`{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "FILE=$(jq -r '.tool_input.file_path') && tractor run .tractor.yml --files \\"$FILE\\""
+          }
+        ]
+      }
+    ]
+  }
+}`}
+      />
+      <p>
+        This way, Claude gets the same error-and-fix loop it's used to from compilers and linters — but for your team's custom rules. No style guide to read, no tokens wasted, just immediate corrections on every edit.
+      </p>
+
       {/* ── Centralized Configuration ── */}
       <h2 id="centralized-configuration">Centralized Configuration</h2>
       <p>
