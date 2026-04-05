@@ -37,6 +37,7 @@ use crate::executor::{
     CheckOperation, Operation, QueryExpr, QueryOperation,
     SetMapping, SetOperation, TestAssertion, TestOperation,
 };
+use crate::xpath_utils::normalize_xpath;
 
 // ---------------------------------------------------------------------------
 // Serde schema
@@ -282,7 +283,7 @@ fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<Operation, Bo
 
     let rules: Vec<Rule> = config.rules.into_iter().map(|r| {
         let severity = parse_severity(&r.severity)?;
-        let mut rule = Rule::new(r.id, r.xpath).with_severity(severity);
+        let mut rule = Rule::new(r.id, normalize_xpath(&r.xpath)).with_severity(severity);
         if let Some(reason) = r.reason {
             rule = rule.with_reason(reason);
         }
@@ -353,7 +354,7 @@ fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<Operation, Bo
     let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
     let queries = config.queries.into_iter().map(|q| {
-        QueryExpr { xpath: q.xpath }
+        QueryExpr { xpath: normalize_xpath(&q.xpath) }
     }).collect();
 
     let (files, exclude, diff_files, diff_lines) = merge_scope(scope, config.files, config.exclude, config.diff_files, config.diff_lines);
@@ -379,7 +380,7 @@ fn convert_test(config: TestConfig, scope: &RootScope) -> Result<Operation, Box<
 
     let assertions = config.assertions.into_iter().map(|a| {
         TestAssertion {
-            xpath: a.xpath,
+            xpath: normalize_xpath(&a.xpath),
             expect: a.expect,
         }
     }).collect();
@@ -969,6 +970,58 @@ check:
             assert_eq!(c.rules[0].invalid_examples, vec!["// TODO: fix"]);
         } else {
             panic!("expected Check");
+        }
+    }
+
+    // -- XPath normalization (implicit // prefix) --
+
+    #[test]
+    fn bare_xpath_normalized_in_check_rules() {
+        let yaml = r#"
+check:
+  files: ["*.json"]
+  rules:
+    - id: has-debug
+      xpath: "debug"
+"#;
+        let ops = parse_config_yaml(yaml).unwrap();
+        if let Operation::Check(c) = &ops[0] {
+            assert_eq!(c.rules[0].xpath, "//debug");
+        } else {
+            panic!("expected Check");
+        }
+    }
+
+    #[test]
+    fn bare_xpath_normalized_in_query() {
+        let yaml = r#"
+query:
+  files: ["*.json"]
+  queries:
+    - xpath: "debug"
+"#;
+        let ops = parse_config_yaml(yaml).unwrap();
+        if let Operation::Query(q) = &ops[0] {
+            assert_eq!(q.queries[0].xpath, "//debug");
+        } else {
+            panic!("expected Query");
+        }
+    }
+
+    #[test]
+    fn bare_xpath_normalized_in_test() {
+        let yaml = r#"
+test:
+  files: ["*.json"]
+  assertions:
+    - xpath: "debug"
+      expect: 1
+"#;
+        let ops = parse_config_yaml(yaml).unwrap();
+        if let Operation::Test(t) = &ops[0] {
+            assert_eq!(t.assertions[0].xpath, "//debug");
+        } else {
+            panic!("expected Test");
         }
     }
 }

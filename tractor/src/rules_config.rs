@@ -9,6 +9,7 @@ use serde::Deserialize;
 use tractor_core::report::Severity;
 use tractor_core::rule::{Rule, RuleSet};
 use tractor_core::tree_mode::TreeMode;
+use crate::xpath_utils::normalize_xpath;
 
 // ---------------------------------------------------------------------------
 // Serde schema (shared across TOML and YAML)
@@ -103,7 +104,7 @@ fn config_to_ruleset(config: RulesConfig) -> Result<RuleSet, Box<dyn std::error:
         let severity = parse_severity(&r.severity)?;
         let tree_mode = r.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
-        let mut rule = Rule::new(r.id, r.xpath)
+        let mut rule = Rule::new(r.id, normalize_xpath(&r.xpath))
             .with_severity(severity);
 
         if let Some(reason) = r.reason {
@@ -485,5 +486,40 @@ rules:
         let rs = parse_rules_yaml(yaml).unwrap();
         assert!(rs.rules[0].valid_examples.is_empty());
         assert!(rs.rules[0].invalid_examples.is_empty());
+    }
+
+    // -- XPath normalization (implicit // prefix) --
+
+    #[test]
+    fn test_bare_xpath_gets_normalized_yaml() {
+        let yaml = r#"
+rules:
+  - id: find-debug
+    xpath: "debug"
+"#;
+        let rs = parse_rules_yaml(yaml).unwrap();
+        assert_eq!(rs.rules[0].xpath, "//debug");
+    }
+
+    #[test]
+    fn test_bare_xpath_gets_normalized_toml() {
+        let toml = r#"
+[[rules]]
+id = "find-debug"
+xpath = "debug"
+"#;
+        let rs = parse_rules_toml(toml).unwrap();
+        assert_eq!(rs.rules[0].xpath, "//debug");
+    }
+
+    #[test]
+    fn test_absolute_xpath_preserved_in_config() {
+        let yaml = r#"
+rules:
+  - id: find-debug
+    xpath: "//debug"
+"#;
+        let rs = parse_rules_yaml(yaml).unwrap();
+        assert_eq!(rs.rules[0].xpath, "//debug");
     }
 }
