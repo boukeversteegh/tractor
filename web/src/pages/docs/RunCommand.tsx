@@ -158,30 +158,97 @@ operations:
 
       <h2>Scope and File Resolution</h2>
       <p>
-        File patterns can be set at the root level (shared) or per-operation. Nested file scopes are intersections — the operation scope narrows the root scope, it does not replace it.
+        File patterns can be set at multiple levels. Each level narrows the scope — it never widens it. The effective file set is the intersection of all levels that are defined.
+      </p>
+
+      <h3>Intersection chain</h3>
+      <p>
+        When you run <code>tractor run config.yaml frontend/**/*.js</code>, the file resolution works like this:
       </p>
       <CodeBlock
+        language="text"
+        code={`config root files  ∩  operation files  ∩  CLI files
+     (broadest)         (per-operation)      (narrowest)`}
+      />
+      <ul>
+        <li>If a level is <strong>not defined</strong>, it's skipped entirely (no intersection).</li>
+        <li>If a level is defined but its <strong>patterns match nothing</strong>, the result is empty.</li>
+      </ul>
+
+      <h3>Root and operation files</h3>
+      <CodeBlock
         language="yaml"
-        code={`# Root-level files: the broadest scope
+        code={`# Root-level: defines the broadest scope for all operations
 files:
   - "src/**/*.js"
 exclude:
   - "src/generated/**"
 
-check:
-  # Operation-level files intersect with root
-  # Only files matching BOTH patterns are checked
-  files:
-    - "src/core/**/*.js"
-  rules:
-    - id: no-todo
-      xpath: "//comment[contains(.,'TODO')]"
-      reason: "No TODOs in core"`}
+operations:
+  - check:
+      # This operation's files intersect with root files.
+      # Effective: src/core/**/*.js that are also in src/**/*.js
+      files:
+        - "src/core/**/*.js"
+      rules:
+        - id: no-todo
+          xpath: "//comment[contains(.,'TODO')]"
+          reason: "No TODOs in core"
+
+  - check:
+      # No files specified — uses root files as the base.
+      # Effective: src/**/*.js
+      rules:
+        - id: no-eval
+          xpath: "//call[name='eval']"
+          reason: "eval is not allowed"`}
       />
       <ul>
-        <li><strong>files</strong>: Operation files intersect with root files — both must match.</li>
+        <li><strong>files</strong>: Operation files intersect with root files — only files matching both patterns are processed.</li>
+        <li><strong>No files on operation</strong>: Root files are used as the base.</li>
         <li><strong>exclude</strong>: Union of root and operation excludes (both narrow the scope).</li>
       </ul>
+
+      <h3>CLI file arguments</h3>
+      <p>
+        Pass files or globs as positional arguments to narrow the config's scope to specific files:
+      </p>
+      <CodeBlock language="bash" code={`# Run config rules, but only on these files
+tractor run .tractor.yml src/app.js src/utils.js
+
+# Or with globs
+tractor run .tractor.yml "src/core/**/*.js"`} />
+      <p>
+        CLI files are intersected with the resolved config scope. This is useful for checking only the files you changed, without modifying the config.
+      </p>
+
+      <h3>File limits</h3>
+      <p>
+        Tractor protects against accidentally globbing too many files:
+      </p>
+      <ul>
+        <li><code>--max-files</code> (default: 10,000) — maximum files to process.</li>
+        <li>Each glob pattern aborts if it expands past 10× the max-files limit.</li>
+        <li>If all patterns match 0 files, tractor reports a fatal error instead of silently succeeding.</li>
+      </ul>
+      <CodeBlock language="bash" code={`# Increase the limit for large monorepos
+tractor run .tractor.yml --max-files 50000`} />
+
+      <h3>Debugging with --verbose</h3>
+      <p>
+        Use <code>--verbose</code> to see each file resolution step — which patterns are being expanded, the base directory, and how many files remain after each intersection:
+      </p>
+      <CodeBlock
+        language="text"
+        code={`$ tractor run .tractor.yml --verbose
+  files: resolving relative to /home/user/project
+  files: max 10000 files, expansion limit 100000
+  files: expanding root scope "src/**/*.js" ...
+  files: root scope has 342 file(s)
+  files: expanding operation "src/core/**/*.js" ...
+  files: operation has 48 file(s)
+  files: 48 file(s) after root intersection (was 48)`}
+      />
 
       <h2>Git-aware Filtering</h2>
       <p>
@@ -215,6 +282,8 @@ check:
           <tr><td><code>-m, --message</code></td><td>Message template for matches</td></tr>
           <tr><td><code>--diff-files</code></td><td>Only files changed in a git diff range</td></tr>
           <tr><td><code>--diff-lines</code></td><td>Only matches in changed hunks</td></tr>
+          <tr><td><code>--max-files</code></td><td>Maximum files to process (default: 10,000)</td></tr>
+          <tr><td><code>--verbose</code></td><td>Show file resolution steps and diagnostics on stderr</td></tr>
           <tr><td><code>-c, --concurrency</code></td><td>Number of parallel workers</td></tr>
         </tbody>
       </table>
