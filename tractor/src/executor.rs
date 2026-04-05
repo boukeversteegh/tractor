@@ -15,9 +15,9 @@
 use std::path::PathBuf;
 use rayon::prelude::*;
 use tractor_core::rule::{Rule, RuleSet};
-use tractor_core::report::{ReportBuilder, ReportMatch, Severity};
+use tractor_core::report::{ReportBuilder, ReportMatch, Severity, DiagnosticOrigin};
 use tractor_core::tree_mode::TreeMode;
-use tractor_core::{expand_globs, filter_supported_files, detect_language, parse_to_documents, parse_string_to_documents, Match, apply_replacements};
+use tractor_core::{expand_globs_checked, filter_supported_files, detect_language, parse_to_documents, parse_string_to_documents, Match, apply_replacements};
 use tractor_core::xpath_upsert::{upsert, update_only};
 
 use crate::filter::ResultFilter;
@@ -214,6 +214,9 @@ pub struct SetMapping {
 // Execution options
 // ---------------------------------------------------------------------------
 
+/// Default maximum number of files tractor will process.
+pub const DEFAULT_MAX_FILES: usize = 10_000;
+
 /// Options controlling how operations are executed.
 #[derive(Debug, Clone)]
 pub struct ExecuteOptions {
@@ -228,6 +231,10 @@ pub struct ExecuteOptions {
     /// Git diff spec for filtering matches to changed hunks.
     /// When set, only matches whose lines overlap with changed hunks are included.
     pub diff_lines: Option<String>,
+    /// Maximum number of files to process. Glob expansion aborts at 10x this limit.
+    pub max_files: usize,
+    /// CLI-provided file patterns, intersected with operation file globs.
+    pub cli_files: Vec<String>,
 }
 
 impl Default for ExecuteOptions {
@@ -237,6 +244,8 @@ impl Default for ExecuteOptions {
             base_dir: None,
             diff_files: None,
             diff_lines: None,
+            max_files: DEFAULT_MAX_FILES,
+            cli_files: Vec::new(),
         }
     }
 }
@@ -269,18 +278,21 @@ fn build_filters(
 /// Resolve files and build result filters for an operation.
 ///
 /// Combines diff-files (file-level) and diff-lines (hunk-level) filtering
-/// with glob expansion and exclude patterns.
+/// with glob expansion and exclude patterns. Pushes fatal diagnostics into
+/// the report builder when file resolution fails.
 fn resolve_op_files(
     files: &[String],
     exclude: &[String],
     diff_files: Option<&str>,
     diff_lines: Option<&str>,
+    command: &str,
     options: &ExecuteOptions,
+    report: &mut ReportBuilder,
 ) -> (Vec<String>, Vec<Box<dyn ResultFilter>>) {
     let cwd = options.base_dir.as_deref()
         .unwrap_or_else(|| std::path::Path::new("."));
     let filters = build_filters(options.diff_lines.as_deref(), diff_lines, cwd);
-    let files = resolve_files(files, exclude, diff_files, &filters, options);
+    let files = resolve_files(files, exclude, diff_files, &filters, command, options, report);
     (files, filters)
 }
 
@@ -326,7 +338,7 @@ fn execute_query(
     }
 
     let (files, filters) = resolve_op_files(
-        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), options,
+        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), "query", options, report,
     );
 
     if files.is_empty() {
@@ -417,7 +429,7 @@ fn execute_check(
 
     // --- Phase 2: Run the actual file check ---
     let (files, filters) = resolve_op_files(
-        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), options,
+        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), "check", options, report,
     );
 
     // Build a RuleSet from the operation. Ruleset-level include/exclude
@@ -563,7 +575,7 @@ fn execute_set(
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let (files, _filters) = resolve_op_files(
-        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), options,
+        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), "set", options, report,
     );
 
     for file_path in &files {
@@ -647,7 +659,7 @@ fn execute_test(
     }
 
     let (files, filters) = resolve_op_files(
-        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), options,
+        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), "test", options, report,
     );
 
     if files.is_empty() {
@@ -707,7 +719,7 @@ fn execute_update(
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let (files, filters) = resolve_op_files(
-        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), options,
+        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), "update", options, report,
     );
     let mut fallback_files = Vec::new();
     let mut files_modified = std::collections::HashSet::new();
@@ -885,23 +897,64 @@ fn resolve_files(
     exclude_globs: &[String],
     op_diff_files: Option<&str>,
     filters: &[Box<dyn ResultFilter>],
+    command: &str,
     options: &ExecuteOptions,
+    report: &mut ReportBuilder,
 ) -> Vec<String> {
-    let mut files = if let Some(base) = &options.base_dir {
-        // Resolve globs relative to base_dir
-        let globs: Vec<String> = file_globs.iter().map(|g| {
-            if std::path::Path::new(g).is_absolute() {
-                g.clone()
-            } else {
-                base.join(g).to_string_lossy().to_string()
+    let expansion_limit = options.max_files * 10;
+
+    // --- Expand operation/config globs ---
+    let (mut files, empty_patterns) = {
+        let globs: Vec<String> = if let Some(base) = &options.base_dir {
+            file_globs.iter().map(|g| {
+                if std::path::Path::new(g).is_absolute() {
+                    g.clone()
+                } else {
+                    base.join(g).to_string_lossy().to_string()
+                }
+            }).collect()
+        } else {
+            file_globs.to_vec()
+        };
+
+        match expand_globs_checked(&globs, expansion_limit) {
+            Ok(result) => (result.files, result.empty_patterns),
+            Err(e) => {
+                let base_hint = options.base_dir.as_ref()
+                    .map(|b| format!(" (resolved relative to {})", b.display()))
+                    .unwrap_or_default();
+                report.add(make_fatal_diagnostic(
+                    command,
+                    format!(
+                        "pattern \"{}\" expanded to over {} paths{} — use a more specific pattern or increase --max-files",
+                        e.pattern, e.limit, base_hint
+                    ),
+                ));
+                return Vec::new();
             }
-        }).collect();
-        expand_globs(&globs)
-    } else {
-        expand_globs(file_globs)
+        }
     };
 
-    // Filter excludes
+    // --- Intersect with CLI files if provided ---
+    if !options.cli_files.is_empty() {
+        let cli_expansion = match expand_globs_checked(&options.cli_files, expansion_limit) {
+            Ok(result) => result.files,
+            Err(e) => {
+                report.add(make_fatal_diagnostic(
+                    command,
+                    format!(
+                        "CLI pattern \"{}\" expanded to over {} paths — use a more specific pattern or increase --max-files",
+                        e.pattern, e.limit
+                    ),
+                ));
+                return Vec::new();
+            }
+        };
+        let cli_set: std::collections::HashSet<String> = cli_expansion.into_iter().collect();
+        files.retain(|f| cli_set.contains(f));
+    }
+
+    // --- Filter excludes ---
     if !exclude_globs.is_empty() {
         let exclude_patterns: Vec<glob::Pattern> = exclude_globs.iter()
             .filter_map(|p| glob::Pattern::new(p).ok())
@@ -920,21 +973,66 @@ fn resolve_files(
 
     let files = filter_supported_files(files);
 
-    // Intersect with git diff-files. Both global (ExecuteOptions) and
-    // per-operation specs apply — each narrows the file set further.
+    // --- Intersect with git diff-files ---
     let cwd = options.base_dir.as_deref()
         .unwrap_or_else(|| std::path::Path::new("."));
 
     let files = apply_diff_files_filter(files, options.diff_files.as_deref(), cwd);
     let mut files = apply_diff_files_filter(files, op_diff_files, cwd);
 
-    // Apply file-level filtering from result filters (e.g. DiffHunkFilter
-    // skips files that have no changed hunks).
+    // --- Apply file-level result filters ---
     if !filters.is_empty() {
         files.retain(|f| filters.iter().all(|filter| filter.include_file(f)));
     }
 
+    // --- Check final file count ---
+    if files.len() > options.max_files {
+        report.add(make_fatal_diagnostic(
+            command,
+            format!(
+                "resolved {} files, exceeding the limit of {} — use a more specific pattern or increase --max-files",
+                files.len(), options.max_files
+            ),
+        ));
+        return Vec::new();
+    }
+
+    // --- Check for empty result from glob expansion ---
+    if files.is_empty() && !file_globs.is_empty() && !empty_patterns.is_empty() {
+        let base_hint = options.base_dir.as_ref()
+            .map(|b| format!(" (resolved relative to {})", b.display()))
+            .unwrap_or_default();
+        let patterns_str = empty_patterns.iter()
+            .map(|p| format!("\"{}\"", p))
+            .collect::<Vec<_>>()
+            .join(", ");
+        report.add(make_fatal_diagnostic(
+            command,
+            format!("file patterns matched 0 files: {}{}", patterns_str, base_hint),
+        ));
+    }
+
     files
+}
+
+/// Build a fatal diagnostic ReportMatch for file resolution errors.
+fn make_fatal_diagnostic(command: &str, reason: String) -> ReportMatch {
+    ReportMatch {
+        file: String::new(),
+        line: 0, column: 0, end_line: 0, end_column: 0,
+        command: command.to_string(),
+        tree: None,
+        value: None,
+        source: None,
+        lines: None,
+        reason: Some(reason),
+        severity: Some(Severity::Fatal),
+        message: None,
+        origin: Some(DiagnosticOrigin::Config),
+        rule_id: None,
+        status: None,
+        output: None,
+    }
 }
 
 fn apply_diff_files_filter(files: Vec<String>, spec: Option<&str>, cwd: &std::path::Path) -> Vec<String> {

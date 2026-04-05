@@ -1,10 +1,13 @@
 Execute a tractor config file (batch check/set operations)
 
-Usage: tractor run [OPTIONS] <CONFIG>
+Usage: tractor run [OPTIONS] <CONFIG> [FILES]...
 
 Arguments:
   <CONFIG>
           Path to the tractor config file (.yaml, .yml, or .toml)
+
+  [FILES]...
+          Files to process (intersected with config file globs)
 
 Options:
   -l, --lang <LANG>
@@ -66,6 +69,11 @@ Advanced:
 
   -c, --concurrency <CONCURRENCY>
           Number of parallel workers
+
+      --max-files <MAX_FILES>
+          Maximum number of files to process (default: 10000)
+          
+          [default: 10000]
 
       --verbose
           Show verbose output

@@ -51,6 +51,8 @@ pub fn run_run(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {
         base_dir,
         diff_files: args.shared.diff_files.clone(),
         diff_lines: args.shared.diff_lines.clone(),
+        max_files: args.shared.max_files,
+        cli_files: args.files.clone(),
     };
 
     let mut builder = tractor_core::ReportBuilder::new();
