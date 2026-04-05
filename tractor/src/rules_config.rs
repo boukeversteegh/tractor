@@ -6,10 +6,10 @@
 
 use std::path::Path;
 use serde::Deserialize;
+use tractor_core::normalized_xpath::NormalizedXpath;
 use tractor_core::report::Severity;
 use tractor_core::rule::{Rule, RuleSet};
 use tractor_core::tree_mode::TreeMode;
-use crate::xpath_utils::normalize_xpath;
 
 // ---------------------------------------------------------------------------
 // Serde schema (shared across TOML and YAML)
@@ -34,7 +34,7 @@ struct RulesConfig {
 #[serde(deny_unknown_fields)]
 struct ConfigRule {
     id: String,
-    xpath: String,
+    xpath: NormalizedXpath,
     #[serde(default)]
     reason: Option<String>,
     #[serde(default = "default_severity")]
@@ -104,7 +104,7 @@ fn config_to_ruleset(config: RulesConfig) -> Result<RuleSet, Box<dyn std::error:
         let severity = parse_severity(&r.severity)?;
         let tree_mode = r.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
-        let mut rule = Rule::new(r.id, normalize_xpath(&r.xpath))
+        let mut rule = Rule::new(r.id, r.xpath)
             .with_severity(severity);
 
         if let Some(reason) = r.reason {

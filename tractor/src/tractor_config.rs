@@ -29,6 +29,7 @@
 
 use std::path::Path;
 use serde::Deserialize;
+use tractor_core::normalized_xpath::NormalizedXpath;
 use tractor_core::report::Severity;
 use tractor_core::rule::Rule;
 use tractor_core::tree_mode::TreeMode;
@@ -37,7 +38,6 @@ use crate::executor::{
     CheckOperation, Operation, QueryExpr, QueryOperation,
     SetMapping, SetOperation, TestAssertion, TestOperation,
 };
-use crate::xpath_utils::normalize_xpath;
 
 // ---------------------------------------------------------------------------
 // Serde schema
@@ -131,7 +131,7 @@ struct CheckConfig {
 #[serde(deny_unknown_fields)]
 struct CheckRuleConfig {
     id: String,
-    xpath: String,
+    xpath: NormalizedXpath,
     #[serde(default)]
     reason: Option<String>,
     #[serde(default = "default_severity")]
@@ -205,7 +205,7 @@ struct QueryConfig {
 #[derive(Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 struct QueryExprConfig {
-    xpath: String,
+    xpath: NormalizedXpath,
 }
 
 #[derive(Deserialize, Debug)]
@@ -232,7 +232,7 @@ struct TestConfig {
 #[derive(Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 struct TestAssertionConfig {
-    xpath: String,
+    xpath: NormalizedXpath,
     #[serde(default = "default_expect")]
     expect: String,
 }
@@ -283,7 +283,7 @@ fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<Operation, Bo
 
     let rules: Vec<Rule> = config.rules.into_iter().map(|r| {
         let severity = parse_severity(&r.severity)?;
-        let mut rule = Rule::new(r.id, normalize_xpath(&r.xpath)).with_severity(severity);
+        let mut rule = Rule::new(r.id, r.xpath).with_severity(severity);
         if let Some(reason) = r.reason {
             rule = rule.with_reason(reason);
         }
@@ -354,7 +354,7 @@ fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<Operation, Bo
     let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
     let queries = config.queries.into_iter().map(|q| {
-        QueryExpr { xpath: normalize_xpath(&q.xpath) }
+        QueryExpr { xpath: q.xpath }
     }).collect();
 
     let (files, exclude, diff_files, diff_lines) = merge_scope(scope, config.files, config.exclude, config.diff_files, config.diff_lines);
@@ -380,7 +380,7 @@ fn convert_test(config: TestConfig, scope: &RootScope) -> Result<Operation, Box<
 
     let assertions = config.assertions.into_iter().map(|a| {
         TestAssertion {
-            xpath: normalize_xpath(&a.xpath),
+            xpath: a.xpath,
             expect: a.expect,
         }
     }).collect();

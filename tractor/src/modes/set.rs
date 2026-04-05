@@ -144,7 +144,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
                 let lang = lang_override
                     .unwrap_or_else(|| detect_language(file_path));
                 let source = std::fs::read_to_string(file_path)?;
-                match upsert(&source, lang, xpath_expr, value, ctx.limit) {
+                match upsert(&source, lang, xpath_expr.as_str(), value, ctx.limit) {
                     Ok(result) => {
                         if result.source != source {
                             std::fs::write(file_path, &result.source)?;

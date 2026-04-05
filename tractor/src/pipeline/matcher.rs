@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use rayon::prelude::*;
 use tractor_core::{
-    Match,
+    Match, NormalizedXpath,
     output::{render_document, RenderOptions},
     parse_to_documents, parse_string_to_documents,
     report::{Report, ReportMatch, Severity, DiagnosticOrigin},
@@ -43,8 +43,8 @@ pub fn exponential_batches<T>(items: &[T], num_threads: usize) -> Vec<&[T]> {
 ///
 /// Builds a `ReportMatch` with `Severity::Fatal`, the XPath string as source,
 /// and the error position highlighted. Returns `None` if the XPath is valid.
-pub fn validate_xpath_diagnostic(xpath_expr: &str, command: &str) -> Option<ReportMatch> {
-    let result = validate_xpath(xpath_expr);
+pub fn validate_xpath_diagnostic(xpath_expr: &NormalizedXpath, command: &str) -> Option<ReportMatch> {
+    let result = validate_xpath(xpath_expr.as_str());
     if result.valid {
         return None;
     }
@@ -55,7 +55,7 @@ pub fn validate_xpath_diagnostic(xpath_expr: &str, command: &str) -> Option<Repo
     let line = 1u32;
     let mut col = 1u32;
     let end_line = 1u32;
-    let mut end_col = xpath_expr.len() as u32 + 1;
+    let mut end_col = xpath_expr.as_str().len() as u32 + 1;
 
     // If we have error position info, narrow the highlight to the error span
     if let (Some(start), Some(end)) = (result.error_start, result.error_end) {
@@ -74,7 +74,7 @@ pub fn validate_xpath_diagnostic(xpath_expr: &str, command: &str) -> Option<Repo
         reason: Some(reason),
         severity: Some(Severity::Fatal),
         message: None,
-       
+
         origin: Some(DiagnosticOrigin::Xpath),
         rule_id: None,
         status: None,
@@ -90,13 +90,13 @@ pub fn query_inline_source(
     ctx: &RunContext,
     source: &str,
     lang: &str,
-    xpath_expr: &str,
+    xpath_expr: &NormalizedXpath,
 ) -> Result<Vec<Match>, Box<dyn std::error::Error>> {
     let mut result = parse_string_to_documents(
         source, lang, "<stdin>".to_string(), ctx.tree_mode, ctx.ignore_whitespace
     )?;
 
-    let matches = result.query(xpath_expr)?;
+    let matches = result.query(xpath_expr.as_str())?;
 
     let matches = if let Some(limit) = ctx.limit {
         matches.into_iter().take(limit).collect()
@@ -110,7 +110,7 @@ pub fn query_inline_source(
 pub fn query_files_batched(
     ctx: &RunContext,
     files: &[String],
-    xpath_expr: &str,
+    xpath_expr: &NormalizedXpath,
     collect: bool,
 ) -> Result<(usize, Vec<Match>), Box<dyn std::error::Error>> {
     let batches = exponential_batches(files, ctx.concurrency);
@@ -142,7 +142,7 @@ pub fn query_files_batched(
                     }
                 };
 
-                match result.query(xpath_expr) {
+                match result.query(xpath_expr.as_str()) {
                     Ok(matches) => Some(matches),
                     Err(e) => {
                         if ctx.verbose {
@@ -177,7 +177,7 @@ pub fn query_files_batched(
 // Debug mode
 // ---------------------------------------------------------------------------
 
-pub fn run_debug(ctx: &RunContext, files: &[String], xpath_expr: &str) -> Result<(), Box<dyn std::error::Error>> {
+pub fn run_debug(ctx: &RunContext, files: &[String], xpath_expr: &NormalizedXpath) -> Result<(), Box<dyn std::error::Error>> {
     let mut remaining_limit = ctx.limit;
 
     for file_path in files {
@@ -201,7 +201,7 @@ pub fn run_debug(ctx: &RunContext, files: &[String], xpath_expr: &str) -> Result
             }
         };
 
-        match result.query(xpath_expr) {
+        match result.query(xpath_expr.as_str()) {
             Ok(matches) if !matches.is_empty() => {
                 let matches: Vec<_> = if let Some(limit) = remaining_limit {
                     let take = limit.min(matches.len());
@@ -251,7 +251,7 @@ pub struct RuleMatch {
 /// Precomputed per-rule state: the glob matcher and the XPath expression.
 struct CompiledRule {
     glob: GlobMatcher,
-    xpath: String,
+    xpath: NormalizedXpath,
 }
 
 /// Execute all rules in a `RuleSet` against a list of files.
@@ -328,7 +328,7 @@ pub fn run_rules(
             let mut file_matches = Vec::new();
 
             for rule_idx in applicable {
-                match result.query(&compiled[rule_idx].xpath) {
+                match result.query(compiled[rule_idx].xpath.as_str()) {
                     Ok(matches) => {
                         for m in matches {
                             file_matches.push(RuleMatch {
