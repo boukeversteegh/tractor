@@ -120,7 +120,7 @@ Rule-level `include` and `exclude` in `run_rules()` use `glob::Pattern::matches(
 | `resolve_input()` in `pipeline/input.rs` | Optional: can use `FileResolver` for consistency |
 | `expand_globs_checked()` in `tractor-core/src/files.rs` | Still the low-level primitive, called only from `FileResolver` |
 | `filter_supported_files()` in `tractor-core/src/files.rs` | Called inside `FileResolver::resolve()` |
-| Per-rule glob matching in `run_rules()` | Unchanged |
+| Per-rule glob matching in `run_rules()` | Expressed as FileResolver operations (see below) |
 
 ## Where It Lives
 
@@ -147,8 +147,64 @@ All file resolution logging goes through `FileResolver`. The log output follows 
 
 The "expanding ..." line prints before the glob walk starts, so runaway expansions are diagnosable (the user sees which pattern is stuck and can Ctrl+C).
 
+## Glob Pattern Arithmetic
+
+All file scope levels use the same glob pattern language. Whether a pattern
+triggers a filesystem walk or an in-memory filter is an optimization detail,
+not a semantic distinction. A rule's `include: ["**/*Controller*"]` is the
+same language as an operation's `files: ["src/**/*.rs"]`.
+
+The FileResolver should provide glob pattern operations that compose:
+
+```
+root_scope("src/**/*.rs")          -- filesystem expansion
+  .intersect("src/core/**/*.rs")   -- narrow (filesystem or in-memory)
+  .exclude("**/*_test.rs")         -- subtract
+  .intersect("**/*Controller*")    -- narrow further (rule include)
+  .exclude("**/generated/**")      -- subtract (rule exclude)
+```
+
+### Order matters
+
+Like `.gitignore`, include/exclude patterns are not commutative. A later
+include can re-include files that an earlier exclude removed. The current
+model (all excludes are subtractive, applied once) is simpler but less
+expressive. The FileResolver should support ordered filter chains:
+
+```yaml
+# Hypothetical future syntax:
+files:
+  - "src/**/*.rs"        # include
+  - "!src/generated/**"  # exclude
+  - "src/generated/api.rs"  # re-include specific file
+```
+
+This is a future direction. The current implementation uses separate
+`files` and `exclude` fields without ordering. But the FileResolver's
+internal model should not preclude ordered evaluation.
+
+### Implementation strategy
+
+Given a resolved parent set, the resolver can choose the cheapest strategy:
+- **No parent set**: expand against filesystem (`glob::glob()`)
+- **Has parent set, pattern is a filter** (e.g. `**/*Controller*`):
+  in-memory `glob::Pattern::matches()` against the parent set
+- **Has parent set, pattern adds new paths**: expand against filesystem,
+  then union with parent set
+
+The caller doesn't need to know which strategy is used. They express intent
+(intersect, exclude, include); the resolver picks the implementation.
+
+### Per-rule patterns through FileResolver
+
+Currently, per-rule `include`/`exclude` patterns are handled by
+`run_rules()` via `GlobMatcher` in `tractor-core`. These should eventually
+be expressed as FileResolver operations so that:
+- The same caching and optimization applies
+- Verbose logging shows rule-level file narrowing
+- The pattern language is guaranteed consistent across all levels
+
 ## Not in Scope
 
-- **Per-rule file resolution through FileResolver**: Rule include/exclude is pattern matching on resolved files, not glob expansion. It stays in `run_rules()`.
 - **Cross-operation file deduplication for parsing**: Two operations targeting the same files still parse them independently. A shared parse cache is a separate optimization.
 - **Async/streaming glob expansion**: The `glob` crate is synchronous. Changing this would require a different crate and is not needed for the current performance profile.
