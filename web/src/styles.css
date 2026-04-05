@@ -35,6 +35,30 @@ body {
   line-height: 1.5;
 }
 
+/* Thin, themed scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
 /* App layout */
 .app {
   display: flex;
@@ -1370,4 +1394,515 @@ body {
   color: var(--text-primary);
   background: none;
   padding: 0;
+}
+
+/* ========================================
+   Navigation Header
+   ======================================== */
+
+.nav-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  height: 3rem;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-decoration: none;
+  color: var(--accent-light);
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.nav-logo {
+  font-size: 1.2rem;
+}
+
+.nav-name {
+  color: var(--accent-light);
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.nav-link {
+  padding: 0.35rem 0.75rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.nav-link:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+.nav-link.active {
+  color: var(--accent-light);
+  background: var(--bg-tertiary);
+}
+
+.nav-link-external svg {
+  opacity: 0.5;
+}
+
+/* ========================================
+   Documentation Layout
+   ======================================== */
+
+.doc-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+  overflow: hidden;
+}
+
+.doc-container {
+  display: flex;
+  flex: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  min-height: 0;
+}
+
+/* Sidebar */
+.doc-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  padding: 1.5rem 0 1.5rem 1.5rem;
+  border-right: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  height: calc(100vh - 3rem);
+  overflow-y: auto;
+}
+
+.sidebar-section {
+  margin-bottom: 1.5rem;
+}
+
+.sidebar-heading {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+}
+
+.sidebar-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-list li {
+  margin: 0;
+}
+
+.sidebar-link {
+  display: block;
+  padding: 0.3rem 0.75rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  border-left: 2px solid transparent;
+}
+
+.sidebar-link:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+.sidebar-link.active {
+  color: var(--accent-light);
+  border-left-color: var(--accent);
+  background: rgba(92, 184, 92, 0.08);
+}
+
+/* Documentation Content */
+/* Scroll wrapper: takes all remaining space, scrollbar at right edge */
+.doc-scroll {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+.doc-content {
+  padding: 2rem 2.5rem;
+  max-width: 800px;
+}
+
+.doc-content h1 {
+  font-size: 2rem;
+  color: var(--accent-light);
+  margin: 0 0 0.5rem 0;
+  font-weight: 700;
+}
+
+.doc-content h2 {
+  font-size: 1.35rem;
+  color: var(--accent-light);
+  margin: 2rem 0 0.75rem 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.doc-content h2:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.doc-content h3 {
+  font-size: 1.05rem;
+  color: var(--accent-yellow);
+  margin: 1.5rem 0 0.5rem 0;
+}
+
+.doc-lead {
+  font-size: 1.05rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.doc-content p {
+  color: var(--text-primary);
+  line-height: 1.6;
+  margin: 0.5rem 0;
+}
+
+.doc-content ul,
+.doc-content ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.doc-content li {
+  margin: 0.25rem 0;
+}
+
+.doc-content code {
+  background: var(--bg-tertiary);
+  padding: 0.15rem 0.35rem;
+  border-radius: 3px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.85em;
+}
+
+.doc-content a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.doc-content a:hover {
+  text-decoration: underline;
+}
+
+.doc-content em {
+  color: var(--text-secondary);
+}
+
+/* Code Blocks */
+.codeblock {
+  margin: 0.75rem 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+
+.codeblock-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+}
+
+.codeblock-title {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.codeblock-lang {
+  color: var(--accent-light);
+  background: rgba(92, 184, 92, 0.15);
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  margin-left: auto;
+}
+
+.codeblock-copy {
+  padding: 0.15rem 0.5rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.7rem;
+  transition: all 0.15s ease;
+}
+
+.codeblock-copy:hover {
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+
+.codeblock-copy-floating {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.codeblock:hover .codeblock-copy-floating {
+  opacity: 1;
+}
+
+.codeblock pre {
+  margin: 0;
+  padding: 0.75rem;
+  overflow-x: auto;
+  background: var(--bg-primary);
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.codeblock code {
+  background: none;
+  padding: 0;
+  color: var(--text-primary);
+  font-size: inherit;
+}
+
+.codeblock-output {
+  border-color: rgba(212, 170, 0, 0.3);
+}
+
+.codeblock-output .codeblock-header {
+  background: rgba(212, 170, 0, 0.08);
+  border-bottom-color: rgba(212, 170, 0, 0.2);
+}
+
+.codeblock-output .codeblock-title {
+  color: var(--accent-yellow);
+}
+
+.codeblock-output pre {
+  background: rgba(15, 26, 15, 0.8);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.codeblock-output code {
+  color: var(--text-secondary);
+}
+
+/* Syntax highlighting classes for code blocks */
+.hl-keyword    { color: var(--syntax-keyword); }
+.hl-type       { color: var(--syntax-type); }
+.hl-string     { color: var(--syntax-string); }
+.hl-number     { color: var(--syntax-string); }
+.hl-comment    { color: var(--syntax-comment); font-style: italic; }
+.hl-tag        { color: var(--syntax-keyword); }
+.hl-key        { color: var(--syntax-type); }
+.hl-flag       { color: var(--accent-light); }
+.hl-variable   { color: var(--syntax-type); }
+.hl-punctuation { color: var(--syntax-operator); }
+
+/* Example group: connected file → command → output blocks */
+.example-group {
+  margin: 0.75rem 0 1.25rem;
+}
+
+.example-group .codeblock {
+  margin: 0;
+  border-radius: 0;
+  border-bottom-width: 0;
+}
+
+.example-group .codeblock:first-child {
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+
+.example-group .codeblock:last-child {
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+  border-bottom-width: 1px;
+}
+
+/* Doc Tables */
+.doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  font-size: 0.85rem;
+}
+
+.doc-table th {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-tertiary);
+  color: var(--accent-yellow);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-bottom: 1px solid var(--border);
+}
+
+.doc-table td {
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.doc-table td code {
+  font-size: 0.8rem;
+}
+
+.doc-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Doc Cards */
+.doc-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.doc-card {
+  display: block;
+  padding: 1rem 1.25rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  border-left: 3px solid var(--accent);
+}
+
+.doc-card:hover {
+  border-color: var(--accent);
+  background: var(--bg-tertiary);
+  text-decoration: none;
+}
+
+.doc-card h3 {
+  margin: 0 0 0.35rem 0;
+  font-size: 1rem;
+  color: var(--accent-yellow);
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+.doc-card p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* Doc Next */
+.doc-next {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  border-left: 3px solid var(--accent-yellow);
+}
+
+.doc-next p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+/* Support tier badges */
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.badge-full {
+  background: rgba(92, 184, 92, 0.15);
+  color: var(--accent-light);
+  border: 1px solid rgba(92, 184, 92, 0.3);
+}
+
+.badge-good {
+  background: rgba(212, 170, 0, 0.12);
+  color: var(--accent-yellow);
+  border: 1px solid rgba(212, 170, 0, 0.25);
+}
+
+.badge-basic {
+  background: rgba(138, 170, 138, 0.1);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+/* Responsive docs */
+@media (max-width: 768px) {
+  .doc-container {
+    flex-direction: column;
+  }
+
+  .doc-sidebar {
+    width: 100%;
+    height: auto;
+    position: static;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .sidebar-section {
+    margin-bottom: 0;
+  }
+
+  .doc-content {
+    padding: 1.5rem;
+  }
+
+  .doc-cards {
+    grid-template-columns: 1fr;
+  }
 }

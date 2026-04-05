@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MiniPlayground } from '../components/MiniPlayground';
+import { NavHeader } from '../components/NavHeader';
 
 type Platform = 'linux' | 'macos' | 'windows';
 
@@ -47,6 +48,7 @@ export function Homepage() {
 
   return (
     <div className="homepage">
+      <NavHeader />
       <header className="hero">
         <h1><span className="logo">&#x1F69C;</span> Tractor</h1>
         <p className="tagline">Write a rule once. Enforce it everywhere.</p>

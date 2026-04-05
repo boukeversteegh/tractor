@@ -84,10 +84,10 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
     let (view_fields, extra_fields) = render_fields_for_match(view, rm);
 
     // Location prefix: file, line, and/or column — combined on one line as file:line:col
-    // Skip for file-less diagnostics (no meaningful location).
+    // Skip for file-less diagnostics (no meaningful location) and stdin input.
     let file = group_file.unwrap_or(&rm.file);
     let has_location = view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
-    if has_location && !file.is_empty() {
+    if has_location && !file.is_empty() && file != "<stdin>" {
         let mut loc = String::new();
         if view.has(ViewField::File) {
             loc.push_str(&normalize_path(file));

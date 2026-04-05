@@ -8,6 +8,7 @@ import { QueryResults } from '../components/QueryResults';
 import { SourceEditor, SourceEditorHandle } from '../components/SourceEditor';
 import { QueryInput } from '../components/QueryInput';
 import { Tabs } from '../components/Tabs';
+import { NavHeader } from '../components/NavHeader';
 import { SAMPLE_CODE } from '../sampleCode';
 import {
   parseXmlToTree,
@@ -418,9 +419,9 @@ export function Playground() {
 
   return (
     <div className="app">
+      <NavHeader />
       <header className="app-header">
         <div className="header-left">
-          <h1>Tractor</h1>
           <span className="subtitle">XPath for Code</span>
         </div>
         <div className="query-bar">
