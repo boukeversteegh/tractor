@@ -1,25 +1,36 @@
 # Design: Centralized File Resolution (FileResolver)
 
-**Status**: Proposed  
-**Related PR**: #82 (root ∩ operation intersection)  
+**Status**: Partially implemented
+**Related PR**: #82 (root intersection, SharedFileScope, module split)
 **Related issue**: #78 (implicit // in config)
 
 ---
 
-## Problem Statement
+## Current State (after #82)
 
-File resolution logic is scattered across multiple functions and modules:
+File resolution is now split across two dedicated modules:
 
-- `merge_scope()` in `tractor_config.rs` — merges exclude/diff settings per operation
-- `SharedFileScope::build()` in `executor.rs` — pre-computes root, CLI, and global diff files
-- `resolve_files()` in `executor.rs` — 80-line function handling expansion, intersection, exclusion, language filtering, diff filtering, and limit checks
-- `resolve_op_files()` in `executor.rs` — wrapper that builds diff-lines filters then calls `resolve_files`
-- `resolve_input()` in `pipeline/input.rs` — separate file resolution path for CLI modes (check, query, test, update)
-- `run_rules()` in `pipeline/matcher.rs` — per-rule include/exclude glob matching against resolved files
+- `tractor-core/src/files.rs` -- low-level primitives: `expand_globs_checked()`,
+  `filter_supported_files()`, `GlobExpansion`, safety limits
+- `tractor/src/pipeline/files.rs` -- high-level resolution: `SharedFileScope`
+  (pre-computes root, CLI, and global diff once), `resolve_op_files()`,
+  `resolve_files()` (expansion, intersection, exclusion, diff, limits)
 
-This makes it hard to reason about file resolution as a whole, leads to duplicated glob expansion across CLI and run paths, and made the root ∩ operation intersection harder to implement than necessary.
+Supporting modules:
+- `tractor/src/pipeline/git.rs` -- `git_changed_files()`, `intersect_changed()`, `DiffHunkFilter`
+- `tractor/src/pipeline/input.rs` -- CLI-mode input source detection (stdin/inline/files),
+  with its own glob expansion path separate from `pipeline/files.rs`
+- `tractor/src/tractor_config.rs` -- `merge_scope()` merges exclude/diff settings per operation;
+  no longer touches `files` (root files handled by `SharedFileScope`)
+- `tractor/src/pipeline/matcher.rs` -- `run_rules()` per-rule include/exclude glob matching
 
-## Decisions
+## Remaining Problem
+
+The two file resolution paths (CLI modes via `pipeline/input.rs` and run mode
+via `pipeline/files.rs`) still duplicate glob expansion and language filtering.
+A `FileResolver` would unify them behind a single API with caching.
+
+## Proposed: FileResolver
 
 ### 1. Single FileResolver struct owns all file resolution
 
@@ -32,7 +43,7 @@ pub struct FileResolver {
     expansion_limit: usize,
     verbose: bool,
 
-    // Cache: original glob patterns → expanded file set.
+    // Cache: original glob patterns -> expanded file set.
     // Identical patterns across operations expand only once.
     cache: HashMap<Vec<String>, Arc<HashSet<String>>>,
 
@@ -90,33 +101,32 @@ The `resolve()` method contains the full resolution pipeline:
 
 `resolve_input()` in `pipeline/input.rs` currently duplicates glob expansion and language filtering. It could construct a `FileResolver` with no root/CLI scope and call `resolve()` with the CLI-provided patterns.
 
-**Why**: Unifies the two file resolution paths (CLI and run) under one implementation. Not required initially — can be done incrementally.
+**Why**: Unifies the two file resolution paths (CLI and run) under one implementation. Not required initially -- can be done incrementally.
 
 ### 6. Per-rule include/exclude stays separate
 
 Rule-level `include` and `exclude` in `run_rules()` use `glob::Pattern::matches()` against an already-resolved file list. This is in-memory pattern matching, not filesystem glob expansion.
 
-**Why**: Different operation — no filesystem walk, no caching benefit. Mixing it into FileResolver would add complexity without value. The rule-level matching operates on the output of FileResolver, not alongside it.
+**Why**: Different operation -- no filesystem walk, no caching benefit. Mixing it into FileResolver would add complexity without value. The rule-level matching operates on the output of FileResolver, not alongside it.
 
-## Mapping: Current Code → FileResolver
+## Mapping: Current Code -> FileResolver
 
 | Current | Proposed |
 |---|---|
-| `SharedFileScope::build()` | `FileResolver::new()` |
-| `resolve_files()` | `FileResolver::resolve()` |
-| `resolve_op_files()` | Removed — callers build `FileRequest` directly |
-| `merge_scope()` files logic | Removed — `FileResolver` handles root fallback |
+| `SharedFileScope::build()` in `pipeline/files.rs` | `FileResolver::new()` |
+| `resolve_files()` in `pipeline/files.rs` | `FileResolver::resolve()` |
+| `resolve_op_files()` in `pipeline/files.rs` | Removed -- callers build `FileRequest` directly |
 | `merge_scope()` exclude/diff logic | Stays (or moves into `FileRequest` construction) |
-| `resolve_input()` in pipeline | Optional: can use `FileResolver` for consistency |
-| `expand_globs_checked()` in tractor-core | Still the low-level primitive, called only from `FileResolver` |
-| `filter_supported_files()` in tractor-core | Called inside `FileResolver::resolve()` |
+| `resolve_input()` in `pipeline/input.rs` | Optional: can use `FileResolver` for consistency |
+| `expand_globs_checked()` in `tractor-core/src/files.rs` | Still the low-level primitive, called only from `FileResolver` |
+| `filter_supported_files()` in `tractor-core/src/files.rs` | Called inside `FileResolver::resolve()` |
 | Per-rule glob matching in `run_rules()` | Unchanged |
 
 ## Where It Lives
 
-New file: `tractor/src/file_resolver.rs`
+`tractor/src/pipeline/files.rs` -- evolves the existing module. The `SharedFileScope` + `resolve_files` code there is the natural starting point for the `FileResolver` struct.
 
-The executor imports and uses it. The module is internal to the `tractor` crate (not tractor-core) because it depends on git integration and CLI concerns.
+The low-level primitives stay in `tractor-core/src/files.rs` because they are also used by the WASM web build.
 
 ## Verbose Logging
 
