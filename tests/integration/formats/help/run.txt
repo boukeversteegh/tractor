@@ -4,7 +4,7 @@ Usage: tractor run [OPTIONS] <CONFIG> [FILES]...
 
 Arguments:
   <CONFIG>
-          Path to the tractor config file (.yaml, .yml, or .toml)
+          Path to the tractor config file (.yaml, .yml, or .toml). File patterns in the config are resolved relative to the config file's directory
 
   [FILES]...
           Files to process (intersected with config file globs)

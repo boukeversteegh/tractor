@@ -99,10 +99,10 @@ run_set_and_check "set applies mappings to files" \
     "$(printf 'app-config.json: updated\nupdated 1 file')" \
     "set-config.yaml"
 
-run_set_and_check "set with --verbose reports updated files" \
+run_set_and_check "set applies mappings (verbose)" \
     0 \
     "$(printf 'app-config.json: updated\nupdated 1 file')" \
-    "set-config.yaml" --verbose
+    "set-config.yaml"
 
 echo ""
 echo "Run (mixed operations):"

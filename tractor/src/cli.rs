@@ -411,7 +411,8 @@ pub struct UpdateArgs {
 /// Run mode: execute a tractor config file with mixed operations
 #[derive(Args, Debug)]
 pub struct RunArgs {
-    /// Path to the tractor config file (.yaml, .yml, or .toml)
+    /// Path to the tractor config file (.yaml, .yml, or .toml).
+    /// File patterns in the config are resolved relative to the config file's directory.
     #[arg()]
     pub config: String,
 
