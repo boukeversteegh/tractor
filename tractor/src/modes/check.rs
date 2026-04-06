@@ -112,7 +112,12 @@ fn run_check_config(args: CheckArgs, config_path_str: &str) -> Result<(), Box<dy
 
     let loaded = crate::tractor_config::load_tractor_config(config_path)?;
 
-    if loaded.operations.is_empty() {
+    // Extract only check operations — ignore set/query/test/etc.
+    let check_ops: Vec<_> = loaded.operations.into_iter()
+        .filter(|op| matches!(op, executor::Operation::Check(_)))
+        .collect();
+
+    if check_ops.is_empty() {
         return Ok(());
     }
 
@@ -139,7 +144,7 @@ fn run_check_config(args: CheckArgs, config_path_str: &str) -> Result<(), Box<dy
     };
 
     let mut builder = tractor_core::ReportBuilder::new();
-    executor::execute(&loaded.operations, &options, &mut builder)?;
+    executor::execute(&check_ops, &options, &mut builder)?;
     let mut report = builder.build();
 
     // Apply CLI-level message template (-m) if provided.
