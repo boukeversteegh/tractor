@@ -152,6 +152,10 @@ When omitted, auto-selects: data for JSON/YAML, structure for everything else.")
     #[arg(long = "no-color", help_heading = "Format")]
     pub no_color: bool,
 
+    /// Claude Code hook type (used with -f claude-code): post-tool-use, pre-tool-use, stop, context
+    #[arg(long = "hook", help_heading = "Format")]
+    pub hook: Option<String>,
+
     // -- Group --
     /// Group output by file
     #[arg(short = 'g', long = "group", help_heading = "View")]
@@ -215,16 +219,17 @@ Report view [default: tree]
     #[arg(short = 'm', long = "message", help_heading = "View")]
     pub message: Option<String>,
 
-    /// Output format: text (default), json, yaml, xml, gcc, github
+    /// Output format: text (default), json, yaml, xml, gcc, github, claude-code
     #[arg(short = 'f', long = "format", default_value = "text", help_heading = "Format",
         long_help = "\
 Output format [default: text]
-  text      Human-readable plain text
-  json      JSON report envelope
-  yaml      YAML report envelope
-  xml       XML report envelope
-  gcc       file:line:col: severity: reason (for CI/editors)
-  github    GitHub Actions annotation (::error file=...)")]
+  text        Human-readable plain text
+  json        JSON report envelope
+  yaml        YAML report envelope
+  xml         XML report envelope
+  gcc         file:line:col: severity: reason (for CI/editors)
+  github      GitHub Actions annotation (::error file=...)
+  claude-code Claude Code hook JSON (use with --hook)")]
     pub format: String,
 
     /// Show full XML with matches highlighted (for debugging XPath)
@@ -271,12 +276,13 @@ Report view [default: tree]
     #[arg(short = 'f', long = "format", default_value = "gcc", help_heading = "Format",
         long_help = "\
 Output format [default: gcc]
-  gcc       file:line:col: severity: reason (default for check)
-  github    GitHub Actions annotation (::error file=...)
-  text      Human-readable plain text
-  json      JSON report envelope
-  yaml      YAML report envelope
-  xml       XML report envelope")]
+  gcc         file:line:col: severity: reason (default for check)
+  github      GitHub Actions annotation (::error file=...)
+  text        Human-readable plain text
+  json        JSON report envelope
+  yaml        YAML report envelope
+  xml         XML report envelope
+  claude-code Claude Code hook JSON (use with --hook)")]
     pub format: String,
 
     /// Reason message for each violation

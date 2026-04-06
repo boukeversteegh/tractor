@@ -69,14 +69,18 @@ Format:
       --no-color
           Disable color output
 
+      --hook <HOOK>
+          Claude Code hook type (used with -f claude-code): post-tool-use, pre-tool-use, stop, context
+
   -f, --format <FORMAT>
           Output format [default: text]
-            text      Human-readable plain text
-            json      JSON report envelope
-            yaml      YAML report envelope
-            xml       XML report envelope
-            gcc       file:line:col: severity: reason (for CI/editors)
-            github    GitHub Actions annotation (::error file=...)
+            text        Human-readable plain text
+            json        JSON report envelope
+            yaml        YAML report envelope
+            xml         XML report envelope
+            gcc         file:line:col: severity: reason (for CI/editors)
+            github      GitHub Actions annotation (::error file=...)
+            claude-code Claude Code hook JSON (use with --hook)
           
           [default: text]
 

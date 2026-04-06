@@ -13,6 +13,8 @@ pub enum OutputFormat {
     Gcc,
     /// GitHub Actions annotation: `::error file=...,line=...::reason`.
     Github,
+    /// Claude Code hook JSON output.
+    ClaudeCode,
 }
 
 impl OutputFormat {
@@ -23,9 +25,10 @@ impl OutputFormat {
             FORMAT_YAML    => Ok(OutputFormat::Yaml),
             FORMAT_XML     => Ok(OutputFormat::Xml),
             FORMAT_GCC     => Ok(OutputFormat::Gcc),
-            FORMAT_GITHUB  => Ok(OutputFormat::Github),
+            FORMAT_GITHUB     => Ok(OutputFormat::Github),
+            FORMAT_CLAUDE_CODE => Ok(OutputFormat::ClaudeCode),
             _ => Err(format!(
-                "invalid format '{}'. Valid formats: text, json, yaml, xml, gcc, github", s,
+                "invalid format '{}'. Valid formats: text, json, yaml, xml, gcc, github, claude-code", s,
             )),
         }
     }
@@ -37,7 +40,38 @@ pub const FORMAT_JSON:   &str = "json";
 pub const FORMAT_YAML:   &str = "yaml";
 pub const FORMAT_XML:    &str = "xml";
 pub const FORMAT_GCC:    &str = "gcc";
-pub const FORMAT_GITHUB: &str = "github";
+pub const FORMAT_GITHUB:     &str = "github";
+pub const FORMAT_CLAUDE_CODE: &str = "claude-code";
+
+// ---------------------------------------------------------------------------
+// HookType — Claude Code hook event type (--hook flag)
+// ---------------------------------------------------------------------------
+
+/// Which Claude Code hook event the output is for. Determines the JSON
+/// envelope structure.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HookType {
+    /// PostToolUse / Stop: `{ "decision": "block", "reason": "..." }`
+    PostToolUse,
+    /// PreToolUse: `{ "hookSpecificOutput": { "hookEventName": "PreToolUse", "permissionDecision": "deny", ... } }`
+    PreToolUse,
+    /// PostToolUse context (non-blocking): `{ "hookSpecificOutput": { "hookEventName": "PostToolUse", "additionalContext": "..." } }`
+    Context,
+}
+
+impl HookType {
+    pub fn from_str(s: &str) -> Result<Self, String> {
+        match s.to_lowercase().replace('_', "-").as_str() {
+            "post-tool-use" => Ok(HookType::PostToolUse),
+            "pre-tool-use"  => Ok(HookType::PreToolUse),
+            "stop"          => Ok(HookType::PostToolUse), // same envelope as post-tool-use
+            "context"       => Ok(HookType::Context),
+            _ => Err(format!(
+                "invalid hook type '{}'. Valid types: post-tool-use, pre-tool-use, stop, context", s,
+            )),
+        }
+    }
+}
 
 // ---------------------------------------------------------------------------
 // ViewField + ViewSet — field selection (-v flag)

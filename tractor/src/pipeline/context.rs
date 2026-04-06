@@ -7,6 +7,7 @@ use tractor_core::{
 use crate::cli::SharedArgs;
 use super::input::{InputMode, resolve_input};
 use super::format::{OutputFormat, GroupDimension, ViewField, ViewSet, parse_view_set, parse_group_by};
+use super::format::options::HookType;
 
 pub struct RunContext {
     pub xpath: Option<NormalizedXpath>,
@@ -31,6 +32,8 @@ pub struct RunContext {
     pub lang: Option<String>,
     pub debug: bool,
     pub group_by: Vec<GroupDimension>,
+    /// Claude Code hook type (--hook), used with `-f claude-code`.
+    pub hook_type: Option<HookType>,
 }
 
 impl RunContext {
@@ -47,6 +50,23 @@ impl RunContext {
         default_group_by: &[GroupDimension],
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let output_format = OutputFormat::from_str(format)?;
+
+        let hook_type = match shared.hook.as_deref() {
+            Some(s) => {
+                if output_format != OutputFormat::ClaudeCode {
+                    return Err("--hook requires -f claude-code".into());
+                }
+                Some(HookType::from_str(s)?)
+            }
+            None => {
+                if output_format == OutputFormat::ClaudeCode {
+                    // Default to post-tool-use when -f claude-code is used without --hook
+                    Some(HookType::PostToolUse)
+                } else {
+                    None
+                }
+            }
+        };
 
         let view = if let Some(s) = user_view {
             parse_view_set(s, default_view)?
@@ -96,6 +116,7 @@ impl RunContext {
             lang: shared.lang.clone(),
             debug,
             group_by,
+            hook_type,
         })
     }
 

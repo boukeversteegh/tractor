@@ -69,6 +69,9 @@ Format:
       --no-color
           Disable color output
 
+      --hook <HOOK>
+          Claude Code hook type (used with -f claude-code): post-tool-use, pre-tool-use, stop, context
+
   -f, --format <FORMAT>
           Output format: text (default), json, yaml, gcc, github
           

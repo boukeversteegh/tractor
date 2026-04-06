@@ -238,6 +238,7 @@ greeter.js:5
           <tr><td><code>xml</code></td><td>XML report envelope</td><td>—</td></tr>
           <tr><td><code>gcc</code></td><td><code>file:line:col: severity: reason</code></td><td>check, run</td></tr>
           <tr><td><code>github</code></td><td>GitHub Actions annotations</td><td>—</td></tr>
+          <tr><td><code>claude-code</code></td><td>Claude Code hook JSON (use with <code>--hook</code>)</td><td>—</td></tr>
         </tbody>
       </table>
 

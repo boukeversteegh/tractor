@@ -56,6 +56,9 @@ Format:
       --no-color
           Disable color output
 
+      --hook <HOOK>
+          Claude Code hook type (used with -f claude-code): post-tool-use, pre-tool-use, stop, context
+
 Filter:
       --diff-files <RANGE>
           Only consider files changed in a git diff (e.g. "HEAD~3", "main..HEAD")
