@@ -118,7 +118,7 @@ fn run_check_config(args: CheckArgs, config_path_str: &str) -> Result<(), Box<dy
         .collect();
 
     if check_ops.is_empty() {
-        return Ok(());
+        return Err(format!("no check operations found in {}", config_path_str).into());
     }
 
     let ctx = RunContext::build(
