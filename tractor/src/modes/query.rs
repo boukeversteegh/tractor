@@ -6,10 +6,27 @@ use crate::pipeline::{
     RunContext, ViewField, InputMode,
     run_debug,
     project_report, apply_message_template,
+    GroupDimension,
 };
 use crate::pipeline::render_report;
+use super::config::{run_from_config, ConfigRunParams};
 
 pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
+    if let Some(ref config_path) = args.config {
+        return run_from_config(ConfigRunParams {
+            config_path,
+            shared: &args.shared,
+            cli_files: args.files.clone(),
+            format: &args.format,
+            default_view: &[ViewField::File, ViewField::Line, ViewField::Tree],
+            view_override: args.view.as_deref(),
+            message: args.message.clone(),
+            default_group: &[GroupDimension::File],
+            op_filter: |op| matches!(op, Operation::Query(_)),
+            filter_label: "query",
+        });
+    }
+
     let ctx = RunContext::build(
         &args.shared, args.files, args.shared.xpath.clone(),
         &args.format, &[ViewField::File, ViewField::Line, ViewField::Tree], args.view.as_deref(), args.message, args.content, args.debug, &[],

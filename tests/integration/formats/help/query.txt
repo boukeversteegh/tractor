@@ -107,3 +107,7 @@ Advanced:
 
   -V, --version
           Print version information (use with --verbose for detailed output)
+
+Config:
+      --config <CONFIG>
+          Path to a tractor config file (YAML/TOML) — runs only query operations from it

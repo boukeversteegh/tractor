@@ -234,6 +234,10 @@ Output format [default: text]
     /// Print version information (use with --verbose for detailed output)
     #[arg(short = 'V', long = "version", help_heading = "Advanced")]
     pub version: bool,
+
+    /// Path to a tractor config file (YAML/TOML) — runs only query operations from it
+    #[arg(long = "config", help_heading = "Config")]
+    pub config: Option<String>,
 }
 
 /// Check mode: lint/report violations
@@ -342,14 +346,17 @@ Report view [default: tree]
     #[arg(short = 'f', long = "format", default_value = "text", help_heading = "Format")]
     pub format: String,
 
-    /// Expected result: none, some, or a number
-    #[arg(short = 'e', long = "expect", help_heading = "Test")]
-    pub expect: String,
+    /// Expected result: none, some, or a number (required unless --config is used)
+    #[arg(short = 'e', long = "expect", help_heading = "Test", required_unless_present = "config")]
+    pub expect: Option<String>,
 
     /// Error message template for failed expectations (per-match, supports {file}, {line}, {name}, etc.)
     #[arg(long = "error", help_heading = "Test")]
     pub error: Option<String>,
 
+    /// Path to a tractor config file (YAML/TOML) — runs only test operations from it
+    #[arg(long = "config", help_heading = "Config")]
+    pub config: Option<String>,
 }
 
 /// Set mode: modify matched node values in-place
@@ -393,6 +400,10 @@ Report view [default: file,line,status]
     /// Output format: text (default), json, yaml, xml
     #[arg(short = 'f', long = "format", default_value = "text", help_heading = "Format")]
     pub format: String,
+
+    /// Path to a tractor config file (YAML/TOML) — runs only set operations from it
+    #[arg(long = "config", help_heading = "Config")]
+    pub config: Option<String>,
 }
 
 /// Update mode: modify only existing matched node values (no creation)

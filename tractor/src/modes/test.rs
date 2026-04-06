@@ -6,6 +6,7 @@ use crate::pipeline::{
     render_report,
     project_report,
 };
+use super::config::{run_from_config, ConfigRunParams};
 
 pub mod test_colors {
     pub const RESET: &str = "\x1b[0m";
@@ -15,7 +16,23 @@ pub mod test_colors {
 }
 
 pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
-    let expect = args.expect.clone();
+    if let Some(ref config_path) = args.config {
+        return run_from_config(ConfigRunParams {
+            config_path,
+            shared: &args.shared,
+            cli_files: args.files.clone(),
+            format: &args.format,
+            default_view: &[ViewField::Totals],
+            view_override: args.view.as_deref(),
+            message: args.message.clone(),
+            default_group: &[],
+            op_filter: |op| matches!(op, Operation::Test(_)),
+            filter_label: "test",
+        });
+    }
+
+    let expect = args.expect.clone()
+        .ok_or("test requires --expect when not using --config")?;
     let error_template = args.error.clone();
     let message = args.message.clone();
 
