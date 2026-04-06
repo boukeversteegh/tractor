@@ -81,7 +81,7 @@ Output formats for every workflow:
 
 ## Supported Languages
 
-C#, TypeScript, JavaScript, Rust, Python, Go, Java, Ruby, C++, C, JSON, YAML, HTML, CSS, Bash, PHP, Scala, Lua, Haskell, and more.
+C#, TypeScript, TSX, JavaScript, Rust, Python, Go, Java, Ruby, C++, C, JSON, YAML, HTML, CSS, Bash, PHP, Scala, Lua, Haskell, and more.
 
 ## Web Playground
 
