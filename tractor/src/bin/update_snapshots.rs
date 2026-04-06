@@ -190,18 +190,18 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
         "check", "tests/integration/formats/sample.cs", "-x", "class",
         "--reason", "class found", "--color", "always",
     ]),
-    // Multi-rule check via --rules flag
+    // Multi-rule check via --config flag
     ("xml/check-multirule.xml", &[
-        "check", "tests/integration/formats/sample.cs",
-        "--rules", "tests/integration/formats/multirule.toml", "-f", "xml",
+        "check",
+        "--config", "tests/integration/formats/multirule.yaml", "-f", "xml",
     ]),
     ("json/check-multirule.json", &[
-        "check", "tests/integration/formats/sample.cs",
-        "--rules", "tests/integration/formats/multirule.toml", "-f", "json",
+        "check",
+        "--config", "tests/integration/formats/multirule.yaml", "-f", "json",
     ]),
     ("gcc/check-multirule.txt", &[
-        "check", "tests/integration/formats/sample.cs",
-        "--rules", "tests/integration/formats/multirule.toml",
+        "check",
+        "--config", "tests/integration/formats/multirule.yaml",
     ]),
     // Multi-op run report (check + test in one config)
     ("xml/run-multiop.xml", &[

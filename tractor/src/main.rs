@@ -6,7 +6,6 @@ mod cli;
 mod version;
 mod pipeline;
 mod modes;
-mod rules_config;
 mod tractor_config;
 mod executor;
 mod filter;

@@ -283,19 +283,20 @@ Output format [default: gcc]
     #[arg(long = "severity", default_value = "error", help_heading = "Check")]
     pub severity: String,
 
-    /// Path to a rules file (YAML/TOML) for batch checking.
+    /// Path to a tractor config file (YAML/TOML) for batch checking.
     ///
-    /// Example YAML rules file:
+    /// Uses the standard tractor config format. Example:
     ///
-    ///   rules:
-    ///     - id: no-eval
-    ///       xpath: "//call[function='eval']"
-    ///       severity: error
-    ///       expect:
-    ///         - valid: "JSON.parse(data)"
-    ///         - invalid: "eval(userInput)"
-    #[arg(long = "rules", help_heading = "Check", verbatim_doc_comment)]
-    pub rules: Option<String>,
+    ///   check:
+    ///     rules:
+    ///       - id: no-eval
+    ///         xpath: "//call[function='eval']"
+    ///         severity: error
+    ///         expect:
+    ///           - valid: "JSON.parse(data)"
+    ///           - invalid: "eval(userInput)"
+    #[arg(long = "config", help_heading = "Check", verbatim_doc_comment)]
+    pub config: Option<String>,
 
     /// A code example that should pass the check (no matches expected)
     #[arg(long = "expect-valid", help_heading = "Check")]

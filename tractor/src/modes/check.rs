@@ -10,9 +10,9 @@ use crate::pipeline::{
 };
 
 pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
-    if args.rules.is_some() {
-        let rules_path = args.rules.clone().unwrap();
-        return run_check_rules(args, &rules_path);
+    if args.config.is_some() {
+        let config_path = args.config.clone().unwrap();
+        return run_check_config(args, &config_path);
     }
 
     let severity = match args.severity.as_str() {
@@ -100,57 +100,46 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 // ---------------------------------------------------------------------------
-// Rules-based batch check — delegates to executor
+// Config-based batch check — loads a tractor config and runs check operations
 // ---------------------------------------------------------------------------
 
-fn run_check_rules(args: CheckArgs, rules_path: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let ruleset = crate::rules_config::load_rules(std::path::Path::new(rules_path))?;
+fn run_check_config(args: CheckArgs, config_path_str: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let config_path = std::path::Path::new(config_path_str);
 
-    if ruleset.rules.is_empty() {
+    if !config_path.exists() {
+        return Err(format!("config file not found: {}", config_path_str).into());
+    }
+
+    let loaded = crate::tractor_config::load_tractor_config(config_path)?;
+
+    if loaded.operations.is_empty() {
         return Ok(());
     }
 
     let ctx = RunContext::build(
-        &args.shared, args.files, None, &args.format,
+        &args.shared, vec![], None, &args.format,
         &[ViewField::Reason, ViewField::Severity, ViewField::Lines],
         args.view.as_deref(), args.message, None, false, &[GroupDimension::File],
     )?;
 
-    let files = match &ctx.input {
-        InputMode::Files(files) => files.clone(),
-        InputMode::InlineSource { .. } => {
-            return Err("check --rules cannot be used with stdin input".into());
-        }
-    };
+    // Resolve base_dir from the config file's parent directory so that
+    // relative file globs in the config are resolved relative to it.
+    let base_dir = config_path.parent()
+        .map(|p| if p.as_os_str().is_empty() { std::path::Path::new(".") } else { p })
+        .map(|p| p.canonicalize().unwrap_or_else(|_| p.to_path_buf()));
 
-    if files.is_empty() {
-        return Ok(());
-    }
-
-    let op = Operation::Check(CheckOperation {
-        files,
-        exclude: vec![],
-        diff_files: None,
-        diff_lines: None,
-        rules: ruleset.rules.clone(),
-        tree_mode: ctx.tree_mode,
-        language: ctx.lang.clone(),
-        ignore_whitespace: ctx.ignore_whitespace,
-        parse_depth: ctx.parse_depth,
-        ruleset_include: ruleset.include.clone(),
-        ruleset_exclude: ruleset.exclude.clone(),
-    });
-
-    let options = ExecuteOptions {
+    let options = executor::ExecuteOptions {
         verbose: ctx.verbose,
+        base_dir,
         diff_files: args.shared.diff_files.clone(),
         diff_lines: args.shared.diff_lines.clone(),
         max_files: args.shared.max_files,
-        ..Default::default()
+        cli_files: args.files.clone(),
+        config_root_files: loaded.root_files,
     };
 
     let mut builder = tractor_core::ReportBuilder::new();
-    executor::execute(&[op], &options, &mut builder)?;
+    executor::execute(&loaded.operations, &options, &mut builder)?;
     let mut report = builder.build();
 
     // Apply CLI-level message template (-m) if provided.
