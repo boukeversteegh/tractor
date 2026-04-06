@@ -16,7 +16,7 @@ use cli::{Cli, Command};
 use clap::Parser;
 use modes::{check::run_check, test::run_test, set::run_set, update::run_update, query::run_query, render::run_render, run::run_run};
 use tractor_core::report::{ReportBuilder, ReportMatch, Severity, DiagnosticOrigin};
-use pipeline::format::{OutputFormat, ViewField, ViewSet, render_gcc, render_text_report, render_json_report, render_yaml_report, render_xml_report, render_github};
+use pipeline::format::{OutputFormat, ViewField, ViewSet, render_gcc, render_text_report, render_json_report, render_yaml_report, render_xml_report, render_github, render_claude_code};
 use tractor_core::output::{should_use_color, RenderOptions};
 
 /// An error that has already been reported to the user; main should exit with
@@ -52,6 +52,13 @@ fn render_error_report(
         OutputFormat::Xml    => print!("{}", render_xml_report(report, &view, &render_opts, &[])),
         OutputFormat::Github => print!("{}", render_github(report, &[])),
         OutputFormat::Gcc    => print!("{}", render_gcc(report, &render_opts, &[])),
+        OutputFormat::ClaudeCode => {
+            let hook_type = pipeline::format::options::HookType::PostToolUse;
+            let out = render_claude_code(report, hook_type, &render_opts, &[]);
+            if !out.is_empty() {
+                print!("{}", out);
+            }
+        }
         OutputFormat::Text   => print!("{}", render_text_report(report, &view, &render_opts, &[])),
     }
 }

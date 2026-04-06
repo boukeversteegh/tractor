@@ -5,6 +5,7 @@ pub mod xml;
 pub mod json;
 pub mod yaml;
 pub mod text;
+pub mod claude_code;
 mod shared;
 
 pub use options::{OutputFormat, GroupDimension, ViewField, ViewSet, parse_view_set, parse_group_by};
@@ -14,6 +15,7 @@ pub use xml::render_xml_report;
 pub use json::render_json_report;
 pub use yaml::render_yaml_report;
 pub use text::render_text_report;
+pub use claude_code::render_claude_code;
 
 use tractor_core::{
     render_xml_node,
@@ -61,6 +63,13 @@ pub fn render_report(
             }
         }
         OutputFormat::Github => print!("{}", render_github(report, &dims)),
+        OutputFormat::ClaudeCode => {
+            let hook_type = ctx.hook_type.unwrap_or(crate::pipeline::format::options::HookType::PostToolUse);
+            let out = render_claude_code(report, hook_type, &ctx.render_options(), &dims);
+            if !out.is_empty() {
+                print!("{}", out);
+            }
+        }
         OutputFormat::Text   => print!("{}", render_text_report(report, &ctx.view, &ctx.render_options(), &dims)),
     }
 
