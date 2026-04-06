@@ -1,4 +1,4 @@
-use tractor_core::report::Severity;
+use tractor_core::report::{Severity, ReportMatch};
 use tractor_core::rule::Rule;
 use crate::cli::CheckArgs;
 use crate::executor::{self, CheckOperation, ExecuteOptions, Operation};
@@ -117,34 +117,44 @@ fn run_check_config(args: CheckArgs, config_path_str: &str) -> Result<(), Box<dy
         .filter(|op| matches!(op, executor::Operation::Check(_)))
         .collect();
 
-    if check_ops.is_empty() {
-        return Err(format!("no check operations found in {}", config_path_str).into());
-    }
-
     let ctx = RunContext::build(
         &args.shared, vec![], None, &args.format,
         &[ViewField::Reason, ViewField::Severity, ViewField::Lines],
         args.view.as_deref(), args.message, None, false, &[GroupDimension::File],
     )?;
 
-    // Resolve base_dir from the config file's parent directory so that
-    // relative file globs in the config are resolved relative to it.
-    let base_dir = config_path.parent()
-        .map(|p| if p.as_os_str().is_empty() { std::path::Path::new(".") } else { p })
-        .map(|p| p.canonicalize().unwrap_or_else(|_| p.to_path_buf()));
-
-    let options = executor::ExecuteOptions {
-        verbose: ctx.verbose,
-        base_dir,
-        diff_files: args.shared.diff_files.clone(),
-        diff_lines: args.shared.diff_lines.clone(),
-        max_files: args.shared.max_files,
-        cli_files: args.files.clone(),
-        config_root_files: loaded.root_files,
-    };
-
     let mut builder = tractor_core::ReportBuilder::new();
-    executor::execute(&check_ops, &options, &mut builder)?;
+
+    if check_ops.is_empty() {
+        builder.add(ReportMatch {
+            file: config_path_str.to_string(),
+            line: 0, column: 0, end_line: 0, end_column: 0,
+            command: String::new(),
+            tree: None, value: None, source: None, lines: None,
+            reason: Some("no check operations found".to_string()),
+            severity: Some(Severity::Fatal),
+            message: None, origin: None, rule_id: None, status: None, output: None,
+        });
+    } else {
+        // Resolve base_dir from the config file's parent directory so that
+        // relative file globs in the config are resolved relative to it.
+        let base_dir = config_path.parent()
+            .map(|p| if p.as_os_str().is_empty() { std::path::Path::new(".") } else { p })
+            .map(|p| p.canonicalize().unwrap_or_else(|_| p.to_path_buf()));
+
+        let options = executor::ExecuteOptions {
+            verbose: ctx.verbose,
+            base_dir,
+            diff_files: args.shared.diff_files.clone(),
+            diff_lines: args.shared.diff_lines.clone(),
+            max_files: args.shared.max_files,
+            cli_files: args.files.clone(),
+            config_root_files: loaded.root_files,
+        };
+
+        executor::execute(&check_ops, &options, &mut builder)?;
+    }
+
     let mut report = builder.build();
 
     // Apply CLI-level message template (-m) if provided.
