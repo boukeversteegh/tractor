@@ -65,10 +65,10 @@ public static class QueryHelpers
 ## Semantic Tree Output
 
 ```xml
-<class start="1:1" end="7:2">
+<class startLine="1" startCol="1" endLine="7" endCol="2">
   <public/><static/>
   <name>QueryHelpers</name>
-  <method start="3:5" end="6:6">
+  <method startLine="3" startCol="5" endLine="6" endCol="6">
     <public/><static/>
     <name>Where</name>
     <type>

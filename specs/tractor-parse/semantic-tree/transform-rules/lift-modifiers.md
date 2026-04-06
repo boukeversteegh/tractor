@@ -16,8 +16,8 @@ source location:
 
 <!-- After -->
 <method>
-  <public start="2:3" end="2:9"/>
-  <static start="2:10" end="2:16"/>
+  <public startLine="2" startCol="3" endLine="2" endCol="9"/>
+  <static startLine="2" startCol="10" endLine="2" endCol="16"/>
 </method>
 ```
 
@@ -29,14 +29,14 @@ marker from the set — never use absence as a default. See
 
 ```xml
 <!-- Declaration kind: always one of const, let, var -->
-<variable><const start="1:1" end="1:6"/><name>x</name></variable>
-<variable><let start="2:1" end="2:4"/><name>y</name></variable>
+<variable><const startLine="1" startCol="1" endLine="1" endCol="6"/><name>x</name></variable>
+<variable><let startLine="2" startCol="1" endLine="2" endCol="4"/><name>y</name></variable>
 
 <!-- Parameter: always one of required, optional -->
 <param><required/><name>id</name><typeof>string</typeof></param>
-<param><optional start="1:30" end="1:31"/><name>limit</name><typeof>number</typeof></param>
+<param><optional startLine="1" startCol="30" endLine="1" endCol="31"/><name>limit</name><typeof>number</typeof></param>
 
 <!-- Access: always one of public, private, protected, internal -->
-<method><public start="5:3" end="5:9"/><name>Foo</name></method>
-<method><internal start="8:3" end="8:11"/><name>Bar</name></method>
+<method><public startLine="5" startCol="3" endLine="5" endCol="9"/><name>Foo</name></method>
+<method><internal startLine="8" startCol="3" endLine="8" endCol="11"/><name>Bar</name></method>
 ```

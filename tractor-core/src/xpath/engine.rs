@@ -51,7 +51,7 @@ pub fn print_timing_stats() {
 
 // Pre-compiled regex for stripping location metadata from XML
 static STRIP_RE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r#"\s*(start|end|startLine|startCol|endLine|endCol)="[^"]*""#).unwrap()
+    Regex::new(r#"\s*(startLine|startCol|endLine|endCol)="[^"]*""#).unwrap()
 });
 
 /// Extract location directly from xot node attributes (fast path - no serialization)
@@ -65,18 +65,10 @@ fn extract_location_from_xot(xot: &Xot, node: Node) -> (u32, u32, u32, u32) {
         for (name_id, value) in xot.attributes(node).iter() {
             let name = xot.local_name_str(name_id);
             match name {
-                "start" => {
-                    if let Some((l, c)) = parse_location_attr(value) {
-                        line = l;
-                        col = c;
-                    }
-                }
-                "end" => {
-                    if let Some((l, c)) = parse_location_attr(value) {
-                        end_line = l;
-                        end_col = c;
-                    }
-                }
+                "startLine" => { if let Ok(v) = value.parse() { line = v; } }
+                "startCol" => { if let Ok(v) = value.parse() { col = v; } }
+                "endLine" => { if let Ok(v) = value.parse() { end_line = v; } }
+                "endCol" => { if let Ok(v) = value.parse() { end_col = v; } }
                 _ => {}
             }
         }
@@ -91,15 +83,6 @@ fn extract_location_from_xot(xot: &Xot, node: Node) -> (u32, u32, u32, u32) {
     } else {
         (1, 1, 1, 1)
     }
-}
-
-/// Parse "line:col" format from attribute value
-#[inline]
-fn parse_location_attr(value: &str) -> Option<(u32, u32)> {
-    let mut parts = value.split(':');
-    let line = parts.next()?.parse().ok()?;
-    let col = parts.next()?.parse().ok()?;
-    Some((line, col))
 }
 
 /// Walk an xot node tree and build a native `XmlNode` IR.
@@ -395,7 +378,7 @@ mod tests {
 
     #[test]
     fn test_strip_location_metadata() {
-        let xml = r#"<class start="1:1" end="5:2">Foo</class>"#;
+        let xml = r#"<class startLine="1" startCol="1" endLine="5" endCol="2">Foo</class>"#;
         let stripped = XPathEngine::strip_location_metadata(xml);
         assert_eq!(stripped, "<class>Foo</class>");
     }
@@ -406,12 +389,12 @@ mod tests {
 
         let xml = r#"<Files>
   <File path="test.ts">
-    <program start="1:1" end="2:1">
-      <variable start="1:1" end="1:11">
+    <program startLine="1" startCol="1" endLine="2" endCol="1">
+      <variable startLine="1" startCol="1" endLine="1" endCol="11">
         <let/>
         <name>x</name>
         <value>
-          <number start="1:9" end="1:10">1</number>
+          <number startLine="1" startCol="9" endLine="1" endCol="10">1</number>
         </value>
       </variable>
     </program>
@@ -601,12 +584,12 @@ mod tests {
         let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
 <Files>
   <File path="test.ts">
-    <program start="1:1" end="2:1">
-      <variable start="1:1" end="1:11">
+    <program startLine="1" startCol="1" endLine="2" endCol="1">
+      <variable startLine="1" startCol="1" endLine="1" endCol="11">
         <let/>
         <name>x</name>
         <value>
-          <number start="1:9" end="1:10">1</number>
+          <number startLine="1" startCol="9" endLine="1" endCol="10">1</number>
         </value>
       </variable>
     </program>

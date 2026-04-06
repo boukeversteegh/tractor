@@ -55,11 +55,10 @@ pub fn syntax_transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction,
                     if field == "key" {
                         let key_name = get_name(xot, "key");
                         let wrapper = xot.new_element(key_name);
-                        if let Some(sv) = get_attr(xot, child, "start") {
-                            set_attr(xot, wrapper, "start", &sv);
-                        }
-                        if let Some(ev) = get_attr(xot, child, "end") {
-                            set_attr(xot, wrapper, "end", &ev);
+                        for attr in &["startLine", "startCol", "endLine", "endCol"] {
+                            if let Some(v) = get_attr(xot, child, attr) {
+                                set_attr(xot, wrapper, attr, &v);
+                            }
                         }
                         xot.insert_before(child, wrapper)?;
                         xot.detach(child)?;

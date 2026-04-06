@@ -133,20 +133,19 @@ fn count_descendants(xot: &Xot, node: Node) -> usize {
     count
 }
 
-/// Extract (line, col) from "start" attribute value like "5:10"
+/// Extract (line, col) from startLine/startCol attributes
 fn extract_position(xot: &Xot, node: Node) -> Option<(u32, u32)> {
     let attrs = xot.attributes(node);
+    let mut line: Option<u32> = None;
+    let mut col: Option<u32> = None;
     for (attr_name_id, attr_value) in attrs.iter() {
-        if xot.local_name_str(attr_name_id) == "start" {
-            let parts: Vec<&str> = attr_value.split(':').collect();
-            if parts.len() == 2 {
-                if let (Ok(line), Ok(col)) = (parts[0].parse(), parts[1].parse()) {
-                    return Some((line, col));
-                }
-            }
+        match xot.local_name_str(attr_name_id) {
+            "startLine" => line = attr_value.parse().ok(),
+            "startCol" => col = attr_value.parse().ok(),
+            _ => {}
         }
     }
-    None
+    Some((line?, col?))
 }
 
 fn render_node_recursive(
@@ -469,7 +468,7 @@ fn render_open_tag(
         if !options.include_meta {
             if matches!(
                 attr_name,
-                "start" | "end" | "startLine" | "startCol" | "endLine" | "endCol"
+                "startLine" | "startCol" | "endLine" | "endCol"
                 | "kind" | "field" | "path"
             ) {
                 continue;
@@ -587,19 +586,18 @@ fn count_xml_node_descendants(node: &XmlNode) -> usize {
     }
 }
 
-/// Extract (line, col) from "start" attribute in an XmlNode element
+/// Extract (line, col) from startLine/startCol attributes in an XmlNode element
 fn extract_xml_node_position(attrs: &[(String, String)]) -> Option<(u32, u32)> {
+    let mut line: Option<u32> = None;
+    let mut col: Option<u32> = None;
     for (k, v) in attrs {
-        if k == "start" {
-            let parts: Vec<&str> = v.split(':').collect();
-            if parts.len() == 2 {
-                if let (Ok(line), Ok(col)) = (parts[0].parse(), parts[1].parse()) {
-                    return Some((line, col));
-                }
-            }
+        match k.as_str() {
+            "startLine" => line = v.parse().ok(),
+            "startCol" => col = v.parse().ok(),
+            _ => {}
         }
     }
-    None
+    Some((line?, col?))
 }
 
 fn render_xml_node_recursive(
@@ -840,7 +838,7 @@ fn render_xml_node_open_tag(
         if !options.include_meta {
             if matches!(
                 attr_name.as_str(),
-                "start" | "end" | "startLine" | "startCol" | "endLine" | "endCol"
+                "startLine" | "startCol" | "endLine" | "endCol"
                 | "kind" | "field" | "path"
             ) {
                 continue;

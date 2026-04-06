@@ -3,34 +3,27 @@ title: Location Attribute Format
 priority: 1
 ---
 
-Source location is stored in compact `start` and `end` attributes using `line:col` format.
+Source location is stored in separate numeric attributes: `startLine`, `startCol`, `endLine`, `endCol`.
 
 ```xml
-<class start="1:1" end="14:2">
-  <method start="4:5" end="7:6">
+<class startLine="1" startCol="1" endLine="14" endCol="2">
+  <method startLine="4" startCol="5" endLine="7" endCol="6">
     <name>Execute</name>
   </method>
 </class>
 ```
 
-Format: `start="startLine:startCol" end="endLine:endCol"`
+All values are 1-based integers.
 
-This is more compact than four separate attributes while remaining human-readable:
-- Current: `startLine="1" startCol="1" endLine="14" endCol="2"` (48 chars)
-- New: `start="1:1" end="14:2"` (23 chars)
-
-XPath access (when needed):
-- Start line: `substring-before(@start, ':')`
-- Start column: `substring-after(@start, ':')`
-- End line: `substring-before(@end, ':')`
-- End column: `substring-after(@end, ':')`
+XPath access is straightforward — no string parsing needed:
+- Start line: `@startLine`
+- Start column: `@startCol`
+- End line: `@endLine`
+- End column: `@endCol`
 
 For line-based queries (e.g., finding long methods):
 ```xpath
-//method[
-  number(substring-before(@end, ':')) -
-  number(substring-before(@start, ':')) > 50
-]
+//method[@endLine - @startLine > 50]
 ```
 
 The location info enables:

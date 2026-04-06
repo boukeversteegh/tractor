@@ -25,10 +25,10 @@ use std::collections::HashMap;
 
 /// Maps original source position (e.g. "3:5") to byte span `(start, end)` in rendered output.
 ///
-/// Keys are the `start` attribute values from XmlNode elements (which encode the
-/// original source line:column). Values are the byte offsets in the rendered string
+/// Keys are (startLine, startCol) pairs identifying the original source position
+/// of each XmlNode element. Values are the byte offsets in the rendered string
 /// where that node's *value* was written.
-pub type SpanMap = HashMap<String, (usize, usize)>;
+pub type SpanMap = HashMap<(u32, u32), (usize, usize)>;
 
 /// Errors that can occur during rendering
 #[derive(Debug, thiserror::Error)]

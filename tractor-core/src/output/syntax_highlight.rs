@@ -244,35 +244,22 @@ pub fn extract_syntax_spans_from_xml_node(node: &XmlNode, category_fn: SyntaxCat
 }
 
 fn extract_xml_node_position_span(attrs: &[(String, String)]) -> Option<(u32, u32, u32, u32)> {
-    let mut start: Option<(u32, u32)> = None;
-    let mut end: Option<(u32, u32)> = None;
+    let mut sl: Option<u32> = None;
+    let mut sc: Option<u32> = None;
+    let mut el: Option<u32> = None;
+    let mut ec: Option<u32> = None;
 
     for (k, v) in attrs {
         match k.as_str() {
-            "start" => {
-                let parts: Vec<&str> = v.split(':').collect();
-                if parts.len() == 2 {
-                    if let (Ok(l), Ok(c)) = (parts[0].parse(), parts[1].parse()) {
-                        start = Some((l, c));
-                    }
-                }
-            }
-            "end" => {
-                let parts: Vec<&str> = v.split(':').collect();
-                if parts.len() == 2 {
-                    if let (Ok(l), Ok(c)) = (parts[0].parse(), parts[1].parse()) {
-                        end = Some((l, c));
-                    }
-                }
-            }
+            "startLine" => sl = v.parse().ok(),
+            "startCol" => sc = v.parse().ok(),
+            "endLine" => el = v.parse().ok(),
+            "endCol" => ec = v.parse().ok(),
             _ => {}
         }
     }
 
-    match (start, end) {
-        (Some((sl, sc)), Some((el, ec))) => Some((sl, sc, el, ec)),
-        _ => None,
-    }
+    Some((sl?, sc?, el?, ec?))
 }
 
 fn extract_spans_from_xml_node_recursive(
@@ -340,38 +327,22 @@ fn extract_spans_recursive(xot: &Xot, node: Node, depth: u32, spans: &mut Vec<Sy
 /// Extract start and end positions from node attributes
 fn extract_position(xot: &Xot, node: Node) -> Option<(u32, u32, u32, u32)> {
     let attrs = xot.attributes(node);
-    let mut start: Option<(u32, u32)> = None;
-    let mut end: Option<(u32, u32)> = None;
+    let mut sl: Option<u32> = None;
+    let mut sc: Option<u32> = None;
+    let mut el: Option<u32> = None;
+    let mut ec: Option<u32> = None;
 
     for (attr_name_id, attr_value) in attrs.iter() {
-        let attr_name = xot.local_name_str(attr_name_id);
-        match attr_name {
-            "start" => {
-                // Format: "line:col"
-                let parts: Vec<&str> = attr_value.split(':').collect();
-                if parts.len() == 2 {
-                    if let (Ok(line), Ok(col)) = (parts[0].parse(), parts[1].parse()) {
-                        start = Some((line, col));
-                    }
-                }
-            }
-            "end" => {
-                // Format: "line:col"
-                let parts: Vec<&str> = attr_value.split(':').collect();
-                if parts.len() == 2 {
-                    if let (Ok(line), Ok(col)) = (parts[0].parse(), parts[1].parse()) {
-                        end = Some((line, col));
-                    }
-                }
-            }
+        match xot.local_name_str(attr_name_id) {
+            "startLine" => sl = attr_value.parse().ok(),
+            "startCol" => sc = attr_value.parse().ok(),
+            "endLine" => el = attr_value.parse().ok(),
+            "endCol" => ec = attr_value.parse().ok(),
             _ => {}
         }
     }
 
-    match (start, end) {
-        (Some((sl, sc)), Some((el, ec))) => Some((sl, sc, el, ec)),
-        _ => None,
-    }
+    Some((sl?, sc?, el?, ec?))
 }
 
 /// Highlight source code using syntax spans
@@ -582,7 +553,7 @@ mod tests {
 
     #[test]
     fn test_extract_spans_simple() {
-        let xml = r#"<class start="1:1" end="1:10"><name start="1:7" end="1:10">Foo</name></class>"#;
+        let xml = r#"<class startLine="1" startCol="1" endLine="1" endCol="10"><name startLine="1" startCol="7" endLine="1" endCol="10">Foo</name></class>"#;
         let spans = extract_syntax_spans(xml);
 
         assert_eq!(spans.len(), 2);
