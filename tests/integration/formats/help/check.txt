@@ -108,18 +108,19 @@ Check:
           
           [default: error]
 
-      --rules <RULES>
-          Path to a rules file (YAML/TOML) for batch checking.
+      --config <CONFIG>
+          Path to a tractor config file (YAML/TOML) for batch checking.
           
-          Example YAML rules file:
+          Uses the standard tractor config format. Example:
           
-            rules:
-              - id: no-eval
-                xpath: "//call[function='eval']"
-                severity: error
-                expect:
-                  - valid: "JSON.parse(data)"
-                  - invalid: "eval(userInput)"
+            check:
+              rules:
+                - id: no-eval
+                  xpath: "//call[function='eval']"
+                  severity: error
+                  expect:
+                    - valid: "JSON.parse(data)"
+                    - invalid: "eval(userInput)"
 
       --expect-valid <EXPECT_VALID>
           A code example that should pass the check (no matches expected)

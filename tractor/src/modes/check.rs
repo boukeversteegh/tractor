@@ -8,11 +8,12 @@ use crate::pipeline::{
     project_report, apply_message_template,
     GroupDimension,
 };
+use super::config::{run_from_config, ConfigRunParams};
 
 pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
-    if args.rules.is_some() {
-        let rules_path = args.rules.clone().unwrap();
-        return run_check_rules(args, &rules_path);
+    if args.config.is_some() {
+        let config_path = args.config.clone().unwrap();
+        return run_check_config(args, &config_path);
     }
 
     let severity = match args.severity.as_str() {
@@ -100,68 +101,20 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 // ---------------------------------------------------------------------------
-// Rules-based batch check — delegates to executor
+// Config-based batch check — loads a tractor config and runs check operations
 // ---------------------------------------------------------------------------
 
-fn run_check_rules(args: CheckArgs, rules_path: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let ruleset = crate::rules_config::load_rules(std::path::Path::new(rules_path))?;
-
-    if ruleset.rules.is_empty() {
-        return Ok(());
-    }
-
-    let ctx = RunContext::build(
-        &args.shared, args.files, None, &args.format,
-        &[ViewField::Reason, ViewField::Severity, ViewField::Lines],
-        args.view.as_deref(), args.message, None, false, &[GroupDimension::File],
-    )?;
-
-    let files = match &ctx.input {
-        InputMode::Files(files) => files.clone(),
-        InputMode::InlineSource { .. } => {
-            return Err("check --rules cannot be used with stdin input".into());
-        }
-    };
-
-    if files.is_empty() {
-        return Ok(());
-    }
-
-    let op = Operation::Check(CheckOperation {
-        files,
-        exclude: vec![],
-        diff_files: None,
-        diff_lines: None,
-        rules: ruleset.rules.clone(),
-        tree_mode: ctx.tree_mode,
-        language: ctx.lang.clone(),
-        ignore_whitespace: ctx.ignore_whitespace,
-        parse_depth: ctx.parse_depth,
-        ruleset_include: ruleset.include.clone(),
-        ruleset_exclude: ruleset.exclude.clone(),
-    });
-
-    let options = ExecuteOptions {
-        verbose: ctx.verbose,
-        diff_files: args.shared.diff_files.clone(),
-        diff_lines: args.shared.diff_lines.clone(),
-        max_files: args.shared.max_files,
-        ..Default::default()
-    };
-
-    let mut builder = tractor_core::ReportBuilder::new();
-    executor::execute(&[op], &options, &mut builder)?;
-    let mut report = builder.build();
-
-    // Apply CLI-level message template (-m) if provided.
-    if let Some(ref template) = ctx.message {
-        apply_message_template(&mut report, template);
-    }
-
-    project_report(&mut report, &ctx.view);
-    let report = {
-        let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
-        report.with_grouping(&dims)
-    };
-    render_report(&report, &ctx, None)
+fn run_check_config(args: CheckArgs, config_path_str: &str) -> Result<(), Box<dyn std::error::Error>> {
+    run_from_config(ConfigRunParams {
+        config_path: config_path_str,
+        shared: &args.shared,
+        cli_files: args.files,
+        format: &args.format,
+        default_view: &[ViewField::Reason, ViewField::Severity, ViewField::Lines],
+        view_override: args.view.as_deref(),
+        message: args.message,
+        default_group: &[GroupDimension::File],
+        op_filter: |op| matches!(op, Operation::Check(_)),
+        filter_label: "check",
+    })
 }

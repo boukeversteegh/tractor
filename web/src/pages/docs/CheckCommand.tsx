@@ -70,34 +70,38 @@ export function CheckCommand() {
         output={`::error file=app.js,line=1,endLine=1,col=1,endColumn=24::TODO comment found`}
       />
 
-      <h2>Rules Files</h2>
+      <h2>Config Files</h2>
       <p>
-        Bundle multiple rules into a YAML file with <code>--rules</code>:
-      </p>
-      <p>
-        <em>Note: the rules file format is being unified with the <code>tractor run</code> config file. In a future release, you'll be able to use the same <code>.tractor.yml</code> for both. The file name is free to choose — any <code>.yaml</code> or <code>.toml</code> file works.</em>
+        Bundle multiple rules into a tractor config file with <code>--config</code>:
       </p>
       <CodeBlock
         language="yaml"
-        title="rules.yaml"
-        code={`rules:
-  - id: no-todo
-    xpath: "//comment[contains(.,'TODO')]"
-    reason: "TODO comments should be resolved"
-    severity: warning
+        title="tractor.yaml"
+        code={`check:
+  files: ["src/**/*.js"]
+  rules:
+    - id: no-todo
+      xpath: "//comment[contains(.,'TODO')]"
+      reason: "TODO comments should be resolved"
+      severity: warning
 
-  - id: repository-needs-orderby
-    xpath: >-
-      //class[contains(name,'Repository')]
-      //method[contains(name,'getAll')]
-      [not(contains(.,'orderBy'))]/name
-    reason: "getAll methods in repositories should use orderBy"
-    severity: error`}
+    - id: repository-needs-orderby
+      xpath: >-
+        //class[contains(name,'Repository')]
+        //method[contains(name,'getAll')]
+        [not(contains(.,'orderBy'))]/name
+      reason: "getAll methods in repositories should use orderBy"
+      severity: error`}
       />
       <CodeBlock
         language="bash"
-        code={`tractor check "src/**/*.js" --rules rules.yaml`}
+        code={`tractor check --config tractor.yaml`}
       />
+      <p>
+        This uses the same config format as <code>tractor run</code>. The <code>check</code> command
+        extracts check operations from the config and groups output by file (whereas <code>run</code> groups
+        by command then file).
+      </p>
 
       <h2>Testing Rules Inline</h2>
       <p>
@@ -140,7 +144,7 @@ export function CheckCommand() {
           <tr><td><code>-x, --extract</code></td><td>XPath expression — each match is a violation</td></tr>
           <tr><td><code>--reason</code></td><td>Reason message for each violation</td></tr>
           <tr><td><code>--severity</code></td><td><code>error</code> (default) or <code>warning</code></td></tr>
-          <tr><td><code>--rules</code></td><td>Path to a YAML/TOML rules file</td></tr>
+          <tr><td><code>--config</code></td><td>Path to a tractor config file (YAML/TOML)</td></tr>
           <tr><td><code>--expect-valid</code></td><td>Code example that should pass (no matches)</td></tr>
           <tr><td><code>--expect-invalid</code></td><td>Code example that should fail (has matches)</td></tr>
           <tr><td><code>-f, --format</code></td><td>Output format: gcc (default), github, text, json, yaml, xml</td></tr>

@@ -143,6 +143,10 @@ struct CheckRuleConfig {
     #[serde(default)]
     exclude: Vec<String>,
     #[serde(default)]
+    language: Option<String>,
+    #[serde(default, rename = "tree-mode")]
+    tree_mode: Option<String>,
+    #[serde(default)]
     expect: Vec<CheckExpectEntry>,
 }
 
@@ -284,6 +288,7 @@ fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<Operation, Bo
 
     let rules: Vec<Rule> = config.rules.into_iter().map(|r| {
         let severity = parse_severity(&r.severity)?;
+        let rule_tree_mode = r.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
         let mut rule = Rule::new(r.id, r.xpath).with_severity(severity);
         if let Some(reason) = r.reason {
             rule = rule.with_reason(reason);
@@ -296,6 +301,12 @@ fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<Operation, Bo
         }
         if !r.exclude.is_empty() {
             rule = rule.with_exclude(r.exclude);
+        }
+        if let Some(lang) = r.language {
+            rule = rule.with_language(lang);
+        }
+        if let Some(tm) = rule_tree_mode {
+            rule = rule.with_tree_mode(tm);
         }
         let valid_examples: Vec<String> = r.expect.iter().filter_map(|e| e.valid.clone()).collect();
         let invalid_examples: Vec<String> = r.expect.iter().filter_map(|e| e.invalid.clone()).collect();

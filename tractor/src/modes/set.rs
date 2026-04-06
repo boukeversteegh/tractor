@@ -4,8 +4,10 @@ use tractor_core::xpath_upsert::upsert;
 use tractor_core::declarative_set::declarative_set;
 use tractor_core::detect_language;
 use crate::cli::SetArgs;
+use crate::executor::Operation;
 use crate::pipeline::{RunContext, ViewField, InputMode, query_files_batched, query_inline_source, render_report, project_report, GroupDimension};
 use crate::pipeline::git;
+use super::config::{run_from_config, ConfigRunParams};
 
 /// Separate positional args into files and an optional path expression.
 ///
@@ -33,6 +35,21 @@ fn split_files_and_expr(args: &[String], has_xpath: bool) -> (Vec<String>, Optio
 }
 
 pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
+    if let Some(ref config_path) = args.config {
+        return run_from_config(ConfigRunParams {
+            config_path,
+            shared: &args.shared,
+            cli_files: args.args.clone(),
+            format: &args.format,
+            default_view: &[ViewField::File, ViewField::Line, ViewField::Status],
+            view_override: args.view.as_deref(),
+            message: None,
+            default_group: &[GroupDimension::File],
+            op_filter: |op| matches!(op, Operation::Set(_)),
+            filter_label: "set",
+        });
+    }
+
     let has_xpath = args.shared.xpath.is_some();
     let diff_files_spec = args.shared.diff_files.clone();
     let diff_lines_spec = args.shared.diff_lines.clone();

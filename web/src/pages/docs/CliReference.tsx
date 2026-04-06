@@ -371,9 +371,9 @@ Core libraries:
       <p>Severity level: <code>error</code> (default, fails build) or <code>warning</code> (passes build).</p>
       <CodeBlock language="bash" code={`tractor check "src/**/*.js" -x "//comment[contains(.,'TODO')]" --reason "TODO" --severity warning`} />
 
-      <h3>--rules</h3>
-      <p>Path to a YAML/TOML rules file for batch checking.</p>
-      <CodeBlock language="bash" code={`tractor check "src/**/*.js" --rules rules.yaml`} />
+      <h3>--config</h3>
+      <p>Path to a tractor config file (YAML/TOML) for batch checking. Uses the same format as <code>tractor run</code>.</p>
+      <CodeBlock language="bash" code={`tractor check --config tractor.yaml`} />
 
       <h3>--expect-valid / --expect-invalid</h3>
       <p>Inline code examples to validate that your rule works correctly.</p>

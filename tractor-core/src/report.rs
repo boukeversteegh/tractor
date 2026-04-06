@@ -116,7 +116,7 @@ pub struct ReportMatch {
     pub message:  Option<String>,
     /// Where a diagnostic originated (shown when file is empty).
     pub origin:   Option<DiagnosticOrigin>,
-    /// Rule identifier for multi-rule reports (future: `--rules` flag).
+    /// Rule identifier for multi-rule reports (via `--config` or `run`).
     pub rule_id:  Option<String>,
     /// Set-command status: "updated" or "unchanged".
     pub status:   Option<String>,
