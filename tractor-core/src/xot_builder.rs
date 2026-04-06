@@ -279,7 +279,7 @@ impl<'a> TreeBuilder<'a> {
         let end_line_attr = self.get_name("end_line");
         let end_col_attr = self.get_name("end_column");
 
-        let attrs = self.xot.attributes_mut(element);
+        let mut attrs = self.xot.attributes_mut(element);
         attrs.insert(start_line_attr, (node.start_row + 1).to_string());
         attrs.insert(start_col_attr, (node.start_col + 1).to_string());
         attrs.insert(end_line_attr, (node.end_row + 1).to_string());
