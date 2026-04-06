@@ -248,7 +248,7 @@ fn add(a: i32, b: i32) -> i32 {
         <tbody>
           <tr><td><code>-x, --extract</code></td><td>XPath expression to match</td></tr>
           <tr><td><code>-v, --view</code></td><td>View mode: tree, value, source, lines, count, schema</td></tr>
-          <tr><td><code>-f, --format</code></td><td>Output format: text, json, yaml, xml, gcc, github</td></tr>
+          <tr><td><code>-f, --format</code></td><td>Output format: text, json, yaml, xml, gcc, github, claude-code</td></tr>
           <tr><td><code>-l, --lang</code></td><td>Language override (auto-detected from file extension)</td></tr>
           <tr><td><code>-s, --string</code></td><td>Inline source code (alternative to file)</td></tr>
           <tr><td><code>-n, --limit</code></td><td>Limit output to first N matches</td></tr>

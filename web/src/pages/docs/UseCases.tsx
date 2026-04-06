@@ -375,7 +375,7 @@ check:
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=$(jq -r '.tool_input.file_path') && tractor check \\"$FILE\\" -x \\"//class[contains(name,'Controller')]/method[public][not(attrs[contains(.,'Authorize')])][not(attrs[contains(.,'AllowAnonymous')])]/name\\" --reason \\"Missing [Authorize] or [AllowAnonymous]\\" 2>&1 || true"
+            "command": "FILE=$(jq -r '.tool_input.file_path') && tractor run .tractor.yml --files \\"$FILE\\" -f claude-code"
           }
         ]
       }
@@ -384,27 +384,8 @@ check:
 }`}
       />
       <p>
-        Or point it at your rules file to run all rules at once — tractor only checks the edited file:
+        With <code>-f claude-code</code>, tractor emits the JSON format that Claude Code hooks expect — no extra <code>jq</code> wrapping needed for the output. When violations are found, Claude sees the errors and fixes them immediately. When the file is clean, tractor outputs nothing and the hook passes silently.
       </p>
-      <CodeBlock
-        language="json"
-        title=".claude/settings.json"
-        code={`{
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "FILE=$(jq -r '.tool_input.file_path') && tractor run .tractor.yml --files \\"$FILE\\""
-          }
-        ]
-      }
-    ]
-  }
-}`}
-      />
       <p>
         This way, Claude gets the same error-and-fix loop it's used to from compilers and linters — but for your team's custom rules. No style guide to read, no tokens wasted, just immediate corrections on every edit.
       </p>

@@ -143,7 +143,7 @@ export function CheckCommand() {
           <tr><td><code>--rules</code></td><td>Path to a YAML/TOML rules file</td></tr>
           <tr><td><code>--expect-valid</code></td><td>Code example that should pass (no matches)</td></tr>
           <tr><td><code>--expect-invalid</code></td><td>Code example that should fail (has matches)</td></tr>
-          <tr><td><code>-f, --format</code></td><td>Output format: gcc (default), github, text, json, yaml, xml</td></tr>
+          <tr><td><code>-f, --format</code></td><td>Output format: gcc (default), github, text, json, yaml, xml, claude-code</td></tr>
           <tr><td><code>-m, --message</code></td><td>Custom message template</td></tr>
           <tr><td><code>--diff-files</code></td><td>Only files changed in a git diff range</td></tr>
           <tr><td><code>--diff-lines</code></td><td>Only matches in changed hunks</td></tr>

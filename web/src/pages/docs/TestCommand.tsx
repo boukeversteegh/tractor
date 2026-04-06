@@ -81,7 +81,7 @@ export function TestCommand() {
           <tr><td><code>-m, --message</code></td><td>Custom message for the assertion</td></tr>
           <tr><td><code>-s, --string</code></td><td>Inline source code to test</td></tr>
           <tr><td><code>-l, --lang</code></td><td>Language for stdin/string input</td></tr>
-          <tr><td><code>-f, --format</code></td><td>Output format: text (default), json, yaml, gcc, github</td></tr>
+          <tr><td><code>-f, --format</code></td><td>Output format: text (default), json, yaml, gcc, github, claude-code</td></tr>
         </tbody>
       </table>
 

@@ -319,7 +319,7 @@ check:
           <tr><th>Option</th><th>Description</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>-f, --format</code></td><td>Output format: gcc (default), github, text, json, yaml, xml</td></tr>
+          <tr><td><code>-f, --format</code></td><td>Output format: gcc (default), github, text, json, yaml, xml, claude-code</td></tr>
           <tr><td><code>-v, --view</code></td><td>View fields to include</td></tr>
           <tr><td><code>-m, --message</code></td><td>Message template for matches</td></tr>
           <tr><td><code>--diff-files</code></td><td>Only files changed in a git diff range</td></tr>
