@@ -58,10 +58,13 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
     body.push_str("</report>\n");
 
     // Colorize the whole report XML in one pass via the unified XML renderer.
+    // Always use with_meta(true) here: the report body already contains only
+    // the attributes it wants. The meta filter would incorrectly strip report
+    // attributes like "line" and "column" from <match> elements.
     if render_opts.use_color {
         let color_opts = RenderOptions::new()
             .with_color(true)
-            .with_meta(render_opts.include_meta)
+            .with_meta(true)
             .with_pretty_print(true);
         let colored = render_xml_string(&body, &color_opts);
         format!("\x1b[2m<?xml version=\"1.0\" encoding=\"UTF-8\"?>\x1b[0m\n{}", colored)
