@@ -141,14 +141,14 @@ Mutually exclusive sets currently identified:
 
 ### 10. Marker Source Locations
 
-Lifted modifier elements that correspond to a source keyword carry `start`/`end`
-source locations pointing to that keyword. Markers that are inferred (no
+Lifted modifier elements that correspond to a source keyword carry
+`line`/`column`/`end_line`/`end_column` source locations pointing to that keyword. Markers that are inferred (no
 corresponding source token) omit the location.
 
 ```xml
 <variable>
-  <const start="1:1" end="1:6"/>
-  <name start="1:7" end="1:8">x</name>
+  <const line="1" column="1" end_line="1" end_column="6"/>
+  <name line="1" column="7" end_line="1" end_column="8">x</name>
 </variable>
 ```
 

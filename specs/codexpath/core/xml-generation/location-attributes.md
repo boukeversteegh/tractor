@@ -4,7 +4,7 @@ priority: 1
 ---
 
 Add location attributes to all XML elements using 1-based indexing:
-- startLine: Starting line number (1-based)
-- startCol: Starting column number (1-based)
-- endLine: Ending line number (1-based)
-- endCol: Ending column number (1-based)
+- line: Starting line number (1-based)
+- column: Starting column number (1-based)
+- end_line: Ending line number (1-based)
+- end_column: Ending column number (1-based)

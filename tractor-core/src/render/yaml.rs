@@ -234,15 +234,18 @@ fn render_sequence(
     Ok(())
 }
 
-/// Record the byte span of a node's value in the span map, if it has a `start` attribute.
+/// Record the byte span of a node's value in the span map, keyed by (line, column).
 fn record_span(
     attributes: &[(String, String)],
     start: usize,
     end: usize,
     span_map: &mut SpanMap,
 ) {
-    if let Some(pos) = get_attr(attributes, "start") {
-        span_map.insert(pos, (start, end));
+    if let (Some(line), Some(col)) = (
+        get_attr(attributes, "line").and_then(|v| v.parse::<u32>().ok()),
+        get_attr(attributes, "column").and_then(|v| v.parse::<u32>().ok()),
+    ) {
+        span_map.insert((line, col), (start, end));
     }
 }
 
@@ -582,7 +585,8 @@ mod tests {
                     name: "name".to_string(),
                     attributes: vec![
                         ("field".to_string(), "name".to_string()),
-                        ("start".to_string(), "1:7".to_string()),
+                        ("line".to_string(), "1".to_string()),
+                        ("column".to_string(), "7".to_string()),
                     ],
                     children: vec![XmlNode::Text("Alice".to_string())],
                 },
@@ -590,7 +594,7 @@ mod tests {
         );
         let (rendered, spans) = render_node_tracked(&root, &opts()).unwrap();
         assert_eq!(rendered, "name: Alice\n");
-        let (start, end) = spans["1:7"];
+        let (start, end) = spans[&(1, 7)];
         // The value span should cover the rendered scalar "Alice"
         assert_eq!(&rendered[start..end], "Alice");
     }

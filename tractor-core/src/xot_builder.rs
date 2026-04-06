@@ -139,17 +139,16 @@ impl<'a> TreeBuilder<'a> {
         let start = ts_node.start_position();
         let end = ts_node.end_position();
 
-        let start_attr = self.get_name("start");
-        let end_attr = self.get_name("end");
+        let start_line_attr = self.get_name("line");
+        let start_col_attr = self.get_name("column");
+        let end_line_attr = self.get_name("end_line");
+        let end_col_attr = self.get_name("end_column");
 
-        self.xot.attributes_mut(element).insert(
-            start_attr,
-            format!("{}:{}", start.row + 1, start.column + 1),
-        );
-        self.xot.attributes_mut(element).insert(
-            end_attr,
-            format!("{}:{}", end.row + 1, end.column + 1),
-        );
+        let mut attrs = self.xot.attributes_mut(element);
+        attrs.insert(start_line_attr, (start.row + 1).to_string());
+        attrs.insert(start_col_attr, (start.column + 1).to_string());
+        attrs.insert(end_line_attr, (end.row + 1).to_string());
+        attrs.insert(end_col_attr, (end.column + 1).to_string());
 
         // Check if leaf node (no named children)
         let named_child_count = ts_node.named_child_count();
@@ -217,13 +216,12 @@ impl<'a> TreeBuilder<'a> {
                 let wrapper_name = self.get_name(field);
                 let wrapper = self.xot.new_element(wrapper_name);
 
-                let start_attr = self.get_name("start");
-                let end_attr = self.get_name("end");
-                if let Some(start_val) = self.xot.attributes(element).get(start_attr).cloned() {
-                    self.xot.attributes_mut(wrapper).insert(start_attr, start_val);
-                }
-                if let Some(end_val) = self.xot.attributes(element).get(end_attr).cloned() {
-                    self.xot.attributes_mut(wrapper).insert(end_attr, end_val);
+                // Copy location attributes from child to wrapper
+                for attr_name in &["line", "column", "end_line", "end_column"] {
+                    let attr_id = self.get_name(attr_name);
+                    if let Some(val) = self.xot.attributes(element).get(attr_id).cloned() {
+                        self.xot.attributes_mut(wrapper).insert(attr_id, val);
+                    }
                 }
 
                 // Mark wrapper as field-backed for JSON property lifting
@@ -276,17 +274,16 @@ impl<'a> TreeBuilder<'a> {
         self.xot.attributes_mut(element).insert(kind_attr, kind.to_string());
 
         // Add location attributes (convert from 0-indexed to 1-indexed)
-        let start_attr = self.get_name("start");
-        let end_attr = self.get_name("end");
+        let start_line_attr = self.get_name("line");
+        let start_col_attr = self.get_name("column");
+        let end_line_attr = self.get_name("end_line");
+        let end_col_attr = self.get_name("end_column");
 
-        self.xot.attributes_mut(element).insert(
-            start_attr,
-            format!("{}:{}", node.start_row + 1, node.start_col + 1),
-        );
-        self.xot.attributes_mut(element).insert(
-            end_attr,
-            format!("{}:{}", node.end_row + 1, node.end_col + 1),
-        );
+        let mut attrs = self.xot.attributes_mut(element);
+        attrs.insert(start_line_attr, (node.start_row + 1).to_string());
+        attrs.insert(start_col_attr, (node.start_col + 1).to_string());
+        attrs.insert(end_line_attr, (node.end_row + 1).to_string());
+        attrs.insert(end_col_attr, (node.end_col + 1).to_string());
 
         // Check if leaf node (no named children)
         let named_child_count = node.named_child_count();
@@ -345,13 +342,11 @@ impl<'a> TreeBuilder<'a> {
                 let wrapper = self.xot.new_element(wrapper_name);
 
                 // Copy location attributes from child to wrapper
-                let start_attr = self.get_name("start");
-                let end_attr = self.get_name("end");
-                if let Some(start_val) = self.xot.attributes(element).get(start_attr).cloned() {
-                    self.xot.attributes_mut(wrapper).insert(start_attr, start_val);
-                }
-                if let Some(end_val) = self.xot.attributes(element).get(end_attr).cloned() {
-                    self.xot.attributes_mut(wrapper).insert(end_attr, end_val);
+                for attr_name in &["line", "column", "end_line", "end_column"] {
+                    let attr_id = self.get_name(attr_name);
+                    if let Some(val) = self.xot.attributes(element).get(attr_id).cloned() {
+                        self.xot.attributes_mut(wrapper).insert(attr_id, val);
+                    }
                 }
 
                 // Mark wrapper as field-backed for JSON property lifting
@@ -761,13 +756,11 @@ impl XeeBuilder {
         let data_el = xot.new_element(data_name);
 
         // Copy the content root's span to <data> so it covers the whole document
-        let start_attr = xot.add_name("start");
-        let end_attr = xot.add_name("end");
-        if let Some(sv) = xot.attributes(content_root).get(start_attr).cloned() {
-            xot.attributes_mut(data_el).insert(start_attr, sv);
-        }
-        if let Some(ev) = xot.attributes(content_root).get(end_attr).cloned() {
-            xot.attributes_mut(data_el).insert(end_attr, ev);
+        for attr_name in &["line", "column", "end_line", "end_column"] {
+            let attr_id = xot.add_name(attr_name);
+            if let Some(val) = xot.attributes(content_root).get(attr_id).cloned() {
+                xot.attributes_mut(data_el).insert(attr_id, val);
+            }
         }
 
         // Move original content from <File> into <syntax>

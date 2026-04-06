@@ -181,15 +181,15 @@ tractor file1.js file2.js`} />
       />
 
       <h3>--meta</h3>
-      <p>Include metadata attributes (start/end positions, node kind, field name) in XML output.</p>
+      <p>Include metadata attributes in XML output: source positions (<code>line</code>, <code>column</code>, <code>end_line</code>, <code>end_column</code>), node <code>kind</code>, and <code>field</code> name.</p>
       <Example
         command={`tractor greeter.js -x "//function/name" --meta`}
         outputLanguage="xml"
         output={`greeter.js:1
-<name start="1:10" end="1:15" field="name">greet</name>
+<name line="1" column="10" end_line="1" end_column="15" field="name">greet</name>
 
 greeter.js:5
-<name start="5:10" end="5:13" field="name">add</name>`}
+<name line="5" column="10" end_line="5" end_column="13" field="name">add</name>`}
       />
 
       <h3>-g, --group</h3>
@@ -334,14 +334,14 @@ tractor check "src/**/*.js" --diff-lines "main..HEAD" -x "//comment[contains(.,'
         command={`echo 'function f() {}' | tractor -l javascript -x "//function" --debug`}
         outputLanguage="xml"
         output={`<stdin>:1
-<function kind="function_declaration" start="1:1" end="1:16">
+<function kind="function_declaration" line="1" column="1" end_line="1" end_column="16">
   function
-  <name start="1:10" end="1:11" field="name">f</name>
-  <parameters start="1:11" end="1:13" field="parameters">
-    <params kind="formal_parameters" start="1:11" end="1:13" field="params">()</params>
+  <name line="1" column="10" end_line="1" end_column="11" field="name">f</name>
+  <parameters line="1" column="11" end_line="1" end_column="13" field="parameters">
+    <params kind="formal_parameters" line="1" column="11" end_line="1" end_column="13" field="params">()</params>
   </parameters>
-  <body start="1:14" end="1:16" field="body">
-    <block kind="statement_block" start="1:14" end="1:16" field="block">{}</block>
+  <body line="1" column="14" end_line="1" end_column="16" field="body">
+    <block kind="statement_block" line="1" column="14" end_line="1" end_column="16" field="block">{}</block>
   </body>
 </function>`}
       />

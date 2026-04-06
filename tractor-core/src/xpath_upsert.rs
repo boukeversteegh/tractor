@@ -219,7 +219,7 @@ fn update_existing(
         .ok_or_else(|| UpsertError::NoInsertionPoint("no File node found".into()))?;
 
     // Step 1: Record original byte spans and mutate all matched nodes
-    let mut splice_info: Vec<(usize, usize, String)> = Vec::new(); // (orig_start, orig_end, span_key)
+    let mut splice_info: Vec<(usize, usize, (u32, u32))> = Vec::new(); // (orig_start, orig_end, span_key)
 
     for matched in matches {
         let orig_start = line_col_to_byte_offset(source, matched.line, matched.column)
@@ -232,7 +232,7 @@ fn update_existing(
 
         replace_text_content(result.documents.xot_mut(), target, value)?;
 
-        let span_key = format!("{}:{}", matched.line, matched.column);
+        let span_key = (matched.line, matched.column);
         splice_info.push((orig_start, orig_end, span_key));
     }
 
@@ -255,7 +255,7 @@ fn update_existing(
     for (orig_start, orig_end, span_key) in &splice_info {
         let (new_start, new_end) = span_map.get(span_key)
             .ok_or_else(|| UpsertError::NoInsertionPoint(
-                format!("node at {} not found in rendered output span map", span_key),
+                format!("node at {}:{} not found in rendered output span map", span_key.0, span_key.1),
             ))?;
 
         new_source.replace_range(*orig_start..*orig_end, &rendered[*new_start..*new_end]);
@@ -386,13 +386,21 @@ fn insert_new(
         rendered.trim_end().to_string()
     } else {
         // Look up the ancestor node's new span from the renderer's span map
-        let span_key = get_attr(result.documents.xot(), ancestor_node, "start")
+        let xot = result.documents.xot();
+        let sl: u32 = get_attr(xot, ancestor_node, "line")
+            .and_then(|v| v.parse().ok())
             .ok_or_else(|| UpsertError::NoInsertionPoint(
-                "splice node has no start attribute for span lookup".into(),
+                "splice node has no line attribute for span lookup".into(),
             ))?;
+        let sc: u32 = get_attr(xot, ancestor_node, "column")
+            .and_then(|v| v.parse().ok())
+            .ok_or_else(|| UpsertError::NoInsertionPoint(
+                "splice node has no column attribute for span lookup".into(),
+            ))?;
+        let span_key = (sl, sc);
         let (new_start, new_end) = span_map.get(&span_key)
             .ok_or_else(|| UpsertError::NoInsertionPoint(
-                format!("ancestor node at {} not found in rendered output span map", span_key),
+                format!("ancestor node at {}:{} not found in rendered output span map", sl, sc),
             ))?;
         rendered[*new_start..*new_end].to_string()
     };
@@ -434,15 +442,13 @@ fn find_file_node(xot: &Xot, doc_node: xot::Node) -> Option<xot::Node> {
     }
 }
 
-/// Find a node in the xot tree by its start position (line:col).
+/// Find a node in the xot tree by its start position.
 fn find_node_by_span(xot: &Xot, root: xot::Node, target_line: u32, target_col: u32) -> Option<xot::Node> {
     // Check if this node matches
-    if let Some(start) = get_attr(xot, root, "start") {
-        if let Some((line, col)) = parse_position(&start) {
-            if line == target_line && col == target_col {
-                return Some(root);
-            }
-        }
+    let line: Option<u32> = get_attr(xot, root, "line").and_then(|v| v.parse().ok());
+    let col: Option<u32> = get_attr(xot, root, "column").and_then(|v| v.parse().ok());
+    if line == Some(target_line) && col == Some(target_col) {
+        return Some(root);
     }
 
     // Recurse into children
@@ -458,10 +464,10 @@ fn find_node_by_span(xot: &Xot, root: xot::Node, target_line: u32, target_col: u
 
 /// Get start/end span of a node as (line, col, end_line, end_col).
 fn get_node_span(xot: &Xot, node: xot::Node) -> Option<(u32, u32, u32, u32)> {
-    let start = get_attr(xot, node, "start")?;
-    let end = get_attr(xot, node, "end")?;
-    let (sl, sc) = parse_position(&start)?;
-    let (el, ec) = parse_position(&end)?;
+    let sl: u32 = get_attr(xot, node, "line")?.parse().ok()?;
+    let sc: u32 = get_attr(xot, node, "column")?.parse().ok()?;
+    let el: u32 = get_attr(xot, node, "end_line")?.parse().ok()?;
+    let ec: u32 = get_attr(xot, node, "end_column")?.parse().ok()?;
     Some((sl, sc, el, ec))
 }
 
@@ -588,14 +594,6 @@ fn xpath_to_key_path(xpath: &str) -> Result<(Vec<String>, Vec<String>), UpsertEr
 // ---------------------------------------------------------------------------
 // Source utilities
 // ---------------------------------------------------------------------------
-
-/// Parse a "line:col" position string.
-fn parse_position(pos: &str) -> Option<(u32, u32)> {
-    let mut parts = pos.split(':');
-    let line: u32 = parts.next()?.parse().ok()?;
-    let col: u32 = parts.next()?.parse().ok()?;
-    Some((line, col))
-}
 
 /// Convert 1-based line:column to byte offset.
 fn line_col_to_byte_offset(content: &str, line: u32, col: u32) -> Option<usize> {

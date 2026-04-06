@@ -20,12 +20,12 @@ public static class QueryHelpers
 ## TreeSitter Raw Output
 
 ```xml
-<class_declaration startLine="1" startCol="1" endLine="7" endCol="2">
+<class_declaration line="1" column="1" end_line="7" end_column="2">
   <modifier>public</modifier>
   <modifier>static</modifier>
   <identifier>QueryHelpers</identifier>
   <declaration_list>
-    <method_declaration startLine="3" startCol="5" endLine="6" endCol="6">
+    <method_declaration line="3" column="5" end_line="6" end_column="6">
       <modifier>public</modifier>
       <modifier>static</modifier>
       <generic_name>
@@ -65,10 +65,10 @@ public static class QueryHelpers
 ## Semantic Tree Output
 
 ```xml
-<class start="1:1" end="7:2">
+<class line="1" column="1" end_line="7" end_column="2">
   <public/><static/>
   <name>QueryHelpers</name>
-  <method start="3:5" end="6:6">
+  <method line="3" column="5" end_line="6" end_column="6">
     <public/><static/>
     <name>Where</name>
     <type>
