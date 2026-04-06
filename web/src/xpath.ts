@@ -24,13 +24,30 @@ export const OUTPUT_FORMATS: { value: OutputFormat; label: string; description: 
 ];
 
 /**
- * Find location attributes on element, its descendants, or ancestors
- * Some elements (field wrappers) don't have locations, but their children or parents do
+ * Build a "line:col" position string from separate attributes on an element.
+ * Returns null if the attributes are missing.
+ */
+function getStartPos(el: Element): string | null {
+  const line = el.getAttribute('line');
+  const col = el.getAttribute('column');
+  return (line && col) ? `${line}:${col}` : null;
+}
+
+function getEndPos(el: Element): string | null {
+  const line = el.getAttribute('end_line');
+  const col = el.getAttribute('end_column');
+  return (line && col) ? `${line}:${col}` : null;
+}
+
+/**
+ * Find location attributes on element, its descendants, or ancestors.
+ * Some elements (field wrappers) don't have locations, but their children or parents do.
+ * Returns start/end as "line:col" strings for the WASM API.
  */
 function findLocation(element: Element): { start?: string; end?: string } {
   // First try the element itself
-  let start = element.getAttribute('start');
-  let end = element.getAttribute('end');
+  let start = getStartPos(element);
+  let end = getEndPos(element);
 
   if (start && end) {
     return { start, end };
@@ -43,8 +60,8 @@ function findLocation(element: Element): { start?: string; end?: string } {
 
   for (let i = 0; i < allElements.length; i++) {
     const child = allElements[i];
-    const childStart = child.getAttribute('start');
-    const childEnd = child.getAttribute('end');
+    const childStart = getStartPos(child);
+    const childEnd = getEndPos(child);
 
     if (childStart && !firstStart) {
       firstStart = childStart;
@@ -61,8 +78,8 @@ function findLocation(element: Element): { start?: string; end?: string } {
   // Still not found - walk up to parent elements
   let parent = element.parentElement;
   while (parent) {
-    const parentStart = parent.getAttribute('start');
-    const parentEnd = parent.getAttribute('end');
+    const parentStart = getStartPos(parent);
+    const parentEnd = getEndPos(parent);
     if (parentStart && parentEnd) {
       // Found a parent with location - but this will highlight too much
       // For now, return it as a fallback

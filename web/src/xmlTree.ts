@@ -19,7 +19,7 @@ export interface XmlNode {
   textContent: string | null;  // For leaf nodes with text
   children: XmlNode[];
   depth: number;
-  location: Location | null;  // Parsed from start/end attributes
+  location: Location | null;  // Parsed from line/column/end_line/end_column attributes
 }
 
 let nodeCounter = 0;
@@ -54,30 +54,20 @@ export function parseXmlToTree(xmlString: string): XmlNode | null {
 }
 
 /**
- * Parse location string "line:col" into Position
- */
-function parsePosition(str: string): Position | null {
-  const match = str.match(/^(\d+):(\d+)$/);
-  if (!match) return null;
-  return {
-    line: parseInt(match[1], 10),
-    column: parseInt(match[2], 10),
-  };
-}
-
-/**
- * Parse start/end attributes into Location
+ * Parse location from separate line/column/end_line/end_column attributes
  */
 function parseLocation(attributes: Record<string, string>): Location | null {
-  const startStr = attributes['start'];
-  const endStr = attributes['end'];
-  if (!startStr || !endStr) return null;
+  const line = parseInt(attributes['line'], 10);
+  const column = parseInt(attributes['column'], 10);
+  const endLine = parseInt(attributes['end_line'], 10);
+  const endColumn = parseInt(attributes['end_column'], 10);
 
-  const start = parsePosition(startStr);
-  const end = parsePosition(endStr);
-  if (!start || !end) return null;
+  if (isNaN(line) || isNaN(column) || isNaN(endLine) || isNaN(endColumn)) return null;
 
-  return { start, end };
+  return {
+    start: { line, column },
+    end: { line: endLine, column: endColumn },
+  };
 }
 
 function convertElement(element: Element, depth: number): XmlNode {
