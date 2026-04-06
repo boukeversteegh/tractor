@@ -1,6 +1,54 @@
+use serde::Serialize;
 use tractor_core::{report::Report, RenderOptions};
 use super::gcc::render_gcc;
 use super::options::HookType;
+
+// ---------------------------------------------------------------------------
+// Claude Code hook output structures
+// ---------------------------------------------------------------------------
+
+/// PostToolUse / Stop blocking response.
+/// Example: `{ "decision": "block", "reason": "..." }`
+#[derive(Serialize)]
+struct BlockResponse<'a> {
+    decision: &'static str,
+    reason: &'a str,
+}
+
+/// PreToolUse deny response.
+/// Example: `{ "hookSpecificOutput": { "hookEventName": "PreToolUse", "permissionDecision": "deny", ... } }`
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PreToolUseResponse<'a> {
+    hook_specific_output: PreToolUseOutput<'a>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PreToolUseOutput<'a> {
+    hook_event_name: &'static str,
+    permission_decision: &'static str,
+    permission_decision_reason: &'a str,
+}
+
+/// PostToolUse context (non-blocking) response.
+/// Example: `{ "hookSpecificOutput": { "hookEventName": "PostToolUse", "additionalContext": "..." } }`
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ContextResponse<'a> {
+    hook_specific_output: ContextOutput<'a>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ContextOutput<'a> {
+    hook_event_name: &'static str,
+    additional_context: &'a str,
+}
+
+// ---------------------------------------------------------------------------
+// Renderer
+// ---------------------------------------------------------------------------
 
 /// Render a report as Claude Code hook JSON.
 ///
@@ -10,7 +58,7 @@ use super::options::HookType;
 /// - **PostToolUse / Stop**: `{ "decision": "block", "reason": "..." }`
 ///   Outputs nothing when the report succeeds (no violations).
 ///
-/// - **PreToolUse**: `{ "hookSpecificOutput": { "hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "..." } }`
+/// - **PreToolUse**: `{ "hookSpecificOutput": { "hookEventName": "PreToolUse", "permissionDecision": "deny", ... } }`
 ///   Outputs nothing when the report succeeds.
 ///
 /// - **Context**: `{ "hookSpecificOutput": { "hookEventName": "PostToolUse", "additionalContext": "..." } }`
@@ -30,47 +78,33 @@ pub fn render_claude_code(
             if success || inner.is_empty() {
                 return String::new();
             }
-            format!(
-                "{{\"decision\":\"block\",\"reason\":{}}}",
-                serde_json::to_string(inner).unwrap_or_else(|_| escape_json_string(inner)),
-            )
+            serde_json::to_string(&BlockResponse {
+                decision: "block",
+                reason: inner,
+            }).expect("BlockResponse serialization cannot fail")
         }
         HookType::PreToolUse => {
             if success || inner.is_empty() {
                 return String::new();
             }
-            format!(
-                "{{\"hookSpecificOutput\":{{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":{}}}}}",
-                serde_json::to_string(inner).unwrap_or_else(|_| escape_json_string(inner)),
-            )
+            serde_json::to_string(&PreToolUseResponse {
+                hook_specific_output: PreToolUseOutput {
+                    hook_event_name: "PreToolUse",
+                    permission_decision: "deny",
+                    permission_decision_reason: inner,
+                },
+            }).expect("PreToolUseResponse serialization cannot fail")
         }
         HookType::Context => {
             if inner.is_empty() {
                 return String::new();
             }
-            format!(
-                "{{\"hookSpecificOutput\":{{\"hookEventName\":\"PostToolUse\",\"additionalContext\":{}}}}}",
-                serde_json::to_string(inner).unwrap_or_else(|_| escape_json_string(inner)),
-            )
+            serde_json::to_string(&ContextResponse {
+                hook_specific_output: ContextOutput {
+                    hook_event_name: "PostToolUse",
+                    additional_context: inner,
+                },
+            }).expect("ContextResponse serialization cannot fail")
         }
     }
-}
-
-/// Fallback JSON string escaping (used only if serde_json is unavailable).
-fn escape_json_string(s: &str) -> String {
-    let mut out = String::with_capacity(s.len() + 2);
-    out.push('"');
-    for c in s.chars() {
-        match c {
-            '"'  => out.push_str("\\\""),
-            '\\' => out.push_str("\\\\"),
-            '\n' => out.push_str("\\n"),
-            '\r' => out.push_str("\\r"),
-            '\t' => out.push_str("\\t"),
-            c if c < '\x20' => out.push_str(&format!("\\u{:04x}", c as u32)),
-            c => out.push(c),
-        }
-    }
-    out.push('"');
-    out
 }
