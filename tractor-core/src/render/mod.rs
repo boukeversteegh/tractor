@@ -25,7 +25,7 @@ use std::collections::HashMap;
 
 /// Maps original source position (e.g. "3:5") to byte span `(start, end)` in rendered output.
 ///
-/// Keys are (startLine, startCol) pairs identifying the original source position
+/// Keys are (line, column) pairs identifying the original source position
 /// of each XmlNode element. Values are the byte offsets in the rendered string
 /// where that node's *value* was written.
 pub type SpanMap = HashMap<(u32, u32), (usize, usize)>;

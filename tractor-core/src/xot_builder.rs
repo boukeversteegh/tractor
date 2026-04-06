@@ -139,10 +139,10 @@ impl<'a> TreeBuilder<'a> {
         let start = ts_node.start_position();
         let end = ts_node.end_position();
 
-        let start_line_attr = self.get_name("startLine");
-        let start_col_attr = self.get_name("startCol");
-        let end_line_attr = self.get_name("endLine");
-        let end_col_attr = self.get_name("endCol");
+        let start_line_attr = self.get_name("line");
+        let start_col_attr = self.get_name("column");
+        let end_line_attr = self.get_name("end_line");
+        let end_col_attr = self.get_name("end_column");
 
         let mut attrs = self.xot.attributes_mut(element);
         attrs.insert(start_line_attr, (start.row + 1).to_string());
@@ -217,7 +217,7 @@ impl<'a> TreeBuilder<'a> {
                 let wrapper = self.xot.new_element(wrapper_name);
 
                 // Copy location attributes from child to wrapper
-                for attr_name in &["startLine", "startCol", "endLine", "endCol"] {
+                for attr_name in &["line", "column", "end_line", "end_column"] {
                     let attr_id = self.get_name(attr_name);
                     if let Some(val) = self.xot.attributes(element).get(attr_id).cloned() {
                         self.xot.attributes_mut(wrapper).insert(attr_id, val);
@@ -274,10 +274,10 @@ impl<'a> TreeBuilder<'a> {
         self.xot.attributes_mut(element).insert(kind_attr, kind.to_string());
 
         // Add location attributes (convert from 0-indexed to 1-indexed)
-        let start_line_attr = self.get_name("startLine");
-        let start_col_attr = self.get_name("startCol");
-        let end_line_attr = self.get_name("endLine");
-        let end_col_attr = self.get_name("endCol");
+        let start_line_attr = self.get_name("line");
+        let start_col_attr = self.get_name("column");
+        let end_line_attr = self.get_name("end_line");
+        let end_col_attr = self.get_name("end_column");
 
         let attrs = self.xot.attributes_mut(element);
         attrs.insert(start_line_attr, (node.start_row + 1).to_string());
@@ -342,7 +342,7 @@ impl<'a> TreeBuilder<'a> {
                 let wrapper = self.xot.new_element(wrapper_name);
 
                 // Copy location attributes from child to wrapper
-                for attr_name in &["startLine", "startCol", "endLine", "endCol"] {
+                for attr_name in &["line", "column", "end_line", "end_column"] {
                     let attr_id = self.get_name(attr_name);
                     if let Some(val) = self.xot.attributes(element).get(attr_id).cloned() {
                         self.xot.attributes_mut(wrapper).insert(attr_id, val);
@@ -756,7 +756,7 @@ impl XeeBuilder {
         let data_el = xot.new_element(data_name);
 
         // Copy the content root's span to <data> so it covers the whole document
-        for attr_name in &["startLine", "startCol", "endLine", "endCol"] {
+        for attr_name in &["line", "column", "end_line", "end_column"] {
             let attr_id = xot.add_name(attr_name);
             if let Some(val) = xot.attributes(content_root).get(attr_id).cloned() {
                 xot.attributes_mut(data_el).insert(attr_id, val);

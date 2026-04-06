@@ -251,10 +251,10 @@ fn extract_xml_node_position_span(attrs: &[(String, String)]) -> Option<(u32, u3
 
     for (k, v) in attrs {
         match k.as_str() {
-            "startLine" => sl = v.parse().ok(),
-            "startCol" => sc = v.parse().ok(),
-            "endLine" => el = v.parse().ok(),
-            "endCol" => ec = v.parse().ok(),
+            "line" => sl = v.parse().ok(),
+            "column" => sc = v.parse().ok(),
+            "end_line" => el = v.parse().ok(),
+            "end_column" => ec = v.parse().ok(),
             _ => {}
         }
     }
@@ -334,10 +334,10 @@ fn extract_position(xot: &Xot, node: Node) -> Option<(u32, u32, u32, u32)> {
 
     for (attr_name_id, attr_value) in attrs.iter() {
         match xot.local_name_str(attr_name_id) {
-            "startLine" => sl = attr_value.parse().ok(),
-            "startCol" => sc = attr_value.parse().ok(),
-            "endLine" => el = attr_value.parse().ok(),
-            "endCol" => ec = attr_value.parse().ok(),
+            "line" => sl = attr_value.parse().ok(),
+            "column" => sc = attr_value.parse().ok(),
+            "end_line" => el = attr_value.parse().ok(),
+            "end_column" => ec = attr_value.parse().ok(),
             _ => {}
         }
     }
@@ -553,7 +553,7 @@ mod tests {
 
     #[test]
     fn test_extract_spans_simple() {
-        let xml = r#"<class startLine="1" startCol="1" endLine="1" endCol="10"><name startLine="1" startCol="7" endLine="1" endCol="10">Foo</name></class>"#;
+        let xml = r#"<class line="1" column="1" end_line="1" end_column="10"><name line="1" column="7" end_line="1" end_column="10">Foo</name></class>"#;
         let spans = extract_syntax_spans(xml);
 
         assert_eq!(spans.len(), 2);

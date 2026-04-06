@@ -31,10 +31,10 @@ fn write_node_with_field(out: &mut impl Write, node: tree_sitter::Node, source: 
     let end_col = (end.column + 1).to_string();
 
     let mut attrs: Vec<(&str, &str)> = vec![
-        ("startLine", &start_line),
-        ("startCol", &start_col),
-        ("endLine", &end_line),
-        ("endCol", &end_col),
+        ("line", &start_line),
+        ("column", &start_col),
+        ("end_line", &end_line),
+        ("end_column", &end_col),
     ];
 
     if let Some(field) = field_name {

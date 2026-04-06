@@ -294,7 +294,7 @@ pub mod helpers {
 
     /// Extract a numeric value from a position attribute.
     /// Position attributes are set by the xot builder from tree-sitter positions.
-    /// E.g. `get_line(xot, node, "startLine")` on a node with `startLine="3"` returns `Some(3)`.
+    /// E.g. `get_line(xot, node, "line")` on a node with `line="3"` returns `Some(3)`.
     pub fn get_line(xot: &Xot, node: XotNode, attr: &str) -> Option<usize> {
         get_attr(xot, node, attr)?
             .parse()
@@ -307,7 +307,7 @@ pub mod helpers {
     ///
     /// Note: `xot.preceding_siblings()` includes the node itself, so we skip it.
     pub fn is_inline_node(xot: &Xot, node: XotNode) -> bool {
-        let start_line = match get_line(xot, node, "startLine") {
+        let start_line = match get_line(xot, node, "line") {
             Some(l) => l,
             None => return false,
         };
@@ -318,7 +318,7 @@ pub mod helpers {
 
         match prev {
             Some(prev) => {
-                let prev_end_line = get_line(xot, prev, "endLine").unwrap_or(0);
+                let prev_end_line = get_line(xot, prev, "end_line").unwrap_or(0);
                 prev_end_line == start_line
             }
             None => false,
@@ -535,7 +535,7 @@ pub mod helpers {
 
     /// Copy source location attributes from one node to another
     pub fn copy_source_location(xot: &mut Xot, from: XotNode, to: XotNode) {
-        for attr in &["startLine", "startCol", "endLine", "endCol"] {
+        for attr in &["line", "column", "end_line", "end_column"] {
             if let Some(v) = get_attr(xot, from, attr) {
                 set_attr(xot, to, attr, &v);
             }

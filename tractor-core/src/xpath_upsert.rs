@@ -387,15 +387,15 @@ fn insert_new(
     } else {
         // Look up the ancestor node's new span from the renderer's span map
         let xot = result.documents.xot();
-        let sl: u32 = get_attr(xot, ancestor_node, "startLine")
+        let sl: u32 = get_attr(xot, ancestor_node, "line")
             .and_then(|v| v.parse().ok())
             .ok_or_else(|| UpsertError::NoInsertionPoint(
-                "splice node has no startLine attribute for span lookup".into(),
+                "splice node has no line attribute for span lookup".into(),
             ))?;
-        let sc: u32 = get_attr(xot, ancestor_node, "startCol")
+        let sc: u32 = get_attr(xot, ancestor_node, "column")
             .and_then(|v| v.parse().ok())
             .ok_or_else(|| UpsertError::NoInsertionPoint(
-                "splice node has no startCol attribute for span lookup".into(),
+                "splice node has no column attribute for span lookup".into(),
             ))?;
         let span_key = (sl, sc);
         let (new_start, new_end) = span_map.get(&span_key)
@@ -445,8 +445,8 @@ fn find_file_node(xot: &Xot, doc_node: xot::Node) -> Option<xot::Node> {
 /// Find a node in the xot tree by its start position.
 fn find_node_by_span(xot: &Xot, root: xot::Node, target_line: u32, target_col: u32) -> Option<xot::Node> {
     // Check if this node matches
-    let line: Option<u32> = get_attr(xot, root, "startLine").and_then(|v| v.parse().ok());
-    let col: Option<u32> = get_attr(xot, root, "startCol").and_then(|v| v.parse().ok());
+    let line: Option<u32> = get_attr(xot, root, "line").and_then(|v| v.parse().ok());
+    let col: Option<u32> = get_attr(xot, root, "column").and_then(|v| v.parse().ok());
     if line == Some(target_line) && col == Some(target_col) {
         return Some(root);
     }
@@ -464,10 +464,10 @@ fn find_node_by_span(xot: &Xot, root: xot::Node, target_line: u32, target_col: u
 
 /// Get start/end span of a node as (line, col, end_line, end_col).
 fn get_node_span(xot: &Xot, node: xot::Node) -> Option<(u32, u32, u32, u32)> {
-    let sl: u32 = get_attr(xot, node, "startLine")?.parse().ok()?;
-    let sc: u32 = get_attr(xot, node, "startCol")?.parse().ok()?;
-    let el: u32 = get_attr(xot, node, "endLine")?.parse().ok()?;
-    let ec: u32 = get_attr(xot, node, "endCol")?.parse().ok()?;
+    let sl: u32 = get_attr(xot, node, "line")?.parse().ok()?;
+    let sc: u32 = get_attr(xot, node, "column")?.parse().ok()?;
+    let el: u32 = get_attr(xot, node, "end_line")?.parse().ok()?;
+    let ec: u32 = get_attr(xot, node, "end_column")?.parse().ok()?;
     Some((sl, sc, el, ec))
 }
 

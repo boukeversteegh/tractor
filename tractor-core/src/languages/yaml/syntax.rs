@@ -55,7 +55,7 @@ pub fn syntax_transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction,
                     if field == "key" {
                         let key_name = get_name(xot, "key");
                         let wrapper = xot.new_element(key_name);
-                        for attr in &["startLine", "startCol", "endLine", "endCol"] {
+                        for attr in &["line", "column", "end_line", "end_column"] {
                             if let Some(v) = get_attr(xot, child, attr) {
                                 set_attr(xot, wrapper, attr, &v);
                             }

@@ -133,15 +133,15 @@ fn count_descendants(xot: &Xot, node: Node) -> usize {
     count
 }
 
-/// Extract (line, col) from startLine/startCol attributes
+/// Extract (line, col) from line/column attributes
 fn extract_position(xot: &Xot, node: Node) -> Option<(u32, u32)> {
     let attrs = xot.attributes(node);
     let mut line: Option<u32> = None;
     let mut col: Option<u32> = None;
     for (attr_name_id, attr_value) in attrs.iter() {
         match xot.local_name_str(attr_name_id) {
-            "startLine" => line = attr_value.parse().ok(),
-            "startCol" => col = attr_value.parse().ok(),
+            "line" => line = attr_value.parse().ok(),
+            "column" => col = attr_value.parse().ok(),
             _ => {}
         }
     }
@@ -468,7 +468,7 @@ fn render_open_tag(
         if !options.include_meta {
             if matches!(
                 attr_name,
-                "startLine" | "startCol" | "endLine" | "endCol"
+                "line" | "column" | "end_line" | "end_column"
                 | "kind" | "field" | "path"
             ) {
                 continue;
@@ -586,14 +586,14 @@ fn count_xml_node_descendants(node: &XmlNode) -> usize {
     }
 }
 
-/// Extract (line, col) from startLine/startCol attributes in an XmlNode element
+/// Extract (line, col) from line/column attributes in an XmlNode element
 fn extract_xml_node_position(attrs: &[(String, String)]) -> Option<(u32, u32)> {
     let mut line: Option<u32> = None;
     let mut col: Option<u32> = None;
     for (k, v) in attrs {
         match k.as_str() {
-            "startLine" => line = v.parse().ok(),
-            "startCol" => col = v.parse().ok(),
+            "line" => line = v.parse().ok(),
+            "column" => col = v.parse().ok(),
             _ => {}
         }
     }
@@ -838,7 +838,7 @@ fn render_xml_node_open_tag(
         if !options.include_meta {
             if matches!(
                 attr_name.as_str(),
-                "startLine" | "startCol" | "endLine" | "endCol"
+                "line" | "column" | "end_line" | "end_column"
                 | "kind" | "field" | "path"
             ) {
                 continue;

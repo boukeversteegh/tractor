@@ -540,7 +540,7 @@ fn is_in_namespace_context(xot: &Xot, node: XotNode) -> bool {
 /// "Immediately" means the next non-comment element sibling starts on the line
 /// right after this comment ends, with no blank-line gap.
 fn is_leading_comment(xot: &Xot, node: XotNode) -> bool {
-    let comment_end_line = match get_line(xot, node, "endLine") {
+    let comment_end_line = match get_line(xot, node, "end_line") {
         Some(l) => l,
         None => return false,
     };
@@ -555,7 +555,7 @@ fn is_leading_comment(xot: &Xot, node: XotNode) -> bool {
 
     match next {
         Some(next) => {
-            let next_start_line = get_line(xot, next, "startLine").unwrap_or(0);
+            let next_start_line = get_line(xot, next, "line").unwrap_or(0);
             // Next declaration starts on the very next line (no blank line gap)
             next_start_line == comment_end_line + 1
         }
@@ -581,7 +581,7 @@ fn group_line_comments(xot: &mut Xot, node: XotNode) -> Result<Vec<XotNode>, xot
         return Ok(Vec::new());
     }
 
-    let mut end_line = match get_line(xot, node, "endLine") {
+    let mut end_line = match get_line(xot, node, "end_line") {
         Some(l) => l,
         None => return Ok(Vec::new()),
     };
@@ -613,7 +613,7 @@ fn group_line_comments(xot: &mut Xot, node: XotNode) -> Result<Vec<XotNode>, xot
             break;
         }
 
-        let sibling_start_line = match get_line(xot, sibling, "startLine") {
+        let sibling_start_line = match get_line(xot, sibling, "line") {
             Some(l) => l,
             None => break,
         };
@@ -628,7 +628,7 @@ fn group_line_comments(xot: &mut Xot, node: XotNode) -> Result<Vec<XotNode>, xot
         merged_text.push_str(&sibling_text);
 
         // Update end line to the consumed sibling's end
-        end_line = get_line(xot, sibling, "endLine").unwrap_or(end_line + 1);
+        end_line = get_line(xot, sibling, "end_line").unwrap_or(end_line + 1);
 
         consumed.push(sibling);
     }
@@ -647,8 +647,8 @@ fn group_line_comments(xot: &mut Xot, node: XotNode) -> Result<Vec<XotNode>, xot
         xot.append(node, new_text)?;
 
         // Update end attribute to reflect the last consumed comment
-        set_attr(xot, node, "endLine", &end_line.to_string());
-        set_attr(xot, node, "endCol", "1");
+        set_attr(xot, node, "end_line", &end_line.to_string());
+        set_attr(xot, node, "end_column", "1");
     }
 
     Ok(consumed)
