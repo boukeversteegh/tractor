@@ -12,7 +12,7 @@ echo -e "${BLUE}Tractor Integration Tests${NC}"
 echo ""
 
 # Language parse/query tests
-for suite in rust python typescript javascript go java csharp ruby xml yaml markdown tsql ini toml; do
+for suite in rust python typescript tsx javascript go java csharp ruby xml yaml markdown tsql ini toml; do
     bash "tests/integration/languages/$suite/test.sh" || exit 1
     echo ""
 done

@@ -453,6 +453,7 @@ export function Playground() {
             <span>Source</span>
             <select value={language} onChange={(e) => handleLanguageChange(e.target.value)}>
               <option value="typescript">TypeScript</option>
+              <option value="tsx">TSX</option>
               <option value="javascript">JavaScript</option>
               <option value="csharp">C#</option>
               <option value="rust">Rust</option>
