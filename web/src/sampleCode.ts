@@ -3,6 +3,13 @@ export const SAMPLE_CODE: Record<string, string> = {
   typescript: `function hello(name: string): string {
   return \`Hello, \${name}!\`;
 }`,
+  tsx: `interface Props {
+  name: string;
+}
+
+function Greeting({ name }: Props) {
+  return <div className="greeting">Hello, {name}!</div>;
+}`,
   javascript: `function hello(name) {
   return \`Hello, \${name}!\`;
 }`,

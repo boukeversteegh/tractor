@@ -21,9 +21,15 @@ pub struct LanguageInfo {
 pub static LANGUAGES: &[LanguageInfo] = &[
     LanguageInfo {
         name: "typescript",
-        extensions: &["ts", "tsx"],
+        extensions: &["ts"],
         has_transforms: true,
         grammar_file: Some("tree-sitter-typescript.wasm"),
+    },
+    LanguageInfo {
+        name: "tsx",
+        extensions: &["tsx"],
+        has_transforms: true,
+        grammar_file: Some("tree-sitter-tsx.wasm"),
     },
     LanguageInfo {
         name: "javascript",
@@ -194,7 +200,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
 pub fn get_language_info(name: &str) -> Option<&'static LanguageInfo> {
     // Normalize common aliases
     let normalized = match name {
-        "ts" | "tsx" => "typescript",
+        "ts" => "typescript",
         "js" | "jsx" => "javascript",
         "cs" => "csharp",
         "rs" => "rust",
@@ -258,9 +264,20 @@ mod tests {
     }
 
     #[test]
+    fn test_tsx_language() {
+        let tsx = get_language_info("tsx").unwrap();
+        assert_eq!(tsx.name, "tsx");
+        assert!(tsx.has_transforms);
+        assert!(tsx.extensions.contains(&"tsx"));
+    }
+
+    #[test]
     fn test_get_language_for_extension() {
         let lang = get_language_for_extension("ts").unwrap();
         assert_eq!(lang.name, "typescript");
+
+        let lang = get_language_for_extension("tsx").unwrap();
+        assert_eq!(lang.name, "tsx");
 
         let lang = get_language_for_extension("cs").unwrap();
         assert_eq!(lang.name, "csharp");

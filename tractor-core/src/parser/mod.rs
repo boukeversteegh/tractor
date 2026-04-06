@@ -19,7 +19,8 @@ pub static SUPPORTED_LANGUAGES: &[(&str, &[&str])] = &[
     ("csharp", &["cs"]),
     ("rust", &["rs"]),
     ("javascript", &["js", "mjs", "cjs", "jsx"]),
-    ("typescript", &["ts", "tsx"]),
+    ("typescript", &["ts"]),
+    ("tsx", &["tsx"]),
     ("python", &["py", "pyw", "pyi"]),
     ("go", &["go"]),
     ("java", &["java"]),
@@ -88,7 +89,8 @@ pub fn detect_language(path: &str) -> &'static str {
         "cs" => "csharp",
         "rs" => "rust",
         "js" | "mjs" | "cjs" | "jsx" => "javascript",
-        "ts" | "tsx" => "typescript",
+        "ts" => "typescript",
+        "tsx" => "tsx",
         "py" | "pyw" | "pyi" => "python",
         "go" => "go",
         "java" => "java",
@@ -123,7 +125,8 @@ fn get_tree_sitter_language(lang: &str) -> Result<tree_sitter::Language, ParseEr
         "csharp" | "cs" => Ok(tree_sitter_c_sharp::LANGUAGE.into()),
         "rust" | "rs" => Ok(tree_sitter_rust::LANGUAGE.into()),
         "javascript" | "js" => Ok(tree_sitter_javascript::LANGUAGE.into()),
-        "typescript" | "ts" | "tsx" => Ok(tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into()),
+        "typescript" | "ts" => Ok(tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into()),
+        "tsx" => Ok(tree_sitter_typescript::LANGUAGE_TSX.into()),
         "python" | "py" => Ok(tree_sitter_python::LANGUAGE.into()),
         "go" => Ok(tree_sitter_go::LANGUAGE.into()),
         "java" => Ok(tree_sitter_java::LANGUAGE.into()),
@@ -253,6 +256,10 @@ pub fn get_language_abi_versions() -> Vec<LanguageAbiInfo> {
         LanguageAbiInfo {
             name: "scala",
             abi_version: tree_sitter::Language::from(tree_sitter_scala::LANGUAGE).abi_version(),
+        },
+        LanguageAbiInfo {
+            name: "tsx",
+            abi_version: tree_sitter::Language::from(tree_sitter_typescript::LANGUAGE_TSX).abi_version(),
         },
         LanguageAbiInfo {
             name: "typescript",
@@ -622,6 +629,9 @@ mod tests {
         assert_eq!(detect_language("foo.rs"), "rust");
         assert_eq!(detect_language("foo.py"), "python");
         assert_eq!(detect_language("foo.js"), "javascript");
+        assert_eq!(detect_language("foo.ts"), "typescript");
+        assert_eq!(detect_language("foo.tsx"), "tsx");
+        assert_eq!(detect_language("foo.jsx"), "javascript");
         assert_eq!(detect_language("foo.sql"), "tsql");
         assert_eq!(detect_language("foo.unknown"), "unknown");
     }
