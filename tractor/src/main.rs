@@ -52,13 +52,7 @@ fn render_error_report(
         OutputFormat::Xml    => print!("{}", render_xml_report(report, &view, &render_opts, &[])),
         OutputFormat::Github => print!("{}", render_github(report, &[])),
         OutputFormat::Gcc    => print!("{}", render_gcc(report, &render_opts, &[])),
-        OutputFormat::ClaudeCode => {
-            let hook_type = pipeline::format::options::HookType::PostToolUse;
-            let out = render_claude_code(report, hook_type, &render_opts, &[]);
-            if !out.is_empty() {
-                print!("{}", out);
-            }
-        }
+        OutputFormat::ClaudeCode => print!("{}", render_claude_code(report, pipeline::format::options::HookType::PostToolUse, &render_opts, &[])),
         OutputFormat::Text   => print!("{}", render_text_report(report, &view, &render_opts, &[])),
     }
 }

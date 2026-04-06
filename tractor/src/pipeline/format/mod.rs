@@ -63,13 +63,7 @@ pub fn render_report(
             }
         }
         OutputFormat::Github => print!("{}", render_github(report, &dims)),
-        OutputFormat::ClaudeCode => {
-            let hook_type = ctx.hook_type.unwrap_or(crate::pipeline::format::options::HookType::PostToolUse);
-            let out = render_claude_code(report, hook_type, &ctx.render_options(), &dims);
-            if !out.is_empty() {
-                print!("{}", out);
-            }
-        }
+        OutputFormat::ClaudeCode => print!("{}", render_claude_code(report, ctx.hook_type.unwrap_or(crate::pipeline::format::options::HookType::PostToolUse), &ctx.render_options(), &dims)),
         OutputFormat::Text   => print!("{}", render_text_report(report, &ctx.view, &ctx.render_options(), &dims)),
     }
 
