@@ -271,7 +271,7 @@ fn rule_language_matches_file(
 ) -> bool {
     let rule = &ruleset.rules[rule_idx];
     let effective_lang = ruleset.effective_language(rule);
-    
+
     match effective_lang {
         // No language specified → rule uses auto-detection, always matches
         None => true,
@@ -542,7 +542,7 @@ mod tests {
         // When no language is specified, rule should match any file
         let mut ruleset = RuleSet::new();
         ruleset.add(tractor_core::rule::Rule::new("test", "//any"));
-        
+
         assert!(rule_language_matches_file(&ruleset, 0, "test.js"));
         assert!(rule_language_matches_file(&ruleset, 0, "test.rs"));
         assert!(rule_language_matches_file(&ruleset, 0, "test.md"));
@@ -556,7 +556,7 @@ mod tests {
         let rule = tractor_core::rule::Rule::new("test", "//any")
             .with_language("javascript");
         ruleset.add(rule);
-        
+
         assert!(rule_language_matches_file(&ruleset, 0, "test.js"));
         assert!(!rule_language_matches_file(&ruleset, 0, "test.rs"));
         assert!(!rule_language_matches_file(&ruleset, 0, "test.md"));
@@ -569,7 +569,7 @@ mod tests {
         let rule = tractor_core::rule::Rule::new("test", "//any")
             .with_language("js");  // alias for javascript
         ruleset.add(rule);
-        
+
         assert!(rule_language_matches_file(&ruleset, 0, "test.js"));
         assert!(!rule_language_matches_file(&ruleset, 0, "test.rs"));
     }
@@ -580,7 +580,7 @@ mod tests {
         let mut ruleset = RuleSet::new();
         ruleset.default_language = Some("markdown".to_string());
         ruleset.add(tractor_core::rule::Rule::new("test", "//any"));
-        
+
         assert!(rule_language_matches_file(&ruleset, 0, "test.md"));
         assert!(!rule_language_matches_file(&ruleset, 0, "test.js"));
     }
@@ -593,7 +593,7 @@ mod tests {
         let rule = tractor_core::rule::Rule::new("test", "//any")
             .with_language("javascript");
         ruleset.add(rule);
-        
+
         assert!(rule_language_matches_file(&ruleset, 0, "test.js"));
         assert!(!rule_language_matches_file(&ruleset, 0, "test.md"));
     }
