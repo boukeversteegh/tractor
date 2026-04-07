@@ -155,35 +155,33 @@ fn function_to_json_string(func: &xee_xpath::function::Function, xot: &mut Xot) 
 //
 // This XPath expression recursively transforms a map so that any entry whose
 // value is a multi-item sequence gets that value wrapped in `array{}`.
-// It handles two levels of nesting: top-level map entries AND maps nested
-// inside arrays (the common case of `map { "key": array { items ! map { ... } } }`).
-// Single-item and empty values are left unchanged. This lets us successfully
-// JSON-serialize maps that would otherwise fail with SERE0023.
+// It recurses to arbitrary depth using the self-application trick ($f($f, ...))
+// to handle maps nested inside arrays inside maps, etc.
+//
+// Ideally we'd convert Function → XmlNode IR directly, but xee's Map type
+// has all iteration methods marked pub(crate). This XPath-based normalization
+// is a workaround until upstream exposes public map introspection APIs.
 thread_local! {
     static NORMALIZE_MAP_QUERY: RefCell<Option<xee_xpath::query::SequenceQuery>> = RefCell::new(None);
 }
 
 /// The XPath expression that normalizes a map by wrapping sequence values in arrays.
-/// Uses a `let`-bound helper to normalize a single map, then applies it to the
-/// top-level map AND to maps nested inside arrays (2 levels deep).
+/// Uses self-application (`$f($f, x)`) to achieve recursion at arbitrary depth.
 const NORMALIZE_MAP_XPATH: &str = concat!(
-    "let $norm := function($m) { ",
+    "let $norm := function($f, $m) { ",
         "map:merge(map:for-each($m, function($k, $v) { ",
-            "map { $k: if (count($v) > 1) then array { $v } else $v } ",
+            "map { $k: ",
+                "if ($v instance of array(*)) then ",
+                    "array:for-each($v, function($item) { ",
+                        "if ($item instance of map(*)) then $f($f, $item) ",
+                        "else $item ",
+                    "}) ",
+                "else if ($v instance of map(*)) then $f($f, $v) ",
+                "else if (count($v) > 1) then array { $v } ",
+                "else $v ",
+            "} ",
         "})) ",
-    "} return ",
-    "map:merge(map:for-each(., function($k, $v) { ",
-        "map { $k: ",
-            "if ($v instance of array(*)) then ",
-                "array:for-each($v, function($item) { ",
-                    "if ($item instance of map(*)) then $norm($item) ",
-                    "else $item ",
-                "}) ",
-            "else if ($v instance of map(*)) then $norm($v) ",
-            "else if (count($v) > 1) then array { $v } ",
-            "else $v ",
-        "} ",
-    "}))"
+    "} return $norm($norm, .)"
 );
 
 /// Try to normalize a map that has sequence-valued entries by wrapping them in
