@@ -159,6 +159,19 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
         "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
         "-x", r#"//class ! array { string(name) }"#, "-f", "xml",
     ]),
+    // Issue #60: map with sequence-valued key (no explicit array{}).
+    // The "methods" value is a bare sequence — previously silently dropped,
+    // now auto-wrapped in an array. Output should match query-map.* above.
+    ("json/query-map-sequence-value.json", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
+        "-x", r#"/! map { "classes": array { //class ! map { "name": string(name), "methods": body/method/name/string(.) } } }"#,
+        "-f", "json",
+    ]),
+    ("yaml/query-map-sequence-value.yaml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
+        "-x", r#"/! map { "classes": array { //class ! map { "name": string(name), "methods": body/method/name/string(.) } } }"#,
+        "-f", "yaml",
+    ]),
     // -g file (group-by) snapshots: query mode with multi-file grouping
     ("json/query-group-file.json", &[
         "query", "tests/integration/formats/sample.cs", "tests/integration/formats/sample2.cs",

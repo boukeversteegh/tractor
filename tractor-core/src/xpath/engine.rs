@@ -153,16 +153,38 @@ fn function_to_json_string(func: &xee_xpath::function::Function, xot: &mut Xot) 
 
 // Thread-local cache for the map normalization query.
 //
-// This XPath expression transforms a map so that any entry whose value is a
-// multi-item sequence gets that value wrapped in an `array{}`. Single-item
-// and empty values are left unchanged. This lets us successfully JSON-serialize
-// maps that would otherwise fail with SERE0023.
+// This XPath expression recursively transforms a map so that any entry whose
+// value is a multi-item sequence gets that value wrapped in `array{}`.
+// It handles two levels of nesting: top-level map entries AND maps nested
+// inside arrays (the common case of `map { "key": array { items ! map { ... } } }`).
+// Single-item and empty values are left unchanged. This lets us successfully
+// JSON-serialize maps that would otherwise fail with SERE0023.
 thread_local! {
     static NORMALIZE_MAP_QUERY: RefCell<Option<xee_xpath::query::SequenceQuery>> = RefCell::new(None);
 }
 
 /// The XPath expression that normalizes a map by wrapping sequence values in arrays.
-const NORMALIZE_MAP_XPATH: &str = r#"map:merge(map:for-each(., function($k, $v) { map { $k: if (count($v) > 1) then array { $v } else $v } }))"#;
+/// Uses a `let`-bound helper to normalize a single map, then applies it to the
+/// top-level map AND to maps nested inside arrays (2 levels deep).
+const NORMALIZE_MAP_XPATH: &str = concat!(
+    "let $norm := function($m) { ",
+        "map:merge(map:for-each($m, function($k, $v) { ",
+            "map { $k: if (count($v) > 1) then array { $v } else $v } ",
+        "})) ",
+    "} return ",
+    "map:merge(map:for-each(., function($k, $v) { ",
+        "map { $k: ",
+            "if ($v instance of array(*)) then ",
+                "array:for-each($v, function($item) { ",
+                    "if ($item instance of map(*)) then $norm($item) ",
+                    "else $item ",
+                "}) ",
+            "else if ($v instance of map(*)) then $norm($v) ",
+            "else if (count($v) > 1) then array { $v } ",
+            "else $v ",
+        "} ",
+    "}))"
+);
 
 /// Try to normalize a map that has sequence-valued entries by wrapping them in
 /// arrays, then serialize the result to JSON. Returns `Some(json_string)` on
@@ -750,6 +772,65 @@ mod tests {
                 // Single values should remain as Text, NOT wrapped in Array
                 assert_eq!(name_entry.1, XmlNode::Text("foo".into()),
                     "Single-item values should not be auto-wrapped in arrays");
+            }
+            other => panic!("Expected XmlNode::Map, got: {:?}", other),
+        }
+    }
+
+    /// Issue #60: sequence values nested inside arrays of maps (the deep nesting case).
+    #[test]
+    fn test_map_with_nested_sequence_in_array() {
+        use crate::parser::load_xml_string_to_documents;
+
+        // Structure: outer map → array of inner maps → inner maps with sequence values
+        let xml = r#"<root>
+            <class><name>A</name><body><method><name>m1</name></method><method><name>m2</name></method></body></class>
+            <class><name>B</name><body><method><name>m3</name></method></body></class>
+        </root>"#;
+        let mut result = load_xml_string_to_documents(xml, "test.xml".to_string()).unwrap();
+        let engine = XPathEngine::new();
+
+        // This mirrors the snapshot query: methods is a bare sequence, not wrapped in array{}
+        let matches = engine.query_documents(
+            &mut result.documents, result.doc_handle,
+            r#"/! map { "classes": array { //class ! map { "name": string(name), "methods": body/method/name/string(.) } } }"#,
+            Arc::new(vec![]), "test.xml"
+        ).unwrap();
+        assert_eq!(matches.len(), 1);
+        match &matches[0].xml_node {
+            Some(XmlNode::Map { entries }) => {
+                let classes = entries.iter().find(|(k, _)| k == "classes")
+                    .expect("Should have 'classes' key");
+                match &classes.1 {
+                    XmlNode::Array { items } => {
+                        assert_eq!(items.len(), 2, "Should have 2 class maps");
+                        // First class should have methods auto-wrapped in array
+                        match &items[0] {
+                            XmlNode::Map { entries } => {
+                                let methods = entries.iter().find(|(k, _)| k == "methods")
+                                    .expect("Should have 'methods' key");
+                                match &methods.1 {
+                                    XmlNode::Array { items } => {
+                                        assert_eq!(items.len(), 2, "Class A should have 2 methods");
+                                    }
+                                    other => panic!("Expected Array for methods, got: {:?}", other),
+                                }
+                            }
+                            other => panic!("Expected Map for class, got: {:?}", other),
+                        }
+                        // Second class has single method — should NOT be wrapped
+                        match &items[1] {
+                            XmlNode::Map { entries } => {
+                                let methods = entries.iter().find(|(k, _)| k == "methods")
+                                    .expect("Should have 'methods' key");
+                                assert_eq!(methods.1, XmlNode::Text("m3".into()),
+                                    "Single method should remain as Text");
+                            }
+                            other => panic!("Expected Map for class, got: {:?}", other),
+                        }
+                    }
+                    other => panic!("Expected Array for classes, got: {:?}", other),
+                }
             }
             other => panic!("Expected XmlNode::Map, got: {:?}", other),
         }

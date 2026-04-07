@@ -1,0 +1,27 @@
+{
+  "results": [
+    {
+      "file": "tests/integration/formats/sample-classes.cs",
+      "line": 1,
+      "tree": {
+        "classes": [
+          {
+            "name": "Calculator",
+            "methods": [
+              "Add",
+              "Subtract",
+              "Multiply"
+            ]
+          },
+          {
+            "name": "Greeter",
+            "methods": [
+              "Hello",
+              "Goodbye"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}❌ Warning: map contains sequence-valued entries which were automatically wrapped in arrays for JSON serialization. Consider using array{} explicitly, e.g.: map { "key": array { expr } }
