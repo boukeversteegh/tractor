@@ -255,6 +255,10 @@ pub struct CheckArgs {
     #[command(flatten)]
     pub shared: SharedArgs,
 
+    /// Source code string to parse (alternative to stdin, requires --lang)
+    #[arg(short = 's', long = "string", help_heading = None)]
+    pub content: Option<String>,
+
     /// Report view [default: tree]
     #[arg(short = 'v', long = "view", help_heading = "View",
         long_help = "\

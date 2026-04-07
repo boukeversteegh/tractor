@@ -10,6 +10,9 @@ Options:
   -l, --lang <LANG>
           Language for stdin input (e.g., csharp, rust, python)
 
+  -s, --string <CONTENT>
+          Source code string to parse (alternative to stdin, requires --lang)
+
   -h, --help
           Print help (see a summary with '-h')
 

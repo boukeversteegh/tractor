@@ -26,22 +26,11 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
     // Build RunContext for input resolution + rendering config.
     let ctx = RunContext::build(
         &args.shared, args.files, args.shared.xpath.clone(),
-        &args.format, &[ViewField::Reason, ViewField::Severity, ViewField::Lines], args.view.as_deref(), args.message, None, false, &[GroupDimension::File],
+        &args.format, &[ViewField::Reason, ViewField::Severity, ViewField::Lines], args.view.as_deref(), args.message, args.content, false, &[GroupDimension::File],
     )?;
 
     let xpath_expr = ctx.xpath.as_ref()
         .ok_or("check requires an XPath query (-x)")?;
-
-    let files = match &ctx.input {
-        InputMode::Files(files) => files,
-        InputMode::InlineSource { .. } => {
-            return Err("check cannot be used with stdin input".into());
-        }
-    };
-
-    if files.is_empty() {
-        return Ok(());
-    }
 
     // Build a single-rule check operation and delegate to the executor.
     let mut rule = Rule::new("_check", xpath_expr.clone())
@@ -55,19 +44,45 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
         rule = rule.with_invalid_examples(vec![ex.clone()]);
     }
 
-    let op = Operation::Check(CheckOperation {
-        files: files.clone(),
-        exclude: vec![],
-        diff_files: None,
-        diff_lines: None,
-        rules: vec![rule],
-        tree_mode: ctx.tree_mode,
-        language: ctx.lang.clone(),
-        ignore_whitespace: ctx.ignore_whitespace,
-        parse_depth: ctx.parse_depth,
-        ruleset_include: vec![],
-        ruleset_exclude: vec![],
-    });
+    let op = match &ctx.input {
+        InputMode::Files(files) => {
+            if files.is_empty() {
+                return Ok(());
+            }
+            Operation::Check(CheckOperation {
+                files: files.clone(),
+                exclude: vec![],
+                diff_files: None,
+                diff_lines: None,
+                rules: vec![rule],
+                tree_mode: ctx.tree_mode,
+                language: ctx.lang.clone(),
+                ignore_whitespace: ctx.ignore_whitespace,
+                parse_depth: ctx.parse_depth,
+                ruleset_include: vec![],
+                ruleset_exclude: vec![],
+                inline_source: None,
+                inline_lang: None,
+            })
+        }
+        InputMode::InlineSource { source, lang } => {
+            Operation::Check(CheckOperation {
+                files: vec![],
+                exclude: vec![],
+                diff_files: None,
+                diff_lines: None,
+                rules: vec![rule],
+                tree_mode: ctx.tree_mode,
+                language: None,
+                ignore_whitespace: ctx.ignore_whitespace,
+                parse_depth: ctx.parse_depth,
+                ruleset_include: vec![],
+                ruleset_exclude: vec![],
+                inline_source: Some(source.clone()),
+                inline_lang: Some(lang.clone()),
+            })
+        }
+    };
 
     let options = ExecuteOptions {
         verbose: ctx.verbose,

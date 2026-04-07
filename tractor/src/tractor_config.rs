@@ -333,6 +333,8 @@ fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<Operation, Bo
         parse_depth: None,
         ruleset_include: vec![],
         ruleset_exclude: vec![],
+        inline_source: None,
+        inline_lang: None,
     }))
 }
 

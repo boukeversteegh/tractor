@@ -112,6 +112,10 @@ pub struct CheckOperation {
     /// Ruleset-level exclude patterns for per-rule glob matching.
     #[doc(hidden)]
     pub ruleset_exclude: Vec<String>,
+    /// Inline source string to parse instead of files.
+    pub inline_source: Option<String>,
+    /// Language for inline source (required when inline_source is set).
+    pub inline_lang: Option<String>,
 }
 
 /// A test operation: run XPath queries and check match counts against expectations.
@@ -404,7 +408,36 @@ fn execute_check(
     // --- Phase 1: Validate rule examples inline ---
     validate_rule_examples(&op.rules, op.language.as_deref(), op.tree_mode, report)?;
 
-    // --- Phase 2: Run the actual file check ---
+    // --- Phase 2: Inline source mode — parse a string and run rules against it ---
+    if let Some(ref source) = op.inline_source {
+        let lang = op.inline_lang.as_deref()
+            .or(op.language.as_deref())
+            .ok_or("inline source requires a language (--lang)")?;
+        let mut result = parse_string_to_documents(
+            source, lang, "<stdin>".to_string(), op.tree_mode, op.ignore_whitespace,
+        )?;
+        for rule in &op.rules {
+            let matches = result.query(rule.xpath.as_str())?;
+            let reason = rule
+                .reason
+                .clone()
+                .unwrap_or_else(|| format!("[{}] check failed", rule.id));
+            let severity = rule.severity;
+            let message_tpl = rule.message.as_deref();
+            for m in matches {
+                let message = message_tpl.map(|t| tractor_core::format_message(t, &m));
+                let mut report_match = match_to_report_match(m, "check");
+                report_match.reason = Some(reason.clone());
+                report_match.severity = Some(severity);
+                report_match.rule_id = Some(rule.id.clone());
+                report_match.message = message;
+                report.add(report_match);
+            }
+        }
+        return Ok(());
+    }
+
+    // --- Phase 3: Run the actual file check ---
     let (files, filters) = resolve_op_files(
         &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), "check", options, shared, report,
     );
@@ -1171,6 +1204,8 @@ mod tests {
             parse_depth: None,
             ruleset_include: vec![],
             ruleset_exclude: vec![],
+            inline_source: None,
+            inline_lang: None,
         })];
 
         let report = run(&ops);
@@ -1200,6 +1235,8 @@ mod tests {
             parse_depth: None,
             ruleset_include: vec![],
             ruleset_exclude: vec![],
+            inline_source: None,
+            inline_lang: None,
         })];
 
         let report = run(&ops);
@@ -1238,6 +1275,8 @@ mod tests {
                 parse_depth: None,
                 ruleset_include: vec![],
                 ruleset_exclude: vec![],
+                inline_source: None,
+                inline_lang: None,
             }),
             Operation::Set(SetOperation {
                 files: vec![config_path.to_str().unwrap().into()],
