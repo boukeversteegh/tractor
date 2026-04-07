@@ -1,0 +1,11 @@
+# Only JS rules - files will be filtered by language
+check:
+  files:
+    - "*.js"
+    - "*.md"
+  rules:
+    - id: spec-ref-wrong-prefix
+      language: javascript
+      xpath: "//comment[contains(., '@specs/')]"
+      reason: "Wrong prefix"
+      severity: error

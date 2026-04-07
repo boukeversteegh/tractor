@@ -1,0 +1,15 @@
+# Multiple rules for same language
+check:
+  files:
+    - "*.js"
+  rules:
+    - id: spec-ref-wrong-prefix
+      language: javascript
+      xpath: "//comment[contains(., '@specs/')]"
+      reason: "Wrong prefix"
+      severity: error
+    - id: no-console-log
+      language: javascript
+      xpath: "//call[descendant::property[.='log']]"
+      reason: "No console.log calls allowed"
+      severity: warning

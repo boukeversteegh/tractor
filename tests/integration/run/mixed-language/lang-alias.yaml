@@ -1,0 +1,10 @@
+# Test language alias handling (js vs javascript)
+check:
+  files:
+    - "*.js"
+  rules:
+    - id: spec-ref-wrong-prefix
+      language: js
+      xpath: "//comment[contains(., '@specs/')]"
+      reason: "Wrong prefix"
+      severity: error

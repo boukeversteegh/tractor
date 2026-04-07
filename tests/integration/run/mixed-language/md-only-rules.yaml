@@ -1,0 +1,11 @@
+# Only MD rules - files will be filtered by language
+check:
+  files:
+    - "*.js"
+    - "*.md"
+  rules:
+    - id: spec-too-long
+      language: markdown
+      xpath: "(//document[@end_line > 50]//heading)[1]"
+      reason: "Spec too long"
+      severity: warning

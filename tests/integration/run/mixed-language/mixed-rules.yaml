@@ -1,0 +1,17 @@
+# Config with rules for multiple languages - tests sub-issues 1, 2, and 3
+check:
+  files:
+    - "*.js"
+    - "*.md"
+  rules:
+    - id: spec-ref-wrong-prefix
+      language: javascript
+      xpath: "//comment[contains(., '@specs/')]"
+      reason: "Wrong prefix"
+      severity: error
+
+    - id: spec-too-long
+      language: markdown
+      xpath: "(//document[@end_line > 50]//heading)[1]"
+      reason: "Spec too long"
+      severity: warning

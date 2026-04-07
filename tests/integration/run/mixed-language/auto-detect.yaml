@@ -1,0 +1,9 @@
+# Auto-detect language (no language specified)
+check:
+  files:
+    - "*.js"
+  rules:
+    - id: spec-ref-wrong-prefix
+      xpath: "//comment[contains(., '@specs/')]"
+      reason: "Wrong prefix"
+      severity: error
