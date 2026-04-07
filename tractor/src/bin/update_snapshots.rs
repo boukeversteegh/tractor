@@ -172,6 +172,11 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
         "-x", r#"/! map { "classes": array { //class ! map { "name": string(name), "methods": body/method/name/string(.) } } }"#,
         "-f", "yaml",
     ]),
+    ("xml/query-map-sequence-value.xml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
+        "-x", r#"/! map { "classes": array { //class ! map { "name": string(name), "methods": body/method/name/string(.) } } }"#,
+        "-f", "xml",
+    ]),
     // -g file (group-by) snapshots: query mode with multi-file grouping
     ("json/query-group-file.json", &[
         "query", "tests/integration/formats/sample.cs", "tests/integration/formats/sample2.cs",
