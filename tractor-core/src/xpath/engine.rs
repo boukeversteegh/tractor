@@ -151,6 +151,58 @@ fn function_to_json_string(func: &xee_xpath::function::Function, xot: &mut Xot) 
     }
 }
 
+// Thread-local cache for the map normalization query.
+//
+// This XPath expression transforms a map so that any entry whose value is a
+// multi-item sequence gets that value wrapped in an `array{}`. Single-item
+// and empty values are left unchanged. This lets us successfully JSON-serialize
+// maps that would otherwise fail with SERE0023.
+thread_local! {
+    static NORMALIZE_MAP_QUERY: RefCell<Option<xee_xpath::query::SequenceQuery>> = RefCell::new(None);
+}
+
+/// The XPath expression that normalizes a map by wrapping sequence values in arrays.
+const NORMALIZE_MAP_XPATH: &str = r#"map:merge(map:for-each(., function($k, $v) { map { $k: if (count($v) > 1) then array { $v } else $v } }))"#;
+
+/// Try to normalize a map that has sequence-valued entries by wrapping them in
+/// arrays, then serialize the result to JSON. Returns `Some(json_string)` on
+/// success, `None` if normalization or serialization fails.
+fn try_normalize_and_serialize_map(
+    func: &xee_xpath::function::Function,
+    documents: &mut Documents,
+) -> Option<String> {
+    use xee_interpreter::sequence::QNameOrString;
+
+    // Only attempt normalization for maps
+    if !matches!(func, xee_xpath::function::Function::Map(_)) {
+        return None;
+    }
+
+    NORMALIZE_MAP_QUERY.with(|cache| {
+        let mut cache = cache.borrow_mut();
+
+        // Compile the normalization query once and cache it
+        if cache.is_none() {
+            let queries = Queries::default();
+            match queries.sequence(NORMALIZE_MAP_XPATH) {
+                Ok(query) => *cache = Some(query),
+                Err(_) => return None,
+            }
+        }
+
+        let query = cache.as_ref()?;
+        let item = xee_xpath::Item::Function(func.clone());
+
+        // Execute the normalization with the map as the context item
+        let normalized = query.execute(documents, &item).ok()?;
+
+        // Serialize the normalized result to JSON
+        let mut params = SerializationParameters::new();
+        params.method = QNameOrString::String("json".to_string());
+        normalized.serialize(params, documents.xot_mut()).ok()
+    })
+}
+
 /// Convert a `serde_json::Value` into an `XmlNode` tree.
 ///
 /// This is the robust bridge between xee's JSON serializer (the only public
@@ -294,6 +346,19 @@ fn execute_direct_query(
                     // all data lives in the tree field.
                     if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&json_str) {
                         m.xml_node = Some(json_value_to_xml_node(&parsed));
+                    } else if let Some(normalized_json) = try_normalize_and_serialize_map(&func, documents) {
+                        // The direct JSON serialization failed (likely because a
+                        // map value is a multi-item sequence). Try normalizing the
+                        // map by wrapping sequence values in arrays.
+                        if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&normalized_json) {
+                            eprintln!(
+                                "Warning: map contains sequence-valued entries which were \
+                                 automatically wrapped in arrays for JSON serialization. \
+                                 Consider using array{{}} explicitly, e.g.: \
+                                 map {{ \"key\": array {{ expr }} }}"
+                            );
+                            m.xml_node = Some(json_value_to_xml_node(&parsed));
+                        }
                     }
                     matches.push(m);
                 }
@@ -571,6 +636,120 @@ mod tests {
                 } else {
                     panic!("Expected Text for 'val' value, got: {:?}", val_val.1);
                 }
+            }
+            other => panic!("Expected XmlNode::Map, got: {:?}", other),
+        }
+    }
+
+    /// Issue #60: map{} with sequence-valued key should auto-wrap in array,
+    /// not silently drop the value.
+    #[test]
+    fn test_map_with_sequence_valued_key() {
+        use crate::parser::load_xml_string_to_documents;
+
+        let xml = r#"<root><item><prop>a</prop><prop>b</prop></item></root>"#;
+        let mut result = load_xml_string_to_documents(xml, "test.xml".to_string()).unwrap();
+        let engine = XPathEngine::new();
+
+        // Without array{}: .//prop/string() produces a sequence of 2 strings.
+        // Previously this was silently dropped; now it should auto-wrap in an array.
+        let matches = engine.query_documents(
+            &mut result.documents, result.doc_handle,
+            r#"//item ! map { "props": .//prop / string() }"#,
+            Arc::new(vec![]), "test.xml"
+        ).unwrap();
+        assert_eq!(matches.len(), 1);
+        match &matches[0].xml_node {
+            Some(XmlNode::Map { entries }) => {
+                let props = entries.iter().find(|(k, _)| k == "props")
+                    .expect("Map should have key 'props'");
+                match &props.1 {
+                    XmlNode::Array { items } => {
+                        assert_eq!(items.len(), 2, "Should have 2 items in auto-wrapped array");
+                        assert_eq!(items[0], XmlNode::Text("a".into()));
+                        assert_eq!(items[1], XmlNode::Text("b".into()));
+                    }
+                    other => panic!("Expected Array for sequence value, got: {:?}", other),
+                }
+            }
+            other => panic!("Expected XmlNode::Map, got: {:?}", other),
+        }
+
+        // With explicit array{}: should produce the same result
+        let matches_arr = engine.query_documents(
+            &mut result.documents, result.doc_handle,
+            r#"//item ! map { "props": array { .//prop / string() } }"#,
+            Arc::new(vec![]), "test.xml"
+        ).unwrap();
+        assert_eq!(matches_arr.len(), 1);
+        // Both approaches should produce identical XmlNode trees
+        assert_eq!(matches[0].xml_node, matches_arr[0].xml_node,
+            "Auto-wrapped and explicit array{{}} should produce identical results");
+    }
+
+    /// Issue #60: map with sequence of maps as value should also be auto-wrapped.
+    #[test]
+    fn test_map_with_sequence_of_maps_value() {
+        use crate::parser::load_xml_string_to_documents;
+
+        let xml = r#"<root><item><prop><name>x</name></prop><prop><name>y</name></prop></item></root>"#;
+        let mut result = load_xml_string_to_documents(xml, "test.xml".to_string()).unwrap();
+        let engine = XPathEngine::new();
+
+        // Sequence of maps as a value — the motivating case from the issue
+        let matches = engine.query_documents(
+            &mut result.documents, result.doc_handle,
+            r#"//item ! map { "properties": .//prop / map { "n": string(name) } }"#,
+            Arc::new(vec![]), "test.xml"
+        ).unwrap();
+        assert_eq!(matches.len(), 1);
+        match &matches[0].xml_node {
+            Some(XmlNode::Map { entries }) => {
+                let props = entries.iter().find(|(k, _)| k == "properties")
+                    .expect("Map should have key 'properties'");
+                match &props.1 {
+                    XmlNode::Array { items } => {
+                        assert_eq!(items.len(), 2, "Should have 2 maps in auto-wrapped array");
+                        // Each item should be a map with key "n"
+                        for item in items {
+                            match item {
+                                XmlNode::Map { entries } => {
+                                    assert!(entries.iter().any(|(k, _)| k == "n"),
+                                        "Each nested map should have key 'n'");
+                                }
+                                other => panic!("Expected nested Map, got: {:?}", other),
+                            }
+                        }
+                    }
+                    other => panic!("Expected Array for sequence-of-maps value, got: {:?}", other),
+                }
+            }
+            other => panic!("Expected XmlNode::Map, got: {:?}", other),
+        }
+    }
+
+    /// Single-item map values should NOT be wrapped in arrays (regression check).
+    #[test]
+    fn test_map_single_value_not_wrapped() {
+        use crate::parser::load_xml_string_to_documents;
+
+        let xml = r#"<root><item><name>foo</name></item></root>"#;
+        let mut result = load_xml_string_to_documents(xml, "test.xml".to_string()).unwrap();
+        let engine = XPathEngine::new();
+
+        let matches = engine.query_documents(
+            &mut result.documents, result.doc_handle,
+            r#"//item ! map { "name": string(name) }"#,
+            Arc::new(vec![]), "test.xml"
+        ).unwrap();
+        assert_eq!(matches.len(), 1);
+        match &matches[0].xml_node {
+            Some(XmlNode::Map { entries }) => {
+                let name_entry = entries.iter().find(|(k, _)| k == "name")
+                    .expect("Map should have key 'name'");
+                // Single values should remain as Text, NOT wrapped in Array
+                assert_eq!(name_entry.1, XmlNode::Text("foo".into()),
+                    "Single-item values should not be auto-wrapped in arrays");
             }
             other => panic!("Expected XmlNode::Map, got: {:?}", other),
         }
