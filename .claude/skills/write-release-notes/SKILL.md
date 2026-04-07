@@ -31,7 +31,19 @@ Write compelling, value-oriented release notes for tractor GitHub releases.
 
 4. **Draft and review**: Present the draft to the user via `AskUserQuestion` with a preview before applying.
 
-5. **Apply**: Use `gh release edit <tag> --notes "..."` to update.
+5. **Apply**: Use `gh release edit <tag> --notes-file <file>` to update. Write notes to a temp file first to preserve markdown formatting.
+
+## Consolidation (past releases)
+
+When reviewing releases from previous days, consolidate multiple same-day releases into one:
+
+1. **Keep the latest tag's release** for each day (e.g., `26.0406.4` if `26.0406`, `.2`, `.3`, `.4` exist).
+2. **Merge all changes** from that day into a single set of release notes on the kept release.
+3. **Delete redundant releases** with `gh release delete <tag> --yes`. Always keep git tags — never pass `--cleanup-tag`.
+4. **Skip internal-only changes** (test infrastructure, internal refactors, Claude skills) — only surface user-facing changes.
+5. If an API or syntax changed across the day's releases, use the final version and add: *Syntax updated as of version \<tag\>.*
+
+This only applies to past releases. Today's releases stay as-is until the day is over.
 
 ## Voice and Tone
 
