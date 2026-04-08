@@ -12,7 +12,7 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
-use tractor_core::{expand_globs_checked, filter_supported_files, normalize_path};
+use tractor_core::{expand_globs_checked, filter_supported_files, normalize_path, NormalizedPath, GlobPattern};
 use tractor_core::report::{ReportBuilder, ReportMatch, Severity, DiagnosticOrigin};
 
 use crate::executor::ExecuteOptions;
@@ -49,9 +49,9 @@ pub(crate) struct FileResolver {
     /// Expanded root-level files (from config `files:`).
     /// `None` when the config key was missing (unrestricted).
     /// `Some(empty)` when explicitly `files: []`.
-    root_files: Option<HashSet<String>>,
+    root_files: Option<HashSet<NormalizedPath>>,
     /// Expanded CLI file args, or None if not provided.
-    cli_files: Option<HashSet<String>>,
+    cli_files: Option<HashSet<NormalizedPath>>,
     /// Expanded global diff-files set, or None if not provided.
     global_diff_files: Option<HashSet<PathBuf>>,
     // Resolution parameters (copied from ExecuteOptions for self-containment)
@@ -87,14 +87,16 @@ impl FileResolver {
                 path.to_string()
             }
         };
-        let log_files = |files: &[String]| {
-            for f in files.iter().take(5) {
-                eprintln!("    {}", relative_path(f));
-            }
-            if files.len() > 5 {
-                eprintln!("    ... and {} more", files.len() - 5);
-            }
-        };
+        macro_rules! log_files {
+            ($files:expr) => {
+                for f in $files.iter().take(5) {
+                    eprintln!("    {}", relative_path(AsRef::<str>::as_ref(f)));
+                }
+                if $files.len() > 5 {
+                    eprintln!("    ... and {} more", $files.len() - 5);
+                }
+            };
+        }
 
         if options.verbose {
             eprintln!("  files: resolving relative to {}", base_dir_display);
@@ -122,10 +124,10 @@ impl FileResolver {
                     })?;
                 if options.verbose {
                     eprintln!("  files: root scope has {} file(s)", expansion.files.len());
-                    log_files(&expansion.files);
+                    log_files!(&expansion.files);
                 }
                 Some(expansion.files.into_iter()
-                    .map(|f| normalize_path(&f)).collect())
+                    .map(|f| NormalizedPath::new(&f)).collect())
             }
             Some(_) => Some(HashSet::new()), // files: [] → explicit empty
             None => None,                     // key missing → unrestricted
@@ -146,16 +148,7 @@ impl FileResolver {
                 eprintln!("  files: CLI args have {} file(s)", expansion.files.len());
             }
             Some(expansion.files.into_iter()
-                .map(|f| {
-                    let p = Path::new(&f);
-                    if p.is_absolute() {
-                        normalize_path(&f)
-                    } else if let Ok(cwd) = std::env::current_dir() {
-                        normalize_path(&cwd.join(&f).to_string_lossy())
-                    } else {
-                        normalize_path(&f)
-                    }
-                }).collect())
+                .map(|f| NormalizedPath::absolute(&f)).collect())
         } else {
             None
         };
@@ -202,7 +195,7 @@ impl FileResolver {
         &self,
         request: &FileRequest,
         report: &mut ReportBuilder,
-    ) -> (Vec<String>, Vec<Box<dyn ResultFilter>>) {
+    ) -> (Vec<NormalizedPath>, Vec<Box<dyn ResultFilter>>) {
         let cwd = self.base_dir.as_deref()
             .unwrap_or_else(|| Path::new("."));
         let filters = build_filters(self.global_diff_lines.as_deref(), request.diff_lines, cwd);
@@ -217,7 +210,7 @@ impl FileResolver {
         request: &FileRequest,
         filters: &[Box<dyn ResultFilter>],
         report: &mut ReportBuilder,
-    ) -> Vec<String> {
+    ) -> Vec<NormalizedPath> {
         let expansion_limit = self.max_files * 10;
 
         // --- Verbose logging helpers ---
@@ -235,14 +228,16 @@ impl FileResolver {
                 path.to_string()
             }
         };
-        let log_files = |files: &[String]| {
-            for f in files.iter().take(5) {
-                eprintln!("    {}", relative_path(f));
-            }
-            if files.len() > 5 {
-                eprintln!("    ... and {} more", files.len() - 5);
-            }
-        };
+        macro_rules! log_files {
+            ($files:expr) => {
+                for f in $files.iter().take(5) {
+                    eprintln!("    {}", relative_path(AsRef::<str>::as_ref(f)));
+                }
+                if $files.len() > 5 {
+                    eprintln!("    ... and {} more", $files.len() - 5);
+                }
+            };
+        }
 
         // --- Resolve operation files ---
         // Five cases:
@@ -263,8 +258,8 @@ impl FileResolver {
             let (mut files, empty_patterns) = match expand_globs_checked(&globs, expansion_limit) {
                 Ok(result) => {
                     // Normalize all expanded paths (fix #98)
-                    let files: Vec<String> = result.files.into_iter()
-                        .map(|f| normalize_path(&f)).collect();
+                    let files: Vec<NormalizedPath> = result.files.into_iter()
+                        .map(|f| NormalizedPath::new(&f)).collect();
                     (files, result.empty_patterns)
                 }
                 Err(e) => {
@@ -284,7 +279,7 @@ impl FileResolver {
 
             if self.verbose {
                 eprintln!("  files: operation has {} file(s)", files.len());
-                log_files(&files);
+                log_files!(&files);
             }
 
             // Intersect with root scope (when both exist)
@@ -330,9 +325,9 @@ impl FileResolver {
         // Resolve relative exclude patterns to absolute (same as include patterns)
         // so they match correctly against absolute file paths.
         if !request.exclude.is_empty() {
-            let resolved: Vec<String> = resolve_globs_to_absolute(&self.base_dir, request.exclude);
+            let resolved = GlobPattern::resolve_all(request.exclude, &self.base_dir);
             let exclude_patterns: Vec<glob::Pattern> = resolved.iter()
-                .filter_map(|p| glob::Pattern::new(p).ok())
+                .filter_map(|p| glob::Pattern::new(p.as_str()).ok())
                 .collect();
 
             let opts = glob::MatchOptions {
@@ -342,25 +337,31 @@ impl FileResolver {
             };
 
             files.retain(|f| {
-                !exclude_patterns.iter().any(|p| p.matches_with(f, opts))
+                !exclude_patterns.iter().any(|p| p.matches_with(f.as_str(), opts))
             });
         }
 
-        let files = filter_supported_files(files);
+        let files: Vec<NormalizedPath> = filter_supported_files(
+            files.into_iter().map(|f| f.into_string()).collect()
+        ).into_iter().map(|f| NormalizedPath::new(&f)).collect();
 
         // --- Intersect with git diff-files ---
-        let files = if let Some(ref global_diff) = self.global_diff_files {
-            git::intersect_changed(files, global_diff)
+        // Convert to strings for git module, then back to NormalizedPath
+        let string_files: Vec<String> = files.into_iter().map(|f| f.into_string()).collect();
+        let string_files = if let Some(ref global_diff) = self.global_diff_files {
+            git::intersect_changed(string_files, global_diff)
         } else {
-            files
+            string_files
         };
         let cwd = self.base_dir.as_deref()
             .unwrap_or_else(|| Path::new("."));
-        let mut files = apply_diff_files_filter(files, request.diff_files, cwd);
+        let string_files = apply_diff_files_filter(string_files, request.diff_files, cwd);
+        let mut files: Vec<NormalizedPath> = string_files.into_iter()
+            .map(|f| NormalizedPath::new(&f)).collect();
 
         // --- Apply file-level result filters ---
         if !filters.is_empty() {
-            files.retain(|f| filters.iter().all(|filter| filter.include_file(f)));
+            files.retain(|f| filters.iter().all(|filter| filter.include_file(f.as_str())));
         }
 
         // --- Check final file count ---
@@ -474,44 +475,39 @@ pub(crate) fn make_fatal_diagnostic(command: &str, reason: String) -> ReportMatc
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tractor_core::GlobPattern;
 
     #[test]
-    fn normalize_path_makes_hashset_intersection_work() {
-        let mut set: HashSet<String> = HashSet::new();
-        set.insert(normalize_path("src\\foo.rs"));
-        assert!(set.contains(&normalize_path("src/foo.rs")));
+    fn normalized_path_hashset_intersection_works() {
+        let mut set: HashSet<NormalizedPath> = HashSet::new();
+        set.insert(NormalizedPath::new("src\\foo.rs"));
+        assert!(set.contains("src/foo.rs"));
     }
 
     #[test]
-    fn normalize_strips_windows_prefix() {
-        let mut set: HashSet<String> = HashSet::new();
-        set.insert(normalize_path("//?/C:/project/src/foo.rs"));
-        assert!(set.contains("C:/project/src/foo.rs"));
+    fn normalized_path_strips_windows_prefix() {
+        let p = NormalizedPath::new("//?/C:/project/src/foo.rs");
+        assert_eq!(p, "C:/project/src/foo.rs");
     }
 
     #[test]
     fn absolute_cli_path_intersects_with_relative_root_glob() {
-        // Scenario: CLI passes "/home/user/project/src/foo.rs" (absolute)
-        // Config has files: ["src/**/*.rs"] resolved relative to base_dir="/home/user/project/"
-        // After base_dir resolution, root glob expands to "/home/user/project/src/foo.rs"
-        // Both sets contain the same normalized absolute path → intersection succeeds.
-        let root: HashSet<String> = [normalize_path("/home/user/project/src/foo.rs")].into();
-        let cli: HashSet<String> = [normalize_path("/home/user/project/src/foo.rs")].into();
+        let root: HashSet<NormalizedPath> =
+            [NormalizedPath::new("/home/user/project/src/foo.rs")].into();
+        let cli: HashSet<NormalizedPath> =
+            [NormalizedPath::new("/home/user/project/src/foo.rs")].into();
         let intersection: Vec<_> = root.intersection(&cli).collect();
         assert_eq!(intersection.len(), 1);
     }
 
     #[test]
-    fn relative_path_strips_base_dir_for_per_rule_matching() {
+    fn glob_pattern_matches_normalized_path() {
         use tractor_core::rule::GlobMatcher;
 
-        // Absolute path stripped of base_dir yields relative path
-        let abs = "/home/user/project/src/main.rs";
-        let rel = abs.strip_prefix("/home/user/project/").unwrap();
-        assert_eq!(rel, "src/main.rs");
-
-        // The relative path matches the per-rule include pattern
-        let m = GlobMatcher::new(&[], &[], &["src/**/*.rs".into()], &[]).unwrap();
-        assert!(m.matches(rel));
+        let m = GlobMatcher::new(
+            &[], &[], &[GlobPattern::new("src/**/*.rs")], &[],
+        ).unwrap();
+        assert!(m.matches(&NormalizedPath::new("src/main.rs")));
+        assert!(!m.matches(&NormalizedPath::new("test/main.rs")));
     }
 }

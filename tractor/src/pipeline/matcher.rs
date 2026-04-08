@@ -3,7 +3,7 @@ use std::path::Path;
 
 use rayon::prelude::*;
 use tractor_core::{
-    Match, NormalizedXpath, normalize_path,
+    Match, NormalizedXpath, GlobPattern, NormalizedPath,
     detect_language,
     language_info::parse_language,
     output::{render_document, RenderOptions},
@@ -298,7 +298,7 @@ fn rule_language_matches_file(
 /// `verbose` controls whether parse/query warnings are printed to stderr.
 pub fn run_rules(
     ruleset: &RuleSet,
-    files: &[String],
+    files: &[NormalizedPath],
     base_dir: Option<&Path>,
     tree_mode: Option<tractor_core::TreeMode>,
     ignore_whitespace: bool,
@@ -306,18 +306,10 @@ pub fn run_rules(
     verbose: bool,
     filters: &[&dyn ResultFilter],
 ) -> Result<Vec<RuleMatch>, Box<dyn std::error::Error>> {
-    // Resolve per-rule include/exclude patterns to absolute paths so they
-    // match correctly against absolute file paths. Without this, a relative
-    // pattern like "src/**/*.rs" would never match "/home/user/project/src/foo.rs".
-    let resolve = |patterns: &[String]| -> Vec<String> {
-        patterns.iter().map(|p| {
-            if let Some(base) = base_dir {
-                if !Path::new(p).is_absolute() {
-                    return normalize_path(&base.join(p).to_string_lossy());
-                }
-            }
-            normalize_path(p)
-        }).collect()
+    // Resolve per-rule include/exclude patterns to absolute GlobPatterns so
+    // they match correctly against absolute NormalizedPath file paths.
+    let resolve = |patterns: &[String]| -> Vec<GlobPattern> {
+        GlobPattern::resolve_all(patterns, &base_dir.map(|p| p.to_path_buf()))
     };
 
     // Compile glob matchers for each rule upfront.
@@ -346,12 +338,14 @@ pub fn run_rules(
     let results: Vec<Vec<RuleMatch>> = files
         .par_iter()
         .filter_map(|file_path| {
+            let path_str = file_path.as_str();
+
             // Determine which rules apply to this file based on globs AND language.
             let applicable: Vec<usize> = compiled
                 .iter()
                 .enumerate()
                 .filter(|(i, cr)| {
-                    cr.glob.matches(file_path) && rule_language_matches_file(ruleset, *i, file_path)
+                    cr.glob.matches(file_path) && rule_language_matches_file(ruleset, *i, path_str)
                 })
                 .map(|(i, _)| i)
                 .collect();
@@ -368,7 +362,7 @@ pub fn run_rules(
             let effective_tree_mode = ruleset.effective_tree_mode(first_rule).or(tree_mode);
 
             let mut result = match parse_to_documents(
-                std::path::Path::new(file_path),
+                std::path::Path::new(path_str),
                 lang_override,
                 effective_tree_mode,
                 ignore_whitespace,
@@ -377,7 +371,7 @@ pub fn run_rules(
                 Ok(r) => r,
                 Err(e) => {
                     if verbose {
-                        eprintln!("warning: {}: {}", file_path, e);
+                        eprintln!("warning: {}: {}", path_str, e);
                     }
                     return None;
                 }

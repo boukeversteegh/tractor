@@ -18,7 +18,7 @@ use tractor_core::normalized_xpath::NormalizedXpath;
 use tractor_core::rule::{Rule, RuleSet};
 use tractor_core::report::{ReportBuilder, ReportMatch, Severity};
 use tractor_core::tree_mode::TreeMode;
-use tractor_core::{detect_language, parse_to_documents, parse_string_to_documents, Match, apply_replacements};
+use tractor_core::{detect_language, parse_to_documents, parse_string_to_documents, Match, apply_replacements, NormalizedPath};
 use tractor_core::xpath_upsert::{upsert, update_only};
 
 use crate::filter::ResultFilter;
@@ -574,7 +574,7 @@ fn execute_set(
     for file_path in &files {
         let lang_override = op.language.as_deref();
         let lang = lang_override
-            .unwrap_or_else(|| detect_language(file_path));
+            .unwrap_or_else(|| detect_language(file_path.as_str()));
 
         let source = std::fs::read_to_string(file_path)?;
         let mut current = source.clone();
@@ -603,7 +603,7 @@ fn execute_set(
         }
 
         report.add(ReportMatch {
-            file: file_path.clone(),
+            file: file_path.as_str().to_string(),
             line: 1,
             column: 1,
             end_line: 1,
@@ -726,19 +726,19 @@ fn execute_update(
         command: "update",
     };
     let (files, filters) = resolver.resolve(&request, report);
-    let mut fallback_files = Vec::new();
+    let mut fallback_files: Vec<NormalizedPath> = Vec::new();
     let mut files_modified = std::collections::HashSet::new();
 
     for file_path in &files {
         let lang = op.language.as_deref()
-            .unwrap_or_else(|| detect_language(file_path));
+            .unwrap_or_else(|| detect_language(file_path.as_str()));
         let source = std::fs::read_to_string(file_path)?;
 
         match update_only(&source, lang, &op.xpath, &op.value, op.limit) {
             Ok(result) => {
                 if result.source != source {
                     std::fs::write(file_path, &result.source)?;
-                    files_modified.insert(file_path.clone());
+                    files_modified.insert(file_path.as_str().to_string());
                     for m in &result.matches {
                         let mut rm = match_to_report_match(m.clone(), "update");
                         rm.status = Some("updated".to_string());
@@ -837,7 +837,7 @@ fn match_to_report_match(m: Match, command: &str) -> ReportMatch {
 /// Parse and query files in parallel with multiple XPath expressions.
 /// Each file is parsed once and all expressions are evaluated against it.
 fn query_files_multi(
-    files: &[String],
+    files: &[NormalizedPath],
     xpaths: &[&str],
     lang: Option<&str>,
     tree_mode: Option<TreeMode>,
