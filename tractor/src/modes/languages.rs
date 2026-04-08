@@ -1,22 +1,6 @@
 //! `tractor docs languages` command - list supported languages with their extensions and aliases
 
-use tractor_core::language_info::{Language, LANGUAGES};
-
-/// Language aliases - maps short forms to canonical Language enum variants
-const LANGUAGE_ALIASES: &[(&str, Language)] = &[
-    ("ts", Language::TypeScript),
-    ("js", Language::JavaScript),
-    ("jsx", Language::JavaScript),
-    ("cs", Language::CSharp),
-    ("rs", Language::Rust),
-    ("py", Language::Python),
-    ("rb", Language::Ruby),
-    ("md", Language::Markdown),
-    ("mdx", Language::Markdown),
-    ("yml", Language::Yaml),
-    ("sh", Language::Bash),
-    ("mssql", Language::TSql),
-];
+use tractor_core::language_info::{LANGUAGES, LANGUAGE_ALIASES};
 
 /// Run the `docs languages` command, printing a table of all supported languages.
 pub fn run_languages() -> Result<(), Box<dyn std::error::Error>> {
@@ -27,7 +11,7 @@ pub fn run_languages() -> Result<(), Box<dyn std::error::Error>> {
     for lang_info in LANGUAGES.iter() {
         let extensions_str = lang_info.extensions.join(", ");
 
-        // Find aliases that map to this language (using Language enum for type-safe comparison)
+        // Find aliases that map to this language (using the canonical LANGUAGE_ALIASES from language_info)
         let lang_aliases: Vec<&str> = LANGUAGE_ALIASES
             .iter()
             .filter(|(_, lang)| *lang == lang_info.language)

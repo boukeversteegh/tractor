@@ -98,24 +98,34 @@ impl fmt::Display for Language {
     }
 }
 
+/// Language aliases - maps short forms to canonical Language enum variants.
+/// This is the single source of truth for aliases; used by FromStr and exported
+/// for display in the `tractor docs languages` command.
+pub const LANGUAGE_ALIASES: &[(&str, Language)] = &[
+    ("ts", Language::TypeScript),
+    ("js", Language::JavaScript),
+    ("jsx", Language::JavaScript),
+    ("cs", Language::CSharp),
+    ("rs", Language::Rust),
+    ("py", Language::Python),
+    ("rb", Language::Ruby),
+    ("md", Language::Markdown),
+    ("mdx", Language::Markdown),
+    ("yml", Language::Yaml),
+    ("sh", Language::Bash),
+    ("mssql", Language::TSql),
+];
+
 impl FromStr for Language {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // Handle aliases first
-        let normalized = match s {
-            "ts" => "typescript",
-            "js" | "jsx" => "javascript",
-            "cs" => "csharp",
-            "rs" => "rust",
-            "py" => "python",
-            "rb" => "ruby",
-            "md" | "mdx" => "markdown",
-            "yml" => "yaml",
-            "sh" => "bash",
-            "mssql" => "tsql",
-            other => other,
-        };
+        // Handle aliases first using the canonical LANGUAGE_ALIASES table
+        let normalized = LANGUAGE_ALIASES
+            .iter()
+            .find(|(alias, _)| *alias == s)
+            .map(|(_, lang)| lang.as_str())
+            .unwrap_or(s);
 
         match normalized {
             "typescript" => Ok(Language::TypeScript),
@@ -156,7 +166,9 @@ impl FromStr for Language {
 /// Information about a supported language
 #[derive(Debug, Clone, Serialize)]
 pub struct LanguageInfo {
-    /// The Language enum variant
+    /// The Language enum variant for type-safe language comparisons.
+    /// Skipped during serialization since `name` already provides the string identifier
+    /// and including both would be redundant in JSON/YAML output.
     #[serde(skip)]
     pub language: Language,
     /// Language identifier (e.g., "typescript", "csharp")
