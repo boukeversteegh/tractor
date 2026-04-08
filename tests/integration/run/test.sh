@@ -60,7 +60,14 @@ run_set_and_check() {
     local actual_exit=$?
 
     # Normalize temp paths
+    local raw_actual="$actual"
     actual=$(echo "$actual" | sed "s|$tmpdir/||g")
+
+    # Debug: if output still contains an absolute path, sed didn't match
+    if [[ "$actual" == *"/"* ]] && [[ "$actual" == *": "* ]] && [[ "$actual" != "$expected_output" ]]; then
+        echo "  [debug] tmpdir=$tmpdir"
+        echo "  [debug] raw_output=$(echo "$raw_actual" | head -1)"
+    fi
 
     rm -rf "$tmpdir"
 
