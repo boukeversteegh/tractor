@@ -50,7 +50,9 @@ run_set_and_check() {
     local tmpdir
     tmpdir=$(mktemp -d)
     # Normalize path for Windows (gitbash /tmp/... → C:/Users/.../Temp/...)
-    if command -v cygpath &>/dev/null; then tmpdir="$(cygpath -m "$tmpdir")"; fi
+    # Use -l (long name) so path matches Rust's canonicalize() output
+    # (cygpath without -l may return 8.3 short names like RUNNER~1).
+    if command -v cygpath &>/dev/null; then tmpdir="$(cygpath -ml "$tmpdir")"; fi
     cp "$FIXTURE_DIR"/*.json "$FIXTURE_DIR"/*.yaml "$tmpdir/" 2>/dev/null
     # Copy the config and adjust file paths (configs reference relative files)
     cp "$FIXTURE_DIR/$config" "$tmpdir/"
@@ -60,14 +62,7 @@ run_set_and_check() {
     local actual_exit=$?
 
     # Normalize temp paths
-    local raw_actual="$actual"
     actual=$(echo "$actual" | sed "s|$tmpdir/||g")
-
-    # Debug: if output still contains an absolute path, sed didn't match
-    if [[ "$actual" == *"/"* ]] && [[ "$actual" == *": "* ]] && [[ "$actual" != "$expected_output" ]]; then
-        echo "  [debug] tmpdir=$tmpdir"
-        echo "  [debug] raw_output=$(echo "$raw_actual" | head -1)"
-    fi
 
     rm -rf "$tmpdir"
 
