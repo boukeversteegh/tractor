@@ -127,6 +127,21 @@ run_and_check "disjoint root and operation yields empty set" \
     "$SCOPE_DIR/intersect-disjoint.yaml"
 
 echo ""
+echo "Run (glob double-star patterns):"
+
+GLOB_DIR="glob-double-star"
+
+run_and_check "** matches files recursively" \
+    0 \
+    "$(printf 'glob-double-star/config.yml:1:8: warning: debug must be disabled\n1 | debug: true\n           ^~~~\n\nglob-double-star/nested/config.yml:1:8: warning: debug must be disabled\n1 | debug: true\n           ^~~~\n\n2 warnings in 2 files')" \
+    "$GLOB_DIR/check-double-star.yaml"
+
+run_and_check "nested/** matches nested files" \
+    0 \
+    "$(printf 'glob-double-star/nested/config.yml:1:8: warning: debug must be disabled\n1 | debug: true\n           ^~~~\n\n1 warning in 1 file')" \
+    "$GLOB_DIR/check-dir-double-star.yaml"
+
+echo ""
 echo "Run (mixed operations):"
 
 run_set_and_check "mixed check+set succeeds when check passes" \
