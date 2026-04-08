@@ -55,6 +55,13 @@ cd "$SCRIPT_DIR"
 if [ ! -f "$TRACTOR_BIN" ] && [ -f "$REPO_ROOT/target/release/tractor.exe" ]; then
     TRACTOR_BIN="$REPO_ROOT/target/release/tractor.exe"
 fi
+export TRACTOR_BIN
+
+# Call the built binary directly so tests do not depend on PATH layout.
+tractor() {
+    "$TRACTOR_BIN" "$@"
+}
+export -f tractor
 
 PASSED=0 FAILED=0
 run_test() {

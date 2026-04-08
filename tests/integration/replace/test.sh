@@ -2,18 +2,25 @@
 # Set (--set) feature integration tests
 source "$(dirname "$0")/../common.sh"
 
+TMPDIR="$(mktemp -d "$SCRIPT_DIR/tmp.replace.XXXXXX")"
+SINGLE_YAML="$TMPDIR/tractor-set-test-single.yaml"
+MULTI_YAML="$TMPDIR/tractor-set-test-multi.yaml"
+LIMIT_YAML="$TMPDIR/tractor-set-test-limit.yaml"
+JSON_FILE="$TMPDIR/tractor-set-test.json"
+STDOUT_YAML="$TMPDIR/tractor-set-stdout.yaml"
+
 echo "Set (YAML):"
 
 # --- Single replacement ---
-cat > /tmp/tractor-set-test-single.yaml << 'EOF'
+cat > "$SINGLE_YAML" << 'EOF'
 name: my-app
 database:
   host: localhost
   port: 5432
 EOF
 
-tractor set /tmp/tractor-set-test-single.yaml -x "//database/host" --value "db.example.com" 2>/dev/null
-ACTUAL=$(cat /tmp/tractor-set-test-single.yaml)
+tractor set "$(to_tractor_path "$SINGLE_YAML")" -x "//database/host" --value "db.example.com" 2>/dev/null
+ACTUAL=$(cat "$SINGLE_YAML")
 EXPECTED='name: my-app
 database:
   host: db.example.com
@@ -29,7 +36,7 @@ else
 fi
 
 # --- Multiple replacements in same file ---
-cat > /tmp/tractor-set-test-multi.yaml << 'EOF'
+cat > "$MULTI_YAML" << 'EOF'
 servers:
   - name: web-1
     port: 8080
@@ -39,8 +46,8 @@ servers:
     port: 9090
 EOF
 
-tractor set /tmp/tractor-set-test-multi.yaml -x "//servers/port[.='8080']" --value "3000" 2>/dev/null
-ACTUAL=$(cat /tmp/tractor-set-test-multi.yaml)
+tractor set "$(to_tractor_path "$MULTI_YAML")" -x "//servers/port[.='8080']" --value "3000" 2>/dev/null
+ACTUAL=$(cat "$MULTI_YAML")
 EXPECTED='servers:
   - name: web-1
     port: 3000
@@ -59,15 +66,15 @@ else
 fi
 
 # --- Set with --limit ---
-cat > /tmp/tractor-set-test-limit.yaml << 'EOF'
+cat > "$LIMIT_YAML" << 'EOF'
 items:
   - value: old
   - value: old
   - value: old
 EOF
 
-tractor set /tmp/tractor-set-test-limit.yaml -x "//items/value[.='old']" -n 1 --value "new" 2>/dev/null
-ACTUAL=$(cat /tmp/tractor-set-test-limit.yaml)
+tractor set "$(to_tractor_path "$LIMIT_YAML")" -x "//items/value[.='old']" -n 1 --value "new" 2>/dev/null
+ACTUAL=$(cat "$LIMIT_YAML")
 EXPECTED='items:
   - value: new
   - value: old
@@ -86,7 +93,7 @@ echo ""
 echo "Set (JSON):"
 
 # --- JSON string replacement ---
-cat > /tmp/tractor-set-test.json << 'EOF'
+cat > "$JSON_FILE" << 'EOF'
 {
   "database": {
     "host": "localhost",
@@ -95,8 +102,8 @@ cat > /tmp/tractor-set-test.json << 'EOF'
 }
 EOF
 
-tractor set /tmp/tractor-set-test.json -x "//database/host" --value db.example.com 2>/dev/null
-ACTUAL=$(cat /tmp/tractor-set-test.json)
+tractor set "$(to_tractor_path "$JSON_FILE")" -x "//database/host" --value db.example.com 2>/dev/null
+ACTUAL=$(cat "$JSON_FILE")
 EXPECTED='{
   "database": {
     "host": "db.example.com",
@@ -130,12 +137,12 @@ else
 fi
 
 # --- explicit --stdout flag writes to stdout without modifying file ---
-cat > /tmp/tractor-set-stdout.yaml << 'EOF'
+cat > "$STDOUT_YAML" << 'EOF'
 host: localhost
 EOF
 
-RESULT=$(tractor set /tmp/tractor-set-stdout.yaml -x "//host" --value "example.com" --stdout 2>/dev/null)
-ORIGINAL=$(cat /tmp/tractor-set-stdout.yaml)
+RESULT=$(tractor set "$(to_tractor_path "$STDOUT_YAML")" -x "//host" --value "example.com" --stdout 2>/dev/null)
+ORIGINAL=$(cat "$STDOUT_YAML")
 if [ "$RESULT" = "host: example.com" ] && [ "$ORIGINAL" = "host: localhost" ]; then
     echo "  ✓ --stdout outputs to stdout without modifying file"
     ((PASSED++))
@@ -145,13 +152,13 @@ else
     echo "    original (should be unchanged): $ORIGINAL"
     ((FAILED++))
 fi
-rm -f /tmp/tractor-set-stdout.yaml
+rm -f "$STDOUT_YAML"
 
 echo ""
 echo "Set (error cases):"
 
 # --- Set without XPath should fail ---
-if tractor set /tmp/tractor-set-test.json --value "foo" 2>/dev/null; then
+if tractor set "$(to_tractor_path "$JSON_FILE")" --value "foo" 2>/dev/null; then
     echo "  ✗ set without xpath should fail"
     ((FAILED++))
 else
@@ -160,7 +167,7 @@ else
 fi
 
 # --- Set with no matches should succeed ---
-if tractor set /tmp/tractor-set-test.json -x "//nonexistent" --value "x" 2>/dev/null; then
+if tractor set "$(to_tractor_path "$JSON_FILE")" -x "//nonexistent" --value "x" 2>/dev/null; then
     echo "  ✓ set with no matches succeeds"
     ((PASSED++))
 else
@@ -169,6 +176,6 @@ else
 fi
 
 # Cleanup
-rm -f /tmp/tractor-set-test-single.yaml /tmp/tractor-set-test-multi.yaml /tmp/tractor-set-test-limit.yaml /tmp/tractor-set-test.json
+rm -rf "$TMPDIR"
 
 report

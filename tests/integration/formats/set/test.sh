@@ -12,17 +12,17 @@ check_set_snapshot() {
     local args=("$@")
 
     # Copy sample so the in-place mode doesn't clobber it
-    local tmpfile="/tmp/tractor-set-snap.yaml"
+    local tmpfile
+    tmpfile="$(mktemp "$SNAPSHOT_DIR/tmp.XXXXXX.yaml")"
     cp "$SNAPSHOT_DIR/sample.yaml" "$tmpfile"
-    # On Windows (gitbash), convert to mixed path so sed matches tractor output
-    local tmpfile_native="$tmpfile"
-    if command -v cygpath &>/dev/null; then tmpfile_native="$(cygpath -m "$tmpfile")"; fi
+    local tmpfile_display
+    tmpfile_display="$(to_display_path "$tmpfile")"
 
     # Run tractor set, capture stdout, normalise the temp path back to the
     # repo-relative path used in the committed snapshot
     local actual
-    actual=$(tractor set "$tmpfile" "${args[@]}" 2>/dev/null \
-        | sed "s|$tmpfile_native|tests/integration/formats/set/sample.yaml|g")
+    actual=$(tractor set "$(to_tractor_path "$tmpfile")" "${args[@]}" 2>/dev/null \
+        | sed "s|$tmpfile_display|tests/integration/formats/set/sample.yaml|g")
 
     local expected
     expected=$(cat "$snapshot")
