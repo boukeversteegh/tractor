@@ -65,7 +65,6 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
             ignore_whitespace: ctx.ignore_whitespace,
             parse_depth: ctx.parse_depth,
             inline_source: None,
-            inline_lang: None,
         }),
         InputMode::InlineSource { source, lang } => Operation::Query(QueryOperation {
             files: vec![],
@@ -74,12 +73,11 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
             diff_lines: None,
             queries: vec![QueryExpr { xpath: xpath_expr.clone() }],
             tree_mode: ctx.tree_mode,
-            language: None,
+            language: Some(lang.clone()),
             limit: ctx.limit,
             ignore_whitespace: ctx.ignore_whitespace,
             parse_depth: ctx.parse_depth,
             inline_source: Some(source.clone()),
-            inline_lang: Some(lang.clone()),
         }),
     };
 

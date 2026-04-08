@@ -73,8 +73,6 @@ pub struct QueryOperation {
     pub parse_depth: Option<usize>,
     /// Inline source string to parse instead of files.
     pub inline_source: Option<String>,
-    /// Language for inline source (required when inline_source is set).
-    pub inline_lang: Option<String>,
 }
 
 /// A single XPath query expression.
@@ -144,8 +142,6 @@ pub struct TestOperation {
     pub parse_depth: Option<usize>,
     /// Inline source string to parse instead of files.
     pub inline_source: Option<String>,
-    /// Language for inline source (required when inline_source is set).
-    pub inline_lang: Option<String>,
 }
 
 /// A single test assertion: an XPath query with an expected match count.
@@ -308,8 +304,7 @@ fn execute_query(
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Inline source mode: parse a string instead of files.
     if let Some(ref source) = op.inline_source {
-        let lang = op.inline_lang.as_deref()
-            .or(op.language.as_deref())
+        let lang = op.language.as_deref()
             .ok_or("inline source requires a language (--lang)")?;
         return execute_query_inline(source, lang, op, report);
     }
@@ -658,8 +653,7 @@ fn execute_test(
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Inline source mode: parse a string and check each assertion individually.
     if let Some(ref source) = op.inline_source {
-        let lang = op.inline_lang.as_deref()
-            .or(op.language.as_deref())
+        let lang = op.language.as_deref()
             .ok_or("inline source requires a language (--lang)")?;
         let mut result = parse_string_to_documents(
             source, lang, "<stdin>".to_string(), op.tree_mode, op.ignore_whitespace,
@@ -960,7 +954,6 @@ mod tests {
             ignore_whitespace: false,
             parse_depth: None,
             inline_source: None,
-            inline_lang: None,
         })];
 
         let report = run_query(&ops);
@@ -985,7 +978,6 @@ mod tests {
             ignore_whitespace: false,
             parse_depth: None,
             inline_source: None,
-            inline_lang: None,
         })];
 
         let report = run_query(&ops);
@@ -1006,7 +998,6 @@ mod tests {
             ignore_whitespace: false,
             parse_depth: None,
             inline_source: None,
-            inline_lang: None,
         })];
 
         let report = run_query(&ops);
