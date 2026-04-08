@@ -397,7 +397,10 @@ fn resolve_globs_to_absolute(base_dir: &Option<PathBuf>, patterns: &[String]) ->
             if Path::new(g).is_absolute() {
                 g.clone()
             } else {
-                base.join(g).to_string_lossy().to_string()
+                // normalize_path ensures forward slashes — critical on Windows
+                // where PathBuf::join produces backslashes that glob interprets
+                // as escape characters.
+                normalize_path(&base.join(g).to_string_lossy())
             }
         }).collect()
     } else {

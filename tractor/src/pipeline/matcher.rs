@@ -3,7 +3,7 @@ use std::path::Path;
 
 use rayon::prelude::*;
 use tractor_core::{
-    Match, NormalizedXpath,
+    Match, NormalizedXpath, normalize_path,
     detect_language,
     language_info::parse_language,
     output::{render_document, RenderOptions},
@@ -315,7 +315,10 @@ pub fn run_rules(
                 if Path::new(p).is_absolute() {
                     p.clone()
                 } else {
-                    base.join(p).to_string_lossy().to_string()
+                    // normalize_path ensures forward slashes — critical on Windows
+                    // where PathBuf::join produces backslashes that glob interprets
+                    // as escape characters.
+                    normalize_path(&base.join(p).to_string_lossy())
                 }
             }).collect()
         } else {
