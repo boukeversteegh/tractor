@@ -146,7 +146,16 @@ impl FileResolver {
                 eprintln!("  files: CLI args have {} file(s)", expansion.files.len());
             }
             Some(expansion.files.into_iter()
-                .map(|f| normalize_path(&f)).collect())
+                .map(|f| {
+                    let p = Path::new(&f);
+                    if p.is_absolute() {
+                        normalize_path(&f)
+                    } else if let Ok(cwd) = std::env::current_dir() {
+                        normalize_path(&cwd.join(&f).to_string_lossy())
+                    } else {
+                        normalize_path(&f)
+                    }
+                }).collect())
         } else {
             None
         };
@@ -395,16 +404,13 @@ fn resolve_globs_to_absolute(base_dir: &Option<PathBuf>, patterns: &[String]) ->
     if let Some(base) = base_dir {
         patterns.iter().map(|g| {
             if Path::new(g).is_absolute() {
-                g.clone()
+                normalize_path(g)
             } else {
-                // normalize_path ensures forward slashes — critical on Windows
-                // where PathBuf::join produces backslashes that glob interprets
-                // as escape characters.
                 normalize_path(&base.join(g).to_string_lossy())
             }
         }).collect()
     } else {
-        patterns.to_vec()
+        patterns.iter().map(|g| normalize_path(g)).collect()
     }
 }
 

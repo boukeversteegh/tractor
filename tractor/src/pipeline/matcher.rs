@@ -310,20 +310,14 @@ pub fn run_rules(
     // match correctly against absolute file paths. Without this, a relative
     // pattern like "src/**/*.rs" would never match "/home/user/project/src/foo.rs".
     let resolve = |patterns: &[String]| -> Vec<String> {
-        if let Some(base) = base_dir {
-            patterns.iter().map(|p| {
-                if Path::new(p).is_absolute() {
-                    p.clone()
-                } else {
-                    // normalize_path ensures forward slashes — critical on Windows
-                    // where PathBuf::join produces backslashes that glob interprets
-                    // as escape characters.
-                    normalize_path(&base.join(p).to_string_lossy())
+        patterns.iter().map(|p| {
+            if let Some(base) = base_dir {
+                if !Path::new(p).is_absolute() {
+                    return normalize_path(&base.join(p).to_string_lossy());
                 }
-            }).collect()
-        } else {
-            patterns.to_vec()
-        }
+            }
+            normalize_path(p)
+        }).collect()
     };
 
     // Compile glob matchers for each rule upfront.
