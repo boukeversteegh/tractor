@@ -96,6 +96,8 @@ pub enum Command {
     Render(RenderArgs),
     /// Execute a tractor config file (batch check/set operations)
     Run(RunArgs),
+    /// List all supported languages with their canonical names and aliases
+    Languages,
 }
 
 /// Shared arguments available in all modes

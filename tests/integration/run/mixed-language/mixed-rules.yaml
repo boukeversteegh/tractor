@@ -1,17 +1,17 @@
-# Config with rules for multiple languages - tests sub-issues 1, 2, and 3
+# Config with rules for multiple languages - tests mixed-language rule configs
 check:
   files:
     - "*.js"
     - "*.md"
   rules:
-    - id: spec-ref-wrong-prefix
+    - id: no-todo-js
       language: javascript
-      xpath: "//comment[contains(., '@specs/')]"
-      reason: "Wrong prefix"
+      xpath: "//comment[contains(., 'TODO')]"
+      reason: "TODO comment found"
       severity: error
 
-    - id: spec-too-long
+    - id: no-todo-md
       language: markdown
-      xpath: "(//document[@end_line > 50]//heading)[1]"
-      reason: "Spec too long"
+      xpath: "//html[contains(., 'TODO')]"
+      reason: "TODO comment found"
       severity: warning

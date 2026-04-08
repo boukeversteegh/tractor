@@ -1,9 +1,10 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use rayon::prelude::*;
 use tractor_core::{
     Match, NormalizedXpath,
     detect_language,
+    language_info::get_language_info,
     output::{render_document, RenderOptions},
     parse_to_documents, parse_string_to_documents,
     report::{Report, ReportMatch, Severity, DiagnosticOrigin},
@@ -284,20 +285,14 @@ fn rule_language_matches_file(
     }
 }
 
-/// Normalize language names to handle aliases.
+/// Normalize language names to their canonical form using centralized language info.
+///
+/// This handles common aliases like "js" → "javascript", "ts" → "typescript", etc.
+/// Returns the canonical language name if found, otherwise returns the input unchanged.
 fn normalize_language(lang: &str) -> &str {
-    match lang {
-        "js" => "javascript",
-        "ts" => "typescript",
-        "py" => "python",
-        "rb" => "ruby",
-        "rs" => "rust",
-        "cs" => "csharp",
-        "md" => "markdown",
-        "yml" => "yaml",
-        "sh" => "bash",
-        _ => lang,
-    }
+    get_language_info(lang)
+        .map(|info| info.name)
+        .unwrap_or(lang)
 }
 
 /// Execute all rules in a `RuleSet` against a list of files.
@@ -330,8 +325,11 @@ pub fn run_rules(
         })
         .collect::<Result<Vec<_>, tractor_core::rule::GlobError>>()?;
 
-    // Process files in parallel. Each file may be parsed multiple times
-    // if rules require different languages.
+    // Process files in parallel. Each file is parsed once using either:
+    // - The file's detected language (when no rules specify a language override)
+    // - The effective language from the first applicable rule (when rules specify a language)
+    // Note: rule_language_matches_file() ensures all applicable rules are compatible
+    // with the file's language, so we won't try to parse a file in multiple languages.
     let results: Vec<Vec<RuleMatch>> = files
         .par_iter()
         .filter_map(|file_path| {
@@ -349,58 +347,48 @@ pub fn run_rules(
                 return None;
             }
 
-            // Group applicable rules by their effective language.
-            // This allows us to parse once per language and run all
-            // rules for that language against the parsed result.
-            let mut rules_by_lang: HashMap<Option<&str>, Vec<usize>> = HashMap::new();
-            for &rule_idx in &applicable {
-                let rule = &ruleset.rules[rule_idx];
-                let lang = ruleset.effective_language(rule);
-                rules_by_lang.entry(lang).or_default().push(rule_idx);
-            }
+            // Resolve language and tree_mode from the first applicable rule.
+            // All applicable rules are compatible with this file's language
+            // (ensured by rule_language_matches_file filter above).
+            let first_rule = &ruleset.rules[applicable[0]];
+            let lang_override = ruleset.effective_language(first_rule);
+            let effective_tree_mode = ruleset.effective_tree_mode(first_rule).or(tree_mode);
+
+            let mut result = match parse_to_documents(
+                std::path::Path::new(file_path),
+                lang_override,
+                effective_tree_mode,
+                ignore_whitespace,
+                parse_depth,
+            ) {
+                Ok(r) => r,
+                Err(e) => {
+                    if verbose {
+                        eprintln!("warning: {}: {}", file_path, e);
+                    }
+                    return None;
+                }
+            };
 
             let mut file_matches = Vec::new();
 
-            // Process each language group: parse once, run all rules
-            for (lang_override, rule_indices) in rules_by_lang {
-                // Resolve tree_mode from the first rule in this language group
-                let first_rule = &ruleset.rules[rule_indices[0]];
-                let effective_tree_mode = ruleset.effective_tree_mode(first_rule).or(tree_mode);
-
-                let mut result = match parse_to_documents(
-                    std::path::Path::new(file_path),
-                    lang_override,
-                    effective_tree_mode,
-                    ignore_whitespace,
-                    parse_depth,
-                ) {
-                    Ok(r) => r,
+            // Run all applicable rules against the parsed result
+            for rule_idx in applicable {
+                match result.query(compiled[rule_idx].xpath.as_str()) {
+                    Ok(matches) => {
+                        for m in matches {
+                            file_matches.push(RuleMatch {
+                                rule_index: rule_idx,
+                                m,
+                            });
+                        }
+                    }
                     Err(e) => {
                         if verbose {
-                            eprintln!("warning: {}: {}", file_path, e);
-                        }
-                        continue;
-                    }
-                };
-
-                // Run all rules for this language against the parsed result
-                for rule_idx in rule_indices {
-                    match result.query(compiled[rule_idx].xpath.as_str()) {
-                        Ok(matches) => {
-                            for m in matches {
-                                file_matches.push(RuleMatch {
-                                    rule_index: rule_idx,
-                                    m,
-                                });
-                            }
-                        }
-                        Err(e) => {
-                            if verbose {
-                                eprintln!(
-                                    "warning: {}: rule '{}' query error: {}",
-                                    file_path, ruleset.rules[rule_idx].id, e
-                                );
-                            }
+                            eprintln!(
+                                "warning: {}: rule '{}' query error: {}",
+                                file_path, ruleset.rules[rule_idx].id, e
+                            );
                         }
                     }
                 }

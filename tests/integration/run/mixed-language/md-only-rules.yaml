@@ -4,8 +4,8 @@ check:
     - "*.js"
     - "*.md"
   rules:
-    - id: spec-too-long
+    - id: no-todo
       language: markdown
-      xpath: "(//document[@end_line > 50]//heading)[1]"
-      reason: "Spec too long"
+      xpath: "//html[contains(., 'TODO')]"
+      reason: "TODO comment found"
       severity: warning

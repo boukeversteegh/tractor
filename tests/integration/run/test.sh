@@ -142,37 +142,37 @@ MIXED_LANG_DIR="$FIXTURE_DIR/mixed-language"
 
 run_and_check "mixed-language: both JS and MD rules find violations" \
     1 \
-    "$(printf 'mixed-language/long-spec.md:1:1: warning: Spec too long\n1 >| # Long Spec Document\n2 >| \n\nmixed-language/sample.js:1:1: error: Wrong prefix\n1 | // @specs/my-spec reference to specs\n    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n1 error in 2 files')" \
+    "$(printf 'mixed-language/sample.js:1:1: error: TODO comment found\n1 | // TODO: Fix this code\n    ^~~~~~~~~~~~~~~~~~~~~~\n\nmixed-language/todo-doc.md:3:1: warning: TODO comment found\n3 >| <!-- TODO: Complete this section -->\n4 >| \n\n1 error in 2 files')" \
     "$MIXED_LANG_DIR/mixed-rules.yaml"
 
 run_and_check "mixed-language: JS-only rules skip MD files" \
     1 \
-    "$(printf 'mixed-language/sample.js:1:1: error: Wrong prefix\n1 | // @specs/my-spec reference to specs\n    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n1 error in 1 file')" \
+    "$(printf 'mixed-language/sample.js:1:1: error: TODO comment found\n1 | // TODO: Fix this code\n    ^~~~~~~~~~~~~~~~~~~~~~\n\n1 error in 1 file')" \
     "$MIXED_LANG_DIR/js-only-rules.yaml"
 
 run_and_check "mixed-language: MD-only rules skip JS files" \
     0 \
-    "$(printf 'mixed-language/long-spec.md:1:1: warning: Spec too long\n1 >| # Long Spec Document\n2 >| \n\n1 warning in 1 file')" \
+    "$(printf 'mixed-language/todo-doc.md:3:1: warning: TODO comment found\n3 >| <!-- TODO: Complete this section -->\n4 >| \n\n1 warning in 1 file')" \
     "$MIXED_LANG_DIR/md-only-rules.yaml"
 
 run_and_check "mixed-language: auto-detect uses file extension" \
     1 \
-    "$(printf 'mixed-language/sample.js:1:1: error: Wrong prefix\n1 | // @specs/my-spec reference to specs\n    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n1 error in 1 file')" \
+    "$(printf 'mixed-language/sample.js:1:1: error: TODO comment found\n1 | // TODO: Fix this code\n    ^~~~~~~~~~~~~~~~~~~~~~\n\n1 error in 1 file')" \
     "$MIXED_LANG_DIR/auto-detect.yaml"
 
 run_and_check "mixed-language: multiple rules for same language" \
     1 \
-    "$(printf 'mixed-language/sample.js:1:1: error: Wrong prefix\n1 | // @specs/my-spec reference to specs\n    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\nmixed-language/sample.js:3:5: warning: No console.log calls allowed\n3 |     console.log(\"Hello, World!\");\n        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\nmixed-language/sample.js:8:5: warning: No console.log calls allowed\n8 |     console.log(\"Goodbye!\");\n        ^~~~~~~~~~~~~~~~~~~~~~~\n\n1 error in 1 file')" \
+    "$(printf 'mixed-language/sample.js:1:1: error: TODO comment found\n1 | // TODO: Fix this code\n    ^~~~~~~~~~~~~~~~~~~~~~\n\nmixed-language/sample.js:3:5: warning: No console.log calls allowed\n3 |     console.log(\"Hello\");\n        ^~~~~~~~~~~~~~~~~~~~\n\nmixed-language/sample.js:7:5: warning: No console.log calls allowed\n7 |     console.log(\"Goodbye\");\n        ^~~~~~~~~~~~~~~~~~~~~~\n\n1 error in 1 file')" \
     "$MIXED_LANG_DIR/same-lang-rules.yaml"
 
 run_and_check "mixed-language: language alias (js -> javascript)" \
     1 \
-    "$(printf 'mixed-language/sample.js:1:1: error: Wrong prefix\n1 | // @specs/my-spec reference to specs\n    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n1 error in 1 file')" \
+    "$(printf 'mixed-language/sample.js:1:1: error: TODO comment found\n1 | // TODO: Fix this code\n    ^~~~~~~~~~~~~~~~~~~~~~\n\n1 error in 1 file')" \
     "$MIXED_LANG_DIR/lang-alias.yaml"
 
 run_and_check "mixed-language: three different languages" \
     1 \
-    "$(printf 'mixed-language/config.yaml:3:10: error: Debug mode must be disabled\n3 |   debug: true\n             ^~~~\n\nmixed-language/long-spec.md:1:1: warning: Spec too long\n1 >| # Long Spec Document\n2 >| \n\nmixed-language/sample.js:1:1: error: Wrong prefix\n1 | // @specs/my-spec reference to specs\n    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n2 errors in 3 files')" \
+    "$(printf 'mixed-language/config.yaml:3:10: error: Debug mode must be disabled\n3 |   debug: true\n             ^~~~\n\nmixed-language/sample.js:1:1: error: TODO comment found\n1 | // TODO: Fix this code\n    ^~~~~~~~~~~~~~~~~~~~~~\n\nmixed-language/todo-doc.md:3:1: warning: TODO comment found\n3 >| <!-- TODO: Complete this section -->\n4 >| \n\n2 errors in 3 files')" \
     "$MIXED_LANG_DIR/three-langs.yaml"
 
 report

@@ -1,11 +1,7 @@
-# Short Spec Document
+# Sample Document
 
-This is a short spec with less than 50 lines.
+This is a sample markdown file.
 
-## Section 1
+## Section
 
 Some content here.
-
-## Section 2
-
-More content.

@@ -198,15 +198,20 @@ pub static LANGUAGES: &[LanguageInfo] = &[
 
 /// Get language info by name
 pub fn get_language_info(name: &str) -> Option<&'static LanguageInfo> {
-    // Normalize common aliases
+    // Normalize common aliases to canonical names
     let normalized = match name {
+        // TypeScript/JavaScript
         "ts" => "typescript",
         "js" | "jsx" => "javascript",
+        // Other common aliases
         "cs" => "csharp",
         "rs" => "rust",
         "py" => "python",
         "rb" => "ruby",
         "md" | "mdx" => "markdown",
+        "yml" => "yaml",
+        "sh" => "bash",
+        // SQL dialects
         "mssql" => "tsql",
         _ => name,
     };
@@ -261,6 +266,15 @@ mod tests {
         assert_eq!(get_language_info("ts").unwrap().name, "typescript");
         assert_eq!(get_language_info("cs").unwrap().name, "csharp");
         assert_eq!(get_language_info("py").unwrap().name, "python");
+        assert_eq!(get_language_info("rb").unwrap().name, "ruby");
+        assert_eq!(get_language_info("rs").unwrap().name, "rust");
+        assert_eq!(get_language_info("md").unwrap().name, "markdown");
+        assert_eq!(get_language_info("yml").unwrap().name, "yaml");
+        assert_eq!(get_language_info("sh").unwrap().name, "bash");
+        assert_eq!(get_language_info("js").unwrap().name, "javascript");
+        assert_eq!(get_language_info("jsx").unwrap().name, "javascript");
+        assert_eq!(get_language_info("mdx").unwrap().name, "markdown");
+        assert_eq!(get_language_info("mssql").unwrap().name, "tsql");
     }
 
     #[test]

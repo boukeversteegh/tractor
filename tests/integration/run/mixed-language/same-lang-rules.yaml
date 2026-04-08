@@ -3,10 +3,10 @@ check:
   files:
     - "*.js"
   rules:
-    - id: spec-ref-wrong-prefix
+    - id: no-todo
       language: javascript
-      xpath: "//comment[contains(., '@specs/')]"
-      reason: "Wrong prefix"
+      xpath: "//comment[contains(., 'TODO')]"
+      reason: "TODO comment found"
       severity: error
     - id: no-console-log
       language: javascript

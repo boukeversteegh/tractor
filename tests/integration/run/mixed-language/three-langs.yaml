@@ -5,18 +5,18 @@ check:
     - "*.md"
     - "*.yaml"
   rules:
-    - id: js-no-specs
+    - id: no-todo-js
       language: javascript
-      xpath: "//comment[contains(., '@specs/')]"
-      reason: "Wrong prefix"
+      xpath: "//comment[contains(., 'TODO')]"
+      reason: "TODO comment found"
       severity: error
-    
-    - id: md-too-long
+
+    - id: no-todo-md
       language: markdown
-      xpath: "(//document[@end_line > 50]//heading)[1]"
-      reason: "Spec too long"
+      xpath: "//html[contains(., 'TODO')]"
+      reason: "TODO comment found"
       severity: warning
-    
+
     - id: yaml-no-debug
       language: yaml
       xpath: "//debug[.='true']"

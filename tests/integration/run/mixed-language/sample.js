@@ -1,9 +1,8 @@
-// @specs/my-spec reference to specs
+// TODO: Fix this code
 function hello() {
-    console.log("Hello, World!");
+    console.log("Hello");
 }
 
-// Another function
 function goodbye() {
-    console.log("Goodbye!");
+    console.log("Goodbye");
 }
