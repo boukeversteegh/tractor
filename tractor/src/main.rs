@@ -11,7 +11,7 @@ mod executor;
 mod filter;
 
 use std::process::ExitCode;
-use cli::{Cli, Command};
+use cli::{Cli, Command, DocsCommand};
 use clap::Parser;
 use modes::{check::run_check, test::run_test, set::run_set, update::run_update, query::run_query, render::run_render, run::run_run, languages::run_languages};
 use tractor_core::report::{ReportBuilder, ReportMatch, Severity, DiagnosticOrigin};
@@ -88,7 +88,7 @@ fn main() -> ExitCode {
         Some(Command::Test(a))  => a.format.as_str(),
         Some(Command::Set(a))   => a.format.as_str(),
         Some(Command::Run(a))   => a.format.as_str(),
-        Some(Command::Update(_)) | Some(Command::Render(_)) | Some(Command::Languages) => "text",
+        Some(Command::Update(_)) | Some(Command::Render(_)) | Some(Command::Docs(_)) => "text",
         None => cli.query.format.as_str(),
     };
     let fallback_format = OutputFormat::from_str(format_str).unwrap_or(OutputFormat::Text);
@@ -99,7 +99,7 @@ fn main() -> ExitCode {
         Some(Command::Set(a))   => &a.shared,
         Some(Command::Update(a)) => &a.shared,
         Some(Command::Run(a))   => &a.shared,
-        Some(Command::Render(_)) | Some(Command::Languages) => &cli.query.shared,
+        Some(Command::Render(_)) | Some(Command::Docs(_)) => &cli.query.shared,
         None => &cli.query.shared,
     };
     let fallback_color = if shared.no_color { false } else { should_use_color(&shared.color) };
@@ -112,7 +112,9 @@ fn main() -> ExitCode {
         Some(Command::Update(args)) => run_update(args),
         Some(Command::Render(args)) => run_render(args),
         Some(Command::Run(args)) => run_run(args),
-        Some(Command::Languages) => run_languages(),
+        Some(Command::Docs(docs_cmd)) => match docs_cmd {
+            DocsCommand::Languages => run_languages(),
+        },
         None => run_query(cli.query),
     };
 

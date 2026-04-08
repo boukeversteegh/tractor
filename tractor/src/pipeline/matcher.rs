@@ -4,7 +4,7 @@ use rayon::prelude::*;
 use tractor_core::{
     Match, NormalizedXpath,
     detect_language,
-    language_info::get_language_info,
+    language_info::parse_language,
     output::{render_document, RenderOptions},
     parse_to_documents, parse_string_to_documents,
     report::{Report, ReportMatch, Severity, DiagnosticOrigin},
@@ -279,20 +279,12 @@ fn rule_language_matches_file(
         // Language specified → must match file's detected language
         Some(rule_lang) => {
             let file_lang = detect_language(file_path);
-            // Handle language aliases (e.g., "js" vs "javascript")
-            normalize_language(rule_lang) == normalize_language(file_lang)
+            // Use Language enum for type-safe comparison
+            let rule_language = parse_language(rule_lang);
+            let file_language = parse_language(file_lang);
+            rule_language == file_language
         }
     }
-}
-
-/// Normalize language names to their canonical form using centralized language info.
-///
-/// This handles common aliases like "js" → "javascript", "ts" → "typescript", etc.
-/// Returns the canonical language name if found, otherwise returns the input unchanged.
-fn normalize_language(lang: &str) -> &str {
-    get_language_info(lang)
-        .map(|info| info.name)
-        .unwrap_or(lang)
 }
 
 /// Execute all rules in a `RuleSet` against a list of files.
@@ -499,30 +491,33 @@ pub fn apply_message_template(report: &mut Report, template: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tractor_core::language_info::Language;
 
     #[test]
-    fn test_normalize_language_aliases() {
-        assert_eq!(normalize_language("js"), "javascript");
-        assert_eq!(normalize_language("javascript"), "javascript");
-        assert_eq!(normalize_language("ts"), "typescript");
-        assert_eq!(normalize_language("typescript"), "typescript");
-        assert_eq!(normalize_language("py"), "python");
-        assert_eq!(normalize_language("python"), "python");
-        assert_eq!(normalize_language("rb"), "ruby");
-        assert_eq!(normalize_language("ruby"), "ruby");
-        assert_eq!(normalize_language("rs"), "rust");
-        assert_eq!(normalize_language("rust"), "rust");
-        assert_eq!(normalize_language("cs"), "csharp");
-        assert_eq!(normalize_language("csharp"), "csharp");
-        assert_eq!(normalize_language("md"), "markdown");
-        assert_eq!(normalize_language("markdown"), "markdown");
-        assert_eq!(normalize_language("yml"), "yaml");
-        assert_eq!(normalize_language("yaml"), "yaml");
-        assert_eq!(normalize_language("sh"), "bash");
-        assert_eq!(normalize_language("bash"), "bash");
-        // Unknown languages pass through
-        assert_eq!(normalize_language("go"), "go");
-        assert_eq!(normalize_language("java"), "java");
+    fn test_language_parsing() {
+        // Test that language parsing handles aliases correctly
+        assert_eq!(parse_language("js"), Language::JavaScript);
+        assert_eq!(parse_language("javascript"), Language::JavaScript);
+        assert_eq!(parse_language("ts"), Language::TypeScript);
+        assert_eq!(parse_language("typescript"), Language::TypeScript);
+        assert_eq!(parse_language("py"), Language::Python);
+        assert_eq!(parse_language("python"), Language::Python);
+        assert_eq!(parse_language("rb"), Language::Ruby);
+        assert_eq!(parse_language("ruby"), Language::Ruby);
+        assert_eq!(parse_language("rs"), Language::Rust);
+        assert_eq!(parse_language("rust"), Language::Rust);
+        assert_eq!(parse_language("cs"), Language::CSharp);
+        assert_eq!(parse_language("csharp"), Language::CSharp);
+        assert_eq!(parse_language("md"), Language::Markdown);
+        assert_eq!(parse_language("markdown"), Language::Markdown);
+        assert_eq!(parse_language("yml"), Language::Yaml);
+        assert_eq!(parse_language("yaml"), Language::Yaml);
+        assert_eq!(parse_language("sh"), Language::Bash);
+        assert_eq!(parse_language("bash"), Language::Bash);
+        assert_eq!(parse_language("go"), Language::Go);
+        assert_eq!(parse_language("java"), Language::Java);
+        // Unknown languages return Language::Unknown
+        assert_eq!(parse_language("nonexistent"), Language::Unknown);
     }
 
     #[test]

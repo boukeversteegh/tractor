@@ -96,7 +96,15 @@ pub enum Command {
     Render(RenderArgs),
     /// Execute a tractor config file (batch check/set operations)
     Run(RunArgs),
-    /// List all supported languages with their canonical names and aliases
+    /// Show documentation and reference information
+    #[command(subcommand)]
+    Docs(DocsCommand),
+}
+
+/// Docs subcommands for reference information
+#[derive(Subcommand, Debug)]
+pub enum DocsCommand {
+    /// List all supported languages with their canonical names, extensions, and aliases
     Languages,
 }
 

@@ -3,10 +3,162 @@
 //! Centralized language definitions shared between CLI and WASM.
 
 use serde::Serialize;
+use std::fmt;
+use std::str::FromStr;
+
+/// Enum representing all supported languages.
+///
+/// Using an enum instead of magic strings prevents typos and ensures
+/// compile-time checking of language identifiers.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Language {
+    TypeScript,
+    Tsx,
+    JavaScript,
+    CSharp,
+    Rust,
+    Python,
+    Go,
+    Java,
+    Ruby,
+    Cpp,
+    C,
+    Json,
+    Html,
+    Css,
+    Bash,
+    Yaml,
+    Toml,
+    Ini,
+    Env,
+    Php,
+    Scala,
+    Lua,
+    Haskell,
+    OCaml,
+    R,
+    Julia,
+    Markdown,
+    Xml,
+    TSql,
+    /// Unknown language (for unsupported extensions)
+    Unknown,
+}
+
+impl Language {
+    /// Get the canonical string name for this language
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Language::TypeScript => "typescript",
+            Language::Tsx => "tsx",
+            Language::JavaScript => "javascript",
+            Language::CSharp => "csharp",
+            Language::Rust => "rust",
+            Language::Python => "python",
+            Language::Go => "go",
+            Language::Java => "java",
+            Language::Ruby => "ruby",
+            Language::Cpp => "cpp",
+            Language::C => "c",
+            Language::Json => "json",
+            Language::Html => "html",
+            Language::Css => "css",
+            Language::Bash => "bash",
+            Language::Yaml => "yaml",
+            Language::Toml => "toml",
+            Language::Ini => "ini",
+            Language::Env => "env",
+            Language::Php => "php",
+            Language::Scala => "scala",
+            Language::Lua => "lua",
+            Language::Haskell => "haskell",
+            Language::OCaml => "ocaml",
+            Language::R => "r",
+            Language::Julia => "julia",
+            Language::Markdown => "markdown",
+            Language::Xml => "xml",
+            Language::TSql => "tsql",
+            Language::Unknown => "unknown",
+        }
+    }
+
+    /// Get LanguageInfo for this language variant
+    pub fn info(&self) -> Option<&'static LanguageInfo> {
+        if *self == Language::Unknown {
+            return None;
+        }
+        LANGUAGES.iter().find(|l| l.language == *self)
+    }
+}
+
+impl fmt::Display for Language {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl FromStr for Language {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // Handle aliases first
+        let normalized = match s {
+            "ts" => "typescript",
+            "js" | "jsx" => "javascript",
+            "cs" => "csharp",
+            "rs" => "rust",
+            "py" => "python",
+            "rb" => "ruby",
+            "md" | "mdx" => "markdown",
+            "yml" => "yaml",
+            "sh" => "bash",
+            "mssql" => "tsql",
+            other => other,
+        };
+
+        match normalized {
+            "typescript" => Ok(Language::TypeScript),
+            "tsx" => Ok(Language::Tsx),
+            "javascript" => Ok(Language::JavaScript),
+            "csharp" => Ok(Language::CSharp),
+            "rust" => Ok(Language::Rust),
+            "python" => Ok(Language::Python),
+            "go" => Ok(Language::Go),
+            "java" => Ok(Language::Java),
+            "ruby" => Ok(Language::Ruby),
+            "cpp" => Ok(Language::Cpp),
+            "c" => Ok(Language::C),
+            "json" => Ok(Language::Json),
+            "html" => Ok(Language::Html),
+            "css" => Ok(Language::Css),
+            "bash" => Ok(Language::Bash),
+            "yaml" => Ok(Language::Yaml),
+            "toml" => Ok(Language::Toml),
+            "ini" => Ok(Language::Ini),
+            "env" => Ok(Language::Env),
+            "php" => Ok(Language::Php),
+            "scala" => Ok(Language::Scala),
+            "lua" => Ok(Language::Lua),
+            "haskell" => Ok(Language::Haskell),
+            "ocaml" => Ok(Language::OCaml),
+            "r" => Ok(Language::R),
+            "julia" => Ok(Language::Julia),
+            "markdown" => Ok(Language::Markdown),
+            "xml" => Ok(Language::Xml),
+            "tsql" => Ok(Language::TSql),
+            "unknown" => Ok(Language::Unknown),
+            _ => Err(()),
+        }
+    }
+}
 
 /// Information about a supported language
 #[derive(Debug, Clone, Serialize)]
 pub struct LanguageInfo {
+    /// The Language enum variant
+    #[serde(skip)]
+    pub language: Language,
     /// Language identifier (e.g., "typescript", "csharp")
     pub name: &'static str,
     /// File extensions (without dots)
@@ -20,168 +172,196 @@ pub struct LanguageInfo {
 /// All supported languages with their metadata
 pub static LANGUAGES: &[LanguageInfo] = &[
     LanguageInfo {
+        language: Language::TypeScript,
         name: "typescript",
         extensions: &["ts"],
         has_transforms: true,
         grammar_file: Some("tree-sitter-typescript.wasm"),
     },
     LanguageInfo {
+        language: Language::Tsx,
         name: "tsx",
         extensions: &["tsx"],
         has_transforms: true,
         grammar_file: Some("tree-sitter-tsx.wasm"),
     },
     LanguageInfo {
+        language: Language::JavaScript,
         name: "javascript",
         extensions: &["js", "mjs", "cjs", "jsx"],
         has_transforms: true,
         grammar_file: Some("tree-sitter-javascript.wasm"),
     },
     LanguageInfo {
+        language: Language::CSharp,
         name: "csharp",
         extensions: &["cs"],
         has_transforms: true,
         grammar_file: Some("tree-sitter-c_sharp.wasm"),
     },
     LanguageInfo {
+        language: Language::Rust,
         name: "rust",
         extensions: &["rs"],
         has_transforms: true,
         grammar_file: Some("tree-sitter-rust.wasm"),
     },
     LanguageInfo {
+        language: Language::Python,
         name: "python",
         extensions: &["py", "pyw", "pyi"],
         has_transforms: true,
         grammar_file: Some("tree-sitter-python.wasm"),
     },
     LanguageInfo {
+        language: Language::Go,
         name: "go",
         extensions: &["go"],
         has_transforms: true,
         grammar_file: Some("tree-sitter-go.wasm"),
     },
     LanguageInfo {
+        language: Language::Java,
         name: "java",
         extensions: &["java"],
         has_transforms: true,
         grammar_file: Some("tree-sitter-java.wasm"),
     },
     LanguageInfo {
+        language: Language::Ruby,
         name: "ruby",
         extensions: &["rb", "rake", "gemspec"],
         has_transforms: true,
         grammar_file: Some("tree-sitter-ruby.wasm"),
     },
     LanguageInfo {
+        language: Language::Cpp,
         name: "cpp",
         extensions: &["cpp", "cc", "cxx", "hpp", "hxx", "hh"],
         has_transforms: false,
         grammar_file: Some("tree-sitter-cpp.wasm"),
     },
     LanguageInfo {
+        language: Language::C,
         name: "c",
         extensions: &["c", "h"],
         has_transforms: false,
         grammar_file: Some("tree-sitter-c.wasm"),
     },
     LanguageInfo {
+        language: Language::Json,
         name: "json",
         extensions: &["json"],
         has_transforms: true,
         grammar_file: Some("tree-sitter-json.wasm"),
     },
     LanguageInfo {
+        language: Language::Html,
         name: "html",
         extensions: &["html", "htm"],
         has_transforms: false,
         grammar_file: Some("tree-sitter-html.wasm"),
     },
     LanguageInfo {
+        language: Language::Css,
         name: "css",
         extensions: &["css"],
         has_transforms: false,
         grammar_file: Some("tree-sitter-css.wasm"),
     },
     LanguageInfo {
+        language: Language::Bash,
         name: "bash",
         extensions: &["sh", "bash"],
         has_transforms: false,
         grammar_file: Some("tree-sitter-bash.wasm"),
     },
     LanguageInfo {
+        language: Language::Yaml,
         name: "yaml",
         extensions: &["yml", "yaml"],
         has_transforms: true,
-        grammar_file: Some("tree-sitter-yaml.wasm")
+        grammar_file: Some("tree-sitter-yaml.wasm"),
     },
     LanguageInfo {
+        language: Language::Toml,
         name: "toml",
         extensions: &["toml"],
         has_transforms: true,
         grammar_file: Some("tree-sitter-toml.wasm"),
     },
     LanguageInfo {
+        language: Language::Ini,
         name: "ini",
         extensions: &["ini", "cfg", "inf"],
         has_transforms: true,
         grammar_file: Some("tree-sitter-ini.wasm"),
     },
     LanguageInfo {
+        language: Language::Env,
         name: "env",
         extensions: &["env"],
         has_transforms: true,
         grammar_file: Some("tree-sitter-bash.wasm"),
     },
     LanguageInfo {
+        language: Language::Php,
         name: "php",
         extensions: &["php"],
         has_transforms: false,
         grammar_file: Some("tree-sitter-php.wasm"),
     },
     LanguageInfo {
+        language: Language::Scala,
         name: "scala",
         extensions: &["scala", "sc"],
         has_transforms: false,
         grammar_file: None,
     },
     LanguageInfo {
+        language: Language::Lua,
         name: "lua",
         extensions: &["lua"],
         has_transforms: false,
         grammar_file: None,
     },
     LanguageInfo {
+        language: Language::Haskell,
         name: "haskell",
         extensions: &["hs", "lhs"],
         has_transforms: false,
         grammar_file: None,
     },
     LanguageInfo {
+        language: Language::OCaml,
         name: "ocaml",
         extensions: &["ml", "mli"],
         has_transforms: false,
         grammar_file: None,
     },
     LanguageInfo {
+        language: Language::R,
         name: "r",
         extensions: &["r"],
         has_transforms: false,
         grammar_file: None,
     },
     LanguageInfo {
+        language: Language::Julia,
         name: "julia",
         extensions: &["jl"],
         has_transforms: false,
         grammar_file: None,
     },
     LanguageInfo {
+        language: Language::Markdown,
         name: "markdown",
         extensions: &["md", "markdown", "mdx"],
         has_transforms: true,
         grammar_file: Some("tree-sitter-markdown.wasm"),
     },
     LanguageInfo {
+        language: Language::Xml,
         name: "xml",
         extensions: &["xml"],
         has_transforms: false,
@@ -189,6 +369,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
     },
     // SQL dialects - multiple languages share the .sql extension
     LanguageInfo {
+        language: Language::TSql,
         name: "tsql",
         extensions: &["sql"],
         has_transforms: true,
@@ -196,26 +377,21 @@ pub static LANGUAGES: &[LanguageInfo] = &[
     },
 ];
 
-/// Get language info by name
+/// Get language info by name or alias
+///
+/// Uses `Language::from_str` to handle aliases, then looks up the LanguageInfo.
 pub fn get_language_info(name: &str) -> Option<&'static LanguageInfo> {
-    // Normalize common aliases to canonical names
-    let normalized = match name {
-        // TypeScript/JavaScript
-        "ts" => "typescript",
-        "js" | "jsx" => "javascript",
-        // Other common aliases
-        "cs" => "csharp",
-        "rs" => "rust",
-        "py" => "python",
-        "rb" => "ruby",
-        "md" | "mdx" => "markdown",
-        "yml" => "yaml",
-        "sh" => "bash",
-        // SQL dialects
-        "mssql" => "tsql",
-        _ => name,
-    };
-    LANGUAGES.iter().find(|l| l.name == normalized)
+    Language::from_str(name)
+        .ok()
+        .and_then(|lang| lang.info())
+}
+
+/// Parse a language string into a Language enum
+///
+/// Handles aliases like "js" → JavaScript, "ts" → TypeScript, etc.
+/// Returns Language::Unknown for unrecognized strings.
+pub fn parse_language(name: &str) -> Language {
+    Language::from_str(name).unwrap_or(Language::Unknown)
 }
 
 /// Get language by file extension
@@ -326,5 +502,42 @@ mod tests {
         assert!(web_langs.iter().any(|l| l.name == "typescript"));
         assert!(web_langs.iter().any(|l| l.name == "yaml"));
         assert!(web_langs.iter().any(|l| l.name == "markdown"));
+    }
+
+    #[test]
+    fn test_language_enum_from_str() {
+        assert_eq!(Language::from_str("typescript").unwrap(), Language::TypeScript);
+        assert_eq!(Language::from_str("ts").unwrap(), Language::TypeScript);
+        assert_eq!(Language::from_str("javascript").unwrap(), Language::JavaScript);
+        assert_eq!(Language::from_str("js").unwrap(), Language::JavaScript);
+        assert_eq!(Language::from_str("csharp").unwrap(), Language::CSharp);
+        assert_eq!(Language::from_str("cs").unwrap(), Language::CSharp);
+        assert_eq!(Language::from_str("markdown").unwrap(), Language::Markdown);
+        assert_eq!(Language::from_str("md").unwrap(), Language::Markdown);
+        assert!(Language::from_str("nonexistent").is_err());
+    }
+
+    #[test]
+    fn test_language_enum_as_str() {
+        assert_eq!(Language::TypeScript.as_str(), "typescript");
+        assert_eq!(Language::JavaScript.as_str(), "javascript");
+        assert_eq!(Language::CSharp.as_str(), "csharp");
+        assert_eq!(Language::Markdown.as_str(), "markdown");
+    }
+
+    #[test]
+    fn test_language_enum_info() {
+        let ts_info = Language::TypeScript.info().unwrap();
+        assert_eq!(ts_info.name, "typescript");
+        assert!(ts_info.extensions.contains(&"ts"));
+
+        assert!(Language::Unknown.info().is_none());
+    }
+
+    #[test]
+    fn test_parse_language() {
+        assert_eq!(parse_language("typescript"), Language::TypeScript);
+        assert_eq!(parse_language("ts"), Language::TypeScript);
+        assert_eq!(parse_language("nonexistent"), Language::Unknown);
     }
 }

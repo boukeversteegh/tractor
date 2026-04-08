@@ -1,36 +1,36 @@
-//! `tractor languages` command - list supported languages with their extensions and aliases
+//! `tractor docs languages` command - list supported languages with their extensions and aliases
 
-use tractor_core::language_info::LANGUAGES;
+use tractor_core::language_info::{Language, LANGUAGES};
 
-/// Run the `languages` command, printing a table of all supported languages.
+/// Language aliases - maps short forms to canonical Language enum variants
+const LANGUAGE_ALIASES: &[(&str, Language)] = &[
+    ("ts", Language::TypeScript),
+    ("js", Language::JavaScript),
+    ("jsx", Language::JavaScript),
+    ("cs", Language::CSharp),
+    ("rs", Language::Rust),
+    ("py", Language::Python),
+    ("rb", Language::Ruby),
+    ("md", Language::Markdown),
+    ("mdx", Language::Markdown),
+    ("yml", Language::Yaml),
+    ("sh", Language::Bash),
+    ("mssql", Language::TSql),
+];
+
+/// Run the `docs languages` command, printing a table of all supported languages.
 pub fn run_languages() -> Result<(), Box<dyn std::error::Error>> {
     println!("Supported languages:\n");
     println!("{:<15} {:<30} {}", "Language", "Extensions", "Aliases");
     println!("{}", "-".repeat(70));
 
-    // Build a map of aliases for display
-    let aliases: &[(&str, &str)] = &[
-        ("ts", "typescript"),
-        ("js", "javascript"),
-        ("jsx", "javascript"),
-        ("cs", "csharp"),
-        ("rs", "rust"),
-        ("py", "python"),
-        ("rb", "ruby"),
-        ("md", "markdown"),
-        ("mdx", "markdown"),
-        ("yml", "yaml"),
-        ("sh", "bash"),
-        ("mssql", "tsql"),
-    ];
+    for lang_info in LANGUAGES.iter() {
+        let extensions_str = lang_info.extensions.join(", ");
 
-    for lang in LANGUAGES.iter() {
-        let extensions_str = lang.extensions.join(", ");
-
-        // Find aliases that map to this language
-        let lang_aliases: Vec<&str> = aliases
+        // Find aliases that map to this language (using Language enum for type-safe comparison)
+        let lang_aliases: Vec<&str> = LANGUAGE_ALIASES
             .iter()
-            .filter(|(_, canonical)| *canonical == lang.name)
+            .filter(|(_, lang)| *lang == lang_info.language)
             .map(|(alias, _)| *alias)
             .collect();
         let aliases_str = if lang_aliases.is_empty() {
@@ -39,7 +39,7 @@ pub fn run_languages() -> Result<(), Box<dyn std::error::Error>> {
             lang_aliases.join(", ")
         };
 
-        println!("{:<15} {:<30} {}", lang.name, extensions_str, aliases_str);
+        println!("{:<15} {:<30} {}", lang_info.name, extensions_str, aliases_str);
     }
 
     println!("\nUse -l/--lang with the language name or any alias.");
