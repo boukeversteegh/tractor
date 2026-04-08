@@ -27,5 +27,6 @@
   </results>
 </report>
 ❌ Warning: "methods": body/method/name/string(.) matched multiple values and was automatically converted to an array.
-❌   Wrap in array:   "methods": array { body/method/name/string(.) }
-❌   Select one value: "methods": (body/method/name/string(.))[1]
+❌ With different input this could be a single value instead, which would break tools consuming this output.
+❌   Always array:  "methods": array { body/method/name/string(.) }
+❌   Always single: "methods": (body/method/name/string(.))[1]

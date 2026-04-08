@@ -501,16 +501,22 @@ fn execute_direct_query(
                                 let leaf = key.rsplit('.').next().unwrap_or(key);
                                 if let Some(expr) = extract_map_value_expr(xpath, key) {
                                     eprintln!(
-                                        "Warning: \"{}\": {} matched multiple values and was automatically converted to an array.\n  \
-                                         Wrap in array:   \"{}\": array {{ {} }}\n  \
-                                         Select one value: \"{}\": ({})[1]",
+                                        "Warning: \"{}\": {} matched multiple values and was \
+                                         automatically converted to an array.\n\
+                                         With different input this could be a single value instead, \
+                                         which would break tools consuming this output.\n  \
+                                         Always array:  \"{}\": array {{ {} }}\n  \
+                                         Always single: \"{}\": ({})[1]",
                                         leaf, expr, leaf, expr, leaf, expr
                                     );
                                 } else {
                                     eprintln!(
-                                        "Warning: \"{}\" matched multiple values and was automatically converted to an array.\n  \
-                                         Wrap in array:    map {{ \"{}\": array {{ expr }} }}\n  \
-                                         Select one value: map {{ \"{}\": (expr)[1] }}",
+                                        "Warning: \"{}\" matched multiple values and was \
+                                         automatically converted to an array.\n\
+                                         With different input this could be a single value instead, \
+                                         which would break tools consuming this output.\n  \
+                                         Always array:  \"{}\": array {{ expr }}\n  \
+                                         Always single: \"{}\": (expr)[1]",
                                         leaf, leaf, leaf
                                     );
                                 }
