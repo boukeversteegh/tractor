@@ -1,0 +1,10 @@
+# Test language alias handling (js vs javascript)
+check:
+  files:
+    - "*.js"
+  rules:
+    - id: no-todo
+      language: js
+      xpath: "//comment[contains(., 'TODO')]"
+      reason: "TODO comment found"
+      severity: error

@@ -1,0 +1,11 @@
+# Only MD rules - files will be filtered by language
+check:
+  files:
+    - "*.js"
+    - "*.md"
+  rules:
+    - id: no-todo
+      language: markdown
+      xpath: "//html[contains(., 'TODO')]"
+      reason: "TODO comment found"
+      severity: warning
