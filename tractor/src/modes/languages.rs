@@ -25,8 +25,7 @@ pub fn run_languages() -> Result<(), Box<dyn std::error::Error>> {
     ];
 
     for lang in LANGUAGES.iter() {
-        let extensions: Vec<&str> = lang.extensions.iter().map(|s| *s).collect();
-        let extensions_str = extensions.join(", ");
+        let extensions_str = lang.extensions.join(", ");
 
         // Find aliases that map to this language
         let lang_aliases: Vec<&str> = aliases
