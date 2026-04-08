@@ -24,4 +24,6 @@
       }
     }
   ]
-}❌ Warning: map contains sequence-valued entries which were automatically wrapped in arrays for JSON serialization. Consider using array{} explicitly, e.g.: map { "key": array { expr } }
+}❌ Warning: map property ("classes.methods") matched multiple values and was automatically converted to an array.
+❌ To make this explicit, wrap the value in array{}: map { "key": array { expr } }
+❌ To select a single value: map { "key": (expr)[1] }

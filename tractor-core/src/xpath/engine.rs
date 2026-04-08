@@ -163,6 +163,7 @@ fn function_to_json_string(func: &xee_xpath::function::Function, xot: &mut Xot) 
 // is a workaround until upstream exposes public map introspection APIs.
 thread_local! {
     static NORMALIZE_MAP_QUERY: RefCell<Option<xee_xpath::query::SequenceQuery>> = RefCell::new(None);
+    static DETECT_SEQUENCE_KEYS_QUERY: RefCell<Option<xee_xpath::query::SequenceQuery>> = RefCell::new(None);
 }
 
 /// The XPath expression that normalizes a map by wrapping sequence values in arrays.
@@ -184,13 +185,40 @@ const NORMALIZE_MAP_XPATH: &str = concat!(
     "} return $norm($norm, .)"
 );
 
+/// XPath that recursively finds all map keys whose values are multi-item sequences.
+/// Returns strings like "key" or "outer.inner.key" for nested maps.
+const DETECT_SEQUENCE_KEYS_XPATH: &str = concat!(
+    "let $detect := function($f, $m, $prefix) { ",
+        "map:for-each($m, function($k, $v) { ",
+            "let $path := if ($prefix) then concat($prefix, '.', $k) else string($k) ",
+            "return ( ",
+                "if (count($v) > 1) then $path else (), ",
+                "if ($v instance of map(*)) then $f($f, $v, $path) else (), ",
+                "if ($v instance of array(*)) then ",
+                    "for-each(1 to array:size($v), function($i) { ",
+                        "let $item := array:get($v, $i) ",
+                        "return if ($item instance of map(*)) then $f($f, $item, $path) else () ",
+                    "}) ",
+                "else () ",
+            ") ",
+        "}) ",
+    "} return $detect($detect, ., '')"
+);
+
+/// Result of normalizing a map: the JSON string and the list of keys that had
+/// multi-item sequences.
+struct NormalizeResult {
+    json: String,
+    sequence_keys: Vec<String>,
+}
+
 /// Try to normalize a map that has sequence-valued entries by wrapping them in
-/// arrays, then serialize the result to JSON. Returns `Some(json_string)` on
-/// success, `None` if normalization or serialization fails.
+/// arrays, then serialize the result to JSON. Also detects which keys had
+/// sequence values for diagnostic messages.
 fn try_normalize_and_serialize_map(
     func: &xee_xpath::function::Function,
     documents: &mut Documents,
-) -> Option<String> {
+) -> Option<NormalizeResult> {
     use xee_interpreter::sequence::QNameOrString;
 
     // Only attempt normalization for maps
@@ -198,10 +226,9 @@ fn try_normalize_and_serialize_map(
         return None;
     }
 
-    NORMALIZE_MAP_QUERY.with(|cache| {
+    // Step 1: Normalize the map
+    let json = NORMALIZE_MAP_QUERY.with(|cache| {
         let mut cache = cache.borrow_mut();
-
-        // Compile the normalization query once and cache it
         if cache.is_none() {
             let queries = Queries::default();
             match queries.sequence(NORMALIZE_MAP_XPATH) {
@@ -209,18 +236,52 @@ fn try_normalize_and_serialize_map(
                 Err(_) => return None,
             }
         }
-
         let query = cache.as_ref()?;
         let item = xee_xpath::Item::Function(func.clone());
-
-        // Execute the normalization with the map as the context item
         let normalized = query.execute(documents, &item).ok()?;
-
-        // Serialize the normalized result to JSON
         let mut params = SerializationParameters::new();
         params.method = QNameOrString::String("json".to_string());
         normalized.serialize(params, documents.xot_mut()).ok()
-    })
+    })?;
+
+    // Step 2: Detect which keys had sequence values
+    let sequence_keys = DETECT_SEQUENCE_KEYS_QUERY.with(|cache| {
+        let mut cache = cache.borrow_mut();
+        if cache.is_none() {
+            let queries = Queries::default();
+            match queries.sequence(DETECT_SEQUENCE_KEYS_XPATH) {
+                Ok(query) => *cache = Some(query),
+                Err(_) => return Vec::new(),
+            }
+        }
+        let query = match cache.as_ref() {
+            Some(q) => q,
+            None => return Vec::new(),
+        };
+        let item = xee_xpath::Item::Function(func.clone());
+        match query.execute(documents, &item) {
+            Ok(result) => result.iter()
+                .filter_map(|item| {
+                    if let xee_xpath::Item::Atomic(a) = item {
+                        let s = a.xpath_representation();
+                        // Strip surrounding quotes from string repr
+                        let s = s.strip_prefix('"').unwrap_or(&s);
+                        let s = s.strip_suffix('"').unwrap_or(s);
+                        Some(s.to_string())
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>(),
+            Err(_) => Vec::new(),
+        }
+    });
+    // Deduplicate keys (same path can appear multiple times in repeated structures)
+    let mut sequence_keys = sequence_keys;
+    sequence_keys.sort();
+    sequence_keys.dedup();
+
+    Some(NormalizeResult { json, sequence_keys })
 }
 
 /// Convert a `serde_json::Value` into an `XmlNode` tree.
@@ -366,16 +427,27 @@ fn execute_direct_query(
                     // all data lives in the tree field.
                     if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&json_str) {
                         m.xml_node = Some(json_value_to_xml_node(&parsed));
-                    } else if let Some(normalized_json) = try_normalize_and_serialize_map(&func, documents) {
+                    } else if let Some(result) = try_normalize_and_serialize_map(&func, documents) {
                         // The direct JSON serialization failed (likely because a
                         // map value is a multi-item sequence). Try normalizing the
                         // map by wrapping sequence values in arrays.
-                        if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&normalized_json) {
+                        if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&result.json) {
+                            let keys = if result.sequence_keys.is_empty() {
+                                String::new()
+                            } else {
+                                let quoted: Vec<String> = result.sequence_keys.iter()
+                                    .map(|k| format!("\"{}\"", k))
+                                    .collect();
+                                format!(" ({})", quoted.join(", "))
+                            };
                             eprintln!(
-                                "Warning: map contains sequence-valued entries which were \
-                                 automatically wrapped in arrays for JSON serialization. \
-                                 Consider using array{{}} explicitly, e.g.: \
-                                 map {{ \"key\": array {{ expr }} }}"
+                                "Warning: map property{} matched multiple values and was \
+                                 automatically converted to an array.\n\
+                                 To make this explicit, wrap the value in array{{}}: \
+                                 map {{ \"key\": array {{ expr }} }}\n\
+                                 To select a single value: \
+                                 map {{ \"key\": (expr)[1] }}",
+                                keys
                             );
                             m.xml_node = Some(json_value_to_xml_node(&parsed));
                         }
