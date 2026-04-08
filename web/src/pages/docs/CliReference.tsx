@@ -137,6 +137,34 @@ tractor file1.js file2.js`} />
              ^~~`}
       />
 
+      <h4>View modifiers: <code>-v=+field</code> / <code>-v=-field</code></h4>
+      <p>
+        Instead of specifying a full view, you can add or remove individual fields from the default view
+        using <code>+</code> and <code>-</code> prefixes.
+      </p>
+      <table className="doc-table">
+        <thead>
+          <tr><th>Syntax</th><th>Effect</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>-v=-lines</code></td><td>Remove code snippet blocks from the default view</td></tr>
+          <tr><td><code>-v=+source</code></td><td>Add source text to the default view</td></tr>
+          <tr><td><code>-v=-lines,+source</code></td><td>Combine multiple modifiers with a comma</td></tr>
+        </tbody>
+      </table>
+      <p>
+        The most common use case is <code>-v=-lines</code> with <code>-f gcc</code>, which produces clean
+        single-line diagnostics — one line per match — suitable for IDE linter extensions and CI parsers
+        that expect one diagnostic per line:
+      </p>
+      <Example
+        command={`tractor check greeter.js -x "//function" --reason "function found" -f gcc --no-color -v=-lines`}
+        output={`greeter.js:1:1: error: function found
+greeter.js:5:1: error: function found
+
+2 errors in 1 file`}
+      />
+
       <h3>-n, --limit</h3>
       <p>Limit output to the first N matches.</p>
       <Example

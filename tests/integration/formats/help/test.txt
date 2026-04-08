@@ -53,6 +53,15 @@ View:
             count     Total match count
             query     Echo the XPath query as tractor received it (useful to detect shell/wrapper mangling)
             schema    Structural overview of element types
+          
+          Modifier syntax — add/remove fields from the default view:
+            -v=-lines        Remove code snippet blocks (e.g. for clean single-line gcc output)
+            -v=+source       Add source text to default view
+            -v=-lines,+source  Combine multiple modifiers with a comma
+          
+          Example — suppress code snippets for IDE/CI parsers:
+            tractor check file.js -x '//function' --reason 'test' -f gcc -v=-lines
+            # file.js:2:1: error: test  (one line per match, no snippet block)
 
   -m, --message <MESSAGE>
           Custom message template (supports {value}, {line}, {col}, {file})
