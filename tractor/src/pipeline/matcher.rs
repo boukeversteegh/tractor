@@ -4,6 +4,8 @@ use std::path::Path;
 use rayon::prelude::*;
 use tractor_core::{
     Match, NormalizedXpath,
+    detect_language,
+    language_info::parse_language,
     output::{render_document, RenderOptions},
     parse_to_documents, parse_string_to_documents,
     report::{Report, ReportMatch, Severity, DiagnosticOrigin},
@@ -255,11 +257,43 @@ struct CompiledRule {
     xpath: NormalizedXpath,
 }
 
+/// Check if a rule's language matches the file's detected language.
+///
+/// Returns `true` if:
+/// - The rule has no explicit language (uses file extension detection)
+/// - The rule's effective language matches the file's detected language
+///
+/// This prevents rules from matching files of incompatible languages,
+/// fixing the mixed-language hang issue where e.g. a markdown rule
+/// would incorrectly apply to JavaScript files.
+fn rule_language_matches_file(
+    ruleset: &RuleSet,
+    rule_idx: usize,
+    file_path: &str,
+) -> bool {
+    let rule = &ruleset.rules[rule_idx];
+    let effective_lang = ruleset.effective_language(rule);
+
+    match effective_lang {
+        // No language specified → rule uses auto-detection, always matches
+        None => true,
+        // Language specified → must match file's detected language
+        Some(rule_lang) => {
+            let file_lang = detect_language(file_path);
+            // Use Language enum for type-safe comparison
+            let rule_language = parse_language(rule_lang);
+            let file_language = parse_language(file_lang);
+            rule_language == file_language
+        }
+    }
+}
+
 /// Execute all rules in a `RuleSet` against a list of files.
 ///
-/// Each file is parsed once. Every applicable rule (determined by glob
-/// intersection) is run against the parsed document. Returns matches
-/// tagged with their originating rule index.
+/// For each file, rules are grouped by their effective language. Files are
+/// parsed once per language group, ensuring rules are evaluated against
+/// correctly-parsed ASTs. This handles mixed-language configs (e.g., rules
+/// for both JavaScript and Markdown in the same config file).
 ///
 /// `verbose` controls whether parse/query warnings are printed to stderr.
 pub fn run_rules(
@@ -307,16 +341,21 @@ pub fn run_rules(
         })
         .collect::<Result<Vec<_>, tractor_core::rule::GlobError>>()?;
 
-    // Process files in parallel. Each file is parsed once, then all
-    // applicable rules are queried against it.
+    // Process files in parallel. Each file is parsed once using either:
+    // - The file's detected language (when no rules specify a language override)
+    // - The effective language from the first applicable rule (when rules specify a language)
+    // Note: rule_language_matches_file() ensures all applicable rules are compatible
+    // with the file's language, so we won't try to parse a file in multiple languages.
     let results: Vec<Vec<RuleMatch>> = files
         .par_iter()
         .filter_map(|file_path| {
-            // Determine which rules apply to this file.
+            // Determine which rules apply to this file based on globs AND language.
             let applicable: Vec<usize> = compiled
                 .iter()
                 .enumerate()
-                .filter(|(_, cr)| cr.glob.matches(file_path))
+                .filter(|(i, cr)| {
+                    cr.glob.matches(file_path) && rule_language_matches_file(ruleset, *i, file_path)
+                })
                 .map(|(i, _)| i)
                 .collect();
 
@@ -324,11 +363,9 @@ pub fn run_rules(
                 return None;
             }
 
-            // Resolve per-file language/tree_mode. Uses the first applicable
-            // rule's overrides or the ruleset defaults. If rules specify
-            // different tree_mode/language for the same file, only the first
-            // rule's settings apply — a future improvement could group rules
-            // by (lang, tree_mode) and re-parse when needed.
+            // Resolve language and tree_mode from the first applicable rule.
+            // All applicable rules are compatible with this file's language
+            // (ensured by rule_language_matches_file filter above).
             let first_rule = &ruleset.rules[applicable[0]];
             let lang_override = ruleset.effective_language(first_rule);
             let effective_tree_mode = ruleset.effective_tree_mode(first_rule).or(tree_mode);
@@ -351,6 +388,7 @@ pub fn run_rules(
 
             let mut file_matches = Vec::new();
 
+            // Run all applicable rules against the parsed result
             for rule_idx in applicable {
                 match result.query(compiled[rule_idx].xpath.as_str()) {
                     Ok(matches) => {
@@ -467,5 +505,103 @@ pub fn apply_message_template(report: &mut Report, template: &str) {
                 .replace("{col}", &m.column.to_string())
                 .replace("{value}", m.value.as_deref().unwrap_or(""))
         );
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tractor_core::language_info::Language;
+
+    #[test]
+    fn test_language_parsing() {
+        // Test that language parsing handles aliases correctly
+        assert_eq!(parse_language("js"), Language::JavaScript);
+        assert_eq!(parse_language("javascript"), Language::JavaScript);
+        assert_eq!(parse_language("ts"), Language::TypeScript);
+        assert_eq!(parse_language("typescript"), Language::TypeScript);
+        assert_eq!(parse_language("py"), Language::Python);
+        assert_eq!(parse_language("python"), Language::Python);
+        assert_eq!(parse_language("rb"), Language::Ruby);
+        assert_eq!(parse_language("ruby"), Language::Ruby);
+        assert_eq!(parse_language("rs"), Language::Rust);
+        assert_eq!(parse_language("rust"), Language::Rust);
+        assert_eq!(parse_language("cs"), Language::CSharp);
+        assert_eq!(parse_language("csharp"), Language::CSharp);
+        assert_eq!(parse_language("md"), Language::Markdown);
+        assert_eq!(parse_language("markdown"), Language::Markdown);
+        assert_eq!(parse_language("yml"), Language::Yaml);
+        assert_eq!(parse_language("yaml"), Language::Yaml);
+        assert_eq!(parse_language("sh"), Language::Bash);
+        assert_eq!(parse_language("bash"), Language::Bash);
+        assert_eq!(parse_language("go"), Language::Go);
+        assert_eq!(parse_language("java"), Language::Java);
+        // Unknown languages return Language::Unknown
+        assert_eq!(parse_language("nonexistent"), Language::Unknown);
+    }
+
+    #[test]
+    fn test_rule_language_matches_file_no_language_specified() {
+        // When no language is specified, rule should match any file
+        let mut ruleset = RuleSet::new();
+        ruleset.add(tractor_core::rule::Rule::new("test", "//any"));
+
+        assert!(rule_language_matches_file(&ruleset, 0, "test.js"));
+        assert!(rule_language_matches_file(&ruleset, 0, "test.rs"));
+        assert!(rule_language_matches_file(&ruleset, 0, "test.md"));
+        assert!(rule_language_matches_file(&ruleset, 0, "test.unknown"));
+    }
+
+    #[test]
+    fn test_rule_language_matches_file_with_language() {
+        // When language is specified, only matching files should match
+        let mut ruleset = RuleSet::new();
+        let rule = tractor_core::rule::Rule::new("test", "//any")
+            .with_language("javascript");
+        ruleset.add(rule);
+
+        assert!(rule_language_matches_file(&ruleset, 0, "test.js"));
+        assert!(!rule_language_matches_file(&ruleset, 0, "test.rs"));
+        assert!(!rule_language_matches_file(&ruleset, 0, "test.md"));
+    }
+
+    #[test]
+    fn test_rule_language_matches_file_with_alias() {
+        // Language aliases should work
+        let mut ruleset = RuleSet::new();
+        let rule = tractor_core::rule::Rule::new("test", "//any")
+            .with_language("js");  // alias for javascript
+        ruleset.add(rule);
+
+        assert!(rule_language_matches_file(&ruleset, 0, "test.js"));
+        assert!(!rule_language_matches_file(&ruleset, 0, "test.rs"));
+    }
+
+    #[test]
+    fn test_rule_language_matches_file_with_default_language() {
+        // Default language on ruleset should be used
+        let mut ruleset = RuleSet::new();
+        ruleset.default_language = Some("markdown".to_string());
+        ruleset.add(tractor_core::rule::Rule::new("test", "//any"));
+
+        assert!(rule_language_matches_file(&ruleset, 0, "test.md"));
+        assert!(!rule_language_matches_file(&ruleset, 0, "test.js"));
+    }
+
+    #[test]
+    fn test_rule_language_overrides_default() {
+        // Rule language should override default
+        let mut ruleset = RuleSet::new();
+        ruleset.default_language = Some("markdown".to_string());
+        let rule = tractor_core::rule::Rule::new("test", "//any")
+            .with_language("javascript");
+        ruleset.add(rule);
+
+        assert!(rule_language_matches_file(&ruleset, 0, "test.js"));
+        assert!(!rule_language_matches_file(&ruleset, 0, "test.md"));
     }
 }

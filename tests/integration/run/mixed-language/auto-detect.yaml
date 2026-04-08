@@ -1,0 +1,9 @@
+# Auto-detect language (no language specified)
+check:
+  files:
+    - "*.js"
+  rules:
+    - id: no-todo
+      xpath: "//comment[contains(., 'TODO')]"
+      reason: "TODO comment found"
+      severity: error

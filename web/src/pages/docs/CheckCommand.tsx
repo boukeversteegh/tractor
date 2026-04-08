@@ -60,6 +60,31 @@ export function CheckCommand() {
         The default format for <code>check</code> is <code>gcc</code> (file:line:col), which works with most editors and CI systems. Use <code>-f</code> to change it.
       </p>
 
+      <h3>Clean single-line output with <code>-v=-lines</code></h3>
+      <p>
+        By default, gcc output includes a code snippet block below each diagnostic. Use <code>-v=-lines</code>
+        to suppress it and get one diagnostic line per match — required by VS Code linter extensions,
+        regex-based CI parsers, and other tools that expect a single line per error:
+      </p>
+      <Example
+        file={{ name: 'app.js', language: 'js', content: APP_JS }}
+        command={`tractor check app.js -x "//comment[contains(.,'TODO')]" \\
+    --reason "TODO comments should be resolved" --no-color`}
+        output={`app.js:1:1: error: TODO comments should be resolved
+1 | // TODO: fix this later
+    ^~~~~~~~~~~~~~~~~~~~~~~
+
+
+1 error in 1 file`}
+      />
+      <Example
+        command={`tractor check app.js -x "//comment[contains(.,'TODO')]" \\
+    --reason "TODO comments should be resolved" --no-color -v=-lines`}
+        output={`app.js:1:1: error: TODO comments should be resolved
+
+1 error in 1 file`}
+      />
+
       <h3>GitHub Actions</h3>
       <p>
         Use <code>-f github</code> to produce annotations that show directly on pull requests:

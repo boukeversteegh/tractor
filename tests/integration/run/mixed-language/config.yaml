@@ -1,0 +1,4 @@
+app:
+  name: "test-app"
+  debug: true
+  log_level: info

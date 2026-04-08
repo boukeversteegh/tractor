@@ -1,0 +1,11 @@
+# Only JS rules - files will be filtered by language
+check:
+  files:
+    - "*.js"
+    - "*.md"
+  rules:
+    - id: no-todo
+      language: javascript
+      xpath: "//comment[contains(., 'TODO')]"
+      reason: "TODO comment found"
+      severity: error

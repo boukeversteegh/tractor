@@ -96,6 +96,16 @@ pub enum Command {
     Render(RenderArgs),
     /// Execute a tractor config file (batch check/set operations)
     Run(RunArgs),
+    /// Show documentation and reference information
+    #[command(subcommand)]
+    Docs(DocsCommand),
+}
+
+/// Docs subcommands for reference information
+#[derive(Subcommand, Debug)]
+pub enum DocsCommand {
+    /// List all supported languages with their canonical names, extensions, and aliases
+    Languages,
 }
 
 /// Shared arguments available in all modes
@@ -212,7 +222,16 @@ Report view [default: tree]
   lines     Full source lines containing each match
   count     Total match count
   query     Echo the XPath query as tractor received it (useful to detect shell/wrapper mangling)
-  schema    Structural overview of element types")]
+  schema    Structural overview of element types
+
+Modifier syntax — add/remove fields from the default view:
+  -v=-lines        Remove code snippet blocks (e.g. for clean single-line gcc output)
+  -v=+source       Add source text to default view
+  -v=-lines,+source  Combine multiple modifiers with a comma
+
+Example — suppress code snippets for IDE/CI parsers:
+  tractor check file.js -x '//function' --reason 'test' -f gcc -v=-lines
+  # file.js:2:1: error: test  (one line per match, no snippet block)")]
     pub view: Option<String>,
 
     /// Custom message template (supports {value}, {line}, {col}, {file})
@@ -265,7 +284,16 @@ Report view [default: tree]
   lines     Full source lines containing each match
   count     Total match count
   query     Echo the XPath query as tractor received it (useful to detect shell/wrapper mangling)
-  schema    Structural overview of element types")]
+  schema    Structural overview of element types
+
+Modifier syntax — add/remove fields from the default view:
+  -v=-lines        Remove code snippet blocks (e.g. for clean single-line gcc output)
+  -v=+source       Add source text to default view
+  -v=-lines,+source  Combine multiple modifiers with a comma
+
+Example — suppress code snippets for IDE/CI parsers:
+  tractor check file.js -x '//function' --reason 'test' -f gcc -v=-lines
+  # file.js:2:1: error: test  (one line per match, no snippet block)")]
     pub view: Option<String>,
 
     /// Custom message template (supports {value}, {line}, {col}, {file})
@@ -341,7 +369,16 @@ Report view [default: tree]
   lines     Full source lines containing each match
   count     Total match count
   query     Echo the XPath query as tractor received it (useful to detect shell/wrapper mangling)
-  schema    Structural overview of element types")]
+  schema    Structural overview of element types
+
+Modifier syntax — add/remove fields from the default view:
+  -v=-lines        Remove code snippet blocks (e.g. for clean single-line gcc output)
+  -v=+source       Add source text to default view
+  -v=-lines,+source  Combine multiple modifiers with a comma
+
+Example — suppress code snippets for IDE/CI parsers:
+  tractor check file.js -x '//function' --reason 'test' -f gcc -v=-lines
+  # file.js:2:1: error: test  (one line per match, no snippet block)")]
     pub view: Option<String>,
 
     /// Custom message template (supports {value}, {line}, {col}, {file})

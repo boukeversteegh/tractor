@@ -3,6 +3,7 @@
 //! This module provides XPath query capabilities for the parsed XML AST.
 
 mod engine;
+mod map_normalize;
 mod match_result;
 
 pub use engine::{XPathEngine, print_timing_stats, xot_node_to_xml_node};
