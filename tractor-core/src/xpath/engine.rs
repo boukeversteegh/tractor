@@ -284,6 +284,71 @@ fn try_normalize_and_serialize_map(
     Some(NormalizeResult { json, sequence_keys })
 }
 
+/// Extract the value expression for a given key from an XPath map constructor.
+///
+/// Given XPath `map { "name": string(name), "methods": body/method/string(.) }`
+/// and key `"methods"`, returns `Some("body/method/string(.)")`.
+///
+/// Uses brace/paren-depth tracking to find the end of the value expression.
+fn extract_map_value_expr<'a>(xpath: &'a str, key: &str) -> Option<&'a str> {
+    // The key in the dotted path (e.g. "classes.methods") — use the leaf
+    let leaf_key = key.rsplit('.').next().unwrap_or(key);
+
+    // Search for "key": or 'key': patterns
+    let patterns = [
+        format!("\"{}\"", leaf_key),
+        format!("'{}'", leaf_key),
+    ];
+
+    for pat in &patterns {
+        if let Some(key_pos) = xpath.find(pat.as_str()) {
+            let after_key = &xpath[key_pos + pat.len()..];
+            // Skip whitespace and colon
+            let after_colon = after_key.trim_start();
+            if !after_colon.starts_with(':') {
+                continue;
+            }
+            let value_start = &after_colon[1..].trim_start();
+            let offset = xpath.len() - value_start.len();
+
+            // Scan forward tracking nesting depth to find where the value ends
+            let mut depth = 0i32;
+            let mut end = 0;
+            let bytes = value_start.as_bytes();
+            let mut in_string = None::<u8>; // tracks quote char
+            for (i, &b) in bytes.iter().enumerate() {
+                match in_string {
+                    Some(q) if b == q => in_string = None,
+                    Some(_) => {}
+                    None => match b {
+                        b'"' | b'\'' => in_string = Some(b),
+                        b'{' | b'(' | b'[' => depth += 1,
+                        b'}' | b')' | b']' => {
+                            if depth == 0 {
+                                end = i;
+                                break;
+                            }
+                            depth -= 1;
+                        }
+                        b',' if depth == 0 => {
+                            end = i;
+                            break;
+                        }
+                        _ => {}
+                    }
+                }
+                end = i + 1;
+            }
+
+            let expr = value_start[..end].trim();
+            if !expr.is_empty() {
+                return Some(&xpath[offset..offset + end].trim());
+            }
+        }
+    }
+    None
+}
+
 /// Convert a `serde_json::Value` into an `XmlNode` tree.
 ///
 /// This is the robust bridge between xee's JSON serializer (the only public
@@ -432,23 +497,24 @@ fn execute_direct_query(
                         // map value is a multi-item sequence). Try normalizing the
                         // map by wrapping sequence values in arrays.
                         if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&result.json) {
-                            let keys = if result.sequence_keys.is_empty() {
-                                String::new()
-                            } else {
-                                let quoted: Vec<String> = result.sequence_keys.iter()
-                                    .map(|k| format!("\"{}\"", k))
-                                    .collect();
-                                format!(" ({})", quoted.join(", "))
-                            };
-                            eprintln!(
-                                "Warning: map property{} matched multiple values and was \
-                                 automatically converted to an array.\n\
-                                 To make this explicit, wrap the value in array{{}}: \
-                                 map {{ \"key\": array {{ expr }} }}\n\
-                                 To select a single value: \
-                                 map {{ \"key\": (expr)[1] }}",
-                                keys
-                            );
+                            for key in &result.sequence_keys {
+                                let leaf = key.rsplit('.').next().unwrap_or(key);
+                                if let Some(expr) = extract_map_value_expr(xpath, key) {
+                                    eprintln!(
+                                        "Warning: \"{}\": {} matched multiple values and was automatically converted to an array.\n  \
+                                         Wrap in array:   \"{}\": array {{ {} }}\n  \
+                                         Select one value: \"{}\": ({})[1]",
+                                        leaf, expr, leaf, expr, leaf, expr
+                                    );
+                                } else {
+                                    eprintln!(
+                                        "Warning: \"{}\" matched multiple values and was automatically converted to an array.\n  \
+                                         Wrap in array:    map {{ \"{}\": array {{ expr }} }}\n  \
+                                         Select one value: map {{ \"{}\": (expr)[1] }}",
+                                        leaf, leaf, leaf
+                                    );
+                                }
+                            }
                             m.xml_node = Some(json_value_to_xml_node(&parsed));
                         }
                     }

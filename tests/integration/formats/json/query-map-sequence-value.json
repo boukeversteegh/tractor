@@ -24,6 +24,6 @@
       }
     }
   ]
-}❌ Warning: map property ("classes.methods") matched multiple values and was automatically converted to an array.
-❌ To make this explicit, wrap the value in array{}: map { "key": array { expr } }
-❌ To select a single value: map { "key": (expr)[1] }
+}❌ Warning: "methods": body/method/name/string(.) matched multiple values and was automatically converted to an array.
+❌   Wrap in array:   "methods": array { body/method/name/string(.) }
+❌   Select one value: "methods": (body/method/name/string(.))[1]
