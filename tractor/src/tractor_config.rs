@@ -48,8 +48,10 @@ use crate::executor::{
 struct ConfigFile {
     /// Root-level file scope: glob patterns that constrain all operations.
     /// Intersected with each operation's own `files`.
+    /// `None` when the key is missing (unrestricted); `Some(vec![])` when
+    /// explicitly empty (`files: []`).
     #[serde(default)]
-    files: Vec<String>,
+    files: Option<Vec<String>>,
 
     /// Root-level exclude patterns applied to all operations.
     #[serde(default)]
@@ -440,7 +442,7 @@ fn merge_scope(
 }
 
 fn config_to_operations(config: ConfigFile) -> Result<LoadedConfig, Box<dyn std::error::Error>> {
-    let root_files = config.files.clone();
+    let root_files = config.files;
 
     let scope = RootScope {
         exclude: config.exclude,
@@ -497,7 +499,9 @@ fn config_to_operations(config: ConfigFile) -> Result<LoadedConfig, Box<dyn std:
 #[derive(Debug)]
 pub struct LoadedConfig {
     /// Root-level file glob patterns that constrain all operations.
-    pub root_files: Vec<String>,
+    /// `None` when the key is missing (unrestricted); `Some(vec![])` when
+    /// explicitly empty.
+    pub root_files: Option<Vec<String>>,
     /// Parsed operations (with their own files, excludes, etc.).
     pub operations: Vec<Operation>,
 }
@@ -843,7 +847,7 @@ check:
       xpath: "//comment"
 "#;
         let loaded = parse_config_yaml(yaml).unwrap();
-        assert_eq!(loaded.root_files, vec!["src/**/*.rs"]);
+        assert_eq!(loaded.root_files, Some(vec!["src/**/*.rs".to_string()]));
         if let Operation::Check(c) = &loaded.operations[0] {
             assert!(c.files.is_empty(), "operation should have no files when not specified");
         } else {
@@ -862,7 +866,7 @@ check:
       xpath: "//comment"
 "#;
         let loaded = parse_config_yaml(yaml).unwrap();
-        assert_eq!(loaded.root_files, vec!["src/**/*.rs"]);
+        assert_eq!(loaded.root_files, Some(vec!["src/**/*.rs".to_string()]));
         if let Operation::Check(c) = &loaded.operations[0] {
             assert_eq!(c.files, vec!["test/**/*.rs"]);
         } else {
@@ -962,10 +966,10 @@ operations:
         let loaded = parse_config_yaml(yaml).unwrap();
         let ops = &loaded.operations;
         assert_eq!(ops.len(), 2);
-        assert_eq!(loaded.root_files, vec!["src/**/*.rs"]);
+        assert_eq!(loaded.root_files, Some(vec!["src/**/*.rs".to_string()]));
 
         // Operations have no files of their own — root files are applied
-        // at resolve time via SharedFileScope.
+        // at resolve time via FileResolver.
         if let Operation::Check(c) = &ops[0] {
             assert!(c.files.is_empty());
             assert_eq!(c.exclude, vec!["vendor/**"]);
@@ -993,11 +997,11 @@ check:
       xpath: "//comment"
 "#;
         let loaded = parse_config_yaml(yaml).unwrap();
-        assert_eq!(loaded.root_files, vec!["src/**/*.rs", "lib/**/*.rs"]);
+        assert_eq!(loaded.root_files, Some(vec!["src/**/*.rs".to_string(), "lib/**/*.rs".to_string()]));
     }
 
     #[test]
-    fn loaded_config_root_files_empty_when_not_specified() {
+    fn loaded_config_root_files_none_when_key_missing() {
         let yaml = r#"
 check:
   files: ["src/**/*.rs"]
@@ -1006,7 +1010,21 @@ check:
       xpath: "//comment"
 "#;
         let loaded = parse_config_yaml(yaml).unwrap();
-        assert!(loaded.root_files.is_empty());
+        assert!(loaded.root_files.is_none());
+    }
+
+    #[test]
+    fn loaded_config_root_files_some_empty_when_explicit_empty() {
+        let yaml = r#"
+files: []
+check:
+  files: ["src/**/*.rs"]
+  rules:
+    - id: no-todo
+      xpath: "//comment"
+"#;
+        let loaded = parse_config_yaml(yaml).unwrap();
+        assert_eq!(loaded.root_files, Some(vec![]));
     }
 
     #[test]
@@ -1021,9 +1039,9 @@ check:
 "#;
         let loaded = parse_config_yaml(yaml).unwrap();
         // Root files are preserved for intersection at resolve time
-        assert_eq!(loaded.root_files, vec!["src/**/*.rs"]);
+        assert_eq!(loaded.root_files, Some(vec!["src/**/*.rs".to_string()]));
         // Operation files are kept as-is (merge_scope overrides at parse time;
-        // actual intersection happens in resolve_files)
+        // actual intersection happens in FileResolver::resolve_files)
         if let Operation::Check(c) = &loaded.operations[0] {
             assert_eq!(c.files, vec!["test/**/*.rs"]);
         } else {

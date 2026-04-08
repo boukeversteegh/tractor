@@ -102,8 +102,8 @@ example.js:3:3: error: getAll methods in repositories should use orderBy
           <tr><td><code>reason</code></td><td>Yes</td><td>Explanation shown for each violation</td></tr>
           <tr><td><code>severity</code></td><td>No</td><td><code>error</code> (default) or <code>warning</code></td></tr>
           <tr><td><code>message</code></td><td>No</td><td>Custom message template (<code>{'{value}'}</code>, <code>{'{line}'}</code>, etc.)</td></tr>
-          <tr><td><code>include</code></td><td>No</td><td>File patterns for this rule only</td></tr>
-          <tr><td><code>exclude</code></td><td>No</td><td>File patterns to exclude for this rule</td></tr>
+          <tr><td><code>include</code></td><td>No</td><td>File patterns for this rule only (relative to config file directory)</td></tr>
+          <tr><td><code>exclude</code></td><td>No</td><td>File patterns to exclude for this rule (relative to config file directory)</td></tr>
           <tr><td><code>expect</code></td><td>No</td><td>Test examples (see below)</td></tr>
         </tbody>
       </table>
@@ -202,6 +202,10 @@ operations:
       <p>
         File patterns can be set at multiple levels. Each level narrows the scope — it never widens it. The effective file set is the intersection of all levels that are defined.
       </p>
+      <p>
+        All file patterns — root <code>files</code>, operation <code>files</code>, <code>exclude</code>, and per-rule <code>include</code>/<code>exclude</code> — are
+        resolved relative to the config file's directory. Absolute paths (e.g. from an IDE) are used as-is.
+      </p>
 
       <h3>Intersection chain</h3>
       <p>
@@ -248,6 +252,8 @@ operations:
       <ul>
         <li><strong>files</strong>: Operation files intersect with root files — only files matching both patterns are processed.</li>
         <li><strong>No files on operation</strong>: Root files are used as the base.</li>
+        <li><strong>No files anywhere</strong>: If neither root nor operation specifies files, CLI file arguments are used as the base set.</li>
+        <li><strong>Missing vs empty</strong>: Omitting <code>files:</code> entirely means "unrestricted" (no intersection at that level). Writing <code>files: []</code> explicitly means "no files" — the result will be empty.</li>
         <li><strong>exclude</strong>: Union of root and operation excludes (both narrow the scope).</li>
       </ul>
 
@@ -259,9 +265,38 @@ operations:
 tractor run .tractor.yml src/app.js src/utils.js
 
 # Or with globs
-tractor run .tractor.yml "src/core/**/*.js"`} />
+tractor run .tractor.yml "src/core/**/*.js"
+
+# Absolute paths work too (e.g. from an IDE)
+tractor run .tractor.yml /home/user/project/src/app.js`} />
       <p>
         CLI files are intersected with the resolved config scope. This is useful for checking only the files you changed, without modifying the config.
+        If the config has no <code>files:</code> key (neither root nor operation level), CLI files are used directly as the file set.
+      </p>
+
+      <h3>Per-rule include/exclude</h3>
+      <p>
+        Individual rules can further narrow their scope with <code>include</code> and <code>exclude</code> patterns.
+        These are resolved relative to the config file's directory — not the current working directory:
+      </p>
+      <CodeBlock
+        language="yaml"
+        code={`check:
+  files: ["src/**/*.js"]
+  rules:
+    - id: no-todo
+      xpath: "//comment[contains(.,'TODO')]"
+      reason: "No TODOs in production code"
+      exclude: ["src/test/**"]    # skip test files
+
+    - id: no-console-log
+      xpath: "//call[name='console.log']"
+      reason: "Use the logger instead"
+      include: ["src/core/**"]    # only check core files`}
+      />
+      <p>
+        Per-rule <code>include</code> narrows which files the rule applies to. Per-rule <code>exclude</code> removes files from consideration.
+        These are applied after the operation-level file resolution, so they can only narrow — never widen — the file set.
       </p>
 
       <h3>File limits</h3>

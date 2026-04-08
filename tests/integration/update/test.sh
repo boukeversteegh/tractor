@@ -2,18 +2,27 @@
 # Update command integration tests
 source "$(dirname "$0")/../common.sh"
 
+TMPDIR="$(mktemp -d "$SCRIPT_DIR/tmp.update.XXXXXX")"
+SINGLE_YAML="$TMPDIR/tractor-update-test-single.yaml"
+MULTI_YAML="$TMPDIR/tractor-update-test-multi.yaml"
+LIMIT_YAML="$TMPDIR/tractor-update-test-limit.yaml"
+NOCREATE_YAML="$TMPDIR/tractor-update-test-nocreate.yaml"
+PARTIAL_YAML="$TMPDIR/tractor-update-test-partial.yaml"
+JSON_FILE="$TMPDIR/tractor-update-test.json"
+NOCREATE_JSON="$TMPDIR/tractor-update-test-nocreate.json"
+
 echo "Update (YAML):"
 
 # --- Single update ---
-cat > /tmp/tractor-update-test-single.yaml << 'EOF'
+cat > "$SINGLE_YAML" << 'EOF'
 name: my-app
 database:
   host: localhost
   port: 5432
 EOF
 
-tractor update /tmp/tractor-update-test-single.yaml -x "//database/host" --value "db.example.com" 2>/dev/null
-ACTUAL=$(cat /tmp/tractor-update-test-single.yaml)
+tractor update "$(to_tractor_path "$SINGLE_YAML")" -x "//database/host" --value "db.example.com" 2>/dev/null
+ACTUAL=$(cat "$SINGLE_YAML")
 EXPECTED='name: my-app
 database:
   host: db.example.com
@@ -29,7 +38,7 @@ else
 fi
 
 # --- Multiple updates in same file ---
-cat > /tmp/tractor-update-test-multi.yaml << 'EOF'
+cat > "$MULTI_YAML" << 'EOF'
 servers:
   - name: web-1
     port: 8080
@@ -39,8 +48,8 @@ servers:
     port: 9090
 EOF
 
-tractor update /tmp/tractor-update-test-multi.yaml -x "//servers/port[.='8080']" --value "3000" 2>/dev/null
-ACTUAL=$(cat /tmp/tractor-update-test-multi.yaml)
+tractor update "$(to_tractor_path "$MULTI_YAML")" -x "//servers/port[.='8080']" --value "3000" 2>/dev/null
+ACTUAL=$(cat "$MULTI_YAML")
 EXPECTED='servers:
   - name: web-1
     port: 3000
@@ -59,15 +68,15 @@ else
 fi
 
 # --- Update with --limit ---
-cat > /tmp/tractor-update-test-limit.yaml << 'EOF'
+cat > "$LIMIT_YAML" << 'EOF'
 items:
   - value: old
   - value: old
   - value: old
 EOF
 
-tractor update /tmp/tractor-update-test-limit.yaml -x "//items/value[.='old']" -n 1 --value "new" 2>/dev/null
-ACTUAL=$(cat /tmp/tractor-update-test-limit.yaml)
+tractor update "$(to_tractor_path "$LIMIT_YAML")" -x "//items/value[.='old']" -n 1 --value "new" 2>/dev/null
+ACTUAL=$(cat "$LIMIT_YAML")
 EXPECTED='items:
   - value: new
   - value: old
@@ -83,15 +92,15 @@ else
 fi
 
 # --- Update with no matches does NOT create nodes and fails ---
-cat > /tmp/tractor-update-test-nocreate.yaml << 'EOF'
+cat > "$NOCREATE_YAML" << 'EOF'
 name: my-app
 EOF
 
-if tractor update /tmp/tractor-update-test-nocreate.yaml -x "//database/host" --value "localhost" 2>/dev/null; then
+if tractor update "$(to_tractor_path "$NOCREATE_YAML")" -x "//database/host" --value "localhost" 2>/dev/null; then
     echo "  ✗ update with no match should fail"
     ((FAILED++))
 else
-    ACTUAL=$(cat /tmp/tractor-update-test-nocreate.yaml)
+    ACTUAL=$(cat "$NOCREATE_YAML")
     EXPECTED='name: my-app'
     if [ "$ACTUAL" = "$EXPECTED" ]; then
         echo "  ✓ update with no match fails and does not create nodes"
@@ -105,16 +114,16 @@ else
 fi
 
 # --- Update with partial path does NOT create leaf and fails ---
-cat > /tmp/tractor-update-test-partial.yaml << 'EOF'
+cat > "$PARTIAL_YAML" << 'EOF'
 database:
   host: localhost
 EOF
 
-if tractor update /tmp/tractor-update-test-partial.yaml -x "//database/port" --value "5432" 2>/dev/null; then
+if tractor update "$(to_tractor_path "$PARTIAL_YAML")" -x "//database/port" --value "5432" 2>/dev/null; then
     echo "  ✗ update with partial path should fail"
     ((FAILED++))
 else
-    ACTUAL=$(cat /tmp/tractor-update-test-partial.yaml)
+    ACTUAL=$(cat "$PARTIAL_YAML")
     EXPECTED='database:
   host: localhost'
     if [ "$ACTUAL" = "$EXPECTED" ]; then
@@ -132,7 +141,7 @@ echo ""
 echo "Update (JSON):"
 
 # --- JSON string update ---
-cat > /tmp/tractor-update-test.json << 'EOF'
+cat > "$JSON_FILE" << 'EOF'
 {
   "database": {
     "host": "localhost",
@@ -141,8 +150,8 @@ cat > /tmp/tractor-update-test.json << 'EOF'
 }
 EOF
 
-tractor update /tmp/tractor-update-test.json -x "//database/host" --value db.example.com 2>/dev/null
-ACTUAL=$(cat /tmp/tractor-update-test.json)
+tractor update "$(to_tractor_path "$JSON_FILE")" -x "//database/host" --value db.example.com 2>/dev/null
+ACTUAL=$(cat "$JSON_FILE")
 EXPECTED='{
   "database": {
     "host": "db.example.com",
@@ -160,17 +169,17 @@ else
 fi
 
 # --- JSON update with no match does NOT create and fails ---
-cat > /tmp/tractor-update-test-nocreate.json << 'EOF'
+cat > "$NOCREATE_JSON" << 'EOF'
 {
   "name": "my-app"
 }
 EOF
 
-if tractor update /tmp/tractor-update-test-nocreate.json -x "//database/host" --value "localhost" 2>/dev/null; then
+if tractor update "$(to_tractor_path "$NOCREATE_JSON")" -x "//database/host" --value "localhost" 2>/dev/null; then
     echo "  ✗ JSON update with no match should fail"
     ((FAILED++))
 else
-    ACTUAL=$(cat /tmp/tractor-update-test-nocreate.json)
+    ACTUAL=$(cat "$NOCREATE_JSON")
     EXPECTED='{
   "name": "my-app"
 }'
@@ -189,7 +198,7 @@ echo ""
 echo "Update (error cases):"
 
 # --- Update without XPath should fail ---
-if tractor update /tmp/tractor-update-test.json --value "foo" 2>/dev/null; then
+if tractor update "$(to_tractor_path "$JSON_FILE")" --value "foo" 2>/dev/null; then
     echo "  ✗ update without xpath should fail"
     ((FAILED++))
 else
@@ -207,7 +216,7 @@ else
 fi
 
 # --- Update with no matches should fail ---
-if tractor update /tmp/tractor-update-test.json -x "//nonexistent" --value "x" 2>/dev/null; then
+if tractor update "$(to_tractor_path "$JSON_FILE")" -x "//nonexistent" --value "x" 2>/dev/null; then
     echo "  ✗ update with no matches should fail"
     ((FAILED++))
 else
@@ -216,9 +225,6 @@ else
 fi
 
 # Cleanup
-rm -f /tmp/tractor-update-test-single.yaml /tmp/tractor-update-test-multi.yaml \
-      /tmp/tractor-update-test-limit.yaml /tmp/tractor-update-test-nocreate.yaml \
-      /tmp/tractor-update-test-partial.yaml /tmp/tractor-update-test.json \
-      /tmp/tractor-update-test-nocreate.json
+rm -rf "$TMPDIR"
 
 report

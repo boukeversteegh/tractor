@@ -9,6 +9,7 @@ mod modes;
 mod tractor_config;
 mod executor;
 mod filter;
+mod file_resolver;
 
 use std::process::ExitCode;
 use cli::{Cli, Command, DocsCommand};

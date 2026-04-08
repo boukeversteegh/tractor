@@ -1,0 +1,9 @@
+# Per-rule exclude pattern is relative to this config's directory.
+# CLI will pass the absolute path. The exclude should filter it out.
+check:
+  rules:
+    - id: no-debug
+      exclude: ["config.yml"]
+      xpath: "//debug[.='true']"
+      reason: "debug must be disabled"
+      severity: warning

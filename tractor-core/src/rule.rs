@@ -55,12 +55,12 @@ mod glob_matcher {
 
     impl std::error::Error for GlobError {}
 
-    fn compile(patterns: &[String]) -> Result<Vec<Pattern>, GlobError> {
+    fn compile(patterns: &[crate::GlobPattern]) -> Result<Vec<Pattern>, GlobError> {
         patterns
             .iter()
             .map(|p| {
-                Pattern::new(p).map_err(|e| GlobError {
-                    pattern: p.clone(),
+                Pattern::new(p.as_str()).map_err(|e| GlobError {
+                    pattern: p.as_str().to_string(),
                     message: e.msg.to_string(),
                 })
             })
@@ -99,10 +99,10 @@ mod glob_matcher {
         /// - Either exclude layer can reject (union).
         /// - An empty include layer is permissive (matches everything).
         pub fn new(
-            ruleset_include: &[String],
-            ruleset_exclude: &[String],
-            rule_include: &[String],
-            rule_exclude: &[String],
+            ruleset_include: &[crate::GlobPattern],
+            ruleset_exclude: &[crate::GlobPattern],
+            rule_include: &[crate::GlobPattern],
+            rule_exclude: &[crate::GlobPattern],
         ) -> Result<Self, GlobError> {
             Ok(GlobMatcher {
                 rs_include: compile(ruleset_include)?,
@@ -120,7 +120,12 @@ mod glob_matcher {
         /// 1. It matches at least one ruleset include (or that list is empty)
         /// 2. It matches at least one rule include (or that list is empty)
         /// 3. It does not match any exclude pattern
-        pub fn matches(&self, path: &str) -> bool {
+        pub fn matches(&self, path: &crate::NormalizedPath) -> bool {
+            self.matches_str(path.as_str())
+        }
+
+        /// String-based matching for backwards compatibility and testing.
+        pub fn matches_str(&self, path: &str) -> bool {
             // Include intersection: both layers must pass
             if !self.rs_include.is_empty() && !any_matches(&self.rs_include, path) {
                 return false;
@@ -328,7 +333,15 @@ impl RuleSet {
     /// global boundary with the rule's own globs.
     #[cfg(feature = "native")]
     pub fn glob_matcher(&self, rule: &Rule) -> Result<GlobMatcher, GlobError> {
-        GlobMatcher::new(&self.include, &self.exclude, &rule.include, &rule.exclude)
+        let to_patterns = |v: &[String]| -> Vec<crate::GlobPattern> {
+            v.iter().map(|s| crate::GlobPattern::new(s)).collect()
+        };
+        GlobMatcher::new(
+            &to_patterns(&self.include),
+            &to_patterns(&self.exclude),
+            &to_patterns(&rule.include),
+            &to_patterns(&rule.exclude),
+        )
     }
 
     /// Resolve the effective tree mode for a rule.
@@ -441,128 +454,93 @@ mod tests {
     #[cfg(feature = "native")]
     mod glob_tests {
         use super::*;
+        use crate::GlobPattern;
+
+        fn g(s: &str) -> GlobPattern { GlobPattern::new(s) }
 
         #[test]
         fn test_empty_matcher_matches_everything() {
             let m = GlobMatcher::new(&[], &[], &[], &[]).unwrap();
-            assert!(m.matches("anything.rs"));
-            assert!(m.matches("deeply/nested/path.ts"));
+            assert!(m.matches_str("anything.rs"));
+            assert!(m.matches_str("deeply/nested/path.ts"));
             assert!(m.is_empty());
         }
 
         #[test]
         fn test_ruleset_include_only() {
-            let m = GlobMatcher::new(
-                &["**/*.rs".into()],
-                &[],
-                &[],
-                &[],
-            ).unwrap();
-
-            assert!(m.matches("src/main.rs"));
-            assert!(m.matches("lib.rs"));
-            assert!(!m.matches("index.ts"));
+            let m = GlobMatcher::new(&[g("**/*.rs")], &[], &[], &[]).unwrap();
+            assert!(m.matches_str("src/main.rs"));
+            assert!(m.matches_str("lib.rs"));
+            assert!(!m.matches_str("index.ts"));
         }
 
         #[test]
         fn test_rule_include_only() {
-            let m = GlobMatcher::new(
-                &[],
-                &[],
-                &["**/*.rs".into()],
-                &[],
-            ).unwrap();
-
-            assert!(m.matches("src/main.rs"));
-            assert!(!m.matches("index.ts"));
+            let m = GlobMatcher::new(&[], &[], &[g("**/*.rs")], &[]).unwrap();
+            assert!(m.matches_str("src/main.rs"));
+            assert!(!m.matches_str("index.ts"));
         }
 
         #[test]
         fn test_include_intersection() {
-            // Ruleset allows all .rs and .ts files
-            // Rule further narrows to only src/ directory
             let m = GlobMatcher::new(
-                &["**/*.rs".into(), "**/*.ts".into()],
-                &[],
-                &["src/**".into()],
-                &[],
+                &[g("**/*.rs"), g("**/*.ts")], &[], &[g("src/**")], &[],
             ).unwrap();
-
-            assert!(m.matches("src/main.rs"));       // .rs + in src/
-            assert!(m.matches("src/index.ts"));       // .ts + in src/
-            assert!(!m.matches("test/main.rs"));      // .rs but not in src/
-            assert!(!m.matches("src/data.json"));     // in src/ but not .rs/.ts
+            assert!(m.matches_str("src/main.rs"));
+            assert!(m.matches_str("src/index.ts"));
+            assert!(!m.matches_str("test/main.rs"));
+            assert!(!m.matches_str("src/data.json"));
         }
 
         #[test]
         fn test_rule_cannot_widen_beyond_ruleset() {
-            // Ruleset only allows src/**
-            // Rule asks for **/*.rs (including test/)
             let m = GlobMatcher::new(
-                &["src/**".into()],
-                &[],
-                &["**/*.rs".into()],
-                &[],
+                &[g("src/**")], &[], &[g("**/*.rs")], &[],
             ).unwrap();
-
-            assert!(m.matches("src/main.rs"));        // in src/ + .rs
-            assert!(!m.matches("test/main.rs"));       // .rs but outside src/ boundary
-            assert!(!m.matches("src/data.json"));      // in src/ but not .rs
+            assert!(m.matches_str("src/main.rs"));
+            assert!(!m.matches_str("test/main.rs"));
+            assert!(!m.matches_str("src/data.json"));
         }
 
         #[test]
         fn test_exclude_union() {
-            // Ruleset excludes vendor/
-            // Rule excludes generated/
             let m = GlobMatcher::new(
-                &[],
-                &["vendor/**".into()],
-                &[],
-                &["generated/**".into()],
+                &[], &[g("vendor/**")], &[], &[g("generated/**")],
             ).unwrap();
-
-            assert!(m.matches("src/main.rs"));
-            assert!(!m.matches("vendor/lib.rs"));       // ruleset exclude
-            assert!(!m.matches("generated/code.rs"));   // rule exclude
+            assert!(m.matches_str("src/main.rs"));
+            assert!(!m.matches_str("vendor/lib.rs"));
+            assert!(!m.matches_str("generated/code.rs"));
         }
 
         #[test]
         fn test_exclude_overrides_include() {
             let m = GlobMatcher::new(
-                &["**/*.rs".into()],
-                &["test/**".into()],
-                &[],
-                &[],
+                &[g("**/*.rs")], &[g("test/**")], &[], &[],
             ).unwrap();
-
-            assert!(m.matches("src/main.rs"));
-            assert!(!m.matches("test/main.rs"));  // included by glob, but excluded
+            assert!(m.matches_str("src/main.rs"));
+            assert!(!m.matches_str("test/main.rs"));
         }
 
         #[test]
         fn test_full_intersection() {
-            // Ruleset: all rust/ts in src/, exclude vendor/
-            // Rule: only test files, exclude snapshots
             let m = GlobMatcher::new(
-                &["src/**/*.rs".into(), "src/**/*.ts".into()],
-                &["src/vendor/**".into()],
-                &["**/*_test.*".into()],
-                &["**/*_snapshot*".into()],
+                &[g("src/**/*.rs"), g("src/**/*.ts")],
+                &[g("src/vendor/**")],
+                &[g("**/*_test.*")],
+                &[g("**/*_snapshot*")],
             ).unwrap();
-
-            assert!(m.matches("src/foo_test.rs"));
-            assert!(!m.matches("src/foo.rs"));                  // not a test file
-            assert!(!m.matches("test/foo_test.rs"));            // outside src/
-            assert!(!m.matches("src/vendor/foo_test.rs"));      // vendored
-            assert!(!m.matches("src/foo_test_snapshot.rs"));    // snapshot
+            assert!(m.matches_str("src/foo_test.rs"));
+            assert!(!m.matches_str("src/foo.rs"));
+            assert!(!m.matches_str("test/foo_test.rs"));
+            assert!(!m.matches_str("src/vendor/foo_test.rs"));
+            assert!(!m.matches_str("src/foo_test_snapshot.rs"));
         }
 
         #[test]
         fn test_invalid_pattern() {
-            let result = GlobMatcher::new(&["[invalid".into()], &[], &[], &[]);
+            let result = GlobMatcher::new(&[g("[invalid")], &[], &[], &[]);
             assert!(result.is_err());
-            let err = result.unwrap_err();
-            assert_eq!(err.pattern, "[invalid");
+            assert_eq!(result.unwrap_err().pattern, "[invalid");
         }
 
         #[test]
@@ -570,25 +548,42 @@ mod tests {
             let mut rs = RuleSet::new();
             rs.include = vec!["src/**".into()];
             rs.exclude = vec!["src/vendor/**".into()];
-
-            let rule = Rule::new("a", "//x")
-                .with_include(vec!["**/*.rs".into()]);
-
+            let rule = Rule::new("a", "//x").with_include(vec!["**/*.rs".into()]);
             let matcher = rs.glob_matcher(&rule).unwrap();
-            assert!(matcher.matches("src/main.rs"));
-            assert!(!matcher.matches("test/main.rs"));       // outside ruleset boundary
-            assert!(!matcher.matches("src/vendor/lib.rs"));   // excluded by ruleset
-            assert!(!matcher.matches("src/index.ts"));         // excluded by rule include
+            assert!(matcher.matches_str("src/main.rs"));
+            assert!(!matcher.matches_str("test/main.rs"));
+            assert!(!matcher.matches_str("src/vendor/lib.rs"));
+            assert!(!matcher.matches_str("src/index.ts"));
         }
 
         #[test]
         fn test_glob_matcher_no_restrictions() {
             let rs = RuleSet::new();
             let rule = Rule::new("a", "//x");
-
             let matcher = rs.glob_matcher(&rule).unwrap();
             assert!(matcher.is_empty());
-            assert!(matcher.matches("literally/anything"));
+            assert!(matcher.matches_str("literally/anything"));
+        }
+
+        #[test]
+        fn relative_include_does_not_match_absolute_path() {
+            let m = GlobMatcher::new(&[], &[], &[g("src/**/*.rs")], &[]).unwrap();
+            assert!(m.matches_str("src/main.rs"));
+            assert!(m.matches_str("src/deep/nested/lib.rs"));
+            assert!(!m.matches_str("/home/user/project/src/main.rs"));
+            assert!(!m.matches_str("/home/user/project/src/deep/nested/lib.rs"));
+        }
+
+        #[test]
+        fn relative_exclude_only_rejects_relative_paths() {
+            // A relative exclude pattern like "test/**" rejects relative paths...
+            let m = GlobMatcher::new(&[], &[], &[], &[g("test/**")]).unwrap();
+            assert!(!m.matches_str("test/foo.rs"));
+            // ...but does NOT reject the same file via absolute path (glob does
+            // full-string matching, so the pattern can't match the leading /).
+            // In practice, run_rules() resolves patterns to absolute before
+            // building the GlobMatcher, so this limitation doesn't surface.
+            assert!(m.matches_str("/home/user/project/test/foo.rs"));
         }
     }
 }

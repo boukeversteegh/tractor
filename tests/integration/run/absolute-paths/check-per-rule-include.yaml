@@ -1,0 +1,11 @@
+# Per-rule include pattern is relative to this config's directory.
+# CLI will pass the absolute path of config.yml.
+# The rule should match because tractor resolves relative patterns
+# to absolute before matching.
+check:
+  rules:
+    - id: no-debug
+      include: ["*.yml"]
+      xpath: "//debug[.='true']"
+      reason: "debug must be disabled"
+      severity: warning

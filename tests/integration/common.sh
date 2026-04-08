@@ -10,16 +10,58 @@ _COMMON_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$_COMMON_DIR/../.." && pwd)"
 unset _COMMON_DIR
 
-# On Windows (gitbash/MSYS2), shell paths use /D/... but tractor outputs D:/...
-# Convert to the mixed format so sed replacements match tractor output.
-if command -v cygpath &>/dev/null; then
-    SCRIPT_DIR="$(cygpath -m "$SCRIPT_DIR")"
-    REPO_ROOT="$(cygpath -m "$REPO_ROOT")"
+to_display_path() {
+    local path="$1"
+    if command -v cygpath &>/dev/null; then
+        cygpath -ml "$path"
+    elif command -v wslpath &>/dev/null && [[ "$TRACTOR_BIN" == *.exe ]]; then
+        wslpath -m "$path"
+    else
+        printf '%s\n' "$path"
+    fi
+}
+
+to_tractor_path() {
+    local path="$1"
+    if [[ "$path" != /* ]] && [[ ! "$path" =~ ^[A-Za-z]:[\\/] ]]; then
+        printf '%s\n' "$path"
+        return
+    fi
+
+    if command -v cygpath &>/dev/null; then
+        cygpath -m "$path"
+    elif command -v wslpath &>/dev/null && [[ "$TRACTOR_BIN" == *.exe ]] && [[ "$path" = /* ]]; then
+        wslpath -m "$path"
+    else
+        printf '%s\n' "$path"
+    fi
+}
+
+# Keep execution paths in shell-native format. A Windows-style path like
+# D:/repo/target/release cannot be prepended to PATH safely because ':' is the
+# PATH separator in bash.
+TRACTOR_BIN="$REPO_ROOT/target/release/tractor"
+if [ ! -f "$TRACTOR_BIN" ] && [ -f "$REPO_ROOT/target/release/tractor.exe" ]; then
+    TRACTOR_BIN="$REPO_ROOT/target/release/tractor.exe"
 fi
-export PATH="$REPO_ROOT/target/release:$PATH"
+
+CARGO_BIN="$(command -v cargo || command -v cargo.exe || true)"
+if [ -z "$CARGO_BIN" ]; then
+    CARGO_BIN="$HOME/.cargo/bin/cargo"
+fi
 
 cd "$SCRIPT_DIR"
-[ -f "$REPO_ROOT/target/release/tractor" ] || (cd "$REPO_ROOT" && cargo build --release -q)
+[ -f "$TRACTOR_BIN" ] || (cd "$REPO_ROOT" && "$CARGO_BIN" build --release -q)
+if [ ! -f "$TRACTOR_BIN" ] && [ -f "$REPO_ROOT/target/release/tractor.exe" ]; then
+    TRACTOR_BIN="$REPO_ROOT/target/release/tractor.exe"
+fi
+export TRACTOR_BIN
+
+# Call the built binary directly so tests do not depend on PATH layout.
+tractor() {
+    "$TRACTOR_BIN" "$@"
+}
+export -f tractor
 
 PASSED=0 FAILED=0
 run_test() {

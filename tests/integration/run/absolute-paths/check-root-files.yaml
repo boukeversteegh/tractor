@@ -1,0 +1,9 @@
+# Root files pattern is relative to this config's directory.
+# CLI will pass the absolute path. Intersection should succeed.
+files: ["*.yml"]
+check:
+  rules:
+    - id: no-debug
+      xpath: "//debug[.='true']"
+      reason: "debug must be disabled"
+      severity: warning

@@ -18,7 +18,7 @@ use tractor_core::normalized_xpath::NormalizedXpath;
 use tractor_core::rule::{Rule, RuleSet};
 use tractor_core::report::{ReportBuilder, ReportMatch, Severity};
 use tractor_core::tree_mode::TreeMode;
-use tractor_core::{detect_language, parse_to_documents, parse_string_to_documents, Match, apply_replacements};
+use tractor_core::{detect_language, parse_to_documents, parse_string_to_documents, Match, apply_replacements, NormalizedPath};
 use tractor_core::xpath_upsert::{upsert, update_only};
 
 use crate::filter::ResultFilter;
@@ -233,10 +233,9 @@ pub struct ExecuteOptions {
     pub max_files: usize,
     /// CLI-provided file patterns, intersected with operation file globs.
     pub cli_files: Vec<String>,
-    /// Root-level file patterns from config, intersected with each operation's
-    /// file globs. When an operation specifies its own files, the resolved set
-    /// is narrowed to the intersection with these root patterns.
-    pub config_root_files: Vec<String>,
+    /// Root-level file patterns from config.
+    /// `None` = key missing (unrestricted); `Some(vec![])` = explicitly empty.
+    pub config_root_files: Option<Vec<String>>,
 }
 
 impl Default for ExecuteOptions {
@@ -248,7 +247,7 @@ impl Default for ExecuteOptions {
             diff_lines: None,
             max_files: DEFAULT_MAX_FILES,
             cli_files: Vec::new(),
-            config_root_files: Vec::new(),
+            config_root_files: None,
         }
     }
 }
@@ -257,7 +256,7 @@ impl Default for ExecuteOptions {
 // Executor
 // ---------------------------------------------------------------------------
 
-use crate::pipeline::files::{SharedFileScope, resolve_op_files, make_fatal_diagnostic};
+use crate::file_resolver::{FileResolver, FileRequest, make_fatal_diagnostic};
 
 /// Convert owned filters to borrowed references for passing to query engine.
 fn filter_refs(filters: &[Box<dyn ResultFilter>]) -> Vec<&dyn ResultFilter> {
@@ -270,9 +269,9 @@ pub fn execute(
     options: &ExecuteOptions,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    // Pre-compute shared file scope once (root globs, CLI globs, global diff).
-    let shared = match SharedFileScope::build(options) {
-        Ok(s) => s,
+    // Build centralized file resolver once (root globs, CLI globs, global diff).
+    let resolver = match FileResolver::new(options) {
+        Ok(r) => r,
         Err(msg) => {
             report.add(make_fatal_diagnostic("config", msg));
             return Ok(());
@@ -281,11 +280,11 @@ pub fn execute(
 
     for op in operations {
         match op {
-            Operation::Query(q) => execute_query(q, options, &shared, report)?,
-            Operation::Check(c) => execute_check(c, options, &shared, report)?,
-            Operation::Test(t) => execute_test(t, options, &shared, report)?,
-            Operation::Set(s) => execute_set(s, options, &shared, report)?,
-            Operation::Update(u) => execute_update(u, options, &shared, report)?,
+            Operation::Query(q) => execute_query(q, options, &resolver, report)?,
+            Operation::Check(c) => execute_check(c, options, &resolver, report)?,
+            Operation::Test(t) => execute_test(t, options, &resolver, report)?,
+            Operation::Set(s) => execute_set(s, options, &resolver, report)?,
+            Operation::Update(u) => execute_update(u, options, &resolver, report)?,
         }
     }
 
@@ -299,7 +298,7 @@ pub fn execute(
 fn execute_query(
     op: &QueryOperation,
     options: &ExecuteOptions,
-    shared: &SharedFileScope,
+    resolver: &FileResolver,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Inline source mode: parse a string instead of files.
@@ -309,9 +308,14 @@ fn execute_query(
         return execute_query_inline(source, lang, op, report);
     }
 
-    let (files, filters) = resolve_op_files(
-        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), "query", options, shared, report,
-    );
+    let request = FileRequest {
+        files: &op.files,
+        exclude: &op.exclude,
+        diff_files: op.diff_files.as_deref(),
+        diff_lines: op.diff_lines.as_deref(),
+        command: "query",
+    };
+    let (files, filters) = resolver.resolve(&request, report);
 
     if files.is_empty() {
         return Ok(());
@@ -382,7 +386,7 @@ fn execute_query_inline(
 fn execute_check(
     op: &CheckOperation,
     options: &ExecuteOptions,
-    shared: &SharedFileScope,
+    resolver: &FileResolver,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if op.rules.is_empty() {
@@ -430,9 +434,14 @@ fn execute_check(
     }
 
     // --- Phase 3: Run the actual file check ---
-    let (files, filters) = resolve_op_files(
-        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), "check", options, shared, report,
-    );
+    let request = FileRequest {
+        files: &op.files,
+        exclude: &op.exclude,
+        diff_files: op.diff_files.as_deref(),
+        diff_lines: op.diff_lines.as_deref(),
+        command: "check",
+    };
+    let (files, filters) = resolver.resolve(&request, report);
 
     // Build a RuleSet from the operation. Ruleset-level include/exclude
     // come from rules files; per-rule patterns still participate in glob matching.
@@ -448,6 +457,7 @@ fn execute_check(
         let rule_matches = run_rules(
             &ruleset,
             &files,
+            resolver.base_dir(),
             op.tree_mode,
             op.ignore_whitespace,
             op.parse_depth,
@@ -573,18 +583,23 @@ fn example_failure_match(rule_id: &str, reason: &str) -> ReportMatch {
 
 fn execute_set(
     op: &SetOperation,
-    options: &ExecuteOptions,
-    shared: &SharedFileScope,
+    _options: &ExecuteOptions,
+    resolver: &FileResolver,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let (files, _filters) = resolve_op_files(
-        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), "set", options, shared, report,
-    );
+    let request = FileRequest {
+        files: &op.files,
+        exclude: &op.exclude,
+        diff_files: op.diff_files.as_deref(),
+        diff_lines: op.diff_lines.as_deref(),
+        command: "set",
+    };
+    let (files, _filters) = resolver.resolve(&request, report);
 
     for file_path in &files {
         let lang_override = op.language.as_deref();
         let lang = lang_override
-            .unwrap_or_else(|| detect_language(file_path));
+            .unwrap_or_else(|| detect_language(file_path.as_str()));
 
         let source = std::fs::read_to_string(file_path)?;
         let mut current = source.clone();
@@ -613,7 +628,7 @@ fn execute_set(
         }
 
         report.add(ReportMatch {
-            file: file_path.clone(),
+            file: file_path.as_str().to_string(),
             line: 1,
             column: 1,
             end_line: 1,
@@ -648,7 +663,7 @@ fn execute_set(
 fn execute_test(
     op: &TestOperation,
     options: &ExecuteOptions,
-    shared: &SharedFileScope,
+    resolver: &FileResolver,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Inline source mode: parse a string and check each assertion individually.
@@ -661,9 +676,14 @@ fn execute_test(
         return run_test_assertions_on_result(&mut result, &op.assertions, op.limit, report);
     }
 
-    let (files, filters) = resolve_op_files(
-        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), "test", options, shared, report,
-    );
+    let request = FileRequest {
+        files: &op.files,
+        exclude: &op.exclude,
+        diff_files: op.diff_files.as_deref(),
+        diff_lines: op.diff_lines.as_deref(),
+        command: "test",
+    };
+    let (files, filters) = resolver.resolve(&request, report);
 
     if files.is_empty() {
         for assertion in &op.assertions {
@@ -719,25 +739,28 @@ fn run_test_assertions_on_result(
 fn execute_update(
     op: &UpdateOperation,
     options: &ExecuteOptions,
-    shared: &SharedFileScope,
+    resolver: &FileResolver,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let (files, filters) = resolve_op_files(
-        &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), "update", options, shared, report,
-    );
-    let mut fallback_files = Vec::new();
-    let mut files_modified = std::collections::HashSet::new();
+    let request = FileRequest {
+        files: &op.files,
+        exclude: &op.exclude,
+        diff_files: op.diff_files.as_deref(),
+        diff_lines: op.diff_lines.as_deref(),
+        command: "update",
+    };
+    let (files, filters) = resolver.resolve(&request, report);
+    let mut fallback_files: Vec<NormalizedPath> = Vec::new();
 
     for file_path in &files {
         let lang = op.language.as_deref()
-            .unwrap_or_else(|| detect_language(file_path));
+            .unwrap_or_else(|| detect_language(file_path.as_str()));
         let source = std::fs::read_to_string(file_path)?;
 
         match update_only(&source, lang, &op.xpath, &op.value, op.limit) {
             Ok(result) => {
                 if result.source != source {
                     std::fs::write(file_path, &result.source)?;
-                    files_modified.insert(file_path.clone());
                     for m in &result.matches {
                         let mut rm = match_to_report_match(m.clone(), "update");
                         rm.status = Some("updated".to_string());
@@ -836,7 +859,7 @@ fn match_to_report_match(m: Match, command: &str) -> ReportMatch {
 /// Parse and query files in parallel with multiple XPath expressions.
 /// Each file is parsed once and all expressions are evaluated against it.
 fn query_files_multi(
-    files: &[String],
+    files: &[NormalizedPath],
     xpaths: &[&str],
     lang: Option<&str>,
     tree_mode: Option<TreeMode>,

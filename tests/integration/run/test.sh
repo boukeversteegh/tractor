@@ -2,7 +2,8 @@
 # Integration tests for `tractor run` (batch execution)
 source "$(dirname "$0")/../common.sh"
 
-FIXTURE_DIR="$SCRIPT_DIR"
+FIXTURE_DIR_NATIVE="$SCRIPT_DIR"
+FIXTURE_DIR="$(to_display_path "$SCRIPT_DIR")"
 
 # Helper: run tractor run, capture stdout+stderr (merged),
 # normalize absolute paths to relative for stable comparison.
@@ -14,7 +15,7 @@ run_and_check() {
     local args=("$@")
 
     local actual
-    actual=$(tractor run "${args[@]}" --no-color 2>&1)
+    actual=$("$TRACTOR_BIN" run "${args[@]}" --no-color 2>&1)
     local actual_exit=$?
 
     # Normalize absolute paths to fixture-relative
@@ -47,20 +48,19 @@ run_set_and_check() {
     local extra_args=("$@")
 
     # Copy fixtures to temp dir so set operations don't clobber originals
-    local tmpdir
-    tmpdir=$(mktemp -d)
-    # Normalize path for Windows (gitbash /tmp/... → C:/Users/.../Temp/...)
-    if command -v cygpath &>/dev/null; then tmpdir="$(cygpath -m "$tmpdir")"; fi
-    cp "$FIXTURE_DIR"/*.json "$FIXTURE_DIR"/*.yaml "$tmpdir/" 2>/dev/null
+    local tmpdir tmpdir_display
+    tmpdir=$(mktemp -d "$FIXTURE_DIR_NATIVE/tmp.XXXXXX")
+    tmpdir_display="$(to_display_path "$tmpdir")"
+    cp "$FIXTURE_DIR_NATIVE"/*.json "$FIXTURE_DIR_NATIVE"/*.yaml "$tmpdir/" 2>/dev/null
     # Copy the config and adjust file paths (configs reference relative files)
-    cp "$FIXTURE_DIR/$config" "$tmpdir/"
+    cp "$FIXTURE_DIR_NATIVE/$config" "$tmpdir/"
 
     local actual
-    actual=$(tractor run "$tmpdir/$config" "${extra_args[@]}" --no-color 2>&1)
+    actual=$("$TRACTOR_BIN" run "$(to_tractor_path "$tmpdir/$config")" "${extra_args[@]}" --no-color 2>&1)
     local actual_exit=$?
 
     # Normalize temp paths
-    actual=$(echo "$actual" | sed "s|$tmpdir/||g")
+    actual=$(echo "$actual" | sed "s|$tmpdir_display/||g")
 
     rm -rf "$tmpdir"
 
@@ -86,12 +86,12 @@ echo "Run (check operations):"
 run_and_check "multirule check finds violations with correct severity" \
     1 \
     "$(printf 'settings.yaml:3:10: error: debug should be disabled in production\n3 |   debug: true\n             ^~~~\n\nsettings.yaml:4:14: warning: log level should not be debug in production\n4 |   log_level: debug\n                 ^~~~~\n\n1 error in 1 file')" \
-    "$FIXTURE_DIR/check-multirule.yaml"
+    "check-multirule.yaml"
 
 run_and_check "multifile check scans multiple files" \
     1 \
     "$(printf 'settings.yaml:3:10: error: debug mode must be disabled\n3 |   debug: true\n             ^~~~\n\n1 error in 1 file')" \
-    "$FIXTURE_DIR/check-multifile.yaml"
+    "check-multifile.yaml"
 
 echo ""
 echo "Run (set operations):"
@@ -109,7 +109,7 @@ run_set_and_check "set applies mappings (verbose)" \
 echo ""
 echo "Run (scope intersection):"
 
-SCOPE_DIR="$FIXTURE_DIR/scope-intersection"
+SCOPE_DIR="scope-intersection"
 
 run_and_check "root ∩ operation narrows to intersection" \
     0 \
@@ -135,10 +135,57 @@ run_set_and_check "mixed check+set succeeds when check passes" \
     "mixed-ops.yaml"
 
 echo ""
+echo "Run (absolute CLI paths):"
+
+ABS_DIR="absolute-paths"
+ABS_FILE="$(to_tractor_path "$SCRIPT_DIR/$ABS_DIR/config.yml")"
+REL_DOT_FILE="./absolute-paths/config.yml"
+
+run_and_check "absolute CLI path + per-rule include matches" \
+    0 \
+    "$(printf 'absolute-paths/config.yml:1:8: warning: debug must be disabled\n1 | debug: true\n           ^~~~\n\n1 warning in 1 file')" \
+    "$ABS_DIR/check-per-rule-include.yaml" "$ABS_FILE"
+
+run_and_check "absolute CLI path + per-rule exclude filters out" \
+    0 \
+    "" \
+    "$ABS_DIR/check-per-rule-exclude.yaml" "$ABS_FILE"
+
+run_and_check "absolute CLI path + root files intersection works" \
+    0 \
+    "$(printf 'absolute-paths/config.yml:1:8: warning: debug must be disabled\n1 | debug: true\n           ^~~~\n\n1 warning in 1 file')" \
+    "$ABS_DIR/check-root-files.yaml" "$ABS_FILE"
+
+run_and_check "absolute CLI path + root exclude filters out" \
+    0 \
+    "" \
+    "$ABS_DIR/check-root-exclude.yaml" "$ABS_FILE"
+
+run_and_check "dot-relative CLI path + per-rule include matches" \
+    0 \
+    "$(printf 'absolute-paths/config.yml:1:8: warning: debug must be disabled\n1 | debug: true\n           ^~~~\n\n1 warning in 1 file')" \
+    "$ABS_DIR/check-per-rule-include.yaml" "$REL_DOT_FILE"
+
+run_and_check "dot-relative CLI path + per-rule exclude filters out" \
+    0 \
+    "" \
+    "$ABS_DIR/check-per-rule-exclude.yaml" "$REL_DOT_FILE"
+
+run_and_check "dot-relative CLI path + root files intersection works" \
+    0 \
+    "$(printf 'absolute-paths/config.yml:1:8: warning: debug must be disabled\n1 | debug: true\n           ^~~~\n\n1 warning in 1 file')" \
+    "$ABS_DIR/check-root-files.yaml" "$REL_DOT_FILE"
+
+run_and_check "dot-relative CLI path + root exclude filters out" \
+    0 \
+    "" \
+    "$ABS_DIR/check-root-exclude.yaml" "$REL_DOT_FILE"
+
+echo ""
 echo "Run (mixed language rules):"
 
 # Test mixed-language rules - JavaScript and Markdown rules in same config
-MIXED_LANG_DIR="$FIXTURE_DIR/mixed-language"
+MIXED_LANG_DIR="mixed-language"
 
 run_and_check "mixed-language: both JS and MD rules find violations" \
     1 \
