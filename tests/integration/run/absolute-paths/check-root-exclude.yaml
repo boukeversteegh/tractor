@@ -1,0 +1,9 @@
+# Root exclude filters out the file passed as absolute CLI arg.
+files: ["*.yml"]
+exclude: ["config.yml"]
+check:
+  rules:
+    - id: no-debug
+      xpath: "//debug[.='true']"
+      reason: "debug must be disabled"
+      severity: warning

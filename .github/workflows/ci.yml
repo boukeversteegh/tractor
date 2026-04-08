@@ -47,6 +47,28 @@ jobs:
       - name: Run snapshot tests
         run: cargo run --release --bin update-snapshots -- --check
 
+  test-windows:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Run path-sensitive unit tests
+        run: cargo test --workspace --release -j 2 -- normalize_path hashset_intersection windows_prefix absolute_cli_path relative_path_strips
+
+      - name: Build release binary for integration tests
+        run: cargo build --release -p tractor
+
+      - name: Run integration tests (absolute paths / scope intersection)
+        run: bash tests/integration/run/test.sh
+
   lint:
     needs: changes
     if: needs.changes.outputs.code == 'true'
@@ -65,7 +87,7 @@ jobs:
         run: ./target/release/tractor run .tractor.yml
 
   gate:
-    needs: [test, lint]
+    needs: [test, test-windows, lint]
     if: always()
     runs-on: ubuntu-latest
     steps:

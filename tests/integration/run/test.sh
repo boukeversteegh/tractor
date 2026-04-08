@@ -134,4 +134,30 @@ run_set_and_check "mixed check+set succeeds when check passes" \
     "$(printf 'app-config.json: updated\nupdated 1 file')" \
     "mixed-ops.yaml"
 
+echo ""
+echo "Run (absolute CLI paths):"
+
+ABS_DIR="$FIXTURE_DIR/absolute-paths"
+ABS_FILE="$ABS_DIR/config.yml"
+
+run_and_check "absolute CLI path + per-rule include matches" \
+    0 \
+    "$(printf 'absolute-paths/config.yml:1:8: warning: debug must be disabled\n1 | debug: true\n           ^~~~\n\n1 warning in 1 file')" \
+    "$ABS_DIR/check-per-rule-include.yaml" "$ABS_FILE"
+
+run_and_check "absolute CLI path + per-rule exclude filters out" \
+    0 \
+    "" \
+    "$ABS_DIR/check-per-rule-exclude.yaml" "$ABS_FILE"
+
+run_and_check "absolute CLI path + root files intersection works" \
+    0 \
+    "$(printf 'absolute-paths/config.yml:1:8: warning: debug must be disabled\n1 | debug: true\n           ^~~~\n\n1 warning in 1 file')" \
+    "$ABS_DIR/check-root-files.yaml" "$ABS_FILE"
+
+run_and_check "absolute CLI path + root exclude filters out" \
+    0 \
+    "" \
+    "$ABS_DIR/check-root-exclude.yaml" "$ABS_FILE"
+
 report

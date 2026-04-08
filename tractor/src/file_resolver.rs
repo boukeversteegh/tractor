@@ -492,7 +492,6 @@ mod tests {
         assert_eq!(intersection.len(), 1);
     }
 
-    #[cfg(feature = "native")]
     #[test]
     fn relative_path_strips_base_dir_for_per_rule_matching() {
         use tractor_core::rule::GlobMatcher;
