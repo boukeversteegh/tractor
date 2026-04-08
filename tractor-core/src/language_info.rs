@@ -1,6 +1,11 @@
 //! Language metadata and information
 //!
 //! Centralized language definitions shared between CLI and WASM.
+//!
+//! The `LANGUAGES` array is the **single source of truth** for all language metadata:
+//! - Canonical names, extensions, aliases, transforms, grammar files
+//! - The `Language` enum variants map 1:1 with entries in `LANGUAGES`
+//! - All lookups (by name, alias, extension) derive from `LANGUAGES`
 
 use serde::Serialize;
 use std::fmt;
@@ -10,6 +15,8 @@ use std::str::FromStr;
 ///
 /// Using an enum instead of magic strings prevents typos and ensures
 /// compile-time checking of language identifiers.
+///
+/// Each variant corresponds to exactly one entry in `LANGUAGES`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Language {
@@ -47,43 +54,14 @@ pub enum Language {
 }
 
 impl Language {
-    /// Get the canonical string name for this language
+    /// Get the canonical string name for this language.
+    /// Derives from `LANGUAGES` - the single source of truth.
     pub fn as_str(&self) -> &'static str {
-        match self {
-            Language::TypeScript => "typescript",
-            Language::Tsx => "tsx",
-            Language::JavaScript => "javascript",
-            Language::CSharp => "csharp",
-            Language::Rust => "rust",
-            Language::Python => "python",
-            Language::Go => "go",
-            Language::Java => "java",
-            Language::Ruby => "ruby",
-            Language::Cpp => "cpp",
-            Language::C => "c",
-            Language::Json => "json",
-            Language::Html => "html",
-            Language::Css => "css",
-            Language::Bash => "bash",
-            Language::Yaml => "yaml",
-            Language::Toml => "toml",
-            Language::Ini => "ini",
-            Language::Env => "env",
-            Language::Php => "php",
-            Language::Scala => "scala",
-            Language::Lua => "lua",
-            Language::Haskell => "haskell",
-            Language::OCaml => "ocaml",
-            Language::R => "r",
-            Language::Julia => "julia",
-            Language::Markdown => "markdown",
-            Language::Xml => "xml",
-            Language::TSql => "tsql",
-            Language::Unknown => "unknown",
-        }
+        self.info().map(|i| i.name).unwrap_or("unknown")
     }
 
-    /// Get LanguageInfo for this language variant
+    /// Get LanguageInfo for this language variant.
+    /// Returns None only for Language::Unknown.
     pub fn info(&self) -> Option<&'static LanguageInfo> {
         if *self == Language::Unknown {
             return None;
@@ -98,95 +76,62 @@ impl fmt::Display for Language {
     }
 }
 
-/// Language aliases - maps short forms to canonical Language enum variants.
-/// This is the single source of truth for aliases; used by FromStr and exported
-/// for display in the `tractor docs languages` command.
-pub const LANGUAGE_ALIASES: &[(&str, Language)] = &[
-    ("ts", Language::TypeScript),
-    ("js", Language::JavaScript),
-    ("jsx", Language::JavaScript),
-    ("cs", Language::CSharp),
-    ("rs", Language::Rust),
-    ("py", Language::Python),
-    ("rb", Language::Ruby),
-    ("md", Language::Markdown),
-    ("mdx", Language::Markdown),
-    ("yml", Language::Yaml),
-    ("sh", Language::Bash),
-    ("mssql", Language::TSql),
-];
-
 impl FromStr for Language {
     type Err = ();
 
+    /// Parse a language name or alias into a Language enum.
+    /// Looks up in `LANGUAGES` - the single source of truth.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // Handle aliases first using the canonical LANGUAGE_ALIASES table
-        let normalized = LANGUAGE_ALIASES
-            .iter()
-            .find(|(alias, _)| *alias == s)
-            .map(|(_, lang)| lang.as_str())
-            .unwrap_or(s);
-
-        match normalized {
-            "typescript" => Ok(Language::TypeScript),
-            "tsx" => Ok(Language::Tsx),
-            "javascript" => Ok(Language::JavaScript),
-            "csharp" => Ok(Language::CSharp),
-            "rust" => Ok(Language::Rust),
-            "python" => Ok(Language::Python),
-            "go" => Ok(Language::Go),
-            "java" => Ok(Language::Java),
-            "ruby" => Ok(Language::Ruby),
-            "cpp" => Ok(Language::Cpp),
-            "c" => Ok(Language::C),
-            "json" => Ok(Language::Json),
-            "html" => Ok(Language::Html),
-            "css" => Ok(Language::Css),
-            "bash" => Ok(Language::Bash),
-            "yaml" => Ok(Language::Yaml),
-            "toml" => Ok(Language::Toml),
-            "ini" => Ok(Language::Ini),
-            "env" => Ok(Language::Env),
-            "php" => Ok(Language::Php),
-            "scala" => Ok(Language::Scala),
-            "lua" => Ok(Language::Lua),
-            "haskell" => Ok(Language::Haskell),
-            "ocaml" => Ok(Language::OCaml),
-            "r" => Ok(Language::R),
-            "julia" => Ok(Language::Julia),
-            "markdown" => Ok(Language::Markdown),
-            "xml" => Ok(Language::Xml),
-            "tsql" => Ok(Language::TSql),
-            "unknown" => Ok(Language::Unknown),
-            _ => Err(()),
+        // First check canonical names
+        if let Some(info) = LANGUAGES.iter().find(|l| l.name == s) {
+            return Ok(info.language);
         }
+        // Then check aliases
+        if let Some(info) = LANGUAGES.iter().find(|l| l.aliases.contains(&s)) {
+            return Ok(info.language);
+        }
+        Err(())
     }
 }
 
-/// Information about a supported language
+/// Information about a supported language.
+///
+/// This struct is the **single source of truth** for language metadata.
+/// All language lookups and conversions derive from the `LANGUAGES` array.
 #[derive(Debug, Clone, Serialize)]
 pub struct LanguageInfo {
     /// The Language enum variant for type-safe language comparisons.
-    /// Skipped during serialization since `name` already provides the string identifier
-    /// and including both would be redundant in JSON/YAML output.
+    /// Skipped during serialization since `name` already provides the string identifier.
     #[serde(skip)]
     pub language: Language,
-    /// Language identifier (e.g., "typescript", "csharp")
+    /// Canonical language identifier (e.g., "typescript", "csharp")
     pub name: &'static str,
     /// File extensions (without dots)
     pub extensions: &'static [&'static str],
+    /// Alternative names/aliases for this language (e.g., "ts" for typescript)
+    #[serde(skip_serializing_if = "is_empty_slice")]
+    pub aliases: &'static [&'static str],
     /// Whether this language has semantic transforms
     pub has_transforms: bool,
     /// Grammar file name for web-tree-sitter (e.g., "tree-sitter-typescript.wasm")
     pub grammar_file: Option<&'static str>,
 }
 
-/// All supported languages with their metadata
+/// Helper for serde skip_serializing_if
+fn is_empty_slice(s: &[&str]) -> bool {
+    s.is_empty()
+}
+
+/// All supported languages with their metadata.
+///
+/// This is the **single source of truth** for all language information.
+/// The `Language` enum, `FromStr`, `as_str()`, and all lookups derive from this array.
 pub static LANGUAGES: &[LanguageInfo] = &[
     LanguageInfo {
         language: Language::TypeScript,
         name: "typescript",
         extensions: &["ts"],
+        aliases: &["ts"],
         has_transforms: true,
         grammar_file: Some("tree-sitter-typescript.wasm"),
     },
@@ -194,6 +139,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         language: Language::Tsx,
         name: "tsx",
         extensions: &["tsx"],
+        aliases: &[],
         has_transforms: true,
         grammar_file: Some("tree-sitter-tsx.wasm"),
     },
@@ -201,6 +147,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         language: Language::JavaScript,
         name: "javascript",
         extensions: &["js", "mjs", "cjs", "jsx"],
+        aliases: &["js", "jsx"],
         has_transforms: true,
         grammar_file: Some("tree-sitter-javascript.wasm"),
     },
@@ -208,6 +155,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         language: Language::CSharp,
         name: "csharp",
         extensions: &["cs"],
+        aliases: &["cs"],
         has_transforms: true,
         grammar_file: Some("tree-sitter-c_sharp.wasm"),
     },
@@ -215,6 +163,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         language: Language::Rust,
         name: "rust",
         extensions: &["rs"],
+        aliases: &["rs"],
         has_transforms: true,
         grammar_file: Some("tree-sitter-rust.wasm"),
     },
@@ -222,6 +171,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         language: Language::Python,
         name: "python",
         extensions: &["py", "pyw", "pyi"],
+        aliases: &["py"],
         has_transforms: true,
         grammar_file: Some("tree-sitter-python.wasm"),
     },
@@ -229,6 +179,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         language: Language::Go,
         name: "go",
         extensions: &["go"],
+        aliases: &[],
         has_transforms: true,
         grammar_file: Some("tree-sitter-go.wasm"),
     },
@@ -236,6 +187,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         language: Language::Java,
         name: "java",
         extensions: &["java"],
+        aliases: &[],
         has_transforms: true,
         grammar_file: Some("tree-sitter-java.wasm"),
     },
@@ -243,6 +195,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         language: Language::Ruby,
         name: "ruby",
         extensions: &["rb", "rake", "gemspec"],
+        aliases: &["rb"],
         has_transforms: true,
         grammar_file: Some("tree-sitter-ruby.wasm"),
     },
@@ -250,6 +203,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         language: Language::Cpp,
         name: "cpp",
         extensions: &["cpp", "cc", "cxx", "hpp", "hxx", "hh"],
+        aliases: &[],
         has_transforms: false,
         grammar_file: Some("tree-sitter-cpp.wasm"),
     },
@@ -257,6 +211,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         language: Language::C,
         name: "c",
         extensions: &["c", "h"],
+        aliases: &[],
         has_transforms: false,
         grammar_file: Some("tree-sitter-c.wasm"),
     },
@@ -264,6 +219,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         language: Language::Json,
         name: "json",
         extensions: &["json"],
+        aliases: &[],
         has_transforms: true,
         grammar_file: Some("tree-sitter-json.wasm"),
     },
@@ -271,6 +227,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         language: Language::Html,
         name: "html",
         extensions: &["html", "htm"],
+        aliases: &[],
         has_transforms: false,
         grammar_file: Some("tree-sitter-html.wasm"),
     },
@@ -278,6 +235,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         language: Language::Css,
         name: "css",
         extensions: &["css"],
+        aliases: &[],
         has_transforms: false,
         grammar_file: Some("tree-sitter-css.wasm"),
     },
@@ -285,6 +243,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         language: Language::Bash,
         name: "bash",
         extensions: &["sh", "bash"],
+        aliases: &["sh"],
         has_transforms: false,
         grammar_file: Some("tree-sitter-bash.wasm"),
     },
@@ -292,6 +251,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         language: Language::Yaml,
         name: "yaml",
         extensions: &["yml", "yaml"],
+        aliases: &["yml"],
         has_transforms: true,
         grammar_file: Some("tree-sitter-yaml.wasm"),
     },
@@ -299,6 +259,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         language: Language::Toml,
         name: "toml",
         extensions: &["toml"],
+        aliases: &[],
         has_transforms: true,
         grammar_file: Some("tree-sitter-toml.wasm"),
     },
@@ -306,6 +267,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         language: Language::Ini,
         name: "ini",
         extensions: &["ini", "cfg", "inf"],
+        aliases: &[],
         has_transforms: true,
         grammar_file: Some("tree-sitter-ini.wasm"),
     },
@@ -313,6 +275,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         language: Language::Env,
         name: "env",
         extensions: &["env"],
+        aliases: &[],
         has_transforms: true,
         grammar_file: Some("tree-sitter-bash.wasm"),
     },
@@ -320,6 +283,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         language: Language::Php,
         name: "php",
         extensions: &["php"],
+        aliases: &[],
         has_transforms: false,
         grammar_file: Some("tree-sitter-php.wasm"),
     },
@@ -327,6 +291,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         language: Language::Scala,
         name: "scala",
         extensions: &["scala", "sc"],
+        aliases: &[],
         has_transforms: false,
         grammar_file: None,
     },
@@ -334,6 +299,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         language: Language::Lua,
         name: "lua",
         extensions: &["lua"],
+        aliases: &[],
         has_transforms: false,
         grammar_file: None,
     },
@@ -341,6 +307,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         language: Language::Haskell,
         name: "haskell",
         extensions: &["hs", "lhs"],
+        aliases: &[],
         has_transforms: false,
         grammar_file: None,
     },
@@ -348,6 +315,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         language: Language::OCaml,
         name: "ocaml",
         extensions: &["ml", "mli"],
+        aliases: &[],
         has_transforms: false,
         grammar_file: None,
     },
@@ -355,6 +323,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         language: Language::R,
         name: "r",
         extensions: &["r"],
+        aliases: &[],
         has_transforms: false,
         grammar_file: None,
     },
@@ -362,6 +331,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         language: Language::Julia,
         name: "julia",
         extensions: &["jl"],
+        aliases: &[],
         has_transforms: false,
         grammar_file: None,
     },
@@ -369,6 +339,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         language: Language::Markdown,
         name: "markdown",
         extensions: &["md", "markdown", "mdx"],
+        aliases: &["md", "mdx"],
         has_transforms: true,
         grammar_file: Some("tree-sitter-markdown.wasm"),
     },
@@ -376,6 +347,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         language: Language::Xml,
         name: "xml",
         extensions: &["xml"],
+        aliases: &[],
         has_transforms: false,
         grammar_file: None, // Pass-through, no parsing needed
     },
@@ -384,6 +356,7 @@ pub static LANGUAGES: &[LanguageInfo] = &[
         language: Language::TSql,
         name: "tsql",
         extensions: &["sql"],
+        aliases: &["mssql"],
         has_transforms: true,
         grammar_file: Some("tree-sitter-sql.wasm"),
     },
