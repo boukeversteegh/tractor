@@ -1229,6 +1229,59 @@ mod tests {
         assert!(report.success.unwrap());
     }
 
+    #[test]
+    fn check_inline_source_finds_violations() {
+        let ops = vec![Operation::Check(CheckOperation {
+            files: vec![],
+            exclude: vec![],
+            diff_files: None,
+            diff_lines: None,
+            rules: vec![
+                Rule::new("no-debug", "//debug[.='true']")
+                    .with_reason("debug should not be enabled")
+                    .with_severity(Severity::Error),
+            ],
+            tree_mode: None,
+            language: Some("json".into()),
+            ignore_whitespace: false,
+            parse_depth: None,
+            ruleset_include: vec![],
+            ruleset_exclude: vec![],
+            inline_source: Some(r#"{"debug": true}"#.into()),
+        })];
+
+        let report = run(&ops);
+        assert!(!report.success.unwrap(), "inline check should fail when violations found");
+        let matches = report.all_matches();
+        assert_eq!(matches.len(), 1);
+        assert_eq!(matches[0].reason.as_deref(), Some("debug should not be enabled"));
+    }
+
+    #[test]
+    fn check_inline_source_passes_when_no_violations() {
+        let ops = vec![Operation::Check(CheckOperation {
+            files: vec![],
+            exclude: vec![],
+            diff_files: None,
+            diff_lines: None,
+            rules: vec![
+                Rule::new("no-debug", "//debug[.='true']")
+                    .with_reason("debug should not be enabled"),
+            ],
+            tree_mode: None,
+            language: Some("json".into()),
+            ignore_whitespace: false,
+            parse_depth: None,
+            ruleset_include: vec![],
+            ruleset_exclude: vec![],
+            inline_source: Some(r#"{"debug": false}"#.into()),
+        })];
+
+        let report = run(&ops);
+        assert!(report.success.unwrap());
+        assert_eq!(report.all_matches().len(), 0);
+    }
+
     // -----------------------------------------------------------------------
     // Mixed operations tests
     // -----------------------------------------------------------------------

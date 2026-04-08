@@ -102,7 +102,7 @@ pub enum Command {
 #[derive(Args, Debug, Clone)]
 pub struct SharedArgs {
     // -- Input --
-    /// Language for stdin input (e.g., csharp, rust, python)
+    /// Language for stdin or -s/--string input (e.g., csharp, rust, python)
     #[arg(short = 'l', long = "lang", help_heading = None)]
     pub lang: Option<String>,
 

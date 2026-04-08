@@ -11,7 +11,7 @@ Arguments:
 
 Options:
   -l, --lang <LANG>
-          Language for stdin input (e.g., csharp, rust, python)
+          Language for stdin or -s/--string input (e.g., csharp, rust, python)
 
   -h, --help
           Print help (see a summary with '-h')
