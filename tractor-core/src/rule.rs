@@ -590,5 +590,27 @@ mod tests {
             assert!(matcher.is_empty());
             assert!(matcher.matches("literally/anything"));
         }
+
+        #[test]
+        fn relative_include_does_not_match_absolute_path() {
+            // Rule include "src/**/*.rs" should match relative paths...
+            let m = GlobMatcher::new(&[], &[], &["src/**/*.rs".into()], &[]).unwrap();
+            assert!(m.matches("src/main.rs"));
+            assert!(m.matches("src/deep/nested/lib.rs"));
+
+            // ...but does NOT match absolute paths (glob::Pattern does full-string matching)
+            assert!(!m.matches("/home/user/project/src/main.rs"));
+            assert!(!m.matches("/home/user/project/src/deep/nested/lib.rs"));
+        }
+
+        #[test]
+        fn relative_exclude_does_not_match_absolute_path() {
+            // Rule exclude "test/**" rejects relative paths...
+            let m = GlobMatcher::new(&[], &[], &[], &["test/**".into()]).unwrap();
+            assert!(!m.matches("test/foo.rs"));
+
+            // ...but fails to reject the same file via absolute path
+            assert!(m.matches("/home/user/project/test/foo.rs")); // limitation: should be rejected
+        }
     }
 }

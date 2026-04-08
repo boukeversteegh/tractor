@@ -1,8 +1,9 @@
 use std::collections::HashSet;
+use std::path::Path;
 
 use rayon::prelude::*;
 use tractor_core::{
-    Match, NormalizedXpath,
+    Match, NormalizedXpath, normalize_path,
     output::{render_document, RenderOptions},
     parse_to_documents, parse_string_to_documents,
     report::{Report, ReportMatch, Severity, DiagnosticOrigin},
@@ -264,6 +265,7 @@ struct CompiledRule {
 pub fn run_rules(
     ruleset: &RuleSet,
     files: &[String],
+    base_dir: Option<&Path>,
     tree_mode: Option<tractor_core::TreeMode>,
     ignore_whitespace: bool,
     parse_depth: Option<usize>,
@@ -283,16 +285,38 @@ pub fn run_rules(
         })
         .collect::<Result<Vec<_>, tractor_core::rule::GlobError>>()?;
 
+    // Pre-compute normalized base_dir prefix for stripping absolute paths.
+    let base_prefix: Option<String> = base_dir.map(|b| {
+        let s = normalize_path(&b.display().to_string());
+        if s.ends_with('/') { s } else { format!("{}/", s) }
+    });
+
     // Process files in parallel. Each file is parsed once, then all
     // applicable rules are queried against it.
     let results: Vec<Vec<RuleMatch>> = files
         .par_iter()
         .filter_map(|file_path| {
             // Determine which rules apply to this file.
+            // Try matching both the absolute path and a relative form
+            // (stripped of base_dir) so that relative per-rule include/exclude
+            // patterns work correctly with absolute file paths.
             let applicable: Vec<usize> = compiled
                 .iter()
                 .enumerate()
-                .filter(|(_, cr)| cr.glob.matches(file_path))
+                .filter(|(_, cr)| {
+                    cr.glob.matches(file_path) || {
+                        if let Some(ref prefix) = base_prefix {
+                            let normalized = normalize_path(file_path);
+                            if let Some(rel) = normalized.strip_prefix(prefix.as_str()) {
+                                cr.glob.matches(rel)
+                            } else {
+                                false
+                            }
+                        } else {
+                            false
+                        }
+                    }
+                })
                 .map(|(i, _)| i)
                 .collect();
 
