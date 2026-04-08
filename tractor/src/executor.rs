@@ -727,7 +727,6 @@ fn execute_update(
     };
     let (files, filters) = resolver.resolve(&request, report);
     let mut fallback_files: Vec<NormalizedPath> = Vec::new();
-    let mut files_modified = std::collections::HashSet::new();
 
     for file_path in &files {
         let lang = op.language.as_deref()
@@ -738,7 +737,6 @@ fn execute_update(
             Ok(result) => {
                 if result.source != source {
                     std::fs::write(file_path, &result.source)?;
-                    files_modified.insert(file_path.as_str().to_string());
                     for m in &result.matches {
                         let mut rm = match_to_report_match(m.clone(), "update");
                         rm.status = Some("updated".to_string());

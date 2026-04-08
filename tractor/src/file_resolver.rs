@@ -78,9 +78,9 @@ impl FileResolver {
 
         let relative_path = |path: &str| -> String {
             if let Some(base) = &options.base_dir {
-                let base_str = base.display().to_string();
+                let base_str = normalize_path(&base.display().to_string());
                 path.strip_prefix(&base_str)
-                    .and_then(|p| p.strip_prefix('\\').or(p.strip_prefix('/')))
+                    .and_then(|p| p.strip_prefix('/'))
                     .unwrap_or(path)
                     .to_string()
             } else {
@@ -219,9 +219,9 @@ impl FileResolver {
         };
         let relative_path = |path: &str| -> String {
             if let Some(base) = &self.base_dir {
-                let base_str = base.display().to_string();
+                let base_str = normalize_path(&base.display().to_string());
                 path.strip_prefix(&base_str)
-                    .and_then(|p| p.strip_prefix('\\').or(p.strip_prefix('/')))
+                    .and_then(|p| p.strip_prefix('/'))
                     .unwrap_or(path)
                     .to_string()
             } else {

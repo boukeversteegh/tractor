@@ -575,10 +575,15 @@ mod tests {
         }
 
         #[test]
-        fn relative_exclude_does_not_match_absolute_path() {
+        fn relative_exclude_only_rejects_relative_paths() {
+            // A relative exclude pattern like "test/**" rejects relative paths...
             let m = GlobMatcher::new(&[], &[], &[], &[g("test/**")]).unwrap();
             assert!(!m.matches_str("test/foo.rs"));
-            assert!(m.matches_str("/home/user/project/test/foo.rs")); // limitation: should be rejected
+            // ...but does NOT reject the same file via absolute path (glob does
+            // full-string matching, so the pattern can't match the leading /).
+            // In practice, run_rules() resolves patterns to absolute before
+            // building the GlobMatcher, so this limitation doesn't surface.
+            assert!(m.matches_str("/home/user/project/test/foo.rs"));
         }
     }
 }
