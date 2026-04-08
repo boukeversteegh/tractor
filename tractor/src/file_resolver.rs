@@ -68,20 +68,6 @@ impl FileResolver {
     pub fn new(options: &ExecuteOptions) -> Result<Self, String> {
         let expansion_limit = options.max_files * 10;
 
-        let resolve_globs = |patterns: &[String]| -> Vec<String> {
-            if let Some(base) = &options.base_dir {
-                patterns.iter().map(|g| {
-                    if Path::new(g).is_absolute() {
-                        g.clone()
-                    } else {
-                        base.join(g).to_string_lossy().to_string()
-                    }
-                }).collect()
-            } else {
-                patterns.to_vec()
-            }
-        };
-
         let format_patterns = |patterns: &[String]| -> String {
             patterns.iter().map(|g| format!("\"{}\"", g)).collect::<Vec<_>>().join(", ")
         };
@@ -123,7 +109,7 @@ impl FileResolver {
                     eprintln!("  files: expanding root scope {} ...",
                         format_patterns(patterns));
                 }
-                let root_globs = resolve_globs(patterns);
+                let root_globs = resolve_globs_to_absolute(&options.base_dir, patterns);
                 let expansion = expand_globs_checked(&root_globs, expansion_limit)
                     .map_err(|e| {
                         let base_hint = options.base_dir.as_ref()
@@ -263,17 +249,7 @@ impl FileResolver {
             if self.verbose {
                 eprintln!("  files: expanding operation {} ...", format_patterns(request.files));
             }
-            let globs: Vec<String> = if let Some(base) = &self.base_dir {
-                request.files.iter().map(|g| {
-                    if Path::new(g).is_absolute() {
-                        g.clone()
-                    } else {
-                        base.join(g).to_string_lossy().to_string()
-                    }
-                }).collect()
-            } else {
-                request.files.to_vec()
-            };
+            let globs = resolve_globs_to_absolute(&self.base_dir, request.files);
 
             let (mut files, empty_patterns) = match expand_globs_checked(&globs, expansion_limit) {
                 Ok(result) => {
@@ -342,8 +318,11 @@ impl FileResolver {
         }
 
         // --- Filter excludes ---
+        // Resolve relative exclude patterns to absolute (same as include patterns)
+        // so they match correctly against absolute file paths.
         if !request.exclude.is_empty() {
-            let exclude_patterns: Vec<glob::Pattern> = request.exclude.iter()
+            let resolved: Vec<String> = resolve_globs_to_absolute(&self.base_dir, request.exclude);
+            let exclude_patterns: Vec<glob::Pattern> = resolved.iter()
                 .filter_map(|p| glob::Pattern::new(p).ok())
                 .collect();
 
@@ -409,6 +388,22 @@ impl FileResolver {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/// Resolve relative glob patterns to absolute by prepending `base_dir`.
+/// Absolute patterns are passed through unchanged.
+fn resolve_globs_to_absolute(base_dir: &Option<PathBuf>, patterns: &[String]) -> Vec<String> {
+    if let Some(base) = base_dir {
+        patterns.iter().map(|g| {
+            if Path::new(g).is_absolute() {
+                g.clone()
+            } else {
+                base.join(g).to_string_lossy().to_string()
+            }
+        }).collect()
+    } else {
+        patterns.to_vec()
+    }
+}
 
 /// Build result filters from global and per-operation diff specs.
 fn build_filters(

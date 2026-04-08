@@ -3,7 +3,7 @@ use std::path::Path;
 
 use rayon::prelude::*;
 use tractor_core::{
-    Match, NormalizedXpath, normalize_path,
+    Match, NormalizedXpath,
     output::{render_document, RenderOptions},
     parse_to_documents, parse_string_to_documents,
     report::{Report, ReportMatch, Severity, DiagnosticOrigin},
@@ -272,12 +272,34 @@ pub fn run_rules(
     verbose: bool,
     filters: &[&dyn ResultFilter],
 ) -> Result<Vec<RuleMatch>, Box<dyn std::error::Error>> {
+    // Resolve per-rule include/exclude patterns to absolute paths so they
+    // match correctly against absolute file paths. Without this, a relative
+    // pattern like "src/**/*.rs" would never match "/home/user/project/src/foo.rs".
+    let resolve = |patterns: &[String]| -> Vec<String> {
+        if let Some(base) = base_dir {
+            patterns.iter().map(|p| {
+                if Path::new(p).is_absolute() {
+                    p.clone()
+                } else {
+                    base.join(p).to_string_lossy().to_string()
+                }
+            }).collect()
+        } else {
+            patterns.to_vec()
+        }
+    };
+
     // Compile glob matchers for each rule upfront.
     let compiled: Vec<CompiledRule> = ruleset
         .rules
         .iter()
         .map(|rule| {
-            let glob = ruleset.glob_matcher(rule)?;
+            let glob = GlobMatcher::new(
+                &resolve(&ruleset.include),
+                &resolve(&ruleset.exclude),
+                &resolve(&rule.include),
+                &resolve(&rule.exclude),
+            )?;
             Ok(CompiledRule {
                 glob,
                 xpath: rule.xpath.clone(),
@@ -285,38 +307,16 @@ pub fn run_rules(
         })
         .collect::<Result<Vec<_>, tractor_core::rule::GlobError>>()?;
 
-    // Pre-compute normalized base_dir prefix for stripping absolute paths.
-    let base_prefix: Option<String> = base_dir.map(|b| {
-        let s = normalize_path(&b.display().to_string());
-        if s.ends_with('/') { s } else { format!("{}/", s) }
-    });
-
     // Process files in parallel. Each file is parsed once, then all
     // applicable rules are queried against it.
     let results: Vec<Vec<RuleMatch>> = files
         .par_iter()
         .filter_map(|file_path| {
             // Determine which rules apply to this file.
-            // Try matching both the absolute path and a relative form
-            // (stripped of base_dir) so that relative per-rule include/exclude
-            // patterns work correctly with absolute file paths.
             let applicable: Vec<usize> = compiled
                 .iter()
                 .enumerate()
-                .filter(|(_, cr)| {
-                    cr.glob.matches(file_path) || {
-                        if let Some(ref prefix) = base_prefix {
-                            let normalized = normalize_path(file_path);
-                            if let Some(rel) = normalized.strip_prefix(prefix.as_str()) {
-                                cr.glob.matches(rel)
-                            } else {
-                                false
-                            }
-                        } else {
-                            false
-                        }
-                    }
-                })
+                .filter(|(_, cr)| cr.glob.matches(file_path))
                 .map(|(i, _)| i)
                 .collect();
 
