@@ -6,7 +6,7 @@
 
 use std::fmt;
 use std::hash::{Hash, Hasher};
-use std::path::Path;
+use std::path::{Component, Path, PathBuf};
 
 use crate::output::normalize_path as normalize_path_str;
 
@@ -38,13 +38,36 @@ impl NormalizedPath {
     pub fn absolute(raw: &str) -> Self {
         let p = Path::new(raw);
         if p.is_absolute() {
-            Self::new(raw)
+            Self::new(&normalize_lexically(p).to_string_lossy())
         } else if let Ok(cwd) = std::env::current_dir() {
-            Self::new(&cwd.join(raw).to_string_lossy())
+            Self::new(&normalize_lexically(&cwd.join(raw)).to_string_lossy())
         } else {
             Self::new(raw)
         }
     }
+}
+
+fn normalize_lexically(path: &Path) -> PathBuf {
+    let mut normalized = PathBuf::new();
+
+    for component in path.components() {
+        match component {
+            Component::CurDir => {}
+            Component::ParentDir => {
+                let last = normalized.components().next_back();
+                if matches!(last, Some(Component::Normal(_))) {
+                    normalized.pop();
+                } else if !path.is_absolute() && !matches!(last, Some(Component::RootDir | Component::Prefix(_))) {
+                    normalized.push(component.as_os_str());
+                }
+            }
+            Component::Prefix(_) | Component::RootDir | Component::Normal(_) => {
+                normalized.push(component.as_os_str());
+            }
+        }
+    }
+
+    normalized
 }
 
 // ---- Display / conversions ----
@@ -153,5 +176,19 @@ mod tests {
     fn display_shows_normalized() {
         let p = NormalizedPath::new("src\\main.rs");
         assert_eq!(format!("{}", p), "src/main.rs");
+    }
+
+    #[test]
+    fn absolute_collapses_current_dir_segments() {
+        let cwd = std::env::current_dir().unwrap();
+        let expected = NormalizedPath::new(&cwd.join("src/foo.rs").to_string_lossy());
+        assert_eq!(NormalizedPath::absolute("./src/./foo.rs"), expected);
+    }
+
+    #[test]
+    fn absolute_collapses_parent_segments() {
+        let cwd = std::env::current_dir().unwrap();
+        let expected = NormalizedPath::new(&cwd.join("src/foo.rs").to_string_lossy());
+        assert_eq!(NormalizedPath::absolute("nested/../src/foo.rs"), expected);
     }
 }
