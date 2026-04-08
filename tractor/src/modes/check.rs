@@ -62,7 +62,6 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
                 ruleset_include: vec![],
                 ruleset_exclude: vec![],
                 inline_source: None,
-                inline_lang: None,
             })
         }
         InputMode::InlineSource { source, lang } => {
@@ -73,13 +72,12 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
                 diff_lines: None,
                 rules: vec![rule],
                 tree_mode: ctx.tree_mode,
-                language: None,
+                language: Some(lang.clone()),
                 ignore_whitespace: ctx.ignore_whitespace,
                 parse_depth: ctx.parse_depth,
                 ruleset_include: vec![],
                 ruleset_exclude: vec![],
                 inline_source: Some(source.clone()),
-                inline_lang: Some(lang.clone()),
             })
         }
     };

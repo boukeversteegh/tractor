@@ -45,7 +45,7 @@ pub enum Operation {
 ///
 /// Supports two input modes:
 /// - **Files**: set `files` (and optionally `exclude`). This is the default.
-/// - **Inline source**: set `inline_source` and `inline_lang`. Files are ignored.
+/// - **Inline source**: set `inline_source` and `language`. Files are ignored.
 ///
 /// Multiple queries can target the same set of files — each file is parsed
 /// once and all XPath expressions are evaluated against it.
@@ -114,8 +114,6 @@ pub struct CheckOperation {
     pub ruleset_exclude: Vec<String>,
     /// Inline source string to parse instead of files.
     pub inline_source: Option<String>,
-    /// Language for inline source (required when inline_source is set).
-    pub inline_lang: Option<String>,
 }
 
 /// A test operation: run XPath queries and check match counts against expectations.
@@ -410,8 +408,7 @@ fn execute_check(
 
     // --- Phase 2: Inline source mode — parse a string and run rules against it ---
     if let Some(ref source) = op.inline_source {
-        let lang = op.inline_lang.as_deref()
-            .or(op.language.as_deref())
+        let lang = op.language.as_deref()
             .ok_or("inline source requires a language (--lang)")?;
         let mut result = parse_string_to_documents(
             source, lang, "<stdin>".to_string(), op.tree_mode, op.ignore_whitespace,
@@ -1205,7 +1202,6 @@ mod tests {
             ruleset_include: vec![],
             ruleset_exclude: vec![],
             inline_source: None,
-            inline_lang: None,
         })];
 
         let report = run(&ops);
@@ -1236,7 +1232,6 @@ mod tests {
             ruleset_include: vec![],
             ruleset_exclude: vec![],
             inline_source: None,
-            inline_lang: None,
         })];
 
         let report = run(&ops);
@@ -1276,7 +1271,6 @@ mod tests {
                 ruleset_include: vec![],
                 ruleset_exclude: vec![],
                 inline_source: None,
-                inline_lang: None,
             }),
             Operation::Set(SetOperation {
                 files: vec![config_path.to_str().unwrap().into()],
