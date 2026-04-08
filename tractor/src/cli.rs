@@ -112,7 +112,7 @@ pub enum DocsCommand {
 #[derive(Args, Debug, Clone)]
 pub struct SharedArgs {
     // -- Input --
-    /// Language for stdin input (e.g., csharp, rust, python)
+    /// Language for stdin or -s/--string input (e.g., csharp, rust, python)
     #[arg(short = 'l', long = "lang", help_heading = None)]
     pub lang: Option<String>,
 
@@ -273,6 +273,10 @@ pub struct CheckArgs {
 
     #[command(flatten)]
     pub shared: SharedArgs,
+
+    /// Source code string to parse (alternative to stdin, requires --lang)
+    #[arg(short = 's', long = "string", help_heading = None)]
+    pub content: Option<String>,
 
     /// Report view [default: tree]
     #[arg(short = 'v', long = "view", help_heading = "View",

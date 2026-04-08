@@ -333,6 +333,7 @@ fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<Operation, Bo
         parse_depth: None,
         ruleset_include: vec![],
         ruleset_exclude: vec![],
+        inline_source: None,
     }))
 }
 
@@ -383,7 +384,6 @@ fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<Operation, Bo
         ignore_whitespace: false,
         parse_depth: None,
         inline_source: None,
-        inline_lang: None,
     }))
 }
 
@@ -411,7 +411,6 @@ fn convert_test(config: TestConfig, scope: &RootScope) -> Result<Operation, Box<
         ignore_whitespace: false,
         parse_depth: None,
         inline_source: None,
-        inline_lang: None,
     }))
 }
 

@@ -45,7 +45,7 @@ pub enum Operation {
 ///
 /// Supports two input modes:
 /// - **Files**: set `files` (and optionally `exclude`). This is the default.
-/// - **Inline source**: set `inline_source` and `inline_lang`. Files are ignored.
+/// - **Inline source**: set `inline_source` and `language`. Files are ignored.
 ///
 /// Multiple queries can target the same set of files — each file is parsed
 /// once and all XPath expressions are evaluated against it.
@@ -73,8 +73,6 @@ pub struct QueryOperation {
     pub parse_depth: Option<usize>,
     /// Inline source string to parse instead of files.
     pub inline_source: Option<String>,
-    /// Language for inline source (required when inline_source is set).
-    pub inline_lang: Option<String>,
 }
 
 /// A single XPath query expression.
@@ -112,6 +110,8 @@ pub struct CheckOperation {
     /// Ruleset-level exclude patterns for per-rule glob matching.
     #[doc(hidden)]
     pub ruleset_exclude: Vec<String>,
+    /// Inline source string to parse instead of files.
+    pub inline_source: Option<String>,
 }
 
 /// A test operation: run XPath queries and check match counts against expectations.
@@ -142,8 +142,6 @@ pub struct TestOperation {
     pub parse_depth: Option<usize>,
     /// Inline source string to parse instead of files.
     pub inline_source: Option<String>,
-    /// Language for inline source (required when inline_source is set).
-    pub inline_lang: Option<String>,
 }
 
 /// A single test assertion: an XPath query with an expected match count.
@@ -306,8 +304,7 @@ fn execute_query(
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Inline source mode: parse a string instead of files.
     if let Some(ref source) = op.inline_source {
-        let lang = op.inline_lang.as_deref()
-            .or(op.language.as_deref())
+        let lang = op.language.as_deref()
             .ok_or("inline source requires a language (--lang)")?;
         return execute_query_inline(source, lang, op, report);
     }
@@ -404,7 +401,35 @@ fn execute_check(
     // --- Phase 1: Validate rule examples inline ---
     validate_rule_examples(&op.rules, op.language.as_deref(), op.tree_mode, report)?;
 
-    // --- Phase 2: Run the actual file check ---
+    // --- Phase 2: Inline source mode — parse a string and run rules against it ---
+    if let Some(ref source) = op.inline_source {
+        let lang = op.language.as_deref()
+            .ok_or("inline source requires a language (--lang)")?;
+        let mut result = parse_string_to_documents(
+            source, lang, "<stdin>".to_string(), op.tree_mode, op.ignore_whitespace,
+        )?;
+        for rule in &op.rules {
+            let matches = result.query(rule.xpath.as_str())?;
+            let reason = rule
+                .reason
+                .clone()
+                .unwrap_or_else(|| format!("[{}] check failed", rule.id));
+            let severity = rule.severity;
+            let message_tpl = rule.message.as_deref();
+            for m in matches {
+                let message = message_tpl.map(|t| tractor_core::format_message(t, &m));
+                let mut report_match = match_to_report_match(m, "check");
+                report_match.reason = Some(reason.clone());
+                report_match.severity = Some(severity);
+                report_match.rule_id = Some(rule.id.clone());
+                report_match.message = message;
+                report.add(report_match);
+            }
+        }
+        return Ok(());
+    }
+
+    // --- Phase 3: Run the actual file check ---
     let (files, filters) = resolve_op_files(
         &op.files, &op.exclude, op.diff_files.as_deref(), op.diff_lines.as_deref(), "check", options, shared, report,
     );
@@ -628,8 +653,7 @@ fn execute_test(
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Inline source mode: parse a string and check each assertion individually.
     if let Some(ref source) = op.inline_source {
-        let lang = op.inline_lang.as_deref()
-            .or(op.language.as_deref())
+        let lang = op.language.as_deref()
             .ok_or("inline source requires a language (--lang)")?;
         let mut result = parse_string_to_documents(
             source, lang, "<stdin>".to_string(), op.tree_mode, op.ignore_whitespace,
@@ -930,7 +954,6 @@ mod tests {
             ignore_whitespace: false,
             parse_depth: None,
             inline_source: None,
-            inline_lang: None,
         })];
 
         let report = run_query(&ops);
@@ -955,7 +978,6 @@ mod tests {
             ignore_whitespace: false,
             parse_depth: None,
             inline_source: None,
-            inline_lang: None,
         })];
 
         let report = run_query(&ops);
@@ -976,7 +998,6 @@ mod tests {
             ignore_whitespace: false,
             parse_depth: None,
             inline_source: None,
-            inline_lang: None,
         })];
 
         let report = run_query(&ops);
@@ -1171,6 +1192,7 @@ mod tests {
             parse_depth: None,
             ruleset_include: vec![],
             ruleset_exclude: vec![],
+            inline_source: None,
         })];
 
         let report = run(&ops);
@@ -1200,10 +1222,64 @@ mod tests {
             parse_depth: None,
             ruleset_include: vec![],
             ruleset_exclude: vec![],
+            inline_source: None,
         })];
 
         let report = run(&ops);
         assert!(report.success.unwrap());
+    }
+
+    #[test]
+    fn check_inline_source_finds_violations() {
+        let ops = vec![Operation::Check(CheckOperation {
+            files: vec![],
+            exclude: vec![],
+            diff_files: None,
+            diff_lines: None,
+            rules: vec![
+                Rule::new("no-debug", "//debug[.='true']")
+                    .with_reason("debug should not be enabled")
+                    .with_severity(Severity::Error),
+            ],
+            tree_mode: None,
+            language: Some("json".into()),
+            ignore_whitespace: false,
+            parse_depth: None,
+            ruleset_include: vec![],
+            ruleset_exclude: vec![],
+            inline_source: Some(r#"{"debug": true}"#.into()),
+        })];
+
+        let report = run(&ops);
+        assert!(!report.success.unwrap(), "inline check should fail when violations found");
+        let matches = report.all_matches();
+        assert_eq!(matches.len(), 1);
+        assert_eq!(matches[0].reason.as_deref(), Some("debug should not be enabled"));
+    }
+
+    #[test]
+    fn check_inline_source_passes_when_no_violations() {
+        let ops = vec![Operation::Check(CheckOperation {
+            files: vec![],
+            exclude: vec![],
+            diff_files: None,
+            diff_lines: None,
+            rules: vec![
+                Rule::new("no-debug", "//debug[.='true']")
+                    .with_reason("debug should not be enabled"),
+            ],
+            tree_mode: None,
+            language: Some("json".into()),
+            ignore_whitespace: false,
+            parse_depth: None,
+            ruleset_include: vec![],
+            ruleset_exclude: vec![],
+            inline_source: Some(r#"{"debug": false}"#.into()),
+        })];
+
+        let report = run(&ops);
+        assert!(report.success.unwrap());
+        assert_eq!(report.all_matches().len(), 0);
     }
 
     // -----------------------------------------------------------------------
@@ -1238,6 +1314,7 @@ mod tests {
                 parse_depth: None,
                 ruleset_include: vec![],
                 ruleset_exclude: vec![],
+                inline_source: None,
             }),
             Operation::Set(SetOperation {
                 files: vec![config_path.to_str().unwrap().into()],

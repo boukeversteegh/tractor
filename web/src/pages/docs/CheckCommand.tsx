@@ -145,6 +145,25 @@ export function CheckCommand() {
         If the expectations fail (e.g. <code>--expect-valid</code> matches), the check reports an error for the rule itself.
       </p>
 
+      <h2>Stdin &amp; Inline Source</h2>
+      <p>
+        You can pipe code into <code>check</code> via stdin or use <code>-s</code> to pass it directly — useful for
+        quick checks, scripting, and CI pipelines:
+      </p>
+      <CodeBlock
+        language="bash"
+        code={`# Using -s/--string
+tractor check -l csharp -s 'class Foo { void Bar() { } }' \\
+    -x "//method" --reason "method found"
+
+# Using stdin
+echo 'class Foo { void Bar() { } }' | \\
+    tractor check -l csharp -x "//method" --reason "method found"`}
+      />
+      <p>
+        Both require <code>-l</code> to specify the language (there's no file extension to auto-detect from).
+      </p>
+
       <h2>Custom Messages</h2>
       <p>
         Use <code>-m</code> to customize the output message with template variables:
@@ -167,6 +186,8 @@ export function CheckCommand() {
         </thead>
         <tbody>
           <tr><td><code>-x, --extract</code></td><td>XPath expression — each match is a violation</td></tr>
+          <tr><td><code>-s, --string</code></td><td>Inline source code (alternative to file/stdin)</td></tr>
+          <tr><td><code>-l, --lang</code></td><td>Language for stdin/string input</td></tr>
           <tr><td><code>--reason</code></td><td>Reason message for each violation</td></tr>
           <tr><td><code>--severity</code></td><td><code>error</code> (default) or <code>warning</code></td></tr>
           <tr><td><code>--config</code></td><td>Path to a tractor config file (YAML/TOML)</td></tr>
