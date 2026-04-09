@@ -22,6 +22,28 @@ pub fn lang_dir(lang: &str) -> PathBuf {
 }
 
 // ---------------------------------------------------------------------------
+// Declarative test macro — one line per case
+// ---------------------------------------------------------------------------
+
+/// Generate a `#[test]` fn that runs `tractor test` for each arg list.
+///
+/// ```ignore
+/// tractor_tests!(rust, lang_dir("rust"),
+///     ["sample.rs", "-x", "function", "--expect", "4"],
+///     ["sample.rs", "-x", "function[name='add']", "--expect", "1"],
+/// );
+/// ```
+macro_rules! tractor_tests {
+    ($name:ident, $dir:expr, $( [$($arg:expr),* $(,)?] ),+ $(,)?) => {
+        #[test]
+        fn $name() {
+            let dir = $dir;
+            $( $crate::common::tractor_test(&dir, &[$($arg),*]); )+
+        }
+    };
+}
+
+// ---------------------------------------------------------------------------
 // Assertions
 // ---------------------------------------------------------------------------
 

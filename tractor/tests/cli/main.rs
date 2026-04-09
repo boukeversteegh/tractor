@@ -4,6 +4,7 @@
 //! for cross-platform reliability. Tests are organized to mirror the bash
 //! test suites they replace.
 
+#[macro_use]
 mod common;
 
 mod formats;
