@@ -53,14 +53,8 @@ jobs:
       - uses: mozilla-actions/sccache-action@v0.0.7
       - uses: Swatinem/rust-cache@v2
 
-      - name: Run unit tests
-        run: cargo test --workspace
-
-      - name: Build release binary
-        run: cargo build --release -p tractor
-
-      - name: Run integration tests
-        run: bash tests/integration/test.sh
+      - name: Run all tests (unit + CLI integration)
+        run: cargo test --workspace --release
 
       - name: Run snapshot tests
         run: cargo run --release --bin update-snapshots -- --check

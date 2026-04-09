@@ -38,11 +38,8 @@ jobs:
       - uses: mozilla-actions/sccache-action@v0.0.7
       - uses: Swatinem/rust-cache@v2
 
-      - name: Run unit tests (release mode, reuses binary for later steps)
+      - name: Run all tests (unit + CLI integration, release mode)
         run: cargo test --workspace --release
-
-      - name: Run integration tests
-        run: bash tests/integration/test.sh
 
       - name: Run snapshot tests
         run: cargo run --release --bin update-snapshots -- --check
@@ -61,14 +58,8 @@ jobs:
       - uses: mozilla-actions/sccache-action@v0.0.7
       - uses: Swatinem/rust-cache@v2
 
-      - name: Build workspace (release)
-        run: cargo build --workspace --release
-
-      - name: Run path-sensitive unit tests
-        run: cargo test --workspace --release -- normalize_path hashset_intersection windows_prefix absolute_cli_path relative_path_strips
-
-      - name: Run integration tests (absolute paths / scope intersection)
-        run: bash tests/integration/run/test.sh
+      - name: Run all tests (unit + CLI integration, release mode)
+        run: cargo test --workspace --release
 
   lint:
     needs: changes

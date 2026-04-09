@@ -1,7 +1,7 @@
-use crate::common::{integration_dir, tractor_test};
+use crate::common::{repo_root, tractor_test};
 
 fn dir() -> std::path::PathBuf {
-    integration_dir("xpath-expressions")
+    repo_root()
 }
 
 #[test]

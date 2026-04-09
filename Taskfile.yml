@@ -103,10 +103,9 @@ tasks:
       - task: test:integration
 
   test:integration:
-    desc: Run integration tests
-    deps: [build]
+    desc: Run CLI integration tests
     cmds:
-      - bash tests/integration/test.sh
+      - cargo test --test cli --release
 
   test:snapshots:
     desc: Check that XML snapshots match current tractor output

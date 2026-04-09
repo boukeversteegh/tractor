@@ -83,6 +83,7 @@ pub struct TractorOutput {
     pub stdout: String,
     pub stderr: String,
     pub success: bool,
+    #[allow(dead_code)]
     pub code: Option<i32>,
 }
 
@@ -227,6 +228,7 @@ impl TempCopy {
     }
 
     /// Read a file inside the temp dir.
+    #[allow(dead_code)]
     pub fn read(&self, name: &str) -> String {
         std::fs::read_to_string(self.dir.path().join(name)).expect("failed to read file")
     }

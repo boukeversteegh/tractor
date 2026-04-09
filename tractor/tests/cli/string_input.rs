@@ -1,7 +1,7 @@
-use crate::common::{integration_dir, repo_root, tractor_test, tractor_fails};
+use crate::common::{repo_root, tractor_test, tractor_fails};
 
 fn dir() -> std::path::PathBuf {
-    integration_dir("string-input")
+    repo_root()
 }
 
 // ---------------------------------------------------------------------------
