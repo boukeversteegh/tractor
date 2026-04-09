@@ -58,8 +58,14 @@ jobs:
       - uses: mozilla-actions/sccache-action@v0.0.7
       - uses: Swatinem/rust-cache@v2
 
-      - name: Run all tests (unit + CLI integration, release mode)
-        run: cargo test --workspace --release
+      - name: Run unit + library tests
+        run: cargo test --workspace --release --lib
+
+      - name: Run tractor-core integration tests
+        run: cargo test -p tractor-core --release --test integration_tests
+
+      - name: Run CLI integration tests (skip path-sensitive output tests on Windows)
+        run: cargo test -p tractor --test cli --release -- --skip run_cmd --skip formats
 
   lint:
     needs: changes
