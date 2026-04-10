@@ -1,0 +1,8 @@
+# Test that ** matches files recursively (fix #100)
+files: ["**"]
+check:
+  rules:
+    - id: no-debug
+      xpath: "//debug[.='true']"
+      reason: "debug must be disabled"
+      severity: warning

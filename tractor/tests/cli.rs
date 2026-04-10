@@ -510,6 +510,24 @@ fn run_scope_intersection_respects_root() {
 }
 
 #[test]
+fn run_double_star_glob_matches_recursively() {
+    case(["run", "glob-double-star/check-double-star.yaml"])
+        .in_fixture("run")
+        .fixture_prefix("")
+        .combined("glob-double-star/config.yml:1:8: warning: debug must be disabled\n1 | debug: true\n           ^~~~\n\nglob-double-star/nested/config.yml:1:8: warning: debug must be disabled\n1 | debug: true\n           ^~~~\n\n2 warnings in 2 files")
+        .run();
+}
+
+#[test]
+fn run_nested_double_star_glob_matches_nested_files() {
+    case(["run", "glob-double-star/check-dir-double-star.yaml"])
+        .in_fixture("run")
+        .fixture_prefix("")
+        .combined("glob-double-star/nested/config.yml:1:8: warning: debug must be disabled\n1 | debug: true\n           ^~~~\n\n1 warning in 1 file")
+        .run();
+}
+
+#[test]
 fn run_absolute_cli_path_with_root_files_intersection() {
     case(["run", "absolute-paths/check-root-files.yaml"])
         .in_fixture("run")

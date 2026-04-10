@@ -1,0 +1,8 @@
+# Test that nested/** matches files (fix #100)
+files: ["nested/**"]
+check:
+  rules:
+    - id: no-debug
+      xpath: "//debug[.='true']"
+      reason: "debug must be disabled"
+      severity: warning
