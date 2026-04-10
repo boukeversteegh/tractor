@@ -55,6 +55,10 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
         "query", "tests/integration/formats/sample.cs", "-x", "class",
         "-v", "file,line",
     ]),
+    ("text/query-meta.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "--meta", "--depth", "1",
+    ]),
     // -f gcc
     ("gcc/check.txt", &[
         "check", "tests/integration/formats/sample.cs", "-x", "class",

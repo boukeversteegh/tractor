@@ -228,18 +228,18 @@ fn segment_for_element(node: &XmlNode, options: &RenderOptions) -> String {
         XmlNode::Element { name, .. } => {
             let info = analyze_element(node, options);
             let mut segment = name.clone();
+            let mut predicates = Vec::new();
             for marker in info.markers {
                 if let XmlNode::Element { name, .. } = marker {
-                    segment.push('[');
-                    segment.push_str(name);
-                    segment.push(']');
+                    predicates.push(name.clone());
                 }
             }
             for (attr_name, attr_value) in info.attributes {
-                segment.push_str("[@");
-                segment.push_str(attr_name);
-                segment.push('=');
-                segment.push_str(&quote_literal(attr_value));
+                predicates.push(format!("@{}={}", attr_name, quote_literal(attr_value)));
+            }
+            if !predicates.is_empty() {
+                segment.push('[');
+                segment.push_str(&predicates.join(" and "));
                 segment.push(']');
             }
             segment
@@ -482,6 +482,37 @@ mod tests {
                 "      ├─ method/\n",
                 "      │   └─ ... (1 children)\n",
                 "      └─ \"}\"\n"
+            )
+        );
+    }
+
+    #[test]
+    fn combines_multiple_predicates_into_one_block() {
+        let node = XmlNode::Element {
+            name: "method".to_string(),
+            attributes: vec![
+                ("kind".to_string(), "method_declaration".to_string()),
+                ("line".to_string(), "19".to_string()),
+            ],
+            children: vec![
+                elem("public", vec![]),
+                elem("static", vec![]),
+                elem("parameters", vec![text("()")]),
+                elem("body", vec![text("{ }")]),
+            ],
+        };
+
+        let rendered = render_query_tree_node(
+            &node,
+            &RenderOptions::new().with_meta(true),
+        );
+
+        assert_eq!(
+            rendered,
+            concat!(
+                "method[public and static and @kind=\"method_declaration\" and @line=\"19\"]/\n",
+                "  ├─ parameters = \"()\"\n",
+                "  └─ body = \"{ }\"\n"
             )
         );
     }
