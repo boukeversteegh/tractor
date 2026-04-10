@@ -1,66 +1,123 @@
-tests/integration/languages/javascript/sample.js:1
-Files/File/program/
-  ├─ comment = "// Simple JavaScript example"
-  ├─ function_declaration/
-        ├─ "function"
-        ├─ name/identifier = "add"
-        ├─ parameters/formal_parameters/
-              ├─ "("
-              ├─ identifier = "a"
-              ├─ ","
-              ├─ identifier = "b"
-              └─ ")"
-        └─ body/statement_block/
-              ├─ "{"
-              ├─ return_statement/
-                    ├─ "return"
-                    ├─ binary_expression/
-                          ├─ left/identifier = "a"
-                          ├─ "+"
-                          └─ right/identifier = "b"
-                    └─ ";"
-              └─ "}"
-  ├─ function_declaration/
-        ├─ "function"
-        ├─ name/identifier = "main"
-        ├─ parameters/formal_parameters = "()"
-        └─ body/statement_block/
-              ├─ "{"
-              ├─ lexical_declaration/
-                    ├─ "const"
-                    ├─ variable_declarator/
-                          ├─ name/identifier = "result"
-                          ├─ "="
-                          └─ value/call_expression/
-                                ├─ identifier = "add"
-                                └─ arguments/arguments/
-                                      ├─ "("
-                                      ├─ number = "5"
-                                      ├─ ","
-                                      ├─ number = "3"
-                                      └─ ")"
-                    └─ ";"
-              ├─ expression_statement/
-                    ├─ call_expression/
-                          ├─ member_expression/
-                                ├─ identifier = "console"
-                                ├─ "."
-                                └─ property_identifier = "log"
-                          └─ arguments/arguments/
-                                ├─ "("
-                                ├─ template_string/
-                                      ├─ "`"
-                                      ├─ string_fragment = "Result:"
-                                      ├─ template_substitution/
-                                            ├─ "${"
-                                            ├─ identifier = "result"
-                                            └─ "}"
-                                      └─ "`"
-                                └─ ")"
-                    └─ ";"
-              └─ "}"
-  └─ expression_statement/
-        ├─ call_expression/
-              ├─ identifier = "main"
-              └─ arguments/arguments = "()"
-        └─ ";"
+<?xml version="1.0" encoding="UTF-8"?>
+<report>
+  <results>
+    <match file="tests/integration/languages/javascript/sample.js" line="1" column="1">
+      <tree>
+        <Files>
+          <file>tests/integration/languages/javascript/sample.js</file>
+          <program>
+            <comment>// Simple JavaScript example</comment>
+            <function_declaration>
+              function
+              <name>
+                <identifier>add</identifier>
+              </name>
+              <parameters>
+                <formal_parameters>
+                  (
+                  <identifier>a</identifier>
+                  ,
+                  <identifier>b</identifier>
+                  )
+                </formal_parameters>
+              </parameters>
+              <body>
+                <statement_block>
+                  {
+                  <return_statement>
+                    return
+                    <binary_expression>
+                      <left>
+                        <identifier>a</identifier>
+                      </left>
+                      +
+                      <right>
+                        <identifier>b</identifier>
+                      </right>
+                    </binary_expression>
+                    ;
+                  </return_statement>
+                  }
+                </statement_block>
+              </body>
+            </function_declaration>
+            <function_declaration>
+              function
+              <name>
+                <identifier>main</identifier>
+              </name>
+              <parameters>
+                <formal_parameters>()</formal_parameters>
+              </parameters>
+              <body>
+                <statement_block>
+                  {
+                  <lexical_declaration>
+                    const
+                    <variable_declarator>
+                      <name>
+                        <identifier>result</identifier>
+                      </name>
+                      =
+                      <value>
+                        <call_expression>
+                          <identifier>add</identifier>
+                          <arguments>
+                            <arguments>
+                              (
+                              <number>5</number>
+                              ,
+                              <number>3</number>
+                              )
+                            </arguments>
+                          </arguments>
+                        </call_expression>
+                      </value>
+                    </variable_declarator>
+                    ;
+                  </lexical_declaration>
+                  <expression_statement>
+                    <call_expression>
+                      <member_expression>
+                        <identifier>console</identifier>
+                        .
+                        <property_identifier>log</property_identifier>
+                      </member_expression>
+                      <arguments>
+                        <arguments>
+                          (
+                          <template_string>
+                            `
+                            <string_fragment>Result: </string_fragment>
+                            <template_substitution>
+                              ${
+                              <identifier>result</identifier>
+                              }
+                            </template_substitution>
+                            `
+                          </template_string>
+                          )
+                        </arguments>
+                      </arguments>
+                    </call_expression>
+                    ;
+                  </expression_statement>
+                  }
+                </statement_block>
+              </body>
+            </function_declaration>
+            <expression_statement>
+              <call_expression>
+                <identifier>main</identifier>
+                <arguments>
+                  <arguments>()</arguments>
+                </arguments>
+              </call_expression>
+              ;
+            </expression_statement>
+          </program>
+        </Files>
+      </tree>
+    </match>
+  </results>
+</report>

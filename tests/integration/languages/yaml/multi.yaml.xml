@@ -1,11 +1,24 @@
-tests/integration/languages/yaml/multi.yaml:1
-Files/File/
-  ├─ document/
-        ├─ name = "doc1"
-        └─ value = "one"
-  ├─ document/
-        ├─ name = "doc2"
-        └─ value = "two"
-  └─ document/
-        ├─ name = "doc3"
-        └─ value = "three"
+<?xml version="1.0" encoding="UTF-8"?>
+<report>
+  <results>
+    <match file="tests/integration/languages/yaml/multi.yaml" line="1" column="1">
+      <tree>
+        <Files>
+          <file>tests/integration/languages/yaml/multi.yaml</file>
+          <document>
+            <name>doc1</name>
+            <value>one</value>
+          </document>
+          <document>
+            <name>doc2</name>
+            <value>two</value>
+          </document>
+          <document>
+            <name>doc3</name>
+            <value>three</value>
+          </document>
+        </Files>
+      </tree>
+    </match>
+  </results>
+</report>

@@ -1,8 +1,29 @@
-tests/integration/languages/python/multiline-string-lf.py:1
-Files/File/module/assign/
-  ├─ left/type = "msg"
-  ├─ "="
-  └─ right/string/
-        ├─ string_start = "\"\"\""
-        ├─ string_content = "hello"
-        └─ string_end = "\"\"\""
+<?xml version="1.0" encoding="UTF-8"?>
+<report>
+  <results>
+    <match file="tests/integration/languages/python/multiline-string-lf.py" line="1" column="1">
+      <tree>
+        <Files>
+          <file>tests/integration/languages/python/multiline-string-lf.py</file>
+          <module>
+            <assign>
+              <left>
+                <type>msg</type>
+              </left>
+              =
+              <right>
+                <string>
+                  <string_start>&quot;&quot;&quot;</string_start>
+                  <string_content>hello
+        
+        </string_content>
+                  <string_end>&quot;&quot;&quot;</string_end>
+                </string>
+              </right>
+            </assign>
+          </module>
+        </Files>
+      </tree>
+    </match>
+  </results>
+</report>

@@ -1,153 +1,296 @@
-tests/integration/languages/java/sample.java:1
-Files/File/program/
-  ├─ line_comment = "// Simple Java example"
-  ├─ class[public]/
-        ├─ "class"
-        ├─ name = "Sample"
-        └─ body/
-              ├─ "{"
-              ├─ field[private]/
-                    ├─ integral_type = "int"
-                    ├─ variable_declarator/name/type = "value"
-                    └─ ";"
-              ├─ ctor[public]/
-                    ├─ name = "Sample"
-                    ├─ parameters/params/
-                          ├─ "("
-                          ├─ param/
-                                ├─ integral_type = "int"
-                                └─ name/type = "value"
-                          └─ ")"
-                    └─ body/constructor_body/
-                          ├─ "{"
-                          ├─ assign/
-                                ├─ op = "="
-                                ├─ left/member/
-                                      ├─ this = "this"
-                                      ├─ "."
-                                      └─ type = "value"
-                                ├─ "="
-                                └─ right/type = "value"
-                          └─ ";\n    }"
-              ├─ method[static][public]/
-                    ├─ integral_type = "int"
-                    ├─ name = "add"
-                    ├─ parameters/params/
-                          ├─ "("
-                          ├─ param/
-                                ├─ integral_type = "int"
-                                └─ name/type = "a"
-                          ├─ ","
-                          ├─ param/
-                                ├─ integral_type = "int"
-                                └─ name/type = "b"
-                          └─ ")"
-                    └─ body/
-                          ├─ "{"
-                          ├─ return/
-                                ├─ "return"
-                                ├─ binary/
-                                      ├─ op[plus] = "+"
-                                      ├─ left/type = "a"
-                                      ├─ "+"
-                                      └─ right/type = "b"
-                                └─ ";"
-                          └─ "}"
-              ├─ method[protected]/
-                    ├─ void_type = "void"
-                    ├─ name = "log"
-                    ├─ parameters/params/
-                          ├─ "("
-                          ├─ param/
-                                ├─ type = "String"
-                                └─ name/type = "message"
-                          └─ ")"
-                    └─ body/
-                          ├─ "{"
-                          ├─ call/
-                                ├─ member/
-                                      ├─ type = "System"
-                                      ├─ "."
-                                      └─ type = "out"
-                                ├─ "."
-                                ├─ name/type = "println"
-                                └─ arguments/args/
-                                      ├─ "("
-                                      ├─ type = "message"
-                                      └─ ")"
-                          └─ ";\n    }"
-              ├─ method[package-private]/
-                    ├─ void_type = "void"
-                    ├─ name = "defaultAccess"
-                    ├─ parameters/params = "()"
-                    └─ body/
-                          ├─ "{"
-                          ├─ line_comment = "// package-private method"
-                          └─ "}"
-              ├─ method[static][public]/
-                    ├─ void_type = "void"
-                    ├─ name = "main"
-                    ├─ parameters/params/
-                          ├─ "("
-                          ├─ param/
-                                ├─ array/
-                                      ├─ type = "String"
-                                      └─ dimensions = "[]"
-                                └─ name/type = "args"
-                          └─ ")"
-                    └─ body/
-                          ├─ "{"
-                          ├─ local_variable_declaration/
-                                ├─ integral_type = "int"
-                                ├─ variable_declarator/
-                                      ├─ name/type = "result"
-                                      ├─ "="
-                                      └─ value/call/
-                                            ├─ name/type = "add"
-                                            └─ arguments/args/
-                                                  ├─ "("
-                                                  ├─ int = "5"
-                                                  ├─ ","
-                                                  ├─ int = "3"
-                                                  └─ ")"
-                                └─ ";"
-                          ├─ call/
-                                ├─ member/
-                                      ├─ type = "System"
-                                      ├─ "."
-                                      └─ type = "out"
-                                ├─ "."
-                                ├─ name/type = "println"
-                                └─ arguments/args/
-                                      ├─ "("
-                                      ├─ binary/
-                                            ├─ op[plus] = "+"
-                                            ├─ left/string/
-                                                  ├─ "\""
-                                                  ├─ string_fragment = "Result:"
-                                                  └─ "\""
-                                            ├─ "+"
-                                            └─ right/type = "result"
-                                      └─ ")"
-                          └─ ";\n    }"
-              └─ "}"
-  ├─ interface[package-private]/
-        ├─ "interface"
-        ├─ name = "Service"
-        └─ body/
-              ├─ "{"
-              ├─ method[package-private]/
-                    ├─ void_type = "void"
-                    ├─ name = "execute"
-                    ├─ parameters/params = "()"
-                    └─ ";"
-              └─ "}"
-  └─ enum[package-private]/
-        ├─ "enum"
-        ├─ name = "Status"
-        └─ body/enum_body/
-              ├─ "{"
-              ├─ enum_constant/name/type = "ACTIVE"
-              ├─ ","
-              ├─ enum_constant/name/type = "INACTIVE"
-              └─ "}"
+<?xml version="1.0" encoding="UTF-8"?>
+<report>
+  <results>
+    <match file="tests/integration/languages/java/sample.java" line="1" column="1">
+      <tree>
+        <Files>
+          <file>tests/integration/languages/java/sample.java</file>
+          <program>
+            <line_comment>// Simple Java example</line_comment>
+            <class>
+              <public/>
+              class
+              <name>Sample</name>
+              <body>
+                {
+                <field>
+                  <private/>
+                  <integral_type>int</integral_type>
+                  <variable_declarator>
+                    <name>
+                      <type>value</type>
+                    </name>
+                  </variable_declarator>
+                  ;
+                </field>
+                <ctor>
+                  <public/>
+                  <name>Sample</name>
+                  <parameters>
+                    <params>
+                      (
+                      <param>
+                        <integral_type>int</integral_type>
+                        <name>
+                          <type>value</type>
+                        </name>
+                      </param>
+                      )
+                    </params>
+                  </parameters>
+                  <body>
+                    <constructor_body>
+                      {
+                      <assign>
+                        <op>=</op>
+                        <left>
+                          <member>
+                            <this>this</this>
+                            .
+                            <type>value</type>
+                          </member>
+                        </left>
+                        =
+                        <right>
+                          <type>value</type>
+                        </right>
+                      </assign>
+                      ;
+            }
+                    </constructor_body>
+                  </body>
+                </ctor>
+                <method>
+                  <static/>
+                  <public/>
+                  <integral_type>int</integral_type>
+                  <name>add</name>
+                  <parameters>
+                    <params>
+                      (
+                      <param>
+                        <integral_type>int</integral_type>
+                        <name>
+                          <type>a</type>
+                        </name>
+                      </param>
+                      ,
+                      <param>
+                        <integral_type>int</integral_type>
+                        <name>
+                          <type>b</type>
+                        </name>
+                      </param>
+                      )
+                    </params>
+                  </parameters>
+                  <body>
+                    {
+                    <return>
+                      return
+                      <binary>
+                        <op>
+                          <plus/>
+                          +
+                        </op>
+                        <left>
+                          <type>a</type>
+                        </left>
+                        +
+                        <right>
+                          <type>b</type>
+                        </right>
+                      </binary>
+                      ;
+                    </return>
+                    }
+                  </body>
+                </method>
+                <method>
+                  <protected/>
+                  <void_type>void</void_type>
+                  <name>log</name>
+                  <parameters>
+                    <params>
+                      (
+                      <param>
+                        <type>String</type>
+                        <name>
+                          <type>message</type>
+                        </name>
+                      </param>
+                      )
+                    </params>
+                  </parameters>
+                  <body>
+                    {
+                    <call>
+                      <member>
+                        <type>System</type>
+                        .
+                        <type>out</type>
+                      </member>
+                      .
+                      <name>
+                        <type>println</type>
+                      </name>
+                      <arguments>
+                        <args>
+                          (
+                          <type>message</type>
+                          )
+                        </args>
+                      </arguments>
+                    </call>
+                    ;
+            }
+                  </body>
+                </method>
+                <method>
+                  <package-private/>
+                  <void_type>void</void_type>
+                  <name>defaultAccess</name>
+                  <parameters>
+                    <params>()</params>
+                  </parameters>
+                  <body>
+                    {
+                    <line_comment>// package-private method</line_comment>
+                    }
+                  </body>
+                </method>
+                <method>
+                  <static/>
+                  <public/>
+                  <void_type>void</void_type>
+                  <name>main</name>
+                  <parameters>
+                    <params>
+                      (
+                      <param>
+                        <array>
+                          <type>String</type>
+                          <dimensions>[]</dimensions>
+                        </array>
+                        <name>
+                          <type>args</type>
+                        </name>
+                      </param>
+                      )
+                    </params>
+                  </parameters>
+                  <body>
+                    {
+                    <local_variable_declaration>
+                      <integral_type>int</integral_type>
+                      <variable_declarator>
+                        <name>
+                          <type>result</type>
+                        </name>
+                        =
+                        <value>
+                          <call>
+                            <name>
+                              <type>add</type>
+                            </name>
+                            <arguments>
+                              <args>
+                                (
+                                <int>5</int>
+                                ,
+                                <int>3</int>
+                                )
+                              </args>
+                            </arguments>
+                          </call>
+                        </value>
+                      </variable_declarator>
+                      ;
+                    </local_variable_declaration>
+                    <call>
+                      <member>
+                        <type>System</type>
+                        .
+                        <type>out</type>
+                      </member>
+                      .
+                      <name>
+                        <type>println</type>
+                      </name>
+                      <arguments>
+                        <args>
+                          (
+                          <binary>
+                            <op>
+                              <plus/>
+                              +
+                            </op>
+                            <left>
+                              <string>
+                                &quot;
+                                <string_fragment>Result: </string_fragment>
+                                &quot;
+                              </string>
+                            </left>
+                            +
+                            <right>
+                              <type>result</type>
+                            </right>
+                          </binary>
+                          )
+                        </args>
+                      </arguments>
+                    </call>
+                    ;
+            }
+                  </body>
+                </method>
+                }
+              </body>
+            </class>
+            <interface>
+              <package-private/>
+              interface
+              <name>Service</name>
+              <body>
+                {
+                <method>
+                  <package-private/>
+                  <void_type>void</void_type>
+                  <name>execute</name>
+                  <parameters>
+                    <params>()</params>
+                  </parameters>
+                  ;
+                </method>
+                }
+              </body>
+            </interface>
+            <enum>
+              <package-private/>
+              enum
+              <name>Status</name>
+              <body>
+                <enum_body>
+                  {
+                  <enum_constant>
+                    <name>
+                      <type>ACTIVE</type>
+                    </name>
+                  </enum_constant>
+                  ,
+                  <enum_constant>
+                    <name>
+                      <type>INACTIVE</type>
+                    </name>
+                  </enum_constant>
+                  }
+                </enum_body>
+              </body>
+            </enum>
+          </program>
+        </Files>
+      </tree>
+    </match>
+  </results>
+</report>

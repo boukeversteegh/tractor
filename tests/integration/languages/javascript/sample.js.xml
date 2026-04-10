@@ -1,63 +1,132 @@
-tests/integration/languages/javascript/sample.js:1
-Files/File/program/
-  ├─ comment = "// Simple JavaScript example"
-  ├─ function/
-        ├─ "function"
-        ├─ name = "add"
-        ├─ parameters/params/
-              ├─ "("
-              ├─ type = "a"
-              ├─ ","
-              ├─ type = "b"
-              └─ ")"
-        └─ body/block/
-              ├─ "{"
-              ├─ return/
-                    ├─ "return"
-                    ├─ binary/
-                          ├─ op[plus] = "+"
-                          ├─ left/type = "a"
-                          ├─ "+"
-                          └─ right/type = "b"
-                    └─ ";"
-              └─ "}"
-  ├─ function/
-        ├─ "function"
-        ├─ name = "main"
-        ├─ parameters/params = "()"
-        └─ body/block/
-              ├─ "{"
-              ├─ variable[const]/
-                    ├─ "const"
-                    ├─ name/type = "result"
-                    ├─ "="
-                    ├─ value/call/
-                          ├─ function[ref] = "add"
-                          └─ arguments/arguments/
-                                ├─ "("
-                                ├─ number = "5"
-                                ├─ ","
-                                ├─ number = "3"
-                                └─ ")"
-                    └─ ";"
-              ├─ call/
-                    ├─ function/member/
-                          ├─ object[ref] = "console"
-                          ├─ "."
-                          └─ property[ref] = "log"
-                    └─ arguments/arguments/
-                          ├─ "("
-                          ├─ template_string/
-                                ├─ "`"
-                                ├─ string_fragment = "Result:"
-                                ├─ template_substitution/
-                                      ├─ "${"
-                                      ├─ type = "result"
-                                      └─ "}"
-                                └─ "`"
-                          └─ ")"
-              └─ ";\n}"
-  ├─ call/
-        ├─ function[ref] = "main"
-        └─ arguments/arguments = "()"
-  └─ ";"
+<?xml version="1.0" encoding="UTF-8"?>
+<report>
+  <results>
+    <match file="tests/integration/languages/javascript/sample.js" line="1" column="1">
+      <tree>
+        <Files>
+          <file>tests/integration/languages/javascript/sample.js</file>
+          <program>
+            <comment>// Simple JavaScript example</comment>
+            <function>
+              function
+              <name>add</name>
+              <parameters>
+                <params>
+                  (
+                  <type>a</type>
+                  ,
+                  <type>b</type>
+                  )
+                </params>
+              </parameters>
+              <body>
+                <block>
+                  {
+                  <return>
+                    return
+                    <binary>
+                      <op>
+                        <plus/>
+                        +
+                      </op>
+                      <left>
+                        <type>a</type>
+                      </left>
+                      +
+                      <right>
+                        <type>b</type>
+                      </right>
+                    </binary>
+                    ;
+                  </return>
+                  }
+                </block>
+              </body>
+            </function>
+            <function>
+              function
+              <name>main</name>
+              <parameters>
+                <params>()</params>
+              </parameters>
+              <body>
+                <block>
+                  {
+                  <variable>
+                    <const/>
+                    const
+                    <name>
+                      <type>result</type>
+                    </name>
+                    =
+                    <value>
+                      <call>
+                        <function>
+                          <ref/>
+                          add
+                        </function>
+                        <arguments>
+                          <arguments>
+                            (
+                            <number>5</number>
+                            ,
+                            <number>3</number>
+                            )
+                          </arguments>
+                        </arguments>
+                      </call>
+                    </value>
+                    ;
+                  </variable>
+                  <call>
+                    <function>
+                      <member>
+                        <object>
+                          <ref/>
+                          console
+                        </object>
+                        .
+                        <property>
+                          <ref/>
+                          log
+                        </property>
+                      </member>
+                    </function>
+                    <arguments>
+                      <arguments>
+                        (
+                        <template_string>
+                          `
+                          <string_fragment>Result: </string_fragment>
+                          <template_substitution>
+                            ${
+                            <type>result</type>
+                            }
+                          </template_substitution>
+                          `
+                        </template_string>
+                        )
+                      </arguments>
+                    </arguments>
+                  </call>
+                  ;
+        }
+                </block>
+              </body>
+            </function>
+            <call>
+              <function>
+                <ref/>
+                main
+              </function>
+              <arguments>
+                <arguments>()</arguments>
+              </arguments>
+            </call>
+            ;
+          </program>
+        </Files>
+      </tree>
+    </match>
+  </results>
+</report>

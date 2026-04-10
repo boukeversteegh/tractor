@@ -1,110 +1,203 @@
-tests/integration/languages/go/sample.go:1
-Files/File/file/
-  ├─ comment = "// Simple Go example"
-  ├─ package/
-        ├─ "package"
-        └─ pkg = "main"
-  ├─ import_declaration/
-        ├─ "import"
-        └─ import_spec/string/
-              ├─ "\""
-              ├─ interpreted_string_literal_content = "fmt"
-              └─ "\""
-  ├─ function[unexported]/
-        ├─ "func"
-        ├─ name = "add"
-        ├─ parameters/params/
-              ├─ "("
-              ├─ param/
-                    ├─ name/type = "a"
-                    └─ type = "int"
-              ├─ ","
-              ├─ param/
-                    ├─ name/type = "b"
-                    └─ type = "int"
-              └─ ")"
-        ├─ type = "int"
-        └─ body/
-              ├─ "{"
-              ├─ return/
-                    ├─ "return"
-                    └─ expression_list/binary/
-                          ├─ op[plus] = "+"
-                          ├─ left/type = "a"
-                          ├─ "+"
-                          └─ right/type = "b"
-              └─ "}"
-  ├─ function[unexported]/
-        ├─ "func"
-        ├─ name = "main"
-        ├─ parameters/params = "()"
-        └─ body/
-              ├─ "{"
-              ├─ short_var_declaration/
-                    ├─ left/expression_list/type = "result"
-                    ├─ ":="
-                    └─ right/expression_list/call/
-                          ├─ type = "add"
-                          └─ arguments/argument_list/
-                                ├─ "("
-                                ├─ int = "5"
-                                ├─ ","
-                                ├─ int = "3"
-                                └─ ")"
-              ├─ call/
-                    ├─ member/
-                          ├─ type = "fmt"
-                          ├─ "."
-                          └─ field = "Printf"
-                    └─ arguments/argument_list/
-                          ├─ "("
-                          ├─ string/
-                                ├─ "\""
-                                ├─ interpreted_string_literal_content = "Result: %d"
-                                ├─ escape_sequence = "\\n"
-                                └─ "\""
-                          ├─ ","
-                          ├─ type = "result"
-                          └─ ")"
-              └─ "}"
-  ├─ comment = "// Exported function"
-  ├─ function[exported]/
-        ├─ "func"
-        ├─ name = "PublicHelper"
-        ├─ parameters/params = "()"
-        ├─ type = "string"
-        └─ body/
-              ├─ "{"
-              ├─ return/
-                    ├─ "return"
-                    └─ expression_list/string/
-                          ├─ "\""
-                          ├─ interpreted_string_literal_content = "hello"
-                          └─ "\""
-              └─ "}"
-  ├─ typedef/
-        ├─ "type"
-        └─ typespec[exported]/
-              ├─ name = "Point"
-              └─ struct/
-                    ├─ "struct"
-                    └─ field_declaration_list/
-                          ├─ "{"
-                          ├─ field_declaration/
-                                ├─ name/field = "X"
-                                └─ type = "int"
-                          ├─ field_declaration/
-                                ├─ name/field = "Y"
-                                └─ type = "int"
-                          └─ "}"
-  └─ typedef/
-        ├─ "type"
-        └─ typespec[exported]/
-              ├─ name = "Shape"
-              └─ interface/
-                    ├─ "interface {"
-                    ├─ method_elem/
-                          ├─ name/field = "Area"
-                          ├─ parameters/params = "()"
-                          └─ type = "float64"
-                    └─ "}"
+<?xml version="1.0" encoding="UTF-8"?>
+<report>
+  <results>
+    <match file="tests/integration/languages/go/sample.go" line="1" column="1">
+      <tree>
+        <Files>
+          <file>tests/integration/languages/go/sample.go</file>
+          <file>
+            <comment>// Simple Go example</comment>
+            <package>
+              package
+              <pkg>main</pkg>
+            </package>
+            <import_declaration>
+              import
+              <import_spec>
+                <string>
+                  &quot;
+                  <interpreted_string_literal_content>fmt</interpreted_string_literal_content>
+                  &quot;
+                </string>
+              </import_spec>
+            </import_declaration>
+            <function>
+              <unexported/>
+              func
+              <name>add</name>
+              <parameters>
+                <params>
+                  (
+                  <param>
+                    <name>
+                      <type>a</type>
+                    </name>
+                    <type>int</type>
+                  </param>
+                  ,
+                  <param>
+                    <name>
+                      <type>b</type>
+                    </name>
+                    <type>int</type>
+                  </param>
+                  )
+                </params>
+              </parameters>
+              <type>int</type>
+              <body>
+                {
+                <return>
+                  return
+                  <expression_list>
+                    <binary>
+                      <op>
+                        <plus/>
+                        +
+                      </op>
+                      <left>
+                        <type>a</type>
+                      </left>
+                      +
+                      <right>
+                        <type>b</type>
+                      </right>
+                    </binary>
+                  </expression_list>
+                </return>
+                }
+              </body>
+            </function>
+            <function>
+              <unexported/>
+              func
+              <name>main</name>
+              <parameters>
+                <params>()</params>
+              </parameters>
+              <body>
+                {
+                <short_var_declaration>
+                  <left>
+                    <expression_list>
+                      <type>result</type>
+                    </expression_list>
+                  </left>
+                  :=
+                  <right>
+                    <expression_list>
+                      <call>
+                        <type>add</type>
+                        <arguments>
+                          <argument_list>
+                            (
+                            <int>5</int>
+                            ,
+                            <int>3</int>
+                            )
+                          </argument_list>
+                        </arguments>
+                      </call>
+                    </expression_list>
+                  </right>
+                </short_var_declaration>
+                <call>
+                  <member>
+                    <type>fmt</type>
+                    .
+                    <field>Printf</field>
+                  </member>
+                  <arguments>
+                    <argument_list>
+                      (
+                      <string>
+                        &quot;
+                        <interpreted_string_literal_content>Result: %d</interpreted_string_literal_content>
+                        <escape_sequence>\n</escape_sequence>
+                        &quot;
+                      </string>
+                      ,
+                      <type>result</type>
+                      )
+                    </argument_list>
+                  </arguments>
+                </call>
+                }
+              </body>
+            </function>
+            <comment>// Exported function</comment>
+            <function>
+              <exported/>
+              func
+              <name>PublicHelper</name>
+              <parameters>
+                <params>()</params>
+              </parameters>
+              <type>string</type>
+              <body>
+                {
+                <return>
+                  return
+                  <expression_list>
+                    <string>
+                      &quot;
+                      <interpreted_string_literal_content>hello</interpreted_string_literal_content>
+                      &quot;
+                    </string>
+                  </expression_list>
+                </return>
+                }
+              </body>
+            </function>
+            <typedef>
+              type
+              <typespec>
+                <exported/>
+                <name>Point</name>
+                <struct>
+                  struct
+                  <field_declaration_list>
+                    {
+                    <field_declaration>
+                      <name>
+                        <field>X</field>
+                      </name>
+                      <type>int</type>
+                    </field_declaration>
+                    <field_declaration>
+                      <name>
+                        <field>Y</field>
+                      </name>
+                      <type>int</type>
+                    </field_declaration>
+                    }
+                  </field_declaration_list>
+                </struct>
+              </typespec>
+            </typedef>
+            <typedef>
+              type
+              <typespec>
+                <exported/>
+                <name>Shape</name>
+                <interface>
+                  interface {
+                  <method_elem>
+                    <name>
+                      <field>Area</field>
+                    </name>
+                    <parameters>
+                      <params>()</params>
+                    </parameters>
+                    <type>float64</type>
+                  </method_elem>
+                  }
+                </interface>
+              </typespec>
+            </typedef>
+          </file>
+        </Files>
+      </tree>
+    </match>
+  </results>
+</report>

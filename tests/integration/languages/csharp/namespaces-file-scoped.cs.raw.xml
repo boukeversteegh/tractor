@@ -1,15 +1,42 @@
-tests/integration/languages/csharp/namespaces-file-scoped.cs:1
-Files/File/compilation_unit/namespace_declaration/
-  ├─ "namespace"
-  ├─ name/qualified_name/
-        ├─ identifier = "MyApp"
-        ├─ "."
-        └─ name/identifier = "Services"
-  └─ body/declaration_list/
-        ├─ "{"
-        ├─ class_declaration/
-              ├─ modifier = "public"
-              ├─ "class"
-              ├─ name/identifier = "UserService"
-              └─ body/declaration_list = "{ }"
-        └─ "}"
+<?xml version="1.0" encoding="UTF-8"?>
+<report>
+  <results>
+    <match file="tests/integration/languages/csharp/namespaces-file-scoped.cs" line="1" column="1">
+      <tree>
+        <Files>
+          <file>tests/integration/languages/csharp/namespaces-file-scoped.cs</file>
+          <compilation_unit>
+            <namespace_declaration>
+              namespace
+              <name>
+                <qualified_name>
+                  <identifier>MyApp</identifier>
+                  .
+                  <name>
+                    <identifier>Services</identifier>
+                  </name>
+                </qualified_name>
+              </name>
+              <body>
+                <declaration_list>
+                  {
+                  <class_declaration>
+                    <modifier>public</modifier>
+                    class
+                    <name>
+                      <identifier>UserService</identifier>
+                    </name>
+                    <body>
+                      <declaration_list>{ }</declaration_list>
+                    </body>
+                  </class_declaration>
+                  }
+                </declaration_list>
+              </body>
+            </namespace_declaration>
+          </compilation_unit>
+        </Files>
+      </tree>
+    </match>
+  </results>
+</report>

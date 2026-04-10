@@ -317,11 +317,11 @@ fn main() {
 
             // Semantic XML
             let xml_path = format!("{}.xml", path_str);
-            let output = run_tractor(&tractor_bin, &path_str, &[]);
+            let output = run_tractor(&tractor_bin, &path_str, &["-f", "xml"]);
 
             // Raw TreeSitter XML
             let raw_xml_path = format!("{}.raw.xml", path_str);
-            let raw_output = run_tractor(&tractor_bin, &path_str, &["-t", "raw"]);
+            let raw_output = run_tractor(&tractor_bin, &path_str, &["-t", "raw", "-f", "xml"]);
 
             if check_mode {
                 if let Ok(existing) = fs::read_to_string(&xml_path) {

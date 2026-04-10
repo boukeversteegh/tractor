@@ -1,27 +1,57 @@
-tests/integration/languages/toml/sample.toml:1
-Files/File/document/
-  ├─ title = "My App"
-  ├─ version = "1.0.0"
-  ├─ features/
-        ├─ item = "auth"
-        ├─ item = "logging"
-        └─ item = "metrics"
-  ├─ inline/
-        ├─ x = "1"
-        └─ y = "2"
-  ├─ quoted = "hello world"
-  ├─ first_name[@key="first name"] = "Alice"
-  ├─ database/
-        ├─ host = "localhost"
-        ├─ port = "5432"
-        └─ enabled = "true"
-  ├─ database/credentials/
-        ├─ username = "admin"
-        └─ password = "secret"
-  ├─ servers/item/
-        ├─ name = "web-1"
-        └─ port = "8080"
-  ├─ servers/item/
-        ├─ name = "web-2"
-        └─ port = "8081"
-  └─ nested/level1/level2/value = "deep"
+<?xml version="1.0" encoding="UTF-8"?>
+<report>
+  <results>
+    <match file="tests/integration/languages/toml/sample.toml" line="1" column="1">
+      <tree>
+        <Files>
+          <file>tests/integration/languages/toml/sample.toml</file>
+          <document>
+            <title>My App</title>
+            <version>1.0.0</version>
+            <features>
+              <item>auth</item>
+              <item>logging</item>
+              <item>metrics</item>
+            </features>
+            <inline>
+              <x>1</x>
+              <y>2</y>
+            </inline>
+            <quoted>hello world</quoted>
+            <first_name key="first name">Alice</first_name>
+            <database>
+              <host>localhost</host>
+              <port>5432</port>
+              <enabled>true</enabled>
+            </database>
+            <database>
+              <credentials>
+                <username>admin</username>
+                <password>secret</password>
+              </credentials>
+            </database>
+            <servers>
+              <item>
+                <name>web-1</name>
+                <port>8080</port>
+              </item>
+            </servers>
+            <servers>
+              <item>
+                <name>web-2</name>
+                <port>8081</port>
+              </item>
+            </servers>
+            <nested>
+              <level1>
+                <level2>
+                  <value>deep</value>
+                </level2>
+              </level1>
+            </nested>
+          </document>
+        </Files>
+      </tree>
+    </match>
+  </results>
+</report>

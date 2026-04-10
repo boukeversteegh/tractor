@@ -1,46 +1,98 @@
-tests/integration/languages/csharp/attribute-required-nullable.cs:1
-Files/File/unit/class[public]/
-  ├─ "class"
-  ├─ name = "UserRecord"
-  └─ body/
-        ├─ "{"
-        ├─ property[public]/
-              ├─ attributes/
-                    ├─ "["
-                    ├─ attribute/name/ref = "Required"
-                    └─ "]"
-              ├─ type = "Guid"
-              ├─ name = "UserId"
-              └─ accessors/
-                    ├─ "{"
-                    ├─ accessor = "get;"
-                    ├─ accessor = "set;"
-                    └─ "}"
-        ├─ comment[trailing] = "// ERROR - Required on non-nullable Guid"
-        ├─ property[public]/
-              ├─ attributes/
-                    ├─ "["
-                    ├─ attribute/name/ref = "Required"
-                    └─ "]"
-              ├─ type[nullable] = "Guid"
-              ├─ name = "NullableId"
-              └─ accessors/
-                    ├─ "{"
-                    ├─ accessor = "get;"
-                    ├─ accessor = "set;"
-                    └─ "}"
-        ├─ comment[trailing] = "// OK - nullable Guid"
-        ├─ property[public]/
-              ├─ attributes/
-                    ├─ "["
-                    ├─ attribute/name/ref = "Required"
-                    └─ "]"
-              ├─ type = "string"
-              ├─ name = "Name"
-              └─ accessors/
-                    ├─ "{"
-                    ├─ accessor = "get;"
-                    ├─ accessor = "set;"
-                    └─ "}"
-        ├─ comment[trailing] = "// OK - string is reference type"
-        └─ "}"
+<?xml version="1.0" encoding="UTF-8"?>
+<report>
+  <results>
+    <match file="tests/integration/languages/csharp/attribute-required-nullable.cs" line="1" column="1">
+      <tree>
+        <Files>
+          <file>tests/integration/languages/csharp/attribute-required-nullable.cs</file>
+          <unit>
+            <class>
+              <public/>
+              class
+              <name>UserRecord</name>
+              <body>
+                {
+                <property>
+                  <attributes>
+                    [
+                    <attribute>
+                      <name>
+                        <ref>Required</ref>
+                      </name>
+                    </attribute>
+                    ]
+                  </attributes>
+                  <public/>
+                  <type>Guid</type>
+                  <name>UserId</name>
+                  <accessors>
+                    {
+                    <accessor>get;</accessor>
+                    <accessor>set;</accessor>
+                    }
+                  </accessors>
+                </property>
+                <comment>
+                  <trailing/>
+                  // ERROR - Required on non-nullable Guid
+                </comment>
+                <property>
+                  <attributes>
+                    [
+                    <attribute>
+                      <name>
+                        <ref>Required</ref>
+                      </name>
+                    </attribute>
+                    ]
+                  </attributes>
+                  <public/>
+                  <type>
+                    Guid
+                    <nullable/>
+                  </type>
+                  <name>NullableId</name>
+                  <accessors>
+                    {
+                    <accessor>get;</accessor>
+                    <accessor>set;</accessor>
+                    }
+                  </accessors>
+                </property>
+                <comment>
+                  <trailing/>
+                  // OK - nullable Guid
+                </comment>
+                <property>
+                  <attributes>
+                    [
+                    <attribute>
+                      <name>
+                        <ref>Required</ref>
+                      </name>
+                    </attribute>
+                    ]
+                  </attributes>
+                  <public/>
+                  <type>string</type>
+                  <name>Name</name>
+                  <accessors>
+                    {
+                    <accessor>get;</accessor>
+                    <accessor>set;</accessor>
+                    }
+                  </accessors>
+                </property>
+                <comment>
+                  <trailing/>
+                  // OK - string is reference type
+                </comment>
+                }
+              </body>
+            </class>
+          </unit>
+        </Files>
+      </tree>
+    </match>
+  </results>
+</report>

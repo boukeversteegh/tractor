@@ -1,52 +1,99 @@
-tests/integration/languages/csharp/attribute-required-nullable.cs:1
-Files/File/compilation_unit/class_declaration/
-  ├─ modifier = "public"
-  ├─ "class"
-  ├─ name/identifier = "UserRecord"
-  └─ body/declaration_list/
-        ├─ "{"
-        ├─ property_declaration/
-              ├─ attribute_list/
-                    ├─ "["
-                    ├─ attribute/name/identifier = "Required"
-                    └─ "]"
-              ├─ modifier = "public"
-              ├─ identifier = "Guid"
-              ├─ name/identifier = "UserId"
-              └─ accessor_list/
-                    ├─ "{"
-                    ├─ accessor_declaration = "get;"
-                    ├─ accessor_declaration = "set;"
-                    └─ "}"
-        ├─ comment = "// ERROR - Required on non-nullable Guid"
-        ├─ property_declaration/
-              ├─ attribute_list/
-                    ├─ "["
-                    ├─ attribute/name/identifier = "Required"
-                    └─ "]"
-              ├─ modifier = "public"
-              ├─ nullable_type/
-                    ├─ identifier = "Guid"
-                    └─ "?"
-              ├─ name/identifier = "NullableId"
-              └─ accessor_list/
-                    ├─ "{"
-                    ├─ accessor_declaration = "get;"
-                    ├─ accessor_declaration = "set;"
-                    └─ "}"
-        ├─ comment = "// OK - nullable Guid"
-        ├─ property_declaration/
-              ├─ attribute_list/
-                    ├─ "["
-                    ├─ attribute/name/identifier = "Required"
-                    └─ "]"
-              ├─ modifier = "public"
-              ├─ predefined_type = "string"
-              ├─ name/identifier = "Name"
-              └─ accessor_list/
-                    ├─ "{"
-                    ├─ accessor_declaration = "get;"
-                    ├─ accessor_declaration = "set;"
-                    └─ "}"
-        ├─ comment = "// OK - string is reference type"
-        └─ "}"
+<?xml version="1.0" encoding="UTF-8"?>
+<report>
+  <results>
+    <match file="tests/integration/languages/csharp/attribute-required-nullable.cs" line="1" column="1">
+      <tree>
+        <Files>
+          <file>tests/integration/languages/csharp/attribute-required-nullable.cs</file>
+          <compilation_unit>
+            <class_declaration>
+              <modifier>public</modifier>
+              class
+              <name>
+                <identifier>UserRecord</identifier>
+              </name>
+              <body>
+                <declaration_list>
+                  {
+                  <property_declaration>
+                    <attribute_list>
+                      [
+                      <attribute>
+                        <name>
+                          <identifier>Required</identifier>
+                        </name>
+                      </attribute>
+                      ]
+                    </attribute_list>
+                    <modifier>public</modifier>
+                    <identifier>Guid</identifier>
+                    <name>
+                      <identifier>UserId</identifier>
+                    </name>
+                    <accessor_list>
+                      {
+                      <accessor_declaration>get;</accessor_declaration>
+                      <accessor_declaration>set;</accessor_declaration>
+                      }
+                    </accessor_list>
+                  </property_declaration>
+                  <comment>// ERROR - Required on non-nullable Guid</comment>
+                  <property_declaration>
+                    <attribute_list>
+                      [
+                      <attribute>
+                        <name>
+                          <identifier>Required</identifier>
+                        </name>
+                      </attribute>
+                      ]
+                    </attribute_list>
+                    <modifier>public</modifier>
+                    <nullable_type>
+                      <identifier>Guid</identifier>
+                      ?
+                    </nullable_type>
+                    <name>
+                      <identifier>NullableId</identifier>
+                    </name>
+                    <accessor_list>
+                      {
+                      <accessor_declaration>get;</accessor_declaration>
+                      <accessor_declaration>set;</accessor_declaration>
+                      }
+                    </accessor_list>
+                  </property_declaration>
+                  <comment>// OK - nullable Guid</comment>
+                  <property_declaration>
+                    <attribute_list>
+                      [
+                      <attribute>
+                        <name>
+                          <identifier>Required</identifier>
+                        </name>
+                      </attribute>
+                      ]
+                    </attribute_list>
+                    <modifier>public</modifier>
+                    <predefined_type>string</predefined_type>
+                    <name>
+                      <identifier>Name</identifier>
+                    </name>
+                    <accessor_list>
+                      {
+                      <accessor_declaration>get;</accessor_declaration>
+                      <accessor_declaration>set;</accessor_declaration>
+                      }
+                    </accessor_list>
+                  </property_declaration>
+                  <comment>// OK - string is reference type</comment>
+                  }
+                </declaration_list>
+              </body>
+            </class_declaration>
+          </compilation_unit>
+        </Files>
+      </tree>
+    </match>
+  </results>
+</report>

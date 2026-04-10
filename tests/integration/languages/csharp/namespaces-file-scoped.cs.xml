@@ -1,14 +1,36 @@
-tests/integration/languages/csharp/namespaces-file-scoped.cs:1
-Files/File/unit/namespace/
-  ├─ "namespace"
-  ├─ name/qualified_name/
-        ├─ name = "MyApp"
-        ├─ "."
-        └─ name/ref = "Services"
-  └─ body/
-        ├─ "{"
-        ├─ class[public]/
-              ├─ "class"
-              ├─ name = "UserService"
-              └─ body = "{ }"
-        └─ "}"
+<?xml version="1.0" encoding="UTF-8"?>
+<report>
+  <results>
+    <match file="tests/integration/languages/csharp/namespaces-file-scoped.cs" line="1" column="1">
+      <tree>
+        <Files>
+          <file>tests/integration/languages/csharp/namespaces-file-scoped.cs</file>
+          <unit>
+            <namespace>
+              namespace
+              <name>
+                <qualified_name>
+                  <name>MyApp</name>
+                  .
+                  <name>
+                    <ref>Services</ref>
+                  </name>
+                </qualified_name>
+              </name>
+              <body>
+                {
+                <class>
+                  <public/>
+                  class
+                  <name>UserService</name>
+                  <body>{ }</body>
+                </class>
+                }
+              </body>
+            </namespace>
+          </unit>
+        </Files>
+      </tree>
+    </match>
+  </results>
+</report>

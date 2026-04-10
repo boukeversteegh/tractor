@@ -1,46 +1,87 @@
-tests/integration/languages/csharp/attribute-maxlength-boolean.cs:1
-Files/File/compilation_unit/class_declaration/
-  ├─ modifier = "public"
-  ├─ "class"
-  ├─ name/identifier = "UserRecord"
-  └─ body/declaration_list/
-        ├─ "{"
-        ├─ property_declaration/
-              ├─ attribute_list/
-                    ├─ "["
-                    ├─ attribute/
-                          ├─ name/identifier = "MaxLength"
-                          └─ attribute_argument_list/
-                                ├─ "("
-                                ├─ attribute_argument/integer_literal = "1"
-                                └─ ")"
-                    └─ "]"
-              ├─ modifier = "public"
-              ├─ predefined_type = "bool"
-              ├─ name/identifier = "IsActive"
-              └─ accessor_list/
-                    ├─ "{"
-                    ├─ accessor_declaration = "get;"
-                    ├─ accessor_declaration = "set;"
-                    └─ "}"
-        ├─ comment = "// ERROR - MaxLength on bool"
-        ├─ property_declaration/
-              ├─ attribute_list/
-                    ├─ "["
-                    ├─ attribute/
-                          ├─ name/identifier = "MaxLength"
-                          └─ attribute_argument_list/
-                                ├─ "("
-                                ├─ attribute_argument/integer_literal = "100"
-                                └─ ")"
-                    └─ "]"
-              ├─ modifier = "public"
-              ├─ predefined_type = "string"
-              ├─ name/identifier = "Name"
-              └─ accessor_list/
-                    ├─ "{"
-                    ├─ accessor_declaration = "get;"
-                    ├─ accessor_declaration = "set;"
-                    └─ "}"
-        ├─ comment = "// OK - MaxLength on string"
-        └─ "}"
+<?xml version="1.0" encoding="UTF-8"?>
+<report>
+  <results>
+    <match file="tests/integration/languages/csharp/attribute-maxlength-boolean.cs" line="1" column="1">
+      <tree>
+        <Files>
+          <file>tests/integration/languages/csharp/attribute-maxlength-boolean.cs</file>
+          <compilation_unit>
+            <class_declaration>
+              <modifier>public</modifier>
+              class
+              <name>
+                <identifier>UserRecord</identifier>
+              </name>
+              <body>
+                <declaration_list>
+                  {
+                  <property_declaration>
+                    <attribute_list>
+                      [
+                      <attribute>
+                        <name>
+                          <identifier>MaxLength</identifier>
+                        </name>
+                        <attribute_argument_list>
+                          (
+                          <attribute_argument>
+                            <integer_literal>1</integer_literal>
+                          </attribute_argument>
+                          )
+                        </attribute_argument_list>
+                      </attribute>
+                      ]
+                    </attribute_list>
+                    <modifier>public</modifier>
+                    <predefined_type>bool</predefined_type>
+                    <name>
+                      <identifier>IsActive</identifier>
+                    </name>
+                    <accessor_list>
+                      {
+                      <accessor_declaration>get;</accessor_declaration>
+                      <accessor_declaration>set;</accessor_declaration>
+                      }
+                    </accessor_list>
+                  </property_declaration>
+                  <comment>// ERROR - MaxLength on bool</comment>
+                  <property_declaration>
+                    <attribute_list>
+                      [
+                      <attribute>
+                        <name>
+                          <identifier>MaxLength</identifier>
+                        </name>
+                        <attribute_argument_list>
+                          (
+                          <attribute_argument>
+                            <integer_literal>100</integer_literal>
+                          </attribute_argument>
+                          )
+                        </attribute_argument_list>
+                      </attribute>
+                      ]
+                    </attribute_list>
+                    <modifier>public</modifier>
+                    <predefined_type>string</predefined_type>
+                    <name>
+                      <identifier>Name</identifier>
+                    </name>
+                    <accessor_list>
+                      {
+                      <accessor_declaration>get;</accessor_declaration>
+                      <accessor_declaration>set;</accessor_declaration>
+                      }
+                    </accessor_list>
+                  </property_declaration>
+                  <comment>// OK - MaxLength on string</comment>
+                  }
+                </declaration_list>
+              </body>
+            </class_declaration>
+          </compilation_unit>
+        </Files>
+      </tree>
+    </match>
+  </results>
+</report>

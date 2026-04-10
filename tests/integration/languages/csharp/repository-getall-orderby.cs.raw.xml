@@ -1,105 +1,209 @@
-tests/integration/languages/csharp/repository-getall-orderby.cs:1
-Files/File/compilation_unit/
-  ├─ class_declaration/
-        ├─ modifier = "public"
-        ├─ "class"
-        ├─ name/identifier = "UserRepository"
-        └─ body/declaration_list/
-              ├─ "{"
-              ├─ method_declaration/
-                    ├─ modifier = "public"
-                    ├─ returns/generic_name/
-                          ├─ identifier = "List"
-                          └─ type_argument_list/
-                                ├─ "<"
-                                ├─ identifier = "User"
-                                └─ ">"
-                    ├─ name/identifier = "GetAll"
-                    ├─ parameters/parameter_list = "()"
-                    └─ body/block/
-                          ├─ "{"
-                          ├─ return_statement/
-                                ├─ "return"
-                                ├─ invocation_expression/
-                                      ├─ member_access_expression/
-                                            ├─ member_access_expression/
-                                                  ├─ identifier = "_context"
-                                                  ├─ "."
-                                                  └─ name/identifier = "Users"
-                                            ├─ "."
-                                            └─ name/identifier = "ToList"
-                                      └─ arguments/argument_list = "()"
-                                └─ ";"
-                          └─ "}"
-              ├─ comment = "// MATCH - missing OrderBy"
-              ├─ method_declaration/
-                    ├─ modifier = "public"
-                    ├─ returns/generic_name/
-                          ├─ identifier = "List"
-                          └─ type_argument_list/
-                                ├─ "<"
-                                ├─ identifier = "User"
-                                └─ ">"
-                    ├─ name/identifier = "GetAllOrdered"
-                    ├─ parameters/parameter_list = "()"
-                    └─ body/block/
-                          ├─ "{"
-                          ├─ return_statement/
-                                ├─ "return"
-                                ├─ invocation_expression/
-                                      ├─ member_access_expression/
-                                            ├─ invocation_expression/
-                                                  ├─ member_access_expression/
-                                                        ├─ member_access_expression/
-                                                              ├─ identifier = "_context"
-                                                              ├─ "."
-                                                              └─ name/identifier = "Users"
-                                                        ├─ "."
-                                                        └─ name/identifier = "OrderBy"
-                                                  └─ arguments/argument_list/
-                                                        ├─ "("
-                                                        ├─ argument/lambda_expression/
-                                                              ├─ parameters/implicit_parameter = "u"
-                                                              ├─ "=>"
-                                                              └─ body/member_access_expression/
-                                                                    ├─ identifier = "u"
-                                                                    ├─ "."
-                                                                    └─ name/identifier = "Name"
-                                                        └─ ")"
-                                            ├─ "."
-                                            └─ name/identifier = "ToList"
-                                      └─ arguments/argument_list = "()"
-                                └─ ";"
-                          └─ "}"
-              ├─ comment = "// OK"
-              └─ "}"
-  └─ class_declaration/
-        ├─ modifier = "public"
-        ├─ "class"
-        ├─ name/identifier = "MockUserRepository"
-        └─ body/declaration_list/
-              ├─ "{"
-              ├─ method_declaration/
-                    ├─ modifier = "public"
-                    ├─ returns/generic_name/
-                          ├─ identifier = "List"
-                          └─ type_argument_list/
-                                ├─ "<"
-                                ├─ identifier = "User"
-                                └─ ">"
-                    ├─ name/identifier = "GetAll"
-                    ├─ parameters/parameter_list = "()"
-                    └─ body/block/
-                          ├─ "{"
-                          ├─ return_statement/
-                                ├─ "return"
-                                ├─ invocation_expression/
-                                      ├─ member_access_expression/
-                                            ├─ identifier = "mock"
-                                            ├─ "."
-                                            └─ name/identifier = "ToList"
-                                      └─ arguments/argument_list = "()"
-                                └─ ";"
-                          └─ "}"
-              ├─ comment = "// Skip - Mock class"
-              └─ "}"
+<?xml version="1.0" encoding="UTF-8"?>
+<report>
+  <results>
+    <match file="tests/integration/languages/csharp/repository-getall-orderby.cs" line="1" column="1">
+      <tree>
+        <Files>
+          <file>tests/integration/languages/csharp/repository-getall-orderby.cs</file>
+          <compilation_unit>
+            <class_declaration>
+              <modifier>public</modifier>
+              class
+              <name>
+                <identifier>UserRepository</identifier>
+              </name>
+              <body>
+                <declaration_list>
+                  {
+                  <method_declaration>
+                    <modifier>public</modifier>
+                    <returns>
+                      <generic_name>
+                        <identifier>List</identifier>
+                        <type_argument_list>
+                          &lt;
+                          <identifier>User</identifier>
+                          &gt;
+                        </type_argument_list>
+                      </generic_name>
+                    </returns>
+                    <name>
+                      <identifier>GetAll</identifier>
+                    </name>
+                    <parameters>
+                      <parameter_list>()</parameter_list>
+                    </parameters>
+                    <body>
+                      <block>
+                        {
+                        <return_statement>
+                          return
+                          <invocation_expression>
+                            <member_access_expression>
+                              <member_access_expression>
+                                <identifier>_context</identifier>
+                                .
+                                <name>
+                                  <identifier>Users</identifier>
+                                </name>
+                              </member_access_expression>
+                              .
+                              <name>
+                                <identifier>ToList</identifier>
+                              </name>
+                            </member_access_expression>
+                            <arguments>
+                              <argument_list>()</argument_list>
+                            </arguments>
+                          </invocation_expression>
+                          ;
+                        </return_statement>
+                        }
+                      </block>
+                    </body>
+                  </method_declaration>
+                  <comment>// MATCH - missing OrderBy</comment>
+                  <method_declaration>
+                    <modifier>public</modifier>
+                    <returns>
+                      <generic_name>
+                        <identifier>List</identifier>
+                        <type_argument_list>
+                          &lt;
+                          <identifier>User</identifier>
+                          &gt;
+                        </type_argument_list>
+                      </generic_name>
+                    </returns>
+                    <name>
+                      <identifier>GetAllOrdered</identifier>
+                    </name>
+                    <parameters>
+                      <parameter_list>()</parameter_list>
+                    </parameters>
+                    <body>
+                      <block>
+                        {
+                        <return_statement>
+                          return
+                          <invocation_expression>
+                            <member_access_expression>
+                              <invocation_expression>
+                                <member_access_expression>
+                                  <member_access_expression>
+                                    <identifier>_context</identifier>
+                                    .
+                                    <name>
+                                      <identifier>Users</identifier>
+                                    </name>
+                                  </member_access_expression>
+                                  .
+                                  <name>
+                                    <identifier>OrderBy</identifier>
+                                  </name>
+                                </member_access_expression>
+                                <arguments>
+                                  <argument_list>
+                                    (
+                                    <argument>
+                                      <lambda_expression>
+                                        <parameters>
+                                          <implicit_parameter>u</implicit_parameter>
+                                        </parameters>
+                                        =&gt;
+                                        <body>
+                                          <member_access_expression>
+                                            <identifier>u</identifier>
+                                            .
+                                            <name>
+                                              <identifier>Name</identifier>
+                                            </name>
+                                          </member_access_expression>
+                                        </body>
+                                      </lambda_expression>
+                                    </argument>
+                                    )
+                                  </argument_list>
+                                </arguments>
+                              </invocation_expression>
+                              .
+                              <name>
+                                <identifier>ToList</identifier>
+                              </name>
+                            </member_access_expression>
+                            <arguments>
+                              <argument_list>()</argument_list>
+                            </arguments>
+                          </invocation_expression>
+                          ;
+                        </return_statement>
+                        }
+                      </block>
+                    </body>
+                  </method_declaration>
+                  <comment>// OK</comment>
+                  }
+                </declaration_list>
+              </body>
+            </class_declaration>
+            <class_declaration>
+              <modifier>public</modifier>
+              class
+              <name>
+                <identifier>MockUserRepository</identifier>
+              </name>
+              <body>
+                <declaration_list>
+                  {
+                  <method_declaration>
+                    <modifier>public</modifier>
+                    <returns>
+                      <generic_name>
+                        <identifier>List</identifier>
+                        <type_argument_list>
+                          &lt;
+                          <identifier>User</identifier>
+                          &gt;
+                        </type_argument_list>
+                      </generic_name>
+                    </returns>
+                    <name>
+                      <identifier>GetAll</identifier>
+                    </name>
+                    <parameters>
+                      <parameter_list>()</parameter_list>
+                    </parameters>
+                    <body>
+                      <block>
+                        {
+                        <return_statement>
+                          return
+                          <invocation_expression>
+                            <member_access_expression>
+                              <identifier>mock</identifier>
+                              .
+                              <name>
+                                <identifier>ToList</identifier>
+                              </name>
+                            </member_access_expression>
+                            <arguments>
+                              <argument_list>()</argument_list>
+                            </arguments>
+                          </invocation_expression>
+                          ;
+                        </return_statement>
+                        }
+                      </block>
+                    </body>
+                  </method_declaration>
+                  <comment>// Skip - Mock class</comment>
+                  }
+                </declaration_list>
+              </body>
+            </class_declaration>
+          </compilation_unit>
+        </Files>
+      </tree>
+    </match>
+  </results>
+</report>
