@@ -59,6 +59,9 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
         "query", "tests/integration/formats/sample.cs", "-x", "class",
         "--meta", "--depth", "1",
     ]),
+    ("text/explore-tree-source.txt", &[
+        "tests/integration/languages/csharp/comments.cs", "-v", "tree,source",
+    ]),
     // -f gcc
     ("gcc/check.txt", &[
         "check", "tests/integration/formats/sample.cs", "-x", "class",

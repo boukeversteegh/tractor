@@ -1,0 +1,47 @@
+Files/File/unit/                                                                                                 | // Application entry point
+  ├─ comment[leading] = "// Application entry point\n// Handles startup configuration"                           | // Handles startup configuration
+  ├─ import/                                                                                                     | using System;
+  │   ├─ "using"                                                                                                 | 
+  │   ├─ ref = "System"                                                                                          | namespace Comments
+  │   └─ ";"                                                                                                     | {
+  └─ namespace/                                                                                                  |     /// <summary>
+      ├─ "namespace"                                                                                             |     /// Sample class demonstrating comment patterns
+      ├─ name = "Comments"                                                                                       |     /// </summary>
+      └─ body/                                                                                                   |     public class Demo
+          ├─ "{"                                                                                                 |     {
+          ├─ comment[leading] = "/// <summary>\n/// Sample class demonstrating comment patterns\n/// </summary>" |         private int _count; // instance counter
+          ├─ class[public]/                                                                                      | 
+          │   ├─ "class"                                                                                         |         // Configuration settings
+          │   ├─ name = "Demo"                                                                                   |         // loaded from environment
+          │   └─ body/                                                                                           |         public string Config { get; set; }
+          │       ├─ "{"                                                                                         | 
+          │       ├─ field[private]/                                                                             |         /* block comment */
+          │       │   ├─ variable/                                                                               |         public void Run()
+          │       │   │   ├─ type = "int"                                                                        |         {
+          │       │   │   └─ declarator/name = "_count"                                                          |             _count++;
+          │       │   └─ ";"                                                                                     |         }
+          │       ├─ comment[trailing] = "// instance counter"                                                   |     }
+          │       ├─ comment[leading] = "// Configuration settings\n// loaded from environment"                  | }
+          │       ├─ property[public]/                                                                           | 
+          │       │   ├─ type = "string"                                                                         | 
+          │       │   ├─ name = "Config"                                                                         | 
+          │       │   └─ accessors/                                                                              | 
+          │       │       ├─ "{"                                                                                 | 
+          │       │       ├─ accessor = "get;"                                                                   | 
+          │       │       ├─ accessor = "set;"                                                                   | 
+          │       │       └─ "}"                                                                                 | 
+          │       ├─ comment[leading] = "/* block comment */"                                                    | 
+          │       ├─ method[public]/                                                                             | 
+          │       │   ├─ returns/type = "void"                                                                   | 
+          │       │   ├─ name = "Run"                                                                            | 
+          │       │   ├─ parameters = "()"                                                                       | 
+          │       │   └─ body/block/                                                                             | 
+          │       │       ├─ "{"                                                                                 | 
+          │       │       ├─ expression_statement/                                                               | 
+          │       │       │   ├─ postfix_unary_expression/                                                       | 
+          │       │       │   │   ├─ ref = "_count"                                                              | 
+          │       │       │   │   └─ "++"                                                                        | 
+          │       │       │   └─ ";"                                                                             | 
+          │       │       └─ "}"                                                                                 | 
+          │       └─ "}"                                                                                         | 
+          └─ "}"                                                                                                 | 

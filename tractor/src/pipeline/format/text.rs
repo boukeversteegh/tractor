@@ -6,8 +6,10 @@
 //! Summary is always included for check/test reports; opt-in via `-v summary`
 //! for query reports.
 
+use std::collections::HashMap;
+
 use tractor_core::{
-    render_query_tree_node, normalize_path,
+    render_query_tree_node, render_query_tree_with_source, normalize_path,
     render_source_precomputed, render_lines,
     report::{Report, ReportMatch, ResultItem, Totals},
     RenderOptions,
@@ -19,6 +21,7 @@ use super::shared::{should_show_totals, render_fields_for_match};
 /// are rendered with inherited file context from groups, not field omission.
 pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, _dimensions: &[&str]) -> String {
     let mut out = String::new();
+    let mut source_cache: HashMap<String, Option<String>> = HashMap::new();
 
     // Set stdout mode: groups with output_content — render group by group.
     let has_group_output = view.has(ViewField::Output) && report.results.iter().any(|item| {
@@ -52,7 +55,7 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         if needs_separator && i > 0 {
             out.push('\n');
         }
-        append_match(&mut out, rm, view, render_opts, *group_file);
+        append_match(&mut out, rm, view, render_opts, *group_file, &mut source_cache);
     }
 
     if should_show_totals(report, view) {
@@ -70,7 +73,14 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
     out
 }
 
-fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts: &RenderOptions, group_file: Option<&str>) {
+fn append_match(
+    out: &mut String,
+    rm: &ReportMatch,
+    view: &ViewSet,
+    render_opts: &RenderOptions,
+    group_file: Option<&str>,
+    source_cache: &mut HashMap<String, Option<String>>,
+) {
 
     // When a message template was used, it is the intended primary output —
     // it replaces tree/value/etc in text format.
@@ -110,11 +120,22 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
         out.push('\n');
     }
 
+    let combined_tree_source = if view.has(ViewField::Tree) && view.has(ViewField::Source) {
+        render_combined_tree_source(rm, file, render_opts, source_cache)
+    } else {
+        None
+    };
+    if let Some(ref rendered) = combined_tree_source {
+        out.push_str(rendered);
+    }
+
     // All fields to stdout: view-requested first, then extras.
     // For text, Severity/Origin are rendered inline with Reason, and
     // Source is redundant when Lines is present — skip these as extras.
     // Severity/Origin are rendered inline with Reason — skip as standalone extras.
     let text_skip = |f: &ViewField| -> bool {
+        (combined_tree_source.is_some() && matches!(f, ViewField::Tree | ViewField::Source))
+            ||
         matches!(f, ViewField::Severity | ViewField::Origin)
             && !view.has(*f)
     };
@@ -124,6 +145,35 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
         }
     }
 
+}
+
+fn render_combined_tree_source(
+    rm: &ReportMatch,
+    file: &str,
+    render_opts: &RenderOptions,
+    source_cache: &mut HashMap<String, Option<String>>,
+) -> Option<String> {
+    let tree = rm.tree.as_ref()?;
+    let source = load_source_for_match(rm, file, source_cache)?;
+    render_query_tree_with_source(tree, &source, render_opts)
+}
+
+fn load_source_for_match(
+    rm: &ReportMatch,
+    file: &str,
+    source_cache: &mut HashMap<String, Option<String>>,
+) -> Option<String> {
+    if !file.is_empty() && file != "<stdin>" {
+        if let Some(cached) = source_cache.get(file) {
+            return cached.clone();
+        }
+
+        let loaded = std::fs::read_to_string(file).ok();
+        source_cache.insert(file.to_string(), loaded.clone());
+        return loaded;
+    }
+
+    rm.source.clone().filter(|s| !s.is_empty())
 }
 
 /// Render a single field from a match into the output buffer.
@@ -323,6 +373,7 @@ fn collect_matches_with_file<'a>(items: &'a [ResultItem], parent_file: Option<&'
 /// Render set stdout mode from results tree (groups with output_content).
 fn render_set_stdout_results(items: &[ResultItem], view: &ViewSet, render_opts: &RenderOptions) -> String {
     let mut out = String::new();
+    let mut source_cache: HashMap<String, Option<String>> = HashMap::new();
     let has_location = view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
     let has_per_match = has_location || view.has(ViewField::Status);
 
@@ -333,7 +384,7 @@ fn render_set_stdout_results(items: &[ResultItem], view: &ViewSet, render_opts: 
                 // Render leaf matches within this group
                 for child in &g.results {
                     if let ResultItem::Match(rm) = child {
-                        append_match(&mut out, rm, view, render_opts, file);
+                        append_match(&mut out, rm, view, render_opts, file, &mut source_cache);
                     }
                 }
             }
