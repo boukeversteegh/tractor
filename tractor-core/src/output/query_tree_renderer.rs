@@ -18,7 +18,7 @@ pub fn render_query_tree_with_source(
     source: &str,
     options: &RenderOptions,
 ) -> Option<String> {
-    let tree_lines = render_query_tree_lines(node, options);
+    let tree_lines = render_query_tree_rows(node, options);
     if tree_lines.is_empty() {
         return None;
     }
@@ -30,25 +30,36 @@ pub fn render_query_tree_with_source(
     }
 
     let source_lines = maybe_highlight_source_lines(node, &source_lines, start_line, end_line, options);
-    Some(render_side_by_side(&tree_lines, &source_lines))
+    Some(render_side_by_side_aligned(&tree_lines, &source_lines, start_line, end_line, options))
 }
 
 fn render_query_tree_lines(node: &XmlNode, options: &RenderOptions) -> Vec<String> {
-    let output = match node {
+    render_query_tree_rows(node, options)
+        .into_iter()
+        .map(|row| row.text)
+        .collect()
+}
+
+fn render_query_tree_rows(node: &XmlNode, options: &RenderOptions) -> Vec<RenderedTreeLine> {
+    match node {
         XmlNode::Element { .. } => {
             let entry = build_element_entry(node, options, 0);
-            let mut out = String::new();
+            let mut out = Vec::new();
             emit_entry(&entry, options, &[], true, true, &mut out);
             out
         }
-        XmlNode::Text(text) => format!(
-            "{}\n",
-            render_line(&RenderLine::TextLiteral(text.clone()), options, false)
-        ),
-        XmlNode::Comment(text) => format!(
-            "{}\n",
-            render_line(&RenderLine::Other(format!("<!--{}-->", text)), options, false)
-        ),
+        XmlNode::Text(text) => vec![RenderedTreeLine {
+            text: render_line(&RenderLine::TextLiteral(text.clone()), options, false),
+            source_line: None,
+            source_end_line: None,
+            continuation_text: String::new(),
+        }],
+        XmlNode::Comment(text) => vec![RenderedTreeLine {
+            text: render_line(&RenderLine::Other(format!("<!--{}-->", text)), options, false),
+            source_line: None,
+            source_end_line: None,
+            continuation_text: String::new(),
+        }],
         XmlNode::ProcessingInstruction { target, data } => {
             let mut label = format!("<?{}", target);
             if let Some(data) = data {
@@ -56,43 +67,158 @@ fn render_query_tree_lines(node: &XmlNode, options: &RenderOptions) -> Vec<Strin
                 label.push_str(data);
             }
             label.push_str("?>");
-            format!("{}\n", render_line(&RenderLine::Other(label), options, false))
+            vec![RenderedTreeLine {
+                text: render_line(&RenderLine::Other(label), options, false),
+                source_line: None,
+                source_end_line: None,
+                continuation_text: String::new(),
+            }]
         }
         XmlNode::Map { .. }
         | XmlNode::Array { .. }
         | XmlNode::Number(_)
         | XmlNode::Boolean(_)
-        | XmlNode::Null => render_xml_node(node, options),
-    };
-
-    output
-        .lines()
-        .map(|line| line.to_string())
-        .collect()
+        | XmlNode::Null => render_xml_node(node, options)
+            .lines()
+            .map(|line| RenderedTreeLine {
+                text: line.to_string(),
+                source_line: None,
+                source_end_line: None,
+                continuation_text: String::new(),
+            })
+            .collect(),
+    }
 }
 
-fn render_side_by_side(tree_lines: &[String], source_lines: &[String]) -> String {
+fn render_side_by_side_aligned(
+    tree_lines: &[RenderedTreeLine],
+    source_lines: &[String],
+    start_line: u32,
+    end_line: u32,
+    options: &RenderOptions,
+) -> String {
     let left_width = tree_lines
         .iter()
-        .map(|line| visible_width(line))
+        .map(|line| visible_width(&line.text))
         .max()
         .unwrap_or(0);
+    let line_number_width = end_line.to_string().len();
 
     let mut out = String::new();
-    let line_count = tree_lines.len().max(source_lines.len());
-    for idx in 0..line_count {
-        let left = tree_lines.get(idx).map(|s| s.as_str()).unwrap_or("");
-        let right = source_lines.get(idx).map(|s| s.as_str()).unwrap_or("");
-        let padding = left_width.saturating_sub(visible_width(left));
+    let mut next_source_line = start_line;
+    let mut gap_text_after = String::new();
 
-        out.push_str(left);
-        out.push_str(&" ".repeat(padding));
-        out.push_str(" | ");
-        out.push_str(right);
-        out.push('\n');
+    for row in tree_lines {
+        let row_line = row.source_line.map(|line| line.clamp(start_line, end_line));
+
+        if let Some(line) = row_line {
+            while next_source_line < line {
+                append_side_by_side_line(
+                    &mut out,
+                    &gap_text_after,
+                    left_width,
+                    Some(next_source_line),
+                    source_lines
+                        .get((next_source_line - start_line) as usize)
+                        .map(|s| s.as_str())
+                        .unwrap_or(""),
+                    line_number_width,
+                    options,
+                );
+                next_source_line += 1;
+            }
+        }
+
+        let (source_line_number, source_text) = if row_line == Some(next_source_line) {
+            let line_number = next_source_line;
+            let text = source_lines
+                .get((next_source_line - start_line) as usize)
+                .map(|s| s.as_str())
+                .unwrap_or("");
+            next_source_line += 1;
+            (Some(line_number), text)
+        } else {
+            (None, "")
+        };
+
+        append_side_by_side_line(
+            &mut out,
+            &row.text,
+            left_width,
+            source_line_number,
+            source_text,
+            line_number_width,
+            options,
+        );
+
+        if let Some(row_end_line) = row.source_end_line.map(|line| line.clamp(start_line, end_line)) {
+            while next_source_line <= row_end_line {
+                append_side_by_side_line(
+                    &mut out,
+                    &row.continuation_text,
+                    left_width,
+                    Some(next_source_line),
+                    source_lines
+                        .get((next_source_line - start_line) as usize)
+                        .map(|s| s.as_str())
+                        .unwrap_or(""),
+                    line_number_width,
+                    options,
+                );
+                next_source_line += 1;
+            }
+        }
+
+        gap_text_after = row.continuation_text.clone();
+    }
+
+    while next_source_line <= end_line {
+        append_side_by_side_line(
+            &mut out,
+            &gap_text_after,
+            left_width,
+            Some(next_source_line),
+            source_lines
+                .get((next_source_line - start_line) as usize)
+                .map(|s| s.as_str())
+                .unwrap_or(""),
+            line_number_width,
+            options,
+        );
+        next_source_line += 1;
     }
 
     out
+}
+
+fn append_side_by_side_line(
+    out: &mut String,
+    left: &str,
+    left_width: usize,
+    source_line_number: Option<u32>,
+    right: &str,
+    line_number_width: usize,
+    options: &RenderOptions,
+) {
+    let padding = left_width.saturating_sub(visible_width(left));
+    out.push_str(left);
+    out.push_str(&" ".repeat(padding));
+    out.push_str(&paint(options, ansi::DIM, " | "));
+    if let Some(line_number) = source_line_number {
+        out.push_str(&paint(
+            options,
+            ansi::DIM,
+            &format!("{:<width$} | ", line_number, width = line_number_width),
+        ));
+    } else {
+        out.push_str(&paint(
+            options,
+            ansi::DIM,
+            &format!("{:width$} | ", "", width = line_number_width),
+        ));
+    }
+    out.push_str(right);
+    out.push('\n');
 }
 
 fn maybe_highlight_source_lines(
@@ -198,7 +324,17 @@ fn visible_width(text: &str) -> usize {
 #[derive(Debug, Clone)]
 struct RenderEntry {
     line: RenderLine,
+    source_line: Option<u32>,
+    source_end_line: Option<u32>,
     children: Vec<RenderEntry>,
+}
+
+#[derive(Debug, Clone)]
+struct RenderedTreeLine {
+    text: String,
+    source_line: Option<u32>,
+    source_end_line: Option<u32>,
+    continuation_text: String,
 }
 
 #[derive(Debug, Clone)]
@@ -221,9 +357,9 @@ struct ElementInfo<'a> {
 #[derive(Debug)]
 enum VisibleChild<'a> {
     Element(&'a XmlNode),
-    Text(&'a str),
-    Comment(&'a str),
-    ProcessingInstruction { target: &'a str, data: Option<&'a str> },
+    Text { text: &'a str, line_hint: Option<u32> },
+    Comment { text: &'a str, line_hint: Option<u32> },
+    ProcessingInstruction { target: &'a str, data: Option<&'a str>, line_hint: Option<u32> },
 }
 
 fn build_element_entry(node: &XmlNode, options: &RenderOptions, depth: usize) -> RenderEntry {
@@ -256,6 +392,8 @@ fn build_element_entry(node: &XmlNode, options: &RenderOptions, depth: usize) ->
                 path,
                 value: value.to_string(),
             },
+            source_line: source_start_line(current),
+            source_end_line: source_end_line(current),
             children: Vec::new(),
         };
     }
@@ -265,6 +403,8 @@ fn build_element_entry(node: &XmlNode, options: &RenderOptions, depth: usize) ->
     {
         vec![RenderEntry {
             line: RenderLine::Truncation(count_descendant_elements(current)),
+            source_line: None,
+            source_end_line: None,
             children: Vec::new(),
         }]
     } else {
@@ -276,6 +416,8 @@ fn build_element_entry(node: &XmlNode, options: &RenderOptions, depth: usize) ->
 
     RenderEntry {
         line: RenderLine::Path(path),
+        source_line: None,
+        source_end_line: None,
         children,
     }
 }
@@ -283,15 +425,19 @@ fn build_element_entry(node: &XmlNode, options: &RenderOptions, depth: usize) ->
 fn build_child_entry(child: &VisibleChild<'_>, options: &RenderOptions, depth: usize) -> RenderEntry {
     match child {
         VisibleChild::Element(node) => build_element_entry(node, options, depth),
-        VisibleChild::Text(text) => RenderEntry {
+        VisibleChild::Text { text, line_hint } => RenderEntry {
             line: RenderLine::TextLiteral((*text).to_string()),
+            source_line: *line_hint,
+            source_end_line: *line_hint,
             children: Vec::new(),
         },
-        VisibleChild::Comment(text) => RenderEntry {
+        VisibleChild::Comment { text, line_hint } => RenderEntry {
             line: RenderLine::Other(format!("<!--{}-->", text)),
+            source_line: *line_hint,
+            source_end_line: *line_hint,
             children: Vec::new(),
         },
-        VisibleChild::ProcessingInstruction { target, data } => {
+        VisibleChild::ProcessingInstruction { target, data, line_hint } => {
             let mut label = format!("<?{}", target);
             if let Some(data) = data {
                 label.push(' ');
@@ -300,6 +446,8 @@ fn build_child_entry(child: &VisibleChild<'_>, options: &RenderOptions, depth: u
             label.push_str("?>");
             RenderEntry {
                 line: RenderLine::Other(label),
+                source_line: *line_hint,
+                source_end_line: *line_hint,
                 children: Vec::new(),
             }
         }
@@ -312,15 +460,36 @@ fn emit_entry(
     ancestor_has_more_siblings: &[bool],
     is_last: bool,
     is_root: bool,
-    out: &mut String,
+    out: &mut Vec<RenderedTreeLine>,
 ) {
+    let mut text = String::new();
     if !is_root {
-        out.push_str(&render_prefix(options, ancestor_has_more_siblings));
-        out.push_str(&render_branch(options, is_last));
+        text.push_str(&render_prefix(options, ancestor_has_more_siblings));
+        text.push_str(&render_branch(options, is_last));
     }
 
-    out.push_str(&render_line(&entry.line, options, !entry.children.is_empty()));
-    out.push('\n');
+    text.push_str(&render_line(&entry.line, options, !entry.children.is_empty()));
+    let continuation_text = if !is_root && entry.children.is_empty() {
+        let mut continuation = render_prefix(options, ancestor_has_more_siblings);
+        continuation.push_str(&render_branch_continuation(options, is_last));
+        continuation
+    } else if !entry.children.is_empty() {
+        let mut child_ancestors = ancestor_has_more_siblings.to_vec();
+        if !is_root {
+            child_ancestors.push(!is_last);
+        }
+        let mut continuation = render_prefix(options, &child_ancestors);
+        continuation.push_str(&paint(options, ansi::DIM, "│"));
+        continuation
+    } else {
+        String::new()
+    };
+    out.push(RenderedTreeLine {
+        text,
+        source_line: entry.source_line,
+        source_end_line: entry.source_end_line,
+        continuation_text,
+    });
 
     let mut child_ancestors = ancestor_has_more_siblings.to_vec();
     if !is_root {
@@ -350,6 +519,11 @@ fn render_prefix(options: &RenderOptions, ancestor_has_more_siblings: &[bool]) -
 
 fn render_branch(options: &RenderOptions, is_last: bool) -> String {
     let branch = if is_last { "└─ " } else { "├─ " };
+    paint(options, ansi::DIM, branch)
+}
+
+fn render_branch_continuation(options: &RenderOptions, is_last: bool) -> String {
+    let branch = if is_last { "   " } else { "│  " };
     paint(options, ansi::DIM, branch)
 }
 
@@ -433,6 +607,8 @@ fn analyze_element<'a>(node: &'a XmlNode, options: &RenderOptions) -> ElementInf
     let mut markers = Vec::new();
     let mut visible_items = Vec::new();
     let mut non_marker_elements = Vec::new();
+    let parent_start = source_start_line(node);
+    let parent_end = source_end_line(node);
 
     for child in children {
         match child {
@@ -442,16 +618,43 @@ fn analyze_element<'a>(node: &'a XmlNode, options: &RenderOptions) -> ElementInf
                 visible_items.push(VisibleChild::Element(child));
             }
             XmlNode::Text(text) if !text.trim().is_empty() => {
-                visible_items.push(VisibleChild::Text(text.trim()));
+                visible_items.push(VisibleChild::Text {
+                    text: text.trim(),
+                    line_hint: None,
+                });
             }
-            XmlNode::Comment(text) => visible_items.push(VisibleChild::Comment(text)),
+            XmlNode::Comment(text) => visible_items.push(VisibleChild::Comment {
+                text,
+                line_hint: None,
+            }),
             XmlNode::ProcessingInstruction { target, data } => {
                 visible_items.push(VisibleChild::ProcessingInstruction {
                     target,
                     data: data.as_deref(),
+                    line_hint: None,
                 });
             }
             _ => {}
+        }
+    }
+
+    let line_hints: Vec<Option<u32>> = visible_items
+        .iter()
+        .enumerate()
+        .map(|(idx, item)| match item {
+            VisibleChild::Element(node) => source_start_line(node),
+            _ => line_hint_for_non_element(idx, &visible_items, parent_start, parent_end),
+        })
+        .collect();
+
+    for (item, line_hint) in visible_items.iter_mut().zip(line_hints) {
+        match item {
+            VisibleChild::Text { line_hint: slot, .. }
+            | VisibleChild::Comment { line_hint: slot, .. }
+            | VisibleChild::ProcessingInstruction { line_hint: slot, .. } => {
+                *slot = line_hint;
+            }
+            VisibleChild::Element(_) => {}
         }
     }
 
@@ -465,7 +668,7 @@ fn analyze_element<'a>(node: &'a XmlNode, options: &RenderOptions) -> ElementInf
 
 fn direct_leaf_value<'a>(info: &'a ElementInfo<'a>) -> Option<&'a str> {
     if info.non_marker_elements.is_empty() && info.visible_items.len() == 1 {
-        if let VisibleChild::Text(text) = info.visible_items[0] {
+        if let VisibleChild::Text { text, .. } = info.visible_items[0] {
             return Some(text);
         }
     }
@@ -514,6 +717,66 @@ fn count_descendant_elements(node: &XmlNode) -> usize {
             .sum(),
         _ => 0,
     }
+}
+
+fn line_hint_for_non_element(
+    idx: usize,
+    visible_items: &[VisibleChild<'_>],
+    parent_start: Option<u32>,
+    parent_end: Option<u32>,
+) -> Option<u32> {
+    let prev_line = visible_items[..idx]
+        .iter()
+        .rev()
+        .find_map(source_line_for_visible_child);
+    let next_line = visible_items[idx + 1..]
+        .iter()
+        .find_map(source_line_for_visible_child);
+
+    if prev_line.is_none() && next_line.is_none() {
+        return parent_start.or(parent_end);
+    }
+    if prev_line.is_none() {
+        return parent_start.or(next_line);
+    }
+    if next_line.is_none() {
+        return parent_end.or(prev_line);
+    }
+
+    prev_line.or(next_line).or(parent_start).or(parent_end)
+}
+
+fn source_line_for_visible_child(child: &VisibleChild<'_>) -> Option<u32> {
+    match child {
+        VisibleChild::Element(node) => source_start_line(node),
+        VisibleChild::Text { line_hint, .. }
+        | VisibleChild::Comment { line_hint, .. }
+        | VisibleChild::ProcessingInstruction { line_hint, .. } => *line_hint,
+    }
+}
+
+fn source_start_line(node: &XmlNode) -> Option<u32> {
+    if let Some((line, _, _, _)) = extract_position_span(node) {
+        return Some(line);
+    }
+
+    let XmlNode::Element { children, .. } = node else {
+        return None;
+    };
+
+    children.iter().find_map(source_start_line)
+}
+
+fn source_end_line(node: &XmlNode) -> Option<u32> {
+    if let Some((_, _, end_line, _)) = extract_position_span(node) {
+        return Some(end_line);
+    }
+
+    let XmlNode::Element { children, .. } = node else {
+        return None;
+    };
+
+    children.iter().rev().find_map(source_end_line)
 }
 
 fn quote_literal(text: &str) -> String {
@@ -724,9 +987,9 @@ mod tests {
         assert_eq!(
             rendered,
             concat!(
-                "Files/File/unit/class/ | class Foo\n",
-                "  \u{251c}\u{2500} \"class\"           | \n",
-                "  \u{2514}\u{2500} name = \"Foo\"      | \n",
+                "Files/File/unit/class/ |   | \n",
+                "  \u{251c}\u{2500} \"class\"           | 2 | class Foo\n",
+                "  \u{2514}\u{2500} name = \"Foo\"      |   | \n",
             )
         );
     }

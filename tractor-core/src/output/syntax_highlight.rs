@@ -445,7 +445,7 @@ pub fn highlight_lines(
     }
 
     let mut output = String::new();
-    let mut current_color: Option<&'static str> = None;
+    let mut carry_color: Option<&'static str> = None;
 
     for line_idx in 0..source_lines.len() {
         let line_num = start_line + line_idx as u32;
@@ -454,12 +454,18 @@ pub fn highlight_lines(
         }
 
         let line_content = &source_lines[line_idx];
+        let mut current_color: Option<&'static str> = None;
+        let mut continuation_color = None;
 
         // Process each character
         for (char_offset, ch) in line_content.char_indices() {
             let col = (char_offset + 1) as u32; // 1-based
 
-            let new_color = find_color_at(spans, line_num, col);
+            let explicit_color = find_color_at(spans, line_num, col);
+            if continuation_color.is_none() && explicit_color.is_none() && !ch.is_whitespace() {
+                continuation_color = carry_color;
+            }
+            let new_color = explicit_color.or(continuation_color);
 
             if new_color != current_color {
                 if current_color.is_some() {
@@ -474,10 +480,11 @@ pub fn highlight_lines(
             output.push(ch);
         }
 
+        carry_color = current_color;
+
         // Reset at end of line
         if current_color.is_some() {
             output.push_str(ansi::RESET);
-            current_color = None;
         }
 
         output.push('\n');
@@ -570,5 +577,53 @@ mod tests {
         assert_eq!(SyntaxCategory::String.to_ansi(), Some(ansi::YELLOW));
         assert_eq!(SyntaxCategory::Comment.to_ansi(), Some(ansi::GREEN));
         assert_eq!(SyntaxCategory::Default.to_ansi(), None);
+    }
+
+    #[test]
+    fn highlight_lines_carries_color_to_multiline_continuation() {
+        let spans = vec![SyntaxSpan {
+            start_line: 1,
+            start_col: 1,
+            end_line: 1,
+            end_col: 7,
+            category: SyntaxCategory::Comment,
+            depth: 0,
+        }];
+        let source_lines = vec!["// one".to_string(), "// two".to_string()];
+
+        let highlighted = highlight_lines(&source_lines, &spans, 1, 2);
+
+        assert_eq!(
+            highlighted,
+            format!(
+                "{green}// one{reset}\n{green}// two{reset}",
+                green = ansi::GREEN,
+                reset = ansi::RESET
+            )
+        );
+    }
+
+    #[test]
+    fn highlight_lines_does_not_color_blank_gap_lines_from_carry_state() {
+        let spans = vec![SyntaxSpan {
+            start_line: 1,
+            start_col: 1,
+            end_line: 1,
+            end_col: 7,
+            category: SyntaxCategory::Comment,
+            depth: 0,
+        }];
+        let source_lines = vec!["// one".to_string(), "".to_string(), "using".to_string()];
+
+        let highlighted = highlight_lines(&source_lines, &spans, 1, 3);
+
+        assert_eq!(
+            highlighted,
+            format!(
+                "{green}// one{reset}\n\nusing",
+                green = ansi::GREEN,
+                reset = ansi::RESET
+            )
+        );
     }
 }

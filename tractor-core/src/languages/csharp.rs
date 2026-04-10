@@ -585,6 +585,8 @@ fn group_line_comments(xot: &mut Xot, node: XotNode) -> Result<Vec<XotNode>, xot
         Some(l) => l,
         None => return Ok(Vec::new()),
     };
+    let mut end_column = get_attr(xot, node, "end_column")
+        .unwrap_or_else(|| "1".to_string());
 
     let mut consumed: Vec<XotNode> = Vec::new();
     let mut merged_text = text.clone();
@@ -629,6 +631,8 @@ fn group_line_comments(xot: &mut Xot, node: XotNode) -> Result<Vec<XotNode>, xot
 
         // Update end line to the consumed sibling's end
         end_line = get_line(xot, sibling, "end_line").unwrap_or(end_line + 1);
+        end_column = get_attr(xot, sibling, "end_column")
+            .unwrap_or_else(|| end_column.clone());
 
         consumed.push(sibling);
     }
@@ -648,7 +652,7 @@ fn group_line_comments(xot: &mut Xot, node: XotNode) -> Result<Vec<XotNode>, xot
 
         // Update end attribute to reflect the last consumed comment
         set_attr(xot, node, "end_line", &end_line.to_string());
-        set_attr(xot, node, "end_column", "1");
+        set_attr(xot, node, "end_column", &end_column);
     }
 
     Ok(consumed)
@@ -721,8 +725,9 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::parse_string_to_xot;
+    use crate::parser::{parse_string_to_xee, parse_string_to_xot};
     use crate::output::{render_document, RenderOptions};
+    use crate::XPathEngine;
 
     #[test]
     fn test_csharp_transform() {
@@ -797,6 +802,22 @@ public class Foo {
         assert!(xml.contains("// line 3"), "merged comment should contain line 3");
         // Should be leading (immediately before int y)
         assert!(xml.contains("<leading/>"), "grouped comment block should be leading");
+
+        let mut parsed = parse_string_to_xee(source, "csharp", "<test>".to_string(), None).unwrap();
+        let engine = XPathEngine::new();
+        let matches = engine.query_documents(
+            &mut parsed.documents,
+            parsed.doc_handle,
+            "//comment",
+            parsed.source_lines.clone(),
+            "<test>",
+        ).unwrap();
+        assert_eq!(matches.len(), 1, "grouped comments should query as a single match");
+        assert_eq!(
+            matches[0].extract_source_snippet(),
+            "// line 1\n    // line 2\n    // line 3".to_string(),
+            "grouped comment should extract the full merged source span"
+        );
     }
 
     #[test]
