@@ -3,9 +3,9 @@
 //! This module owns ALL Java-specific transformation rules.
 //! No assumptions about other languages - this is self-contained.
 
-use xot::{Xot, Node as XotNode};
-use crate::xot_transform::{TransformAction, helpers::*};
 use crate::output::syntax_highlight::SyntaxCategory;
+use crate::xot_transform::{helpers::*, TransformAction};
+use xot::{Node as XotNode, Xot};
 
 /// Transform a Java AST node
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
@@ -31,10 +31,18 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         "name" => {
             if let Some(parent) = get_parent(xot, node) {
                 let parent_kind = get_element_name(xot, parent).unwrap_or_default();
-                if matches!(parent_kind.as_str(),
-                    "class_declaration" | "interface_declaration" | "enum_declaration"
-                    | "method_declaration" | "constructor_declaration"
-                    | "class" | "interface" | "enum" | "method" | "ctor"
+                if matches!(
+                    parent_kind.as_str(),
+                    "class_declaration"
+                        | "interface_declaration"
+                        | "enum_declaration"
+                        | "method_declaration"
+                        | "constructor_declaration"
+                        | "class"
+                        | "interface"
+                        | "enum"
+                        | "method"
+                        | "ctor"
                 ) {
                     let children: Vec<_> = xot.children(node).collect();
                     for child in children {
@@ -113,8 +121,12 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // ---------------------------------------------------------------------
         // Declarations — prepend <package-private/> if no modifiers child
         // ---------------------------------------------------------------------
-        "class_declaration" | "interface_declaration" | "enum_declaration"
-        | "method_declaration" | "constructor_declaration" | "field_declaration" => {
+        "class_declaration"
+        | "interface_declaration"
+        | "enum_declaration"
+        | "method_declaration"
+        | "constructor_declaration"
+        | "field_declaration" => {
             if !has_modifiers_child(xot, node) {
                 prepend_empty_element(xot, node, "package-private")?;
             }
@@ -155,10 +167,19 @@ fn has_modifiers_child(xot: &Xot, node: XotNode) -> bool {
 
 /// Known Java modifiers
 fn is_known_modifier(text: &str) -> bool {
-    matches!(text,
-        "public" | "private" | "protected" |
-        "static" | "final" | "abstract" | "synchronized" |
-        "volatile" | "transient" | "native" | "strictfp"
+    matches!(
+        text,
+        "public"
+            | "private"
+            | "protected"
+            | "static"
+            | "final"
+            | "abstract"
+            | "synchronized"
+            | "volatile"
+            | "transient"
+            | "native"
+            | "strictfp"
     )
 }
 
@@ -214,7 +235,8 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
 fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     let texts = get_text_children(xot, node);
     let operator = texts.iter().find(|t| {
-        !t.chars().all(|c| matches!(c, '(' | ')' | ',' | ';' | '{' | '}' | '[' | ']'))
+        !t.chars()
+            .all(|c| matches!(c, '(' | ')' | ',' | ';' | '{' | '}' | '[' | ']'))
     });
     if let Some(op) = operator {
         prepend_op_element(xot, node, op)?;
@@ -226,7 +248,7 @@ fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
 fn classify_identifier(xot: &Xot, node: XotNode) -> &'static str {
     let parent = match get_parent(xot, node) {
         Some(p) => p,
-        None => return "type",  // Default for Java
+        None => return "type", // Default for Java
     };
     let parent_kind = get_element_name(xot, parent).unwrap_or_default();
 

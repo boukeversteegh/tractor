@@ -6,11 +6,11 @@
 //! Also provides `DiffHunkFilter` for line-level filtering: only keep
 //! matches whose line ranges overlap with changed hunks in a git diff.
 
+use crate::filter::ResultFilter;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use tractor_core::Match;
-use crate::filter::ResultFilter;
 
 /// Run `git diff --name-only` with the given spec and return the set of
 /// changed file paths, resolved relative to `cwd`.
@@ -58,10 +58,7 @@ pub fn git_changed_files(
 
 /// Filter a list of file paths to only those present in the `changed` set.
 /// Paths are canonicalized for reliable comparison.
-pub fn intersect_changed(
-    files: Vec<String>,
-    changed: &HashSet<PathBuf>,
-) -> Vec<String> {
+pub fn intersect_changed(files: Vec<String>, changed: &HashSet<PathBuf>) -> Vec<String> {
     // Pre-canonicalize the changed set for comparison.
     let canonical_changed: HashSet<PathBuf> = changed
         .iter()
@@ -308,12 +305,23 @@ mod tests {
                 .env("GIT_COMMITTER_EMAIL", "test@test")
                 .output()
                 .unwrap();
-            assert!(output.status.success(), "git {:?} failed: {}",
-                args, String::from_utf8_lossy(&output.stderr));
+            assert!(
+                output.status.success(),
+                "git {:?} failed: {}",
+                args,
+                String::from_utf8_lossy(&output.stderr)
+            );
         };
 
         run(&["init"]);
-        run(&["-c", "commit.gpgsign=false", "commit", "--allow-empty", "-m", "initial"]);
+        run(&[
+            "-c",
+            "commit.gpgsign=false",
+            "commit",
+            "--allow-empty",
+            "-m",
+            "initial",
+        ]);
         dir
     }
 
@@ -325,10 +333,15 @@ mod tests {
         // Create a file and commit it
         std::fs::write(cwd.join("a.rs"), "fn main() {}").unwrap();
         let run = |args: &[&str]| {
-            Command::new("git").args(args).current_dir(cwd)
-                .env("GIT_AUTHOR_NAME", "test").env("GIT_AUTHOR_EMAIL", "test@test")
-                .env("GIT_COMMITTER_NAME", "test").env("GIT_COMMITTER_EMAIL", "test@test")
-                .output().unwrap();
+            Command::new("git")
+                .args(args)
+                .current_dir(cwd)
+                .env("GIT_AUTHOR_NAME", "test")
+                .env("GIT_AUTHOR_EMAIL", "test@test")
+                .env("GIT_COMMITTER_NAME", "test")
+                .env("GIT_COMMITTER_EMAIL", "test@test")
+                .output()
+                .unwrap();
         };
         run(&["add", "a.rs"]);
         run(&["-c", "commit.gpgsign=false", "commit", "-m", "add a.rs"]);
@@ -337,7 +350,13 @@ mod tests {
         std::fs::write(cwd.join("a.rs"), "fn main() { println!(\"hello\"); }").unwrap();
         std::fs::write(cwd.join("b.rs"), "fn other() {}").unwrap();
         run(&["add", "."]);
-        run(&["-c", "commit.gpgsign=false", "commit", "-m", "modify a.rs, add b.rs"]);
+        run(&[
+            "-c",
+            "commit.gpgsign=false",
+            "commit",
+            "-m",
+            "modify a.rs, add b.rs",
+        ]);
 
         let changed = git_changed_files("HEAD~1 HEAD", cwd).unwrap();
         let a_path = cwd.join("a.rs");
@@ -354,13 +373,21 @@ mod tests {
         let cwd = dir.path();
 
         // Create a file with 10 lines and commit
-        let original = (1..=10).map(|i| format!("line {}", i)).collect::<Vec<_>>().join("\n");
+        let original = (1..=10)
+            .map(|i| format!("line {}", i))
+            .collect::<Vec<_>>()
+            .join("\n");
         std::fs::write(cwd.join("test.rs"), &original).unwrap();
         let run = |args: &[&str]| {
-            Command::new("git").args(args).current_dir(cwd)
-                .env("GIT_AUTHOR_NAME", "test").env("GIT_AUTHOR_EMAIL", "test@test")
-                .env("GIT_COMMITTER_NAME", "test").env("GIT_COMMITTER_EMAIL", "test@test")
-                .output().unwrap();
+            Command::new("git")
+                .args(args)
+                .current_dir(cwd)
+                .env("GIT_AUTHOR_NAME", "test")
+                .env("GIT_AUTHOR_EMAIL", "test@test")
+                .env("GIT_COMMITTER_NAME", "test")
+                .env("GIT_COMMITTER_EMAIL", "test@test")
+                .output()
+                .unwrap();
         };
         run(&["add", "."]);
         run(&["-c", "commit.gpgsign=false", "commit", "-m", "initial file"]);
@@ -371,7 +398,13 @@ mod tests {
             .replace("line 7", "line 7 CHANGED");
         std::fs::write(cwd.join("test.rs"), &modified).unwrap();
         run(&["add", "."]);
-        run(&["-c", "commit.gpgsign=false", "commit", "-m", "modify lines 3 and 7"]);
+        run(&[
+            "-c",
+            "commit.gpgsign=false",
+            "commit",
+            "-m",
+            "modify lines 3 and 7",
+        ]);
 
         let filter = DiffHunkFilter::from_spec("HEAD~1 HEAD", cwd).unwrap();
         let test_canon = std::fs::canonicalize(cwd.join("test.rs")).unwrap();
@@ -381,16 +414,31 @@ mod tests {
 
         // Match on line 3 should be included
         let m = Match::new(test_canon.to_str().unwrap().to_string(), "x".into());
-        let m3 = Match { line: 3, end_line: 3, ..m.clone() };
+        let m3 = Match {
+            line: 3,
+            end_line: 3,
+            ..m.clone()
+        };
         assert!(filter.include(&m3), "line 3 should be in a changed hunk");
 
         // Match on line 7 should be included
-        let m7 = Match { line: 7, end_line: 7, ..m.clone() };
+        let m7 = Match {
+            line: 7,
+            end_line: 7,
+            ..m.clone()
+        };
         assert!(filter.include(&m7), "line 7 should be in a changed hunk");
 
         // Match on line 5 (unchanged) should be excluded
-        let m5 = Match { line: 5, end_line: 5, ..m };
-        assert!(!filter.include(&m5), "line 5 should NOT be in a changed hunk");
+        let m5 = Match {
+            line: 5,
+            end_line: 5,
+            ..m
+        };
+        assert!(
+            !filter.include(&m5),
+            "line 5 should NOT be in a changed hunk"
+        );
     }
 
     // -----------------------------------------------------------------------
@@ -488,19 +536,35 @@ mod tests {
 
         // Match fully within hunk
         let m = Match::new(a.to_str().unwrap().to_string(), "x".into());
-        let m = Match { line: 3, end_line: 3, ..m };
+        let m = Match {
+            line: 3,
+            end_line: 3,
+            ..m
+        };
         assert!(filter.include(&m));
 
         // Match overlapping hunk start
-        let m = Match { line: 1, end_line: 2, ..m };
+        let m = Match {
+            line: 1,
+            end_line: 2,
+            ..m
+        };
         assert!(filter.include(&m));
 
         // Match overlapping hunk end
-        let m = Match { line: 4, end_line: 6, ..m };
+        let m = Match {
+            line: 4,
+            end_line: 6,
+            ..m
+        };
         assert!(filter.include(&m));
 
         // Match completely outside hunk
-        let m = Match { line: 5, end_line: 6, ..m };
+        let m = Match {
+            line: 5,
+            end_line: 6,
+            ..m
+        };
         assert!(!filter.include(&m));
     }
 
@@ -527,10 +591,15 @@ mod tests {
         let cwd = dir.path();
 
         let run = |args: &[&str]| {
-            Command::new("git").args(args).current_dir(cwd)
-                .env("GIT_AUTHOR_NAME", "test").env("GIT_AUTHOR_EMAIL", "test@test")
-                .env("GIT_COMMITTER_NAME", "test").env("GIT_COMMITTER_EMAIL", "test@test")
-                .output().unwrap();
+            Command::new("git")
+                .args(args)
+                .current_dir(cwd)
+                .env("GIT_AUTHOR_NAME", "test")
+                .env("GIT_AUTHOR_EMAIL", "test@test")
+                .env("GIT_COMMITTER_NAME", "test")
+                .env("GIT_COMMITTER_EMAIL", "test@test")
+                .output()
+                .unwrap();
         };
 
         // Create two files and commit
@@ -547,6 +616,10 @@ mod tests {
         let changed = git_changed_files("HEAD~1 HEAD", cwd).unwrap();
 
         // delete.rs should NOT appear (--diff-filter=ACMR excludes deletions)
-        assert!(changed.is_empty(), "deleted files should be excluded, got: {:?}", changed);
+        assert!(
+            changed.is_empty(),
+            "deleted files should be excluded, got: {:?}",
+            changed
+        );
     }
 }

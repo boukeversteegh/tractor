@@ -12,7 +12,10 @@ pub fn run_languages() -> Result<(), Box<dyn std::error::Error>> {
         let extensions_str = lang_info.extensions.join(", ");
         let aliases_str = lang_info.aliases.join(", ");
 
-        println!("{:<15} {:<30} {}", lang_info.name, extensions_str, aliases_str);
+        println!(
+            "{:<15} {:<30} {}",
+            lang_info.name, extensions_str, aliases_str
+        );
     }
 
     println!("\nUse -l/--lang with the language name or any alias.");

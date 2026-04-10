@@ -12,14 +12,17 @@
 //! and pushes matches into a `ReportBuilder` that can be finalized into a
 //! `Report` and rendered in any format.
 
-use std::path::PathBuf;
 use rayon::prelude::*;
+use std::path::PathBuf;
 use tractor_core::normalized_xpath::NormalizedXpath;
-use tractor_core::rule::{Rule, RuleSet};
 use tractor_core::report::{ReportBuilder, ReportMatch, Severity};
+use tractor_core::rule::{Rule, RuleSet};
 use tractor_core::tree_mode::TreeMode;
-use tractor_core::{detect_language, parse_to_documents, parse_string_to_documents, Match, apply_replacements, NormalizedPath};
-use tractor_core::xpath_upsert::{upsert, update_only};
+use tractor_core::xpath_upsert::{update_only, upsert};
+use tractor_core::{
+    apply_replacements, detect_language, parse_string_to_documents, parse_to_documents, Match,
+    NormalizedPath,
+};
 
 use crate::filter::ResultFilter;
 use crate::pipeline::matcher::validate_xpath_diagnostic;
@@ -256,7 +259,7 @@ impl Default for ExecuteOptions {
 // Executor
 // ---------------------------------------------------------------------------
 
-use crate::file_resolver::{FileResolver, FileRequest, make_fatal_diagnostic};
+use crate::file_resolver::{make_fatal_diagnostic, FileRequest, FileResolver};
 
 /// Convert owned filters to borrowed references for passing to query engine.
 fn filter_refs(filters: &[Box<dyn ResultFilter>]) -> Vec<&dyn ResultFilter> {
@@ -303,7 +306,9 @@ fn execute_query(
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Inline source mode: parse a string instead of files.
     if let Some(ref source) = op.inline_source {
-        let lang = op.language.as_deref()
+        let lang = op
+            .language
+            .as_deref()
             .ok_or("inline source requires a language (--lang)")?;
         return execute_query_inline(source, lang, op, report);
     }
@@ -324,7 +329,9 @@ fn execute_query(
     let xpaths: Vec<&str> = op.queries.iter().map(|q| q.xpath.as_str()).collect();
 
     // Validate all XPath expressions upfront �� add fatal diagnostics on failure
-    let diagnostics: Vec<_> = op.queries.iter()
+    let diagnostics: Vec<_> = op
+        .queries
+        .iter()
         .filter_map(|q| validate_xpath_diagnostic(&q.xpath, "query"))
         .collect();
     if !diagnostics.is_empty() {
@@ -333,12 +340,22 @@ fn execute_query(
     }
 
     let matches = query_files_multi(
-        &files, &xpaths, op.language.as_deref(),
-        op.tree_mode, op.ignore_whitespace, op.parse_depth,
-        op.limit, options.verbose, &filter_refs(&filters),
+        &files,
+        &xpaths,
+        op.language.as_deref(),
+        op.tree_mode,
+        op.ignore_whitespace,
+        op.parse_depth,
+        op.limit,
+        options.verbose,
+        &filter_refs(&filters),
     )?;
 
-    report.add_all(matches.into_iter().map(|m| match_to_report_match(m, "query")));
+    report.add_all(
+        matches
+            .into_iter()
+            .map(|m| match_to_report_match(m, "query")),
+    );
 
     Ok(())
 }
@@ -351,9 +368,10 @@ fn execute_query_inline(
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Validate all XPath expressions upfront
-    let diagnostics: Vec<_> = op.queries.iter()
+    let diagnostics: Vec<_> = op
+        .queries
+        .iter()
         .filter_map(|q| validate_xpath_diagnostic(&q.xpath, "query"))
-
         .collect();
     if !diagnostics.is_empty() {
         report.add_all(diagnostics);
@@ -361,7 +379,11 @@ fn execute_query_inline(
     }
 
     let mut result = parse_string_to_documents(
-        source, lang, "<stdin>".to_string(), op.tree_mode, op.ignore_whitespace,
+        source,
+        lang,
+        "<stdin>".to_string(),
+        op.tree_mode,
+        op.ignore_whitespace,
     )?;
 
     let mut all_matches = Vec::new();
@@ -374,7 +396,11 @@ fn execute_query_inline(
         all_matches.truncate(limit);
     }
 
-    report.add_all(all_matches.into_iter().map(|m| match_to_report_match(m, "query")));
+    report.add_all(
+        all_matches
+            .into_iter()
+            .map(|m| match_to_report_match(m, "query")),
+    );
 
     Ok(())
 }
@@ -394,7 +420,9 @@ fn execute_check(
     }
 
     // --- Phase 0: Validate XPath expressions upfront ---
-    let diagnostics: Vec<_> = op.rules.iter()
+    let diagnostics: Vec<_> = op
+        .rules
+        .iter()
         .filter_map(|rule| validate_xpath_diagnostic(&rule.xpath, "check"))
         .collect();
     if !diagnostics.is_empty() {
@@ -407,10 +435,16 @@ fn execute_check(
 
     // --- Phase 2: Inline source mode — parse a string and run rules against it ---
     if let Some(ref source) = op.inline_source {
-        let lang = op.language.as_deref()
+        let lang = op
+            .language
+            .as_deref()
             .ok_or("inline source requires a language (--lang)")?;
         let mut result = parse_string_to_documents(
-            source, lang, "<stdin>".to_string(), op.tree_mode, op.ignore_whitespace,
+            source,
+            lang,
+            "<stdin>".to_string(),
+            op.tree_mode,
+            op.ignore_whitespace,
         )?;
         for rule in &op.rules {
             let matches = result.query(rule.xpath.as_str())?;
@@ -517,16 +551,16 @@ fn validate_rule_examples(
 
         // Validate valid examples: expect "none" (query should NOT match valid code)
         for (i, example) in rule.valid_examples.iter().enumerate() {
-            let mut result = parse_string_to_documents(
-                example, lang, "<stdin>".to_string(), tree_mode, false,
-            )?;
+            let mut result =
+                parse_string_to_documents(example, lang, "<stdin>".to_string(), tree_mode, false)?;
             let matches = result.query(rule.xpath.as_str())?;
             if !check_expectation("none", matches.len())? {
                 report.add(example_failure_match(
                     &rule.id,
                     &format!(
                         "[{}] valid example {} unexpectedly matched query",
-                        rule.id, i + 1
+                        rule.id,
+                        i + 1
                     ),
                 ));
             }
@@ -534,16 +568,16 @@ fn validate_rule_examples(
 
         // Validate invalid examples: expect "some" (query SHOULD match invalid code)
         for (i, example) in rule.invalid_examples.iter().enumerate() {
-            let mut result = parse_string_to_documents(
-                example, lang, "<stdin>".to_string(), tree_mode, false,
-            )?;
+            let mut result =
+                parse_string_to_documents(example, lang, "<stdin>".to_string(), tree_mode, false)?;
             let matches = result.query(rule.xpath.as_str())?;
             if !check_expectation("some", matches.len())? {
                 report.add(example_failure_match(
                     &rule.id,
                     &format!(
                         "[{}] invalid example {} did not match query",
-                        rule.id, i + 1
+                        rule.id,
+                        i + 1
                     ),
                 ));
             }
@@ -569,7 +603,7 @@ fn example_failure_match(rule_id: &str, reason: &str) -> ReportMatch {
         reason: Some(reason.to_string()),
         severity: Some(Severity::Error),
         message: None,
-       
+
         origin: None,
         rule_id: Some(rule_id.to_string()),
         status: None,
@@ -598,8 +632,7 @@ fn execute_set(
 
     for file_path in &files {
         let lang_override = op.language.as_deref();
-        let lang = lang_override
-            .unwrap_or_else(|| detect_language(file_path.as_str()));
+        let lang = lang_override.unwrap_or_else(|| detect_language(file_path.as_str()));
 
         let source = std::fs::read_to_string(file_path)?;
         let mut current = source.clone();
@@ -641,12 +674,16 @@ fn execute_set(
             reason: None,
             severity: None,
             message: None,
-           
+
             origin: None,
             rule_id: None,
             status: Some(status_str.to_string()),
             output: if was_modified && op.verify {
-                Some(format!("{} mapping{} would change", mappings_applied, if mappings_applied == 1 { "" } else { "s" }))
+                Some(format!(
+                    "{} mapping{} would change",
+                    mappings_applied,
+                    if mappings_applied == 1 { "" } else { "s" }
+                ))
             } else {
                 None
             },
@@ -668,10 +705,16 @@ fn execute_test(
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Inline source mode: parse a string and check each assertion individually.
     if let Some(ref source) = op.inline_source {
-        let lang = op.language.as_deref()
+        let lang = op
+            .language
+            .as_deref()
             .ok_or("inline source requires a language (--lang)")?;
         let mut result = parse_string_to_documents(
-            source, lang, "<stdin>".to_string(), op.tree_mode, op.ignore_whitespace,
+            source,
+            lang,
+            "<stdin>".to_string(),
+            op.tree_mode,
+            op.ignore_whitespace,
         )?;
         return run_test_assertions_on_result(&mut result, &op.assertions, op.limit, report);
     }
@@ -698,14 +741,24 @@ fn execute_test(
     let refs = filter_refs(&filters);
     for assertion in &op.assertions {
         let matches = query_files_multi(
-            &files, &[assertion.xpath.as_str()], op.language.as_deref(),
-            op.tree_mode, op.ignore_whitespace, op.parse_depth,
-            op.limit, options.verbose, &refs,
+            &files,
+            &[assertion.xpath.as_str()],
+            op.language.as_deref(),
+            op.tree_mode,
+            op.ignore_whitespace,
+            op.parse_depth,
+            op.limit,
+            options.verbose,
+            &refs,
         )?;
         if !check_expectation(&assertion.expect, matches.len())? {
             report.fail();
         }
-        report.add_all(matches.into_iter().map(|m| match_to_report_match(m, "test")));
+        report.add_all(
+            matches
+                .into_iter()
+                .map(|m| match_to_report_match(m, "test")),
+        );
     }
 
     Ok(())
@@ -726,7 +779,11 @@ fn run_test_assertions_on_result(
         if !check_expectation(&assertion.expect, matches.len())? {
             report.fail();
         }
-        report.add_all(matches.into_iter().map(|m| match_to_report_match(m, "test")));
+        report.add_all(
+            matches
+                .into_iter()
+                .map(|m| match_to_report_match(m, "test")),
+        );
     }
 
     Ok(())
@@ -753,7 +810,9 @@ fn execute_update(
     let mut fallback_files: Vec<NormalizedPath> = Vec::new();
 
     for file_path in &files {
-        let lang = op.language.as_deref()
+        let lang = op
+            .language
+            .as_deref()
             .unwrap_or_else(|| detect_language(file_path.as_str()));
         let source = std::fs::read_to_string(file_path)?;
 
@@ -778,20 +837,35 @@ fn execute_update(
     // Legacy fallback for languages without renderers
     if !fallback_files.is_empty() {
         let matches = query_files_multi(
-            &fallback_files, &[op.xpath.as_str()], op.language.as_deref(),
-            op.tree_mode, op.ignore_whitespace, op.parse_depth,
-            None, options.verbose, &filter_refs(&filters),
+            &fallback_files,
+            &[op.xpath.as_str()],
+            op.language.as_deref(),
+            op.tree_mode,
+            op.ignore_whitespace,
+            op.parse_depth,
+            None,
+            options.verbose,
+            &filter_refs(&filters),
         )?;
         if !matches.is_empty() {
             let summary = apply_replacements(&matches, &op.value)?;
             for m in &matches[..summary.replacements_made.min(matches.len())] {
                 report.add(ReportMatch {
                     file: m.file.clone(),
-                    line: m.line, column: m.column, end_line: m.end_line, end_column: m.end_column,
+                    line: m.line,
+                    column: m.column,
+                    end_line: m.end_line,
+                    end_column: m.end_column,
                     command: "update".to_string(),
-                    tree: None, value: None, source: None, lines: None,
-                    reason: None, severity: None, message: None,
-                    origin: None, rule_id: None,
+                    tree: None,
+                    value: None,
+                    source: None,
+                    lines: None,
+                    reason: None,
+                    severity: None,
+                    message: None,
+                    origin: None,
+                    rule_id: None,
                     status: Some("updated".to_string()),
                     output: None,
                 });
@@ -817,8 +891,12 @@ fn check_expectation(expect: &str, count: usize) -> Result<bool, Box<dyn std::er
         "none" => count == 0,
         "some" => count > 0,
         _ => {
-            let expected: usize = expect.parse()
-                .map_err(|_| format!("invalid expectation '{}': use 'none', 'some', or a number", expect))?;
+            let expected: usize = expect.parse().map_err(|_| {
+                format!(
+                    "invalid expectation '{}': use 'none', 'some', or a number",
+                    expect
+                )
+            })?;
             count == expected
         }
     };
@@ -848,7 +926,7 @@ fn match_to_report_match(m: Match, command: &str) -> ReportMatch {
         reason: None,
         severity: None,
         message: None,
-       
+
         origin: None,
         rule_id: None,
         status: None,
@@ -905,7 +983,11 @@ fn query_files_multi(
                 file_matches.retain(|m| filters.iter().all(|f| f.include(m)));
             }
 
-            if file_matches.is_empty() { None } else { Some(file_matches) }
+            if file_matches.is_empty() {
+                None
+            } else {
+                Some(file_matches)
+            }
         })
         .flatten()
         .collect();
@@ -926,7 +1008,6 @@ fn query_files_multi(
 #[cfg(test)]
 mod tests {
     use super::*;
-
 
     fn temp_json_file(content: &str) -> (tempfile::TempDir, String) {
         let dir = tempfile::tempdir().unwrap();
@@ -970,7 +1051,9 @@ mod tests {
             exclude: vec![],
             diff_files: None,
             diff_lines: None,
-            queries: vec![QueryExpr { xpath: "//name".into() }],
+            queries: vec![QueryExpr {
+                xpath: "//name".into(),
+            }],
             tree_mode: None,
             language: None,
             limit: None,
@@ -994,7 +1077,9 @@ mod tests {
             exclude: vec![],
             diff_files: None,
             diff_lines: None,
-            queries: vec![QueryExpr { xpath: "//*[number(.) > 0]".into() }],
+            queries: vec![QueryExpr {
+                xpath: "//*[number(.) > 0]".into(),
+            }],
             tree_mode: None,
             language: None,
             limit: Some(2),
@@ -1014,7 +1099,9 @@ mod tests {
             exclude: vec![],
             diff_files: None,
             diff_lines: None,
-            queries: vec![QueryExpr { xpath: "//x".into() }],
+            queries: vec![QueryExpr {
+                xpath: "//x".into(),
+            }],
             tree_mode: None,
             language: None,
             limit: None,
@@ -1053,8 +1140,16 @@ mod tests {
         assert!(report.success.unwrap());
 
         let content = std::fs::read_to_string(&path).unwrap();
-        assert!(content.contains("new-host"), "file should contain new value: {}", content);
-        assert!(!content.contains("old"), "file should not contain old value: {}", content);
+        assert!(
+            content.contains("new-host"),
+            "file should contain new value: {}",
+            content
+        );
+        assert!(
+            !content.contains("old"),
+            "file should not contain old value: {}",
+            content
+        );
     }
 
     #[test]
@@ -1078,7 +1173,11 @@ mod tests {
         assert!(report.success.unwrap());
 
         let content = std::fs::read_to_string(&path).unwrap();
-        assert!(content.contains("localhost"), "missing node should be created: {}", content);
+        assert!(
+            content.contains("localhost"),
+            "missing node should be created: {}",
+            content
+        );
     }
 
     #[test]
@@ -1091,8 +1190,14 @@ mod tests {
             diff_files: None,
             diff_lines: None,
             mappings: vec![
-                SetMapping { xpath: "//database/host".into(), value: "new-host".into() },
-                SetMapping { xpath: "//database/port".into(), value: "5432".into() },
+                SetMapping {
+                    xpath: "//database/host".into(),
+                    value: "new-host".into(),
+                },
+                SetMapping {
+                    xpath: "//database/port".into(),
+                    value: "5432".into(),
+                },
             ],
             language: None,
             verify: false,
@@ -1102,8 +1207,16 @@ mod tests {
         assert!(report.success.unwrap());
 
         let content = std::fs::read_to_string(&path).unwrap();
-        assert!(content.contains("new-host"), "host should be updated: {}", content);
-        assert!(content.contains("5432"), "port should be updated: {}", content);
+        assert!(
+            content.contains("new-host"),
+            "host should be updated: {}",
+            content
+        );
+        assert!(
+            content.contains("5432"),
+            "port should be updated: {}",
+            content
+        );
     }
 
     #[test]
@@ -1163,16 +1276,21 @@ mod tests {
 
         // File should NOT be modified
         let content = std::fs::read_to_string(&path).unwrap();
-        assert!(content.contains("wrong"), "file should not be modified in verify mode");
+        assert!(
+            content.contains("wrong"),
+            "file should not be modified in verify mode"
+        );
     }
 
     #[test]
     fn verify_passes_when_in_sync() {
-        let (_dir, path) = temp_json_file(r#"{
+        let (_dir, path) = temp_json_file(
+            r#"{
   "database": {
     "host": "correct"
   }
-}"#);
+}"#,
+        );
 
         let ops = vec![Operation::Set(SetOperation {
             files: vec![path.clone()],
@@ -1188,7 +1306,10 @@ mod tests {
         })];
 
         let report = run(&ops);
-        assert!(report.success.unwrap(), "verify should pass when values are in sync");
+        assert!(
+            report.success.unwrap(),
+            "verify should pass when values are in sync"
+        );
     }
 
     // -----------------------------------------------------------------------
@@ -1204,11 +1325,9 @@ mod tests {
             exclude: vec![],
             diff_files: None,
             diff_lines: None,
-            rules: vec![
-                Rule::new("no-debug", "//debug[.='true']")
-                    .with_reason("debug should not be enabled")
-                    .with_severity(Severity::Error),
-            ],
+            rules: vec![Rule::new("no-debug", "//debug[.='true']")
+                .with_reason("debug should not be enabled")
+                .with_severity(Severity::Error)],
             tree_mode: None,
             language: None,
             ignore_whitespace: false,
@@ -1219,11 +1338,17 @@ mod tests {
         })];
 
         let report = run(&ops);
-        assert!(!report.success.unwrap(), "check should fail when violations found");
+        assert!(
+            !report.success.unwrap(),
+            "check should fail when violations found"
+        );
         let matches = report.all_matches();
         assert_eq!(matches.len(), 1);
         assert_eq!(matches[0].rule_id.as_deref(), Some("no-debug"));
-        assert_eq!(matches[0].reason.as_deref(), Some("debug should not be enabled"));
+        assert_eq!(
+            matches[0].reason.as_deref(),
+            Some("debug should not be enabled")
+        );
     }
 
     #[test]
@@ -1235,10 +1360,8 @@ mod tests {
             exclude: vec![],
             diff_files: None,
             diff_lines: None,
-            rules: vec![
-                Rule::new("no-debug", "//debug[.='true']")
-                    .with_reason("debug should not be enabled"),
-            ],
+            rules: vec![Rule::new("no-debug", "//debug[.='true']")
+                .with_reason("debug should not be enabled")],
             tree_mode: None,
             language: None,
             ignore_whitespace: false,
@@ -1259,11 +1382,9 @@ mod tests {
             exclude: vec![],
             diff_files: None,
             diff_lines: None,
-            rules: vec![
-                Rule::new("no-debug", "//debug[.='true']")
-                    .with_reason("debug should not be enabled")
-                    .with_severity(Severity::Error),
-            ],
+            rules: vec![Rule::new("no-debug", "//debug[.='true']")
+                .with_reason("debug should not be enabled")
+                .with_severity(Severity::Error)],
             tree_mode: None,
             language: Some("json".into()),
             ignore_whitespace: false,
@@ -1274,10 +1395,16 @@ mod tests {
         })];
 
         let report = run(&ops);
-        assert!(!report.success.unwrap(), "inline check should fail when violations found");
+        assert!(
+            !report.success.unwrap(),
+            "inline check should fail when violations found"
+        );
         let matches = report.all_matches();
         assert_eq!(matches.len(), 1);
-        assert_eq!(matches[0].reason.as_deref(), Some("debug should not be enabled"));
+        assert_eq!(
+            matches[0].reason.as_deref(),
+            Some("debug should not be enabled")
+        );
     }
 
     #[test]
@@ -1287,10 +1414,8 @@ mod tests {
             exclude: vec![],
             diff_files: None,
             diff_lines: None,
-            rules: vec![
-                Rule::new("no-debug", "//debug[.='true']")
-                    .with_reason("debug should not be enabled"),
-            ],
+            rules: vec![Rule::new("no-debug", "//debug[.='true']")
+                .with_reason("debug should not be enabled")],
             tree_mode: None,
             language: Some("json".into()),
             ignore_whitespace: false,
@@ -1327,10 +1452,8 @@ mod tests {
                 exclude: vec![],
                 diff_files: None,
                 diff_lines: None,
-                rules: vec![
-                    Rule::new("has-name", "//name[.='missing']")
-                        .with_reason("name should not be 'missing'"),
-                ],
+                rules: vec![Rule::new("has-name", "//name[.='missing']")
+                    .with_reason("name should not be 'missing'")],
                 tree_mode: None,
                 language: None,
                 ignore_whitespace: false,
@@ -1382,8 +1505,16 @@ mod tests {
         assert!(report.success.unwrap());
 
         let content = std::fs::read_to_string(&path).unwrap();
-        assert!(content.contains("new-host"), "yaml host should be updated: {}", content);
-        assert!(content.contains("5432"), "yaml port should be preserved: {}", content);
+        assert!(
+            content.contains("new-host"),
+            "yaml host should be updated: {}",
+            content
+        );
+        assert!(
+            content.contains("5432"),
+            "yaml port should be preserved: {}",
+            content
+        );
     }
 
     // -----------------------------------------------------------------------
@@ -1394,57 +1525,61 @@ mod tests {
     fn test_validate_examples_pass_and_fail_correct() {
         // Valid example has no comments → expect "none" passes
         // Invalid example has a comment → expect "some" passes
-        let rules = vec![
-            Rule::new("no-comments", "//line_comment")
-                .with_language("rust")
-                .with_valid_examples(vec!["fn main() {}".to_string()])
-                .with_invalid_examples(vec!["// hello\nfn main() {}".to_string()]),
-        ];
+        let rules = vec![Rule::new("no-comments", "//line_comment")
+            .with_language("rust")
+            .with_valid_examples(vec!["fn main() {}".to_string()])
+            .with_invalid_examples(vec!["// hello\nfn main() {}".to_string()])];
         let mut builder = ReportBuilder::new();
         validate_rule_examples(&rules, None, None, &mut builder).unwrap();
         let report = builder.build();
-        assert!(report.all_matches().is_empty(), "expected no failures: {:?}", report.all_matches());
+        assert!(
+            report.all_matches().is_empty(),
+            "expected no failures: {:?}",
+            report.all_matches()
+        );
     }
 
     #[test]
     fn test_validate_examples_valid_unexpectedly_matches() {
         // Valid example has a comment but rule looks for comments → should fail
-        let rules = vec![
-            Rule::new("no-comments", "//line_comment")
-                .with_language("rust")
-                .with_valid_examples(vec!["// oops this is a comment".to_string()]),
-        ];
+        let rules = vec![Rule::new("no-comments", "//line_comment")
+            .with_language("rust")
+            .with_valid_examples(vec!["// oops this is a comment".to_string()])];
         let mut builder = ReportBuilder::new();
         validate_rule_examples(&rules, None, None, &mut builder).unwrap();
         let report = builder.build();
         let matches = report.all_matches();
         assert_eq!(matches.len(), 1);
-        assert!(matches[0].reason.as_ref().unwrap().contains("valid example 1 unexpectedly matched"));
+        assert!(matches[0]
+            .reason
+            .as_ref()
+            .unwrap()
+            .contains("valid example 1 unexpectedly matched"));
     }
 
     #[test]
     fn test_validate_examples_invalid_does_not_match() {
         // Invalid example has no comment but rule looks for comments → should fail
-        let rules = vec![
-            Rule::new("no-comments", "//line_comment")
-                .with_language("rust")
-                .with_invalid_examples(vec!["fn main() {}".to_string()]),
-        ];
+        let rules = vec![Rule::new("no-comments", "//line_comment")
+            .with_language("rust")
+            .with_invalid_examples(vec!["fn main() {}".to_string()])];
         let mut builder = ReportBuilder::new();
         validate_rule_examples(&rules, None, None, &mut builder).unwrap();
         let report = builder.build();
         let matches = report.all_matches();
         assert_eq!(matches.len(), 1);
-        assert!(matches[0].reason.as_ref().unwrap().contains("invalid example 1 did not match"));
+        assert!(matches[0]
+            .reason
+            .as_ref()
+            .unwrap()
+            .contains("invalid example 1 did not match"));
     }
 
     #[test]
     fn test_validate_examples_language_from_operation() {
         // Rule has no language but operation default is "rust"
-        let rules = vec![
-            Rule::new("no-comments", "//line_comment")
-                .with_valid_examples(vec!["fn main() {}".to_string()]),
-        ];
+        let rules = vec![Rule::new("no-comments", "//line_comment")
+            .with_valid_examples(vec!["fn main() {}".to_string()])];
         let mut builder = ReportBuilder::new();
         validate_rule_examples(&rules, Some("rust"), None, &mut builder).unwrap();
         let report = builder.build();
@@ -1454,10 +1589,8 @@ mod tests {
     #[test]
     fn test_validate_examples_no_language_errors() {
         // Rule has examples but no language anywhere → error
-        let rules = vec![
-            Rule::new("no-comments", "//line_comment")
-                .with_valid_examples(vec!["fn main() {}".to_string()]),
-        ];
+        let rules = vec![Rule::new("no-comments", "//line_comment")
+            .with_valid_examples(vec!["fn main() {}".to_string()])];
         let mut builder = ReportBuilder::new();
         let err = validate_rule_examples(&rules, None, None, &mut builder).unwrap_err();
         assert!(err.to_string().contains("no language specified"));

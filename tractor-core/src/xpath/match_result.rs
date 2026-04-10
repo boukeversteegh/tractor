@@ -19,7 +19,6 @@ use std::sync::Arc;
 #[derive(Debug, Clone, PartialEq)]
 pub enum XmlNode {
     // --- XML node variants ---
-
     /// An XML element with tag name, attributes, and children.
     Element {
         name: String,
@@ -37,7 +36,6 @@ pub enum XmlNode {
     },
 
     // --- XPath data variants (maps, arrays, scalars) ---
-
     /// An XPath map: ordered sequence of key–value pairs.
     /// Keys are always strings (from XPath map constructors).
     Map { entries: Vec<(String, XmlNode)> },
@@ -145,7 +143,9 @@ impl Match {
             };
 
             let end_col = if line_idx == end_line - 1 {
-                (self.end_column as usize).saturating_sub(1).min(trimmed.len())
+                (self.end_column as usize)
+                    .saturating_sub(1)
+                    .min(trimmed.len())
             } else {
                 trimmed.len()
             };

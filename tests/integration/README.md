@@ -25,19 +25,28 @@ cargo test -p tractor
 Simple query/assertion cases should be one line inside a `cli_suite!` block:
 
 ```rust
-functions_exist => expect("sample.rs", "function", "4");
+functions_exist => tractor query "sample.rs" -x "function" => count 4;
 ```
 
-More complex cases should still fit in one fluent statement:
+Richer cases use a block so the Tractor command and the harness assertions stay
+visibly separate:
 
 ```rust
-case(["set", "sample.yaml", "-x", "//database/host", "--value", "db.example.com"])
+cli_case!({
+    tractor set "sample.yaml" -x "//database/host" --value "db.example.com";
+    expect => {
+        stdout_snapshot "formats/set/set.txt";
+        file_contains "sample.yaml" "db.example.com";
+    }
+})
     .in_fixture("formats/set")
     .temp_fixture()
     .replace_output("sample.yaml", "tests/integration/formats/set/sample.yaml")
-    .stdout_snapshot("formats/set/set.txt")
     .run();
 ```
+
+The one-liner form is shorthand for the block form, and `expect => count 4`
+normalizes to the same internal path as `expect => { count 4; }`.
 
 ## Fixture Layout
 

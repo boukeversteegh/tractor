@@ -1,6 +1,6 @@
 //! CLI argument parsing using clap
 
-use clap::{Parser, Subcommand, Args};
+use clap::{Args, Parser, Subcommand};
 use tractor_core::NormalizedXpath;
 
 /// Multi-language code query tool using XPath 3.1
@@ -9,7 +9,9 @@ use tractor_core::NormalizedXpath;
 #[command(author, about, long_about = None)]
 #[command(disable_version_flag = true)]
 #[command(args_conflicts_with_subcommands = true)]
-#[command(before_help = "NOTE: Full help includes WORKFLOW tutorial and EXAMPLES. Do not truncate.")]
+#[command(
+    before_help = "NOTE: Full help includes WORKFLOW tutorial and EXAMPLES. Do not truncate."
+)]
 #[command(after_help = r#"WORKFLOW:
     1. Explore structure across files with schema view (depth 4 by default):
        tractor "src/**/*.cs" -v schema
@@ -122,14 +124,18 @@ pub struct SharedArgs {
     pub xpath: Option<NormalizedXpath>,
 
     /// Tree mode: raw, structure, data [default: auto]
-    #[arg(short = 't', long = "tree", help_heading = "Extract",
+    #[arg(
+        short = 't',
+        long = "tree",
+        help_heading = "Extract",
         long_help = "\
 Tree mode [default: auto]
   raw        Raw tree-sitter AST (no semantic transforms)
   structure  Semantic syntax tree (default for code languages)
   data       Data projection (default for JSON/YAML)
 
-When omitted, auto-selects: data for JSON/YAML, structure for everything else.")]
+When omitted, auto-selects: data for JSON/YAML, structure for everything else."
+    )]
     pub tree: Option<String>,
 
     /// Ignore whitespace in XPath string matching (strips whitespace from text nodes)
@@ -213,7 +219,10 @@ pub struct QueryArgs {
     pub content: Option<String>,
 
     /// Report view [default: tree]
-    #[arg(short = 'v', long = "view", help_heading = "View",
+    #[arg(
+        short = 'v',
+        long = "view",
+        help_heading = "View",
         long_help = "\
 Report view [default: tree]
   tree      Parsed source tree (XML or JSON, depending on -f)
@@ -231,7 +240,8 @@ Modifier syntax — add/remove fields from the default view:
 
 Example — suppress code snippets for IDE/CI parsers:
   tractor check file.js -x '//function' --reason 'test' -f gcc -v=-lines
-  # file.js:2:1: error: test  (one line per match, no snippet block)")]
+  # file.js:2:1: error: test  (one line per match, no snippet block)"
+    )]
     pub view: Option<String>,
 
     /// Custom message template (supports {value}, {line}, {col}, {file})
@@ -239,7 +249,11 @@ Example — suppress code snippets for IDE/CI parsers:
     pub message: Option<String>,
 
     /// Output format: text (default), json, yaml, xml, gcc, github, claude-code
-    #[arg(short = 'f', long = "format", default_value = "text", help_heading = "Format",
+    #[arg(
+        short = 'f',
+        long = "format",
+        default_value = "text",
+        help_heading = "Format",
         long_help = "\
 Output format [default: text]
   text        Human-readable plain text
@@ -248,7 +262,8 @@ Output format [default: text]
   xml         XML report envelope
   gcc         file:line:col: severity: reason (for CI/editors)
   github      GitHub Actions annotation (::error file=...)
-  claude-code Claude Code hook JSON (use with --hook)")]
+  claude-code Claude Code hook JSON (use with --hook)"
+    )]
     pub format: String,
 
     /// Show full XML with matches highlighted (for debugging XPath)
@@ -279,7 +294,10 @@ pub struct CheckArgs {
     pub content: Option<String>,
 
     /// Report view [default: tree]
-    #[arg(short = 'v', long = "view", help_heading = "View",
+    #[arg(
+        short = 'v',
+        long = "view",
+        help_heading = "View",
         long_help = "\
 Report view [default: tree]
   tree      Parsed source tree
@@ -297,7 +315,8 @@ Modifier syntax — add/remove fields from the default view:
 
 Example — suppress code snippets for IDE/CI parsers:
   tractor check file.js -x '//function' --reason 'test' -f gcc -v=-lines
-  # file.js:2:1: error: test  (one line per match, no snippet block)")]
+  # file.js:2:1: error: test  (one line per match, no snippet block)"
+    )]
     pub view: Option<String>,
 
     /// Custom message template (supports {value}, {line}, {col}, {file})
@@ -305,7 +324,11 @@ Example — suppress code snippets for IDE/CI parsers:
     pub message: Option<String>,
 
     /// Output format [default: gcc]
-    #[arg(short = 'f', long = "format", default_value = "gcc", help_heading = "Format",
+    #[arg(
+        short = 'f',
+        long = "format",
+        default_value = "gcc",
+        help_heading = "Format",
         long_help = "\
 Output format [default: gcc]
   gcc         file:line:col: severity: reason (default for check)
@@ -314,7 +337,8 @@ Output format [default: gcc]
   json        JSON report envelope
   yaml        YAML report envelope
   xml         XML report envelope
-  claude-code Claude Code hook JSON (use with --hook)")]
+  claude-code Claude Code hook JSON (use with --hook)"
+    )]
     pub format: String,
 
     /// Reason message for each violation
@@ -364,7 +388,10 @@ pub struct TestArgs {
     pub content: Option<String>,
 
     /// Report view [default: tree]
-    #[arg(short = 'v', long = "view", help_heading = "View",
+    #[arg(
+        short = 'v',
+        long = "view",
+        help_heading = "View",
         long_help = "\
 Report view [default: tree]
   tree      Parsed source tree (XML or JSON, depending on -f)
@@ -382,7 +409,8 @@ Modifier syntax — add/remove fields from the default view:
 
 Example — suppress code snippets for IDE/CI parsers:
   tractor check file.js -x '//function' --reason 'test' -f gcc -v=-lines
-  # file.js:2:1: error: test  (one line per match, no snippet block)")]
+  # file.js:2:1: error: test  (one line per match, no snippet block)"
+    )]
     pub view: Option<String>,
 
     /// Custom message template (supports {value}, {line}, {col}, {file})
@@ -390,11 +418,21 @@ Example — suppress code snippets for IDE/CI parsers:
     pub message: Option<String>,
 
     /// Output format: text (default), json, yaml, gcc, github
-    #[arg(short = 'f', long = "format", default_value = "text", help_heading = "Format")]
+    #[arg(
+        short = 'f',
+        long = "format",
+        default_value = "text",
+        help_heading = "Format"
+    )]
     pub format: String,
 
     /// Expected result: none, some, or a number (required unless --config is used)
-    #[arg(short = 'e', long = "expect", help_heading = "Test", required_unless_present = "config")]
+    #[arg(
+        short = 'e',
+        long = "expect",
+        help_heading = "Test",
+        required_unless_present = "config"
+    )]
     pub expect: Option<String>,
 
     /// Error message template for failed expectations (per-match, supports {file}, {line}, {name}, etc.)
@@ -432,7 +470,10 @@ pub struct SetArgs {
     pub stdout: bool,
 
     /// Report view [default: file,line,status]
-    #[arg(short = 'v', long = "view", help_heading = "View",
+    #[arg(
+        short = 'v',
+        long = "view",
+        help_heading = "View",
         long_help = "\
 Report view [default: file,line,status]
   status    Whether each match was updated or unchanged (default)
@@ -441,11 +482,17 @@ Report view [default: file,line,status]
   line      Line number of the match
   value     Original value of the matched node
   source    Exact matched source text
-  lines     Full source lines containing each match")]
+  lines     Full source lines containing each match"
+    )]
     pub view: Option<String>,
 
     /// Output format: text (default), json, yaml, xml
-    #[arg(short = 'f', long = "format", default_value = "text", help_heading = "Format")]
+    #[arg(
+        short = 'f',
+        long = "format",
+        default_value = "text",
+        help_heading = "Format"
+    )]
     pub format: String,
 
     /// Path to a tractor config file (YAML/TOML) — runs only set operations from it
@@ -484,7 +531,12 @@ pub struct RunArgs {
     pub shared: SharedArgs,
 
     /// Output format: text, json, yaml, xml, gcc, github
-    #[arg(short = 'f', long = "format", default_value = "gcc", help_heading = "Output")]
+    #[arg(
+        short = 'f',
+        long = "format",
+        default_value = "gcc",
+        help_heading = "Output"
+    )]
     pub format: String,
 
     /// View fields to include (e.g. "tree,reason,severity")

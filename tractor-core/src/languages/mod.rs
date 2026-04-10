@@ -3,24 +3,24 @@
 //! Each language owns its complete transform logic.
 //! The shared infrastructure (xot_transform) provides only the walker and helpers.
 
-pub mod typescript;
 pub mod csharp;
-pub mod python;
-pub mod go;
-pub mod rust_lang;
-pub mod java;
-pub mod ruby;
-pub mod json;
-pub mod yaml;
-pub mod toml;
-pub mod ini;
 pub mod env;
+pub mod go;
+pub mod ini;
+pub mod java;
+pub mod json;
 pub mod markdown;
+pub mod python;
+pub mod ruby;
+pub mod rust_lang;
+pub mod toml;
 pub mod tsql;
+pub mod typescript;
+pub mod yaml;
 
-use xot::{Xot, Node as XotNode};
-use crate::xot_transform::TransformAction;
 use crate::output::syntax_highlight::SyntaxCategory;
+use crate::xot_transform::TransformAction;
+use xot::{Node as XotNode, Xot};
 
 /// Type alias for language transform functions
 pub type TransformFn = fn(&mut Xot, XotNode) -> Result<TransformAction, xot::Error>;

@@ -32,15 +32,14 @@ impl OutputFormat {
             )),
         }
     }
-
 }
 
-pub const FORMAT_TEXT:   &str = "text";
-pub const FORMAT_JSON:   &str = "json";
-pub const FORMAT_YAML:   &str = "yaml";
-pub const FORMAT_XML:    &str = "xml";
-pub const FORMAT_GCC:    &str = "gcc";
-pub const FORMAT_GITHUB:     &str = "github";
+pub const FORMAT_TEXT: &str = "text";
+pub const FORMAT_JSON: &str = "json";
+pub const FORMAT_YAML: &str = "yaml";
+pub const FORMAT_XML: &str = "xml";
+pub const FORMAT_GCC: &str = "gcc";
+pub const FORMAT_GITHUB: &str = "github";
 pub const FORMAT_CLAUDE_CODE: &str = "claude-code";
 
 // ---------------------------------------------------------------------------
@@ -63,11 +62,12 @@ impl HookType {
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s.to_lowercase().replace('_', "-").as_str() {
             "post-tool-use" => Ok(HookType::PostToolUse),
-            "pre-tool-use"  => Ok(HookType::PreToolUse),
-            "stop"          => Ok(HookType::PostToolUse), // same envelope as post-tool-use
-            "context"       => Ok(HookType::Context),
+            "pre-tool-use" => Ok(HookType::PreToolUse),
+            "stop" => Ok(HookType::PostToolUse), // same envelope as post-tool-use
+            "context" => Ok(HookType::Context),
             _ => Err(format!(
-                "invalid hook type '{}'. Valid types: post-tool-use, pre-tool-use, stop, context", s,
+                "invalid hook type '{}'. Valid types: post-tool-use, pre-tool-use, stop, context",
+                s,
             )),
         }
     }
@@ -107,24 +107,25 @@ impl ViewField {
     fn from_str(s: &str) -> Result<Self, String> {
         match s {
             "tree" | "ast" => Ok(ViewField::Tree),
-            "value"        => Ok(ViewField::Value),
-            "source"       => Ok(ViewField::Source),
-            "lines"        => Ok(ViewField::Lines),
-            "file"         => Ok(ViewField::File),
-            "line"         => Ok(ViewField::Line),
-            "column"       => Ok(ViewField::Column),
-            "reason"       => Ok(ViewField::Reason),
-            "severity"     => Ok(ViewField::Severity),
+            "value" => Ok(ViewField::Value),
+            "source" => Ok(ViewField::Source),
+            "lines" => Ok(ViewField::Lines),
+            "file" => Ok(ViewField::File),
+            "line" => Ok(ViewField::Line),
+            "column" => Ok(ViewField::Column),
+            "reason" => Ok(ViewField::Reason),
+            "severity" => Ok(ViewField::Severity),
             "totals" | "summary" => Ok(ViewField::Totals),
-            "count"        => Ok(ViewField::Count),
-            "schema"       => Ok(ViewField::Schema),
-            "query"        => Ok(ViewField::Query),
-            "status"       => Ok(ViewField::Status),
-            "output"       => Ok(ViewField::Output),
-            "command"      => Ok(ViewField::Command),
-            "origin"       => Ok(ViewField::Origin),
+            "count" => Ok(ViewField::Count),
+            "schema" => Ok(ViewField::Schema),
+            "query" => Ok(ViewField::Query),
+            "status" => Ok(ViewField::Status),
+            "output" => Ok(ViewField::Output),
+            "command" => Ok(ViewField::Command),
+            "origin" => Ok(ViewField::Origin),
             "gcc" | "github" => Err(format!(
-                "'{}' is a format, not a view. Use -f {} instead of -v {}", s, s, s,
+                "'{}' is a format, not a view. Use -f {} instead of -v {}",
+                s, s, s,
             )),
             _ => Err(format!(
                 "invalid view '{}'. Valid views: tree, value, source, lines, file, line, column, \
@@ -151,7 +152,9 @@ impl ViewSet {
     }
 
     pub fn single(field: ViewField) -> Self {
-        ViewSet { fields: vec![field] }
+        ViewSet {
+            fields: vec![field],
+        }
     }
 
     pub fn from_fields(fields: Vec<ViewField>) -> Self {
@@ -194,7 +197,8 @@ impl ViewSet {
 ///
 /// Mixing plain field names with `+`/`-` prefixed modifiers is an error.
 pub fn parse_view_set(s: &str, default_fields: &[ViewField]) -> Result<ViewSet, String> {
-    let tokens: Vec<&str> = s.split(',')
+    let tokens: Vec<&str> = s
+        .split(',')
         .map(|p| p.trim())
         .filter(|p| !p.is_empty())
         .collect();
@@ -203,16 +207,18 @@ pub fn parse_view_set(s: &str, default_fields: &[ViewField]) -> Result<ViewSet, 
         return Err("view cannot be empty".to_string());
     }
 
-    let has_modifier = tokens.iter().any(|p| p.starts_with('+') || p.starts_with('-'));
-    let has_plain = tokens.iter().any(|p| !p.starts_with('+') && !p.starts_with('-'));
+    let has_modifier = tokens
+        .iter()
+        .any(|p| p.starts_with('+') || p.starts_with('-'));
+    let has_plain = tokens
+        .iter()
+        .any(|p| !p.starts_with('+') && !p.starts_with('-'));
 
     if has_modifier && has_plain {
-        return Err(
-            "cannot mix plain field names with +/- modifiers in -v. \
+        return Err("cannot mix plain field names with +/- modifiers in -v. \
              Use either an explicit list (e.g. -v file,line,reason) \
              or only modifiers (e.g. -v -lines,+source)."
-                .to_string(),
-        );
+            .to_string());
     }
 
     if has_modifier {
@@ -293,5 +299,3 @@ pub fn parse_group_by(s: &str) -> Result<Vec<GroupDimension>, String> {
     }
     Ok(dims)
 }
-
-

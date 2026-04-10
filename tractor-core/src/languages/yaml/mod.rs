@@ -19,15 +19,15 @@
 //! ```
 //! Queryable as: `//data/foo/bar[.='baz']`
 
-pub mod syntax;
 pub mod data;
+pub mod syntax;
 
-use xot::{Xot, Node as XotNode};
-use crate::xot_transform::TransformAction;
 use crate::output::syntax_highlight::SyntaxCategory;
+use crate::xot_transform::TransformAction;
+use xot::{Node as XotNode, Xot};
 
-pub use syntax::syntax_transform;
 pub use data::data_transform;
+pub use syntax::syntax_transform;
 
 /// Backwards-compatible alias for the syntax transform
 pub fn ast_transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
@@ -201,7 +201,10 @@ mod tests {
     #[test]
     fn test_decode_yaml_double_quote_escapes() {
         assert_eq!(decode_yaml_double_quote_escapes("hello"), "hello");
-        assert_eq!(decode_yaml_double_quote_escapes(r"hello\nworld"), "hello\nworld");
+        assert_eq!(
+            decode_yaml_double_quote_escapes(r"hello\nworld"),
+            "hello\nworld"
+        );
         assert_eq!(decode_yaml_double_quote_escapes(r"tab\there"), "tab\there");
         assert_eq!(decode_yaml_double_quote_escapes(r"\u0041"), "A");
     }

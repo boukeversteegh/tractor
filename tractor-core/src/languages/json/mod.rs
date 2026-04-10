@@ -6,18 +6,21 @@
 //! - `data`: Projects into query-friendly data view where object keys
 //!   become element names and scalar values become text content.
 
-pub mod syntax;
 pub mod data;
+pub mod syntax;
 
-use xot::{Xot, Node as XotNode};
-use crate::xot_transform::helpers::*;
 use crate::output::syntax_highlight::SyntaxCategory;
+use crate::xot_transform::helpers::*;
+use xot::{Node as XotNode, Xot};
 
-pub use syntax::syntax_transform;
 pub use data::data_transform;
+pub use syntax::syntax_transform;
 
 /// Backwards-compatible alias for the syntax transform
-pub fn ast_transform(xot: &mut Xot, node: XotNode) -> Result<crate::xot_transform::TransformAction, xot::Error> {
+pub fn ast_transform(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<crate::xot_transform::TransformAction, xot::Error> {
     syntax_transform(xot, node)
 }
 
@@ -59,7 +62,11 @@ pub(crate) fn extract_decoded_string_content(xot: &Xot, string_node: XotNode) ->
             }
         }
     }
-    if found_content { Some(result) } else { None }
+    if found_content {
+        Some(result)
+    } else {
+        None
+    }
 }
 
 /// Decode JSON string escape sequences into their actual characters.
@@ -127,5 +134,4 @@ mod tests {
         assert_eq!(decode_json_escapes(r"\u0041"), "A");
         assert_eq!(decode_json_escapes(r"a\u00e9b"), "a\u{00e9}b"); // é
     }
-
 }

@@ -1,8 +1,8 @@
 //! Markdown transform logic
 
-use xot::{Xot, Node as XotNode};
-use crate::xot_transform::{TransformAction, helpers::*};
 use crate::output::syntax_highlight::SyntaxCategory;
+use crate::xot_transform::{helpers::*, TransformAction};
+use xot::{Node as XotNode, Xot};
 
 /// Transform a Markdown AST node
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
@@ -35,9 +35,14 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         // Heading markers and underlines - remove entirely (level is captured on parent)
-        "atx_h1_marker" | "atx_h2_marker" | "atx_h3_marker"
-        | "atx_h4_marker" | "atx_h5_marker" | "atx_h6_marker"
-        | "setext_h1_underline" | "setext_h2_underline" => {
+        "atx_h1_marker"
+        | "atx_h2_marker"
+        | "atx_h3_marker"
+        | "atx_h4_marker"
+        | "atx_h5_marker"
+        | "atx_h6_marker"
+        | "setext_h1_underline"
+        | "setext_h2_underline" => {
             detach(xot, node)?;
             Ok(TransformAction::Done)
         }
@@ -80,8 +85,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         // Links
-        "inline_link" | "full_reference_link" | "collapsed_reference_link"
-        | "shortcut_link" => {
+        "inline_link" | "full_reference_link" | "collapsed_reference_link" | "shortcut_link" => {
             rename(xot, node, "link");
             Ok(TransformAction::Continue)
         }
@@ -125,8 +129,11 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
         // List markers - remove entirely (type is captured on parent list)
-        "list_marker_plus" | "list_marker_minus" | "list_marker_star"
-        | "list_marker_dot" | "list_marker_parenthesis" => {
+        "list_marker_plus"
+        | "list_marker_minus"
+        | "list_marker_star"
+        | "list_marker_dot"
+        | "list_marker_parenthesis" => {
             detach(xot, node)?;
             Ok(TransformAction::Done)
         }
@@ -169,8 +176,10 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
         // Delimiter row and alignment markers - remove entirely
-        "pipe_table_delimiter_row" | "pipe_table_delimiter_cell"
-        | "pipe_table_align_left" | "pipe_table_align_right" => {
+        "pipe_table_delimiter_row"
+        | "pipe_table_delimiter_cell"
+        | "pipe_table_align_left"
+        | "pipe_table_align_right" => {
             detach(xot, node)?;
             Ok(TransformAction::Done)
         }

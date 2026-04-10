@@ -20,8 +20,8 @@
 //! silently ignored — except `field` which drives the singleton detection.
 //! Whitespace-only text nodes are also dropped.
 
-use serde_json::{json, Map, Value};
 use crate::xpath::XmlNode;
+use serde_json::{json, Map, Value};
 
 const KEY_TYPE: &str = "$type";
 const KEY_TEXT: &str = "text";
@@ -36,9 +36,14 @@ pub fn xml_node_to_json(node: &XmlNode, max_depth: Option<usize>) -> Value {
 
 fn xml_node_to_json_inner(node: &XmlNode, max_depth: Option<usize>, depth: usize) -> Value {
     match node {
-        XmlNode::Element { name, attributes, children } => {
+        XmlNode::Element {
+            name,
+            attributes,
+            children,
+        } => {
             // Extract field attribute
-            let field = attributes.iter()
+            let field = attributes
+                .iter()
                 .find(|(k, _)| k == "field")
                 .map(|(_, v)| v.clone());
 
@@ -56,7 +61,11 @@ fn xml_node_to_json_inner(node: &XmlNode, max_depth: Option<usize>, depth: usize
 
             for child in children {
                 match child {
-                    XmlNode::Element { name: child_name, children: child_children, attributes: child_attrs } => {
+                    XmlNode::Element {
+                        name: child_name,
+                        children: child_children,
+                        attributes: child_attrs,
+                    } => {
                         if skip_element_children {
                             // At depth limit: skip all element children
                             children_truncated = true;
@@ -64,11 +73,15 @@ fn xml_node_to_json_inner(node: &XmlNode, max_depth: Option<usize>, depth: usize
                             // Self-closing → boolean flag
                             flags.push(child_name.clone());
                         } else {
-                            let child_field = child_attrs.iter()
+                            let child_field = child_attrs
+                                .iter()
                                 .find(|(k, _)| k == "field")
                                 .map(|(_, v)| v.clone());
                             let val = xml_node_to_json_inner(child, max_depth, depth + 1);
-                            content_children.push(ChildEntry { field: child_field, value: val });
+                            content_children.push(ChildEntry {
+                                field: child_field,
+                                value: val,
+                            });
                         }
                     }
                     XmlNode::Text(text) => {
@@ -86,7 +99,11 @@ fn xml_node_to_json_inner(node: &XmlNode, max_depth: Option<usize>, depth: usize
             // Build the JSON value
             let is_text_only = content_children.iter().all(|c| is_anon_text_entry(c));
             let has_text = !text_fragments.is_empty();
-            let combined_text = if has_text { text_fragments.join(" ") } else { String::new() };
+            let combined_text = if has_text {
+                text_fragments.join(" ")
+            } else {
+                String::new()
+            };
 
             // Pure text-only leaf
             if is_text_only && flags.is_empty() && has_text && !children_truncated {
@@ -141,15 +158,19 @@ fn xml_node_to_json_inner(node: &XmlNode, max_depth: Option<usize>, depth: usize
         XmlNode::Map { entries } => {
             let mut obj = Map::new();
             for (key, val) in entries {
-                obj.insert(key.clone(), xml_node_to_json_inner(val, max_depth, depth + 1));
+                obj.insert(
+                    key.clone(),
+                    xml_node_to_json_inner(val, max_depth, depth + 1),
+                );
             }
             Value::Object(obj)
         }
-        XmlNode::Array { items } => {
-            Value::Array(items.iter()
+        XmlNode::Array { items } => Value::Array(
+            items
+                .iter()
                 .map(|item| xml_node_to_json_inner(item, max_depth, depth + 1))
-                .collect())
-        }
+                .collect(),
+        ),
         XmlNode::Number(n) => json!(*n),
         XmlNode::Boolean(b) => Value::Bool(*b),
         XmlNode::Null => Value::Null,
@@ -163,16 +184,18 @@ struct ChildEntry {
 }
 
 fn is_anon_text_entry(entry: &ChildEntry) -> bool {
-    entry.field.is_none() && entry.value.as_object().map_or(false, |o| {
-        o.len() == 1 && o.contains_key(KEY_TEXT)
-    })
+    entry.field.is_none()
+        && entry
+            .value
+            .as_object()
+            .map_or(false, |o| o.len() == 1 && o.contains_key(KEY_TEXT))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use quick_xml::Reader;
     use quick_xml::events::Event;
+    use quick_xml::Reader;
 
     // -----------------------------------------------------------------------
     // String-based XML → JSON converter (kept for test reference/comparison)
@@ -202,7 +225,8 @@ mod tests {
                         continue;
                     }
                     let name = String::from_utf8_lossy(e.local_name().as_ref()).to_string();
-                    let field = e.attributes()
+                    let field = e
+                        .attributes()
                         .filter_map(|a| a.ok())
                         .find(|a| a.key.as_ref() == b"field")
                         .and_then(|a| String::from_utf8(a.value.to_vec()).ok());
@@ -218,7 +242,9 @@ mod tests {
                         let field = node.field.clone();
                         let val = node.into_value();
                         if let Some(parent) = stack.last_mut() {
-                            parent.content_children.push(TestChildEntry { field, value: val });
+                            parent
+                                .content_children
+                                .push(TestChildEntry { field, value: val });
                         }
                     }
                 }
@@ -269,12 +295,18 @@ mod tests {
             }
         }
 
-        let root = stack.pop().unwrap_or_else(|| JsonNode::new("__root__", None));
-        let non_text_children: Vec<&TestChildEntry> = root.content_children.iter()
+        let root = stack
+            .pop()
+            .unwrap_or_else(|| JsonNode::new("__root__", None));
+        let non_text_children: Vec<&TestChildEntry> = root
+            .content_children
+            .iter()
             .filter(|c| !is_test_anon_text_entry(c))
             .collect();
         if non_text_children.len() == 1 && root.flags.is_empty() {
-            let entry = root.content_children.into_iter()
+            let entry = root
+                .content_children
+                .into_iter()
                 .find(|c| !is_test_anon_text_entry(c))
                 .unwrap();
             entry.value
@@ -302,9 +334,11 @@ mod tests {
     }
 
     fn is_test_anon_text_entry(entry: &TestChildEntry) -> bool {
-        entry.field.is_none() && entry.value.as_object().map_or(false, |o| {
-            o.len() == 1 && o.contains_key(KEY_TEXT)
-        })
+        entry.field.is_none()
+            && entry
+                .value
+                .as_object()
+                .map_or(false, |o| o.len() == 1 && o.contains_key(KEY_TEXT))
     }
 
     struct JsonNode {
@@ -329,7 +363,9 @@ mod tests {
         }
 
         fn is_text_only(&self) -> bool {
-            self.content_children.iter().all(|c| is_test_anon_text_entry(c))
+            self.content_children
+                .iter()
+                .all(|c| is_test_anon_text_entry(c))
         }
 
         fn combined_text(&self) -> String {
@@ -343,7 +379,11 @@ mod tests {
         fn into_value(self) -> Value {
             let is_text_only = self.is_text_only();
             let has_text = !self.text_fragments.is_empty();
-            let combined_text = if has_text { self.combined_text() } else { String::new() };
+            let combined_text = if has_text {
+                self.combined_text()
+            } else {
+                String::new()
+            };
 
             if is_text_only && self.flags.is_empty() && has_text && !self.children_truncated {
                 if self.field.is_some() {

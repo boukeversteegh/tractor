@@ -1,9 +1,21 @@
-use serde_json::{json, Value};
-use tractor_core::{report::{Report, ReportMatch, ResultItem}, normalize_path, xml_node_to_json, RenderOptions};
 use super::options::{ViewField, ViewSet};
-use super::shared::{should_show_totals, should_emit_file, should_emit_command, should_emit_rule_id, render_fields_for_match};
+use super::shared::{
+    render_fields_for_match, should_emit_command, should_emit_file, should_emit_rule_id,
+    should_show_totals,
+};
+use serde_json::{json, Value};
+use tractor_core::{
+    normalize_path,
+    report::{Report, ReportMatch, ResultItem},
+    xml_node_to_json, RenderOptions,
+};
 
-pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, dimensions: &[&str]) -> String {
+pub fn render_json_report(
+    report: &Report,
+    view: &ViewSet,
+    render_opts: &RenderOptions,
+    dimensions: &[&str],
+) -> String {
     let mut root = serde_json::Map::new();
 
     if should_show_totals(report, view) {
@@ -34,13 +46,25 @@ pub fn emit_report_metadata(root: &mut serde_json::Map<String, Value>, report: &
     if let Some(ref totals) = report.totals {
         let mut t = serde_json::Map::new();
         t.insert("results".into(), json!(totals.results));
-        t.insert("files".into(),   json!(totals.files));
-        if totals.fatals > 0 { t.insert("fatals".into(), json!(totals.fatals)); }
-        if totals.errors > 0 { t.insert("errors".into(), json!(totals.errors)); }
-        if totals.warnings > 0 { t.insert("warnings".into(), json!(totals.warnings)); }
-        if totals.infos > 0 { t.insert("infos".into(), json!(totals.infos)); }
-        if totals.updated > 0 { t.insert("updated".into(), json!(totals.updated)); }
-        if totals.unchanged > 0 { t.insert("unchanged".into(), json!(totals.unchanged)); }
+        t.insert("files".into(), json!(totals.files));
+        if totals.fatals > 0 {
+            t.insert("fatals".into(), json!(totals.fatals));
+        }
+        if totals.errors > 0 {
+            t.insert("errors".into(), json!(totals.errors));
+        }
+        if totals.warnings > 0 {
+            t.insert("warnings".into(), json!(totals.warnings));
+        }
+        if totals.infos > 0 {
+            t.insert("infos".into(), json!(totals.infos));
+        }
+        if totals.updated > 0 {
+            t.insert("updated".into(), json!(totals.updated));
+        }
+        if totals.unchanged > 0 {
+            t.insert("unchanged".into(), json!(totals.unchanged));
+        }
         root.insert("totals".into(), Value::Object(t));
     }
     if let Some(ref expected) = report.expected {
@@ -60,35 +84,45 @@ pub fn render_results_json(
     render_opts: &RenderOptions,
     dimensions: &[&str],
 ) -> Vec<Value> {
-    items.iter().map(|item| {
-        match item {
-            ResultItem::Match(rm) => match_to_value(rm, view, render_opts, dimensions),
-            ResultItem::Group(sub) => {
-                let mut obj = serde_json::Map::new();
-                // Hoisted group key
-                if let Some(ref file) = sub.file { obj.insert("file".into(), json!(file)); }
-                if let Some(ref command) = sub.command { obj.insert("command".into(), json!(command)); }
-                if let Some(ref rule_id) = sub.rule_id { obj.insert("rule_id".into(), json!(rule_id)); }
-                emit_report_metadata(&mut obj, sub);
-                // Sub-grouping dimension (before nested results)
-                if let Some(ref group) = sub.group {
-                    obj.insert("group".into(), json!(group));
-                }
-                // Group-level output (set stdout mode)
-                if view.has(ViewField::Output) {
-                    if let Some(ref content) = sub.output_content {
-                        obj.insert("output".into(), json!(content));
+    items
+        .iter()
+        .map(|item| {
+            match item {
+                ResultItem::Match(rm) => match_to_value(rm, view, render_opts, dimensions),
+                ResultItem::Group(sub) => {
+                    let mut obj = serde_json::Map::new();
+                    // Hoisted group key
+                    if let Some(ref file) = sub.file {
+                        obj.insert("file".into(), json!(file));
                     }
+                    if let Some(ref command) = sub.command {
+                        obj.insert("command".into(), json!(command));
+                    }
+                    if let Some(ref rule_id) = sub.rule_id {
+                        obj.insert("rule_id".into(), json!(rule_id));
+                    }
+                    emit_report_metadata(&mut obj, sub);
+                    // Sub-grouping dimension (before nested results)
+                    if let Some(ref group) = sub.group {
+                        obj.insert("group".into(), json!(group));
+                    }
+                    // Group-level output (set stdout mode)
+                    if view.has(ViewField::Output) {
+                        if let Some(ref content) = sub.output_content {
+                            obj.insert("output".into(), json!(content));
+                        }
+                    }
+                    // Recurse
+                    let sub_results =
+                        render_results_json(&sub.results, view, render_opts, dimensions);
+                    if !sub_results.is_empty() {
+                        obj.insert("results".into(), Value::Array(sub_results));
+                    }
+                    Value::Object(obj)
                 }
-                // Recurse
-                let sub_results = render_results_json(&sub.results, view, render_opts, dimensions);
-                if !sub_results.is_empty() {
-                    obj.insert("results".into(), Value::Array(sub_results));
-                }
-                Value::Object(obj)
             }
-        }
-    }).collect()
+        })
+        .collect()
 }
 
 /// Shared match serialization — reused by yaml.rs.
@@ -112,9 +146,13 @@ pub fn match_to_value(
                     obj.insert("file".into(), json!(normalize_path(&rm.file)));
                 }
             }
-            ViewField::Line   => { obj.insert("line".into(),   json!(rm.line)); }
-            ViewField::Column => { obj.insert("column".into(), json!(rm.column)); }
-            ViewField::Value  => {
+            ViewField::Line => {
+                obj.insert("line".into(), json!(rm.line));
+            }
+            ViewField::Column => {
+                obj.insert("column".into(), json!(rm.column));
+            }
+            ViewField::Value => {
                 if let Some(ref v) = rm.value {
                     obj.insert("value".into(), json!(v));
                 }
@@ -187,27 +225,50 @@ mod tests {
     fn make_plain_match(value: &str) -> ReportMatch {
         ReportMatch {
             file: "test.xml".to_string(),
-            line: 1, column: 1, end_line: 1, end_column: 1,
+            line: 1,
+            column: 1,
+            end_line: 1,
+            end_column: 1,
             command: String::new(),
             tree: None,
             value: Some(value.to_string()),
-            source: None, lines: None, reason: None, severity: None,
-            message: None, origin: None, rule_id: None, status: None, output: None,
+            source: None,
+            lines: None,
+            reason: None,
+            severity: None,
+            message: None,
+            origin: None,
+            rule_id: None,
+            status: None,
+            output: None,
         }
     }
 
     fn make_map_match(entries: Vec<(&str, XmlNode)>) -> ReportMatch {
         let tree = XmlNode::Map {
-            entries: entries.into_iter().map(|(k, v)| (k.to_string(), v)).collect(),
+            entries: entries
+                .into_iter()
+                .map(|(k, v)| (k.to_string(), v))
+                .collect(),
         };
         ReportMatch {
             file: "test.xml".to_string(),
-            line: 1, column: 1, end_line: 1, end_column: 1,
+            line: 1,
+            column: 1,
+            end_line: 1,
+            end_column: 1,
             command: String::new(),
             tree: Some(tree),
             value: None, // maps have no value — data is in tree
-            source: None, lines: None, reason: None, severity: None,
-            message: None, origin: None, rule_id: None, status: None, output: None,
+            source: None,
+            lines: None,
+            reason: None,
+            severity: None,
+            message: None,
+            origin: None,
+            rule_id: None,
+            status: None,
+            output: None,
         }
     }
 
@@ -221,7 +282,11 @@ mod tests {
         let opts = RenderOptions::new();
         let val = match_to_value(&rm, &view, &opts, &[]);
         let v = val.get("tree").unwrap();
-        assert!(v.is_object(), "Map tree should be a JSON object, got: {}", v);
+        assert!(
+            v.is_object(),
+            "Map tree should be a JSON object, got: {}",
+            v
+        );
         assert_eq!(v["name"], "foo");
         assert_eq!(v["val"], "1");
     }
@@ -233,7 +298,11 @@ mod tests {
         let opts = RenderOptions::new();
         let val = match_to_value(&rm, &view, &opts, &[]);
         let v = val.get("value").unwrap();
-        assert!(v.is_string(), "Regular value should be a string, got: {}", v);
+        assert!(
+            v.is_string(),
+            "Regular value should be a string, got: {}",
+            v
+        );
         assert_eq!(v.as_str().unwrap(), "hello world");
     }
 
@@ -252,7 +321,11 @@ mod tests {
         let output = render_json_report(&report, &view, &opts, &[]);
         let parsed: serde_json::Value = serde_json::from_str(&output).unwrap();
         let match_tree = &parsed["results"][0]["tree"];
-        assert!(match_tree.is_object(), "Map tree should be a JSON object in report output, got: {}", match_tree);
+        assert!(
+            match_tree.is_object(),
+            "Map tree should be a JSON object in report output, got: {}",
+            match_tree
+        );
         assert_eq!(match_tree["name"], "foo");
         assert_eq!(match_tree["count"], 3.0);
     }

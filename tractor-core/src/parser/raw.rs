@@ -7,12 +7,25 @@
 use std::io::Write;
 
 /// Write TreeSitter node to XML in raw format
-pub fn write_node(out: &mut impl Write, node: tree_sitter::Node, source: &str, indent: usize, use_color: bool) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+pub fn write_node(
+    out: &mut impl Write,
+    node: tree_sitter::Node,
+    source: &str,
+    indent: usize,
+    use_color: bool,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     write_node_with_field(out, node, source, indent, use_color, None)
 }
 
 /// Write TreeSitter node with optional field name from parent
-fn write_node_with_field(out: &mut impl Write, node: tree_sitter::Node, source: &str, indent: usize, use_color: bool, field_name: Option<&str>) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+fn write_node_with_field(
+    out: &mut impl Write,
+    node: tree_sitter::Node,
+    source: &str,
+    indent: usize,
+    use_color: bool,
+    field_name: Option<&str>,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let indent_str = "  ".repeat(indent);
     let kind = node.kind();
 
@@ -98,12 +111,17 @@ fn write_text_content(out: &mut impl Write, text: &str) -> std::io::Result<()> {
 
 fn escape_xml(s: &str) -> String {
     s.replace('&', "&amp;")
-     .replace('<', "&lt;")
-     .replace('>', "&gt;")
-     .replace('"', "&quot;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
 }
 
-fn write_element_open_with_attrs(out: &mut impl Write, name: &str, attrs: &[(&str, &str)], _use_color: bool) -> std::io::Result<()> {
+fn write_element_open_with_attrs(
+    out: &mut impl Write,
+    name: &str,
+    attrs: &[(&str, &str)],
+    _use_color: bool,
+) -> std::io::Result<()> {
     write!(out, "<{}", escape_xml(name))?;
     for (attr_name, attr_value) in attrs {
         write!(out, " {}=\"{}\"", attr_name, escape_xml(attr_value))?;
@@ -112,7 +130,13 @@ fn write_element_open_with_attrs(out: &mut impl Write, name: &str, attrs: &[(&st
     Ok(())
 }
 
-fn write_element_with_attrs_and_text(out: &mut impl Write, name: &str, attrs: &[(&str, &str)], text: Option<&str>, _use_color: bool) -> std::io::Result<()> {
+fn write_element_with_attrs_and_text(
+    out: &mut impl Write,
+    name: &str,
+    attrs: &[(&str, &str)],
+    text: Option<&str>,
+    _use_color: bool,
+) -> std::io::Result<()> {
     let escaped_name = escape_xml(name);
     write!(out, "<{}", escaped_name)?;
     for (attr_name, attr_value) in attrs {
@@ -126,7 +150,12 @@ fn write_element_with_attrs_and_text(out: &mut impl Write, name: &str, attrs: &[
     Ok(())
 }
 
-fn write_tag_close(out: &mut impl Write, name: &str, indent: usize, _use_color: bool) -> std::io::Result<()> {
+fn write_tag_close(
+    out: &mut impl Write,
+    name: &str,
+    indent: usize,
+    _use_color: bool,
+) -> std::io::Result<()> {
     let indent_str = "  ".repeat(indent);
     writeln!(out, "{}</{}>", indent_str, name)
 }

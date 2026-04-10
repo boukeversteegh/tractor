@@ -1,12 +1,10 @@
-use tractor_core::NormalizedXpath;
-use crate::cli::TestArgs;
-use crate::executor::{self, ExecuteOptions, Operation, TestOperation, TestAssertion};
-use crate::pipeline::{
-    RunContext, ViewField, InputMode, TestRenderOptions,
-    render_report,
-    project_report,
-};
 use super::config::{run_from_config, ConfigRunParams};
+use crate::cli::TestArgs;
+use crate::executor::{self, ExecuteOptions, Operation, TestAssertion, TestOperation};
+use crate::pipeline::{
+    project_report, render_report, InputMode, RunContext, TestRenderOptions, ViewField,
+};
+use tractor_core::NormalizedXpath;
 
 pub mod test_colors {
     pub const RESET: &str = "\x1b[0m";
@@ -31,14 +29,24 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
         });
     }
 
-    let expect = args.expect.clone()
+    let expect = args
+        .expect
+        .clone()
         .ok_or("test requires --expect when not using --config")?;
     let error_template = args.error.clone();
     let message = args.message.clone();
 
     let ctx = RunContext::build(
-        &args.shared, args.files, args.shared.xpath.clone(),
-        &args.format, &[ViewField::Totals], args.view.as_deref(), args.message, args.content, false, &[],
+        &args.shared,
+        args.files,
+        args.shared.xpath.clone(),
+        &args.format,
+        &[ViewField::Totals],
+        args.view.as_deref(),
+        args.message,
+        args.content,
+        false,
+        &[],
     )?;
 
     let dot = NormalizedXpath::new(".");
@@ -97,6 +105,9 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
     project_report(&mut report, &ctx.view);
     let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
     let report = report.with_grouping(&dims);
-    let test_opts = TestRenderOptions { message, error_template };
+    let test_opts = TestRenderOptions {
+        message,
+        error_template,
+    };
     render_report(&report, &ctx, Some(&test_opts))
 }

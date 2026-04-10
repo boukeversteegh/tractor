@@ -3,9 +3,9 @@
 //! Transforms TreeSitter YAML nodes into a unified syntax tree using the same
 //! vocabulary as JSON: object/array/property/key/value/string/number/bool/null.
 
-use xot::{Xot, Node as XotNode};
-use crate::xot_transform::{TransformAction, helpers::*};
-use super::{strip_quotes_from_node, normalize_block_scalar};
+use super::{normalize_block_scalar, strip_quotes_from_node};
+use crate::xot_transform::{helpers::*, TransformAction};
+use xot::{Node as XotNode, Xot};
 
 // /specs/tractor-parse/dual-view/syntax-branch/vocabulary.md: Unified Syntax Vocabulary
 /// Normalize TreeSitter YAML into unified syntax vocabulary.
@@ -47,7 +47,8 @@ pub fn syntax_transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction,
             remove_text_children(xot, node)?;
 
             // Find the key child (has field="key" attr) and wrap in <key> element
-            let children: Vec<XotNode> = xot.children(node)
+            let children: Vec<XotNode> = xot
+                .children(node)
                 .filter(|&c| xot.element(c).is_some())
                 .collect();
             for child in children {
@@ -138,9 +139,7 @@ pub fn syntax_transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction,
             remove_text_children(xot, node)?;
             Ok(TransformAction::Flatten)
         }
-        "alias_name" | "anchor_name" => {
-            Ok(TransformAction::Flatten)
-        }
+        "alias_name" | "anchor_name" => Ok(TransformAction::Flatten),
 
         // Comments: remove
         "comment" => {

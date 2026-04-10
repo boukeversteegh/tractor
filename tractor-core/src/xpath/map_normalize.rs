@@ -14,7 +14,7 @@
 //! is a workaround until upstream exposes public map introspection APIs.
 
 use std::cell::RefCell;
-use xee_xpath::{Documents, Queries, SerializationParameters, Query};
+use xee_xpath::{Documents, Queries, Query, SerializationParameters};
 
 // Thread-local caches for compiled normalization queries.
 thread_local! {
@@ -26,18 +26,18 @@ thread_local! {
 /// Uses self-application (`$f($f, x)`) to achieve recursion at arbitrary depth.
 const NORMALIZE_MAP_XPATH: &str = concat!(
     "let $norm := function($f, $m) { ",
-        "map:merge(map:for-each($m, function($k, $v) { ",
-            "map { $k: ",
-                "if ($v instance of array(*)) then ",
-                    "array:for-each($v, function($item) { ",
-                        "if ($item instance of map(*)) then $f($f, $item) ",
-                        "else $item ",
-                    "}) ",
-                "else if ($v instance of map(*)) then $f($f, $v) ",
-                "else if (count($v) > 1) then array { $v } ",
-                "else $v ",
-            "} ",
-        "})) ",
+    "map:merge(map:for-each($m, function($k, $v) { ",
+    "map { $k: ",
+    "if ($v instance of array(*)) then ",
+    "array:for-each($v, function($item) { ",
+    "if ($item instance of map(*)) then $f($f, $item) ",
+    "else $item ",
+    "}) ",
+    "else if ($v instance of map(*)) then $f($f, $v) ",
+    "else if (count($v) > 1) then array { $v } ",
+    "else $v ",
+    "} ",
+    "})) ",
     "} return $norm($norm, .)"
 );
 
@@ -45,19 +45,19 @@ const NORMALIZE_MAP_XPATH: &str = concat!(
 /// Returns strings like "key" or "outer.inner.key" for nested maps.
 const DETECT_SEQUENCE_KEYS_XPATH: &str = concat!(
     "let $detect := function($f, $m, $prefix) { ",
-        "map:for-each($m, function($k, $v) { ",
-            "let $path := if ($prefix) then concat($prefix, '.', $k) else string($k) ",
-            "return ( ",
-                "if (count($v) > 1) then $path else (), ",
-                "if ($v instance of map(*)) then $f($f, $v, $path) else (), ",
-                "if ($v instance of array(*)) then ",
-                    "for-each(1 to array:size($v), function($i) { ",
-                        "let $item := array:get($v, $i) ",
-                        "return if ($item instance of map(*)) then $f($f, $item, $path) else () ",
-                    "}) ",
-                "else () ",
-            ") ",
-        "}) ",
+    "map:for-each($m, function($k, $v) { ",
+    "let $path := if ($prefix) then concat($prefix, '.', $k) else string($k) ",
+    "return ( ",
+    "if (count($v) > 1) then $path else (), ",
+    "if ($v instance of map(*)) then $f($f, $v, $path) else (), ",
+    "if ($v instance of array(*)) then ",
+    "for-each(1 to array:size($v), function($i) { ",
+    "let $item := array:get($v, $i) ",
+    "return if ($item instance of map(*)) then $f($f, $item, $path) else () ",
+    "}) ",
+    "else () ",
+    ") ",
+    "}) ",
     "} return $detect($detect, ., '')"
 );
 
@@ -116,7 +116,8 @@ pub(super) fn try_normalize_and_serialize_map(
         };
         let item = xee_xpath::Item::Function(func.clone());
         match query.execute(documents, &item) {
-            Ok(result) => result.iter()
+            Ok(result) => result
+                .iter()
                 .filter_map(|item| {
                     if let xee_xpath::Item::Atomic(a) = item {
                         let s = a.xpath_representation();
@@ -137,7 +138,10 @@ pub(super) fn try_normalize_and_serialize_map(
     sequence_keys.sort();
     sequence_keys.dedup();
 
-    Some(NormalizeResult { json, sequence_keys })
+    Some(NormalizeResult {
+        json,
+        sequence_keys,
+    })
 }
 
 /// Extract the value expression for a given key from an XPath map constructor.
@@ -151,10 +155,7 @@ pub(super) fn extract_map_value_expr<'a>(xpath: &'a str, key: &str) -> Option<&'
     let leaf_key = key.rsplit('.').next().unwrap_or(key);
 
     // Search for "key": or 'key': patterns
-    let patterns = [
-        format!("\"{}\"", leaf_key),
-        format!("'{}'", leaf_key),
-    ];
+    let patterns = [format!("\"{}\"", leaf_key), format!("'{}'", leaf_key)];
 
     for pat in &patterns {
         if let Some(key_pos) = xpath.find(pat.as_str()) {
@@ -191,7 +192,7 @@ pub(super) fn extract_map_value_expr<'a>(xpath: &'a str, key: &str) -> Option<&'
                             break;
                         }
                         _ => {}
-                    }
+                    },
                 }
                 end = i + 1;
             }

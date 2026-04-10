@@ -4,9 +4,9 @@
 //! and transformation rules. The renderer imports constants from here
 //! rather than defining its own.
 
-use xot::{Xot, Node as XotNode};
-use crate::xot_transform::{TransformAction, helpers::*};
 use crate::output::syntax_highlight::SyntaxCategory;
+use crate::xot_transform::{helpers::*, TransformAction};
+use xot::{Node as XotNode, Xot};
 
 use semantic::*;
 
@@ -59,7 +59,8 @@ pub mod semantic {
 /// Check if kind is a declaration that has a name child
 /// Uses original TreeSitter kinds (from `kind` attribute) for robust detection
 fn is_named_declaration(kind: &str) -> bool {
-    matches!(kind,
+    matches!(
+        kind,
         // Types
         "class_declaration"
         | "struct_declaration"
@@ -151,7 +152,10 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             let children: Vec<_> = xot.children(node).collect();
             for child in children {
                 if let Some(child_kind) = get_kind(xot, child) {
-                    if matches!(child_kind.as_str(), "identifier" | "predefined_type" | "type_identifier") {
+                    if matches!(
+                        child_kind.as_str(),
+                        "identifier" | "predefined_type" | "type_identifier"
+                    ) {
                         if let Some(type_text) = get_text_content(xot, child) {
                             // Remove all children
                             let all_children: Vec<_> = xot.children(node).collect();
@@ -245,10 +249,15 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // ---------------------------------------------------------------------
         // Declarations — prepend default access modifier if none present
         // ---------------------------------------------------------------------
-        "class_declaration" | "struct_declaration" | "interface_declaration"
-        | "enum_declaration" | "record_declaration"
-        | "method_declaration" | "constructor_declaration"
-        | "property_declaration" | "field_declaration" => {
+        "class_declaration"
+        | "struct_declaration"
+        | "interface_declaration"
+        | "enum_declaration"
+        | "record_declaration"
+        | "method_declaration"
+        | "constructor_declaration"
+        | "property_declaration"
+        | "field_declaration" => {
             if !has_access_modifier_child(xot, node) {
                 let default = default_access_modifier(xot, node);
                 prepend_empty_element(xot, node, default)?;
@@ -315,8 +324,8 @@ pub const ACCESS_MODIFIERS: &[&str] = &["public", "private", "protected", "inter
 
 /// C# non-access modifiers in canonical declaration order
 pub const OTHER_MODIFIERS: &[&str] = &[
-    "static", "abstract", "virtual", "override", "sealed",
-    "readonly", "const", "partial", "async", "extern", "unsafe", "new",
+    "static", "abstract", "virtual", "override", "sealed", "readonly", "const", "partial", "async",
+    "extern", "unsafe", "new",
 ];
 
 fn is_access_modifier(text: &str) -> bool {
@@ -353,7 +362,9 @@ fn default_access_modifier(xot: &Xot, node: XotNode) -> &'static str {
     while let Some(parent) = current {
         if let Some(parent_kind) = get_kind(xot, parent).as_deref().map(str::to_owned) {
             match parent_kind.as_str() {
-                "class_declaration" | "struct_declaration" | "interface_declaration"
+                "class_declaration"
+                | "struct_declaration"
+                | "interface_declaration"
                 | "record_declaration" => return "private",
                 // declaration_list is a transparent wrapper — look through it
                 "declaration_list" => {}
@@ -436,7 +447,8 @@ fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     let texts = get_text_children(xot, node);
 
     let operator = texts.iter().find(|t| {
-        !t.chars().all(|c| matches!(c, '(' | ')' | ',' | ';' | '{' | '}' | '[' | ']'))
+        !t.chars()
+            .all(|c| matches!(c, '(' | ')' | ',' | ';' | '{' | '}' | '[' | ']'))
     });
 
     if let Some(op) = operator {
@@ -458,7 +470,7 @@ fn classify_identifier(xot: &Xot, node: XotNode) -> &'static str {
 
     let parent = match get_parent(xot, node) {
         Some(p) => p,
-        None => return "type",  // Default for C#
+        None => return "type", // Default for C#
     };
 
     let parent_kind = get_kind(xot, parent).unwrap_or_default();
@@ -494,8 +506,12 @@ fn classify_identifier(xot: &Xot, node: XotNode) -> &'static str {
         "method_declaration" | "constructor_declaration" if has_param_sibling => "name",
 
         // Type declarations - the identifier IS the name
-        "class_declaration" | "struct_declaration" | "interface_declaration"
-        | "enum_declaration" | "record_declaration" | "namespace_declaration" => "name",
+        "class_declaration"
+        | "struct_declaration"
+        | "interface_declaration"
+        | "enum_declaration"
+        | "record_declaration"
+        | "namespace_declaration" => "name",
 
         // Variable declarator - the identifier is the name
         "variable_declarator" => "name",
@@ -522,8 +538,11 @@ fn is_in_namespace_context(xot: &Xot, node: XotNode) -> bool {
             match kind.as_str() {
                 "namespace_declaration" => return true,
                 // Stop if we hit a type declaration
-                "class_declaration" | "struct_declaration" | "interface_declaration"
-                | "enum_declaration" | "record_declaration" => return false,
+                "class_declaration"
+                | "struct_declaration"
+                | "interface_declaration"
+                | "enum_declaration"
+                | "record_declaration" => return false,
                 _ => {}
             }
         }
@@ -546,12 +565,10 @@ fn is_leading_comment(xot: &Xot, node: XotNode) -> bool {
     };
 
     // Find next element sibling that is NOT a comment (skip self — following_siblings includes node)
-    let next = xot.following_siblings(node)
+    let next = xot
+        .following_siblings(node)
         .filter(|&s| s != node)
-        .find(|&s| {
-            xot.element(s).is_some()
-                && get_kind(xot, s).as_deref() != Some("comment")
-        });
+        .find(|&s| xot.element(s).is_some() && get_kind(xot, s).as_deref() != Some("comment"));
 
     match next {
         Some(next) => {
@@ -590,7 +607,8 @@ fn group_line_comments(xot: &mut Xot, node: XotNode) -> Result<Vec<XotNode>, xot
     let mut merged_text = text.clone();
 
     // Walk following siblings looking for adjacent // comments (skip self)
-    let following: Vec<XotNode> = xot.following_siblings(node)
+    let following: Vec<XotNode> = xot
+        .following_siblings(node)
         .filter(|&s| s != node && xot.element(s).is_some())
         .collect();
 
@@ -636,7 +654,8 @@ fn group_line_comments(xot: &mut Xot, node: XotNode) -> Result<Vec<XotNode>, xot
     if !consumed.is_empty() {
         // Replace text content of node with merged text
         // Remove existing text children
-        let text_children: Vec<XotNode> = xot.children(node)
+        let text_children: Vec<XotNode> = xot
+            .children(node)
             .filter(|&c| xot.text_str(c).is_some())
             .collect();
         for child in text_children {
@@ -664,7 +683,7 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
 
         // Types
         "type" => SyntaxCategory::Type,
-        "implicit_type" => SyntaxCategory::Type,  // var keyword in C#
+        "implicit_type" => SyntaxCategory::Type, // var keyword in C#
         "generic" => SyntaxCategory::Type,
         "nullable" => SyntaxCategory::Type,
         "array" => SyntaxCategory::Type,
@@ -677,7 +696,9 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
         "null" => SyntaxCategory::Keyword,
 
         // Keywords - declarations (actual keyword tokens, not structural wrappers)
-        "class" | "struct" | "interface" | "enum" | "record" | "namespace" => SyntaxCategory::Keyword,
+        "class" | "struct" | "interface" | "enum" | "record" | "namespace" => {
+            SyntaxCategory::Keyword
+        }
         "import" => SyntaxCategory::Keyword,
 
         // Note: "method", "constructor", "property", "field", "parameter", "variable",
@@ -721,8 +742,8 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::parse_string_to_xot;
     use crate::output::{render_document, RenderOptions};
+    use crate::parser::parse_string_to_xot;
 
     #[test]
     fn test_csharp_transform() {
@@ -737,9 +758,18 @@ public class Foo {
         let xml = render_document(&result.xot, result.root, &options);
 
         // Check transforms applied
-        assert!(xml.contains("<class"), "class_declaration should be renamed");
-        assert!(xml.contains("<method"), "method_declaration should be renamed");
-        assert!(xml.contains("<public"), "public modifier should be extracted");
+        assert!(
+            xml.contains("<class"),
+            "class_declaration should be renamed"
+        );
+        assert!(
+            xml.contains("<method"),
+            "method_declaration should be renamed"
+        );
+        assert!(
+            xml.contains("<public"),
+            "public modifier should be extracted"
+        );
     }
 
     // =========================================================================
@@ -753,7 +783,8 @@ public class Foo {
         let xml = render_document(&result.xot, result.root, &RenderOptions::default());
         assert!(
             xml.contains("<trailing/>"),
-            "same-line comment should get <trailing/> marker, got:\n{}", xml
+            "same-line comment should get <trailing/> marker, got:\n{}",
+            xml
         );
     }
 
@@ -764,7 +795,8 @@ public class Foo {
         let xml = render_document(&result.xot, result.root, &RenderOptions::default());
         assert!(
             xml.contains("<leading/>"),
-            "comment above declaration should get <leading/> marker, got:\n{}", xml
+            "comment above declaration should get <leading/> marker, got:\n{}",
+            xml
         );
     }
 
@@ -776,27 +808,39 @@ public class Foo {
         let xml = render_document(&result.xot, result.root, &RenderOptions::default());
         assert!(
             !xml.contains("<trailing/>") && !xml.contains("<leading/>"),
-            "floating comment should have no marker, got:\n{}", xml
+            "floating comment should have no marker, got:\n{}",
+            xml
         );
         assert!(xml.contains("<comment>"), "comment should still be present");
     }
 
     #[test]
     fn test_comment_block_grouping() {
-        let source = "public class Foo {\n    // line 1\n    // line 2\n    // line 3\n    int y;\n}\n";
+        let source =
+            "public class Foo {\n    // line 1\n    // line 2\n    // line 3\n    int y;\n}\n";
         let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), None).unwrap();
         let xml = render_document(&result.xot, result.root, &RenderOptions::default());
         // Should be grouped into a single comment
         let comment_count = xml.matches("<comment>").count() + xml.matches("<comment ").count();
         assert_eq!(
             comment_count, 1,
-            "three adjacent // comments should be grouped into one, got {} comments in:\n{}", comment_count, xml
+            "three adjacent // comments should be grouped into one, got {} comments in:\n{}",
+            comment_count, xml
         );
         // Should contain all lines
-        assert!(xml.contains("// line 1"), "merged comment should contain line 1");
-        assert!(xml.contains("// line 3"), "merged comment should contain line 3");
+        assert!(
+            xml.contains("// line 1"),
+            "merged comment should contain line 1"
+        );
+        assert!(
+            xml.contains("// line 3"),
+            "merged comment should contain line 3"
+        );
         // Should be leading (immediately before int y)
-        assert!(xml.contains("<leading/>"), "grouped comment block should be leading");
+        assert!(
+            xml.contains("<leading/>"),
+            "grouped comment block should be leading"
+        );
     }
 
     #[test]
@@ -809,10 +853,17 @@ public class Foo {
         let comment_count = xml.matches("<comment>").count() + xml.matches("<comment ").count();
         assert_eq!(
             comment_count, 2,
-            "should have trailing + grouped block = 2 comments, got {} in:\n{}", comment_count, xml
+            "should have trailing + grouped block = 2 comments, got {} in:\n{}",
+            comment_count, xml
         );
-        assert!(xml.contains("<trailing/>"), "first comment should be trailing");
-        assert!(xml.contains("<leading/>"), "block comment should be leading");
+        assert!(
+            xml.contains("<trailing/>"),
+            "first comment should be trailing"
+        );
+        assert!(
+            xml.contains("<leading/>"),
+            "block comment should be leading"
+        );
         // Block should contain both lines
         assert!(xml.contains("// block 1"), "block should contain line 1");
         assert!(xml.contains("// block 2"), "block should contain line 2");
@@ -827,7 +878,9 @@ public class Foo {
         let comment_count = xml.matches("<comment>").count() + xml.matches("<comment ").count();
         assert!(
             comment_count >= 2,
-            "/* */ and // comments should not be grouped, got {} comments in:\n{}", comment_count, xml
+            "/* */ and // comments should not be grouped, got {} comments in:\n{}",
+            comment_count,
+            xml
         );
     }
 
@@ -839,7 +892,8 @@ public class Foo {
         let xml = render_document(&result.xot, result.root, &RenderOptions::default());
         assert!(
             xml.contains("<leading/>"),
-            "top-level comment before class should be leading, got:\n{}", xml
+            "top-level comment before class should be leading, got:\n{}",
+            xml
         );
     }
 
@@ -858,7 +912,14 @@ public static class Mapper {
         let xml = render_document(&result.xot, result.root, &options);
 
         // this modifier should be converted to <this/> element
-        assert!(xml.contains("<this/>"), "this modifier should be converted to <this/> element, got: {}", xml);
-        assert!(!xml.contains("<modifier>this</modifier>"), "this should not remain as <modifier>this</modifier>");
+        assert!(
+            xml.contains("<this/>"),
+            "this modifier should be converted to <this/> element, got: {}",
+            xml
+        );
+        assert!(
+            !xml.contains("<modifier>this</modifier>"),
+            "this should not remain as <modifier>this</modifier>"
+        );
     }
 }

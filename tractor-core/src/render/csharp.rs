@@ -6,7 +6,7 @@
 use super::{
     get_child, get_child_text, get_children, has_marker, text_content, RenderError, RenderOptions,
 };
-use crate::languages::csharp::{ACCESS_MODIFIERS, OTHER_MODIFIERS, semantic::*};
+use crate::languages::csharp::{semantic::*, ACCESS_MODIFIERS, OTHER_MODIFIERS};
 use crate::xpath::XmlNode;
 
 /// Render a single XML node to C# source code

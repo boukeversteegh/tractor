@@ -24,12 +24,12 @@
 //!
 //! For the no-XPath case, we use the Xot tree directly (no re-parsing needed).
 
+use crate::xpath::XmlNode;
 use quick_xml::events::Event;
 use quick_xml::Reader;
 use serde::Serialize;
 use std::collections::HashMap;
 use xot::{Node, Value, Xot};
-use crate::xpath::XmlNode;
 
 /// Serializable schema node for JSON output (used by WASM and web UI)
 #[derive(Debug, Clone, Serialize)]
@@ -207,7 +207,16 @@ impl SchemaCollector {
         let tree = self.build_tree();
         let mut output = String::new();
         let mut truncated = false;
-        format_node(&tree, "", true, 0, max_depth, use_color, &mut output, &mut truncated);
+        format_node(
+            &tree,
+            "",
+            true,
+            0,
+            max_depth,
+            use_color,
+            &mut output,
+            &mut truncated,
+        );
 
         // Add helpful note if truncation occurred
         if truncated {
@@ -344,9 +353,15 @@ fn format_node(
         if depth >= max && !node.children.is_empty() {
             let child_count = count_descendants(node);
             if use_color {
-                output.push_str(&format!("{}\u{2514}\u{2500} \x1b[2m\u{2026} ({} children)\x1b[0m\n", prefix, child_count));
+                output.push_str(&format!(
+                    "{}\u{2514}\u{2500} \x1b[2m\u{2026} ({} children)\x1b[0m\n",
+                    prefix, child_count
+                ));
             } else {
-                output.push_str(&format!("{}\u{2514}\u{2500} \u{2026} ({} children)\n", prefix, child_count));
+                output.push_str(&format!(
+                    "{}\u{2514}\u{2500} \u{2026} ({} children)\n",
+                    prefix, child_count
+                ));
             }
             *truncated = true;
             return;

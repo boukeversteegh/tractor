@@ -1,15 +1,18 @@
 //! XPath 3.1 query engine implementation
 
-use super::{Match, XPathError};
-use super::map_normalize::{try_normalize_and_serialize_map, extract_map_value_expr};
+use super::map_normalize::{extract_map_value_expr, try_normalize_and_serialize_map};
 use super::match_result::XmlNode;
+use super::{Match, XPathError};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::cell::RefCell;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 use std::time::Instant;
-use xee_xpath::{Documents, DocumentHandle, Queries, Query, Sequence, SerializationParameters, query::SequenceQuery};
+use xee_xpath::{
+    query::SequenceQuery, DocumentHandle, Documents, Queries, Query, Sequence,
+    SerializationParameters,
+};
 use xot::{Node, Value, Xot};
 
 // Timing stats (in microseconds) for profiling
@@ -34,26 +37,48 @@ pub fn print_timing_stats() {
     let string_value = TIMING_STRING_VALUE.load(Ordering::Relaxed);
     let match_count = TIMING_MATCH_COUNT.load(Ordering::Relaxed);
 
-    eprintln!("\n=== XPath Timing Stats ({} files, {} matches) ===", count, match_count);
-    eprintln!("Query exec:       {:>8.2}ms ({:.2}ms/file)",
-        query_exec as f64 / 1000.0, query_exec as f64 / 1000.0 / count as f64);
-    eprintln!("Result proc:      {:>8.2}ms ({:.2}ms/file)",
-        result_proc as f64 / 1000.0, result_proc as f64 / 1000.0 / count as f64);
-    eprintln!("  - xml_fragment: {:>8.2}ms ({:.3}ms/match)",
+    eprintln!(
+        "\n=== XPath Timing Stats ({} files, {} matches) ===",
+        count, match_count
+    );
+    eprintln!(
+        "Query exec:       {:>8.2}ms ({:.2}ms/file)",
+        query_exec as f64 / 1000.0,
+        query_exec as f64 / 1000.0 / count as f64
+    );
+    eprintln!(
+        "Result proc:      {:>8.2}ms ({:.2}ms/file)",
+        result_proc as f64 / 1000.0,
+        result_proc as f64 / 1000.0 / count as f64
+    );
+    eprintln!(
+        "  - xml_fragment: {:>8.2}ms ({:.3}ms/match)",
         xml_serialize as f64 / 1000.0,
-        if match_count > 0 { xml_serialize as f64 / 1000.0 / match_count as f64 } else { 0.0 });
-    eprintln!("  - string_value: {:>8.2}ms ({:.3}ms/match)",
+        if match_count > 0 {
+            xml_serialize as f64 / 1000.0 / match_count as f64
+        } else {
+            0.0
+        }
+    );
+    eprintln!(
+        "  - string_value: {:>8.2}ms ({:.3}ms/match)",
         string_value as f64 / 1000.0,
-        if match_count > 0 { string_value as f64 / 1000.0 / match_count as f64 } else { 0.0 });
-    eprintln!("Total XPath:      {:>8.2}ms ({:.2}ms/file)",
+        if match_count > 0 {
+            string_value as f64 / 1000.0 / match_count as f64
+        } else {
+            0.0
+        }
+    );
+    eprintln!(
+        "Total XPath:      {:>8.2}ms ({:.2}ms/file)",
         (query_exec + result_proc) as f64 / 1000.0,
-        (query_exec + result_proc) as f64 / 1000.0 / count as f64);
+        (query_exec + result_proc) as f64 / 1000.0 / count as f64
+    );
 }
 
 // Pre-compiled regex for stripping location metadata from XML
-static STRIP_RE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r#"\s*(line|column|end_line|end_column)="[^"]*""#).unwrap()
-});
+static STRIP_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r#"\s*(line|column|end_line|end_column)="[^"]*""#).unwrap());
 
 /// Extract location directly from xot node attributes (fast path - no serialization)
 fn extract_location_from_xot(xot: &Xot, node: Node) -> (u32, u32, u32, u32) {
@@ -66,10 +91,26 @@ fn extract_location_from_xot(xot: &Xot, node: Node) -> (u32, u32, u32, u32) {
         for (name_id, value) in xot.attributes(node).iter() {
             let name = xot.local_name_str(name_id);
             match name {
-                "line" => { if let Ok(v) = value.parse() { line = v; } }
-                "column" => { if let Ok(v) = value.parse() { col = v; } }
-                "end_line" => { if let Ok(v) = value.parse() { end_line = v; } }
-                "end_column" => { if let Ok(v) = value.parse() { end_col = v; } }
+                "line" => {
+                    if let Ok(v) = value.parse() {
+                        line = v;
+                    }
+                }
+                "column" => {
+                    if let Ok(v) = value.parse() {
+                        col = v;
+                    }
+                }
+                "end_line" => {
+                    if let Ok(v) = value.parse() {
+                        end_line = v;
+                    }
+                }
+                "end_column" => {
+                    if let Ok(v) = value.parse() {
+                        end_col = v;
+                    }
+                }
                 _ => {}
             }
         }
@@ -102,20 +143,18 @@ pub fn xot_node_to_xml_node(xot: &Xot, node: Node) -> XmlNode {
                 .children(node)
                 .map(|child| xot_node_to_xml_node(xot, child))
                 .collect();
-            XmlNode::Element { name, attributes, children }
-        }
-        Value::Text(text) => {
-            XmlNode::Text(text.get().to_string())
-        }
-        Value::Comment(comment) => {
-            XmlNode::Comment(comment.get().to_string())
-        }
-        Value::ProcessingInstruction(pi) => {
-            XmlNode::ProcessingInstruction {
-                target: xot.local_name_str(pi.target()).to_string(),
-                data: pi.data().map(|d| d.to_string()),
+            XmlNode::Element {
+                name,
+                attributes,
+                children,
             }
         }
+        Value::Text(text) => XmlNode::Text(text.get().to_string()),
+        Value::Comment(comment) => XmlNode::Comment(comment.get().to_string()),
+        Value::ProcessingInstruction(pi) => XmlNode::ProcessingInstruction {
+            target: xot.local_name_str(pi.target()).to_string(),
+            data: pi.data().map(|d| d.to_string()),
+        },
         Value::Document => {
             // For document nodes, collect children into a wrapper element
             let children: Vec<XmlNode> = xot
@@ -176,12 +215,15 @@ fn json_value_to_xml_node(val: &serde_json::Value) -> XmlNode {
             XmlNode::Array { .. } => 2,
             // XML node types (Element, Comment, ProcessingInstruction) cannot
             // appear in a JSON-derived tree; treat them as complex (tier 1).
-            XmlNode::Element { .. } | XmlNode::Comment(_) | XmlNode::ProcessingInstruction { .. } => 1,
+            XmlNode::Element { .. }
+            | XmlNode::Comment(_)
+            | XmlNode::ProcessingInstruction { .. } => 1,
         }
     }
     match val {
         serde_json::Value::Object(map) => {
-            let mut entries: Vec<_> = map.iter()
+            let mut entries: Vec<_> = map
+                .iter()
                 .map(|(k, v)| (k.clone(), json_value_to_xml_node(v)))
                 .collect();
             entries.sort_by(|(a, av), (b, bv)| {
@@ -358,7 +400,10 @@ pub struct XPathEngine {
 impl XPathEngine {
     /// Create a new XPath engine
     pub fn new() -> Self {
-        XPathEngine { verbose: false, ignore_whitespace: false }
+        XPathEngine {
+            verbose: false,
+            ignore_whitespace: false,
+        }
     }
 
     /// Enable verbose mode for debugging
@@ -436,16 +481,26 @@ mod tests {
         let mut result = load_xml_string_to_documents(xml, "test.ts".to_string()).unwrap();
         let engine = XPathEngine::new();
 
-        let matches = engine.query_documents(
-            &mut result.documents, result.doc_handle,
-            "//variable", Arc::new(vec![]), "test.ts"
-        ).unwrap();
+        let matches = engine
+            .query_documents(
+                &mut result.documents,
+                result.doc_handle,
+                "//variable",
+                Arc::new(vec![]),
+                "test.ts",
+            )
+            .unwrap();
         assert_eq!(matches.len(), 1, "Should find one variable element");
 
-        let matches = engine.query_documents(
-            &mut result.documents, result.doc_handle,
-            "//name", Arc::new(vec![]), "test.ts"
-        ).unwrap();
+        let matches = engine
+            .query_documents(
+                &mut result.documents,
+                result.doc_handle,
+                "//name",
+                Arc::new(vec![]),
+                "test.ts",
+            )
+            .unwrap();
         assert_eq!(matches.len(), 1, "Should find one name element");
     }
 
@@ -461,18 +516,28 @@ mod tests {
         let engine = XPathEngine::new();
 
         let mut result1 = load_xml_string_to_documents(xml1, "test1.xml".to_string()).unwrap();
-        let matches1 = engine.query_documents(
-            &mut result1.documents, result1.doc_handle,
-            "//item", Arc::new(vec![]), "test1.xml"
-        ).unwrap();
+        let matches1 = engine
+            .query_documents(
+                &mut result1.documents,
+                result1.doc_handle,
+                "//item",
+                Arc::new(vec![]),
+                "test1.xml",
+            )
+            .unwrap();
         assert_eq!(matches1.len(), 1);
 
         // Same query, different document - should use cached query
         let mut result2 = load_xml_string_to_documents(xml2, "test2.xml".to_string()).unwrap();
-        let matches2 = engine.query_documents(
-            &mut result2.documents, result2.doc_handle,
-            "//item", Arc::new(vec![]), "test2.xml"
-        ).unwrap();
+        let matches2 = engine
+            .query_documents(
+                &mut result2.documents,
+                result2.doc_handle,
+                "//item",
+                Arc::new(vec![]),
+                "test2.xml",
+            )
+            .unwrap();
         assert_eq!(matches2.len(), 2);
     }
 
@@ -485,18 +550,30 @@ mod tests {
         let engine = XPathEngine::new();
 
         let matches = engine.query_documents(
-            &mut result.documents, result.doc_handle,
+            &mut result.documents,
+            result.doc_handle,
             r#"//item ! map { "n": string(name), "v": string(value) }"#,
-            Arc::new(vec![]), "test.xml"
+            Arc::new(vec![]),
+            "test.xml",
         );
-        assert!(matches.is_ok(), "Map constructor should parse: {:?}", matches.err());
+        assert!(
+            matches.is_ok(),
+            "Map constructor should parse: {:?}",
+            matches.err()
+        );
         let m = matches.unwrap();
         assert_eq!(m.len(), 2, "Should get 2 maps");
         // Verify structured tree
         match &m[0].xml_node {
             Some(XmlNode::Map { entries }) => {
-                assert!(entries.iter().any(|(k, _)| k == "n"), "Map should have key 'n'");
-                assert!(entries.iter().any(|(k, _)| k == "v"), "Map should have key 'v'");
+                assert!(
+                    entries.iter().any(|(k, _)| k == "n"),
+                    "Map should have key 'n'"
+                );
+                assert!(
+                    entries.iter().any(|(k, _)| k == "v"),
+                    "Map should have key 'v'"
+                );
             }
             other => panic!("Expected XmlNode::Map, got: {:?}", other),
         }
@@ -510,16 +587,23 @@ mod tests {
         let mut result = load_xml_string_to_documents(xml, "test.xml".to_string()).unwrap();
         let engine = XPathEngine::new();
 
-        let matches = engine.query_documents(
-            &mut result.documents, result.doc_handle,
-            r#"//item ! map { "name": string(name), "val": string(value) }"#,
-            Arc::new(vec![]), "test.xml"
-        ).unwrap();
+        let matches = engine
+            .query_documents(
+                &mut result.documents,
+                result.doc_handle,
+                r#"//item ! map { "name": string(name), "val": string(value) }"#,
+                Arc::new(vec![]),
+                "test.xml",
+            )
+            .unwrap();
         assert_eq!(matches.len(), 1);
         // Tree should be a structured Map
         match &matches[0].xml_node {
             Some(XmlNode::Map { entries }) => {
-                let name_entry = entries.iter().find(|(k, _)| k == "name").expect("key 'name'");
+                let name_entry = entries
+                    .iter()
+                    .find(|(k, _)| k == "name")
+                    .expect("key 'name'");
                 let val_entry = entries.iter().find(|(k, _)| k == "val").expect("key 'val'");
                 assert_eq!(name_entry.1, XmlNode::Text("foo".into()));
                 assert_eq!(val_entry.1, XmlNode::Text("1".into()));
@@ -537,34 +621,53 @@ mod tests {
         let engine = XPathEngine::new();
 
         // Map results should have a Map variant in xml_node
-        let matches = engine.query_documents(
-            &mut result.documents, result.doc_handle,
-            r#"//item ! map { "name": string(name) }"#,
-            Arc::new(vec![]), "test.xml"
-        ).unwrap();
+        let matches = engine
+            .query_documents(
+                &mut result.documents,
+                result.doc_handle,
+                r#"//item ! map { "name": string(name) }"#,
+                Arc::new(vec![]),
+                "test.xml",
+            )
+            .unwrap();
         assert_eq!(matches.len(), 1);
-        assert!(matches!(matches[0].xml_node, Some(XmlNode::Map { .. })),
-            "Map results should have XmlNode::Map in tree, got: {:?}", matches[0].xml_node);
+        assert!(
+            matches!(matches[0].xml_node, Some(XmlNode::Map { .. })),
+            "Map results should have XmlNode::Map in tree, got: {:?}",
+            matches[0].xml_node
+        );
 
         // Node results should have an Element variant
-        let matches = engine.query_documents(
-            &mut result.documents, result.doc_handle,
-            "//name",
-            Arc::new(vec![]), "test.xml"
-        ).unwrap();
+        let matches = engine
+            .query_documents(
+                &mut result.documents,
+                result.doc_handle,
+                "//name",
+                Arc::new(vec![]),
+                "test.xml",
+            )
+            .unwrap();
         assert_eq!(matches.len(), 1);
-        assert!(matches!(matches[0].xml_node, Some(XmlNode::Element { .. })),
-            "Node results should have XmlNode::Element in tree");
+        assert!(
+            matches!(matches[0].xml_node, Some(XmlNode::Element { .. })),
+            "Node results should have XmlNode::Element in tree"
+        );
 
         // Atomic results should have no tree
-        let matches = engine.query_documents(
-            &mut result.documents, result.doc_handle,
-            "string(//name)",
-            Arc::new(vec![]), "test.xml"
-        ).unwrap();
+        let matches = engine
+            .query_documents(
+                &mut result.documents,
+                result.doc_handle,
+                "string(//name)",
+                Arc::new(vec![]),
+                "test.xml",
+            )
+            .unwrap();
         assert_eq!(matches.len(), 1);
-        assert!(matches[0].xml_node.is_none(),
-            "Atomic results should have no tree");
+        assert!(
+            matches[0].xml_node.is_none(),
+            "Atomic results should have no tree"
+        );
     }
 
     #[test]
@@ -577,24 +680,36 @@ mod tests {
 
         // Map with node values (not string() wrapped) — xee serializes nodes
         // as their XML representation, then we parse back to XmlNode::Map
-        let matches = engine.query_documents(
-            &mut result.documents, result.doc_handle,
-            r#"//item ! map { "name": name, "val": value }"#,
-            Arc::new(vec![]), "test.xml"
-        ).unwrap();
+        let matches = engine
+            .query_documents(
+                &mut result.documents,
+                result.doc_handle,
+                r#"//item ! map { "name": name, "val": value }"#,
+                Arc::new(vec![]),
+                "test.xml",
+            )
+            .unwrap();
         assert_eq!(matches.len(), 1);
         // Should have structured Map in tree
         match &matches[0].xml_node {
             Some(XmlNode::Map { entries }) => {
                 assert_eq!(entries.len(), 2);
                 // Look up by key (order depends on serde_json's BTreeMap)
-                let name_val = entries.iter().find(|(k, _)| k == "name")
+                let name_val = entries
+                    .iter()
+                    .find(|(k, _)| k == "name")
                     .expect("Should have 'name' key");
-                let val_val = entries.iter().find(|(k, _)| k == "val")
+                let val_val = entries
+                    .iter()
+                    .find(|(k, _)| k == "val")
                     .expect("Should have 'val' key");
                 // Node values become Text strings (from xee's XML serialization)
                 if let XmlNode::Text(ref s) = name_val.1 {
-                    assert!(s.contains("foo"), "Node value should contain 'foo', got: {}", s);
+                    assert!(
+                        s.contains("foo"),
+                        "Node value should contain 'foo', got: {}",
+                        s
+                    );
                 } else {
                     panic!("Expected Text for 'name' value, got: {:?}", name_val.1);
                 }
@@ -620,15 +735,21 @@ mod tests {
 
         // Without array{}: .//prop/string() produces a sequence of 2 strings.
         // Previously this was silently dropped; now it should auto-wrap in an array.
-        let matches = engine.query_documents(
-            &mut result.documents, result.doc_handle,
-            r#"//item ! map { "props": .//prop / string() }"#,
-            Arc::new(vec![]), "test.xml"
-        ).unwrap();
+        let matches = engine
+            .query_documents(
+                &mut result.documents,
+                result.doc_handle,
+                r#"//item ! map { "props": .//prop / string() }"#,
+                Arc::new(vec![]),
+                "test.xml",
+            )
+            .unwrap();
         assert_eq!(matches.len(), 1);
         match &matches[0].xml_node {
             Some(XmlNode::Map { entries }) => {
-                let props = entries.iter().find(|(k, _)| k == "props")
+                let props = entries
+                    .iter()
+                    .find(|(k, _)| k == "props")
                     .expect("Map should have key 'props'");
                 match &props.1 {
                     XmlNode::Array { items } => {
@@ -643,15 +764,21 @@ mod tests {
         }
 
         // With explicit array{}: should produce the same result
-        let matches_arr = engine.query_documents(
-            &mut result.documents, result.doc_handle,
-            r#"//item ! map { "props": array { .//prop / string() } }"#,
-            Arc::new(vec![]), "test.xml"
-        ).unwrap();
+        let matches_arr = engine
+            .query_documents(
+                &mut result.documents,
+                result.doc_handle,
+                r#"//item ! map { "props": array { .//prop / string() } }"#,
+                Arc::new(vec![]),
+                "test.xml",
+            )
+            .unwrap();
         assert_eq!(matches_arr.len(), 1);
         // Both approaches should produce identical XmlNode trees
-        assert_eq!(matches[0].xml_node, matches_arr[0].xml_node,
-            "Auto-wrapped and explicit array{{}} should produce identical results");
+        assert_eq!(
+            matches[0].xml_node, matches_arr[0].xml_node,
+            "Auto-wrapped and explicit array{{}} should produce identical results"
+        );
     }
 
     /// Issue #60: map with sequence of maps as value should also be auto-wrapped.
@@ -659,20 +786,27 @@ mod tests {
     fn test_map_with_sequence_of_maps_value() {
         use crate::parser::load_xml_string_to_documents;
 
-        let xml = r#"<root><item><prop><name>x</name></prop><prop><name>y</name></prop></item></root>"#;
+        let xml =
+            r#"<root><item><prop><name>x</name></prop><prop><name>y</name></prop></item></root>"#;
         let mut result = load_xml_string_to_documents(xml, "test.xml".to_string()).unwrap();
         let engine = XPathEngine::new();
 
         // Sequence of maps as a value — the motivating case from the issue
-        let matches = engine.query_documents(
-            &mut result.documents, result.doc_handle,
-            r#"//item ! map { "properties": .//prop / map { "n": string(name) } }"#,
-            Arc::new(vec![]), "test.xml"
-        ).unwrap();
+        let matches = engine
+            .query_documents(
+                &mut result.documents,
+                result.doc_handle,
+                r#"//item ! map { "properties": .//prop / map { "n": string(name) } }"#,
+                Arc::new(vec![]),
+                "test.xml",
+            )
+            .unwrap();
         assert_eq!(matches.len(), 1);
         match &matches[0].xml_node {
             Some(XmlNode::Map { entries }) => {
-                let props = entries.iter().find(|(k, _)| k == "properties")
+                let props = entries
+                    .iter()
+                    .find(|(k, _)| k == "properties")
                     .expect("Map should have key 'properties'");
                 match &props.1 {
                     XmlNode::Array { items } => {
@@ -681,14 +815,19 @@ mod tests {
                         for item in items {
                             match item {
                                 XmlNode::Map { entries } => {
-                                    assert!(entries.iter().any(|(k, _)| k == "n"),
-                                        "Each nested map should have key 'n'");
+                                    assert!(
+                                        entries.iter().any(|(k, _)| k == "n"),
+                                        "Each nested map should have key 'n'"
+                                    );
                                 }
                                 other => panic!("Expected nested Map, got: {:?}", other),
                             }
                         }
                     }
-                    other => panic!("Expected Array for sequence-of-maps value, got: {:?}", other),
+                    other => panic!(
+                        "Expected Array for sequence-of-maps value, got: {:?}",
+                        other
+                    ),
                 }
             }
             other => panic!("Expected XmlNode::Map, got: {:?}", other),
@@ -704,19 +843,28 @@ mod tests {
         let mut result = load_xml_string_to_documents(xml, "test.xml".to_string()).unwrap();
         let engine = XPathEngine::new();
 
-        let matches = engine.query_documents(
-            &mut result.documents, result.doc_handle,
-            r#"//item ! map { "name": string(name) }"#,
-            Arc::new(vec![]), "test.xml"
-        ).unwrap();
+        let matches = engine
+            .query_documents(
+                &mut result.documents,
+                result.doc_handle,
+                r#"//item ! map { "name": string(name) }"#,
+                Arc::new(vec![]),
+                "test.xml",
+            )
+            .unwrap();
         assert_eq!(matches.len(), 1);
         match &matches[0].xml_node {
             Some(XmlNode::Map { entries }) => {
-                let name_entry = entries.iter().find(|(k, _)| k == "name")
+                let name_entry = entries
+                    .iter()
+                    .find(|(k, _)| k == "name")
                     .expect("Map should have key 'name'");
                 // Single values should remain as Text, NOT wrapped in Array
-                assert_eq!(name_entry.1, XmlNode::Text("foo".into()),
-                    "Single-item values should not be auto-wrapped in arrays");
+                assert_eq!(
+                    name_entry.1,
+                    XmlNode::Text("foo".into()),
+                    "Single-item values should not be auto-wrapped in arrays"
+                );
             }
             other => panic!("Expected XmlNode::Map, got: {:?}", other),
         }
@@ -744,7 +892,9 @@ mod tests {
         assert_eq!(matches.len(), 1);
         match &matches[0].xml_node {
             Some(XmlNode::Map { entries }) => {
-                let classes = entries.iter().find(|(k, _)| k == "classes")
+                let classes = entries
+                    .iter()
+                    .find(|(k, _)| k == "classes")
                     .expect("Should have 'classes' key");
                 match &classes.1 {
                     XmlNode::Array { items } => {
@@ -752,7 +902,9 @@ mod tests {
                         // First class should have methods auto-wrapped in array
                         match &items[0] {
                             XmlNode::Map { entries } => {
-                                let methods = entries.iter().find(|(k, _)| k == "methods")
+                                let methods = entries
+                                    .iter()
+                                    .find(|(k, _)| k == "methods")
                                     .expect("Should have 'methods' key");
                                 match &methods.1 {
                                     XmlNode::Array { items } => {
@@ -766,10 +918,15 @@ mod tests {
                         // Second class has single method — should NOT be wrapped
                         match &items[1] {
                             XmlNode::Map { entries } => {
-                                let methods = entries.iter().find(|(k, _)| k == "methods")
+                                let methods = entries
+                                    .iter()
+                                    .find(|(k, _)| k == "methods")
                                     .expect("Should have 'methods' key");
-                                assert_eq!(methods.1, XmlNode::Text("m3".into()),
-                                    "Single method should remain as Text");
+                                assert_eq!(
+                                    methods.1,
+                                    XmlNode::Text("m3".into()),
+                                    "Single method should remain as Text"
+                                );
                             }
                             other => panic!("Expected Map for class, got: {:?}", other),
                         }
@@ -803,11 +960,20 @@ mod tests {
 
         let mut result = load_xml_string_to_documents(xml, "test.ts".to_string()).unwrap();
         let engine = XPathEngine::new();
-        let matches = engine.query_documents(
-            &mut result.documents, result.doc_handle,
-            "//variable", Arc::new(vec![]), "test.ts"
-        ).unwrap();
-        assert_eq!(matches.len(), 1, "Should find one variable element with XML prolog");
+        let matches = engine
+            .query_documents(
+                &mut result.documents,
+                result.doc_handle,
+                "//variable",
+                Arc::new(vec![]),
+                "test.ts",
+            )
+            .unwrap();
+        assert_eq!(
+            matches.len(),
+            1,
+            "Should find one variable element with XML prolog"
+        );
     }
 
     #[test]
@@ -815,30 +981,44 @@ mod tests {
         use crate::parse_string_to_documents;
 
         let source = "let x = 1;";
-        let mut result = parse_string_to_documents(
-            source, "typescript", "test.ts".to_string(), None, false
-        ).unwrap();
+        let mut result =
+            parse_string_to_documents(source, "typescript", "test.ts".to_string(), None, false)
+                .unwrap();
 
         let engine = XPathEngine::new();
 
-        let matches = engine.query_documents(
-            &mut result.documents, result.doc_handle,
-            "//variable", result.source_lines.clone(), "test.ts"
-        ).unwrap();
+        let matches = engine
+            .query_documents(
+                &mut result.documents,
+                result.doc_handle,
+                "//variable",
+                result.source_lines.clone(),
+                "test.ts",
+            )
+            .unwrap();
         assert_eq!(matches.len(), 1, "Should find one variable element");
 
         // Also test querying nested elements
-        let matches = engine.query_documents(
-            &mut result.documents, result.doc_handle,
-            "//name", result.source_lines.clone(), "test.ts"
-        ).unwrap();
+        let matches = engine
+            .query_documents(
+                &mut result.documents,
+                result.doc_handle,
+                "//name",
+                result.source_lines.clone(),
+                "test.ts",
+            )
+            .unwrap();
         assert_eq!(matches.len(), 1, "Should find one name element");
 
-        let matches = engine.query_documents(
-            &mut result.documents, result.doc_handle,
-            "//value/number", result.source_lines.clone(), "test.ts"
-        ).unwrap();
+        let matches = engine
+            .query_documents(
+                &mut result.documents,
+                result.doc_handle,
+                "//value/number",
+                result.source_lines.clone(),
+                "test.ts",
+            )
+            .unwrap();
         assert_eq!(matches.len(), 1, "Should find number inside value");
     }
-
 }

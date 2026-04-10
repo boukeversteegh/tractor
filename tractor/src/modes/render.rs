@@ -1,8 +1,8 @@
+use crate::cli::RenderArgs;
 use std::io::Read;
-use tractor_core::language_info::{get_language_info, get_language_for_extension};
+use tractor_core::language_info::{get_language_for_extension, get_language_info};
 use tractor_core::render::{parse_input, render, RenderOptions};
 use tractor_core::TreeMode;
-use crate::cli::RenderArgs;
 
 pub fn run_render(args: RenderArgs) -> Result<(), Box<dyn std::error::Error>> {
     let lang = resolve_language(&args)?;
@@ -24,14 +24,16 @@ pub fn run_render(args: RenderArgs) -> Result<(), Box<dyn std::error::Error>> {
 fn resolve_language(args: &RenderArgs) -> Result<String, Box<dyn std::error::Error>> {
     // Explicit --lang takes priority (supports aliases like "cs" → "csharp")
     if let Some(lang) = &args.lang {
-        let info = get_language_info(lang)
-            .ok_or_else(|| format!("unknown language: {}", lang))?;
+        let info = get_language_info(lang).ok_or_else(|| format!("unknown language: {}", lang))?;
         return Ok(info.name.to_string());
     }
 
     // Derive from file extension
     if let Some(file) = &args.file {
-        if let Some(ext) = std::path::Path::new(file).extension().and_then(|e| e.to_str()) {
+        if let Some(ext) = std::path::Path::new(file)
+            .extension()
+            .and_then(|e| e.to_str())
+        {
             let info = get_language_for_extension(ext)
                 .ok_or_else(|| format!("unrecognized extension: .{}", ext))?;
             return Ok(info.name.to_string());

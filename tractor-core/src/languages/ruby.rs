@@ -1,8 +1,8 @@
 //! Ruby transform logic
 
-use xot::{Xot, Node as XotNode};
-use crate::xot_transform::{TransformAction, helpers::*};
 use crate::output::syntax_highlight::SyntaxCategory;
+use crate::xot_transform::{helpers::*, TransformAction};
+use xot::{Node as XotNode, Xot};
 
 /// Transform a Ruby AST node
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {

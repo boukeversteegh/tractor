@@ -9,10 +9,12 @@
 //!
 //! All three accept a `RenderOptions` and respect `use_color` and `language`.
 
-use crate::xpath::{Match, XmlNode};
-use crate::output::xml_renderer::{render_xml_node, RenderOptions};
-use crate::output::syntax_highlight::{extract_syntax_spans_from_xml_node, highlight_source, highlight_lines};
 use crate::languages::get_syntax_category;
+use crate::output::syntax_highlight::{
+    extract_syntax_spans_from_xml_node, highlight_lines, highlight_source,
+};
+use crate::output::xml_renderer::{render_xml_node, RenderOptions};
+use crate::xpath::{Match, XmlNode};
 use regex::Regex;
 
 /// Render the XML tree fragment for a single match.
@@ -29,7 +31,9 @@ pub fn render_tree_match(m: &Match, opts: &RenderOptions) -> String {
         }
     } else {
         let mut s = m.value.clone();
-        if opts.pretty_print { s.push('\n'); }
+        if opts.pretty_print {
+            s.push('\n');
+        }
         s
     }
 }
@@ -44,9 +48,8 @@ pub fn render_source_match(m: &Match, opts: &RenderOptions) -> String {
         let category_fn = get_syntax_category(opts.language.as_deref().unwrap_or(""));
         let spans = extract_syntax_spans_from_xml_node(m.xml_node.as_ref().unwrap(), category_fn);
         if !spans.is_empty() {
-            let highlighted = highlight_source(
-                &snippet, &spans, m.line, m.column, m.end_line, m.end_column,
-            );
+            let highlighted =
+                highlight_source(&snippet, &spans, m.line, m.column, m.end_line, m.end_column);
             return format!("{}\n", highlighted);
         }
     }
@@ -59,14 +62,18 @@ pub fn render_source_match(m: &Match, opts: &RenderOptions) -> String {
 /// is set in `opts.language`.
 pub fn render_lines_match(m: &Match, opts: &RenderOptions) -> String {
     let lines = m.get_source_lines_range();
-    let lines_vec: Vec<String> = lines.iter()
+    let lines_vec: Vec<String> = lines
+        .iter()
         .map(|l| l.trim_end_matches('\r').to_string())
         .collect();
     if opts.use_color && m.xml_node.is_some() {
         let category_fn = get_syntax_category(opts.language.as_deref().unwrap_or(""));
         let spans = extract_syntax_spans_from_xml_node(m.xml_node.as_ref().unwrap(), category_fn);
         if !spans.is_empty() {
-            return format!("{}\n", highlight_lines(&lines_vec, &spans, m.line, m.end_line));
+            return format!(
+                "{}\n",
+                highlight_lines(&lines_vec, &spans, m.line, m.end_line)
+            );
         }
     }
     let mut out = String::new();
@@ -103,7 +110,8 @@ pub fn render_source_precomputed(
             let category_fn = get_syntax_category(opts.language.as_deref().unwrap_or(""));
             let spans = extract_syntax_spans_from_xml_node(node, category_fn);
             if !spans.is_empty() {
-                let highlighted = highlight_source(snippet, &spans, line, column, end_line, end_column);
+                let highlighted =
+                    highlight_source(snippet, &spans, line, column, end_line, end_column);
                 return format!("{}\n", highlighted);
             }
         }
@@ -176,7 +184,11 @@ pub fn render_lines(
     } else if line_count <= 6 {
         for (i, line) in display.iter().enumerate().take(line_count) {
             let lineno = sl + i;
-            let marker = if lineno == sl || lineno == el { ">" } else { " " };
+            let marker = if lineno == sl || lineno == el {
+                ">"
+            } else {
+                " "
+            };
             out.push_str(&format!("{:>w$} {}| {}\n", lineno, marker, line, w = lnw));
         }
     } else {
@@ -186,7 +198,12 @@ pub fn render_lines(
                 out.push_str(&format!("{:>w$} >| {}\n", sl + i, &display[i], w = lnw));
             }
         }
-        out.push_str(&format!("{:>w$}  | ... ({} more lines)\n", "...", line_count - 4, w = lnw));
+        out.push_str(&format!(
+            "{:>w$}  | ... ({} more lines)\n",
+            "...",
+            line_count - 4,
+            w = lnw
+        ));
         // Last 2 lines
         for i in (line_count - 2)..line_count {
             if i < display.len() {
@@ -198,22 +215,20 @@ pub fn render_lines(
     out
 }
 
-
 /// Format a message template by replacing placeholders ({value}, {line}, {col}, {file}).
 pub fn format_message(template: &str, m: &Match) -> String {
     if !template.contains('{') {
         return template.to_string();
     }
     let re = Regex::new(r"\{([^}]+)\}").unwrap();
-    re.replace_all(template, |caps: &regex::Captures| {
-        match &caps[1] {
-            "value" => truncate(&m.value, 50),
-            "line"  => m.line.to_string(),
-            "col"   => m.column.to_string(),
-            "file"  => normalize_path(&m.file),
-            expr    => format!("{{{}}}", expr),
-        }
-    }).to_string()
+    re.replace_all(template, |caps: &regex::Captures| match &caps[1] {
+        "value" => truncate(&m.value, 50),
+        "line" => m.line.to_string(),
+        "col" => m.column.to_string(),
+        "file" => normalize_path(&m.file),
+        expr => format!("{{{}}}", expr),
+    })
+    .to_string()
 }
 
 fn truncate(s: &str, max_len: usize) -> String {
@@ -233,7 +248,11 @@ mod tests {
     #[test]
     fn test_format_message() {
         let m = Match::with_location(
-            "test.cs".to_string(), 10, 5, 10, 15,
+            "test.cs".to_string(),
+            10,
+            5,
+            10,
+            15,
             "MyMethod".to_string(),
             Arc::new(vec![]),
         );

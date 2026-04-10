@@ -9,10 +9,10 @@ pub mod raw;
 // Re-export languages for compatibility
 pub use crate::languages;
 
-use std::path::Path;
-use std::fs;
-use thiserror::Error;
 use crate::tree_mode::TreeMode;
+use std::fs;
+use std::path::Path;
+use thiserror::Error;
 
 /// Supported languages and their extensions
 pub static SUPPORTED_LANGUAGES: &[(&str, &[&str])] = &[
@@ -211,7 +211,8 @@ pub fn get_language_abi_versions() -> Vec<LanguageAbiInfo> {
         },
         LanguageAbiInfo {
             name: "javascript",
-            abi_version: tree_sitter::Language::from(tree_sitter_javascript::LANGUAGE).abi_version(),
+            abi_version: tree_sitter::Language::from(tree_sitter_javascript::LANGUAGE)
+                .abi_version(),
         },
         LanguageAbiInfo {
             name: "json",
@@ -231,7 +232,8 @@ pub fn get_language_abi_versions() -> Vec<LanguageAbiInfo> {
         },
         LanguageAbiInfo {
             name: "ocaml",
-            abi_version: tree_sitter::Language::from(tree_sitter_ocaml::LANGUAGE_OCAML).abi_version(),
+            abi_version: tree_sitter::Language::from(tree_sitter_ocaml::LANGUAGE_OCAML)
+                .abi_version(),
         },
         LanguageAbiInfo {
             name: "php",
@@ -259,11 +261,13 @@ pub fn get_language_abi_versions() -> Vec<LanguageAbiInfo> {
         },
         LanguageAbiInfo {
             name: "tsx",
-            abi_version: tree_sitter::Language::from(tree_sitter_typescript::LANGUAGE_TSX).abi_version(),
+            abi_version: tree_sitter::Language::from(tree_sitter_typescript::LANGUAGE_TSX)
+                .abi_version(),
         },
         LanguageAbiInfo {
             name: "typescript",
-            abi_version: tree_sitter::Language::from(tree_sitter_typescript::LANGUAGE_TYPESCRIPT).abi_version(),
+            abi_version: tree_sitter::Language::from(tree_sitter_typescript::LANGUAGE_TYPESCRIPT)
+                .abi_version(),
         },
         LanguageAbiInfo {
             name: "toml",
@@ -279,7 +283,8 @@ pub fn get_language_abi_versions() -> Vec<LanguageAbiInfo> {
         },
         LanguageAbiInfo {
             name: "tsql",
-            abi_version: tree_sitter::Language::from(tree_sitter_sequel_tsql::LANGUAGE).abi_version(),
+            abi_version: tree_sitter::Language::from(tree_sitter_sequel_tsql::LANGUAGE)
+                .abi_version(),
         },
     ]
 }
@@ -289,15 +294,13 @@ pub fn get_language_abi_versions() -> Vec<LanguageAbiInfo> {
 // ============================================================================
 
 use crate::language_info::get_all_languages_for_extension;
-use crate::xot_builder::{XotBuilder, XeeBuilder};
-use xee_xpath::{Documents, DocumentHandle};
+use crate::xot_builder::{XeeBuilder, XotBuilder};
+use xee_xpath::{DocumentHandle, Documents};
 
 /// Check if a file extension is ambiguous (multiple languages claim it).
 /// Returns Ok(()) if the extension is unambiguous, or an error if it is ambiguous.
 fn check_ambiguous_extension(path: &Path) -> Result<(), ParseError> {
-    let ext = path.extension()
-        .and_then(|e| e.to_str())
-        .unwrap_or("");
+    let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
     if ext.is_empty() {
         return Ok(());
     }
@@ -314,7 +317,11 @@ fn check_ambiguous_extension(path: &Path) -> Result<(), ParseError> {
 }
 
 /// Parse a file and return an xot document (new pipeline)
-pub fn parse_file_to_xot(path: &Path, lang_override: Option<&str>, tree_mode: Option<TreeMode>) -> Result<XotParseResult, ParseError> {
+pub fn parse_file_to_xot(
+    path: &Path,
+    lang_override: Option<&str>,
+    tree_mode: Option<TreeMode>,
+) -> Result<XotParseResult, ParseError> {
     parse_file_to_xot_with_options(path, lang_override, tree_mode, false)
 }
 
@@ -330,11 +337,22 @@ pub fn parse_file_to_xot_with_options(
     }
     let source = fs::read_to_string(path)?;
     let lang = lang_override.unwrap_or_else(|| detect_language(path.to_str().unwrap_or("")));
-    parse_string_to_xot_with_options(&source, lang, path.to_string_lossy().to_string(), tree_mode, ignore_whitespace)
+    parse_string_to_xot_with_options(
+        &source,
+        lang,
+        path.to_string_lossy().to_string(),
+        tree_mode,
+        ignore_whitespace,
+    )
 }
 
 /// Parse a source string and return an xot document (new pipeline)
-pub fn parse_string_to_xot(source: &str, lang: &str, file_path: String, tree_mode: Option<TreeMode>) -> Result<XotParseResult, ParseError> {
+pub fn parse_string_to_xot(
+    source: &str,
+    lang: &str,
+    file_path: String,
+    tree_mode: Option<TreeMode>,
+) -> Result<XotParseResult, ParseError> {
     parse_string_to_xot_with_options(source, lang, file_path, tree_mode, false)
 }
 
@@ -349,21 +367,23 @@ pub fn parse_string_to_xot_with_options(
     tree_mode: Option<TreeMode>,
     ignore_whitespace: bool,
 ) -> Result<XotParseResult, ParseError> {
-    let resolved = TreeMode::resolve(tree_mode, lang)
-        .map_err(ParseError::Parse)?;
+    let resolved = TreeMode::resolve(tree_mode, lang).map_err(ParseError::Parse)?;
 
     let language = get_tree_sitter_language(lang)?;
 
     let mut parser = tree_sitter::Parser::new();
-    parser.set_language(&language)
+    parser
+        .set_language(&language)
         .map_err(|e| ParseError::TreeSitter(e.to_string()))?;
 
-    let tree = parser.parse(source, None)
+    let tree = parser
+        .parse(source, None)
         .ok_or_else(|| ParseError::Parse("Failed to parse source".to_string()))?;
 
     // Build xot document (always start with raw tree)
     let mut builder = XotBuilder::new();
-    let root = builder.build_raw_with_options(tree.root_node(), source, &file_path, ignore_whitespace)
+    let root = builder
+        .build_raw_with_options(tree.root_node(), source, &file_path, ignore_whitespace)
         .map_err(|e| ParseError::Parse(e.to_string()))?;
 
     let mut xot = builder.into_xot();
@@ -403,7 +423,10 @@ impl XeeParseResult {
     ///
     /// This is a convenience method that creates an XPathEngine and calls
     /// `query_documents`, avoiding the need to destructure the parse result.
-    pub fn query(&mut self, xpath: &str) -> Result<Vec<crate::xpath::Match>, crate::xpath::XPathError> {
+    pub fn query(
+        &mut self,
+        xpath: &str,
+    ) -> Result<Vec<crate::xpath::Match>, crate::xpath::XPathError> {
         let engine = crate::xpath::XPathEngine::new();
         engine.query_documents(
             &mut self.documents,
@@ -451,15 +474,26 @@ pub fn print_parse_timing_stats() {
     let source_lines = TIMING_SOURCE_LINES.load(Ordering::Relaxed);
 
     eprintln!("\n=== Parse Timing Stats ({} files) ===", count);
-    eprintln!("TreeSitter parse: {:>8.2}ms ({:.2}ms/file)",
-        ts_parse as f64 / 1000.0, ts_parse as f64 / 1000.0 / count as f64);
-    eprintln!("Xot building:     {:>8.2}ms ({:.2}ms/file)",
-        xot_build as f64 / 1000.0, xot_build as f64 / 1000.0 / count as f64);
-    eprintln!("Source lines:     {:>8.2}ms ({:.2}ms/file)",
-        source_lines as f64 / 1000.0, source_lines as f64 / 1000.0 / count as f64);
-    eprintln!("Total parsing:    {:>8.2}ms ({:.2}ms/file)",
+    eprintln!(
+        "TreeSitter parse: {:>8.2}ms ({:.2}ms/file)",
+        ts_parse as f64 / 1000.0,
+        ts_parse as f64 / 1000.0 / count as f64
+    );
+    eprintln!(
+        "Xot building:     {:>8.2}ms ({:.2}ms/file)",
+        xot_build as f64 / 1000.0,
+        xot_build as f64 / 1000.0 / count as f64
+    );
+    eprintln!(
+        "Source lines:     {:>8.2}ms ({:.2}ms/file)",
+        source_lines as f64 / 1000.0,
+        source_lines as f64 / 1000.0 / count as f64
+    );
+    eprintln!(
+        "Total parsing:    {:>8.2}ms ({:.2}ms/file)",
         (ts_parse + xot_build + source_lines) as f64 / 1000.0,
-        (ts_parse + xot_build + source_lines) as f64 / 1000.0 / count as f64);
+        (ts_parse + xot_build + source_lines) as f64 / 1000.0 / count as f64
+    );
 }
 
 /// Parse a source string directly into Documents with all options
@@ -478,22 +512,32 @@ pub fn parse_string_to_xee_with_options(
 ) -> Result<XeeParseResult, ParseError> {
     use std::time::Instant;
 
-    let resolved = TreeMode::resolve(tree_mode, lang)
-        .map_err(ParseError::Parse)?;
+    let resolved = TreeMode::resolve(tree_mode, lang).map_err(ParseError::Parse)?;
     let language = get_tree_sitter_language(lang)?;
 
     let t0 = Instant::now();
     let mut parser = tree_sitter::Parser::new();
-    parser.set_language(&language)
+    parser
+        .set_language(&language)
         .map_err(|e| ParseError::TreeSitter(e.to_string()))?;
 
-    let tree = parser.parse(source, None)
+    let tree = parser
+        .parse(source, None)
         .ok_or_else(|| ParseError::Parse("Failed to parse source".to_string()))?;
     let t1 = Instant::now();
 
     // Build directly into Documents using XeeBuilder
     let mut builder = XeeBuilder::new();
-    let doc_handle = builder.build_with_options(tree.root_node(), source, &file_path, lang, resolved, ignore_whitespace, max_depth)
+    let doc_handle = builder
+        .build_with_options(
+            tree.root_node(),
+            source,
+            &file_path,
+            lang,
+            resolved,
+            ignore_whitespace,
+            max_depth,
+        )
         .map_err(|e| ParseError::Parse(e.to_string()))?;
 
     let documents = builder.into_documents();
@@ -538,7 +582,14 @@ pub fn parse_file_to_xee_with_options(
     }
     let source = fs::read_to_string(path)?;
     let lang = lang_override.unwrap_or_else(|| detect_language(path.to_str().unwrap_or("")));
-    parse_string_to_xee_with_options(&source, lang, path.to_string_lossy().to_string(), tree_mode, ignore_whitespace, None)
+    parse_string_to_xee_with_options(
+        &source,
+        lang,
+        path.to_string_lossy().to_string(),
+        tree_mode,
+        ignore_whitespace,
+        None,
+    )
 }
 
 // ============================================================================
@@ -548,14 +599,16 @@ pub fn parse_file_to_xee_with_options(
 /// Load XML string directly into Documents for querying
 ///
 /// This is the XML passthrough path - no TreeSitter parsing, just load the XML.
-pub fn load_xml_string_to_documents(xml: &str, file_path: String) -> Result<XeeParseResult, ParseError> {
+pub fn load_xml_string_to_documents(
+    xml: &str,
+    file_path: String,
+) -> Result<XeeParseResult, ParseError> {
     let mut documents = Documents::new();
 
     // Parse XML directly into Documents
-    let doc_handle = documents.add_string(
-        "file:///source".try_into().unwrap(),
-        xml,
-    ).map_err(|e| ParseError::Parse(e.to_string()))?;
+    let doc_handle = documents
+        .add_string("file:///source".try_into().unwrap(), xml)
+        .map_err(|e| ParseError::Parse(e.to_string()))?;
 
     Ok(XeeParseResult {
         documents,
@@ -598,7 +651,14 @@ pub fn parse_to_documents(
     } else {
         // Source code: TreeSitter → XeeBuilder → Documents
         let source = fs::read_to_string(path)?;
-        parse_string_to_xee_with_options(&source, lang, path.to_string_lossy().to_string(), tree_mode, ignore_whitespace, max_depth)
+        parse_string_to_xee_with_options(
+            &source,
+            lang,
+            path.to_string_lossy().to_string(),
+            tree_mode,
+            ignore_whitespace,
+            max_depth,
+        )
     }
 }
 
@@ -615,7 +675,14 @@ pub fn parse_string_to_documents(
         load_xml_string_to_documents(source, file_path)
     } else {
         // Source code: TreeSitter → XeeBuilder → Documents
-        parse_string_to_xee_with_options(source, lang, file_path, tree_mode, ignore_whitespace, None)
+        parse_string_to_xee_with_options(
+            source,
+            lang,
+            file_path,
+            tree_mode,
+            ignore_whitespace,
+            None,
+        )
     }
 }
 
@@ -641,12 +708,18 @@ mod tests {
         use crate::output::{render_node, RenderOptions};
 
         let result = parse_string_to_documents(
-            "public class Foo { }", "csharp", "<test>".to_string(), None, false
-        ).unwrap();
+            "public class Foo { }",
+            "csharp",
+            "<test>".to_string(),
+            None,
+            false,
+        )
+        .unwrap();
 
         let doc_node = result.documents.document_node(result.doc_handle).unwrap();
         let xot = result.documents.xot();
-        let xml: String = xot.children(doc_node)
+        let xml: String = xot
+            .children(doc_node)
             .map(|child| render_node(xot, child, &RenderOptions::new()))
             .collect();
 

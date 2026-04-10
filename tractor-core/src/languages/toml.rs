@@ -19,9 +19,9 @@
 //! ```
 //! Queryable as: `//database/host[.='localhost']`
 
-use xot::{Xot, Node as XotNode};
-use crate::xot_transform::{TransformAction, helpers::*};
 use crate::output::syntax_highlight::SyntaxCategory;
+use crate::xot_transform::{helpers::*, TransformAction};
+use xot::{Node as XotNode, Xot};
 
 /// Transform a TOML AST node into a data-structure-oriented XML tree
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
@@ -32,24 +32,16 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 
     match kind.as_str() {
         // Key-value pairs: rename to the key text
-        "pair" => {
-            transform_pair(xot, node)
-        }
+        "pair" => transform_pair(xot, node),
 
         // Table headers [key]: rename to the key text
-        "table" => {
-            transform_table(xot, node)
-        }
+        "table" => transform_table(xot, node),
 
         // Table array elements [[key]]: rename to the key text
-        "table_array_element" => {
-            transform_table_array_element(xot, node)
-        }
+        "table_array_element" => transform_table_array_element(xot, node),
 
         // Arrays: remove punctuation, wrap values as <item>
-        "array" => {
-            transform_array(xot, node)
-        }
+        "array" => transform_array(xot, node),
 
         // Inline tables: remove punctuation, flatten
         "inline_table" => {
@@ -64,21 +56,14 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         // Scalar values: flatten to promote text content to parent
-        "integer" | "float" | "boolean"
-        | "local_date" | "local_date_time" | "local_time"
-        | "offset_date_time" => {
-            Ok(TransformAction::Flatten)
-        }
+        "integer" | "float" | "boolean" | "local_date" | "local_date_time" | "local_time"
+        | "offset_date_time" => Ok(TransformAction::Flatten),
 
         // Keys: flatten to promote text
-        "bare_key" | "quoted_key" => {
-            Ok(TransformAction::Flatten)
-        }
+        "bare_key" | "quoted_key" => Ok(TransformAction::Flatten),
 
         // Dotted keys: flatten to promote text
-        "dotted_key" => {
-            Ok(TransformAction::Flatten)
-        }
+        "dotted_key" => Ok(TransformAction::Flatten),
 
         // Comments: remove entirely
         "comment" => {
@@ -87,9 +72,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         // Escape sequences: flatten to promote text
-        "escape_sequence" => {
-            Ok(TransformAction::Flatten)
-        }
+        "escape_sequence" => Ok(TransformAction::Flatten),
 
         // Document root: clean up text children
         "document" => {
@@ -162,7 +145,10 @@ fn transform_table(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot:
 }
 
 /// Transform a table array element [[key]] by extracting the key and renaming.
-fn transform_table_array_element(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+fn transform_table_array_element(
+    xot: &mut Xot,
+    node: XotNode,
+) -> Result<TransformAction, xot::Error> {
     if let Some(key_info) = extract_table_key(xot, node) {
         let segments = key_info.segments;
 
@@ -194,7 +180,8 @@ fn transform_array(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot:
     remove_text_children(xot, node)?;
 
     // Wrap each element child in an <item> element
-    let children: Vec<XotNode> = xot.children(node)
+    let children: Vec<XotNode> = xot
+        .children(node)
         .filter(|&c| xot.element(c).is_some())
         .collect();
 
@@ -224,12 +211,16 @@ fn extract_pair_key(xot: &Xot, node: XotNode) -> Option<KeyInfo> {
             match name.as_str() {
                 "bare_key" => {
                     let text = get_text_content(xot, child)?;
-                    return Some(KeyInfo { segments: vec![text.trim().to_string()] });
+                    return Some(KeyInfo {
+                        segments: vec![text.trim().to_string()],
+                    });
                 }
                 "quoted_key" => {
                     let text = get_text_content(xot, child)?;
                     let stripped = strip_quotes(text.trim());
-                    return Some(KeyInfo { segments: vec![stripped] });
+                    return Some(KeyInfo {
+                        segments: vec![stripped],
+                    });
                 }
                 "dotted_key" => {
                     return extract_dotted_key_segments(xot, child);
@@ -287,7 +278,11 @@ fn collect_key_segments(xot: &Xot, node: XotNode, segments: &mut Vec<String>) {
 
 /// Wrap a node in nested elements for dotted key segments.
 /// For segments ["a", "b"] and node N, creates: <a><b>N</b></a>
-fn wrap_in_nested_elements(xot: &mut Xot, node: XotNode, segments: &[String]) -> Result<(), xot::Error> {
+fn wrap_in_nested_elements(
+    xot: &mut Xot,
+    node: XotNode,
+    segments: &[String],
+) -> Result<(), xot::Error> {
     let mut current = node;
 
     // Wrap from innermost to outermost
@@ -307,13 +302,13 @@ fn wrap_in_nested_elements(xot: &mut Xot, node: XotNode, segments: &[String]) ->
 /// Strip surrounding quotes from a string
 fn strip_quotes(s: &str) -> String {
     // Multi-line strings first (""" or ''')
-    if (s.starts_with("\"\"\"") && s.ends_with("\"\"\"")) ||
-       (s.starts_with("'''") && s.ends_with("'''")) {
+    if (s.starts_with("\"\"\"") && s.ends_with("\"\"\""))
+        || (s.starts_with("'''") && s.ends_with("'''"))
+    {
         return s[3..s.len() - 3].trim_start_matches('\n').to_string();
     }
     // Single-line strings
-    if (s.starts_with('"') && s.ends_with('"')) ||
-       (s.starts_with('\'') && s.ends_with('\'')) {
+    if (s.starts_with('"') && s.ends_with('"')) || (s.starts_with('\'') && s.ends_with('\'')) {
         return s[1..s.len() - 1].to_string();
     }
     s.to_string()

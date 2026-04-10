@@ -169,7 +169,10 @@ mod tests {
     #[test]
     fn preserves_absolute_paths() {
         assert_eq!(NormalizedXpath::new("//function"), "//function");
-        assert_eq!(NormalizedXpath::new("//class[name='Foo']"), "//class[name='Foo']");
+        assert_eq!(
+            NormalizedXpath::new("//class[name='Foo']"),
+            "//class[name='Foo']"
+        );
         if !is_msys_environment() {
             assert_eq!(NormalizedXpath::new("/root"), "/root");
         }
@@ -269,8 +272,14 @@ mod tests {
         assert_eq!(NormalizedXpath::new("count(//item)"), "count(//item)");
         assert_eq!(NormalizedXpath::new("not(//x)"), "not(//x)");
         assert_eq!(NormalizedXpath::new("string(//x)"), "string(//x)");
-        assert_eq!(NormalizedXpath::new("contains(//x, 'y')"), "contains(//x, 'y')");
-        assert_eq!(NormalizedXpath::new("starts-with(//x, 'y')"), "starts-with(//x, 'y')");
+        assert_eq!(
+            NormalizedXpath::new("contains(//x, 'y')"),
+            "contains(//x, 'y')"
+        );
+        assert_eq!(
+            NormalizedXpath::new("starts-with(//x, 'y')"),
+            "starts-with(//x, 'y')"
+        );
     }
 
     // -- FromStr / Display / Serde --

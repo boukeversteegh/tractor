@@ -22,246 +22,696 @@ const SKIP_EXTENSIONS: &[&str] = &["xml", "sh", "md"];
 /// Directory = -f value, name = command + params, extension = file format.
 const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
     // -f text
-    ("text/query.txt", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-    ]),
-    ("text/query-value.txt", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class", "-v", "value",
-    ]),
-    ("text/query-count.txt", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class", "-v", "count",
-    ]),
-    ("text/query-message.txt", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "-m", "{file}:{line}",
-    ]),
-    ("text/check.txt", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "-f", "text",
-    ]),
-    ("text/check-composable.txt", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "-v", "tree,reason,severity", "-f", "text",
-    ]),
-    ("text/query-summary.txt", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "-v", "summary",
-    ]),
-    ("text/query-query.txt", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "-v", "query",
-    ]),
-    ("text/query-location.txt", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "-v", "file,line",
-    ]),
+    (
+        "text/query.txt",
+        &[
+            "query",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+        ],
+    ),
+    (
+        "text/query-value.txt",
+        &[
+            "query",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "-v",
+            "value",
+        ],
+    ),
+    (
+        "text/query-count.txt",
+        &[
+            "query",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "-v",
+            "count",
+        ],
+    ),
+    (
+        "text/query-message.txt",
+        &[
+            "query",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "-m",
+            "{file}:{line}",
+        ],
+    ),
+    (
+        "text/check.txt",
+        &[
+            "check",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "--reason",
+            "class found",
+            "-f",
+            "text",
+        ],
+    ),
+    (
+        "text/check-composable.txt",
+        &[
+            "check",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "--reason",
+            "class found",
+            "-v",
+            "tree,reason,severity",
+            "-f",
+            "text",
+        ],
+    ),
+    (
+        "text/query-summary.txt",
+        &[
+            "query",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "-v",
+            "summary",
+        ],
+    ),
+    (
+        "text/query-query.txt",
+        &[
+            "query",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "-v",
+            "query",
+        ],
+    ),
+    (
+        "text/query-location.txt",
+        &[
+            "query",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "-v",
+            "file,line",
+        ],
+    ),
     // -f gcc
-    ("gcc/check.txt", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found",
-    ]),
-    ("gcc/check-no-matches.txt", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "interface",
-        "--reason", "interface found",
-    ]),
+    (
+        "gcc/check.txt",
+        &[
+            "check",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "--reason",
+            "class found",
+        ],
+    ),
+    (
+        "gcc/check-no-matches.txt",
+        &[
+            "check",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "interface",
+            "--reason",
+            "interface found",
+        ],
+    ),
     // -f json
-    ("json/query.json", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class", "-f", "json",
-    ]),
-    ("json/query-value.json", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "-v", "value", "-f", "json",
-    ]),
-    ("json/query-message.json", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "-m", "{file}:{line}", "-f", "json",
-    ]),
-    ("json/check.json", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "-f", "json",
-    ]),
-    ("json/check-composable.json", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "-v", "tree,reason,severity", "-f", "json",
-    ]),
-    ("json/query-summary.json", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "-v", "summary", "-f", "json",
-    ]),
-    ("json/query-query.json", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "-v", "query", "-f", "json",
-    ]),
+    (
+        "json/query.json",
+        &[
+            "query",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "-f",
+            "json",
+        ],
+    ),
+    (
+        "json/query-value.json",
+        &[
+            "query",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "-v",
+            "value",
+            "-f",
+            "json",
+        ],
+    ),
+    (
+        "json/query-message.json",
+        &[
+            "query",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "-m",
+            "{file}:{line}",
+            "-f",
+            "json",
+        ],
+    ),
+    (
+        "json/check.json",
+        &[
+            "check",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "--reason",
+            "class found",
+            "-f",
+            "json",
+        ],
+    ),
+    (
+        "json/check-composable.json",
+        &[
+            "check",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "--reason",
+            "class found",
+            "-v",
+            "tree,reason,severity",
+            "-f",
+            "json",
+        ],
+    ),
+    (
+        "json/query-summary.json",
+        &[
+            "query",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "-v",
+            "summary",
+            "-f",
+            "json",
+        ],
+    ),
+    (
+        "json/query-query.json",
+        &[
+            "query",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "-v",
+            "query",
+            "-f",
+            "json",
+        ],
+    ),
     // -f xml
-    ("xml/query.xml", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class", "-f", "xml",
-    ]),
-    ("xml/check.xml", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "-f", "xml",
-    ]),
+    (
+        "xml/query.xml",
+        &[
+            "query",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "-f",
+            "xml",
+        ],
+    ),
+    (
+        "xml/check.xml",
+        &[
+            "check",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "--reason",
+            "class found",
+            "-f",
+            "xml",
+        ],
+    ),
     // -f yaml
-    ("yaml/query.yaml", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class", "-f", "yaml",
-    ]),
-    ("yaml/check.yaml", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "-f", "yaml",
-    ]),
+    (
+        "yaml/query.yaml",
+        &[
+            "query",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "-f",
+            "yaml",
+        ],
+    ),
+    (
+        "yaml/check.yaml",
+        &[
+            "check",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "--reason",
+            "class found",
+            "-f",
+            "yaml",
+        ],
+    ),
     // --depth snapshots: verify tree truncation at various depths
-    ("text/query-depth1.txt", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class", "--depth", "1",
-    ]),
-    ("text/query-depth2.txt", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class", "--depth", "2",
-    ]),
-    ("json/query-depth1.json", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "-v", "tree", "-f", "json", "--depth", "1",
-    ]),
-    ("json/query-depth2.json", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "-v", "tree", "-f", "json", "--depth", "2",
-    ]),
-    ("xml/check-composable-depth1.xml", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "-v", "tree,reason,severity", "-f", "xml", "--depth", "1",
-    ]),
+    (
+        "text/query-depth1.txt",
+        &[
+            "query",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "--depth",
+            "1",
+        ],
+    ),
+    (
+        "text/query-depth2.txt",
+        &[
+            "query",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "--depth",
+            "2",
+        ],
+    ),
+    (
+        "json/query-depth1.json",
+        &[
+            "query",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "-v",
+            "tree",
+            "-f",
+            "json",
+            "--depth",
+            "1",
+        ],
+    ),
+    (
+        "json/query-depth2.json",
+        &[
+            "query",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "-v",
+            "tree",
+            "-f",
+            "json",
+            "--depth",
+            "2",
+        ],
+    ),
+    (
+        "xml/check-composable-depth1.xml",
+        &[
+            "check",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "--reason",
+            "class found",
+            "-v",
+            "tree,reason,severity",
+            "-f",
+            "xml",
+            "--depth",
+            "1",
+        ],
+    ),
     // map/array constructor output: XPath 3.1 structured results rendered natively.
     // Uses sample-classes.cs (Calculator + Greeter, each with multiple methods) so
     // the output is realistic and easy to inspect visually.
     // The map is wrapped in { "classes": [...] } so the result mirrors an intuitive
     // data shape: a single object whose "classes" key holds all class records.
-    ("json/query-map.json", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
-        "-x", r#"/! map { "classes": array { //class ! map { "name": string(name), "methods": array { body/method/name/string(.) } } } }"#,
-        "-f", "json",
-    ]),
-    ("json/query-array.json", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
-        "-x", r#"//class ! array { string(name) }"#, "-f", "json",
-    ]),
-    ("yaml/query-map.yaml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
-        "-x", r#"/! map { "classes": array { //class ! map { "name": string(name), "methods": array { body/method/name/string(.) } } } }"#,
-        "-f", "yaml",
-    ]),
-    ("yaml/query-array.yaml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
-        "-x", r#"//class ! array { string(name) }"#, "-f", "yaml",
-    ]),
-    ("xml/query-map.xml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
-        "-x", r#"/! map { "classes": array { //class ! map { "name": string(name), "methods": array { body/method/name/string(.) } } } }"#,
-        "-f", "xml",
-    ]),
-    ("xml/query-array.xml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
-        "-x", r#"//class ! array { string(name) }"#, "-f", "xml",
-    ]),
+    (
+        "json/query-map.json",
+        &[
+            "query",
+            "tests/integration/formats/sample-classes.cs",
+            "-l",
+            "csharp",
+            "-x",
+            r#"/! map { "classes": array { //class ! map { "name": string(name), "methods": array { body/method/name/string(.) } } } }"#,
+            "-f",
+            "json",
+        ],
+    ),
+    (
+        "json/query-array.json",
+        &[
+            "query",
+            "tests/integration/formats/sample-classes.cs",
+            "-l",
+            "csharp",
+            "-x",
+            r#"//class ! array { string(name) }"#,
+            "-f",
+            "json",
+        ],
+    ),
+    (
+        "yaml/query-map.yaml",
+        &[
+            "query",
+            "tests/integration/formats/sample-classes.cs",
+            "-l",
+            "csharp",
+            "-x",
+            r#"/! map { "classes": array { //class ! map { "name": string(name), "methods": array { body/method/name/string(.) } } } }"#,
+            "-f",
+            "yaml",
+        ],
+    ),
+    (
+        "yaml/query-array.yaml",
+        &[
+            "query",
+            "tests/integration/formats/sample-classes.cs",
+            "-l",
+            "csharp",
+            "-x",
+            r#"//class ! array { string(name) }"#,
+            "-f",
+            "yaml",
+        ],
+    ),
+    (
+        "xml/query-map.xml",
+        &[
+            "query",
+            "tests/integration/formats/sample-classes.cs",
+            "-l",
+            "csharp",
+            "-x",
+            r#"/! map { "classes": array { //class ! map { "name": string(name), "methods": array { body/method/name/string(.) } } } }"#,
+            "-f",
+            "xml",
+        ],
+    ),
+    (
+        "xml/query-array.xml",
+        &[
+            "query",
+            "tests/integration/formats/sample-classes.cs",
+            "-l",
+            "csharp",
+            "-x",
+            r#"//class ! array { string(name) }"#,
+            "-f",
+            "xml",
+        ],
+    ),
     // Issue #60: map with sequence-valued key (no explicit array{}).
     // The "methods" value is a bare sequence — previously silently dropped,
     // now auto-wrapped in an array. Output should match query-map.* above.
-    ("json/query-map-sequence-value.json", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
-        "-x", r#"/! map { "classes": array { //class ! map { "name": string(name), "methods": body/method/name/string(.) } } }"#,
-        "-f", "json",
-    ]),
-    ("yaml/query-map-sequence-value.yaml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
-        "-x", r#"/! map { "classes": array { //class ! map { "name": string(name), "methods": body/method/name/string(.) } } }"#,
-        "-f", "yaml",
-    ]),
-    ("xml/query-map-sequence-value.xml", &[
-        "query", "tests/integration/formats/sample-classes.cs", "-l", "csharp",
-        "-x", r#"/! map { "classes": array { //class ! map { "name": string(name), "methods": body/method/name/string(.) } } }"#,
-        "-f", "xml",
-    ]),
+    (
+        "json/query-map-sequence-value.json",
+        &[
+            "query",
+            "tests/integration/formats/sample-classes.cs",
+            "-l",
+            "csharp",
+            "-x",
+            r#"/! map { "classes": array { //class ! map { "name": string(name), "methods": body/method/name/string(.) } } }"#,
+            "-f",
+            "json",
+        ],
+    ),
+    (
+        "yaml/query-map-sequence-value.yaml",
+        &[
+            "query",
+            "tests/integration/formats/sample-classes.cs",
+            "-l",
+            "csharp",
+            "-x",
+            r#"/! map { "classes": array { //class ! map { "name": string(name), "methods": body/method/name/string(.) } } }"#,
+            "-f",
+            "yaml",
+        ],
+    ),
+    (
+        "xml/query-map-sequence-value.xml",
+        &[
+            "query",
+            "tests/integration/formats/sample-classes.cs",
+            "-l",
+            "csharp",
+            "-x",
+            r#"/! map { "classes": array { //class ! map { "name": string(name), "methods": body/method/name/string(.) } } }"#,
+            "-f",
+            "xml",
+        ],
+    ),
     // -g file (group-by) snapshots: query mode with multi-file grouping
-    ("json/query-group-file.json", &[
-        "query", "tests/integration/formats/sample.cs", "tests/integration/formats/sample2.cs",
-        "-x", "class", "-g", "file", "-f", "json",
-    ]),
-    ("xml/query-group-file.xml", &[
-        "query", "tests/integration/formats/sample.cs", "tests/integration/formats/sample2.cs",
-        "-x", "class", "-g", "file", "-f", "xml",
-    ]),
-    ("json/check-no-group.json", &[
-        "check", "tests/integration/formats/sample.cs", "tests/integration/formats/sample2.cs",
-        "-x", "class", "--reason", "class found", "-g", "none", "-f", "json",
-    ]),
+    (
+        "json/query-group-file.json",
+        &[
+            "query",
+            "tests/integration/formats/sample.cs",
+            "tests/integration/formats/sample2.cs",
+            "-x",
+            "class",
+            "-g",
+            "file",
+            "-f",
+            "json",
+        ],
+    ),
+    (
+        "xml/query-group-file.xml",
+        &[
+            "query",
+            "tests/integration/formats/sample.cs",
+            "tests/integration/formats/sample2.cs",
+            "-x",
+            "class",
+            "-g",
+            "file",
+            "-f",
+            "xml",
+        ],
+    ),
+    (
+        "json/check-no-group.json",
+        &[
+            "check",
+            "tests/integration/formats/sample.cs",
+            "tests/integration/formats/sample2.cs",
+            "-x",
+            "class",
+            "--reason",
+            "class found",
+            "-g",
+            "none",
+            "-f",
+            "json",
+        ],
+    ),
     // Color snapshots: ANSI codes rendered as \e so they are visible in text editors.
     // These document what colored output looks like for each format.
-    ("text/query-color.txt", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "--color", "always",
-    ]),
-    ("xml/query-color.xml", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "-f", "xml", "--color", "always",
-    ]),
-    ("xml/check-color.xml", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "-f", "xml", "--color", "always",
-    ]),
-    ("gcc/check-color.txt", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "--color", "always",
-    ]),
+    (
+        "text/query-color.txt",
+        &[
+            "query",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "--color",
+            "always",
+        ],
+    ),
+    (
+        "xml/query-color.xml",
+        &[
+            "query",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "-f",
+            "xml",
+            "--color",
+            "always",
+        ],
+    ),
+    (
+        "xml/check-color.xml",
+        &[
+            "check",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "--reason",
+            "class found",
+            "-f",
+            "xml",
+            "--color",
+            "always",
+        ],
+    ),
+    (
+        "gcc/check-color.txt",
+        &[
+            "check",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "class",
+            "--reason",
+            "class found",
+            "--color",
+            "always",
+        ],
+    ),
     // Multi-rule check via --config flag
-    ("xml/check-multirule.xml", &[
-        "check",
-        "--config", "tests/integration/formats/multirule.yaml", "-f", "xml",
-    ]),
-    ("json/check-multirule.json", &[
-        "check",
-        "--config", "tests/integration/formats/multirule.yaml", "-f", "json",
-    ]),
-    ("gcc/check-multirule.txt", &[
-        "check",
-        "--config", "tests/integration/formats/multirule.yaml",
-    ]),
+    (
+        "xml/check-multirule.xml",
+        &[
+            "check",
+            "--config",
+            "tests/integration/formats/multirule.yaml",
+            "-f",
+            "xml",
+        ],
+    ),
+    (
+        "json/check-multirule.json",
+        &[
+            "check",
+            "--config",
+            "tests/integration/formats/multirule.yaml",
+            "-f",
+            "json",
+        ],
+    ),
+    (
+        "gcc/check-multirule.txt",
+        &[
+            "check",
+            "--config",
+            "tests/integration/formats/multirule.yaml",
+        ],
+    ),
     // Multi-op run report (check + test in one config)
-    ("xml/run-multiop.xml", &[
-        "run", "tests/integration/formats/multiop.yaml", "-f", "xml",
-    ]),
-    ("json/run-multiop.json", &[
-        "run", "tests/integration/formats/multiop.yaml", "-f", "json",
-    ]),
+    (
+        "xml/run-multiop.xml",
+        &["run", "tests/integration/formats/multiop.yaml", "-f", "xml"],
+    ),
+    (
+        "json/run-multiop.json",
+        &[
+            "run",
+            "tests/integration/formats/multiop.yaml",
+            "-f",
+            "json",
+        ],
+    ),
     // --help snapshots: track changes to CLI help text per subcommand
     ("help/query.txt", &["query", "--help"]),
     ("help/check.txt", &["check", "--help"]),
-    ("help/test.txt",  &["test",  "--help"]),
-    ("help/run.txt",   &["run",   "--help"]),
+    ("help/test.txt", &["test", "--help"]),
+    ("help/run.txt", &["run", "--help"]),
     // Error/diagnostic snapshots: invalid XPath across all output formats.
-    ("errors/xpath-invalid-text.txt", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "//class[bad=(",
-        "--no-color",
-    ]),
-    ("errors/xpath-invalid.json", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "//class[bad=(",
-        "-f", "json",
-    ]),
-    ("errors/xpath-invalid.yaml", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "//class[bad=(",
-        "-f", "yaml",
-    ]),
-    ("errors/xpath-invalid-gcc.txt", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "//class[bad=(",
-        "-f", "gcc", "--no-color",
-    ]),
-    ("errors/xpath-invalid-github.txt", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "//class[bad=(",
-        "-f", "github",
-    ]),
-    ("errors/xpath-invalid.xml", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "//class[bad=(",
-        "-f", "xml", "--no-color",
-    ]),
-    ("errors/xpath-invalid-check.txt", &[
-        "check", "tests/integration/formats/sample.cs", "-x", "//class[bad=(",
-        "--reason", "test", "--no-color",
-    ]),
+    (
+        "errors/xpath-invalid-text.txt",
+        &[
+            "query",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "//class[bad=(",
+            "--no-color",
+        ],
+    ),
+    (
+        "errors/xpath-invalid.json",
+        &[
+            "query",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "//class[bad=(",
+            "-f",
+            "json",
+        ],
+    ),
+    (
+        "errors/xpath-invalid.yaml",
+        &[
+            "query",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "//class[bad=(",
+            "-f",
+            "yaml",
+        ],
+    ),
+    (
+        "errors/xpath-invalid-gcc.txt",
+        &[
+            "query",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "//class[bad=(",
+            "-f",
+            "gcc",
+            "--no-color",
+        ],
+    ),
+    (
+        "errors/xpath-invalid-github.txt",
+        &[
+            "query",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "//class[bad=(",
+            "-f",
+            "github",
+        ],
+    ),
+    (
+        "errors/xpath-invalid.xml",
+        &[
+            "query",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "//class[bad=(",
+            "-f",
+            "xml",
+            "--no-color",
+        ],
+    ),
+    (
+        "errors/xpath-invalid-check.txt",
+        &[
+            "check",
+            "tests/integration/formats/sample.cs",
+            "-x",
+            "//class[bad=(",
+            "--reason",
+            "test",
+            "--no-color",
+        ],
+    ),
 ];
 
 fn main() {
@@ -269,7 +719,10 @@ fn main() {
 
     let tests_dir = Path::new("tests/integration");
     if !tests_dir.is_dir() {
-        eprintln!("error: {} not found — run from project root", tests_dir.display());
+        eprintln!(
+            "error: {} not found — run from project root",
+            tests_dir.display()
+        );
         process::exit(1);
     }
 
@@ -388,7 +841,10 @@ fn main() {
 
     if check_mode {
         if mismatches.is_empty() {
-            println!("\x1b[32m✓\x1b[0m Snapshots match ({} fixtures checked)", processed);
+            println!(
+                "\x1b[32m✓\x1b[0m Snapshots match ({} fixtures checked)",
+                processed
+            );
         } else {
             println!("\x1b[31m✗\x1b[0m Snapshot mismatch:");
             println!();
@@ -543,13 +999,10 @@ fn run_tractor(bin: &str, fixture: &str, extra_args: &[&str]) -> String {
 /// Run tractor with an arbitrary list of args (for output-format cases).
 /// Stdout is captured as-is. Stderr lines are prefixed with ❌.
 fn run_tractor_args(bin: &str, args: &[&str]) -> String {
-    let output = Command::new(bin)
-        .args(args)
-        .output()
-        .unwrap_or_else(|e| {
-            eprintln!("error: failed to run {}: {}", bin, e);
-            process::exit(1);
-        });
+    let output = Command::new(bin).args(args).output().unwrap_or_else(|e| {
+        eprintln!("error: failed to run {}: {}", bin, e);
+        process::exit(1);
+    });
 
     let stderr = String::from_utf8(output.stderr).expect("non-UTF8 tractor stderr");
     let stdout = String::from_utf8(output.stdout).expect("non-UTF8 tractor stdout");

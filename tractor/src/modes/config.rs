@@ -12,10 +12,7 @@ use tractor_core::report::{ReportMatch, Severity};
 use crate::cli::SharedArgs;
 use crate::executor::{self, ExecuteOptions, Operation};
 use crate::pipeline::{
-    RunContext, ViewField,
-    render_report,
-    project_report, apply_message_template,
-    GroupDimension,
+    apply_message_template, project_report, render_report, GroupDimension, RunContext, ViewField,
 };
 
 /// Parameters that vary per command when executing a config file.
@@ -42,14 +39,23 @@ pub fn run_from_config(params: ConfigRunParams) -> Result<(), Box<dyn std::error
 
     let loaded = crate::tractor_config::load_tractor_config(config_path)?;
 
-    let operations: Vec<_> = loaded.operations.into_iter()
+    let operations: Vec<_> = loaded
+        .operations
+        .into_iter()
         .filter(params.op_filter)
         .collect();
 
     let ctx = RunContext::build(
-        params.shared, vec![], None, params.format,
+        params.shared,
+        vec![],
+        None,
+        params.format,
         params.default_view,
-        params.view_override, params.message, None, false, params.default_group,
+        params.view_override,
+        params.message,
+        None,
+        false,
+        params.default_group,
     )?;
 
     let mut builder = tractor_core::ReportBuilder::new();
@@ -57,16 +63,33 @@ pub fn run_from_config(params: ConfigRunParams) -> Result<(), Box<dyn std::error
     if operations.is_empty() {
         builder.add(ReportMatch {
             file: params.config_path.to_string(),
-            line: 0, column: 0, end_line: 0, end_column: 0,
+            line: 0,
+            column: 0,
+            end_line: 0,
+            end_column: 0,
             command: String::new(),
-            tree: None, value: None, source: None, lines: None,
+            tree: None,
+            value: None,
+            source: None,
+            lines: None,
             reason: Some(format!("no {} operations found", params.filter_label)),
             severity: Some(Severity::Fatal),
-            message: None, origin: None, rule_id: None, status: None, output: None,
+            message: None,
+            origin: None,
+            rule_id: None,
+            status: None,
+            output: None,
         });
     } else {
-        let base_dir = config_path.parent()
-            .map(|p| if p.as_os_str().is_empty() { std::path::Path::new(".") } else { p })
+        let base_dir = config_path
+            .parent()
+            .map(|p| {
+                if p.as_os_str().is_empty() {
+                    std::path::Path::new(".")
+                } else {
+                    p
+                }
+            })
             .map(|p| p.canonicalize().unwrap_or_else(|_| p.to_path_buf()));
 
         let options = ExecuteOptions {

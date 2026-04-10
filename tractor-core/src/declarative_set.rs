@@ -138,8 +138,12 @@ pub fn declarative_set(
 
     for op in &ops {
         let result = upsert_typed(
-            &current_source, lang, &op.xpath,
-            op.value.text(), None, Some(op.value.kind()),
+            &current_source,
+            lang,
+            &op.xpath,
+            op.value.text(),
+            None,
+            Some(op.value.kind()),
         )?;
         if result.source != current_source {
             ops_applied += 1;
@@ -280,14 +284,20 @@ fn flatten(node: &PathNode, prefix: &str, ops: &mut Vec<SetOp>) {
 /// Append a PathNode as path segments to a base xpath.
 fn append_path(base: &str, node: &PathNode) -> String {
     match node {
-        PathNode::Segment { name, predicates: _ } => {
+        PathNode::Segment {
+            name,
+            predicates: _,
+        } => {
             format!("{}/{}", base, name)
         }
         PathNode::Path(segments) => {
             let mut result = base.to_string();
             for seg in segments {
                 match seg {
-                    PathNode::Segment { name, predicates: _ } => {
+                    PathNode::Segment {
+                        name,
+                        predicates: _,
+                    } => {
                         result = format!("{}/{}", result, name);
                     }
                     _ => {}
@@ -413,7 +423,7 @@ impl Parser {
     ///   - Bare words → error (use quotes for strings)
     fn parse_value(&mut self) -> Result<SetValue, UpsertError> {
         match self.peek() {
-            Some('\'') => Ok(SetValue::String(self.parse_quoted('\'')? )),
+            Some('\'') => Ok(SetValue::String(self.parse_quoted('\'')?)),
             Some('"') => Ok(SetValue::String(self.parse_quoted('"')?)),
             _ => self.parse_bare_value(),
         }
@@ -426,11 +436,7 @@ impl Parser {
             match self.advance() {
                 Some(ch) if ch == quote => return Ok(value),
                 Some(ch) => value.push(ch),
-                None => {
-                    return Err(UpsertError::Parse(
-                        "unterminated quoted string".into(),
-                    ))
-                }
+                None => return Err(UpsertError::Parse("unterminated quoted string".into())),
             }
         }
     }
@@ -485,7 +491,9 @@ impl Parser {
             Some(ch) if ch == expected => Ok(()),
             Some(ch) => Err(UpsertError::Parse(format!(
                 "expected '{}' but found '{}' at position {}",
-                expected, ch, self.pos - 1
+                expected,
+                ch,
+                self.pos - 1
             ))),
             None => Err(UpsertError::Parse(format!(
                 "expected '{}' but reached end of input",
@@ -506,98 +514,153 @@ mod tests {
     #[test]
     fn parse_simple_leaf() {
         let ops = parse_set_expr("database[host='localhost']").unwrap();
-        assert_eq!(ops, vec![SetOp {
-            xpath: "//database/host".into(),
-            value: SetValue::String("localhost".into()),
-        }]);
+        assert_eq!(
+            ops,
+            vec![SetOp {
+                xpath: "//database/host".into(),
+                value: SetValue::String("localhost".into()),
+            }]
+        );
     }
 
     #[test]
     fn parse_multiple_predicates() {
         let ops = parse_set_expr("database[host='localhost'][port=5432]").unwrap();
-        assert_eq!(ops, vec![
-            SetOp { xpath: "//database/host".into(), value: SetValue::String("localhost".into()) },
-            SetOp { xpath: "//database/port".into(), value: SetValue::Number("5432".into()) },
-        ]);
+        assert_eq!(
+            ops,
+            vec![
+                SetOp {
+                    xpath: "//database/host".into(),
+                    value: SetValue::String("localhost".into())
+                },
+                SetOp {
+                    xpath: "//database/port".into(),
+                    value: SetValue::Number("5432".into())
+                },
+            ]
+        );
     }
 
     #[test]
     fn parse_nested_predicates() {
-        let ops = parse_set_expr(
-            "database[host='localhost'][user[name='admin'][password='secret']]"
-        ).unwrap();
-        assert_eq!(ops, vec![
-            SetOp { xpath: "//database/host".into(), value: SetValue::String("localhost".into()) },
-            SetOp { xpath: "//database/user/name".into(), value: SetValue::String("admin".into()) },
-            SetOp { xpath: "//database/user/password".into(), value: SetValue::String("secret".into()) },
-        ]);
+        let ops =
+            parse_set_expr("database[host='localhost'][user[name='admin'][password='secret']]")
+                .unwrap();
+        assert_eq!(
+            ops,
+            vec![
+                SetOp {
+                    xpath: "//database/host".into(),
+                    value: SetValue::String("localhost".into())
+                },
+                SetOp {
+                    xpath: "//database/user/name".into(),
+                    value: SetValue::String("admin".into())
+                },
+                SetOp {
+                    xpath: "//database/user/password".into(),
+                    value: SetValue::String("secret".into())
+                },
+            ]
+        );
     }
 
     #[test]
     fn parse_bare_path() {
         // The terminal segment is a marker (null)
         let ops = parse_set_expr("database/host").unwrap();
-        assert_eq!(ops, vec![SetOp {
-            xpath: "//database/host".into(),
-            value: SetValue::Null,
-        }]);
+        assert_eq!(
+            ops,
+            vec![SetOp {
+                xpath: "//database/host".into(),
+                value: SetValue::Null,
+            }]
+        );
     }
 
     #[test]
     fn parse_path_with_value() {
         let ops = parse_set_expr("database/host[port=8080]").unwrap();
-        assert_eq!(ops, vec![SetOp {
-            xpath: "//database/host/port".into(),
-            value: SetValue::Number("8080".into()),
-        }]);
+        assert_eq!(
+            ops,
+            vec![SetOp {
+                xpath: "//database/host/port".into(),
+                value: SetValue::Number("8080".into()),
+            }]
+        );
     }
 
     #[test]
     fn parse_deeply_nested() {
-        let ops = parse_set_expr(
-            "a[b[c[d='deep']]]"
-        ).unwrap();
-        assert_eq!(ops, vec![SetOp {
-            xpath: "//a/b/c/d".into(),
-            value: SetValue::String("deep".into()),
-        }]);
+        let ops = parse_set_expr("a[b[c[d='deep']]]").unwrap();
+        assert_eq!(
+            ops,
+            vec![SetOp {
+                xpath: "//a/b/c/d".into(),
+                value: SetValue::String("deep".into()),
+            }]
+        );
     }
 
     #[test]
     fn parse_marker_node() {
         // [sub[marker]] — marker is a bare leaf, should produce null-value op
         let ops = parse_set_expr("parent[sub[marker]]").unwrap();
-        assert_eq!(ops, vec![SetOp {
-            xpath: "//parent/sub/marker".into(),
-            value: SetValue::Null,
-        }]);
+        assert_eq!(
+            ops,
+            vec![SetOp {
+                xpath: "//parent/sub/marker".into(),
+                value: SetValue::Null,
+            }]
+        );
     }
 
     #[test]
     fn parse_marker_with_siblings() {
         let ops = parse_set_expr("config[enabled][name='test']").unwrap();
-        assert_eq!(ops, vec![
-            SetOp { xpath: "//config/enabled".into(), value: SetValue::Null },
-            SetOp { xpath: "//config/name".into(), value: SetValue::String("test".into()) },
-        ]);
+        assert_eq!(
+            ops,
+            vec![
+                SetOp {
+                    xpath: "//config/enabled".into(),
+                    value: SetValue::Null
+                },
+                SetOp {
+                    xpath: "//config/name".into(),
+                    value: SetValue::String("test".into())
+                },
+            ]
+        );
     }
 
     #[test]
     fn parse_double_quoted_value() {
         let ops = parse_set_expr(r#"db[host="localhost"]"#).unwrap();
-        assert_eq!(ops, vec![SetOp {
-            xpath: "//db/host".into(),
-            value: SetValue::String("localhost".into()),
-        }]);
+        assert_eq!(
+            ops,
+            vec![SetOp {
+                xpath: "//db/host".into(),
+                value: SetValue::String("localhost".into()),
+            }]
+        );
     }
 
     #[test]
     fn parse_boolean_values() {
         let ops = parse_set_expr("config[debug=true()][verbose=false()]").unwrap();
-        assert_eq!(ops, vec![
-            SetOp { xpath: "//config/debug".into(), value: SetValue::Boolean(true) },
-            SetOp { xpath: "//config/verbose".into(), value: SetValue::Boolean(false) },
-        ]);
+        assert_eq!(
+            ops,
+            vec![
+                SetOp {
+                    xpath: "//config/debug".into(),
+                    value: SetValue::Boolean(true)
+                },
+                SetOp {
+                    xpath: "//config/verbose".into(),
+                    value: SetValue::Boolean(false)
+                },
+            ]
+        );
     }
 
     #[test]
@@ -612,14 +675,30 @@ mod tests {
     #[test]
     fn parse_complex_expression() {
         let ops = parse_set_expr(
-            "database[host='localhost'][port=1234][user[name='dbadmin'][password='1234']]"
-        ).unwrap();
-        assert_eq!(ops, vec![
-            SetOp { xpath: "//database/host".into(), value: SetValue::String("localhost".into()) },
-            SetOp { xpath: "//database/port".into(), value: SetValue::Number("1234".into()) },
-            SetOp { xpath: "//database/user/name".into(), value: SetValue::String("dbadmin".into()) },
-            SetOp { xpath: "//database/user/password".into(), value: SetValue::String("1234".into()) },
-        ]);
+            "database[host='localhost'][port=1234][user[name='dbadmin'][password='1234']]",
+        )
+        .unwrap();
+        assert_eq!(
+            ops,
+            vec![
+                SetOp {
+                    xpath: "//database/host".into(),
+                    value: SetValue::String("localhost".into())
+                },
+                SetOp {
+                    xpath: "//database/port".into(),
+                    value: SetValue::Number("1234".into())
+                },
+                SetOp {
+                    xpath: "//database/user/name".into(),
+                    value: SetValue::String("dbadmin".into())
+                },
+                SetOp {
+                    xpath: "//database/user/password".into(),
+                    value: SetValue::String("1234".into())
+                },
+            ]
+        );
     }
 
     #[test]
@@ -637,13 +716,15 @@ mod tests {
     fn declarative_set_json_new_structure() {
         let source = "{}";
         let result = declarative_set(
-            source, "json",
+            source,
+            "json",
             "database[host='localhost'][port=5432]",
             None,
-        ).unwrap();
+        )
+        .unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
         assert_eq!(parsed["database"]["host"], "localhost");
-        assert_eq!(parsed["database"]["port"], 5432);  // auto-detected as number
+        assert_eq!(parsed["database"]["port"], 5432); // auto-detected as number
         assert_eq!(result.ops_applied, 2);
     }
 
@@ -651,10 +732,12 @@ mod tests {
     fn declarative_set_json_nested() {
         let source = "{}";
         let result = declarative_set(
-            source, "json",
+            source,
+            "json",
             "database[host='localhost'][user[name='admin'][password='secret']]",
             None,
-        ).unwrap();
+        )
+        .unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
         assert_eq!(parsed["database"]["host"], "localhost");
         assert_eq!(parsed["database"]["user"]["name"], "admin");
@@ -664,11 +747,7 @@ mod tests {
     #[test]
     fn declarative_set_json_with_explicit_value() {
         let source = r#"{"database": {"host": "old"}}"#;
-        let result = declarative_set(
-            source, "json",
-            "database/host",
-            Some("new"),
-        ).unwrap();
+        let result = declarative_set(source, "json", "database/host", Some("new")).unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
         assert_eq!(parsed["database"]["host"], "new");
     }
@@ -677,22 +756,28 @@ mod tests {
     fn declarative_set_yaml_creates_structure() {
         let source = "name: test\n";
         let result = declarative_set(
-            source, "yaml",
+            source,
+            "yaml",
             "database[host='localhost'][port=5432]",
             None,
-        ).unwrap();
-        assert!(result.source.contains("host: localhost"), "source: {}", result.source);
-        assert!(result.source.contains("port: 5432"), "source: {}", result.source);
+        )
+        .unwrap();
+        assert!(
+            result.source.contains("host: localhost"),
+            "source: {}",
+            result.source
+        );
+        assert!(
+            result.source.contains("port: 5432"),
+            "source: {}",
+            result.source
+        );
     }
 
     #[test]
     fn declarative_set_updates_existing() {
         let source = r#"{"database": {"host": "old", "port": 1234}}"#;
-        let result = declarative_set(
-            source, "json",
-            "database[host='new']",
-            None,
-        ).unwrap();
+        let result = declarative_set(source, "json", "database[host='new']", None).unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
         assert_eq!(parsed["database"]["host"], "new");
         // port should be preserved
@@ -704,17 +789,23 @@ mod tests {
         let result = declarative_set("{}", "json", "database/host", None).unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
         // Bare path creates structure with null leaf (marker)
-        assert!(parsed["database"]["host"].is_null(), "expected null, source: {}", result.source);
+        assert!(
+            parsed["database"]["host"].is_null(),
+            "expected null, source: {}",
+            result.source
+        );
     }
 
     #[test]
     fn declarative_set_json_booleans() {
         let source = "{}";
         let result = declarative_set(
-            source, "json",
+            source,
+            "json",
             "config[debug=true()][verbose=false()]",
             None,
-        ).unwrap();
+        )
+        .unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
         assert_eq!(parsed["config"]["debug"], true);
         assert_eq!(parsed["config"]["verbose"], false);
@@ -724,10 +815,12 @@ mod tests {
     fn declarative_set_json_mixed_types() {
         let source = "{}";
         let result = declarative_set(
-            source, "json",
+            source,
+            "json",
             "server[host='localhost'][port=8080][debug=true()][label]",
             None,
-        ).unwrap();
+        )
+        .unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
         assert_eq!(parsed["server"]["host"], "localhost");
         assert_eq!(parsed["server"]["port"], 8080);

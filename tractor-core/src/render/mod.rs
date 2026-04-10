@@ -19,8 +19,8 @@ pub mod csharp;
 pub mod json;
 pub mod yaml;
 
-use crate::xpath::XmlNode;
 use crate::tree_mode::TreeMode;
+use crate::xpath::XmlNode;
 use std::collections::HashMap;
 
 /// Maps original source position (e.g. "3:5") to byte span `(start, end)` in rendered output.
@@ -36,7 +36,9 @@ pub enum RenderError {
     #[error("unsupported language: {0}")]
     UnsupportedLanguage(String),
 
-    #[error("unsupported tree mode '{mode}' for language '{lang}': renderer only supports 'data' mode")]
+    #[error(
+        "unsupported tree mode '{mode}' for language '{lang}': renderer only supports 'data' mode"
+    )]
     UnsupportedTreeMode { lang: String, mode: String },
 
     #[error("unsupported node type: {0}")]
@@ -209,9 +211,10 @@ fn json_value_to_xmlnode(value: &serde_json::Value) -> Result<XmlNode, RenderErr
                         });
                     }
                     _ => {
-                        return Err(RenderError::ParseError(
-                            format!("unexpected single-key value type for '{}'", key),
-                        ));
+                        return Err(RenderError::ParseError(format!(
+                            "unexpected single-key value type for '{}'",
+                            key
+                        )));
                     }
                 }
             } else {
@@ -230,14 +233,18 @@ fn json_value_to_xmlnode(value: &serde_json::Value) -> Result<XmlNode, RenderErr
             })
         }
         serde_json::Value::String(s) => Ok(XmlNode::Text(s.clone())),
-        _ => Err(RenderError::ParseError(format!("unexpected JSON value type at root"))),
+        _ => Err(RenderError::ParseError(format!(
+            "unexpected JSON value type at root"
+        ))),
     }
 }
 
 /// Convert a JSON object's properties into XmlNode children.
 /// Handles booleans (markers), strings (text elements), objects (structural),
 /// and the special "children" array.
-fn json_object_to_children(obj: &serde_json::Map<String, serde_json::Value>) -> Result<Vec<XmlNode>, RenderError> {
+fn json_object_to_children(
+    obj: &serde_json::Map<String, serde_json::Value>,
+) -> Result<Vec<XmlNode>, RenderError> {
     let mut children = Vec::new();
 
     // First pass: collect lifted properties (everything except $type and children)
@@ -316,7 +323,12 @@ pub fn supports_tree_mode(_lang: &str, mode: TreeMode) -> bool {
 /// The `tree_mode` parameter must match the mode used to parse the tree.
 /// Returns [`RenderError::UnsupportedTreeMode`] if the renderer does not
 /// support the given mode. Use [`supports_tree_mode`] to check upfront.
-pub fn render(node: &XmlNode, lang: &str, tree_mode: TreeMode, opts: &RenderOptions) -> Result<String, RenderError> {
+pub fn render(
+    node: &XmlNode,
+    lang: &str,
+    tree_mode: TreeMode,
+    opts: &RenderOptions,
+) -> Result<String, RenderError> {
     if !supports_tree_mode(lang, tree_mode) {
         return Err(RenderError::UnsupportedTreeMode {
             lang: lang.to_string(),

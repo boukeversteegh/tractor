@@ -6,47 +6,62 @@
 //! Summary is always included for check/test reports; opt-in via `-v summary`
 //! for query reports.
 
+use super::options::{ViewField, ViewSet};
+use super::shared::{render_fields_for_match, should_show_totals};
 use tractor_core::{
-    render_xml_node, normalize_path,
-    render_source_precomputed, render_lines,
+    normalize_path, render_lines, render_source_precomputed, render_xml_node,
     report::{Report, ReportMatch, ResultItem, Totals},
     RenderOptions,
 };
-use super::options::{ViewField, ViewSet};
-use super::shared::{should_show_totals, render_fields_for_match};
 
 /// Text is human-readable — grouping affects display structure but matches
 /// are rendered with inherited file context from groups, not field omission.
-pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, _dimensions: &[&str]) -> String {
+pub fn render_text_report(
+    report: &Report,
+    view: &ViewSet,
+    render_opts: &RenderOptions,
+    _dimensions: &[&str],
+) -> String {
     let mut out = String::new();
 
     // Set stdout mode: groups with output_content — render group by group.
-    let has_group_output = view.has(ViewField::Output) && report.results.iter().any(|item| {
-        matches!(item, ResultItem::Group(g) if g.output_content.is_some())
-    });
+    let has_group_output = view.has(ViewField::Output)
+        && report
+            .results
+            .iter()
+            .any(|item| matches!(item, ResultItem::Group(g) if g.output_content.is_some()));
     if has_group_output {
-        out.push_str(&render_set_stdout_results(&report.results, view, render_opts));
+        out.push_str(&render_set_stdout_results(
+            &report.results,
+            view,
+            render_opts,
+        ));
         return out;
     }
 
     // Collect matches with optional group file context
-    let matches: Vec<(Option<&str>, &ReportMatch)> = collect_matches_with_file(&report.results, None);
+    let matches: Vec<(Option<&str>, &ReportMatch)> =
+        collect_matches_with_file(&report.results, None);
 
     // Blank line between matches when a single match produces more than one output line.
     // File/line/column are combined onto one location line — they don't count individually.
     // In message-template mode all matches render as single lines — no separator.
-    let message_mode = matches.first().map_or(false, |(_, rm)| rm.message.is_some());
-    let has_location = view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
+    let message_mode = matches
+        .first()
+        .map_or(false, |(_, rm)| rm.message.is_some());
+    let has_location =
+        view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
     // Status is now inline on the location line, so it doesn't produce an extra line
     let single_line_fields = [ViewField::Value, ViewField::Reason, ViewField::Severity]
-        .iter().filter(|&&f| view.has(f)).count();
-    let needs_separator = !message_mode && (
-        view.has(ViewField::Tree)
-        || view.has(ViewField::Lines)
-        || view.has(ViewField::Source)
-        || single_line_fields >= 2
-        || (single_line_fields >= 1 && has_location)
-    );
+        .iter()
+        .filter(|&&f| view.has(f))
+        .count();
+    let needs_separator = !message_mode
+        && (view.has(ViewField::Tree)
+            || view.has(ViewField::Lines)
+            || view.has(ViewField::Source)
+            || single_line_fields >= 2
+            || (single_line_fields >= 1 && has_location));
 
     for (i, (group_file, rm)) in matches.iter().enumerate() {
         if needs_separator && i > 0 {
@@ -63,15 +78,24 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
             if let Some(ref query) = report.query {
                 out.push_str(&format!("Query: {}\n", query));
             }
-            out.push_str(&format_summary(totals, report.success, report.expected.as_deref()));
+            out.push_str(&format_summary(
+                totals,
+                report.success,
+                report.expected.as_deref(),
+            ));
         }
     }
 
     out
 }
 
-fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts: &RenderOptions, group_file: Option<&str>) {
-
+fn append_match(
+    out: &mut String,
+    rm: &ReportMatch,
+    view: &ViewSet,
+    render_opts: &RenderOptions,
+    group_file: Option<&str>,
+) {
     // When a message template was used, it is the intended primary output —
     // it replaces tree/value/etc in text format.
     if let Some(ref msg) = rm.message {
@@ -86,14 +110,17 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
     // Location prefix: file, line, and/or column — combined on one line as file:line:col
     // Skip for file-less diagnostics (no meaningful location) and stdin input.
     let file = group_file.unwrap_or(&rm.file);
-    let has_location = view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
+    let has_location =
+        view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
     if has_location && !file.is_empty() && file != "<stdin>" {
         let mut loc = String::new();
         if view.has(ViewField::File) {
             loc.push_str(&normalize_path(file));
         }
         if view.has(ViewField::Line) {
-            if !loc.is_empty() { loc.push(':'); }
+            if !loc.is_empty() {
+                loc.push(':');
+            }
             loc.push_str(&rm.line.to_string());
         }
         if view.has(ViewField::Column) {
@@ -115,15 +142,13 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
     // Source is redundant when Lines is present — skip these as extras.
     // Severity/Origin are rendered inline with Reason — skip as standalone extras.
     let text_skip = |f: &ViewField| -> bool {
-        matches!(f, ViewField::Severity | ViewField::Origin)
-            && !view.has(*f)
+        matches!(f, ViewField::Severity | ViewField::Origin) && !view.has(*f)
     };
     for field in view_fields.iter().chain(extra_fields.iter()) {
         if !text_skip(field) {
             render_field(out, field, rm, view, group_file, render_opts);
         }
     }
-
 }
 
 /// Render a single field from a match into the output buffer.
@@ -158,7 +183,10 @@ fn render_field(
                 out.push_str(&render_source_precomputed(
                     s,
                     rm.tree.as_ref(),
-                    rm.line, rm.column, rm.end_line, rm.end_column,
+                    rm.line,
+                    rm.column,
+                    rm.end_line,
+                    rm.end_column,
                     render_opts,
                 ));
             }
@@ -168,7 +196,10 @@ fn render_field(
                 out.push_str(&render_lines(
                     ls,
                     rm.tree.as_ref(),
-                    rm.line, rm.column, rm.end_line, rm.end_column,
+                    rm.line,
+                    rm.column,
+                    rm.end_line,
+                    rm.end_column,
                     render_opts,
                 ));
             }
@@ -199,7 +230,9 @@ fn render_field(
             }
         }
         ViewField::Status => {
-            let has_location = view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
+            let has_location = view.has(ViewField::File)
+                || view.has(ViewField::Line)
+                || view.has(ViewField::Column);
             if !has_location {
                 if let Some(ref status) = rm.status {
                     out.push_str(status);
@@ -235,7 +268,11 @@ fn format_summary(totals: &Totals, success: Option<bool>, expected: Option<&str>
 
     // Test assertions
     if has_test && !has_check && !has_set {
-        return if success_val { "passed\n".to_string() } else { "failed\n".to_string() };
+        return if success_val {
+            "passed\n".to_string()
+        } else {
+            "failed\n".to_string()
+        };
     }
 
     // Check violations
@@ -245,15 +282,32 @@ fn format_summary(totals: &Totals, success: Option<bool>, expected: Option<&str>
         }
         let mut parts = Vec::new();
         if totals.fatals > 0 {
-            parts.push(format!("{} fatal{}", totals.fatals, if totals.fatals == 1 { "" } else { "s" }));
+            parts.push(format!(
+                "{} fatal{}",
+                totals.fatals,
+                if totals.fatals == 1 { "" } else { "s" }
+            ));
         }
         if totals.errors > 0 {
-            parts.push(format!("{} error{}", totals.errors, if totals.errors == 1 { "" } else { "s" }));
+            parts.push(format!(
+                "{} error{}",
+                totals.errors,
+                if totals.errors == 1 { "" } else { "s" }
+            ));
         }
         if totals.warnings > 0 {
-            parts.push(format!("{} warning{}", totals.warnings, if totals.warnings == 1 { "" } else { "s" }));
+            parts.push(format!(
+                "{} warning{}",
+                totals.warnings,
+                if totals.warnings == 1 { "" } else { "s" }
+            ));
         }
-        return format!("{} in {} file{}\n", parts.join(", "), f, if f == 1 { "" } else { "s" });
+        return format!(
+            "{} in {} file{}\n",
+            parts.join(", "),
+            f,
+            if f == 1 { "" } else { "s" }
+        );
     }
 
     // Set operations
@@ -263,14 +317,22 @@ fn format_summary(totals: &Totals, success: Option<bool>, expected: Option<&str>
         if updated == 0 && unchanged == 0 {
             return "No matches\n".to_string();
         } else if unchanged == 0 {
-            return format!("Set {} match{} in {} file{}\n",
-                updated, if updated == 1 { "" } else { "es" },
-                f, if f == 1 { "" } else { "s" });
+            return format!(
+                "Set {} match{} in {} file{}\n",
+                updated,
+                if updated == 1 { "" } else { "es" },
+                f,
+                if f == 1 { "" } else { "s" }
+            );
         } else {
-            return format!("Set {} match{} in {} file{} ({} unchanged)\n",
-                updated, if updated == 1 { "" } else { "es" },
-                f, if f == 1 { "" } else { "s" },
-                unchanged);
+            return format!(
+                "Set {} match{} in {} file{} ({} unchanged)\n",
+                updated,
+                if updated == 1 { "" } else { "es" },
+                f,
+                if f == 1 { "" } else { "s" },
+                unchanged
+            );
         }
     }
 
@@ -289,13 +351,25 @@ fn format_summary(totals: &Totals, success: Option<bool>, expected: Option<&str>
     }
     let mut parts = Vec::new();
     if totals.fatals > 0 {
-        parts.push(format!("{} fatal{}", totals.fatals, if totals.fatals == 1 { "" } else { "s" }));
+        parts.push(format!(
+            "{} fatal{}",
+            totals.fatals,
+            if totals.fatals == 1 { "" } else { "s" }
+        ));
     }
     if totals.errors > 0 {
-        parts.push(format!("{} error{}", totals.errors, if totals.errors == 1 { "" } else { "s" }));
+        parts.push(format!(
+            "{} error{}",
+            totals.errors,
+            if totals.errors == 1 { "" } else { "s" }
+        ));
     }
     if totals.warnings > 0 {
-        parts.push(format!("{} warning{}", totals.warnings, if totals.warnings == 1 { "" } else { "s" }));
+        parts.push(format!(
+            "{} warning{}",
+            totals.warnings,
+            if totals.warnings == 1 { "" } else { "s" }
+        ));
     }
     if totals.updated > 0 {
         parts.push(format!("{} updated", totals.updated));
@@ -312,7 +386,10 @@ fn format_summary(totals: &Totals, success: Option<bool>, expected: Option<&str>
 // ---------------------------------------------------------------------------
 
 /// Collect leaf matches with their inherited file context from the results tree.
-fn collect_matches_with_file<'a>(items: &'a [ResultItem], parent_file: Option<&'a str>) -> Vec<(Option<&'a str>, &'a ReportMatch)> {
+fn collect_matches_with_file<'a>(
+    items: &'a [ResultItem],
+    parent_file: Option<&'a str>,
+) -> Vec<(Option<&'a str>, &'a ReportMatch)> {
     let mut out = Vec::new();
     for item in items {
         match item {
@@ -327,9 +404,14 @@ fn collect_matches_with_file<'a>(items: &'a [ResultItem], parent_file: Option<&'
 }
 
 /// Render set stdout mode from results tree (groups with output_content).
-fn render_set_stdout_results(items: &[ResultItem], view: &ViewSet, render_opts: &RenderOptions) -> String {
+fn render_set_stdout_results(
+    items: &[ResultItem],
+    view: &ViewSet,
+    render_opts: &RenderOptions,
+) -> String {
     let mut out = String::new();
-    let has_location = view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
+    let has_location =
+        view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
     let has_per_match = has_location || view.has(ViewField::Status);
 
     for item in items {

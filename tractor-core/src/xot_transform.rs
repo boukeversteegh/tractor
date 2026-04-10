@@ -8,7 +8,7 @@
 //! AST → build_raw() → xot tree → walk_transform(lang_fn) → transformed tree
 //! ```
 
-use xot::{Xot, Node as XotNode, NameId};
+use xot::{NameId, Node as XotNode, Xot};
 
 // =============================================================================
 // TRANSFORM ACTION - Control flow for the walker
@@ -35,7 +35,11 @@ pub enum TransformAction {
 ///
 /// The transform function receives each node and returns a `TransformAction`
 /// to control how the walker proceeds.
-pub fn walk_transform<F>(xot: &mut Xot, root: XotNode, mut transform_fn: F) -> Result<(), xot::Error>
+pub fn walk_transform<F>(
+    xot: &mut Xot,
+    root: XotNode,
+    mut transform_fn: F,
+) -> Result<(), xot::Error>
 where
     F: FnMut(&mut Xot, XotNode) -> Result<TransformAction, xot::Error>,
 {
@@ -48,7 +52,11 @@ where
 ///
 /// Use this when transforming a detached subtree that isn't wrapped in
 /// Files/File elements (e.g., a cloned content root for dual-branch assembly).
-pub fn walk_transform_node<F>(xot: &mut Xot, node: XotNode, mut transform_fn: F) -> Result<(), xot::Error>
+pub fn walk_transform_node<F>(
+    xot: &mut Xot,
+    node: XotNode,
+    mut transform_fn: F,
+) -> Result<(), xot::Error>
 where
     F: FnMut(&mut Xot, XotNode) -> Result<TransformAction, xot::Error>,
 {
@@ -95,7 +103,8 @@ where
     match action {
         TransformAction::Continue => {
             // Process children recursively
-            let children: Vec<XotNode> = xot.children(node)
+            let children: Vec<XotNode> = xot
+                .children(node)
                 .filter(|&c| xot.element(c).is_some())
                 .collect();
             for child in children {
@@ -116,7 +125,8 @@ where
         }
         TransformAction::Flatten => {
             // Transform children first, then move them to parent and remove node
-            let children: Vec<XotNode> = xot.children(node)
+            let children: Vec<XotNode> = xot
+                .children(node)
                 .filter(|&c| xot.element(c).is_some())
                 .collect();
             for child in children {
@@ -141,9 +151,8 @@ pub mod helpers {
 
     /// Get the local name of an element node
     pub fn get_element_name(xot: &Xot, node: XotNode) -> Option<String> {
-        xot.element(node).map(|element| {
-            xot.local_name_str(element.name()).to_string()
-        })
+        xot.element(node)
+            .map(|element| xot.local_name_str(element.name()).to_string())
     }
 
     /// Get the original TreeSitter kind from the `kind` attribute
@@ -286,19 +295,22 @@ pub mod helpers {
 
     /// Get text content of a node (concatenated text children)
     pub fn get_text_content(xot: &Xot, node: XotNode) -> Option<String> {
-        let text: String = xot.children(node)
+        let text: String = xot
+            .children(node)
             .filter_map(|child| xot.text_str(child))
             .collect();
-        if text.is_empty() { None } else { Some(text) }
+        if text.is_empty() {
+            None
+        } else {
+            Some(text)
+        }
     }
 
     /// Extract a numeric value from a position attribute.
     /// Position attributes are set by the xot builder from tree-sitter positions.
     /// E.g. `get_line(xot, node, "line")` on a node with `line="3"` returns `Some(3)`.
     pub fn get_line(xot: &Xot, node: XotNode, attr: &str) -> Option<usize> {
-        get_attr(xot, node, attr)?
-            .parse()
-            .ok()
+        get_attr(xot, node, attr)?.parse().ok()
     }
 
     /// Check if a node starts on the same line as its previous element sibling ends.
@@ -312,7 +324,8 @@ pub mod helpers {
             None => return false,
         };
 
-        let prev = xot.preceding_siblings(node)
+        let prev = xot
+            .preceding_siblings(node)
             .filter(|&s| s != node)
             .find(|&s| xot.element(s).is_some());
 
@@ -326,7 +339,11 @@ pub mod helpers {
     }
 
     /// Prepend an empty element as first child
-    pub fn prepend_empty_element(xot: &mut Xot, parent: XotNode, name: &str) -> Result<XotNode, xot::Error> {
+    pub fn prepend_empty_element(
+        xot: &mut Xot,
+        parent: XotNode,
+        name: &str,
+    ) -> Result<XotNode, xot::Error> {
         let name_id = xot.add_name(name);
         let element = xot.new_element(name_id);
         xot.prepend(parent, element)?;
@@ -334,7 +351,11 @@ pub mod helpers {
     }
 
     /// Insert an empty element before a sibling
-    pub fn insert_empty_before(xot: &mut Xot, sibling: XotNode, name: &str) -> Result<XotNode, xot::Error> {
+    pub fn insert_empty_before(
+        xot: &mut Xot,
+        sibling: XotNode,
+        name: &str,
+    ) -> Result<XotNode, xot::Error> {
         let name_id = xot.add_name(name);
         let element = xot.new_element(name_id);
         xot.insert_before(sibling, element)?;
@@ -342,7 +363,12 @@ pub mod helpers {
     }
 
     /// Prepend an element with text content as first child
-    pub fn prepend_element_with_text(xot: &mut Xot, parent: XotNode, name: &str, text: &str) -> Result<XotNode, xot::Error> {
+    pub fn prepend_element_with_text(
+        xot: &mut Xot,
+        parent: XotNode,
+        name: &str,
+        text: &str,
+    ) -> Result<XotNode, xot::Error> {
         let name_id = xot.add_name(name);
         let element = xot.new_element(name_id);
         let text_node = xot.new_text(text);
@@ -352,7 +378,11 @@ pub mod helpers {
     }
 
     /// Append an empty element as last child
-    pub fn append_empty_element(xot: &mut Xot, parent: XotNode, name: &str) -> Result<XotNode, xot::Error> {
+    pub fn append_empty_element(
+        xot: &mut Xot,
+        parent: XotNode,
+        name: &str,
+    ) -> Result<XotNode, xot::Error> {
         let name_id = xot.add_name(name);
         let element = xot.new_element(name_id);
         xot.append(parent, element)?;
@@ -360,7 +390,12 @@ pub mod helpers {
     }
 
     /// Append a marker element with optional flat children
-    pub fn append_marker(xot: &mut Xot, parent: XotNode, name: &str, children: &[&str]) -> Result<XotNode, xot::Error> {
+    pub fn append_marker(
+        xot: &mut Xot,
+        parent: XotNode,
+        name: &str,
+        children: &[&str],
+    ) -> Result<XotNode, xot::Error> {
         let el = append_empty_element(xot, parent, name)?;
         for child in children {
             append_empty_element(xot, el, child)?;
@@ -369,7 +404,11 @@ pub mod helpers {
     }
 
     /// Prepend an `<op>` element with semantic markers and raw text
-    pub fn prepend_op_element(xot: &mut Xot, parent: XotNode, op_text: &str) -> Result<XotNode, xot::Error> {
+    pub fn prepend_op_element(
+        xot: &mut Xot,
+        parent: XotNode,
+        op_text: &str,
+    ) -> Result<XotNode, xot::Error> {
         let op_name = xot.add_name("op");
         let op_element = xot.new_element(op_name);
         add_operator_markers(xot, op_element, op_text)?;
@@ -383,60 +422,158 @@ pub mod helpers {
     fn add_operator_markers(xot: &mut Xot, op: XotNode, text: &str) -> Result<(), xot::Error> {
         match text {
             // Equality
-            "==" => { append_marker(xot, op, "equals", &[])?; }
-            "===" => { append_marker(xot, op, "equals", &["strict"])?; }
-            "!=" => { append_marker(xot, op, "not-equals", &[])?; }
-            "!==" => { append_marker(xot, op, "not-equals", &["strict"])?; }
+            "==" => {
+                append_marker(xot, op, "equals", &[])?;
+            }
+            "===" => {
+                append_marker(xot, op, "equals", &["strict"])?;
+            }
+            "!=" => {
+                append_marker(xot, op, "not-equals", &[])?;
+            }
+            "!==" => {
+                append_marker(xot, op, "not-equals", &["strict"])?;
+            }
             // Comparison
-            "<" => { append_marker(xot, op, "compare", &["less"])?; }
-            ">" => { append_marker(xot, op, "compare", &["greater"])?; }
-            "<=" => { append_marker(xot, op, "compare", &["less", "or-equal"])?; }
-            ">=" => { append_marker(xot, op, "compare", &["greater", "or-equal"])?; }
+            "<" => {
+                append_marker(xot, op, "compare", &["less"])?;
+            }
+            ">" => {
+                append_marker(xot, op, "compare", &["greater"])?;
+            }
+            "<=" => {
+                append_marker(xot, op, "compare", &["less", "or-equal"])?;
+            }
+            ">=" => {
+                append_marker(xot, op, "compare", &["greater", "or-equal"])?;
+            }
             // Arithmetic
-            "+" => { append_marker(xot, op, "plus", &[])?; }
-            "-" => { append_marker(xot, op, "minus", &[])?; }
-            "*" => { append_marker(xot, op, "multiply", &[])?; }
-            "/" => { append_marker(xot, op, "divide", &[])?; }
-            "%" => { append_marker(xot, op, "modulo", &[])?; }
-            "**" => { append_marker(xot, op, "power", &[])?; }
+            "+" => {
+                append_marker(xot, op, "plus", &[])?;
+            }
+            "-" => {
+                append_marker(xot, op, "minus", &[])?;
+            }
+            "*" => {
+                append_marker(xot, op, "multiply", &[])?;
+            }
+            "/" => {
+                append_marker(xot, op, "divide", &[])?;
+            }
+            "%" => {
+                append_marker(xot, op, "modulo", &[])?;
+            }
+            "**" => {
+                append_marker(xot, op, "power", &[])?;
+            }
             // Logical
-            "&&" | "and" => { append_marker(xot, op, "logical", &["and"])?; }
-            "||" | "or" => { append_marker(xot, op, "logical", &["or"])?; }
-            "!" | "not" => { append_marker(xot, op, "logical", &["not"])?; }
-            "??" => { append_marker(xot, op, "nullish-coalescing", &[])?; }
+            "&&" | "and" => {
+                append_marker(xot, op, "logical", &["and"])?;
+            }
+            "||" | "or" => {
+                append_marker(xot, op, "logical", &["or"])?;
+            }
+            "!" | "not" => {
+                append_marker(xot, op, "logical", &["not"])?;
+            }
+            "??" => {
+                append_marker(xot, op, "nullish-coalescing", &[])?;
+            }
             // Bitwise
-            "&" => { append_marker(xot, op, "bitwise", &["and"])?; }
-            "|" => { append_marker(xot, op, "bitwise", &["or"])?; }
-            "^" => { append_marker(xot, op, "bitwise", &["xor"])?; }
-            "~" => { append_marker(xot, op, "bitwise", &["not"])?; }
-            "<<" => { append_marker(xot, op, "shift", &["left"])?; }
-            ">>" => { append_marker(xot, op, "shift", &["right"])?; }
-            ">>>" => { append_marker(xot, op, "shift", &["right", "unsigned"])?; }
+            "&" => {
+                append_marker(xot, op, "bitwise", &["and"])?;
+            }
+            "|" => {
+                append_marker(xot, op, "bitwise", &["or"])?;
+            }
+            "^" => {
+                append_marker(xot, op, "bitwise", &["xor"])?;
+            }
+            "~" => {
+                append_marker(xot, op, "bitwise", &["not"])?;
+            }
+            "<<" => {
+                append_marker(xot, op, "shift", &["left"])?;
+            }
+            ">>" => {
+                append_marker(xot, op, "shift", &["right"])?;
+            }
+            ">>>" => {
+                append_marker(xot, op, "shift", &["right", "unsigned"])?;
+            }
             // Assignment (bare = gets no marker — parent element disambiguates)
             // Compound assignment (arithmetic)
-            "+=" => { append_marker(xot, op, "assign", &["plus"])?; }
-            "-=" => { append_marker(xot, op, "assign", &["minus"])?; }
-            "*=" => { append_marker(xot, op, "assign", &["multiply"])?; }
-            "/=" => { append_marker(xot, op, "assign", &["divide"])?; }
-            "%=" => { append_marker(xot, op, "assign", &["modulo"])?; }
-            "**=" => { append_marker(xot, op, "assign", &["power"])?; }
+            "+=" => {
+                append_marker(xot, op, "assign", &["plus"])?;
+            }
+            "-=" => {
+                append_marker(xot, op, "assign", &["minus"])?;
+            }
+            "*=" => {
+                append_marker(xot, op, "assign", &["multiply"])?;
+            }
+            "/=" => {
+                append_marker(xot, op, "assign", &["divide"])?;
+            }
+            "%=" => {
+                append_marker(xot, op, "assign", &["modulo"])?;
+            }
+            "**=" => {
+                append_marker(xot, op, "assign", &["power"])?;
+            }
             // Compound assignment (logical/bitwise/shift)
-            "&&=" => { let a = append_marker(xot, op, "assign", &[])?; append_marker(xot, a, "logical", &["and"])?; }
-            "||=" => { let a = append_marker(xot, op, "assign", &[])?; append_marker(xot, a, "logical", &["or"])?; }
-            "??=" => { let a = append_marker(xot, op, "assign", &[])?; append_marker(xot, a, "nullish-coalescing", &[])?; }
-            "<<=" => { let a = append_marker(xot, op, "assign", &[])?; append_marker(xot, a, "shift", &["left"])?; }
-            ">>=" => { let a = append_marker(xot, op, "assign", &[])?; append_marker(xot, a, "shift", &["right"])?; }
-            "&=" => { let a = append_marker(xot, op, "assign", &[])?; append_marker(xot, a, "bitwise", &["and"])?; }
-            "|=" => { let a = append_marker(xot, op, "assign", &[])?; append_marker(xot, a, "bitwise", &["or"])?; }
-            "^=" => { let a = append_marker(xot, op, "assign", &[])?; append_marker(xot, a, "bitwise", &["xor"])?; }
+            "&&=" => {
+                let a = append_marker(xot, op, "assign", &[])?;
+                append_marker(xot, a, "logical", &["and"])?;
+            }
+            "||=" => {
+                let a = append_marker(xot, op, "assign", &[])?;
+                append_marker(xot, a, "logical", &["or"])?;
+            }
+            "??=" => {
+                let a = append_marker(xot, op, "assign", &[])?;
+                append_marker(xot, a, "nullish-coalescing", &[])?;
+            }
+            "<<=" => {
+                let a = append_marker(xot, op, "assign", &[])?;
+                append_marker(xot, a, "shift", &["left"])?;
+            }
+            ">>=" => {
+                let a = append_marker(xot, op, "assign", &[])?;
+                append_marker(xot, a, "shift", &["right"])?;
+            }
+            "&=" => {
+                let a = append_marker(xot, op, "assign", &[])?;
+                append_marker(xot, a, "bitwise", &["and"])?;
+            }
+            "|=" => {
+                let a = append_marker(xot, op, "assign", &[])?;
+                append_marker(xot, a, "bitwise", &["or"])?;
+            }
+            "^=" => {
+                let a = append_marker(xot, op, "assign", &[])?;
+                append_marker(xot, a, "bitwise", &["xor"])?;
+            }
             // Python-specific
-            "in" => { append_marker(xot, op, "contains", &[])?; }
-            "not in" => { append_marker(xot, op, "contains", &["not"])?; }
-            "is" => { append_marker(xot, op, "identity", &[])?; }
-            "is not" => { append_marker(xot, op, "identity", &["not"])?; }
+            "in" => {
+                append_marker(xot, op, "contains", &[])?;
+            }
+            "not in" => {
+                append_marker(xot, op, "contains", &["not"])?;
+            }
+            "is" => {
+                append_marker(xot, op, "identity", &[])?;
+            }
+            "is not" => {
+                append_marker(xot, op, "identity", &["not"])?;
+            }
             // Unary prefix/postfix
-            "++" => { append_marker(xot, op, "increment", &[])?; }
-            "--" => { append_marker(xot, op, "decrement", &[])?; }
+            "++" => {
+                append_marker(xot, op, "increment", &[])?;
+            }
+            "--" => {
+                append_marker(xot, op, "decrement", &[])?;
+            }
             // No marker — graceful degradation
             _ => {}
         }
@@ -445,29 +582,53 @@ pub mod helpers {
 
     /// Check if an element name is an operator semantic marker
     pub fn is_operator_marker(name: &str) -> bool {
-        matches!(name,
-            "equals" | "not-equals" | "compare" | "less" | "greater" | "or-equal"
-            | "plus" | "minus" | "multiply" | "divide" | "modulo" | "power"
-            | "logical" | "bitwise" | "shift" | "nullish-coalescing"
-            | "assign" | "increment" | "decrement"
-            | "strict" | "left" | "right" | "unsigned" | "xor"
-            | "contains" | "identity" | "not" | "and" | "or"
+        matches!(
+            name,
+            "equals"
+                | "not-equals"
+                | "compare"
+                | "less"
+                | "greater"
+                | "or-equal"
+                | "plus"
+                | "minus"
+                | "multiply"
+                | "divide"
+                | "modulo"
+                | "power"
+                | "logical"
+                | "bitwise"
+                | "shift"
+                | "nullish-coalescing"
+                | "assign"
+                | "increment"
+                | "decrement"
+                | "strict"
+                | "left"
+                | "right"
+                | "unsigned"
+                | "xor"
+                | "contains"
+                | "identity"
+                | "not"
+                | "and"
+                | "or"
         )
     }
 
     /// Default singleton wrappers — wrappers that typically contain exactly
     /// one semantic child. Languages may adjust this list.
     pub const DEFAULT_SINGLETON_WRAPPERS: &[&str] = &[
-        "value",        // assigned/initial value
-        "left",         // binary left operand
-        "right",        // binary right operand
-        "condition",    // if/while/for condition
-        "consequence",  // if true branch
-        "alternative",  // if else branch
-        "returns",      // return type
-        // Note: "body" excluded — after transforms inline declaration lists,
-        // body can contain multiple children. Lifting the first child would
-        // violate cardinality-independence (issue #34).
+        "value",       // assigned/initial value
+        "left",        // binary left operand
+        "right",       // binary right operand
+        "condition",   // if/while/for condition
+        "consequence", // if true branch
+        "alternative", // if else branch
+        "returns",     // return type
+                       // Note: "body" excluded — after transforms inline declaration lists,
+                       // body can contain multiple children. Lifting the first child would
+                       // violate cardinality-independence (issue #34).
     ];
 
     /// Mark the first element child of singleton wrappers with `field`.
@@ -485,10 +646,16 @@ pub mod helpers {
                 Some(n) => n,
                 None => continue,
             };
-            if !singletons.contains(&name.as_str()) { continue; }
+            if !singletons.contains(&name.as_str()) {
+                continue;
+            }
             // Must be a wrapper (has field attr, no kind attr)
-            if get_attr(xot, node, "field").is_none() { continue; }
-            if get_attr(xot, node, "kind").is_some() { continue; }
+            if get_attr(xot, node, "field").is_none() {
+                continue;
+            }
+            if get_attr(xot, node, "kind").is_some() {
+                continue;
+            }
             // Add field to first element child if it doesn't already have one
             let children = get_element_children(xot, node);
             if let Some(&child) = children.first() {
@@ -585,13 +752,14 @@ pub mod helpers {
         for child in xot.children(node) {
             // Use kind attr for TreeSitter nodes, element name for TreeBuilder
             // wrappers (like <value>) which don't have a kind attr.
-            let tag = get_kind(xot, child)
-                .or_else(|| get_element_name(xot, child));
+            let tag = get_kind(xot, child).or_else(|| get_element_name(xot, child));
             if let Some(tag) = tag {
                 match tag.as_str() {
                     "block_sequence" | "flow_sequence" | "array" => return true,
                     "block_node" | "flow_node" | "value" => {
-                        if has_sequence_child(xot, child) { return true; }
+                        if has_sequence_child(xot, child) {
+                            return true;
+                        }
                     }
                     _ => {}
                 }
@@ -653,7 +821,8 @@ pub mod helpers {
 
     /// Remove all text children from a node
     pub fn remove_text_children(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
-        let text_children: Vec<XotNode> = xot.children(node)
+        let text_children: Vec<XotNode> = xot
+            .children(node)
             .filter(|&child| xot.text_str(child).is_some())
             .collect();
         for child in text_children {
@@ -665,8 +834,8 @@ pub mod helpers {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::helpers::*;
+    use super::*;
 
     fn create_test_xot() -> (Xot, XotNode) {
         let mut xot = Xot::new();
@@ -715,7 +884,8 @@ mod tests {
                 visited.push(name);
             }
             Ok(TransformAction::Continue)
-        }).unwrap();
+        })
+        .unwrap();
 
         assert_eq!(visited, vec!["root", "child"]);
     }

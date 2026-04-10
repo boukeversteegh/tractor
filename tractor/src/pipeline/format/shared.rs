@@ -1,9 +1,9 @@
 //! Shared helpers used across multiple format renderers.
 
+use super::options::{ViewField, ViewSet};
 use std::path::Path;
 use tractor_core::normalize_path;
 use tractor_core::report::ReportMatch;
-use super::options::{ViewField, ViewSet};
 
 pub fn to_absolute_path(path: &str) -> String {
     let p = Path::new(path);
@@ -71,14 +71,20 @@ pub fn match_has_field(rm: &ReportMatch, field: ViewField) -> bool {
 /// The extra diagnostic fields are: Reason, Lines. These are the essential
 /// fields for understanding what went wrong. Reason renders severity+origin
 /// inline when present, so those don't need separate entries.
-pub fn render_fields_for_match(view: &ViewSet, rm: &ReportMatch) -> (Vec<ViewField>, Vec<ViewField>) {
+pub fn render_fields_for_match(
+    view: &ViewSet,
+    rm: &ReportMatch,
+) -> (Vec<ViewField>, Vec<ViewField>) {
     let view_fields = view.fields.clone();
 
     let diagnostic_extras: &[ViewField] = &[
-        ViewField::Severity, ViewField::Reason, ViewField::Origin,
+        ViewField::Severity,
+        ViewField::Reason,
+        ViewField::Origin,
         ViewField::Lines,
     ];
-    let extra: Vec<ViewField> = diagnostic_extras.iter()
+    let extra: Vec<ViewField> = diagnostic_extras
+        .iter()
         .filter(|&&f| !view.has(f) && match_has_field(rm, f))
         .copied()
         .collect();

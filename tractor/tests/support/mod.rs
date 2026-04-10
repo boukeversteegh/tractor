@@ -1,5 +1,11 @@
 #![allow(dead_code)]
 
+//! Shared support for the CLI integration DSL.
+//!
+//! Design rationale lives in `docs/design-cli-integration-dsl.md`. This module
+//! keeps the same layers: suite structure, command capture, assertion parsing,
+//! and execution.
+
 use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -7,113 +13,57 @@ use std::process::{Command, Stdio};
 
 use tempfile::TempDir;
 
-#[derive(Clone, Copy, Debug)]
-enum StatusExpectation {
-    Success,
-    Exact(i32),
-    Failure,
-}
+// ---------------------------------------------------------------------------
+// Layer 2: command capture
+// ---------------------------------------------------------------------------
 
 #[derive(Clone, Debug)]
-enum ExpectedText {
-    Inline(String),
-    Snapshot(String),
-}
-
-#[derive(Clone, Debug)]
-enum TestArg {
+enum CommandArg {
     Literal(String),
     FixturePath { relative: String, absolute: bool },
 }
 
-#[derive(Clone, Copy, Debug)]
-enum OutputKind {
-    Stdout,
-    Stderr,
-    Combined,
-}
-
+/// A captured `tractor ...` invocation.
+///
+/// This stores only CLI-shaped process inputs: arguments, stdin, and the
+/// default `--no-color` test setting. Fixture copying, seeded files, and
+/// output normalization live in the harness setup instead.
 #[derive(Clone, Debug)]
-struct OutputExpectation {
-    kind: OutputKind,
-    expected: ExpectedText,
-}
-
-#[derive(Clone, Debug)]
-struct FileExpectation {
-    relative: String,
-    expected: ExpectedText,
-}
-
-#[derive(Clone, Debug)]
-struct SeedFile {
-    relative: String,
-    contents: String,
-}
-
-pub struct RunResult {
-    pub status: i32,
-    pub stdout: String,
-    pub stderr: String,
-    pub combined: String,
-    pub cwd: PathBuf,
-    _temp_dir: Option<TempDir>,
-}
-
-#[derive(Clone, Debug)]
-pub struct CliTest {
-    fixture: Option<String>,
-    args: Vec<TestArg>,
+pub struct TractorInvocation {
+    args: Vec<CommandArg>,
     stdin: Option<String>,
-    status: StatusExpectation,
-    outputs: Vec<OutputExpectation>,
-    files: Vec<FileExpectation>,
-    seed_files: Vec<SeedFile>,
-    temp_fixture: bool,
-    temp_prefix_replacement: Option<String>,
-    fixture_prefix_replacement: Option<String>,
-    replacements: Vec<(String, String)>,
     no_color: bool,
 }
 
-impl CliTest {
+impl TractorInvocation {
+    pub fn from_dsl(command: &str) -> Self {
+        Self::new(parse_dsl_words(command))
+    }
+
     pub fn new(args: impl IntoIterator<Item = impl Into<String>>) -> Self {
         Self {
-            fixture: None,
             args: args
                 .into_iter()
-                .map(|arg| TestArg::Literal(arg.into()))
+                .map(|arg| CommandArg::Literal(arg.into()))
                 .collect(),
             stdin: None,
-            status: StatusExpectation::Success,
-            outputs: Vec::new(),
-            files: Vec::new(),
-            seed_files: Vec::new(),
-            temp_fixture: false,
-            temp_prefix_replacement: None,
-            fixture_prefix_replacement: None,
-            replacements: Vec::new(),
             no_color: true,
         }
     }
 
-    pub fn in_fixture(mut self, fixture: impl Into<String>) -> Self {
-        self.fixture = Some(fixture.into());
-        self
-    }
-
     pub fn arg(mut self, arg: impl Into<String>) -> Self {
-        self.args.push(TestArg::Literal(arg.into()));
+        self.args.push(CommandArg::Literal(arg.into()));
         self
     }
 
     pub fn args(mut self, args: impl IntoIterator<Item = impl Into<String>>) -> Self {
-        self.args.extend(args.into_iter().map(|arg| TestArg::Literal(arg.into())));
+        self.args
+            .extend(args.into_iter().map(|arg| CommandArg::Literal(arg.into())));
         self
     }
 
     pub fn abs_arg(mut self, relative: impl Into<String>) -> Self {
-        self.args.push(TestArg::FixturePath {
+        self.args.push(CommandArg::FixturePath {
             relative: relative.into(),
             absolute: true,
         });
@@ -125,139 +75,307 @@ impl CliTest {
         self
     }
 
-    pub fn status(mut self, code: i32) -> Self {
-        self.status = StatusExpectation::Exact(code);
+    pub fn no_color(mut self, enabled: bool) -> Self {
+        self.no_color = enabled;
         self
     }
 
-    pub fn fails(mut self) -> Self {
-        self.status = StatusExpectation::Failure;
+    fn with_count_view(&self) -> Self {
+        let mut args = Vec::new();
+        let mut iter = self.args.iter().cloned();
+
+        while let Some(arg) = iter.next() {
+            let literal = match &arg {
+                CommandArg::Literal(value) => Some(value.as_str()),
+                CommandArg::FixturePath { .. } => None,
+            };
+
+            match literal {
+                Some("-v") | Some("--view") => {
+                    let _ = iter.next();
+                }
+                Some(value) if value.starts_with("-v=") || value.starts_with("--view=") => {}
+                _ => args.push(arg),
+            }
+        }
+
+        let mut invocation = Self {
+            args,
+            stdin: self.stdin.clone(),
+            no_color: self.no_color,
+        };
+        invocation.args.push(CommandArg::Literal("-v".to_string()));
+        invocation
+            .args
+            .push(CommandArg::Literal("count".to_string()));
+        invocation
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Layer 3: assertion parsing
+// ---------------------------------------------------------------------------
+
+#[derive(Clone, Debug)]
+pub(crate) enum ExpectedText {
+    Inline(String),
+    Snapshot(String),
+}
+
+#[derive(Clone, Debug)]
+pub(crate) enum CountExpectation {
+    Exact(usize),
+    Some,
+    None,
+}
+
+/// Harness-side assertions that run after the command is captured.
+///
+/// These are deliberately named as test assertions, not as Tractor flags.
+/// They describe how the harness should evaluate the outcome of the command.
+#[derive(Clone, Debug)]
+pub(crate) enum Assertion {
+    Exit(i32),
+    Count(CountExpectation),
+    Stdout(ExpectedText),
+    Combined(ExpectedText),
+    FileEq {
+        relative: String,
+        expected: ExpectedText,
+    },
+    FileContains {
+        relative: String,
+        needle: String,
+    },
+}
+
+impl Assertion {
+    pub fn exit(code: i32) -> Self {
+        Self::Exit(code)
+    }
+
+    pub fn count(expected: usize) -> Self {
+        Self::Count(CountExpectation::Exact(expected))
+    }
+
+    pub fn count_some() -> Self {
+        Self::Count(CountExpectation::Some)
+    }
+
+    pub fn count_none() -> Self {
+        Self::Count(CountExpectation::None)
+    }
+
+    pub fn stdout(expected: impl Into<String>) -> Self {
+        Self::Stdout(ExpectedText::Inline(expected.into()))
+    }
+
+    pub fn stdout_snapshot(snapshot: impl Into<String>) -> Self {
+        Self::Stdout(ExpectedText::Snapshot(snapshot.into()))
+    }
+
+    pub fn combined(expected: impl Into<String>) -> Self {
+        Self::Combined(ExpectedText::Inline(expected.into()))
+    }
+
+    pub fn combined_snapshot(snapshot: impl Into<String>) -> Self {
+        Self::Combined(ExpectedText::Snapshot(snapshot.into()))
+    }
+
+    pub fn file_eq(relative: impl Into<String>, expected: impl Into<String>) -> Self {
+        Self::FileEq {
+            relative: relative.into(),
+            expected: ExpectedText::Inline(expected.into()),
+        }
+    }
+
+    pub fn file_snapshot(relative: impl Into<String>, snapshot: impl Into<String>) -> Self {
+        Self::FileEq {
+            relative: relative.into(),
+            expected: ExpectedText::Snapshot(snapshot.into()),
+        }
+    }
+
+    pub fn file_contains(relative: impl Into<String>, needle: impl Into<String>) -> Self {
+        Self::FileContains {
+            relative: relative.into(),
+            needle: needle.into(),
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Layer 4: execution
+// ---------------------------------------------------------------------------
+
+#[derive(Clone, Debug, Default)]
+struct HarnessSetup {
+    fixture: Option<String>,
+    temp_fixture: bool,
+    temp_prefix_replacement: Option<String>,
+    fixture_prefix_replacement: Option<String>,
+    replacements: Vec<(String, String)>,
+    seed_files: Vec<SeedFile>,
+}
+
+#[derive(Clone, Debug)]
+struct SeedFile {
+    relative: String,
+    contents: String,
+}
+
+struct ExecutionContext {
+    cwd: PathBuf,
+    fixture: Option<String>,
+    temp_dir: Option<TempDir>,
+}
+
+pub struct RunResult {
+    pub status: i32,
+    pub stdout: String,
+    pub stderr: String,
+    pub combined: String,
+    pub cwd: PathBuf,
+    _temp_dir: Option<TempDir>,
+}
+
+/// A complete CLI integration case.
+///
+/// The harness model is explicit: a Tractor invocation plus harness assertions.
+#[derive(Clone, Debug)]
+pub struct TestCase {
+    command: TractorInvocation,
+    assertions: Vec<Assertion>,
+    setup: HarnessSetup,
+}
+
+impl TestCase {
+    pub fn new(command: TractorInvocation) -> Self {
+        Self {
+            command,
+            assertions: Vec::new(),
+            setup: HarnessSetup::default(),
+        }
+    }
+
+    pub fn with_assertion(mut self, assertion: Assertion) -> Self {
+        self.assertions.push(assertion);
         self
     }
 
-    pub fn expect(mut self, expected: impl Into<String>) -> Self {
-        self = self.arg("--expect");
-        self = self.arg(expected);
+    pub fn with_assertions(mut self, assertions: impl IntoIterator<Item = Assertion>) -> Self {
+        self.assertions.extend(assertions);
         self
     }
 
-    pub fn view(mut self, value: impl Into<String>) -> Self {
-        self = self.arg("-v");
-        self = self.arg(value);
+    pub fn in_fixture(mut self, fixture: impl Into<String>) -> Self {
+        self.setup.fixture = Some(fixture.into());
         self
     }
 
-    pub fn format(mut self, value: impl Into<String>) -> Self {
-        self = self.arg("-f");
-        self = self.arg(value);
+    pub fn arg(mut self, arg: impl Into<String>) -> Self {
+        self.command = self.command.arg(arg);
         self
     }
 
-    pub fn lang(mut self, value: impl Into<String>) -> Self {
-        self = self.arg("--lang");
-        self = self.arg(value);
+    pub fn args(mut self, args: impl IntoIterator<Item = impl Into<String>>) -> Self {
+        self.command = self.command.args(args);
         self
     }
 
-    pub fn tree(mut self, value: impl Into<String>) -> Self {
-        self = self.arg("-t");
-        self = self.arg(value);
+    pub fn abs_arg(mut self, relative: impl Into<String>) -> Self {
+        self.command = self.command.abs_arg(relative);
         self
     }
 
-    pub fn reason(mut self, value: impl Into<String>) -> Self {
-        self = self.arg("--reason");
-        self = self.arg(value);
+    pub fn stdin(mut self, text: impl Into<String>) -> Self {
+        self.command = self.command.stdin(text);
         self
     }
 
     pub fn temp_fixture(mut self) -> Self {
-        self.temp_fixture = true;
+        self.setup.temp_fixture = true;
         self
     }
 
     pub fn strip_temp_prefix(mut self) -> Self {
-        self.temp_prefix_replacement = Some(String::new());
+        self.setup.temp_prefix_replacement = Some(String::new());
         self
     }
 
     pub fn temp_prefix(mut self, replacement: impl Into<String>) -> Self {
-        self.temp_prefix_replacement = Some(replacement.into());
+        self.setup.temp_prefix_replacement = Some(replacement.into());
         self
     }
 
     pub fn fixture_prefix(mut self, replacement: impl Into<String>) -> Self {
-        self.fixture_prefix_replacement = Some(replacement.into());
+        self.setup.fixture_prefix_replacement = Some(replacement.into());
         self
     }
 
-    pub fn replace_output(
-        mut self,
-        from: impl Into<String>,
-        to: impl Into<String>,
-    ) -> Self {
-        self.replacements.push((from.into(), to.into()));
-        self
-    }
-
-    pub fn stdout(mut self, expected: impl Into<String>) -> Self {
-        self.outputs.push(OutputExpectation {
-            kind: OutputKind::Stdout,
-            expected: ExpectedText::Inline(expected.into()),
-        });
-        self
-    }
-
-    pub fn stdout_snapshot(mut self, snapshot: impl Into<String>) -> Self {
-        self.outputs.push(OutputExpectation {
-            kind: OutputKind::Stdout,
-            expected: ExpectedText::Snapshot(snapshot.into()),
-        });
-        self
-    }
-
-    pub fn combined(mut self, expected: impl Into<String>) -> Self {
-        self.outputs.push(OutputExpectation {
-            kind: OutputKind::Combined,
-            expected: ExpectedText::Inline(expected.into()),
-        });
-        self
-    }
-
-    pub fn combined_snapshot(mut self, snapshot: impl Into<String>) -> Self {
-        self.outputs.push(OutputExpectation {
-            kind: OutputKind::Combined,
-            expected: ExpectedText::Snapshot(snapshot.into()),
-        });
-        self
-    }
-
-    pub fn file_eq(mut self, relative: impl Into<String>, expected: impl Into<String>) -> Self {
-        self.files.push(FileExpectation {
-            relative: relative.into(),
-            expected: ExpectedText::Inline(expected.into()),
-        });
-        self
-    }
-
-    pub fn file_snapshot(
-        mut self,
-        relative: impl Into<String>,
-        snapshot: impl Into<String>,
-    ) -> Self {
-        self.files.push(FileExpectation {
-            relative: relative.into(),
-            expected: ExpectedText::Snapshot(snapshot.into()),
-        });
+    pub fn replace_output(mut self, from: impl Into<String>, to: impl Into<String>) -> Self {
+        self.setup.replacements.push((from.into(), to.into()));
         self
     }
 
     pub fn seed_file(mut self, relative: impl Into<String>, contents: impl Into<String>) -> Self {
-        self.seed_files.push(SeedFile {
+        self.setup.seed_files.push(SeedFile {
             relative: relative.into(),
             contents: contents.into(),
         });
         self
+    }
+
+    pub fn assert_exit(self, code: i32) -> Self {
+        self.with_assertion(Assertion::exit(code))
+    }
+
+    pub fn assert_count(self, expected: usize) -> Self {
+        self.with_assertion(Assertion::count(expected))
+    }
+
+    pub fn assert_count_some(self) -> Self {
+        self.with_assertion(Assertion::count_some())
+    }
+
+    pub fn assert_count_none(self) -> Self {
+        self.with_assertion(Assertion::count_none())
+    }
+
+    pub fn assert_stdout(self, expected: impl Into<String>) -> Self {
+        self.with_assertion(Assertion::stdout(expected))
+    }
+
+    pub fn assert_stdout_snapshot(self, snapshot: impl Into<String>) -> Self {
+        self.with_assertion(Assertion::stdout_snapshot(snapshot))
+    }
+
+    pub fn assert_combined(self, expected: impl Into<String>) -> Self {
+        self.with_assertion(Assertion::combined(expected))
+    }
+
+    pub fn assert_combined_snapshot(self, snapshot: impl Into<String>) -> Self {
+        self.with_assertion(Assertion::combined_snapshot(snapshot))
+    }
+
+    pub fn assert_file_eq(self, relative: impl Into<String>, expected: impl Into<String>) -> Self {
+        self.with_assertion(Assertion::file_eq(relative, expected))
+    }
+
+    pub fn assert_file_snapshot(
+        self,
+        relative: impl Into<String>,
+        snapshot: impl Into<String>,
+    ) -> Self {
+        self.with_assertion(Assertion::file_snapshot(relative, snapshot))
+    }
+
+    pub fn assert_file_contains(
+        self,
+        relative: impl Into<String>,
+        needle: impl Into<String>,
+    ) -> Self {
+        self.with_assertion(Assertion::file_contains(relative, needle))
     }
 
     pub fn capture(self) -> RunResult {
@@ -269,145 +387,250 @@ impl CliTest {
     }
 
     fn execute(self, assert_expectations: bool) -> RunResult {
-        let fixture = self.fixture.clone();
-        let fixture_root = fixture.as_deref().map(fixture_dir);
-        let (cwd, temp_dir) = if self.temp_fixture {
-            let source = fixture_root
-                .as_ref()
-                .expect("temp_fixture requires an attached fixture directory");
-            let temp_dir = TempDir::new().expect("failed to create temp fixture directory");
-            copy_dir_all(source, temp_dir.path());
-            (temp_dir.path().to_path_buf(), Some(temp_dir))
-        } else {
-            (
-                fixture_root.unwrap_or_else(repo_root),
-                None,
-            )
-        };
+        let TestCase {
+            command,
+            assertions,
+            setup,
+        } = self;
 
-        for file in &self.seed_files {
-            let path = cwd.join(&file.relative);
-            if let Some(parent) = path.parent() {
-                fs::create_dir_all(parent).expect("failed to create seed file parent directory");
-            }
-            fs::write(&path, &file.contents).expect("failed to write seed file");
-        }
-
-        let mut command = Command::new(binary_path());
-        command.current_dir(&cwd);
-        command.stdin(if self.stdin.is_some() {
-            Stdio::piped()
-        } else {
-            Stdio::null()
-        });
-        command.stdout(Stdio::piped());
-        command.stderr(Stdio::piped());
-
-        for arg in &self.args {
-            command.arg(resolve_arg(arg, &cwd));
-        }
-        if self.no_color {
-            command.arg("--no-color");
-        }
-
-        let mut child = command.spawn().expect("failed to launch tractor binary");
-        if let Some(input) = &self.stdin {
-            use std::io::Write;
-            let mut stdin = child.stdin.take().expect("failed to open stdin");
-            stdin
-                .write_all(input.as_bytes())
-                .expect("failed to write test stdin");
-        }
-
-        let output = child
-            .wait_with_output()
-            .expect("failed to wait for tractor process");
-
-        let stdout = normalize_text(&String::from_utf8(output.stdout).expect("stdout was not utf-8"));
-        let stderr = normalize_text(&String::from_utf8(output.stderr).expect("stderr was not utf-8"));
-        let mut result = RunResult {
-            status: output.status.code().unwrap_or(-1),
-            combined: combine_streams(&stdout, &stderr),
-            stdout,
-            stderr,
-            cwd,
-            _temp_dir: temp_dir,
-        };
-
-        if let Some(replacement) = &self.temp_prefix_replacement {
-            result.stdout = replace_path_prefix(&result.stdout, &result.cwd, replacement);
-            result.stderr = replace_path_prefix(&result.stderr, &result.cwd, replacement);
-            result.combined = replace_path_prefix(&result.combined, &result.cwd, replacement);
-        }
-
-        if let Some(replacement) = &self.fixture_prefix_replacement {
-            if let Some(fixture) = &fixture {
-                let root = fixture_dir(fixture);
-                result.stdout = replace_path_prefix(&result.stdout, &root, replacement);
-                result.stderr = replace_path_prefix(&result.stderr, &root, replacement);
-                result.combined = replace_path_prefix(&result.combined, &root, replacement);
-            }
-        }
-
-        for (from, to) in &self.replacements {
-            result.stdout = result.stdout.replace(from, to);
-            result.stderr = result.stderr.replace(from, to);
-            result.combined = result.combined.replace(from, to);
-        }
+        let context = prepare_execution(&setup);
+        let mut result = run_invocation(&command, &context.cwd);
+        normalize_result(&mut result, &context, &setup);
 
         if assert_expectations {
-            assert_status(self.status, result.status);
-
-            for output in &self.outputs {
-                let actual = match output.kind {
-                    OutputKind::Stdout => &result.stdout,
-                    OutputKind::Stderr => &result.stderr,
-                    OutputKind::Combined => &result.combined,
-                };
-                let expected = load_expected(&output.expected);
-                assert_eq!(expected, actual.as_str(), "unexpected {:?} output", output.kind);
-            }
-
-            for file in &self.files {
-                let actual = normalize_text(
-                    &fs::read_to_string(result.cwd.join(&file.relative))
-                        .unwrap_or_else(|_| panic!("failed to read {}", file.relative)),
-                );
-                let expected = load_expected(&file.expected);
-                assert_eq!(expected, actual, "unexpected file contents for {}", file.relative);
+            assert_default_exit(&assertions, result.status);
+            for assertion in &assertions {
+                evaluate_assertion(assertion, &command, &context, &result);
             }
         }
 
+        result._temp_dir = context.temp_dir;
         result
     }
 }
 
-pub fn case(args: impl IntoIterator<Item = impl Into<String>>) -> CliTest {
-    CliTest::new(args)
+pub fn command(args: impl IntoIterator<Item = impl Into<String>>) -> TestCase {
+    TestCase::new(TractorInvocation::new(args))
 }
 
-pub fn expect(file: impl Into<String>, xpath: impl Into<String>, expected: impl Into<String>) -> CliTest {
-    CliTest::new(["test"])
-        .arg(file.into())
-        .arg("-x")
-        .arg(xpath.into())
-        .expect(expected.into())
+pub fn query_command(file: impl Into<String>, xpath: impl Into<String>) -> TestCase {
+    let file = file.into();
+    let xpath = xpath.into();
+    TestCase::new(
+        TractorInvocation::new(["query"])
+            .arg(file)
+            .arg("-x")
+            .arg(xpath),
+    )
 }
 
-pub fn inline(lang: impl Into<String>, source: impl Into<String>, xpath: impl Into<String>) -> CliTest {
-    CliTest::new(["test"])
-        .arg("-s")
-        .arg(source.into())
-        .arg("-l")
-        .arg(lang.into())
-        .arg("-x")
-        .arg(xpath.into())
+pub fn inline_command(
+    lang: impl Into<String>,
+    source: impl Into<String>,
+    xpath: impl Into<String>,
+) -> TestCase {
+    let lang = lang.into();
+    let source = source.into();
+    let xpath = xpath.into();
+    TestCase::new(
+        TractorInvocation::new(["query"])
+            .arg("-s")
+            .arg(source)
+            .arg("-l")
+            .arg(lang)
+            .arg("-x")
+            .arg(xpath),
+    )
 }
 
-pub fn query(file: impl Into<String>, xpath: impl Into<String>) -> CliTest {
-    CliTest::new([file.into()])
-        .arg("-x")
-        .arg(xpath.into())
+fn prepare_execution(setup: &HarnessSetup) -> ExecutionContext {
+    let fixture = setup.fixture.clone();
+    let fixture_root = fixture.as_deref().map(fixture_dir);
+    let (cwd, temp_dir) = if setup.temp_fixture {
+        let source = fixture_root
+            .as_ref()
+            .expect("temp_fixture requires an attached fixture directory");
+        let temp_dir = TempDir::new().expect("failed to create temp fixture directory");
+        copy_dir_all(source, temp_dir.path());
+        (temp_dir.path().to_path_buf(), Some(temp_dir))
+    } else {
+        (fixture_root.unwrap_or_else(repo_root), None)
+    };
+
+    for file in &setup.seed_files {
+        let path = cwd.join(&file.relative);
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).expect("failed to create seed file parent directory");
+        }
+        fs::write(&path, &file.contents).expect("failed to write seed file");
+    }
+
+    ExecutionContext {
+        cwd,
+        fixture,
+        temp_dir,
+    }
+}
+
+fn run_invocation(invocation: &TractorInvocation, cwd: &Path) -> RunResult {
+    let mut command = Command::new(binary_path());
+    command.current_dir(cwd);
+    command.stdin(if invocation.stdin.is_some() {
+        Stdio::piped()
+    } else {
+        Stdio::null()
+    });
+    command.stdout(Stdio::piped());
+    command.stderr(Stdio::piped());
+
+    for arg in &invocation.args {
+        command.arg(resolve_arg(arg, cwd));
+    }
+    if invocation.no_color {
+        command.arg("--no-color");
+    }
+
+    let mut child = command.spawn().expect("failed to launch tractor binary");
+    if let Some(input) = &invocation.stdin {
+        use std::io::Write;
+        let mut stdin = child.stdin.take().expect("failed to open stdin");
+        stdin
+            .write_all(input.as_bytes())
+            .expect("failed to write test stdin");
+    }
+
+    let output = child
+        .wait_with_output()
+        .expect("failed to wait for tractor process");
+
+    let stdout = normalize_text(&String::from_utf8(output.stdout).expect("stdout was not utf-8"));
+    let stderr = normalize_text(&String::from_utf8(output.stderr).expect("stderr was not utf-8"));
+
+    RunResult {
+        status: output.status.code().unwrap_or(-1),
+        combined: combine_streams(&stdout, &stderr),
+        stdout,
+        stderr,
+        cwd: cwd.to_path_buf(),
+        _temp_dir: None,
+    }
+}
+
+fn normalize_result(result: &mut RunResult, context: &ExecutionContext, setup: &HarnessSetup) {
+    if let Some(replacement) = &setup.temp_prefix_replacement {
+        result.stdout = replace_path_prefix(&result.stdout, &result.cwd, replacement);
+        result.stderr = replace_path_prefix(&result.stderr, &result.cwd, replacement);
+        result.combined = replace_path_prefix(&result.combined, &result.cwd, replacement);
+    }
+
+    if let Some(replacement) = &setup.fixture_prefix_replacement {
+        if let Some(fixture) = &context.fixture {
+            let root = fixture_dir(fixture);
+            result.stdout = replace_path_prefix(&result.stdout, &root, replacement);
+            result.stderr = replace_path_prefix(&result.stderr, &root, replacement);
+            result.combined = replace_path_prefix(&result.combined, &root, replacement);
+        }
+    }
+
+    for (from, to) in &setup.replacements {
+        result.stdout = result.stdout.replace(from, to);
+        result.stderr = result.stderr.replace(from, to);
+        result.combined = result.combined.replace(from, to);
+    }
+}
+
+fn assert_default_exit(assertions: &[Assertion], actual: i32) {
+    if assertions
+        .iter()
+        .any(|assertion| matches!(assertion, Assertion::Exit(_)))
+    {
+        return;
+    }
+    assert_eq!(0, actual, "expected success exit code");
+}
+
+fn evaluate_assertion(
+    assertion: &Assertion,
+    command: &TractorInvocation,
+    context: &ExecutionContext,
+    result: &RunResult,
+) {
+    match assertion {
+        Assertion::Exit(expected) => {
+            assert_eq!(*expected, result.status, "unexpected exit code");
+        }
+        Assertion::Count(expected) => {
+            let actual = observe_match_count(command, &context.cwd);
+            match expected {
+                CountExpectation::Exact(expected) => {
+                    assert_eq!(*expected, actual, "unexpected match count");
+                }
+                CountExpectation::Some => {
+                    assert!(actual > 0, "expected at least one match");
+                }
+                CountExpectation::None => {
+                    assert_eq!(0, actual, "expected no matches");
+                }
+            }
+        }
+        Assertion::Stdout(expected) => {
+            assert_eq!(
+                load_expected(expected),
+                result.stdout,
+                "unexpected stdout output"
+            );
+        }
+        Assertion::Combined(expected) => {
+            assert_eq!(
+                load_expected(expected),
+                result.combined,
+                "unexpected combined output"
+            );
+        }
+        Assertion::FileEq { relative, expected } => {
+            let actual = normalize_text(
+                &fs::read_to_string(result.cwd.join(relative))
+                    .unwrap_or_else(|_| panic!("failed to read {relative}")),
+            );
+            assert_eq!(
+                load_expected(expected),
+                actual,
+                "unexpected file contents for {relative}"
+            );
+        }
+        Assertion::FileContains { relative, needle } => {
+            let actual = normalize_text(
+                &fs::read_to_string(result.cwd.join(relative))
+                    .unwrap_or_else(|_| panic!("failed to read {relative}")),
+            );
+            assert!(
+                actual.contains(needle),
+                "expected {relative} to contain {needle:?}, got:\n{actual}"
+            );
+        }
+    }
+}
+
+fn observe_match_count(command: &TractorInvocation, cwd: &Path) -> usize {
+    let subcommand = command
+        .args
+        .first()
+        .and_then(|arg| match arg {
+            CommandArg::Literal(value) => Some(value.as_str()),
+            CommandArg::FixturePath { .. } => None,
+        })
+        .unwrap_or("query");
+
+    match subcommand {
+        "query" | "check" | "test" => {}
+        _ => panic!("count assertions are only supported for query/check/test commands"),
+    }
+
+    let observed = run_invocation(&command.with_count_view(), cwd);
+    observed
+        .stdout
+        .parse::<usize>()
+        .unwrap_or_else(|e| panic!("failed to parse count output {:?}: {e}", observed.stdout))
 }
 
 pub fn repo_root() -> PathBuf {
@@ -440,10 +663,10 @@ fn binary_path() -> OsString {
     })
 }
 
-fn resolve_arg(arg: &TestArg, cwd: &Path) -> OsString {
+fn resolve_arg(arg: &CommandArg, cwd: &Path) -> OsString {
     match arg {
-        TestArg::Literal(value) => value.into(),
-        TestArg::FixturePath { relative, absolute } => {
+        CommandArg::Literal(value) => value.into(),
+        CommandArg::FixturePath { relative, absolute } => {
             if *absolute {
                 cwd.join(relative).into_os_string()
             } else {
@@ -458,25 +681,16 @@ fn load_expected(expected: &ExpectedText) -> String {
         ExpectedText::Inline(value) => normalize_text(value),
         ExpectedText::Snapshot(path) => normalize_text(
             &fs::read_to_string(integration_root().join(path))
-                .unwrap_or_else(|_| panic!("failed to read snapshot {}", path)),
+                .unwrap_or_else(|_| panic!("failed to read snapshot {path}")),
         ),
     }
 }
 
-fn assert_status(expectation: StatusExpectation, actual: i32) {
-    match expectation {
-        StatusExpectation::Success => assert_eq!(0, actual, "expected success exit code"),
-        StatusExpectation::Exact(expected) => {
-            assert_eq!(expected, actual, "unexpected exit code")
-        }
-        StatusExpectation::Failure => {
-            assert!(actual != 0, "expected a non-zero exit code, got {actual}")
-        }
-    }
-}
-
 fn normalize_text(value: &str) -> String {
-    value.replace("\r\n", "\n").trim_end_matches('\n').to_string()
+    value
+        .replace("\r\n", "\n")
+        .trim_end_matches('\n')
+        .to_string()
 }
 
 fn combine_streams(stdout: &str, stderr: &str) -> String {
@@ -525,7 +739,9 @@ fn copy_dir_all(source: &Path, destination: &Path) {
 
     for entry in fs::read_dir(source).expect("failed to read source directory") {
         let entry = entry.expect("failed to read directory entry");
-        let file_type = entry.file_type().expect("failed to inspect directory entry");
+        let file_type = entry
+            .file_type()
+            .expect("failed to inspect directory entry");
         let destination_path = destination.join(entry.file_name());
         if file_type.is_dir() {
             copy_dir_all(&entry.path(), &destination_path);
@@ -535,17 +751,243 @@ fn copy_dir_all(source: &Path, destination: &Path) {
     }
 }
 
-macro_rules! cli_suite {
-    ($module:ident in $fixture:literal { $($name:ident => $case:expr;)+ }) => {
-        mod $module {
-            use super::*;
+fn parse_dsl_words(input: &str) -> Vec<String> {
+    let mut words = Vec::new();
+    let chars: Vec<char> = input.chars().collect();
+    let mut index = 0;
 
-            $(
-                #[test]
-                fn $name() {
-                    $case.in_fixture($fixture).run();
-                }
-            )+
+    while index < chars.len() {
+        while index < chars.len() && chars[index].is_whitespace() {
+            index += 1;
         }
+        if index >= chars.len() {
+            break;
+        }
+
+        if chars[index] == '"' {
+            index += 1;
+            let mut value = String::new();
+            while index < chars.len() {
+                match chars[index] {
+                    '"' => {
+                        index += 1;
+                        break;
+                    }
+                    '\\' => {
+                        index += 1;
+                        let escaped = chars.get(index).copied().unwrap_or_else(|| {
+                            panic!("unterminated escape in DSL string: {input}")
+                        });
+                        value.push(match escaped {
+                            '\\' => '\\',
+                            '"' => '"',
+                            'n' => '\n',
+                            'r' => '\r',
+                            't' => '\t',
+                            '0' => '\0',
+                            other => panic!("unsupported escape \\{other} in DSL string: {input}"),
+                        });
+                        index += 1;
+                    }
+                    ch => {
+                        value.push(ch);
+                        index += 1;
+                    }
+                }
+            }
+            words.push(value);
+            continue;
+        }
+
+        let start = index;
+        while index < chars.len() && !chars[index].is_whitespace() {
+            index += 1;
+        }
+        words.push(chars[start..index].iter().collect());
+    }
+
+    words
+}
+
+// ---------------------------------------------------------------------------
+// Layer 1: suite structure and lowering macros
+// ---------------------------------------------------------------------------
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! tractor_long_flag {
+    ($name:ident) => {
+        concat!("--", stringify!($name))
+    };
+    ($first:ident, $second:ident) => {
+        concat!("--", stringify!($first), "-", stringify!($second))
+    };
+    ($first:ident, $second:ident, $third:ident) => {
+        concat!(
+            "--",
+            stringify!($first),
+            "-",
+            stringify!($second),
+            "-",
+            stringify!($third)
+        )
+    };
+}
+
+/// Capture a CLI-shaped Tractor command into a `TractorInvocation`.
+#[doc(hidden)]
+#[macro_export]
+macro_rules! tractor_invocation {
+    ($($command:tt)+) => {
+        $crate::support::TractorInvocation::from_dsl(::core::stringify!($($command)+))
+    };
+}
+
+/// Parse one or more harness assertions.
+#[doc(hidden)]
+#[macro_export]
+macro_rules! cli_assertions {
+    ({ $($assertions:tt)* }) => {{
+        let mut assertions = ::std::vec::Vec::new();
+        $crate::cli_assertions!(@push assertions; $($assertions)*);
+        assertions
+    }};
+    (@push $assertions:ident;) => {};
+    (@push $assertions:ident; exit $code:literal; $($rest:tt)*) => {{
+        $assertions.push($crate::support::Assertion::exit($code));
+        $crate::cli_assertions!(@push $assertions; $($rest)*);
+    }};
+    (@push $assertions:ident; count $count:literal; $($rest:tt)*) => {{
+        $assertions.push($crate::support::Assertion::count($count));
+        $crate::cli_assertions!(@push $assertions; $($rest)*);
+    }};
+    (@push $assertions:ident; count some; $($rest:tt)*) => {{
+        $assertions.push($crate::support::Assertion::count_some());
+        $crate::cli_assertions!(@push $assertions; $($rest)*);
+    }};
+    (@push $assertions:ident; count none; $($rest:tt)*) => {{
+        $assertions.push($crate::support::Assertion::count_none());
+        $crate::cli_assertions!(@push $assertions; $($rest)*);
+    }};
+    (@push $assertions:ident; stdout $expected:literal; $($rest:tt)*) => {{
+        $assertions.push($crate::support::Assertion::stdout($expected));
+        $crate::cli_assertions!(@push $assertions; $($rest)*);
+    }};
+    (@push $assertions:ident; stdout_snapshot $snapshot:literal; $($rest:tt)*) => {{
+        $assertions.push($crate::support::Assertion::stdout_snapshot($snapshot));
+        $crate::cli_assertions!(@push $assertions; $($rest)*);
+    }};
+    (@push $assertions:ident; combined $expected:literal; $($rest:tt)*) => {{
+        $assertions.push($crate::support::Assertion::combined($expected));
+        $crate::cli_assertions!(@push $assertions; $($rest)*);
+    }};
+    (@push $assertions:ident; combined_snapshot $snapshot:literal; $($rest:tt)*) => {{
+        $assertions.push($crate::support::Assertion::combined_snapshot($snapshot));
+        $crate::cli_assertions!(@push $assertions; $($rest)*);
+    }};
+    (@push $assertions:ident; file_eq $path:literal $expected:literal; $($rest:tt)*) => {{
+        $assertions.push($crate::support::Assertion::file_eq($path, $expected));
+        $crate::cli_assertions!(@push $assertions; $($rest)*);
+    }};
+    (@push $assertions:ident; file_snapshot $path:literal $snapshot:literal; $($rest:tt)*) => {{
+        $assertions.push($crate::support::Assertion::file_snapshot($path, $snapshot));
+        $crate::cli_assertions!(@push $assertions; $($rest)*);
+    }};
+    (@push $assertions:ident; file_contains $path:literal $needle:literal; $($rest:tt)*) => {{
+        $assertions.push($crate::support::Assertion::file_contains($path, $needle));
+        $crate::cli_assertions!(@push $assertions; $($rest)*);
+    }};
+}
+
+/// Lower a DSL case into `TestCase { command, assertions }`.
+#[doc(hidden)]
+#[macro_export]
+macro_rules! cli_case {
+    (tractor $($rest:tt)*) => {
+        $crate::cli_case!(@one_liner_command [] $($rest)*)
+    };
+    (@one_liner_command [$($command:tt)*] => $assertion:ident $($rest:tt)*) => {
+        $crate::cli_case!(@one_liner_assert [$($command)*] $assertion [] $($rest)*)
+    };
+    (@one_liner_command [$($command:tt)*] $next:tt $($rest:tt)*) => {
+        $crate::cli_case!(@one_liner_command [$($command)* $next] $($rest)*)
+    };
+    (@one_liner_assert [$($command:tt)*] $assertion:ident [$($args:tt)*]) => {
+        $crate::cli_case!({
+            tractor $($command)*;
+            expect => { $assertion $($args)*; }
+        })
+    };
+    (@one_liner_assert [$($command:tt)*] $assertion:ident [$($args:tt)*] $next:tt $($rest:tt)*) => {
+        $crate::cli_case!(@one_liner_assert [$($command)*] $assertion [$($args)* $next] $($rest)*)
+    };
+    ({
+        tractor $($rest:tt)*
+    }) => {
+        $crate::cli_case!(@block_command [] $($rest)*)
+    };
+    (@block_command [$($command:tt)*] ; expect => { $($assertions:tt)* } ) => {{
+        $crate::support::TestCase::new($crate::tractor_invocation!($($command)+))
+            .with_assertions($crate::cli_assertions!({ $($assertions)* }))
+    }};
+    (@block_command [$($command:tt)*] ; expect => $assertion:ident $($rest:tt)*) => {
+        $crate::cli_case!(@block_assert [$($command)*] $assertion [] $($rest)*)
+    };
+    (@block_command [$($command:tt)*] $next:tt $($rest:tt)*) => {
+        $crate::cli_case!(@block_command [$($command)* $next] $($rest)*)
+    };
+    (@block_assert [$($command:tt)*] $assertion:ident [$($args:tt)*] ; ) => {
+        $crate::cli_case!({
+            tractor $($command)*;
+            expect => { $assertion $($args)*; }
+        })
+    };
+    (@block_assert [$($command:tt)*] $assertion:ident [$($args:tt)*] $next:tt $($rest:tt)*) => {
+        $crate::cli_case!(@block_assert [$($command)*] $assertion [$($args)* $next] $($rest)*)
+    };
+}
+
+/// Define a fixture-backed module of CLI tests.
+macro_rules! cli_suite {
+    ($module:ident in $fixture:literal { $($cases:tt)* }) => {
+        mod $module {
+            cli_suite!(@cases $fixture; $($cases)*);
+        }
+    };
+    (@cases $fixture:literal;) => {};
+    (@cases $fixture:literal; ; $($rest:tt)*) => {
+        cli_suite!(@cases $fixture; $($rest)*);
+    };
+    (@cases $fixture:literal; $name:ident => tractor $($rest:tt)*) => {
+        cli_suite!(@one_liner_command $fixture $name [] $($rest)*);
+    };
+    (@cases $fixture:literal; $name:ident => $body:block $($rest:tt)*) => {
+        #[test]
+        fn $name() {
+            $crate::cli_case!($body)
+                .in_fixture($fixture)
+                .run();
+        }
+
+        cli_suite!(@cases $fixture; $($rest)*);
+    };
+    (@one_liner_command $fixture:literal $name:ident [$($command:tt)*] => $assertion:ident $($rest:tt)*) => {
+        cli_suite!(@one_liner_assert $fixture $name [$($command)*] $assertion [] $($rest)*);
+    };
+    (@one_liner_command $fixture:literal $name:ident [$($command:tt)*] $next:tt $($rest:tt)*) => {
+        cli_suite!(@one_liner_command $fixture $name [$($command)* $next] $($rest)*);
+    };
+    (@one_liner_assert $fixture:literal $name:ident [$($command:tt)*] $assertion:ident [$($args:tt)*] ; $($rest:tt)*) => {
+        #[test]
+        fn $name() {
+            $crate::cli_case!(tractor $($command)* => $assertion $($args)*)
+                .in_fixture($fixture)
+                .run();
+        }
+
+        cli_suite!(@cases $fixture; $($rest)*);
+    };
+    (@one_liner_assert $fixture:literal $name:ident [$($command:tt)*] $assertion:ident [$($args:tt)*] $next:tt $($rest:tt)*) => {
+        cli_suite!(@one_liner_assert $fixture $name [$($command)*] $assertion [$($args)* $next] $($rest)*);
     };
 }

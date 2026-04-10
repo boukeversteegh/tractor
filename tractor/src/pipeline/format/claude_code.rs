@@ -1,7 +1,7 @@
-use serde::Serialize;
-use tractor_core::{report::Report, RenderOptions};
 use super::gcc::render_gcc;
 use super::options::HookType;
+use serde::Serialize;
+use tractor_core::{report::Report, RenderOptions};
 
 // ---------------------------------------------------------------------------
 // Claude Code hook output structures
@@ -81,7 +81,8 @@ pub fn render_claude_code(
             serde_json::to_string(&BlockResponse {
                 decision: "block",
                 reason: inner,
-            }).expect("BlockResponse serialization cannot fail")
+            })
+            .expect("BlockResponse serialization cannot fail")
         }
         HookType::PreToolUse => {
             if success || inner.is_empty() {
@@ -93,7 +94,8 @@ pub fn render_claude_code(
                     permission_decision: "deny",
                     permission_decision_reason: inner,
                 },
-            }).expect("PreToolUseResponse serialization cannot fail")
+            })
+            .expect("PreToolUseResponse serialization cannot fail")
         }
         HookType::Context => {
             if inner.is_empty() {
@@ -104,7 +106,8 @@ pub fn render_claude_code(
                     hook_event_name: "PostToolUse",
                     additional_context: inner,
                 },
-            }).expect("ContextResponse serialization cannot fail")
+            })
+            .expect("ContextResponse serialization cannot fail")
         }
     }
 }

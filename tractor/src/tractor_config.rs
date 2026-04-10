@@ -27,16 +27,16 @@
 //! Both forms produce the same `Vec<Operation>`. When both are present,
 //! root-level keys are expanded first, then the operations list is appended.
 
-use std::path::Path;
 use serde::Deserialize;
+use std::path::Path;
 use tractor_core::normalized_xpath::NormalizedXpath;
 use tractor_core::report::Severity;
 use tractor_core::rule::Rule;
 use tractor_core::tree_mode::TreeMode;
 
 use crate::executor::{
-    CheckOperation, Operation, QueryExpr, QueryOperation,
-    SetMapping, SetOperation, TestAssertion, TestOperation,
+    CheckOperation, Operation, QueryExpr, QueryOperation, SetMapping, SetOperation, TestAssertion,
+    TestOperation,
 };
 
 // ---------------------------------------------------------------------------
@@ -259,7 +259,10 @@ fn parse_severity(s: &str) -> Result<Severity, String> {
     match s {
         "error" => Ok(Severity::Error),
         "warning" => Ok(Severity::Warning),
-        other => Err(format!("invalid severity '{}': use 'error' or 'warning'", other)),
+        other => Err(format!(
+            "invalid severity '{}': use 'error' or 'warning'",
+            other
+        )),
     }
 }
 
@@ -285,43 +288,62 @@ struct RootScope {
     diff_lines: Option<String>,
 }
 
-fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<Operation, Box<dyn std::error::Error>> {
-    let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
+fn convert_check(
+    config: CheckConfig,
+    scope: &RootScope,
+) -> Result<Operation, Box<dyn std::error::Error>> {
+    let tree_mode = config
+        .tree_mode
+        .as_deref()
+        .map(parse_tree_mode)
+        .transpose()?;
 
-    let rules: Vec<Rule> = config.rules.into_iter().map(|r| {
-        let severity = parse_severity(&r.severity)?;
-        let rule_tree_mode = r.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
-        let mut rule = Rule::new(r.id, r.xpath).with_severity(severity);
-        if let Some(reason) = r.reason {
-            rule = rule.with_reason(reason);
-        }
-        if let Some(message) = r.message {
-            rule = rule.with_message(message);
-        }
-        if !r.include.is_empty() {
-            rule = rule.with_include(r.include);
-        }
-        if !r.exclude.is_empty() {
-            rule = rule.with_exclude(r.exclude);
-        }
-        if let Some(lang) = r.language {
-            rule = rule.with_language(lang);
-        }
-        if let Some(tm) = rule_tree_mode {
-            rule = rule.with_tree_mode(tm);
-        }
-        let valid_examples: Vec<String> = r.expect.iter().filter_map(|e| e.valid.clone()).collect();
-        let invalid_examples: Vec<String> = r.expect.iter().filter_map(|e| e.invalid.clone()).collect();
-        if !valid_examples.is_empty() {
-            rule = rule.with_valid_examples(valid_examples);
-        }
-        if !invalid_examples.is_empty() {
-            rule = rule.with_invalid_examples(invalid_examples);
-        }
-        Ok::<Rule, Box<dyn std::error::Error>>(rule)
-    }).collect::<Result<_, _>>()?;
+    let rules: Vec<Rule> = config
+        .rules
+        .into_iter()
+        .map(|r| {
+            let severity = parse_severity(&r.severity)?;
+            let rule_tree_mode = r.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
+            let mut rule = Rule::new(r.id, r.xpath).with_severity(severity);
+            if let Some(reason) = r.reason {
+                rule = rule.with_reason(reason);
+            }
+            if let Some(message) = r.message {
+                rule = rule.with_message(message);
+            }
+            if !r.include.is_empty() {
+                rule = rule.with_include(r.include);
+            }
+            if !r.exclude.is_empty() {
+                rule = rule.with_exclude(r.exclude);
+            }
+            if let Some(lang) = r.language {
+                rule = rule.with_language(lang);
+            }
+            if let Some(tm) = rule_tree_mode {
+                rule = rule.with_tree_mode(tm);
+            }
+            let valid_examples: Vec<String> =
+                r.expect.iter().filter_map(|e| e.valid.clone()).collect();
+            let invalid_examples: Vec<String> =
+                r.expect.iter().filter_map(|e| e.invalid.clone()).collect();
+            if !valid_examples.is_empty() {
+                rule = rule.with_valid_examples(valid_examples);
+            }
+            if !invalid_examples.is_empty() {
+                rule = rule.with_invalid_examples(invalid_examples);
+            }
+            Ok::<Rule, Box<dyn std::error::Error>>(rule)
+        })
+        .collect::<Result<_, _>>()?;
 
-    let (files, exclude, diff_files, diff_lines) = merge_scope(scope, config.files, config.exclude, config.diff_files, config.diff_lines);
+    let (files, exclude, diff_files, diff_lines) = merge_scope(
+        scope,
+        config.files,
+        config.exclude,
+        config.diff_files,
+        config.diff_lines,
+    );
 
     Ok(Operation::Check(CheckOperation {
         files,
@@ -339,20 +361,31 @@ fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<Operation, Bo
     }))
 }
 
-fn convert_set(config: SetConfig, scope: &RootScope) -> Result<Operation, Box<dyn std::error::Error>> {
+fn convert_set(
+    config: SetConfig,
+    scope: &RootScope,
+) -> Result<Operation, Box<dyn std::error::Error>> {
     // Validate tree_mode if provided (even though set doesn't use it yet)
     if let Some(ref tm) = config.tree_mode {
         parse_tree_mode(tm)?;
     }
 
-    let mappings = config.mappings.into_iter().map(|m| {
-        SetMapping {
+    let mappings = config
+        .mappings
+        .into_iter()
+        .map(|m| SetMapping {
             xpath: m.xpath,
             value: m.value,
-        }
-    }).collect();
+        })
+        .collect();
 
-    let (files, exclude, diff_files, diff_lines) = merge_scope(scope, config.files, config.exclude, config.diff_files, config.diff_lines);
+    let (files, exclude, diff_files, diff_lines) = merge_scope(
+        scope,
+        config.files,
+        config.exclude,
+        config.diff_files,
+        config.diff_lines,
+    );
 
     Ok(Operation::Set(SetOperation {
         files,
@@ -365,14 +398,29 @@ fn convert_set(config: SetConfig, scope: &RootScope) -> Result<Operation, Box<dy
     }))
 }
 
-fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<Operation, Box<dyn std::error::Error>> {
-    let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
+fn convert_query(
+    config: QueryConfig,
+    scope: &RootScope,
+) -> Result<Operation, Box<dyn std::error::Error>> {
+    let tree_mode = config
+        .tree_mode
+        .as_deref()
+        .map(parse_tree_mode)
+        .transpose()?;
 
-    let queries = config.queries.into_iter().map(|q| {
-        QueryExpr { xpath: q.xpath }
-    }).collect();
+    let queries = config
+        .queries
+        .into_iter()
+        .map(|q| QueryExpr { xpath: q.xpath })
+        .collect();
 
-    let (files, exclude, diff_files, diff_lines) = merge_scope(scope, config.files, config.exclude, config.diff_files, config.diff_lines);
+    let (files, exclude, diff_files, diff_lines) = merge_scope(
+        scope,
+        config.files,
+        config.exclude,
+        config.diff_files,
+        config.diff_lines,
+    );
 
     Ok(Operation::Query(QueryOperation {
         files,
@@ -389,17 +437,32 @@ fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<Operation, Bo
     }))
 }
 
-fn convert_test(config: TestConfig, scope: &RootScope) -> Result<Operation, Box<dyn std::error::Error>> {
-    let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
+fn convert_test(
+    config: TestConfig,
+    scope: &RootScope,
+) -> Result<Operation, Box<dyn std::error::Error>> {
+    let tree_mode = config
+        .tree_mode
+        .as_deref()
+        .map(parse_tree_mode)
+        .transpose()?;
 
-    let assertions = config.assertions.into_iter().map(|a| {
-        TestAssertion {
+    let assertions = config
+        .assertions
+        .into_iter()
+        .map(|a| TestAssertion {
             xpath: a.xpath,
             expect: a.expect,
-        }
-    }).collect();
+        })
+        .collect();
 
-    let (files, exclude, diff_files, diff_lines) = merge_scope(scope, config.files, config.exclude, config.diff_files, config.diff_lines);
+    let (files, exclude, diff_files, diff_lines) = merge_scope(
+        scope,
+        config.files,
+        config.exclude,
+        config.diff_files,
+        config.diff_lines,
+    );
 
     Ok(Operation::Test(TestOperation {
         files,
@@ -518,22 +581,23 @@ pub fn load_tractor_config(path: &Path) -> Result<LoadedConfig, Box<dyn std::err
         Some(ext) => Err(format!(
             "unsupported config file extension '.{}': use .yaml, .yml, or .toml",
             ext
-        ).into()),
+        )
+        .into()),
         None => Err("config file has no extension: use .yaml, .yml, or .toml".into()),
     }
 }
 
 /// Parse a tractor config from a YAML string.
 pub fn parse_config_yaml(content: &str) -> Result<LoadedConfig, Box<dyn std::error::Error>> {
-    let config: ConfigFile = serde_yaml::from_str(content)
-        .map_err(|e| format!("invalid tractor config YAML: {}", e))?;
+    let config: ConfigFile =
+        serde_yaml::from_str(content).map_err(|e| format!("invalid tractor config YAML: {}", e))?;
     config_to_operations(config)
 }
 
 /// Parse a tractor config from a TOML string.
 pub fn parse_config_toml(content: &str) -> Result<LoadedConfig, Box<dyn std::error::Error>> {
-    let config: ConfigFile = toml::from_str(content)
-        .map_err(|e| format!("invalid tractor config TOML: {}", e))?;
+    let config: ConfigFile =
+        toml::from_str(content).map_err(|e| format!("invalid tractor config TOML: {}", e))?;
     config_to_operations(config)
 }
 
@@ -849,7 +913,10 @@ check:
         let loaded = parse_config_yaml(yaml).unwrap();
         assert_eq!(loaded.root_files, Some(vec!["src/**/*.rs".to_string()]));
         if let Operation::Check(c) = &loaded.operations[0] {
-            assert!(c.files.is_empty(), "operation should have no files when not specified");
+            assert!(
+                c.files.is_empty(),
+                "operation should have no files when not specified"
+            );
         } else {
             panic!("expected Check");
         }
@@ -997,7 +1064,10 @@ check:
       xpath: "//comment"
 "#;
         let loaded = parse_config_yaml(yaml).unwrap();
-        assert_eq!(loaded.root_files, Some(vec!["src/**/*.rs".to_string(), "lib/**/*.rs".to_string()]));
+        assert_eq!(
+            loaded.root_files,
+            Some(vec!["src/**/*.rs".to_string(), "lib/**/*.rs".to_string()])
+        );
     }
 
     #[test]

@@ -21,9 +21,9 @@
 use crate::parser::{parse_string_to_documents, XeeParseResult};
 use crate::render::{self, RenderOptions};
 use crate::tree_mode::TreeMode;
+use crate::xot_transform::helpers::*;
 use crate::xpath::xot_node_to_xml_node;
 pub use crate::xpath::Match;
-use crate::xot_transform::helpers::*;
 use xot::Xot;
 
 /// Result of an upsert operation.
@@ -102,7 +102,8 @@ pub fn update_only(
     .map_err(|e| UpsertError::Parse(e.to_string()))?;
 
     // Query with XPath
-    let existing = result.query(xpath)
+    let existing = result
+        .query(xpath)
         .map_err(|e| UpsertError::Query(e.to_string()))?;
 
     if existing.is_empty() {
@@ -183,7 +184,8 @@ pub fn upsert_typed(
     .map_err(|e| UpsertError::Parse(e.to_string()))?;
 
     // Query with XPath to determine update vs insert
-    let existing = result.query(xpath)
+    let existing = result
+        .query(xpath)
         .map_err(|e| UpsertError::Query(e.to_string()))?;
 
     if !existing.is_empty() {
@@ -212,7 +214,9 @@ fn update_existing(
     matches: &[Match],
     mut result: XeeParseResult,
 ) -> Result<UpsertResult, UpsertError> {
-    let doc_node = result.documents.document_node(result.doc_handle)
+    let doc_node = result
+        .documents
+        .document_node(result.doc_handle)
         .ok_or_else(|| UpsertError::Parse("no document node".into()))?;
 
     let file_node = find_file_node(result.documents.xot(), doc_node)
@@ -227,8 +231,15 @@ fn update_existing(
         let orig_end = line_col_to_byte_offset(source, matched.end_line, matched.end_column)
             .ok_or_else(|| UpsertError::NoInsertionPoint("end position out of bounds".into()))?;
 
-        let target = find_node_by_span(result.documents.xot(), file_node, matched.line, matched.column)
-            .ok_or_else(|| UpsertError::NoInsertionPoint("could not locate matched node in tree".into()))?;
+        let target = find_node_by_span(
+            result.documents.xot(),
+            file_node,
+            matched.line,
+            matched.column,
+        )
+        .ok_or_else(|| {
+            UpsertError::NoInsertionPoint("could not locate matched node in tree".into())
+        })?;
 
         replace_text_content(result.documents.xot_mut(), target, value)?;
 
@@ -239,8 +250,9 @@ fn update_existing(
     // Step 2: Re-render once with span tracking
     let xml_node = xot_node_to_xml_node(result.documents.xot(), file_node);
     let render_opts = detect_render_options(source);
-    let (rendered, span_map) = render::render_with_spans(&xml_node, lang, TreeMode::Data, &render_opts)
-        .map_err(|e| UpsertError::Render(e.to_string()))?;
+    let (rendered, span_map) =
+        render::render_with_spans(&xml_node, lang, TreeMode::Data, &render_opts)
+            .map_err(|e| UpsertError::Render(e.to_string()))?;
 
     // Step 3: Sort splices by position descending and apply from end to start
     // to preserve byte offsets
@@ -253,10 +265,12 @@ fn update_existing(
     let mut applied = 0;
 
     for (orig_start, orig_end, span_key) in &splice_info {
-        let (new_start, new_end) = span_map.get(span_key)
-            .ok_or_else(|| UpsertError::NoInsertionPoint(
-                format!("node at {}:{} not found in rendered output span map", span_key.0, span_key.1),
-            ))?;
+        let (new_start, new_end) = span_map.get(span_key).ok_or_else(|| {
+            UpsertError::NoInsertionPoint(format!(
+                "node at {}:{} not found in rendered output span map",
+                span_key.0, span_key.1
+            ))
+        })?;
 
         new_source.replace_range(*orig_start..*orig_end, &rendered[*new_start..*new_end]);
         applied += 1;
@@ -268,7 +282,11 @@ fn update_existing(
         inserted: false,
         matches_updated: count,
         matches: matches.to_vec(),
-        description: format!("updated {} existing value{}", count, if count == 1 { "" } else { "s" }),
+        description: format!(
+            "updated {} existing value{}",
+            count,
+            if count == 1 { "" } else { "s" }
+        ),
     })
 }
 
@@ -300,7 +318,9 @@ fn insert_new(
     // Step 1: Use the real XPath engine to find the deepest matching prefix.
     // Try progressively shorter prefixes (from N-1 segments down to 1) until
     // one matches. This honours predicates, axes, and any valid XPath.
-    let doc_node = result.documents.document_node(result.doc_handle)
+    let doc_node = result
+        .documents
+        .document_node(result.doc_handle)
         .ok_or_else(|| UpsertError::Parse("no document node".into()))?;
     let file_node = find_file_node(result.documents.xot(), doc_node)
         .ok_or_else(|| UpsertError::NoInsertionPoint("no File node found".into()))?;
@@ -312,13 +332,8 @@ fn insert_new(
 
     // Try prefixes from longest (all but last segment) to shortest (1 segment)
     for depth in (1..raw_segments.len()).rev() {
-        let prefix_xpath = format!(
-            "{}{}",
-            xpath_prefix,
-            raw_segments[..depth].join("/"),
-        );
-        let matches = result.query(&prefix_xpath)
-            .unwrap_or_default();
+        let prefix_xpath = format!("{}{}", xpath_prefix, raw_segments[..depth].join("/"),);
+        let matches = result.query(&prefix_xpath).unwrap_or_default();
 
         if let Some(matched) = matches.first() {
             // Found deepest matching prefix — locate the xot node
@@ -365,9 +380,7 @@ fn insert_new(
         (0, source.len())
     } else {
         get_node_byte_span(result.documents.xot(), ancestor_node, source)
-            .ok_or_else(|| UpsertError::NoInsertionPoint(
-                "splice node has no source span".into(),
-            ))?
+            .ok_or_else(|| UpsertError::NoInsertionPoint("splice node has no source span".into()))?
     };
 
     // Step 3: Mutate the tree — add missing children
@@ -377,8 +390,9 @@ fn insert_new(
     // Step 4: Re-render the full modified tree with span tracking
     let xml_node = xot_node_to_xml_node(result.documents.xot(), file_node);
     let render_opts = detect_render_options(source);
-    let (rendered, span_map) = render::render_with_spans(&xml_node, lang, TreeMode::Data, &render_opts)
-        .map_err(|e| UpsertError::Render(e.to_string()))?;
+    let (rendered, span_map) =
+        render::render_with_spans(&xml_node, lang, TreeMode::Data, &render_opts)
+            .map_err(|e| UpsertError::Render(e.to_string()))?;
 
     // Step 5: Determine the new splice content
     let new_content = if is_root_splice {
@@ -389,19 +403,25 @@ fn insert_new(
         let xot = result.documents.xot();
         let sl: u32 = get_attr(xot, ancestor_node, "line")
             .and_then(|v| v.parse().ok())
-            .ok_or_else(|| UpsertError::NoInsertionPoint(
-                "splice node has no line attribute for span lookup".into(),
-            ))?;
+            .ok_or_else(|| {
+                UpsertError::NoInsertionPoint(
+                    "splice node has no line attribute for span lookup".into(),
+                )
+            })?;
         let sc: u32 = get_attr(xot, ancestor_node, "column")
             .and_then(|v| v.parse().ok())
-            .ok_or_else(|| UpsertError::NoInsertionPoint(
-                "splice node has no column attribute for span lookup".into(),
-            ))?;
+            .ok_or_else(|| {
+                UpsertError::NoInsertionPoint(
+                    "splice node has no column attribute for span lookup".into(),
+                )
+            })?;
         let span_key = (sl, sc);
-        let (new_start, new_end) = span_map.get(&span_key)
-            .ok_or_else(|| UpsertError::NoInsertionPoint(
-                format!("ancestor node at {}:{} not found in rendered output span map", sl, sc),
-            ))?;
+        let (new_start, new_end) = span_map.get(&span_key).ok_or_else(|| {
+            UpsertError::NoInsertionPoint(format!(
+                "ancestor node at {}:{} not found in rendered output span map",
+                sl, sc
+            ))
+        })?;
         rendered[*new_start..*new_end].to_string()
     };
 
@@ -411,10 +431,7 @@ fn insert_new(
     new_source.push_str(&new_content);
     new_source.push_str(&source[orig_end..]);
 
-    let description = format!(
-        "inserted {}",
-        missing_keys.join("/"),
-    );
+    let description = format!("inserted {}", missing_keys.join("/"),);
 
     Ok(UpsertResult {
         source: new_source,
@@ -434,16 +451,20 @@ fn find_file_node(xot: &Xot, doc_node: xot::Node) -> Option<xot::Node> {
     let doc_el = xot.document_element(doc_node).ok()?;
     // doc_el is typically <Files>, find <File> inside
     if get_element_name(xot, doc_el).as_deref() == Some("Files") {
-        xot.children(doc_el).find(|&c| {
-            get_element_name(xot, c).as_deref() == Some("File")
-        })
+        xot.children(doc_el)
+            .find(|&c| get_element_name(xot, c).as_deref() == Some("File"))
     } else {
         Some(doc_el)
     }
 }
 
 /// Find a node in the xot tree by its start position.
-fn find_node_by_span(xot: &Xot, root: xot::Node, target_line: u32, target_col: u32) -> Option<xot::Node> {
+fn find_node_by_span(
+    xot: &Xot,
+    root: xot::Node,
+    target_line: u32,
+    target_col: u32,
+) -> Option<xot::Node> {
     // Check if this node matches
     let line: Option<u32> = get_attr(xot, root, "line").and_then(|v| v.parse().ok());
     let col: Option<u32> = get_attr(xot, root, "column").and_then(|v| v.parse().ok());
@@ -497,7 +518,8 @@ fn replace_text_content(xot: &mut Xot, node: xot::Node, new_text: &str) -> Resul
 fn descend_structural_wrappers(xot: &Xot, container: xot::Node) -> xot::Node {
     let mut current = container;
     loop {
-        let element_children: Vec<_> = xot.children(current)
+        let element_children: Vec<_> = xot
+            .children(current)
             .filter(|&c| xot.element(c).is_some())
             .collect();
         if element_children.len() == 1 {
@@ -542,7 +564,8 @@ fn add_nested_children(
             // the renderer auto-detect (null, number, boolean, string).
             if let Some(kind) = value_kind {
                 let kind_attr = xot.add_name("kind");
-                xot.attributes_mut(element).insert(kind_attr, kind.to_string());
+                xot.attributes_mut(element)
+                    .insert(kind_attr, kind.to_string());
             }
         }
 
@@ -590,7 +613,6 @@ fn xpath_to_key_path(xpath: &str) -> Result<(Vec<String>, Vec<String>), UpsertEr
     Ok((keys, raw))
 }
 
-
 // ---------------------------------------------------------------------------
 // Source utilities
 // ---------------------------------------------------------------------------
@@ -630,10 +652,15 @@ fn line_col_to_byte_offset(content: &str, line: u32, col: u32) -> Option<usize> 
 
 /// Detect render options from source (indentation style, newline style).
 fn detect_render_options(source: &str) -> RenderOptions {
-    let newline = if source.contains("\r\n") { "\r\n" } else { "\n" };
+    let newline = if source.contains("\r\n") {
+        "\r\n"
+    } else {
+        "\n"
+    };
 
     // Detect indent from first indented line
-    let indent = source.lines()
+    let indent = source
+        .lines()
         .find(|line| line.starts_with(' ') || line.starts_with('\t'))
         .map(|line| {
             let trimmed = line.trim_start();
@@ -756,7 +783,10 @@ mod tests {
     fn unsupported_language_error() {
         let result = upsert("{}", "brainfuck", "//x", "1", None);
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), UpsertError::UnsupportedLanguage(_)));
+        assert!(matches!(
+            result.unwrap_err(),
+            UpsertError::UnsupportedLanguage(_)
+        ));
     }
 
     // ---------------------------------------------------------------------------
@@ -808,8 +838,16 @@ mod tests {
         let source = "db:\n  host: localhost\n";
         let result = upsert(source, "yaml", "//db/port", "5432", None).unwrap();
         assert!(result.inserted, "source: {:?}", result.source);
-        assert!(result.source.contains("host: localhost"), "source: {:?}", result.source);
-        assert!(result.source.contains("port: 5432"), "source: {:?}", result.source);
+        assert!(
+            result.source.contains("host: localhost"),
+            "source: {:?}",
+            result.source
+        );
+        assert!(
+            result.source.contains("port: 5432"),
+            "source: {:?}",
+            result.source
+        );
     }
 
     #[test]
@@ -818,8 +856,16 @@ mod tests {
         let source = "user:\n  name: john\n";
         let result = upsert(source, "yaml", "//user[name='john']/age", "30", None).unwrap();
         assert!(result.inserted, "source: {:?}", result.source);
-        assert!(result.source.contains("name: john"), "source: {:?}", result.source);
-        assert!(result.source.contains("age: 30"), "source: {:?}", result.source);
+        assert!(
+            result.source.contains("name: john"),
+            "source: {:?}",
+            result.source
+        );
+        assert!(
+            result.source.contains("age: 30"),
+            "source: {:?}",
+            result.source
+        );
     }
 
     #[test]
@@ -827,7 +873,10 @@ mod tests {
         // Predicates on segments that need creation should error
         let source = "name: Alice\n";
         let result = upsert(source, "yaml", "//item[@type='x']/value", "42", None);
-        assert!(result.is_err(), "should reject predicate on to-be-created segment");
+        assert!(
+            result.is_err(),
+            "should reject predicate on to-be-created segment"
+        );
         assert!(result.unwrap_err().to_string().contains("predicate"));
     }
 
@@ -836,8 +885,16 @@ mod tests {
         let source = "name: Alice\n";
         let result = upsert(source, "yaml", "//age", "30", None).unwrap();
         assert!(result.inserted, "source: {:?}", result.source);
-        assert!(result.source.contains("name: Alice"), "source: {:?}", result.source);
-        assert!(result.source.contains("age: 30"), "source: {:?}", result.source);
+        assert!(
+            result.source.contains("name: Alice"),
+            "source: {:?}",
+            result.source
+        );
+        assert!(
+            result.source.contains("age: 30"),
+            "source: {:?}",
+            result.source
+        );
     }
 
     #[test]
@@ -845,8 +902,16 @@ mod tests {
         let source = "name: Alice\n";
         let result = upsert(source, "yaml", "//db/host", "localhost", None).unwrap();
         assert!(result.inserted, "source: {:?}", result.source);
-        assert!(result.source.contains("name: Alice"), "source: {:?}", result.source);
-        assert!(result.source.contains("host: localhost"), "source: {:?}", result.source);
+        assert!(
+            result.source.contains("name: Alice"),
+            "source: {:?}",
+            result.source
+        );
+        assert!(
+            result.source.contains("host: localhost"),
+            "source: {:?}",
+            result.source
+        );
     }
 
     // ---------------------------------------------------------------------------
@@ -886,7 +951,11 @@ mod tests {
     fn yaml_update_with_value_predicate() {
         let source = "servers:\n  - name: web-1\n    port: 8080\n  - name: web-2\n    port: 8080\n  - name: web-3\n    port: 9090\n";
         let result = upsert(source, "yaml", "//servers/port[.='8080']", "3000", None).unwrap();
-        assert!(result.source.contains("port: 3000"), "first match should be updated: {}", result.source);
+        assert!(
+            result.source.contains("port: 3000"),
+            "first match should be updated: {}",
+            result.source
+        );
     }
 
     // ---------------------------------------------------------------------------
@@ -915,7 +984,12 @@ mod tests {
         // All ports should now be 3000
         assert!(!result.source.contains("8080"), "source: {}", result.source);
         assert!(!result.source.contains("9090"), "source: {}", result.source);
-        assert_eq!(result.source.matches("port: 3000").count(), 3, "source: {}", result.source);
+        assert_eq!(
+            result.source.matches("port: 3000").count(),
+            3,
+            "source: {}",
+            result.source
+        );
     }
 
     // ---------------------------------------------------------------------------
@@ -927,8 +1001,11 @@ mod tests {
         let source = "{\n  \"name\": \"Alice\",\n  \"age\": 30\n}\n";
         let result = upsert(source, "json", "//name", "Bob", None).unwrap();
         assert!(!result.inserted);
-        assert_eq!(result.source, "{\n  \"name\": \"Bob\",\n  \"age\": 30\n}\n",
-            "2-space indent should be preserved: {:?}", result.source);
+        assert_eq!(
+            result.source, "{\n  \"name\": \"Bob\",\n  \"age\": 30\n}\n",
+            "2-space indent should be preserved: {:?}",
+            result.source
+        );
     }
 
     #[test]
@@ -936,8 +1013,11 @@ mod tests {
         let source = "{\n    \"name\": \"Alice\",\n    \"age\": 30\n}\n";
         let result = upsert(source, "json", "//name", "Bob", None).unwrap();
         assert!(!result.inserted);
-        assert_eq!(result.source, "{\n    \"name\": \"Bob\",\n    \"age\": 30\n}\n",
-            "4-space indent should be preserved: {:?}", result.source);
+        assert_eq!(
+            result.source, "{\n    \"name\": \"Bob\",\n    \"age\": 30\n}\n",
+            "4-space indent should be preserved: {:?}",
+            result.source
+        );
     }
 
     #[test]
@@ -945,8 +1025,11 @@ mod tests {
         let source = "{\n\t\"name\": \"Alice\",\n\t\"age\": 30\n}\n";
         let result = upsert(source, "json", "//name", "Bob", None).unwrap();
         assert!(!result.inserted);
-        assert_eq!(result.source, "{\n\t\"name\": \"Bob\",\n\t\"age\": 30\n}\n",
-            "tab indent should be preserved: {:?}", result.source);
+        assert_eq!(
+            result.source, "{\n\t\"name\": \"Bob\",\n\t\"age\": 30\n}\n",
+            "tab indent should be preserved: {:?}",
+            result.source
+        );
     }
 
     #[test]
@@ -958,8 +1041,11 @@ mod tests {
         assert_eq!(parsed["name"], "Alice");
         assert_eq!(parsed["age"], "30");
         // Inserted property should use 2-space indent like existing content
-        assert!(result.source.contains("\n  \"age\""),
-            "inserted property should use 2-space indent: {:?}", result.source);
+        assert!(
+            result.source.contains("\n  \"age\""),
+            "inserted property should use 2-space indent: {:?}",
+            result.source
+        );
     }
 
     #[test]
@@ -971,8 +1057,11 @@ mod tests {
         assert_eq!(parsed["name"], "Alice");
         assert_eq!(parsed["age"], "30");
         // Inserted property should use 4-space indent like existing content
-        assert!(result.source.contains("\n    \"age\""),
-            "inserted property should use 4-space indent: {:?}", result.source);
+        assert!(
+            result.source.contains("\n    \"age\""),
+            "inserted property should use 4-space indent: {:?}",
+            result.source
+        );
     }
 
     #[test]
@@ -984,8 +1073,11 @@ mod tests {
         assert_eq!(parsed["name"], "Alice");
         assert_eq!(parsed["age"], "30");
         // Inserted property should use tab indent like existing content
-        assert!(result.source.contains("\n\t\"age\""),
-            "inserted property should use tab indent: {:?}", result.source);
+        assert!(
+            result.source.contains("\n\t\"age\""),
+            "inserted property should use tab indent: {:?}",
+            result.source
+        );
     }
 
     #[test]
@@ -997,8 +1089,11 @@ mod tests {
         assert_eq!(parsed["db"]["host"], "localhost");
         assert_eq!(parsed["db"]["port"], "5432");
         // Nested insert should use 4 spaces (2 levels deep)
-        assert!(result.source.contains("\n    \"port\""),
-            "nested insert should use 2 levels of 2-space indent: {:?}", result.source);
+        assert!(
+            result.source.contains("\n    \"port\""),
+            "nested insert should use 2 levels of 2-space indent: {:?}",
+            result.source
+        );
     }
 
     #[test]
@@ -1006,8 +1101,11 @@ mod tests {
         let source = "{\r\n  \"name\": \"Alice\",\r\n  \"age\": 30\r\n}\r\n";
         let result = upsert(source, "json", "//name", "Bob", None).unwrap();
         assert!(!result.inserted);
-        assert!(result.source.contains("\r\n"),
-            "CRLF newlines should be preserved: {:?}", result.source);
+        assert!(
+            result.source.contains("\r\n"),
+            "CRLF newlines should be preserved: {:?}",
+            result.source
+        );
         assert!(result.source.contains("Bob"));
     }
 
@@ -1023,8 +1121,11 @@ mod tests {
         assert!(!result.inserted);
         eprintln!("minified update result: {:?}", result.source);
         // Update via splice should preserve the compact style
-        assert_eq!(result.source, r#"{"name":"Bob","age":30}"#,
-            "minified JSON should stay minified on update: {:?}", result.source);
+        assert_eq!(
+            result.source, r#"{"name":"Bob","age":30}"#,
+            "minified JSON should stay minified on update: {:?}",
+            result.source
+        );
     }
 
     #[test]
@@ -1060,7 +1161,10 @@ mod tests {
         let result = update_only(source, "json", "//nonexistent", "value", None).unwrap();
         assert!(!result.inserted);
         assert_eq!(result.matches_updated, 0);
-        assert_eq!(result.source, source, "source should be unchanged when no match");
+        assert_eq!(
+            result.source, source,
+            "source should be unchanged when no match"
+        );
     }
 
     #[test]
@@ -1094,17 +1198,27 @@ mod tests {
         assert!(!result.inserted);
         assert_eq!(result.matches_updated, 1);
         let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
-        let vals: Vec<_> = parsed["items"].as_array().unwrap()
-            .iter().map(|i| i["val"].as_i64().unwrap()).collect();
+        let vals: Vec<_> = parsed["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|i| i["val"].as_i64().unwrap())
+            .collect();
         assert_eq!(vals[0], 99, "first should be updated");
         // At least one should remain unchanged
-        assert!(vals[1] != 99 || vals[2] != 99, "limit should prevent updating all");
+        assert!(
+            vals[1] != 99 || vals[2] != 99,
+            "limit should prevent updating all"
+        );
     }
 
     #[test]
     fn update_only_unsupported_language() {
         let result = update_only("{}", "brainfuck", "//x", "1", None);
-        assert!(matches!(result.unwrap_err(), UpsertError::UnsupportedLanguage(_)));
+        assert!(matches!(
+            result.unwrap_err(),
+            UpsertError::UnsupportedLanguage(_)
+        ));
     }
 
     #[test]
@@ -1131,8 +1245,14 @@ mod tests {
         let result = update_only(source, "yaml", "//db/host", "localhost", None).unwrap();
         assert_eq!(result.matches_updated, 0);
         assert_eq!(result.source, source, "should not create //db/host");
-        assert!(!result.source.contains("db"), "db key should not be created");
-        assert!(!result.source.contains("host"), "host key should not be created");
+        assert!(
+            !result.source.contains("db"),
+            "db key should not be created"
+        );
+        assert!(
+            !result.source.contains("host"),
+            "host key should not be created"
+        );
     }
 
     #[test]
@@ -1150,7 +1270,10 @@ mod tests {
         let source = "db:\n  host: localhost\n";
         let result = update_only(source, "yaml", "//db/port", "5432", None).unwrap();
         assert_eq!(result.matches_updated, 0);
-        assert_eq!(result.source, source, "should not create missing port under existing db");
+        assert_eq!(
+            result.source, source,
+            "should not create missing port under existing db"
+        );
     }
 
     #[test]

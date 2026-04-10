@@ -3,30 +3,40 @@
 //! This is the main CLI entry point that orchestrates parsing and querying.
 
 mod cli;
-mod version;
-mod pipeline;
-mod modes;
-mod tractor_config;
 mod executor;
-mod filter;
 mod file_resolver;
+mod filter;
+mod modes;
+mod pipeline;
+mod tractor_config;
+mod version;
 
-use std::process::ExitCode;
-use cli::{Cli, Command, DocsCommand};
 use clap::Parser;
-use modes::{check::run_check, test::run_test, set::run_set, update::run_update, query::run_query, render::run_render, run::run_run, languages::run_languages};
-use tractor_core::report::{ReportBuilder, ReportMatch, Severity, DiagnosticOrigin};
-use pipeline::format::{OutputFormat, ViewField, ViewSet, render_gcc, render_text_report, render_json_report, render_yaml_report, render_xml_report, render_github, render_claude_code};
+use cli::{Cli, Command, DocsCommand};
+use modes::{
+    check::run_check, languages::run_languages, query::run_query, render::run_render, run::run_run,
+    set::run_set, test::run_test, update::run_update,
+};
+use pipeline::format::{
+    render_claude_code, render_gcc, render_github, render_json_report, render_text_report,
+    render_xml_report, render_yaml_report, OutputFormat, ViewField, ViewSet,
+};
+use std::process::ExitCode;
 use tractor_core::output::{should_use_color, RenderOptions};
+use tractor_core::report::{DiagnosticOrigin, ReportBuilder, ReportMatch, Severity};
 
 /// An error that has already been reported to the user; main should exit with
 /// failure but not print an additional "error: ..." line.
 pub struct SilentExit;
 impl std::fmt::Display for SilentExit {
-    fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> std::fmt::Result { Ok(()) }
+    fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Ok(())
+    }
 }
 impl std::fmt::Debug for SilentExit {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result { write!(f, "SilentExit") }
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "SilentExit")
+    }
 }
 impl std::error::Error for SilentExit {}
 
@@ -43,17 +53,28 @@ fn render_error_report(
     use_color: bool,
 ) {
     let view = ViewSet::new(vec![
-        ViewField::Origin, ViewField::Reason, ViewField::Severity, ViewField::Lines,
+        ViewField::Origin,
+        ViewField::Reason,
+        ViewField::Severity,
+        ViewField::Lines,
     ]);
     let render_opts = RenderOptions::new().with_color(use_color);
     match format {
-        OutputFormat::Json   => print!("{}", render_json_report(report, &view, &render_opts, &[])),
-        OutputFormat::Yaml   => print!("{}", render_yaml_report(report, &view, &render_opts, &[])),
-        OutputFormat::Xml    => print!("{}", render_xml_report(report, &view, &render_opts, &[])),
+        OutputFormat::Json => print!("{}", render_json_report(report, &view, &render_opts, &[])),
+        OutputFormat::Yaml => print!("{}", render_yaml_report(report, &view, &render_opts, &[])),
+        OutputFormat::Xml => print!("{}", render_xml_report(report, &view, &render_opts, &[])),
         OutputFormat::Github => print!("{}", render_github(report, &[])),
-        OutputFormat::Gcc    => print!("{}", render_gcc(report, &render_opts, &[])),
-        OutputFormat::ClaudeCode => print!("{}", render_claude_code(report, pipeline::format::options::HookType::PostToolUse, &render_opts, &[])),
-        OutputFormat::Text   => print!("{}", render_text_report(report, &view, &render_opts, &[])),
+        OutputFormat::Gcc => print!("{}", render_gcc(report, &render_opts, &[])),
+        OutputFormat::ClaudeCode => print!(
+            "{}",
+            render_claude_code(
+                report,
+                pipeline::format::options::HookType::PostToolUse,
+                &render_opts,
+                &[]
+            )
+        ),
+        OutputFormat::Text => print!("{}", render_text_report(report, &view, &render_opts, &[])),
     }
 }
 
@@ -86,9 +107,9 @@ fn main() -> ExitCode {
     let format_str = match &cli.command {
         Some(Command::Check(a)) => a.format.as_str(),
         Some(Command::Query(a)) => a.format.as_str(),
-        Some(Command::Test(a))  => a.format.as_str(),
-        Some(Command::Set(a))   => a.format.as_str(),
-        Some(Command::Run(a))   => a.format.as_str(),
+        Some(Command::Test(a)) => a.format.as_str(),
+        Some(Command::Set(a)) => a.format.as_str(),
+        Some(Command::Run(a)) => a.format.as_str(),
         Some(Command::Update(_)) | Some(Command::Render(_)) | Some(Command::Docs(_)) => "text",
         None => cli.query.format.as_str(),
     };
@@ -96,14 +117,18 @@ fn main() -> ExitCode {
     let shared = match &cli.command {
         Some(Command::Check(a)) => &a.shared,
         Some(Command::Query(a)) => &a.shared,
-        Some(Command::Test(a))  => &a.shared,
-        Some(Command::Set(a))   => &a.shared,
+        Some(Command::Test(a)) => &a.shared,
+        Some(Command::Set(a)) => &a.shared,
         Some(Command::Update(a)) => &a.shared,
-        Some(Command::Run(a))   => &a.shared,
+        Some(Command::Run(a)) => &a.shared,
         Some(Command::Render(_)) | Some(Command::Docs(_)) => &cli.query.shared,
         None => &cli.query.shared,
     };
-    let fallback_color = if shared.no_color { false } else { should_use_color(&shared.color) };
+    let fallback_color = if shared.no_color {
+        false
+    } else {
+        should_use_color(&shared.color)
+    };
 
     let result = match cli.command {
         Some(Command::Query(args)) => run_query(args),
@@ -128,14 +153,22 @@ fn main() -> ExitCode {
         // Wrap the error in a minimal fatal report for format-aware rendering
         let rm = ReportMatch {
             file: String::new(),
-            line: 0, column: 0, end_line: 0, end_column: 0,
+            line: 0,
+            column: 0,
+            end_line: 0,
+            end_column: 0,
             command: String::new(),
-            tree: None, value: None, source: None, lines: None,
+            tree: None,
+            value: None,
+            source: None,
+            lines: None,
             reason: Some(msg),
             severity: Some(Severity::Fatal),
             message: None,
             origin: Some(DiagnosticOrigin::Cli),
-            rule_id: None, status: None, output: None,
+            rule_id: None,
+            status: None,
+            output: None,
         };
         let mut builder = ReportBuilder::new();
         builder.add(rm);

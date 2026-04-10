@@ -1,8 +1,8 @@
 //! T-SQL (Microsoft SQL Server) transform logic
 
-use xot::{Xot, Node as XotNode};
-use crate::xot_transform::{TransformAction, helpers::*};
 use crate::output::syntax_highlight::SyntaxCategory;
+use crate::xot_transform::{helpers::*, TransformAction};
+use xot::{Node as XotNode, Xot};
 
 /// Transform a T-SQL AST node
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
@@ -160,7 +160,8 @@ fn transform_identifier(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> 
 /// Replace all text content of a node
 fn replace_text(xot: &mut Xot, node: XotNode, new_text: &str) {
     // Remove existing text children
-    let text_children: Vec<_> = xot.children(node)
+    let text_children: Vec<_> = xot
+        .children(node)
         .filter(|&c| xot.text_str(c).is_some())
         .collect();
     for c in text_children {
@@ -336,7 +337,9 @@ fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     let operator = texts.iter().find(|t| {
         let trimmed = t.trim();
         !trimmed.is_empty()
-            && !trimmed.chars().all(|c| matches!(c, '(' | ')' | ',' | ';' | '{' | '}' | '[' | ']' | '.'))
+            && !trimmed
+                .chars()
+                .all(|c| matches!(c, '(' | ')' | ',' | ';' | '{' | '}' | '[' | ']' | '.'))
     });
     if let Some(op) = operator {
         prepend_op_element(xot, node, op.trim())?;
@@ -357,7 +360,9 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
         "select" | "insert" | "update" | "delete" => SyntaxCategory::Keyword,
         "from" | "where" | "order_by" | "group_by" | "having" => SyntaxCategory::Keyword,
         "join" | "union" | "exists" | "merge" => SyntaxCategory::Keyword,
-        "statement" | "create_table" | "alter_table" | "create_index" | "cte" => SyntaxCategory::Keyword,
+        "statement" | "create_table" | "alter_table" | "create_index" | "cte" => {
+            SyntaxCategory::Keyword
+        }
         "create_function" | "exec" | "set" | "transaction" | "go" => SyntaxCategory::Keyword,
         "case" | "when" | "direction" => SyntaxCategory::Keyword,
         "star" => SyntaxCategory::Keyword,

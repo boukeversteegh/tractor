@@ -3,9 +3,9 @@
 //! This module owns ALL TypeScript-specific transformation rules.
 //! No assumptions about other languages - this is self-contained.
 
-use xot::{Xot, Node as XotNode};
-use crate::xot_transform::{TransformAction, helpers::*};
 use crate::output::syntax_highlight::SyntaxCategory;
+use crate::xot_transform::{helpers::*, TransformAction};
+use xot::{Node as XotNode, Xot};
 
 /// Transform a TypeScript AST node
 ///
@@ -35,9 +35,14 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         "name" => {
             if let Some(parent) = get_parent(xot, node) {
                 let parent_kind = get_element_name(xot, parent).unwrap_or_default();
-                if matches!(parent_kind.as_str(),
-                    "function_declaration" | "class_declaration" | "method_definition"
-                    | "function" | "class" | "method"
+                if matches!(
+                    parent_kind.as_str(),
+                    "function_declaration"
+                        | "class_declaration"
+                        | "method_definition"
+                        | "function"
+                        | "class"
+                        | "method"
                 ) {
                     let children: Vec<_> = xot.children(node).collect();
                     for child in children {
@@ -83,8 +88,11 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // ---------------------------------------------------------------------
         // Binary/unary expressions - extract operator
         // ---------------------------------------------------------------------
-        "binary_expression" | "unary_expression" | "assignment_expression"
-        | "augmented_assignment_expression" | "update_expression" => {
+        "binary_expression"
+        | "unary_expression"
+        | "assignment_expression"
+        | "augmented_assignment_expression"
+        | "update_expression" => {
             extract_operator(xot, node)?;
             if let Some(new_name) = map_element_name(&kind) {
                 rename(xot, node, new_name);
@@ -213,7 +221,8 @@ fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
 
     // Find operator (skip punctuation)
     let operator = texts.iter().find(|t| {
-        !t.chars().all(|c| matches!(c, '(' | ')' | ',' | ';' | '{' | '}' | '[' | ']'))
+        !t.chars()
+            .all(|c| matches!(c, '(' | ')' | ',' | ';' | '{' | '}' | '[' | ']'))
     });
 
     if let Some(op) = operator {
@@ -231,7 +240,8 @@ fn extract_keyword_modifiers(xot: &mut Xot, node: XotNode) -> Result<(), xot::Er
     const MODIFIERS: &[&str] = &["let", "const", "var", "async", "export", "default"];
 
     // Find modifiers and prepend as empty elements (in reverse to maintain order)
-    let found: Vec<&str> = texts.iter()
+    let found: Vec<&str> = texts
+        .iter()
         .filter_map(|t| MODIFIERS.iter().find(|&&m| m == t).copied())
         .collect();
 
@@ -252,7 +262,8 @@ fn has_kind(xot: &Xot, node: XotNode) -> bool {
 
 /// Promote field attributes on children to wrapper elements
 fn promote_children_fields(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
-    let children: Vec<XotNode> = xot.children(node)
+    let children: Vec<XotNode> = xot
+        .children(node)
         .filter(|&c| xot.element(c).is_some())
         .collect();
     for child in children {
@@ -294,7 +305,7 @@ fn inline_identifier_with_ref(xot: &mut Xot, wrapper: XotNode) -> Result<(), xot
 fn classify_identifier(xot: &Xot, node: XotNode) -> &'static str {
     let parent = match get_parent(xot, node) {
         Some(p) => p,
-        None => return "name",  // Default
+        None => return "name", // Default
     };
 
     let parent_kind = get_element_name(xot, parent).unwrap_or_default();
@@ -309,10 +320,14 @@ fn classify_identifier(xot: &Xot, node: XotNode) -> &'static str {
 
     match parent_kind.as_str() {
         // Method/function names followed by params
-        "method_definition" | "function_declaration" | "arrow_function" if has_param_sibling => "name",
+        "method_definition" | "function_declaration" | "arrow_function" if has_param_sibling => {
+            "name"
+        }
 
         // Type declarations - the identifier IS the name
-        "class_declaration" | "interface_declaration" | "type_alias_declaration"
+        "class_declaration"
+        | "interface_declaration"
+        | "type_alias_declaration"
         | "enum_declaration" => "name",
 
         // Variable declarator - the identifier is the name
@@ -381,8 +396,8 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::parse_string_to_xot;
     use crate::output::{render_document, RenderOptions};
+    use crate::parser::parse_string_to_xot;
 
     #[test]
     fn test_typescript_transform() {
@@ -393,8 +408,14 @@ mod tests {
         let xml = render_document(&result.xot, result.root, &options);
 
         // Check transforms applied
-        assert!(xml.contains("<binary"), "binary_expression should be renamed");
-        assert!(xml.contains("<op><plus/>+</op>"), "operator should be extracted with semantic marker");
+        assert!(
+            xml.contains("<binary"),
+            "binary_expression should be renamed"
+        );
+        assert!(
+            xml.contains("<op><plus/>+</op>"),
+            "operator should be extracted with semantic marker"
+        );
         assert!(xml.contains("<let"), "let should be extracted as modifier");
     }
 
@@ -411,10 +432,16 @@ mod tests {
         assert_eq!(param_count, 2, "should have 2 params, got: {xml}");
 
         // Only the optional parameter should have <optional/>
-        assert!(xml.contains("<optional/>"), "optional parameter should have <optional/> marker, got: {xml}");
+        assert!(
+            xml.contains("<optional/>"),
+            "optional parameter should have <optional/> marker, got: {xml}"
+        );
 
         // The <optional/> should appear exactly once (only for b?)
         let optional_count = xml.matches("<optional/>").count();
-        assert_eq!(optional_count, 1, "should have exactly 1 <optional/> marker, got: {xml}");
+        assert_eq!(
+            optional_count, 1,
+            "should have exactly 1 <optional/> marker, got: {xml}"
+        );
     }
 }
