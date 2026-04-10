@@ -1,2 +1,32 @@
-❌ 
-❌ thread 'main' (34968) has overflowed its stack
+<?xml version="1.0" encoding="UTF-8"?>
+<report>
+  <results>
+    <match file="tests/integration/formats/sample-classes.cs" line="1" column="1">
+      <tree>
+        {
+          "classes": [
+            {
+              "name": "Calculator",
+              "methods": [
+                "Add",
+                "Subtract",
+                "Multiply"
+              ]
+            },
+            {
+              "name": "Greeter",
+              "methods": [
+                "Hello",
+                "Goodbye"
+              ]
+            }
+          ]
+        }
+      </tree>
+    </match>
+  </results>
+</report>
+❌ Warning: "methods": body/method/name/string(.) matched multiple values and was automatically converted to an array.
+❌ With different input this could be a single value instead, which would break tools consuming this output.
+❌   Always array:  "methods": array { body/method/name/string(.) }
+❌   Always single: "methods": (body/method/name/string(.))[1]

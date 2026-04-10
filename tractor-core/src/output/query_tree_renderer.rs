@@ -104,7 +104,7 @@ fn render_side_by_side_aligned(
         .unwrap_or(0);
     let line_number_width = end_line.to_string().len();
 
-    let mut out = String::new();
+    let mut rows = Vec::new();
     let mut next_source_line = start_line;
     let mut gap_text_after = String::new();
 
@@ -113,18 +113,16 @@ fn render_side_by_side_aligned(
 
         if let Some(line) = row_line {
             while next_source_line < line {
-                append_side_by_side_line(
-                    &mut out,
-                    &gap_text_after,
-                    left_width,
-                    Some(next_source_line),
-                    source_lines
+                rows.push(SideBySideRow {
+                    left: gap_text_after.clone(),
+                    has_left_row: false,
+                    source_line_number: Some(next_source_line),
+                    right: source_lines
                         .get((next_source_line - start_line) as usize)
                         .map(|s| s.as_str())
-                        .unwrap_or(""),
-                    line_number_width,
-                    options,
-                );
+                        .unwrap_or("")
+                        .to_string(),
+                });
                 next_source_line += 1;
             }
         }
@@ -141,30 +139,25 @@ fn render_side_by_side_aligned(
             (None, "")
         };
 
-        append_side_by_side_line(
-            &mut out,
-            &row.text,
-            left_width,
+        rows.push(SideBySideRow {
+            left: row.text.clone(),
+            has_left_row: true,
             source_line_number,
-            source_text,
-            line_number_width,
-            options,
-        );
+            right: source_text.to_string(),
+        });
 
         if let Some(row_end_line) = row.source_end_line.map(|line| line.clamp(start_line, end_line)) {
             while next_source_line <= row_end_line {
-                append_side_by_side_line(
-                    &mut out,
-                    &row.continuation_text,
-                    left_width,
-                    Some(next_source_line),
-                    source_lines
+                rows.push(SideBySideRow {
+                    left: row.continuation_text.clone(),
+                    has_left_row: false,
+                    source_line_number: Some(next_source_line),
+                    right: source_lines
                         .get((next_source_line - start_line) as usize)
                         .map(|s| s.as_str())
-                        .unwrap_or(""),
-                    line_number_width,
-                    options,
-                );
+                        .unwrap_or("")
+                        .to_string(),
+                });
                 next_source_line += 1;
             }
         }
@@ -173,19 +166,31 @@ fn render_side_by_side_aligned(
     }
 
     while next_source_line <= end_line {
-        append_side_by_side_line(
-            &mut out,
-            &gap_text_after,
-            left_width,
-            Some(next_source_line),
-            source_lines
+        rows.push(SideBySideRow {
+            left: gap_text_after.clone(),
+            has_left_row: false,
+            source_line_number: Some(next_source_line),
+            right: source_lines
                 .get((next_source_line - start_line) as usize)
                 .map(|s| s.as_str())
-                .unwrap_or(""),
+                .unwrap_or("")
+                .to_string(),
+        });
+        next_source_line += 1;
+    }
+
+    let mut out = String::new();
+    for row in &rows {
+        append_side_by_side_line(
+            &mut out,
+            &row.left,
+            left_width,
+            row.has_left_row,
+            row.source_line_number,
+            &row.right,
             line_number_width,
             options,
         );
-        next_source_line += 1;
     }
 
     out
@@ -195,28 +200,35 @@ fn append_side_by_side_line(
     out: &mut String,
     left: &str,
     left_width: usize,
+    has_left_row: bool,
     source_line_number: Option<u32>,
     right: &str,
     line_number_width: usize,
     options: &RenderOptions,
 ) {
     let padding = left_width.saturating_sub(visible_width(left));
+    let left_seam = if has_left_row { "┤" } else { "│" };
+    let right_seam = if right.is_empty() { "│" } else { "├" };
+
     out.push_str(left);
     out.push_str(&" ".repeat(padding));
-    out.push_str(&paint(options, ansi::DIM, " | "));
+    out.push_str(&paint(options, ansi::DIM, left_seam));
+    out.push(' ');
     if let Some(line_number) = source_line_number {
         out.push_str(&paint(
             options,
             ansi::DIM,
-            &format!("{:<width$} | ", line_number, width = line_number_width),
+            &format!("{:>width$} ", line_number, width = line_number_width),
         ));
     } else {
         out.push_str(&paint(
             options,
             ansi::DIM,
-            &format!("{:width$} | ", "", width = line_number_width),
+            &format!("{:width$} ", "", width = line_number_width),
         ));
     }
+    out.push_str(&paint(options, ansi::DIM, right_seam));
+    out.push(' ');
     out.push_str(right);
     out.push('\n');
 }
@@ -335,6 +347,14 @@ struct RenderedTreeLine {
     source_line: Option<u32>,
     source_end_line: Option<u32>,
     continuation_text: String,
+}
+
+#[derive(Debug, Clone)]
+struct SideBySideRow {
+    left: String,
+    has_left_row: bool,
+    source_line_number: Option<u32>,
+    right: String,
 }
 
 #[derive(Debug, Clone)]
@@ -987,9 +1007,9 @@ mod tests {
         assert_eq!(
             rendered,
             concat!(
-                "Files/File/unit/class/ |   | \n",
-                "  \u{251c}\u{2500} \"class\"           | 2 | class Foo\n",
-                "  \u{2514}\u{2500} name = \"Foo\"      |   | \n",
+                "Files/File/unit/class/┤   │ \n",
+                "  \u{251c}\u{2500} \"class\"          ┤ 2 \u{251c} class Foo\n",
+                "  \u{2514}\u{2500} name = \"Foo\"     ┤   │ \n",
             )
         );
     }
