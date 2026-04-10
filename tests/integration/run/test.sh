@@ -98,12 +98,12 @@ echo "Run (set operations):"
 
 run_set_and_check "set applies mappings to files" \
     0 \
-    "$(printf 'app-config.json: updated\nupdated 1 file')" \
+    "$(printf 'app-config.json:3:13: note: unchanged //database/host\napp-config.json:8:12: note: updated //cache/ttl\nupdated 1 file')" \
     "set-config.yaml"
 
 run_set_and_check "set applies mappings (verbose)" \
     0 \
-    "$(printf 'app-config.json: updated\nupdated 1 file')" \
+    "$(printf 'app-config.json:3:13: note: unchanged //database/host\napp-config.json:8:12: note: updated //cache/ttl\nupdated 1 file')" \
     "set-config.yaml"
 
 echo ""
@@ -146,7 +146,7 @@ echo "Run (mixed operations):"
 
 run_set_and_check "mixed check+set succeeds when check passes" \
     0 \
-    "$(printf 'app-config.json: updated\nupdated 1 file')" \
+    "$(printf 'app-config.json:3:13: note: unchanged //database/host')" \
     "mixed-ops.yaml"
 
 echo ""

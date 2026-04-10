@@ -1,6 +1,6 @@
 {
   "database": {
-    "host": "localhost",
+    "host": "db.prod.internal",
     "port": 5432
   },
   "cache": {

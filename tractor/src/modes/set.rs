@@ -79,7 +79,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
             shared: &args.shared,
             cli_files: args.args.clone(),
             format: &args.format,
-            default_view: &[ViewField::File, ViewField::Line, ViewField::Status],
+            default_view: &[ViewField::File, ViewField::Line, ViewField::Status, ViewField::Reason],
             view_override: args.view.as_deref(),
             message: None,
             default_group: &[GroupDimension::File],
@@ -97,7 +97,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
     let default_view: &[ViewField] = if capture {
         &[ViewField::File, ViewField::Output]
     } else {
-        &[ViewField::File, ViewField::Line, ViewField::Status]
+        &[ViewField::File, ViewField::Line, ViewField::Status, ViewField::Reason]
     };
 
     let ctx = RunContext::build(
@@ -134,7 +134,6 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
                 language: ctx.lang.clone(),
                 limit: ctx.limit,
                 ignore_whitespace: ctx.ignore_whitespace,
-                parse_depth: ctx.parse_depth,
                 inline_source: None,
                 write_mode: if capture { SetWriteMode::Capture } else { SetWriteMode::InPlace },
                 report_mode: SetReportMode::PerMatch,
@@ -150,7 +149,6 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
             language: Some(lang.clone()),
             limit: ctx.limit,
             ignore_whitespace: ctx.ignore_whitespace,
-            parse_depth: ctx.parse_depth,
             inline_source: Some(source.clone()),
             write_mode: SetWriteMode::Capture,
             report_mode: SetReportMode::PerMatch,

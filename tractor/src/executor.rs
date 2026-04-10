@@ -202,8 +202,6 @@ pub struct SetOperation {
     pub limit: Option<usize>,
     /// Ignore whitespace-only text nodes while collecting diagnostics.
     pub ignore_whitespace: bool,
-    /// Maximum parse depth while collecting diagnostics.
-    pub parse_depth: Option<usize>,
     /// Inline source string to mutate instead of files.
     pub inline_source: Option<String>,
     /// How transformed content should be applied.
@@ -713,6 +711,7 @@ fn execute_set_target(
             diagnostics.extend(report_matches.drain(..).map(|m| {
                 let mut rm = match_to_report_match(m, "set");
                 rm.status = Some(status.to_string());
+                rm.reason = Some(mapping.xpath.clone());
                 rm
             }));
         }
@@ -1149,7 +1148,6 @@ mod tests {
             language: None,
             limit: None,
             ignore_whitespace: false,
-            parse_depth: None,
             inline_source: None,
             write_mode,
             report_mode: SetReportMode::PerMatch,
@@ -1172,7 +1170,6 @@ mod tests {
             language: Some(lang.into()),
             limit: None,
             ignore_whitespace: false,
-            parse_depth: None,
             inline_source: Some(source.into()),
             write_mode,
             report_mode: SetReportMode::PerMatch,
@@ -1421,7 +1418,6 @@ mod tests {
             language: None,
             limit: None,
             ignore_whitespace: false,
-            parse_depth: None,
             inline_source: None,
             write_mode: SetWriteMode::Capture,
             report_mode: SetReportMode::PerMatch,

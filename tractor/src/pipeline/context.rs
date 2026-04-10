@@ -19,7 +19,6 @@ pub struct RunContext {
     /// Interpolated message template from `-m`, if provided.
     pub message: Option<String>,
     pub input: InputMode,
-    pub concurrency: usize,
     pub limit: Option<usize>,
     pub depth: Option<usize>,
     pub parse_depth: Option<usize>,
@@ -104,7 +103,6 @@ impl RunContext {
             use_color,
             message,
             input,
-            concurrency,
             limit: shared.limit,
             depth: shared.depth,
             parse_depth: shared.parse_depth,

@@ -188,6 +188,10 @@ struct SetConfig {
     limit: Option<usize>,
     #[serde(default, rename = "ignore-whitespace")]
     ignore_whitespace: bool,
+    // Parsed for forward compatibility with shared command config, but
+    // currently ignored because set mutates full documents rather than
+    // supporting depth-limited parses.
+    #[allow(dead_code)]
     #[serde(default, rename = "parse-depth")]
     parse_depth: Option<usize>,
     #[serde(default, rename = "inline-source", alias = "source", alias = "string")]
@@ -455,7 +459,6 @@ fn convert_set(config: SetConfig, scope: &RootScope) -> Result<Operation, Box<dy
         language: config.language,
         limit: config.limit,
         ignore_whitespace: config.ignore_whitespace,
-        parse_depth: config.parse_depth,
         inline_source: config.inline_source,
         write_mode,
         report_mode,
