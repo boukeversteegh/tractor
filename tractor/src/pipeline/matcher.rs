@@ -1,18 +1,18 @@
 use std::collections::HashSet;
 use std::path::Path;
 
-use crate::filter::ResultFilter;
 use rayon::prelude::*;
 use tractor_core::{
+    Match, NormalizedXpath, GlobPattern, NormalizedPath,
     detect_language,
     language_info::parse_language,
     output::{render_document, RenderOptions},
-    parse_string_to_documents, parse_to_documents,
-    report::{DiagnosticOrigin, Report, ReportMatch, Severity},
-    rule::{GlobMatcher, RuleSet},
+    parse_to_documents, parse_string_to_documents,
+    report::{Report, ReportMatch, Severity, DiagnosticOrigin},
+    rule::{RuleSet, GlobMatcher},
     xpath::validate_xpath,
-    GlobPattern, Match, NormalizedPath, NormalizedXpath,
 };
+use crate::filter::ResultFilter;
 
 use super::context::RunContext;
 use super::format::{ViewField, ViewSet};
@@ -46,20 +46,13 @@ pub fn exponential_batches<T>(items: &[T], num_threads: usize) -> Vec<&[T]> {
 ///
 /// Builds a `ReportMatch` with `Severity::Fatal`, the XPath string as source,
 /// and the error position highlighted. Returns `None` if the XPath is valid.
-pub fn validate_xpath_diagnostic(
-    xpath_expr: &NormalizedXpath,
-    command: &str,
-) -> Option<ReportMatch> {
+pub fn validate_xpath_diagnostic(xpath_expr: &NormalizedXpath, command: &str) -> Option<ReportMatch> {
     let result = validate_xpath(xpath_expr.as_str());
     if result.valid {
         return None;
     }
 
-    let reason = result
-        .error
-        .as_deref()
-        .unwrap_or("invalid XPath expression")
-        .to_string();
+    let reason = result.error.as_deref().unwrap_or("invalid XPath expression").to_string();
 
     // Default: highlight the entire expression
     let line = 1u32;
@@ -75,10 +68,7 @@ pub fn validate_xpath_diagnostic(
 
     Some(ReportMatch {
         file: String::new(),
-        line,
-        column: col,
-        end_line,
-        end_column: end_col,
+        line, column: col, end_line, end_column: end_col,
         command: command.to_string(),
         tree: None,
         value: None,
@@ -106,11 +96,7 @@ pub fn query_inline_source(
     xpath_expr: &NormalizedXpath,
 ) -> Result<Vec<Match>, Box<dyn std::error::Error>> {
     let mut result = parse_string_to_documents(
-        source,
-        lang,
-        "<stdin>".to_string(),
-        ctx.tree_mode,
-        ctx.ignore_whitespace,
+        source, lang, "<stdin>".to_string(), ctx.tree_mode, ctx.ignore_whitespace
     )?;
 
     let matches = result.query(xpath_expr.as_str())?;
@@ -194,11 +180,7 @@ pub fn query_files_batched(
 // Debug mode
 // ---------------------------------------------------------------------------
 
-pub fn run_debug(
-    ctx: &RunContext,
-    files: &[String],
-    xpath_expr: &NormalizedXpath,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub fn run_debug(ctx: &RunContext, files: &[String], xpath_expr: &NormalizedXpath) -> Result<(), Box<dyn std::error::Error>> {
     let mut remaining_limit = ctx.limit;
 
     for file_path in files {
@@ -232,8 +214,10 @@ pub fn run_debug(
                     matches
                 };
 
-                let highlights: HashSet<(u32, u32)> =
-                    matches.iter().map(|m| (m.line, m.column)).collect();
+                let highlights: HashSet<(u32, u32)> = matches
+                    .iter()
+                    .map(|m| (m.line, m.column))
+                    .collect();
 
                 let doc_node = result.documents.document_node(result.doc_handle).unwrap();
                 let render_opts = RenderOptions::new()
@@ -282,7 +266,11 @@ struct CompiledRule {
 /// This prevents rules from matching files of incompatible languages,
 /// fixing the mixed-language hang issue where e.g. a markdown rule
 /// would incorrectly apply to JavaScript files.
-fn rule_language_matches_file(ruleset: &RuleSet, rule_idx: usize, file_path: &str) -> bool {
+fn rule_language_matches_file(
+    ruleset: &RuleSet,
+    rule_idx: usize,
+    file_path: &str,
+) -> bool {
     let rule = &ruleset.rules[rule_idx];
     let effective_lang = ruleset.effective_language(rule);
 
@@ -428,8 +416,9 @@ pub fn run_rules(
 
     // Flatten and sort by file, line, column for stable output.
     let mut all_matches: Vec<RuleMatch> = results.into_iter().flatten().collect();
-    all_matches
-        .sort_by(|a, b| (&a.m.file, a.m.line, a.m.column).cmp(&(&b.m.file, b.m.line, b.m.column)));
+    all_matches.sort_by(|a, b| {
+        (&a.m.file, a.m.line, a.m.column).cmp(&(&b.m.file, b.m.line, b.m.column))
+    });
 
     Ok(all_matches)
 }
@@ -453,20 +442,12 @@ pub fn project_report(report: &mut Report, view: &ViewSet) {
             // Map/Array nodes are always kept — they're the only representation for data formats.
             // For other nodes, keep when tree/lines/source is selected (needed for rendering).
             let keep_tree = match &m.tree {
-                Some(node)
-                    if matches!(
-                        node,
-                        tractor_core::xpath::XmlNode::Map { .. }
-                            | tractor_core::xpath::XmlNode::Array { .. }
-                    ) =>
-                {
-                    true
-                }
-                _ => {
-                    view.has(ViewField::Tree)
-                        || view.has(ViewField::Lines)
-                        || view.has(ViewField::Source)
-                }
+                Some(node) if matches!(
+                    node,
+                    tractor_core::xpath::XmlNode::Map { .. }
+                        | tractor_core::xpath::XmlNode::Array { .. }
+                ) => true,
+                _ => view.has(ViewField::Tree) || view.has(ViewField::Lines) || view.has(ViewField::Source),
             };
             if !keep_tree {
                 m.tree = None;
@@ -513,7 +494,7 @@ pub fn apply_message_template(report: &mut Report, template: &str) {
                 .replace("{file}", &tractor_core::output::normalize_path(&m.file))
                 .replace("{line}", &m.line.to_string())
                 .replace("{col}", &m.column.to_string())
-                .replace("{value}", m.value.as_deref().unwrap_or("")),
+                .replace("{value}", m.value.as_deref().unwrap_or(""))
         );
     }
 }
@@ -570,7 +551,8 @@ mod tests {
     fn test_rule_language_matches_file_with_language() {
         // When language is specified, only matching files should match
         let mut ruleset = RuleSet::new();
-        let rule = tractor_core::rule::Rule::new("test", "//any").with_language("javascript");
+        let rule = tractor_core::rule::Rule::new("test", "//any")
+            .with_language("javascript");
         ruleset.add(rule);
 
         assert!(rule_language_matches_file(&ruleset, 0, "test.js"));
@@ -582,7 +564,8 @@ mod tests {
     fn test_rule_language_matches_file_with_alias() {
         // Language aliases should work
         let mut ruleset = RuleSet::new();
-        let rule = tractor_core::rule::Rule::new("test", "//any").with_language("js"); // alias for javascript
+        let rule = tractor_core::rule::Rule::new("test", "//any")
+            .with_language("js");  // alias for javascript
         ruleset.add(rule);
 
         assert!(rule_language_matches_file(&ruleset, 0, "test.js"));
@@ -605,7 +588,8 @@ mod tests {
         // Rule language should override default
         let mut ruleset = RuleSet::new();
         ruleset.default_language = Some("markdown".to_string());
-        let rule = tractor_core::rule::Rule::new("test", "//any").with_language("javascript");
+        let rule = tractor_core::rule::Rule::new("test", "//any")
+            .with_language("javascript");
         ruleset.add(rule);
 
         assert!(rule_language_matches_file(&ruleset, 0, "test.js"));

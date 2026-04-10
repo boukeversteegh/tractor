@@ -3,13 +3,13 @@
 //! Provides JavaScript-callable functions for parsing source code to XML
 //! using a serialized TreeSitter AST.
 
+use wasm_bindgen::prelude::*;
+use crate::wasm_ast::{SerializedNode, ParseRequest, ParseResponse};
+use crate::xot_builder::XotBuilder;
+use crate::xot_transform::walk_transform;
 use crate::languages::get_transform;
 use crate::output::RenderOptions;
 use crate::tree_mode::TreeMode;
-use crate::wasm_ast::{ParseRequest, ParseResponse, SerializedNode};
-use crate::xot_builder::XotBuilder;
-use crate::xot_transform::walk_transform;
-use wasm_bindgen::prelude::*;
 
 /// Initialize panic hook for better error messages in browser console
 #[wasm_bindgen(start)]
@@ -36,16 +36,8 @@ pub fn parse_to_xml(request_json: &str) -> Result<String, JsValue> {
 
     // Resolve tree mode: explicit tree_mode takes precedence, then raw_mode for backwards compat
     let tree_mode = resolve_wasm_tree_mode(request.tree_mode.as_deref(), request.raw_mode);
-    let xml = parse_ast_to_xml(
-        &request.ast,
-        &request.source,
-        &request.language,
-        &request.file_path,
-        tree_mode,
-        request.include_locations,
-        request.pretty_print,
-    )
-    .map_err(|e| JsValue::from_str(&e))?;
+    let xml = parse_ast_to_xml(&request.ast, &request.source, &request.language, &request.file_path, tree_mode, request.include_locations, request.pretty_print)
+        .map_err(|e| JsValue::from_str(&e))?;
 
     let response = ParseResponse {
         xml,
@@ -81,16 +73,8 @@ pub fn parse_ast_to_xml_simple(
         .map_err(|e| JsValue::from_str(&format!("Failed to parse AST: {}", e)))?;
 
     let tree_mode = resolve_wasm_tree_mode(None, raw_mode);
-    parse_ast_to_xml(
-        &ast,
-        source,
-        language,
-        "input",
-        tree_mode,
-        include_locations,
-        pretty_print,
-    )
-    .map_err(|e| JsValue::from_str(&e))
+    parse_ast_to_xml(&ast, source, language, "input", tree_mode, include_locations, pretty_print)
+        .map_err(|e| JsValue::from_str(&e))
 }
 
 /// Resolve tree mode from WASM request parameters
@@ -99,9 +83,9 @@ fn resolve_wasm_tree_mode(tree_mode_str: Option<&str>, raw_mode: bool) -> Option
         Some("raw") => Some(TreeMode::Raw),
         Some("structure") => Some(TreeMode::Structure),
         Some("data") => Some(TreeMode::Data),
-        Some(_) => None,                         // invalid string → auto-detect
+        Some(_) => None, // invalid string → auto-detect
         None if raw_mode => Some(TreeMode::Raw), // backwards compat
-        None => None,                            // auto-detect
+        None => None, // auto-detect
     }
 }
 
@@ -119,8 +103,7 @@ fn parse_ast_to_xml(
 
     // Build the raw xot document
     let mut builder = XotBuilder::new();
-    let root = builder
-        .build_raw_from_serialized(ast, source, file_path)
+    let root = builder.build_raw_from_serialized(ast, source, file_path)
         .map_err(|e| format!("Failed to build XML: {}", e))?;
 
     let mut xot = builder.into_xot();
@@ -167,12 +150,12 @@ pub fn get_schema_tree(
         .map_err(|e| JsValue::from_str(&format!("Failed to parse AST: {}", e)))?;
 
     let tree_mode = resolve_wasm_tree_mode(None, raw_mode);
-    let resolved = TreeMode::resolve(tree_mode, language).map_err(|e| JsValue::from_str(&e))?;
+    let resolved = TreeMode::resolve(tree_mode, language)
+        .map_err(|e| JsValue::from_str(&e))?;
 
     // Build the xot document (same as parse_ast_to_xml)
     let mut builder = XotBuilder::new();
-    let root = builder
-        .build_raw_from_serialized(&ast, source, "input")
+    let root = builder.build_raw_from_serialized(&ast, source, "input")
         .map_err(|e| JsValue::from_str(&format!("Failed to build XML: {}", e)))?;
 
     let mut xot = builder.into_xot();
@@ -257,7 +240,8 @@ pub fn validate_xpath(xpath: &str) -> String {
 /// The extracted source text between the positions
 #[wasm_bindgen(js_name = extractSourceSnippet)]
 pub fn extract_source_snippet(source: &str, start: &str, end: &str) -> Result<String, JsValue> {
-    crate::source_utils::extract_snippet(source, start, end).map_err(|e| JsValue::from_str(&e))
+    crate::source_utils::extract_snippet(source, start, end)
+        .map_err(|e| JsValue::from_str(&e))
 }
 
 /// Get full source lines for a range given "line:col" format positions
@@ -308,8 +292,8 @@ pub fn pretty_print_xml(xml: &str, include_locations: bool, use_color: bool) -> 
 /// The full source code with ANSI color codes for syntax highlighting
 #[wasm_bindgen(js_name = highlightFullSource)]
 pub fn highlight_full_source(source: &str, xml: &str, language: &str) -> String {
-    use crate::languages::get_syntax_category;
     use crate::output::syntax_highlight::{extract_syntax_spans_with_lang, highlight_source};
+    use crate::languages::get_syntax_category;
 
     if source.is_empty() || xml.is_empty() {
         return source.to_string();

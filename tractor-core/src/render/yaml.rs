@@ -48,22 +48,19 @@ fn render_top(
         XmlNode::Element { children, name, .. } => {
             let element_kids = element_children(children);
 
-            let has_documents = element_kids
-                .iter()
-                .any(|c| matches!(c, XmlNode::Element { name, .. } if name == "document"));
+            let has_documents = element_kids.iter().any(|c| {
+                matches!(c, XmlNode::Element { name, .. } if name == "document")
+            });
 
             if has_documents {
                 // All children must be documents — reject mixed trees
-                let all_documents = element_kids
-                    .iter()
-                    .all(|c| matches!(c, XmlNode::Element { name, .. } if name == "document"));
+                let all_documents = element_kids.iter().all(|c| {
+                    matches!(c, XmlNode::Element { name, .. } if name == "document")
+                });
                 if !all_documents {
-                    let bad_names: Vec<_> = element_kids
-                        .iter()
+                    let bad_names: Vec<_> = element_kids.iter()
                         .filter_map(|c| match c {
-                            XmlNode::Element { name, .. } if name != "document" => {
-                                Some(name.as_str())
-                            }
+                            XmlNode::Element { name, .. } if name != "document" => Some(name.as_str()),
                             _ => None,
                         })
                         .collect();
@@ -238,7 +235,12 @@ fn render_sequence(
 }
 
 /// Record the byte span of a node's value in the span map, keyed by (line, column).
-fn record_span(attributes: &[(String, String)], start: usize, end: usize, span_map: &mut SpanMap) {
+fn record_span(
+    attributes: &[(String, String)],
+    start: usize,
+    end: usize,
+    span_map: &mut SpanMap,
+) {
     if let (Some(line), Some(col)) = (
         get_attr(attributes, "line").and_then(|v| v.parse::<u32>().ok()),
         get_attr(attributes, "column").and_then(|v| v.parse::<u32>().ok()),
@@ -284,34 +286,24 @@ fn needs_yaml_quoting(s: &str) -> bool {
 
     // Values that look like booleans, null, or numbers
     match s {
-        "true" | "false" | "True" | "False" | "TRUE" | "FALSE" | "yes" | "no" | "Yes" | "No"
-        | "YES" | "NO" | "on" | "off" | "On" | "Off" | "ON" | "OFF" | "null" | "Null" | "NULL"
-        | "~" => return true,
+        "true" | "false" | "True" | "False" | "TRUE" | "FALSE"
+        | "yes" | "no" | "Yes" | "No" | "YES" | "NO"
+        | "on" | "off" | "On" | "Off" | "ON" | "OFF"
+        | "null" | "Null" | "NULL" | "~" => return true,
         _ => {}
     }
 
     // Contains characters that need quoting
-    if s.contains(':')
-        || s.contains('#')
-        || s.contains('\n')
-        || s.contains('"')
-        || s.contains('\'')
-        || s.starts_with('&')
-        || s.starts_with('*')
-        || s.starts_with('!')
-        || s.starts_with('|')
-        || s.starts_with('>')
-        || s.starts_with('%')
-        || s.starts_with('@')
-        || s.starts_with('`')
-        || s.starts_with('{')
-        || s.starts_with('}')
-        || s.starts_with('[')
-        || s.starts_with(']')
-        || s.starts_with(',')
-        || s.starts_with('?')
-        || s.starts_with('-')
-        || s.starts_with(' ')
+    if s.contains(':') || s.contains('#') || s.contains('\n')
+        || s.contains('"') || s.contains('\'')
+        || s.starts_with('&') || s.starts_with('*')
+        || s.starts_with('!') || s.starts_with('|')
+        || s.starts_with('>') || s.starts_with('%')
+        || s.starts_with('@') || s.starts_with('`')
+        || s.starts_with('{') || s.starts_with('}')
+        || s.starts_with('[') || s.starts_with(']')
+        || s.starts_with(',') || s.starts_with('?')
+        || s.starts_with('-') || s.starts_with(' ')
         || s.ends_with(' ')
     {
         return true;
@@ -358,7 +350,9 @@ fn is_property_element(node: &XmlNode) -> bool {
 /// Check if a node is a scalar (leaf with text, no element children).
 fn is_scalar(node: &XmlNode) -> bool {
     match node {
-        XmlNode::Element { children, .. } => element_children(children).is_empty(),
+        XmlNode::Element { children, .. } => {
+            element_children(children).is_empty()
+        }
         XmlNode::Text(_) => true,
         _ => true,
     }
@@ -435,7 +429,10 @@ mod tests {
     fn simple_mapping() {
         let root = make_container(
             "File",
-            vec![make_prop("name", "Alice"), make_prop("age", "30")],
+            vec![
+                make_prop("name", "Alice"),
+                make_prop("age", "30"),
+            ],
         );
         let result = render_node(&root, &opts()).unwrap();
         assert_eq!(result, "name: Alice\nage: 30\n");
@@ -449,7 +446,10 @@ mod tests {
                 make_prop("name", "myapp"),
                 make_prop_obj(
                     "db",
-                    vec![make_prop("host", "localhost"), make_prop("port", "5432")],
+                    vec![
+                        make_prop("host", "localhost"),
+                        make_prop("port", "5432"),
+                    ],
                 ),
             ],
         );
@@ -464,13 +464,15 @@ mod tests {
     fn sequence() {
         let root = make_container(
             "File",
-            vec![make_prop_obj(
-                "tags",
-                vec![
-                    make_container("tags", vec![XmlNode::Text("admin".to_string())]),
-                    make_container("tags", vec![XmlNode::Text("user".to_string())]),
-                ],
-            )],
+            vec![
+                make_prop_obj(
+                    "tags",
+                    vec![
+                        make_container("tags", vec![XmlNode::Text("admin".to_string())]),
+                        make_container("tags", vec![XmlNode::Text("user".to_string())]),
+                    ],
+                ),
+            ],
         );
         let result = render_node(&root, &opts()).unwrap();
         assert_eq!(result, "tags:\n  - admin\n  - user\n");
@@ -482,7 +484,10 @@ mod tests {
             "File",
             vec![make_container(
                 "document",
-                vec![make_prop("name", "Alice"), make_prop("age", "30")],
+                vec![
+                    make_prop("name", "Alice"),
+                    make_prop("age", "30"),
+                ],
             )],
         );
         let result = render_node(&root, &opts()).unwrap();
@@ -494,8 +499,14 @@ mod tests {
         let root = make_container(
             "File",
             vec![
-                make_container("document", vec![make_prop("name", "Alice")]),
-                make_container("document", vec![make_prop("name", "Bob")]),
+                make_container(
+                    "document",
+                    vec![make_prop("name", "Alice")],
+                ),
+                make_container(
+                    "document",
+                    vec![make_prop("name", "Bob")],
+                ),
             ],
         );
         let result = render_node(&root, &opts()).unwrap();
@@ -504,7 +515,10 @@ mod tests {
 
     #[test]
     fn string_needing_quoting() {
-        let root = make_container("File", vec![make_prop("value", "true")]);
+        let root = make_container(
+            "File",
+            vec![make_prop("value", "true")],
+        );
         let result = render_node(&root, &opts()).unwrap();
         // "true" as a string value needs quoting to avoid being parsed as boolean
         assert_eq!(result, "value: \"true\"\n");
@@ -559,25 +573,24 @@ mod tests {
             }],
         );
         let result = render_node(&root, &opts()).unwrap();
-        assert!(
-            result.contains("my-key:"),
-            "should use original key from key attr"
-        );
+        assert!(result.contains("my-key:"), "should use original key from key attr");
     }
 
     #[test]
     fn tracked_render_records_spans() {
         let root = make_container(
             "File",
-            vec![XmlNode::Element {
-                name: "name".to_string(),
-                attributes: vec![
-                    ("field".to_string(), "name".to_string()),
-                    ("line".to_string(), "1".to_string()),
-                    ("column".to_string(), "7".to_string()),
-                ],
-                children: vec![XmlNode::Text("Alice".to_string())],
-            }],
+            vec![
+                XmlNode::Element {
+                    name: "name".to_string(),
+                    attributes: vec![
+                        ("field".to_string(), "name".to_string()),
+                        ("line".to_string(), "1".to_string()),
+                        ("column".to_string(), "7".to_string()),
+                    ],
+                    children: vec![XmlNode::Text("Alice".to_string())],
+                },
+            ],
         );
         let (rendered, spans) = render_node_tracked(&root, &opts()).unwrap();
         assert_eq!(rendered, "name: Alice\n");

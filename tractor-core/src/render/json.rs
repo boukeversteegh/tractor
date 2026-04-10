@@ -89,7 +89,9 @@ fn render_value(
                 }
             } else {
                 // Has element children — determine if object or array
-                let all_properties = element_children.iter().all(|c| is_property_element(c));
+                let all_properties = element_children
+                    .iter()
+                    .all(|c| is_property_element(c));
 
                 if all_properties {
                     render_object(&element_children, opts, buf, span_map)?;
@@ -214,7 +216,12 @@ fn render_array(
 }
 
 /// Record the byte span of a node's value in the span map, keyed by (line, column).
-fn record_span(attributes: &[(String, String)], start: usize, end: usize, span_map: &mut SpanMap) {
+fn record_span(
+    attributes: &[(String, String)],
+    start: usize,
+    end: usize,
+    span_map: &mut SpanMap,
+) {
     if let (Some(line), Some(col)) = (
         get_attr(attributes, "line").and_then(|v| v.parse::<u32>().ok()),
         get_attr(attributes, "column").and_then(|v| v.parse::<u32>().ok()),
@@ -362,7 +369,10 @@ mod tests {
     fn simple_object() {
         let root = make_container(
             "File",
-            vec![make_prop("name", "Alice"), make_prop("age", "30")],
+            vec![
+                make_prop("name", "Alice"),
+                make_prop("age", "30"),
+            ],
         );
         let result = render_node(&root, &opts()).unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
@@ -378,7 +388,10 @@ mod tests {
                 make_prop("name", "myapp"),
                 make_prop_obj(
                     "db",
-                    vec![make_prop("host", "localhost"), make_prop("port", "5432")],
+                    vec![
+                        make_prop("host", "localhost"),
+                        make_prop("port", "5432"),
+                    ],
                 ),
             ],
         );
@@ -408,7 +421,10 @@ mod tests {
 
     #[test]
     fn string_value_with_escaping() {
-        let root = make_container("File", vec![make_prop("msg", "hello \"world\"\nnewline")]);
+        let root = make_container(
+            "File",
+            vec![make_prop("msg", "hello \"world\"\nnewline")],
+        );
         let result = render_node(&root, &opts()).unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
         assert_eq!(parsed["msg"], "hello \"world\"\nnewline");
@@ -421,7 +437,13 @@ mod tests {
             vec![
                 make_prop("a", "1"),
                 make_prop("b", "hello"),
-                make_prop_obj("c", vec![make_prop("d", "true"), make_prop("e", "null")]),
+                make_prop_obj(
+                    "c",
+                    vec![
+                        make_prop("d", "true"),
+                        make_prop("e", "null"),
+                    ],
+                ),
             ],
         );
         let result = render_node(&root, &opts()).unwrap();
@@ -448,12 +470,12 @@ mod tests {
         let root = make_container(
             "File",
             vec![
-                make_typed_prop("flag", "true", "string"), // string "true", not boolean
-                make_typed_prop("count", "42", "string"),  // string "42", not number
-                make_typed_prop("nothing", "null", "string"), // string "null", not null
-                make_typed_prop("active", "true", "true"), // boolean true
-                make_typed_prop("pi", "3.14", "number"),   // number
-                make_typed_prop("empty", "null", "null"),  // null
+                make_typed_prop("flag", "true", "string"),      // string "true", not boolean
+                make_typed_prop("count", "42", "string"),        // string "42", not number
+                make_typed_prop("nothing", "null", "string"),    // string "null", not null
+                make_typed_prop("active", "true", "true"),       // boolean true
+                make_typed_prop("pi", "3.14", "number"),         // number
+                make_typed_prop("empty", "null", "null"),        // null
             ],
         );
         let result = render_node(&root, &opts()).unwrap();
@@ -484,25 +506,24 @@ mod tests {
             }],
         );
         let result = render_node(&root, &opts()).unwrap();
-        assert!(
-            result.contains("\"my-key\""),
-            "should use original key from key attr"
-        );
+        assert!(result.contains("\"my-key\""), "should use original key from key attr");
     }
 
     #[test]
     fn tracked_render_records_spans() {
         let root = make_container(
             "File",
-            vec![XmlNode::Element {
-                name: "name".to_string(),
-                attributes: vec![
-                    ("field".to_string(), "name".to_string()),
-                    ("line".to_string(), "1".to_string()),
-                    ("column".to_string(), "10".to_string()),
-                ],
-                children: vec![XmlNode::Text("Alice".to_string())],
-            }],
+            vec![
+                XmlNode::Element {
+                    name: "name".to_string(),
+                    attributes: vec![
+                        ("field".to_string(), "name".to_string()),
+                        ("line".to_string(), "1".to_string()),
+                        ("column".to_string(), "10".to_string()),
+                    ],
+                    children: vec![XmlNode::Text("Alice".to_string())],
+                },
+            ],
         );
         let (rendered, spans) = render_node_tracked(&root, &opts()).unwrap();
         let (start, end) = spans[&(1, 10)];

@@ -89,10 +89,7 @@ pub fn expand_globs_checked(
         }
     }
 
-    Ok(GlobExpansion {
-        files,
-        empty_patterns,
-    })
+    Ok(GlobExpansion { files, empty_patterns })
 }
 
 /// Expand glob patterns to file paths (convenience wrapper with no limit).

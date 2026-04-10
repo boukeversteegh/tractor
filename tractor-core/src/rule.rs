@@ -31,14 +31,14 @@ use crate::tree_mode::TreeMode;
 // ---------------------------------------------------------------------------
 
 #[cfg(feature = "native")]
-pub use glob_matcher::GlobError;
-#[cfg(feature = "native")]
 pub use glob_matcher::GlobMatcher;
+#[cfg(feature = "native")]
+pub use glob_matcher::GlobError;
 
 #[cfg(feature = "native")]
 mod glob_matcher {
-    use glob::MatchOptions;
     use glob::Pattern;
+    use glob::MatchOptions;
 
     /// Error returned when a glob pattern string is invalid.
     #[derive(Debug, Clone)]
@@ -351,9 +351,7 @@ impl RuleSet {
 
     /// Resolve the effective language for a rule.
     pub fn effective_language<'a>(&'a self, rule: &'a Rule) -> Option<&'a str> {
-        rule.language
-            .as_deref()
-            .or(self.default_language.as_deref())
+        rule.language.as_deref().or(self.default_language.as_deref())
     }
 }
 
@@ -380,10 +378,7 @@ mod tests {
 
         assert_eq!(rule.id, "no-unwrap");
         assert_eq!(rule.xpath, "//call[name='unwrap']");
-        assert_eq!(
-            rule.reason.as_deref(),
-            Some("Prefer ? operator over .unwrap()")
-        );
+        assert_eq!(rule.reason.as_deref(), Some("Prefer ? operator over .unwrap()"));
         assert_eq!(rule.severity, Severity::Warning);
         assert_eq!(rule.include, vec!["**/*.rs".to_string()]);
         assert!(rule.exclude.is_empty());
@@ -410,7 +405,8 @@ mod tests {
         rs.default_tree_mode = Some(TreeMode::Data);
 
         let rule_no_mode = Rule::new("a", "//x");
-        let rule_with_mode = Rule::new("b", "//y").with_tree_mode(TreeMode::Raw);
+        let rule_with_mode = Rule::new("b", "//y")
+            .with_tree_mode(TreeMode::Raw);
 
         assert_eq!(rs.effective_tree_mode(&rule_no_mode), Some(TreeMode::Data));
         assert_eq!(rs.effective_tree_mode(&rule_with_mode), Some(TreeMode::Raw));
@@ -422,7 +418,8 @@ mod tests {
         rs.default_language = Some("typescript".into());
 
         let rule_no_lang = Rule::new("a", "//x");
-        let rule_with_lang = Rule::new("b", "//y").with_language("rust");
+        let rule_with_lang = Rule::new("b", "//y")
+            .with_language("rust");
 
         assert_eq!(rs.effective_language(&rule_no_lang), Some("typescript"));
         assert_eq!(rs.effective_language(&rule_with_lang), Some("rust"));
@@ -430,7 +427,10 @@ mod tests {
 
     #[test]
     fn test_ruleset_from_rules() {
-        let rules = vec![Rule::new("a", "//x"), Rule::new("b", "//y")];
+        let rules = vec![
+            Rule::new("a", "//x"),
+            Rule::new("b", "//y"),
+        ];
         let rs = RuleSet::from_rules(rules);
         assert_eq!(rs.rules.len(), 2);
         assert_eq!(rs.rules[0].id, "a");
@@ -456,9 +456,7 @@ mod tests {
         use super::*;
         use crate::GlobPattern;
 
-        fn g(s: &str) -> GlobPattern {
-            GlobPattern::new(s)
-        }
+        fn g(s: &str) -> GlobPattern { GlobPattern::new(s) }
 
         #[test]
         fn test_empty_matcher_matches_everything() {
@@ -485,8 +483,9 @@ mod tests {
 
         #[test]
         fn test_include_intersection() {
-            let m =
-                GlobMatcher::new(&[g("**/*.rs"), g("**/*.ts")], &[], &[g("src/**")], &[]).unwrap();
+            let m = GlobMatcher::new(
+                &[g("**/*.rs"), g("**/*.ts")], &[], &[g("src/**")], &[],
+            ).unwrap();
             assert!(m.matches_str("src/main.rs"));
             assert!(m.matches_str("src/index.ts"));
             assert!(!m.matches_str("test/main.rs"));
@@ -495,7 +494,9 @@ mod tests {
 
         #[test]
         fn test_rule_cannot_widen_beyond_ruleset() {
-            let m = GlobMatcher::new(&[g("src/**")], &[], &[g("**/*.rs")], &[]).unwrap();
+            let m = GlobMatcher::new(
+                &[g("src/**")], &[], &[g("**/*.rs")], &[],
+            ).unwrap();
             assert!(m.matches_str("src/main.rs"));
             assert!(!m.matches_str("test/main.rs"));
             assert!(!m.matches_str("src/data.json"));
@@ -503,7 +504,9 @@ mod tests {
 
         #[test]
         fn test_exclude_union() {
-            let m = GlobMatcher::new(&[], &[g("vendor/**")], &[], &[g("generated/**")]).unwrap();
+            let m = GlobMatcher::new(
+                &[], &[g("vendor/**")], &[], &[g("generated/**")],
+            ).unwrap();
             assert!(m.matches_str("src/main.rs"));
             assert!(!m.matches_str("vendor/lib.rs"));
             assert!(!m.matches_str("generated/code.rs"));
@@ -511,7 +514,9 @@ mod tests {
 
         #[test]
         fn test_exclude_overrides_include() {
-            let m = GlobMatcher::new(&[g("**/*.rs")], &[g("test/**")], &[], &[]).unwrap();
+            let m = GlobMatcher::new(
+                &[g("**/*.rs")], &[g("test/**")], &[], &[],
+            ).unwrap();
             assert!(m.matches_str("src/main.rs"));
             assert!(!m.matches_str("test/main.rs"));
         }
@@ -523,8 +528,7 @@ mod tests {
                 &[g("src/vendor/**")],
                 &[g("**/*_test.*")],
                 &[g("**/*_snapshot*")],
-            )
-            .unwrap();
+            ).unwrap();
             assert!(m.matches_str("src/foo_test.rs"));
             assert!(!m.matches_str("src/foo.rs"));
             assert!(!m.matches_str("test/foo_test.rs"));

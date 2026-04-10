@@ -6,11 +6,11 @@ mod engine;
 mod map_normalize;
 mod match_result;
 
-pub use engine::{print_timing_stats, xot_node_to_xml_node, XPathEngine};
+pub use engine::{XPathEngine, print_timing_stats, xot_node_to_xml_node};
 pub use match_result::{Match, XmlNode};
 
 // Re-export xee-xpath types needed for direct query API
-pub use xee_xpath::{DocumentHandle, Documents};
+pub use xee_xpath::{Documents, DocumentHandle};
 
 use serde::Serialize;
 use thiserror::Error;
@@ -191,16 +191,9 @@ mod validation_tests {
         assert!(result.error.is_some());
         // Check the error message is human-readable
         let err = result.error.unwrap();
-        assert!(
-            err.contains("Parse error"),
-            "Error should mention parse error: {}",
-            err
-        );
+        assert!(err.contains("Parse error"), "Error should mention parse error: {}", err);
         // Check position is captured
-        assert!(
-            result.error_start.is_some(),
-            "Should have error start position"
-        );
+        assert!(result.error_start.is_some(), "Should have error start position");
         assert!(result.error_end.is_some(), "Should have error end position");
     }
 
@@ -218,13 +211,8 @@ mod validation_tests {
         assert_eq!(start, Some(8));
         assert_eq!(end, Some(8));
 
-        let (msg, start, end) = parse_xpath_error(
-            "XPST0017 Type error: incorrect function name or number of arguments. (0..18)",
-        );
-        assert_eq!(
-            msg,
-            "Type error: incorrect function name or number of arguments"
-        );
+        let (msg, start, end) = parse_xpath_error("XPST0017 Type error: incorrect function name or number of arguments. (0..18)");
+        assert_eq!(msg, "Type error: incorrect function name or number of arguments");
         assert_eq!(start, Some(0));
         assert_eq!(end, Some(18));
     }

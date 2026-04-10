@@ -1,7 +1,4 @@
-use tractor_core::{
-    normalize_path,
-    report::{Report, ResultItem},
-};
+use tractor_core::{report::{Report, ResultItem}, normalize_path};
 
 /// Render report matches as GitHub Actions annotations: `::error file=...,line=...::reason`
 /// GitHub annotations are self-contained — grouping affects ordering only,
@@ -26,11 +23,7 @@ fn render_github_results(out: &mut String, items: &[ResultItem], parent_file: Op
     }
 }
 
-fn render_github_match(
-    out: &mut String,
-    rm: &tractor_core::report::ReportMatch,
-    group_file: Option<&str>,
-) {
+fn render_github_match(out: &mut String, rm: &tractor_core::report::ReportMatch, group_file: Option<&str>) {
     let reason = rm.reason.as_deref().unwrap_or("violation");
     // GitHub Actions only supports error, warning, notice
     let level = rm.severity.map_or("error", |s| match s {
@@ -39,7 +32,7 @@ fn render_github_match(
         tractor_core::report::Severity::Warning => "warning",
         tractor_core::report::Severity::Info => "notice",
     });
-    let file = group_file.unwrap_or(&rm.file);
+    let file   = group_file.unwrap_or(&rm.file);
     let mut message = reason.to_string();
     // Include the source expression and error position for diagnostics
     if let Some(ref source) = rm.source {
@@ -52,11 +45,7 @@ fn render_github_match(
             Some(o) => format!("{}: {}", o.as_str(), message),
             None => message.clone(),
         };
-        out.push_str(&format!(
-            "::{level}::{message}\n",
-            level = level,
-            message = prefix_msg
-        ));
+        out.push_str(&format!("::{level}::{message}\n", level = level, message = prefix_msg));
     } else {
         let file = normalize_path(file);
         out.push_str(&format!(
@@ -74,7 +63,5 @@ fn render_github_match(
 
 /// Escape characters that break GitHub Actions workflow command parsing.
 fn escape_github_message(s: &str) -> String {
-    s.replace('%', "%25")
-        .replace('\r', "%0D")
-        .replace('\n', "%0A")
+    s.replace('%', "%25").replace('\r', "%0D").replace('\n', "%0A")
 }

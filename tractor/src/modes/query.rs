@@ -1,13 +1,15 @@
-use super::config::{run_from_config, ConfigRunParams};
-use crate::cli::{Cli, QueryArgs};
-use crate::executor::{self, ExecuteOptions, Operation, QueryExpr, QueryOperation};
-use crate::pipeline::render_report;
-use crate::pipeline::{
-    apply_message_template, project_report, run_debug, GroupDimension, InputMode, RunContext,
-    ViewField,
-};
 use clap::CommandFactory;
 use tractor_core::NormalizedXpath;
+use crate::cli::{Cli, QueryArgs};
+use crate::executor::{self, ExecuteOptions, Operation, QueryOperation, QueryExpr};
+use crate::pipeline::{
+    RunContext, ViewField, InputMode,
+    run_debug,
+    project_report, apply_message_template,
+    GroupDimension,
+};
+use crate::pipeline::render_report;
+use super::config::{run_from_config, ConfigRunParams};
 
 pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(ref config_path) = args.config {
@@ -26,16 +28,8 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let ctx = RunContext::build(
-        &args.shared,
-        args.files,
-        args.shared.xpath.clone(),
-        &args.format,
-        &[ViewField::File, ViewField::Line, ViewField::Tree],
-        args.view.as_deref(),
-        args.message,
-        args.content,
-        args.debug,
-        &[],
+        &args.shared, args.files, args.shared.xpath.clone(),
+        &args.format, &[ViewField::File, ViewField::Line, ViewField::Tree], args.view.as_deref(), args.message, args.content, args.debug, &[],
     )?;
 
     if let InputMode::Files(ref files) = ctx.input {
@@ -64,9 +58,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
             exclude: vec![],
             diff_files: None,
             diff_lines: None,
-            queries: vec![QueryExpr {
-                xpath: xpath_expr.clone(),
-            }],
+            queries: vec![QueryExpr { xpath: xpath_expr.clone() }],
             tree_mode: ctx.tree_mode,
             language: ctx.lang.clone(),
             limit: ctx.limit,
@@ -79,9 +71,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
             exclude: vec![],
             diff_files: None,
             diff_lines: None,
-            queries: vec![QueryExpr {
-                xpath: xpath_expr.clone(),
-            }],
+            queries: vec![QueryExpr { xpath: xpath_expr.clone() }],
             tree_mode: ctx.tree_mode,
             language: Some(lang.clone()),
             limit: ctx.limit,

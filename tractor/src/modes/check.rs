@@ -1,12 +1,14 @@
-use super::config::{run_from_config, ConfigRunParams};
+use tractor_core::report::Severity;
+use tractor_core::rule::Rule;
 use crate::cli::CheckArgs;
 use crate::executor::{self, CheckOperation, ExecuteOptions, Operation};
 use crate::pipeline::{
-    apply_message_template, project_report, render_report, GroupDimension, InputMode, RunContext,
-    ViewField,
+    RunContext, ViewField, InputMode,
+    render_report,
+    project_report, apply_message_template,
+    GroupDimension,
 };
-use tractor_core::report::Severity;
-use tractor_core::rule::Rule;
+use super::config::{run_from_config, ConfigRunParams};
 
 pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
     if args.config.is_some() {
@@ -19,28 +21,15 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
         "warning" => Severity::Warning,
         s => return Err(format!("invalid severity '{}': use 'error' or 'warning'", s).into()),
     };
-    let reason = args
-        .reason
-        .clone()
-        .unwrap_or_else(|| "check failed".to_string());
+    let reason = args.reason.clone().unwrap_or_else(|| "check failed".to_string());
 
     // Build RunContext for input resolution + rendering config.
     let ctx = RunContext::build(
-        &args.shared,
-        args.files,
-        args.shared.xpath.clone(),
-        &args.format,
-        &[ViewField::Reason, ViewField::Severity, ViewField::Lines],
-        args.view.as_deref(),
-        args.message,
-        args.content,
-        false,
-        &[GroupDimension::File],
+        &args.shared, args.files, args.shared.xpath.clone(),
+        &args.format, &[ViewField::Reason, ViewField::Severity, ViewField::Lines], args.view.as_deref(), args.message, args.content, false, &[GroupDimension::File],
     )?;
 
-    let xpath_expr = ctx
-        .xpath
-        .as_ref()
+    let xpath_expr = ctx.xpath.as_ref()
         .ok_or("check requires an XPath query (-x)")?;
 
     // Build a single-rule check operation and delegate to the executor.
@@ -75,20 +64,22 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
                 inline_source: None,
             })
         }
-        InputMode::InlineSource { source, lang } => Operation::Check(CheckOperation {
-            files: vec![],
-            exclude: vec![],
-            diff_files: None,
-            diff_lines: None,
-            rules: vec![rule],
-            tree_mode: ctx.tree_mode,
-            language: Some(lang.clone()),
-            ignore_whitespace: ctx.ignore_whitespace,
-            parse_depth: ctx.parse_depth,
-            ruleset_include: vec![],
-            ruleset_exclude: vec![],
-            inline_source: Some(source.clone()),
-        }),
+        InputMode::InlineSource { source, lang } => {
+            Operation::Check(CheckOperation {
+                files: vec![],
+                exclude: vec![],
+                diff_files: None,
+                diff_lines: None,
+                rules: vec![rule],
+                tree_mode: ctx.tree_mode,
+                language: Some(lang.clone()),
+                ignore_whitespace: ctx.ignore_whitespace,
+                parse_depth: ctx.parse_depth,
+                ruleset_include: vec![],
+                ruleset_exclude: vec![],
+                inline_source: Some(source.clone()),
+            })
+        }
     };
 
     let options = ExecuteOptions {
@@ -126,10 +117,7 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
 // Config-based batch check — loads a tractor config and runs check operations
 // ---------------------------------------------------------------------------
 
-fn run_check_config(
-    args: CheckArgs,
-    config_path_str: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
+fn run_check_config(args: CheckArgs, config_path_str: &str) -> Result<(), Box<dyn std::error::Error>> {
     run_from_config(ConfigRunParams {
         config_path: config_path_str,
         shared: &args.shared,

@@ -19,9 +19,9 @@
 //! ```
 //! Queryable as: `//database/host[.='localhost']`
 
+use xot::{Xot, Node as XotNode};
+use crate::xot_transform::{TransformAction, helpers::*};
 use crate::output::syntax_highlight::SyntaxCategory;
-use crate::xot_transform::{helpers::*, TransformAction};
-use xot::{Node as XotNode, Xot};
 
 /// Transform an INI AST node into a data-structure-oriented XML tree
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
@@ -32,7 +32,9 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 
     match kind.as_str() {
         // Sections: extract name from section_name child, rename to that
-        "section" => transform_section(xot, node),
+        "section" => {
+            transform_section(xot, node)
+        }
 
         // Section name: remove after parent extracts it
         "section_name" => {
@@ -42,16 +44,24 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         // Settings (key=value pairs): rename to the key text
-        "setting" => transform_setting(xot, node),
+        "setting" => {
+            transform_setting(xot, node)
+        }
 
         // Setting name and value: flatten to promote text
-        "setting_name" | "setting_value" => Ok(TransformAction::Flatten),
+        "setting_name" | "setting_value" => {
+            Ok(TransformAction::Flatten)
+        }
 
         // Text nodes inside section_name or comment: flatten
-        "text" => Ok(TransformAction::Flatten),
+        "text" => {
+            Ok(TransformAction::Flatten)
+        }
 
         // Comments: keep as <comment> with text content, strip # or ; prefix
-        "comment" => transform_comment(xot, node),
+        "comment" => {
+            transform_comment(xot, node)
+        }
 
         // Document root: clean up text children
         "document" => {
@@ -90,9 +100,9 @@ fn transform_setting(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xo
 
         // Copy the setting_value child's source span to the node so --set
         // replaces only the value portion, not the entire `key = value` line.
-        let value_child = xot
-            .children(node)
-            .find(|&c| get_element_name(xot, c).as_deref() == Some("setting_value"));
+        let value_child = xot.children(node).find(|&c| {
+            get_element_name(xot, c).as_deref() == Some("setting_value")
+        });
         if let Some(vc) = value_child {
             copy_source_location(xot, vc, node);
         }

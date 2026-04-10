@@ -366,7 +366,9 @@ pub static LANGUAGES: &[LanguageInfo] = &[
 ///
 /// Uses `Language::from_str` to handle aliases, then looks up the LanguageInfo.
 pub fn get_language_info(name: &str) -> Option<&'static LanguageInfo> {
-    Language::from_str(name).ok().and_then(|lang| lang.info())
+    Language::from_str(name)
+        .ok()
+        .and_then(|lang| lang.info())
 }
 
 /// Parse a language string into a Language enum
@@ -405,10 +407,7 @@ pub fn get_language_names() -> Vec<&'static str> {
 
 /// Get languages that are available in web (have grammar files)
 pub fn get_web_languages() -> Vec<&'static LanguageInfo> {
-    LANGUAGES
-        .iter()
-        .filter(|l| l.grammar_file.is_some())
-        .collect()
+    LANGUAGES.iter().filter(|l| l.grammar_file.is_some()).collect()
 }
 
 #[cfg(test)]
@@ -492,15 +491,9 @@ mod tests {
 
     #[test]
     fn test_language_enum_from_str() {
-        assert_eq!(
-            Language::from_str("typescript").unwrap(),
-            Language::TypeScript
-        );
+        assert_eq!(Language::from_str("typescript").unwrap(), Language::TypeScript);
         assert_eq!(Language::from_str("ts").unwrap(), Language::TypeScript);
-        assert_eq!(
-            Language::from_str("javascript").unwrap(),
-            Language::JavaScript
-        );
+        assert_eq!(Language::from_str("javascript").unwrap(), Language::JavaScript);
         assert_eq!(Language::from_str("js").unwrap(), Language::JavaScript);
         assert_eq!(Language::from_str("csharp").unwrap(), Language::CSharp);
         assert_eq!(Language::from_str("cs").unwrap(), Language::CSharp);

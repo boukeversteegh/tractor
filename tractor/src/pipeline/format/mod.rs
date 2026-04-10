@@ -1,30 +1,29 @@
-pub mod claude_code;
+pub mod options;
 pub mod gcc;
 pub mod github;
-pub mod json;
-pub mod options;
-mod shared;
-pub mod text;
 pub mod xml;
+pub mod json;
 pub mod yaml;
+pub mod text;
+pub mod claude_code;
+mod shared;
 
-pub use claude_code::render_claude_code;
+pub use options::{OutputFormat, GroupDimension, ViewField, ViewSet, parse_view_set, parse_group_by};
 pub use gcc::{render_gcc, render_gcc_report_with_template};
 pub use github::render_github;
-pub use json::render_json_report;
-pub use options::{
-    parse_group_by, parse_view_set, GroupDimension, OutputFormat, ViewField, ViewSet,
-};
-pub use text::render_text_report;
 pub use xml::render_xml_report;
+pub use json::render_json_report;
 pub use yaml::render_yaml_report;
+pub use text::render_text_report;
+pub use claude_code::render_claude_code;
 
-use crate::modes::test::test_colors;
-use crate::pipeline::context::RunContext;
 use tractor_core::{
-    render_lines, render_source_precomputed, render_xml_node,
+    render_xml_node,
+    render_source_precomputed, render_lines,
     report::{Report, ReportMatch},
 };
+use crate::pipeline::context::RunContext;
+use crate::modes::test::test_colors;
 
 /// Options for test-specific rendering (colored pass/fail, error detail).
 /// When None, the report is rendered generically.
@@ -46,10 +45,7 @@ pub fn render_report(
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Test reports with text/gcc/github get special colored pass/fail rendering.
     if let Some(opts) = test_opts {
-        if matches!(
-            ctx.output_format,
-            OutputFormat::Text | OutputFormat::Gcc | OutputFormat::Github
-        ) {
+        if matches!(ctx.output_format, OutputFormat::Text | OutputFormat::Gcc | OutputFormat::Github) {
             return render_test_text(report, ctx, opts);
         }
     }
@@ -57,39 +53,18 @@ pub fn render_report(
     // Standard format dispatch — same for all report types.
     let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
     match ctx.output_format {
-        OutputFormat::Json => print!(
-            "{}",
-            render_json_report(report, &ctx.view, &ctx.render_options(), &dims)
-        ),
-        OutputFormat::Yaml => print!(
-            "{}",
-            render_yaml_report(report, &ctx.view, &ctx.render_options(), &dims)
-        ),
-        OutputFormat::Xml => print!(
-            "{}",
-            render_xml_report(report, &ctx.view, &ctx.render_options(), &dims)
-        ),
-        OutputFormat::Gcc => {
+        OutputFormat::Json   => print!("{}", render_json_report(report, &ctx.view, &ctx.render_options(), &dims)),
+        OutputFormat::Yaml   => print!("{}", render_yaml_report(report, &ctx.view, &ctx.render_options(), &dims)),
+        OutputFormat::Xml    => print!("{}", render_xml_report(report, &ctx.view, &ctx.render_options(), &dims)),
+        OutputFormat::Gcc    => {
             print!("{}", render_gcc(report, &ctx.render_options(), &dims));
             if let Some(ref totals) = report.totals {
                 print_gcc_summary(totals);
             }
         }
         OutputFormat::Github => print!("{}", render_github(report, &dims)),
-        OutputFormat::ClaudeCode => print!(
-            "{}",
-            render_claude_code(
-                report,
-                ctx.hook_type
-                    .unwrap_or(crate::pipeline::format::options::HookType::PostToolUse),
-                &ctx.render_options(),
-                &dims
-            )
-        ),
-        OutputFormat::Text => print!(
-            "{}",
-            render_text_report(report, &ctx.view, &ctx.render_options(), &dims)
-        ),
+        OutputFormat::ClaudeCode => print!("{}", render_claude_code(report, ctx.hook_type.unwrap_or(crate::pipeline::format::options::HookType::PostToolUse), &ctx.render_options(), &dims)),
+        OutputFormat::Text   => print!("{}", render_text_report(report, &ctx.view, &ctx.render_options(), &dims)),
     }
 
     // Exit code: fail when success is explicitly false.
@@ -109,10 +84,7 @@ fn render_test_text(
     opts: &TestRenderOptions,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let success = report.success.unwrap_or(true);
-    let totals = report
-        .totals
-        .as_ref()
-        .expect("test report must have totals");
+    let totals = report.totals.as_ref().expect("test report must have totals");
 
     let (symbol, color) = if success {
         ("✓", test_colors::GREEN)
@@ -120,62 +92,30 @@ fn render_test_text(
         ("✗", test_colors::RED)
     };
 
-    let label = opts.message.as_deref().unwrap_or("");
+    let label        = opts.message.as_deref().unwrap_or("");
     let expected_str = report.expected.as_deref().unwrap_or("?");
 
     if ctx.use_color {
         if label.is_empty() {
-            println!(
-                "{}{}{} {} matches{}",
-                test_colors::BOLD,
-                color,
-                symbol,
-                totals.results,
-                test_colors::RESET
-            );
+            println!("{}{}{} {} matches{}", test_colors::BOLD, color, symbol, totals.results, test_colors::RESET);
         } else if success {
-            println!(
-                "{}{}{} {}{}",
-                test_colors::BOLD,
-                color,
-                symbol,
-                label,
-                test_colors::RESET
-            );
+            println!("{}{}{} {}{}", test_colors::BOLD, color, symbol, label, test_colors::RESET);
         } else {
-            println!(
-                "{}{}{} {} {}(expected {}, got {}){}",
-                test_colors::BOLD,
-                color,
-                symbol,
-                label,
-                test_colors::RESET,
-                expected_str,
-                totals.results,
-                test_colors::RESET
-            );
+            println!("{}{}{} {} {}(expected {}, got {}){}", test_colors::BOLD, color, symbol, label, test_colors::RESET, expected_str, totals.results, test_colors::RESET);
         }
     } else if label.is_empty() {
         println!("{} {} matches", symbol, totals.results);
     } else if success {
         println!("{} {}", symbol, label);
     } else {
-        println!(
-            "{} {} (expected {}, got {})",
-            symbol, label, expected_str, totals.results
-        );
+        println!("{} {} (expected {}, got {})", symbol, label, expected_str, totals.results);
     }
 
     let all_matches = report.all_matches();
     if !success && !all_matches.is_empty() {
         if let Some(ref error_tmpl) = opts.error_template {
             let flat_matches: Vec<ReportMatch> = all_matches.into_iter().cloned().collect();
-            let out = render_gcc_report_with_template(
-                &flat_matches,
-                error_tmpl,
-                false,
-                &ctx.render_options(),
-            );
+            let out = render_gcc_report_with_template(&flat_matches, error_tmpl, false, &ctx.render_options());
             for line in out.lines() {
                 if ctx.use_color {
                     println!("  {}{}{}", color, line, test_colors::RESET);
@@ -188,24 +128,12 @@ fn render_test_text(
             for rm in &all_matches {
                 let rendered = if let Some(ref s) = rm.source {
                     render_source_precomputed(
-                        s,
-                        rm.tree.as_ref(),
-                        rm.line,
-                        rm.column,
-                        rm.end_line,
-                        rm.end_column,
+                        s, rm.tree.as_ref(),
+                        rm.line, rm.column, rm.end_line, rm.end_column,
                         &render_opts,
                     )
                 } else if let Some(ref ls) = rm.lines {
-                    render_lines(
-                        ls,
-                        rm.tree.as_ref(),
-                        rm.line,
-                        rm.column,
-                        rm.end_line,
-                        rm.end_column,
-                        &render_opts,
-                    )
+                    render_lines(ls, rm.tree.as_ref(), rm.line, rm.column, rm.end_line, rm.end_column, &render_opts)
                 } else if let Some(ref v) = rm.value {
                     format!("{}\n", v)
                 } else if let Some(ref node) = rm.tree {
@@ -239,48 +167,25 @@ fn print_gcc_summary(totals: &tractor_core::report::Totals) {
     let mut parts = Vec::new();
 
     if totals.fatals > 0 {
-        parts.push(format!(
-            "{} fatal{}",
-            totals.fatals,
-            if totals.fatals == 1 { "" } else { "s" }
-        ));
+        parts.push(format!("{} fatal{}", totals.fatals, if totals.fatals == 1 { "" } else { "s" }));
     }
     if totals.errors > 0 {
-        parts.push(format!(
-            "{} error{}",
-            totals.errors,
-            if totals.errors == 1 { "" } else { "s" }
-        ));
+        parts.push(format!("{} error{}", totals.errors, if totals.errors == 1 { "" } else { "s" }));
     }
     if totals.warnings > 0 && totals.errors == 0 && totals.fatals == 0 {
-        parts.push(format!(
-            "{} warning{}",
-            totals.warnings,
-            if totals.warnings == 1 { "" } else { "s" }
-        ));
+        parts.push(format!("{} warning{}", totals.warnings, if totals.warnings == 1 { "" } else { "s" }));
     }
     if totals.updated > 0 {
-        parts.push(format!(
-            "updated {} file{}",
-            totals.updated,
-            if totals.updated == 1 { "" } else { "s" }
-        ));
+        parts.push(format!("updated {} file{}", totals.updated, if totals.updated == 1 { "" } else { "s" }));
     }
 
-    if parts.is_empty() {
-        return;
-    }
+    if parts.is_empty() { return; }
 
-    let file_part =
-        if totals.files > 0 && (totals.fatals > 0 || totals.errors > 0 || totals.warnings > 0) {
-            format!(
-                " in {} file{}",
-                totals.files,
-                if totals.files == 1 { "" } else { "s" }
-            )
-        } else {
-            String::new()
-        };
+    let file_part = if totals.files > 0 && (totals.fatals > 0 || totals.errors > 0 || totals.warnings > 0) {
+        format!(" in {} file{}", totals.files, if totals.files == 1 { "" } else { "s" })
+    } else {
+        String::new()
+    };
 
     println!("{}{}", parts.join(", "), file_part);
 }

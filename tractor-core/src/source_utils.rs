@@ -38,10 +38,10 @@ pub fn parse_position(pos: &str) -> Option<(u32, u32)> {
 
 /// Extract source snippet given start/end positions in "line:col" format
 pub fn extract_snippet(source: &str, start: &str, end: &str) -> Result<String, String> {
-    let (start_line, start_col) =
-        parse_position(start).ok_or_else(|| format!("Invalid start position: {}", start))?;
-    let (end_line, end_col) =
-        parse_position(end).ok_or_else(|| format!("Invalid end position: {}", end))?;
+    let (start_line, start_col) = parse_position(start)
+        .ok_or_else(|| format!("Invalid start position: {}", start))?;
+    let (end_line, end_col) = parse_position(end)
+        .ok_or_else(|| format!("Invalid end position: {}", end))?;
 
     let start_offset = position_to_offset(source, start_line, start_col);
     let end_offset = position_to_offset(source, end_line, end_col);
@@ -75,15 +75,11 @@ pub fn get_source_lines(source: &str, start_line: u32, end_line: u32) -> Vec<Str
 
 /// Get source lines for a range given "line:col" format positions
 /// Returns the full lines from start position's line to end position's line
-pub fn get_source_lines_for_range(
-    source: &str,
-    start: &str,
-    end: &str,
-) -> Result<Vec<String>, String> {
-    let (start_line, _) =
-        parse_position(start).ok_or_else(|| format!("Invalid start position: {}", start))?;
-    let (end_line, _) =
-        parse_position(end).ok_or_else(|| format!("Invalid end position: {}", end))?;
+pub fn get_source_lines_for_range(source: &str, start: &str, end: &str) -> Result<Vec<String>, String> {
+    let (start_line, _) = parse_position(start)
+        .ok_or_else(|| format!("Invalid start position: {}", start))?;
+    let (end_line, _) = parse_position(end)
+        .ok_or_else(|| format!("Invalid end position: {}", end))?;
 
     Ok(get_source_lines(source, start_line, end_line))
 }
@@ -122,10 +118,7 @@ mod tests {
         // Extract "world"
         assert_eq!(extract_snippet(source, "2:1", "2:6").unwrap(), "world");
         // Extract across lines
-        assert_eq!(
-            extract_snippet(source, "1:1", "2:6").unwrap(),
-            "hello\nworld"
-        );
+        assert_eq!(extract_snippet(source, "1:1", "2:6").unwrap(), "hello\nworld");
         // Invalid positions
         assert!(extract_snippet(source, "invalid", "2:6").is_err());
     }
@@ -134,10 +127,7 @@ mod tests {
     fn test_get_source_lines() {
         let source = "line1\nline2\nline3\nline4";
         assert_eq!(get_source_lines(source, 1, 2), vec!["line1", "line2"]);
-        assert_eq!(
-            get_source_lines(source, 2, 4),
-            vec!["line2", "line3", "line4"]
-        );
+        assert_eq!(get_source_lines(source, 2, 4), vec!["line2", "line3", "line4"]);
         assert_eq!(get_source_lines(source, 1, 1), vec!["line1"]);
         assert_eq!(get_source_lines(source, 0, 2), Vec::<String>::new());
     }

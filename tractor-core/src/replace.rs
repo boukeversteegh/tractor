@@ -38,11 +38,7 @@ impl fmt::Display for ReplaceError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ReplaceError::Io { path, source } => write!(f, "{}: {}", path, source),
-            ReplaceError::OverlappingMatches {
-                file,
-                first,
-                second,
-            } => {
+            ReplaceError::OverlappingMatches { file, first, second } => {
                 write!(
                     f,
                     "overlapping matches in {} at {}:{} and {}:{}, replacement is ambiguous",
@@ -114,10 +110,7 @@ pub fn apply_set_to_string(
     matches: &[Match],
     new_value: &str,
 ) -> Result<String, ReplaceError> {
-    let file_label = matches
-        .first()
-        .map(|m| m.file.as_str())
-        .unwrap_or("<source>");
+    let file_label = matches.first().map(|m| m.file.as_str()).unwrap_or("<source>");
     let file_matches: Vec<&Match> = matches.iter().collect();
     let (result, _) = apply_to_content_str(source, file_matches, new_value, file_label)?;
     Ok(result)
@@ -207,10 +200,7 @@ fn apply_to_content_str(
 /// - Two matches overlap in the same file
 /// - A file cannot be read or written
 /// - A match has no valid file path (e.g. from stdin)
-pub fn apply_replacements(
-    matches: &[Match],
-    new_value: &str,
-) -> Result<ReplaceSummary, ReplaceError> {
+pub fn apply_replacements(matches: &[Match], new_value: &str) -> Result<ReplaceSummary, ReplaceError> {
     if matches.is_empty() {
         return Ok(ReplaceSummary {
             files_modified: 0,
@@ -338,24 +328,8 @@ mod tests {
         let source = Arc::new(vec!["aaa bbb aaa".to_string()]);
 
         let matches = vec![
-            Match::with_location(
-                file_str.clone(),
-                1,
-                1,
-                1,
-                4,
-                "aaa".to_string(),
-                Arc::clone(&source),
-            ),
-            Match::with_location(
-                file_str.clone(),
-                1,
-                9,
-                1,
-                12,
-                "aaa".to_string(),
-                Arc::clone(&source),
-            ),
+            Match::with_location(file_str.clone(), 1, 1, 1, 4, "aaa".to_string(), Arc::clone(&source)),
+            Match::with_location(file_str.clone(), 1, 9, 1, 12, "aaa".to_string(), Arc::clone(&source)),
         ];
 
         let result = apply_replacements(&matches, "xxx").unwrap();
@@ -371,16 +345,9 @@ mod tests {
 
         let matches = vec![Match::with_location(
             file.to_str().unwrap().to_string(),
-            2,
-            1,
-            2,
-            4,
+            2, 1, 2, 4,
             "OLD".to_string(),
-            Arc::new(vec![
-                "line1".to_string(),
-                "OLD".to_string(),
-                "line3".to_string(),
-            ]),
+            Arc::new(vec!["line1".to_string(), "OLD".to_string(), "line3".to_string()]),
         )];
 
         let result = apply_replacements(&matches, "NEW").unwrap();
@@ -398,32 +365,13 @@ mod tests {
         let source = Arc::new(vec!["abcdefgh".to_string()]);
 
         let matches = vec![
-            Match::with_location(
-                file_str.clone(),
-                1,
-                1,
-                1,
-                5,
-                "abcd".to_string(),
-                Arc::clone(&source),
-            ),
-            Match::with_location(
-                file_str.clone(),
-                1,
-                3,
-                1,
-                7,
-                "cdef".to_string(),
-                Arc::clone(&source),
-            ),
+            Match::with_location(file_str.clone(), 1, 1, 1, 5, "abcd".to_string(), Arc::clone(&source)),
+            Match::with_location(file_str.clone(), 1, 3, 1, 7, "cdef".to_string(), Arc::clone(&source)),
         ];
 
         let result = apply_replacements(&matches, "x");
         assert!(result.is_err());
-        assert!(matches!(
-            result.unwrap_err(),
-            ReplaceError::OverlappingMatches { .. }
-        ));
+        assert!(matches!(result.unwrap_err(), ReplaceError::OverlappingMatches { .. }));
     }
 
     #[test]
@@ -437,24 +385,8 @@ mod tests {
 
         // Duplicate match at same position
         let matches = vec![
-            Match::with_location(
-                file_str.clone(),
-                1,
-                1,
-                1,
-                6,
-                "hello".to_string(),
-                Arc::clone(&source),
-            ),
-            Match::with_location(
-                file_str.clone(),
-                1,
-                1,
-                1,
-                6,
-                "hello".to_string(),
-                Arc::clone(&source),
-            ),
+            Match::with_location(file_str.clone(), 1, 1, 1, 6, "hello".to_string(), Arc::clone(&source)),
+            Match::with_location(file_str.clone(), 1, 1, 1, 6, "hello".to_string(), Arc::clone(&source)),
         ];
 
         let result = apply_replacements(&matches, "world").unwrap();
@@ -484,10 +416,7 @@ mod tests {
 
         let matches = vec![Match::with_location(
             file.to_str().unwrap().to_string(),
-            1,
-            1,
-            1,
-            3,
+            1, 1, 1, 3,
             "ab".to_string(),
             Arc::new(vec!["ab".to_string()]),
         )];
@@ -506,10 +435,7 @@ mod tests {
 
         let matches = vec![Match::with_location(
             file.to_str().unwrap().to_string(),
-            1,
-            1,
-            1,
-            10,
+            1, 1, 1, 10,
             "remove_me".to_string(),
             Arc::new(vec!["remove_me".to_string()]),
         )];

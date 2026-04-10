@@ -57,9 +57,7 @@ fn normalize_lexically(path: &Path) -> PathBuf {
                 let last = normalized.components().next_back();
                 if matches!(last, Some(Component::Normal(_))) {
                     normalized.pop();
-                } else if !path.is_absolute()
-                    && !matches!(last, Some(Component::RootDir | Component::Prefix(_)))
-                {
+                } else if !path.is_absolute() && !matches!(last, Some(Component::RootDir | Component::Prefix(_))) {
                     normalized.push(component.as_os_str());
                 }
             }

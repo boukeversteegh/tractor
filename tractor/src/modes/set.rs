@@ -1,16 +1,13 @@
-use super::config::{run_from_config, ConfigRunParams};
-use crate::cli::SetArgs;
-use crate::executor::Operation;
-use crate::pipeline::git;
-use crate::pipeline::{
-    project_report, query_files_batched, query_inline_source, render_report, GroupDimension,
-    InputMode, RunContext, ViewField,
-};
-use tractor_core::declarative_set::declarative_set;
-use tractor_core::detect_language;
+use tractor_core::{apply_replacements, apply_set_to_string};
 use tractor_core::report::{Report, ReportBuilder, ReportMatch};
 use tractor_core::xpath_upsert::upsert;
-use tractor_core::{apply_replacements, apply_set_to_string};
+use tractor_core::declarative_set::declarative_set;
+use tractor_core::detect_language;
+use crate::cli::SetArgs;
+use crate::executor::Operation;
+use crate::pipeline::{RunContext, ViewField, InputMode, query_files_batched, query_inline_source, render_report, project_report, GroupDimension};
+use crate::pipeline::git;
+use super::config::{run_from_config, ConfigRunParams};
 
 /// Separate positional args into files and an optional path expression.
 ///
@@ -61,16 +58,8 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
     // Declarative mode: path expression without -x
     if let Some(expr) = &expr {
         let ctx = RunContext::build(
-            &args.shared,
-            files,
-            None,
-            "text",
-            &[ViewField::Tree],
-            None,
-            None,
-            None,
-            false,
-            &[GroupDimension::File],
+            &args.shared, files, None,
+            "text", &[ViewField::Tree], None, None, None, false, &[GroupDimension::File],
         )?;
 
         let file_list = match &ctx.input {
@@ -80,20 +69,19 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
             }
         };
 
-        let file_list = apply_file_filters(
-            file_list.clone(),
-            diff_files_spec.as_deref(),
-            diff_lines_spec.as_deref(),
-        );
+        let file_list = apply_file_filters(file_list.clone(), diff_files_spec.as_deref(), diff_lines_spec.as_deref());
         let lang_override = ctx.lang.as_deref();
         let mut files_modified = 0;
         let mut total_ops = 0;
 
         for file_path in &file_list {
-            let lang = lang_override.unwrap_or_else(|| detect_language(file_path));
+            let lang = lang_override
+                .unwrap_or_else(|| detect_language(file_path));
 
             let source = std::fs::read_to_string(file_path)?;
-            let result = declarative_set(&source, lang, expr, args.value.as_deref())?;
+            let result = declarative_set(
+                &source, lang, expr, args.value.as_deref(),
+            )?;
 
             if result.source != source {
                 std::fs::write(file_path, &result.source)?;
@@ -119,31 +107,23 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
     //
     // Early normalization: if stdin is provided as source input (--lang set, no files,
     // stdin is not a TTY), implicitly enable stdout mode — there is no file to modify.
-    let stdin_source =
-        files.is_empty() && args.shared.lang.is_some() && !atty::is(atty::Stream::Stdin);
+    let stdin_source = files.is_empty()
+        && args.shared.lang.is_some()
+        && !atty::is(atty::Stream::Stdin);
     let stdout = args.stdout || stdin_source;
 
     let default_view: &[ViewField] = &[ViewField::File, ViewField::Line, ViewField::Status];
 
     let ctx = RunContext::build(
-        &args.shared,
-        files,
-        args.shared.xpath.clone(),
-        &args.format,
-        default_view,
-        args.view.as_deref(),
-        None,
-        None,
-        false,
-        &[GroupDimension::File],
+        &args.shared, files, args.shared.xpath.clone(),
+        &args.format, default_view, args.view.as_deref(), None, None, false, &[GroupDimension::File],
     )?;
 
-    let xpath_expr = ctx
-        .xpath
-        .as_ref()
+    let xpath_expr = ctx.xpath.as_ref()
         .ok_or("set requires either an XPath query (-x) or a path expression")?;
 
-    let value = args.value.as_ref().ok_or("set with -x requires --value")?;
+    let value = args.value.as_ref()
+        .ok_or("set with -x requires --value")?;
 
     // Stdout mode: print modified content directly and exit. No report.
     if stdout {
@@ -152,14 +132,11 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
                 if files.len() > 1 {
                     return Err("--stdout with multiple files is not supported".into());
                 }
-                let files = apply_file_filters(
-                    files.clone(),
-                    diff_files_spec.as_deref(),
-                    diff_lines_spec.as_deref(),
-                );
+                let files = apply_file_filters(files.clone(), diff_files_spec.as_deref(), diff_lines_spec.as_deref());
                 let (_, matches) = query_files_batched(&ctx, &files, xpath_expr, true)?;
-                let modified =
-                    apply_set_to_string(&std::fs::read_to_string(&files[0])?, &matches, value)?;
+                let modified = apply_set_to_string(
+                    &std::fs::read_to_string(&files[0])?, &matches, value,
+                )?;
                 print!("{}", modified);
             }
             InputMode::InlineSource { source, lang } => {
@@ -174,18 +151,15 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
     // In-place mode: modify files, report matches.
     match &ctx.input {
         InputMode::Files(files) => {
-            let files = apply_file_filters(
-                files.clone(),
-                diff_files_spec.as_deref(),
-                diff_lines_spec.as_deref(),
-            );
+            let files = apply_file_filters(files.clone(), diff_files_spec.as_deref(), diff_lines_spec.as_deref());
             let (_, matches) = query_files_batched(&ctx, &files, xpath_expr, true)?;
 
             let lang_override = ctx.lang.as_deref();
             let mut fallback_files: Vec<String> = Vec::new();
 
             for file_path in &files {
-                let lang = lang_override.unwrap_or_else(|| detect_language(file_path));
+                let lang = lang_override
+                    .unwrap_or_else(|| detect_language(file_path));
                 let source = std::fs::read_to_string(file_path)?;
                 match upsert(&source, lang, xpath_expr.as_str(), value, ctx.limit) {
                     Ok(result) => {
@@ -202,8 +176,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
 
             // Legacy fallback for languages without renderers
             if !fallback_files.is_empty() {
-                let fallback_matches: Vec<_> = matches
-                    .iter()
+                let fallback_matches: Vec<_> = matches.iter()
                     .filter(|m| fallback_files.contains(&m.file))
                     .cloned()
                     .collect();
@@ -219,9 +192,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
             render_report(&report, &ctx, None)?;
         }
         InputMode::InlineSource { .. } => {
-            return Err(
-                "set without --stdout cannot be used with stdin input (no file to modify)".into(),
-            );
+            return Err("set without --stdout cannot be used with stdin input (no file to modify)".into());
         }
     }
     Ok(())
@@ -248,37 +219,20 @@ fn build_set_report_matches(
             end_column: m.end_column,
             command: "set".to_string(),
             tree: None,
-            value: if ctx.view.has(ViewField::Value) {
-                Some(m.value.clone())
-            } else {
-                None
-            },
-            source: if ctx.view.has(ViewField::Source) {
-                Some(m.extract_source_snippet())
-            } else {
-                None
-            },
+            value: if ctx.view.has(ViewField::Value) { Some(m.value.clone()) } else { None },
+            source: if ctx.view.has(ViewField::Source) { Some(m.extract_source_snippet()) } else { None },
             lines: if ctx.view.has(ViewField::Lines) {
-                Some(
-                    m.get_source_lines_range()
-                        .into_iter()
-                        .map(|l| l.trim_end_matches('\r').to_owned())
-                        .collect(),
-                )
-            } else {
-                None
-            },
+                Some(m.get_source_lines_range().into_iter()
+                    .map(|l| l.trim_end_matches('\r').to_owned())
+                    .collect())
+            } else { None },
             reason: None,
             severity: None,
             message: None,
-
+           
             origin: None,
             rule_id: None,
-            status: if ctx.view.has(ViewField::Status) {
-                Some(status_str.to_string())
-            } else {
-                None
-            },
+            status: if ctx.view.has(ViewField::Status) { Some(status_str.to_string()) } else { None },
             output: None,
         });
     }
@@ -287,38 +241,35 @@ fn build_set_report_matches(
 }
 
 /// Apply --diff-files and --diff-lines file-level filters (set mode bypasses the executor).
-fn apply_file_filters(
-    files: Vec<String>,
-    diff_files_spec: Option<&str>,
-    diff_lines_spec: Option<&str>,
-) -> Vec<String> {
+fn apply_file_filters(files: Vec<String>, diff_files_spec: Option<&str>, diff_lines_spec: Option<&str>) -> Vec<String> {
     let cwd = std::path::Path::new(".");
 
     let files = match diff_files_spec {
-        Some(spec) => match git::git_changed_files(spec, cwd) {
-            Ok(changed) => git::intersect_changed(files, &changed),
-            Err(e) => {
-                eprintln!("warning: --diff-files filter failed: {}", e);
-                files
+        Some(spec) => {
+            match git::git_changed_files(spec, cwd) {
+                Ok(changed) => git::intersect_changed(files, &changed),
+                Err(e) => {
+                    eprintln!("warning: --diff-files filter failed: {}", e);
+                    files
+                }
             }
-        },
+        }
         None => files,
     };
 
     match diff_lines_spec {
-        Some(spec) => match git::DiffHunkFilter::from_spec(spec, cwd) {
-            Ok(filter) => {
-                use crate::filter::ResultFilter;
-                files
-                    .into_iter()
-                    .filter(|f| filter.include_file(f))
-                    .collect()
+        Some(spec) => {
+            match git::DiffHunkFilter::from_spec(spec, cwd) {
+                Ok(filter) => {
+                    use crate::filter::ResultFilter;
+                    files.into_iter().filter(|f| filter.include_file(f)).collect()
+                }
+                Err(e) => {
+                    eprintln!("warning: --diff-lines filter failed: {}", e);
+                    files
+                }
             }
-            Err(e) => {
-                eprintln!("warning: --diff-lines filter failed: {}", e);
-                files
-            }
-        },
+        }
         None => files,
     }
 }

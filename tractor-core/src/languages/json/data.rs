@@ -11,9 +11,9 @@
 //! ```
 //! Queryable as: `//data/name`
 
-use super::{extract_decoded_string_content, extract_string_content};
-use crate::xot_transform::{helpers::*, TransformAction};
-use xot::{Node as XotNode, Xot};
+use xot::{Xot, Node as XotNode};
+use crate::xot_transform::{TransformAction, helpers::*};
+use super::{extract_string_content, extract_decoded_string_content};
 
 // /specs/tractor-parse/dual-view/data-branch.md: Data Branch
 /// Project JSON into query-friendly data view.
@@ -40,10 +40,14 @@ pub fn data_transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
         }
 
         // pair: extract key, rename element to the key name
-        "pair" => transform_data_pair(xot, node),
+        "pair" => {
+            transform_data_pair(xot, node)
+        }
 
         // array: wrap items in <item>, then flatten
-        "array" => transform_data_array(xot, node),
+        "array" => {
+            transform_data_array(xot, node)
+        }
 
         // /specs/tractor-parse/dual-view/data-branch/scalars.md: Scalar Values
         // string: extract decoded content (handles escape sequences), flatten to parent
@@ -60,13 +64,19 @@ pub fn data_transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, x
             Ok(TransformAction::Flatten)
         }
 
-        "string_content" => Ok(TransformAction::Flatten),
+        "string_content" => {
+            Ok(TransformAction::Flatten)
+        }
 
         // number: flatten to promote text to parent
-        "number" => Ok(TransformAction::Flatten),
+        "number" => {
+            Ok(TransformAction::Flatten)
+        }
 
         // true/false/null: flatten text to parent
-        "true" | "false" | "null" => Ok(TransformAction::Flatten),
+        "true" | "false" | "null" => {
+            Ok(TransformAction::Flatten)
+        }
 
         _ => Ok(TransformAction::Continue),
     }
@@ -96,8 +106,7 @@ fn transform_data_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
 
         // /specs/tractor-parse/dual-view/data-branch/source-spans.md: Value-Oriented Source Spans
         // Flatten the <value> wrapper if present, copying its span first.
-        let children: Vec<XotNode> = xot
-            .children(node)
+        let children: Vec<XotNode> = xot.children(node)
             .filter(|&c| xot.element(c).is_some())
             .collect();
         for child in children {
@@ -112,8 +121,7 @@ fn transform_data_pair(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
 
         // Set kind to the scalar value type so the renderer knows how to
         // format the value (string vs number vs boolean vs null).
-        let value_kind = xot
-            .children(node)
+        let value_kind = xot.children(node)
             .find(|&c| xot.element(c).is_some())
             .and_then(|c| get_kind(xot, c));
         if let Some(ref vk) = value_kind {
@@ -140,7 +148,8 @@ fn extract_pair_key_text(xot: &Xot, pair_node: XotNode) -> Option<String> {
     for child in xot.children(pair_node) {
         if let Some(field) = get_attr(xot, child, "field") {
             if field == "key" {
-                return extract_string_content(xot, child).or_else(|| get_text_content(xot, child));
+                return extract_string_content(xot, child)
+                    .or_else(|| get_text_content(xot, child));
             }
         }
     }
@@ -155,8 +164,7 @@ fn transform_data_array(xot: &mut Xot, node: XotNode) -> Result<TransformAction,
     let wrapper = find_ancestor_key_name(xot, node).unwrap_or_else(|| "item".to_string());
     let wrapper_name = get_name(xot, &wrapper);
 
-    let children: Vec<XotNode> = xot
-        .children(node)
+    let children: Vec<XotNode> = xot.children(node)
         .filter(|&c| xot.element(c).is_some())
         .collect();
 

@@ -12,10 +12,8 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
-use tractor_core::report::{DiagnosticOrigin, ReportBuilder, ReportMatch, Severity};
-use tractor_core::{
-    expand_globs_checked, filter_supported_files, normalize_path, GlobPattern, NormalizedPath,
-};
+use tractor_core::{expand_globs_checked, filter_supported_files, normalize_path, NormalizedPath, GlobPattern};
+use tractor_core::report::{ReportBuilder, ReportMatch, Severity, DiagnosticOrigin};
 
 use crate::executor::ExecuteOptions;
 use crate::filter::ResultFilter;
@@ -71,16 +69,10 @@ impl FileResolver {
         let expansion_limit = options.max_files * 10;
 
         let format_patterns = |patterns: &[String]| -> String {
-            patterns
-                .iter()
-                .map(|g| format!("\"{}\"", g))
-                .collect::<Vec<_>>()
-                .join(", ")
+            patterns.iter().map(|g| format!("\"{}\"", g)).collect::<Vec<_>>().join(", ")
         };
 
-        let base_dir_display = options
-            .base_dir
-            .as_ref()
+        let base_dir_display = options.base_dir.as_ref()
             .map(|b| b.display().to_string())
             .unwrap_or_else(|| ".".to_string());
 
@@ -108,10 +100,7 @@ impl FileResolver {
 
         if options.verbose {
             eprintln!("  files: resolving relative to {}", base_dir_display);
-            eprintln!(
-                "  files: max {} files, expansion limit {}",
-                options.max_files, expansion_limit
-            );
+            eprintln!("  files: max {} files, expansion limit {}", options.max_files, expansion_limit);
         }
 
         // --- Root scope (fix #99) ---
@@ -119,10 +108,8 @@ impl FileResolver {
         let root_files = match &options.config_root_files {
             Some(patterns) if !patterns.is_empty() => {
                 if options.verbose {
-                    eprintln!(
-                        "  files: expanding root scope {} ...",
-                        format_patterns(patterns)
-                    );
+                    eprintln!("  files: expanding root scope {} ...",
+                        format_patterns(patterns));
                 }
                 let root_globs = resolve_globs_to_absolute(&options.base_dir, patterns);
                 let expansion = expand_globs_checked(&root_globs, expansion_limit)
@@ -139,25 +126,18 @@ impl FileResolver {
                     eprintln!("  files: root scope has {} file(s)", expansion.files.len());
                     log_files!(&expansion.files);
                 }
-                Some(
-                    expansion
-                        .files
-                        .into_iter()
-                        .map(|f| NormalizedPath::new(&f))
-                        .collect(),
-                )
+                Some(expansion.files.into_iter()
+                    .map(|f| NormalizedPath::new(&f)).collect())
             }
             Some(_) => Some(HashSet::new()), // files: [] → explicit empty
-            None => None,                    // key missing → unrestricted
+            None => None,                     // key missing → unrestricted
         };
 
         // --- CLI files (fix #98: normalize paths) ---
         let cli_files = if !options.cli_files.is_empty() {
             if options.verbose {
-                eprintln!(
-                    "  files: expanding CLI args {} (relative to cwd) ...",
-                    format_patterns(&options.cli_files)
-                );
+                eprintln!("  files: expanding CLI args {} (relative to cwd) ...",
+                    format_patterns(&options.cli_files));
             }
             let expansion = expand_globs_checked(&options.cli_files, expansion_limit)
                 .map_err(|e| format!(
@@ -167,31 +147,20 @@ impl FileResolver {
             if options.verbose {
                 eprintln!("  files: CLI args have {} file(s)", expansion.files.len());
             }
-            Some(
-                expansion
-                    .files
-                    .into_iter()
-                    .map(|f| NormalizedPath::absolute(&f))
-                    .collect(),
-            )
+            Some(expansion.files.into_iter()
+                .map(|f| NormalizedPath::absolute(&f)).collect())
         } else {
             None
         };
 
         // --- Global diff-files ---
         let global_diff_files = if let Some(ref spec) = options.diff_files {
-            let cwd = options
-                .base_dir
-                .as_deref()
+            let cwd = options.base_dir.as_deref()
                 .unwrap_or_else(|| Path::new("."));
             match git::git_changed_files(spec, cwd) {
                 Ok(changed) => {
                     if options.verbose {
-                        eprintln!(
-                            "  files: git diff \"{}\" has {} changed file(s)",
-                            spec,
-                            changed.len()
-                        );
+                        eprintln!("  files: git diff \"{}\" has {} changed file(s)", spec, changed.len());
                     }
                     Some(changed.into_iter().collect())
                 }
@@ -227,7 +196,8 @@ impl FileResolver {
         request: &FileRequest,
         report: &mut ReportBuilder,
     ) -> (Vec<NormalizedPath>, Vec<Box<dyn ResultFilter>>) {
-        let cwd = self.base_dir.as_deref().unwrap_or_else(|| Path::new("."));
+        let cwd = self.base_dir.as_deref()
+            .unwrap_or_else(|| Path::new("."));
         let filters = build_filters(self.global_diff_lines.as_deref(), request.diff_lines, cwd);
         let files = self.resolve_files(request, &filters, report);
         (files, filters)
@@ -245,11 +215,7 @@ impl FileResolver {
 
         // --- Verbose logging helpers ---
         let format_patterns = |patterns: &[String]| -> String {
-            patterns
-                .iter()
-                .map(|g| format!("\"{}\"", g))
-                .collect::<Vec<_>>()
-                .join(", ")
+            patterns.iter().map(|g| format!("\"{}\"", g)).collect::<Vec<_>>().join(", ")
         };
         let relative_path = |path: &str| -> String {
             if let Some(base) = &self.base_dir {
@@ -285,27 +251,19 @@ impl FileResolver {
         let (mut files, empty_patterns) = if has_op_files {
             // Expand operation globs
             if self.verbose {
-                eprintln!(
-                    "  files: expanding operation {} ...",
-                    format_patterns(request.files)
-                );
+                eprintln!("  files: expanding operation {} ...", format_patterns(request.files));
             }
             let globs = resolve_globs_to_absolute(&self.base_dir, request.files);
 
             let (mut files, empty_patterns) = match expand_globs_checked(&globs, expansion_limit) {
                 Ok(result) => {
                     // Normalize all expanded paths (fix #98)
-                    let files: Vec<NormalizedPath> = result
-                        .files
-                        .into_iter()
-                        .map(|f| NormalizedPath::new(&f))
-                        .collect();
+                    let files: Vec<NormalizedPath> = result.files.into_iter()
+                        .map(|f| NormalizedPath::new(&f)).collect();
                     (files, result.empty_patterns)
                 }
                 Err(e) => {
-                    let base_hint = self
-                        .base_dir
-                        .as_ref()
+                    let base_hint = self.base_dir.as_ref()
                         .map(|b| format!(" (resolved relative to {})", b.display()))
                         .unwrap_or_default();
                     report.add(make_fatal_diagnostic(
@@ -329,11 +287,7 @@ impl FileResolver {
                 let before = files.len();
                 files.retain(|f| root_set.contains(f));
                 if self.verbose {
-                    eprintln!(
-                        "  files: {} file(s) after root intersection (was {})",
-                        files.len(),
-                        before
-                    );
+                    eprintln!("  files: {} file(s) after root intersection (was {})", files.len(), before);
                 }
             }
 
@@ -347,10 +301,7 @@ impl FileResolver {
         } else if let Some(ref cli_set) = self.cli_files {
             // No root/op files — CLI files become the base set (fix #99)
             if self.verbose {
-                eprintln!(
-                    "  files: using CLI files as base ({} file(s))",
-                    cli_set.len()
-                );
+                eprintln!("  files: using CLI files as base ({} file(s))", cli_set.len());
             }
             (cli_set.iter().cloned().collect(), vec![])
         } else {
@@ -365,11 +316,7 @@ impl FileResolver {
                 let before = files.len();
                 files.retain(|f| cli_set.contains(f));
                 if self.verbose {
-                    eprintln!(
-                        "  files: {} file(s) after CLI intersection (was {})",
-                        files.len(),
-                        before
-                    );
+                    eprintln!("  files: {} file(s) after CLI intersection (was {})", files.len(), before);
                 }
             }
         }
@@ -379,8 +326,7 @@ impl FileResolver {
         // so they match correctly against absolute file paths.
         if !request.exclude.is_empty() {
             let resolved = GlobPattern::resolve_all(request.exclude, &self.base_dir);
-            let exclude_patterns: Vec<glob::Pattern> = resolved
-                .iter()
+            let exclude_patterns: Vec<glob::Pattern> = resolved.iter()
                 .filter_map(|p| glob::Pattern::new(p.as_str()).ok())
                 .collect();
 
@@ -391,17 +337,13 @@ impl FileResolver {
             };
 
             files.retain(|f| {
-                !exclude_patterns
-                    .iter()
-                    .any(|p| p.matches_with(f.as_str(), opts))
+                !exclude_patterns.iter().any(|p| p.matches_with(f.as_str(), opts))
             });
         }
 
-        let files: Vec<NormalizedPath> =
-            filter_supported_files(files.into_iter().map(|f| f.into_string()).collect())
-                .into_iter()
-                .map(|f| NormalizedPath::new(&f))
-                .collect();
+        let files: Vec<NormalizedPath> = filter_supported_files(
+            files.into_iter().map(|f| f.into_string()).collect()
+        ).into_iter().map(|f| NormalizedPath::new(&f)).collect();
 
         // --- Intersect with git diff-files ---
         // Convert to strings for git module, then back to NormalizedPath
@@ -411,12 +353,11 @@ impl FileResolver {
         } else {
             string_files
         };
-        let cwd = self.base_dir.as_deref().unwrap_or_else(|| Path::new("."));
+        let cwd = self.base_dir.as_deref()
+            .unwrap_or_else(|| Path::new("."));
         let string_files = apply_diff_files_filter(string_files, request.diff_files, cwd);
-        let mut files: Vec<NormalizedPath> = string_files
-            .into_iter()
-            .map(|f| NormalizedPath::new(&f))
-            .collect();
+        let mut files: Vec<NormalizedPath> = string_files.into_iter()
+            .map(|f| NormalizedPath::new(&f)).collect();
 
         // --- Apply file-level result filters ---
         if !filters.is_empty() {
@@ -437,22 +378,16 @@ impl FileResolver {
 
         // --- Check for empty result from glob expansion ---
         if files.is_empty() && !request.files.is_empty() && !empty_patterns.is_empty() {
-            let base_hint = self
-                .base_dir
-                .as_ref()
+            let base_hint = self.base_dir.as_ref()
                 .map(|b| format!(" (resolved relative to {})", b.display()))
                 .unwrap_or_default();
-            let patterns_str = empty_patterns
-                .iter()
+            let patterns_str = empty_patterns.iter()
                 .map(|p| format!("\"{}\"", p))
                 .collect::<Vec<_>>()
                 .join(", ");
             report.add(make_fatal_diagnostic(
                 request.command,
-                format!(
-                    "file patterns matched 0 files: {}{}",
-                    patterns_str, base_hint
-                ),
+                format!("file patterns matched 0 files: {}{}", patterns_str, base_hint),
             ));
         }
 
@@ -468,16 +403,13 @@ impl FileResolver {
 /// Absolute patterns are passed through unchanged.
 fn resolve_globs_to_absolute(base_dir: &Option<PathBuf>, patterns: &[String]) -> Vec<String> {
     if let Some(base) = base_dir {
-        patterns
-            .iter()
-            .map(|g| {
-                if Path::new(g).is_absolute() {
-                    normalize_path(g)
-                } else {
-                    normalize_path(&base.join(g).to_string_lossy())
-                }
-            })
-            .collect()
+        patterns.iter().map(|g| {
+            if Path::new(g).is_absolute() {
+                normalize_path(g)
+            } else {
+                normalize_path(&base.join(g).to_string_lossy())
+            }
+        }).collect()
     } else {
         patterns.iter().map(|g| normalize_path(g)).collect()
     }
@@ -503,13 +435,15 @@ fn build_filters(
 
 fn apply_diff_files_filter(files: Vec<String>, spec: Option<&str>, cwd: &Path) -> Vec<String> {
     match spec {
-        Some(spec) => match git::git_changed_files(spec, cwd) {
-            Ok(changed) => git::intersect_changed(files, &changed),
-            Err(e) => {
-                eprintln!("warning: --diff-files filter failed: {}", e);
-                files
+        Some(spec) => {
+            match git::git_changed_files(spec, cwd) {
+                Ok(changed) => git::intersect_changed(files, &changed),
+                Err(e) => {
+                    eprintln!("warning: --diff-files filter failed: {}", e);
+                    files
+                }
             }
-        },
+        }
         None => files,
     }
 }
@@ -518,10 +452,7 @@ fn apply_diff_files_filter(files: Vec<String>, spec: Option<&str>, cwd: &Path) -
 pub(crate) fn make_fatal_diagnostic(command: &str, reason: String) -> ReportMatch {
     ReportMatch {
         file: String::new(),
-        line: 0,
-        column: 0,
-        end_line: 0,
-        end_column: 0,
+        line: 0, column: 0, end_line: 0, end_column: 0,
         command: command.to_string(),
         tree: None,
         value: None,
@@ -573,7 +504,9 @@ mod tests {
     fn glob_pattern_matches_normalized_path() {
         use tractor_core::rule::GlobMatcher;
 
-        let m = GlobMatcher::new(&[], &[], &[GlobPattern::new("src/**/*.rs")], &[]).unwrap();
+        let m = GlobMatcher::new(
+            &[], &[], &[GlobPattern::new("src/**/*.rs")], &[],
+        ).unwrap();
         assert!(m.matches(&NormalizedPath::new("src/main.rs")));
         assert!(!m.matches(&NormalizedPath::new("test/main.rs")));
     }

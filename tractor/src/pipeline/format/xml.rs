@@ -1,20 +1,8 @@
+use tractor_core::{report::{Report, ResultItem}, normalize_path, render_xml_string, render_xml_node, RenderOptions};
 use super::options::{ViewField, ViewSet};
-use super::shared::{
-    render_fields_for_match, should_emit_command, should_emit_file, should_emit_rule_id,
-    should_show_totals,
-};
-use tractor_core::{
-    normalize_path, render_xml_node, render_xml_string,
-    report::{Report, ResultItem},
-    RenderOptions,
-};
+use super::shared::{should_show_totals, should_emit_file, should_emit_command, should_emit_rule_id, render_fields_for_match};
 
-pub fn render_xml_report(
-    report: &Report,
-    view: &ViewSet,
-    render_opts: &RenderOptions,
-    dimensions: &[&str],
-) -> String {
+pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, dimensions: &[&str]) -> String {
     let mut tree_opts = render_opts.clone();
     tree_opts.use_color = false;
 
@@ -45,10 +33,7 @@ pub fn render_xml_report(
                 body.push_str(&format!("    <updated>{}</updated>\n", totals.updated));
             }
             if totals.unchanged > 0 {
-                body.push_str(&format!(
-                    "    <unchanged>{}</unchanged>\n",
-                    totals.unchanged
-                ));
+                body.push_str(&format!("    <unchanged>{}</unchanged>\n", totals.unchanged));
             }
             body.push_str("  </totals>\n");
         }
@@ -66,14 +51,7 @@ pub fn render_xml_report(
     }
     if !report.results.is_empty() {
         body.push_str("  <results>\n");
-        render_xml_results(
-            &mut body,
-            &report.results,
-            view,
-            "    ",
-            &tree_opts,
-            dimensions,
-        );
+        render_xml_results(&mut body, &report.results, view, "    ", &tree_opts, dimensions);
         body.push_str("  </results>\n");
     }
 
@@ -89,10 +67,7 @@ pub fn render_xml_report(
             .with_meta(true)
             .with_pretty_print(true);
         let colored = render_xml_string(&body, &color_opts);
-        format!(
-            "\x1b[2m<?xml version=\"1.0\" encoding=\"UTF-8\"?>\x1b[0m\n{}",
-            colored
-        )
+        format!("\x1b[2m<?xml version=\"1.0\" encoding=\"UTF-8\"?>\x1b[0m\n{}", colored)
     } else {
         format!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n{}", body)
     }
@@ -111,38 +86,22 @@ fn append_match(
     let has_position = rm.line > 0;
     if !show_file {
         if has_position {
-            out.push_str(&format!(
-                "{}<match line=\"{}\" column=\"{}\"",
-                indent, rm.line, rm.column
-            ));
+            out.push_str(&format!("{}<match line=\"{}\" column=\"{}\"", indent, rm.line, rm.column));
         } else {
             out.push_str(&format!("{}<match", indent));
         }
     } else if has_position {
-        out.push_str(&format!(
-            "{}<match file=\"{}\" line=\"{}\" column=\"{}\"",
-            indent,
-            escape_attr(&file_str),
-            rm.line,
-            rm.column
-        ));
+        out.push_str(&format!("{}<match file=\"{}\" line=\"{}\" column=\"{}\"", indent, escape_attr(&file_str), rm.line, rm.column));
     } else {
-        out.push_str(&format!(
-            "{}<match file=\"{}\"",
-            indent,
-            escape_attr(&file_str)
-        ));
+        out.push_str(&format!("{}<match file=\"{}\"", indent, escape_attr(&file_str)));
     }
     if has_position && (rm.end_line != rm.line || rm.end_column != rm.column) {
-        out.push_str(&format!(
-            " end_line=\"{}\" end_column=\"{}\"",
-            rm.end_line, rm.end_column
-        ));
+        out.push_str(&format!(" end_line=\"{}\" end_column=\"{}\"", rm.end_line, rm.end_column));
     }
     out.push_str(">\n");
 
     let inner = &format!("{}  ", indent);
-    let deep = &format!("{}    ", indent);
+    let deep  = &format!("{}    ", indent);
 
     let (view_fields, extra_fields) = render_fields_for_match(view, rm);
     let all_fields: Vec<ViewField> = view_fields.into_iter().chain(extra_fields).collect();
@@ -175,11 +134,7 @@ fn append_match(
             }
             ViewField::Severity => {
                 if let Some(severity) = rm.severity {
-                    out.push_str(&format!(
-                        "{}<severity>{}</severity>\n",
-                        inner,
-                        severity.as_str()
-                    ));
+                    out.push_str(&format!("{}<severity>{}</severity>\n", inner, severity.as_str()));
                 }
             }
             ViewField::Status => {
@@ -216,25 +171,13 @@ fn append_match(
     }
 
     if should_emit_command(rm, view, skip_dims) {
-        out.push_str(&format!(
-            "{}<command>{}</command>\n",
-            inner,
-            escape(&rm.command)
-        ));
+        out.push_str(&format!("{}<command>{}</command>\n", inner, escape(&rm.command)));
     }
     if let Some(ref message) = rm.message {
-        out.push_str(&format!(
-            "{}<message>{}</message>\n",
-            inner,
-            escape(message)
-        ));
+        out.push_str(&format!("{}<message>{}</message>\n", inner, escape(message)));
     }
     if should_emit_rule_id(rm, skip_dims) {
-        out.push_str(&format!(
-            "{}<rule-id>{}</rule-id>\n",
-            inner,
-            escape(rm.rule_id.as_deref().unwrap())
-        ));
+        out.push_str(&format!("{}<rule-id>{}</rule-id>\n", inner, escape(rm.rule_id.as_deref().unwrap())));
     }
 
     out.push_str(&format!("{}</match>\n", indent));
@@ -272,11 +215,7 @@ fn render_xml_results(
                 out.push_str(&format!("{}<group{}>\n", indent, attrs));
                 // Sub-group's own grouping dimension
                 if let Some(ref group) = sub.group {
-                    out.push_str(&format!(
-                        "{}<group-by>{}</group-by>\n",
-                        inner,
-                        escape(group)
-                    ));
+                    out.push_str(&format!("{}<group-by>{}</group-by>\n", inner, escape(group)));
                 }
                 if view.has(ViewField::Output) {
                     if let Some(ref content) = sub.output_content {
@@ -293,9 +232,7 @@ fn render_xml_results(
 }
 
 fn escape(s: &str) -> String {
-    s.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
+    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;")
 }
 
 fn escape_attr(s: &str) -> String {

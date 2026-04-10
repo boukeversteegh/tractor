@@ -362,6 +362,24 @@ fn string_input_requires_language() {
 }
 
 #[test]
+fn missing_empty_fixture_directory_falls_back_to_temp_workspace() {
+    command([
+        "query",
+        "-s",
+        "fn main() {}",
+        "-l",
+        "rust",
+        "-x",
+        "function",
+        "-v",
+        "count",
+    ])
+    .in_fixture("missing-empty-fixture")
+    .assert_stdout("1")
+    .run();
+}
+
+#[test]
 fn set_snapshot_text_default() {
     cli_case!({
         tractor set "sample.yaml" -x "//database/host" --value "db.example.com";

@@ -11,9 +11,9 @@
 //! </object>
 //! ```
 
+use xot::{Xot, Node as XotNode};
+use crate::xot_transform::{TransformAction, helpers::*};
 use super::extract_string_content;
-use crate::xot_transform::{helpers::*, TransformAction};
-use xot::{Node as XotNode, Xot};
 
 // /specs/tractor-parse/dual-view/syntax-branch/vocabulary.md: Unified Syntax Vocabulary
 /// Normalize TreeSitter JSON into unified syntax vocabulary.
@@ -56,8 +56,7 @@ pub fn syntax_transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction,
             remove_text_children(xot, node)?;
 
             // Find the key child (has field="key" attr) and wrap in <key> element
-            let children: Vec<XotNode> = xot
-                .children(node)
+            let children: Vec<XotNode> = xot.children(node)
                 .filter(|&c| xot.element(c).is_some())
                 .collect();
             for child in children {
@@ -98,7 +97,9 @@ pub fn syntax_transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction,
         }
 
         // string_content: flatten just in case
-        "string_content" => Ok(TransformAction::Flatten),
+        "string_content" => {
+            Ok(TransformAction::Flatten)
+        }
 
         // number: already correct
         "number" => {
@@ -113,7 +114,9 @@ pub fn syntax_transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction,
         }
 
         // null: already correct
-        "null" => Ok(TransformAction::Done),
+        "null" => {
+            Ok(TransformAction::Done)
+        }
 
         _ => Ok(TransformAction::Continue),
     }
@@ -121,8 +124,7 @@ pub fn syntax_transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction,
 
 /// Remove text children that are punctuation (keep actual content text)
 fn remove_text_children_except_content(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
-    let to_remove: Vec<XotNode> = xot
-        .children(node)
+    let to_remove: Vec<XotNode> = xot.children(node)
         .filter(|&child| {
             if let Some(text) = xot.text_str(child) {
                 let trimmed = text.trim();

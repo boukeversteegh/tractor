@@ -3,18 +3,18 @@
 //! Applies ANSI color codes to source code based on XML node types.
 //! Uses the XML fragment's TreeSitter node kinds to determine syntax categories.
 
+use xot::{Xot, Node, Value};
 use crate::xpath::XmlNode;
-use xot::{Node, Value, Xot};
 
 /// ANSI color codes for syntax highlighting
 pub mod ansi {
     pub const RESET: &str = "\x1b[0m";
     pub const DIM: &str = "\x1b[2m";
-    pub const BLUE: &str = "\x1b[34m"; // Keywords
-    pub const CYAN: &str = "\x1b[36m"; // Types, functions
+    pub const BLUE: &str = "\x1b[34m";   // Keywords
+    pub const CYAN: &str = "\x1b[36m";   // Types, functions
     pub const YELLOW: &str = "\x1b[33m"; // Strings, numbers
-    pub const WHITE: &str = "\x1b[97m"; // Identifiers
-    pub const GREEN: &str = "\x1b[32m"; // Comments
+    pub const WHITE: &str = "\x1b[97m";  // Identifiers
+    pub const GREEN: &str = "\x1b[32m";  // Comments
 }
 
 /// Syntax categories for highlighting
@@ -63,127 +63,81 @@ impl SyntaxCategory {
     pub fn from_element_name(name: &str) -> Self {
         match name {
             // Keywords - control flow
-            "if" | "else" | "for" | "while" | "do" | "switch" | "case" | "return" | "break"
-            | "continue" | "goto" | "throw" | "try" | "catch" | "finally" | "yield" | "match"
-            | "if_statement" | "else_clause" | "for_statement" | "while_statement"
-            | "do_statement" | "switch_statement" | "case_statement" | "return_statement"
-            | "break_statement" | "continue_statement" | "throw_statement" | "try_statement"
-            | "catch_clause" | "finally_clause" | "yield_statement" => SyntaxCategory::Keyword,
+            "if" | "else" | "for" | "while" | "do" | "switch" | "case" |
+            "return" | "break" | "continue" | "goto" | "throw" |
+            "try" | "catch" | "finally" | "yield" | "match" |
+            "if_statement" | "else_clause" | "for_statement" | "while_statement" |
+            "do_statement" | "switch_statement" | "case_statement" |
+            "return_statement" | "break_statement" | "continue_statement" |
+            "throw_statement" | "try_statement" | "catch_clause" |
+            "finally_clause" | "yield_statement" => SyntaxCategory::Keyword,
 
             // Keywords - declarations
-            "class"
-            | "struct"
-            | "enum"
-            | "interface"
-            | "trait"
-            | "record"
-            | "namespace"
-            | "module"
-            | "import"
-            | "using"
-            | "package"
-            | "from"
-            | "fn"
-            | "func"
-            | "function"
-            | "def"
-            | "let"
-            | "var"
-            | "const"
-            | "class_declaration"
-            | "struct_declaration"
-            | "enum_declaration"
-            | "interface_declaration"
-            | "record_declaration"
-            | "namespace_declaration"
-            | "using_directive"
-            | "import_statement"
-            | "function_declaration"
-            | "method_declaration"
-            | "local_declaration_statement"
-            | "variable_declaration" => SyntaxCategory::Keyword,
+            "class" | "struct" | "enum" | "interface" | "trait" | "record" |
+            "namespace" | "module" | "import" | "using" | "package" | "from" |
+            "fn" | "func" | "function" | "def" | "let" | "var" | "const" |
+            "class_declaration" | "struct_declaration" | "enum_declaration" |
+            "interface_declaration" | "record_declaration" |
+            "namespace_declaration" | "using_directive" | "import_statement" |
+            "function_declaration" | "method_declaration" |
+            "local_declaration_statement" | "variable_declaration" => SyntaxCategory::Keyword,
 
             // Keywords - modifiers
-            "public" | "private" | "protected" | "internal" | "static" | "abstract" | "virtual"
-            | "override" | "sealed" | "readonly" | "async" | "await" | "unsafe" | "extern"
-            | "new" | "this" | "base" | "super" | "self" | "modifier" | "access_modifier" => {
-                SyntaxCategory::Keyword
-            }
+            "public" | "private" | "protected" | "internal" |
+            "static" | "abstract" | "virtual" | "override" | "sealed" |
+            "readonly" | "async" | "await" | "unsafe" | "extern" |
+            "new" | "this" | "base" | "super" | "self" |
+            "modifier" | "access_modifier" => SyntaxCategory::Keyword,
 
             // Types
-            "type" | "generic" | "nullable" | "array_type" | "pointer_type" | "predefined_type"
-            | "type_parameter" | "type_argument" | "generic_name" | "qualified_name"
-            | "simple_type" | "primitive_type" | "builtin_type" => SyntaxCategory::Type,
+            "type" | "generic" | "nullable" | "array_type" | "pointer_type" |
+            "predefined_type" | "type_parameter" | "type_argument" |
+            "generic_name" | "qualified_name" | "simple_type" |
+            "primitive_type" | "builtin_type" => SyntaxCategory::Type,
 
             // Types - pattern matching for _type suffix
             n if n.ends_with("_type") || n.contains("type_") => SyntaxCategory::Type,
 
             // Functions
-            "method"
-            | "constructor"
-            | "destructor"
-            | "function_definition"
-            | "method_definition"
-            | "constructor_declaration"
-            | "destructor_declaration"
-            | "invocation_expression"
-            | "call_expression" => SyntaxCategory::Function,
+            "method" | "constructor" | "destructor" |
+            "function_definition" | "method_definition" |
+            "constructor_declaration" | "destructor_declaration" |
+            "invocation_expression" | "call_expression" => SyntaxCategory::Function,
 
             // Functions - pattern matching
-            n if n.contains("function")
-                || n.contains("method")
-                || n.ends_with("_call")
-                || n == "invocation" =>
-            {
-                SyntaxCategory::Function
-            }
+            n if n.contains("function") || n.contains("method") ||
+                 n.ends_with("_call") || n == "invocation" => SyntaxCategory::Function,
 
             // Identifiers (semantic mode names)
-            "name" | "identifier" | "variable" | "parameter" | "simple_name"
-            | "identifier_name" => SyntaxCategory::Identifier,
+            "name" | "identifier" | "variable" | "parameter" |
+            "simple_name" | "identifier_name" => SyntaxCategory::Identifier,
 
             // String literals
-            "string"
-            | "char"
-            | "interpolated_string"
-            | "raw_string"
-            | "string_literal"
-            | "character_literal"
-            | "verbatim_string"
-            | "interpolated_string_expression"
-            | "string_content" => SyntaxCategory::String,
+            "string" | "char" | "interpolated_string" | "raw_string" |
+            "string_literal" | "character_literal" | "verbatim_string" |
+            "interpolated_string_expression" | "string_content" => SyntaxCategory::String,
 
             // String - pattern matching
             n if n.contains("string") && !n.contains("interpolation") => SyntaxCategory::String,
 
             // Number literals
-            "int" | "float" | "decimal" | "number" | "integer" | "integer_literal"
-            | "real_literal" | "numeric_literal" => SyntaxCategory::Number,
+            "int" | "float" | "decimal" | "number" | "integer" |
+            "integer_literal" | "real_literal" | "numeric_literal" => SyntaxCategory::Number,
 
             // Number - pattern matching (but exclude string_literal)
-            n if n.ends_with("_literal") && !n.contains("string") && !n.contains("char") => {
-                SyntaxCategory::Number
-            }
+            n if n.ends_with("_literal") && !n.contains("string") && !n.contains("char") => SyntaxCategory::Number,
 
             // Boolean/null literals - treat as keywords
-            "true" | "false" | "null" | "nil" | "none" | "boolean_literal" | "null_literal" => {
-                SyntaxCategory::Keyword
-            }
+            "true" | "false" | "null" | "nil" | "none" |
+            "boolean_literal" | "null_literal" => SyntaxCategory::Keyword,
 
             // Comments
-            "comment"
-            | "line_comment"
-            | "block_comment"
-            | "doc_comment"
-            | "multiline_comment"
-            | "documentation_comment" => SyntaxCategory::Comment,
+            "comment" | "line_comment" | "block_comment" | "doc_comment" |
+            "multiline_comment" | "documentation_comment" => SyntaxCategory::Comment,
 
             // Operators (if they appear as named nodes)
-            "operator"
-            | "binary_operator"
-            | "unary_operator"
-            | "assignment_operator"
-            | "comparison_operator" => SyntaxCategory::Operator,
+            "operator" | "binary_operator" | "unary_operator" |
+            "assignment_operator" | "comparison_operator" => SyntaxCategory::Operator,
 
             // Operators - pattern matching
             n if n.contains("operator") || n.ends_with("_op") => SyntaxCategory::Operator,
@@ -259,8 +213,7 @@ pub fn extract_syntax_spans_with_lang(xml: &str, category_fn: SyntaxCategoryFn) 
 
     // Sort spans by position, then by depth (descending) for innermost-wins
     spans.sort_by(|a, b| {
-        a.start_line
-            .cmp(&b.start_line)
+        a.start_line.cmp(&b.start_line)
             .then(a.start_col.cmp(&b.start_col))
             .then(b.depth.cmp(&a.depth)) // Higher depth first
     });
@@ -277,16 +230,12 @@ pub fn extract_syntax_spans(xml: &str) -> Vec<SyntaxSpan> {
 }
 
 /// Extract syntax spans from an XmlNode tree (no XML string parsing).
-pub fn extract_syntax_spans_from_xml_node(
-    node: &XmlNode,
-    category_fn: SyntaxCategoryFn,
-) -> Vec<SyntaxSpan> {
+pub fn extract_syntax_spans_from_xml_node(node: &XmlNode, category_fn: SyntaxCategoryFn) -> Vec<SyntaxSpan> {
     let mut spans = Vec::new();
     extract_spans_from_xml_node_recursive(node, 0, &mut spans, category_fn);
 
     spans.sort_by(|a, b| {
-        a.start_line
-            .cmp(&b.start_line)
+        a.start_line.cmp(&b.start_line)
             .then(a.start_col.cmp(&b.start_col))
             .then(b.depth.cmp(&a.depth))
     });
@@ -319,18 +268,11 @@ fn extract_spans_from_xml_node_recursive(
     spans: &mut Vec<SyntaxSpan>,
     category_fn: SyntaxCategoryFn,
 ) {
-    if let XmlNode::Element {
-        name,
-        attributes,
-        children,
-    } = node
-    {
+    if let XmlNode::Element { name, attributes, children } = node {
         let category = category_fn(name);
 
         if category != SyntaxCategory::Default {
-            if let Some((start_line, start_col, end_line, end_col)) =
-                extract_xml_node_position_span(attributes)
-            {
+            if let Some((start_line, start_col, end_line, end_col)) = extract_xml_node_position_span(attributes) {
                 spans.push(SyntaxSpan {
                     start_line,
                     start_col,
@@ -348,13 +290,7 @@ fn extract_spans_from_xml_node_recursive(
     }
 }
 
-fn extract_spans_recursive(
-    xot: &Xot,
-    node: Node,
-    depth: u32,
-    spans: &mut Vec<SyntaxSpan>,
-    category_fn: SyntaxCategoryFn,
-) {
+fn extract_spans_recursive(xot: &Xot, node: Node, depth: u32, spans: &mut Vec<SyntaxSpan>, category_fn: SyntaxCategoryFn) {
     match xot.value(node) {
         Value::Document => {
             for child in xot.children(node) {
@@ -367,9 +303,7 @@ fn extract_spans_recursive(
 
             // Only add span if we have a meaningful category
             if category != SyntaxCategory::Default {
-                if let Some((start_line, start_col, end_line, end_col)) =
-                    extract_position(xot, node)
-                {
+                if let Some((start_line, start_col, end_line, end_col)) = extract_position(xot, node) {
                     spans.push(SyntaxSpan {
                         start_line,
                         start_col,
@@ -563,46 +497,16 @@ mod tests {
 
     #[test]
     fn test_category_from_element_name() {
-        assert_eq!(
-            SyntaxCategory::from_element_name("if"),
-            SyntaxCategory::Keyword
-        );
-        assert_eq!(
-            SyntaxCategory::from_element_name("class"),
-            SyntaxCategory::Keyword
-        );
-        assert_eq!(
-            SyntaxCategory::from_element_name("public"),
-            SyntaxCategory::Keyword
-        );
-        assert_eq!(
-            SyntaxCategory::from_element_name("predefined_type"),
-            SyntaxCategory::Type
-        );
-        assert_eq!(
-            SyntaxCategory::from_element_name("array_type"),
-            SyntaxCategory::Type
-        );
-        assert_eq!(
-            SyntaxCategory::from_element_name("name"),
-            SyntaxCategory::Identifier
-        );
-        assert_eq!(
-            SyntaxCategory::from_element_name("string_literal"),
-            SyntaxCategory::String
-        );
-        assert_eq!(
-            SyntaxCategory::from_element_name("integer_literal"),
-            SyntaxCategory::Number
-        );
-        assert_eq!(
-            SyntaxCategory::from_element_name("comment"),
-            SyntaxCategory::Comment
-        );
-        assert_eq!(
-            SyntaxCategory::from_element_name("binary_expression"),
-            SyntaxCategory::Default
-        );
+        assert_eq!(SyntaxCategory::from_element_name("if"), SyntaxCategory::Keyword);
+        assert_eq!(SyntaxCategory::from_element_name("class"), SyntaxCategory::Keyword);
+        assert_eq!(SyntaxCategory::from_element_name("public"), SyntaxCategory::Keyword);
+        assert_eq!(SyntaxCategory::from_element_name("predefined_type"), SyntaxCategory::Type);
+        assert_eq!(SyntaxCategory::from_element_name("array_type"), SyntaxCategory::Type);
+        assert_eq!(SyntaxCategory::from_element_name("name"), SyntaxCategory::Identifier);
+        assert_eq!(SyntaxCategory::from_element_name("string_literal"), SyntaxCategory::String);
+        assert_eq!(SyntaxCategory::from_element_name("integer_literal"), SyntaxCategory::Number);
+        assert_eq!(SyntaxCategory::from_element_name("comment"), SyntaxCategory::Comment);
+        assert_eq!(SyntaxCategory::from_element_name("binary_expression"), SyntaxCategory::Default);
     }
 
     #[test]

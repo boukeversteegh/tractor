@@ -1,8 +1,8 @@
 //! Go transform logic
 
+use xot::{Xot, Node as XotNode};
+use crate::xot_transform::{TransformAction, helpers::*};
 use crate::output::syntax_highlight::SyntaxCategory;
-use crate::xot_transform::{helpers::*, TransformAction};
-use xot::{Node as XotNode, Xot};
 
 /// Transform a Go AST node
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
@@ -19,14 +19,9 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         "name" => {
             if let Some(parent) = get_parent(xot, node) {
                 let parent_kind = get_element_name(xot, parent).unwrap_or_default();
-                if matches!(
-                    parent_kind.as_str(),
-                    "function_declaration"
-                        | "method_declaration"
-                        | "type_spec"
-                        | "function"
-                        | "method"
-                        | "typespec"
+                if matches!(parent_kind.as_str(),
+                    "function_declaration" | "method_declaration" | "type_spec"
+                    | "function" | "method" | "typespec"
                 ) {
                     let children: Vec<_> = xot.children(node).collect();
                     for child in children {
@@ -177,8 +172,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
 fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     let texts = get_text_children(xot, node);
     let operator = texts.iter().find(|t| {
-        !t.chars()
-            .all(|c| matches!(c, '(' | ')' | ',' | ';' | '{' | '}' | '[' | ']'))
+        !t.chars().all(|c| matches!(c, '(' | ')' | ',' | ';' | '{' | '}' | '[' | ']'))
     });
     if let Some(op) = operator {
         prepend_op_element(xot, node, op)?;

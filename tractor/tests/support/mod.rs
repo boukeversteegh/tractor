@@ -446,15 +446,28 @@ pub fn inline_command(
 fn prepare_execution(setup: &HarnessSetup) -> ExecutionContext {
     let fixture = setup.fixture.clone();
     let fixture_root = fixture.as_deref().map(fixture_dir);
-    let (cwd, temp_dir) = if setup.temp_fixture {
-        let source = fixture_root
-            .as_ref()
-            .expect("temp_fixture requires an attached fixture directory");
-        let temp_dir = TempDir::new().expect("failed to create temp fixture directory");
-        copy_dir_all(source, temp_dir.path());
-        (temp_dir.path().to_path_buf(), Some(temp_dir))
-    } else {
-        (fixture_root.unwrap_or_else(repo_root), None)
+    let (cwd, temp_dir) = match (setup.temp_fixture, fixture_root.as_ref()) {
+        (true, Some(source)) => {
+            let temp_dir = TempDir::new().expect("failed to create temp fixture directory");
+            if source.exists() {
+                copy_dir_all(source, temp_dir.path());
+            }
+            (temp_dir.path().to_path_buf(), Some(temp_dir))
+        }
+        (true, None) => {
+            let temp_dir = TempDir::new().expect("failed to create temp fixture directory");
+            (temp_dir.path().to_path_buf(), Some(temp_dir))
+        }
+        (false, Some(source)) if source.exists() => (source.to_path_buf(), None),
+        // Some suites are logically grouped under empty fixture directories.
+        // Git does not preserve empty directories, so CI checkouts may not
+        // contain them. Fall back to an empty temp workspace so command-based
+        // tests still have a stable cwd without requiring placeholder files.
+        (false, Some(_)) => {
+            let temp_dir = TempDir::new().expect("failed to create temp fixture directory");
+            (temp_dir.path().to_path_buf(), Some(temp_dir))
+        }
+        (false, None) => (repo_root(), None),
     };
 
     for file in &setup.seed_files {

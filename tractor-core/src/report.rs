@@ -8,8 +8,8 @@
 //!                → [stage 2: report build]  → Report
 //!                → [stage 3: output]        → stdout
 
-use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
+use serde::ser::SerializeMap;
 
 use crate::normalized_xpath::NormalizedXpath;
 use crate::output::{normalize_path, xml_node_to_string};
@@ -104,24 +104,24 @@ pub struct ReportMatch {
 
     // Content fields — Some only if selected by resolved ViewSet
     /// Native XML node tree; renderers convert directly (text → pretty-print, json → object).
-    pub tree: Option<XmlNode>,
+    pub tree:     Option<XmlNode>,
     /// XPath string value of the matched node.
-    pub value: Option<String>,
+    pub value:    Option<String>,
     /// Pre-computed column-precise source snippet (plain text; coloring in renderer).
-    pub source: Option<String>,
+    pub source:   Option<String>,
     /// Pre-computed source lines spanning the match (trailing \r stripped).
-    pub lines: Option<Vec<String>>,
-    pub reason: Option<String>,
+    pub lines:    Option<Vec<String>>,
+    pub reason:   Option<String>,
     pub severity: Option<Severity>,
-    pub message: Option<String>,
+    pub message:  Option<String>,
     /// Where a diagnostic originated (shown when file is empty).
-    pub origin: Option<DiagnosticOrigin>,
+    pub origin:   Option<DiagnosticOrigin>,
     /// Rule identifier for multi-rule reports (via `--config` or `run`).
-    pub rule_id: Option<String>,
+    pub rule_id:  Option<String>,
     /// Set-command status: "updated" or "unchanged".
-    pub status: Option<String>,
+    pub status:   Option<String>,
     /// Full modified file content, used by the set command's stdout mode.
-    pub output: Option<String>,
+    pub output:   Option<String>,
 }
 
 impl Serialize for ReportMatch {
@@ -141,8 +141,7 @@ impl Serialize for ReportMatch {
         let has_command = !self.command.is_empty();
         let core_count = if has_file { 5 } else { 4 };
         let command_count = if has_command { 1 } else { 0 };
-        let mut map =
-            serializer.serialize_map(Some(core_count + command_count + optional_count))?;
+        let mut map = serializer.serialize_map(Some(core_count + command_count + optional_count))?;
 
         if has_file {
             map.serialize_entry("file", &normalize_path(&self.file))?;
@@ -155,39 +154,17 @@ impl Serialize for ReportMatch {
             map.serialize_entry("command", &self.command)?;
         }
 
-        if let Some(ref v) = self.tree {
-            map.serialize_entry("tree", &xml_node_to_string(v))?;
-        }
-        if let Some(ref v) = self.value {
-            map.serialize_entry("value", v)?;
-        }
-        if let Some(ref v) = self.source {
-            map.serialize_entry("source", v)?;
-        }
-        if let Some(ref v) = self.lines {
-            map.serialize_entry("lines", v)?;
-        }
-        if let Some(ref v) = self.reason {
-            map.serialize_entry("reason", v)?;
-        }
-        if let Some(ref v) = self.severity {
-            map.serialize_entry("severity", v)?;
-        }
-        if let Some(ref v) = self.message {
-            map.serialize_entry("message", v)?;
-        }
-        if let Some(ref v) = self.origin {
-            map.serialize_entry("origin", v)?;
-        }
-        if let Some(ref v) = self.rule_id {
-            map.serialize_entry("rule_id", v)?;
-        }
-        if let Some(ref v) = self.status {
-            map.serialize_entry("status", v)?;
-        }
-        if let Some(ref v) = self.output {
-            map.serialize_entry("output", v)?;
-        }
+        if let Some(ref v) = self.tree     { map.serialize_entry("tree", &xml_node_to_string(v))?; }
+        if let Some(ref v) = self.value    { map.serialize_entry("value", v)?; }
+        if let Some(ref v) = self.source   { map.serialize_entry("source", v)?; }
+        if let Some(ref v) = self.lines    { map.serialize_entry("lines", v)?; }
+        if let Some(ref v) = self.reason   { map.serialize_entry("reason", v)?; }
+        if let Some(ref v) = self.severity { map.serialize_entry("severity", v)?; }
+        if let Some(ref v) = self.message  { map.serialize_entry("message", v)?; }
+        if let Some(ref v) = self.origin   { map.serialize_entry("origin", v)?; }
+        if let Some(ref v) = self.rule_id  { map.serialize_entry("rule_id", v)?; }
+        if let Some(ref v) = self.status   { map.serialize_entry("status", v)?; }
+        if let Some(ref v) = self.output   { map.serialize_entry("output", v)?; }
 
         map.end()
     }
@@ -197,9 +174,7 @@ impl Serialize for ReportMatch {
 // Totals
 // ---------------------------------------------------------------------------
 
-fn is_zero(v: &usize) -> bool {
-    *v == 0
-}
+fn is_zero(v: &usize) -> bool { *v == 0 }
 
 /// Numeric aggregates for a report or group. Contains only counts —
 /// the verdict (`passed`) lives on the Report itself.
@@ -300,6 +275,7 @@ pub struct Report {
     pub query: Option<NormalizedXpath>,
 
     // ---- New unified fields (Step 3) ----
+
     /// Unified results list. Contains either leaf matches or sub-groups.
     #[serde(skip)]
     pub results: Vec<ResultItem>,
@@ -357,10 +333,7 @@ impl Report {
         }
     }
 
-    fn collect_matches_mut_recursive<'a>(
-        items: &'a mut [ResultItem],
-        out: &mut Vec<&'a mut ReportMatch>,
-    ) {
+    fn collect_matches_mut_recursive<'a>(items: &'a mut [ResultItem], out: &mut Vec<&'a mut ReportMatch>) {
         for item in items {
             match item {
                 ResultItem::Match(m) => out.push(m),
@@ -432,17 +405,15 @@ impl Report {
         self = self.group_by(dim);
 
         if !rest.is_empty() {
-            self.results = self
-                .results
-                .into_iter()
-                .map(|item| match item {
+            self.results = self.results.into_iter().map(|item| {
+                match item {
                     ResultItem::Group(mut g) => {
                         *g = g.with_grouping(rest);
                         ResultItem::Group(g)
                     }
                     other => other,
-                })
-                .collect();
+                }
+            }).collect();
         }
 
         self
@@ -466,10 +437,7 @@ impl Report {
 
     /// Attach pre-computed file outputs to file groups (set stdout mode).
     /// Must be called after `with_groups()`.
-    pub fn with_file_outputs(
-        mut self,
-        outputs: &std::collections::HashMap<String, String>,
-    ) -> Self {
+    pub fn with_file_outputs(mut self, outputs: &std::collections::HashMap<String, String>) -> Self {
         for item in &mut self.results {
             if let ResultItem::Group(ref mut g) = item {
                 if let Some(ref file) = g.file {
@@ -551,16 +519,12 @@ impl ReportBuilder {
 
     /// Check if any fatal-severity matches have been added.
     pub fn has_fatals(&self) -> bool {
-        self.matches
-            .iter()
-            .any(|m| m.severity == Some(Severity::Fatal))
+        self.matches.iter().any(|m| m.severity == Some(Severity::Fatal))
     }
 
     /// Check if any matches with status="updated" have been added.
     pub fn has_updates(&self) -> bool {
-        self.matches
-            .iter()
-            .any(|m| m.status.as_deref() == Some("updated"))
+        self.matches.iter().any(|m| m.status.as_deref() == Some("updated"))
     }
 
     /// Consume the builder and produce a finalized Report.
@@ -615,11 +579,7 @@ impl ReportBuilder {
             SuccessMode::NoVerdict => {
                 // No verdict on match results, but fatals are infrastructure
                 // errors (broken XPath, bad config) — always fail.
-                if fatals > 0 {
-                    Some(false)
-                } else {
-                    None
-                }
+                if fatals > 0 { Some(false) } else { None }
             }
             SuccessMode::Derive => {
                 let has_failures = fatals > 0 || errors > 0 || self.failed;

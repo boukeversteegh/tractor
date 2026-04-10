@@ -3,19 +3,19 @@
 //! Renders xot nodes to strings with optional ANSI color codes.
 //! This replaces the regex-based colorization hack.
 
-use crate::xpath::XmlNode;
+use xot::{Xot, Node, Value};
 use std::collections::HashSet;
-use xot::{Node, Value, Xot};
+use crate::xpath::XmlNode;
 
 /// ANSI color codes (following tractor brand guidelines)
 pub mod ansi {
     pub const RESET: &str = "\x1b[0m";
     pub const DIM: &str = "\x1b[2m";
     pub const BOLD: &str = "\x1b[1m";
-    pub const BLUE: &str = "\x1b[34m"; // Primary: element/tag names
-    pub const CYAN: &str = "\x1b[36m"; // Secondary: attribute names
+    pub const BLUE: &str = "\x1b[34m";   // Primary: element/tag names
+    pub const CYAN: &str = "\x1b[36m";   // Secondary: attribute names
     pub const YELLOW: &str = "\x1b[33m"; // Accent: attribute values
-    pub const BLACK: &str = "\x1b[30m"; // For highlight backgrounds
+    pub const BLACK: &str = "\x1b[30m";  // For highlight backgrounds
     pub const BG_YELLOW: &str = "\x1b[43m"; // For match highlights
 }
 
@@ -174,51 +174,27 @@ fn render_node_recursive(
             // In default mode, convert <File path="..."> to <file>path</file> + promote children
             if name == "File" && !options.include_meta {
                 // Emit <file>path</file>
-                let path_value = xot
-                    .attributes(node)
-                    .iter()
+                let path_value = xot.attributes(node).iter()
                     .find(|(n, _)| xot.local_name_str(*n) == "path")
                     .map(|(_, v)| v.as_str());
                 if let Some(path) = path_value {
                     output.push_str(&indent);
-                    if options.use_color {
-                        output.push_str(ansi::DIM);
-                    }
+                    if options.use_color { output.push_str(ansi::DIM); }
                     output.push('<');
-                    if options.use_color {
-                        output.push_str(ansi::RESET);
-                        output.push_str(ansi::BLUE);
-                    }
+                    if options.use_color { output.push_str(ansi::RESET); output.push_str(ansi::BLUE); }
                     output.push_str("file");
-                    if options.use_color {
-                        output.push_str(ansi::RESET);
-                        output.push_str(ansi::DIM);
-                    }
+                    if options.use_color { output.push_str(ansi::RESET); output.push_str(ansi::DIM); }
                     output.push('>');
-                    if options.use_color {
-                        output.push_str(ansi::RESET);
-                    }
+                    if options.use_color { output.push_str(ansi::RESET); }
                     output.push_str(&escape_xml(path));
-                    if options.use_color {
-                        output.push_str(ansi::DIM);
-                    }
+                    if options.use_color { output.push_str(ansi::DIM); }
                     output.push_str("</");
-                    if options.use_color {
-                        output.push_str(ansi::RESET);
-                        output.push_str(ansi::BLUE);
-                    }
+                    if options.use_color { output.push_str(ansi::RESET); output.push_str(ansi::BLUE); }
                     output.push_str("file");
-                    if options.use_color {
-                        output.push_str(ansi::RESET);
-                        output.push_str(ansi::DIM);
-                    }
+                    if options.use_color { output.push_str(ansi::RESET); output.push_str(ansi::DIM); }
                     output.push('>');
-                    if options.use_color {
-                        output.push_str(ansi::RESET);
-                    }
-                    if options.pretty_print {
-                        output.push('\n');
-                    }
+                    if options.use_color { output.push_str(ansi::RESET); }
+                    if options.pretty_print { output.push('\n'); }
                 }
                 // Render children as siblings (promoted out of File wrapper)
                 for child in xot.children(node) {
@@ -232,7 +208,8 @@ fn render_node_recursive(
 
             // Check if this element should be highlighted
             let is_highlighted = options.highlights.as_ref().map_or(false, |highlights| {
-                extract_position(xot, node).map_or(false, |pos| highlights.contains(&pos))
+                extract_position(xot, node)
+                    .map_or(false, |pos| highlights.contains(&pos))
             });
 
             // Opening tag
@@ -491,7 +468,8 @@ fn render_open_tag(
         if !options.include_meta {
             if matches!(
                 attr_name,
-                "line" | "column" | "end_line" | "end_column" | "kind" | "field" | "path"
+                "line" | "column" | "end_line" | "end_column"
+                | "kind" | "field" | "path"
             ) {
                 continue;
             }
@@ -635,57 +613,30 @@ fn render_xml_node_recursive(
     };
 
     match node {
-        XmlNode::Element {
-            name,
-            attributes,
-            children,
-        } => {
+        XmlNode::Element { name, attributes, children } => {
             // In default mode, convert <File path="..."> to <file>path</file> + promote children
             if name == "File" && !options.include_meta {
-                let path_value = attributes
-                    .iter()
+                let path_value = attributes.iter()
                     .find(|(k, _)| k == "path")
                     .map(|(_, v)| v.as_str());
                 if let Some(path) = path_value {
                     output.push_str(&indent);
-                    if options.use_color {
-                        output.push_str(ansi::DIM);
-                    }
+                    if options.use_color { output.push_str(ansi::DIM); }
                     output.push('<');
-                    if options.use_color {
-                        output.push_str(ansi::RESET);
-                        output.push_str(ansi::BLUE);
-                    }
+                    if options.use_color { output.push_str(ansi::RESET); output.push_str(ansi::BLUE); }
                     output.push_str("file");
-                    if options.use_color {
-                        output.push_str(ansi::RESET);
-                        output.push_str(ansi::DIM);
-                    }
+                    if options.use_color { output.push_str(ansi::RESET); output.push_str(ansi::DIM); }
                     output.push('>');
-                    if options.use_color {
-                        output.push_str(ansi::RESET);
-                    }
+                    if options.use_color { output.push_str(ansi::RESET); }
                     output.push_str(&escape_xml(path));
-                    if options.use_color {
-                        output.push_str(ansi::DIM);
-                    }
+                    if options.use_color { output.push_str(ansi::DIM); }
                     output.push_str("</");
-                    if options.use_color {
-                        output.push_str(ansi::RESET);
-                        output.push_str(ansi::BLUE);
-                    }
+                    if options.use_color { output.push_str(ansi::RESET); output.push_str(ansi::BLUE); }
                     output.push_str("file");
-                    if options.use_color {
-                        output.push_str(ansi::RESET);
-                        output.push_str(ansi::DIM);
-                    }
+                    if options.use_color { output.push_str(ansi::RESET); output.push_str(ansi::DIM); }
                     output.push('>');
-                    if options.use_color {
-                        output.push_str(ansi::RESET);
-                    }
-                    if options.pretty_print {
-                        output.push('\n');
-                    }
+                    if options.use_color { output.push_str(ansi::RESET); }
+                    if options.pretty_print { output.push('\n'); }
                 }
                 for child in children {
                     render_xml_node_recursive(child, options, depth, output);
@@ -696,7 +647,8 @@ fn render_xml_node_recursive(
             let truncate_children = options.max_depth.map_or(false, |max| depth >= max);
 
             let is_highlighted = options.highlights.as_ref().map_or(false, |highlights| {
-                extract_xml_node_position(attributes).map_or(false, |pos| highlights.contains(&pos))
+                extract_xml_node_position(attributes)
+                    .map_or(false, |pos| highlights.contains(&pos))
             });
 
             output.push_str(&indent);
@@ -712,25 +664,15 @@ fn render_xml_node_recursive(
 
             if children.is_empty() {
                 // Self-closing
-                if !is_highlighted && options.use_color {
-                    output.push_str(ansi::DIM);
-                }
+                if !is_highlighted && options.use_color { output.push_str(ansi::DIM); }
                 output.push_str("/>");
-                if options.use_color {
-                    output.push_str(ansi::RESET);
-                }
-                if options.pretty_print {
-                    output.push('\n');
-                }
+                if options.use_color { output.push_str(ansi::RESET); }
+                if options.pretty_print { output.push('\n'); }
             } else if children.len() == 1 && matches!(&children[0], XmlNode::Text(_)) {
                 // Single text child — inline
-                if !is_highlighted && options.use_color {
-                    output.push_str(ansi::DIM);
-                }
+                if !is_highlighted && options.use_color { output.push_str(ansi::DIM); }
                 output.push('>');
-                if is_highlighted && options.use_color {
-                    output.push_str(ansi::RESET);
-                }
+                if is_highlighted && options.use_color { output.push_str(ansi::RESET); }
 
                 if let XmlNode::Text(text) = &children[0] {
                     output.push_str(&escape_xml(text));
@@ -754,32 +696,20 @@ fn render_xml_node_recursive(
                     output.push_str(ansi::DIM);
                 }
                 output.push('>');
-                if options.use_color {
-                    output.push_str(ansi::RESET);
-                }
-                if options.pretty_print {
-                    output.push('\n');
-                }
+                if options.use_color { output.push_str(ansi::RESET); }
+                if options.pretty_print { output.push('\n'); }
             } else if truncate_children {
                 let child_count = count_xml_node_descendants(node);
-                if !is_highlighted && options.use_color {
-                    output.push_str(ansi::DIM);
-                }
+                if !is_highlighted && options.use_color { output.push_str(ansi::DIM); }
                 output.push('>');
-                if options.use_color {
-                    output.push_str(ansi::RESET);
-                }
+                if options.use_color { output.push_str(ansi::RESET); }
                 if options.pretty_print {
                     output.push('\n');
                     let child_indent = options.indent.repeat(depth + 1);
                     output.push_str(&child_indent);
-                    if options.use_color {
-                        output.push_str(ansi::DIM);
-                    }
+                    if options.use_color { output.push_str(ansi::DIM); }
                     output.push_str(&format!("<!-- ... ({} children) -->\n", child_count));
-                    if options.use_color {
-                        output.push_str(ansi::RESET);
-                    }
+                    if options.use_color { output.push_str(ansi::RESET); }
                 }
 
                 output.push_str(&indent);
@@ -801,24 +731,14 @@ fn render_xml_node_recursive(
                     output.push_str(ansi::DIM);
                 }
                 output.push('>');
-                if options.use_color {
-                    output.push_str(ansi::RESET);
-                }
-                if options.pretty_print {
-                    output.push('\n');
-                }
+                if options.use_color { output.push_str(ansi::RESET); }
+                if options.pretty_print { output.push('\n'); }
             } else {
                 // Multiple children
-                if !is_highlighted && options.use_color {
-                    output.push_str(ansi::DIM);
-                }
+                if !is_highlighted && options.use_color { output.push_str(ansi::DIM); }
                 output.push('>');
-                if options.use_color {
-                    output.push_str(ansi::RESET);
-                }
-                if options.pretty_print {
-                    output.push('\n');
-                }
+                if options.use_color { output.push_str(ansi::RESET); }
+                if options.pretty_print { output.push('\n'); }
 
                 for child in children {
                     render_xml_node_recursive(child, options, depth + 1, output);
@@ -843,12 +763,8 @@ fn render_xml_node_recursive(
                     output.push_str(ansi::DIM);
                 }
                 output.push('>');
-                if options.use_color {
-                    output.push_str(ansi::RESET);
-                }
-                if options.pretty_print {
-                    output.push('\n');
-                }
+                if options.use_color { output.push_str(ansi::RESET); }
+                if options.pretty_print { output.push('\n'); }
             }
         }
         XmlNode::Text(text) => {
@@ -865,24 +781,16 @@ fn render_xml_node_recursive(
         }
         XmlNode::Comment(text) => {
             output.push_str(&indent);
-            if options.use_color {
-                output.push_str(ansi::DIM);
-            }
+            if options.use_color { output.push_str(ansi::DIM); }
             output.push_str("<!--");
             output.push_str(text);
             output.push_str("-->");
-            if options.use_color {
-                output.push_str(ansi::RESET);
-            }
-            if options.pretty_print {
-                output.push('\n');
-            }
+            if options.use_color { output.push_str(ansi::RESET); }
+            if options.pretty_print { output.push('\n'); }
         }
         XmlNode::ProcessingInstruction { target, data } => {
             output.push_str(&indent);
-            if options.use_color {
-                output.push_str(ansi::DIM);
-            }
+            if options.use_color { output.push_str(ansi::DIM); }
             output.push_str("<?");
             output.push_str(target);
             if let Some(d) = data {
@@ -890,19 +798,12 @@ fn render_xml_node_recursive(
                 output.push_str(d);
             }
             output.push_str("?>");
-            if options.use_color {
-                output.push_str(ansi::RESET);
-            }
-            if options.pretty_print {
-                output.push('\n');
-            }
+            if options.use_color { output.push_str(ansi::RESET); }
+            if options.pretty_print { output.push('\n'); }
         }
         // XPath data variants — render as pretty-printed JSON
-        XmlNode::Map { .. }
-        | XmlNode::Array { .. }
-        | XmlNode::Number(_)
-        | XmlNode::Boolean(_)
-        | XmlNode::Null => {
+        XmlNode::Map { .. } | XmlNode::Array { .. } | XmlNode::Number(_)
+        | XmlNode::Boolean(_) | XmlNode::Null => {
             let json_val = crate::output::xml_node_to_json(node, options.max_depth);
             let rendered = serde_json::to_string_pretty(&json_val).unwrap_or_default();
             if options.pretty_print {
@@ -925,64 +826,41 @@ fn render_xml_node_open_tag(
     is_highlighted: bool,
     output: &mut String,
 ) {
-    if !is_highlighted && options.use_color {
-        output.push_str(ansi::DIM);
-    }
+    if !is_highlighted && options.use_color { output.push_str(ansi::DIM); }
     output.push('<');
-    if !is_highlighted && options.use_color {
-        output.push_str(ansi::RESET);
-    }
+    if !is_highlighted && options.use_color { output.push_str(ansi::RESET); }
 
-    if !is_highlighted && options.use_color {
-        output.push_str(ansi::BLUE);
-    }
+    if !is_highlighted && options.use_color { output.push_str(ansi::BLUE); }
     output.push_str(name);
-    if !is_highlighted && options.use_color {
-        output.push_str(ansi::RESET);
-    }
+    if !is_highlighted && options.use_color { output.push_str(ansi::RESET); }
 
     for (attr_name, attr_value) in attributes {
         if !options.include_meta {
             if matches!(
                 attr_name.as_str(),
-                "line" | "column" | "end_line" | "end_column" | "kind" | "field" | "path"
+                "line" | "column" | "end_line" | "end_column"
+                | "kind" | "field" | "path"
             ) {
                 continue;
             }
         }
 
         output.push(' ');
-        if !is_highlighted && options.use_color {
-            output.push_str(ansi::CYAN);
-        }
+        if !is_highlighted && options.use_color { output.push_str(ansi::CYAN); }
         output.push_str(attr_name);
-        if !is_highlighted && options.use_color {
-            output.push_str(ansi::RESET);
-        }
+        if !is_highlighted && options.use_color { output.push_str(ansi::RESET); }
 
-        if !is_highlighted && options.use_color {
-            output.push_str(ansi::DIM);
-        }
+        if !is_highlighted && options.use_color { output.push_str(ansi::DIM); }
         output.push_str("=\"");
-        if !is_highlighted && options.use_color {
-            output.push_str(ansi::RESET);
-        }
+        if !is_highlighted && options.use_color { output.push_str(ansi::RESET); }
 
-        if !is_highlighted && options.use_color {
-            output.push_str(ansi::YELLOW);
-        }
+        if !is_highlighted && options.use_color { output.push_str(ansi::YELLOW); }
         output.push_str(&escape_xml(attr_value));
-        if !is_highlighted && options.use_color {
-            output.push_str(ansi::RESET);
-        }
+        if !is_highlighted && options.use_color { output.push_str(ansi::RESET); }
 
-        if !is_highlighted && options.use_color {
-            output.push_str(ansi::DIM);
-        }
+        if !is_highlighted && options.use_color { output.push_str(ansi::DIM); }
         output.push('"');
-        if !is_highlighted && options.use_color {
-            output.push_str(ansi::RESET);
-        }
+        if !is_highlighted && options.use_color { output.push_str(ansi::RESET); }
     }
 }
 
@@ -1000,7 +878,9 @@ mod tests {
 
     #[test]
     fn test_render_options_builder() {
-        let opts = RenderOptions::new().with_color(true).with_meta(false);
+        let opts = RenderOptions::new()
+            .with_color(true)
+            .with_meta(false);
 
         assert!(opts.use_color);
         assert!(!opts.include_meta);
@@ -1009,7 +889,8 @@ mod tests {
     #[test]
     fn test_max_depth_truncation() {
         let xml = r#"<root><a><b><c>text</c></b></a></root>"#;
-        let opts = RenderOptions::new().with_max_depth(Some(1)); // root=0, a=1, b=2 (truncated)
+        let opts = RenderOptions::new()
+            .with_max_depth(Some(1));  // root=0, a=1, b=2 (truncated)
 
         let output = render_xml_string(xml, &opts);
 
@@ -1037,11 +918,7 @@ pub fn xml_node_to_string(node: &XmlNode) -> String {
 
 fn write_xml_compact(node: &XmlNode, out: &mut String) {
     match node {
-        XmlNode::Element {
-            name,
-            attributes,
-            children,
-        } => {
+        XmlNode::Element { name, attributes, children } => {
             out.push('<');
             out.push_str(name);
             for (k, v) in attributes {
@@ -1081,11 +958,8 @@ fn write_xml_compact(node: &XmlNode, out: &mut String) {
             out.push_str("?>");
         }
         // XPath data variants — compact JSON
-        XmlNode::Map { .. }
-        | XmlNode::Array { .. }
-        | XmlNode::Number(_)
-        | XmlNode::Boolean(_)
-        | XmlNode::Null => {
+        XmlNode::Map { .. } | XmlNode::Array { .. } | XmlNode::Number(_)
+        | XmlNode::Boolean(_) | XmlNode::Null => {
             let json_val = crate::output::xml_node_to_json(node, None);
             out.push_str(&serde_json::to_string(&json_val).unwrap_or_default());
         }

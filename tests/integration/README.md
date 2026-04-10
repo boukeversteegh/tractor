@@ -2,6 +2,8 @@
 
 The CLI integration suite is now Rust-native and lives in `tractor/tests/cli.rs` with shared helpers in `tractor/tests/support/mod.rs`.
 
+The DSL design note lives in `docs/design-cli-integration-dsl.md`.
+
 Run it with:
 
 ```bash

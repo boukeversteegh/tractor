@@ -9,10 +9,10 @@
 //!
 //! Both use `TreeBuilder` internally for shared tree-building logic.
 
-use std::collections::HashMap;
 #[cfg(feature = "native")]
 use tree_sitter::Node as TsNode;
-use xot::{NameId, Node as XotNode, Xot};
+use xot::{Xot, Node as XotNode, NameId};
+use std::collections::HashMap;
 
 #[cfg(feature = "wasm")]
 use crate::wasm_ast::SerializedNode;
@@ -44,11 +44,7 @@ struct TreeBuilder<'a> {
 
 impl<'a> TreeBuilder<'a> {
     /// Create a new TreeBuilder
-    fn new(
-        xot: &'a mut Xot,
-        name_cache: &'a mut HashMap<String, NameId>,
-        ignore_whitespace: bool,
-    ) -> Self {
+    fn new(xot: &'a mut Xot, name_cache: &'a mut HashMap<String, NameId>, ignore_whitespace: bool) -> Self {
         TreeBuilder {
             xot,
             name_cache,
@@ -137,9 +133,7 @@ impl<'a> TreeBuilder<'a> {
 
         // Add kind attribute (original TreeSitter kind) for robust transform detection
         let kind_attr = self.get_name("kind");
-        self.xot
-            .attributes_mut(element)
-            .insert(kind_attr, kind.to_string());
+        self.xot.attributes_mut(element).insert(kind_attr, kind.to_string());
 
         // Add location attributes
         let start = ts_node.start_position();
@@ -187,14 +181,7 @@ impl<'a> TreeBuilder<'a> {
                 if child.is_named() {
                     let child_field = cursor.field_name();
                     // Recurse with incremented depth
-                    self.build_node(
-                        child,
-                        source,
-                        element,
-                        child_field,
-                        current_depth + 1,
-                        max_depth,
-                    )?;
+                    self.build_node(child, source, element, child_field, current_depth + 1, max_depth)?;
                 } else {
                     // Anonymous node - add as text child
                     if let Ok(text) = child.utf8_text(source.as_bytes()) {
@@ -239,30 +226,22 @@ impl<'a> TreeBuilder<'a> {
 
                 // Mark wrapper as field-backed for JSON property lifting
                 let field_attr = self.get_name("field");
-                self.xot
-                    .attributes_mut(wrapper)
-                    .insert(field_attr, field.to_string());
+                self.xot.attributes_mut(wrapper).insert(field_attr, field.to_string());
 
                 // Mark the inner element as a singleton child so the JSON
                 // serializer can lift it as a direct property on the wrapper.
                 // The wrapper guarantees exactly one semantic child.
-                let inner_name = self
-                    .xot
-                    .element(element)
+                let inner_name = self.xot.element(element)
                     .map(|e| self.xot.local_name_str(e.name()).to_string());
                 if let Some(name_str) = inner_name {
-                    self.xot
-                        .attributes_mut(element)
-                        .insert(field_attr, name_str);
+                    self.xot.attributes_mut(element).insert(field_attr, name_str);
                 }
 
                 self.xot.append(wrapper, element)?;
                 self.xot.append(parent, wrapper)?;
             } else {
                 let field_attr = self.get_name("field");
-                self.xot
-                    .attributes_mut(element)
-                    .insert(field_attr, field.to_string());
+                self.xot.attributes_mut(element).insert(field_attr, field.to_string());
                 self.xot.append(parent, element)?;
             }
         } else {
@@ -292,9 +271,7 @@ impl<'a> TreeBuilder<'a> {
 
         // Add kind attribute (original TreeSitter kind) for robust transform detection
         let kind_attr = self.get_name("kind");
-        self.xot
-            .attributes_mut(element)
-            .insert(kind_attr, kind.to_string());
+        self.xot.attributes_mut(element).insert(kind_attr, kind.to_string());
 
         // Add location attributes (convert from 0-indexed to 1-indexed)
         let start_line_attr = self.get_name("line");
@@ -333,12 +310,7 @@ impl<'a> TreeBuilder<'a> {
                 }
 
                 if child.is_named {
-                    self.build_serialized_node(
-                        child,
-                        source,
-                        element,
-                        child.field_name.as_deref(),
-                    )?;
+                    self.build_serialized_node(child, source, element, child.field_name.as_deref())?;
                 } else {
                     // Anonymous node - add as text child (operators, keywords, punctuation)
                     let text = child.text(source);
@@ -379,19 +351,13 @@ impl<'a> TreeBuilder<'a> {
 
                 // Mark wrapper as field-backed for JSON property lifting
                 let field_attr = self.get_name("field");
-                self.xot
-                    .attributes_mut(wrapper)
-                    .insert(field_attr, field.to_string());
+                self.xot.attributes_mut(wrapper).insert(field_attr, field.to_string());
 
                 // Mark the inner element as a singleton child
-                let inner_name = self
-                    .xot
-                    .element(element)
+                let inner_name = self.xot.element(element)
                     .map(|e| self.xot.local_name_str(e.name()).to_string());
                 if let Some(name_str) = inner_name {
-                    self.xot
-                        .attributes_mut(element)
-                        .insert(field_attr, name_str);
+                    self.xot.attributes_mut(element).insert(field_attr, name_str);
                 }
 
                 self.xot.append(wrapper, element)?;
@@ -399,9 +365,7 @@ impl<'a> TreeBuilder<'a> {
             } else {
                 // Add field as attribute instead
                 let field_attr = self.get_name("field");
-                self.xot
-                    .attributes_mut(element)
-                    .insert(field_attr, field.to_string());
+                self.xot.attributes_mut(element).insert(field_attr, field.to_string());
                 self.xot.append(parent, element)?;
             }
         } else {
@@ -472,14 +436,11 @@ impl XotBuilder {
         let file_el = self.xot.new_element(file_name);
 
         let path_attr = self.get_name("path");
-        self.xot
-            .attributes_mut(file_el)
-            .insert(path_attr, file_path.to_string());
+        self.xot.attributes_mut(file_el).insert(path_attr, file_path.to_string());
 
         // Build the tree from TreeSitter using TreeBuilder
         {
-            let mut builder =
-                TreeBuilder::new(&mut self.xot, &mut self.name_cache, ignore_whitespace);
+            let mut builder = TreeBuilder::new(&mut self.xot, &mut self.name_cache, ignore_whitespace);
             builder.build_node(ts_node, source, file_el, None, 0, None)?;
         }
 
@@ -523,14 +484,11 @@ impl XotBuilder {
         let file_el = self.xot.new_element(file_name);
 
         let path_attr = self.get_name("path");
-        self.xot
-            .attributes_mut(file_el)
-            .insert(path_attr, file_path.to_string());
+        self.xot.attributes_mut(file_el).insert(path_attr, file_path.to_string());
 
         // Build the tree from serialized AST using TreeBuilder
         {
-            let mut builder =
-                TreeBuilder::new(&mut self.xot, &mut self.name_cache, ignore_whitespace);
+            let mut builder = TreeBuilder::new(&mut self.xot, &mut self.name_cache, ignore_whitespace);
             builder.build_serialized_node(node, source, file_el, None)?;
         }
 
@@ -572,7 +530,7 @@ impl Default for XotBuilder {
 // XeeBuilder: Build directly into xee-xpath's Documents (no serialization)
 // ============================================================================
 
-use xee_xpath::{DocumentHandle, Documents};
+use xee_xpath::{Documents, DocumentHandle};
 
 /// Builder for creating documents directly into xee-xpath's Documents
 ///
@@ -628,8 +586,8 @@ impl XeeBuilder {
         max_depth: Option<usize>,
     ) -> Result<DocumentHandle, xot::Error> {
         use crate::tree_mode::TreeMode;
-        use std::sync::atomic::{AtomicU64, Ordering};
         use std::time::Instant;
+        use std::sync::atomic::{AtomicU64, Ordering};
 
         static TIMING_RAW_BUILD: AtomicU64 = AtomicU64::new(0);
         static TIMING_TRANSFORM: AtomicU64 = AtomicU64::new(0);
@@ -637,8 +595,7 @@ impl XeeBuilder {
 
         let t0 = Instant::now();
         // Build the raw tree
-        let doc_handle =
-            self.build_raw_with_options(ts_node, source, file_path, ignore_whitespace, max_depth)?;
+        let doc_handle = self.build_raw_with_options(ts_node, source, file_path, ignore_whitespace, max_depth)?;
         let t1 = Instant::now();
 
         // Apply transforms based on tree mode
@@ -648,28 +605,19 @@ impl XeeBuilder {
             }
             TreeMode::Structure => {
                 // Single-branch syntax transform
-                let doc_node = self
-                    .documents
-                    .document_node(doc_handle)
+                let doc_node = self.documents.document_node(doc_handle)
                     .ok_or_else(|| xot::Error::Io("Failed to get document node".to_string()))?;
-                let transform_fn =
-                    if let Some((syntax_fn, _)) = crate::languages::get_data_transforms(lang) {
-                        // Data-aware language: use the syntax (ast) transform
-                        syntax_fn
-                    } else {
-                        crate::languages::get_transform(lang)
-                    };
-                crate::xot_transform::walk_transform(
-                    self.documents.xot_mut(),
-                    doc_node,
-                    transform_fn,
-                )?;
+                let transform_fn = if let Some((syntax_fn, _)) = crate::languages::get_data_transforms(lang) {
+                    // Data-aware language: use the syntax (ast) transform
+                    syntax_fn
+                } else {
+                    crate::languages::get_transform(lang)
+                };
+                crate::xot_transform::walk_transform(self.documents.xot_mut(), doc_node, transform_fn)?;
             }
             TreeMode::Data => {
                 // Single-branch data transform (caller already validated lang supports it)
-                let doc_node = self
-                    .documents
-                    .document_node(doc_handle)
+                let doc_node = self.documents.document_node(doc_handle)
                     .ok_or_else(|| xot::Error::Io("Failed to get document node".to_string()))?;
                 let (_, data_fn) = crate::languages::get_data_transforms(lang)
                     .expect("Data mode requires a data-aware language");
@@ -687,16 +635,8 @@ impl XeeBuilder {
             let raw = TIMING_RAW_BUILD.load(Ordering::Relaxed);
             let transform = TIMING_TRANSFORM.load(Ordering::Relaxed);
             eprintln!("\n=== Xot Build Stats ({} files) ===", count);
-            eprintln!(
-                "Raw build:    {:>8.2}ms ({:.2}ms/file)",
-                raw as f64 / 1000.0,
-                raw as f64 / 1000.0 / count as f64
-            );
-            eprintln!(
-                "Transform:    {:>8.2}ms ({:.2}ms/file)",
-                transform as f64 / 1000.0,
-                transform as f64 / 1000.0 / count as f64
-            );
+            eprintln!("Raw build:    {:>8.2}ms ({:.2}ms/file)", raw as f64 / 1000.0, raw as f64 / 1000.0 / count as f64);
+            eprintln!("Transform:    {:>8.2}ms ({:.2}ms/file)", transform as f64 / 1000.0, transform as f64 / 1000.0 / count as f64);
         }
 
         Ok(doc_handle)
@@ -726,15 +666,13 @@ impl XeeBuilder {
         max_depth: Option<usize>,
     ) -> Result<DocumentHandle, xot::Error> {
         // Create a shell document with Files root
-        let doc_handle = self
-            .documents
-            .add_string("file:///source".try_into().unwrap(), "<Files/>")
-            .map_err(|e| xot::Error::Io(e.to_string()))?;
+        let doc_handle = self.documents.add_string(
+            "file:///source".try_into().unwrap(),
+            "<Files/>",
+        ).map_err(|e| xot::Error::Io(e.to_string()))?;
 
         // Get the document node and root element
-        let doc_node = self
-            .documents
-            .document_node(doc_handle)
+        let doc_node = self.documents.document_node(doc_handle)
             .ok_or_else(|| xot::Error::Io("Failed to get document node".to_string()))?;
 
         let xot = self.documents.xot_mut();
@@ -753,8 +691,7 @@ impl XeeBuilder {
             self.name_cache.insert("path".to_string(), id);
             id
         };
-        xot.attributes_mut(file_el)
-            .insert(path_attr, file_path.to_string());
+        xot.attributes_mut(file_el).insert(path_attr, file_path.to_string());
 
         // Build the tree from TreeSitter using TreeBuilder
         {
@@ -791,23 +728,19 @@ impl XeeBuilder {
         syntax_transform: crate::languages::TransformFn,
         data_transform: crate::languages::TransformFn,
     ) -> Result<(), xot::Error> {
-        let doc_node = self
-            .documents
-            .document_node(doc_handle)
+        let doc_node = self.documents.document_node(doc_handle)
             .ok_or_else(|| xot::Error::Io("Failed to get document node".to_string()))?;
 
         let xot = self.documents.xot_mut();
 
         // Find <Files> -> <File>
         let files_el = xot.document_element(doc_node)?;
-        let file_el = xot
-            .children(files_el)
+        let file_el = xot.children(files_el)
             .find(|&c| xot.element(c).is_some())
             .ok_or_else(|| xot::Error::Io("No File element found".to_string()))?;
 
         // Find the content root (first element child of <File>)
-        let content_root = xot
-            .children(file_el)
+        let content_root = xot.children(file_el)
             .find(|&c| xot.element(c).is_some())
             .ok_or_else(|| xot::Error::Io("No content root under File".to_string()))?;
 
@@ -848,8 +781,7 @@ impl XeeBuilder {
         // nesting — content should sit directly under <data>.
         // For multi-doc YAML, keep <document> wrappers for positional queries.
         let doc_element_name = xot.add_name("document");
-        let doc_children: Vec<XotNode> = xot
-            .children(data_el)
+        let doc_children: Vec<XotNode> = xot.children(data_el)
             .filter(|&c| {
                 xot.element(c)
                     .map(|e| e.name() == doc_element_name)

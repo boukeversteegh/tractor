@@ -23,9 +23,9 @@
 //! ```
 //! Queryable as: `//DB_HOST[.='localhost']`
 
+use xot::{Xot, Node as XotNode};
+use crate::xot_transform::{TransformAction, helpers::*};
 use crate::output::syntax_highlight::SyntaxCategory;
-use crate::xot_transform::{helpers::*, TransformAction};
-use xot::{Node as XotNode, Xot};
 
 /// Transform a bash AST node into an env-file-oriented XML tree
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
@@ -43,7 +43,9 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         // Variable assignments: rename to the variable name
-        "variable_assignment" => transform_variable_assignment(xot, node),
+        "variable_assignment" => {
+            transform_variable_assignment(xot, node)
+        }
 
         // export KEY=VALUE: flatten to expose the inner variable_assignment
         "declaration_command" => {
@@ -52,19 +54,29 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         // Comments: keep as <comment>, strip the # prefix
-        "comment" => transform_comment(xot, node),
+        "comment" => {
+            transform_comment(xot, node)
+        }
 
         // Variable name: flatten to promote text to parent
-        "variable_name" => Ok(TransformAction::Flatten),
+        "variable_name" => {
+            Ok(TransformAction::Flatten)
+        }
 
         // Value wrapper nodes: flatten
-        "word" | "number" | "raw_string" | "ansii_c_string" => Ok(TransformAction::Flatten),
+        "word" | "number" | "raw_string" | "ansii_c_string" => {
+            Ok(TransformAction::Flatten)
+        }
 
         // Strings: strip quotes and flatten
-        "string" | "simple_expansion" | "expansion" => Ok(TransformAction::Flatten),
+        "string" | "simple_expansion" | "expansion" => {
+            Ok(TransformAction::Flatten)
+        }
 
         // String content: flatten to promote text
-        "string_content" => Ok(TransformAction::Flatten),
+        "string_content" => {
+            Ok(TransformAction::Flatten)
+        }
 
         // Concatenation: flatten to combine parts
         "concatenation" => {
@@ -87,10 +99,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 ///   <value><word>val</word></value>
 /// </variable_assignment>
 /// ```
-fn transform_variable_assignment(
-    xot: &mut Xot,
-    node: XotNode,
-) -> Result<TransformAction, xot::Error> {
+fn transform_variable_assignment(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let var_name = extract_variable_name(xot, node);
     let var_value = extract_variable_value(xot, node);
 
@@ -99,9 +108,9 @@ fn transform_variable_assignment(
 
         // Copy the value child's source span to the node so --set replaces
         // only the value portion, not the entire `KEY=value` assignment.
-        let value_child = xot
-            .children(node)
-            .find(|&c| get_element_name(xot, c).as_deref() == Some("value"));
+        let value_child = xot.children(node).find(|&c| {
+            get_element_name(xot, c).as_deref() == Some("value")
+        });
         if let Some(vc) = value_child {
             copy_source_location(xot, vc, node);
         }
@@ -198,18 +207,14 @@ fn collect_value_text(xot: &Xot, node: XotNode, parts: &mut Vec<String>) {
                 // Raw strings (single-quoted): strip surrounding quotes
                 "raw_string" => {
                     if let Some(text) = get_text_content(xot, child) {
-                        let stripped = text
-                            .strip_prefix('\'')
+                        let stripped = text.strip_prefix('\'')
                             .and_then(|s| s.strip_suffix('\''))
                             .unwrap_or(&text);
                         parts.push(stripped.to_string());
                     }
                 }
                 // Recurse into wrapper/composite nodes
-                "string"
-                | "concatenation"
-                | "simple_expansion"
-                | "expansion"
+                "string" | "concatenation" | "simple_expansion" | "expansion"
                 | "command_substitution" => {
                     collect_value_text(xot, child, parts);
                 }
@@ -229,8 +234,7 @@ fn transform_comment(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xo
     // The comment node contains text like "# Database config"
     // Strip the leading "# " prefix
     if let Some(text) = get_text_content(xot, node) {
-        let stripped = text
-            .strip_prefix('#')
+        let stripped = text.strip_prefix('#')
             .unwrap_or(&text)
             .trim_start()
             .to_string();

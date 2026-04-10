@@ -1,8 +1,8 @@
 //! Rust transform logic
 
+use xot::{Xot, Node as XotNode};
+use crate::xot_transform::{TransformAction, helpers::*};
 use crate::output::syntax_highlight::SyntaxCategory;
-use crate::xot_transform::{helpers::*, TransformAction};
-use xot::{Node as XotNode, Xot};
 
 /// Transform a Rust AST node
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
@@ -20,20 +20,9 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         "name" => {
             if let Some(parent) = get_parent(xot, node) {
                 let parent_kind = get_element_name(xot, parent).unwrap_or_default();
-                if matches!(
-                    parent_kind.as_str(),
-                    "function_item"
-                        | "struct_item"
-                        | "enum_item"
-                        | "trait_item"
-                        | "mod_item"
-                        | "type_item"
-                        | "function"
-                        | "struct"
-                        | "enum"
-                        | "trait"
-                        | "mod"
-                        | "typedef"
+                if matches!(parent_kind.as_str(),
+                    "function_item" | "struct_item" | "enum_item" | "trait_item" | "mod_item" | "type_item"
+                    | "function" | "struct" | "enum" | "trait" | "mod" | "typedef"
                 ) {
                     let children: Vec<_> = xot.children(node).collect();
                     for child in children {
@@ -64,14 +53,10 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
                 // Add restriction detail as child element
                 if let Some(start) = text.find('(') {
                     if let Some(end) = text.find(')') {
-                        let inner = text[start + 1..end].trim();
+                        let inner = text[start+1..end].trim();
                         match inner {
-                            "crate" => {
-                                prepend_empty_element(xot, node, "crate")?;
-                            }
-                            "super" => {
-                                prepend_empty_element(xot, node, "super")?;
-                            }
+                            "crate" => { prepend_empty_element(xot, node, "crate")?; }
+                            "super" => { prepend_empty_element(xot, node, "super")?; }
                             _ if inner.starts_with("in ") => {
                                 let path = inner[3..].trim();
                                 prepend_element_with_text(xot, node, "in", path)?;
@@ -86,8 +71,8 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         // Declarations — prepend <private/> if no visibility_modifier child
-        "function_item" | "struct_item" | "enum_item" | "trait_item" | "const_item"
-        | "static_item" | "type_item" | "mod_item" => {
+        "function_item" | "struct_item" | "enum_item" | "trait_item"
+        | "const_item" | "static_item" | "type_item" | "mod_item" => {
             let has_vis = xot.children(node).any(|child| {
                 get_element_name(xot, child).as_deref() == Some("visibility_modifier")
             });
@@ -183,8 +168,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
 fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     let texts = get_text_children(xot, node);
     let operator = texts.iter().find(|t| {
-        !t.chars()
-            .all(|c| matches!(c, '(' | ')' | ',' | ';' | '{' | '}' | '[' | ']'))
+        !t.chars().all(|c| matches!(c, '(' | ')' | ',' | ';' | '{' | '}' | '[' | ']'))
     });
     if let Some(op) = operator {
         prepend_op_element(xot, node, op)?;
@@ -196,8 +180,7 @@ fn extract_modifiers(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     let texts = get_text_children(xot, node);
     const MODIFIERS: &[&str] = &["mut", "async", "unsafe", "const"];
 
-    let found: Vec<&str> = texts
-        .iter()
+    let found: Vec<&str> = texts.iter()
         .filter_map(|t| MODIFIERS.iter().find(|&&m| m == t).copied())
         .collect();
 

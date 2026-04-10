@@ -1,10 +1,13 @@
-use super::format::options::HookType;
-use super::format::{
-    parse_group_by, parse_view_set, GroupDimension, OutputFormat, ViewField, ViewSet,
+use tractor_core::{
+    output::should_use_color,
+    output::RenderOptions,
+    NormalizedXpath,
+    TreeMode,
 };
-use super::input::{resolve_input, InputMode};
 use crate::cli::SharedArgs;
-use tractor_core::{output::should_use_color, output::RenderOptions, NormalizedXpath, TreeMode};
+use super::input::{InputMode, resolve_input};
+use super::format::{OutputFormat, GroupDimension, ViewField, ViewSet, parse_view_set, parse_group_by};
+use super::format::options::HookType;
 
 pub struct RunContext {
     pub xpath: Option<NormalizedXpath>,
@@ -70,12 +73,8 @@ impl RunContext {
         } else {
             ViewSet::from_fields(default_view.to_vec())
         };
-        let use_color = if shared.no_color {
-            false
-        } else {
-            should_use_color(&shared.color)
-        };
-        let input = resolve_input(shared, files, content)?;
+        let use_color     = if shared.no_color { false } else { should_use_color(&shared.color) };
+        let input         = resolve_input(shared, files, content)?;
 
         let group_by = match shared.group_by.as_deref() {
             Some(s) => parse_group_by(s)?,
@@ -86,13 +85,9 @@ impl RunContext {
             Some("raw") => Some(TreeMode::Raw),
             Some("structure") => Some(TreeMode::Structure),
             Some("data") => Some(TreeMode::Data),
-            Some(other) => {
-                return Err(format!(
-                    "invalid --tree value '{}': use 'raw', 'structure', or 'data'",
-                    other
-                )
-                .into())
-            }
+            Some(other) => return Err(format!(
+                "invalid --tree value '{}': use 'raw', 'structure', or 'data'", other
+            ).into()),
             None => None, // auto-detect at parse time
         };
 

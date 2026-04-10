@@ -1,6 +1,6 @@
-use crate::cli::SharedArgs;
 use std::io::{self, BufRead, Read};
 use tractor_core::{expand_globs_checked, filter_supported_files};
+use crate::cli::SharedArgs;
 
 pub enum InputMode {
     Files(Vec<String>),
@@ -13,12 +13,8 @@ pub fn resolve_input(
     content: Option<String>,
 ) -> Result<InputMode, Box<dyn std::error::Error>> {
     let expansion_limit = shared.max_files * 10;
-    let result = expand_globs_checked(&files, expansion_limit).map_err(|e| {
-        format!(
-            "{} — use a more specific pattern or increase --max-files",
-            e
-        )
-    })?;
+    let result = expand_globs_checked(&files, expansion_limit)
+        .map_err(|e| format!("{} — use a more specific pattern or increase --max-files", e))?;
     let mut files: Vec<String> = result.files;
 
     let input = if let Some(ref content_str) = content {

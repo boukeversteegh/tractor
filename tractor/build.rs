@@ -75,8 +75,16 @@ fn main() {
     writeln!(f, "];").unwrap();
 
     writeln!(f).unwrap();
-    writeln!(f, "/// Auto-generated grammar versions from Cargo.lock").unwrap();
-    writeln!(f, "/// Format: (crate_name, version_string, language_name)").unwrap();
+    writeln!(
+        f,
+        "/// Auto-generated grammar versions from Cargo.lock"
+    )
+    .unwrap();
+    writeln!(
+        f,
+        "/// Format: (crate_name, version_string, language_name)"
+    )
+    .unwrap();
     writeln!(f, "pub const GRAMMAR_VERSIONS: &[(&str, &str, &str)] = &[").unwrap();
 
     // Grammar crates (sorted alphabetically)
@@ -135,7 +143,7 @@ fn crate_to_language_name(crate_name: &str) -> &'static str {
 struct PackageInfo {
     version: String,
     is_patched: bool,
-    source_type: String,          // "registry", "git", "path"
+    source_type: String,         // "registry", "git", "path"
     patch_commit: Option<String>, // For patched crates: commit hash
     patch_date: Option<String>,   // For patched crates: commit date
 }
