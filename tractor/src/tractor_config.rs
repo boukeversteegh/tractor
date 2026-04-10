@@ -29,6 +29,7 @@
 
 use std::path::Path;
 use serde::Deserialize;
+use tractor_core::declarative_set::parse_set_expr;
 use tractor_core::normalized_xpath::NormalizedXpath;
 use tractor_core::report::Severity;
 use tractor_core::rule::Rule;
@@ -36,7 +37,7 @@ use tractor_core::tree_mode::TreeMode;
 
 use crate::executor::{
     CheckOperation, Operation, QueryExpr, QueryOperation,
-    SetMapping, SetOperation, TestAssertion, TestOperation,
+    SetMapping, SetOperation, SetReportMode, SetWriteMode, TestAssertion, TestOperation,
 };
 
 // ---------------------------------------------------------------------------
@@ -173,11 +174,30 @@ struct SetConfig {
     diff_files: Option<String>,
     #[serde(default, rename = "diff-lines")]
     diff_lines: Option<String>,
+    #[serde(default)]
     mappings: Vec<SetMappingConfig>,
+    #[serde(default, alias = "expr", alias = "declarative")]
+    expression: Option<String>,
+    #[serde(default)]
+    value: Option<String>,
     #[serde(default, rename = "tree-mode")]
     tree_mode: Option<String>,
     #[serde(default)]
     language: Option<String>,
+    #[serde(default)]
+    limit: Option<usize>,
+    #[serde(default, rename = "ignore-whitespace")]
+    ignore_whitespace: bool,
+    #[serde(default, rename = "parse-depth")]
+    parse_depth: Option<usize>,
+    #[serde(default, rename = "inline-source", alias = "source", alias = "string")]
+    inline_source: Option<String>,
+    #[serde(default, rename = "write-mode", alias = "write")]
+    write_mode: Option<String>,
+    #[serde(default)]
+    verify: bool,
+    #[serde(default, rename = "report-mode", alias = "report")]
+    report_mode: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -185,6 +205,8 @@ struct SetConfig {
 struct SetMappingConfig {
     xpath: String,
     value: String,
+    #[serde(default, rename = "value-kind", alias = "kind", alias = "type")]
+    value_kind: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -275,6 +297,29 @@ fn parse_tree_mode(s: &str) -> Result<TreeMode, String> {
     }
 }
 
+fn parse_set_write_mode(s: &str) -> Result<SetWriteMode, String> {
+    match s {
+        "in-place" | "inplace" | "write" => Ok(SetWriteMode::InPlace),
+        "verify" => Ok(SetWriteMode::Verify),
+        "capture" | "stdout" => Ok(SetWriteMode::Capture),
+        other => Err(format!(
+            "invalid set write mode '{}': use 'in-place', 'verify', or 'capture'",
+            other
+        )),
+    }
+}
+
+fn parse_set_report_mode(s: &str) -> Result<SetReportMode, String> {
+    match s {
+        "per-match" | "match" | "matches" => Ok(SetReportMode::PerMatch),
+        "per-file" | "file" | "files" => Ok(SetReportMode::PerFile),
+        other => Err(format!(
+            "invalid set report mode '{}': use 'per-match' or 'per-file'",
+            other
+        )),
+    }
+}
+
 /// Root-level scope fields that constrain all operations.
 /// Note: `files` is handled separately via `LoadedConfig.root_files` and
 /// `SharedFileScope` — it's not part of the per-operation merge.
@@ -339,18 +384,64 @@ fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<Operation, Bo
     }))
 }
 
-fn convert_set(config: SetConfig, scope: &RootScope) -> Result<Operation, Box<dyn std::error::Error>> {
-    // Validate tree_mode if provided (even though set doesn't use it yet)
-    if let Some(ref tm) = config.tree_mode {
-        parse_tree_mode(tm)?;
+fn selector_xpath(expr: &str) -> String {
+    if expr.starts_with('/') {
+        expr.to_string()
+    } else {
+        format!("//{}", expr)
+    }
+}
+
+fn normalize_set_expression(
+    expr: &str,
+    explicit_value: Option<&str>,
+) -> Result<Vec<SetMapping>, Box<dyn std::error::Error>> {
+    if let Some(value) = explicit_value {
+        return Ok(vec![SetMapping {
+            xpath: selector_xpath(expr),
+            value: value.to_string(),
+            value_kind: Some("string".to_string()),
+        }]);
     }
 
-    let mappings = config.mappings.into_iter().map(|m| {
+    Ok(parse_set_expr(expr)?.into_iter().map(|op| SetMapping {
+        xpath: op.xpath,
+        value: op.value.text().to_string(),
+        value_kind: Some(op.value.kind().to_string()),
+    }).collect())
+}
+
+fn convert_set(config: SetConfig, scope: &RootScope) -> Result<Operation, Box<dyn std::error::Error>> {
+    let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
+
+    let mut mappings = config.mappings.into_iter().map(|m| {
         SetMapping {
             xpath: m.xpath,
             value: m.value,
+            value_kind: m.value_kind,
         }
-    }).collect();
+    }).collect::<Vec<_>>();
+
+    if let Some(ref expr) = config.expression {
+        mappings.extend(normalize_set_expression(expr, config.value.as_deref())?);
+    }
+    if mappings.is_empty() {
+        return Err("set operation requires either mappings or an expression".into());
+    }
+
+    let write_mode = if let Some(mode) = config.write_mode.as_deref() {
+        parse_set_write_mode(mode)?
+    } else if config.verify {
+        SetWriteMode::Verify
+    } else if config.inline_source.is_some() {
+        SetWriteMode::Capture
+    } else {
+        SetWriteMode::InPlace
+    };
+    let report_mode = config.report_mode.as_deref()
+        .map(parse_set_report_mode)
+        .transpose()?
+        .unwrap_or(SetReportMode::PerMatch);
 
     let (files, exclude, diff_files, diff_lines) = merge_scope(scope, config.files, config.exclude, config.diff_files, config.diff_lines);
 
@@ -360,8 +451,14 @@ fn convert_set(config: SetConfig, scope: &RootScope) -> Result<Operation, Box<dy
         diff_files,
         diff_lines,
         mappings,
+        tree_mode,
         language: config.language,
-        verify: false,
+        limit: config.limit,
+        ignore_whitespace: config.ignore_whitespace,
+        parse_depth: config.parse_depth,
+        inline_source: config.inline_source,
+        write_mode,
+        report_mode,
     }))
 }
 
@@ -705,6 +802,69 @@ set:
         let ops = parse_config_yaml(yaml).unwrap().operations;
         if let Operation::Set(s) = &ops[0] {
             assert_eq!(s.exclude, vec!["node_modules/**"]);
+        }
+    }
+
+    #[test]
+    fn parse_yaml_set_expression_into_typed_mappings() {
+        let yaml = r#"
+set:
+  files: ["config.yaml"]
+  expression: "database[host='db.example.com'][port=5432]"
+"#;
+        let ops = parse_config_yaml(yaml).unwrap().operations;
+        if let Operation::Set(s) = &ops[0] {
+            assert_eq!(s.mappings.len(), 2);
+            assert_eq!(s.mappings[0].xpath, "//database/host");
+            assert_eq!(s.mappings[0].value, "db.example.com");
+            assert_eq!(s.mappings[0].value_kind.as_deref(), Some("string"));
+            assert_eq!(s.mappings[1].xpath, "//database/port");
+            assert_eq!(s.mappings[1].value, "5432");
+            assert_eq!(s.mappings[1].value_kind.as_deref(), Some("number"));
+            assert_eq!(s.write_mode, SetWriteMode::InPlace);
+            assert_eq!(s.report_mode, SetReportMode::PerMatch);
+        } else {
+            panic!("expected Set operation");
+        }
+    }
+
+    #[test]
+    fn parse_yaml_set_capture_inline_source() {
+        let yaml = r#"
+set:
+  language: yaml
+  inline-source: "database:\n  host: localhost\n"
+  expression: "database[host='db.example.com']"
+  write: capture
+  report: per-file
+"#;
+        let ops = parse_config_yaml(yaml).unwrap().operations;
+        if let Operation::Set(s) = &ops[0] {
+            assert_eq!(s.language.as_deref(), Some("yaml"));
+            assert!(s.inline_source.is_some());
+            assert_eq!(s.write_mode, SetWriteMode::Capture);
+            assert_eq!(s.report_mode, SetReportMode::PerFile);
+        } else {
+            panic!("expected Set operation");
+        }
+    }
+
+    #[test]
+    fn parse_yaml_set_expression_with_value_preserves_predicates() {
+        let yaml = r#"
+set:
+  files: ["config.yaml"]
+  expression: "servers[host='localhost']/port"
+  value: "5433"
+"#;
+        let ops = parse_config_yaml(yaml).unwrap().operations;
+        if let Operation::Set(s) = &ops[0] {
+            assert_eq!(s.mappings.len(), 1);
+            assert_eq!(s.mappings[0].xpath, "//servers[host='localhost']/port");
+            assert_eq!(s.mappings[0].value, "5433");
+            assert_eq!(s.mappings[0].value_kind.as_deref(), Some("string"));
+        } else {
+            panic!("expected Set operation");
         }
     }
 

@@ -1,37 +1,75 @@
-use tractor_core::{apply_replacements, apply_set_to_string};
-use tractor_core::report::{Report, ReportBuilder, ReportMatch};
-use tractor_core::xpath_upsert::upsert;
-use tractor_core::declarative_set::declarative_set;
-use tractor_core::detect_language;
+use tractor_core::declarative_set::parse_set_expr;
+
 use crate::cli::SetArgs;
-use crate::executor::Operation;
-use crate::pipeline::{RunContext, ViewField, InputMode, query_files_batched, query_inline_source, render_report, project_report, GroupDimension};
-use crate::pipeline::git;
-use super::config::{run_from_config, ConfigRunParams};
+use crate::executor::{
+    self, ExecuteOptions, Operation, SetMapping, SetOperation, SetReportMode, SetWriteMode,
+};
+use crate::pipeline::{
+    GroupDimension, InputMode, RunContext, ViewField, apply_message_template, project_report,
+    render_report,
+};
+use super::config::{ConfigRunParams, run_from_config};
 
 /// Separate positional args into files and an optional path expression.
 ///
-/// When -x is given, all positional args are files.
-/// Otherwise, the last arg that looks like a path expression (contains `[`
-/// or doesn't resolve to any existing file/glob) is the expression.
+/// When `-x` is given, all positional args are files.
+/// Otherwise, the last arg that looks like a path expression (contains `[` or
+/// doesn't resolve to any existing file/glob) is treated as the expression.
 fn split_files_and_expr(args: &[String], has_xpath: bool) -> (Vec<String>, Option<String>) {
     if has_xpath || args.is_empty() {
         return (args.to_vec(), None);
     }
 
-    // Check if the last arg looks like a declarative expression
     if let Some(last) = args.last() {
         let is_expr = last.contains('[')
             || last.contains('=')
             || (!std::path::Path::new(last).exists() && !last.contains('*') && !last.contains('?'));
 
         if is_expr {
-            let files = args[..args.len() - 1].to_vec();
-            return (files, Some(last.clone()));
+            return (args[..args.len() - 1].to_vec(), Some(last.clone()));
         }
     }
 
     (args.to_vec(), None)
+}
+
+fn selector_xpath(expr: &str) -> String {
+    if expr.starts_with('/') {
+        expr.to_string()
+    } else {
+        format!("//{}", expr)
+    }
+}
+
+fn normalize_set_mappings(
+    xpath: Option<&tractor_core::NormalizedXpath>,
+    expr: Option<&str>,
+    explicit_value: Option<&str>,
+) -> Result<Vec<SetMapping>, Box<dyn std::error::Error>> {
+    if let Some(xpath) = xpath {
+        let value = explicit_value
+            .ok_or("set with -x requires --value")?;
+        return Ok(vec![SetMapping {
+            xpath: xpath.to_string(),
+            value: value.to_string(),
+            value_kind: Some("string".to_string()),
+        }]);
+    }
+
+    let expr = expr.ok_or("set requires either an XPath query (-x) or a path expression")?;
+    if let Some(value) = explicit_value {
+        return Ok(vec![SetMapping {
+            xpath: selector_xpath(expr),
+            value: value.to_string(),
+            value_kind: Some("string".to_string()),
+        }]);
+    }
+
+    Ok(parse_set_expr(expr)?.into_iter().map(|op| SetMapping {
+        xpath: op.xpath,
+        value: op.value.text().to_string(),
+        value_kind: Some(op.value.kind().to_string()),
+    }).collect())
 }
 
 pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
@@ -51,225 +89,121 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let has_xpath = args.shared.xpath.is_some();
-    let diff_files_spec = args.shared.diff_files.clone();
-    let diff_lines_spec = args.shared.diff_lines.clone();
     let (files, expr) = split_files_and_expr(&args.args, has_xpath);
 
-    // Declarative mode: path expression without -x
-    if let Some(expr) = &expr {
-        let ctx = RunContext::build(
-            &args.shared, files, None,
-            "text", &[ViewField::Tree], None, None, None, false, &[GroupDimension::File],
-        )?;
+    let capture = args.stdout
+        || (files.is_empty() && args.shared.lang.is_some() && !atty::is(atty::Stream::Stdin));
 
-        let file_list = match &ctx.input {
-            InputMode::Files(files) => files,
-            InputMode::InlineSource { .. } => {
-                return Err("set cannot be used with stdin input (no file to modify)".into());
-            }
-        };
-
-        let file_list = apply_file_filters(file_list.clone(), diff_files_spec.as_deref(), diff_lines_spec.as_deref());
-        let lang_override = ctx.lang.as_deref();
-        let mut files_modified = 0;
-        let mut total_ops = 0;
-
-        for file_path in &file_list {
-            let lang = lang_override
-                .unwrap_or_else(|| detect_language(file_path));
-
-            let source = std::fs::read_to_string(file_path)?;
-            let result = declarative_set(
-                &source, lang, expr, args.value.as_deref(),
-            )?;
-
-            if result.source != source {
-                std::fs::write(file_path, &result.source)?;
-                files_modified += 1;
-                total_ops += result.ops_applied;
-                for desc in &result.descriptions {
-                    eprintln!("  {} in {}", desc, file_path);
-                }
-            }
-        }
-
-        eprintln!(
-            "Set {} value{} in {} file{}",
-            total_ops,
-            if total_ops == 1 { "" } else { "s" },
-            files_modified,
-            if files_modified == 1 { "" } else { "s" },
-        );
-        return Ok(());
-    }
-
-    // XPath mode (-x): with rendering system integration.
-    //
-    // Early normalization: if stdin is provided as source input (--lang set, no files,
-    // stdin is not a TTY), implicitly enable stdout mode — there is no file to modify.
-    let stdin_source = files.is_empty()
-        && args.shared.lang.is_some()
-        && !atty::is(atty::Stream::Stdin);
-    let stdout = args.stdout || stdin_source;
-
-    let default_view: &[ViewField] = &[ViewField::File, ViewField::Line, ViewField::Status];
-
-    let ctx = RunContext::build(
-        &args.shared, files, args.shared.xpath.clone(),
-        &args.format, default_view, args.view.as_deref(), None, None, false, &[GroupDimension::File],
-    )?;
-
-    let xpath_expr = ctx.xpath.as_ref()
-        .ok_or("set requires either an XPath query (-x) or a path expression")?;
-
-    let value = args.value.as_ref()
-        .ok_or("set with -x requires --value")?;
-
-    // Stdout mode: print modified content directly and exit. No report.
-    if stdout {
-        match &ctx.input {
-            InputMode::Files(files) => {
-                if files.len() > 1 {
-                    return Err("--stdout with multiple files is not supported".into());
-                }
-                let files = apply_file_filters(files.clone(), diff_files_spec.as_deref(), diff_lines_spec.as_deref());
-                let (_, matches) = query_files_batched(&ctx, &files, xpath_expr, true)?;
-                let modified = apply_set_to_string(
-                    &std::fs::read_to_string(&files[0])?, &matches, value,
-                )?;
-                print!("{}", modified);
-            }
-            InputMode::InlineSource { source, lang } => {
-                let matches = query_inline_source(&ctx, source, lang, xpath_expr)?;
-                let modified = apply_set_to_string(source, &matches, value)?;
-                print!("{}", modified);
-            }
-        }
-        return Ok(());
-    }
-
-    // In-place mode: modify files, report matches.
-    match &ctx.input {
-        InputMode::Files(files) => {
-            let files = apply_file_filters(files.clone(), diff_files_spec.as_deref(), diff_lines_spec.as_deref());
-            let (_, matches) = query_files_batched(&ctx, &files, xpath_expr, true)?;
-
-            let lang_override = ctx.lang.as_deref();
-            let mut fallback_files: Vec<String> = Vec::new();
-
-            for file_path in &files {
-                let lang = lang_override
-                    .unwrap_or_else(|| detect_language(file_path));
-                let source = std::fs::read_to_string(file_path)?;
-                match upsert(&source, lang, xpath_expr.as_str(), value, ctx.limit) {
-                    Ok(result) => {
-                        if result.source != source {
-                            std::fs::write(file_path, &result.source)?;
-                        }
-                    }
-                    Err(tractor_core::xpath_upsert::UpsertError::UnsupportedLanguage(_)) => {
-                        fallback_files.push(file_path.clone());
-                    }
-                    Err(e) => return Err(e.into()),
-                }
-            }
-
-            // Legacy fallback for languages without renderers
-            if !fallback_files.is_empty() {
-                let fallback_matches: Vec<_> = matches.iter()
-                    .filter(|m| fallback_files.contains(&m.file))
-                    .cloned()
-                    .collect();
-                if !fallback_matches.is_empty() {
-                    apply_replacements(&fallback_matches, value)?;
-                }
-            }
-
-            let mut report = build_set_report_matches(&matches, value, &ctx);
-            project_report(&mut report, &ctx.view);
-            let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
-            let report = report.with_grouping(&dims);
-            render_report(&report, &ctx, None)?;
-        }
-        InputMode::InlineSource { .. } => {
-            return Err("set without --stdout cannot be used with stdin input (no file to modify)".into());
-        }
-    }
-    Ok(())
-}
-
-/// Build per-match `ReportMatch` entries annotated with status.
-/// Does NOT write any files. Returns a flat (non-grouped) `Report`.
-fn build_set_report_matches(
-    matches: &[tractor_core::Match],
-    new_value: &str,
-    ctx: &RunContext,
-) -> Report {
-    let mut builder = ReportBuilder::new();
-
-    for m in matches {
-        let is_unchanged = m.value == new_value;
-        let status_str = if is_unchanged { "unchanged" } else { "updated" };
-
-        builder.add(ReportMatch {
-            file: m.file.clone(),
-            line: m.line,
-            column: m.column,
-            end_line: m.end_line,
-            end_column: m.end_column,
-            command: "set".to_string(),
-            tree: None,
-            value: if ctx.view.has(ViewField::Value) { Some(m.value.clone()) } else { None },
-            source: if ctx.view.has(ViewField::Source) { Some(m.extract_source_snippet()) } else { None },
-            lines: if ctx.view.has(ViewField::Lines) {
-                Some(m.get_source_lines_range().into_iter()
-                    .map(|l| l.trim_end_matches('\r').to_owned())
-                    .collect())
-            } else { None },
-            reason: None,
-            severity: None,
-            message: None,
-           
-            origin: None,
-            rule_id: None,
-            status: if ctx.view.has(ViewField::Status) { Some(status_str.to_string()) } else { None },
-            output: None,
-        });
-    }
-
-    builder.build()
-}
-
-/// Apply --diff-files and --diff-lines file-level filters (set mode bypasses the executor).
-fn apply_file_filters(files: Vec<String>, diff_files_spec: Option<&str>, diff_lines_spec: Option<&str>) -> Vec<String> {
-    let cwd = std::path::Path::new(".");
-
-    let files = match diff_files_spec {
-        Some(spec) => {
-            match git::git_changed_files(spec, cwd) {
-                Ok(changed) => git::intersect_changed(files, &changed),
-                Err(e) => {
-                    eprintln!("warning: --diff-files filter failed: {}", e);
-                    files
-                }
-            }
-        }
-        None => files,
+    let default_view: &[ViewField] = if capture {
+        &[ViewField::File, ViewField::Output]
+    } else {
+        &[ViewField::File, ViewField::Line, ViewField::Status]
     };
 
-    match diff_lines_spec {
-        Some(spec) => {
-            match git::DiffHunkFilter::from_spec(spec, cwd) {
-                Ok(filter) => {
-                    use crate::filter::ResultFilter;
-                    files.into_iter().filter(|f| filter.include_file(f)).collect()
-                }
-                Err(e) => {
-                    eprintln!("warning: --diff-lines filter failed: {}", e);
-                    files
-                }
+    let ctx = RunContext::build(
+        &args.shared,
+        files,
+        args.shared.xpath.clone(),
+        &args.format,
+        default_view,
+        args.view.as_deref(),
+        None,
+        None,
+        false,
+        &[GroupDimension::File],
+    )?;
+
+    let mappings = normalize_set_mappings(
+        ctx.xpath.as_ref(),
+        expr.as_deref(),
+        args.value.as_deref(),
+    )?;
+
+    let op = match &ctx.input {
+        InputMode::Files(files) => {
+            if files.is_empty() {
+                return Err("set requires at least one file or inline source".into());
             }
+            Operation::Set(SetOperation {
+                files: files.clone(),
+                exclude: vec![],
+                diff_files: None,
+                diff_lines: None,
+                mappings,
+                tree_mode: ctx.tree_mode,
+                language: ctx.lang.clone(),
+                limit: ctx.limit,
+                ignore_whitespace: ctx.ignore_whitespace,
+                parse_depth: ctx.parse_depth,
+                inline_source: None,
+                write_mode: if capture { SetWriteMode::Capture } else { SetWriteMode::InPlace },
+                report_mode: SetReportMode::PerMatch,
+            })
         }
-        None => files,
+        InputMode::InlineSource { source, lang } => Operation::Set(SetOperation {
+            files: vec![],
+            exclude: vec![],
+            diff_files: None,
+            diff_lines: None,
+            mappings,
+            tree_mode: ctx.tree_mode,
+            language: Some(lang.clone()),
+            limit: ctx.limit,
+            ignore_whitespace: ctx.ignore_whitespace,
+            parse_depth: ctx.parse_depth,
+            inline_source: Some(source.clone()),
+            write_mode: SetWriteMode::Capture,
+            report_mode: SetReportMode::PerMatch,
+        }),
+    };
+
+    let options = ExecuteOptions {
+        verbose: ctx.verbose,
+        diff_files: args.shared.diff_files.clone(),
+        diff_lines: args.shared.diff_lines.clone(),
+        max_files: args.shared.max_files,
+        ..Default::default()
+    };
+
+    let mut builder = tractor_core::ReportBuilder::new();
+    executor::execute(&[op], &options, &mut builder)?;
+    let mut report = builder.build();
+
+    if capture
+        && ctx.output_format == crate::pipeline::format::OutputFormat::Text
+        && report.artifacts.len() == 1
+        && args.view.is_none()
+    {
+        print!("{}", report.artifacts[0].content);
+        return Ok(());
+    }
+
+    if let Some(ref template) = ctx.message {
+        apply_message_template(&mut report, template);
+    }
+
+    project_report(&mut report, &ctx.view);
+    let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
+    let report = report.with_grouping(&dims).with_artifacts();
+    render_report(&report, &ctx, None)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn normalize_set_mappings_preserves_predicates_with_explicit_value() {
+        let mappings = normalize_set_mappings(
+            None,
+            Some("servers[host='localhost']/port"),
+            Some("5433"),
+        )
+        .unwrap();
+
+        assert_eq!(mappings.len(), 1);
+        assert_eq!(mappings[0].xpath, "//servers[host='localhost']/port");
+        assert_eq!(mappings[0].value, "5433");
+        assert_eq!(mappings[0].value_kind.as_deref(), Some("string"));
     }
 }

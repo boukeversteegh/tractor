@@ -181,7 +181,6 @@ pub fn match_to_value(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tractor_core::report::{Report, Totals};
     use tractor_core::xpath::XmlNode;
 
     fn make_plain_match(value: &str) -> ReportMatch {

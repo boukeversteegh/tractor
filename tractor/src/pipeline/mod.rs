@@ -8,7 +8,6 @@ pub use input::InputMode;
 pub use context::RunContext;
 pub use format::{ViewField, GroupDimension};
 pub use matcher::{
-    query_files_batched, query_inline_source,
     run_debug,
     run_rules,
     project_report,

@@ -44,6 +44,10 @@ check_set_snapshot "text default (file:line + status + summary)" \
     "$SNAPSHOT_DIR/set.txt" \
     -x "//database/host" --value "db.example.com" --no-color
 
+check_set_snapshot "text declarative mode" \
+    "$SNAPSHOT_DIR/set-declarative.txt" \
+    "database[host='db.example.com']" --no-color
+
 check_set_snapshot "text unchanged (value already set)" \
     "$SNAPSHOT_DIR/set-unchanged.txt" \
     -x "//database/host" --value "localhost" --no-color
@@ -55,6 +59,41 @@ echo "Set (snapshot: text stdout mode):"
 check_set_snapshot "text stdout mode" \
     "$SNAPSHOT_DIR/set-stdout.txt" \
     -x "//database/host" --value "db.example.com" --stdout --no-color
+
+# Stdin capture path: no files, declarative expression, executor capture mode
+stdin_actual=$(printf 'database:\n  host: localhost\n  port: 5432\n' \
+    | tractor set -l yaml "database[host='db.example.com']" --stdout --no-color 2>/dev/null)
+stdin_expected=$(cat "$SNAPSHOT_DIR/set-stdin-stdout.txt")
+if [ "$stdin_actual" = "$stdin_expected" ]; then
+    echo "  ✓ text stdout mode from stdin"
+    ((PASSED++))
+else
+    echo "  ✗ text stdout mode from stdin"
+    diff <(echo "$stdin_expected") <(echo "$stdin_actual") --color=always -u --label expected --label actual | sed 's/^/      /'
+    ((FAILED++))
+fi
+
+# Multi-file stdout should stay structured and include file headers.
+tmpfile_a="$(mktemp "$SNAPSHOT_DIR/tmp-a.XXXXXX.yaml")"
+tmpfile_b="$(mktemp "$SNAPSHOT_DIR/tmp-b.XXXXXX.yaml")"
+cp "$SNAPSHOT_DIR/sample.yaml" "$tmpfile_a"
+cp "$SNAPSHOT_DIR/sample.yaml" "$tmpfile_b"
+tmpfile_a_display="$(to_display_path "$tmpfile_a")"
+tmpfile_b_display="$(to_display_path "$tmpfile_b")"
+multi_actual=$(tractor set "$(to_tractor_path "$tmpfile_a")" "$(to_tractor_path "$tmpfile_b")" \
+    -x "//database/host" --value "db.example.com" --stdout --no-color 2>/dev/null \
+    | sed "s|$tmpfile_a_display|tests/integration/formats/set/sample-a.yaml|g" \
+    | sed "s|$tmpfile_b_display|tests/integration/formats/set/sample-b.yaml|g")
+multi_expected=$(cat "$SNAPSHOT_DIR/set-stdout-multi.txt")
+if [ "$multi_actual" = "$multi_expected" ]; then
+    echo "  ✓ text stdout mode with multiple files"
+    ((PASSED++))
+else
+    echo "  ✗ text stdout mode with multiple files"
+    diff <(echo "$multi_expected") <(echo "$multi_actual") --color=always -u --label expected --label actual | sed 's/^/      /'
+    ((FAILED++))
+fi
+rm -f "$tmpfile_a" "$tmpfile_b"
 
 echo ""
 echo "Set (snapshot: json format):"

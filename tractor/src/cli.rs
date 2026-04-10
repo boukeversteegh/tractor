@@ -412,6 +412,7 @@ Example — suppress code snippets for IDE/CI parsers:
 ///   tractor set config.yaml -x "//database/host" --value "localhost"
 ///   tractor set config.yaml "database[host='localhost'][port=5432]"
 ///   tractor set config.yaml "database/host" --value "localhost"
+///   tractor set config.yaml "servers[host='localhost']/port" --value "5433"
 #[derive(Args, Debug)]
 pub struct SetArgs {
     /// Files to process and optional path expression.

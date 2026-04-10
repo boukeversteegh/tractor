@@ -124,6 +124,17 @@ pub struct ReportMatch {
     pub output:   Option<String>,
 }
 
+/// A transformed output payload produced by an operation.
+///
+/// Artifacts are distinct from diagnostic matches: they carry generated content
+/// such as captured `set --stdout` output and are rendered separately.
+#[derive(Debug, Clone, Serialize)]
+pub struct ReportArtifact {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub file: Option<String>,
+    pub content: String,
+}
+
 impl Serialize for ReportMatch {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         let optional_count = self.tree.as_ref().map_or(0, |_| 1)
@@ -273,6 +284,10 @@ pub struct Report {
     /// The XPath query as received by tractor (set when `-v query` is used).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub query: Option<NormalizedXpath>,
+
+    /// Generated content payloads, separate from diagnostic matches.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub artifacts: Vec<ReportArtifact>,
 
     // ---- New unified fields (Step 3) ----
 
@@ -426,6 +441,7 @@ impl Report {
             totals: None,
             expected: None,
             query: None,
+            artifacts: vec![],
             results: vec![],
             group: None,
             file: None,
@@ -449,6 +465,21 @@ impl Report {
         }
         self
     }
+
+    /// Attach artifact payloads to file groups for renderer compatibility.
+    ///
+    /// `artifacts` remains the source of truth; `output_content` is populated so
+    /// existing grouped renderers can expose captured content when requested.
+    pub fn with_artifacts(mut self) -> Self {
+        let outputs: std::collections::HashMap<String, String> = self.artifacts.iter()
+            .filter_map(|artifact| artifact.file.as_ref().map(|file| (normalize_path(file), artifact.content.clone())))
+            .collect();
+        if outputs.is_empty() {
+            return self;
+        }
+        self = self.with_file_outputs(&outputs);
+        self
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -469,6 +500,7 @@ enum SuccessMode {
 /// builder, passes it to the executor, and calls `build()` to finalize.
 pub struct ReportBuilder {
     matches: Vec<ReportMatch>,
+    artifacts: Vec<ReportArtifact>,
     failed: bool,
     success_mode: SuccessMode,
     expected: Option<String>,
@@ -479,6 +511,7 @@ impl ReportBuilder {
     pub fn new() -> Self {
         ReportBuilder {
             matches: Vec::new(),
+            artifacts: Vec::new(),
             failed: false,
             success_mode: SuccessMode::Derive,
             expected: None,
@@ -494,6 +527,16 @@ impl ReportBuilder {
     /// Add multiple matches to the report.
     pub fn add_all(&mut self, rms: impl IntoIterator<Item = ReportMatch>) {
         self.matches.extend(rms);
+    }
+
+    /// Add a generated artifact payload to the report.
+    pub fn add_artifact(&mut self, artifact: ReportArtifact) {
+        self.artifacts.push(artifact);
+    }
+
+    /// Add multiple generated artifact payloads to the report.
+    pub fn add_artifacts(&mut self, artifacts: impl IntoIterator<Item = ReportArtifact>) {
+        self.artifacts.extend(artifacts);
     }
 
     /// Signal that the operation failed (e.g. test expectations unmet).
@@ -593,6 +636,7 @@ impl ReportBuilder {
             totals: Some(totals),
             expected: self.expected,
             query: self.query,
+            artifacts: self.artifacts,
             results,
             group: None,
             file: None,

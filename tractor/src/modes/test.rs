@@ -96,7 +96,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     project_report(&mut report, &ctx.view);
     let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
-    let report = report.with_grouping(&dims);
+    let report = report.with_grouping(&dims).with_artifacts();
     let test_opts = TestRenderOptions { message, error_template };
     render_report(&report, &ctx, Some(&test_opts))
 }

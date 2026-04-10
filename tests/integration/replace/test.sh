@@ -65,6 +65,32 @@ else
     ((FAILED++))
 fi
 
+# --- Path expression predicates should filter set targets ---
+cat > "$MULTI_YAML" << 'EOF'
+servers:
+  - host: localhost
+    port: 5432
+  - host: prod-db
+    port: 5432
+EOF
+
+tractor set "$(to_tractor_path "$MULTI_YAML")" "servers[host='localhost']/port" --value "5433" 2>/dev/null
+ACTUAL=$(cat "$MULTI_YAML")
+EXPECTED='servers:
+  - host: localhost
+    port: 5433
+  - host: prod-db
+    port: 5432'
+if [ "$ACTUAL" = "$EXPECTED" ]; then
+    echo "  OK path-expression predicates filter set targets"
+    ((PASSED++))
+else
+    echo "  FAIL path-expression predicates should filter set targets"
+    echo "    expected: $EXPECTED"
+    echo "    actual: $ACTUAL"
+    ((FAILED++))
+fi
+
 # --- Set with --limit ---
 cat > "$LIMIT_YAML" << 'EOF'
 items:

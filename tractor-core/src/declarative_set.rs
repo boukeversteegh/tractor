@@ -100,35 +100,20 @@ pub fn declarative_set(
 ) -> Result<DeclSetResult, UpsertError> {
     let ops = parse_set_expr(expr)?;
 
-    if ops.is_empty() {
-        // No predicates with values — need explicit --value on a bare path
-        if let Some(value) = explicit_value {
-            // Treat the whole expression as a simple path
-            let xpath = format!("//{}", expr);
-            let result = upsert(source, lang, &xpath, value, None)?;
-            return Ok(DeclSetResult {
-                source: result.source,
-                ops_applied: 1,
-                descriptions: vec![result.description],
-            });
-        } else {
-            return Err(UpsertError::NoInsertionPoint(
-                "expression has no value predicates and no --value was given".into(),
-            ));
-        }
-    }
-
-    // If explicit_value is given, it overrides the last leaf's value
-    // (e.g., `database/host --value newval` targets //database/host)
     if let Some(value) = explicit_value {
-        // With --value, treat the expression as a path, ignore predicates
-        let xpath = format!("//{}", strip_predicates(expr));
+        let xpath = selector_xpath(expr);
         let result = upsert(source, lang, &xpath, value, None)?;
         return Ok(DeclSetResult {
             source: result.source,
             ops_applied: 1,
             descriptions: vec![result.description],
         });
+    }
+
+    if ops.is_empty() {
+        return Err(UpsertError::NoInsertionPoint(
+            "expression has no value predicates and no --value was given".into(),
+        ));
     }
 
     // Apply each set operation sequentially with explicit types.
@@ -155,19 +140,12 @@ pub fn declarative_set(
     })
 }
 
-/// Strip all predicates from a path expression, leaving bare names.
-fn strip_predicates(expr: &str) -> String {
-    let mut result = String::new();
-    let mut depth = 0;
-    for ch in expr.chars() {
-        match ch {
-            '[' => depth += 1,
-            ']' => depth -= 1,
-            _ if depth == 0 => result.push(ch),
-            _ => {}
-        }
+fn selector_xpath(expr: &str) -> String {
+    if expr.starts_with('/') {
+        expr.to_string()
+    } else {
+        format!("//{}", expr)
     }
-    result
 }
 
 // ---------------------------------------------------------------------------
@@ -623,10 +601,10 @@ mod tests {
     }
 
     #[test]
-    fn strip_predicates_works() {
-        assert_eq!(strip_predicates("database[host='x']/port"), "database/port");
-        assert_eq!(strip_predicates("a[b[c='d']]/e"), "a/e");
-        assert_eq!(strip_predicates("simple/path"), "simple/path");
+    fn selector_xpath_preserves_predicates() {
+        assert_eq!(selector_xpath("database[host='x']/port"), "//database[host='x']/port");
+        assert_eq!(selector_xpath("//database[host='x']/port"), "//database[host='x']/port");
+        assert_eq!(selector_xpath("simple/path"), "//simple/path");
     }
 
     // -----------------------------------------------------------------------
@@ -671,6 +649,24 @@ mod tests {
         ).unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
         assert_eq!(parsed["database"]["host"], "new");
+    }
+
+    #[test]
+    fn declarative_set_explicit_value_preserves_predicate_filter() {
+        let source = r#"{
+  "servers": [
+    { "host": "localhost", "port": 5432 },
+    { "host": "prod-db", "port": 5432 }
+  ]
+}"#;
+        let result = declarative_set(
+            source, "json",
+            "servers[host='localhost']/port",
+            Some("5433"),
+        ).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&result.source).unwrap();
+        assert_eq!(parsed["servers"][0]["port"], 5433);
+        assert_eq!(parsed["servers"][1]["port"], 5432);
     }
 
     #[test]
