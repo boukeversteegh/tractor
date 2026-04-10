@@ -1,85 +1,44 @@
 tests/integration/languages/ruby/sample.rb:1
-<Files>
-  <file>tests/integration/languages/ruby/sample.rb</file>
-  <program>
-    <comment># Simple Ruby example</comment>
-    <method>
-      def
-      <name>
-        <identifier>add</identifier>
-      </name>
-      <parameters>
-        <method_parameters>
-          (
-          <identifier>a</identifier>
-          ,
-          <identifier>b</identifier>
-          )
-        </method_parameters>
-      </parameters>
-      <body>
-        <body_statement>
-          <binary>
-            <left>
-              <identifier>a</identifier>
-            </left>
-            +
-            <right>
-              <identifier>b</identifier>
-            </right>
-          </binary>
-        </body_statement>
-      </body>
-      end
-    </method>
-    <method>
-      def
-      <name>
-        <identifier>main</identifier>
-      </name>
-      <body>
-        <body_statement>
-          <assignment>
-            <left>
-              <identifier>result</identifier>
-            </left>
-            =
-            <right>
-              <call>
-                <identifier>add</identifier>
-                <arguments>
-                  <argument_list>
-                    (
-                    <integer>5</integer>
-                    ,
-                    <integer>3</integer>
-                    )
-                  </argument_list>
-                </arguments>
-              </call>
-            </right>
-          </assignment>
-          <call>
-            <identifier>puts</identifier>
-            <arguments>
-              <argument_list>
-                <string>
-                  &quot;
-                  <string_content>Result: </string_content>
-                  <interpolation>
-                    #{
-                    <identifier>result</identifier>
-                    }
-                  </interpolation>
-                  &quot;
-                </string>
-              </argument_list>
-            </arguments>
-          </call>
-        </body_statement>
-      </body>
-      end
-    </method>
-    <identifier>main</identifier>
-  </program>
-</Files>
+Files/File/program/
+  ├─ comment = "# Simple Ruby example"
+  ├─ method/
+        ├─ "def"
+        ├─ name/identifier = "add"
+        ├─ parameters/method_parameters/
+              ├─ "("
+              ├─ identifier = "a"
+              ├─ ","
+              ├─ identifier = "b"
+              └─ ")"
+        ├─ body/body_statement/binary/
+              ├─ left/identifier = "a"
+              ├─ "+"
+              └─ right/identifier = "b"
+        └─ "end"
+  ├─ method/
+        ├─ "def"
+        ├─ name/identifier = "main"
+        ├─ body/body_statement/
+              ├─ assignment/
+                    ├─ left/identifier = "result"
+                    ├─ "="
+                    └─ right/call/
+                          ├─ identifier = "add"
+                          └─ arguments/argument_list/
+                                ├─ "("
+                                ├─ integer = "5"
+                                ├─ ","
+                                ├─ integer = "3"
+                                └─ ")"
+              └─ call/
+                    ├─ identifier = "puts"
+                    └─ arguments/argument_list/string/
+                          ├─ "\""
+                          ├─ string_content = "Result:"
+                          ├─ interpolation/
+                                ├─ "#{"
+                                ├─ identifier = "result"
+                                └─ "}"
+                          └─ "\""
+        └─ "end"
+  └─ identifier = "main"

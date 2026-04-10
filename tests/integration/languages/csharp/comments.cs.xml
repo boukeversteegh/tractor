@@ -1,94 +1,48 @@
 tests/integration/languages/csharp/comments.cs:1
-<Files>
-  <file>tests/integration/languages/csharp/comments.cs</file>
-  <unit>
-    <comment>
-      <leading/>
-      // Application entry point
-// Handles startup configuration
-    </comment>
-    <import>
-      using
-      <ref>System</ref>
-      ;
-    </import>
-    <namespace>
-      namespace
-      <name>Comments</name>
-      <body>
-        {
-        <comment>
-          <leading/>
-          /// &lt;summary&gt;
-/// Sample class demonstrating comment patterns
-/// &lt;/summary&gt;
-        </comment>
-        <class>
-          <public/>
-          class
-          <name>Demo</name>
-          <body>
-            {
-            <field>
-              <private/>
-              <variable>
-                <type>int</type>
-                <declarator>
-                  <name>_count</name>
-                </declarator>
-              </variable>
-              ;
-            </field>
-            <comment>
-              <trailing/>
-              // instance counter
-            </comment>
-            <comment>
-              <leading/>
-              // Configuration settings
-// loaded from environment
-            </comment>
-            <property>
-              <public/>
-              <type>string</type>
-              <name>Config</name>
-              <accessors>
-                {
-                <accessor>get;</accessor>
-                <accessor>set;</accessor>
-                }
-              </accessors>
-            </property>
-            <comment>
-              <leading/>
-              /* block comment */
-            </comment>
-            <method>
-              <public/>
-              <returns>
-                <type>void</type>
-              </returns>
-              <name>Run</name>
-              <parameters>()</parameters>
-              <body>
-                <block>
-                  {
-                  <expression_statement>
-                    <postfix_unary_expression>
-                      <ref>_count</ref>
-                      ++
-                    </postfix_unary_expression>
-                    ;
-                  </expression_statement>
-                  }
-                </block>
-              </body>
-            </method>
-            }
-          </body>
-        </class>
-        }
-      </body>
-    </namespace>
-  </unit>
-</Files>
+Files/File/unit/
+  ├─ comment[leading] = "// Application entry point\n// Handles startup configuration"
+  ├─ import/
+        ├─ "using"
+        ├─ ref = "System"
+        └─ ";"
+  └─ namespace/
+        ├─ "namespace"
+        ├─ name = "Comments"
+        └─ body/
+              ├─ "{"
+              ├─ comment[leading] = "/// <summary>\n/// Sample class demonstrating comment patterns\n/// </summary>"
+              ├─ class[public]/
+                    ├─ "class"
+                    ├─ name = "Demo"
+                    └─ body/
+                          ├─ "{"
+                          ├─ field[private]/
+                                ├─ variable/
+                                      ├─ type = "int"
+                                      └─ declarator/name = "_count"
+                                └─ ";"
+                          ├─ comment[trailing] = "// instance counter"
+                          ├─ comment[leading] = "// Configuration settings\n// loaded from environment"
+                          ├─ property[public]/
+                                ├─ type = "string"
+                                ├─ name = "Config"
+                                └─ accessors/
+                                      ├─ "{"
+                                      ├─ accessor = "get;"
+                                      ├─ accessor = "set;"
+                                      └─ "}"
+                          ├─ comment[leading] = "/* block comment */"
+                          ├─ method[public]/
+                                ├─ returns/type = "void"
+                                ├─ name = "Run"
+                                ├─ parameters = "()"
+                                └─ body/block/
+                                      ├─ "{"
+                                      ├─ expression_statement/
+                                            ├─ postfix_unary_expression/
+                                                  ├─ ref = "_count"
+                                                  └─ "++"
+                                            └─ ";"
+                                      └─ "}"
+                          └─ "}"
+              └─ "}"

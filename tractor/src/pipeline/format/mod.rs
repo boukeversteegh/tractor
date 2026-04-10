@@ -18,7 +18,7 @@ pub use text::render_text_report;
 pub use claude_code::render_claude_code;
 
 use tractor_core::{
-    render_xml_node,
+    render_query_tree_node, render_xml_node,
     render_source_precomputed, render_lines,
     report::{Report, ReportMatch},
 };
@@ -137,12 +137,17 @@ fn render_test_text(
                 } else if let Some(ref v) = rm.value {
                     format!("{}\n", v)
                 } else if let Some(ref node) = rm.tree {
-                    let rendered = render_xml_node(node, &render_opts);
-                    if render_opts.pretty_print && !rendered.ends_with('\n') {
-                        format!("{}\n", rendered)
+                    let rendered = if ctx.output_format == OutputFormat::Text {
+                        render_query_tree_node(node, &render_opts)
                     } else {
-                        rendered
-                    }
+                        let rendered = render_xml_node(node, &render_opts);
+                        if render_opts.pretty_print && !rendered.ends_with('\n') {
+                            format!("{}\n", rendered)
+                        } else {
+                            rendered
+                        }
+                    };
+                    rendered
                 } else {
                     String::new()
                 };

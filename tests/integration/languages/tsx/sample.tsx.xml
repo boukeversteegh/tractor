@@ -1,290 +1,169 @@
 tests/integration/languages/tsx/sample.tsx:1
-<Files>
-  <file>tests/integration/languages/tsx/sample.tsx</file>
-  <program>
-    <comment>// Simple TSX example</comment>
-    <import>
-      import
-      <import_clause>
-        <type>React</type>
-        ,
-        <named_imports>
-          {
-          <import_specifier>
-            <name>
-              <type>useState</type>
-            </name>
-          </import_specifier>
-          }
-        </named_imports>
-      </import_clause>
-      from
-      <string>
-        '
-        <string_fragment>react</string_fragment>
-        '
-      </string>
-      ;
-    </import>
-    <interface>
-      interface
-      <name>
-        <type>Props</type>
-      </name>
-      <body>
-        {
-        <property_signature>
-          <name>
-            <type>name</type>
-          </name>
-          <typeof>
-            :
-            <predefined_type>string</predefined_type>
-          </typeof>
-        </property_signature>
-        ;
-        <property_signature>
-          <name>
-            <type>age</type>
-          </name>
-          ?
-          <typeof>
-            :
-            <predefined_type>number</predefined_type>
-          </typeof>
-        </property_signature>
-        ;
-}
-      </body>
-    </interface>
-    <function>
-      function
-      <name>Greeting</name>
-      <parameters>
-        <params>
-          (
-          <param>
-            <required/>
-            <object_pattern>
-              {
-              <shorthand_property_identifier_pattern>name</shorthand_property_identifier_pattern>
-              ,
-              <shorthand_property_identifier_pattern>age</shorthand_property_identifier_pattern>
-              }
-            </object_pattern>
-            <typeof>
-              :
-              <type>Props</type>
-            </typeof>
-          </param>
-          )
-        </params>
-      </parameters>
-      <body>
-        <block>
-          {
-          <variable>
-            <const/>
-            const
-            <name>
-              <array_pattern>
-                [
-                <type>count</type>
-                ,
-                <type>setCount</type>
-                ]
-              </array_pattern>
-            </name>
-            =
-            <value>
-              <call>
-                <function>
-                  <ref/>
-                  useState
-                </function>
-                <arguments>
-                  <arguments>
-                    (
-                    <number>0</number>
-                    )
-                  </arguments>
-                </arguments>
-              </call>
-            </value>
-            ;
-          </variable>
-          <return>
-            return
-            <parenthesized_expression>
-              (
-              <jsx_element>
-                <jsx_opening_element>
-                  &lt;
-                  <name>
-                    <type>div</type>
-                  </name>
-                  <jsx_attribute>
-                    <type>className</type>
-                    =
-                    <string>
-                      &quot;
-                      <string_fragment>greeting</string_fragment>
-                      &quot;
-                    </string>
-                  </jsx_attribute>
-                  &gt;
-                </jsx_opening_element>
-                <jsx_element>
-                  <jsx_opening_element>
-                    &lt;
-                    <name>
-                      <type>h1</type>
-                    </name>
-                    &gt;
-                  </jsx_opening_element>
-                  <jsx_text>Hello, </jsx_text>
-                  <jsx_expression>
-                    {
-                    <type>name</type>
-                    }
-                  </jsx_expression>
-                  <jsx_text>!</jsx_text>
-                  <jsx_closing_element>
-                    &lt;/
-                    <name>
-                      <type>h1</type>
-                    </name>
-                    &gt;
-                  </jsx_closing_element>
-                </jsx_element>
-                <jsx_expression>
-                  {
-                  <binary>
-                    <op>
-                      <logical>
-                        <and/>
-                      </logical>
-                      &amp;&amp;
-                    </op>
-                    <left>
-                      <type>age</type>
-                    </left>
-                    &amp;&amp;
-                    <right>
-                      <jsx_element>
-                        <jsx_opening_element>
-                          &lt;
-                          <name>
-                            <type>span</type>
-                          </name>
-                          &gt;
-                        </jsx_opening_element>
-                        <jsx_text>Age: </jsx_text>
-                        <jsx_expression>
-                          {
-                          <type>age</type>
-                          }
-                        </jsx_expression>
-                        <jsx_closing_element>
-                          &lt;/
-                          <name>
-                            <type>span</type>
-                          </name>
-                          &gt;
-                        </jsx_closing_element>
-                      </jsx_element>
-                    </right>
-                  </binary>
-                  }
-                </jsx_expression>
-                <jsx_element>
-                  <jsx_opening_element>
-                    &lt;
-                    <name>
-                      <type>button</type>
-                    </name>
-                    <jsx_attribute>
-                      <type>onClick</type>
-                      =
-                      <jsx_expression>
-                        {
-                        <lambda>
-                          <parameters>
-                            <params>()</params>
-                          </parameters>
-                          =&gt;
-                          <body>
-                            <call>
-                              <function>
-                                <ref/>
-                                setCount
-                              </function>
-                              <arguments>
-                                <arguments>
-                                  (
-                                  <binary>
-                                    <op>
-                                      <plus/>
-                                      +
-                                    </op>
-                                    <left>
-                                      <type>count</type>
-                                    </left>
-                                    +
-                                    <right>
-                                      <number>1</number>
-                                    </right>
-                                  </binary>
-                                  )
-                                </arguments>
-                              </arguments>
-                            </call>
-                          </body>
-                        </lambda>
-                        }
-                      </jsx_expression>
-                    </jsx_attribute>
-                    &gt;
-                  </jsx_opening_element>
-                  <jsx_text>
-                Clicked </jsx_text>
-                  <jsx_expression>
-                    {
-                    <type>count</type>
-                    }
-                  </jsx_expression>
-                  <jsx_text> times
-            </jsx_text>
-                  <jsx_closing_element>
-                    &lt;/
-                    <name>
-                      <type>button</type>
-                    </name>
-                    &gt;
-                  </jsx_closing_element>
-                </jsx_element>
-                <jsx_closing_element>
-                  &lt;/
-                  <name>
-                    <type>div</type>
-                  </name>
-                  &gt;
-                </jsx_closing_element>
-              </jsx_element>
-              )
-            </parenthesized_expression>
-            ;
-          </return>
-          }
-        </block>
-      </body>
-    </function>
-    <export>
-      export default
-      <value>
-        <type>Greeting</type>
-      </value>
-      ;
-    </export>
-  </program>
-</Files>
+Files/File/program/
+  ├─ comment = "// Simple TSX example"
+  ├─ import/
+        ├─ "import"
+        ├─ import_clause/
+              ├─ type = "React"
+              ├─ ","
+              └─ named_imports/
+                    ├─ "{"
+                    ├─ import_specifier/name/type = "useState"
+                    └─ "}"
+        ├─ "from"
+        ├─ string/
+              ├─ "'"
+              ├─ string_fragment = "react"
+              └─ "'"
+        └─ ";"
+  ├─ interface/
+        ├─ "interface"
+        ├─ name/type = "Props"
+        └─ body/
+              ├─ "{"
+              ├─ property_signature/
+                    ├─ name/type = "name"
+                    └─ typeof/
+                          ├─ ":"
+                          └─ predefined_type = "string"
+              ├─ ";"
+              ├─ property_signature/
+                    ├─ name/type = "age"
+                    ├─ "?"
+                    └─ typeof/
+                          ├─ ":"
+                          └─ predefined_type = "number"
+              └─ ";\n}"
+  ├─ function/
+        ├─ "function"
+        ├─ name = "Greeting"
+        ├─ parameters/params/
+              ├─ "("
+              ├─ param[required]/
+                    ├─ object_pattern/
+                          ├─ "{"
+                          ├─ shorthand_property_identifier_pattern = "name"
+                          ├─ ","
+                          ├─ shorthand_property_identifier_pattern = "age"
+                          └─ "}"
+                    └─ typeof/
+                          ├─ ":"
+                          └─ type = "Props"
+              └─ ")"
+        └─ body/block/
+              ├─ "{"
+              ├─ variable[const]/
+                    ├─ "const"
+                    ├─ name/array_pattern/
+                          ├─ "["
+                          ├─ type = "count"
+                          ├─ ","
+                          ├─ type = "setCount"
+                          └─ "]"
+                    ├─ "="
+                    ├─ value/call/
+                          ├─ function[ref] = "useState"
+                          └─ arguments/arguments/
+                                ├─ "("
+                                ├─ number = "0"
+                                └─ ")"
+                    └─ ";"
+              ├─ return/
+                    ├─ "return"
+                    ├─ parenthesized_expression/
+                          ├─ "("
+                          ├─ jsx_element/
+                                ├─ jsx_opening_element/
+                                      ├─ "<"
+                                      ├─ name/type = "div"
+                                      ├─ jsx_attribute/
+                                            ├─ type = "className"
+                                            ├─ "="
+                                            └─ string/
+                                                  ├─ "\""
+                                                  ├─ string_fragment = "greeting"
+                                                  └─ "\""
+                                      └─ ">"
+                                ├─ jsx_element/
+                                      ├─ jsx_opening_element/
+                                            ├─ "<"
+                                            ├─ name/type = "h1"
+                                            └─ ">"
+                                      ├─ jsx_text = "Hello,"
+                                      ├─ jsx_expression/
+                                            ├─ "{"
+                                            ├─ type = "name"
+                                            └─ "}"
+                                      ├─ jsx_text = "!"
+                                      └─ jsx_closing_element/
+                                            ├─ "</"
+                                            ├─ name/type = "h1"
+                                            └─ ">"
+                                ├─ jsx_expression/
+                                      ├─ "{"
+                                      ├─ binary/
+                                            ├─ op/
+                                                  ├─ logical[and]
+                                                  └─ "&&"
+                                            ├─ left/type = "age"
+                                            ├─ "&&"
+                                            └─ right/jsx_element/
+                                                  ├─ jsx_opening_element/
+                                                        ├─ "<"
+                                                        ├─ name/type = "span"
+                                                        └─ ">"
+                                                  ├─ jsx_text = "Age:"
+                                                  ├─ jsx_expression/
+                                                        ├─ "{"
+                                                        ├─ type = "age"
+                                                        └─ "}"
+                                                  └─ jsx_closing_element/
+                                                        ├─ "</"
+                                                        ├─ name/type = "span"
+                                                        └─ ">"
+                                      └─ "}"
+                                ├─ jsx_element/
+                                      ├─ jsx_opening_element/
+                                            ├─ "<"
+                                            ├─ name/type = "button"
+                                            ├─ jsx_attribute/
+                                                  ├─ type = "onClick"
+                                                  ├─ "="
+                                                  └─ jsx_expression/
+                                                        ├─ "{"
+                                                        ├─ lambda/
+                                                              ├─ parameters/params = "()"
+                                                              ├─ "=>"
+                                                              └─ body/call/
+                                                                    ├─ function[ref] = "setCount"
+                                                                    └─ arguments/arguments/
+                                                                          ├─ "("
+                                                                          ├─ binary/
+                                                                                ├─ op[plus] = "+"
+                                                                                ├─ left/type = "count"
+                                                                                ├─ "+"
+                                                                                └─ right/number = "1"
+                                                                          └─ ")"
+                                                        └─ "}"
+                                            └─ ">"
+                                      ├─ jsx_text = "Clicked"
+                                      ├─ jsx_expression/
+                                            ├─ "{"
+                                            ├─ type = "count"
+                                            └─ "}"
+                                      ├─ jsx_text = "times"
+                                      └─ jsx_closing_element/
+                                            ├─ "</"
+                                            ├─ name/type = "button"
+                                            └─ ">"
+                                └─ jsx_closing_element/
+                                      ├─ "</"
+                                      ├─ name/type = "div"
+                                      └─ ">"
+                          └─ ")"
+                    └─ ";"
+              └─ "}"
+  └─ export/
+        ├─ "export default"
+        ├─ value/type = "Greeting"
+        └─ ";"

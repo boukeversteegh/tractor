@@ -1,204 +1,109 @@
 tests/integration/languages/go/sample.go:1
-<Files>
-  <file>tests/integration/languages/go/sample.go</file>
-  <source_file>
-    <comment>// Simple Go example</comment>
-    <package_clause>
-      package
-      <package_identifier>main</package_identifier>
-    </package_clause>
-    <import_declaration>
-      import
-      <import_spec>
-        <interpreted_string_literal>
-          &quot;
-          <interpreted_string_literal_content>fmt</interpreted_string_literal_content>
-          &quot;
-        </interpreted_string_literal>
-      </import_spec>
-    </import_declaration>
-    <function_declaration>
-      func
-      <name>
-        <identifier>add</identifier>
-      </name>
-      <parameters>
-        <parameter_list>
-          (
-          <parameter_declaration>
-            <name>
-              <identifier>a</identifier>
-            </name>
-            <type_identifier>int</type_identifier>
-          </parameter_declaration>
-          ,
-          <parameter_declaration>
-            <name>
-              <identifier>b</identifier>
-            </name>
-            <type_identifier>int</type_identifier>
-          </parameter_declaration>
-          )
-        </parameter_list>
-      </parameters>
-      <type_identifier>int</type_identifier>
-      <body>
-        <block>
-          {
-          <return_statement>
-            return
-            <expression_list>
-              <binary_expression>
-                <left>
-                  <identifier>a</identifier>
-                </left>
-                +
-                <right>
-                  <identifier>b</identifier>
-                </right>
-              </binary_expression>
-            </expression_list>
-          </return_statement>
-          }
-        </block>
-      </body>
-    </function_declaration>
-    <function_declaration>
-      func
-      <name>
-        <identifier>main</identifier>
-      </name>
-      <parameters>
-        <parameter_list>()</parameter_list>
-      </parameters>
-      <body>
-        <block>
-          {
-          <short_var_declaration>
-            <left>
-              <expression_list>
-                <identifier>result</identifier>
-              </expression_list>
-            </left>
-            :=
-            <right>
-              <expression_list>
-                <call_expression>
-                  <identifier>add</identifier>
-                  <arguments>
-                    <argument_list>
-                      (
-                      <int_literal>5</int_literal>
-                      ,
-                      <int_literal>3</int_literal>
-                      )
-                    </argument_list>
-                  </arguments>
-                </call_expression>
-              </expression_list>
-            </right>
-          </short_var_declaration>
-          <expression_statement>
-            <call_expression>
-              <selector_expression>
-                <identifier>fmt</identifier>
-                .
-                <field_identifier>Printf</field_identifier>
-              </selector_expression>
-              <arguments>
-                <argument_list>
-                  (
-                  <interpreted_string_literal>
-                    &quot;
-                    <interpreted_string_literal_content>Result: %d</interpreted_string_literal_content>
-                    <escape_sequence>\n</escape_sequence>
-                    &quot;
-                  </interpreted_string_literal>
-                  ,
-                  <identifier>result</identifier>
-                  )
-                </argument_list>
-              </arguments>
-            </call_expression>
-          </expression_statement>
-          }
-        </block>
-      </body>
-    </function_declaration>
-    <comment>// Exported function</comment>
-    <function_declaration>
-      func
-      <name>
-        <identifier>PublicHelper</identifier>
-      </name>
-      <parameters>
-        <parameter_list>()</parameter_list>
-      </parameters>
-      <type_identifier>string</type_identifier>
-      <body>
-        <block>
-          {
-          <return_statement>
-            return
-            <expression_list>
-              <interpreted_string_literal>
-                &quot;
-                <interpreted_string_literal_content>hello</interpreted_string_literal_content>
-                &quot;
-              </interpreted_string_literal>
-            </expression_list>
-          </return_statement>
-          }
-        </block>
-      </body>
-    </function_declaration>
-    <type_declaration>
-      type
-      <type_spec>
-        <name>
-          <type_identifier>Point</type_identifier>
-        </name>
-        <struct_type>
-          struct
-          <field_declaration_list>
-            {
-            <field_declaration>
-              <name>
-                <field_identifier>X</field_identifier>
-              </name>
-              <type_identifier>int</type_identifier>
-            </field_declaration>
-            <field_declaration>
-              <name>
-                <field_identifier>Y</field_identifier>
-              </name>
-              <type_identifier>int</type_identifier>
-            </field_declaration>
-            }
-          </field_declaration_list>
-        </struct_type>
-      </type_spec>
-    </type_declaration>
-    <type_declaration>
-      type
-      <type_spec>
-        <name>
-          <type_identifier>Shape</type_identifier>
-        </name>
-        <interface_type>
-          interface {
-          <method_elem>
-            <name>
-              <field_identifier>Area</field_identifier>
-            </name>
-            <parameters>
-              <parameter_list>()</parameter_list>
-            </parameters>
-            <type_identifier>float64</type_identifier>
-          </method_elem>
-          }
-        </interface_type>
-      </type_spec>
-    </type_declaration>
-  </source_file>
-</Files>
+Files/File/source_file/
+  ├─ comment = "// Simple Go example"
+  ├─ package_clause/
+        ├─ "package"
+        └─ package_identifier = "main"
+  ├─ import_declaration/
+        ├─ "import"
+        └─ import_spec/interpreted_string_literal/
+              ├─ "\""
+              ├─ interpreted_string_literal_content = "fmt"
+              └─ "\""
+  ├─ function_declaration/
+        ├─ "func"
+        ├─ name/identifier = "add"
+        ├─ parameters/parameter_list/
+              ├─ "("
+              ├─ parameter_declaration/
+                    ├─ name/identifier = "a"
+                    └─ type_identifier = "int"
+              ├─ ","
+              ├─ parameter_declaration/
+                    ├─ name/identifier = "b"
+                    └─ type_identifier = "int"
+              └─ ")"
+        ├─ type_identifier = "int"
+        └─ body/block/
+              ├─ "{"
+              ├─ return_statement/
+                    ├─ "return"
+                    └─ expression_list/binary_expression/
+                          ├─ left/identifier = "a"
+                          ├─ "+"
+                          └─ right/identifier = "b"
+              └─ "}"
+  ├─ function_declaration/
+        ├─ "func"
+        ├─ name/identifier = "main"
+        ├─ parameters/parameter_list = "()"
+        └─ body/block/
+              ├─ "{"
+              ├─ short_var_declaration/
+                    ├─ left/expression_list/identifier = "result"
+                    ├─ ":="
+                    └─ right/expression_list/call_expression/
+                          ├─ identifier = "add"
+                          └─ arguments/argument_list/
+                                ├─ "("
+                                ├─ int_literal = "5"
+                                ├─ ","
+                                ├─ int_literal = "3"
+                                └─ ")"
+              ├─ expression_statement/call_expression/
+                    ├─ selector_expression/
+                          ├─ identifier = "fmt"
+                          ├─ "."
+                          └─ field_identifier = "Printf"
+                    └─ arguments/argument_list/
+                          ├─ "("
+                          ├─ interpreted_string_literal/
+                                ├─ "\""
+                                ├─ interpreted_string_literal_content = "Result: %d"
+                                ├─ escape_sequence = "\\n"
+                                └─ "\""
+                          ├─ ","
+                          ├─ identifier = "result"
+                          └─ ")"
+              └─ "}"
+  ├─ comment = "// Exported function"
+  ├─ function_declaration/
+        ├─ "func"
+        ├─ name/identifier = "PublicHelper"
+        ├─ parameters/parameter_list = "()"
+        ├─ type_identifier = "string"
+        └─ body/block/
+              ├─ "{"
+              ├─ return_statement/
+                    ├─ "return"
+                    └─ expression_list/interpreted_string_literal/
+                          ├─ "\""
+                          ├─ interpreted_string_literal_content = "hello"
+                          └─ "\""
+              └─ "}"
+  ├─ type_declaration/
+        ├─ "type"
+        └─ type_spec/
+              ├─ name/type_identifier = "Point"
+              └─ struct_type/
+                    ├─ "struct"
+                    └─ field_declaration_list/
+                          ├─ "{"
+                          ├─ field_declaration/
+                                ├─ name/field_identifier = "X"
+                                └─ type_identifier = "int"
+                          ├─ field_declaration/
+                                ├─ name/field_identifier = "Y"
+                                └─ type_identifier = "int"
+                          └─ "}"
+  └─ type_declaration/
+        ├─ "type"
+        └─ type_spec/
+              ├─ name/type_identifier = "Shape"
+              └─ interface_type/
+                    ├─ "interface {"
+                    ├─ method_elem/
+                          ├─ name/field_identifier = "Area"
+                          ├─ parameters/parameter_list = "()"
+                          └─ type_identifier = "float64"
+                    └─ "}"

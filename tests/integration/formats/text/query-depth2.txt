@@ -1,24 +1,17 @@
 tests/integration/formats/sample.cs:1
-<class>
-  <public/>
-  class
-  <name>Foo</name>
-  <body>
-    {
-    <property>
-      <!-- ... (6 children) -->
-    </property>
-    <method>
-      <!-- ... (7 children) -->
-    </method>
-    }
-  </body>
-</class>
+class[public]/
+  ├─ "class"
+  ├─ name = "Foo"
+  └─ body/
+      ├─ "{"
+      ├─ property[public]/
+      │   └─ ... (6 children)
+      ├─ method[public]/
+      │   └─ ... (7 children)
+      └─ "}"
 
 tests/integration/formats/sample.cs:7
-<class>
-  <public/>
-  class
-  <name>Qux</name>
-  <body>{ }</body>
-</class>
+class[public]/
+  ├─ "class"
+  ├─ name = "Qux"
+  └─ body = "{ }"

@@ -1,77 +1,43 @@
 tests/integration/languages/csharp/attribute-maxlength-boolean.cs:1
-<Files>
-  <file>tests/integration/languages/csharp/attribute-maxlength-boolean.cs</file>
-  <unit>
-    <class>
-      <public/>
-      class
-      <name>UserRecord</name>
-      <body>
-        {
-        <property>
-          <attributes>
-            [
-            <attribute>
-              <name>
-                <ref>MaxLength</ref>
-              </name>
-              <arguments>
-                (
-                <argument>
-                  <int>1</int>
-                </argument>
-                )
-              </arguments>
-            </attribute>
-            ]
-          </attributes>
-          <public/>
-          <type>bool</type>
-          <name>IsActive</name>
-          <accessors>
-            {
-            <accessor>get;</accessor>
-            <accessor>set;</accessor>
-            }
-          </accessors>
-        </property>
-        <comment>
-          <trailing/>
-          // ERROR - MaxLength on bool
-        </comment>
-        <property>
-          <attributes>
-            [
-            <attribute>
-              <name>
-                <ref>MaxLength</ref>
-              </name>
-              <arguments>
-                (
-                <argument>
-                  <int>100</int>
-                </argument>
-                )
-              </arguments>
-            </attribute>
-            ]
-          </attributes>
-          <public/>
-          <type>string</type>
-          <name>Name</name>
-          <accessors>
-            {
-            <accessor>get;</accessor>
-            <accessor>set;</accessor>
-            }
-          </accessors>
-        </property>
-        <comment>
-          <trailing/>
-          // OK - MaxLength on string
-        </comment>
-        }
-      </body>
-    </class>
-  </unit>
-</Files>
+Files/File/unit/class[public]/
+  ├─ "class"
+  ├─ name = "UserRecord"
+  └─ body/
+        ├─ "{"
+        ├─ property[public]/
+              ├─ attributes/
+                    ├─ "["
+                    ├─ attribute/
+                          ├─ name/ref = "MaxLength"
+                          └─ arguments/
+                                ├─ "("
+                                ├─ argument/int = "1"
+                                └─ ")"
+                    └─ "]"
+              ├─ type = "bool"
+              ├─ name = "IsActive"
+              └─ accessors/
+                    ├─ "{"
+                    ├─ accessor = "get;"
+                    ├─ accessor = "set;"
+                    └─ "}"
+        ├─ comment[trailing] = "// ERROR - MaxLength on bool"
+        ├─ property[public]/
+              ├─ attributes/
+                    ├─ "["
+                    ├─ attribute/
+                          ├─ name/ref = "MaxLength"
+                          └─ arguments/
+                                ├─ "("
+                                ├─ argument/int = "100"
+                                └─ ")"
+                    └─ "]"
+              ├─ type = "string"
+              ├─ name = "Name"
+              └─ accessors/
+                    ├─ "{"
+                    ├─ accessor = "get;"
+                    ├─ accessor = "set;"
+                    └─ "}"
+        ├─ comment[trailing] = "// OK - MaxLength on string"
+        └─ "}"

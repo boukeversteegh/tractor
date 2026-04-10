@@ -1,117 +1,35 @@
 tests/integration/languages/yaml/multi.yaml:1
-<Files>
-  <file>tests/integration/languages/yaml/multi.yaml</file>
-  <stream>
-    <document>
-      ---
-      <block_node>
-        <block_mapping>
-          <block_mapping_pair>
-            <flow_node>
-              <plain_scalar>
-                <string_scalar>name</string_scalar>
-              </plain_scalar>
-            </flow_node>
-            :
-            <value>
-              <flow_node>
-                <plain_scalar>
-                  <string_scalar>doc1</string_scalar>
-                </plain_scalar>
-              </flow_node>
-            </value>
-          </block_mapping_pair>
-          <block_mapping_pair>
-            <flow_node>
-              <plain_scalar>
-                <string_scalar>value</string_scalar>
-              </plain_scalar>
-            </flow_node>
-            :
-            <value>
-              <flow_node>
-                <plain_scalar>
-                  <string_scalar>one</string_scalar>
-                </plain_scalar>
-              </flow_node>
-            </value>
-          </block_mapping_pair>
-        </block_mapping>
-      </block_node>
-    </document>
-    <document>
-      ---
-      <block_node>
-        <block_mapping>
-          <block_mapping_pair>
-            <flow_node>
-              <plain_scalar>
-                <string_scalar>name</string_scalar>
-              </plain_scalar>
-            </flow_node>
-            :
-            <value>
-              <flow_node>
-                <plain_scalar>
-                  <string_scalar>doc2</string_scalar>
-                </plain_scalar>
-              </flow_node>
-            </value>
-          </block_mapping_pair>
-          <block_mapping_pair>
-            <flow_node>
-              <plain_scalar>
-                <string_scalar>value</string_scalar>
-              </plain_scalar>
-            </flow_node>
-            :
-            <value>
-              <flow_node>
-                <plain_scalar>
-                  <string_scalar>two</string_scalar>
-                </plain_scalar>
-              </flow_node>
-            </value>
-          </block_mapping_pair>
-        </block_mapping>
-      </block_node>
-    </document>
-    <document>
-      ---
-      <block_node>
-        <block_mapping>
-          <block_mapping_pair>
-            <flow_node>
-              <plain_scalar>
-                <string_scalar>name</string_scalar>
-              </plain_scalar>
-            </flow_node>
-            :
-            <value>
-              <flow_node>
-                <plain_scalar>
-                  <string_scalar>doc3</string_scalar>
-                </plain_scalar>
-              </flow_node>
-            </value>
-          </block_mapping_pair>
-          <block_mapping_pair>
-            <flow_node>
-              <plain_scalar>
-                <string_scalar>value</string_scalar>
-              </plain_scalar>
-            </flow_node>
-            :
-            <value>
-              <flow_node>
-                <plain_scalar>
-                  <string_scalar>three</string_scalar>
-                </plain_scalar>
-              </flow_node>
-            </value>
-          </block_mapping_pair>
-        </block_mapping>
-      </block_node>
-    </document>
-  </stream>
-</Files>
+Files/File/stream/
+  ├─ document/
+        ├─ "---"
+        └─ block_node/block_mapping/
+              ├─ block_mapping_pair/
+                    ├─ flow_node/plain_scalar/string_scalar = "name"
+                    ├─ ":"
+                    └─ value/flow_node/plain_scalar/string_scalar = "doc1"
+              └─ block_mapping_pair/
+                    ├─ flow_node/plain_scalar/string_scalar = "value"
+                    ├─ ":"
+                    └─ value/flow_node/plain_scalar/string_scalar = "one"
+  ├─ document/
+        ├─ "---"
+        └─ block_node/block_mapping/
+              ├─ block_mapping_pair/
+                    ├─ flow_node/plain_scalar/string_scalar = "name"
+                    ├─ ":"
+                    └─ value/flow_node/plain_scalar/string_scalar = "doc2"
+              └─ block_mapping_pair/
+                    ├─ flow_node/plain_scalar/string_scalar = "value"
+                    ├─ ":"
+                    └─ value/flow_node/plain_scalar/string_scalar = "two"
+  └─ document/
+        ├─ "---"
+        └─ block_node/block_mapping/
+              ├─ block_mapping_pair/
+                    ├─ flow_node/plain_scalar/string_scalar = "name"
+                    ├─ ":"
+                    └─ value/flow_node/plain_scalar/string_scalar = "doc3"
+              └─ block_mapping_pair/
+                    ├─ flow_node/plain_scalar/string_scalar = "value"
+                    ├─ ":"
+                    └─ value/flow_node/plain_scalar/string_scalar = "three"

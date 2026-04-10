@@ -1,191 +1,100 @@
 tests/integration/languages/csharp/repository-getall-orderby.cs:1
-<Files>
-  <file>tests/integration/languages/csharp/repository-getall-orderby.cs</file>
-  <unit>
-    <class>
-      <public/>
-      class
-      <name>UserRepository</name>
-      <body>
-        {
-        <method>
-          <public/>
-          <returns>
-            <type>
-              <generic/>
-              List
-              <arguments>
-                &lt;
-                <type>User</type>
-                &gt;
-              </arguments>
-            </type>
-          </returns>
-          <name>GetAll</name>
-          <parameters>()</parameters>
-          <body>
-            <block>
-              {
-              <return>
-                return
-                <call>
-                  <member>
-                    <member>
-                      <ref>_context</ref>
-                      .
-                      <name>
-                        <ref>Users</ref>
-                      </name>
-                    </member>
-                    .
-                    <name>
-                      <ref>ToList</ref>
-                    </name>
-                  </member>
-                  <arguments>
-                    <arguments>()</arguments>
-                  </arguments>
-                </call>
-                ;
-              </return>
-              }
-            </block>
-          </body>
-        </method>
-        <comment>
-          <trailing/>
-          // MATCH - missing OrderBy
-        </comment>
-        <method>
-          <public/>
-          <returns>
-            <type>
-              <generic/>
-              List
-              <arguments>
-                &lt;
-                <type>User</type>
-                &gt;
-              </arguments>
-            </type>
-          </returns>
-          <name>GetAllOrdered</name>
-          <parameters>()</parameters>
-          <body>
-            <block>
-              {
-              <return>
-                return
-                <call>
-                  <member>
-                    <call>
-                      <member>
-                        <member>
-                          <ref>_context</ref>
-                          .
-                          <name>
-                            <ref>Users</ref>
-                          </name>
-                        </member>
-                        .
-                        <name>
-                          <ref>OrderBy</ref>
-                        </name>
-                      </member>
-                      <arguments>
-                        <arguments>
-                          (
-                          <argument>
-                            <lambda>
-                              <implicit_parameter>u</implicit_parameter>
-                              =&gt;
-                              <body>
-                                <member>
-                                  <ref>u</ref>
-                                  .
-                                  <name>
-                                    <ref>Name</ref>
-                                  </name>
-                                </member>
-                              </body>
-                            </lambda>
-                          </argument>
-                          )
-                        </arguments>
-                      </arguments>
-                    </call>
-                    .
-                    <name>
-                      <ref>ToList</ref>
-                    </name>
-                  </member>
-                  <arguments>
-                    <arguments>()</arguments>
-                  </arguments>
-                </call>
-                ;
-              </return>
-              }
-            </block>
-          </body>
-        </method>
-        <comment>
-          <trailing/>
-          // OK
-        </comment>
-        }
-      </body>
-    </class>
-    <class>
-      <public/>
-      class
-      <name>MockUserRepository</name>
-      <body>
-        {
-        <method>
-          <public/>
-          <returns>
-            <type>
-              <generic/>
-              List
-              <arguments>
-                &lt;
-                <type>User</type>
-                &gt;
-              </arguments>
-            </type>
-          </returns>
-          <name>GetAll</name>
-          <parameters>()</parameters>
-          <body>
-            <block>
-              {
-              <return>
-                return
-                <call>
-                  <member>
-                    <ref>mock</ref>
-                    .
-                    <name>
-                      <ref>ToList</ref>
-                    </name>
-                  </member>
-                  <arguments>
-                    <arguments>()</arguments>
-                  </arguments>
-                </call>
-                ;
-              </return>
-              }
-            </block>
-          </body>
-        </method>
-        <comment>
-          <trailing/>
-          // Skip - Mock class
-        </comment>
-        }
-      </body>
-    </class>
-  </unit>
-</Files>
+Files/File/unit/
+  ├─ class[public]/
+        ├─ "class"
+        ├─ name = "UserRepository"
+        └─ body/
+              ├─ "{"
+              ├─ method[public]/
+                    ├─ returns/type[generic]/
+                          ├─ "List"
+                          └─ arguments/
+                                ├─ "<"
+                                ├─ type = "User"
+                                └─ ">"
+                    ├─ name = "GetAll"
+                    ├─ parameters = "()"
+                    └─ body/block/
+                          ├─ "{"
+                          ├─ return/
+                                ├─ "return"
+                                ├─ call/
+                                      ├─ member/
+                                            ├─ member/
+                                                  ├─ ref = "_context"
+                                                  ├─ "."
+                                                  └─ name/ref = "Users"
+                                            ├─ "."
+                                            └─ name/ref = "ToList"
+                                      └─ arguments/arguments = "()"
+                                └─ ";"
+                          └─ "}"
+              ├─ comment[trailing] = "// MATCH - missing OrderBy"
+              ├─ method[public]/
+                    ├─ returns/type[generic]/
+                          ├─ "List"
+                          └─ arguments/
+                                ├─ "<"
+                                ├─ type = "User"
+                                └─ ">"
+                    ├─ name = "GetAllOrdered"
+                    ├─ parameters = "()"
+                    └─ body/block/
+                          ├─ "{"
+                          ├─ return/
+                                ├─ "return"
+                                ├─ call/
+                                      ├─ member/
+                                            ├─ call/
+                                                  ├─ member/
+                                                        ├─ member/
+                                                              ├─ ref = "_context"
+                                                              ├─ "."
+                                                              └─ name/ref = "Users"
+                                                        ├─ "."
+                                                        └─ name/ref = "OrderBy"
+                                                  └─ arguments/arguments/
+                                                        ├─ "("
+                                                        ├─ argument/lambda/
+                                                              ├─ implicit_parameter = "u"
+                                                              ├─ "=>"
+                                                              └─ body/member/
+                                                                    ├─ ref = "u"
+                                                                    ├─ "."
+                                                                    └─ name/ref = "Name"
+                                                        └─ ")"
+                                            ├─ "."
+                                            └─ name/ref = "ToList"
+                                      └─ arguments/arguments = "()"
+                                └─ ";"
+                          └─ "}"
+              ├─ comment[trailing] = "// OK"
+              └─ "}"
+  └─ class[public]/
+        ├─ "class"
+        ├─ name = "MockUserRepository"
+        └─ body/
+              ├─ "{"
+              ├─ method[public]/
+                    ├─ returns/type[generic]/
+                          ├─ "List"
+                          └─ arguments/
+                                ├─ "<"
+                                ├─ type = "User"
+                                └─ ">"
+                    ├─ name = "GetAll"
+                    ├─ parameters = "()"
+                    └─ body/block/
+                          ├─ "{"
+                          ├─ return/
+                                ├─ "return"
+                                ├─ call/
+                                      ├─ member/
+                                            ├─ ref = "mock"
+                                            ├─ "."
+                                            └─ name/ref = "ToList"
+                                      └─ arguments/arguments = "()"
+                                └─ ";"
+                          └─ "}"
+              ├─ comment[trailing] = "// Skip - Mock class"
+              └─ "}"

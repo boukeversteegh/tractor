@@ -7,7 +7,7 @@
 //! for query reports.
 
 use tractor_core::{
-    render_xml_node, normalize_path,
+    render_query_tree_node, normalize_path,
     render_source_precomputed, render_lines,
     report::{Report, ReportMatch, ResultItem, Totals},
     RenderOptions,
@@ -138,13 +138,7 @@ fn render_field(
     match field {
         ViewField::Tree => {
             if let Some(ref node) = rm.tree {
-                let rendered = render_xml_node(node, render_opts);
-                if render_opts.pretty_print && !rendered.ends_with('\n') {
-                    out.push_str(&rendered);
-                    out.push('\n');
-                } else {
-                    out.push_str(&rendered);
-                }
+                out.push_str(&render_query_tree_node(node, render_opts));
             }
         }
         ViewField::Value => {

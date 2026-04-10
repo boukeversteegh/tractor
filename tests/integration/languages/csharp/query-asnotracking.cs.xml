@@ -1,224 +1,114 @@
 tests/integration/languages/csharp/query-asnotracking.cs:1
-<Files>
-  <file>tests/integration/languages/csharp/query-asnotracking.cs</file>
-  <unit>
-    <class>
-      <public/>
-      class
-      <name>UserService</name>
-      <body>
-        {
-        <comment>
-          <leading/>
-          // GetUser: missing AsNoTracking - should be flagged
-        </comment>
-        <method>
-          <public/>
-          <returns>
-            <ref>UserDto</ref>
-          </returns>
-          <name>GetUser</name>
-          <parameters>
-            (
-            <parameter>
-              <type>int</type>
-              <name>id</name>
-            </parameter>
-            )
-          </parameters>
-          <body>
-            <block>
-              {
-              <local>
-                <variable>
-                  <implicit_type>var</implicit_type>
-                  <declarator>
-                    <name>user</name>
-                    =
-                    <call>
-                      <member>
-                        <member>
-                          <ref>_context</ref>
-                          .
-                          <name>
-                            <ref>Users</ref>
-                          </name>
-                        </member>
-                        .
-                        <name>
-                          <ref>First</ref>
-                        </name>
-                      </member>
-                      <arguments>
-                        <arguments>
-                          (
-                          <argument>
-                            <lambda>
-                              <implicit_parameter>u</implicit_parameter>
-                              =&gt;
-                              <body>
-                                <binary>
-                                  <op>
-                                    <equals/>
-                                    ==
-                                  </op>
-                                  <left>
-                                    <member>
-                                      <ref>u</ref>
-                                      .
-                                      <name>
-                                        <ref>Id</ref>
-                                      </name>
-                                    </member>
-                                  </left>
-                                  ==
-                                  <right>
-                                    <ref>id</ref>
-                                  </right>
-                                </binary>
-                              </body>
-                            </lambda>
-                          </argument>
-                          )
-                        </arguments>
-                      </arguments>
-                    </call>
-                  </declarator>
-                </variable>
-                ;
-              </local>
-              <return>
-                return
-                <call>
-                  <ref>Map</ref>
-                  <arguments>
-                    <arguments>
-                      (
-                      <argument>
-                        <ref>user</ref>
-                      </argument>
-                      )
-                    </arguments>
-                  </arguments>
-                </call>
-                ;
-              </return>
-              }
-            </block>
-          </body>
-        </method>
-        <comment>
-          <leading/>
-          // GetUserTracked: has AsNoTracking - OK
-        </comment>
-        <method>
-          <public/>
-          <returns>
-            <ref>UserDto</ref>
-          </returns>
-          <name>GetUserTracked</name>
-          <parameters>
-            (
-            <parameter>
-              <type>int</type>
-              <name>id</name>
-            </parameter>
-            )
-          </parameters>
-          <body>
-            <block>
-              {
-              <local>
-                <variable>
-                  <implicit_type>var</implicit_type>
-                  <declarator>
-                    <name>user</name>
-                    =
-                    <call>
-                      <member>
-                        <call>
-                          <member>
-                            <member>
-                              <ref>_context</ref>
-                              .
-                              <name>
-                                <ref>Users</ref>
-                              </name>
-                            </member>
-                            .
-                            <name>
-                              <ref>AsNoTracking</ref>
-                            </name>
-                          </member>
-                          <arguments>
-                            <arguments>()</arguments>
-                          </arguments>
-                        </call>
-                        .
-                        <name>
-                          <ref>First</ref>
-                        </name>
-                      </member>
-                      <arguments>
-                        <arguments>
-                          (
-                          <argument>
-                            <lambda>
-                              <implicit_parameter>u</implicit_parameter>
-                              =&gt;
-                              <body>
-                                <binary>
-                                  <op>
-                                    <equals/>
-                                    ==
-                                  </op>
-                                  <left>
-                                    <member>
-                                      <ref>u</ref>
-                                      .
-                                      <name>
-                                        <ref>Id</ref>
-                                      </name>
-                                    </member>
-                                  </left>
-                                  ==
-                                  <right>
-                                    <ref>id</ref>
-                                  </right>
-                                </binary>
-                              </body>
-                            </lambda>
-                          </argument>
-                          )
-                        </arguments>
-                      </arguments>
-                    </call>
-                  </declarator>
-                </variable>
-                ;
-              </local>
-              <return>
-                return
-                <call>
-                  <ref>Map</ref>
-                  <arguments>
-                    <arguments>
-                      (
-                      <argument>
-                        <ref>user</ref>
-                      </argument>
-                      )
-                    </arguments>
-                  </arguments>
-                </call>
-                ;
-              </return>
-              }
-            </block>
-          </body>
-        </method>
-        }
-      </body>
-    </class>
-  </unit>
-</Files>
+Files/File/unit/class[public]/
+  ├─ "class"
+  ├─ name = "UserService"
+  └─ body/
+        ├─ "{"
+        ├─ comment[leading] = "// GetUser: missing AsNoTracking - should be flagged"
+        ├─ method[public]/
+              ├─ returns/ref = "UserDto"
+              ├─ name = "GetUser"
+              ├─ parameters/
+                    ├─ "("
+                    ├─ parameter/
+                          ├─ type = "int"
+                          └─ name = "id"
+                    └─ ")"
+              └─ body/block/
+                    ├─ "{"
+                    ├─ local/
+                          ├─ variable/
+                                ├─ implicit_type = "var"
+                                └─ declarator/
+                                      ├─ name = "user"
+                                      ├─ "="
+                                      └─ call/
+                                            ├─ member/
+                                                  ├─ member/
+                                                        ├─ ref = "_context"
+                                                        ├─ "."
+                                                        └─ name/ref = "Users"
+                                                  ├─ "."
+                                                  └─ name/ref = "First"
+                                            └─ arguments/arguments/
+                                                  ├─ "("
+                                                  ├─ argument/lambda/
+                                                        ├─ implicit_parameter = "u"
+                                                        ├─ "=>"
+                                                        └─ body/binary/
+                                                              ├─ op[equals] = "=="
+                                                              ├─ left/member/
+                                                                    ├─ ref = "u"
+                                                                    ├─ "."
+                                                                    └─ name/ref = "Id"
+                                                              ├─ "=="
+                                                              └─ right/ref = "id"
+                                                  └─ ")"
+                          └─ ";"
+                    ├─ return/
+                          ├─ "return"
+                          ├─ call/
+                                ├─ ref = "Map"
+                                └─ arguments/arguments/
+                                      ├─ "("
+                                      ├─ argument/ref = "user"
+                                      └─ ")"
+                          └─ ";"
+                    └─ "}"
+        ├─ comment[leading] = "// GetUserTracked: has AsNoTracking - OK"
+        ├─ method[public]/
+              ├─ returns/ref = "UserDto"
+              ├─ name = "GetUserTracked"
+              ├─ parameters/
+                    ├─ "("
+                    ├─ parameter/
+                          ├─ type = "int"
+                          └─ name = "id"
+                    └─ ")"
+              └─ body/block/
+                    ├─ "{"
+                    ├─ local/
+                          ├─ variable/
+                                ├─ implicit_type = "var"
+                                └─ declarator/
+                                      ├─ name = "user"
+                                      ├─ "="
+                                      └─ call/
+                                            ├─ member/
+                                                  ├─ call/
+                                                        ├─ member/
+                                                              ├─ member/
+                                                                    ├─ ref = "_context"
+                                                                    ├─ "."
+                                                                    └─ name/ref = "Users"
+                                                              ├─ "."
+                                                              └─ name/ref = "AsNoTracking"
+                                                        └─ arguments/arguments = "()"
+                                                  ├─ "."
+                                                  └─ name/ref = "First"
+                                            └─ arguments/arguments/
+                                                  ├─ "("
+                                                  ├─ argument/lambda/
+                                                        ├─ implicit_parameter = "u"
+                                                        ├─ "=>"
+                                                        └─ body/binary/
+                                                              ├─ op[equals] = "=="
+                                                              ├─ left/member/
+                                                                    ├─ ref = "u"
+                                                                    ├─ "."
+                                                                    └─ name/ref = "Id"
+                                                              ├─ "=="
+                                                              └─ right/ref = "id"
+                                                  └─ ")"
+                          └─ ";"
+                    ├─ return/
+                          ├─ "return"
+                          ├─ call/
+                                ├─ ref = "Map"
+                                └─ arguments/arguments/
+                                      ├─ "("
+                                      ├─ argument/ref = "user"
+                                      └─ ")"
+                          └─ ";"
+                    └─ "}"
+        └─ "}"

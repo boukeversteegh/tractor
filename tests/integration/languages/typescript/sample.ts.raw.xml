@@ -1,326 +1,196 @@
 tests/integration/languages/typescript/sample.ts:1
-<Files>
-  <file>tests/integration/languages/typescript/sample.ts</file>
-  <program>
-    <comment>// Simple TypeScript example</comment>
-    <function_declaration>
-      function
-      <name>
-        <identifier>add</identifier>
-      </name>
-      <parameters>
-        <formal_parameters>
-          (
-          <required_parameter>
-            <identifier>a</identifier>
-            <type_annotation>
-              :
-              <predefined_type>number</predefined_type>
-            </type_annotation>
-          </required_parameter>
-          ,
-          <required_parameter>
-            <identifier>b</identifier>
-            <type_annotation>
-              :
-              <predefined_type>number</predefined_type>
-            </type_annotation>
-          </required_parameter>
-          )
-        </formal_parameters>
-      </parameters>
-      <type_annotation>
-        :
-        <predefined_type>number</predefined_type>
-      </type_annotation>
-      <body>
-        <statement_block>
-          {
-          <return_statement>
-            return
-            <binary_expression>
-              <left>
-                <identifier>a</identifier>
-              </left>
-              +
-              <right>
-                <identifier>b</identifier>
-              </right>
-            </binary_expression>
-            ;
-          </return_statement>
-          }
-        </statement_block>
-      </body>
-    </function_declaration>
-    <function_declaration>
-      function
-      <name>
-        <identifier>main</identifier>
-      </name>
-      <parameters>
-        <formal_parameters>()</formal_parameters>
-      </parameters>
-      <type_annotation>
-        :
-        <predefined_type>void</predefined_type>
-      </type_annotation>
-      <body>
-        <statement_block>
-          {
-          <lexical_declaration>
-            const
-            <variable_declarator>
-              <name>
-                <identifier>result</identifier>
-              </name>
-              =
-              <value>
-                <call_expression>
-                  <identifier>add</identifier>
-                  <arguments>
-                    <arguments>
-                      (
-                      <number>5</number>
-                      ,
-                      <number>3</number>
-                      )
-                    </arguments>
-                  </arguments>
-                </call_expression>
-              </value>
-            </variable_declarator>
-            ;
-          </lexical_declaration>
-          <expression_statement>
-            <call_expression>
-              <member_expression>
-                <identifier>console</identifier>
-                .
-                <property_identifier>log</property_identifier>
-              </member_expression>
-              <arguments>
-                <arguments>
-                  (
-                  <template_string>
-                    `
-                    <string_fragment>Result: </string_fragment>
-                    <template_substitution>
-                      ${
-                      <identifier>result</identifier>
-                      }
-                    </template_substitution>
-                    `
-                  </template_string>
-                  )
-                </arguments>
-              </arguments>
-            </call_expression>
-            ;
-          </expression_statement>
-          }
-        </statement_block>
-      </body>
-    </function_declaration>
-    <expression_statement>
-      <call_expression>
-        <identifier>main</identifier>
-        <arguments>
-          <arguments>()</arguments>
-        </arguments>
-      </call_expression>
-      ;
-    </expression_statement>
-    <interface_declaration>
-      interface
-      <name>
-        <type_identifier>Person</type_identifier>
-      </name>
-      <body>
-        <interface_body>
-          {
-          <property_signature>
-            <name>
-              <property_identifier>name</property_identifier>
-            </name>
-            <type_annotation>
-              :
-              <predefined_type>string</predefined_type>
-            </type_annotation>
-          </property_signature>
-          ;
-          <property_signature>
-            <name>
-              <property_identifier>age</property_identifier>
-            </name>
-            <type_annotation>
-              :
-              <predefined_type>number</predefined_type>
-            </type_annotation>
-          </property_signature>
-          ;
-}
-        </interface_body>
-      </body>
-    </interface_declaration>
-    <enum_declaration>
-      enum
-      <name>
-        <identifier>Color</identifier>
-      </name>
-      <body>
-        <enum_body>
-          {
-          <name>
-            <property_identifier>Red</property_identifier>
-          </name>
-          ,
-          <name>
-            <property_identifier>Green</property_identifier>
-          </name>
-          ,
-          <name>
-            <property_identifier>Blue</property_identifier>
-          </name>
-          }
-        </enum_body>
-      </body>
-    </enum_declaration>
-    <function_declaration>
-      function
-      <name>
-        <identifier>greet</identifier>
-      </name>
-      <parameters>
-        <formal_parameters>
-          (
-          <required_parameter>
-            <identifier>name</identifier>
-            <type_annotation>
-              :
-              <predefined_type>string</predefined_type>
-            </type_annotation>
-          </required_parameter>
-          ,
-          <optional_parameter>
-            <identifier>title</identifier>
-            ?
-            <type_annotation>
-              :
-              <predefined_type>string</predefined_type>
-            </type_annotation>
-          </optional_parameter>
-          )
-        </formal_parameters>
-      </parameters>
-      <type_annotation>
-        :
-        <predefined_type>string</predefined_type>
-      </type_annotation>
-      <body>
-        <statement_block>
-          {
-          <return_statement>
-            return
-            <ternary_expression>
-              <condition>
-                <identifier>title</identifier>
-              </condition>
-              ?
-              <consequence>
-                <template_string>
-                  `
-                  <template_substitution>
-                    ${
-                    <identifier>title</identifier>
-                    }
-                  </template_substitution>
-                  <string_fragment> </string_fragment>
-                  <template_substitution>
-                    ${
-                    <identifier>name</identifier>
-                    }
-                  </template_substitution>
-                  `
-                </template_string>
-              </consequence>
-              :
-              <alternative>
-                <identifier>name</identifier>
-              </alternative>
-            </ternary_expression>
-            ;
-          </return_statement>
-          }
-        </statement_block>
-      </body>
-    </function_declaration>
-    <function_declaration>
-      function
-      <name>
-        <identifier>configure</identifier>
-      </name>
-      <parameters>
-        <formal_parameters>
-          (
-          <required_parameter>
-            <identifier>host</identifier>
-            <type_annotation>
-              :
-              <predefined_type>string</predefined_type>
-            </type_annotation>
-          </required_parameter>
-          ,
-          <required_parameter>
-            <identifier>port</identifier>
-            <type_annotation>
-              :
-              <predefined_type>number</predefined_type>
-            </type_annotation>
-          </required_parameter>
-          ,
-          <optional_parameter>
-            <identifier>timeout</identifier>
-            ?
-            <type_annotation>
-              :
-              <predefined_type>number</predefined_type>
-            </type_annotation>
-          </optional_parameter>
-          )
-        </formal_parameters>
-      </parameters>
-      <type_annotation>
-        :
-        <predefined_type>void</predefined_type>
-      </type_annotation>
-      <body>
-        <statement_block>
-          {
-          <expression_statement>
-            <call_expression>
-              <member_expression>
-                <identifier>console</identifier>
-                .
-                <property_identifier>log</property_identifier>
-              </member_expression>
-              <arguments>
-                <arguments>
-                  (
-                  <identifier>host</identifier>
-                  ,
-                  <identifier>port</identifier>
-                  ,
-                  <identifier>timeout</identifier>
-                  )
-                </arguments>
-              </arguments>
-            </call_expression>
-            ;
-          </expression_statement>
-          }
-        </statement_block>
-      </body>
-    </function_declaration>
-  </program>
-</Files>
+Files/File/program/
+  ├─ comment = "// Simple TypeScript example"
+  ├─ function_declaration/
+        ├─ "function"
+        ├─ name/identifier = "add"
+        ├─ parameters/formal_parameters/
+              ├─ "("
+              ├─ required_parameter/
+                    ├─ identifier = "a"
+                    └─ type_annotation/
+                          ├─ ":"
+                          └─ predefined_type = "number"
+              ├─ ","
+              ├─ required_parameter/
+                    ├─ identifier = "b"
+                    └─ type_annotation/
+                          ├─ ":"
+                          └─ predefined_type = "number"
+              └─ ")"
+        ├─ type_annotation/
+              ├─ ":"
+              └─ predefined_type = "number"
+        └─ body/statement_block/
+              ├─ "{"
+              ├─ return_statement/
+                    ├─ "return"
+                    ├─ binary_expression/
+                          ├─ left/identifier = "a"
+                          ├─ "+"
+                          └─ right/identifier = "b"
+                    └─ ";"
+              └─ "}"
+  ├─ function_declaration/
+        ├─ "function"
+        ├─ name/identifier = "main"
+        ├─ parameters/formal_parameters = "()"
+        ├─ type_annotation/
+              ├─ ":"
+              └─ predefined_type = "void"
+        └─ body/statement_block/
+              ├─ "{"
+              ├─ lexical_declaration/
+                    ├─ "const"
+                    ├─ variable_declarator/
+                          ├─ name/identifier = "result"
+                          ├─ "="
+                          └─ value/call_expression/
+                                ├─ identifier = "add"
+                                └─ arguments/arguments/
+                                      ├─ "("
+                                      ├─ number = "5"
+                                      ├─ ","
+                                      ├─ number = "3"
+                                      └─ ")"
+                    └─ ";"
+              ├─ expression_statement/
+                    ├─ call_expression/
+                          ├─ member_expression/
+                                ├─ identifier = "console"
+                                ├─ "."
+                                └─ property_identifier = "log"
+                          └─ arguments/arguments/
+                                ├─ "("
+                                ├─ template_string/
+                                      ├─ "`"
+                                      ├─ string_fragment = "Result:"
+                                      ├─ template_substitution/
+                                            ├─ "${"
+                                            ├─ identifier = "result"
+                                            └─ "}"
+                                      └─ "`"
+                                └─ ")"
+                    └─ ";"
+              └─ "}"
+  ├─ expression_statement/
+        ├─ call_expression/
+              ├─ identifier = "main"
+              └─ arguments/arguments = "()"
+        └─ ";"
+  ├─ interface_declaration/
+        ├─ "interface"
+        ├─ name/type_identifier = "Person"
+        └─ body/interface_body/
+              ├─ "{"
+              ├─ property_signature/
+                    ├─ name/property_identifier = "name"
+                    └─ type_annotation/
+                          ├─ ":"
+                          └─ predefined_type = "string"
+              ├─ ";"
+              ├─ property_signature/
+                    ├─ name/property_identifier = "age"
+                    └─ type_annotation/
+                          ├─ ":"
+                          └─ predefined_type = "number"
+              └─ ";\n}"
+  ├─ enum_declaration/
+        ├─ "enum"
+        ├─ name/identifier = "Color"
+        └─ body/enum_body/
+              ├─ "{"
+              ├─ name/property_identifier = "Red"
+              ├─ ","
+              ├─ name/property_identifier = "Green"
+              ├─ ","
+              ├─ name/property_identifier = "Blue"
+              └─ "}"
+  ├─ function_declaration/
+        ├─ "function"
+        ├─ name/identifier = "greet"
+        ├─ parameters/formal_parameters/
+              ├─ "("
+              ├─ required_parameter/
+                    ├─ identifier = "name"
+                    └─ type_annotation/
+                          ├─ ":"
+                          └─ predefined_type = "string"
+              ├─ ","
+              ├─ optional_parameter/
+                    ├─ identifier = "title"
+                    ├─ "?"
+                    └─ type_annotation/
+                          ├─ ":"
+                          └─ predefined_type = "string"
+              └─ ")"
+        ├─ type_annotation/
+              ├─ ":"
+              └─ predefined_type = "string"
+        └─ body/statement_block/
+              ├─ "{"
+              ├─ return_statement/
+                    ├─ "return"
+                    ├─ ternary_expression/
+                          ├─ condition/identifier = "title"
+                          ├─ "?"
+                          ├─ consequence/template_string[string_fragment]/
+                                ├─ "`"
+                                ├─ template_substitution/
+                                      ├─ "${"
+                                      ├─ identifier = "title"
+                                      └─ "}"
+                                ├─ template_substitution/
+                                      ├─ "${"
+                                      ├─ identifier = "name"
+                                      └─ "}"
+                                └─ "`"
+                          ├─ ":"
+                          └─ alternative/identifier = "name"
+                    └─ ";"
+              └─ "}"
+  └─ function_declaration/
+        ├─ "function"
+        ├─ name/identifier = "configure"
+        ├─ parameters/formal_parameters/
+              ├─ "("
+              ├─ required_parameter/
+                    ├─ identifier = "host"
+                    └─ type_annotation/
+                          ├─ ":"
+                          └─ predefined_type = "string"
+              ├─ ","
+              ├─ required_parameter/
+                    ├─ identifier = "port"
+                    └─ type_annotation/
+                          ├─ ":"
+                          └─ predefined_type = "number"
+              ├─ ","
+              ├─ optional_parameter/
+                    ├─ identifier = "timeout"
+                    ├─ "?"
+                    └─ type_annotation/
+                          ├─ ":"
+                          └─ predefined_type = "number"
+              └─ ")"
+        ├─ type_annotation/
+              ├─ ":"
+              └─ predefined_type = "void"
+        └─ body/statement_block/
+              ├─ "{"
+              ├─ expression_statement/
+                    ├─ call_expression/
+                          ├─ member_expression/
+                                ├─ identifier = "console"
+                                ├─ "."
+                                └─ property_identifier = "log"
+                          └─ arguments/arguments/
+                                ├─ "("
+                                ├─ identifier = "host"
+                                ├─ ","
+                                ├─ identifier = "port"
+                                ├─ ","
+                                ├─ identifier = "timeout"
+                                └─ ")"
+                    └─ ";"
+              └─ "}"

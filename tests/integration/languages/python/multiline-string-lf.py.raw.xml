@@ -1,23 +1,8 @@
 tests/integration/languages/python/multiline-string-lf.py:1
-<Files>
-  <file>tests/integration/languages/python/multiline-string-lf.py</file>
-  <module>
-    <expression_statement>
-      <assignment>
-        <left>
-          <identifier>msg</identifier>
-        </left>
-        =
-        <right>
-          <string>
-            <string_start>&quot;&quot;&quot;</string_start>
-            <string_content>hello
-
-</string_content>
-            <string_end>&quot;&quot;&quot;</string_end>
-          </string>
-        </right>
-      </assignment>
-    </expression_statement>
-  </module>
-</Files>
+Files/File/module/expression_statement/assignment/
+  ├─ left/identifier = "msg"
+  ├─ "="
+  └─ right/string/
+        ├─ string_start = "\"\"\""
+        ├─ string_content = "hello"
+        └─ string_end = "\"\"\""

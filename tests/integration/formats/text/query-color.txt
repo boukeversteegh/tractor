@@ -1,40 +1,26 @@
 tests/integration/formats/sample.cs:1
-🟫<🟫🟦class🟦🟫>🟫
-  🟫<🟫🟦public🟦🟫/>🟫
-  class
-  🟫<🟫🟦name🟦🟫>Foo🟫🟫</🟫🟦name🟦🟫>🟫
-  🟫<🟫🟦body🟦🟫>🟫
-    {
-    🟫<🟫🟦property🟦🟫>🟫
-      🟫<🟫🟦public🟦🟫/>🟫
-      🟫<🟫🟦type🟦🟫>int🟫🟫</🟫🟦type🟦🟫>🟫
-      🟫<🟫🟦name🟦🟫>Bar🟫🟫</🟫🟦name🟦🟫>🟫
-      🟫<🟫🟦accessors🟦🟫>🟫
-        {
-        🟫<🟫🟦accessor🟦🟫>get;🟫🟫</🟫🟦accessor🟦🟫>🟫
-        🟫<🟫🟦accessor🟦🟫>set;🟫🟫</🟫🟦accessor🟦🟫>🟫
-        }
-      🟫</🟫🟦accessors🟦🟫>🟫
-    🟫</🟫🟦property🟦🟫>🟫
-    🟫<🟫🟦method🟦🟫>🟫
-      🟫<🟫🟦public🟦🟫/>🟫
-      🟫<🟫🟦returns🟦🟫>🟫
-        🟫<🟫🟦type🟦🟫>void🟫🟫</🟫🟦type🟦🟫>🟫
-      🟫</🟫🟦returns🟦🟫>🟫
-      🟫<🟫🟦name🟦🟫>Baz🟫🟫</🟫🟦name🟦🟫>🟫
-      🟫<🟫🟦parameters🟦🟫>()🟫🟫</🟫🟦parameters🟦🟫>🟫
-      🟫<🟫🟦body🟦🟫>🟫
-        🟫<🟫🟦block🟦🟫>{ }🟫🟫</🟫🟦block🟦🟫>🟫
-      🟫</🟫🟦body🟦🟫>🟫
-    🟫</🟫🟦method🟦🟫>🟫
-    }
-  🟫</🟫🟦body🟦🟫>🟫
-🟫</🟫🟦class🟦🟫>🟫
+🟦class[public]🟦🟫/🟫
+🟫  ├─ 🟫🟨"class"🟨
+🟫  ├─ 🟫🟦name🟦🟫 = 🟫🟨"Foo"🟨
+🟫  └─ 🟫🟦body🟦🟫/🟫
+      🟫  ├─ 🟫🟨"{"🟨
+      🟫  ├─ 🟫🟦property[public]🟦🟫/🟫
+            🟫  ├─ 🟫🟦type🟦🟫 = 🟫🟨"int"🟨
+            🟫  ├─ 🟫🟦name🟦🟫 = 🟫🟨"Bar"🟨
+            🟫  └─ 🟫🟦accessors🟦🟫/🟫
+                  🟫  ├─ 🟫🟨"{"🟨
+                  🟫  ├─ 🟫🟦accessor🟦🟫 = 🟫🟨"get;"🟨
+                  🟫  ├─ 🟫🟦accessor🟦🟫 = 🟫🟨"set;"🟨
+                  🟫  └─ 🟫🟨"}"🟨
+      🟫  ├─ 🟫🟦method[public]🟦🟫/🟫
+            🟫  ├─ 🟫🟦returns/type🟦🟫 = 🟫🟨"void"🟨
+            🟫  ├─ 🟫🟦name🟦🟫 = 🟫🟨"Baz"🟨
+            🟫  ├─ 🟫🟦parameters🟦🟫 = 🟫🟨"()"🟨
+            🟫  └─ 🟫🟦body/block🟦🟫 = 🟫🟨"{ }"🟨
+      🟫  └─ 🟫🟨"}"🟨
 
 tests/integration/formats/sample.cs:7
-🟫<🟫🟦class🟦🟫>🟫
-  🟫<🟫🟦public🟦🟫/>🟫
-  class
-  🟫<🟫🟦name🟦🟫>Qux🟫🟫</🟫🟦name🟦🟫>🟫
-  🟫<🟫🟦body🟦🟫>{ }🟫🟫</🟫🟦body🟦🟫>🟫
-🟫</🟫🟦class🟦🟫>🟫
+🟦class[public]🟦🟫/🟫
+🟫  ├─ 🟫🟨"class"🟨
+🟫  ├─ 🟫🟦name🟦🟫 = 🟫🟨"Qux"🟨
+🟫  └─ 🟫🟦body🟦🟫 = 🟫🟨"{ }"🟨

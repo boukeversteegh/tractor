@@ -1,46 +1,30 @@
 tests/integration/languages/yaml/sample.yaml:1
-<Files>
-  <file>tests/integration/languages/yaml/sample.yaml</file>
-  <document>
-    <name>my-app</name>
-    <version>1.0.0</version>
-    <database>
-      <host>localhost</host>
-      <port>5432</port>
-      <credentials>
-        <username>admin</username>
-        <password>secret</password>
-      </credentials>
-    </database>
-    <servers>
-      <name>web-1</name>
-      <port>8080</port>
-    </servers>
-    <servers>
-      <name>web-2</name>
-      <port>8081</port>
-    </servers>
-    <features>auth</features>
-    <features>logging</features>
-    <features>metrics</features>
-    <nested>
-      <level1>
-        <level2>
-          <value>deep</value>
-        </level2>
-      </level1>
-    </nested>
-    <flow_map>
-      <x>1</x>
-      <y>2</y>
-    </flow_map>
-    <flow_list>a</flow_list>
-    <flow_list>b</flow_list>
-    <flow_list>c</flow_list>
-    <quoted>hello world</quoted>
-    <multiline>line one
-line two</multiline>
-    <first_name key="first name">Alice</first_name>
-    <last_name key="last name">Bob</last_name>
-  </document>
-</Files>
+Files/File/document/
+  ├─ name = "my-app"
+  ├─ version = "1.0.0"
+  ├─ database/
+        ├─ host = "localhost"
+        ├─ port = "5432"
+        └─ credentials/
+              ├─ username = "admin"
+              └─ password = "secret"
+  ├─ servers/
+        ├─ name = "web-1"
+        └─ port = "8080"
+  ├─ servers/
+        ├─ name = "web-2"
+        └─ port = "8081"
+  ├─ features = "auth"
+  ├─ features = "logging"
+  ├─ features = "metrics"
+  ├─ nested/level1/level2/value = "deep"
+  ├─ flow_map/
+        ├─ x = "1"
+        └─ y = "2"
+  ├─ flow_list = "a"
+  ├─ flow_list = "b"
+  ├─ flow_list = "c"
+  ├─ quoted = "hello world"
+  ├─ multiline = "line one\nline two"
+  ├─ first_name[@key="first name"] = "Alice"
+  └─ last_name[@key="last name"] = "Bob"

@@ -1,16 +1,11 @@
 tests/integration/languages/yaml/multi.yaml:1
-<Files>
-  <file>tests/integration/languages/yaml/multi.yaml</file>
-  <document>
-    <name>doc1</name>
-    <value>one</value>
-  </document>
-  <document>
-    <name>doc2</name>
-    <value>two</value>
-  </document>
-  <document>
-    <name>doc3</name>
-    <value>three</value>
-  </document>
-</Files>
+Files/File/
+  ├─ document/
+        ├─ name = "doc1"
+        └─ value = "one"
+  ├─ document/
+        ├─ name = "doc2"
+        └─ value = "two"
+  └─ document/
+        ├─ name = "doc3"
+        └─ value = "three"
