@@ -58,9 +58,17 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
         body.push_str(&format!("  <group-by>{}</group-by>\n", escape(group)));
     }
     if !report.results.is_empty() {
-        body.push_str("  <results>\n");
-        render_xml_results(&mut body, &report.results, view, "    ", &tree_opts, dimensions);
-        body.push_str("  </results>\n");
+        // Render into a temp buffer first so we can skip the <results> wrapper
+        // entirely when the view selects no per-match fields (e.g. `-v summary`
+        // or `-v query`). json/yaml skip empty objects automatically via serde;
+        // xml needs to do it explicitly to stay consistent across formats.
+        let mut results_body = String::new();
+        render_xml_results(&mut results_body, &report.results, view, "    ", &tree_opts, dimensions);
+        if !results_body.is_empty() {
+            body.push_str("  <results>\n");
+            body.push_str(&results_body);
+            body.push_str("  </results>\n");
+        }
     }
 
     body.push_str("</report>\n");

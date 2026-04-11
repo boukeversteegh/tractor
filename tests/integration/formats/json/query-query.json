@@ -3,9 +3,5 @@
     "results": 2,
     "files": 1
   },
-  "query": "//class",
-  "results": [
-    {},
-    {}
-  ]
+  "query": "//class"
 }
