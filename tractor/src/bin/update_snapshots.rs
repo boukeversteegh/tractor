@@ -100,6 +100,14 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
         "check", "tests/integration/formats/sample.cs", "-x", "class",
         "--reason", "class found", "-f", "xml",
     ]),
+    ("xml/query-summary.xml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-v", "summary", "-f", "xml",
+    ]),
+    ("xml/query-query.xml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-v", "query", "-f", "xml",
+    ]),
     // -f yaml
     ("yaml/query.yaml", &[
         "query", "tests/integration/formats/sample.cs", "-x", "class", "-f", "yaml",
@@ -107,6 +115,14 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
     ("yaml/check.yaml", &[
         "check", "tests/integration/formats/sample.cs", "-x", "class",
         "--reason", "class found", "-f", "yaml",
+    ]),
+    ("yaml/query-summary.yaml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-v", "summary", "-f", "yaml",
+    ]),
+    ("yaml/query-query.yaml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-v", "query", "-f", "yaml",
     ]),
     // --depth snapshots: verify tree truncation at various depths
     ("text/query-depth1.txt", &[
