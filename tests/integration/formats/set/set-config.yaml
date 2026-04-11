@@ -1,0 +1,7 @@
+set:
+  files: ["sample.yaml"]
+  mappings:
+    - xpath: "//database/host"
+      value: "db.example.com"
+    - xpath: "//database/port"
+      value: "5433"

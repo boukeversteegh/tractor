@@ -100,6 +100,14 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
         "check", "tests/integration/formats/sample.cs", "-x", "class",
         "--reason", "class found", "-f", "xml",
     ]),
+    ("xml/query-summary.xml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-v", "summary", "-f", "xml",
+    ]),
+    ("xml/query-query.xml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-v", "query", "-f", "xml",
+    ]),
     // -f yaml
     ("yaml/query.yaml", &[
         "query", "tests/integration/formats/sample.cs", "-x", "class", "-f", "yaml",
@@ -107,6 +115,14 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
     ("yaml/check.yaml", &[
         "check", "tests/integration/formats/sample.cs", "-x", "class",
         "--reason", "class found", "-f", "yaml",
+    ]),
+    ("yaml/query-summary.yaml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-v", "summary", "-f", "yaml",
+    ]),
+    ("yaml/query-query.yaml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-v", "query", "-f", "yaml",
     ]),
     // --depth snapshots: verify tree truncation at various depths
     ("text/query-depth1.txt", &[
@@ -264,6 +280,107 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
     ]),
 ];
 
+struct Mismatch {
+    path: String,
+    expected: String,
+    actual: String,
+    missing: bool,
+}
+
+impl Mismatch {
+    fn changed(path: &str, expected: &str, actual: &str) -> Self {
+        Self {
+            path: path.to_string(),
+            expected: expected.to_string(),
+            actual: actual.to_string(),
+            missing: false,
+        }
+    }
+
+    fn missing(path: &str, actual: &str) -> Self {
+        Self {
+            path: path.to_string(),
+            expected: String::new(),
+            actual: actual.to_string(),
+            missing: true,
+        }
+    }
+}
+
+/// Print a minimal line-based diff between expected and actual snapshot contents.
+///
+/// Uses a naive line-by-line alignment (no LCS): good enough for spotting the
+/// actual bytes that differ when CI fails, without pulling in a diff crate.
+fn print_mismatch(m: &Mismatch) {
+    println!("\x1b[1m--- {}\x1b[0m", m.path);
+    if m.missing {
+        println!("  (snapshot file missing — showing full actual output)");
+        println!("\x1b[32m+++ actual ({} bytes)\x1b[0m", m.actual.len());
+        for line in m.actual.lines().take(200) {
+            println!("\x1b[32m+ {}\x1b[0m", line);
+        }
+        if m.actual.lines().count() > 200 {
+            println!("  ... ({} more lines)", m.actual.lines().count() - 200);
+        }
+        println!();
+        return;
+    }
+
+    let expected: Vec<&str> = m.expected.lines().collect();
+    let actual: Vec<&str> = m.actual.lines().collect();
+    let max = expected.len().max(actual.len());
+    let mut printed = 0usize;
+    let mut suppressed = 0usize;
+    for i in 0..max {
+        let e = expected.get(i).copied();
+        let a = actual.get(i).copied();
+        match (e, a) {
+            (Some(e), Some(a)) if e == a => {
+                // Print a little context around diffs (max 2 lines before/after shown
+                // naturally by nearby diffs). For simplicity skip equal lines entirely.
+                continue;
+            }
+            (Some(e), Some(a)) => {
+                if printed >= 80 {
+                    suppressed += 2;
+                    continue;
+                }
+                println!("\x1b[31m- {:4} {}\x1b[0m", i + 1, e);
+                println!("\x1b[32m+ {:4} {}\x1b[0m", i + 1, a);
+                printed += 2;
+            }
+            (Some(e), None) => {
+                if printed >= 80 {
+                    suppressed += 1;
+                    continue;
+                }
+                println!("\x1b[31m- {:4} {}\x1b[0m", i + 1, e);
+                printed += 1;
+            }
+            (None, Some(a)) => {
+                if printed >= 80 {
+                    suppressed += 1;
+                    continue;
+                }
+                println!("\x1b[32m+ {:4} {}\x1b[0m", i + 1, a);
+                printed += 1;
+            }
+            (None, None) => {}
+        }
+    }
+    if suppressed > 0 {
+        println!("  ... ({} more differing line(s) suppressed)", suppressed);
+    }
+    if !m.expected.ends_with('\n') || !m.actual.ends_with('\n') {
+        println!(
+            "  (trailing newline: expected={}, actual={})",
+            m.expected.ends_with('\n'),
+            m.actual.ends_with('\n')
+        );
+    }
+    println!();
+}
+
 fn main() {
     let check_mode = std::env::args().any(|a| a == "--check");
 
@@ -277,7 +394,7 @@ fn main() {
     let skip: HashSet<&str> = SKIP_EXTENSIONS.iter().copied().collect();
 
     let mut processed = 0;
-    let mut mismatches: Vec<String> = Vec::new();
+    let mut mismatches: Vec<Mismatch> = Vec::new();
 
     // --- Language parse-tree snapshots ---
 
@@ -324,15 +441,19 @@ fn main() {
             let raw_output = run_tractor(&tractor_bin, &path_str, &["-t", "raw"]);
 
             if check_mode {
-                if let Ok(existing) = fs::read_to_string(&xml_path) {
-                    if existing != output {
-                        mismatches.push(xml_path.clone());
+                match fs::read_to_string(&xml_path) {
+                    Ok(existing) if existing != output => {
+                        mismatches.push(Mismatch::changed(&xml_path, &existing, &output));
                     }
+                    Err(_) => mismatches.push(Mismatch::missing(&xml_path, &output)),
+                    _ => {}
                 }
-                if let Ok(existing) = fs::read_to_string(&raw_xml_path) {
-                    if existing != raw_output {
-                        mismatches.push(raw_xml_path.clone());
+                match fs::read_to_string(&raw_xml_path) {
+                    Ok(existing) if existing != raw_output => {
+                        mismatches.push(Mismatch::changed(&raw_xml_path, &existing, &raw_output));
                     }
+                    Err(_) => mismatches.push(Mismatch::missing(&raw_xml_path, &raw_output)),
+                    _ => {}
                 }
             } else {
                 fs::write(&xml_path, &output).expect("cannot write .xml snapshot");
@@ -371,12 +492,12 @@ fn main() {
         );
 
         if check_mode {
-            if let Ok(existing) = fs::read_to_string(&snap_path) {
-                if existing != output {
-                    mismatches.push(snap_path_str.clone());
+            match fs::read_to_string(&snap_path) {
+                Ok(existing) if existing != output => {
+                    mismatches.push(Mismatch::changed(&snap_path_str, &existing, &output));
                 }
-            } else {
-                mismatches.push(format!("{} (missing)", snap_path_str));
+                Err(_) => mismatches.push(Mismatch::missing(&snap_path_str, &output)),
+                _ => {}
             }
         } else {
             fs::write(&snap_path, &output).expect("cannot write output-format snapshot");
@@ -390,10 +511,15 @@ fn main() {
         if mismatches.is_empty() {
             println!("\x1b[32m✓\x1b[0m Snapshots match ({} fixtures checked)", processed);
         } else {
-            println!("\x1b[31m✗\x1b[0m Snapshot mismatch:");
+            println!("\x1b[31m✗\x1b[0m Snapshot mismatch ({} file(s)):", mismatches.len());
             println!();
             for m in &mismatches {
-                println!("  {}", m);
+                print_mismatch(m);
+            }
+            println!("Summary:");
+            for m in &mismatches {
+                let tag = if m.missing { " (missing)" } else { "" };
+                println!("  {}{}", m.path, tag);
             }
             println!();
             println!("If intentional, run 'task test:snapshots:update' to regenerate.");

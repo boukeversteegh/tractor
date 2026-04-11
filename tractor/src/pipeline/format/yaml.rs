@@ -1,7 +1,7 @@
 use serde_json::Value;
 use tractor_core::{report::Report, RenderOptions};
 use super::options::{ViewSet};
-use super::json::{render_results_json, emit_report_metadata};
+use super::json::{emit_report_metadata, outputs_to_json, render_results_json};
 use super::shared::should_show_totals;
 
 pub fn render_yaml_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, dimensions: &[&str]) -> String {
@@ -9,6 +9,10 @@ pub fn render_yaml_report(report: &Report, view: &ViewSet, render_opts: &RenderO
 
     if should_show_totals(report, view) {
         emit_report_metadata(&mut root, report);
+    }
+
+    if !report.outputs.is_empty() {
+        root.insert("outputs".into(), outputs_to_json(&report.outputs));
     }
 
     // Group dimension (before results)

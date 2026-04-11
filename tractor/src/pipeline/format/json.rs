@@ -1,13 +1,21 @@
 use serde_json::{json, Value};
 use tractor_core::{report::{Report, ReportMatch, ResultItem}, normalize_path, xml_node_to_json, RenderOptions};
 use super::options::{ViewField, ViewSet};
-use super::shared::{should_show_totals, should_emit_file, should_emit_command, should_emit_rule_id, render_fields_for_match};
+use super::shared::{render_fields_for_match, should_emit_command, should_emit_file, should_emit_rule_id, should_show_totals};
 
 pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, dimensions: &[&str]) -> String {
     let mut root = serde_json::Map::new();
 
     if should_show_totals(report, view) {
         emit_report_metadata(&mut root, report);
+    }
+
+    // Top-level captured outputs — honest view of the report model.
+    // Any file-bound outputs that matched a file-group will have already
+    // been moved into their group during `with_grouping`; what remains
+    // here is genuinely ungrouped output (stdin payloads or orphans).
+    if !report.outputs.is_empty() {
+        root.insert("outputs".into(), outputs_to_json(&report.outputs));
     }
 
     // Group dimension (before results, so readers see the grouping context first)
@@ -24,6 +32,38 @@ pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderO
     }
 
     serde_json::to_string_pretty(&Value::Object(root)).unwrap_or_else(|_| "{}".to_string())
+}
+
+/// Serialize a list of captured outputs as a JSON array of objects.
+/// Each object has `content` and, if set, `file`.
+pub fn outputs_to_json(outputs: &[tractor_core::report::ReportOutput]) -> Value {
+    Value::Array(outputs.iter().map(|o| {
+        output_to_json(o)
+    }).collect())
+}
+
+fn output_to_json(output: &tractor_core::report::ReportOutput) -> Value {
+    let mut obj = serde_json::Map::new();
+    if let Some(ref file) = output.file {
+        obj.insert("file".into(), json!(file));
+    }
+    obj.insert("content".into(), json!(output.content));
+    Value::Object(obj)
+}
+
+fn group_outputs_to_json(
+    outputs: &[tractor_core::report::ReportOutput],
+    is_file_group: bool,
+) -> (&'static str, Value) {
+    if is_file_group && outputs.len() == 1 {
+        let output = &outputs[0];
+        if output.file.is_none() {
+            return ("output", json!(output.content));
+        }
+        return ("output", output_to_json(output));
+    }
+
+    ("outputs", outputs_to_json(outputs))
 }
 
 /// Emit success, totals, expected, query as top-level fields.
@@ -60,9 +100,16 @@ pub fn render_results_json(
     render_opts: &RenderOptions,
     dimensions: &[&str],
 ) -> Vec<Value> {
-    items.iter().map(|item| {
+    items.iter().filter_map(|item| {
         match item {
-            ResultItem::Match(rm) => match_to_value(rm, view, render_opts, dimensions),
+            ResultItem::Match(rm) => {
+                let value = match_to_value(rm, view, render_opts, dimensions);
+                if value.as_object().is_some_and(|obj| obj.is_empty()) {
+                    None
+                } else {
+                    Some(value)
+                }
+            }
             ResultItem::Group(sub) => {
                 let mut obj = serde_json::Map::new();
                 // Hoisted group key
@@ -74,18 +121,18 @@ pub fn render_results_json(
                 if let Some(ref group) = sub.group {
                     obj.insert("group".into(), json!(group));
                 }
-                // Group-level output (set stdout mode)
-                if view.has(ViewField::Output) {
-                    if let Some(ref content) = sub.output_content {
-                        obj.insert("output".into(), json!(content));
-                    }
+                // Group-level captured outputs — honest view of the report model.
+                // Rendered unconditionally when non-empty, independent of ViewField::Output.
+                if !sub.outputs.is_empty() {
+                    let (key, value) = group_outputs_to_json(&sub.outputs, sub.file.is_some());
+                    obj.insert(key.into(), value);
                 }
                 // Recurse
                 let sub_results = render_results_json(&sub.results, view, render_opts, dimensions);
                 if !sub_results.is_empty() {
                     obj.insert("results".into(), Value::Array(sub_results));
                 }
-                Value::Object(obj)
+                Some(Value::Object(obj))
             }
         }
     }).collect()
@@ -181,7 +228,6 @@ pub fn match_to_value(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tractor_core::report::{Report, Totals};
     use tractor_core::xpath::XmlNode;
 
     fn make_plain_match(value: &str) -> ReportMatch {
@@ -255,5 +301,40 @@ mod tests {
         assert!(match_tree.is_object(), "Map tree should be a JSON object in report output, got: {}", match_tree);
         assert_eq!(match_tree["name"], "foo");
         assert_eq!(match_tree["count"], 3.0);
+    }
+
+    #[test]
+    fn file_group_with_single_output_renders_singular_output() {
+        let report = Report {
+            success: Some(true),
+            totals: None,
+            expected: None,
+            query: None,
+            outputs: vec![],
+            results: vec![ResultItem::Group(Box::new(Report {
+                success: None,
+                totals: None,
+                expected: None,
+                query: None,
+                outputs: vec![tractor_core::report::ReportOutput {
+                    file: None,
+                    content: "hello\n".to_string(),
+                }],
+                results: vec![],
+                group: None,
+                file: Some("test.xml".to_string()),
+                command: None,
+                rule_id: None,
+            }))],
+            group: Some("file".to_string()),
+            file: None,
+            command: None,
+            rule_id: None,
+        };
+
+        let rendered = render_json_report(&report, &ViewSet::new(vec![]), &RenderOptions::new(), &[]);
+        let parsed: serde_json::Value = serde_json::from_str(&rendered).unwrap();
+        assert_eq!(parsed["results"][0]["output"], "hello\n");
+        assert!(parsed["results"][0].get("outputs").is_none());
     }
 }

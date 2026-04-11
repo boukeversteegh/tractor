@@ -3,3 +3,16 @@ rustc-wrapper = "sccache"
 
 [target.wasm32-unknown-unknown]
 rustflags = ["--cfg", "getrandom_backend=\"wasm_js\""]
+
+# Windows MSVC default main-thread stack is 1 MiB, which overflows when xee
+# evaluates deeply-nested XPath map/array constructors (e.g. the
+# query-map-sequence-value snapshot case). Linux defaults to 8 MiB and never
+# tripped this locally. Reserve 16 MiB so tractor matches Linux behavior.
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "link-arg=/STACK:16777216"]
+
+[target.i686-pc-windows-msvc]
+rustflags = ["-C", "link-arg=/STACK:16777216"]
+
+[target.aarch64-pc-windows-msvc]
+rustflags = ["-C", "link-arg=/STACK:16777216"]

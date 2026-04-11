@@ -6,6 +6,16 @@
     <files>1</files>
     <updated>2</updated>
   </totals>
+  <outputs>
+    <output file="tests/integration/formats/set/sample.yaml">database:
+  host: db.example.com
+  port: 5432
+</output>
+    <output file="tests/integration/formats/set/sample.yaml">database:
+  host: localhost
+  port: 5433
+</output>
+  </outputs>
   <group-by>command</group-by>
   <results>
     <group command="set">

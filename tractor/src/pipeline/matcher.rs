@@ -7,7 +7,7 @@ use tractor_core::{
     detect_language,
     language_info::parse_language,
     output::{render_document, RenderOptions},
-    parse_to_documents, parse_string_to_documents,
+    parse_to_documents,
     report::{Report, ReportMatch, Severity, DiagnosticOrigin},
     rule::{RuleSet, GlobMatcher},
     xpath::validate_xpath,
@@ -16,27 +16,6 @@ use crate::filter::ResultFilter;
 
 use super::context::RunContext;
 use super::format::{ViewField, ViewSet};
-
-// ---------------------------------------------------------------------------
-// Batch utility
-// ---------------------------------------------------------------------------
-
-/// Split a slice into exponentially growing batches, capped at a maximum.
-pub fn exponential_batches<T>(items: &[T], num_threads: usize) -> Vec<&[T]> {
-    let mut batches = Vec::new();
-    let mut start = 0;
-    let mut batch_size = num_threads.max(1);
-    let max_batch_size = num_threads * 8;
-
-    while start < items.len() {
-        let end = (start + batch_size).min(items.len());
-        batches.push(&items[start..end]);
-        start = end;
-        batch_size = (batch_size * 2).min(max_batch_size);
-    }
-
-    batches
-}
 
 // ---------------------------------------------------------------------------
 // XPath validation
@@ -83,97 +62,6 @@ pub fn validate_xpath_diagnostic(xpath_expr: &NormalizedXpath, command: &str) ->
         status: None,
         output: None,
     })
-}
-
-// ---------------------------------------------------------------------------
-// Query pipeline
-// ---------------------------------------------------------------------------
-
-pub fn query_inline_source(
-    ctx: &RunContext,
-    source: &str,
-    lang: &str,
-    xpath_expr: &NormalizedXpath,
-) -> Result<Vec<Match>, Box<dyn std::error::Error>> {
-    let mut result = parse_string_to_documents(
-        source, lang, "<stdin>".to_string(), ctx.tree_mode, ctx.ignore_whitespace
-    )?;
-
-    let matches = result.query(xpath_expr.as_str())?;
-
-    let matches = if let Some(limit) = ctx.limit {
-        matches.into_iter().take(limit).collect()
-    } else {
-        matches
-    };
-
-    Ok(matches)
-}
-
-pub fn query_files_batched(
-    ctx: &RunContext,
-    files: &[String],
-    xpath_expr: &NormalizedXpath,
-    collect: bool,
-) -> Result<(usize, Vec<Match>), Box<dyn std::error::Error>> {
-    let batches = exponential_batches(files, ctx.concurrency);
-    let mut total_matches = 0usize;
-    let mut remaining_limit = ctx.limit;
-    let mut all_matches: Vec<Match> = Vec::new();
-
-    for batch in batches {
-        if remaining_limit == Some(0) {
-            break;
-        }
-
-        let mut batch_matches: Vec<Match> = batch
-            .par_iter()
-            .filter_map(|file_path| {
-                let mut result = match parse_to_documents(
-                    std::path::Path::new(file_path),
-                    ctx.lang.as_deref(),
-                    ctx.tree_mode,
-                    ctx.ignore_whitespace,
-                    ctx.parse_depth,
-                ) {
-                    Ok(r) => r,
-                    Err(e) => {
-                        if ctx.verbose {
-                            eprintln!("warning: {}: {}", file_path, e);
-                        }
-                        return None;
-                    }
-                };
-
-                match result.query(xpath_expr.as_str()) {
-                    Ok(matches) => Some(matches),
-                    Err(e) => {
-                        if ctx.verbose {
-                            eprintln!("warning: {}: query error: {}", file_path, e);
-                        }
-                        None
-                    }
-                }
-            })
-            .flatten()
-            .collect();
-
-        batch_matches.sort_by(|a, b| (&a.file, a.line, a.column).cmp(&(&b.file, b.line, b.column)));
-
-        if let Some(limit) = remaining_limit {
-            batch_matches.truncate(limit);
-            remaining_limit = Some(limit.saturating_sub(batch_matches.len()));
-        }
-
-        total_matches += batch_matches.len();
-
-        if collect {
-            all_matches.extend(batch_matches);
-        }
-        // collect=false: streaming placeholder for future large-repo optimization
-    }
-
-    Ok((total_matches, all_matches))
 }
 
 // ---------------------------------------------------------------------------

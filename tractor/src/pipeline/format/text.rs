@@ -20,9 +20,9 @@ use super::shared::{should_show_totals, render_fields_for_match};
 pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, _dimensions: &[&str]) -> String {
     let mut out = String::new();
 
-    // Set stdout mode: groups with output_content — render group by group.
+    // Set stdout mode: groups with captured outputs — render group by group.
     let has_group_output = view.has(ViewField::Output) && report.results.iter().any(|item| {
-        matches!(item, ResultItem::Group(g) if g.output_content.is_some())
+        matches!(item, ResultItem::Group(g) if !g.outputs.is_empty())
     });
     if has_group_output {
         out.push_str(&render_set_stdout_results(&report.results, view, render_opts));
@@ -87,6 +87,7 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
     // Skip for file-less diagnostics (no meaningful location) and stdin input.
     let file = group_file.unwrap_or(&rm.file);
     let has_location = view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
+    let inline_status_reason = should_inline_status_reason(view, rm);
     if has_location && !file.is_empty() && file != "<stdin>" {
         let mut loc = String::new();
         if view.has(ViewField::File) {
@@ -104,6 +105,12 @@ fn append_match(out: &mut String, rm: &ReportMatch, view: &ViewSet, render_opts:
             if let Some(ref status) = rm.status {
                 loc.push_str(": ");
                 loc.push_str(status);
+                if inline_status_reason {
+                    if let Some(ref reason) = rm.reason {
+                        loc.push(' ');
+                        loc.push_str(reason);
+                    }
+                }
             }
         }
         out.push_str(&loc);
@@ -174,6 +181,9 @@ fn render_field(
             }
         }
         ViewField::Reason => {
+            if should_inline_status_reason(view, rm) {
+                return;
+            }
             if let Some(ref reason) = rm.reason {
                 // Render as "severity(origin): reason" when available
                 if let Some(severity) = rm.severity {
@@ -203,6 +213,12 @@ fn render_field(
             if !has_location {
                 if let Some(ref status) = rm.status {
                     out.push_str(status);
+                    if should_inline_status_reason(view, rm) {
+                        if let Some(ref reason) = rm.reason {
+                            out.push(' ');
+                            out.push_str(reason);
+                        }
+                    }
                     out.push('\n');
                 }
             }
@@ -312,7 +328,10 @@ fn format_summary(totals: &Totals, success: Option<bool>, expected: Option<&str>
 // ---------------------------------------------------------------------------
 
 /// Collect leaf matches with their inherited file context from the results tree.
-fn collect_matches_with_file<'a>(items: &'a [ResultItem], parent_file: Option<&'a str>) -> Vec<(Option<&'a str>, &'a ReportMatch)> {
+fn collect_matches_with_file<'a>(
+    items: &'a [ResultItem],
+    parent_file: Option<&'a str>,
+) -> Vec<(Option<&'a str>, &'a ReportMatch)> {
     let mut out = Vec::new();
     for item in items {
         match item {
@@ -326,7 +345,15 @@ fn collect_matches_with_file<'a>(items: &'a [ResultItem], parent_file: Option<&'
     out
 }
 
-/// Render set stdout mode from results tree (groups with output_content).
+fn should_inline_status_reason(view: &ViewSet, rm: &ReportMatch) -> bool {
+    view.has(ViewField::Status)
+        && view.has(ViewField::Reason)
+        && rm.status.is_some()
+        && rm.reason.is_some()
+        && rm.severity.is_none()
+}
+
+/// Render set stdout mode from results tree (groups with captured outputs).
 fn render_set_stdout_results(items: &[ResultItem], view: &ViewSet, render_opts: &RenderOptions) -> String {
     let mut out = String::new();
     let has_location = view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
@@ -343,11 +370,70 @@ fn render_set_stdout_results(items: &[ResultItem], view: &ViewSet, render_opts: 
                     }
                 }
             }
-            // Group-level output (the full modified file content)
-            if let Some(ref content) = g.output_content {
-                out.push_str(content);
+            // Group-level captured outputs (full modified file content)
+            for captured in &g.outputs {
+                out.push_str(&captured.content);
             }
         }
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::render_text_report;
+    use crate::pipeline::format::{ViewField, ViewSet};
+    use tractor_core::report::{Report, ReportMatch, ResultItem, Totals};
+    use tractor_core::RenderOptions;
+
+    #[test]
+    fn render_text_inlines_status_and_reason_when_both_are_selected() {
+        let report = Report {
+            success: Some(true),
+            totals: Some(Totals {
+                results: 1,
+                files: 1,
+                fatals: 0,
+                errors: 0,
+                warnings: 0,
+                infos: 0,
+                updated: 1,
+                unchanged: 0,
+            }),
+            expected: None,
+            query: None,
+            outputs: vec![],
+            results: vec![ResultItem::Match(ReportMatch {
+                file: "app-config.json".to_string(),
+                line: 3,
+                column: 13,
+                end_line: 3,
+                end_column: 25,
+                command: "set".to_string(),
+                tree: None,
+                value: Some("db.prod.internal".to_string()),
+                source: None,
+                lines: None,
+                reason: Some("//database/host".to_string()),
+                severity: None,
+                message: None,
+                origin: None,
+                rule_id: None,
+                status: Some("updated".to_string()),
+                output: None,
+            })],
+            group: None,
+            file: None,
+            command: None,
+            rule_id: None,
+        };
+
+        let view = ViewSet::new(vec![ViewField::File, ViewField::Line, ViewField::Status, ViewField::Reason]);
+        let rendered = render_text_report(&report, &view, &RenderOptions::default(), &[]);
+
+        assert_eq!(
+            rendered,
+            "app-config.json:3: updated //database/host\nSet 1 match in 1 file\n"
+        );
+    }
 }

@@ -48,7 +48,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Explore (no XPath) = query with implicit "/*" — selects the document root.
-    let default_xpath = NormalizedXpath::new("/*");
+    let default_xpath = NormalizedXpath::new("/");
     let xpath_expr = ctx.xpath.as_ref().unwrap_or(&default_xpath);
 
     // Build the query operation for either files or inline source.
