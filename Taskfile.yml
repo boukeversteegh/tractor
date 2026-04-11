@@ -95,18 +95,16 @@ tasks:
       - cargo run --release -p tractor --bin tractor -- {{.CLI_ARGS}}
 
   test:
-    desc: Run all tests (Rust, TypeScript, integration)
+    desc: Run all tests (Rust and web)
     cmds:
       - cargo test --workspace
       - task: web:test
       - task: test:snapshots
-      - task: test:integration
 
   test:integration:
-    desc: Run integration tests
-    deps: [build]
+    desc: Run CLI integration tests
     cmds:
-      - bash tests/integration/test.sh
+      - cargo test -p tractor --test cli
 
   test:snapshots:
     desc: Check that XML snapshots match current tractor output
