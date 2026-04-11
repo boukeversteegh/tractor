@@ -751,11 +751,30 @@ fn candidate_path_strings(path: &Path) -> Vec<String> {
     let raw = path.to_string_lossy().to_string();
     let mut candidates = vec![raw.clone()];
 
-    if let Some(stripped) = strip_windows_verbatim_prefix(&raw) {
-        candidates.push(stripped);
+    if let Ok(canonical) = fs::canonicalize(path) {
+        let canonical = canonical.to_string_lossy().to_string();
+        if canonical != raw {
+            candidates.push(canonical);
+        }
     }
 
-    candidates
+    if let Some(file_name) = path.file_name() {
+        let temp_joined = std::env::temp_dir().join(file_name);
+        let temp_joined = temp_joined.to_string_lossy().to_string();
+        if !candidates.contains(&temp_joined) {
+            candidates.push(temp_joined);
+        }
+    }
+
+    let mut expanded = Vec::new();
+    for candidate in candidates {
+        expanded.push(candidate.clone());
+        if let Some(stripped) = strip_windows_verbatim_prefix(&candidate) {
+            expanded.push(stripped);
+        }
+    }
+
+    expanded
 }
 
 fn strip_windows_verbatim_prefix(path: &str) -> Option<String> {
@@ -785,6 +804,20 @@ mod support_tests {
         assert_eq!(
             "app-config.json:3:13: note",
             replace_path_prefix(output, path, "")
+        );
+    }
+
+    #[test]
+    fn replace_path_prefix_matches_plain_temp_dir_joined_from_basename() {
+        let temp_path = std::env::temp_dir().join(".tmp123");
+        let output = format!(
+            "{}/app-config.json:3:13: note",
+            temp_path.to_string_lossy().replace('\\', "/")
+        );
+
+        assert_eq!(
+            "app-config.json:3:13: note",
+            replace_path_prefix(&output, Path::new(r"\\?\C:\different\spelling\.tmp123"), "")
         );
     }
 }
