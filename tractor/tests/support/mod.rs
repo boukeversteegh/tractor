@@ -794,7 +794,7 @@ fn push_variant(variants: &mut Vec<String>, value: String) {
 #[cfg(test)]
 mod support_tests {
     use super::replace_path_prefix;
-    use std::path::Path;
+    use std::path::{Path, PathBuf};
 
     #[test]
     fn replace_path_prefix_matches_windows_verbatim_paths() {
@@ -814,10 +814,15 @@ mod support_tests {
             "{}/app-config.json:3:13: note",
             temp_path.to_string_lossy().replace('\\', "/")
         );
+        let aliased_path = if cfg!(windows) {
+            PathBuf::from(r"X:\different\spelling\.tmp123")
+        } else {
+            PathBuf::from("/different/spelling/.tmp123")
+        };
 
         assert_eq!(
             "app-config.json:3:13: note",
-            replace_path_prefix(&output, Path::new(r"\\?\C:\different\spelling\.tmp123"), "")
+            replace_path_prefix(&output, &aliased_path, "")
         );
     }
 }
