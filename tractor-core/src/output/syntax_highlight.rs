@@ -456,16 +456,22 @@ pub fn highlight_lines(
         let line_content = &source_lines[line_idx];
         let mut current_color: Option<&'static str> = None;
         let mut continuation_color = None;
+        let mut seen_non_whitespace = false;
 
         // Process each character
         for (char_offset, ch) in line_content.char_indices() {
             let col = (char_offset + 1) as u32; // 1-based
 
-            let explicit_color = find_color_at(spans, line_num, col);
-            if continuation_color.is_none() && explicit_color.is_none() && !ch.is_whitespace() {
-                continuation_color = carry_color;
-            }
-            let new_color = explicit_color.or(continuation_color);
+            let new_color = if !seen_non_whitespace && ch.is_whitespace() {
+                None
+            } else {
+                seen_non_whitespace = true;
+                let explicit_color = find_color_at(spans, line_num, col);
+                if continuation_color.is_none() && explicit_color.is_none() {
+                    continuation_color = carry_color;
+                }
+                explicit_color.or(continuation_color)
+            };
 
             if new_color != current_color {
                 if current_color.is_some() {
@@ -621,6 +627,34 @@ mod tests {
             highlighted,
             format!(
                 "{green}// one{reset}\n\nusing",
+                green = ansi::GREEN,
+                reset = ansi::RESET
+            )
+        );
+    }
+
+    #[test]
+    fn highlight_lines_keeps_leading_indentation_uncolored() {
+        let spans = vec![SyntaxSpan {
+            start_line: 7,
+            start_col: 5,
+            end_line: 9,
+            end_col: 19,
+            category: SyntaxCategory::Comment,
+            depth: 0,
+        }];
+        let source_lines = vec![
+            "    /// <summary>".to_string(),
+            "    /// Example".to_string(),
+            "    /// </summary>".to_string(),
+        ];
+
+        let highlighted = highlight_lines(&source_lines, &spans, 7, 9);
+
+        assert_eq!(
+            highlighted,
+            format!(
+                "    {green}/// <summary>{reset}\n    {green}/// Example{reset}\n    {green}/// </summary>{reset}",
                 green = ansi::GREEN,
                 reset = ansi::RESET
             )

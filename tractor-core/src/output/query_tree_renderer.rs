@@ -484,23 +484,24 @@ fn emit_entry(
 ) {
     let mut text = String::new();
     if !is_root {
-        text.push_str(&render_prefix(options, ancestor_has_more_siblings));
-        text.push_str(&render_branch(options, is_last));
+        let mut chrome = render_prefix(ancestor_has_more_siblings);
+        chrome.push_str(render_branch(is_last));
+        text.push_str(&paint(options, ansi::DIM, &chrome));
     }
 
     text.push_str(&render_line(&entry.line, options, !entry.children.is_empty()));
     let continuation_text = if !is_root && entry.children.is_empty() {
-        let mut continuation = render_prefix(options, ancestor_has_more_siblings);
-        continuation.push_str(&render_branch_continuation(options, is_last));
-        continuation
+        let mut continuation = render_prefix(ancestor_has_more_siblings);
+        continuation.push_str(render_branch_continuation(is_last));
+        paint(options, ansi::DIM, &continuation)
     } else if !entry.children.is_empty() {
         let mut child_ancestors = ancestor_has_more_siblings.to_vec();
         if !is_root {
             child_ancestors.push(!is_last);
         }
-        let mut continuation = render_prefix(options, &child_ancestors);
-        continuation.push_str(&paint(options, ansi::DIM, "│"));
-        continuation
+        let mut continuation = render_prefix(&child_ancestors);
+        continuation.push('│');
+        paint(options, ansi::DIM, &continuation)
     } else {
         String::new()
     };
@@ -528,23 +529,21 @@ fn emit_entry(
     }
 }
 
-fn render_prefix(options: &RenderOptions, ancestor_has_more_siblings: &[bool]) -> String {
-    let mut prefix = paint(options, ansi::DIM, "  ");
+fn render_prefix(ancestor_has_more_siblings: &[bool]) -> String {
+    let mut prefix = String::from("  ");
     for &has_more_siblings in ancestor_has_more_siblings {
         let segment = if has_more_siblings { "│   " } else { "    " };
-        prefix.push_str(&paint(options, ansi::DIM, segment));
+        prefix.push_str(segment);
     }
     prefix
 }
 
-fn render_branch(options: &RenderOptions, is_last: bool) -> String {
-    let branch = if is_last { "└─ " } else { "├─ " };
-    paint(options, ansi::DIM, branch)
+fn render_branch(is_last: bool) -> &'static str {
+    if is_last { "└─ " } else { "├─ " }
 }
 
-fn render_branch_continuation(options: &RenderOptions, is_last: bool) -> String {
-    let branch = if is_last { "   " } else { "│  " };
-    paint(options, ansi::DIM, branch)
+fn render_branch_continuation(is_last: bool) -> &'static str {
+    if is_last { "   " } else { "│  " }
 }
 
 fn render_line(line: &RenderLine, options: &RenderOptions, has_children: bool) -> String {
@@ -903,6 +902,23 @@ mod tests {
                 "  └─ third = \"3\"\n"
             )
         );
+    }
+
+    #[test]
+    fn colors_tree_chrome_as_one_dim_span_per_row() {
+        let node = elem(
+            "root",
+            vec![
+                elem("first", vec![text("1")]),
+                elem("second", vec![text("2")]),
+            ],
+        );
+
+        let rendered = render_query_tree_node(&node, &RenderOptions::new().with_color(true));
+        let child_line = rendered.lines().nth(1).unwrap();
+
+        assert!(child_line.starts_with(&format!("{}  ├─ {}", ansi::DIM, ansi::RESET)));
+        assert!(!child_line.contains(&format!("{}  {}", ansi::RESET, ansi::DIM)));
     }
 
     #[test]
