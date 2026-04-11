@@ -737,13 +737,55 @@ fn replace_path_prefix(text: &str, path: &Path, replacement: &str) -> String {
 }
 
 fn path_variants(path: &Path) -> Vec<String> {
-    let native = path.to_string_lossy().to_string();
-    let forward = native.replace('\\', "/");
+    let mut variants = Vec::new();
 
-    if native == forward {
-        vec![native]
-    } else {
-        vec![native, forward]
+    for raw in candidate_path_strings(path) {
+        push_variant(&mut variants, raw.clone());
+        push_variant(&mut variants, raw.replace('\\', "/"));
+    }
+
+    variants
+}
+
+fn candidate_path_strings(path: &Path) -> Vec<String> {
+    let raw = path.to_string_lossy().to_string();
+    let mut candidates = vec![raw.clone()];
+
+    if let Some(stripped) = strip_windows_verbatim_prefix(&raw) {
+        candidates.push(stripped);
+    }
+
+    candidates
+}
+
+fn strip_windows_verbatim_prefix(path: &str) -> Option<String> {
+    path.strip_prefix(r"\\?\UNC\")
+        .map(|rest| format!(r"\\{rest}"))
+        .or_else(|| path.strip_prefix(r"\\?\").map(str::to_string))
+        .or_else(|| path.strip_prefix("//?/UNC/").map(|rest| format!("//{rest}")))
+        .or_else(|| path.strip_prefix("//?/").map(str::to_string))
+}
+
+fn push_variant(variants: &mut Vec<String>, value: String) {
+    if !variants.contains(&value) {
+        variants.push(value);
+    }
+}
+
+#[cfg(test)]
+mod support_tests {
+    use super::replace_path_prefix;
+    use std::path::Path;
+
+    #[test]
+    fn replace_path_prefix_matches_windows_verbatim_paths() {
+        let path = Path::new(r"\\?\C:\Users\runneradmin\AppData\Local\Temp\.tmp123");
+        let output = "C:/Users/runneradmin/AppData/Local/Temp/.tmp123/app-config.json:3:13: note";
+
+        assert_eq!(
+            "app-config.json:3:13: note",
+            replace_path_prefix(output, path, "")
+        );
     }
 }
 
