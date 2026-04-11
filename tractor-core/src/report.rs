@@ -485,6 +485,12 @@ impl Report {
 
         // Then move our file-bound outputs down into matching file-groups.
         let own = std::mem::take(&mut self.outputs);
+        let mut file_counts: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+        for output in &own {
+            if let Some(ref file) = output.file {
+                *file_counts.entry(normalize_path(file)).or_insert(0) += 1;
+            }
+        }
         let mut remaining: Vec<ReportOutput> = Vec::new();
         for output in own {
             let Some(ref file) = output.file else {
@@ -492,6 +498,10 @@ impl Report {
                 continue;
             };
             let normalized = normalize_path(file);
+            if file_counts.get(&normalized).copied().unwrap_or(0) > 1 {
+                remaining.push(output);
+                continue;
+            }
             let mut placed = false;
             for item in &mut self.results {
                 if let ResultItem::Group(ref mut g) = item {
@@ -787,5 +797,33 @@ mod tests {
         assert_eq!(matches.len(), 1);
         assert!(matches[0].reason.is_none());
         assert!(matches[0].severity.is_none());
+    }
+
+    #[test]
+    fn duplicate_file_outputs_stay_at_report_root() {
+        let mut builder = ReportBuilder::new();
+        builder.set_no_verdict();
+        builder.add(make_report_match("config.yaml", 1, 1, "x"));
+        builder.add_outputs([
+            ReportOutput {
+                file: Some("config.yaml".to_string()),
+                content: "host: a\n".to_string(),
+            },
+            ReportOutput {
+                file: Some("config.yaml".to_string()),
+                content: "host: b\n".to_string(),
+            },
+        ]);
+
+        let report = builder.build().with_grouping(&["file"]);
+
+        assert_eq!(report.outputs.len(), 2);
+        assert_eq!(report.outputs[0].file.as_deref(), Some("config.yaml"));
+        assert_eq!(report.outputs[1].file.as_deref(), Some("config.yaml"));
+
+        let ResultItem::Group(group) = &report.results[0] else {
+            panic!("expected grouped file report");
+        };
+        assert!(group.outputs.is_empty());
     }
 }

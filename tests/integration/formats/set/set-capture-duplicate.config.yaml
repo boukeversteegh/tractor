@@ -1,0 +1,13 @@
+operations:
+  - set:
+      files: ["sample.yaml"]
+      mappings:
+        - xpath: "//database/host"
+          value: "db.example.com"
+      write: capture
+  - set:
+      files: ["sample.yaml"]
+      mappings:
+        - xpath: "//database/port"
+          value: "5433"
+      write: capture

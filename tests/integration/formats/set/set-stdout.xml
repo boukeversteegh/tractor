@@ -9,12 +9,10 @@
   <group-by>file</group-by>
   <results>
     <group file="tests/integration/formats/set/sample.yaml">
-      <outputs>
-        <output>database:
+      <output>database:
   host: db.example.com
   port: 5432
 </output>
-      </outputs>
     </group>
   </results>
 </report>

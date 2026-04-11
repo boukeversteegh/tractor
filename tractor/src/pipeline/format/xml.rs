@@ -1,6 +1,6 @@
 use tractor_core::{report::{Report, ResultItem}, normalize_path, render_xml_string, render_xml_node, RenderOptions};
 use super::options::{ViewField, ViewSet};
-use super::shared::{should_show_totals, should_emit_file, should_emit_command, should_emit_rule_id, render_fields_for_match};
+use super::shared::{render_fields_for_match, should_emit_command, should_emit_file, should_emit_rule_id, should_show_totals};
 
 pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, dimensions: &[&str]) -> String {
     let mut tree_opts = render_opts.clone();
@@ -227,7 +227,7 @@ fn render_xml_results(
                 }
                 // Group-level captured outputs — unconditional honest view.
                 if !sub.outputs.is_empty() {
-                    append_outputs(out, &sub.outputs, &inner);
+                    append_group_outputs(out, &sub.outputs, sub.file.as_deref(), &inner);
                 }
                 // Recurse — this group's children skip the same field that was hoisted
                 // to create this group. If this group has sub-grouping, that applies too.
@@ -253,6 +253,26 @@ fn append_outputs(out: &mut String, outputs: &[tractor_core::report::ReportOutpu
         out.push_str("</output>\n");
     }
     out.push_str(&format!("{}</outputs>\n", indent));
+}
+
+fn append_group_outputs(
+    out: &mut String,
+    outputs: &[tractor_core::report::ReportOutput],
+    group_file: Option<&str>,
+    indent: &str,
+) {
+    if group_file.is_some() && outputs.len() == 1 {
+        let captured = &outputs[0];
+        match &captured.file {
+            Some(file) => out.push_str(&format!("{}<output file=\"{}\">", indent, escape_attr(file))),
+            None => out.push_str(&format!("{}<output>", indent)),
+        }
+        out.push_str(&escape(&captured.content));
+        out.push_str("</output>\n");
+        return;
+    }
+
+    append_outputs(out, outputs, indent);
 }
 
 fn escape(s: &str) -> String {
