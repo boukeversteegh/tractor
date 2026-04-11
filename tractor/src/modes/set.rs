@@ -169,10 +169,10 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     if capture
         && ctx.output_format == crate::pipeline::format::OutputFormat::Text
-        && report.artifacts.len() == 1
+        && report.outputs.len() == 1
         && args.view.is_none()
     {
-        print!("{}", report.artifacts[0].content);
+        print!("{}", report.outputs[0].content);
         return Ok(());
     }
 
@@ -182,7 +182,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     project_report(&mut report, &ctx.view);
     let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
-    let report = report.with_grouping(&dims).with_artifacts();
+    let report = report.with_grouping(&dims);
     render_report(&report, &ctx, None)
 }
 

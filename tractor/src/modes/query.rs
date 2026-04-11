@@ -118,7 +118,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
         // Project for the requested view and render.
         project_report(&mut report, &ctx.view);
         let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
-        let report = report.with_grouping(&dims).with_artifacts();
+        let report = report.with_grouping(&dims);
         render_report(&report, &ctx, None)?;
     }
 

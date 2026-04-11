@@ -45,6 +45,14 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
         }
     }
 
+    // Top-level captured outputs — honest view of the report model.
+    // Any file-bound outputs that matched a file-group have been moved
+    // into their group during `with_grouping`; what remains here is
+    // genuinely ungrouped output (stdin payloads or orphans).
+    if !report.outputs.is_empty() {
+        append_outputs(&mut body, &report.outputs, "  ");
+    }
+
     // Render results
     if let Some(ref group) = report.group {
         body.push_str(&format!("  <group-by>{}</group-by>\n", escape(group)));
@@ -217,10 +225,9 @@ fn render_xml_results(
                 if let Some(ref group) = sub.group {
                     out.push_str(&format!("{}<group-by>{}</group-by>\n", inner, escape(group)));
                 }
-                if view.has(ViewField::Output) {
-                    if let Some(ref content) = sub.output_content {
-                        out.push_str(&format!("{}<output>{}</output>\n", inner, escape(content)));
-                    }
+                // Group-level captured outputs — unconditional honest view.
+                if !sub.outputs.is_empty() {
+                    append_outputs(out, &sub.outputs, &inner);
                 }
                 // Recurse — this group's children skip the same field that was hoisted
                 // to create this group. If this group has sub-grouping, that applies too.
@@ -229,6 +236,23 @@ fn render_xml_results(
             }
         }
     }
+}
+
+/// Render a list of captured outputs as `<outputs><output file="...">...</output>...</outputs>`.
+/// Content is XML-escaped but newlines are preserved literally, matching how
+/// `<lines><line>` is rendered elsewhere.
+fn append_outputs(out: &mut String, outputs: &[tractor_core::report::ReportOutput], indent: &str) {
+    let inner = format!("{}  ", indent);
+    out.push_str(&format!("{}<outputs>\n", indent));
+    for captured in outputs {
+        match &captured.file {
+            Some(file) => out.push_str(&format!("{}<output file=\"{}\">", inner, escape_attr(file))),
+            None => out.push_str(&format!("{}<output>", inner)),
+        }
+        out.push_str(&escape(&captured.content));
+        out.push_str("</output>\n");
+    }
+    out.push_str(&format!("{}</outputs>\n", indent));
 }
 
 fn escape(s: &str) -> String {

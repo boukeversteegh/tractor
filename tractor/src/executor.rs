@@ -16,7 +16,7 @@ use std::path::PathBuf;
 use rayon::prelude::*;
 use tractor_core::normalized_xpath::NormalizedXpath;
 use tractor_core::rule::{Rule, RuleSet};
-use tractor_core::report::{ReportArtifact, ReportBuilder, ReportMatch, Severity};
+use tractor_core::report::{ReportBuilder, ReportMatch, ReportOutput, Severity};
 use tractor_core::tree_mode::TreeMode;
 use tractor_core::{detect_language, parse_to_documents, parse_string_to_documents, Match, apply_replacements, NormalizedPath};
 use tractor_core::xpath_upsert::{upsert_typed, update_only};
@@ -624,8 +624,8 @@ fn execute_set(
             report.fail();
         }
         report.add_all(outcome.diagnostics);
-        if let Some(artifact) = outcome.artifact {
-            report.add_artifact(artifact);
+        if let Some(output) = outcome.output {
+            report.add_output(output);
         }
         return Ok(());
     }
@@ -660,8 +660,8 @@ fn execute_set(
             report.fail();
         }
         report.add_all(outcome.diagnostics);
-        if let Some(artifact) = outcome.artifact {
-            report.add_artifact(artifact);
+        if let Some(output) = outcome.output {
+            report.add_output(output);
         }
     }
 
@@ -671,7 +671,7 @@ fn execute_set(
 struct SetTargetOutcome {
     content: String,
     diagnostics: Vec<ReportMatch>,
-    artifact: Option<ReportArtifact>,
+    output: Option<ReportOutput>,
     changed: bool,
 }
 
@@ -741,8 +741,8 @@ fn execute_set_target(
         });
     }
 
-    let artifact = if matches!(op.write_mode, SetWriteMode::Capture) {
-        Some(ReportArtifact {
+    let output = if matches!(op.write_mode, SetWriteMode::Capture) {
+        Some(ReportOutput {
             file: file.map(|path| path.to_string()),
             content: current.clone(),
         })
@@ -753,7 +753,7 @@ fn execute_set_target(
     Ok(SetTargetOutcome {
         content: current,
         diagnostics,
-        artifact,
+        output,
         changed,
     })
 }
@@ -1387,7 +1387,7 @@ mod tests {
     }
 
     #[test]
-    fn set_capture_inline_source_emits_artifact() {
+    fn set_capture_inline_source_emits_output() {
         let ops = vec![set_inline_operation(
             "yaml",
             "database:\n  host: localhost\n  port: 5432\n",
@@ -1397,14 +1397,14 @@ mod tests {
 
         let report = run(&ops);
         assert!(report.success.unwrap());
-        assert_eq!(report.artifacts.len(), 1);
-        assert!(report.artifacts[0].file.is_none());
-        assert!(report.artifacts[0].content.contains("db.example.com"));
+        assert_eq!(report.outputs.len(), 1);
+        assert!(report.outputs[0].file.is_none());
+        assert!(report.outputs[0].content.contains("db.example.com"));
         assert_eq!(report.all_matches()[0].status.as_deref(), Some("updated"));
     }
 
     #[test]
-    fn set_capture_files_emits_file_artifacts() {
+    fn set_capture_files_emits_file_outputs() {
         let (_dir_a, path_a) = temp_yaml_file("database:\n  host: a\n");
         let (_dir_b, path_b) = temp_yaml_file("database:\n  host: b\n");
 
@@ -1425,13 +1425,13 @@ mod tests {
 
         let report = run(&ops);
         assert!(report.success.unwrap());
-        assert_eq!(report.artifacts.len(), 2);
-        let files: std::collections::HashSet<_> = report.artifacts.iter()
-            .filter_map(|artifact| artifact.file.as_deref())
+        assert_eq!(report.outputs.len(), 2);
+        let files: std::collections::HashSet<_> = report.outputs.iter()
+            .filter_map(|output| output.file.as_deref())
             .collect();
         assert!(files.contains(tractor_core::normalize_path(&path_a).as_str()));
         assert!(files.contains(tractor_core::normalize_path(&path_b).as_str()));
-        assert!(report.artifacts.iter().all(|artifact| artifact.content.contains("db.example.com")));
+        assert!(report.outputs.iter().all(|output| output.content.contains("db.example.com")));
 
         let content_a = std::fs::read_to_string(&path_a).unwrap();
         let content_b = std::fs::read_to_string(&path_b).unwrap();

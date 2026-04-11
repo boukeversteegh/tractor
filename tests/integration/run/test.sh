@@ -38,7 +38,22 @@ run_and_check() {
     fi
 }
 
-# Helper: run tractor run on a copy of fixtures (for set operations that modify files)
+# Helper: run tractor run on a copy of fixtures (for set operations that modify files).
+#
+# TODO(rust port): add a fixture drift guard. These tests used to bake a
+# mutated fixture into their expectations: an earlier predicate bug caused
+# `set` to in-place-mutate `tests/integration/run/app-config.json`, the
+# mutated file was committed, and the expectations here were written
+# against `host: db.prod.internal` with `unchanged //database/host`. See
+# commit fe55dfd which restored the fixture, after which these
+# expectations had to be flipped to `updated //database/host`.
+#
+# The ported Rust test should refuse to run if any committed fixture
+# under the run/ test directory has unstaged changes on disk at test
+# start — honest failure > silent rot. Bash equivalent would be
+# `git status --porcelain tests/integration/run/ | grep -v test.sh` at
+# the top of this file, but `.git` being a file in git worktrees makes
+# the bash version fiddly, so defer it to the Rust port.
 run_set_and_check() {
     local desc="$1"
     local expected_exit="$2"
@@ -98,12 +113,12 @@ echo "Run (set operations):"
 
 run_set_and_check "set applies mappings to files" \
     0 \
-    "$(printf 'app-config.json:3:13: note: unchanged //database/host\napp-config.json:8:12: note: updated //cache/ttl\nupdated 1 file')" \
+    "$(printf 'app-config.json:3:13: note: updated //database/host\napp-config.json:8:12: note: updated //cache/ttl\nupdated 1 file')" \
     "set-config.yaml"
 
 run_set_and_check "set applies mappings (verbose)" \
     0 \
-    "$(printf 'app-config.json:3:13: note: unchanged //database/host\napp-config.json:8:12: note: updated //cache/ttl\nupdated 1 file')" \
+    "$(printf 'app-config.json:3:13: note: updated //database/host\napp-config.json:8:12: note: updated //cache/ttl\nupdated 1 file')" \
     "set-config.yaml"
 
 echo ""
@@ -146,7 +161,7 @@ echo "Run (mixed operations):"
 
 run_set_and_check "mixed check+set succeeds when check passes" \
     0 \
-    "$(printf 'app-config.json:3:13: note: unchanged //database/host')" \
+    "$(printf 'app-config.json:3:13: note: updated //database/host\nupdated 1 file')" \
     "mixed-ops.yaml"
 
 echo ""

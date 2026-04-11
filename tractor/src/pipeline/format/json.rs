@@ -10,6 +10,14 @@ pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         emit_report_metadata(&mut root, report);
     }
 
+    // Top-level captured outputs — honest view of the report model.
+    // Any file-bound outputs that matched a file-group will have already
+    // been moved into their group during `with_grouping`; what remains
+    // here is genuinely ungrouped output (stdin payloads or orphans).
+    if !report.outputs.is_empty() {
+        root.insert("outputs".into(), outputs_to_json(&report.outputs));
+    }
+
     // Group dimension (before results, so readers see the grouping context first)
     if let Some(ref group) = report.group {
         root.insert("group".into(), json!(group));
@@ -24,6 +32,19 @@ pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderO
     }
 
     serde_json::to_string_pretty(&Value::Object(root)).unwrap_or_else(|_| "{}".to_string())
+}
+
+/// Serialize a list of captured outputs as a JSON array of objects.
+/// Each object has `content` and, if set, `file`.
+fn outputs_to_json(outputs: &[tractor_core::report::ReportOutput]) -> Value {
+    Value::Array(outputs.iter().map(|o| {
+        let mut obj = serde_json::Map::new();
+        if let Some(ref file) = o.file {
+            obj.insert("file".into(), json!(file));
+        }
+        obj.insert("content".into(), json!(o.content));
+        Value::Object(obj)
+    }).collect())
 }
 
 /// Emit success, totals, expected, query as top-level fields.
@@ -74,11 +95,10 @@ pub fn render_results_json(
                 if let Some(ref group) = sub.group {
                     obj.insert("group".into(), json!(group));
                 }
-                // Group-level output (set stdout mode)
-                if view.has(ViewField::Output) {
-                    if let Some(ref content) = sub.output_content {
-                        obj.insert("output".into(), json!(content));
-                    }
+                // Group-level captured outputs — honest view of the report model.
+                // Rendered unconditionally when non-empty, independent of ViewField::Output.
+                if !sub.outputs.is_empty() {
+                    obj.insert("outputs".into(), outputs_to_json(&sub.outputs));
                 }
                 // Recurse
                 let sub_results = render_results_json(&sub.results, view, render_opts, dimensions);

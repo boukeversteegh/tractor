@@ -20,9 +20,9 @@ use super::shared::{should_show_totals, render_fields_for_match};
 pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, _dimensions: &[&str]) -> String {
     let mut out = String::new();
 
-    // Set stdout mode: groups with output_content — render group by group.
+    // Set stdout mode: groups with captured outputs — render group by group.
     let has_group_output = view.has(ViewField::Output) && report.results.iter().any(|item| {
-        matches!(item, ResultItem::Group(g) if g.output_content.is_some())
+        matches!(item, ResultItem::Group(g) if !g.outputs.is_empty())
     });
     if has_group_output {
         out.push_str(&render_set_stdout_results(&report.results, view, render_opts));
@@ -353,7 +353,7 @@ fn should_inline_status_reason(view: &ViewSet, rm: &ReportMatch) -> bool {
         && rm.severity.is_none()
 }
 
-/// Render set stdout mode from results tree (groups with output_content).
+/// Render set stdout mode from results tree (groups with captured outputs).
 fn render_set_stdout_results(items: &[ResultItem], view: &ViewSet, render_opts: &RenderOptions) -> String {
     let mut out = String::new();
     let has_location = view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
@@ -370,9 +370,9 @@ fn render_set_stdout_results(items: &[ResultItem], view: &ViewSet, render_opts: 
                     }
                 }
             }
-            // Group-level output (the full modified file content)
-            if let Some(ref content) = g.output_content {
-                out.push_str(content);
+            // Group-level captured outputs (full modified file content)
+            for captured in &g.outputs {
+                out.push_str(&captured.content);
             }
         }
     }
@@ -402,7 +402,7 @@ mod tests {
             }),
             expected: None,
             query: None,
-            artifacts: vec![],
+            outputs: vec![],
             results: vec![ResultItem::Match(ReportMatch {
                 file: "app-config.json".to_string(),
                 line: 3,
@@ -426,7 +426,6 @@ mod tests {
             file: None,
             command: None,
             rule_id: None,
-            output_content: None,
         };
 
         let view = ViewSet::new(vec![ViewField::File, ViewField::Line, ViewField::Status, ViewField::Reason]);

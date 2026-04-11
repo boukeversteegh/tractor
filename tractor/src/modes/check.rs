@@ -108,7 +108,7 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
     project_report(&mut report, &ctx.view);
     let report = {
         let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
-        report.with_grouping(&dims).with_artifacts()
+        report.with_grouping(&dims)
     };
     render_report(&report, &ctx, None)
 }

@@ -90,6 +90,6 @@ pub fn run_from_config(params: ConfigRunParams) -> Result<(), Box<dyn std::error
 
     project_report(&mut report, &ctx.view);
     let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
-    let report = report.with_grouping(&dims).with_artifacts();
+    let report = report.with_grouping(&dims);
     render_report(&report, &ctx, None)
 }

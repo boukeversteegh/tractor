@@ -124,12 +124,14 @@ pub struct ReportMatch {
     pub output:   Option<String>,
 }
 
-/// A transformed output payload produced by an operation.
+/// A captured output payload produced by an operation.
 ///
-/// Artifacts are distinct from diagnostic matches: they carry generated content
-/// such as captured `set --stdout` output and are rendered separately.
+/// Outputs are distinct from diagnostic matches: they carry generated content
+/// (e.g. captured `set --stdout` file contents) and are rendered separately.
+/// An output with `file: Some(path)` belongs to that file; `None` means the
+/// payload has no file identity (e.g. stdin → stdout).
 #[derive(Debug, Clone, Serialize)]
-pub struct ReportArtifact {
+pub struct ReportOutput {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub file: Option<String>,
     pub content: String,
@@ -285,9 +287,11 @@ pub struct Report {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub query: Option<NormalizedXpath>,
 
-    /// Generated content payloads, separate from diagnostic matches.
+    /// Captured output payloads produced by this report's operation (or,
+    /// for sub-groups, payloads that were distributed down to this group
+    /// by `with_grouping`). Distinct from diagnostic matches.
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub artifacts: Vec<ReportArtifact>,
+    pub outputs: Vec<ReportOutput>,
 
     // ---- New unified fields (Step 3) ----
 
@@ -311,10 +315,6 @@ pub struct Report {
     /// Hoisted rule_id (when this Report is a rule group).
     #[serde(skip)]
     pub rule_id: Option<String>,
-
-    /// Full modified file content for set stdout mode (group-level).
-    #[serde(skip)]
-    pub output_content: Option<String>,
 }
 
 impl Report {
@@ -409,11 +409,22 @@ impl Report {
     /// Apply multi-level grouping. Each dimension partitions results into
     /// groups, with nested dimensions applied recursively within each group.
     /// Matches retain all their fields — renderers decide what to omit.
+    ///
+    /// After grouping, file-bound outputs are distributed down into their
+    /// matching file groups (see `distribute_outputs`).
     pub fn with_grouping(mut self, dimensions: &[&str]) -> Self {
         if dimensions.is_empty() {
             return self;
         }
+        self = self.with_grouping_inner(dimensions);
+        self.distribute_outputs();
+        self
+    }
 
+    fn with_grouping_inner(mut self, dimensions: &[&str]) -> Self {
+        if dimensions.is_empty() {
+            return self;
+        }
         let dim = dimensions[0];
         let rest = &dimensions[1..];
 
@@ -423,7 +434,7 @@ impl Report {
             self.results = self.results.into_iter().map(|item| {
                 match item {
                     ResultItem::Group(mut g) => {
-                        *g = g.with_grouping(rest);
+                        *g = g.with_grouping_inner(rest);
                         ResultItem::Group(g)
                     }
                     other => other,
@@ -441,44 +452,70 @@ impl Report {
             totals: None,
             expected: None,
             query: None,
-            artifacts: vec![],
+            outputs: vec![],
             results: vec![],
             group: None,
             file: None,
             command: None,
             rule_id: None,
-            output_content: None,
         }
     }
 
-    /// Attach pre-computed file outputs to file groups (set stdout mode).
-    /// Must be called after `with_groups()`.
-    pub fn with_file_outputs(mut self, outputs: &std::collections::HashMap<String, String>) -> Self {
+    /// Move file-bound outputs into their matching file-group, recursively.
+    ///
+    /// For every `ReportOutput` on `self.outputs` whose `file` matches a
+    /// descendant file-group, the output is detached from the parent's list
+    /// and appended to the group's `outputs`, with its `file` field cleared
+    /// (the group already hoists it). Outputs with `file: None` or with no
+    /// matching group remain where they are.
+    ///
+    /// Called from `with_grouping` so callers don't need to invoke it
+    /// separately.
+    pub fn distribute_outputs(&mut self) {
+        if self.outputs.is_empty() && !self.has_any_outputs_in_groups() {
+            return;
+        }
+
+        // First, recurse so descendants redistribute their own outputs.
         for item in &mut self.results {
             if let ResultItem::Group(ref mut g) = item {
-                if let Some(ref file) = g.file {
-                    if let Some(content) = outputs.get(file.as_str()) {
-                        g.output_content = Some(content.clone());
+                g.distribute_outputs();
+            }
+        }
+
+        // Then move our file-bound outputs down into matching file-groups.
+        let own = std::mem::take(&mut self.outputs);
+        let mut remaining: Vec<ReportOutput> = Vec::new();
+        for output in own {
+            let Some(ref file) = output.file else {
+                remaining.push(output);
+                continue;
+            };
+            let normalized = normalize_path(file);
+            let mut placed = false;
+            for item in &mut self.results {
+                if let ResultItem::Group(ref mut g) = item {
+                    if g.file.as_deref().map(normalize_path).as_deref() == Some(&normalized) {
+                        let mut moved = output.clone();
+                        moved.file = None;
+                        g.outputs.push(moved);
+                        placed = true;
+                        break;
                     }
                 }
             }
+            if !placed {
+                remaining.push(output);
+            }
         }
-        self
+        self.outputs = remaining;
     }
 
-    /// Attach artifact payloads to file groups for renderer compatibility.
-    ///
-    /// `artifacts` remains the source of truth; `output_content` is populated so
-    /// existing grouped renderers can expose captured content when requested.
-    pub fn with_artifacts(mut self) -> Self {
-        let outputs: std::collections::HashMap<String, String> = self.artifacts.iter()
-            .filter_map(|artifact| artifact.file.as_ref().map(|file| (normalize_path(file), artifact.content.clone())))
-            .collect();
-        if outputs.is_empty() {
-            return self;
-        }
-        self = self.with_file_outputs(&outputs);
-        self
+    fn has_any_outputs_in_groups(&self) -> bool {
+        self.results.iter().any(|item| match item {
+            ResultItem::Group(g) => !g.outputs.is_empty() || g.has_any_outputs_in_groups(),
+            _ => false,
+        })
     }
 }
 
@@ -500,7 +537,7 @@ enum SuccessMode {
 /// builder, passes it to the executor, and calls `build()` to finalize.
 pub struct ReportBuilder {
     matches: Vec<ReportMatch>,
-    artifacts: Vec<ReportArtifact>,
+    outputs: Vec<ReportOutput>,
     failed: bool,
     success_mode: SuccessMode,
     expected: Option<String>,
@@ -511,7 +548,7 @@ impl ReportBuilder {
     pub fn new() -> Self {
         ReportBuilder {
             matches: Vec::new(),
-            artifacts: Vec::new(),
+            outputs: Vec::new(),
             failed: false,
             success_mode: SuccessMode::Derive,
             expected: None,
@@ -529,14 +566,14 @@ impl ReportBuilder {
         self.matches.extend(rms);
     }
 
-    /// Add a generated artifact payload to the report.
-    pub fn add_artifact(&mut self, artifact: ReportArtifact) {
-        self.artifacts.push(artifact);
+    /// Add a captured output payload to the report.
+    pub fn add_output(&mut self, output: ReportOutput) {
+        self.outputs.push(output);
     }
 
-    /// Add multiple generated artifact payloads to the report.
-    pub fn add_artifacts(&mut self, artifacts: impl IntoIterator<Item = ReportArtifact>) {
-        self.artifacts.extend(artifacts);
+    /// Add multiple captured output payloads to the report.
+    pub fn add_outputs(&mut self, outputs: impl IntoIterator<Item = ReportOutput>) {
+        self.outputs.extend(outputs);
     }
 
     /// Signal that the operation failed (e.g. test expectations unmet).
@@ -636,13 +673,12 @@ impl ReportBuilder {
             totals: Some(totals),
             expected: self.expected,
             query: self.query,
-            artifacts: self.artifacts,
+            outputs: self.outputs,
             results,
             group: None,
             file: None,
             command: None,
             rule_id: None,
-            output_content: None,
         }
     }
 }

@@ -119,6 +119,10 @@ tasks:
     deps: [build]
     cmds:
       - cargo run --release --bin update-snapshots
+      # Bash-driven snapshot cases (formats/set/ needs tempfiles, path
+      # normalisation, stdin piping — richer than the Rust updater handles).
+      # UPDATE=1 makes test.sh overwrite snapshots instead of diffing.
+      - UPDATE=1 bash tests/integration/formats/set/test.sh
 
   # === Distribution builds ===
 

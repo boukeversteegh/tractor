@@ -12,7 +12,8 @@
       "results": [
         {
           "line": 2,
-          "status": "updated"
+          "status": "updated",
+          "reason": "//database/host"
         }
       ]
     }
