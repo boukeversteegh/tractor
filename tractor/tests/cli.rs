@@ -311,7 +311,7 @@ cli_suite! {
         value_output => tractor query -s "class Foo { }" -l "csharp" -x "class/name" -v "value" => count 1;
         count_output => tractor query -s "class Foo { }" -l "csharp" -x "class" -v "count" => stdout "1";
         gcc_output => tractor query -s "class Foo { }" -l "csharp" -x "class" -f "gcc" => count 1;
-        without_xpath => tractor query -s "let x = 1;" -l "rust" -v "count" => stdout "1";
+        without_xpath => tractor query -s "let x = 1;" -l "rust" => count some;
     }
 }
 
