@@ -71,10 +71,9 @@ run_test bash -c "
 
 # Removing a field that is not in the default is a no-op
 run_test bash -c "
-  default_out=\$(tractor '$SAMPLE_CS' -x '//class/name' --no-color -v value 2>/dev/null)
+  default_out=\$(tractor '$SAMPLE_CS' -x '//class/name' --no-color 2>/dev/null)
   modifier_out=\$(tractor '$SAMPLE_CS' -x '//class/name' --no-color '-v=-source' 2>/dev/null)
-  # Both should list class names (source was not in default anyway)
-  echo \"\$modifier_out\" | grep -q 'Foo'
+  [ \"\$default_out\" = \"\$modifier_out\" ]
 " -m "query -v=-field not in default is a no-op"
 
 # ---------------------------------------------------------------------------
