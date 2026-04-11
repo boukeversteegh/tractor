@@ -387,6 +387,7 @@ fn set_snapshot_text_default() {
     })
     .in_fixture("formats/set")
     .temp_fixture()
+    .strip_temp_prefix()
     .replace_output("sample.yaml", "tests/integration/formats/set/sample.yaml")
     .run();
 }
@@ -396,6 +397,19 @@ fn set_snapshot_text_unchanged() {
     cli_case!({
         tractor set "sample.yaml" -x "//database/host" --value "localhost";
         expect => stdout_snapshot "formats/set/set-unchanged.txt";
+    })
+    .in_fixture("formats/set")
+    .temp_fixture()
+    .strip_temp_prefix()
+    .replace_output("sample.yaml", "tests/integration/formats/set/sample.yaml")
+    .run();
+}
+
+#[test]
+fn set_snapshot_text_declarative_mode() {
+    cli_case!({
+        tractor set "sample.yaml" "database[host='db.example.com']";
+        expect => stdout_snapshot "formats/set/set-declarative.txt";
     })
     .in_fixture("formats/set")
     .temp_fixture()
@@ -415,6 +429,31 @@ fn set_snapshot_stdout_mode() {
 }
 
 #[test]
+fn set_snapshot_stdout_mode_from_stdin() {
+    cli_case!({
+        tractor set -l "yaml" "database[host='db.example.com']" --stdout;
+        expect => stdout_snapshot "formats/set/set-stdin-stdout.txt";
+    })
+    .stdin("database:\n  host: localhost\n  port: 5432\n")
+    .run();
+}
+
+#[test]
+fn set_snapshot_stdout_mode_multiple_files() {
+    cli_case!({
+        tractor set "sample-a.yaml" "sample-b.yaml" -x "//database/host" --value "db.example.com" --stdout;
+        expect => stdout_snapshot "formats/set/set-stdout-multi.txt";
+    })
+    .in_fixture("formats/set")
+    .temp_fixture()
+    .seed_file("sample-a.yaml", "database:\n  host: localhost\n  port: 5432\n")
+    .seed_file("sample-b.yaml", "database:\n  host: localhost\n  port: 5432\n")
+    .replace_output("sample-a.yaml", "tests/integration/formats/set/sample-a.yaml")
+    .replace_output("sample-b.yaml", "tests/integration/formats/set/sample-b.yaml")
+    .run();
+}
+
+#[test]
 fn set_snapshot_json() {
     cli_case!({
         tractor set "sample.yaml" -x "//database/host" --value "db.example.com" -f "json";
@@ -429,8 +468,78 @@ fn set_snapshot_json() {
 #[test]
 fn set_snapshot_xml() {
     cli_case!({
-        tractor set "sample.yaml" -x "//database/host" --value "db.example.com" -f "xml";
+        tractor run "set-config.yaml" -f "xml";
         expect => stdout_snapshot "formats/set/set.xml";
+    })
+    .in_fixture("formats/set")
+    .temp_fixture()
+    .strip_temp_prefix()
+    .replace_output("sample.yaml", "tests/integration/formats/set/sample.yaml")
+    .run();
+}
+
+#[test]
+fn set_snapshot_stdout_xml() {
+    cli_case!({
+        tractor set "sample.yaml" -x "//database/host" --value "db.example.com" --stdout -f "xml";
+        expect => stdout_snapshot "formats/set/set-stdout.xml";
+    })
+    .in_fixture("formats/set")
+    .temp_fixture()
+    .replace_output("sample.yaml", "tests/integration/formats/set/sample.yaml")
+    .run();
+}
+
+#[test]
+fn run_set_capture_duplicate_file_outputs_stay_rooted() {
+    cli_case!({
+        tractor run "set-capture-duplicate.config.yaml" -f "xml";
+        expect => stdout_snapshot "formats/set/set-stdout-duplicate.xml";
+    })
+    .in_fixture("formats/set")
+    .fixture_prefix("tests/integration/formats/set")
+    .run();
+}
+
+#[test]
+fn run_set_capture_duplicate_file_outputs_stay_rooted_json() {
+    cli_case!({
+        tractor run "set-capture-duplicate.config.yaml" -f "json";
+        expect => stdout_snapshot "formats/set/set-stdout-duplicate.json";
+    })
+    .in_fixture("formats/set")
+    .fixture_prefix("tests/integration/formats/set")
+    .run();
+}
+
+#[test]
+fn run_set_capture_duplicate_file_outputs_stay_rooted_yaml() {
+    cli_case!({
+        tractor run "set-capture-duplicate.config.yaml" -f "yaml";
+        expect => stdout_snapshot "formats/set/set-stdout-duplicate.yaml";
+    })
+    .in_fixture("formats/set")
+    .fixture_prefix("tests/integration/formats/set")
+    .run();
+}
+
+#[test]
+fn set_snapshot_stdout_json() {
+    cli_case!({
+        tractor set "sample.yaml" -x "//database/host" --value "db.example.com" --stdout -f "json";
+        expect => stdout_snapshot "formats/set/set-stdout.json";
+    })
+    .in_fixture("formats/set")
+    .temp_fixture()
+    .replace_output("sample.yaml", "tests/integration/formats/set/sample.yaml")
+    .run();
+}
+
+#[test]
+fn set_snapshot_stdout_yaml() {
+    cli_case!({
+        tractor set "sample.yaml" -x "//database/host" --value "db.example.com" --stdout -f "yaml";
+        expect => stdout_snapshot "formats/set/set-stdout.yaml";
     })
     .in_fixture("formats/set")
     .temp_fixture()
@@ -459,6 +568,42 @@ fn replace_updates_multiple_yaml_values() {
     .in_fixture("replace")
     .temp_fixture()
     .seed_file("multi.yaml", "servers:\n  - name: web-1\n    port: 8080\n  - name: web-2\n    port: 8080\n  - name: web-3\n    port: 9090\n")
+    .run();
+}
+
+#[test]
+fn replace_path_expression_predicates_filter_targets() {
+    cli_case!({
+        tractor set "multi.yaml" "servers[host='localhost']/port" --value "5433";
+        expect => file_eq "multi.yaml" "servers:\n  - host: localhost\n    port: 5433\n  - host: prod-db\n    port: 5432";
+    })
+    .in_fixture("replace")
+    .temp_fixture()
+    .seed_file("multi.yaml", "servers:\n  - host: localhost\n    port: 5432\n  - host: prod-db\n    port: 5432\n")
+    .run();
+}
+
+#[test]
+fn replace_respects_limit() {
+    cli_case!({
+        tractor set "limit.yaml" -x "//items/value[.='old']" -n "1" --value "new";
+        expect => file_eq "limit.yaml" "items:\n  - value: new\n  - value: old\n  - value: old";
+    })
+    .in_fixture("replace")
+    .temp_fixture()
+    .seed_file("limit.yaml", "items:\n  - value: old\n  - value: old\n  - value: old\n")
+    .run();
+}
+
+#[test]
+fn replace_updates_json_string_values() {
+    cli_case!({
+        tractor set "data.json" -x "//database/host" --value "db.example.com";
+        expect => file_eq "data.json" "{\n  \"database\": {\n    \"host\": \"db.example.com\",\n    \"port\": 5432\n  }\n}";
+    })
+    .in_fixture("replace")
+    .temp_fixture()
+    .seed_file("data.json", "{\n  \"database\": {\n    \"host\": \"localhost\",\n    \"port\": 5432\n  }\n}\n")
     .run();
 }
 
@@ -498,6 +643,18 @@ fn replace_without_xpath_fails() {
     .in_fixture("replace")
     .temp_fixture()
     .seed_file("data.json", "{\n  \"name\": \"value\"\n}\n")
+    .run();
+}
+
+#[test]
+fn replace_creates_missing_nodes_when_set_has_no_matches() {
+    cli_case!({
+        tractor set "data.json" -x "//nonexistent" --value "x";
+        expect => file_eq "data.json" "{\n  \"database\": {\n    \"host\": \"localhost\",\n    \"port\": 5432\n  },\n  \"nonexistent\": \"x\"\n}";
+    })
+    .in_fixture("replace")
+    .temp_fixture()
+    .seed_file("data.json", "{\n  \"database\": {\n    \"host\": \"localhost\",\n    \"port\": 5432\n  }\n}\n")
     .run();
 }
 
@@ -570,10 +727,59 @@ fn run_multirule_output_is_stable() {
 }
 
 #[test]
+fn run_multifile_check_scans_multiple_files() {
+    cli_case!({
+        tractor run "check-multifile.yaml";
+        expect => {
+            exit 1;
+            combined "settings.yaml:3:10: error: debug mode must be disabled\n3 |   debug: true\n             ^~~~\n\n1 error in 1 file";
+        }
+    })
+    .in_fixture("run")
+    .fixture_prefix("")
+    .run();
+}
+
+#[test]
+fn run_set_applies_mappings_to_files() {
+    cli_case!({
+        tractor run "set-config.yaml";
+        expect => combined "app-config.json:3:13: note: updated //database/host\napp-config.json:8:12: note: updated //cache/ttl\nupdated 1 file";
+    })
+    .in_fixture("run")
+    .fixture_prefix("")
+    .temp_fixture()
+    .strip_temp_prefix()
+    .run();
+}
+
+#[test]
 fn run_scope_intersection_respects_root() {
     cli_case!({
         tractor run "scope-intersection/intersect-narrow.yaml";
         expect => combined "scope-intersection/frontend/config.yml:1:8: warning: debug must be disabled\n1 | debug: true\n           ^~~~\n\n1 warning in 1 file";
+    })
+    .in_fixture("run")
+    .fixture_prefix("")
+    .run();
+}
+
+#[test]
+fn run_scope_intersection_falls_back_to_root_when_operation_has_no_files() {
+    cli_case!({
+        tractor run "scope-intersection/intersect-fallback.yaml";
+        expect => combined "";
+    })
+    .in_fixture("run")
+    .fixture_prefix("")
+    .run();
+}
+
+#[test]
+fn run_scope_intersection_can_be_empty() {
+    cli_case!({
+        tractor run "scope-intersection/intersect-disjoint.yaml";
+        expect => combined "";
     })
     .in_fixture("run")
     .fixture_prefix("")
@@ -608,7 +814,77 @@ fn run_absolute_cli_path_with_root_files_intersection() {
         .abs_arg("absolute-paths/config.yml")
         .in_fixture("run")
         .fixture_prefix("")
+    .assert_combined("absolute-paths/config.yml:1:8: warning: debug must be disabled\n1 | debug: true\n           ^~~~\n\n1 warning in 1 file")
+    .run();
+}
+
+#[test]
+fn run_absolute_cli_path_with_per_rule_include_matches() {
+    command(["run", "absolute-paths/check-per-rule-include.yaml"])
+        .abs_arg("absolute-paths/config.yml")
+        .in_fixture("run")
+        .fixture_prefix("")
         .assert_combined("absolute-paths/config.yml:1:8: warning: debug must be disabled\n1 | debug: true\n           ^~~~\n\n1 warning in 1 file")
+        .run();
+}
+
+#[test]
+fn run_absolute_cli_path_with_per_rule_exclude_filters_out() {
+    command(["run", "absolute-paths/check-per-rule-exclude.yaml"])
+        .abs_arg("absolute-paths/config.yml")
+        .in_fixture("run")
+        .fixture_prefix("")
+        .assert_combined("")
+        .run();
+}
+
+#[test]
+fn run_absolute_cli_path_with_root_exclude_filters_out() {
+    command(["run", "absolute-paths/check-root-exclude.yaml"])
+        .abs_arg("absolute-paths/config.yml")
+        .in_fixture("run")
+        .fixture_prefix("")
+        .assert_combined("")
+        .run();
+}
+
+#[test]
+fn run_dot_relative_cli_path_with_per_rule_include_matches() {
+    command(["run", "absolute-paths/check-per-rule-include.yaml"])
+        .arg("./absolute-paths/config.yml")
+        .in_fixture("run")
+        .fixture_prefix("")
+        .assert_combined("absolute-paths/config.yml:1:8: warning: debug must be disabled\n1 | debug: true\n           ^~~~\n\n1 warning in 1 file")
+        .run();
+}
+
+#[test]
+fn run_dot_relative_cli_path_with_per_rule_exclude_filters_out() {
+    command(["run", "absolute-paths/check-per-rule-exclude.yaml"])
+        .arg("./absolute-paths/config.yml")
+        .in_fixture("run")
+        .fixture_prefix("")
+        .assert_combined("")
+        .run();
+}
+
+#[test]
+fn run_dot_relative_cli_path_with_root_files_intersection() {
+    command(["run", "absolute-paths/check-root-files.yaml"])
+        .arg("./absolute-paths/config.yml")
+        .in_fixture("run")
+        .fixture_prefix("")
+        .assert_combined("absolute-paths/config.yml:1:8: warning: debug must be disabled\n1 | debug: true\n           ^~~~\n\n1 warning in 1 file")
+        .run();
+}
+
+#[test]
+fn run_dot_relative_cli_path_with_root_exclude_filters_out() {
+    command(["run", "absolute-paths/check-root-exclude.yaml"])
+        .arg("./absolute-paths/config.yml")
+        .in_fixture("run")
+        .fixture_prefix("")
+        .assert_combined("")
         .run();
 }
 
@@ -623,6 +899,100 @@ fn run_mixed_language_rules_report_all_findings() {
     })
     .in_fixture("run")
     .fixture_prefix("")
+    .run();
+}
+
+#[test]
+fn run_mixed_language_rules_report_javascript_and_markdown_findings() {
+    cli_case!({
+        tractor run "mixed-language/mixed-rules.yaml";
+        expect => {
+            exit 1;
+            combined "mixed-language/sample.js:1:1: error: TODO comment found\n1 | // TODO: Fix this code\n    ^~~~~~~~~~~~~~~~~~~~~~\n\nmixed-language/todo-doc.md:3:1: warning: TODO comment found\n3 >| <!-- TODO: Complete this section -->\n4 >| \n\n1 error in 2 files";
+        }
+    })
+    .in_fixture("run")
+    .fixture_prefix("")
+    .run();
+}
+
+#[test]
+fn run_mixed_language_javascript_only_rules_skip_markdown() {
+    cli_case!({
+        tractor run "mixed-language/js-only-rules.yaml";
+        expect => {
+            exit 1;
+            combined "mixed-language/sample.js:1:1: error: TODO comment found\n1 | // TODO: Fix this code\n    ^~~~~~~~~~~~~~~~~~~~~~\n\n1 error in 1 file";
+        }
+    })
+    .in_fixture("run")
+    .fixture_prefix("")
+    .run();
+}
+
+#[test]
+fn run_mixed_language_markdown_only_rules_skip_javascript() {
+    cli_case!({
+        tractor run "mixed-language/md-only-rules.yaml";
+        expect => combined "mixed-language/todo-doc.md:3:1: warning: TODO comment found\n3 >| <!-- TODO: Complete this section -->\n4 >| \n\n1 warning in 1 file";
+    })
+    .in_fixture("run")
+    .fixture_prefix("")
+    .run();
+}
+
+#[test]
+fn run_mixed_language_auto_detect_uses_file_extension() {
+    cli_case!({
+        tractor run "mixed-language/auto-detect.yaml";
+        expect => {
+            exit 1;
+            combined "mixed-language/sample.js:1:1: error: TODO comment found\n1 | // TODO: Fix this code\n    ^~~~~~~~~~~~~~~~~~~~~~\n\n1 error in 1 file";
+        }
+    })
+    .in_fixture("run")
+    .fixture_prefix("")
+    .run();
+}
+
+#[test]
+fn run_mixed_language_multiple_rules_for_same_language_report_all_findings() {
+    cli_case!({
+        tractor run "mixed-language/same-lang-rules.yaml";
+        expect => {
+            exit 1;
+            combined "mixed-language/sample.js:1:1: error: TODO comment found\n1 | // TODO: Fix this code\n    ^~~~~~~~~~~~~~~~~~~~~~\n\nmixed-language/sample.js:3:5: warning: No console.log calls allowed\n3 |     console.log(\"Hello\");\n        ^~~~~~~~~~~~~~~~~~~~\n\nmixed-language/sample.js:7:5: warning: No console.log calls allowed\n7 |     console.log(\"Goodbye\");\n        ^~~~~~~~~~~~~~~~~~~~~~\n\n1 error in 1 file";
+        }
+    })
+    .in_fixture("run")
+    .fixture_prefix("")
+    .run();
+}
+
+#[test]
+fn run_mixed_language_aliases_are_resolved() {
+    cli_case!({
+        tractor run "mixed-language/lang-alias.yaml";
+        expect => {
+            exit 1;
+            combined "mixed-language/sample.js:1:1: error: TODO comment found\n1 | // TODO: Fix this code\n    ^~~~~~~~~~~~~~~~~~~~~~\n\n1 error in 1 file";
+        }
+    })
+    .in_fixture("run")
+    .fixture_prefix("")
+    .run();
+}
+
+#[test]
+fn run_mixed_check_and_set_succeeds_when_check_passes() {
+    cli_case!({
+        tractor run "mixed-ops.yaml";
+        expect => combined "app-config.json:3:13: note: updated //database/host\nupdated 1 file";
+    })
+    .in_fixture("run")
+    .fixture_prefix("")
+    .temp_fixture()
+    .strip_temp_prefix()
     .run();
 }
 

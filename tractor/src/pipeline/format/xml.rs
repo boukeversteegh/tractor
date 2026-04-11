@@ -1,6 +1,6 @@
 use tractor_core::{report::{Report, ResultItem}, normalize_path, render_xml_string, render_xml_node, RenderOptions};
 use super::options::{ViewField, ViewSet};
-use super::shared::{should_show_totals, should_emit_file, should_emit_command, should_emit_rule_id, render_fields_for_match};
+use super::shared::{render_fields_for_match, should_emit_command, should_emit_file, should_emit_rule_id, should_show_totals};
 
 pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, dimensions: &[&str]) -> String {
     let mut tree_opts = render_opts.clone();
@@ -45,14 +45,30 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
         }
     }
 
+    // Top-level captured outputs — honest view of the report model.
+    // Any file-bound outputs that matched a file-group have been moved
+    // into their group during `with_grouping`; what remains here is
+    // genuinely ungrouped output (stdin payloads or orphans).
+    if !report.outputs.is_empty() {
+        append_outputs(&mut body, &report.outputs, "  ");
+    }
+
     // Render results
     if let Some(ref group) = report.group {
         body.push_str(&format!("  <group-by>{}</group-by>\n", escape(group)));
     }
     if !report.results.is_empty() {
-        body.push_str("  <results>\n");
-        render_xml_results(&mut body, &report.results, view, "    ", &tree_opts, dimensions);
-        body.push_str("  </results>\n");
+        // Render into a temp buffer first so we can skip the <results> wrapper
+        // entirely when the view selects no per-match fields (e.g. `-v summary`
+        // or `-v query`). json/yaml skip empty objects automatically via serde;
+        // xml needs to do it explicitly to stay consistent across formats.
+        let mut results_body = String::new();
+        render_xml_results(&mut results_body, &report.results, view, "    ", &tree_opts, dimensions);
+        if !results_body.is_empty() {
+            body.push_str("  <results>\n");
+            body.push_str(&results_body);
+            body.push_str("  </results>\n");
+        }
     }
 
     body.push_str("</report>\n");
@@ -217,10 +233,9 @@ fn render_xml_results(
                 if let Some(ref group) = sub.group {
                     out.push_str(&format!("{}<group-by>{}</group-by>\n", inner, escape(group)));
                 }
-                if view.has(ViewField::Output) {
-                    if let Some(ref content) = sub.output_content {
-                        out.push_str(&format!("{}<output>{}</output>\n", inner, escape(content)));
-                    }
+                // Group-level captured outputs — unconditional honest view.
+                if !sub.outputs.is_empty() {
+                    append_group_outputs(out, &sub.outputs, sub.file.as_deref(), &inner);
                 }
                 // Recurse — this group's children skip the same field that was hoisted
                 // to create this group. If this group has sub-grouping, that applies too.
@@ -229,6 +244,43 @@ fn render_xml_results(
             }
         }
     }
+}
+
+/// Render a list of captured outputs as `<outputs><output file="...">...</output>...</outputs>`.
+/// Content is XML-escaped but newlines are preserved literally, matching how
+/// `<lines><line>` is rendered elsewhere.
+fn append_outputs(out: &mut String, outputs: &[tractor_core::report::ReportOutput], indent: &str) {
+    let inner = format!("{}  ", indent);
+    out.push_str(&format!("{}<outputs>\n", indent));
+    for captured in outputs {
+        match &captured.file {
+            Some(file) => out.push_str(&format!("{}<output file=\"{}\">", inner, escape_attr(file))),
+            None => out.push_str(&format!("{}<output>", inner)),
+        }
+        out.push_str(&escape(&captured.content));
+        out.push_str("</output>\n");
+    }
+    out.push_str(&format!("{}</outputs>\n", indent));
+}
+
+fn append_group_outputs(
+    out: &mut String,
+    outputs: &[tractor_core::report::ReportOutput],
+    group_file: Option<&str>,
+    indent: &str,
+) {
+    if group_file.is_some() && outputs.len() == 1 {
+        let captured = &outputs[0];
+        match &captured.file {
+            Some(file) => out.push_str(&format!("{}<output file=\"{}\">", indent, escape_attr(file))),
+            None => out.push_str(&format!("{}<output>", indent)),
+        }
+        out.push_str(&escape(&captured.content));
+        out.push_str("</output>\n");
+        return;
+    }
+
+    append_outputs(out, outputs, indent);
 }
 
 fn escape(s: &str) -> String {

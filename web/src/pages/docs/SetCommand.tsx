@@ -75,6 +75,28 @@ Set 3 matches in 3 files`}
       <p>Glob patterns work too:</p>
       <CodeBlock language="bash" code={`tractor set "config/**/*.yaml" -x "//database/host" --value "new-db.example.com"`} />
 
+      <h2>Filter Targets with Predicates</h2>
+      <p>
+        When you pass a path expression together with <code>--value</code>, tractor treats the expression as a selector. Predicates stay intact and only matching nodes are updated:
+      </p>
+      <Example
+        file={{ name: 'servers.yaml', language: 'yaml', content: `servers:
+  - host: localhost
+    port: 5432
+  - host: prod-db
+    port: 5432` }}
+        command={`tractor set servers.yaml "servers[host='localhost']/port" --value "5433" --stdout`}
+        outputLanguage="yaml"
+        output={`servers:
+  - host: localhost
+    port: 5433
+  - host: prod-db
+    port: 5432`}
+      />
+      <p>
+        This is equivalent in spirit to an XPath update such as <code>-x "//servers[host='localhost']/port"</code>: the predicate filters the target nodes; it is not stripped away.
+      </p>
+
       <h2>Patch Source Code</h2>
       <p>
         Tractor isn't limited to config files. You can modify values in any source file — patch constants, update versions, change strings in generated code:

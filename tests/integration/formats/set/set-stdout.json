@@ -9,13 +9,7 @@
   "results": [
     {
       "file": "tests/integration/formats/set/sample.yaml",
-      "results": [
-        {
-          "line": 2,
-          "status": "updated",
-          "reason": "//database/host"
-        }
-      ]
+      "output": "database:\n  host: db.example.com\n  port: 5432\n"
     }
   ]
 }

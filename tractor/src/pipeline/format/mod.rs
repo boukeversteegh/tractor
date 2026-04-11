@@ -58,8 +58,8 @@ pub fn render_report(
         OutputFormat::Xml    => print!("{}", render_xml_report(report, &ctx.view, &ctx.render_options(), &dims)),
         OutputFormat::Gcc    => {
             print!("{}", render_gcc(report, &ctx.render_options(), &dims));
-            if let Some(ref totals) = report.totals {
-                print_gcc_summary(totals);
+            if let Some(summary) = gcc_summary_string(report) {
+                print!("{}", summary);
             }
         }
         OutputFormat::Github => print!("{}", render_github(report, &dims)),
@@ -168,8 +168,16 @@ fn render_test_text(
 // Gcc summary (stderr) — printed after gcc format output
 // ---------------------------------------------------------------------------
 
-fn print_gcc_summary(totals: &tractor_core::report::Totals) {
+fn gcc_summary_string(report: &Report) -> Option<String> {
+    let totals = report.totals.as_ref()?;
     let mut parts = Vec::new();
+    let mut updated_files = std::collections::HashSet::new();
+
+    for m in report.all_matches() {
+        if m.status.as_deref() == Some("updated") && !m.file.is_empty() {
+            updated_files.insert(&m.file);
+        }
+    }
 
     if totals.fatals > 0 {
         parts.push(format!("{} fatal{}", totals.fatals, if totals.fatals == 1 { "" } else { "s" }));
@@ -180,11 +188,12 @@ fn print_gcc_summary(totals: &tractor_core::report::Totals) {
     if totals.warnings > 0 && totals.errors == 0 && totals.fatals == 0 {
         parts.push(format!("{} warning{}", totals.warnings, if totals.warnings == 1 { "" } else { "s" }));
     }
-    if totals.updated > 0 {
-        parts.push(format!("updated {} file{}", totals.updated, if totals.updated == 1 { "" } else { "s" }));
+    if !updated_files.is_empty() {
+        let count = updated_files.len();
+        parts.push(format!("updated {} file{}", count, if count == 1 { "" } else { "s" }));
     }
 
-    if parts.is_empty() { return; }
+    if parts.is_empty() { return None; }
 
     let file_part = if totals.files > 0 && (totals.fatals > 0 || totals.errors > 0 || totals.warnings > 0) {
         format!(" in {} file{}", totals.files, if totals.files == 1 { "" } else { "s" })
@@ -192,5 +201,75 @@ fn print_gcc_summary(totals: &tractor_core::report::Totals) {
         String::new()
     };
 
-    println!("{}{}", parts.join(", "), file_part);
+    Some(format!("{}{}\n", parts.join(", "), file_part))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::gcc_summary_string;
+    use tractor_core::report::{ReportMatch, ReportBuilder, Severity};
+
+    fn set_match(file: &str, status: &str) -> ReportMatch {
+        ReportMatch {
+            file: file.to_string(),
+            line: 1,
+            column: 1,
+            end_line: 1,
+            end_column: 1,
+            command: "set".to_string(),
+            tree: None,
+            value: None,
+            source: None,
+            lines: None,
+            reason: None,
+            severity: None,
+            message: None,
+            origin: None,
+            rule_id: None,
+            status: Some(status.to_string()),
+            output: None,
+        }
+    }
+
+    #[test]
+    fn gcc_summary_counts_distinct_updated_files() {
+        let mut builder = ReportBuilder::new();
+        builder.add(set_match("a.yaml", "updated"));
+        builder.add(set_match("a.yaml", "updated"));
+        builder.add(set_match("b.yaml", "unchanged"));
+        let report = builder.build();
+
+        assert_eq!(gcc_summary_string(&report).as_deref(), Some("updated 1 file\n"));
+    }
+
+    #[test]
+    fn gcc_summary_keeps_error_file_count_separate_from_updated_files() {
+        let mut builder = ReportBuilder::new();
+        builder.add(set_match("a.yaml", "updated"));
+        builder.add(ReportMatch {
+            file: "b.yaml".to_string(),
+            line: 1,
+            column: 1,
+            end_line: 1,
+            end_column: 1,
+            command: "check".to_string(),
+            tree: None,
+            value: None,
+            source: None,
+            lines: None,
+            reason: Some("bad".to_string()),
+            severity: Some(Severity::Error),
+            message: None,
+            origin: None,
+            rule_id: Some("rule".to_string()),
+            status: None,
+            output: None,
+        });
+        let report = builder.build();
+
+        assert_eq!(
+            gcc_summary_string(&report).as_deref(),
+            Some("1 error, updated 1 file in 2 files\n")
+        );
+    }
 }
