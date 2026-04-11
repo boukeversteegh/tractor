@@ -41,10 +41,11 @@ run_test bash -c "
 # +field: add a field to the default view
 # ---------------------------------------------------------------------------
 
-# Adding source to query default (default: file,line,tree) should produce source text lines
+# Adding source to query default (default: file,line,tree) should produce
+# side-by-side source text in the combined tree+source renderer.
 run_test bash -c "
   actual=\$(tractor '$SAMPLE_CS' -x '//class/name' --no-color '-v=+source' 2>/dev/null)
-  echo \"\$actual\" | grep -qE '^(Foo|Qux)$'
+  echo \"\$actual\" | grep -qE 'public class (Foo|Qux)'
 " -m "query -v=+source adds source text to output"
 
 # ---------------------------------------------------------------------------
