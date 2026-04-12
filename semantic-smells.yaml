@@ -1,0 +1,86 @@
+# Semantic smell detection — experimental rules for tractor's own codebase
+# Run: tractor run /tmp/semantic-smells.yaml
+
+check:
+  files:
+    - "tractor/src/**/*.rs"
+    - "tractor-core/src/**/*.rs"
+  language: rust
+  rules:
+    # SMELL 1: let VAR = something.FIELD where VAR and FIELD share no substring
+    - id: let-field-mismatch
+      severity: warning
+      reason: "Variable name doesn't match source field name"
+      xpath: >-
+        //let
+          [value/field/field_identifier]
+          [string-length(type) > 3]
+          [string-length(value/field/field_identifier) > 3]
+          [let $v := lower-case(string(type))
+           return let $f := lower-case(string(value/field/field_identifier))
+           return $v != $f
+             and not(contains($v, $f))
+             and not(contains($f, $v))]
+
+    # SMELL 2: Struct field initialized from variable with different name
+    - id: struct-field-value-mismatch
+      severity: warning
+      reason: "Struct field name doesn't match the variable assigned to it"
+      xpath: >-
+        //field_initializer
+          [field_identifier]
+          [value/type]
+          [string-length(field_identifier) > 3]
+          [string-length(value/type) > 3]
+          [let $n := lower-case(string(field_identifier))
+           return let $val := lower-case(string(value/type))
+           return $n != $val
+             and $val != "none" and $val != "true" and $val != "false"
+             and $val != "self" and $val != "default"
+             and not(contains($n, $val))
+             and not(contains($val, $n))]
+
+    # SMELL 3: x.COLLECTION.push(y) where pushed item has a field name that doesn't match collection
+    - id: push-collection-mismatch
+      severity: warning
+      reason: "Collection name doesn't match pushed item's field name"
+      xpath: >-
+        //call
+          [field/field_identifier = "push" or field/field_identifier = "insert"]
+          [field/value/field/field_identifier]
+          [arguments//field/field_identifier]
+          [let $col := lower-case(string(field/value/field/field_identifier))
+           return let $item := lower-case(string((arguments//field/field_identifier)[last()]))
+           return string-length($col) > 3 and string-length($item) > 3
+             and not(contains($col, $item))
+             and not(contains($item, $col))]
+
+    # SMELL 4: let VAR = SOURCE.method() where VAR doesn't match SOURCE object name
+    - id: let-source-mismatch
+      severity: warning
+      reason: "Variable name doesn't match the object it was derived from"
+      xpath: >-
+        //let
+          [value/call/field/value/type]
+          [string-length(type) > 3]
+          [string-length(value/call/field/value/type) > 3]
+          [let $v := lower-case(string(type))
+           return let $s := lower-case(string(value/call/field/value/type))
+           return $v != $s
+             and not(contains($v, $s))
+             and not(contains($s, $v))]
+
+    # SMELL 5: let VAR = SOURCE.field.method() where VAR doesn't match FIELD
+    - id: let-chained-field-mismatch
+      severity: warning
+      reason: "Variable name doesn't match the field in the method chain"
+      xpath: >-
+        //let
+          [value/call/field/value/field/field_identifier]
+          [string-length(type) > 3]
+          [string-length(value/call/field/value/field/field_identifier) > 3]
+          [let $v := lower-case(string(type))
+           return let $f := lower-case(string(value/call/field/value/field/field_identifier))
+           return $v != $f
+             and not(contains($v, $f))
+             and not(contains($f, $v))]
