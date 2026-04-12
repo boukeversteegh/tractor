@@ -1,6 +1,45 @@
-use clap::CommandFactory;
+use clap::{Args, CommandFactory};
 use tractor_core::NormalizedXpath;
-use crate::cli::{Cli, QueryArgs};
+use crate::cli::{Cli, SharedArgs};
+
+/// Query/explore mode (default, no subcommand)
+#[derive(Args, Debug)]
+pub struct QueryArgs {
+    /// Files to process (supports glob patterns like "src/**/*.cs")
+    #[arg()]
+    pub files: Vec<String>,
+
+    #[command(flatten)]
+    pub shared: SharedArgs,
+
+    /// Source code string to parse (alternative to stdin, requires --lang)
+    #[arg(short = 's', long = "string", help_heading = None)]
+    pub content: Option<String>,
+
+    /// Report fields to include (e.g. tree, value, source) [default: file,line,tree]
+    #[arg(short = 'v', long = "view", help_heading = "View")]
+    pub view: Option<String>,
+
+    /// Custom message template (supports {value}, {line}, {col}, {file})
+    #[arg(short = 'm', long = "message", help_heading = "View")]
+    pub message: Option<String>,
+
+    /// Output format [default: text]
+    #[arg(short = 'f', long = "format", default_value = "text", help_heading = "Format")]
+    pub format: String,
+
+    /// Show full XML with matches highlighted (for debugging XPath)
+    #[arg(long = "debug", help_heading = "Advanced")]
+    pub debug: bool,
+
+    /// Print version information (use with --verbose for detailed output)
+    #[arg(short = 'V', long = "version", help_heading = "Advanced")]
+    pub version: bool,
+
+    /// Path to a tractor config file (YAML/TOML) — runs only query operations from it
+    #[arg(long = "config", help_heading = "Config")]
+    pub config: Option<String>,
+}
 use crate::executor::{self, ExecuteOptions, Operation, QueryOperation, QueryExpr};
 use crate::pipeline::{
     RunContext, ViewField, InputMode,

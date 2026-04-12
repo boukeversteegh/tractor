@@ -1,8 +1,24 @@
 use std::io::Read;
+use clap::Args;
 use tractor_core::language_info::{get_language_info, get_language_for_extension};
 use tractor_core::render::{parse_input, render, RenderOptions};
 use tractor_core::TreeMode;
-use crate::cli::RenderArgs;
+
+/// Render mode: convert XML AST back to source code
+#[derive(Args, Debug)]
+pub struct RenderArgs {
+    /// Target file (determines language from extension). If omitted, output goes to stdout.
+    #[arg()]
+    pub file: Option<String>,
+
+    /// Language (required when no file is given, e.g., csharp, rust)
+    #[arg(short = 'l', long = "lang")]
+    pub lang: Option<String>,
+
+    /// XML input string (alternative to stdin)
+    #[arg(short = 's', long = "string")]
+    pub input: Option<String>,
+}
 
 pub fn run_render(args: RenderArgs) -> Result<(), Box<dyn std::error::Error>> {
     let lang = resolve_language(&args)?;

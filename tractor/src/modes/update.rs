@@ -1,4 +1,20 @@
-use crate::cli::UpdateArgs;
+use clap::Args;
+use crate::cli::SharedArgs;
+
+/// Update mode: modify only existing matched node values (no creation)
+#[derive(Args, Debug)]
+pub struct UpdateArgs {
+    /// Files to process (supports glob patterns like "src/**/*.cs")
+    #[arg()]
+    pub files: Vec<String>,
+
+    #[command(flatten)]
+    pub shared: SharedArgs,
+
+    /// Value to set matched nodes to
+    #[arg(long = "value", help_heading = "Update")]
+    pub value: String,
+}
 use crate::executor::{self, ExecuteOptions, Operation, UpdateOperation};
 use crate::pipeline::{RunContext, ViewField, InputMode};
 

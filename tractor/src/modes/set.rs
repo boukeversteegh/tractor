@@ -1,6 +1,45 @@
+use clap::Args;
 use tractor_core::declarative_set::parse_set_expr;
+use crate::cli::SharedArgs;
 
-use crate::cli::SetArgs;
+/// Set mode: modify matched node values in-place
+///
+/// Examples:
+///   tractor set config.yaml -x "//database/host" --value "localhost"
+///   tractor set config.yaml "database[host='localhost'][port=5432]"
+///   tractor set config.yaml "database/host" --value "localhost"
+///   tractor set config.yaml "servers[host='localhost']/port" --value "5433"
+#[derive(Args, Debug)]
+pub struct SetArgs {
+    /// Files to process and optional path expression.
+    /// When -x is not given, the last argument that isn't an existing file
+    /// is treated as the path expression.
+    #[arg()]
+    pub args: Vec<String>,
+
+    #[command(flatten)]
+    pub shared: SharedArgs,
+
+    /// Value to set matched nodes to (optional when path expression contains values)
+    #[arg(long = "value", help_heading = "Set")]
+    pub value: Option<String>,
+
+    /// Write output to stdout instead of modifying files in-place
+    #[arg(long = "stdout", help_heading = "Set")]
+    pub stdout: bool,
+
+    /// Report fields to include (e.g. tree, value, source) [default: file,line,status,reason]
+    #[arg(short = 'v', long = "view", help_heading = "View")]
+    pub view: Option<String>,
+
+    /// Output format [default: text]
+    #[arg(short = 'f', long = "format", default_value = "text", help_heading = "Format")]
+    pub format: String,
+
+    /// Path to a tractor config file (YAML/TOML) — runs only set operations from it
+    #[arg(long = "config", help_heading = "Config")]
+    pub config: Option<String>,
+}
 use crate::executor::{
     self, ExecuteOptions, Operation, SetMapping, SetOperation, SetReportMode, SetWriteMode,
 };

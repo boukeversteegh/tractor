@@ -18,7 +18,51 @@ pub enum OutputFormat {
 }
 
 impl OutputFormat {
+    /// All variants in display order.
+    const ALL: &[OutputFormat] = &[
+        OutputFormat::Text, OutputFormat::Json, OutputFormat::Yaml,
+        OutputFormat::Xml, OutputFormat::Gcc, OutputFormat::Github,
+        OutputFormat::ClaudeCode,
+    ];
+
+    /// Canonical CLI name for this format.
+    pub fn name(&self) -> &'static str {
+        match self {
+            OutputFormat::Text      => FORMAT_TEXT,
+            OutputFormat::Json      => FORMAT_JSON,
+            OutputFormat::Yaml      => FORMAT_YAML,
+            OutputFormat::Xml       => FORMAT_XML,
+            OutputFormat::Gcc       => FORMAT_GCC,
+            OutputFormat::Github    => FORMAT_GITHUB,
+            OutputFormat::ClaudeCode => FORMAT_CLAUDE_CODE,
+        }
+    }
+
+    /// Short description for help and error output.
+    pub fn description(&self) -> &'static str {
+        match self {
+            OutputFormat::Text      => "Human-readable plain text",
+            OutputFormat::Json      => "JSON report envelope",
+            OutputFormat::Yaml      => "YAML report envelope",
+            OutputFormat::Xml       => "XML report envelope",
+            OutputFormat::Gcc       => "file:line:col: severity: reason (for CI/editors)",
+            OutputFormat::Github    => "GitHub Actions annotation (::error file=...)",
+            OutputFormat::ClaudeCode => "Claude Code hook JSON (use with --hook)",
+        }
+    }
+
+    /// Full `long_help` text for the `-f` / `--format` flag.
+    pub fn format_long_help(default: &str) -> String {
+        let mut lines = vec![format!("Output format [default: {default}]")];
+        let max_name = OutputFormat::ALL.iter().map(|f| f.name().len()).max().unwrap_or(0);
+        for f in OutputFormat::ALL {
+            lines.push(format!("  {:width$}  {}", f.name(), f.description(), width = max_name));
+        }
+        lines.join("\n")
+    }
+
     pub fn from_str(s: &str) -> Result<Self, String> {
+        let all_names: Vec<&str> = OutputFormat::ALL.iter().map(|f| f.name()).collect();
         match s.to_lowercase().as_str() {
             FORMAT_TEXT    => Ok(OutputFormat::Text),
             FORMAT_JSON    => Ok(OutputFormat::Json),
@@ -28,11 +72,10 @@ impl OutputFormat {
             FORMAT_GITHUB     => Ok(OutputFormat::Github),
             FORMAT_CLAUDE_CODE => Ok(OutputFormat::ClaudeCode),
             _ => Err(format!(
-                "invalid format '{}'. Valid formats: text, json, yaml, xml, gcc, github, claude-code", s,
+                "invalid format '{}'. Valid formats: {}", s, all_names.join(", "),
             )),
         }
     }
-
 }
 
 pub const FORMAT_TEXT:   &str = "text";
@@ -104,6 +147,116 @@ pub enum ViewField {
 }
 
 impl ViewField {
+    /// All variants in canonical display order.
+    const ALL: &[ViewField] = &[
+        ViewField::Tree, ViewField::Value, ViewField::Source, ViewField::Lines,
+        ViewField::File, ViewField::Line, ViewField::Column,
+        ViewField::Reason, ViewField::Severity, ViewField::Totals,
+        ViewField::Count, ViewField::Schema, ViewField::Query,
+        ViewField::Status, ViewField::Output, ViewField::Command, ViewField::Origin,
+    ];
+
+    /// Canonical CLI name for this field (the primary name accepted by `-v`).
+    pub fn name(&self) -> &'static str {
+        match self {
+            ViewField::Tree     => "tree",
+            ViewField::Value    => "value",
+            ViewField::Source   => "source",
+            ViewField::Lines    => "lines",
+            ViewField::File     => "file",
+            ViewField::Line     => "line",
+            ViewField::Column   => "column",
+            ViewField::Reason   => "reason",
+            ViewField::Severity => "severity",
+            ViewField::Totals   => "totals",
+            ViewField::Count    => "count",
+            ViewField::Schema   => "schema",
+            ViewField::Query    => "query",
+            ViewField::Status   => "status",
+            ViewField::Output   => "output",
+            ViewField::Command  => "command",
+            ViewField::Origin   => "origin",
+        }
+    }
+
+    /// Short description for help and error output.
+    pub fn description(&self) -> &'static str {
+        match self {
+            ViewField::Tree     => "Parsed source tree",
+            ViewField::Value    => "Text content of matched nodes",
+            ViewField::Source   => "Exact matched source text",
+            ViewField::Lines    => "Full source lines containing each match",
+            ViewField::File     => "File path of the match",
+            ViewField::Line     => "Line number of the match",
+            ViewField::Column   => "Column number of the match",
+            ViewField::Reason   => "Reason message for violations",
+            ViewField::Severity => "Severity level (error/warning)",
+            ViewField::Totals   => "Summary totals across all matches",
+            ViewField::Count    => "Total match count",
+            ViewField::Schema   => "Structural overview of element types",
+            ViewField::Query    => "Echo the XPath query as received",
+            ViewField::Status   => "Whether each match was updated or unchanged",
+            ViewField::Output   => "Full modified content (for --stdout)",
+            ViewField::Command  => "Operation type (check, query, etc.)",
+            ViewField::Origin   => "Diagnostic origin (xpath, cli, etc.)",
+        }
+    }
+
+    /// Category label for grouping in help output.
+    fn category(&self) -> &'static str {
+        match self {
+            ViewField::Tree | ViewField::Value | ViewField::Source
+            | ViewField::Lines | ViewField::Schema => "content",
+            ViewField::File | ViewField::Line | ViewField::Column => "location",
+            ViewField::Reason | ViewField::Severity | ViewField::Origin
+            | ViewField::Command => "diagnostic",
+            ViewField::Count | ViewField::Totals | ViewField::Query => "summary",
+            ViewField::Status | ViewField::Output => "set mode",
+        }
+    }
+
+    /// Categorized view names with descriptions and modifier syntax.
+    /// Used by both `--help` (via `view_long_help`) and error messages.
+    pub fn help_text() -> String {
+        let categories: &[&str] = &["content", "location", "diagnostic", "summary", "set mode"];
+        let max_name_len = ViewField::ALL.iter().map(|f| f.name().len()).max().unwrap_or(0);
+        let mut sections = Vec::new();
+        for &cat in categories {
+            let fields: Vec<&ViewField> = ViewField::ALL.iter()
+                .filter(|f| f.category() == cat)
+                .collect();
+            if fields.is_empty() { continue; }
+            let mut lines = vec![format!("  {}:", cat)];
+            for f in fields {
+                lines.push(format!("    {:width$}  {}", f.name(), f.description(), width = max_name_len));
+            }
+            sections.push(lines.join("\n"));
+        }
+        let views = sections.join("\n");
+        format!(
+            "{views}\n\n\
+             Combine with commas: -v tree,value\n\
+             Use +/- modifiers to adjust defaults: -v=-lines or -v=+source,-lines"
+        )
+    }
+
+    /// Full `long_help` text for the `-v` / `--view` flag, including the
+    /// command-specific default. Call from `Command` augmentation in main.
+    pub fn view_long_help(default_fields: &[ViewField]) -> String {
+        let defaults: Vec<&str> = default_fields.iter().map(|f| f.name()).collect();
+        format!(
+            "Choose which fields are included in the output [default: {}]\n\n\
+             {}\n\n\
+             Examples:\n  \
+             -v value                Show only text content\n  \
+             -v tree,value           Combine multiple fields\n  \
+             -v=-lines               Remove a field from defaults\n  \
+             -v=+source,-lines       Add and remove in one expression",
+            defaults.join(","),
+            ViewField::help_text(),
+        )
+    }
+
     fn from_str(s: &str) -> Result<Self, String> {
         match s {
             "tree" | "ast" => Ok(ViewField::Tree),
@@ -127,9 +280,8 @@ impl ViewField {
                 "'{}' is a format, not a view. Use -f {} instead of -v {}", s, s, s,
             )),
             _ => Err(format!(
-                "invalid view '{}'. Valid views: tree, value, source, lines, file, line, column, \
-                 reason, severity, totals, count, schema, query, status, output, command, origin",
-                s,
+                "invalid view '{}'.\n\nValid views:\n{}",
+                s, ViewField::help_text(),
             )),
         }
     }

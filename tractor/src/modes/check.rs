@@ -1,6 +1,65 @@
+use clap::Args;
 use tractor_core::report::Severity;
 use tractor_core::rule::Rule;
-use crate::cli::CheckArgs;
+use crate::cli::SharedArgs;
+
+/// Check mode: lint/report violations
+#[derive(Args, Debug)]
+pub struct CheckArgs {
+    /// Files to process (supports glob patterns like "src/**/*.cs")
+    #[arg()]
+    pub files: Vec<String>,
+
+    #[command(flatten)]
+    pub shared: SharedArgs,
+
+    /// Source code string to parse (alternative to stdin, requires --lang)
+    #[arg(short = 's', long = "string", help_heading = None)]
+    pub content: Option<String>,
+
+    /// Report fields to include (e.g. tree, value, source) [default: reason,severity,lines]
+    #[arg(short = 'v', long = "view", help_heading = "View")]
+    pub view: Option<String>,
+
+    /// Custom message template (supports {value}, {line}, {col}, {file})
+    #[arg(short = 'm', long = "message", help_heading = "View")]
+    pub message: Option<String>,
+
+    /// Output format [default: gcc]
+    #[arg(short = 'f', long = "format", default_value = "gcc", help_heading = "Format")]
+    pub format: String,
+
+    /// Reason message for each violation
+    #[arg(long = "reason", help_heading = "Check")]
+    pub reason: Option<String>,
+
+    /// Severity level: error (default) or warning
+    #[arg(long = "severity", default_value = "error", help_heading = "Check")]
+    pub severity: String,
+
+    /// Path to a tractor config file (YAML/TOML) for batch checking.
+    ///
+    /// Uses the standard tractor config format. Example:
+    ///
+    ///   check:
+    ///     rules:
+    ///       - id: no-eval
+    ///         xpath: "//call[function='eval']"
+    ///         severity: error
+    ///         expect:
+    ///           - valid: "JSON.parse(data)"
+    ///           - invalid: "eval(userInput)"
+    #[arg(long = "config", help_heading = "Check", verbatim_doc_comment)]
+    pub config: Option<String>,
+
+    /// A code example that should pass the check (no matches expected)
+    #[arg(long = "expect-valid", help_heading = "Check")]
+    pub expect_valid: Option<String>,
+
+    /// A code example that should fail the check (matches expected)
+    #[arg(long = "expect-invalid", help_heading = "Check")]
+    pub expect_invalid: Option<String>,
+}
 use crate::executor::{self, CheckOperation, ExecuteOptions, Operation};
 use crate::pipeline::{
     RunContext, ViewField, InputMode,
