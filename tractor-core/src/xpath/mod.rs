@@ -77,6 +77,7 @@ impl ValidationResult {
 /// and any errors or warnings.
 pub fn validate_xpath(xpath: &str) -> ValidationResult {
     use xee_xpath::Queries;
+    use crate::xpath::engine::tractor_static_context;
 
     // Empty query check
     let trimmed = xpath.trim();
@@ -84,8 +85,8 @@ pub fn validate_xpath(xpath: &str) -> ValidationResult {
         return ValidationResult::err("XPath expression is empty".to_string());
     }
 
-    // Try to compile the query
-    let queries = Queries::default();
+    // Try to compile the query (with tractor's built-in variables like $file)
+    let queries = Queries::new(tractor_static_context());
     match queries.sequence(xpath) {
         Ok(_) => ValidationResult::ok(),
         Err(e) => {

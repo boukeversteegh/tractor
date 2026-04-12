@@ -171,38 +171,6 @@ fn render_node_recursive(
         Value::Element(element) => {
             let name = xot.local_name_str(element.name());
 
-            // In default mode, convert <File path="..."> to <file>path</file> + promote children
-            if name == "File" && !options.include_meta {
-                // Emit <file>path</file>
-                let path_value = xot.attributes(node).iter()
-                    .find(|(n, _)| xot.local_name_str(*n) == "path")
-                    .map(|(_, v)| v.as_str());
-                if let Some(path) = path_value {
-                    output.push_str(&indent);
-                    if options.use_color { output.push_str(ansi::DIM); }
-                    output.push('<');
-                    if options.use_color { output.push_str(ansi::RESET); output.push_str(ansi::BLUE); }
-                    output.push_str("file");
-                    if options.use_color { output.push_str(ansi::RESET); output.push_str(ansi::DIM); }
-                    output.push('>');
-                    if options.use_color { output.push_str(ansi::RESET); }
-                    output.push_str(&escape_xml(path));
-                    if options.use_color { output.push_str(ansi::DIM); }
-                    output.push_str("</");
-                    if options.use_color { output.push_str(ansi::RESET); output.push_str(ansi::BLUE); }
-                    output.push_str("file");
-                    if options.use_color { output.push_str(ansi::RESET); output.push_str(ansi::DIM); }
-                    output.push('>');
-                    if options.use_color { output.push_str(ansi::RESET); }
-                    if options.pretty_print { output.push('\n'); }
-                }
-                // Render children as siblings (promoted out of File wrapper)
-                for child in xot.children(node) {
-                    render_node_recursive(xot, child, options, depth, output);
-                }
-                return;
-            }
-
             // Check if children should be truncated (at max depth)
             let truncate_children = options.max_depth.map_or(false, |max| depth >= max);
 
@@ -469,7 +437,7 @@ fn render_open_tag(
             if matches!(
                 attr_name,
                 "line" | "column" | "end_line" | "end_column"
-                | "kind" | "field" | "path"
+                | "kind" | "field"
             ) {
                 continue;
             }
@@ -614,36 +582,6 @@ fn render_xml_node_recursive(
 
     match node {
         XmlNode::Element { name, attributes, children } => {
-            // In default mode, convert <File path="..."> to <file>path</file> + promote children
-            if name == "File" && !options.include_meta {
-                let path_value = attributes.iter()
-                    .find(|(k, _)| k == "path")
-                    .map(|(_, v)| v.as_str());
-                if let Some(path) = path_value {
-                    output.push_str(&indent);
-                    if options.use_color { output.push_str(ansi::DIM); }
-                    output.push('<');
-                    if options.use_color { output.push_str(ansi::RESET); output.push_str(ansi::BLUE); }
-                    output.push_str("file");
-                    if options.use_color { output.push_str(ansi::RESET); output.push_str(ansi::DIM); }
-                    output.push('>');
-                    if options.use_color { output.push_str(ansi::RESET); }
-                    output.push_str(&escape_xml(path));
-                    if options.use_color { output.push_str(ansi::DIM); }
-                    output.push_str("</");
-                    if options.use_color { output.push_str(ansi::RESET); output.push_str(ansi::BLUE); }
-                    output.push_str("file");
-                    if options.use_color { output.push_str(ansi::RESET); output.push_str(ansi::DIM); }
-                    output.push('>');
-                    if options.use_color { output.push_str(ansi::RESET); }
-                    if options.pretty_print { output.push('\n'); }
-                }
-                for child in children {
-                    render_xml_node_recursive(child, options, depth, output);
-                }
-                return;
-            }
-
             let truncate_children = options.max_depth.map_or(false, |max| depth >= max);
 
             let is_highlighted = options.highlights.as_ref().map_or(false, |highlights| {
@@ -839,7 +777,7 @@ fn render_xml_node_open_tag(
             if matches!(
                 attr_name.as_str(),
                 "line" | "column" | "end_line" | "end_column"
-                | "kind" | "field" | "path"
+                | "kind" | "field"
             ) {
                 continue;
             }

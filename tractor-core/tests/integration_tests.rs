@@ -510,7 +510,7 @@ fn test_json_data_view_arrays() {
 
 #[test]
 fn test_json_data_view_top_level_array() {
-    // Top-level arrays should use <item> directly under File
+    // Top-level arrays should use <item> directly under the document root
     let source = r#"[1, "two", [3, 4]]"#;
     let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), None, false)
         .expect("Should parse JSON");
@@ -519,7 +519,7 @@ fn test_json_data_view_top_level_array() {
 
     let matches = engine.query_documents(
         &mut result.documents, result.doc_handle,
-        "//File/item", result.source_lines.clone(), &result.file_path,
+        "/*/item", result.source_lines.clone(), &result.file_path,
     ).expect("Query should succeed");
     assert_eq!(matches.len(), 3, "Top-level array should have 3 items");
 

@@ -10,7 +10,7 @@ cli_suite! {
         functions_exist => tractor query "sample.rs" -x "function" => count 4;
         add_name => tractor query "sample.rs" -x "function[name='add']" => count 1;
         main_name => tractor query "sample.rs" -x "function[name='main']" => count 1;
-        file_rename => tractor query "sample.rs" -x "file" => count 1;
+        file_variable => tractor query "sample.rs" -x "$file" => count 1;
         let_rename => tractor query "sample.rs" -x "let" => count 1;
         binary_op => tractor query "sample.rs" -x "binary[op='+']" => count 1;
         call_rename => tractor query "sample.rs" -x "call" => count 1;
@@ -59,7 +59,7 @@ cli_suite! {
         functions_exist => tractor query "sample.go" -x "function" => count 3;
         add_name => tractor query "sample.go" -x "function[name='add']" => count 1;
         main_name => tractor query "sample.go" -x "function[name='main']" => count 1;
-        file_rename => tractor query "sample.go" -x "file" => count 1;
+        file_variable => tractor query "sample.go" -x "$file" => count 1;
         package_clause => tractor query "sample.go" -x "package" => count 1;
         binary_op => tractor query "sample.go" -x "binary[op='+']" => count 1;
         call_rename => tractor query "sample.go" -x "call" => count 2;
@@ -326,6 +326,21 @@ cli_suite! {
         variable_reference => tractor query -s "let x = 1;" -l "typescript" -x "let $v := //name return $v" -v "value" => count 1;
         bare_element_name => tractor query -s "let x = 1;" -l "typescript" -x "variable" => count 1;
         bare_element_predicate => tractor query -s "function foo() {}" -l "javascript" -x "function[name='foo']" => count 1;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// $file variable tests
+// ---------------------------------------------------------------------------
+
+cli_suite! {
+    file_variable in "variables" {
+        // $file returns the file path as a string
+        file_path => tractor query "MyApp/Services/UserService.cs" -x "$file" => count 1;
+        // Detect C# namespace/directory mismatch:
+        // MyApp/Services/UserService.cs has namespace MyApp.Services → OK (path contains MyApp/Services)
+        // MyApp/Models/UserService.cs has namespace MyApp.Services → MISMATCH (path has Models, not Services)
+        namespace_mismatch => tractor query "MyApp/**/*.cs" -x "//namespace[not(contains($file, translate(string(name), '.', '/')))]" => count 1;
     }
 }
 

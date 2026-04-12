@@ -215,8 +215,8 @@ fn update_existing(
     let doc_node = result.documents.document_node(result.doc_handle)
         .ok_or_else(|| UpsertError::Parse("no document node".into()))?;
 
-    let file_node = find_file_node(result.documents.xot(), doc_node)
-        .ok_or_else(|| UpsertError::NoInsertionPoint("no File node found".into()))?;
+    let ast_root = find_document_element(result.documents.xot(), doc_node)
+        .ok_or_else(|| UpsertError::NoInsertionPoint("no document element found".into()))?;
 
     // Step 1: Record original byte spans and mutate all matched nodes
     let mut splice_info: Vec<(usize, usize, (u32, u32))> = Vec::new(); // (orig_start, orig_end, span_key)
@@ -227,7 +227,7 @@ fn update_existing(
         let orig_end = line_col_to_byte_offset(source, matched.end_line, matched.end_column)
             .ok_or_else(|| UpsertError::NoInsertionPoint("end position out of bounds".into()))?;
 
-        let target = find_node_by_span(result.documents.xot(), file_node, matched.line, matched.column)
+        let target = find_node_by_span(result.documents.xot(), ast_root, matched.line, matched.column)
             .ok_or_else(|| UpsertError::NoInsertionPoint("could not locate matched node in tree".into()))?;
 
         replace_text_content(result.documents.xot_mut(), target, value)?;
@@ -237,7 +237,7 @@ fn update_existing(
     }
 
     // Step 2: Re-render once with span tracking
-    let xml_node = xot_node_to_xml_node(result.documents.xot(), file_node);
+    let xml_node = xot_node_to_xml_node(result.documents.xot(), ast_root);
     let render_opts = detect_render_options(source);
     let (rendered, span_map) = render::render_with_spans(&xml_node, lang, TreeMode::Data, &render_opts)
         .map_err(|e| UpsertError::Render(e.to_string()))?;
@@ -302,13 +302,13 @@ fn insert_new(
     // one matches. This honours predicates, axes, and any valid XPath.
     let doc_node = result.documents.document_node(result.doc_handle)
         .ok_or_else(|| UpsertError::Parse("no document node".into()))?;
-    let file_node = find_file_node(result.documents.xot(), doc_node)
-        .ok_or_else(|| UpsertError::NoInsertionPoint("no File node found".into()))?;
+    let ast_root = find_document_element(result.documents.xot(), doc_node)
+        .ok_or_else(|| UpsertError::NoInsertionPoint("no document element found".into()))?;
 
     let mut existing_depth = 0usize;
-    // When no prefix matches, insert under the document wrapper (not the raw
-    // File node). Descend through structural wrappers like <document>.
-    let mut ancestor_node = descend_structural_wrappers(result.documents.xot(), file_node);
+    // When no prefix matches, insert under the document element.
+    // Descend through structural wrappers like <document>.
+    let mut ancestor_node = descend_structural_wrappers(result.documents.xot(), ast_root);
 
     // Try prefixes from longest (all but last segment) to shortest (1 segment)
     for depth in (1..raw_segments.len()).rev() {
@@ -324,7 +324,7 @@ fn insert_new(
             // Found deepest matching prefix — locate the xot node
             if let Some(node) = find_node_by_span(
                 result.documents.xot(),
-                file_node,
+                ast_root,
                 matched.line,
                 matched.column,
             ) {
@@ -357,8 +357,8 @@ fn insert_new(
     }
 
     // Record the splice node's original span.
-    // When existing_depth == 0, the splice node is the File container (the whole
-    // document), so the entire source is replaced with the full re-render.
+    // When existing_depth == 0, the splice node is the document root, so the
+    // entire source is replaced with the full re-render.
     let is_root_splice = existing_depth == 0;
 
     let (orig_start, orig_end) = if is_root_splice {
@@ -375,7 +375,7 @@ fn insert_new(
     add_nested_children(xot, ancestor_node, missing_keys, value, value_kind)?;
 
     // Step 4: Re-render the full modified tree with span tracking
-    let xml_node = xot_node_to_xml_node(result.documents.xot(), file_node);
+    let xml_node = xot_node_to_xml_node(result.documents.xot(), ast_root);
     let render_opts = detect_render_options(source);
     let (rendered, span_map) = render::render_with_spans(&xml_node, lang, TreeMode::Data, &render_opts)
         .map_err(|e| UpsertError::Render(e.to_string()))?;
@@ -429,17 +429,9 @@ fn insert_new(
 // Tree helpers
 // ---------------------------------------------------------------------------
 
-/// Navigate from document root to the File element.
-fn find_file_node(xot: &Xot, doc_node: xot::Node) -> Option<xot::Node> {
-    let doc_el = xot.document_element(doc_node).ok()?;
-    // doc_el is typically <Files>, find <File> inside
-    if get_element_name(xot, doc_el).as_deref() == Some("Files") {
-        xot.children(doc_el).find(|&c| {
-            get_element_name(xot, c).as_deref() == Some("File")
-        })
-    } else {
-        Some(doc_el)
-    }
+/// Navigate from document root to the AST root element.
+fn find_document_element(xot: &Xot, doc_node: xot::Node) -> Option<xot::Node> {
+    xot.document_element(doc_node).ok()
 }
 
 /// Find a node in the xot tree by its start position.

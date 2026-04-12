@@ -424,29 +424,27 @@ impl XotBuilder {
         &mut self,
         ts_node: TsNode,
         source: &str,
-        file_path: &str,
+        _file_path: &str,
         ignore_whitespace: bool,
     ) -> Result<XotNode, xot::Error> {
-        // Create Files root element
-        let files_name = self.get_name("Files");
-        let files_el = self.xot.new_element(files_name);
-
-        // Create File element with path attribute
-        let file_name = self.get_name("File");
-        let file_el = self.xot.new_element(file_name);
-
-        let path_attr = self.get_name("path");
-        self.xot.attributes_mut(file_el).insert(path_attr, file_path.to_string());
+        // Create a temporary root to hold AST children during building
+        let temp_name = self.get_name("_build_root_");
+        let temp_root = self.xot.new_element(temp_name);
 
         // Build the tree from TreeSitter using TreeBuilder
         {
             let mut builder = TreeBuilder::new(&mut self.xot, &mut self.name_cache, ignore_whitespace);
-            builder.build_node(ts_node, source, file_el, None, 0, None)?;
+            builder.build_node(ts_node, source, temp_root, None, 0, None)?;
         }
 
-        // Assemble document
-        self.xot.append(files_el, file_el)?;
-        let doc = self.xot.new_document_with_element(files_el)?;
+        // The first element child of temp_root is the actual AST root (e.g. <unit>, <program>)
+        // Use it as the document element directly
+        let ast_root = self.xot.children(temp_root)
+            .find(|&c| self.xot.element(c).is_some())
+            .ok_or_else(|| xot::Error::Io("No AST root element produced".to_string()))?;
+        self.xot.detach(ast_root)?;
+
+        let doc = self.xot.new_document_with_element(ast_root)?;
 
         Ok(doc)
     }
@@ -472,29 +470,26 @@ impl XotBuilder {
         &mut self,
         node: &SerializedNode,
         source: &str,
-        file_path: &str,
+        _file_path: &str,
         ignore_whitespace: bool,
     ) -> Result<XotNode, xot::Error> {
-        // Create Files root element
-        let files_name = self.get_name("Files");
-        let files_el = self.xot.new_element(files_name);
-
-        // Create File element with path attribute
-        let file_name = self.get_name("File");
-        let file_el = self.xot.new_element(file_name);
-
-        let path_attr = self.get_name("path");
-        self.xot.attributes_mut(file_el).insert(path_attr, file_path.to_string());
+        // Create a temporary root to hold AST children during building
+        let temp_name = self.get_name("_build_root_");
+        let temp_root = self.xot.new_element(temp_name);
 
         // Build the tree from serialized AST using TreeBuilder
         {
             let mut builder = TreeBuilder::new(&mut self.xot, &mut self.name_cache, ignore_whitespace);
-            builder.build_serialized_node(node, source, file_el, None)?;
+            builder.build_serialized_node(node, source, temp_root, None)?;
         }
 
-        // Assemble document
-        self.xot.append(files_el, file_el)?;
-        let doc = self.xot.new_document_with_element(files_el)?;
+        // The first element child is the actual AST root
+        let ast_root = self.xot.children(temp_root)
+            .find(|&c| self.xot.element(c).is_some())
+            .ok_or_else(|| xot::Error::Io("No AST root element produced".to_string()))?;
+        self.xot.detach(ast_root)?;
+
+        let doc = self.xot.new_document_with_element(ast_root)?;
 
         Ok(doc)
     }
@@ -661,48 +656,39 @@ impl XeeBuilder {
         &mut self,
         ts_node: TsNode,
         source: &str,
-        file_path: &str,
+        _file_path: &str,
         ignore_whitespace: bool,
         max_depth: Option<usize>,
     ) -> Result<DocumentHandle, xot::Error> {
-        // Create a shell document with Files root
+        // Create a shell document with a placeholder root
         let doc_handle = self.documents.add_string(
             "file:///source".try_into().unwrap(),
-            "<Files/>",
+            "<_placeholder_/>",
         ).map_err(|e| xot::Error::Io(e.to_string()))?;
 
-        // Get the document node and root element
+        // Get the document node and placeholder root
         let doc_node = self.documents.document_node(doc_handle)
             .ok_or_else(|| xot::Error::Io("Failed to get document node".to_string()))?;
 
         let xot = self.documents.xot_mut();
-        let root = xot.document_element(doc_node)?;
+        let placeholder = xot.document_element(doc_node)?;
 
-        // Create File element with path attribute
-        let file_name = {
-            let id = xot.add_name("File");
-            self.name_cache.insert("File".to_string(), id);
-            id
-        };
-        let file_el = xot.new_element(file_name);
-
-        let path_attr = {
-            let id = xot.add_name("path");
-            self.name_cache.insert("path".to_string(), id);
-            id
-        };
-        xot.attributes_mut(file_el).insert(path_attr, file_path.to_string());
-
-        // Build the tree from TreeSitter using TreeBuilder
+        // Build the tree from TreeSitter into the placeholder
         {
             let xot = self.documents.xot_mut();
             let mut builder = TreeBuilder::new(xot, &mut self.name_cache, ignore_whitespace);
-            builder.build_node(ts_node, source, file_el, None, 0, max_depth)?;
+            builder.build_node(ts_node, source, placeholder, None, 0, max_depth)?;
         }
 
-        // Append File to root
+        // The first element child of placeholder is the actual AST root.
+        // Replace the placeholder with it as the document element.
         let xot = self.documents.xot_mut();
-        xot.append(root, file_el)?;
+        let ast_root = xot.children(placeholder)
+            .find(|&c| xot.element(c).is_some())
+            .ok_or_else(|| xot::Error::Io("No AST root element produced".to_string()))?;
+        xot.detach(ast_root)?;
+        xot.insert_before(placeholder, ast_root)?;
+        xot.detach(placeholder)?;
 
         Ok(doc_handle)
     }
@@ -714,9 +700,9 @@ impl XeeBuilder {
     /// TreeMode::Data and TreeMode::Structure), but kept for potential web UI use.
     #[allow(dead_code)]
     ///
-    /// Takes the raw tree under <File>, clones it, applies the syntax transform
+    /// Takes the raw AST root, clones it, applies the syntax transform
     /// to one copy and the data transform to the other, then wraps each in
-    /// <syntax> and <data> elements under <File>.
+    /// <syntax> and <data> elements under a <dual> root.
     ///
     /// For the data branch, single-document files have <document> flattened
     /// so content sits directly under <data>. Multi-document files keep
@@ -733,16 +719,8 @@ impl XeeBuilder {
 
         let xot = self.documents.xot_mut();
 
-        // Find <Files> -> <File>
-        let files_el = xot.document_element(doc_node)?;
-        let file_el = xot.children(files_el)
-            .find(|&c| xot.element(c).is_some())
-            .ok_or_else(|| xot::Error::Io("No File element found".to_string()))?;
-
-        // Find the content root (first element child of <File>)
-        let content_root = xot.children(file_el)
-            .find(|&c| xot.element(c).is_some())
-            .ok_or_else(|| xot::Error::Io("No content root under File".to_string()))?;
+        // The document element is the AST root directly (e.g. <program>, <unit>)
+        let content_root = xot.document_element(doc_node)?;
 
         // Clone the content subtree for the data branch
         let data_content = xot.clone_node(content_root);
@@ -763,8 +741,15 @@ impl XeeBuilder {
             }
         }
 
-        // Move original content from <File> into <syntax>
+        // Create a dual-view root to replace the AST root as document element
+        let dual_name = xot.add_name("dual");
+        let dual_el = xot.new_element(dual_name);
+
+        // Replace content_root with dual_el as document element
+        xot.insert_before(content_root, dual_el)?;
         xot.detach(content_root)?;
+
+        // Move original content into <syntax>
         xot.append(syntax_el, content_root)?;
 
         // Attach cloned content into <data>
@@ -801,11 +786,11 @@ impl XeeBuilder {
             xot.detach(single_doc)?;
         }
 
-        // Append <syntax> and <data> to <File>, with a hint comment before <data>
-        xot.append(file_el, syntax_el)?;
+        // Append <syntax> and <data> to <dual>, with a hint comment before <data>
+        xot.append(dual_el, syntax_el)?;
         let hint = xot.new_comment(" Data view: query-friendly projection. Node spans point to values, not full key-value pairs. ");
-        xot.append(file_el, hint)?;
-        xot.append(file_el, data_el)?;
+        xot.append(dual_el, hint)?;
+        xot.append(dual_el, data_el)?;
 
         Ok(())
     }

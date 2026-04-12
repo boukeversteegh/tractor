@@ -3,8 +3,7 @@
   <results>
     <match file="tests/integration/languages/yaml/multi.yaml" line="1" column="1">
       <tree>
-        <Files>
-          <file>tests/integration/languages/yaml/multi.yaml</file>
+        <stream>
           <document>
             <name>doc1</name>
             <value>one</value>
@@ -17,7 +16,7 @@
             <name>doc3</name>
             <value>three</value>
           </document>
-        </Files>
+        </stream>
       </tree>
     </match>
   </results>
