@@ -61,12 +61,10 @@ pub struct CheckArgs {
     pub expect_invalid: Option<String>,
 }
 use crate::executor::{self, CheckOperation, ExecuteOptions, Operation};
-use crate::pipeline::{
-    RunContext, ViewField, InputMode,
-    render_report,
-    project_report, apply_message_template,
-    GroupDimension,
-};
+use crate::cli::context::RunContext;
+use crate::input::InputMode;
+use crate::format::{ViewField, GroupDimension, render_report};
+use crate::matcher::{project_report, apply_message_template};
 use super::config::{run_from_config, ConfigRunParams};
 
 pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {

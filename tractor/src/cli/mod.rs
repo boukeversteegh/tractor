@@ -1,19 +1,27 @@
-//! CLI argument parsing using clap
+//! CLI argument parsing and command execution.
 
 pub mod help;
+pub mod context;
+pub mod query;
+pub mod check;
+pub mod test;
+pub mod set;
+pub mod update;
+pub mod render;
+pub mod run;
+pub mod config;
+pub mod languages;
 
 use clap::{Parser, Subcommand, Args};
 use tractor_core::NormalizedXpath;
 
-// Re-export Args structs from their mode modules so existing
-// `use crate::cli::QueryArgs` imports continue to work.
-pub use crate::modes::query::QueryArgs;
-pub use crate::modes::check::CheckArgs;
-pub use crate::modes::test::TestArgs;
-pub use crate::modes::set::SetArgs;
-pub use crate::modes::update::UpdateArgs;
-pub use crate::modes::render::RenderArgs;
-pub use crate::modes::run::RunArgs;
+pub use query::QueryArgs;
+pub use check::CheckArgs;
+pub use test::TestArgs;
+pub use set::SetArgs;
+pub use update::UpdateArgs;
+pub use render::RenderArgs;
+pub use run::RunArgs;
 
 /// Multi-language code query tool using XPath 3.1
 #[derive(Parser, Debug)]

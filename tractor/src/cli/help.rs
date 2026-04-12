@@ -1,7 +1,7 @@
 //! CLI help enhancements: shared `--view` long_help and parse error hints.
 
 use super::Cli;
-use crate::pipeline::format::{OutputFormat, ViewField};
+use crate::format::{OutputFormat, ViewField};
 
 // ---------------------------------------------------------------------------
 // --view long_help injection

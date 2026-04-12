@@ -11,12 +11,9 @@ use tractor_core::report::{ReportMatch, Severity};
 
 use crate::cli::SharedArgs;
 use crate::executor::{self, ExecuteOptions, Operation};
-use crate::pipeline::{
-    RunContext, ViewField,
-    render_report,
-    project_report, apply_message_template,
-    GroupDimension,
-};
+use crate::cli::context::RunContext;
+use crate::format::{ViewField, GroupDimension, render_report};
+use crate::matcher::{project_report, apply_message_template};
 
 /// Parameters that vary per command when executing a config file.
 pub struct ConfigRunParams<'a> {

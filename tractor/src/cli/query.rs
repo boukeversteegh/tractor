@@ -41,13 +41,10 @@ pub struct QueryArgs {
     pub config: Option<String>,
 }
 use crate::executor::{self, ExecuteOptions, Operation, QueryOperation, QueryExpr};
-use crate::pipeline::{
-    RunContext, ViewField, InputMode,
-    run_debug,
-    project_report, apply_message_template,
-    GroupDimension,
-};
-use crate::pipeline::render_report;
+use crate::cli::context::RunContext;
+use crate::input::InputMode;
+use crate::format::{ViewField, GroupDimension, render_report};
+use crate::matcher::{run_debug, project_report, apply_message_template};
 use super::config::{run_from_config, ConfigRunParams};
 
 pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {

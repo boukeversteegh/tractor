@@ -4,20 +4,19 @@
 
 mod cli;
 mod version;
-mod pipeline;
-mod modes;
+mod format;
+mod input;
+mod matcher;
 mod tractor_config;
 mod executor;
-mod filter;
-mod file_resolver;
 
 use std::process::ExitCode;
 use clap::{CommandFactory as _, FromArgMatches as _};
 use cli::{Cli, Command, DocsCommand};
 use cli::help::CommandExt as _;
-use modes::{check::run_check, test::run_test, set::run_set, update::run_update, query::run_query, render::run_render, run::run_run, languages::run_languages};
+use cli::{check::run_check, test::run_test, set::run_set, update::run_update, query::run_query, render::run_render, run::run_run, languages::run_languages};
 use tractor_core::report::{ReportBuilder, ReportMatch, Severity, DiagnosticOrigin};
-use pipeline::format::{OutputFormat, ViewField, ViewSet, render_gcc, render_text_report, render_json_report, render_yaml_report, render_xml_report, render_github, render_claude_code};
+use format::{OutputFormat, ViewField, ViewSet, render_gcc, render_text_report, render_json_report, render_yaml_report, render_xml_report, render_github, render_claude_code};
 use tractor_core::output::{should_use_color, RenderOptions};
 
 /// An error that has already been reported to the user; main should exit with
@@ -53,7 +52,7 @@ fn render_error_report(
         OutputFormat::Xml    => print!("{}", render_xml_report(report, &view, &render_opts, &[])),
         OutputFormat::Github => print!("{}", render_github(report, &[])),
         OutputFormat::Gcc    => print!("{}", render_gcc(report, &render_opts, &[])),
-        OutputFormat::ClaudeCode => print!("{}", render_claude_code(report, pipeline::format::options::HookType::PostToolUse, &render_opts, &[])),
+        OutputFormat::ClaudeCode => print!("{}", render_claude_code(report, format::options::HookType::PostToolUse, &render_opts, &[])),
         OutputFormat::Text   => print!("{}", render_text_report(report, &view, &render_opts, &[])),
     }
 }

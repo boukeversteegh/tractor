@@ -10,7 +10,7 @@ use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use tractor_core::Match;
-use crate::filter::ResultFilter;
+use super::filter::ResultFilter;
 
 /// Run `git diff --name-only` with the given spec and return the set of
 /// changed file paths, resolved relative to `cwd`.

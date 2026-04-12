@@ -41,11 +41,10 @@ pub struct TestArgs {
     pub config: Option<String>,
 }
 use crate::executor::{self, ExecuteOptions, Operation, TestOperation, TestAssertion};
-use crate::pipeline::{
-    RunContext, ViewField, InputMode, TestRenderOptions,
-    render_report,
-    project_report,
-};
+use crate::cli::context::RunContext;
+use crate::input::InputMode;
+use crate::format::{ViewField, TestRenderOptions, render_report};
+use crate::matcher::project_report;
 use super::config::{run_from_config, ConfigRunParams};
 
 pub mod test_colors {

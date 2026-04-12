@@ -30,7 +30,7 @@ pub struct RunArgs {
     #[arg(short = 'm', long = "message", help_heading = "Output")]
     pub message: Option<String>,
 }
-use crate::pipeline::{ViewField, GroupDimension};
+use crate::format::{ViewField, GroupDimension};
 use super::config::{run_from_config, ConfigRunParams};
 
 pub fn run_run(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {

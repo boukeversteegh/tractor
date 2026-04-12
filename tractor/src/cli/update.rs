@@ -16,7 +16,9 @@ pub struct UpdateArgs {
     pub value: String,
 }
 use crate::executor::{self, ExecuteOptions, Operation, UpdateOperation};
-use crate::pipeline::{RunContext, ViewField, InputMode};
+use crate::cli::context::RunContext;
+use crate::input::InputMode;
+use crate::format::ViewField;
 
 pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
     let ctx = RunContext::build(

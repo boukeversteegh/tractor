@@ -16,8 +16,8 @@ use tractor_core::{expand_globs_checked, filter_supported_files, normalize_path,
 use tractor_core::report::{ReportBuilder, ReportMatch, Severity, DiagnosticOrigin};
 
 use crate::executor::ExecuteOptions;
-use crate::filter::ResultFilter;
-use crate::pipeline::git;
+use super::filter::ResultFilter;
+use super::git;
 
 // ---------------------------------------------------------------------------
 // FileRequest

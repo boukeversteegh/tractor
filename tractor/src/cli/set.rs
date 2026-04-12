@@ -43,10 +43,10 @@ pub struct SetArgs {
 use crate::executor::{
     self, ExecuteOptions, Operation, SetMapping, SetOperation, SetReportMode, SetWriteMode,
 };
-use crate::pipeline::{
-    GroupDimension, InputMode, RunContext, ViewField, apply_message_template, project_report,
-    render_report,
-};
+use crate::cli::context::RunContext;
+use crate::input::InputMode;
+use crate::format::{ViewField, GroupDimension, render_report};
+use crate::matcher::{project_report, apply_message_template};
 use super::config::{ConfigRunParams, run_from_config};
 
 /// Separate positional args into files and an optional path expression.
@@ -207,7 +207,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
     let mut report = builder.build();
 
     if capture
-        && ctx.output_format == crate::pipeline::format::OutputFormat::Text
+        && ctx.output_format == crate::format::OutputFormat::Text
         && report.outputs.len() == 1
         && args.view.is_none()
     {
