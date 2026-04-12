@@ -171,17 +171,8 @@ pub fn get_schema_tree(
     let mut collector = SchemaCollector::new();
     collector.collect_from_xot(&xot, root);
 
-    // Convert to serializable tree, unwrapping the Files/File wrapper
-    // (web playground only handles a single file)
-    let mut schema_tree = collector.to_schema_tree();
-    if schema_tree.len() == 1 && schema_tree[0].name == "Files" {
-        let files_node = schema_tree.remove(0);
-        schema_tree = files_node.children;
-        if schema_tree.len() == 1 && schema_tree[0].name == "File" {
-            let file_node = schema_tree.remove(0);
-            schema_tree = file_node.children;
-        }
-    }
+    // Convert to serializable tree
+    let schema_tree = collector.to_schema_tree();
 
     serde_json::to_string(&schema_tree)
         .map_err(|e| JsValue::from_str(&format!("Failed to serialize schema: {}", e)))

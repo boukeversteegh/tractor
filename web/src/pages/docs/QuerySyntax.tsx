@@ -264,6 +264,31 @@ tractor file.js -x "//method[contains(name,'getAll')][not(contains(.,'orderBy'))
       <CodeBlock language="bash" code={`# Find the class that contains a method named 'save'
 tractor file.js -x "//method[name='save']/ancestor::class/name" -v value`} />
 
+      <h2>Context Variables</h2>
+      <p>
+        Tractor provides built-in variables you can use in any XPath expression:
+      </p>
+      <table className="doc-table">
+        <thead>
+          <tr><th>Variable</th><th>Type</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>$file</code></td><td>string</td><td>Path of the current file being queried</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Using $file in predicates</h3>
+      <p>
+        The <code>$file</code> variable lets you write queries that cross-reference file paths with AST content.
+        For example, detecting C# files where the namespace doesn't match the directory structure:
+      </p>
+      <CodeBlock language="bash" code={`# Namespace MyApp.Services should be in a MyApp/Services/ directory
+# translate() converts dots to slashes: MyApp.Services → MyApp/Services
+tractor "src/**/*.cs" -x "//namespace[not(contains($file, translate(string(name), '.', '/')))]"
+
+# Simply check the file path
+tractor "src/**/*.cs" -x "$file" -v value`} />
+
       <h2>Tips</h2>
       <ul>
         <li><strong>Start with <code>//</code></strong> — you almost never need full paths from root.</li>

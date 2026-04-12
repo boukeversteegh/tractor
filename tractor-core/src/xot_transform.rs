@@ -39,15 +39,33 @@ pub fn walk_transform<F>(xot: &mut Xot, root: XotNode, mut transform_fn: F) -> R
 where
     F: FnMut(&mut Xot, XotNode) -> Result<TransformAction, xot::Error>,
 {
-    // Find the actual content root (skip document/Files/File wrappers)
+    // Find the actual content root (skip document wrapper)
     let content_root = find_content_root(xot, root);
-    walk_node(xot, content_root, &mut transform_fn)
+
+    // Apply transform to the content root, but protect it from being
+    // removed (Flatten/Skip) since it's the document element.
+    if xot.element(content_root).is_some() {
+        let action = transform_fn(xot, content_root)?;
+        match action {
+            TransformAction::Flatten | TransformAction::Skip | TransformAction::Continue => {
+                // Process children regardless — Flatten/Skip at the root just means
+                // "this wrapper is unimportant", but we can't remove the document element.
+                let children: Vec<XotNode> = xot.children(content_root)
+                    .filter(|&c| xot.element(c).is_some())
+                    .collect();
+                for child in children {
+                    walk_node(xot, child, &mut transform_fn)?;
+                }
+            }
+            TransformAction::Done => {}
+        }
+        Ok(())
+    } else {
+        walk_node(xot, content_root, &mut transform_fn)
+    }
 }
 
 /// Walk and transform starting from a specific node (no wrapper skipping).
-///
-/// Use this when transforming a detached subtree that isn't wrapped in
-/// Files/File elements (e.g., a cloned content root for dual-branch assembly).
 pub fn walk_transform_node<F>(xot: &mut Xot, node: XotNode, mut transform_fn: F) -> Result<(), xot::Error>
 where
     F: FnMut(&mut Xot, XotNode) -> Result<TransformAction, xot::Error>,
@@ -55,27 +73,13 @@ where
     walk_node(xot, node, &mut transform_fn)
 }
 
-/// Find the actual content root, skipping Files/File wrappers
+/// Find the actual content root, skipping the document node wrapper
 fn find_content_root(xot: &Xot, node: XotNode) -> XotNode {
-    // If this is a document node, get the document element
     if xot.is_document(node) {
         if let Ok(elem) = xot.document_element(node) {
-            return find_content_root(xot, elem);
+            return elem;
         }
     }
-
-    // Check if this is a Files or File wrapper
-    if let Some(name) = helpers::get_element_name(xot, node) {
-        if name == "Files" || name == "File" {
-            // Return the first element child
-            for child in xot.children(node) {
-                if xot.element(child).is_some() {
-                    return find_content_root(xot, child);
-                }
-            }
-        }
-    }
-
     node
 }
 

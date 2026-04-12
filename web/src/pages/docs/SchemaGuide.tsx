@@ -30,15 +30,13 @@ export function SchemaGuide() {
       <Example
         file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
         command={`tractor greeter.js -v schema`}
-        output={`Files
-└─ File
-   └─ program
-      └─ function (2)  function
-         ├─ name (2)  greet, add
-         ├─ body (2)
-         │  └─ … (11 children)
-         └─ parameters (2)
-            └─ … (2 children)
+        output={`program
+└─ function (2)  function
+   ├─ name (2)  greet, add
+   ├─ body (2)
+   │  └─ … (11 children)
+   └─ parameters (2)
+      └─ … (2 children)
 
 (use -d to increase depth, or -x to query specific elements)`}
       />
@@ -49,18 +47,16 @@ export function SchemaGuide() {
       </p>
       <Example
         command={`tractor greeter.js -v schema -d 6`}
-        output={`Files
-└─ File
-   └─ program
-      └─ function (2)  function
-         ├─ parameters (2)
-         │  └─ params (2)  (, ), ,
-         │     └─ type (3)  name, a, b
-         ├─ name (2)  greet, add
-         └─ body (2)
-            └─ block (2)  {…}
-               └─ return (2)  return, ;
-                  └─ … (9 children)
+        output={`program
+└─ function (2)  function
+   ├─ parameters (2)
+   │  └─ params (2)  (, ), ,
+   │     └─ type (3)  name, a, b
+   ├─ name (2)  greet, add
+   └─ body (2)
+      └─ block (2)  {…}
+         └─ return (2)  return, ;
+            └─ … (9 children)
 
 (use -d to increase depth, or -x to query specific elements)`}
       />

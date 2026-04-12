@@ -9,8 +9,10 @@ use std::cell::RefCell;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Instant;
-use xee_xpath::{Documents, DocumentHandle, Queries, Query, Sequence, SerializationParameters, query::SequenceQuery};
+use xee_xpath::{Documents, DocumentHandle, Itemable, Queries, Query, Sequence, SerializationParameters, query::SequenceQuery};
+use xee_xpath::context::{StaticContextBuilder, Variables};
 use xot::{Node, Value, Xot};
+use xot::xmlname::OwnedName;
 
 // Timing stats (in microseconds) for profiling
 static TIMING_XML_LOAD: AtomicU64 = AtomicU64::new(0);
@@ -206,6 +208,20 @@ thread_local! {
     static QUERY_CACHE: RefCell<Option<(String, SequenceQuery)>> = const { RefCell::new(None) };
 }
 
+/// Build a StaticContextBuilder that declares the built-in tractor variables ($file).
+pub fn tractor_static_context() -> StaticContextBuilder<'static> {
+    let mut scb = StaticContextBuilder::default();
+    scb.variable_names([OwnedName::name("file")]);
+    scb
+}
+
+/// Build a Variables map binding $file to the given path.
+fn tractor_variables(file_path: &str) -> Variables {
+    let mut vars = Variables::default();
+    vars.insert(OwnedName::name("file"), Sequence::from(file_path.to_string()));
+    vars
+}
+
 /// Execute a query directly on Documents (no XML parsing needed)
 ///
 /// This is the fast path - use when you've built directly into Documents
@@ -226,7 +242,7 @@ fn execute_direct_query(
                 cached_query
             } else {
                 // Different XPath, need to recompile
-                let queries = Queries::default();
+                let queries = Queries::new(tractor_static_context());
                 let new_query = queries
                     .sequence(xpath)
                     .map_err(|e| XPathError::Compile(e.to_string()))?;
@@ -235,7 +251,7 @@ fn execute_direct_query(
             }
         } else {
             // No cached query, compile it
-            let queries = Queries::default();
+            let queries = Queries::new(tractor_static_context());
             let new_query = queries
                 .sequence(xpath)
                 .map_err(|e| XPathError::Compile(e.to_string()))?;
@@ -243,10 +259,16 @@ fn execute_direct_query(
             &cache.as_ref().unwrap().1
         };
 
-        // Execute the query directly - no XML loading needed!
+        // Execute the query with $file variable bound
         let t1 = Instant::now();
+        let vars = tractor_variables(file_path);
+        let context_item = doc_handle.to_item(documents)
+            .map_err(|e| XPathError::Execute(e.to_string()))?;
         let results = query
-            .execute(documents, doc_handle)
+            .execute_build_context(documents, |builder| {
+                builder.context_item(context_item);
+                builder.variables(vars);
+            })
             .map_err(|e: xee_xpath::error::Error| XPathError::Execute(e.to_string()))?;
         let t2 = Instant::now();
 

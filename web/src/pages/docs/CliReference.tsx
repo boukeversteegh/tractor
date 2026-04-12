@@ -323,7 +323,7 @@ greeter.js:5
       <Example
         file={{ name: 'small.json', language: 'json', content: '{"host": "localhost"}' }}
         command={`tractor small.json --no-pretty`}
-        output={`small.json:1\n<Files><file>small.json</file><host>localhost</host></Files>`}
+        output={`small.json:1\ndocument/host = "localhost"`}
       />
 
       <h3>--color</h3>

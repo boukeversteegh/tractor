@@ -1,4 +1,4 @@
-Files/File/unit/                                                                                                ┤    │ 
+unit/                                                                                                           ┤    │ 
   ├─ comment[leading] = "// Application entry point\n// Handles startup configuration"                          ┤  1 ├ // Application entry point
   │                                                                                                             │  2 ├ // Handles startup configuration
   ├─ import/                                                                                                    ┤    │ 
