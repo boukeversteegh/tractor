@@ -1,0 +1,14 @@
+tests/integration/formats/sample.cs:1
+class[@kind="class_declaration" and @line="1" and @column="1" and @end_line="5" and @end_column="2"]/
+  ├─ public[@kind="modifier" and @line="1" and @column="1" and @end_line="1" and @end_column="7"]
+  ├─ "class"
+  ├─ name[@line="1" and @column="14" and @end_line="1" and @end_column="17" and @field="name"] = "Foo"
+  └─ body[@line="2" and @column="1" and @end_line="5" and @end_column="2" and @field="body"]/
+      └─ ... (15 children)
+
+tests/integration/formats/sample.cs:7
+class[@kind="class_declaration" and @line="7" and @column="1" and @end_line="7" and @end_column="21"]/
+  ├─ public[@kind="modifier" and @line="7" and @column="1" and @end_line="7" and @end_column="7"]
+  ├─ "class"
+  ├─ name[@line="7" and @column="14" and @end_line="7" and @end_column="17" and @field="name"] = "Qux"
+  └─ body[@line="7" and @column="18" and @end_line="7" and @end_column="21" and @field="body"] = "{ }"

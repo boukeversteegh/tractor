@@ -1043,10 +1043,8 @@ fn view_modifier_can_add_source_and_remove_tree() {
         .in_fixture("formats")
         .capture();
     assert_eq!(0, with_source.status);
-    assert!(with_source
-        .stdout
-        .lines()
-        .any(|line| line == "Foo" || line == "Qux"));
+    assert!(with_source.stdout.contains("public class Foo"));
+    assert!(with_source.stdout.contains("public class Qux"));
 }
 
 #[test]

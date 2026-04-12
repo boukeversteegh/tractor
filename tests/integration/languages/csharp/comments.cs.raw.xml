@@ -1,95 +1,103 @@
-tests/integration/languages/csharp/comments.cs:1
-<Files>
-  <file>tests/integration/languages/csharp/comments.cs</file>
-  <compilation_unit>
-    <comment>// Application entry point</comment>
-    <comment>// Handles startup configuration</comment>
-    <using_directive>
-      using
-      <identifier>System</identifier>
-      ;
-    </using_directive>
-    <namespace_declaration>
-      namespace
-      <name>
-        <identifier>Comments</identifier>
-      </name>
-      <body>
-        <declaration_list>
-          {
-          <comment>/// &lt;summary&gt;</comment>
-          <comment>/// Sample class demonstrating comment patterns</comment>
-          <comment>/// &lt;/summary&gt;</comment>
-          <class_declaration>
-            <modifier>public</modifier>
-            class
-            <name>
-              <identifier>Demo</identifier>
-            </name>
-            <body>
-              <declaration_list>
-                {
-                <field_declaration>
-                  <modifier>private</modifier>
-                  <variable_declaration>
-                    <predefined_type>int</predefined_type>
-                    <variable_declarator>
-                      <name>
-                        <identifier>_count</identifier>
-                      </name>
-                    </variable_declarator>
-                  </variable_declaration>
-                  ;
-                </field_declaration>
-                <comment>// instance counter</comment>
-                <comment>// Configuration settings</comment>
-                <comment>// loaded from environment</comment>
-                <property_declaration>
-                  <modifier>public</modifier>
-                  <predefined_type>string</predefined_type>
-                  <name>
-                    <identifier>Config</identifier>
-                  </name>
-                  <accessor_list>
-                    {
-                    <accessor_declaration>get;</accessor_declaration>
-                    <accessor_declaration>set;</accessor_declaration>
-                    }
-                  </accessor_list>
-                </property_declaration>
-                <comment>/* block comment */</comment>
-                <method_declaration>
-                  <modifier>public</modifier>
-                  <returns>
-                    <predefined_type>void</predefined_type>
-                  </returns>
-                  <name>
-                    <identifier>Run</identifier>
-                  </name>
-                  <parameters>
-                    <parameter_list>()</parameter_list>
-                  </parameters>
-                  <body>
-                    <block>
-                      {
-                      <expression_statement>
-                        <postfix_unary_expression>
-                          <identifier>_count</identifier>
-                          ++
-                        </postfix_unary_expression>
-                        ;
-                      </expression_statement>
-                      }
-                    </block>
-                  </body>
-                </method_declaration>
-                }
-              </declaration_list>
-            </body>
-          </class_declaration>
-          }
-        </declaration_list>
-      </body>
-    </namespace_declaration>
-  </compilation_unit>
-</Files>
+<?xml version="1.0" encoding="UTF-8"?>
+<report>
+  <results>
+    <match file="tests/integration/languages/csharp/comments.cs" line="1" column="1">
+      <tree>
+        <Files>
+          <file>tests/integration/languages/csharp/comments.cs</file>
+          <compilation_unit>
+            <comment>// Application entry point</comment>
+            <comment>// Handles startup configuration</comment>
+            <using_directive>
+              using
+              <identifier>System</identifier>
+              ;
+            </using_directive>
+            <namespace_declaration>
+              namespace
+              <name>
+                <identifier>Comments</identifier>
+              </name>
+              <body>
+                <declaration_list>
+                  {
+                  <comment>/// &lt;summary&gt;</comment>
+                  <comment>/// Sample class demonstrating comment patterns</comment>
+                  <comment>/// &lt;/summary&gt;</comment>
+                  <class_declaration>
+                    <modifier>public</modifier>
+                    class
+                    <name>
+                      <identifier>Demo</identifier>
+                    </name>
+                    <body>
+                      <declaration_list>
+                        {
+                        <field_declaration>
+                          <modifier>private</modifier>
+                          <variable_declaration>
+                            <predefined_type>int</predefined_type>
+                            <variable_declarator>
+                              <name>
+                                <identifier>_count</identifier>
+                              </name>
+                            </variable_declarator>
+                          </variable_declaration>
+                          ;
+                        </field_declaration>
+                        <comment>// instance counter</comment>
+                        <comment>// Configuration settings</comment>
+                        <comment>// loaded from environment</comment>
+                        <property_declaration>
+                          <modifier>public</modifier>
+                          <predefined_type>string</predefined_type>
+                          <name>
+                            <identifier>Config</identifier>
+                          </name>
+                          <accessor_list>
+                            {
+                            <accessor_declaration>get;</accessor_declaration>
+                            <accessor_declaration>set;</accessor_declaration>
+                            }
+                          </accessor_list>
+                        </property_declaration>
+                        <comment>/* block comment */</comment>
+                        <method_declaration>
+                          <modifier>public</modifier>
+                          <returns>
+                            <predefined_type>void</predefined_type>
+                          </returns>
+                          <name>
+                            <identifier>Run</identifier>
+                          </name>
+                          <parameters>
+                            <parameter_list>()</parameter_list>
+                          </parameters>
+                          <body>
+                            <block>
+                              {
+                              <expression_statement>
+                                <postfix_unary_expression>
+                                  <identifier>_count</identifier>
+                                  ++
+                                </postfix_unary_expression>
+                                ;
+                              </expression_statement>
+                              }
+                            </block>
+                          </body>
+                        </method_declaration>
+                        }
+                      </declaration_list>
+                    </body>
+                  </class_declaration>
+                  }
+                </declaration_list>
+              </body>
+            </namespace_declaration>
+          </compilation_unit>
+        </Files>
+      </tree>
+    </match>
+  </results>
+</report>

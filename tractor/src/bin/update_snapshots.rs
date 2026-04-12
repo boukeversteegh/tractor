@@ -55,6 +55,17 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
         "query", "tests/integration/formats/sample.cs", "-x", "class",
         "-v", "file,line",
     ]),
+    ("text/query-meta.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "--meta", "--depth", "1",
+    ]),
+    ("text/explore-tree-source.txt", &[
+        "tests/integration/languages/csharp/comments.cs", "-v", "tree,source",
+    ]),
+    ("text/explore-tree-source-color.txt", &[
+        "tests/integration/languages/csharp/comments.cs", "-v", "tree,source",
+        "--color", "always",
+    ]),
     // -f gcc
     ("gcc/check.txt", &[
         "check", "tests/integration/formats/sample.cs", "-x", "class",
@@ -434,11 +445,11 @@ fn main() {
 
             // Semantic XML
             let xml_path = format!("{}.xml", path_str);
-            let output = run_tractor(&tractor_bin, &path_str, &[]);
+            let output = run_tractor(&tractor_bin, &path_str, &["-f", "xml"]);
 
             // Raw TreeSitter XML
             let raw_xml_path = format!("{}.raw.xml", path_str);
-            let raw_output = run_tractor(&tractor_bin, &path_str, &["-t", "raw"]);
+            let raw_output = run_tractor(&tractor_bin, &path_str, &["-t", "raw", "-f", "xml"]);
 
             if check_mode {
                 match fs::read_to_string(&xml_path) {

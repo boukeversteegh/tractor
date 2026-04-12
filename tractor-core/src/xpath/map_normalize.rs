@@ -22,43 +22,54 @@ thread_local! {
     static DETECT_SEQUENCE_KEYS_QUERY: RefCell<Option<xee_xpath::query::SequenceQuery>> = RefCell::new(None);
 }
 
+/// Guard against runaway self-application in the XPath-based normalization workaround.
+const MAX_NORMALIZE_DEPTH: u32 = 10;
+
 /// The XPath expression that normalizes a map by wrapping sequence values in arrays.
-/// Uses self-application (`$f($f, x)`) to achieve recursion at arbitrary depth.
-const NORMALIZE_MAP_XPATH: &str = concat!(
-    "let $norm := function($f, $m) { ",
+/// Uses self-application (`$f($f, x, depth)`) with a hard recursion cap.
+const NORMALIZE_MAP_XPATH_PREFIX: &str = concat!(
+    "let $norm := function($f, $m, $depth) { ",
+        "if ($depth ge "
+);
+const NORMALIZE_MAP_XPATH_SUFFIX: &str = concat!(
+    ") then $m else ",
         "map:merge(map:for-each($m, function($k, $v) { ",
             "map { $k: ",
                 "if ($v instance of array(*)) then ",
                     "array:for-each($v, function($item) { ",
-                        "if ($item instance of map(*)) then $f($f, $item) ",
+                        "if ($item instance of map(*)) then $f($f, $item, $depth + 1) ",
                         "else $item ",
                     "}) ",
-                "else if ($v instance of map(*)) then $f($f, $v) ",
+                "else if ($v instance of map(*)) then $f($f, $v, $depth + 1) ",
                 "else if (count($v) > 1) then array { $v } ",
                 "else $v ",
             "} ",
         "})) ",
-    "} return $norm($norm, .)"
+    "} return $norm($norm, ., 0)"
 );
 
 /// XPath that recursively finds all map keys whose values are multi-item sequences.
 /// Returns strings like "key" or "outer.inner.key" for nested maps.
-const DETECT_SEQUENCE_KEYS_XPATH: &str = concat!(
-    "let $detect := function($f, $m, $prefix) { ",
+const DETECT_SEQUENCE_KEYS_XPATH_PREFIX: &str = concat!(
+    "let $detect := function($f, $m, $prefix, $depth) { ",
+        "if ($depth ge "
+);
+const DETECT_SEQUENCE_KEYS_XPATH_SUFFIX: &str = concat!(
+    ") then () else ",
         "map:for-each($m, function($k, $v) { ",
             "let $path := if ($prefix) then concat($prefix, '.', $k) else string($k) ",
             "return ( ",
                 "if (count($v) > 1) then $path else (), ",
-                "if ($v instance of map(*)) then $f($f, $v, $path) else (), ",
+                "if ($v instance of map(*)) then $f($f, $v, $path, $depth + 1) else (), ",
                 "if ($v instance of array(*)) then ",
                     "for-each(1 to array:size($v), function($i) { ",
                         "let $item := array:get($v, $i) ",
-                        "return if ($item instance of map(*)) then $f($f, $item, $path) else () ",
+                        "return if ($item instance of map(*)) then $f($f, $item, $path, $depth + 1) else () ",
                     "}) ",
                 "else () ",
             ") ",
         "}) ",
-    "} return $detect($detect, ., '')"
+    "} return $detect($detect, ., '', 0)"
 );
 
 /// Result of normalizing a map: the JSON string and the list of keys that had
@@ -77,6 +88,19 @@ pub(super) fn try_normalize_and_serialize_map(
 ) -> Option<NormalizeResult> {
     use xee_interpreter::sequence::QNameOrString;
 
+    let normalize_map_xpath = format!(
+        "{}{}{}",
+        NORMALIZE_MAP_XPATH_PREFIX,
+        MAX_NORMALIZE_DEPTH,
+        NORMALIZE_MAP_XPATH_SUFFIX,
+    );
+    let detect_sequence_keys_xpath = format!(
+        "{}{}{}",
+        DETECT_SEQUENCE_KEYS_XPATH_PREFIX,
+        MAX_NORMALIZE_DEPTH,
+        DETECT_SEQUENCE_KEYS_XPATH_SUFFIX,
+    );
+
     // Only attempt normalization for maps
     if !matches!(func, xee_xpath::function::Function::Map(_)) {
         return None;
@@ -87,7 +111,7 @@ pub(super) fn try_normalize_and_serialize_map(
         let mut cache = cache.borrow_mut();
         if cache.is_none() {
             let queries = Queries::default();
-            match queries.sequence(NORMALIZE_MAP_XPATH) {
+            match queries.sequence(&normalize_map_xpath) {
                 Ok(query) => *cache = Some(query),
                 Err(_) => return None,
             }
@@ -105,7 +129,7 @@ pub(super) fn try_normalize_and_serialize_map(
         let mut cache = cache.borrow_mut();
         if cache.is_none() {
             let queries = Queries::default();
-            match queries.sequence(DETECT_SEQUENCE_KEYS_XPATH) {
+            match queries.sequence(&detect_sequence_keys_xpath) {
                 Ok(query) => *cache = Some(query),
                 Err(_) => return Vec::new(),
             }
@@ -138,6 +162,37 @@ pub(super) fn try_normalize_and_serialize_map(
     sequence_keys.dedup();
 
     Some(NormalizeResult { json, sequence_keys })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn normalization_xpath_has_depth_guard() {
+        let normalize = format!(
+            "{}{}{}",
+            NORMALIZE_MAP_XPATH_PREFIX,
+            MAX_NORMALIZE_DEPTH,
+            NORMALIZE_MAP_XPATH_SUFFIX,
+        );
+        let detect = format!(
+            "{}{}{}",
+            DETECT_SEQUENCE_KEYS_XPATH_PREFIX,
+            MAX_NORMALIZE_DEPTH,
+            DETECT_SEQUENCE_KEYS_XPATH_SUFFIX,
+        );
+
+        assert!(normalize.contains("function($f, $m, $depth)"));
+        assert!(normalize.contains(&format!("if ($depth ge {})", MAX_NORMALIZE_DEPTH)));
+        assert!(normalize.contains("$f($f, $item, $depth + 1)"));
+        assert!(normalize.contains("$f($f, $v, $depth + 1)"));
+
+        assert!(detect.contains("function($f, $m, $prefix, $depth)"));
+        assert!(detect.contains(&format!("if ($depth ge {})", MAX_NORMALIZE_DEPTH)));
+        assert!(detect.contains("$f($f, $v, $path, $depth + 1)"));
+        assert!(detect.contains("$f($f, $item, $path, $depth + 1)"));
+    }
 }
 
 /// Extract the value expression for a given key from an XPath map constructor.
