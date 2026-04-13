@@ -9,25 +9,6 @@ pub struct GlobExpansionError {
     pub limit: usize,
 }
 
-/// Normalize a glob pattern so `**` matches files, not just directories.
-///
-/// The `glob` crate's `**` only matches directories. To match files recursively,
-/// we need `**/*`. This function transforms:
-/// - `**` → `**/*`
-/// - `foo/**` → `foo/**/*`
-///
-/// Other patterns are returned unchanged.
-fn normalize_double_star(pattern: &str) -> String {
-    // Check if pattern ends with `**` (but not `**/*` or similar)
-    if pattern == "**" {
-        return "**/*".to_string();
-    }
-    if pattern.ends_with("/**") && !pattern.ends_with("/**/*") {
-        return format!("{}/*", pattern);
-    }
-    pattern.to_string()
-}
-
 impl std::fmt::Display for GlobExpansionError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -46,6 +27,9 @@ pub struct GlobExpansion {
 
 /// Expand glob patterns to file paths, with a per-pattern expansion limit.
 ///
+/// Uses a custom canonical filesystem walker that produces correctly-cased
+/// paths on Windows by building paths from `read_dir` entry names.
+///
 /// Returns the expanded file list and a list of patterns that matched 0 files.
 /// Returns `Err` if any single pattern exceeds `expansion_limit` matches.
 pub fn expand_globs_checked(
@@ -57,29 +41,29 @@ pub fn expand_globs_checked(
 
     for pattern in patterns {
         if pattern.contains('*') || pattern.contains('?') {
-            // Normalize `**` patterns so they match files, not just directories
-            let expanded_pattern = normalize_double_star(pattern);
-            match glob::glob(&expanded_pattern) {
+            let remaining = expansion_limit.saturating_sub(files.len());
+            match crate::glob_match::expand_canonical(pattern, remaining) {
                 Ok(paths) => {
-                    let before = files.len();
-                    for entry in paths.flatten() {
-                        if entry.is_file() {
-                            if let Some(path) = entry.to_str() {
-                                files.push(path.to_string());
-                                if files.len() > expansion_limit {
-                                    return Err(GlobExpansionError {
-                                        pattern: pattern.clone(),
-                                        limit: expansion_limit,
-                                    });
-                                }
-                            }
-                        }
-                    }
-                    if files.len() == before {
+                    if paths.is_empty() {
                         empty_patterns.push(pattern.clone());
+                    }
+                    for path in paths {
+                        files.push(path.into_string());
+                        if files.len() > expansion_limit {
+                            return Err(GlobExpansionError {
+                                pattern: pattern.clone(),
+                                limit: expansion_limit,
+                            });
+                        }
                     }
                 }
                 Err(e) => {
+                    if e.message.contains("limit") {
+                        return Err(GlobExpansionError {
+                            pattern: pattern.clone(),
+                            limit: expansion_limit,
+                        });
+                    }
                     eprintln!("Invalid glob pattern '{}': {}", pattern, e);
                 }
             }
@@ -133,31 +117,4 @@ mod tests {
         assert_eq!(filtered, vec!["test.cs", "test.rs", "readme.md"]);
     }
 
-    #[test]
-    fn test_normalize_double_star_standalone() {
-        assert_eq!(normalize_double_star("**"), "**/*");
-    }
-
-    #[test]
-    fn test_normalize_double_star_trailing() {
-        assert_eq!(normalize_double_star("src/**"), "src/**/*");
-        assert_eq!(normalize_double_star("foo/bar/**"), "foo/bar/**/*");
-    }
-
-    #[test]
-    fn test_normalize_double_star_already_normalized() {
-        // Patterns that already have `/*` after `**` should not be changed
-        assert_eq!(normalize_double_star("**/*"), "**/*");
-        assert_eq!(normalize_double_star("src/**/*"), "src/**/*");
-        assert_eq!(normalize_double_star("src/**/*.rs"), "src/**/*.rs");
-    }
-
-    #[test]
-    fn test_normalize_double_star_other_patterns() {
-        // Other patterns should remain unchanged
-        assert_eq!(normalize_double_star("*.rs"), "*.rs");
-        assert_eq!(normalize_double_star("src/*.rs"), "src/*.rs");
-        assert_eq!(normalize_double_star("**/foo"), "**/foo");
-        assert_eq!(normalize_double_star("foo/**/bar"), "foo/**/bar");
-    }
 }
