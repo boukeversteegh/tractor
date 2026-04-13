@@ -25,7 +25,7 @@ export function DocsOverview() {
 
       <h2>What is Tractor?</h2>
       <p>
-        Tractor parses your source code into a tree, then lets you query it using standard expressions. You see exactly what you're querying — no hidden structure, no guessing. One tool, one syntax, 20+ languages.
+        Tractor parses your source code into a tree, then lets you query it using <a href="https://www.w3.org/TR/xpath-31/" target="_blank" rel="noopener noreferrer">standard expressions</a>. You see exactly what you're querying — no hidden structure, no guessing. One tool, one syntax, 20+ languages.
       </p>
 
       <h2>Quick Start</h2>

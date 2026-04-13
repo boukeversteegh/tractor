@@ -29,7 +29,7 @@ export function QuerySyntax() {
     <DocLayout>
       <h1>Query Syntax</h1>
       <p className="doc-lead">
-        Tractor uses path expressions to query code. Just name the element you want — tractor searches the whole tree. Use <code>/</code> to navigate to children, <code>//</code> to search deeper.
+        Tractor uses <a href="https://www.w3.org/TR/xpath-31/" target="_blank" rel="noopener noreferrer">path expressions</a> to query code. Just name the element you want — tractor searches the whole tree. Use <code>/</code> to navigate to children, <code>//</code> to search deeper.
       </p>
 
       <h2>Path Basics</h2>
@@ -296,6 +296,7 @@ tractor "src/**/*.cs" -x "$file" -v value`} />
         <li><strong>The dot <code>.</code> is your friend</strong> — <code>contains(.,'text')</code> matches against the flattened source code of any element.</li>
         <li><strong>No attributes</strong> — tractor models everything as elements and text. You won't need <code>@attr</code> syntax.</li>
         <li><strong>AI tools know the syntax</strong> — ChatGPT and Claude can write tractor queries. Show them the schema output and ask for a query.</li>
+        <li><strong>Full reference</strong> — the query language is XPath 3.1. See the <a href="https://devhints.io/xpath" target="_blank" rel="noopener noreferrer">XPath cheat sheet</a> for a quick overview or the <a href="https://www.w3.org/TR/xpath-31/" target="_blank" rel="noopener noreferrer">W3C spec</a> for the complete reference.</li>
       </ul>
 
       <div className="doc-next">
