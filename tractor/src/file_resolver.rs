@@ -257,9 +257,16 @@ impl FileResolver {
 
             let (mut files, empty_patterns) = match expand_globs_checked(&globs, expansion_limit) {
                 Ok(result) => {
-                    // Normalize all expanded paths (fix #98)
+                    // Normalize and deduplicate expanded paths. Multiple patterns
+                    // can expand to the same file (e.g. "src/**/*.cs" and
+                    // "src/sub/**/*.cs" both yield "src/sub/foo.cs"). Using a
+                    // set ensures each file appears once regardless of how many
+                    // patterns matched it (#127 follow-up).
+                    let mut seen = HashSet::new();
                     let files: Vec<NormalizedPath> = result.files.into_iter()
-                        .map(|f| NormalizedPath::new(&f)).collect();
+                        .map(|f| NormalizedPath::new(&f))
+                        .filter(|f| seen.insert(f.clone()))
+                        .collect();
                     (files, result.empty_patterns)
                 }
                 Err(e) => {

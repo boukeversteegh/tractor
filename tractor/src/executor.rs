@@ -1868,4 +1868,56 @@ mod tests {
             "intersection of identical canonical paths should find the file"
         );
     }
+
+    // -----------------------------------------------------------------------
+    // Follow-up: overlapping rule includes must not duplicate matches
+    // -----------------------------------------------------------------------
+
+    /// When multiple rules have overlapping include patterns, each file should
+    /// be processed once — not once per pattern that matched it.
+    #[test]
+    fn check_overlapping_rule_includes_no_duplicate_matches() {
+        let dir = tempfile::tempdir().unwrap();
+        let sub_dir = dir.path().join("src").join("sub");
+        std::fs::create_dir_all(&sub_dir).unwrap();
+        let json_path = sub_dir.join("data.json");
+        std::fs::write(&json_path, r#"{"name": "test"}"#).unwrap();
+
+        // Two rules with overlapping includes — both match the same file.
+        let broad = format!("{}/**/*.json", normalize_path(&dir.path().join("src").to_string_lossy()));
+        let narrow = format!("{}/**/*.json", normalize_path(&sub_dir.to_string_lossy()));
+
+        let rule_a = Rule::new("rule-a", "//name")
+            .with_severity(tractor_core::report::Severity::Error)
+            .with_reason("found name".to_string())
+            .with_include(vec![broad]);
+        let rule_b = Rule::new("rule-b", "//name")
+            .with_severity(tractor_core::report::Severity::Error)
+            .with_reason("found name".to_string())
+            .with_include(vec![narrow]);
+
+        let ops = vec![Operation::Check(CheckOperation {
+            files: vec![],
+            exclude: vec![],
+            diff_files: None,
+            diff_lines: None,
+            rules: vec![rule_a, rule_b],
+            tree_mode: None,
+            language: None,
+            ignore_whitespace: false,
+            parse_depth: None,
+            ruleset_include: vec![],
+            ruleset_exclude: vec![],
+            inline_source: None,
+        })];
+
+        let report = run(&ops);
+        // Each rule should match the file once → exactly 2 matches total.
+        // Without dedup, the file appears twice in the discovery set and we'd
+        // get 4 matches (2 rules × 2 copies of the file).
+        assert_eq!(
+            report.all_matches().len(), 2,
+            "each rule should match the file exactly once, not once per overlapping glob"
+        );
+    }
 }
