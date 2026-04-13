@@ -40,7 +40,7 @@ tractor file1.js file2.js`} />
       <h2>Extract</h2>
 
       <h3>-x, --extract</h3>
-      <p>XPath expression to select matching AST nodes. Without this, the full tree is shown.</p>
+      <p>Expression to select matching nodes. Without this, the full tree is shown.</p>
       <Example
         file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
         command={`tractor greeter.js -x "//function/name" -v value`}
@@ -65,44 +65,26 @@ tractor file1.js file2.js`} />
       <Example
         file={{ name: 'config.json', language: 'json', content: '{"host": "localhost", "port": 5432}' }}
         command={`tractor config.json -t structure`}
-        outputLanguage="xml"
         output={`config.json:1
-<Files>
-  <file>config.json</file>
-  <object>
-    <property>
-      <key>
-        <string>host</string>
-      </key>
-      <value>
-        <string>localhost</string>
-      </value>
-    </property>
-    <property>
-      <key>
-        <string>port</string>
-      </key>
-      <value>
-        <number>5432</number>
-      </value>
-    </property>
-  </object>
-</Files>`}
+object/
+  ├─ property/
+  │   ├─ key/string = "host"
+  │   └─ value/string = "localhost"
+  └─ property/
+      ├─ key/string = "port"
+      └─ value/number = "5432"`}
       />
       <p>Compare with the default <code>data</code> mode, where the same JSON becomes a clean data tree:</p>
       <Example
         command={`tractor config.json`}
-        outputLanguage="xml"
         output={`config.json:1
-<Files>
-  <file>config.json</file>
-  <host>localhost</host>
-  <port>5432</port>
-</Files>`}
+document/
+  ├─ host = "localhost"
+  └─ port = "5432"`}
       />
 
       <h3>-W, --ignore-whitespace</h3>
-      <p>Ignore whitespace when comparing strings in XPath. Useful when source code has varying formatting.</p>
+      <p>Ignore whitespace when comparing strings. Useful when source code has varying formatting.</p>
       <Example
         command={`echo 'function greet( name ) { return name; }' | tractor -l javascript -x "//params[.='(name)']" -v value -W`}
         output="(name)"
@@ -118,13 +100,13 @@ tractor file1.js file2.js`} />
           <tr><th>View</th><th>Description</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>tree</code></td><td>Full parsed XML (default)</td></tr>
+          <tr><td><code>tree</code></td><td>Query-oriented tree view (default)</td></tr>
           <tr><td><code>value</code></td><td>Text content of matched nodes</td></tr>
           <tr><td><code>source</code></td><td>Exact matched source code</td></tr>
           <tr><td><code>lines</code></td><td>Full source lines containing each match</td></tr>
           <tr><td><code>count</code></td><td>Total number of matches</td></tr>
           <tr><td><code>schema</code></td><td>Structural overview of element types</td></tr>
-          <tr><td><code>query</code></td><td>Echo the XPath query (useful for debugging shell escaping)</td></tr>
+          <tr><td><code>query</code></td><td>Echo the query (useful for debugging shell escaping)</td></tr>
         </tbody>
       </table>
       <Example
@@ -176,48 +158,36 @@ greeter.js:5:1: error: function found
       />
 
       <h3>-d, --depth</h3>
-      <p>Limit XML output depth. Deeper elements are collapsed into comments. Default is 4 for schema view.</p>
+      <p>Limit tree output depth. Deeper elements are collapsed with a child count. Default is 4 for schema view.</p>
       <Example
         command={`tractor greeter.js -d 3`}
-        outputLanguage="xml"
         output={`greeter.js:1
-<Files>
-  <file>greeter.js</file>
-  <program>
-    <function>
-      function
-      <name>greet</name>
-      <parameters>
-        <!-- ... (2 children) -->
-      </parameters>
-      <body>
-        <!-- ... (10 children) -->
-      </body>
-    </function>
-    <function>
-      function
-      <name>add</name>
-      <parameters>
-        <!-- ... (3 children) -->
-      </parameters>
-      <body>
-        <!-- ... (9 children) -->
-      </body>
-    </function>
-  </program>
-</Files>`}
+program/
+  ├─ function/
+  │   ├─ "function"
+  │   ├─ name = "greet"
+  │   ├─ parameters/
+  │   │   └─ ... (2 children)
+  │   └─ body/
+  │       └─ ... (10 children)
+  └─ function/
+      ├─ "function"
+      ├─ name = "add"
+      ├─ parameters/
+      │   └─ ... (3 children)
+      └─ body/
+          └─ ... (9 children)`}
       />
 
       <h3>--meta</h3>
-      <p>Include metadata attributes in XML output: source positions (<code>line</code>, <code>column</code>, <code>end_line</code>, <code>end_column</code>), node <code>kind</code>, and <code>field</code> name.</p>
+      <p>Include metadata in tree output: source positions (<code>line</code>, <code>column</code>, <code>end_line</code>, <code>end_column</code>), node <code>kind</code>, and <code>field</code> name. These appear as predicates in the tree view.</p>
       <Example
         command={`tractor greeter.js -x "//function/name" --meta`}
-        outputLanguage="xml"
         output={`greeter.js:1
-<name line="1" column="10" end_line="1" end_column="15" field="name">greet</name>
+name[line=1][column=10][end_line=1][end_column=15][field=name] = "greet"
 
 greeter.js:5
-<name line="5" column="10" end_line="5" end_column="13" field="name">add</name>`}
+name[line=5][column=10][end_line=5][end_column=13][field=name] = "add"`}
       />
 
       <h3>-g, --group</h3>
@@ -319,7 +289,7 @@ greeter.js:5
       />
 
       <h3>--no-pretty</h3>
-      <p>Disable pretty printing. Shows compact XML without indentation.</p>
+      <p>Disable pretty printing. Shows compact output without indentation.</p>
       <Example
         file={{ name: 'small.json', language: 'json', content: '{"host": "localhost"}' }}
         command={`tractor small.json --no-pretty`}
@@ -357,7 +327,7 @@ tractor check "src/**/*.js" --diff-lines "main..HEAD" -x "//comment[contains(.,'
       <CodeBlock language="bash" code={`tractor "src/**/*.js" -x "//function" --verbose`} />
 
       <h3>--debug</h3>
-      <p>Show the full XML with match highlights and metadata attributes. Useful for debugging XPath queries.</p>
+      <p>Show the full tree with match highlights and metadata. Useful for debugging queries. Debug mode uses XML output to show all internal detail.</p>
       <Example
         command={`echo 'function f() {}' | tractor -l javascript -x "//function" --debug`}
         outputLanguage="xml"

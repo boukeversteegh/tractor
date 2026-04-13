@@ -23,7 +23,7 @@ export function SetCommand() {
       </p>
 
       <h2>Usage</h2>
-      <CodeBlock code={`tractor set [FILES] -x <XPATH> --value <VALUE> [OPTIONS]
+      <CodeBlock code={`tractor set [FILES] -x <EXPRESSION> --value <VALUE> [OPTIONS]
 tractor set [FILES] <PATH_EXPRESSION> [--value <VALUE>] [OPTIONS]`} language="bash" />
 
       <h2>Update Config Values</h2>
@@ -94,7 +94,7 @@ Set 3 matches in 3 files`}
     port: 5432`}
       />
       <p>
-        This is equivalent in spirit to an XPath update such as <code>-x "//servers[host='localhost']/port"</code>: the predicate filters the target nodes; it is not stripped away.
+        This is equivalent to <code>-x "//servers[host='localhost']/port"</code>: the predicate filters the target nodes; it is not stripped away.
       </p>
 
       <h2>Patch Source Code</h2>
@@ -206,7 +206,7 @@ Set 2 values in 1 file`}
 
       <h2>Multiple Mappings with tractor run</h2>
       <p>
-        The <code>set</code> CLI command applies one XPath + value per invocation. To set multiple values at once, use <Link to="/docs/commands/run">tractor run</Link> with a config file:
+        The <code>set</code> CLI command applies one expression + value per invocation. To set multiple values at once, use <Link to="/docs/commands/run">tractor run</Link> with a config file:
       </p>
       <CodeBlock
         language="yaml"
@@ -232,7 +232,7 @@ Set 2 values in 1 file`}
           <tr><th>Option</th><th>Description</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>-x, --extract</code></td><td>XPath expression to match nodes</td></tr>
+          <tr><td><code>-x, --extract</code></td><td>Expression to match nodes</td></tr>
           <tr><td><code>--value</code></td><td>New value to set (optional with path expressions)</td></tr>
           <tr><td><code>--stdout</code></td><td>Output to stdout instead of modifying in-place</td></tr>
           <tr><td><code>-v, --view</code></td><td>View: status (default), output, file, line, value, source, lines</td></tr>

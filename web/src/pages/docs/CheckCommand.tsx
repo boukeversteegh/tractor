@@ -16,7 +16,7 @@ export function CheckCommand() {
       </p>
 
       <h2>Usage</h2>
-      <CodeBlock code={`tractor check [FILES] -x <XPATH> --reason <REASON> [OPTIONS]`} language="bash" />
+      <CodeBlock code={`tractor check [FILES] -x <EXPRESSION> --reason <REASON> [OPTIONS]`} language="bash" />
 
       <h2>Basic Check</h2>
       <p>
@@ -185,7 +185,7 @@ echo 'class Foo { void Bar() { } }' | \\
           <tr><th>Option</th><th>Description</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>-x, --extract</code></td><td>XPath expression — each match is a violation</td></tr>
+          <tr><td><code>-x, --extract</code></td><td>Expression — each match is a violation</td></tr>
           <tr><td><code>-s, --string</code></td><td>Inline source code (alternative to file/stdin)</td></tr>
           <tr><td><code>-l, --lang</code></td><td>Language for stdin/string input</td></tr>
           <tr><td><code>--reason</code></td><td>Reason message for each violation</td></tr>

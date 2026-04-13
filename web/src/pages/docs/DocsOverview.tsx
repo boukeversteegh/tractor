@@ -42,40 +42,23 @@ export function DocsOverview() {
       <Example
         file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
         command="tractor greeter.js"
-        outputLanguage="xml"
         output={`greeter.js:1
-<Files>
-  <file>greeter.js</file>
-  <program>
-    <function>
-      function
-      <name>greet</name>
-      <parameters>
-        <params>
-          (
-          <type>name</type>
-          )
-        </params>
-      </parameters>
-      <body>
-        <block>
-          {
-          <return>
-            return
-            <binary>...</binary>
-            ;
-          </return>
-          }
-        </block>
-      </body>
-    </function>
-    <function>
-      function
-      <name>add</name>
-      ...
-    </function>
-  </program>
-</Files>`}
+program/
+  ├─ function/
+  │   ├─ "function"
+  │   ├─ name = "greet"
+  │   ├─ parameters/
+  │   │   └─ params/
+  │   │       ├─ "("
+  │   │       ├─ type = "name"
+  │   │       └─ ")"
+  │   └─ body/
+  │       └─ block/
+  │           └─ ... (5 children)
+  └─ function/
+      ├─ "function"
+      ├─ name = "add"
+      └─ ... (3 children)`}
       />
 
       <h3>3. Query for patterns</h3>
@@ -110,7 +93,7 @@ export function DocsOverview() {
       </p>
       <ul>
         <li><strong>Everything is a node</strong> — you match by element name, not attributes. Modifiers like <code>public</code> or <code>static</code> are empty marker elements, so you can filter with <code>[public]</code> or <code>[not(static)]</code>.</li>
-        <li><strong>Text content is the source code</strong> — when you compare a node to a string, tractor ignores the XML tags and matches against the flattened source text. This means you can write <code>{'//method[contains(.,"exit(1)")]'}</code> and it matches even though the source code spans multiple nested elements.</li>
+        <li><strong>Text content is the source code</strong> — when you compare a node to a string, tractor matches against the flattened source text. This means you can write <code>{'//method[contains(.,"exit(1)")]'}</code> and it matches even though the source code spans multiple nested elements.</li>
         <li><strong>No attributes needed</strong> — the tree is structured so that nearly everything you'd want to query is a named element or text content, not a hidden attribute.</li>
       </ul>
       <p>
