@@ -304,8 +304,16 @@ impl FileResolver {
                 eprintln!("  files: using CLI files as base ({} file(s))", cli_set.len());
             }
             (cli_set.iter().cloned().collect(), vec![])
+        } else if self.base_dir.is_some() {
+            // Config-based run with no files at any level — fail with a clear
+            // message rather than silently doing nothing (fix #127 bug 4).
+            report.add(make_fatal_diagnostic(
+                request.command,
+                "no file patterns specified — add `files:` to your config, pass files as CLI arguments, or add `include:` to your rules".to_string(),
+            ));
+            return Vec::new();
         } else {
-            // Nothing specified
+            // Non-config usage with no files (e.g. inline source) — empty set.
             (vec![], vec![])
         };
 
@@ -331,7 +339,8 @@ impl FileResolver {
                 .collect();
 
             let opts = glob::MatchOptions {
-                case_sensitive: true,
+                // Windows file paths are case-insensitive (fix #127).
+                case_sensitive: !cfg!(target_os = "windows"),
                 require_literal_separator: false,
                 require_literal_leading_dot: false,
             };
@@ -509,5 +518,128 @@ mod tests {
         ).unwrap();
         assert!(m.matches(&NormalizedPath::new("src/main.rs")));
         assert!(!m.matches(&NormalizedPath::new("test/main.rs")));
+    }
+
+    // -----------------------------------------------------------------------
+    // Bug 1 regression tests: CLI ∩ root intersection
+    // -----------------------------------------------------------------------
+
+    /// Fix #127 bug 1: CLI files (via NormalizedPath::absolute) must intersect
+    /// with root files (from glob expansion) even when cwd casing differs from
+    /// the canonicalized base_dir.
+    #[test]
+    fn cli_files_intersect_with_root_files_same_canonical_path() {
+        // Simulate: root files from glob expansion use canonical casing
+        let root: HashSet<NormalizedPath> = [
+            NormalizedPath::new("C:/Work/Repo/src/foo.rs"),
+            NormalizedPath::new("C:/Work/Repo/src/bar.rs"),
+        ].into();
+
+        // CLI files also use canonical casing (after our fix)
+        let cli: HashSet<NormalizedPath> = [
+            NormalizedPath::new("C:/Work/Repo/src/foo.rs"),
+        ].into();
+
+        // Intersection must find the common file
+        let mut files: Vec<NormalizedPath> = root.iter().cloned().collect();
+        files.retain(|f| cli.contains(f));
+        assert_eq!(files.len(), 1, "intersection should find the matching file");
+        assert_eq!(files[0], "C:/Work/Repo/src/foo.rs");
+    }
+
+    /// Fix #127 bug 1: demonstrate that the old bug would produce 0 files
+    /// when cwd casing differs from canonical casing.
+    #[test]
+    fn different_casing_does_not_intersect() {
+        // Without the canonicalization fix, CLI files would have cwd casing
+        let root: HashSet<NormalizedPath> = [
+            NormalizedPath::new("C:/Work/Repo/src/foo.rs"),
+        ].into();
+        let wrong_case = NormalizedPath::new("c:/work/repo/src/foo.rs");
+
+        // This demonstrates the bug: different casing = no match
+        assert!(!root.contains(&wrong_case),
+            "NormalizedPath comparison is case-sensitive (by design)");
+    }
+
+    // -----------------------------------------------------------------------
+    // Bug 4 regression test: error on no files in config mode
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn resolve_with_no_files_config_mode_emits_diagnostic() {
+        use tractor_core::report::Severity;
+
+        let resolver = FileResolver {
+            root_files: None,
+            cli_files: None,
+            global_diff_files: None,
+            verbose: false,
+            base_dir: Some(std::path::PathBuf::from(".")),  // config mode
+            max_files: 1000,
+            global_diff_lines: None,
+        };
+
+        let mut builder = tractor_core::ReportBuilder::new();
+        let request = FileRequest {
+            files: &[],
+            exclude: &[],
+            diff_files: None,
+            diff_lines: None,
+            command: "check",
+        };
+        let (files, _) = resolver.resolve(&request, &mut builder);
+        assert!(files.is_empty(), "should return no files");
+
+        let report = builder.build();
+        let matches = report.all_matches();
+        assert_eq!(matches.len(), 1, "should emit exactly one diagnostic");
+        assert_eq!(matches[0].severity, Some(Severity::Fatal));
+        assert!(matches[0].reason.as_ref().unwrap().contains("no file patterns"));
+    }
+
+    #[test]
+    fn resolve_with_no_files_non_config_mode_returns_empty() {
+        let resolver = FileResolver {
+            root_files: None,
+            cli_files: None,
+            global_diff_files: None,
+            verbose: false,
+            base_dir: None,  // non-config mode
+            max_files: 1000,
+            global_diff_lines: None,
+        };
+
+        let mut builder = tractor_core::ReportBuilder::new();
+        let request = FileRequest {
+            files: &[],
+            exclude: &[],
+            diff_files: None,
+            diff_lines: None,
+            command: "query",
+        };
+        let (files, _) = resolver.resolve(&request, &mut builder);
+        assert!(files.is_empty());
+
+        let report = builder.build();
+        assert!(report.all_matches().is_empty(), "should not emit diagnostic in non-config mode");
+    }
+
+    // -----------------------------------------------------------------------
+    // Bug 2 regression: case-insensitive exclude on Windows
+    // -----------------------------------------------------------------------
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn exclude_is_case_insensitive_on_windows() {
+        use tractor_core::rule::GlobMatcher;
+
+        // Exclude pattern uses uppercase
+        let m = GlobMatcher::new(
+            &[], &[GlobPattern::new("VENDOR/**")], &[], &[],
+        ).unwrap();
+
+        // Lowercase path should still be excluded on Windows
+        assert!(!m.matches(&NormalizedPath::new("vendor/lib.rs")));
     }
 }

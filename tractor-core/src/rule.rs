@@ -68,7 +68,8 @@ mod glob_matcher {
     }
 
     const OPTS: MatchOptions = MatchOptions {
-        case_sensitive: true,
+        // Windows file paths are case-insensitive (fix #127).
+        case_sensitive: !cfg!(target_os = "windows"),
         require_literal_separator: false,
         require_literal_leading_dot: false,
     };
@@ -584,6 +585,42 @@ mod tests {
             // In practice, run_rules() resolves patterns to absolute before
             // building the GlobMatcher, so this limitation doesn't surface.
             assert!(m.matches_str("/home/user/project/test/foo.rs"));
+        }
+
+        /// Fix #127 bug 2: on Windows, glob matching must be case-insensitive
+        /// so that rule include patterns match files regardless of casing.
+        #[cfg(target_os = "windows")]
+        #[test]
+        fn case_insensitive_matching_on_windows() {
+            // Pattern with uppercase, path with lowercase
+            let m = GlobMatcher::new(&[], &[], &[g("C:/Work/Repo/src/**/*.cs")], &[]).unwrap();
+            assert!(m.matches_str("C:/work/repo/src/Example.cs"),
+                "should match regardless of case on Windows");
+            assert!(m.matches_str("C:/WORK/REPO/SRC/EXAMPLE.CS"),
+                "should match full uppercase on Windows");
+
+            // Pattern with lowercase, path with uppercase
+            let m2 = GlobMatcher::new(&[], &[], &[g("c:/work/**/*.rs")], &[]).unwrap();
+            assert!(m2.matches_str("C:/Work/Src/Main.rs"),
+                "lowercase pattern should match uppercase path on Windows");
+        }
+
+        /// On non-Windows, glob matching is case-sensitive.
+        #[cfg(not(target_os = "windows"))]
+        #[test]
+        fn case_sensitive_matching_on_unix() {
+            let m = GlobMatcher::new(&[], &[], &[g("src/**/*.rs")], &[]).unwrap();
+            assert!(m.matches_str("src/main.rs"));
+            assert!(!m.matches_str("SRC/main.rs"), "should be case-sensitive on Unix");
+        }
+
+        /// Fix #127 bug 2: exclude patterns are also case-insensitive on Windows.
+        #[cfg(target_os = "windows")]
+        #[test]
+        fn case_insensitive_exclude_on_windows() {
+            let m = GlobMatcher::new(&[], &[g("VENDOR/**")], &[], &[]).unwrap();
+            assert!(!m.matches_str("vendor/lib.rs"),
+                "lowercase path should be excluded by uppercase pattern on Windows");
         }
     }
 }
