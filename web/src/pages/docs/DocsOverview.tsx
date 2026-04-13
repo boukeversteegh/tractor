@@ -138,6 +138,10 @@ program/
 
       <h2>Guides</h2>
       <div className="doc-cards">
+        <Link to="/docs/guides/cheat-sheet" className="doc-card">
+          <h3>Cheat Sheet</h3>
+          <p>Quick reference for query syntax, views, formats, and CLI flags.</p>
+        </Link>
         <Link to="/docs/guides/query-syntax" className="doc-card">
           <h3>Query Syntax</h3>
           <p>Reference for path expressions, predicates, functions, and text matching.</p>
