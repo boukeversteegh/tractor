@@ -25,6 +25,7 @@ pub mod declarative_set;
 pub mod normalized_xpath;
 pub mod normalized_path;
 pub mod glob_pattern;
+pub mod glob_match;
 pub mod report;
 pub mod rule;
 pub mod tree_mode;
@@ -63,4 +64,7 @@ pub use xot_builder::{XotBuilder, XeeBuilder};
 pub use normalized_xpath::NormalizedXpath;
 pub use normalized_path::NormalizedPath;
 pub use glob_pattern::GlobPattern;
+pub use glob_match::CompiledPattern;
+#[cfg(feature = "native")]
+pub use glob_match::{expand_canonical, GlobExpandError};
 pub use tree_mode::TreeMode;

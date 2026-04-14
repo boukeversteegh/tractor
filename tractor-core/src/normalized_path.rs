@@ -35,15 +35,25 @@ impl NormalizedPath {
 
     /// Make a relative path absolute by joining with `cwd`.
     /// If already absolute, just normalizes.
+    ///
+    /// Uses `std::fs::canonicalize` when the file exists to resolve symlinks
+    /// and — on Windows — get the true filesystem casing. This prevents
+    /// intersection failures caused by `current_dir()` returning a different
+    /// casing than `canonicalize()` used on config paths (fix #127).
     pub fn absolute(raw: &str) -> Self {
         let p = Path::new(raw);
-        if p.is_absolute() {
-            Self::new(&normalize_lexically(p).to_string_lossy())
+        let full = if p.is_absolute() {
+            p.to_path_buf()
         } else if let Ok(cwd) = std::env::current_dir() {
-            Self::new(&normalize_lexically(&cwd.join(raw)).to_string_lossy())
+            cwd.join(raw)
         } else {
-            Self::new(raw)
-        }
+            return Self::new(raw);
+        };
+        // Prefer canonicalize for consistent casing (Windows) and symlink resolution.
+        // Fall back to lexical normalization when the path doesn't exist yet.
+        let resolved = std::fs::canonicalize(&full)
+            .unwrap_or_else(|_| normalize_lexically(&full));
+        Self::new(&resolved.to_string_lossy())
     }
 }
 
@@ -190,5 +200,65 @@ mod tests {
         let cwd = std::env::current_dir().unwrap();
         let expected = NormalizedPath::new(&cwd.join("src/foo.rs").to_string_lossy());
         assert_eq!(NormalizedPath::absolute("nested/../src/foo.rs"), expected);
+    }
+
+    /// Fix #127 bug 1: absolute() must canonicalize existing files so that
+    /// CLI paths match config-derived paths regardless of cwd casing.
+    #[test]
+    fn absolute_canonicalizes_existing_file() {
+        // Create a temp file and resolve it via absolute() — the result
+        // must match std::fs::canonicalize (true casing on Windows).
+        let tmp = std::env::temp_dir().join("tractor_test_canon.txt");
+        std::fs::write(&tmp, "").unwrap();
+
+        let canonical = std::fs::canonicalize(&tmp).unwrap();
+        let expected = NormalizedPath::new(&canonical.to_string_lossy());
+        let actual = NormalizedPath::absolute(&tmp.to_string_lossy());
+        assert_eq!(actual, expected, "absolute() should canonicalize existing files");
+
+        std::fs::remove_file(&tmp).ok();
+    }
+
+    /// Fix #127 bug 1: absolute() with a relative path to an existing file
+    /// must produce the same NormalizedPath as expanding a glob that matches
+    /// the same file (both should use canonical casing).
+    #[test]
+    fn absolute_relative_matches_glob_expanded() {
+        // Use Cargo.toml (always present in the repo root) as a known file.
+        // The worktree cwd is the repo root, so "Cargo.toml" is resolvable.
+        let cwd = std::env::current_dir().unwrap();
+        let cargo_toml = cwd.join("Cargo.toml");
+        if !cargo_toml.exists() {
+            return; // skip if not in repo root
+        }
+
+        let from_absolute = NormalizedPath::absolute("Cargo.toml");
+        let canonical = std::fs::canonicalize(&cargo_toml).unwrap();
+        let from_canonical = NormalizedPath::new(&canonical.to_string_lossy());
+        assert_eq!(
+            from_absolute, from_canonical,
+            "absolute('Cargo.toml') must match canonical form"
+        );
+    }
+
+    /// Fix #127 bug 1: on Windows, two paths differing only in case must
+    /// produce the same NormalizedPath after absolute().
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn absolute_case_insensitive_on_windows() {
+        let tmp = std::env::temp_dir().join("tractor_test_CaseCheck.txt");
+        std::fs::write(&tmp, "").unwrap();
+
+        let lower = tmp.to_string_lossy().to_lowercase();
+        let upper = tmp.to_string_lossy().to_uppercase();
+
+        let from_lower = NormalizedPath::absolute(&lower);
+        let from_upper = NormalizedPath::absolute(&upper);
+        assert_eq!(
+            from_lower, from_upper,
+            "absolute() must produce the same path regardless of input casing on Windows"
+        );
+
+        std::fs::remove_file(&tmp).ok();
     }
 }

@@ -1,20 +1,10 @@
 //! Shared helpers used across multiple format renderers.
 
-use std::path::Path;
-use tractor_core::normalize_path;
 use tractor_core::report::ReportMatch;
 use super::options::{ViewField, ViewSet};
 
 pub fn to_absolute_path(path: &str) -> String {
-    let p = Path::new(path);
-    let absolute = if p.is_absolute() {
-        p.to_path_buf()
-    } else if let Ok(cwd) = std::env::current_dir() {
-        cwd.join(p)
-    } else {
-        p.to_path_buf()
-    };
-    normalize_path(&absolute.to_string_lossy())
+    tractor_core::NormalizedPath::absolute(path).into_string()
 }
 
 /// Whether totals/metadata should be shown for this report.

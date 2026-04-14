@@ -37,8 +37,7 @@ pub use glob_matcher::GlobError;
 
 #[cfg(feature = "native")]
 mod glob_matcher {
-    use glob::Pattern;
-    use glob::MatchOptions;
+    use crate::glob_match::CompiledPattern;
 
     /// Error returned when a glob pattern string is invalid.
     #[derive(Debug, Clone)]
@@ -55,26 +54,20 @@ mod glob_matcher {
 
     impl std::error::Error for GlobError {}
 
-    fn compile(patterns: &[crate::GlobPattern]) -> Result<Vec<Pattern>, GlobError> {
+    fn compile(patterns: &[crate::GlobPattern]) -> Result<Vec<CompiledPattern>, GlobError> {
         patterns
             .iter()
             .map(|p| {
-                Pattern::new(p.as_str()).map_err(|e| GlobError {
+                CompiledPattern::new(p.as_str()).map_err(|e| GlobError {
                     pattern: p.as_str().to_string(),
-                    message: e.msg.to_string(),
+                    message: e.message,
                 })
             })
             .collect()
     }
 
-    const OPTS: MatchOptions = MatchOptions {
-        case_sensitive: true,
-        require_literal_separator: false,
-        require_literal_leading_dot: false,
-    };
-
-    fn any_matches(patterns: &[Pattern], path: &str) -> bool {
-        patterns.iter().any(|p| p.matches_with(path, OPTS))
+    fn any_matches(patterns: &[CompiledPattern], path: &str) -> bool {
+        patterns.iter().any(|p| p.matches(path))
     }
 
     /// Compiled glob patterns for path matching.
@@ -85,11 +78,11 @@ mod glob_matcher {
     #[derive(Debug, Clone)]
     pub struct GlobMatcher {
         /// Ruleset-level include patterns (hard boundary).
-        rs_include: Vec<Pattern>,
+        rs_include: Vec<CompiledPattern>,
         /// Rule-level include patterns (further narrowing).
-        r_include: Vec<Pattern>,
+        r_include: Vec<CompiledPattern>,
         /// All exclude patterns (ruleset + rule, unioned).
-        exclude: Vec<Pattern>,
+        exclude: Vec<CompiledPattern>,
     }
 
     impl GlobMatcher {
@@ -584,6 +577,42 @@ mod tests {
             // In practice, run_rules() resolves patterns to absolute before
             // building the GlobMatcher, so this limitation doesn't surface.
             assert!(m.matches_str("/home/user/project/test/foo.rs"));
+        }
+
+        /// Fix #127 bug 2: on Windows, glob matching must be case-insensitive
+        /// so that rule include patterns match files regardless of casing.
+        #[cfg(target_os = "windows")]
+        #[test]
+        fn case_insensitive_matching_on_windows() {
+            // Pattern with uppercase, path with lowercase
+            let m = GlobMatcher::new(&[], &[], &[g("C:/Work/Repo/src/**/*.cs")], &[]).unwrap();
+            assert!(m.matches_str("C:/work/repo/src/Example.cs"),
+                "should match regardless of case on Windows");
+            assert!(m.matches_str("C:/WORK/REPO/SRC/EXAMPLE.CS"),
+                "should match full uppercase on Windows");
+
+            // Pattern with lowercase, path with uppercase
+            let m2 = GlobMatcher::new(&[], &[], &[g("c:/work/**/*.rs")], &[]).unwrap();
+            assert!(m2.matches_str("C:/Work/Src/Main.rs"),
+                "lowercase pattern should match uppercase path on Windows");
+        }
+
+        /// On non-Windows, glob matching is case-sensitive.
+        #[cfg(not(target_os = "windows"))]
+        #[test]
+        fn case_sensitive_matching_on_unix() {
+            let m = GlobMatcher::new(&[], &[], &[g("src/**/*.rs")], &[]).unwrap();
+            assert!(m.matches_str("src/main.rs"));
+            assert!(!m.matches_str("SRC/main.rs"), "should be case-sensitive on Unix");
+        }
+
+        /// Fix #127 bug 2: exclude patterns are also case-insensitive on Windows.
+        #[cfg(target_os = "windows")]
+        #[test]
+        fn case_insensitive_exclude_on_windows() {
+            let m = GlobMatcher::new(&[], &[g("VENDOR/**")], &[], &[]).unwrap();
+            assert!(!m.matches_str("vendor/lib.rs"),
+                "lowercase path should be excluded by uppercase pattern on Windows");
         }
     }
 }

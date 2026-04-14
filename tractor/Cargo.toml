@@ -22,7 +22,6 @@ serde_json.workspace = true
 serde_yaml.workspace = true
 toml = "0.8"
 serde = { workspace = true }
-glob.workspace = true
 
 [dev-dependencies]
 tempfile = "3"
