@@ -52,7 +52,8 @@ export function CheatSheet() {
           <tr><th>Pattern</th><th>Meaning</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>[public][not(static)]</code></td><td>AND — both must be true</td></tr>
+          <tr><td><code>[public][not(static)]</code></td><td>AND — both must be true (chained)</td></tr>
+          <tr><td><code>[public and not(static)]</code></td><td>AND — both must be true (single predicate)</td></tr>
           <tr><td><code>[public or static]</code></td><td>OR — either is true</td></tr>
           <tr><td><code>[not(public or static)]</code></td><td>NOR — neither is true</td></tr>
         </tbody>
