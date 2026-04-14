@@ -79,6 +79,31 @@ export function CheatSheet() {
         </tbody>
       </table>
 
+      <h2>Maps &amp; Arrays</h2>
+      <p>
+        Build structured output with <a href="https://www.w3.org/TR/xpath-31/#id-maps-and-arrays" target="_blank" rel="noopener noreferrer">XPath 3.1 maps and arrays</a>. Useful with <code>-f json</code> or <code>-f yaml</code>.
+      </p>
+      <table className="doc-table">
+        <thead>
+          <tr><th>Syntax</th><th>Result</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>{'map { "k": "v" }'}</code></td><td>{'{ "k": "v" }'}</td></tr>
+          <tr><td><code>{'map { "name": string(name), "line": string(@line) }'}</code></td><td>Map with computed values</td></tr>
+          <tr><td><code>{'array { "a", "b", "c" }'}</code></td><td>{'["a", "b", "c"]'}</td></tr>
+          <tr><td><code>{'array { //function/name/string(.) }'}</code></td><td>Array from query results</td></tr>
+        </tbody>
+      </table>
+      <h3>Example: extract structured data</h3>
+      <CodeBlock language="bash" code={`# Build a JSON array of objects from code
+tractor file.cs -f json -x '//class ! map {
+  "name": string(name),
+  "methods": array { body/method/name/string(.) }
+}'`} />
+      <p>
+        When a map value produces multiple items, tractor automatically wraps them in an array.
+      </p>
+
       <h2>Axes</h2>
       <table className="doc-table">
         <thead>
