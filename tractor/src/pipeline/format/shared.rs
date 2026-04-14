@@ -1,22 +1,10 @@
 //! Shared helpers used across multiple format renderers.
 
-use std::path::Path;
-use tractor_core::normalize_path;
 use tractor_core::report::ReportMatch;
 use super::options::{ViewField, ViewSet};
 
 pub fn to_absolute_path(path: &str) -> String {
-    let p = Path::new(path);
-    let full = if p.is_absolute() {
-        p.to_path_buf()
-    } else if let Ok(cwd) = std::env::current_dir() {
-        cwd.join(p)
-    } else {
-        p.to_path_buf()
-    };
-    // Canonicalize to resolve 8.3 short names on Windows and get true casing.
-    let resolved = std::fs::canonicalize(&full).unwrap_or(full);
-    normalize_path(&resolved.to_string_lossy())
+    tractor_core::NormalizedPath::absolute(path).into_string()
 }
 
 /// Whether totals/metadata should be shown for this report.
