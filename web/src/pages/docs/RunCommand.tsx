@@ -98,7 +98,7 @@ example.js:3:3: error: getAll methods in repositories should use orderBy
         </thead>
         <tbody>
           <tr><td><code>id</code></td><td>Yes</td><td>Unique identifier for the rule</td></tr>
-          <tr><td><code>xpath</code></td><td>Yes</td><td>Expression — each match is a violation</td></tr>
+          <tr><td><code>xpath</code></td><td>Yes</td><td><Link to="/docs/guides/query-syntax">Query</Link> — each match is a violation</td></tr>
           <tr><td><code>reason</code></td><td>Yes</td><td>Explanation shown for each violation</td></tr>
           <tr><td><code>severity</code></td><td>No</td><td><code>error</code> (default) or <code>warning</code></td></tr>
           <tr><td><code>message</code></td><td>No</td><td>Custom message template (<code>{'{value}'}</code>, <code>{'{line}'}</code>, etc.)</td></tr>

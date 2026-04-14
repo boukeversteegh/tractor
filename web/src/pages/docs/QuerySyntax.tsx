@@ -29,7 +29,7 @@ export function QuerySyntax() {
     <DocLayout>
       <h1>Query Syntax</h1>
       <p className="doc-lead">
-        Tractor uses <a href="https://www.w3.org/TR/xpath-31/" target="_blank" rel="noopener noreferrer">path expressions</a> to query code. Just name the element you want — tractor searches the whole tree. Use <code>/</code> to navigate to children, <code>//</code> to search deeper.
+        Tractor queries use <a href="https://www.w3.org/TR/xpath-31/" target="_blank" rel="noopener noreferrer">XPath</a> syntax. Just name the element you want — tractor searches the whole tree. Use <code>/</code> to navigate to children, <code>//</code> to search deeper.
       </p>
 
       <h2>Path Basics</h2>

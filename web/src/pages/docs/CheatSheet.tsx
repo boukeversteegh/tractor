@@ -168,7 +168,7 @@ tractor "src/**/*.js" --diff-lines "main..HEAD" -x "//function" -v count`} />
           <tr><th>Flag</th><th>Description</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>-x</code></td><td>Query expression</td></tr>
+          <tr><td><code>-x</code></td><td>Query to match</td></tr>
           <tr><td><code>-v</code></td><td>View mode (tree, value, source, lines, count, schema)</td></tr>
           <tr><td><code>-f</code></td><td>Output format (text, gcc, json, yaml, github)</td></tr>
           <tr><td><code>-d</code></td><td>Limit tree depth</td></tr>

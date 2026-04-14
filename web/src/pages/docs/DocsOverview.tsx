@@ -144,7 +144,7 @@ program/
         </Link>
         <Link to="/docs/guides/query-syntax" className="doc-card">
           <h3>Query Syntax</h3>
-          <p>Reference for path expressions, predicates, functions, and text matching.</p>
+          <p>Reference for query syntax, predicates, functions, and text matching.</p>
         </Link>
         <Link to="/docs/guides/writing-queries" className="doc-card">
           <h3>Writing Queries</h3>

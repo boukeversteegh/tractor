@@ -19,7 +19,7 @@ export function TestCommand() {
       </p>
 
       <h2>Usage</h2>
-      <CodeBlock code={`tractor test [FILES] -x <EXPRESSION> --expect <EXPECT> [OPTIONS]`} language="bash" />
+      <CodeBlock code={`tractor test [FILES] -x <QUERY> --expect <EXPECT> [OPTIONS]`} language="bash" />
 
       <h2>Basic Test</h2>
       <p>
@@ -76,7 +76,7 @@ export function TestCommand() {
           <tr><th>Option</th><th>Description</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>-x, --extract</code></td><td>Expression to match</td></tr>
+          <tr><td><code>-x, --extract</code></td><td><Link to="/docs/guides/query-syntax">Query</Link> to match</td></tr>
           <tr><td><code>-e, --expect</code></td><td>Expected result: <code>none</code>, <code>some</code>, or a number</td></tr>
           <tr><td><code>-m, --message</code></td><td>Custom message for the assertion</td></tr>
           <tr><td><code>-s, --string</code></td><td>Inline source code to test</td></tr>

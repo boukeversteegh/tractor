@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { DocLayout } from '../../components/DocLayout';
 import { CodeBlock, OutputBlock, Example } from '../../components/CodeBlock';
 
@@ -40,7 +41,7 @@ tractor file1.js file2.js`} />
       <h2>Extract</h2>
 
       <h3>-x, --extract</h3>
-      <p>Expression to select matching nodes. Without this, the full tree is shown.</p>
+      <p><Link to="/docs/guides/query-syntax">Query</Link> to select matching nodes. Without this, the full tree is shown.</p>
       <Example
         file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
         command={`tractor greeter.js -x "//function/name" -v value`}

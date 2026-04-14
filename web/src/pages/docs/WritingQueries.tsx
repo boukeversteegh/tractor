@@ -92,7 +92,7 @@ export function WritingQueries() {
 
       <h2>Step 3: Select Elements</h2>
       <p>
-        Use <code>-x</code> with a <a href="https://www.w3.org/TR/xpath-31/" target="_blank" rel="noopener noreferrer">path expression</a> to select elements. The syntax is similar to file paths:
+        Use <code>-x</code> with a <Link to="/docs/guides/query-syntax">query</Link> to select elements. The syntax is similar to file paths:
       </p>
 
       <h3>Select all method names</h3>
