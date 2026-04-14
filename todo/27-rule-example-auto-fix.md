@@ -89,6 +89,74 @@ For this to work, a `valid`/`invalid` pair must be:
    "replace class body" patch rather than three surgical edits. Good
    limit case to document.
 
+## Renderer coverage is the real gating concern
+
+The pipeline only works if `render()` can serialize every node type
+that might appear on either side of a diff. The C# renderer today
+(`tractor-core/src/render/csharp.rs:13-28`) only handles
+**class-level structural nodes**: `class`, `struct`, `property`,
+`field`, `unit`, `namespace`, `import`, `comment`. Methods are not
+rendered, let alone method bodies. Anything inside a method body
+(statements, expressions) falls through to
+`RenderError::UnsupportedNode`.
+
+Mapping the three test cases against that gap:
+
+| Test case | Additional node kinds the renderer must support |
+|---|---|
+| always-use-braces | `method_declaration`, `parameter_list`, `parameter`, `block`, `if_statement`, `return_statement`, `binary_expression`, `identifier` |
+| no-null-comparison | all of the above + `expression_statement`, `invocation_expression`, `member_access_expression`, `throw_statement`, `object_creation_expression` |
+| primary-constructor | `constructor_declaration`, `primary_constructor_base_type`, `base_list`, `assignment_expression` |
+
+In other words, to make this usable on realistic C# rules the
+renderer needs roughly full statement- and expression-level coverage.
+That is a substantial subproject on its own — likely larger than the
+diff walker.
+
+**Scoping options**, rough ordering from cheapest to most ambitious:
+
+1. **Round-trip shortcut for unchanged subtrees.** When the diff
+   walker decides a subtree on the valid side is the "replacement
+   value" for a SetOp, it could serialize it not by calling
+   `render()` but by slicing the original source text using the
+   subtree's byte span (the span is already tracked during parsing).
+   This completely sidesteps the rendering problem for subtrees that
+   came verbatim from the user's example — which is the common case
+   when examples are minimal pairs. The renderer only needs to be
+   invoked if the diff synthesizes a new subtree, which this
+   algorithm doesn't do.
+2. **Incremental renderer growth driven by tests.** If we *do* need
+   the renderer (e.g. because we want the patch to emit canonically
+   formatted C# rather than whatever the example used), grow the
+   renderer one node kind at a time, with each rule's auto-fix test
+   pulling in the next batch.
+3. **Full statement/expression renderer.** Only commit to this if
+   the source-slicing shortcut turns out to be insufficient (e.g.
+   placeholder substitution means we can't just slice — we need to
+   regenerate with identifier replacements).
+
+Option (1) is probably the right POC path: it lets us prove the diff
+walker and patch-apply loop work before we sink effort into renderer
+expansion. Placeholder substitution can still be done by text-level
+splicing inside the sliced source, since tree-sitter gives us spans
+down to individual identifiers.
+
+## Proof-of-concept plan
+
+A minimal POC, before renderer work:
+
+1. Take the "always-use-braces" example pair (smallest, cleanest
+   minimal pair).
+2. Parse both sides via `parse_string_to_documents`.
+3. Implement a parallel walker that returns `Vec<DiffPoint>` where
+   `DiffPoint = { invalid_xpath, valid_subtree_span }`.
+4. For each diff point, slice the valid subtree directly out of the
+   valid-side source via the byte span, and construct a SetOp whose
+   value is that slice.
+5. Apply the SetOps to a *third* invalid snippet (not the example —
+   real user code) and check the result matches an expected output.
+6. Only then tackle placeholder abstraction and renderer expansion.
+
 ## Open questions / risks
 
 - **Removals.** Set supports upsert but not delete. Removals have to
