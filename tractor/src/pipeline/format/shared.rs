@@ -7,14 +7,16 @@ use super::options::{ViewField, ViewSet};
 
 pub fn to_absolute_path(path: &str) -> String {
     let p = Path::new(path);
-    let absolute = if p.is_absolute() {
+    let full = if p.is_absolute() {
         p.to_path_buf()
     } else if let Ok(cwd) = std::env::current_dir() {
         cwd.join(p)
     } else {
         p.to_path_buf()
     };
-    normalize_path(&absolute.to_string_lossy())
+    // Canonicalize to resolve 8.3 short names on Windows and get true casing.
+    let resolved = std::fs::canonicalize(&full).unwrap_or(full);
+    normalize_path(&resolved.to_string_lossy())
 }
 
 /// Whether totals/metadata should be shown for this report.
