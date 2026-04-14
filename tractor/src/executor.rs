@@ -1735,7 +1735,9 @@ mod tests {
     fn check_rule_include_discovers_files() {
         // Create a temp JSON file that a rule's include pattern will match.
         let dir = tempfile::tempdir().unwrap();
-        let src_dir = dir.path().join("src");
+        // Canonicalize to resolve 8.3 short names on Windows CI (e.g. RUNNER~1 → runneradmin)
+        let canon_dir = std::fs::canonicalize(dir.path()).unwrap();
+        let src_dir = canon_dir.join("src");
         std::fs::create_dir_all(&src_dir).unwrap();
         let json_path = src_dir.join("data.json");
         std::fs::write(&json_path, r#"{"name": "test"}"#).unwrap();
@@ -1775,8 +1777,9 @@ mod tests {
     #[test]
     fn check_multiple_rule_includes_discover_union() {
         let dir = tempfile::tempdir().unwrap();
-        let src_dir = dir.path().join("src");
-        let test_dir = dir.path().join("test");
+        let canon_dir = std::fs::canonicalize(dir.path()).unwrap();
+        let src_dir = canon_dir.join("src");
+        let test_dir = canon_dir.join("test");
         std::fs::create_dir_all(&src_dir).unwrap();
         std::fs::create_dir_all(&test_dir).unwrap();
         std::fs::write(src_dir.join("data.json"), r#"{"name": "src"}"#).unwrap();
@@ -1878,13 +1881,14 @@ mod tests {
     #[test]
     fn check_overlapping_rule_includes_no_duplicate_matches() {
         let dir = tempfile::tempdir().unwrap();
-        let sub_dir = dir.path().join("src").join("sub");
+        let canon_dir = std::fs::canonicalize(dir.path()).unwrap();
+        let sub_dir = canon_dir.join("src").join("sub");
         std::fs::create_dir_all(&sub_dir).unwrap();
         let json_path = sub_dir.join("data.json");
         std::fs::write(&json_path, r#"{"name": "test"}"#).unwrap();
 
         // Two rules with overlapping includes — both match the same file.
-        let broad = format!("{}/**/*.json", normalize_path(&dir.path().join("src").to_string_lossy()));
+        let broad = format!("{}/**/*.json", normalize_path(&canon_dir.join("src").to_string_lossy()));
         let narrow = format!("{}/**/*.json", normalize_path(&sub_dir.to_string_lossy()));
 
         let rule_a = Rule::new("rule-a", "//name")
