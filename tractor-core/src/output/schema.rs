@@ -353,8 +353,13 @@ fn format_node(
         }
     }
 
-    for (i, (name, child)) in node.children.iter().enumerate() {
-        let is_last_child = i == node.children.len() - 1;
+    // Separate markers (leaf nodes with no children and no values) from regular children
+    let regular_children: Vec<&(String, TreeNode)> = node.children.iter()
+        .filter(|(_, child)| !child.children.is_empty() || !child.values.is_empty())
+        .collect();
+
+    for (i, (name, child)) in regular_children.iter().enumerate() {
+        let is_last_child = i == regular_children.len() - 1;
 
         let connector = if is_root {
             ""
@@ -375,6 +380,29 @@ fn format_node(
             String::new()
         };
 
+        // Trailing "/" for nodes with children
+        let has_children = !child.children.is_empty();
+        let trailing_slash = if has_children {
+            if use_color {
+                "\x1b[2m/\x1b[0m".to_string()
+            } else {
+                "/".to_string()
+            }
+        } else {
+            String::new()
+        };
+
+        // Collect marker qualifier for this child node
+        let child_markers: Vec<&str> = child.children.iter()
+            .filter(|(_, grandchild)| grandchild.children.is_empty() && grandchild.values.is_empty())
+            .map(|(n, _)| n.as_str())
+            .collect();
+        let child_qualifier = if child_markers.is_empty() {
+            String::new()
+        } else {
+            format!("[{}]", child_markers.join(" and "))
+        };
+
         // Format values if any
         let values_str = if child.values.is_empty() {
             String::new()
@@ -387,34 +415,40 @@ fn format_node(
 
             let content = if is_structural_pair {
                 format!("{}\u{2026}{}", child.values[0], child.values[1])
-            } else if child.values.len() <= 5 {
-                child.values.join(", ")
             } else {
-                format!(
-                    "{}, \u{2026} (+{})",
-                    child.values[..5].join(", "),
-                    child.values.len() - 5
-                )
+                let quoted: Vec<String> = child.values.iter()
+                    .take(5)
+                    .map(|v| quote_literal(v))
+                    .collect();
+                if child.values.len() <= 5 {
+                    quoted.join(", ")
+                } else {
+                    format!(
+                        "{}, \u{2026} (+{})",
+                        quoted.join(", "),
+                        child.values.len() - 5
+                    )
+                }
             };
 
             if use_color {
-                format!("  \x1b[2m{}\x1b[0m", content)
+                format!(" = \x1b[2m{}\x1b[0m", content)
             } else {
-                format!("  {}", content)
+                format!(" = {}", content)
             }
         };
 
         output.push_str(&format!(
-            "{}{}{}{}{}\n",
-            prefix, connector, name, occurrence, values_str
+            "{}{}{}{}{}{}{}\n",
+            prefix, connector, name, child_qualifier, occurrence, trailing_slash, values_str
         ));
 
         let new_prefix = if is_root {
-            String::new()
+            String::from("  ")
         } else if is_last_child {
-            format!("{}   ", prefix)
+            format!("{}    ", prefix)
         } else {
-            format!("{}\u{2502}  ", prefix)
+            format!("{}\u{2502}   ", prefix)
         };
 
         // Don't increment depth for the invisible root node, matching
@@ -438,4 +472,8 @@ pub fn format_schema(xot: &Xot, node: Node, max_depth: Option<usize>, use_color:
     let mut collector = SchemaCollector::new();
     collector.collect_from_xot(xot, node);
     collector.format(max_depth, use_color)
+}
+
+fn quote_literal(text: &str) -> String {
+    serde_json::to_string(text).unwrap_or_else(|_| format!("\"{}\"", text))
 }
