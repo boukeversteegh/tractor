@@ -459,8 +459,26 @@ fn execute_check(
     }
 
     // --- Phase 3: Run the actual file check ---
+    // When the operation has no files but rules define include patterns, hoist
+    // their union into the file request so patterns drive file discovery (fix #127 bug 3).
+    let hoisted_files: Vec<String> = if op.files.is_empty() {
+        let mut seen = std::collections::HashSet::new();
+        op.rules.iter()
+            .flat_map(|r| r.include.iter())
+            .filter(|p| seen.insert((*p).clone()))
+            .cloned()
+            .collect()
+    } else {
+        vec![]
+    };
+    let effective_files = if !hoisted_files.is_empty() {
+        &hoisted_files
+    } else {
+        &op.files
+    };
+
     let request = FileRequest {
-        files: &op.files,
+        files: effective_files,
         exclude: &op.exclude,
         diff_files: op.diff_files.as_deref(),
         diff_lines: op.diff_lines.as_deref(),
@@ -1113,6 +1131,7 @@ fn query_files_multi(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tractor_core::normalize_path;
 
 
     fn temp_json_file(content: &str) -> (tempfile::TempDir, String) {
@@ -1704,5 +1723,205 @@ mod tests {
         validate_rule_examples(&rules, None, None, &mut builder).unwrap();
         let report = builder.build();
         assert!(report.all_matches().is_empty());
+    }
+
+    // -----------------------------------------------------------------------
+    // Bug 3 regression: rule-level include hoists into file discovery
+    // -----------------------------------------------------------------------
+
+    /// Fix #127 bug 3: when a check operation has no files but rules have
+    /// include patterns, those patterns must drive file discovery.
+    #[test]
+    fn check_rule_include_discovers_files() {
+        // Create a temp JSON file that a rule's include pattern will match.
+        let dir = tempfile::tempdir().unwrap();
+        // Canonicalize to resolve 8.3 short names on Windows CI (e.g. RUNNER~1 → runneradmin)
+        let canon_dir = std::fs::canonicalize(dir.path()).unwrap();
+        let src_dir = canon_dir.join("src");
+        std::fs::create_dir_all(&src_dir).unwrap();
+        let json_path = src_dir.join("data.json");
+        std::fs::write(&json_path, r#"{"name": "test"}"#).unwrap();
+
+        // Build a check operation with no files but a rule that includes src/**/*.json
+        let include_pattern = format!("{}/**/*.json", normalize_path(&src_dir.to_string_lossy()));
+        let rule = Rule::new("no-name", "//name")
+            .with_severity(tractor_core::report::Severity::Error)
+            .with_reason("found name".to_string())
+            .with_include(vec![include_pattern]);
+
+        let ops = vec![Operation::Check(CheckOperation {
+            files: vec![],  // no operation-level files
+            exclude: vec![],
+            diff_files: None,
+            diff_lines: None,
+            rules: vec![rule],
+            tree_mode: None,
+            language: None,
+            ignore_whitespace: false,
+            parse_depth: None,
+            ruleset_include: vec![],
+            ruleset_exclude: vec![],
+            inline_source: None,
+        })];
+
+        let report = run(&ops);
+        assert!(
+            !report.all_matches().is_empty(),
+            "rule include pattern should discover files and find matches"
+        );
+        assert_eq!(report.all_matches()[0].reason.as_deref(), Some("found name"));
+    }
+
+    /// Fix #127 bug 3: multiple rules with different include patterns — each
+    /// rule's include is expanded for discovery, but only matches its own files.
+    #[test]
+    fn check_multiple_rule_includes_discover_union() {
+        let dir = tempfile::tempdir().unwrap();
+        let canon_dir = std::fs::canonicalize(dir.path()).unwrap();
+        let src_dir = canon_dir.join("src");
+        let test_dir = canon_dir.join("test");
+        std::fs::create_dir_all(&src_dir).unwrap();
+        std::fs::create_dir_all(&test_dir).unwrap();
+        std::fs::write(src_dir.join("data.json"), r#"{"name": "src"}"#).unwrap();
+        std::fs::write(test_dir.join("data.json"), r#"{"name": "test"}"#).unwrap();
+
+        let src_pattern = format!("{}/**/*.json", normalize_path(&src_dir.to_string_lossy()));
+        let test_pattern = format!("{}/**/*.json", normalize_path(&test_dir.to_string_lossy()));
+
+        let rule_src = Rule::new("src-rule", "//name")
+            .with_severity(tractor_core::report::Severity::Error)
+            .with_reason("src match".to_string())
+            .with_include(vec![src_pattern]);
+        let rule_test = Rule::new("test-rule", "//name")
+            .with_severity(tractor_core::report::Severity::Error)
+            .with_reason("test match".to_string())
+            .with_include(vec![test_pattern]);
+
+        let ops = vec![Operation::Check(CheckOperation {
+            files: vec![],
+            exclude: vec![],
+            diff_files: None,
+            diff_lines: None,
+            rules: vec![rule_src, rule_test],
+            tree_mode: None,
+            language: None,
+            ignore_whitespace: false,
+            parse_depth: None,
+            ruleset_include: vec![],
+            ruleset_exclude: vec![],
+            inline_source: None,
+        })];
+
+        let report = run(&ops);
+        // Both files should be discovered (union of includes)
+        let reasons: Vec<&str> = report.all_matches().iter()
+            .filter_map(|m| m.reason.as_deref())
+            .collect();
+        assert!(reasons.contains(&"src match"), "should find src match");
+        assert!(reasons.contains(&"test match"), "should find test match");
+    }
+
+    // -----------------------------------------------------------------------
+    // Bug 1 regression: CLI + config intersection on real files
+    // -----------------------------------------------------------------------
+
+    /// Fix #127 bug 1: verify that CLI files intersect correctly with root
+    /// files when both refer to the same canonical file.
+    #[test]
+    fn check_cli_root_intersection_on_real_files() {
+        let dir = tempfile::tempdir().unwrap();
+        let json_path = dir.path().join("test.json");
+        std::fs::write(&json_path, r#"{"bad": true}"#).unwrap();
+
+        let canonical = std::fs::canonicalize(&json_path).unwrap();
+        let canonical_str = normalize_path(&canonical.to_string_lossy());
+
+        // Root files contain the canonical path (as from glob expansion)
+        // CLI files also resolve to the same canonical path
+        let ops = vec![Operation::Check(CheckOperation {
+            files: vec![],
+            exclude: vec![],
+            diff_files: None,
+            diff_lines: None,
+            rules: vec![
+                Rule::new("check-bad", "//bad")
+                    .with_severity(tractor_core::report::Severity::Error)
+                    .with_reason("found bad".to_string()),
+            ],
+            tree_mode: None,
+            language: None,
+            ignore_whitespace: false,
+            parse_depth: None,
+            ruleset_include: vec![],
+            ruleset_exclude: vec![],
+            inline_source: None,
+        })];
+
+        // Execute with both root_files and cli_files pointing to the same file
+        let options = ExecuteOptions {
+            config_root_files: Some(vec![canonical_str.clone()]),
+            cli_files: vec![canonical_str.clone()],
+            ..Default::default()
+        };
+        let mut builder = ReportBuilder::new();
+        execute(&ops, &options, &mut builder).unwrap();
+        let report = builder.build();
+        assert!(
+            !report.all_matches().is_empty(),
+            "intersection of identical canonical paths should find the file"
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // Follow-up: overlapping rule includes must not duplicate matches
+    // -----------------------------------------------------------------------
+
+    /// When multiple rules have overlapping include patterns, each file should
+    /// be processed once — not once per pattern that matched it.
+    #[test]
+    fn check_overlapping_rule_includes_no_duplicate_matches() {
+        let dir = tempfile::tempdir().unwrap();
+        let canon_dir = std::fs::canonicalize(dir.path()).unwrap();
+        let sub_dir = canon_dir.join("src").join("sub");
+        std::fs::create_dir_all(&sub_dir).unwrap();
+        let json_path = sub_dir.join("data.json");
+        std::fs::write(&json_path, r#"{"name": "test"}"#).unwrap();
+
+        // Two rules with overlapping includes — both match the same file.
+        let broad = format!("{}/**/*.json", normalize_path(&canon_dir.join("src").to_string_lossy()));
+        let narrow = format!("{}/**/*.json", normalize_path(&sub_dir.to_string_lossy()));
+
+        let rule_a = Rule::new("rule-a", "//name")
+            .with_severity(tractor_core::report::Severity::Error)
+            .with_reason("found name".to_string())
+            .with_include(vec![broad]);
+        let rule_b = Rule::new("rule-b", "//name")
+            .with_severity(tractor_core::report::Severity::Error)
+            .with_reason("found name".to_string())
+            .with_include(vec![narrow]);
+
+        let ops = vec![Operation::Check(CheckOperation {
+            files: vec![],
+            exclude: vec![],
+            diff_files: None,
+            diff_lines: None,
+            rules: vec![rule_a, rule_b],
+            tree_mode: None,
+            language: None,
+            ignore_whitespace: false,
+            parse_depth: None,
+            ruleset_include: vec![],
+            ruleset_exclude: vec![],
+            inline_source: None,
+        })];
+
+        let report = run(&ops);
+        // Each rule should match the file once → exactly 2 matches total.
+        // Without dedup, the file appears twice in the discovery set and we'd
+        // get 4 matches (2 rules × 2 copies of the file).
+        assert_eq!(
+            report.all_matches().len(), 2,
+            "each rule should match the file exactly once, not once per overlapping glob"
+        );
     }
 }
