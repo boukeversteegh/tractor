@@ -78,15 +78,32 @@ fn case_correct_existing(path: &Path) -> PathBuf {
 
 #[cfg(windows)]
 fn case_correct_existing(path: &Path) -> PathBuf {
-    // Find the longest existing ancestor to hand to GetLongPathName.
-    // `ancestors()` yields `path` itself first, then shorter prefixes;
-    // the drive root (e.g. `C:\`) always exists so this eventually
-    // finds something.
-    let anchor = path.ancestors().find(|p| p.exists());
+    // Step 1: resolve 8.3 short-name aliases via GetLongPathName.
+    //   This handles CMD-style paths like `C:\Users\RUNNER~1\...`.
+    //   GetLongPathName case-corrects path components only as a side
+    //   effect of 8.3 expansion (it has to enumerate the parent dir to
+    //   find which entry the `~1` alias points at), so the *leaf*
+    //   component — and any non-8.3 components — keeps the caller's
+    //   casing. That's what step 2 cleans up.
+    let after_long = resolve_long_path(path);
 
-    let resolved = if let Some(anchor) = anchor {
+    // Step 2: read_dir per-component case correction.
+    //   For each Normal component, look up the parent directory's
+    //   entries and use the entry's true filesystem casing.
+    let after_case = case_correct_via_readdir(&after_long);
+
+    // Step 3: uppercase the drive letter for consistency. GetLongPathName
+    //   and read_dir don't normalize drive-letter casing.
+    uppercase_drive_letter(after_case)
+}
+
+#[cfg(windows)]
+fn resolve_long_path(path: &Path) -> PathBuf {
+    // Find the longest existing ancestor and resolve it. Walk up to the
+    // drive root if needed (which always exists on Windows).
+    let anchor = path.ancestors().find(|p| p.exists());
+    if let Some(anchor) = anchor {
         let long = get_long_path_name(anchor).unwrap_or_else(|| anchor.to_path_buf());
-        // Re-append any trailing components that didn't exist yet.
         let anchor_comps = anchor.components().count();
         let mut result = long;
         for comp in path.components().skip(anchor_comps) {
@@ -95,9 +112,72 @@ fn case_correct_existing(path: &Path) -> PathBuf {
         result
     } else {
         path.to_path_buf()
-    };
+    }
+}
 
-    uppercase_drive_letter(resolved)
+#[cfg(windows)]
+fn case_correct_via_readdir(path: &Path) -> PathBuf {
+    let mut result = PathBuf::new();
+    let mut comps = path.components();
+
+    // Copy prefix (drive) and root verbatim — drive case is normalized
+    // separately by `uppercase_drive_letter`.
+    while let Some(c) = comps.clone().next() {
+        match c {
+            Component::Prefix(_) | Component::RootDir => {
+                result.push(c.as_os_str());
+                comps.next();
+            }
+            _ => break,
+        }
+    }
+
+    // For each remaining component, look up the parent's read_dir entries
+    // and use the entry's true filesystem casing. Stop at the first
+    // component we can't resolve (push the rest as-is).
+    loop {
+        let comp = match comps.next() {
+            Some(c) => c,
+            None => return result,
+        };
+        let name = comp.as_os_str();
+        let entries = match std::fs::read_dir(&result) {
+            Ok(e) => e,
+            Err(_) => {
+                result.push(name);
+                for rest in comps {
+                    result.push(rest.as_os_str());
+                }
+                return result;
+            }
+        };
+
+        let mut found: Option<std::ffi::OsString> = None;
+        for entry in entries.flatten() {
+            let entry_name = entry.file_name();
+            if entry_name.to_string_lossy()
+                .eq_ignore_ascii_case(&name.to_string_lossy())
+            {
+                found = Some(entry_name);
+                break;
+            }
+        }
+
+        match found {
+            Some(n) => result.push(n),
+            None => {
+                // Component doesn't exist (or isn't visible) — push
+                // remainder as-is and stop. Note: we should usually not
+                // hit this for components GetLongPathName already
+                // resolved, since they exist on disk by definition.
+                result.push(name);
+                for rest in comps {
+                    result.push(rest.as_os_str());
+                }
+                return result;
+            }
+        }
+    }
 }
 
 /// Uppercase the ASCII drive letter prefix of a Windows path, if any.
