@@ -227,9 +227,12 @@ recursive pass.
    prevents cycles
 6. Permission-denied directories: skipped silently
 
-Pattern syntax: `*` (single segment), `**` (zero or more segments),
-`?` (single character). `[...]` rejected with error. Case-insensitive
-on Windows.
+Pattern syntax: `*` (any characters within one segment) and `**` (zero
+or more whole segments). Character classes (`[...]`) and the
+single-character wildcard (`?`) are rejected with a compile error —
+file patterns in tractor are overwhelmingly expressed by extension and
+directory, and we can introduce richer syntax when a real need shows
+up. Case-insensitive on Windows.
 
 ## Not in Scope
 

@@ -59,9 +59,8 @@ enum Segment {
 
 /// A compiled glob pattern for matching against normalized path strings.
 ///
-/// Supports `*` (single-segment wildcard), `**` (recursive), and `?`
-/// (single character). Case sensitivity is determined at compile time
-/// based on the target OS.
+/// Supports `*` (single-segment wildcard) and `**` (recursive).
+/// Case sensitivity is determined at compile time based on the target OS.
 #[derive(Debug, Clone)]
 pub struct CompiledPattern {
     segments: Vec<Segment>,
@@ -74,9 +73,9 @@ impl CompiledPattern {
     /// The pattern uses `/` as separator (normalized). Supported wildcards:
     /// - `*` matches any characters within a single path component
     /// - `**` matches zero or more path components
-    /// - `?` matches exactly one character (not `/`)
     ///
-    /// Returns an error for unsupported syntax (`[...]`).
+    /// Returns an error for unsupported syntax: character classes (`[...]`)
+    /// and single-character wildcards (`?`).
     pub fn new(pattern: &str) -> Result<Self, GlobCompileError> {
         let normalized = normalize_path(pattern);
 
@@ -84,6 +83,13 @@ impl CompiledPattern {
             return Err(GlobCompileError {
                 pattern: normalized,
                 message: "character classes [...] are not supported".into(),
+            });
+        }
+
+        if normalized.contains('?') {
+            return Err(GlobCompileError {
+                pattern: normalized,
+                message: "`?` single-character wildcard is not supported; use `*` instead".into(),
             });
         }
 
@@ -104,7 +110,7 @@ impl CompiledPattern {
                 if !matches!(segments.last(), Some(Segment::DoubleStar)) {
                     segments.push(Segment::DoubleStar);
                 }
-            } else if part.contains('*') || part.contains('?') {
+            } else if part.contains('*') {
                 segments.push(compile_wild_segment(part, case_insensitive));
             } else {
                 let lit = if case_insensitive {
@@ -130,7 +136,7 @@ impl CompiledPattern {
                     if !matches!(abs_segments.last(), Some(Segment::DoubleStar)) {
                         abs_segments.push(Segment::DoubleStar);
                     }
-                } else if part.contains('*') || part.contains('?') {
+                } else if part.contains('*') {
                     abs_segments.push(compile_wild_segment(part, case_insensitive));
                 } else {
                     let lit = if case_insensitive {
@@ -158,10 +164,8 @@ impl CompiledPattern {
     }
 }
 
-/// Compile a single wildcard segment (contains `*` or `?`).
+/// Compile a single wildcard segment (contains `*`).
 fn compile_wild_segment(part: &str, case_insensitive: bool) -> Segment {
-    // Expand `?` into a representation we can match.
-    // For simplicity, store the raw pattern and match character-by-character.
     let part = if case_insensitive {
         part.to_ascii_lowercase()
     } else {
@@ -322,11 +326,22 @@ mod walk {
     /// Maximum directory depth to prevent symlink cycle hangs.
     const MAX_DEPTH: usize = 100;
 
+    /// Classifies why a glob expansion failed, so callers can react
+    /// structurally instead of string-matching the error message.
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub enum GlobExpandErrorKind {
+        /// The expansion produced more paths than the caller's limit allowed.
+        LimitExceeded,
+        /// The pattern itself was invalid (e.g. unsupported syntax).
+        InvalidPattern,
+    }
+
     /// Error from canonical glob expansion.
     #[derive(Debug, Clone)]
     pub struct GlobExpandError {
         pub pattern: String,
         pub message: String,
+        pub kind: GlobExpandErrorKind,
     }
 
     impl fmt::Display for GlobExpandError {
@@ -351,13 +366,13 @@ mod walk {
         let normalized = normalize_path(pattern);
 
         // Non-glob pattern: return as-is
-        if !normalized.contains('*') && !normalized.contains('?') {
+        if !normalized.contains('*') {
             return Ok(vec![NormalizedPath::new(&normalized)]);
         }
 
         // Split into root prefix (literal) and wildcard suffix
         let parts: Vec<&str> = normalized.split('/').collect();
-        let first_wild = parts.iter().position(|p| p.contains('*') || p.contains('?'))
+        let first_wild = parts.iter().position(|p| p.contains('*'))
             .unwrap(); // safe: we checked for wildcards above
 
         let root = if first_wild == 0 {
@@ -379,17 +394,22 @@ mod walk {
         let compiled = CompiledPattern::new(&suffix_pattern).map_err(|e| GlobExpandError {
             pattern: pattern.to_string(),
             message: e.message,
+            kind: GlobExpandErrorKind::InvalidPattern,
         })?;
 
         let mut results = Vec::new();
         walk_dir(&canonical_root, "", &compiled, limit, &mut results, 0)
-            .map_err(|msg| GlobExpandError {
+            .map_err(|_| GlobExpandError {
                 pattern: pattern.to_string(),
-                message: msg,
+                message: format!("exceeded {} file limit", limit),
+                kind: GlobExpandErrorKind::LimitExceeded,
             })?;
 
         Ok(results)
     }
+
+    /// Marker error type returned when the walker exceeds the expansion limit.
+    struct WalkLimitExceeded;
 
     /// Recursively walk a directory, matching relative paths against the compiled pattern.
     fn walk_dir(
@@ -399,9 +419,17 @@ mod walk {
         limit: usize,
         results: &mut Vec<NormalizedPath>,
         depth: usize,
-    ) -> Result<(), String> {
+    ) -> Result<(), WalkLimitExceeded> {
         if depth > MAX_DEPTH {
-            return Ok(()); // silently stop — likely a symlink cycle
+            eprintln!(
+                "warning: glob walker reached max depth ({}) at '{}{}{}' — \
+                 skipping deeper entries (may indicate a symlink cycle or unusually deep tree)",
+                MAX_DEPTH,
+                root,
+                if relative.is_empty() { "" } else { "/" },
+                relative,
+            );
+            return Ok(());
         }
 
         let full_dir = if relative.is_empty() {
@@ -434,7 +462,7 @@ mod walk {
                 if pattern.matches(&child_relative) {
                     results.push(NormalizedPath::new(&format!("{}/{}", root, child_relative)));
                     if results.len() > limit {
-                        return Err(format!("exceeded {} file limit", limit));
+                        return Err(WalkLimitExceeded);
                     }
                 }
             }
@@ -449,7 +477,7 @@ mod walk {
 }
 
 #[cfg(feature = "native")]
-pub use walk::{expand_canonical, GlobExpandError};
+pub use walk::{expand_canonical, GlobExpandError, GlobExpandErrorKind};
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -563,6 +591,14 @@ mod tests {
     #[test]
     fn rejects_character_classes() {
         assert!(CompiledPattern::new("src/[abc]/*.rs").is_err());
+    }
+
+    #[test]
+    fn rejects_question_mark_wildcard() {
+        // `?` was previously silently accepted but never actually matched —
+        // it's now rejected at compile time with a clear error.
+        let err = CompiledPattern::new("file?.rs").unwrap_err();
+        assert!(err.message.contains("`?`"), "error should mention `?`: {}", err.message);
     }
 
     #[cfg(target_os = "windows")]

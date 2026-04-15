@@ -344,9 +344,23 @@ impl FileResolver {
         if !request.exclude.is_empty() {
             let before = files.len();
             let resolved = GlobPattern::resolve_all(request.exclude, &self.base_dir);
-            let exclude_patterns: Vec<CompiledPattern> = resolved.iter()
-                .filter_map(|p| CompiledPattern::new(p.as_str()).ok())
-                .collect();
+            let mut exclude_patterns: Vec<CompiledPattern> = Vec::with_capacity(resolved.len());
+            let mut invalid = false;
+            for pattern in &resolved {
+                match CompiledPattern::new(pattern.as_str()) {
+                    Ok(compiled) => exclude_patterns.push(compiled),
+                    Err(err) => {
+                        report.add(make_fatal_diagnostic(
+                            request.command,
+                            format!("invalid exclude pattern `{}`: {}", pattern, err),
+                        ));
+                        invalid = true;
+                    }
+                }
+            }
+            if invalid {
+                return Vec::new();
+            }
 
             files.retain(|f| {
                 !exclude_patterns.iter().any(|p| p.matches(f.as_str()))

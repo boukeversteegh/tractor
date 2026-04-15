@@ -40,7 +40,7 @@ pub fn expand_globs_checked(
     let mut empty_patterns = Vec::new();
 
     for pattern in patterns {
-        if pattern.contains('*') || pattern.contains('?') {
+        if pattern.contains('*') {
             let remaining = expansion_limit.saturating_sub(files.len());
             match crate::glob_match::expand_canonical(pattern, remaining) {
                 Ok(paths) => {
@@ -57,15 +57,17 @@ pub fn expand_globs_checked(
                         }
                     }
                 }
-                Err(e) => {
-                    if e.message.contains("limit") {
+                Err(e) => match e.kind {
+                    crate::glob_match::GlobExpandErrorKind::LimitExceeded => {
                         return Err(GlobExpansionError {
                             pattern: pattern.clone(),
                             limit: expansion_limit,
                         });
                     }
-                    eprintln!("Invalid glob pattern '{}': {}", pattern, e);
-                }
+                    crate::glob_match::GlobExpandErrorKind::InvalidPattern => {
+                        eprintln!("Invalid glob pattern '{}': {}", pattern, e);
+                    }
+                },
             }
         } else {
             // Not a glob, use as-is
