@@ -695,12 +695,14 @@ mod tests {
 
         /// `expand_canonical` must classify a malformed wildcard suffix as
         /// `InvalidPattern` so callers (e.g. `expand_globs_checked`) don't
-        /// confuse it with a limit overflow. Pattern below puts a `[...]`
+        /// confuse it with a limit overflow. The pattern below puts a `[...]`
         /// character class after the first `*`, so it lands in the
-        /// `CompiledPattern::new()` failure path.
+        /// `CompiledPattern::new()` failure path. Uses `./*` so the literal
+        /// root is always the cwd — otherwise on Windows `/tmp` doesn't exist
+        /// and expansion short-circuits before the pattern is compiled.
         #[test]
         fn expand_invalid_pattern_kind() {
-            let result = expand_canonical("/tmp/*/[abc]/*.rs", 100);
+            let result = expand_canonical("./*/[abc]/*.rs", 100);
             let err = result.expect_err("invalid pattern must surface as Err");
             assert!(matches!(err.kind, GlobExpandErrorKind::InvalidPattern),
                 "expected InvalidPattern, got {:?}", err.kind);
