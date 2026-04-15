@@ -23,6 +23,39 @@ impl NormalizedPath {
         Self(normalize_path_str(raw))
     }
 
+    /// Construct an empty `NormalizedPath`. Useful as an accumulator start
+    /// for [`Self::join_segment`].
+    pub fn empty() -> Self {
+        Self(String::new())
+    }
+
+    /// Append a single path component to this (already normalized) path.
+    ///
+    /// The parent string is reused verbatim — no re-scan, no re-normalization.
+    /// This is the hierarchical construction primitive: `read_dir` entry
+    /// names arrive as plain segments (no separator), and appending them to
+    /// an already-normalized parent yields a normalized child by construction.
+    ///
+    /// The segment MUST NOT contain `/` or `\` (those would smuggle in
+    /// unverified path structure). In debug builds this is asserted; in
+    /// release we still split on any stray separators and append each piece
+    /// as its own component, so we never produce an un-normalized value.
+    pub fn join_segment(&self, segment: &str) -> Self {
+        debug_assert!(
+            !segment.contains('/') && !segment.contains('\\'),
+            "join_segment expects a single path component, got {segment:?}"
+        );
+        let mut out = String::with_capacity(self.0.len() + 1 + segment.len());
+        out.push_str(&self.0);
+        for part in segment.split(|c| c == '/' || c == '\\').filter(|p| !p.is_empty()) {
+            if !out.is_empty() && !out.ends_with('/') {
+                out.push('/');
+            }
+            out.push_str(part);
+        }
+        Self(out)
+    }
+
     /// Return the normalized path as a string slice.
     pub fn as_str(&self) -> &str {
         &self.0
@@ -354,6 +387,27 @@ mod tests {
     #[test]
     fn normalizes_backslashes() {
         assert_eq!(NormalizedPath::new("src\\foo.rs"), "src/foo.rs");
+    }
+
+    #[test]
+    fn join_segment_appends_with_slash() {
+        let root = NormalizedPath::new("/tmp/project");
+        let child = root.join_segment("src");
+        assert_eq!(child, "/tmp/project/src");
+        let grand = child.join_segment("foo.rs");
+        assert_eq!(grand, "/tmp/project/src/foo.rs");
+    }
+
+    #[test]
+    fn join_segment_onto_empty_produces_plain_component() {
+        assert_eq!(NormalizedPath::empty().join_segment("foo"), "foo");
+    }
+
+    #[test]
+    fn join_segment_preserves_trailing_slash() {
+        // Root-only prefixes ("/", "C:/") already end in `/` — don't double it.
+        let root = NormalizedPath::new("/");
+        assert_eq!(root.join_segment("etc"), "/etc");
     }
 
     #[test]

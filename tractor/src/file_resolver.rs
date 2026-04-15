@@ -12,7 +12,7 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
-use tractor_core::{expand_globs_checked, filter_supported_files, normalize_path, NormalizedPath, GlobPattern, CompiledPattern};
+use tractor_core::{expand_globs_checked, detect_language, normalize_path, NormalizedPath, GlobPattern, CompiledPattern};
 use tractor_core::report::{ReportBuilder, ReportMatch, Severity, DiagnosticOrigin};
 
 use crate::executor::ExecuteOptions;
@@ -53,7 +53,7 @@ pub(crate) struct FileResolver {
     /// Expanded CLI file args, or None if not provided.
     cli_files: Option<HashSet<NormalizedPath>>,
     /// Expanded global diff-files set, or None if not provided.
-    global_diff_files: Option<HashSet<PathBuf>>,
+    global_diff_files: Option<HashSet<NormalizedPath>>,
     // Resolution parameters (copied from ExecuteOptions for self-containment)
     verbose: bool,
     base_dir: Option<PathBuf>,
@@ -165,7 +165,7 @@ impl FileResolver {
                     if options.verbose {
                         eprintln!("  files: git diff \"{}\" found {} changed file(s)", spec, changed.len());
                     }
-                    Some(changed.into_iter().collect())
+                    Some(changed)
                 }
                 Err(e) => {
                     eprintln!("warning: --diff-files filter failed: {}", e);
@@ -371,27 +371,23 @@ impl FileResolver {
         }
 
         let before_lang = files.len();
-        let files: Vec<NormalizedPath> = filter_supported_files(
-            files.into_iter().map(|f| f.into_string()).collect()
-        ).into_iter().map(|f| NormalizedPath::new(&f)).collect();
+        // Filter by supported language directly on NormalizedPath — no
+        // String round-trip needed.
+        files.retain(|f| detect_language(f.as_str()) != "unknown");
         if self.verbose && files.len() != before_lang {
             eprintln!("  files: {} file(s) after language filter (was {})", files.len(), before_lang);
         }
 
         // --- Intersect with git diff-files ---
-        // Convert to strings for git module, then back to NormalizedPath
-        let string_files: Vec<String> = files.into_iter().map(|f| f.into_string()).collect();
-        let before_diff = string_files.len();
-        let string_files = if let Some(ref global_diff) = self.global_diff_files {
-            git::intersect_changed(string_files, global_diff)
-        } else {
-            string_files
-        };
+        // Both sides of the intersection are already `NormalizedPath`,
+        // produced via `NormalizedPath::absolute` — compare as-is.
+        let before_diff = files.len();
+        if let Some(ref global_diff) = self.global_diff_files {
+            files = git::intersect_changed(files, global_diff);
+        }
         let cwd = self.base_dir.as_deref()
             .unwrap_or_else(|| Path::new("."));
-        let string_files = apply_diff_files_filter(string_files, request.diff_files, cwd);
-        let mut files: Vec<NormalizedPath> = string_files.into_iter()
-            .map(|f| NormalizedPath::new(&f)).collect();
+        files = apply_diff_files_filter(files, request.diff_files, cwd);
         if self.verbose && files.len() != before_diff {
             eprintln!("  files: {} file(s) after diff filter (was {})", files.len(), before_diff);
         }
@@ -476,7 +472,7 @@ fn build_filters(
     filters
 }
 
-fn apply_diff_files_filter(files: Vec<String>, spec: Option<&str>, cwd: &Path) -> Vec<String> {
+fn apply_diff_files_filter(files: Vec<NormalizedPath>, spec: Option<&str>, cwd: &Path) -> Vec<NormalizedPath> {
     match spec {
         Some(spec) => {
             match git::git_changed_files(spec, cwd) {

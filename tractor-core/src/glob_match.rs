@@ -391,7 +391,7 @@ mod walk {
         if !std::path::Path::new(&root).exists() {
             return Ok(vec![]); // root doesn't exist → empty
         }
-        let canonical_root = NormalizedPath::absolute(&root).into_string();
+        let canonical_root = NormalizedPath::absolute(&root);
 
         // Compile the wildcard suffix for matching
         let compiled = CompiledPattern::new(&suffix_pattern).map_err(|e| GlobExpandError {
@@ -401,7 +401,7 @@ mod walk {
         })?;
 
         let mut results = Vec::new();
-        walk_dir(&canonical_root, "", &compiled, limit, &mut results, 0)
+        walk_dir(&canonical_root, &canonical_root, "", &compiled, limit, &mut results, 0)
             .map_err(|_| GlobExpandError {
                 pattern: pattern.to_string(),
                 message: format!("exceeded {} file limit", limit),
@@ -414,9 +414,17 @@ mod walk {
     /// Marker error type returned when the walker exceeds the expansion limit.
     struct WalkLimitExceeded;
 
-    /// Recursively walk a directory, matching relative paths against the compiled pattern.
+    /// Recursively walk a directory, matching relative paths against the
+    /// compiled pattern.
+    ///
+    /// `root` is the normalized base of the walk (used for the warning message
+    /// only). `current` is the normalized absolute path of the directory being
+    /// scanned — each child is built by `current.join_segment(entry_name)`,
+    /// reusing the validated parent string without re-normalization.
+    /// `relative` is the path relative to `root` used for pattern matching.
     fn walk_dir(
-        root: &str,
+        root: &NormalizedPath,
+        current: &NormalizedPath,
         relative: &str,
         pattern: &CompiledPattern,
         limit: usize,
@@ -425,23 +433,15 @@ mod walk {
     ) -> Result<(), WalkLimitExceeded> {
         if depth > MAX_DEPTH {
             eprintln!(
-                "warning: glob walker reached max depth ({}) at '{}{}{}' — \
+                "warning: glob walker reached max depth ({}) at '{}' — \
                  skipping deeper entries (may indicate a symlink cycle or unusually deep tree)",
                 MAX_DEPTH,
-                root,
-                if relative.is_empty() { "" } else { "/" },
-                relative,
+                current,
             );
             return Ok(());
         }
 
-        let full_dir = if relative.is_empty() {
-            root.to_string()
-        } else {
-            format!("{}/{}", root, relative)
-        };
-
-        let entries = match std::fs::read_dir(&full_dir) {
+        let entries = match std::fs::read_dir(current.as_str()) {
             Ok(e) => e,
             Err(_) => return Ok(()), // permission denied, etc. — skip silently
         };
@@ -449,6 +449,11 @@ mod walk {
         for entry in entries.flatten() {
             let name = entry.file_name();
             let name_str = name.to_string_lossy();
+
+            // Extend the already-normalized parent with the raw entry name.
+            // `read_dir` yields single path components (no separators), so
+            // this preserves the NormalizedPath invariant by construction.
+            let child_path = current.join_segment(&name_str);
 
             let child_relative = if relative.is_empty() {
                 name_str.to_string()
@@ -463,7 +468,7 @@ mod walk {
 
             if file_type.is_file() || (file_type.is_symlink() && entry.path().is_file()) {
                 if pattern.matches(&child_relative) {
-                    results.push(NormalizedPath::new(&format!("{}/{}", root, child_relative)));
+                    results.push(child_path.clone());
                     if results.len() > limit {
                         return Err(WalkLimitExceeded);
                     }
@@ -471,7 +476,7 @@ mod walk {
             }
 
             if file_type.is_dir() || (file_type.is_symlink() && entry.path().is_dir()) {
-                walk_dir(root, &child_relative, pattern, limit, results, depth + 1)?;
+                walk_dir(root, &child_path, &child_relative, pattern, limit, results, depth + 1)?;
             }
         }
 
