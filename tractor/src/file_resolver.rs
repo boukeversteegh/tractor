@@ -472,17 +472,14 @@ impl FileResolver {
         }
 
         // --- Check for empty result from glob expansion ---
-        // When walker pruning is active (root/CLI sibling prefixes), an
-        // empty expansion result can mean "the prune cut away every match",
-        // not "the pattern truly matches nothing". An empty intersection
-        // with siblings has always been allowed to succeed silently, so we
-        // suppress the diagnostic in that case and only surface it when
-        // the walker did a full (unpruned) scan and still found nothing.
-        let prune_was_active = !self.root_prefixes.is_empty()
-            || !self.cli_prefixes.is_empty();
-        if files.is_empty() && !request.files.is_empty() && !empty_patterns.is_empty()
-            && !prune_was_active
-        {
+        // An empty expansion is always a fatal diagnostic — whether the
+        // pattern genuinely matched nothing or the walker was pruned to
+        // nothing by sibling intersections (root ∩ CLI ∩ operation). In
+        // either case the user asked us to run checks on zero files,
+        // which is almost certainly a mistake (typo, misconfigured
+        // scope, stale rule) and deserves to be surfaced rather than
+        // swallowed as a silent success.
+        if files.is_empty() && !request.files.is_empty() && !empty_patterns.is_empty() {
             let patterns_str = empty_patterns.iter()
                 .map(|p| format!("\"{}\"", p))
                 .collect::<Vec<_>>()
