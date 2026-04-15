@@ -61,11 +61,6 @@ impl NormalizedPath {
         &self.0
     }
 
-    /// Consume and return the inner String.
-    pub fn into_string(self) -> String {
-        self.0
-    }
-
     /// Make a relative path absolute by joining with `cwd`, normalizing
     /// lexically (collapsing `.`/`..`) and — on Windows — case-correcting
     /// each existing path component against the true filesystem casing.
@@ -594,6 +589,7 @@ mod tests {
         // path (may contain 8.3 on CI) and comparing to the long form
         // obtained via canonicalize (strip `\\?\` via NormalizedPath::new).
         let resolved = NormalizedPath::absolute(&tmp.to_string_lossy());
+        #[allow(clippy::disallowed_methods)] // test cross-checks against real canonical form
         let canonical = std::fs::canonicalize(&tmp).unwrap();
         let long_form = NormalizedPath::new(&canonical.to_string_lossy());
         assert_eq!(

@@ -4,7 +4,7 @@ use tractor_core::report::ReportMatch;
 use super::options::{ViewField, ViewSet};
 
 pub fn to_absolute_path(path: &str) -> String {
-    tractor_core::NormalizedPath::absolute(path).into_string()
+    tractor_core::NormalizedPath::absolute(path).to_string()
 }
 
 /// Whether totals/metadata should be shown for this report.

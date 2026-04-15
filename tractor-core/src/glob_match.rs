@@ -754,6 +754,7 @@ mod tests {
             let result = expand_canonical(&pattern, 10000).unwrap();
             // Verify paths match what canonicalize would return
             for p in result.iter().take(3) {
+                #[allow(clippy::disallowed_methods)] // test verifies canonical walker output
                 let canonical = std::fs::canonicalize(p.as_str())
                     .map(|c| normalize_path(&c.to_string_lossy()))
                     .unwrap_or_else(|_| p.as_str().to_string());

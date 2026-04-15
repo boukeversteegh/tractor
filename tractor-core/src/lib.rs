@@ -59,7 +59,7 @@ pub use rule::{Rule, RuleSet};
 #[cfg(feature = "native")]
 pub use rule::{GlobMatcher, GlobError};
 #[cfg(feature = "native")]
-pub use files::{expand_globs, expand_globs_checked, filter_supported_files, GlobExpansion, GlobExpansionError};
+pub use files::{expand_globs, expand_globs_checked, GlobExpansion, GlobExpansionError};
 pub use xot_builder::{XotBuilder, XeeBuilder};
 pub use normalized_xpath::NormalizedXpath;
 pub use normalized_path::NormalizedPath;

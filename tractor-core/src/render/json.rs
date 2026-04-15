@@ -486,7 +486,9 @@ mod tests {
         assert_eq!(parsed["nothing"], "null");
         // type="true"/"number"/"null" renders as bare values
         assert_eq!(parsed["active"], true);
-        assert_eq!(parsed["pi"], 3.14);
+        #[allow(clippy::approx_constant)] // test value, not meant as PI
+        let pi_value = 3.14;
+        assert_eq!(parsed["pi"], pi_value);
         assert!(parsed["empty"].is_null());
     }
 

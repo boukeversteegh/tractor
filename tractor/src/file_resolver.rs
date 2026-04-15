@@ -100,8 +100,7 @@ impl FileResolver {
 
         if options.verbose {
             let cwd_display = std::env::current_dir()
-                .and_then(|p| std::fs::canonicalize(&p).or(Ok(p)))
-                .map(|p| normalize_path(&p.display().to_string()))
+                .map(|p| NormalizedPath::absolute(&p.display().to_string()).to_string())
                 .unwrap_or_else(|_| ".".to_string());
             eprintln!("  files: working directory {}", cwd_display);
             eprintln!("  files: resolving relative to {}", base_dir_display);
@@ -125,8 +124,7 @@ impl FileResolver {
                         format_patterns(patterns), expansion.files.len());
                     log_files!(&expansion.files);
                 }
-                Some(expansion.files.into_iter()
-                    .map(|f| NormalizedPath::new(&f)).collect())
+                Some(expansion.files.into_iter().collect())
             }
             Some(_) => Some(HashSet::new()), // files: [] → explicit empty
             None => None,                     // key missing → unrestricted
@@ -140,7 +138,7 @@ impl FileResolver {
                     e.pattern, e.limit
                 ))?;
             let cli_set: HashSet<NormalizedPath> = expansion.files.into_iter()
-                .map(|f| NormalizedPath::absolute(&f)).collect();
+                .map(|f| NormalizedPath::absolute(f.as_str())).collect();
             if options.verbose {
                 eprintln!("  files: CLI args {} expanded to {} file(s)",
                     format_patterns(&options.cli_files), cli_set.len());
@@ -265,7 +263,6 @@ impl FileResolver {
                     // patterns matched it (#127 follow-up).
                     let mut seen = HashSet::new();
                     let files: Vec<NormalizedPath> = result.files.into_iter()
-                        .map(|f| NormalizedPath::new(&f))
                         .filter(|f| seen.insert(f.clone()))
                         .collect();
                     (files, result.empty_patterns)
