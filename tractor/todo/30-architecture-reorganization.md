@@ -100,15 +100,15 @@ From current tractor:
 
 ## Execution Plan
 
-### Phase 1: Reorganize tractor/src (no crate boundary changes)
-1. Rename `modes/` → content moves into `cli/` (already done)
-2. Split `executor.rs` into `executor/` directory
-3. Move `pipeline/` contents to their logical homes:
+### Phase 1: Reorganize tractor/src (no crate boundary changes) ✅ Done
+1. ✅ Rename `modes/` → content moves into `cli/`
+2. ✅ Split `executor.rs` (1708 lines) into `executor/` directory with per-operation files
+3. ✅ Move `pipeline/` contents to their logical homes:
    - `pipeline/format/` → `format/`
    - `pipeline/git.rs`, `pipeline/input.rs` + `file_resolver.rs` + `filter.rs` → `input/`
    - `pipeline/matcher.rs` → `matcher.rs`
-   - `pipeline/context.rs` → `cli/context.rs` (it processes CLI args)
-4. Delete empty `pipeline/`
+   - `pipeline/context.rs` → `cli/context.rs`
+4. ✅ Delete empty `pipeline/` and `modes/`
 
 ### Phase 2: Merge tractor-core into tractor
 1. Add feature flags to `tractor/Cargo.toml`
