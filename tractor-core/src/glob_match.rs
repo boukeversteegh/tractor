@@ -683,7 +683,22 @@ mod tests {
             }
 
             let result = expand_canonical(&pattern, 1);
-            assert!(result.is_err(), "should fail when exceeding limit of 1");
+            let err = result.expect_err("should fail when exceeding limit of 1");
+            assert!(matches!(err.kind, GlobExpandErrorKind::LimitExceeded),
+                "limit overflow must be classified as LimitExceeded, got {:?}", err.kind);
+        }
+
+        /// `expand_canonical` must classify a malformed wildcard suffix as
+        /// `InvalidPattern` so callers (e.g. `expand_globs_checked`) don't
+        /// confuse it with a limit overflow. Pattern below puts a `[...]`
+        /// character class after the first `*`, so it lands in the
+        /// `CompiledPattern::new()` failure path.
+        #[test]
+        fn expand_invalid_pattern_kind() {
+            let result = expand_canonical("/tmp/*/[abc]/*.rs", 100);
+            let err = result.expect_err("invalid pattern must surface as Err");
+            assert!(matches!(err.kind, GlobExpandErrorKind::InvalidPattern),
+                "expected InvalidPattern, got {:?}", err.kind);
         }
 
         #[cfg(target_os = "windows")]

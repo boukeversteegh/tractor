@@ -659,6 +659,46 @@ mod tests {
         assert!(report.all_matches().is_empty(), "should not emit diagnostic in non-config mode");
     }
 
+    /// Copilot review #4: invalid exclude patterns must surface as a fatal
+    /// diagnostic instead of being silently dropped (which would expand the
+    /// effective scope without warning).
+    #[test]
+    fn invalid_exclude_pattern_emits_fatal_diagnostic() {
+        use tractor_core::report::Severity;
+
+        let root: HashSet<NormalizedPath> =
+            [NormalizedPath::new("/tmp/foo.rs")].into();
+        let resolver = FileResolver {
+            root_files: Some(root),
+            cli_files: None,
+            global_diff_files: None,
+            verbose: false,
+            base_dir: Some(std::path::PathBuf::from(".")),
+            max_files: 1000,
+            global_diff_lines: None,
+        };
+
+        let mut builder = tractor_core::ReportBuilder::new();
+        // `[abc]` character classes are rejected by CompiledPattern.
+        let exclude = vec!["/tmp/[abc]/**".to_string()];
+        let request = FileRequest {
+            files: &[],
+            exclude: &exclude,
+            diff_files: None,
+            diff_lines: None,
+            command: "check",
+        };
+        let (files, _) = resolver.resolve(&request, &mut builder);
+        assert!(files.is_empty(), "invalid exclude must short-circuit resolution");
+
+        let report = builder.build();
+        let has_fatal = report.all_matches().iter().any(|m| {
+            m.severity == Some(Severity::Fatal)
+                && m.reason.as_ref().is_some_and(|r| r.contains("invalid exclude pattern"))
+        });
+        assert!(has_fatal, "expected fatal diagnostic about invalid exclude pattern, got: {:#?}", report.all_matches());
+    }
+
     // -----------------------------------------------------------------------
     // Bug 2 regression: case-insensitive exclude on Windows
     // -----------------------------------------------------------------------
