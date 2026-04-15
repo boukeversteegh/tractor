@@ -1,5 +1,6 @@
 //! File discovery: glob expansion, language filtering, and safety limits.
 
+use crate::glob_match::FilePrune;
 use crate::NormalizedPath;
 
 /// Error returned when glob expansion exceeds the path limit.
@@ -32,11 +33,17 @@ pub struct GlobExpansion {
 /// Uses a custom canonical filesystem walker that produces correctly-cased
 /// paths on Windows by building paths from `read_dir` entry names.
 ///
+/// `prune`, if provided, narrows the walk to subtrees compatible with the
+/// given prefix groups — typically the literal prefixes of *sibling*
+/// pattern sets that will be intersected with this one (e.g. CLI ∩ rule).
+/// See [`FilePrune`] for the compatibility model.
+///
 /// Returns the expanded file list and a list of patterns that matched 0 files.
 /// Returns `Err` if any single pattern exceeds `expansion_limit` matches.
 pub fn expand_globs_checked(
     patterns: &[String],
     expansion_limit: usize,
+    prune: Option<&FilePrune>,
 ) -> Result<GlobExpansion, GlobExpansionError> {
     let mut files: Vec<NormalizedPath> = Vec::new();
     let mut empty_patterns = Vec::new();
@@ -44,7 +51,7 @@ pub fn expand_globs_checked(
     for pattern in patterns {
         if pattern.contains('*') {
             let remaining = expansion_limit.saturating_sub(files.len());
-            match crate::glob_match::expand_canonical(pattern, remaining) {
+            match crate::glob_match::expand_canonical(pattern, remaining, prune) {
                 Ok(paths) => {
                     if paths.is_empty() {
                         empty_patterns.push(pattern.clone());
@@ -72,7 +79,9 @@ pub fn expand_globs_checked(
                 },
             }
         } else {
-            // Not a glob, use as-is (normalized).
+            // Not a glob, use as-is (normalized). Non-glob patterns bypass
+            // the walker entirely, so prune doesn't apply here — sibling-set
+            // intersection still runs downstream.
             files.push(NormalizedPath::new(pattern));
         }
     }
@@ -82,7 +91,7 @@ pub fn expand_globs_checked(
 
 /// Expand glob patterns to file paths (convenience wrapper with no limit).
 pub fn expand_globs(patterns: &[String]) -> Vec<NormalizedPath> {
-    match expand_globs_checked(patterns, usize::MAX) {
+    match expand_globs_checked(patterns, usize::MAX, None) {
         Ok(result) => result.files,
         Err(_) => unreachable!("usize::MAX limit cannot be exceeded"),
     }

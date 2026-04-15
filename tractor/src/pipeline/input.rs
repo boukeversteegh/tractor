@@ -13,7 +13,7 @@ pub fn resolve_input(
     content: Option<String>,
 ) -> Result<InputMode, Box<dyn std::error::Error>> {
     let expansion_limit = shared.max_files * 10;
-    let result = expand_globs_checked(&files, expansion_limit)
+    let result = expand_globs_checked(&files, expansion_limit, None)
         .map_err(|e| format!("{} — use a more specific pattern or increase --max-files", e))?;
     // Output boundary: downstream `InputMode::Files` carries `Vec<String>`,
     // so we convert here and treat stdin-fed paths as raw strings.

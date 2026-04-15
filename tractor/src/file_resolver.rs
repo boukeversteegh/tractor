@@ -12,7 +12,7 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
-use tractor_core::{expand_globs_checked, detect_language, normalize_path, NormalizedPath, GlobPattern, CompiledPattern};
+use tractor_core::{expand_globs_checked, detect_language, normalize_path, pattern_literal_prefix, FilePrune, NormalizedPath, GlobPattern, CompiledPattern};
 use tractor_core::report::{ReportBuilder, ReportMatch, Severity, DiagnosticOrigin};
 
 use crate::executor::ExecuteOptions;
@@ -54,11 +54,31 @@ pub(crate) struct FileResolver {
     cli_files: Option<HashSet<NormalizedPath>>,
     /// Expanded global diff-files set, or None if not provided.
     global_diff_files: Option<HashSet<NormalizedPath>>,
+    /// Literal path prefixes of the root-level `files:` patterns. Used as
+    /// a prune group when expanding operation patterns so the walker
+    /// doesn't descend into subtrees that root already excludes.
+    root_prefixes: Vec<NormalizedPath>,
+    /// Literal path prefixes of the CLI file args. Plays the same role
+    /// as `root_prefixes` — sibling constraint during expansion.
+    cli_prefixes: Vec<NormalizedPath>,
     // Resolution parameters (copied from ExecuteOptions for self-containment)
     verbose: bool,
     base_dir: Option<PathBuf>,
     max_files: usize,
     global_diff_lines: Option<String>,
+}
+
+/// Collect absolute literal prefixes from a list of *already-absolutized*
+/// glob patterns. The result is the OR-group to pass to `FilePrune::with_group`.
+///
+/// Each prefix is case-canonicalized via `NormalizedPath::absolute` so it
+/// matches the walker's `read_dir`-derived casing on Windows.
+fn prefixes_of_patterns(patterns: &[String]) -> Vec<NormalizedPath> {
+    patterns.iter()
+        .map(|p| pattern_literal_prefix(p))
+        .filter(|p| !p.is_empty())
+        .map(|p| NormalizedPath::absolute(&p))
+        .collect()
 }
 
 impl FileResolver {
@@ -107,12 +127,34 @@ impl FileResolver {
             eprintln!("  files: max {} files", options.max_files);
         }
 
+        // --- Pre-compute sibling prefix groups ---
+        // Walker pruning (fix A): when expanding root patterns, the walker
+        // can skip subtrees that no CLI pattern's prefix is compatible with,
+        // and vice versa. We derive both prefix sets up-front so each
+        // expansion can be pruned by the other.
+        //
+        // Anchoring note: root patterns are rebased onto `base_dir` (the
+        // config's directory), while CLI patterns stay cwd-relative. The
+        // prefixes below must agree with how the actual expansion calls
+        // resolve "relative" — `prefixes_of_patterns` absolutises via
+        // `NormalizedPath::absolute`, which anchors relatives to cwd. That
+        // matches the CLI expansion (passes `options.cli_files` raw) and
+        // the root expansion (feeds pre-absolutised patterns).
+        let resolved_root_patterns: Option<Vec<String>> = options.config_root_files.as_ref()
+            .filter(|p| !p.is_empty())
+            .map(|p| resolve_globs_to_absolute(&options.base_dir, p));
+
+        let root_prefixes: Vec<NormalizedPath> = resolved_root_patterns.as_deref()
+            .map(prefixes_of_patterns).unwrap_or_default();
+        let cli_prefixes: Vec<NormalizedPath> = prefixes_of_patterns(&options.cli_files);
+
         // --- Root scope (fix #99) ---
         // None = key missing → unrestricted; Some([]) = explicit empty; Some([...]) = expand
-        let root_files = match &options.config_root_files {
-            Some(patterns) if !patterns.is_empty() => {
-                let root_globs = resolve_globs_to_absolute(&options.base_dir, patterns);
-                let expansion = expand_globs_checked(&root_globs, expansion_limit)
+        let root_files = match (&options.config_root_files, resolved_root_patterns) {
+            (Some(patterns), Some(root_globs)) if !patterns.is_empty() => {
+                // Prune root expansion by CLI prefixes — symmetric sibling constraint.
+                let prune = FilePrune::new().with_group(cli_prefixes.iter().cloned());
+                let expansion = expand_globs_checked(&root_globs, expansion_limit, Some(&prune))
                     .map_err(|e| {
                         format!(
                             "root pattern \"{}\" expanded to over {} paths — use a more specific pattern or increase --max-files",
@@ -126,13 +168,21 @@ impl FileResolver {
                 }
                 Some(expansion.files.into_iter().collect())
             }
-            Some(_) => Some(HashSet::new()), // files: [] → explicit empty
-            None => None,                     // key missing → unrestricted
+            (Some(_), _) => Some(HashSet::new()), // files: [] → explicit empty
+            (None, _) => None,                     // key missing → unrestricted
         };
 
         // --- CLI files (fix #98: normalize paths) ---
+        // CLI args are cwd-relative (they come from the user's shell) —
+        // pass them to `expand_globs_checked` unchanged and let
+        // `NormalizedPath::absolute` anchor them against cwd below. This
+        // preserves `./foo` semantics even when the config lives in a
+        // different directory.
         let cli_files = if !options.cli_files.is_empty() {
-            let expansion = expand_globs_checked(&options.cli_files, expansion_limit)
+            // Prune CLI expansion by root prefixes — the other half of the
+            // symmetric walker constraint.
+            let prune = FilePrune::new().with_group(root_prefixes.iter().cloned());
+            let expansion = expand_globs_checked(&options.cli_files, expansion_limit, Some(&prune))
                 .map_err(|e| format!(
                     "CLI pattern \"{}\" expanded to over {} paths — use a more specific pattern or increase --max-files",
                     e.pattern, e.limit
@@ -178,6 +228,8 @@ impl FileResolver {
             root_files,
             cli_files,
             global_diff_files,
+            root_prefixes,
+            cli_prefixes,
             verbose: options.verbose,
             base_dir: options.base_dir.clone(),
             max_files: options.max_files,
@@ -254,7 +306,16 @@ impl FileResolver {
             // (verbose log after expansion below)
             let globs = resolve_globs_to_absolute(&self.base_dir, request.files);
 
-            let (mut files, empty_patterns) = match expand_globs_checked(&globs, expansion_limit) {
+            // Prune the walker by sibling constraints: root patterns and
+            // CLI patterns are each AND-intersected with the operation
+            // result, so their literal prefixes bound where op patterns
+            // can possibly match. Each becomes an independent AND-group
+            // so the walker rejects dirs only outside *all* of them.
+            let prune = FilePrune::new()
+                .with_group(self.root_prefixes.iter().cloned())
+                .with_group(self.cli_prefixes.iter().cloned());
+
+            let (mut files, empty_patterns) = match expand_globs_checked(&globs, expansion_limit, Some(&prune)) {
                 Ok(result) => {
                     // Normalize and deduplicate expanded paths. Multiple patterns
                     // can expand to the same file (e.g. "src/**/*.cs" and
@@ -411,7 +472,17 @@ impl FileResolver {
         }
 
         // --- Check for empty result from glob expansion ---
-        if files.is_empty() && !request.files.is_empty() && !empty_patterns.is_empty() {
+        // When walker pruning is active (root/CLI sibling prefixes), an
+        // empty expansion result can mean "the prune cut away every match",
+        // not "the pattern truly matches nothing". An empty intersection
+        // with siblings has always been allowed to succeed silently, so we
+        // suppress the diagnostic in that case and only surface it when
+        // the walker did a full (unpruned) scan and still found nothing.
+        let prune_was_active = !self.root_prefixes.is_empty()
+            || !self.cli_prefixes.is_empty();
+        if files.is_empty() && !request.files.is_empty() && !empty_patterns.is_empty()
+            && !prune_was_active
+        {
             let patterns_str = empty_patterns.iter()
                 .map(|p| format!("\"{}\"", p))
                 .collect::<Vec<_>>()
@@ -601,6 +672,8 @@ mod tests {
             root_files: None,
             cli_files: None,
             global_diff_files: None,
+            root_prefixes: Vec::new(),
+            cli_prefixes: Vec::new(),
             verbose: false,
             base_dir: Some(std::path::PathBuf::from(".")),  // config mode
             max_files: 1000,
@@ -631,6 +704,8 @@ mod tests {
             root_files: None,
             cli_files: None,
             global_diff_files: None,
+            root_prefixes: Vec::new(),
+            cli_prefixes: Vec::new(),
             verbose: false,
             base_dir: None,  // non-config mode
             max_files: 1000,
@@ -665,6 +740,8 @@ mod tests {
             root_files: Some(root),
             cli_files: None,
             global_diff_files: None,
+            root_prefixes: Vec::new(),
+            cli_prefixes: Vec::new(),
             verbose: false,
             base_dir: Some(std::path::PathBuf::from(".")),
             max_files: 1000,
