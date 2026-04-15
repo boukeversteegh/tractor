@@ -389,7 +389,7 @@ mod tests {
         let test_norm = np(&cwd.join("test.rs"));
 
         // File should be included
-        assert!(filter.include_file(cwd.join("test.rs").to_str().unwrap()));
+        assert!(filter.include_file(test_norm.as_str()));
 
         // Match on line 3 should be included
         let m = Match::new(test_norm.as_str().to_string(), "x".into());
