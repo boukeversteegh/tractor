@@ -96,7 +96,7 @@ More text` }}
         HTML is parsed into a syntax tree with <code>element</code>, <code>start_tag</code>, <code>tag_name</code>, <code>attribute</code>, and <code>text</code> nodes.
       </p>
       <p>
-        <strong>Note:</strong> HTML support is basic. The tree exposes the parser's syntax structure, which means you query through nodes like <code>start_tag/tag_name</code> rather than directly by tag name. For example, you can't write <code>//h1</code> — you need <code>//element[.//tag_name='h1']</code>. If you're working with well-formed HTML, consider treating it as XML (<code>-l xml</code> or <code>-t raw</code>) where you can query the tag structure directly.
+        <strong>Note:</strong> HTML support is basic. The tree exposes the parser's syntax structure, which means you query through nodes like <code>start_tag/tag_name</code> rather than directly by tag name. For example, you can't write <code>//h1</code> — you need <code>//element[.//tag_name='h1']</code>.
       </p>
       <Example
         file={{ name: 'page.html', language: 'xml', content: `<div class="app">

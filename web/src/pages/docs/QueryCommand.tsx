@@ -31,87 +31,48 @@ tractor query [FILES] [OPTIONS]`} language="bash" />
       <Example
         file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
         command="tractor greeter.js"
-        outputLanguage="xml"
         output={`greeter.js:1
-<Files>
-  <file>greeter.js</file>
-  <program>
-    <function>
-      function
-      <name>greet</name>
-      <parameters>
-        <params>
-          (
-          <type>name</type>
-          )
-        </params>
-      </parameters>
-      <body>
-        <block>
-          {
-          <return>
-            return
-            <binary>
-              <op>
-                <plus/>
-                +
-              </op>
-              <left>
-                <string>
-                  &quot;
-                  <string_fragment>Hello, </string_fragment>
-                  &quot;
-                </string>
-              </left>
-              +
-              <right>
-                <type>name</type>
-              </right>
-            </binary>
-            ;
-          </return>
-          }
-        </block>
-      </body>
-    </function>
-    <function>
-      function
-      <name>add</name>
-      <parameters>
-        <params>
-          (
-          <type>a</type>
-          ,
-          <type>b</type>
-          )
-        </params>
-      </parameters>
-      <body>
-        <block>
-          {
-          <return>
-            return
-            <binary>
-              <op>
-                <plus/>
-                +
-              </op>
-              <left>
-                <type>a</type>
-              </left>
-              +
-              <right>
-                <type>b</type>
-              </right>
-            </binary>
-            ;
-          </return>
-          }
-        </block>
-      </body>
-    </function>
-  </program>
-</Files>`}
+program/
+  ├─ function/
+  │   ├─ "function"
+  │   ├─ name = "greet"
+  │   ├─ parameters/
+  │   │   └─ params/
+  │   │       ├─ "("
+  │   │       ├─ type = "name"
+  │   │       └─ ")"
+  │   └─ body/
+  │       └─ block/
+  │           ├─ "{"
+  │           ├─ return/
+  │           │   ├─ "return"
+  │           │   ├─ binary/
+  │           │   │   ├─ op/plus = "+"
+  │           │   │   ├─ left/string = "\\"Hello, \\""
+  │           │   │   └─ right/type = "name"
+  │           │   └─ ";"
+  │           └─ "}"
+  └─ function/
+      ├─ "function"
+      ├─ name = "add"
+      ├─ parameters/
+      │   └─ params/
+      │       ├─ "("
+      │       ├─ type = "a"
+      │       ├─ ","
+      │       ├─ type = "b"
+      │       └─ ")"
+      └─ body/
+          └─ block/
+              ├─ "{"
+              ├─ return/
+              │   ├─ "return"
+              │   ├─ binary/
+              │   │   ├─ op/plus = "+"
+              │   │   ├─ left/type = "a"
+              │   │   └─ right/type = "b"
+              │   └─ ";"
+              └─ "}"`}
       />
 
       <h2>Extract with -x</h2>
@@ -125,7 +86,7 @@ tractor query [FILES] [OPTIONS]`} language="bash" />
 
       <h2>Views</h2>
       <p>
-        Use <code>-v</code> to control what you see. The default is <code>tree</code> (full XML), but other views are more useful for specific tasks.
+        Use <code>-v</code> to control what you see. The default is <code>tree</code>, which shows the query-oriented tree view. Other views are more useful for specific tasks.
       </p>
 
       <h3>value</h3>
@@ -246,7 +207,7 @@ fn add(a: i32, b: i32) -> i32 {
           <tr><th>Option</th><th>Description</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>-x, --extract</code></td><td>XPath expression to match</td></tr>
+          <tr><td><code>-x, --extract</code></td><td><Link to="/docs/guides/query-syntax">Query</Link> to match</td></tr>
           <tr><td><code>-v, --view</code></td><td>View mode: tree, value, source, lines, count, schema</td></tr>
           <tr><td><code>-f, --format</code></td><td>Output format: text, json, yaml, xml, gcc, github, claude-code</td></tr>
           <tr><td><code>-l, --lang</code></td><td>Language override (auto-detected from file extension)</td></tr>
