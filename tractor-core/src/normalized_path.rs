@@ -59,17 +59,18 @@ impl NormalizedPath {
     }
 }
 
-/// Case-correct each existing component of an absolute path against the
-/// true filesystem casing. No-op on non-Windows platforms.
+/// Normalize casing and 8.3 short-name aliases of an existing path
+/// against the true filesystem form. No-op on non-Windows platforms.
 ///
-/// On Windows, walks the path component by component, calling `read_dir`
-/// on each parent to find the entry whose name matches case-insensitively,
-/// then appends that entry's name (which has true filesystem casing).
-/// Does not resolve symlinks — unlike `std::fs::canonicalize`.
+/// On Windows we use `GetLongPathNameW`, which:
+/// - Resolves 8.3 short-name aliases (`RUNNER~1` → `runneradmin`) that
+///   CMD and legacy tools sometimes pass in.
+/// - Returns the path using the true filesystem casing.
+/// - Does NOT follow symlinks — unlike `std::fs::canonicalize`.
 ///
-/// Stops correcting at the first missing component (pushes the remaining
-/// components as-is). Paths where the parent can't be read (permissions,
-/// missing) are returned unchanged from that point.
+/// If the full path doesn't exist, we walk up to the nearest existing
+/// ancestor, resolve it, then re-append the missing components as-is.
+/// The drive letter is uppercased for consistency regardless.
 #[cfg(not(windows))]
 fn case_correct_existing(path: &Path) -> PathBuf {
     path.to_path_buf()
@@ -77,65 +78,97 @@ fn case_correct_existing(path: &Path) -> PathBuf {
 
 #[cfg(windows)]
 fn case_correct_existing(path: &Path) -> PathBuf {
-    let mut result = PathBuf::new();
-    let mut components = path.components();
+    // Find the longest existing ancestor to hand to GetLongPathName.
+    // `ancestors()` yields `path` itself first, then shorter prefixes;
+    // the drive root (e.g. `C:\`) always exists so this eventually
+    // finds something.
+    let anchor = path.ancestors().find(|p| p.exists());
 
-    // Copy the prefix (drive letter) and root directory verbatim.
-    // Case of a drive letter is not something `read_dir` can tell us;
-    // upstream `normalize_path` / the rest of the pipeline handles that.
-    while let Some(comp) = components.clone().next() {
-        match comp {
-            Component::Prefix(_) | Component::RootDir => {
-                result.push(comp.as_os_str());
-                components.next();
-            }
-            _ => break,
+    let resolved = if let Some(anchor) = anchor {
+        let long = get_long_path_name(anchor).unwrap_or_else(|| anchor.to_path_buf());
+        // Re-append any trailing components that didn't exist yet.
+        let anchor_comps = anchor.components().count();
+        let mut result = long;
+        for comp in path.components().skip(anchor_comps) {
+            result.push(comp.as_os_str());
         }
+        result
+    } else {
+        path.to_path_buf()
+    };
+
+    uppercase_drive_letter(resolved)
+}
+
+/// Uppercase the ASCII drive letter prefix of a Windows path, if any.
+/// `GetLongPathName` preserves whatever casing the caller passed in for
+/// the drive letter, so we normalize it here for consistent intersection.
+#[cfg(windows)]
+fn uppercase_drive_letter(path: PathBuf) -> PathBuf {
+    use std::path::Prefix;
+    let mut comps = path.components();
+    let first = match comps.next() {
+        Some(c) => c,
+        None => return path,
+    };
+    let prefix_str: std::ffi::OsString = match first {
+        Component::Prefix(p) => match p.kind() {
+            Prefix::Disk(letter) => {
+                format!("{}:", (letter as char).to_ascii_uppercase()).into()
+            }
+            Prefix::VerbatimDisk(letter) => {
+                format!(r"\\?\{}:", (letter as char).to_ascii_uppercase()).into()
+            }
+            _ => return path, // unsupported prefix shape — leave untouched
+        },
+        _ => return path, // no drive prefix — nothing to uppercase
+    };
+    let mut result = PathBuf::from(prefix_str);
+    for c in comps {
+        result.push(c.as_os_str());
+    }
+    result
+}
+
+/// Call the Windows `GetLongPathNameW` API to resolve 8.3 short names
+/// and get the true filesystem casing, without following symlinks.
+/// Returns `None` if the call fails (e.g. the path doesn't exist).
+#[cfg(windows)]
+fn get_long_path_name(path: &Path) -> Option<PathBuf> {
+    use std::ffi::OsString;
+    use std::os::windows::ffi::{OsStrExt, OsStringExt};
+
+    #[link(name = "kernel32")]
+    extern "system" {
+        fn GetLongPathNameW(
+            lpsz_short_path: *const u16,
+            lpsz_long_path: *mut u16,
+            cch_buffer: u32,
+        ) -> u32;
     }
 
-    // Case-correct remaining components via read_dir.
-    loop {
-        let comp = match components.next() {
-            Some(c) => c,
-            None => return result,
-        };
-        let name = comp.as_os_str();
-        let entries = match std::fs::read_dir(&result) {
-            Ok(e) => e,
-            Err(_) => {
-                // Parent can't be read — stop correcting, push rest as-is.
-                result.push(name);
-                for rest in components {
-                    result.push(rest.as_os_str());
-                }
-                return result;
-            }
-        };
+    let wide: Vec<u16> = path
+        .as_os_str()
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect();
 
-        let mut found: Option<std::ffi::OsString> = None;
-        for entry in entries.flatten() {
-            let entry_name = entry.file_name();
-            if entry_name.to_string_lossy()
-                .eq_ignore_ascii_case(&name.to_string_lossy())
-            {
-                found = Some(entry_name);
-                break;
-            }
-        }
-
-        match found {
-            Some(n) => result.push(n),
-            None => {
-                // Missing component — push as-is and stop correcting
-                // (we can't read_dir into something that doesn't exist).
-                result.push(name);
-                for rest in components {
-                    result.push(rest.as_os_str());
-                }
-                return result;
-            }
-        }
+    // First call with a null buffer returns the required size *including*
+    // the terminating null; 0 means the call failed (path missing, etc).
+    let needed = unsafe { GetLongPathNameW(wide.as_ptr(), std::ptr::null_mut(), 0) };
+    if needed == 0 {
+        return None;
     }
+
+    let mut buf = vec![0u16; needed as usize];
+    // Second call returns the length *excluding* the terminating null.
+    let written = unsafe { GetLongPathNameW(wide.as_ptr(), buf.as_mut_ptr(), needed) };
+    if written == 0 || written >= needed {
+        return None;
+    }
+
+    buf.truncate(written as usize);
+    Some(PathBuf::from(OsString::from_wide(&buf)))
 }
 
 fn normalize_lexically(path: &Path) -> PathBuf {
@@ -365,24 +398,73 @@ mod tests {
     }
 
     /// Fix #127 bug 1: on Windows, two paths differing only in case must
-    /// produce the same NormalizedPath after absolute(). Handled by the
-    /// Windows-only `case_correct_existing` helper, which walks each
-    /// component via `read_dir` to find the true filesystem casing
-    /// (without following symlinks, unlike `std::fs::canonicalize`).
+    /// produce the same NormalizedPath after absolute(). This also
+    /// covers 8.3 short-name aliases (e.g. `RUNNER~1` passed from CMD
+    /// or legacy tools) — both are handled by `GetLongPathNameW`.
     #[cfg(windows)]
     #[test]
     fn absolute_case_insensitive_on_windows() {
+        // Use the raw tempdir directly. On GitHub Actions runners this
+        // contains the 8.3 short-name alias `RUNNER~1`, which is exactly
+        // the CMD-prompt scenario we want to cover.
         let tmp = std::env::temp_dir().join("tractor_test_CaseCheck.txt");
         std::fs::write(&tmp, "").unwrap();
 
-        let lower = tmp.to_string_lossy().to_lowercase();
-        let upper = tmp.to_string_lossy().to_uppercase();
+        let path_str = tmp.to_string_lossy();
+        let lower = path_str.to_lowercase();
+        let upper = path_str.to_uppercase();
 
         let from_lower = NormalizedPath::absolute(&lower);
         let from_upper = NormalizedPath::absolute(&upper);
         assert_eq!(
             from_lower, from_upper,
             "absolute() must produce the same path regardless of input casing on Windows"
+        );
+
+        std::fs::remove_file(&tmp).ok();
+    }
+
+    /// Windows: drive letters are always uppercased to give consistent
+    /// casing across inputs, even when the filesystem root `read_dir`
+    /// lookup can't help (the drive letter is not a `read_dir` entry).
+    #[cfg(windows)]
+    #[test]
+    fn absolute_uppercases_drive_letter_on_windows() {
+        let tmp = std::env::temp_dir().join("tractor_test_DriveCase.txt");
+        std::fs::write(&tmp, "").unwrap();
+
+        let path_str = tmp.to_string_lossy().into_owned();
+        // Force a lowercase drive letter on the input.
+        assert!(path_str.len() >= 2 && path_str.as_bytes()[1] == b':');
+        let mut lowered = path_str.clone();
+        lowered.replace_range(0..1, &path_str[0..1].to_ascii_lowercase());
+
+        let result = NormalizedPath::absolute(&lowered);
+        // First character of the result must be an uppercase drive letter.
+        let first = result.as_str().chars().next().unwrap();
+        assert!(first.is_ascii_uppercase(), "drive letter should be uppercased, got: {}", result);
+
+        std::fs::remove_file(&tmp).ok();
+    }
+
+    /// Windows: 8.3 short-name aliases (`RUNNER~1`, `PROGRA~1`, etc.)
+    /// must resolve to the long form so that short-name input from CMD
+    /// intersects with glob-expanded long-form paths.
+    #[cfg(windows)]
+    #[test]
+    fn absolute_resolves_83_short_names_on_windows() {
+        let tmp = std::env::temp_dir().join("tractor_test_ShortName.txt");
+        std::fs::write(&tmp, "").unwrap();
+
+        // Resolve to the long form by handing `absolute()` the raw tempdir
+        // path (may contain 8.3 on CI) and comparing to the long form
+        // obtained via canonicalize (strip `\\?\` via NormalizedPath::new).
+        let resolved = NormalizedPath::absolute(&tmp.to_string_lossy());
+        let canonical = std::fs::canonicalize(&tmp).unwrap();
+        let long_form = NormalizedPath::new(&canonical.to_string_lossy());
+        assert_eq!(
+            resolved, long_form,
+            "absolute() must resolve 8.3 short names to the long form"
         );
 
         std::fs::remove_file(&tmp).ok();
