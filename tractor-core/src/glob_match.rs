@@ -384,11 +384,14 @@ mod walk {
 
         let suffix_pattern = parts[first_wild..].join("/");
 
-        // Canonicalize root for true filesystem casing
-        let canonical_root = match std::fs::canonicalize(&root) {
-            Ok(p) => normalize_path(&p.to_string_lossy()),
-            Err(_) => return Ok(vec![]), // root doesn't exist → empty
-        };
+        // Resolve the root: absolute + lexically normalized, with true
+        // filesystem casing on Windows. Does NOT resolve symlinks — paths
+        // built from `read_dir` further down keep the symlink name, so
+        // glob-expanded paths match CLI args that also use the link name.
+        if !std::path::Path::new(&root).exists() {
+            return Ok(vec![]); // root doesn't exist → empty
+        }
+        let canonical_root = NormalizedPath::absolute(&root).into_string();
 
         // Compile the wildcard suffix for matching
         let compiled = CompiledPattern::new(&suffix_pattern).map_err(|e| GlobExpandError {
