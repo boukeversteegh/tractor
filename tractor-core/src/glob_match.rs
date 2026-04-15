@@ -701,6 +701,39 @@ mod tests {
                 "expected InvalidPattern, got {:?}", err.kind);
         }
 
+        /// A symlink cycle (`a/loop → a`) must not hang the walker. The
+        /// MAX_DEPTH guard logs a warning and returns `Ok`, so expansion
+        /// completes and non-cyclic files inside the cycle are still found.
+        #[cfg(unix)]
+        #[test]
+        fn walk_terminates_on_symlink_cycle() {
+            use std::os::unix::fs::symlink;
+
+            let dir = std::env::temp_dir().join("tractor_test_cycle");
+            let _ = std::fs::remove_dir_all(&dir);
+            std::fs::create_dir_all(&dir).unwrap();
+
+            let a = dir.join("a");
+            std::fs::create_dir(&a).unwrap();
+            std::fs::write(a.join("real.rs"), "").unwrap();
+            // a/loop → a creates the cycle.
+            symlink(&a, a.join("loop")).unwrap();
+
+            let pattern = format!("{}/**/*.rs", dir.to_string_lossy());
+            let result = expand_canonical(&pattern, 10_000)
+                .expect("walker must terminate without returning an error");
+
+            // MAX_DEPTH stops the recursion; the real file (at every depth
+            // up to the cutoff) shows up in the results.
+            assert!(
+                result.iter().any(|p| p.as_str().ends_with("/real.rs")),
+                "walker should still find real.rs before hitting MAX_DEPTH; got: {:?}",
+                result.iter().map(|p| p.as_str()).collect::<Vec<_>>()
+            );
+
+            std::fs::remove_dir_all(&dir).ok();
+        }
+
         #[cfg(target_os = "windows")]
         #[test]
         fn expand_returns_canonical_casing() {
