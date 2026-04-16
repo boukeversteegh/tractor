@@ -15,6 +15,30 @@ use crate::cli::context::RunContext;
 use crate::format::{ViewField, GroupDimension, render_report};
 use crate::matcher::{project_report, apply_message_template};
 
+/// File names searched (in order) when no config path is given on the CLI.
+pub const DEFAULT_CONFIG_NAMES: &[&str] = &["tractor.yml", "tractor.yaml"];
+
+/// Resolve a config path from an optional CLI argument, falling back to the
+/// first existing default file in the current directory. Returns a clear error
+/// when no path is given and no default config exists.
+pub fn resolve_config_path(
+    explicit: Option<&str>,
+) -> Result<String, Box<dyn std::error::Error>> {
+    if let Some(path) = explicit {
+        return Ok(path.to_string());
+    }
+    for candidate in DEFAULT_CONFIG_NAMES {
+        if std::path::Path::new(candidate).exists() {
+            return Ok((*candidate).to_string());
+        }
+    }
+    Err(format!(
+        "no config file given and no default found (looked for {})",
+        DEFAULT_CONFIG_NAMES.join(", ")
+    )
+    .into())
+}
+
 /// Parameters that vary per command when executing a config file.
 pub struct ConfigRunParams<'a> {
     pub config_path: &'a str,

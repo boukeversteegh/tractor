@@ -1020,6 +1020,73 @@ fn run_mixed_check_and_set_succeeds_when_check_passes() {
     .run();
 }
 
+const DEFAULT_CONFIG_CONTENTS: &str =
+    "check:\n  files: [\"settings.yaml\"]\n  rules:\n    - id: no-debug\n      xpath: \"//debug[.='true']\"\n      reason: \"debug should be disabled\"\n      severity: error\n";
+
+const DEFAULT_CONFIG_SETTINGS: &str = "app:\n  name: myapp\n  debug: true\n";
+
+#[test]
+fn run_without_path_uses_default_tractor_yml() {
+    cli_case!({
+        tractor run;
+        expect => {
+            exit 1;
+            combined "settings.yaml:3:10: error: debug should be disabled\n3 |   debug: true\n             ^~~~\n\n1 error in 1 file";
+        }
+    })
+    .temp_fixture()
+    .seed_file("tractor.yml", DEFAULT_CONFIG_CONTENTS)
+    .seed_file("settings.yaml", DEFAULT_CONFIG_SETTINGS)
+    .strip_temp_prefix()
+    .run();
+}
+
+#[test]
+fn run_without_path_uses_default_tractor_yaml() {
+    cli_case!({
+        tractor run;
+        expect => {
+            exit 1;
+            combined "settings.yaml:3:10: error: debug should be disabled\n3 |   debug: true\n             ^~~~\n\n1 error in 1 file";
+        }
+    })
+    .temp_fixture()
+    .seed_file("tractor.yaml", DEFAULT_CONFIG_CONTENTS)
+    .seed_file("settings.yaml", DEFAULT_CONFIG_SETTINGS)
+    .strip_temp_prefix()
+    .run();
+}
+
+#[test]
+fn run_without_path_prefers_yml_over_yaml() {
+    // tractor.yml wins over tractor.yaml. The .yml scans settings.yaml and
+    // finds a violation; the .yaml points at a missing file and would error.
+    cli_case!({
+        tractor run;
+        expect => exit 1;
+    })
+    .temp_fixture()
+    .seed_file("tractor.yml", DEFAULT_CONFIG_CONTENTS)
+    .seed_file(
+        "tractor.yaml",
+        "check:\n  files: [\"nonexistent.yaml\"]\n  rules: []\n",
+    )
+    .seed_file("settings.yaml", DEFAULT_CONFIG_SETTINGS)
+    .strip_temp_prefix()
+    .run();
+}
+
+#[test]
+fn run_without_path_errors_when_no_default_exists() {
+    let result = command(["run"]).temp_fixture().assert_exit(1).capture();
+    let combined = format!("{}{}", result.stdout, result.stderr);
+    assert!(
+        combined.contains("no config file given and no default found"),
+        "expected error about missing default config, got: {}",
+        combined
+    );
+}
+
 #[test]
 fn view_modifier_can_drop_lines_in_gcc_output() {
     let result = command([

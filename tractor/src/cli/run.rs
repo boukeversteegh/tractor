@@ -8,8 +8,9 @@ use crate::cli::SharedArgs;
 pub struct RunArgs {
     /// Path to the tractor config file (.yaml, .yml, or .toml).
     /// File patterns in the config are resolved relative to the config file's directory.
+    /// Defaults to `tractor.yml` or `tractor.yaml` in the current directory.
     #[arg()]
-    pub config: String,
+    pub config: Option<String>,
 
     /// Files to process (intersected with config file globs)
     #[arg()]
@@ -31,11 +32,12 @@ pub struct RunArgs {
     pub shared: SharedArgs,
 }
 use crate::format::{ViewField, GroupDimension};
-use super::config::{run_from_config, ConfigRunParams};
+use super::config::{run_from_config, resolve_config_path, ConfigRunParams};
 
 pub fn run_run(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {
+    let config_path = resolve_config_path(args.config.as_deref())?;
     run_from_config(ConfigRunParams {
-        config_path: &args.config,
+        config_path: &config_path,
         shared: &args.shared,
         cli_files: args.files,
         format: &args.format,

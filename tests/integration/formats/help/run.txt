@@ -1,10 +1,10 @@
 Execute a tractor config file (batch check/set operations)
 
-Usage: tractor run [OPTIONS] <CONFIG> [FILES]...
+Usage: tractor run [OPTIONS] [CONFIG] [FILES]...
 
 Arguments:
-  <CONFIG>
-          Path to the tractor config file (.yaml, .yml, or .toml). File patterns in the config are resolved relative to the config file's directory
+  [CONFIG]
+          Path to the tractor config file (.yaml, .yml, or .toml). File patterns in the config are resolved relative to the config file's directory. Defaults to `tractor.yml` or `tractor.yaml` in the current directory
 
   [FILES]...
           Files to process (intersected with config file globs)
