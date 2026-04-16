@@ -13,6 +13,7 @@
 mod formatter;
 mod colors;
 mod query_tree_renderer;
+pub mod source_utils;
 pub mod xml_renderer;
 pub mod syntax_highlight;
 mod schema;

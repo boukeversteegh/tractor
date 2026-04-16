@@ -10,93 +10,66 @@ The file structure doesn't tell the architecture story. Key issues:
 4. **`tractor-core`** exists as a separate crate solely for WASM compatibility, but the name implies it's the architectural core. It's really "the WASM-safe subset"
 5. **`context.rs`** does CLI arg processing but lives in `pipeline/`
 
-## Target Structure
+## Final Structure
 
 ### tractor/src/
 
 ```
-main.rs
+lib.rs                — library entry point (public API + re-exports)
+main.rs               — CLI entry point
 
-cli/
-  mod.rs              — Cli, Command, SharedArgs, DocsCommand
-  help.rs             — help text injection, parse error hints
-  query.rs            — QueryArgs + run_query (args → executor call)
-  check.rs            — CheckArgs + run_check
-  test.rs             — TestArgs + run_test
-  set.rs              — SetArgs + run_set
-  update.rs           — UpdateArgs + run_update
-  render.rs           — RenderArgs + run_render
-  run.rs              — RunArgs + run_run (config file execution)
-  config.rs           — tractor config file parsing (YAML/TOML rule files)
-  languages.rs        — `docs languages` subcommand
+  ── CLI (the tool, native-only) ──
 
-executor/
-  mod.rs              — execute() entry point, ExecuteOptions, shared types
-  query.rs            — QueryOperation + execution
-  check.rs            — CheckOperation + execution
-  test.rs             — TestOperation, TestAssertion + execution
-  set.rs              — SetOperation, SetMapping + execution
-  update.rs           — UpdateOperation + execution
-
-input/
-  mod.rs              — InputMode, resolve stdin vs files
-  file_resolver.rs    — glob expansion, file discovery
-  filter.rs           — diff-files/diff-lines filtering
-  git.rs              — git diff helpers
-
+cli/                  — CLI argument parsing & command handlers
+executor/             — parallel execution per operation type
+format/               — output format renderers (text, json, gcc, ...)
+input/                — stdin/file resolution, diff filtering, git
 matcher.rs            — parallel parse + XPath dispatch (uses rayon)
+tractor_config.rs     — YAML/TOML config file parsing
+version.rs            — version info
 
-format/
-  mod.rs              — OutputFormat, ViewField, ViewSet, GroupDimension, render dispatch
-  options.rs          — option types and parsing
-  text.rs             — human-readable text renderer
-  json.rs             — JSON report renderer
-  yaml.rs             — YAML report renderer
-  xml.rs              — XML report renderer
-  gcc.rs              — GCC-style one-line renderer
-  github.rs           — GitHub Actions annotation renderer
-  claude_code.rs      — Claude Code hook JSON renderer
-  shared.rs           — shared rendering utilities
+  ── Library (the engine, native + WASM) ──
 
-version.rs
+parser/               — tree-sitter parsing (native-only)
+xot/                  — xot XML tree building & transformation
+  builder.rs          — TreeSitter AST → xot document
+  transform.rs        — generic tree walker & xot helpers
+languages/            — per-language semantic transforms + metadata
+  info.rs             — language metadata (names, extensions, features)
+  csharp.rs, go.rs, ... — per-language transforms
+xpath/                — XPath 3.1 query engine
+output/               — XML/tree rendering, syntax highlighting
+  source_utils.rs     — source snippet extraction
+render/               — reverse rendering (XML→source code)
+model/                — core data types
+  report.rs           — report, match, severity, totals
+  rule.rs             — check rule with XPath + glob matchers
+  tree_mode.rs        — raw/structure/data tree mode enum
+  normalized_xpath.rs — auto-prefixed XPath expression wrapper
+glob/                 — file discovery & path handling
+  matching.rs         — glob pattern matching + filesystem walking
+  pattern.rs          — normalized glob pattern wrapper
+  normalized_path.rs  — forward-slash normalized path wrapper
+  files.rs            — glob expansion with limits (native-only)
+mutation/             — code modification
+  replace.rs          — match-based text replacement
+  xpath_upsert.rs     — XPath-based insert/update for data files
+  declarative_set.rs  — declarative path=value set expressions
+wasm/                 — WASM bindings for web playground
+  ast.rs              — serializable AST types for JS interop
 ```
 
-### Merge tractor-core into tractor
+### Feature flags
 
-The two-crate split exists solely for WASM. Instead:
+```toml
+[features]
+default = ["native"]
+native = ["tree-sitter parsers", "rayon", "clap", ...]  # CLI binary
+wasm = ["wasm-bindgen", "console_error_panic_hook"]      # WASM cdylib
+```
 
-1. Move all `tractor-core/src/` modules into `tractor/src/` (under logical groupings or a `core/` namespace)
-2. Use a Cargo feature flag to gate OS-dependent modules:
-   ```toml
-   [features]
-   default = ["cli"]
-   cli = ["rayon", "walkdir", "clap"]
-   ```
-3. `#[cfg(feature = "cli")]` on modules that need filesystem/threads (cli/, input/, matcher, etc.)
-4. Create a thin `tractor-wasm/` crate that depends on `tractor` with `default-features = false` and exposes `#[wasm_bindgen]` bindings
-5. Update `web/` to import from the new WASM crate
-
-### What's WASM-safe (no `cli` feature needed)
-
-From current tractor-core:
-- parser/, languages/, xpath/ — parsing and querying
-- output/ — XML/tree rendering
-- render/ — XML→source code (reverse rendering)
-- report.rs, rule.rs — report model
-- replace.rs, xpath_upsert.rs, declarative_set.rs — mutation
-- normalized_xpath.rs, normalized_path.rs, glob_pattern.rs — types
-- source_utils.rs, tree_mode.rs — utilities
-
-From current tractor:
-- format/ (mostly) — report renderers (text, json, gcc, etc.)
-- executor/ operation types — pure data structs
-
-### What needs `cli` feature
-
-- cli/ — clap, CLI args
-- input/ — filesystem, walkdir, glob
-- matcher.rs — rayon parallelism
-- input/git.rs — shells out to `git`
+Binary targets have `required-features = ["native"]`. Library modules use
+`#[cfg(feature = "native")]` or `#[cfg(feature = "wasm")]` as needed.
 
 ## Execution Plan
 
@@ -118,7 +91,17 @@ From current tractor:
 5. ✅ Update web/ build to use `tractor` crate with `--features wasm`
 6. ✅ Remove `tractor-core/` from workspace
 
-### Phase 3: Cleanup
+### Phase 3: Organize library modules into logical directories ✅ Done
+1. ✅ `glob/` — matching.rs, pattern.rs, normalized_path.rs, files.rs
+2. ✅ `model/` — report.rs, rule.rs, tree_mode.rs, normalized_xpath.rs
+3. ✅ `mutation/` — replace.rs, xpath_upsert.rs, declarative_set.rs
+4. ✅ `xot/` — builder.rs, transform.rs
+5. ✅ `wasm/` — mod.rs (bindings), ast.rs (serialization types)
+6. ✅ `languages/info.rs` — language metadata (was language_info.rs)
+7. ✅ `output/source_utils.rs` — source snippet extraction
+8. ✅ Backward-compatible `pub use` re-exports in lib.rs — zero import changes needed
+
+### Phase 4: Remaining cleanup
 1. Update CLAUDE.md / architecture docs
 2. Verify `task test` passes (cargo tests, web vitest, integration tests)
 3. Verify WASM build still works
