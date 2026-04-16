@@ -98,7 +98,7 @@ example.js:3:3: error: getAll methods in repositories should use orderBy
         </thead>
         <tbody>
           <tr><td><code>id</code></td><td>Yes</td><td>Unique identifier for the rule</td></tr>
-          <tr><td><code>xpath</code></td><td>Yes</td><td>XPath expression — each match is a violation</td></tr>
+          <tr><td><code>xpath</code></td><td>Yes</td><td><Link to="/docs/guides/query-syntax">Query</Link> — each match is a violation</td></tr>
           <tr><td><code>reason</code></td><td>Yes</td><td>Explanation shown for each violation</td></tr>
           <tr><td><code>severity</code></td><td>No</td><td><code>error</code> (default) or <code>warning</code></td></tr>
           <tr><td><code>message</code></td><td>No</td><td>Custom message template (<code>{'{value}'}</code>, <code>{'{line}'}</code>, etc.)</td></tr>
@@ -158,7 +158,7 @@ operations:
 
       <h2>Set Operations</h2>
       <p>
-        Use <code>set</code> to apply multiple value changes in a config file. Each mapping specifies an XPath expression and the value to set. This is the batch equivalent of the <Link to="/docs/commands/set">set command</Link>:
+        Use <code>set</code> to apply multiple value changes in a config file. Each mapping specifies an expression and the value to set. This is the batch equivalent of the <Link to="/docs/commands/set">set command</Link>:
       </p>
       <CodeBlock
         language="yaml"

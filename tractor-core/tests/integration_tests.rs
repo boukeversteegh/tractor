@@ -932,10 +932,10 @@ fn test_schema_collector_from_xot() {
 
     let output = collector.format(None, false);
 
-    // Should show class appearing twice
-    assert!(output.contains("class (2)"), "Should show 2 classes: {}", output);
-    // Should show method appearing twice (one in each class)
-    assert!(output.contains("method (2)"), "Should show 2 methods: {}", output);
+    // Should show class appearing twice (markers like "internal" are now shown as qualifiers)
+    assert!(output.contains("class[internal] (2)"), "Should show 2 classes with qualifier: {}", output);
+    // Should show method appearing twice (one in each class), with qualifier
+    assert!(output.contains("method[private] (2)"), "Should show 2 methods with qualifier: {}", output);
     // Should show field appearing once
     assert!(output.contains("field"), "Should show field: {}", output);
     // Should show class names

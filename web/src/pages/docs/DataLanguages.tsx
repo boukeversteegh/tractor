@@ -37,19 +37,15 @@ export function DataLanguages() {
       <Example
         file={{ name: 'config.json', language: 'json', content: CONFIG_JSON }}
         command="tractor config.json"
-        outputLanguage="xml"
         output={`config.json:1
-<Files>
-  <file>config.json</file>
-  <database>
-    <host>localhost</host>
-    <port>5432</port>
-  </database>
-  <debug>true</debug>
-</Files>`}
+document/
+  ├─ database/
+  │   ├─ host = "localhost"
+  │   └─ port = "5432"
+  └─ debug = "true"`}
       />
       <p>
-        The JSON structure maps directly: <code>database.host</code> becomes <code>&lt;database&gt;&lt;host&gt;</code>. Querying is intuitive:
+        The JSON structure maps directly: <code>database.host</code> becomes <code>database/host</code> in the tree. Querying is intuitive:
       </p>
       <Example
         command={`tractor config.json -x "//database/host" -v value`}
@@ -60,22 +56,16 @@ export function DataLanguages() {
       <Example
         file={{ name: 'settings.yaml', language: 'yaml', content: SETTINGS_YAML }}
         command="tractor settings.yaml"
-        outputLanguage="xml"
         output={`settings.yaml:1
-<Files>
-  <file>settings.yaml</file>
-  <document>
-    <database>
-      <host>localhost</host>
-      <port>5432</port>
-    </database>
-    <debug>true</debug>
-    <log_level>verbose</log_level>
-  </document>
-</Files>`}
+document/
+  ├─ database/
+  │   ├─ host = "localhost"
+  │   └─ port = "5432"
+  ├─ debug = "true"
+  └─ log_level = "verbose"`}
       />
       <p>
-        YAML files have a <code>&lt;document&gt;</code> wrapper. Queries work the same:
+        YAML files have a <code>document</code> wrapper. Queries work the same:
       </p>
       <Example
         command={`tractor settings.yaml -x "//database/port" -v value`}
@@ -86,17 +76,11 @@ export function DataLanguages() {
       <Example
         file={{ name: 'config.toml', language: 'toml', content: CONFIG_TOML }}
         command="tractor config.toml"
-        outputLanguage="xml"
         output={`config.toml:1
-<Files>
-  <file>config.toml</file>
-  <document>
-    <database>
-      <host>localhost</host>
-      <port>5432</port>
-    </database>
-  </document>
-</Files>`}
+document/
+  └─ database/
+      ├─ host = "localhost"
+      └─ port = "5432"`}
       />
       <Example
         command={`tractor config.toml -x "//database/host" -v value`}
@@ -119,22 +103,17 @@ export function DataLanguages() {
   ]
 }` }}
         command="tractor servers.json"
-        outputLanguage="xml"
         output={`servers.json:1
-<Files>
-  <file>servers.json</file>
-  <servers>
-    <host>web1</host>
-    <port>80</port>
-  </servers>
-  <servers>
-    <host>web2</host>
-    <port>443</port>
-  </servers>
-</Files>`}
+document/
+  ├─ servers/
+  │   ├─ host = "web1"
+  │   └─ port = "80"
+  └─ servers/
+      ├─ host = "web2"
+      └─ port = "443"`}
       />
       <p>
-        Each array item becomes a separate <code>&lt;servers&gt;</code> element. You can query across all of them or filter:
+        Each array item becomes a separate <code>servers</code> element. You can query across all of them or filter:
       </p>
       <Example
         command={`tractor servers.json -x "//servers/host" -v value`}

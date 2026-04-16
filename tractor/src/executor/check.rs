@@ -366,6 +366,7 @@ mod tests {
     #[test]
     fn check_rule_include_discovers_files() {
         let dir = tempfile::tempdir().unwrap();
+        #[allow(clippy::disallowed_methods)] // test-only filesystem setup
         let canon_dir = std::fs::canonicalize(dir.path()).unwrap();
         let src_dir = canon_dir.join("src");
         std::fs::create_dir_all(&src_dir).unwrap();
@@ -406,6 +407,7 @@ mod tests {
     #[test]
     fn check_multiple_rule_includes_discover_union() {
         let dir = tempfile::tempdir().unwrap();
+        #[allow(clippy::disallowed_methods)] // test-only filesystem setup
         let canon_dir = std::fs::canonicalize(dir.path()).unwrap();
         let src_dir = canon_dir.join("src");
         let test_dir = canon_dir.join("test");
@@ -457,6 +459,7 @@ mod tests {
         let json_path = dir.path().join("test.json");
         std::fs::write(&json_path, r#"{"bad": true}"#).unwrap();
 
+        #[allow(clippy::disallowed_methods)] // test-only filesystem setup
         let canonical = std::fs::canonicalize(&json_path).unwrap();
         let canonical_str = normalize_path(&canonical.to_string_lossy());
 
@@ -498,6 +501,7 @@ mod tests {
     #[test]
     fn check_overlapping_rule_includes_no_duplicate_matches() {
         let dir = tempfile::tempdir().unwrap();
+        #[allow(clippy::disallowed_methods)] // test-only filesystem setup
         let canon_dir = std::fs::canonicalize(dir.path()).unwrap();
         let sub_dir = canon_dir.join("src").join("sub");
         std::fs::create_dir_all(&sub_dir).unwrap();

@@ -17,6 +17,7 @@ import { SchemaGuide } from './pages/docs/SchemaGuide';
 import { LintRulesGuide } from './pages/docs/LintRulesGuide';
 import { CiCdGuide } from './pages/docs/CiCdGuide';
 import { UseCases } from './pages/docs/UseCases';
+import { CheatSheet } from './pages/docs/CheatSheet';
 
 export function App() {
   return (
@@ -34,6 +35,7 @@ export function App() {
         <Route path="/docs/languages/documents" element={<DocumentLanguages />} />
         <Route path="/docs/languages/data" element={<DataLanguages />} />
         <Route path="/docs/reference/cli" element={<CliReference />} />
+        <Route path="/docs/guides/cheat-sheet" element={<CheatSheet />} />
         <Route path="/docs/guides/query-syntax" element={<QuerySyntax />} />
         <Route path="/docs/guides/writing-queries" element={<WritingQueries />} />
         <Route path="/docs/guides/schema" element={<SchemaGuide />} />

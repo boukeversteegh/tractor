@@ -64,7 +64,13 @@ pub fn run_from_config(params: ConfigRunParams) -> Result<(), Box<dyn std::error
     } else {
         let base_dir = config_path.parent()
             .map(|p| if p.as_os_str().is_empty() { std::path::Path::new(".") } else { p })
-            .map(|p| p.canonicalize().unwrap_or_else(|_| p.to_path_buf()));
+            .map(|p| {
+                // Absolutize without following symlinks — matches the glob
+                // walker and CLI path resolution, so `base_dir`-derived paths
+                // intersect by set equality with those pipelines.
+                let normalized = tractor_core::NormalizedPath::absolute(&p.to_string_lossy());
+                std::path::PathBuf::from(normalized.as_str())
+            });
 
         let options = ExecuteOptions {
             verbose: ctx.verbose,

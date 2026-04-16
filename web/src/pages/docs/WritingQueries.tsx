@@ -38,7 +38,7 @@ export function WritingQueries() {
       </p>
       <ol>
         <li><strong>See the structure</strong> — explore with schema view</li>
-        <li><strong>View the tree</strong> — inspect the full XML of specific code</li>
+        <li><strong>View the tree</strong> — inspect the full tree of specific code</li>
         <li><strong>Select elements</strong> — use <code>-x</code> to pick elements</li>
         <li><strong>Add predicates</strong> — filter by conditions</li>
         <li><strong>Choose a view</strong> — pick the output that fits your use case</li>
@@ -92,7 +92,7 @@ export function WritingQueries() {
 
       <h2>Step 3: Select Elements</h2>
       <p>
-        Use <code>-x</code> with a path expression to select elements. The syntax uses path expressions, similar to file paths:
+        Use <code>-x</code> with a <Link to="/docs/guides/query-syntax">query</Link> to select elements. The syntax is similar to file paths:
       </p>
 
       <h3>Select all method names</h3>
@@ -126,7 +126,7 @@ export function WritingQueries() {
         output={`findById\nsave\n_log`}
       />
       <p>
-        <code>[not(static)]</code> means "does not have a <code>&lt;static/&gt;</code> child".
+        <code>[not(static)]</code> means "does not have a <code>static</code> child element".
       </p>
 
       <h3>Filter by text content</h3>
@@ -141,8 +141,8 @@ export function WritingQueries() {
           <tr><th>Predicate</th><th>Meaning</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>[public]</code></td><td>Has a <code>&lt;public/&gt;</code> child element</td></tr>
-          <tr><td><code>[not(static)]</code></td><td>Does not have a <code>&lt;static/&gt;</code> child</td></tr>
+          <tr><td><code>[public]</code></td><td>Has a <code>public</code> child element</td></tr>
+          <tr><td><code>[not(static)]</code></td><td>Does not have a <code>static</code> child</td></tr>
           <tr><td><code>[name='Foo']</code></td><td>Has name equal to "Foo"</td></tr>
           <tr><td><code>[contains(name,'get')]</code></td><td>Name contains "get"</td></tr>
           <tr><td><code>[contains(.,'orderBy')]</code></td><td>Full text of element contains "orderBy"</td></tr>
@@ -160,7 +160,7 @@ export function WritingQueries() {
           <tr><th>View</th><th>Use case</th></tr>
         </thead>
         <tbody>
-          <tr><td><code>-v tree</code></td><td>Full XML (default) — see the structure</td></tr>
+          <tr><td><code>-v tree</code></td><td>Tree view (default) — see the structure</td></tr>
           <tr><td><code>-v value</code></td><td>Text content — get names, values</td></tr>
           <tr><td><code>-v source</code></td><td>Exact source code — copy-paste ready</td></tr>
           <tr><td><code>-v lines</code></td><td>Source lines with context</td></tr>
@@ -190,7 +190,7 @@ export function WritingQueries() {
         <li>Use <code>-v schema</code> when querying multiple files to see element types at a glance.</li>
         <li>Use <code>-W</code> to ignore whitespace when matching formatted code.</li>
         <li>The <Link to="/playground">Playground</Link> lets you build queries visually.</li>
-        <li>AI tools like ChatGPT and Claude can write tractor queries — the syntax is standard XPath that they already know.</li>
+        <li>AI tools like ChatGPT and Claude can write tractor queries — the syntax is standard and they already know it.</li>
       </ul>
 
       <div className="doc-next">

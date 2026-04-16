@@ -29,7 +29,7 @@ export function QuerySyntax() {
     <DocLayout>
       <h1>Query Syntax</h1>
       <p className="doc-lead">
-        Tractor uses XPath expressions to query code. Just name the element you want — tractor searches the whole tree. Use <code>/</code> to navigate to children, <code>//</code> to search deeper.
+        Tractor queries use <a href="https://www.w3.org/TR/xpath-31/" target="_blank" rel="noopener noreferrer">XPath</a> syntax. Just name the element you want — tractor searches the whole tree. Use <code>/</code> to navigate to children, <code>//</code> to search deeper.
       </p>
 
       <h2>Path Basics</h2>
@@ -48,7 +48,7 @@ export function QuerySyntax() {
         output={`greet\nadd`}
       />
       <p>
-        Here <code>function</code> finds all functions anywhere in the tree, and <code>/name</code> selects their direct <code>&lt;name&gt;</code> child.
+        Here <code>function</code> finds all functions anywhere in the tree, and <code>/name</code> selects their direct <code>name</code> child.
       </p>
 
       <h3>/ — Direct child</h3>
@@ -139,12 +139,12 @@ tractor user-service.js -x "//method/name[contains(.,'find')]" -v value`} />
 
       <h3>The dot (.) — Current node's text</h3>
       <p>
-        The dot <code>.</code> refers to the full text content of the current element — all nested text concatenated together, ignoring XML tags. This is powerful because it lets you match against the source code as a flat string:
+        The dot <code>.</code> refers to the full text content of the current element — all nested text concatenated together. This is powerful because it lets you match against the source code as a flat string:
       </p>
       <CodeBlock language="bash" code={`# Find methods that call console.log
 tractor user-service.js -x "//method[contains(.,'console.log')]/name" -v value`} />
       <p>
-        Even though <code>console.log(msg)</code> is represented as nested elements in the tree (<code>&lt;call&gt;</code>, <code>&lt;function&gt;</code>, <code>&lt;arguments&gt;</code>, etc.), the dot flattens all the text together and matches <code>"console.log"</code> against it.
+        Even though <code>console.log(msg)</code> is represented as nested elements in the tree (<code>call</code>, <code>function</code>, <code>arguments</code>, etc.), the dot flattens all the text together and matches <code>"console.log"</code> against it.
       </p>
 
       <h3>Negation with not()</h3>
@@ -246,7 +246,7 @@ tractor file.js -x "//method[contains(name,'getAll')][not(contains(.,'orderBy'))
 
       <h2>Axes</h2>
       <p>
-        XPath axes let you navigate the tree in different directions:
+        Axes let you navigate the tree in different directions:
       </p>
       <table className="doc-table">
         <thead>
@@ -266,7 +266,7 @@ tractor file.js -x "//method[name='save']/ancestor::class/name" -v value`} />
 
       <h2>Context Variables</h2>
       <p>
-        Tractor provides built-in variables you can use in any XPath expression:
+        Tractor provides built-in variables you can use in any expression:
       </p>
       <table className="doc-table">
         <thead>
@@ -295,7 +295,8 @@ tractor "src/**/*.cs" -x "$file" -v value`} />
         <li><strong>Use <code>-v schema</code></strong> to discover element names before writing queries.</li>
         <li><strong>The dot <code>.</code> is your friend</strong> — <code>contains(.,'text')</code> matches against the flattened source code of any element.</li>
         <li><strong>No attributes</strong> — tractor models everything as elements and text. You won't need <code>@attr</code> syntax.</li>
-        <li><strong>AI tools know XPath</strong> — ChatGPT and Claude can write tractor queries. Show them the schema output and ask for a query.</li>
+        <li><strong>AI tools know the syntax</strong> — ChatGPT and Claude can write tractor queries. Show them the schema output and ask for a query.</li>
+        <li><strong>Full reference</strong> — the query language is XPath 3.1. See the <a href="https://devhints.io/xpath" target="_blank" rel="noopener noreferrer">XPath cheat sheet</a> for a quick overview or the <a href="https://www.w3.org/TR/xpath-31/" target="_blank" rel="noopener noreferrer">W3C spec</a> for the complete reference.</li>
       </ul>
 
       <div className="doc-next">

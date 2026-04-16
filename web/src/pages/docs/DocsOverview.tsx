@@ -25,7 +25,7 @@ export function DocsOverview() {
 
       <h2>What is Tractor?</h2>
       <p>
-        Tractor parses your source code into a tree, then lets you query it using standard expressions. You see exactly what you're querying — no hidden structure, no guessing. One tool, one syntax, 20+ languages.
+        Tractor parses your source code into a tree, then lets you query it using <a href="https://www.w3.org/TR/xpath-31/" target="_blank" rel="noopener noreferrer">standard expressions</a>. You see exactly what you're querying — no hidden structure, no guessing. One tool, one syntax, 20+ languages.
       </p>
 
       <h2>Quick Start</h2>
@@ -42,40 +42,23 @@ export function DocsOverview() {
       <Example
         file={{ name: 'greeter.js', language: 'js', content: GREETER_JS }}
         command="tractor greeter.js"
-        outputLanguage="xml"
         output={`greeter.js:1
-<Files>
-  <file>greeter.js</file>
-  <program>
-    <function>
-      function
-      <name>greet</name>
-      <parameters>
-        <params>
-          (
-          <type>name</type>
-          )
-        </params>
-      </parameters>
-      <body>
-        <block>
-          {
-          <return>
-            return
-            <binary>...</binary>
-            ;
-          </return>
-          }
-        </block>
-      </body>
-    </function>
-    <function>
-      function
-      <name>add</name>
-      ...
-    </function>
-  </program>
-</Files>`}
+program/
+  ├─ function/
+  │   ├─ "function"
+  │   ├─ name = "greet"
+  │   ├─ parameters/
+  │   │   └─ params/
+  │   │       ├─ "("
+  │   │       ├─ type = "name"
+  │   │       └─ ")"
+  │   └─ body/
+  │       └─ block/
+  │           └─ ... (5 children)
+  └─ function/
+      ├─ "function"
+      ├─ name = "add"
+      └─ ... (3 children)`}
       />
 
       <h3>3. Query for patterns</h3>
@@ -110,7 +93,7 @@ export function DocsOverview() {
       </p>
       <ul>
         <li><strong>Everything is a node</strong> — you match by element name, not attributes. Modifiers like <code>public</code> or <code>static</code> are empty marker elements, so you can filter with <code>[public]</code> or <code>[not(static)]</code>.</li>
-        <li><strong>Text content is the source code</strong> — when you compare a node to a string, tractor ignores the XML tags and matches against the flattened source text. This means you can write <code>{'//method[contains(.,"exit(1)")]'}</code> and it matches even though the source code spans multiple nested elements.</li>
+        <li><strong>Text content is the source code</strong> — when you compare a node to a string, tractor matches against the flattened source text. This means you can write <code>{'//method[contains(.,"exit(1)")]'}</code> and it matches even though the source code spans multiple nested elements.</li>
         <li><strong>No attributes needed</strong> — the tree is structured so that nearly everything you'd want to query is a named element or text content, not a hidden attribute.</li>
       </ul>
       <p>
@@ -155,9 +138,13 @@ export function DocsOverview() {
 
       <h2>Guides</h2>
       <div className="doc-cards">
+        <Link to="/docs/guides/cheat-sheet" className="doc-card">
+          <h3>Cheat Sheet</h3>
+          <p>Quick reference for query syntax, views, formats, and CLI flags.</p>
+        </Link>
         <Link to="/docs/guides/query-syntax" className="doc-card">
           <h3>Query Syntax</h3>
-          <p>Reference for path expressions, predicates, functions, and text matching.</p>
+          <p>Reference for query syntax, predicates, functions, and text matching.</p>
         </Link>
         <Link to="/docs/guides/writing-queries" className="doc-card">
           <h3>Writing Queries</h3>

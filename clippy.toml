@@ -1,0 +1,20 @@
+#
+# Tractor: path-invariant lints.
+#
+# `NormalizedPath` is the universal container for file paths throughout the
+# pipeline (glob walker, CLI resolution, diff intersection, result filtering).
+# The methods listed below re-enter the path domain through non-standard
+# channels and bypass the invariant — they are disallowed so that any
+# alternative path construction has to be a conscious, annotated boundary.
+#
+# To make a legitimate boundary call, annotate the specific call site with
+# `#[allow(clippy::disallowed_methods)]` and add a short comment explaining
+# why this site is the input/output edge of the type.
+#
+# See docs/design-file-resolver.md for the path invariant rationale.
+#
+disallowed-methods = [
+  { path = "std::fs::canonicalize", reason = "follows symlinks and re-adds `\\\\?\\` on Windows; use `NormalizedPath::absolute` instead" },
+  { path = "std::path::Path::canonicalize", reason = "follows symlinks and re-adds `\\\\?\\` on Windows; use `NormalizedPath::absolute` instead" },
+  { path = "std::path::PathBuf::canonicalize", reason = "follows symlinks and re-adds `\\\\?\\` on Windows; use `NormalizedPath::absolute` instead" },
+]
