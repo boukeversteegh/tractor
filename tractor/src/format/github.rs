@@ -1,4 +1,4 @@
-use tractor_core::{report::{Report, ResultItem}, normalize_path};
+use tractor::{report::{Report, ResultItem}, normalize_path};
 
 /// Render report matches as GitHub Actions annotations: `::error file=...,line=...::reason`
 /// GitHub annotations are self-contained — grouping affects ordering only,
@@ -23,14 +23,14 @@ fn render_github_results(out: &mut String, items: &[ResultItem], parent_file: Op
     }
 }
 
-fn render_github_match(out: &mut String, rm: &tractor_core::report::ReportMatch, group_file: Option<&str>) {
+fn render_github_match(out: &mut String, rm: &tractor::report::ReportMatch, group_file: Option<&str>) {
     let reason = rm.reason.as_deref().unwrap_or("violation");
     // GitHub Actions only supports error, warning, notice
     let level = rm.severity.map_or("error", |s| match s {
-        tractor_core::report::Severity::Fatal => "error",
-        tractor_core::report::Severity::Error => "error",
-        tractor_core::report::Severity::Warning => "warning",
-        tractor_core::report::Severity::Info => "notice",
+        tractor::report::Severity::Fatal => "error",
+        tractor::report::Severity::Error => "error",
+        tractor::report::Severity::Warning => "warning",
+        tractor::report::Severity::Info => "notice",
     });
     let file   = group_file.unwrap_or(&rm.file);
     let mut message = reason.to_string();

@@ -1,5 +1,5 @@
 use serde_json::{json, Value};
-use tractor_core::{report::{Report, ReportMatch, ResultItem}, normalize_path, xml_node_to_json, RenderOptions};
+use tractor::{report::{Report, ReportMatch, ResultItem}, normalize_path, xml_node_to_json, RenderOptions};
 use super::options::{ViewField, ViewSet};
 use super::shared::{render_fields_for_match, should_emit_command, should_emit_file, should_emit_rule_id, should_show_totals};
 
@@ -36,13 +36,13 @@ pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderO
 
 /// Serialize a list of captured outputs as a JSON array of objects.
 /// Each object has `content` and, if set, `file`.
-pub fn outputs_to_json(outputs: &[tractor_core::report::ReportOutput]) -> Value {
+pub fn outputs_to_json(outputs: &[tractor::report::ReportOutput]) -> Value {
     Value::Array(outputs.iter().map(|o| {
         output_to_json(o)
     }).collect())
 }
 
-fn output_to_json(output: &tractor_core::report::ReportOutput) -> Value {
+fn output_to_json(output: &tractor::report::ReportOutput) -> Value {
     let mut obj = serde_json::Map::new();
     if let Some(ref file) = output.file {
         obj.insert("file".into(), json!(file));
@@ -52,7 +52,7 @@ fn output_to_json(output: &tractor_core::report::ReportOutput) -> Value {
 }
 
 fn group_outputs_to_json(
-    outputs: &[tractor_core::report::ReportOutput],
+    outputs: &[tractor::report::ReportOutput],
     is_file_group: bool,
 ) -> (&'static str, Value) {
     if is_file_group && outputs.len() == 1 {
@@ -228,7 +228,7 @@ pub fn match_to_value(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tractor_core::xpath::XmlNode;
+    use tractor::xpath::XmlNode;
 
     fn make_plain_match(value: &str) -> ReportMatch {
         ReportMatch {
@@ -289,7 +289,7 @@ mod tests {
             ("name", XmlNode::Text("foo".into())),
             ("count", XmlNode::Number(3.0)),
         ]);
-        let mut builder = tractor_core::ReportBuilder::new();
+        let mut builder = tractor::ReportBuilder::new();
         builder.set_no_verdict();
         builder.add(rm);
         let report = builder.build();
@@ -316,7 +316,7 @@ mod tests {
                 totals: None,
                 expected: None,
                 query: None,
-                outputs: vec![tractor_core::report::ReportOutput {
+                outputs: vec![tractor::report::ReportOutput {
                     file: None,
                     content: "hello\n".to_string(),
                 }],

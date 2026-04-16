@@ -1,9 +1,9 @@
 //! Query operation: run XPath expressions against files, return matches.
 
-use tractor_core::normalized_xpath::NormalizedXpath;
-use tractor_core::report::ReportBuilder;
-use tractor_core::tree_mode::TreeMode;
-use tractor_core::parse_string_to_documents;
+use tractor::normalized_xpath::NormalizedXpath;
+use tractor::report::ReportBuilder;
+use tractor::tree_mode::TreeMode;
+use tractor::parse_string_to_documents;
 
 use crate::matcher::validate_xpath_diagnostic;
 use crate::input::file_resolver::{FileResolver, FileRequest};
@@ -153,7 +153,7 @@ fn execute_query_inline(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tractor_core::report::ReportBuilder;
+    use tractor::report::ReportBuilder;
     use crate::executor::{Operation, ExecuteOptions, execute};
 
     fn temp_json_file(content: &str) -> (tempfile::TempDir, String) {
@@ -163,7 +163,7 @@ mod tests {
         (dir, path.to_str().unwrap().to_string())
     }
 
-    fn run_query_ops(ops: &[Operation]) -> tractor_core::report::Report {
+    fn run_query_ops(ops: &[Operation]) -> tractor::report::Report {
         let mut builder = ReportBuilder::new();
         builder.set_no_verdict();
         execute(ops, &ExecuteOptions::default(), &mut builder).unwrap();

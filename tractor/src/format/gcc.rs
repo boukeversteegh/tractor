@@ -1,4 +1,4 @@
-use tractor_core::{render_lines, report::{Report, ReportMatch, ResultItem}, RenderOptions};
+use tractor::{render_lines, report::{Report, ReportMatch, ResultItem}, RenderOptions};
 use super::shared::to_absolute_path;
 
 /// Render report matches in gcc format: `file:line:col: severity: reason`
@@ -50,10 +50,10 @@ fn render_gcc_match(out: &mut String, rm: &ReportMatch, group_file: Option<&str>
 
 fn gcc_severity(rm: &ReportMatch) -> &'static str {
     match rm.severity {
-        Some(tractor_core::report::Severity::Fatal) => "error",
-        Some(tractor_core::report::Severity::Error) => "error",
-        Some(tractor_core::report::Severity::Warning) => "warning",
-        Some(tractor_core::report::Severity::Info) => "note",
+        Some(tractor::report::Severity::Fatal) => "error",
+        Some(tractor::report::Severity::Error) => "error",
+        Some(tractor::report::Severity::Warning) => "warning",
+        Some(tractor::report::Severity::Info) => "note",
         None => "note",
     }
 }
@@ -74,7 +74,7 @@ pub fn render_gcc_report_with_template(matches: &[ReportMatch], template: &str, 
     let mut out = String::new();
     for rm in matches {
         let msg = template
-            .replace("{file}", &tractor_core::normalize_path(&rm.file))
+            .replace("{file}", &tractor::normalize_path(&rm.file))
             .replace("{line}", &rm.line.to_string())
             .replace("{col}", &rm.column.to_string())
             .replace("{value}", rm.value.as_deref().unwrap_or(""));
@@ -96,8 +96,8 @@ pub fn render_gcc_report_with_template(matches: &[ReportMatch], template: &str, 
 #[cfg(test)]
 mod tests {
     use super::render_gcc;
-    use tractor_core::report::{Report, ReportMatch, ResultItem, Totals};
-    use tractor_core::RenderOptions;
+    use tractor::report::{Report, ReportMatch, ResultItem, Totals};
+    use tractor::RenderOptions;
 
     fn set_match(file: &str, line: u32, column: u32, status: &str, xpath: &str) -> ReportMatch {
         ReportMatch {

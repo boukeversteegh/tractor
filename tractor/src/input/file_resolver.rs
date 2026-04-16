@@ -12,8 +12,8 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
-use tractor_core::{expand_globs_checked, detect_language, normalize_path, pattern_literal_prefix, FilePrune, NormalizedPath, GlobPattern, CompiledPattern};
-use tractor_core::report::{ReportBuilder, ReportMatch, Severity, DiagnosticOrigin};
+use tractor::{expand_globs_checked, detect_language, normalize_path, pattern_literal_prefix, FilePrune, NormalizedPath, GlobPattern, CompiledPattern};
+use tractor::report::{ReportBuilder, ReportMatch, Severity, DiagnosticOrigin};
 
 use crate::executor::ExecuteOptions;
 use super::filter::ResultFilter;
@@ -579,7 +579,7 @@ pub(crate) fn make_fatal_diagnostic(command: &str, reason: String) -> ReportMatc
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tractor_core::GlobPattern;
+    use tractor::GlobPattern;
 
     #[test]
     fn normalized_path_hashset_intersection_works() {
@@ -606,7 +606,7 @@ mod tests {
 
     #[test]
     fn glob_pattern_matches_normalized_path() {
-        use tractor_core::rule::GlobMatcher;
+        use tractor::rule::GlobMatcher;
 
         let m = GlobMatcher::new(
             &[], &[], &[GlobPattern::new("src/**/*.rs")], &[],
@@ -663,7 +663,7 @@ mod tests {
 
     #[test]
     fn resolve_with_no_files_config_mode_emits_diagnostic() {
-        use tractor_core::report::Severity;
+        use tractor::report::Severity;
 
         let resolver = FileResolver {
             root_files: None,
@@ -677,7 +677,7 @@ mod tests {
             global_diff_lines: None,
         };
 
-        let mut builder = tractor_core::ReportBuilder::new();
+        let mut builder = tractor::ReportBuilder::new();
         let request = FileRequest {
             files: &[],
             exclude: &[],
@@ -709,7 +709,7 @@ mod tests {
             global_diff_lines: None,
         };
 
-        let mut builder = tractor_core::ReportBuilder::new();
+        let mut builder = tractor::ReportBuilder::new();
         let request = FileRequest {
             files: &[],
             exclude: &[],
@@ -729,7 +729,7 @@ mod tests {
     /// effective scope without warning).
     #[test]
     fn invalid_exclude_pattern_emits_fatal_diagnostic() {
-        use tractor_core::report::Severity;
+        use tractor::report::Severity;
 
         let root: HashSet<NormalizedPath> =
             [NormalizedPath::new("/tmp/foo.rs")].into();
@@ -745,7 +745,7 @@ mod tests {
             global_diff_lines: None,
         };
 
-        let mut builder = tractor_core::ReportBuilder::new();
+        let mut builder = tractor::ReportBuilder::new();
         // `[abc]` character classes are rejected by CompiledPattern.
         let exclude = vec!["/tmp/[abc]/**".to_string()];
         let request = FileRequest {
@@ -773,7 +773,7 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn exclude_is_case_insensitive_on_windows() {
-        use tractor_core::rule::GlobMatcher;
+        use tractor::rule::GlobMatcher;
 
         // Exclude pattern uses uppercase
         let m = GlobMatcher::new(

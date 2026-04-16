@@ -2,7 +2,6 @@
 resolver = "2"
 members = [
     "tractor",
-    "tractor-core",
 ]
 
 [workspace.package]

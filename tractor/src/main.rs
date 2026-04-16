@@ -15,9 +15,9 @@ use clap::{CommandFactory as _, FromArgMatches as _};
 use cli::{Cli, Command, DocsCommand};
 use cli::help::CommandExt as _;
 use cli::{check::run_check, test::run_test, set::run_set, update::run_update, query::run_query, render::run_render, run::run_run, languages::run_languages};
-use tractor_core::report::{ReportBuilder, ReportMatch, Severity, DiagnosticOrigin};
+use tractor::report::{ReportBuilder, ReportMatch, Severity, DiagnosticOrigin};
 use format::{OutputFormat, ViewField, ViewSet, render_gcc, render_text_report, render_json_report, render_yaml_report, render_xml_report, render_github, render_claude_code};
-use tractor_core::output::{should_use_color, RenderOptions};
+use tractor::output::{should_use_color, RenderOptions};
 
 /// An error that has already been reported to the user; main should exit with
 /// failure but not print an additional "error: ..." line.
@@ -38,7 +38,7 @@ impl std::error::Error for SilentExit {}
 /// Used as fallback when errors reach main() before a RunContext is built.
 /// Machine-consumed formats go to stdout for consistency with normal output.
 fn render_error_report(
-    report: &tractor_core::report::Report,
+    report: &tractor::report::Report,
     format: OutputFormat,
     use_color: bool,
 ) {
@@ -150,8 +150,8 @@ fn main() -> ExitCode {
 
     // Print timing stats if TRACTOR_PROFILE env var is set
     if std::env::var("TRACTOR_PROFILE").is_ok() {
-        tractor_core::print_parse_timing_stats();
-        tractor_core::print_timing_stats();
+        tractor::print_parse_timing_stats();
+        tractor::print_timing_stats();
     }
 
     ExitCode::SUCCESS

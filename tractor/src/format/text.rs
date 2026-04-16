@@ -8,7 +8,7 @@
 
 use std::collections::HashMap;
 
-use tractor_core::{
+use tractor::{
     render_query_tree_node, render_query_tree_with_source, normalize_path,
     render_source_precomputed, render_lines,
     report::{Report, ReportMatch, ResultItem, Totals},
@@ -428,8 +428,8 @@ fn render_set_stdout_results(items: &[ResultItem], view: &ViewSet, render_opts: 
 mod tests {
     use super::render_text_report;
     use crate::format::{ViewField, ViewSet};
-    use tractor_core::report::{Report, ReportMatch, ResultItem, Totals};
-    use tractor_core::RenderOptions;
+    use tractor::report::{Report, ReportMatch, ResultItem, Totals};
+    use tractor::RenderOptions;
 
     #[test]
     fn render_text_inlines_status_and_reason_when_both_are_selected() {

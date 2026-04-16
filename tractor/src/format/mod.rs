@@ -17,7 +17,7 @@ pub use yaml::render_yaml_report;
 pub use text::render_text_report;
 pub use claude_code::render_claude_code;
 
-use tractor_core::{
+use tractor::{
     render_query_tree_node, render_xml_node,
     render_source_precomputed, render_lines,
     report::{Report, ReportMatch},
@@ -207,7 +207,7 @@ fn gcc_summary_string(report: &Report) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::gcc_summary_string;
-    use tractor_core::report::{ReportMatch, ReportBuilder, Severity};
+    use tractor::report::{ReportMatch, ReportBuilder, Severity};
 
     fn set_match(file: &str, status: &str) -> ReportMatch {
         ReportMatch {

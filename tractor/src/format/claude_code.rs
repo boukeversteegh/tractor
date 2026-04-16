@@ -1,5 +1,5 @@
 use serde::Serialize;
-use tractor_core::{report::Report, RenderOptions};
+use tractor::{report::Report, RenderOptions};
 use super::gcc::render_gcc;
 use super::options::HookType;
 

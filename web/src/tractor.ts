@@ -19,7 +19,7 @@ import init, {
   prettyPrintXml as wasmPrettyPrintXml,
   highlightFullSource as wasmHighlightFullSource,
   getSchemaTree as wasmGetSchemaTree,
-} from '../pkg/tractor_core.js';
+} from '../pkg/tractor.js';
 
 let initialized = false;
 

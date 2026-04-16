@@ -60,9 +60,9 @@ then be simplified to remove the `position()<=5` workaround.
   before the annotated item — not all attributes in the file.
 - The adjacency detection logic is closely related to the C# renderer's
   trailing vs leading comment classification:
-  - `is_inline_node()` in `tractor-core/src/xot_transform.rs:306` checks
+  - `is_inline_node()` in `tractor/src/xot_transform.rs:306` checks
     if a node starts on the same line as its previous sibling ends.
-  - `is_leading_comment()` in `tractor-core/src/languages/csharp.rs:542`
+  - `is_leading_comment()` in `tractor/src/languages/csharp.rs:542`
     checks if a comment immediately precedes a declaration (no blank line
     gap), and `group_line_comments()` at line 572 merges consecutive
     same-kind siblings before attaching them.

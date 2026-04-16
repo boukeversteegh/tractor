@@ -6,7 +6,7 @@
 /// 3. XPath querying against parsed code
 
 use std::path::PathBuf;
-use tractor_core::{
+use tractor::{
     load_xml_string_to_documents, load_xml_file_to_documents,
     parse_string_to_documents, parse_to_documents,
     XPathEngine, XeeParseResult, SchemaCollector,
@@ -274,7 +274,7 @@ fn test_multi_language_snapshots() {
 fn test_xpath_string_value_preserves_whitespace() {
     // Test that inter-token whitespace is preserved in string-value
     let source = "let mut batches = Vec::new();";
-    let mut result = parse_string_to_documents(source, "rust", "<test>".to_string(), Some(tractor_core::TreeMode::Raw), false)
+    let mut result = parse_string_to_documents(source, "rust", "<test>".to_string(), Some(tractor::TreeMode::Raw), false)
         .expect("Should parse Rust");
 
     let engine = XPathEngine::new();
@@ -408,7 +408,7 @@ fn test_json_default_is_data_tree() {
 fn test_json_structure_mode_vocabulary() {
     // Verify JSON structure mode uses normalized syntax vocabulary
     let source = r#"{"name": "John", "age": 30, "active": true, "x": null}"#;
-    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), Some(tractor_core::TreeMode::Structure), false)
+    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), Some(tractor::TreeMode::Structure), false)
         .expect("Should parse JSON");
 
     let engine = XPathEngine::new();
@@ -738,7 +738,7 @@ fn test_yaml_data_view_null_handling() {
 fn test_json_raw_mode_unchanged() {
     // --raw mode should produce single tree (no syntax/data branches)
     let source = r#"{"a": 1}"#;
-    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), Some(tractor_core::TreeMode::Raw), false)
+    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), Some(tractor::TreeMode::Raw), false)
         .expect("Should parse JSON in raw mode");
 
     let engine = XPathEngine::new();
@@ -793,7 +793,7 @@ fn test_yaml_default_is_data_tree() {
 fn test_yaml_structure_mode_vocabulary() {
     // Verify YAML structure mode uses same vocabulary as JSON structure mode
     let source = "name: John\ncount: 42\nactive: true\nempty: null";
-    let mut result = parse_string_to_documents(source, "yaml", "<test>".to_string(), Some(tractor_core::TreeMode::Structure), false)
+    let mut result = parse_string_to_documents(source, "yaml", "<test>".to_string(), Some(tractor::TreeMode::Structure), false)
         .expect("Should parse YAML");
 
     let engine = XPathEngine::new();
@@ -883,7 +883,7 @@ fn test_typescript_not_affected() {
 fn test_json_empty_structures() {
     // Empty objects and arrays in structure mode
     let source = r#"{"obj": {}, "arr": []}"#;
-    let mut result_structure = parse_string_to_documents(source, "json", "<test>".to_string(), Some(tractor_core::TreeMode::Structure), false)
+    let mut result_structure = parse_string_to_documents(source, "json", "<test>".to_string(), Some(tractor::TreeMode::Structure), false)
         .expect("Should parse JSON");
 
     let engine = XPathEngine::new();

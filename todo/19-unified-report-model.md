@@ -34,7 +34,7 @@ operation batches but currently produces separate reports per operation.
 
 ## Location
 
-- `tractor-core/src/report.rs` — report and summary types
+- `tractor/src/report.rs` — report and summary types
 - `tractor/src/executor.rs` — `validate_rule_examples()` conversion logic
 - `tractor/src/pipeline/format/` — renderers
 

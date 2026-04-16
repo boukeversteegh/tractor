@@ -138,8 +138,8 @@ This document describes the actual data processing pipeline of the tractor CLI a
 | `tractor/src/modes/test.rs` | Test mode, expectation checking |
 | `tractor/src/modes/set.rs` | Set mode, in-place file editing |
 | `tractor/src/pipeline/report_output.rs` | All report renderers |
-| `tractor-core/src/report.rs` | `Report`, `ReportMatch`, `FileGroup` model |
-| `tractor-core/src/output/formatter.rs` | `format_matches`, `format_message`, text sub-formats |
+| `tractor/src/report.rs` | `Report`, `ReportMatch`, `FileGroup` model |
+| `tractor/src/output/formatter.rs` | `format_matches`, `format_message`, text sub-formats |
 
 ---
 
@@ -292,5 +292,5 @@ This section describes the pipeline after the refactor committed in "Clean pipel
 | `tractor/src/modes/set.rs` | Set mode — in-place file editing (separate pipeline) |
 | `tractor/src/pipeline/format/mod.rs` | Render dispatch for query/check/test |
 | `tractor/src/pipeline/format/options.rs` | `ViewSet` (ordered Vec), `ViewField`, `OutputFormat` |
-| `tractor-core/src/report.rs` | `Report`, flat `ReportMatch`, `FileGroup`, `Summary` |
-| `tractor-core/src/output/formatter.rs` | `render_source_precomputed`, `render_lines_precomputed` |
+| `tractor/src/report.rs` | `Report`, flat `ReportMatch`, `FileGroup`, `Summary` |
+| `tractor/src/output/formatter.rs` | `render_source_precomputed`, `render_lines_precomputed` |

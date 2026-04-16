@@ -48,7 +48,7 @@ wrap each in `<ast>`/`<data>` under the `<File>` element.
 
 ### Step 1: Introduce "syntax category" concept for language dispatch
 
-**File**: `tractor-core/src/languages/mod.rs`
+**File**: `tractor/src/languages/mod.rs`
 
 Add a function to classify languages:
 
@@ -88,7 +88,7 @@ pub fn get_data_transforms(lang: &str) -> Option<(TransformFn, TransformFn)> {
 
 ### Step 2: Create JSON transform module
 
-**New file**: `tractor-core/src/languages/json.rs`
+**New file**: `tractor/src/languages/json.rs`
 
 TreeSitter JSON grammar produces these node kinds:
 - `document`, `object`, `pair`, `array`, `string`, `number`, `true`, `false`, `null`
@@ -172,7 +172,7 @@ The result for `{"name": "John", "tags": ["math", "science"]}`:
 
 ### Step 3: Split YAML transform into ast + data
 
-**File**: `tractor-core/src/languages/yaml.rs`
+**File**: `tractor/src/languages/yaml.rs`
 
 The current `yaml::transform` is already a data transform. We need to:
 
@@ -207,7 +207,7 @@ The current `yaml::transform` is already a data transform. We need to:
 
 ### Step 4: Modify XeeBuilder for dual-branch assembly
 
-**File**: `tractor-core/src/xot_builder.rs`
+**File**: `tractor/src/xot_builder.rs`
 
 Add a new method to `XeeBuilder`:
 
@@ -272,7 +272,7 @@ where F: FnMut(&mut Xot, XotNode) -> Result<TransformAction, xot::Error>
 
 ### Step 5: Update build_with_options dispatch
 
-**File**: `tractor-core/src/xot_builder.rs`
+**File**: `tractor/src/xot_builder.rs`
 
 Modify `XeeBuilder::build_with_options()` to detect data languages and
 route to the new dual-branch builder:
@@ -311,7 +311,7 @@ tree as today. No `<ast>`/`<data>` branches. This is unchanged.
 
 ### Step 7: Update language_info.rs
 
-**File**: `tractor-core/src/language_info.rs`
+**File**: `tractor/src/language_info.rs`
 
 Set `has_transforms: true` for JSON (currently `false`).
 

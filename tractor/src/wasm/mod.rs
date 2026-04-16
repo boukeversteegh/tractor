@@ -1,10 +1,12 @@
-//! WASM bindings for tractor-core
+//! WASM bindings for tractor
 //!
 //! Provides JavaScript-callable functions for parsing source code to XML
 //! using a serialized TreeSitter AST.
 
+pub mod ast;
+
 use wasm_bindgen::prelude::*;
-use crate::wasm_ast::{SerializedNode, ParseRequest, ParseResponse};
+use ast::{SerializedNode, ParseRequest, ParseResponse};
 use crate::xot_builder::XotBuilder;
 use crate::xot_transform::walk_transform;
 use crate::languages::get_transform;
@@ -146,7 +148,7 @@ pub fn get_schema_tree(
 ) -> Result<String, JsValue> {
     use crate::output::SchemaCollector;
 
-    let ast: crate::wasm_ast::SerializedNode = serde_json::from_str(ast_json)
+    let ast: ast::SerializedNode = serde_json::from_str(ast_json)
         .map_err(|e| JsValue::from_str(&format!("Failed to parse AST: {}", e)))?;
 
     let tree_mode = resolve_wasm_tree_mode(None, raw_mode);
