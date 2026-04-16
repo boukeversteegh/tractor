@@ -751,6 +751,7 @@ fn candidate_path_strings(path: &Path) -> Vec<String> {
     let raw = path.to_string_lossy().to_string();
     let mut candidates = vec![raw.clone()];
 
+    #[allow(clippy::disallowed_methods)] // test helper: generate fallback path variants
     if let Ok(canonical) = fs::canonicalize(path) {
         let canonical = canonical.to_string_lossy().to_string();
         if canonical != raw {

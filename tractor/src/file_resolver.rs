@@ -12,7 +12,7 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
-use tractor_core::{expand_globs_checked, filter_supported_files, normalize_path, NormalizedPath, GlobPattern, CompiledPattern};
+use tractor_core::{expand_globs_checked, detect_language, normalize_path, pattern_literal_prefix, FilePrune, NormalizedPath, GlobPattern, CompiledPattern};
 use tractor_core::report::{ReportBuilder, ReportMatch, Severity, DiagnosticOrigin};
 
 use crate::executor::ExecuteOptions;
@@ -53,12 +53,32 @@ pub(crate) struct FileResolver {
     /// Expanded CLI file args, or None if not provided.
     cli_files: Option<HashSet<NormalizedPath>>,
     /// Expanded global diff-files set, or None if not provided.
-    global_diff_files: Option<HashSet<PathBuf>>,
+    global_diff_files: Option<HashSet<NormalizedPath>>,
+    /// Literal path prefixes of the root-level `files:` patterns. Used as
+    /// a prune group when expanding operation patterns so the walker
+    /// doesn't descend into subtrees that root already excludes.
+    root_prefixes: Vec<NormalizedPath>,
+    /// Literal path prefixes of the CLI file args. Plays the same role
+    /// as `root_prefixes` — sibling constraint during expansion.
+    cli_prefixes: Vec<NormalizedPath>,
     // Resolution parameters (copied from ExecuteOptions for self-containment)
     verbose: bool,
     base_dir: Option<PathBuf>,
     max_files: usize,
     global_diff_lines: Option<String>,
+}
+
+/// Collect absolute literal prefixes from a list of *already-absolutized*
+/// glob patterns. The result is the OR-group to pass to `FilePrune::with_group`.
+///
+/// Each prefix is case-canonicalized via `NormalizedPath::absolute` so it
+/// matches the walker's `read_dir`-derived casing on Windows.
+fn prefixes_of_patterns(patterns: &[String]) -> Vec<NormalizedPath> {
+    patterns.iter()
+        .map(|p| pattern_literal_prefix(p))
+        .filter(|p| !p.is_empty())
+        .map(|p| NormalizedPath::absolute(&p))
+        .collect()
 }
 
 impl FileResolver {
@@ -100,20 +120,41 @@ impl FileResolver {
 
         if options.verbose {
             let cwd_display = std::env::current_dir()
-                .and_then(|p| std::fs::canonicalize(&p).or(Ok(p)))
-                .map(|p| normalize_path(&p.display().to_string()))
+                .map(|p| NormalizedPath::absolute(&p.display().to_string()).to_string())
                 .unwrap_or_else(|_| ".".to_string());
             eprintln!("  files: working directory {}", cwd_display);
             eprintln!("  files: resolving relative to {}", base_dir_display);
             eprintln!("  files: max {} files", options.max_files);
         }
 
+        // --- Pre-compute sibling prefix groups ---
+        // Walker pruning (fix A): when expanding root patterns, the walker
+        // can skip subtrees that no CLI pattern's prefix is compatible with,
+        // and vice versa. We derive both prefix sets up-front so each
+        // expansion can be pruned by the other.
+        //
+        // Anchoring note: root patterns are rebased onto `base_dir` (the
+        // config's directory), while CLI patterns stay cwd-relative. The
+        // prefixes below must agree with how the actual expansion calls
+        // resolve "relative" — `prefixes_of_patterns` absolutises via
+        // `NormalizedPath::absolute`, which anchors relatives to cwd. That
+        // matches the CLI expansion (passes `options.cli_files` raw) and
+        // the root expansion (feeds pre-absolutised patterns).
+        let resolved_root_patterns: Option<Vec<String>> = options.config_root_files.as_ref()
+            .filter(|p| !p.is_empty())
+            .map(|p| resolve_globs_to_absolute(&options.base_dir, p));
+
+        let root_prefixes: Vec<NormalizedPath> = resolved_root_patterns.as_deref()
+            .map(prefixes_of_patterns).unwrap_or_default();
+        let cli_prefixes: Vec<NormalizedPath> = prefixes_of_patterns(&options.cli_files);
+
         // --- Root scope (fix #99) ---
         // None = key missing → unrestricted; Some([]) = explicit empty; Some([...]) = expand
-        let root_files = match &options.config_root_files {
-            Some(patterns) if !patterns.is_empty() => {
-                let root_globs = resolve_globs_to_absolute(&options.base_dir, patterns);
-                let expansion = expand_globs_checked(&root_globs, expansion_limit)
+        let root_files = match (&options.config_root_files, resolved_root_patterns) {
+            (Some(patterns), Some(root_globs)) if !patterns.is_empty() => {
+                // Prune root expansion by CLI prefixes — symmetric sibling constraint.
+                let prune = FilePrune::new().with_group(cli_prefixes.iter().cloned());
+                let expansion = expand_globs_checked(&root_globs, expansion_limit, Some(&prune))
                     .map_err(|e| {
                         format!(
                             "root pattern \"{}\" expanded to over {} paths — use a more specific pattern or increase --max-files",
@@ -125,22 +166,29 @@ impl FileResolver {
                         format_patterns(patterns), expansion.files.len());
                     log_files!(&expansion.files);
                 }
-                Some(expansion.files.into_iter()
-                    .map(|f| NormalizedPath::new(&f)).collect())
+                Some(expansion.files.into_iter().collect())
             }
-            Some(_) => Some(HashSet::new()), // files: [] → explicit empty
-            None => None,                     // key missing → unrestricted
+            (Some(_), _) => Some(HashSet::new()), // files: [] → explicit empty
+            (None, _) => None,                     // key missing → unrestricted
         };
 
         // --- CLI files (fix #98: normalize paths) ---
+        // CLI args are cwd-relative (they come from the user's shell) —
+        // pass them to `expand_globs_checked` unchanged and let
+        // `NormalizedPath::absolute` anchor them against cwd below. This
+        // preserves `./foo` semantics even when the config lives in a
+        // different directory.
         let cli_files = if !options.cli_files.is_empty() {
-            let expansion = expand_globs_checked(&options.cli_files, expansion_limit)
+            // Prune CLI expansion by root prefixes — the other half of the
+            // symmetric walker constraint.
+            let prune = FilePrune::new().with_group(root_prefixes.iter().cloned());
+            let expansion = expand_globs_checked(&options.cli_files, expansion_limit, Some(&prune))
                 .map_err(|e| format!(
                     "CLI pattern \"{}\" expanded to over {} paths — use a more specific pattern or increase --max-files",
                     e.pattern, e.limit
                 ))?;
             let cli_set: HashSet<NormalizedPath> = expansion.files.into_iter()
-                .map(|f| NormalizedPath::absolute(&f)).collect();
+                .map(|f| NormalizedPath::absolute(f.as_str())).collect();
             if options.verbose {
                 eprintln!("  files: CLI args {} expanded to {} file(s)",
                     format_patterns(&options.cli_files), cli_set.len());
@@ -165,7 +213,7 @@ impl FileResolver {
                     if options.verbose {
                         eprintln!("  files: git diff \"{}\" found {} changed file(s)", spec, changed.len());
                     }
-                    Some(changed.into_iter().collect())
+                    Some(changed)
                 }
                 Err(e) => {
                     eprintln!("warning: --diff-files filter failed: {}", e);
@@ -180,6 +228,8 @@ impl FileResolver {
             root_files,
             cli_files,
             global_diff_files,
+            root_prefixes,
+            cli_prefixes,
             verbose: options.verbose,
             base_dir: options.base_dir.clone(),
             max_files: options.max_files,
@@ -256,7 +306,16 @@ impl FileResolver {
             // (verbose log after expansion below)
             let globs = resolve_globs_to_absolute(&self.base_dir, request.files);
 
-            let (mut files, empty_patterns) = match expand_globs_checked(&globs, expansion_limit) {
+            // Prune the walker by sibling constraints: root patterns and
+            // CLI patterns are each AND-intersected with the operation
+            // result, so their literal prefixes bound where op patterns
+            // can possibly match. Each becomes an independent AND-group
+            // so the walker rejects dirs only outside *all* of them.
+            let prune = FilePrune::new()
+                .with_group(self.root_prefixes.iter().cloned())
+                .with_group(self.cli_prefixes.iter().cloned());
+
+            let (mut files, empty_patterns) = match expand_globs_checked(&globs, expansion_limit, Some(&prune)) {
                 Ok(result) => {
                     // Normalize and deduplicate expanded paths. Multiple patterns
                     // can expand to the same file (e.g. "src/**/*.cs" and
@@ -265,7 +324,6 @@ impl FileResolver {
                     // patterns matched it (#127 follow-up).
                     let mut seen = HashSet::new();
                     let files: Vec<NormalizedPath> = result.files.into_iter()
-                        .map(|f| NormalizedPath::new(&f))
                         .filter(|f| seen.insert(f.clone()))
                         .collect();
                     (files, result.empty_patterns)
@@ -344,9 +402,23 @@ impl FileResolver {
         if !request.exclude.is_empty() {
             let before = files.len();
             let resolved = GlobPattern::resolve_all(request.exclude, &self.base_dir);
-            let exclude_patterns: Vec<CompiledPattern> = resolved.iter()
-                .filter_map(|p| CompiledPattern::new(p.as_str()).ok())
-                .collect();
+            let mut exclude_patterns: Vec<CompiledPattern> = Vec::with_capacity(resolved.len());
+            let mut invalid = false;
+            for pattern in &resolved {
+                match CompiledPattern::new(pattern.as_str()) {
+                    Ok(compiled) => exclude_patterns.push(compiled),
+                    Err(err) => {
+                        report.add(make_fatal_diagnostic(
+                            request.command,
+                            format!("invalid exclude pattern `{}`: {}", pattern, err),
+                        ));
+                        invalid = true;
+                    }
+                }
+            }
+            if invalid {
+                return Vec::new();
+            }
 
             files.retain(|f| {
                 !exclude_patterns.iter().any(|p| p.matches(f.as_str()))
@@ -357,27 +429,23 @@ impl FileResolver {
         }
 
         let before_lang = files.len();
-        let files: Vec<NormalizedPath> = filter_supported_files(
-            files.into_iter().map(|f| f.into_string()).collect()
-        ).into_iter().map(|f| NormalizedPath::new(&f)).collect();
+        // Filter by supported language directly on NormalizedPath — no
+        // String round-trip needed.
+        files.retain(|f| detect_language(f.as_str()) != "unknown");
         if self.verbose && files.len() != before_lang {
             eprintln!("  files: {} file(s) after language filter (was {})", files.len(), before_lang);
         }
 
         // --- Intersect with git diff-files ---
-        // Convert to strings for git module, then back to NormalizedPath
-        let string_files: Vec<String> = files.into_iter().map(|f| f.into_string()).collect();
-        let before_diff = string_files.len();
-        let string_files = if let Some(ref global_diff) = self.global_diff_files {
-            git::intersect_changed(string_files, global_diff)
-        } else {
-            string_files
-        };
+        // Both sides of the intersection are already `NormalizedPath`,
+        // produced via `NormalizedPath::absolute` — compare as-is.
+        let before_diff = files.len();
+        if let Some(ref global_diff) = self.global_diff_files {
+            files = git::intersect_changed(files, global_diff);
+        }
         let cwd = self.base_dir.as_deref()
             .unwrap_or_else(|| Path::new("."));
-        let string_files = apply_diff_files_filter(string_files, request.diff_files, cwd);
-        let mut files: Vec<NormalizedPath> = string_files.into_iter()
-            .map(|f| NormalizedPath::new(&f)).collect();
+        files = apply_diff_files_filter(files, request.diff_files, cwd);
         if self.verbose && files.len() != before_diff {
             eprintln!("  files: {} file(s) after diff filter (was {})", files.len(), before_diff);
         }
@@ -404,6 +472,13 @@ impl FileResolver {
         }
 
         // --- Check for empty result from glob expansion ---
+        // An empty expansion is always a fatal diagnostic — whether the
+        // pattern genuinely matched nothing or the walker was pruned to
+        // nothing by sibling intersections (root ∩ CLI ∩ operation). In
+        // either case the user asked us to run checks on zero files,
+        // which is almost certainly a mistake (typo, misconfigured
+        // scope, stale rule) and deserves to be surfaced rather than
+        // swallowed as a silent success.
         if files.is_empty() && !request.files.is_empty() && !empty_patterns.is_empty() {
             let patterns_str = empty_patterns.iter()
                 .map(|p| format!("\"{}\"", p))
@@ -462,7 +537,7 @@ fn build_filters(
     filters
 }
 
-fn apply_diff_files_filter(files: Vec<String>, spec: Option<&str>, cwd: &Path) -> Vec<String> {
+fn apply_diff_files_filter(files: Vec<NormalizedPath>, spec: Option<&str>, cwd: &Path) -> Vec<NormalizedPath> {
     match spec {
         Some(spec) => {
             match git::git_changed_files(spec, cwd) {
@@ -594,6 +669,8 @@ mod tests {
             root_files: None,
             cli_files: None,
             global_diff_files: None,
+            root_prefixes: Vec::new(),
+            cli_prefixes: Vec::new(),
             verbose: false,
             base_dir: Some(std::path::PathBuf::from(".")),  // config mode
             max_files: 1000,
@@ -624,6 +701,8 @@ mod tests {
             root_files: None,
             cli_files: None,
             global_diff_files: None,
+            root_prefixes: Vec::new(),
+            cli_prefixes: Vec::new(),
             verbose: false,
             base_dir: None,  // non-config mode
             max_files: 1000,
@@ -643,6 +722,48 @@ mod tests {
 
         let report = builder.build();
         assert!(report.all_matches().is_empty(), "should not emit diagnostic in non-config mode");
+    }
+
+    /// Copilot review #4: invalid exclude patterns must surface as a fatal
+    /// diagnostic instead of being silently dropped (which would expand the
+    /// effective scope without warning).
+    #[test]
+    fn invalid_exclude_pattern_emits_fatal_diagnostic() {
+        use tractor_core::report::Severity;
+
+        let root: HashSet<NormalizedPath> =
+            [NormalizedPath::new("/tmp/foo.rs")].into();
+        let resolver = FileResolver {
+            root_files: Some(root),
+            cli_files: None,
+            global_diff_files: None,
+            root_prefixes: Vec::new(),
+            cli_prefixes: Vec::new(),
+            verbose: false,
+            base_dir: Some(std::path::PathBuf::from(".")),
+            max_files: 1000,
+            global_diff_lines: None,
+        };
+
+        let mut builder = tractor_core::ReportBuilder::new();
+        // `[abc]` character classes are rejected by CompiledPattern.
+        let exclude = vec!["/tmp/[abc]/**".to_string()];
+        let request = FileRequest {
+            files: &[],
+            exclude: &exclude,
+            diff_files: None,
+            diff_lines: None,
+            command: "check",
+        };
+        let (files, _) = resolver.resolve(&request, &mut builder);
+        assert!(files.is_empty(), "invalid exclude must short-circuit resolution");
+
+        let report = builder.build();
+        let has_fatal = report.all_matches().iter().any(|m| {
+            m.severity == Some(Severity::Fatal)
+                && m.reason.as_ref().is_some_and(|r| r.contains("invalid exclude pattern"))
+        });
+        assert!(has_fatal, "expected fatal diagnostic about invalid exclude pattern, got: {:#?}", report.all_matches());
     }
 
     // -----------------------------------------------------------------------

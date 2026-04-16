@@ -2,7 +2,8 @@
 
 **Status**: Implemented
 **Related PR**: #82 (root intersection, SharedFileScope, module split),
-#128 (canonical glob walker, path intersection fix)
+#128 (canonical glob walker, path intersection fix),
+#134 (typed paths, walker pruning, Windows canonicalization)
 **Related issue**: #78 (implicit // in config), #127 (path filter intersection)
 
 ---
@@ -54,8 +55,9 @@ distinction.
 All discovered paths are canonical from the moment of creation. The
 custom glob walker (`expand_canonical`) achieves this by:
 
-- Canonicalizing the root prefix once (resolves symlinks, 8.3 short
-  names on Windows, and true filesystem casing)
+- Canonicalizing the root prefix once (resolves 8.3 short names on
+  Windows and true filesystem casing — symlinks are deliberately NOT
+  resolved so CLI paths using link names still intersect correctly)
 - Building child paths by appending `read_dir` entry names (which have
   true filesystem casing) with `/` separators
 - Never constructing intermediate `PathBuf` values that could introduce
@@ -132,7 +134,9 @@ codebases (1.5s vs 10s on 205K files). The speedup comes from:
   pattern-matching pass)
 - Building paths as strings by appending entry names (no `PathBuf`
   allocation per entry)
-- Single `canonicalize()` call at the root instead of per-file
+- Single `NormalizedPath::absolute()` call at the root instead of per-file
+- Walker pruning (`FilePrune`) skips entire subtrees when sibling
+  patterns constrain the scope
 
 ---
 
@@ -216,20 +220,56 @@ matching, path construction, and canonicalization happen in a single
 recursive pass.
 
 1. Split pattern at first wildcard → literal root prefix + wildcard suffix
-2. Canonicalize root prefix once (`std::fs::canonicalize`)
+2. Canonicalize root prefix once via `NormalizedPath::absolute()` (resolves
+   8.3 short names and case on Windows; does NOT follow symlinks)
 3. Compile wildcard suffix into `CompiledPattern`
-4. Walk with `std::fs::read_dir` recursively:
+4. If a `FilePrune` predicate is provided, check that the canonical root
+   is compatible with every prune group — short-circuit with `Ok(vec![])`
+   if not
+5. Walk with `std::fs::read_dir` recursively:
    - Build each path by appending `entry.file_name()` (true casing) to
      parent path string with `/`
+   - If `FilePrune` is active, skip directories/files that aren't
+     compatible with every prune group
    - Match each file's relative path against compiled suffix
    - Return `Vec<NormalizedPath>` — canonical by construction
-5. Symlinks: traversed using link name (not target); depth limit (100)
-   prevents cycles
-6. Permission-denied directories: skipped silently
+6. Symlinks: traversed using link name (not target); depth limit (100)
+   prevents cycles; warning emitted when MAX_DEPTH is reached
+7. Permission-denied directories: skipped silently
 
-Pattern syntax: `*` (single segment), `**` (zero or more segments),
-`?` (single character). `[...]` rejected with error. Case-insensitive
-on Windows.
+Pattern syntax: `*` (any characters within one segment) and `**` (zero
+or more whole segments). Character classes (`[...]`) and the
+single-character wildcard (`?`) are rejected with a compile error when
+used in a glob pattern (alongside `*`). In non-glob patterns (no `*`)
+they are treated as literal filename characters with a warning — this
+supports the edge case of actual brackets in filenames while flagging
+likely mistakes. Case-insensitive on Windows.
+
+### Walker pruning (`FilePrune`)
+
+When the file resolver intersects root / CLI / operation pattern sets,
+it used to expand each independently and intersect downstream — walking
+subtrees that could never appear in the final result. Now each pattern
+contributes its literal (wildcard-free) path prefix via
+`pattern_literal_prefix()`. The resolver bundles prefixes from sibling
+sets into a `FilePrune` predicate (AND-of-OR groups) and passes it to
+`expand_canonical`. The walker refuses to descend into any directory that
+isn't path-compatible with every group.
+
+Two primary use cases:
+
+- **Scoping to a directory**: CLI passes `backend/**/*.cs`, rule says
+  `**/*.cs` → walker only enters `backend/`.
+- **Scoping to a single file**: CLI passes `src/foo.cs` → every
+  rule-side expansion resolves to just that file.
+
+`FilePrune` uses path-segment-prefix compatibility (not substring): the
+walker at `/proj` can descend *toward* a constraint `/proj/backend`,
+and once it reaches `/proj/backend/` it continues unrestricted below.
+Case-insensitive on Windows.
+
+Future work (Option B): prune further by using already-expanded sets
+to filter unfinished walks.
 
 ## Not in Scope
 

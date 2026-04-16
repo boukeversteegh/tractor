@@ -791,14 +791,23 @@ fn run_scope_intersection_falls_back_to_root_when_operation_has_no_files() {
 }
 
 #[test]
-fn run_scope_intersection_can_be_empty() {
-    cli_case!({
-        tractor run "scope-intersection/intersect-disjoint.yaml";
-        expect => combined "";
-    })
-    .in_fixture("run")
-    .fixture_prefix("")
-    .run();
+fn run_scope_intersection_fatal_when_empty() {
+    // Running checks on zero files is almost always a mistake (typo,
+    // stale scope, misconfigured rule) — surface it as a fatal error
+    // rather than silently succeeding. This holds whether the emptiness
+    // came from a pattern genuinely matching nothing or from sibling
+    // intersections (root ∩ operation) reducing the set to zero.
+    let result = command(["run", "scope-intersection/intersect-disjoint.yaml"])
+        .in_fixture("run")
+        .fixture_prefix("")
+        .assert_exit(1)
+        .capture();
+    let combined = format!("{}{}", result.stdout, result.stderr);
+    assert!(
+        combined.contains("file patterns matched 0 files"),
+        "expected fatal about empty expansion, got: {}",
+        combined
+    );
 }
 
 #[test]
