@@ -17,26 +17,24 @@ export function CommitHooksGuide() {
 
       <h2 id="shell-script">Using a shell script</h2>
       <p>
-        Create <code>.git/hooks/pre-commit</code> (or add to your existing hook):
+        Create <code>.git/hooks/pre-commit</code> (or add to your existing hook). Tractor's built-in <code>--diff-files</code> flag handles scoping to staged files — no need to manually list them with <code>git diff</code>:
       </p>
       <CodeBlock
         language="bash"
         title=".git/hooks/pre-commit"
         code={`#!/bin/sh
-# Run tractor on staged files only
-STAGED=$(git diff --cached --name-only --diff-filter=ACM)
-
-if [ -n "$STAGED" ]; then
-  tractor run .tractor.yml --files $STAGED
-fi`}
+tractor run .tractor.yml --diff-files "--cached"`}
       />
       <p>
         Make it executable with <code>chmod +x .git/hooks/pre-commit</code>.
       </p>
+      <p>
+        The <code>--diff-files "--cached"</code> flag tells tractor to only check files that are staged for commit. Keep this on the command line rather than in your <code>.tractor.yml</code> — that way your rule file stays reusable for CI, editor hooks, and other contexts.
+      </p>
 
       <h2 id="pre-commit-framework">Using pre-commit framework</h2>
       <p>
-        If you use the <a href="https://pre-commit.com" target="_blank" rel="noopener noreferrer">pre-commit</a> framework, add tractor as a local hook:
+        If you use the <a href="https://pre-commit.com" target="_blank" rel="noopener noreferrer">pre-commit</a> framework, you can either use <code>--diff-files</code> or let the framework pass filenames directly:
       </p>
       <CodeBlock
         language="yaml"
@@ -46,9 +44,9 @@ fi`}
     hooks:
       - id: tractor
         name: tractor
-        entry: tractor run .tractor.yml --files
+        entry: tractor run .tractor.yml --diff-files "--cached"
         language: system
-        pass_filenames: true`}
+        pass_filenames: false`}
       />
 
       <h2 id="example-config">Example rule file</h2>
