@@ -42,26 +42,42 @@ View:
           Include metadata attributes (start/end, kind, field) in XML output
 
   -g, --group <GROUP_BY>
-          Group output by file
+          Group output by dimension: none, file, command, rule (comma-separated)
 
   -v, --view <VIEW>
-          Report view [default: tree]
-            tree      Parsed source tree
-            value     Text content of matched nodes
-            source    Exact matched source text
-            lines     Full source lines containing each match
-            count     Total match count
-            query     Echo the XPath query as tractor received it (useful to detect shell/wrapper mangling)
-            schema    Structural overview of element types
+          Choose which fields are included in the output [default: reason,severity,lines]
           
-          Modifier syntax — add/remove fields from the default view:
-            -v=-lines        Remove code snippet blocks (e.g. for clean single-line gcc output)
-            -v=+source       Add source text to default view
-            -v=-lines,+source  Combine multiple modifiers with a comma
+            content:
+              tree      Parsed source tree
+              value     Text content of matched nodes
+              source    Exact matched source text
+              lines     Full source lines containing each match
+              schema    Structural overview of element types
+            location:
+              file      File path of the match
+              line      Line number of the match
+              column    Column number of the match
+            diagnostic:
+              reason    Reason message for violations
+              severity  Severity level (error/warning)
+              command   Operation type (check, query, etc.)
+              origin    Diagnostic origin (xpath, cli, etc.)
+            summary:
+              totals    Summary totals across all matches
+              count     Total match count
+              query     Echo the XPath query as received
+            set mode:
+              status    Whether each match was updated or unchanged
+              output    Full modified content (for --stdout)
           
-          Example — suppress code snippets for IDE/CI parsers:
-            tractor check file.js -x '//function' --reason 'test' -f gcc -v=-lines
-            # file.js:2:1: error: test  (one line per match, no snippet block)
+          Combine with commas: -v tree,value
+          Use +/- modifiers to adjust defaults: -v=-lines or -v=+source,-lines
+          
+          Examples:
+            -v value                Show only text content
+            -v tree,value           Combine multiple fields
+            -v=-lines               Remove a field from defaults
+            -v=+source,-lines       Add and remove in one expression
 
   -m, --message <MESSAGE>
           Custom message template (supports {value}, {line}, {col}, {file})
@@ -83,13 +99,13 @@ Format:
 
   -f, --format <FORMAT>
           Output format [default: gcc]
-            gcc         file:line:col: severity: reason (default for check)
-            github      GitHub Actions annotation (::error file=...)
-            text        Human-readable plain text
-            json        JSON report envelope
-            yaml        YAML report envelope
-            xml         XML report envelope
-            claude-code Claude Code hook JSON (use with --hook)
+            text         Human-readable plain text
+            json         JSON report envelope
+            yaml         YAML report envelope
+            xml          XML report envelope
+            gcc          file:line:col: severity: reason (for CI/editors)
+            github       GitHub Actions annotation (::error file=...)
+            claude-code  Claude Code hook JSON (use with --hook)
           
           [default: gcc]
 

@@ -22,8 +22,8 @@ use tractor_core::{
     render_source_precomputed, render_lines,
     report::{Report, ReportMatch},
 };
-use crate::pipeline::context::RunContext;
-use crate::modes::test::test_colors;
+use crate::cli::context::RunContext;
+use crate::cli::test::test_colors;
 
 /// Options for test-specific rendering (colored pass/fail, error detail).
 /// When None, the report is rendered generically.
@@ -63,7 +63,7 @@ pub fn render_report(
             }
         }
         OutputFormat::Github => print!("{}", render_github(report, &dims)),
-        OutputFormat::ClaudeCode => print!("{}", render_claude_code(report, ctx.hook_type.unwrap_or(crate::pipeline::format::options::HookType::PostToolUse), &ctx.render_options(), &dims)),
+        OutputFormat::ClaudeCode => print!("{}", render_claude_code(report, ctx.hook_type.unwrap_or(options::HookType::PostToolUse), &ctx.render_options(), &dims)),
         OutputFormat::Text   => print!("{}", render_text_report(report, &ctx.view, &ctx.render_options(), &dims)),
     }
 

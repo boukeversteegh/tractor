@@ -1,11 +1,50 @@
+use clap::Args;
 use tractor_core::NormalizedXpath;
-use crate::cli::TestArgs;
+use crate::cli::SharedArgs;
+
+/// Test mode: assert match count expectations
+#[derive(Args, Debug)]
+pub struct TestArgs {
+    /// Files to process (supports glob patterns like "src/**/*.cs")
+    #[arg()]
+    pub files: Vec<String>,
+
+    #[command(flatten)]
+    pub shared: SharedArgs,
+
+    /// Source code string to parse (alternative to stdin, requires --lang)
+    #[arg(short = 's', long = "string", help_heading = None)]
+    pub content: Option<String>,
+
+    /// Report fields to include (e.g. tree, value, source) [default: totals]
+    #[arg(short = 'v', long = "view", help_heading = "View")]
+    pub view: Option<String>,
+
+    /// Custom message template (supports {value}, {line}, {col}, {file})
+    #[arg(short = 'm', long = "message", help_heading = "View")]
+    pub message: Option<String>,
+
+    /// Output format [default: text]
+    #[arg(short = 'f', long = "format", default_value = "text", help_heading = "Format")]
+    pub format: String,
+
+    /// Expected result: none, some, or a number (required unless --config is used)
+    #[arg(short = 'e', long = "expect", help_heading = "Test", required_unless_present = "config")]
+    pub expect: Option<String>,
+
+    /// Error message template for failed expectations (per-match, supports {file}, {line}, {name}, etc.)
+    #[arg(long = "error", help_heading = "Test")]
+    pub error: Option<String>,
+
+    /// Path to a tractor config file (YAML/TOML) — runs only test operations from it
+    #[arg(long = "config", help_heading = "Config")]
+    pub config: Option<String>,
+}
 use crate::executor::{self, ExecuteOptions, Operation, TestOperation, TestAssertion};
-use crate::pipeline::{
-    RunContext, ViewField, InputMode, TestRenderOptions,
-    render_report,
-    project_report,
-};
+use crate::cli::context::RunContext;
+use crate::input::InputMode;
+use crate::format::{ViewField, TestRenderOptions, render_report};
+use crate::matcher::project_report;
 use super::config::{run_from_config, ConfigRunParams};
 
 pub mod test_colors {

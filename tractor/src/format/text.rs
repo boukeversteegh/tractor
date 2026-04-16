@@ -427,7 +427,7 @@ fn render_set_stdout_results(items: &[ResultItem], view: &ViewSet, render_opts: 
 #[cfg(test)]
 mod tests {
     use super::render_text_report;
-    use crate::pipeline::format::{ViewField, ViewSet};
+    use crate::format::{ViewField, ViewSet};
     use tractor_core::report::{Report, ReportMatch, ResultItem, Totals};
     use tractor_core::RenderOptions;
 
