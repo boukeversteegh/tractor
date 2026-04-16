@@ -75,7 +75,7 @@ pub struct SharedArgs {
     pub lang: Option<String>,
 
     // -- Extract --
-    /// Query expression to extract matching AST nodes
+    /// XPath expression to extract matching AST nodes
     #[arg(short = 'x', long = "extract", value_name = "QUERY", help_heading = "Extract")]
     pub xpath: Option<NormalizedXpath>,
 

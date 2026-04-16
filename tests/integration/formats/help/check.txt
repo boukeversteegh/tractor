@@ -48,7 +48,7 @@ Inline Rule (use with -x):
 
 Extract:
   -x, --extract <QUERY>
-          Query expression to extract matching AST nodes
+          XPath expression to extract matching AST nodes
 
   -t, --tree <TREE>
           Tree mode [default: auto]
