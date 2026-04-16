@@ -470,8 +470,19 @@ mod walk {
     ) -> Result<Vec<NormalizedPath>, GlobExpandError> {
         let normalized = normalize_path(pattern);
 
-        // Non-glob pattern: return as-is
+        // Non-glob pattern: return as-is. Brackets and question marks
+        // are valid literal filename characters (at least on Unix), so
+        // we don't reject — but warn because they're more likely a
+        // glob-syntax mistake than an actual filename.
         if !normalized.contains('*') {
+            if normalized.contains('[') || normalized.contains('?') {
+                eprintln!(
+                    "warning: pattern '{}' contains '?' or '[' but no '*' — \
+                     treating as a literal file path; if you intended glob syntax, \
+                     add a '*' or '**/' prefix",
+                    normalized
+                );
+            }
             return Ok(vec![NormalizedPath::new(&normalized)]);
         }
 

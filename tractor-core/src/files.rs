@@ -82,6 +82,20 @@ pub fn expand_globs_checked(
             // Not a glob, use as-is (normalized). Non-glob patterns bypass
             // the walker entirely, so prune doesn't apply here — sibling-set
             // intersection still runs downstream.
+            //
+            // Brackets and question marks are valid in literal filenames
+            // (at least on Unix), so we don't reject them — but they are
+            // much more likely to be a glob-syntax mistake (e.g. `[abc]`
+            // character class or `?` single-char wildcard) than an actual
+            // filename, so warn.
+            if pattern.contains('[') || pattern.contains('?') {
+                eprintln!(
+                    "warning: pattern '{}' contains '?' or '[' but no '*' — \
+                     treating as a literal file path; if you intended glob syntax, \
+                     add a '*' or '**/' prefix",
+                    pattern
+                );
+            }
             files.push(NormalizedPath::new(pattern));
         }
     }
