@@ -16,8 +16,8 @@ export function CiCdGuide() {
       </p>
       <ol>
         <li>Download the binary from the <a href="https://github.com/boukeversteegh/tractor/releases/latest" target="_blank" rel="noopener noreferrer">latest release</a></li>
-        <li>Create a <code>.tractor.yml</code> in your repo</li>
-        <li>Run <code>tractor run .tractor.yml</code></li>
+        <li>Create a <code>tractor.yml</code> in your repo</li>
+        <li>Run <code>tractor run tractor.yml</code></li>
       </ol>
 
       <h2>GitHub Actions</h2>
@@ -39,7 +39,7 @@ jobs:
           chmod +x tractor
 
       - name: Run checks
-        run: ./tractor run .tractor.yml`}
+        run: ./tractor run tractor.yml`}
       />
 
       <h3>With GitHub Annotations</h3>
@@ -64,7 +64,7 @@ jobs:
           chmod +x tractor
 
       - name: Run checks
-        run: ./tractor run .tractor.yml -f github`}
+        run: ./tractor run tractor.yml -f github`}
       />
       <p>
         With <code>-f github</code>, violations produce GitHub annotation output:
@@ -98,7 +98,7 @@ jobs:
           chmod +x tractor
 
       - name: Run checks on changed code
-        run: ./tractor run .tractor.yml --diff-lines "origin/main..HEAD" -f github`}
+        run: ./tractor run tractor.yml --diff-lines "origin/main..HEAD" -f github`}
       />
       <p>
         Note: <code>fetch-depth: 0</code> is needed so git has the full history for the diff.
@@ -113,7 +113,7 @@ jobs:
   script:
     - curl -sL https://github.com/boukeversteegh/tractor/releases/latest/download/tractor-linux-x86_64 -o tractor
     - chmod +x tractor
-    - ./tractor run .tractor.yml`}
+    - ./tractor run tractor.yml`}
       />
 
       <h2>Azure DevOps</h2>
@@ -126,17 +126,17 @@ jobs:
       chmod +x tractor
     displayName: 'Install tractor'
 
-  - script: ./tractor run .tractor.yml
+  - script: ./tractor run tractor.yml
     displayName: 'Run tractor checks'`}
       />
 
       <h2>Example Config</h2>
       <p>
-        A typical <code>.tractor.yml</code> for a JavaScript project:
+        A typical <code>tractor.yml</code> for a JavaScript project:
       </p>
       <CodeBlock
         language="yaml"
-        title=".tractor.yml"
+        title="tractor.yml"
         code={`check:
   files:
     - "src/**/*.js"

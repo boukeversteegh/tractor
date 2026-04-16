@@ -23,13 +23,13 @@ export function CommitHooksGuide() {
         language="bash"
         title=".git/hooks/pre-commit"
         code={`#!/bin/sh
-tractor run .tractor.yml --diff-files "--cached"`}
+tractor run tractor.yml --diff-files "--cached"`}
       />
       <p>
         Make it executable with <code>chmod +x .git/hooks/pre-commit</code>.
       </p>
       <p>
-        The <code>--diff-files "--cached"</code> flag tells tractor to only check files that are staged for commit. Keep this on the command line rather than in your <code>.tractor.yml</code> — that way your rule file stays reusable for CI, editor hooks, and other contexts.
+        The <code>--diff-files "--cached"</code> flag tells tractor to only check files that are staged for commit. Keep this on the command line rather than in your <code>tractor.yml</code> — that way your rule file stays reusable for CI, editor hooks, and other contexts.
       </p>
 
       <h2 id="pre-commit-framework">Using pre-commit framework</h2>
@@ -44,18 +44,18 @@ tractor run .tractor.yml --diff-files "--cached"`}
     hooks:
       - id: tractor
         name: tractor
-        entry: tractor run .tractor.yml --diff-files "--cached"
+        entry: tractor run tractor.yml --diff-files "--cached"
         language: system
         pass_filenames: false`}
       />
 
       <h2 id="example-config">Example rule file</h2>
       <p>
-        A typical <code>.tractor.yml</code> for commit hooks:
+        A typical <code>tractor.yml</code> for commit hooks:
       </p>
       <CodeBlock
         language="yaml"
-        title=".tractor.yml"
+        title="tractor.yml"
         code={`check:
   files:
     - "src/**/*.cs"

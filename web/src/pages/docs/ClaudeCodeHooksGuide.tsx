@@ -33,7 +33,7 @@ export function ClaudeCodeHooksGuide() {
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=$(jq -r '.tool_input.file_path') && tractor run .tractor.yml --files \\"$FILE\\" -f claude-code"
+            "command": "FILE=$(jq -r '.tool_input.file_path') && tractor run tractor.yml --files \\"$FILE\\" -f claude-code"
           }
         ]
       }
@@ -89,7 +89,7 @@ export function ClaudeCodeHooksGuide() {
       </p>
 
       <p>
-        The hook references a <code>.tractor.yml</code> config file that defines your rules. See the <Link to="/docs/guides/lint-rules">Writing Lint Rules</Link> guide and <Link to="/docs/guides/use-cases">Use Cases</Link> for examples of what to put in it.
+        The hook references a <code>tractor.yml</code> config file that defines your rules. See the <Link to="/docs/guides/lint-rules">Writing Lint Rules</Link> guide and <Link to="/docs/guides/use-cases">Use Cases</Link> for examples of what to put in it.
       </p>
 
       <h2 id="other-hooks">Other hooks</h2>
