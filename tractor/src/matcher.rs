@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::path::Path;
 
 use rayon::prelude::*;
-use tractor_core::{
+use tractor::{
     Match, NormalizedXpath, GlobPattern, NormalizedPath,
     detect_language,
     language_info::parse_language,
@@ -188,7 +188,7 @@ pub fn run_rules(
     ruleset: &RuleSet,
     files: &[NormalizedPath],
     base_dir: Option<&Path>,
-    tree_mode: Option<tractor_core::TreeMode>,
+    tree_mode: Option<tractor::TreeMode>,
     ignore_whitespace: bool,
     parse_depth: Option<usize>,
     verbose: bool,
@@ -216,7 +216,7 @@ pub fn run_rules(
                 xpath: rule.xpath.clone(),
             })
         })
-        .collect::<Result<Vec<_>, tractor_core::rule::GlobError>>()?;
+        .collect::<Result<Vec<_>, tractor::rule::GlobError>>()?;
 
     // Process files in parallel. Each file is parsed once using either:
     // - The file's detected language (when no rules specify a language override)
@@ -332,8 +332,8 @@ pub fn project_report(report: &mut Report, view: &ViewSet) {
             let keep_tree = match &m.tree {
                 Some(node) if matches!(
                     node,
-                    tractor_core::xpath::XmlNode::Map { .. }
-                        | tractor_core::xpath::XmlNode::Array { .. }
+                    tractor::xpath::XmlNode::Map { .. }
+                        | tractor::xpath::XmlNode::Array { .. }
                 ) => true,
                 _ => view.has(ViewField::Tree) || view.has(ViewField::Lines) || view.has(ViewField::Source),
             };
@@ -379,7 +379,7 @@ pub fn apply_message_template(report: &mut Report, template: &str) {
     for m in report.all_matches_mut() {
         m.message = Some(
             template
-                .replace("{file}", &tractor_core::output::normalize_path(&m.file))
+                .replace("{file}", &tractor::output::normalize_path(&m.file))
                 .replace("{line}", &m.line.to_string())
                 .replace("{col}", &m.column.to_string())
                 .replace("{value}", m.value.as_deref().unwrap_or(""))
@@ -394,7 +394,7 @@ pub fn apply_message_template(report: &mut Report, template: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tractor_core::language_info::Language;
+    use tractor::language_info::Language;
 
     #[test]
     fn test_language_parsing() {
@@ -427,7 +427,7 @@ mod tests {
     fn test_rule_language_matches_file_no_language_specified() {
         // When no language is specified, rule should match any file
         let mut ruleset = RuleSet::new();
-        ruleset.add(tractor_core::rule::Rule::new("test", "//any"));
+        ruleset.add(tractor::rule::Rule::new("test", "//any"));
 
         assert!(rule_language_matches_file(&ruleset, 0, "test.js"));
         assert!(rule_language_matches_file(&ruleset, 0, "test.rs"));
@@ -439,7 +439,7 @@ mod tests {
     fn test_rule_language_matches_file_with_language() {
         // When language is specified, only matching files should match
         let mut ruleset = RuleSet::new();
-        let rule = tractor_core::rule::Rule::new("test", "//any")
+        let rule = tractor::rule::Rule::new("test", "//any")
             .with_language("javascript");
         ruleset.add(rule);
 
@@ -452,7 +452,7 @@ mod tests {
     fn test_rule_language_matches_file_with_alias() {
         // Language aliases should work
         let mut ruleset = RuleSet::new();
-        let rule = tractor_core::rule::Rule::new("test", "//any")
+        let rule = tractor::rule::Rule::new("test", "//any")
             .with_language("js");  // alias for javascript
         ruleset.add(rule);
 
@@ -465,7 +465,7 @@ mod tests {
         // Default language on ruleset should be used
         let mut ruleset = RuleSet::new();
         ruleset.default_language = Some("markdown".to_string());
-        ruleset.add(tractor_core::rule::Rule::new("test", "//any"));
+        ruleset.add(tractor::rule::Rule::new("test", "//any"));
 
         assert!(rule_language_matches_file(&ruleset, 0, "test.md"));
         assert!(!rule_language_matches_file(&ruleset, 0, "test.js"));
@@ -476,7 +476,7 @@ mod tests {
         // Rule language should override default
         let mut ruleset = RuleSet::new();
         ruleset.default_language = Some("markdown".to_string());
-        let rule = tractor_core::rule::Rule::new("test", "//any")
+        let rule = tractor::rule::Rule::new("test", "//any")
             .with_language("javascript");
         ruleset.add(rule);
 

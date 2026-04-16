@@ -1,9 +1,9 @@
 //! Test operation: run XPath queries and check match counts against expectations.
 
-use tractor_core::normalized_xpath::NormalizedXpath;
-use tractor_core::report::ReportBuilder;
-use tractor_core::tree_mode::TreeMode;
-use tractor_core::parse_string_to_documents;
+use tractor::normalized_xpath::NormalizedXpath;
+use tractor::report::ReportBuilder;
+use tractor::tree_mode::TreeMode;
+use tractor::parse_string_to_documents;
 
 use crate::input::file_resolver::{FileResolver, FileRequest};
 
@@ -109,7 +109,7 @@ pub(crate) fn execute_test(
 
 /// Run test assertions against a single parsed document (inline source).
 fn run_test_assertions_on_result(
-    result: &mut tractor_core::XeeParseResult,
+    result: &mut tractor::XeeParseResult,
     assertions: &[TestAssertion],
     limit: Option<usize>,
     report: &mut ReportBuilder,

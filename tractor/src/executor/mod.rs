@@ -20,9 +20,9 @@ mod update;
 
 use std::path::PathBuf;
 use rayon::prelude::*;
-use tractor_core::report::{ReportBuilder, ReportMatch};
-use tractor_core::tree_mode::TreeMode;
-use tractor_core::{parse_to_documents, Match, NormalizedPath};
+use tractor::report::{ReportBuilder, ReportMatch};
+use tractor::tree_mode::TreeMode;
+use tractor::{parse_to_documents, Match, NormalizedPath};
 
 use crate::input::filter::ResultFilter;
 use crate::input::file_resolver::{FileResolver, make_fatal_diagnostic};
@@ -248,8 +248,8 @@ pub(crate) fn check_expectation(expect: &str, count: usize) -> Result<bool, Box<
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tractor_core::report::{ReportBuilder, Severity};
-    use tractor_core::rule::Rule;
+    use tractor::report::{ReportBuilder, Severity};
+    use tractor::rule::Rule;
 
     fn temp_json_file(content: &str) -> (tempfile::TempDir, String) {
         let dir = tempfile::tempdir().unwrap();
@@ -258,7 +258,7 @@ mod tests {
         (dir, path.to_str().unwrap().to_string())
     }
 
-    fn run(ops: &[Operation]) -> tractor_core::report::Report {
+    fn run(ops: &[Operation]) -> tractor::report::Report {
         let mut builder = ReportBuilder::new();
         execute(ops, &ExecuteOptions::default(), &mut builder).unwrap();
         builder.build()

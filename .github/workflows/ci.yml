@@ -20,7 +20,6 @@ jobs:
           filters: |
             code:
               - 'tractor/**'
-              - 'tractor-core/**'
               - 'Cargo.toml'
               - 'Cargo.lock'
               - 'tests/**'

@@ -1,9 +1,9 @@
 //! Update operation: modify existing matched nodes without creating new structure.
 
-use tractor_core::report::{ReportBuilder, ReportMatch};
-use tractor_core::tree_mode::TreeMode;
-use tractor_core::{detect_language, apply_replacements, NormalizedPath};
-use tractor_core::xpath_upsert::update_only;
+use tractor::report::{ReportBuilder, ReportMatch};
+use tractor::tree_mode::TreeMode;
+use tractor::{detect_language, apply_replacements, NormalizedPath};
+use tractor::xpath_upsert::update_only;
 
 use crate::input::file_resolver::{FileResolver, FileRequest};
 
@@ -77,7 +77,7 @@ pub(crate) fn execute_update(
                     }
                 }
             }
-            Err(tractor_core::xpath_upsert::UpsertError::UnsupportedLanguage(_)) => {
+            Err(tractor::xpath_upsert::UpsertError::UnsupportedLanguage(_)) => {
                 fallback_files.push(file_path.clone());
             }
             Err(e) => return Err(e.into()),

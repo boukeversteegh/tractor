@@ -1,6 +1,6 @@
 use clap::Args;
-use tractor_core::report::Severity;
-use tractor_core::rule::Rule;
+use tractor::report::Severity;
+use tractor::rule::Rule;
 use crate::cli::SharedArgs;
 
 /// Check mode: lint/report violations
@@ -147,7 +147,7 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
         ..Default::default()
     };
 
-    let mut builder = tractor_core::ReportBuilder::new();
+    let mut builder = tractor::ReportBuilder::new();
     executor::execute(&[op], &options, &mut builder)?;
     let mut report = builder.build();
 

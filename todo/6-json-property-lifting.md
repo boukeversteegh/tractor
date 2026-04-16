@@ -84,7 +84,7 @@ After:
 
 ### Step 1: Add `field` attribute to WRAPPED_FIELDS wrapper elements
 
-**File:** `tractor-core/src/xot_builder.rs`
+**File:** `tractor/src/xot_builder.rs`
 
 Currently, wrapper elements (line 216-230 native, ~340 WASM) don't get a `field` attribute.
 Non-wrapped fields do (line 232-234). Add `field="<fieldname>"` on wrapper elements too, after
@@ -104,7 +104,7 @@ target inner TS-backed nodes by `kind`), so this is safe.
 
 ### Step 2: Include `field` attribute in XML fragment output
 
-**File:** `tractor-core/src/output/xml_renderer.rs`
+**File:** `tractor/src/output/xml_renderer.rs`
 
 Line 436-442 strips `kind`, `start`, `end`, etc. when `include_locations=false`. Currently
 `field` is NOT in this strip list (it's already included in output). Verify this — no change
@@ -116,7 +116,7 @@ stripped. `field` survives. But double-check that `xot.to_string()` (used in eng
 
 ### Step 3: Rewrite `xml_to_json.rs` for field-based partitioning
 
-**File:** `tractor-core/src/output/xml_to_json.rs`
+**File:** `tractor/src/output/xml_to_json.rs`
 
 This is the core change. Three sub-changes:
 
@@ -185,9 +185,9 @@ propagate automatically. Run YAML tests to confirm.
 
 ## Key files
 
-- `tractor-core/src/xot_builder.rs` — add `field` attr to wrappers (lines 216-230, ~340)
-- `tractor-core/src/output/xml_to_json.rs` — core rewrite
-- `tractor-core/src/output/xml_renderer.rs` — verify `field` not stripped
+- `tractor/src/xot_builder.rs` — add `field` attr to wrappers (lines 216-230, ~340)
+- `tractor/src/output/xml_to_json.rs` — core rewrite
+- `tractor/src/output/xml_renderer.rs` — verify `field` not stripped
 - `tractor/src/pipeline/format/json.rs` — verify no changes needed
 - `tests/integration/formats/json/query.json` — primary snapshot to verify
 

@@ -110,13 +110,13 @@ From current tractor:
    - `pipeline/context.rs` → `cli/context.rs`
 4. ✅ Delete empty `pipeline/` and `modes/`
 
-### Phase 2: Merge tractor-core into tractor
-1. Add feature flags to `tractor/Cargo.toml`
-2. Move tractor-core modules into tractor (under `core/` or flat)
-3. Update all imports
-4. Create `tractor-wasm/` crate with `#[wasm_bindgen]` bindings
-5. Update web/ build to use new WASM crate
-6. Remove `tractor-core/` from workspace
+### Phase 2: Merge tractor-core into tractor ✅ Done
+1. ✅ Add feature flags (`native`, `wasm`) to `tractor/Cargo.toml`
+2. ✅ Move tractor-core modules into `tractor/src/` (flat, alongside CLI modules)
+3. ✅ Update all imports (`tractor_core::` → `tractor::`)
+4. ✅ WASM exports via `#[cfg(feature = "wasm")]` in the same crate (no separate tractor-wasm crate needed)
+5. ✅ Update web/ build to use `tractor` crate with `--features wasm`
+6. ✅ Remove `tractor-core/` from workspace
 
 ### Phase 3: Cleanup
 1. Update CLAUDE.md / architecture docs

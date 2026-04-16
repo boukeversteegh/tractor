@@ -120,7 +120,7 @@ XML node results are represented as a native `XmlNode` enum instead of serialize
 XML strings. This eliminates the serialize → parse roundtrip that existed before:
 
 ```rust
-// tractor-core/src/xpath/match_result.rs
+// tractor/src/xpath/match_result.rs
 pub enum XmlNode {
     Element { name: String, attributes: Vec<(String, String)>, children: Vec<XmlNode> },
     Text(String),
@@ -152,13 +152,13 @@ future, these could be converted to native IR types instead.
 
 | File | Role |
 |------|------|
-| `tractor-core/src/xpath/match_result.rs` | `XmlNode` enum and `Match` struct |
-| `tractor-core/src/xpath/engine.rs` | `xot_node_to_xml_node()`, `function_to_json_string()` |
-| `tractor-core/src/output/xml_renderer.rs` | `render_xml_node()`, `xml_node_to_string()` |
-| `tractor-core/src/output/xml_to_json.rs` | `xml_node_to_json()` — tree-to-JSON with field lifting |
-| `tractor-core/src/output/syntax_highlight.rs` | `extract_syntax_spans_from_xml_node()` |
-| `tractor-core/src/output/schema.rs` | `SchemaCollector::collect_from_xml_node()` |
-| `tractor-core/src/report.rs` | `ReportMatch` with `tree: Option<XmlNode>` |
+| `tractor/src/xpath/match_result.rs` | `XmlNode` enum and `Match` struct |
+| `tractor/src/xpath/engine.rs` | `xot_node_to_xml_node()`, `function_to_json_string()` |
+| `tractor/src/output/xml_renderer.rs` | `render_xml_node()`, `xml_node_to_string()` |
+| `tractor/src/output/xml_to_json.rs` | `xml_node_to_json()` — tree-to-JSON with field lifting |
+| `tractor/src/output/syntax_highlight.rs` | `extract_syntax_spans_from_xml_node()` |
+| `tractor/src/output/schema.rs` | `SchemaCollector::collect_from_xml_node()` |
+| `tractor/src/report.rs` | `ReportMatch` with `tree: Option<XmlNode>` |
 
 ## Recommendation
 

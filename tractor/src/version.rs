@@ -45,7 +45,7 @@ pub fn print_version_verbose() {
     }
 
     // Get runtime ABI versions
-    let abi_versions: HashMap<&str, usize> = tractor_core::get_language_abi_versions()
+    let abi_versions: HashMap<&str, usize> = tractor::get_language_abi_versions()
         .into_iter()
         .map(|info| (info.name, info.abi_version))
         .collect();

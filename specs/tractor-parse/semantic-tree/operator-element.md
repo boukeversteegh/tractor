@@ -3,14 +3,14 @@ title: Operator Element
 priority: 2
 status: implemented
 refs:
-  - /tractor-core/src/xot_transform.rs # prepend_op_element, add_operator_markers, is_operator_marker
-  - /tractor-core/src/languages/typescript.rs # extract_operator
-  - /tractor-core/src/languages/csharp.rs # extract_operator
-  - /tractor-core/src/languages/rust_lang.rs # extract_operator
-  - /tractor-core/src/languages/python.rs # extract_operator
-  - /tractor-core/src/languages/java.rs # extract_operator
-  - /tractor-core/src/languages/go.rs # extract_operator
-  - /tractor-core/src/languages/tsql.rs # extract_operator
+  - /tractor/src/xot_transform.rs # prepend_op_element, add_operator_markers, is_operator_marker
+  - /tractor/src/languages/typescript.rs # extract_operator
+  - /tractor/src/languages/csharp.rs # extract_operator
+  - /tractor/src/languages/rust_lang.rs # extract_operator
+  - /tractor/src/languages/python.rs # extract_operator
+  - /tractor/src/languages/java.rs # extract_operator
+  - /tractor/src/languages/go.rs # extract_operator
+  - /tractor/src/languages/tsql.rs # extract_operator
 ---
 
 Operators in expressions are represented as `<op>` child elements with semantic

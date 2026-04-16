@@ -1,5 +1,5 @@
 use clap::{Args, CommandFactory};
-use tractor_core::NormalizedXpath;
+use tractor::NormalizedXpath;
 use crate::cli::{Cli, SharedArgs};
 
 /// Query/explore mode (default, no subcommand)
@@ -125,7 +125,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
         ..Default::default()
     };
 
-    let mut builder = tractor_core::ReportBuilder::new();
+    let mut builder = tractor::ReportBuilder::new();
     builder.set_no_verdict();
     executor::execute(&[op], &options, &mut builder)?;
     let mut report = builder.build();
@@ -133,7 +133,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     if ctx.view.has(ViewField::Count) {
         println!("{}", report.totals.as_ref().unwrap().results);
     } else if ctx.view.has(ViewField::Schema) {
-        let mut collector = tractor_core::SchemaCollector::new();
+        let mut collector = tractor::SchemaCollector::new();
         for m in report.all_matches() {
             if let Some(ref node) = m.tree {
                 collector.collect_from_xml_node(node);

@@ -1,5 +1,5 @@
 use clap::Args;
-use tractor_core::NormalizedXpath;
+use tractor::NormalizedXpath;
 use crate::cli::SharedArgs;
 
 /// Test mode: assert match count expectations
@@ -127,7 +127,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
         ..Default::default()
     };
 
-    let mut builder = tractor_core::ReportBuilder::new();
+    let mut builder = tractor::ReportBuilder::new();
     executor::execute(&[op], &options, &mut builder)?;
     // Set expected value for test summary rendering (test-mode only, not shared with run mode)
     builder.set_expected(expect.clone());

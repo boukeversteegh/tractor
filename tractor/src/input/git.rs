@@ -9,7 +9,7 @@
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::process::Command;
-use tractor_core::{Match, NormalizedPath};
+use tractor::{Match, NormalizedPath};
 use super::filter::ResultFilter;
 
 /// Run `git diff --name-only` with the given spec and return the set of

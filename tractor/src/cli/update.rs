@@ -58,7 +58,7 @@ pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
         ..Default::default()
     };
 
-    let mut builder = tractor_core::ReportBuilder::new();
+    let mut builder = tractor::ReportBuilder::new();
     executor::execute(&[op], &options, &mut builder)?;
     let report = builder.build();
     if report.success == Some(false) {

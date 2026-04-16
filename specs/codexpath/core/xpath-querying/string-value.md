@@ -56,5 +56,5 @@ optimized for human readability while XPath queries operate on the internal xot 
 
 ## References
 
-- `tractor-core/src/xot_builder.rs` - Inter-token whitespace insertion
-- `tractor-core/src/xpath/engine.rs:64` - `xot.string_value(node)` for match values
+- `tractor/src/xot_builder.rs` - Inter-token whitespace insertion
+- `tractor/src/xpath/engine.rs:64` - `xot.string_value(node)` for match values

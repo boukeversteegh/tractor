@@ -1,6 +1,5 @@
 check:
   files:
-    - "tractor-core/src/**/*.rs"
     - "tractor/src/**/*.rs"
   rules:
     - id: no-todo

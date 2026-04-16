@@ -1,7 +1,7 @@
-//! tractor-core: Multi-language code query library
+//! tractor: Multi-language code query library and CLI
 //!
 //! This library provides:
-//! - TreeSitter-based parsing for 22 languages
+//! - TreeSitter-based parsing for 22+ languages
 //! - Semantic tree transformations
 //! - XPath 3.1 query execution
 //! - Multiple output formats

@@ -1,4 +1,4 @@
-use tractor_core::{report::{Report, ResultItem}, normalize_path, render_xml_string, render_xml_node, RenderOptions};
+use tractor::{report::{Report, ResultItem}, normalize_path, render_xml_string, render_xml_node, RenderOptions};
 use super::options::{ViewField, ViewSet};
 use super::shared::{render_fields_for_match, should_emit_command, should_emit_file, should_emit_rule_id, should_show_totals};
 
@@ -91,7 +91,7 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
 
 fn append_match(
     out: &mut String,
-    rm: &tractor_core::report::ReportMatch,
+    rm: &tractor::report::ReportMatch,
     view: &ViewSet,
     indent: &str,
     render_opts: &RenderOptions,
@@ -249,7 +249,7 @@ fn render_xml_results(
 /// Render a list of captured outputs as `<outputs><output file="...">...</output>...</outputs>`.
 /// Content is XML-escaped but newlines are preserved literally, matching how
 /// `<lines><line>` is rendered elsewhere.
-fn append_outputs(out: &mut String, outputs: &[tractor_core::report::ReportOutput], indent: &str) {
+fn append_outputs(out: &mut String, outputs: &[tractor::report::ReportOutput], indent: &str) {
     let inner = format!("{}  ", indent);
     out.push_str(&format!("{}<outputs>\n", indent));
     for captured in outputs {
@@ -265,7 +265,7 @@ fn append_outputs(out: &mut String, outputs: &[tractor_core::report::ReportOutpu
 
 fn append_group_outputs(
     out: &mut String,
-    outputs: &[tractor_core::report::ReportOutput],
+    outputs: &[tractor::report::ReportOutput],
     group_file: Option<&str>,
     indent: &str,
 ) {

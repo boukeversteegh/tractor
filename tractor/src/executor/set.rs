@@ -1,9 +1,9 @@
 //! Set operation: ensure values exist at specified XPaths.
 
-use tractor_core::report::{ReportBuilder, ReportMatch, ReportOutput};
-use tractor_core::tree_mode::TreeMode;
-use tractor_core::{detect_language, parse_string_to_documents, Match};
-use tractor_core::xpath_upsert::upsert_typed;
+use tractor::report::{ReportBuilder, ReportMatch, ReportOutput};
+use tractor::tree_mode::TreeMode;
+use tractor::{detect_language, parse_string_to_documents, Match};
+use tractor::xpath_upsert::upsert_typed;
 
 use crate::input::filter::ResultFilter;
 use crate::input::file_resolver::{FileResolver, FileRequest};
@@ -255,7 +255,7 @@ fn apply_set_mapping(
                 m
             }).collect(),
         }),
-        Err(tractor_core::xpath_upsert::UpsertError::UnsupportedLanguage(_)) => {
+        Err(tractor::xpath_upsert::UpsertError::UnsupportedLanguage(_)) => {
             if mapping.value_kind.as_deref().is_some_and(|kind| kind != "string") {
                 return Err(format!(
                     "set fallback only supports string replacements for unsupported languages ({})",
@@ -276,7 +276,7 @@ fn apply_set_mapping(
                 ).into());
             }
 
-            let updated = tractor_core::apply_set_to_string(source, &fallback_matches, &mapping.value)?;
+            let updated = tractor::apply_set_to_string(source, &fallback_matches, &mapping.value)?;
             Ok(SetMappingResult {
                 source: updated,
                 matches: fallback_matches,
@@ -318,7 +318,7 @@ fn query_set_matches(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tractor_core::report::ReportBuilder;
+    use tractor::report::ReportBuilder;
     use crate::executor::{Operation, ExecuteOptions, execute};
 
     fn temp_json_file(content: &str) -> (tempfile::TempDir, String) {
@@ -383,7 +383,7 @@ mod tests {
     }
 
     /// Helper: execute operations and build a report.
-    fn run(ops: &[Operation]) -> tractor_core::report::Report {
+    fn run(ops: &[Operation]) -> tractor::report::Report {
         let mut builder = ReportBuilder::new();
         execute(ops, &ExecuteOptions::default(), &mut builder).unwrap();
         builder.build()
@@ -524,8 +524,8 @@ mod tests {
         let files: std::collections::HashSet<_> = report.outputs.iter()
             .filter_map(|output| output.file.as_deref())
             .collect();
-        assert!(files.contains(tractor_core::normalize_path(&path_a).as_str()));
-        assert!(files.contains(tractor_core::normalize_path(&path_b).as_str()));
+        assert!(files.contains(tractor::normalize_path(&path_a).as_str()));
+        assert!(files.contains(tractor::normalize_path(&path_b).as_str()));
         assert!(report.outputs.iter().all(|output| output.content.contains("db.example.com")));
         let content_a = std::fs::read_to_string(&path_a).unwrap();
         let content_b = std::fs::read_to_string(&path_b).unwrap();

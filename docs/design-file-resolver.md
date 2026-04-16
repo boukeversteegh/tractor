@@ -17,10 +17,10 @@ dependency.
 
 Core modules:
 
-- `tractor-core/src/glob_match.rs` -- custom glob engine:
+- `tractor/src/glob_match.rs` -- custom glob engine:
   `CompiledPattern` for pattern matching (WASM-safe), `expand_canonical()`
   for filesystem walking with canonical path construction (native-only)
-- `tractor-core/src/files.rs` -- expansion API: `expand_globs_checked()`
+- `tractor/src/files.rs` -- expansion API: `expand_globs_checked()`
   delegates to `expand_canonical()`, applies limits
 - `tractor/src/file_resolver.rs` -- `FileResolver`: centralized
   pre-computation of shared scopes (root, CLI, diff), per-operation
@@ -204,11 +204,11 @@ Step 9 is per-rule narrowing. Step 10 is validation.
 
 | Module | Role |
 |---|---|
-| `tractor-core/src/glob_match.rs` | Custom glob engine: `CompiledPattern` (matching, WASM-safe) + `expand_canonical()` (walk, native) |
-| `tractor-core/src/files.rs` | Expansion API: `expand_globs_checked()` with limits, delegates to `expand_canonical()` |
-| `tractor-core/src/normalized_path.rs` | `NormalizedPath::absolute()` — single source of truth for path canonicalization |
-| `tractor-core/src/glob_pattern.rs` | `GlobPattern` — normalized pattern string wrapper for storage/serialization |
-| `tractor-core/src/rule.rs` | `GlobMatcher` — two-layer include/exclude matching using `CompiledPattern` |
+| `tractor/src/glob_match.rs` | Custom glob engine: `CompiledPattern` (matching, WASM-safe) + `expand_canonical()` (walk, native) |
+| `tractor/src/files.rs` | Expansion API: `expand_globs_checked()` with limits, delegates to `expand_canonical()` |
+| `tractor/src/normalized_path.rs` | `NormalizedPath::absolute()` — single source of truth for path canonicalization |
+| `tractor/src/glob_pattern.rs` | `GlobPattern` — normalized pattern string wrapper for storage/serialization |
+| `tractor/src/rule.rs` | `GlobMatcher` — two-layer include/exclude matching using `CompiledPattern` |
 | `tractor/src/file_resolver.rs` | `FileResolver` — centralized resolution: pre-compute shared scopes, per-operation `resolve()` |
 | `tractor/src/pipeline/matcher.rs` | `run_rules()` — applies per-rule glob matching after file discovery |
 | `tractor/src/pipeline/input.rs` | CLI-mode input source detection (stdin/inline/files) |
