@@ -27,7 +27,7 @@ pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     let xpath_expr = ctx.xpath.as_ref()
-        .ok_or("update requires an XPath query (-x)")?;
+        .ok_or("update requires a query (-x)")?;
 
     let files = match &ctx.input {
         InputMode::Files(files) => files,

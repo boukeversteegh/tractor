@@ -95,7 +95,7 @@ fn normalize_set_mappings(
         }]);
     }
 
-    let expr = expr.ok_or("set requires either an XPath query (-x) or a path expression")?;
+    let expr = expr.ok_or("set requires either a query (-x) or a path expression")?;
     if let Some(value) = explicit_value {
         return Ok(vec![SetMapping {
             xpath: selector_xpath(expr),

@@ -41,6 +41,9 @@ export function ClaudeCodeHooksGuide() {
       <p>
         The hook triggers after every <code>Edit</code> or <code>Write</code> tool call. It reads the file path from the tool input, then runs tractor against just that file using your project's rule file.
       </p>
+      <p>
+        <strong>Note:</strong> This hook currently requires <a href="https://jqlang.github.io/jq/" target="_blank" rel="noopener noreferrer">jq</a> to be installed (used to extract the file path from the hook payload). We're working on making this integration seamless without external dependencies.
+      </p>
 
       <h3>Output format</h3>
       <p>
