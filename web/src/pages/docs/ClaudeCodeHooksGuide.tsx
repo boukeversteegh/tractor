@@ -88,39 +88,9 @@ export function ClaudeCodeHooksGuide() {
         When <code>--hook</code> is omitted, tractor defaults to <code>post-tool-use</code>. For the edit hook setup above, this is the right choice — it blocks Claude from proceeding until violations are fixed.
       </p>
 
-      <h2 id="example-rules">Example rule file</h2>
       <p>
-        Here's a <code>.tractor.yml</code> that enforces common conventions:
+        The hook references a <code>.tractor.yml</code> config file that defines your rules. See the <Link to="/docs/guides/lint-rules">Writing Lint Rules</Link> guide and <Link to="/docs/guides/use-cases">Use Cases</Link> for examples of what to put in it.
       </p>
-      <CodeBlock
-        language="yaml"
-        title=".tractor.yml"
-        code={`check:
-  files:
-    - "src/**/*.cs"
-  rules:
-    - id: authorize-required
-      xpath: >-
-        //class[contains(name,'Controller')]
-        /method[public]
-        [not(attrs[contains(.,'Authorize')])]
-        [not(attrs[contains(.,'AllowAnonymous')])]/name
-      reason: "Controller actions must have [Authorize] or [AllowAnonymous]"
-      severity: error
-
-    - id: tenant-id-required
-      xpath: >-
-        //class[contains(name,'Controller')]
-        /method[public]
-        [not(contains(.,'GetTenantId'))]/name
-      reason: "Controller actions must call GetTenantId()"
-      severity: error
-
-    - id: method-pascalcase
-      xpath: "//method[public]/name[matches(., '^[a-z]')]"
-      reason: "Public methods should use PascalCase"
-      severity: error`}
-      />
 
       <h2 id="other-hooks">Other hooks</h2>
       <ul>
