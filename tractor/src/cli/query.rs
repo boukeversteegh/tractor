@@ -9,6 +9,10 @@ pub struct QueryArgs {
     #[arg()]
     pub files: Vec<String>,
 
+    /// Path to a tractor config file (YAML/TOML) — runs only query operations from it
+    #[arg(long = "config", help_heading = "Config")]
+    pub config: Option<String>,
+
     #[command(flatten)]
     pub shared: SharedArgs,
 
@@ -35,10 +39,6 @@ pub struct QueryArgs {
     /// Print version information (use with --verbose for detailed output)
     #[arg(short = 'V', long = "version", help_heading = "Advanced")]
     pub version: bool,
-
-    /// Path to a tractor config file (YAML/TOML) — runs only query operations from it
-    #[arg(long = "config", help_heading = "Config")]
-    pub config: Option<String>,
 }
 use crate::executor::{self, ExecuteOptions, Operation, QueryOperation, QueryExpr};
 use crate::cli::context::RunContext;

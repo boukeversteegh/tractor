@@ -16,6 +16,57 @@ Options:
   -h, --help
           Print help (see a summary with '-h')
 
+Output:
+  -f, --format <FORMAT>
+          Output format [default: gcc]
+            text         Human-readable plain text
+            json         JSON report envelope
+            yaml         YAML report envelope
+            xml          XML report envelope
+            gcc          file:line:col: severity: reason (for CI/editors)
+            github       GitHub Actions annotation (::error file=...)
+            claude-code  Claude Code hook JSON (use with --hook)
+          
+          [default: gcc]
+
+  -v, --view <VIEW>
+          Choose which fields are included in the output [default: command,reason,severity,lines,status,value]
+          
+            content:
+              tree      Parsed source tree
+              value     Text content of matched nodes
+              source    Exact matched source text
+              lines     Full source lines containing each match
+              schema    Structural overview of element types
+            location:
+              file      File path of the match
+              line      Line number of the match
+              column    Column number of the match
+            diagnostic:
+              reason    Reason message for violations
+              severity  Severity level (error/warning)
+              command   Operation type (check, query, etc.)
+              origin    Diagnostic origin (xpath, cli, etc.)
+            summary:
+              totals    Summary totals across all matches
+              count     Total match count
+              query     Echo the XPath query as received
+            set mode:
+              status    Whether each match was updated or unchanged
+              output    Full modified content (for --stdout)
+          
+          Combine with commas: -v tree,value
+          Use +/- modifiers to adjust defaults: -v=-lines or -v=+source,-lines
+          
+          Examples:
+            -v value                Show only text content
+            -v tree,value           Combine multiple fields
+            -v=-lines               Remove a field from defaults
+            -v=+source,-lines       Add and remove in one expression
+
+  -m, --message <MESSAGE>
+          Message template for matches (e.g. "{file}:{line}: {value}")
+
 Extract:
   -x, --extract <XPATH>
           XPath expression to extract matching AST nodes
@@ -80,54 +131,3 @@ Advanced:
 
       --verbose
           Show verbose output
-
-Output:
-  -f, --format <FORMAT>
-          Output format [default: gcc]
-            text         Human-readable plain text
-            json         JSON report envelope
-            yaml         YAML report envelope
-            xml          XML report envelope
-            gcc          file:line:col: severity: reason (for CI/editors)
-            github       GitHub Actions annotation (::error file=...)
-            claude-code  Claude Code hook JSON (use with --hook)
-          
-          [default: gcc]
-
-  -v, --view <VIEW>
-          Choose which fields are included in the output [default: command,reason,severity,lines,status,value]
-          
-            content:
-              tree      Parsed source tree
-              value     Text content of matched nodes
-              source    Exact matched source text
-              lines     Full source lines containing each match
-              schema    Structural overview of element types
-            location:
-              file      File path of the match
-              line      Line number of the match
-              column    Column number of the match
-            diagnostic:
-              reason    Reason message for violations
-              severity  Severity level (error/warning)
-              command   Operation type (check, query, etc.)
-              origin    Diagnostic origin (xpath, cli, etc.)
-            summary:
-              totals    Summary totals across all matches
-              count     Total match count
-              query     Echo the XPath query as received
-            set mode:
-              status    Whether each match was updated or unchanged
-              output    Full modified content (for --stdout)
-          
-          Combine with commas: -v tree,value
-          Use +/- modifiers to adjust defaults: -v=-lines or -v=+source,-lines
-          
-          Examples:
-            -v value                Show only text content
-            -v tree,value           Combine multiple fields
-            -v=-lines               Remove a field from defaults
-            -v=+source,-lines       Add and remove in one expression
-
-  -m, --message <MESSAGE>
-          Message template for matches (e.g. "{file}:{line}: {value}")

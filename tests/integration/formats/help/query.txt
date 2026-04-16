@@ -16,6 +16,10 @@ Options:
   -h, --help
           Print help (see a summary with '-h')
 
+Config:
+      --config <CONFIG>
+          Path to a tractor config file (YAML/TOML) — runs only query operations from it
+
 Extract:
   -x, --extract <XPATH>
           XPath expression to extract matching AST nodes
@@ -136,7 +140,3 @@ Advanced:
 
   -V, --version
           Print version information (use with --verbose for detailed output)
-
-Config:
-      --config <CONFIG>
-          Path to a tractor config file (YAML/TOML) — runs only query operations from it

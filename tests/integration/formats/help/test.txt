@@ -16,6 +16,17 @@ Options:
   -h, --help
           Print help (see a summary with '-h')
 
+Test:
+  -e, --expect <EXPECT>
+          Expected result: none, some, or a number (required unless --config is used)
+
+      --error <ERROR>
+          Error message template for failed expectations (per-match, supports {file}, {line}, {name}, etc.)
+
+Config:
+      --config <CONFIG>
+          Path to a tractor config file (YAML/TOML) — runs only test operations from it
+
 Extract:
   -x, --extract <XPATH>
           XPath expression to extract matching AST nodes
@@ -130,14 +141,3 @@ Advanced:
 
       --verbose
           Show verbose output
-
-Test:
-  -e, --expect <EXPECT>
-          Expected result: none, some, or a number (required unless --config is used)
-
-      --error <ERROR>
-          Error message template for failed expectations (per-match, supports {file}, {line}, {name}, etc.)
-
-Config:
-      --config <CONFIG>
-          Path to a tractor config file (YAML/TOML) — runs only test operations from it

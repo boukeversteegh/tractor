@@ -15,9 +15,6 @@ pub struct RunArgs {
     #[arg()]
     pub files: Vec<String>,
 
-    #[command(flatten)]
-    pub shared: SharedArgs,
-
     /// Output format [default: gcc]
     #[arg(short = 'f', long = "format", default_value = "gcc", help_heading = "Output")]
     pub format: String,
@@ -29,6 +26,9 @@ pub struct RunArgs {
     /// Message template for matches (e.g. "{file}:{line}: {value}")
     #[arg(short = 'm', long = "message", help_heading = "Output")]
     pub message: Option<String>,
+
+    #[command(flatten)]
+    pub shared: SharedArgs,
 }
 use crate::format::{ViewField, GroupDimension};
 use super::config::{run_from_config, ConfigRunParams};

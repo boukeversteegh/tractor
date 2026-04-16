@@ -9,6 +9,18 @@ pub struct TestArgs {
     #[arg()]
     pub files: Vec<String>,
 
+    /// Expected result: none, some, or a number (required unless --config is used)
+    #[arg(short = 'e', long = "expect", help_heading = "Test", required_unless_present = "config")]
+    pub expect: Option<String>,
+
+    /// Error message template for failed expectations (per-match, supports {file}, {line}, {name}, etc.)
+    #[arg(long = "error", help_heading = "Test")]
+    pub error: Option<String>,
+
+    /// Path to a tractor config file (YAML/TOML) — runs only test operations from it
+    #[arg(long = "config", help_heading = "Config")]
+    pub config: Option<String>,
+
     #[command(flatten)]
     pub shared: SharedArgs,
 
@@ -27,18 +39,6 @@ pub struct TestArgs {
     /// Output format [default: text]
     #[arg(short = 'f', long = "format", default_value = "text", help_heading = "Format")]
     pub format: String,
-
-    /// Expected result: none, some, or a number (required unless --config is used)
-    #[arg(short = 'e', long = "expect", help_heading = "Test", required_unless_present = "config")]
-    pub expect: Option<String>,
-
-    /// Error message template for failed expectations (per-match, supports {file}, {line}, {name}, etc.)
-    #[arg(long = "error", help_heading = "Test")]
-    pub error: Option<String>,
-
-    /// Path to a tractor config file (YAML/TOML) — runs only test operations from it
-    #[arg(long = "config", help_heading = "Config")]
-    pub config: Option<String>,
 }
 use crate::executor::{self, ExecuteOptions, Operation, TestOperation, TestAssertion};
 use crate::cli::context::RunContext;

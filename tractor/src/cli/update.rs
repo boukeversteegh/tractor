@@ -8,12 +8,12 @@ pub struct UpdateArgs {
     #[arg()]
     pub files: Vec<String>,
 
-    #[command(flatten)]
-    pub shared: SharedArgs,
-
     /// Value to set matched nodes to
     #[arg(long = "value", help_heading = "Update")]
     pub value: String,
+
+    #[command(flatten)]
+    pub shared: SharedArgs,
 }
 use crate::executor::{self, ExecuteOptions, Operation, UpdateOperation};
 use crate::cli::context::RunContext;
