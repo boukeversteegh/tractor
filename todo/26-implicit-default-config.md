@@ -20,6 +20,18 @@ This means:
 - If neither `tractor.yml` nor `tractor.yaml` exists and no path is
   given, tractor should report a clear error
 
+## Why `tractor.yml` instead of `.tractor.yml`
+
+Dotfiles are hidden by default on Unix — users need `ls -a` or
+explicit IDE settings to see them. That creates unnecessary friction:
+the config is invisible unless you know to look for it.
+
+A plain `tractor.yml` is immediately visible in the project root.
+It feels accessible and approachable — just a simple file you can
+open and edit. Dotfiles carry the connotation of complex, low-level
+configuration scripts that are hard to write and debug. Tractor's
+config should feel like the opposite of that.
+
 ## Scope
 
 All commands that accept a `<CONFIG>` argument.
