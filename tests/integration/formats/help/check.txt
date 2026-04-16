@@ -16,7 +16,7 @@ Options:
   -h, --help
           Print help (see a summary with '-h')
 
-Check:
+Config:
       --config <CONFIG>
           Path to a tractor config file (YAML/TOML) for batch checking.
           
@@ -31,6 +31,7 @@ Check:
                     - valid: "JSON.parse(data)"
                     - invalid: "eval(userInput)"
 
+Inline Rule:
       --reason <REASON>
           Reason message for each violation
 
