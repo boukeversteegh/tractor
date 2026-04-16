@@ -10,33 +10,6 @@ pub struct CheckArgs {
     #[arg()]
     pub files: Vec<String>,
 
-    #[command(flatten)]
-    pub shared: SharedArgs,
-
-    /// Source code string to parse (alternative to stdin, requires --lang)
-    #[arg(short = 's', long = "string", help_heading = None)]
-    pub content: Option<String>,
-
-    /// Report fields to include (e.g. tree, value, source) [default: reason,severity,lines]
-    #[arg(short = 'v', long = "view", help_heading = "View")]
-    pub view: Option<String>,
-
-    /// Custom message template (supports {value}, {line}, {col}, {file})
-    #[arg(short = 'm', long = "message", help_heading = "View")]
-    pub message: Option<String>,
-
-    /// Output format [default: gcc]
-    #[arg(short = 'f', long = "format", default_value = "gcc", help_heading = "Format")]
-    pub format: String,
-
-    /// Reason message for each violation
-    #[arg(long = "reason", help_heading = "Check")]
-    pub reason: Option<String>,
-
-    /// Severity level: error (default) or warning
-    #[arg(long = "severity", default_value = "error", help_heading = "Check")]
-    pub severity: String,
-
     /// Path to a tractor config file (YAML/TOML) for batch checking.
     ///
     /// Uses the standard tractor config format. Example:
@@ -49,16 +22,43 @@ pub struct CheckArgs {
     ///         expect:
     ///           - valid: "JSON.parse(data)"
     ///           - invalid: "eval(userInput)"
-    #[arg(long = "config", help_heading = "Check", verbatim_doc_comment)]
+    #[arg(long = "config", help_heading = "Config", verbatim_doc_comment)]
     pub config: Option<String>,
 
+    /// Reason message for each violation
+    #[arg(long = "reason", help_heading = "Inline Rule (use with -x)")]
+    pub reason: Option<String>,
+
+    /// Severity level: error (default) or warning
+    #[arg(long = "severity", default_value = "error", help_heading = "Inline Rule (use with -x)")]
+    pub severity: String,
+
     /// A code example that should pass the check (no matches expected)
-    #[arg(long = "expect-valid", help_heading = "Check")]
+    #[arg(long = "expect-valid", help_heading = "Inline Rule (use with -x)")]
     pub expect_valid: Option<String>,
 
     /// A code example that should fail the check (matches expected)
-    #[arg(long = "expect-invalid", help_heading = "Check")]
+    #[arg(long = "expect-invalid", help_heading = "Inline Rule (use with -x)")]
     pub expect_invalid: Option<String>,
+
+    #[command(flatten)]
+    pub shared: SharedArgs,
+
+    /// Source code string to parse (alternative to stdin, requires --lang)
+    #[arg(short = 's', long = "string", help_heading = None)]
+    pub content: Option<String>,
+
+    /// Report fields to include (e.g. tree, value, source) [default: reason,severity,lines]
+    #[arg(short = 'v', long = "view", help_heading = "View", allow_hyphen_values = true)]
+    pub view: Option<String>,
+
+    /// Custom message template (supports {value}, {line}, {col}, {file})
+    #[arg(short = 'm', long = "message", help_heading = "View")]
+    pub message: Option<String>,
+
+    /// Output format [default: gcc]
+    #[arg(short = 'f', long = "format", default_value = "gcc", help_heading = "Format")]
+    pub format: String,
 }
 use crate::executor::{self, CheckOperation, ExecuteOptions, Operation};
 use crate::cli::context::RunContext;

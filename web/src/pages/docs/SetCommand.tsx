@@ -210,7 +210,7 @@ Set 2 values in 1 file`}
       </p>
       <CodeBlock
         language="yaml"
-        title=".tractor.yml"
+        title="tractor.yml"
         code={`set:
   files: ["config.json"]
   mappings:
@@ -221,7 +221,7 @@ Set 2 values in 1 file`}
     - xpath: "//cache/ttl"
       value: "600"`}
       />
-      <CodeBlock language="bash" code={`tractor run .tractor.yml`} />
+      <CodeBlock language="bash" code={`tractor run tractor.yml`} />
       <p>
         This applies all mappings to the matched files in a single operation. See the <Link to="/docs/commands/run">run command</Link> for more details on config files.
       </p>

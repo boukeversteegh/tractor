@@ -42,7 +42,7 @@ export function LintRulesGuide() {
       <h3>3. Add it to a config file</h3>
       <CodeBlock
         language="yaml"
-        title=".tractor.yml"
+        title="tractor.yml"
         code={`check:
   files:
     - "src/**/*.js"
@@ -91,7 +91,7 @@ export function LintRulesGuide() {
       </p>
       <CodeBlock
         language="yaml"
-        title=".tractor.yml"
+        title="tractor.yml"
         code={`check:
   files:
     - "src/**/*.js"
@@ -163,7 +163,7 @@ check:
       </p>
       <CodeBlock
         language="yaml"
-        title=".tractor.yml"
+        title="tractor.yml"
         code={`operations:
   - check:
       files:

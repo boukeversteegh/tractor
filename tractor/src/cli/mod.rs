@@ -76,11 +76,11 @@ pub struct SharedArgs {
 
     // -- Extract --
     /// XPath expression to extract matching AST nodes
-    #[arg(short = 'x', long = "extract", help_heading = "Extract")]
+    #[arg(short = 'x', long = "extract", value_name = "QUERY", help_heading = "Extract")]
     pub xpath: Option<NormalizedXpath>,
 
     /// Tree mode: raw, structure, data [default: auto]
-    #[arg(short = 't', long = "tree", help_heading = "Extract",
+    #[arg(short = 't', long = "tree", help_heading = "Extract", allow_hyphen_values = true,
         long_help = "\
 Tree mode [default: auto]
   raw        Raw tree-sitter AST (no semantic transforms)
@@ -131,11 +131,11 @@ When omitted, auto-selects: data for JSON/YAML, structure for everything else.")
 
     // -- Filter --
     /// Only consider files changed in a git diff (e.g. "HEAD~3", "main..HEAD")
-    #[arg(long = "diff-files", value_name = "RANGE", help_heading = "Filter")]
+    #[arg(long = "diff-files", value_name = "RANGE", help_heading = "Filter", allow_hyphen_values = true)]
     pub diff_files: Option<String>,
 
     /// Only consider matches in changed hunks of a git diff (e.g. "HEAD~3", "main..HEAD")
-    #[arg(long = "diff-lines", value_name = "RANGE", help_heading = "Filter")]
+    #[arg(long = "diff-lines", value_name = "RANGE", help_heading = "Filter", allow_hyphen_values = true)]
     pub diff_lines: Option<String>,
 
     // -- Advanced --

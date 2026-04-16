@@ -16,8 +16,38 @@ Options:
   -h, --help
           Print help (see a summary with '-h')
 
+Config:
+      --config <CONFIG>
+          Path to a tractor config file (YAML/TOML) for batch checking.
+          
+          Uses the standard tractor config format. Example:
+          
+            check:
+              rules:
+                - id: no-eval
+                  xpath: "//call[function='eval']"
+                  severity: error
+                  expect:
+                    - valid: "JSON.parse(data)"
+                    - invalid: "eval(userInput)"
+
+Inline Rule (use with -x):
+      --reason <REASON>
+          Reason message for each violation
+
+      --severity <SEVERITY>
+          Severity level: error (default) or warning
+          
+          [default: error]
+
+      --expect-valid <EXPECT_VALID>
+          A code example that should pass the check (no matches expected)
+
+      --expect-invalid <EXPECT_INVALID>
+          A code example that should fail the check (matches expected)
+
 Extract:
-  -x, --extract <XPATH>
+  -x, --extract <QUERY>
           XPath expression to extract matching AST nodes
 
   -t, --tree <TREE>
@@ -71,13 +101,13 @@ View:
               output    Full modified content (for --stdout)
           
           Combine with commas: -v tree,value
-          Use +/- modifiers to adjust defaults: -v=-lines or -v=+source,-lines
+          Use +/- modifiers to adjust defaults: -v -lines or -v +source,-lines
           
           Examples:
             -v value                Show only text content
             -v tree,value           Combine multiple fields
-            -v=-lines               Remove a field from defaults
-            -v=+source,-lines       Add and remove in one expression
+            -v -lines               Remove a field from defaults
+            -v +source,-lines       Add and remove in one expression
 
   -m, --message <MESSAGE>
           Custom message template (supports {value}, {line}, {col}, {file})
@@ -130,32 +160,3 @@ Advanced:
 
       --verbose
           Show verbose output
-
-Check:
-      --reason <REASON>
-          Reason message for each violation
-
-      --severity <SEVERITY>
-          Severity level: error (default) or warning
-          
-          [default: error]
-
-      --config <CONFIG>
-          Path to a tractor config file (YAML/TOML) for batch checking.
-          
-          Uses the standard tractor config format. Example:
-          
-            check:
-              rules:
-                - id: no-eval
-                  xpath: "//call[function='eval']"
-                  severity: error
-                  expect:
-                    - valid: "JSON.parse(data)"
-                    - invalid: "eval(userInput)"
-
-      --expect-valid <EXPECT_VALID>
-          A code example that should pass the check (no matches expected)
-
-      --expect-invalid <EXPECT_INVALID>
-          A code example that should fail the check (matches expected)

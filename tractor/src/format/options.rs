@@ -236,7 +236,7 @@ impl ViewField {
         format!(
             "{views}\n\n\
              Combine with commas: -v tree,value\n\
-             Use +/- modifiers to adjust defaults: -v=-lines or -v=+source,-lines"
+             Use +/- modifiers to adjust defaults: -v -lines or -v +source,-lines"
         )
     }
 
@@ -250,8 +250,8 @@ impl ViewField {
              Examples:\n  \
              -v value                Show only text content\n  \
              -v tree,value           Combine multiple fields\n  \
-             -v=-lines               Remove a field from defaults\n  \
-             -v=+source,-lines       Add and remove in one expression",
+             -v -lines               Remove a field from defaults\n  \
+             -v +source,-lines       Add and remove in one expression",
             defaults.join(","),
             ViewField::help_text(),
         )

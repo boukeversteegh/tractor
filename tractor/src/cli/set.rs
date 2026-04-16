@@ -17,9 +17,6 @@ pub struct SetArgs {
     #[arg()]
     pub args: Vec<String>,
 
-    #[command(flatten)]
-    pub shared: SharedArgs,
-
     /// Value to set matched nodes to (optional when path expression contains values)
     #[arg(long = "value", help_heading = "Set")]
     pub value: Option<String>,
@@ -28,17 +25,20 @@ pub struct SetArgs {
     #[arg(long = "stdout", help_heading = "Set")]
     pub stdout: bool,
 
+    /// Path to a tractor config file (YAML/TOML) — runs only set operations from it
+    #[arg(long = "config", help_heading = "Config")]
+    pub config: Option<String>,
+
+    #[command(flatten)]
+    pub shared: SharedArgs,
+
     /// Report fields to include (e.g. tree, value, source) [default: file,line,status,reason]
-    #[arg(short = 'v', long = "view", help_heading = "View")]
+    #[arg(short = 'v', long = "view", help_heading = "View", allow_hyphen_values = true)]
     pub view: Option<String>,
 
     /// Output format [default: text]
     #[arg(short = 'f', long = "format", default_value = "text", help_heading = "Format")]
     pub format: String,
-
-    /// Path to a tractor config file (YAML/TOML) — runs only set operations from it
-    #[arg(long = "config", help_heading = "Config")]
-    pub config: Option<String>,
 }
 use crate::executor::{
     self, ExecuteOptions, Operation, SetMapping, SetOperation, SetReportMode, SetWriteMode,
