@@ -16,6 +16,35 @@ Options:
   -h, --help
           Print help (see a summary with '-h')
 
+Check:
+      --config <CONFIG>
+          Path to a tractor config file (YAML/TOML) for batch checking.
+          
+          Uses the standard tractor config format. Example:
+          
+            check:
+              rules:
+                - id: no-eval
+                  xpath: "//call[function='eval']"
+                  severity: error
+                  expect:
+                    - valid: "JSON.parse(data)"
+                    - invalid: "eval(userInput)"
+
+      --reason <REASON>
+          Reason message for each violation
+
+      --severity <SEVERITY>
+          Severity level: error (default) or warning
+          
+          [default: error]
+
+      --expect-valid <EXPECT_VALID>
+          A code example that should pass the check (no matches expected)
+
+      --expect-invalid <EXPECT_INVALID>
+          A code example that should fail the check (matches expected)
+
 Extract:
   -x, --extract <XPATH>
           XPath expression to extract matching AST nodes
@@ -130,32 +159,3 @@ Advanced:
 
       --verbose
           Show verbose output
-
-Check:
-      --config <CONFIG>
-          Path to a tractor config file (YAML/TOML) for batch checking.
-          
-          Uses the standard tractor config format. Example:
-          
-            check:
-              rules:
-                - id: no-eval
-                  xpath: "//call[function='eval']"
-                  severity: error
-                  expect:
-                    - valid: "JSON.parse(data)"
-                    - invalid: "eval(userInput)"
-
-      --reason <REASON>
-          Reason message for each violation
-
-      --severity <SEVERITY>
-          Severity level: error (default) or warning
-          
-          [default: error]
-
-      --expect-valid <EXPECT_VALID>
-          A code example that should pass the check (no matches expected)
-
-      --expect-invalid <EXPECT_INVALID>
-          A code example that should fail the check (matches expected)

@@ -10,25 +10,6 @@ pub struct CheckArgs {
     #[arg()]
     pub files: Vec<String>,
 
-    #[command(flatten)]
-    pub shared: SharedArgs,
-
-    /// Source code string to parse (alternative to stdin, requires --lang)
-    #[arg(short = 's', long = "string", help_heading = None)]
-    pub content: Option<String>,
-
-    /// Report fields to include (e.g. tree, value, source) [default: reason,severity,lines]
-    #[arg(short = 'v', long = "view", help_heading = "View")]
-    pub view: Option<String>,
-
-    /// Custom message template (supports {value}, {line}, {col}, {file})
-    #[arg(short = 'm', long = "message", help_heading = "View")]
-    pub message: Option<String>,
-
-    /// Output format [default: gcc]
-    #[arg(short = 'f', long = "format", default_value = "gcc", help_heading = "Format")]
-    pub format: String,
-
     /// Path to a tractor config file (YAML/TOML) for batch checking.
     ///
     /// Uses the standard tractor config format. Example:
@@ -59,6 +40,25 @@ pub struct CheckArgs {
     /// A code example that should fail the check (matches expected)
     #[arg(long = "expect-invalid", help_heading = "Check")]
     pub expect_invalid: Option<String>,
+
+    #[command(flatten)]
+    pub shared: SharedArgs,
+
+    /// Source code string to parse (alternative to stdin, requires --lang)
+    #[arg(short = 's', long = "string", help_heading = None)]
+    pub content: Option<String>,
+
+    /// Report fields to include (e.g. tree, value, source) [default: reason,severity,lines]
+    #[arg(short = 'v', long = "view", help_heading = "View")]
+    pub view: Option<String>,
+
+    /// Custom message template (supports {value}, {line}, {col}, {file})
+    #[arg(short = 'm', long = "message", help_heading = "View")]
+    pub message: Option<String>,
+
+    /// Output format [default: gcc]
+    #[arg(short = 'f', long = "format", default_value = "gcc", help_heading = "Format")]
+    pub format: String,
 }
 use crate::executor::{self, CheckOperation, ExecuteOptions, Operation};
 use crate::cli::context::RunContext;
