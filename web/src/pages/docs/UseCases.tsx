@@ -318,7 +318,8 @@ OrderService.cs:5:5: error: Public methods should use PascalCase
         There are several ways to wire tractor into your AI workflow:
       </p>
       <ul>
-        <li><Link to="/docs/guides/claude-code-hooks">Claude Code Hooks</Link> — real-time feedback on every file edit, plus pre-commit hooks</li>
+        <li><Link to="/docs/guides/claude-code-hooks">Claude Code Hooks</Link> — real-time feedback on every file edit</li>
+        <li><Link to="/docs/guides/commit-hooks">Commit Hooks</Link> — catch violations before code is committed</li>
         <li><Link to="/docs/guides/ci-cd#ai-generated-prs">CI/CD Integration</Link> — catch violations in AI-generated pull requests with inline annotations</li>
       </ul>
 

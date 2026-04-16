@@ -50,6 +50,41 @@ export function ClaudeCodeHooksGuide() {
         The <code>-f claude-code</code> flag tells tractor to emit the JSON format that Claude Code hooks expect — no extra <code>jq</code> wrapping needed. When violations are found, Claude sees the errors and fixes them immediately. When the file is clean, tractor outputs nothing and the hook passes silently.
       </p>
 
+      <h3>The <code>--hook</code> parameter</h3>
+      <p>
+        The <code>-f claude-code</code> format supports a <code>--hook</code> parameter that controls the JSON envelope structure. Different Claude Code hook events expect different response formats:
+      </p>
+      <table className="doc-table">
+        <thead>
+          <tr><th><code>--hook</code> value</th><th>Behavior</th><th>Use case</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>post-tool-use</code></td>
+            <td>Blocks with <code>{`{ "decision": "block", "reason": "..." }`}</code></td>
+            <td>Check files after edits (default)</td>
+          </tr>
+          <tr>
+            <td><code>stop</code></td>
+            <td>Same envelope as post-tool-use</td>
+            <td>Final check before Claude stops</td>
+          </tr>
+          <tr>
+            <td><code>pre-tool-use</code></td>
+            <td>Denies with <code>{`{ "permissionDecision": "deny", ... }`}</code></td>
+            <td>Prevent tool calls based on violations</td>
+          </tr>
+          <tr>
+            <td><code>context</code></td>
+            <td>Non-blocking: <code>{`{ "additionalContext": "..." }`}</code></td>
+            <td>Feed violations as context without blocking</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        When <code>--hook</code> is omitted, tractor defaults to <code>post-tool-use</code>. For the edit hook setup above, this is the right choice — it blocks Claude from proceeding until violations are fixed.
+      </p>
+
       <h2 id="example-rules">Example rule file</h2>
       <p>
         Here's a <code>.tractor.yml</code> that enforces common conventions:
@@ -84,54 +119,11 @@ export function ClaudeCodeHooksGuide() {
       severity: error`}
       />
 
-      <h2 id="pre-commit-hook">Pre-commit hook</h2>
-      <p>
-        You can also run tractor as a <strong>git pre-commit hook</strong> to catch violations before they're committed — whether the code was written by a human or an AI agent. This is useful as a local safety net alongside the Claude Code edit hook.
-      </p>
-
-      <h3>Using a shell script</h3>
-      <p>
-        Create <code>.git/hooks/pre-commit</code> (or add to your existing hook):
-      </p>
-      <CodeBlock
-        language="bash"
-        title=".git/hooks/pre-commit"
-        code={`#!/bin/sh
-# Run tractor on staged files only
-STAGED=$(git diff --cached --name-only --diff-filter=ACM)
-
-if [ -n "$STAGED" ]; then
-  tractor run .tractor.yml --files $STAGED
-fi`}
-      />
-      <p>
-        Make it executable with <code>chmod +x .git/hooks/pre-commit</code>.
-      </p>
-
-      <h3>Using pre-commit framework</h3>
-      <p>
-        If you use the <a href="https://pre-commit.com" target="_blank" rel="noopener noreferrer">pre-commit</a> framework, add tractor as a local hook:
-      </p>
-      <CodeBlock
-        language="yaml"
-        title=".pre-commit-config.yaml"
-        code={`repos:
-  - repo: local
-    hooks:
-      - id: tractor
-        name: tractor
-        entry: tractor run .tractor.yml --files
-        language: system
-        pass_filenames: true`}
-      />
-      <p>
-        Both approaches only check staged files, so the hook stays fast even on large codebases. If tractor finds errors, the commit is blocked and you see the violations immediately.
-      </p>
-
-      <h2 id="ci-integration">CI for AI-generated PRs</h2>
-      <p>
-        For AI agents that work asynchronously — opening PRs rather than editing interactively — add tractor to your CI pipeline. With <code>--diff-lines</code> and <code>-f github</code>, violations appear as inline annotations on the PR that the AI can read and fix automatically. See the <Link to="/docs/guides/ci-cd#ai-generated-prs">CI/CD Integration guide</Link> for full setup instructions.
-      </p>
+      <h2 id="other-hooks">Other hooks</h2>
+      <ul>
+        <li><Link to="/docs/guides/commit-hooks">Commit Hooks</Link> — run tractor as a git pre-commit hook for a local safety net alongside the edit hook</li>
+        <li><Link to="/docs/guides/ci-cd#ai-generated-prs">CI/CD Integration</Link> — catch violations in AI-generated pull requests with inline annotations</li>
+      </ul>
 
       <div className="doc-next">
         <p>Next: <Link to="/docs/guides/use-cases">Use Cases</Link> — see the full range of ways teams use tractor.</p>
