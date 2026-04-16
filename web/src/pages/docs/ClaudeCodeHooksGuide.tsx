@@ -12,7 +12,10 @@ export function ClaudeCodeHooksGuide() {
 
       <h2 id="how-it-works">How it works</h2>
       <p>
-        Claude Code supports <strong>hooks</strong> — shell commands that run in response to tool events. By wiring tractor into a <code>PostToolUse</code> hook, you get instant feedback every time Claude creates or modifies a file. Claude sees the violations as error messages and fixes them immediately, just like it would with a compiler error or linter warning.
+        Claude Code supports <strong>hooks</strong> — shell commands that run in response to tool events. Tractor currently integrates via the <code>PostToolUse</code> hook, which fires <em>after</em> an edit has been written to disk. This means violations don't prevent the file from being updated — instead, Claude sees the errors immediately after the edit and fixes them in a follow-up change.
+      </p>
+      <p>
+        This gives you a fast correct-and-fix loop: Claude writes code, tractor checks it, Claude fixes any issues. We're working on a pre-edit integration that will prevent violations from being written in the first place.
       </p>
 
       <h2 id="setup">Setting up the edit hook</h2>
