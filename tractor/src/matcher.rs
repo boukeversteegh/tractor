@@ -12,10 +12,10 @@ use tractor_core::{
     rule::{RuleSet, GlobMatcher},
     xpath::validate_xpath,
 };
-use crate::filter::ResultFilter;
+use crate::input::filter::ResultFilter;
 
-use super::context::RunContext;
-use super::format::{ViewField, ViewSet};
+use crate::cli::context::RunContext;
+use crate::format::{ViewField, ViewSet};
 
 // ---------------------------------------------------------------------------
 // XPath validation

@@ -5,9 +5,9 @@ use tractor_core::{
     TreeMode,
 };
 use crate::cli::SharedArgs;
-use super::input::{InputMode, resolve_input};
-use super::format::{OutputFormat, GroupDimension, ViewField, ViewSet, parse_view_set, parse_group_by};
-use super::format::options::HookType;
+use crate::input::{InputMode, resolve_input};
+use crate::format::{OutputFormat, GroupDimension, ViewField, ViewSet, parse_view_set, parse_group_by};
+use crate::format::options::HookType;
 
 pub struct RunContext {
     pub xpath: Option<NormalizedXpath>,

@@ -1,3 +1,7 @@
+pub mod git;
+pub mod filter;
+pub mod file_resolver;
+
 use std::io::{self, BufRead, Read};
 use tractor_core::{expand_globs_checked, detect_language};
 use crate::cli::SharedArgs;
