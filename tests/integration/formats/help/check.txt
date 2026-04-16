@@ -31,7 +31,7 @@ Config:
                     - valid: "JSON.parse(data)"
                     - invalid: "eval(userInput)"
 
-Inline Rule:
+Inline Rule (use with -x):
       --reason <REASON>
           Reason message for each violation
 

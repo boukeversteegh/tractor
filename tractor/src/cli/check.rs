@@ -26,19 +26,19 @@ pub struct CheckArgs {
     pub config: Option<String>,
 
     /// Reason message for each violation
-    #[arg(long = "reason", help_heading = "Inline Rule")]
+    #[arg(long = "reason", help_heading = "Inline Rule (use with -x)")]
     pub reason: Option<String>,
 
     /// Severity level: error (default) or warning
-    #[arg(long = "severity", default_value = "error", help_heading = "Inline Rule")]
+    #[arg(long = "severity", default_value = "error", help_heading = "Inline Rule (use with -x)")]
     pub severity: String,
 
     /// A code example that should pass the check (no matches expected)
-    #[arg(long = "expect-valid", help_heading = "Inline Rule")]
+    #[arg(long = "expect-valid", help_heading = "Inline Rule (use with -x)")]
     pub expect_valid: Option<String>,
 
     /// A code example that should fail the check (matches expected)
-    #[arg(long = "expect-invalid", help_heading = "Inline Rule")]
+    #[arg(long = "expect-invalid", help_heading = "Inline Rule (use with -x)")]
     pub expect_invalid: Option<String>,
 
     #[command(flatten)]
