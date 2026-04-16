@@ -75,13 +75,13 @@ View:
               output    Full modified content (for --stdout)
           
           Combine with commas: -v tree,value
-          Use +/- modifiers to adjust defaults: -v=-lines or -v=+source,-lines
+          Use +/- modifiers to adjust defaults: -v -lines or -v +source,-lines
           
           Examples:
             -v value                Show only text content
             -v tree,value           Combine multiple fields
-            -v=-lines               Remove a field from defaults
-            -v=+source,-lines       Add and remove in one expression
+            -v -lines               Remove a field from defaults
+            -v +source,-lines       Add and remove in one expression
 
   -m, --message <MESSAGE>
           Custom message template (supports {value}, {line}, {col}, {file})

@@ -29,7 +29,7 @@ pub struct TestArgs {
     pub content: Option<String>,
 
     /// Report fields to include (e.g. tree, value, source) [default: totals]
-    #[arg(short = 'v', long = "view", help_heading = "View")]
+    #[arg(short = 'v', long = "view", help_heading = "View", allow_hyphen_values = true)]
     pub view: Option<String>,
 
     /// Custom message template (supports {value}, {line}, {col}, {file})

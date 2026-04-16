@@ -80,7 +80,7 @@ pub struct SharedArgs {
     pub xpath: Option<NormalizedXpath>,
 
     /// Tree mode: raw, structure, data [default: auto]
-    #[arg(short = 't', long = "tree", help_heading = "Extract",
+    #[arg(short = 't', long = "tree", help_heading = "Extract", allow_hyphen_values = true,
         long_help = "\
 Tree mode [default: auto]
   raw        Raw tree-sitter AST (no semantic transforms)

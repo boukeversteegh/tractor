@@ -33,7 +33,7 @@ pub struct SetArgs {
     pub shared: SharedArgs,
 
     /// Report fields to include (e.g. tree, value, source) [default: file,line,status,reason]
-    #[arg(short = 'v', long = "view", help_heading = "View")]
+    #[arg(short = 'v', long = "view", help_heading = "View", allow_hyphen_values = true)]
     pub view: Option<String>,
 
     /// Output format [default: text]

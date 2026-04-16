@@ -106,72 +106,9 @@ fn augment_arg_help(cmd: clap::Command, view_defaults: &[ViewField], format_defa
 }
 
 // ---------------------------------------------------------------------------
-// Parse error hints
+// Parse error handling
 // ---------------------------------------------------------------------------
 
-/// Handle a clap parse error, adding a hint about `=` syntax when a flag
-/// like `-v` is followed by a hyphen-prefixed value (e.g. `-v -tree`).
 pub fn handle_parse_error(e: clap::Error) -> Cli {
-    let plain = e.render().to_string();
-    if plain.contains("a value is required for") {
-        if let Some((flag, next)) = detect_hyphen_value_pattern() {
-            let use_color = e.use_stderr();
-            let rendered = if use_color {
-                e.render().ansi().to_string()
-            } else {
-                plain.clone()
-            };
-            let (green, yellow, reset) = if use_color {
-                ("\x1b[32m", "\x1b[33m", "\x1b[0m")
-            } else {
-                ("", "", "")
-            };
-            let tip = format!(
-                "\n  {green}tip:{reset} to pass a value starting with '-', use '{yellow}{flag}={next}{reset}'\n"
-            );
-            // Insert tip before the "For more information" line.
-            // Locate in plain text, then find the matching newline in
-            // the rendered (possibly ANSI) string by newline count.
-            let marker = "\nFor more information";
-            if let Some(plain_pos) = plain.find(marker) {
-                let nl_count = plain[..plain_pos].matches('\n').count();
-                if let Some(ansi_pos) = rendered.match_indices('\n')
-                    .nth(nl_count).map(|(i, _)| i)
-                {
-                    eprint!("{}{}{}", &rendered[..ansi_pos], tip, &rendered[ansi_pos..]);
-                } else {
-                    eprint!("{rendered}{tip}");
-                }
-            } else {
-                eprint!("{rendered}{tip}");
-            }
-            std::process::exit(2);
-        }
-    }
     e.exit();
-}
-
-/// Check if the raw CLI args contain a pattern like `-v -something` where
-/// a flag that takes a value is followed by what looks like another flag.
-/// Returns `(flag, next_arg)` for the hint, e.g. `("-v", "-tree")`.
-fn detect_hyphen_value_pattern() -> Option<(String, String)> {
-    let args: Vec<String> = std::env::args().collect();
-    // Flags that take a value and support values starting with - or +
-    let value_flags: &[(&str, &str)] = &[
-        ("-v", "--view"),
-        ("-t", "--tree"),
-    ];
-
-    for window in args.windows(2) {
-        let (flag, next) = (&window[0], &window[1]);
-        let is_value_flag = value_flags.iter().any(|(short, long)| flag == short || flag == *long);
-        if !is_value_flag {
-            continue;
-        }
-        // Next arg looks like a flag (starts with -), but not bare `--`
-        if next.starts_with('-') && next.len() > 1 && next != "--" {
-            return Some((flag.clone(), next.clone()));
-        }
-    }
-    None
 }

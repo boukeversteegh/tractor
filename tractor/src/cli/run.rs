@@ -20,7 +20,7 @@ pub struct RunArgs {
     pub format: String,
 
     /// Report fields to include (e.g. tree, value, source)
-    #[arg(short = 'v', long = "view", help_heading = "Output")]
+    #[arg(short = 'v', long = "view", help_heading = "Output", allow_hyphen_values = true)]
     pub view: Option<String>,
 
     /// Message template for matches (e.g. "{file}:{line}: {value}")
