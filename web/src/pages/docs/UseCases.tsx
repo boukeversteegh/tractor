@@ -299,50 +299,6 @@ OrderService.cs:5:5: error: Public methods should use PascalCase
         This is the same feedback loop as a compiler or linter, but for your team's custom conventions. The AI already knows how to respond to error messages — it does it all day with TypeScript errors and ESLint warnings.
       </p>
 
-      <h3>Example: CI hook for AI-generated PRs</h3>
-      <p>
-        Add tractor to your CI pipeline. When an AI agent opens a PR, it gets the same feedback as a human developer:
-      </p>
-      <CodeBlock
-        language="yaml"
-        title=".tractor.yml"
-        code={`diff-lines: "main..HEAD"
-
-check:
-  files:
-    - "src/**/*.cs"
-  rules:
-    - id: authorize-required
-      xpath: >-
-        //class[contains(name,'Controller')]
-        /method[public]
-        [not(attrs[contains(.,'Authorize')])]
-        [not(attrs[contains(.,'AllowAnonymous')])]/name
-      reason: "Controller actions must have [Authorize] or [AllowAnonymous]"
-      severity: error
-
-    - id: tenant-id-required
-      xpath: >-
-        //class[contains(name,'Controller')]
-        /method[public]
-        [not(contains(.,'GetTenantId'))]/name
-      reason: "Controller actions must call GetTenantId()"
-      severity: error
-
-    - id: method-pascalcase
-      xpath: "//method[public]/name[matches(., '^[a-z]')]"
-      reason: "Public methods should use PascalCase"
-      severity: error`}
-      />
-      <CodeBlock
-        language="bash"
-        title="CI step"
-        code={`tractor run .tractor.yml --format github`}
-      />
-      <p>
-        With <code>--format github</code>, violations appear as inline annotations on the PR — the AI agent can read them and push a fix automatically.
-      </p>
-
       <h3>Why this beats style guides</h3>
       <table className="doc-table">
         <thead>
@@ -357,38 +313,14 @@ check:
         </tbody>
       </table>
 
-      <h3>Instant feedback with Claude Code hooks</h3>
+      <h3>Set it up</h3>
       <p>
-        For the tightest feedback loop, you can run tractor as an <strong>edit hook</strong> in Claude Code. Every time Claude edits a file, tractor checks just that file and reports violations immediately — before Claude moves on to the next change.
+        There are several ways to wire tractor into your AI workflow:
       </p>
-      <p>
-        Add this to your project's <code>.claude/settings.json</code>:
-      </p>
-      <CodeBlock
-        language="json"
-        title=".claude/settings.json"
-        code={`{
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "FILE=$(jq -r '.tool_input.file_path') && tractor run .tractor.yml --files \\"$FILE\\" -f claude-code"
-          }
-        ]
-      }
-    ]
-  }
-}`}
-      />
-      <p>
-        With <code>-f claude-code</code>, tractor emits the JSON format that Claude Code hooks expect — no extra <code>jq</code> wrapping needed for the output. When violations are found, Claude sees the errors and fixes them immediately. When the file is clean, tractor outputs nothing and the hook passes silently.
-      </p>
-      <p>
-        This way, Claude gets the same error-and-fix loop it's used to from compilers and linters — but for your team's custom rules. No style guide to read, no tokens wasted, just immediate corrections on every edit.
-      </p>
+      <ul>
+        <li><Link to="/docs/guides/claude-code-hooks">Claude Code Hooks</Link> — real-time feedback on every file edit, plus pre-commit hooks</li>
+        <li><Link to="/docs/guides/ci-cd#ai-generated-prs">CI/CD Integration</Link> — catch violations in AI-generated pull requests with inline annotations</li>
+      </ul>
 
       {/* ── Centralized Configuration ── */}
       <h2 id="centralized-configuration">Centralized Configuration</h2>

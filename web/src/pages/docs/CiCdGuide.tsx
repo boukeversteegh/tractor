@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { DocLayout } from '../../components/DocLayout';
 import { CodeBlock, OutputBlock } from '../../components/CodeBlock';
 
@@ -169,6 +170,14 @@ jobs:
           <tr><td><code>1</code></td><td>Errors found</td></tr>
         </tbody>
       </table>
+
+      <h2 id="ai-generated-prs">AI-Generated PRs</h2>
+      <p>
+        When AI coding agents (Claude, Copilot, etc.) open pull requests, tractor gives them the same feedback loop as human developers. Combine <code>--diff-lines</code> with <code>-f github</code> so violations appear as inline annotations on the PR — the AI agent can read them and push a fix automatically.
+      </p>
+      <p>
+        This approach is more efficient than prompting the AI with lengthy style guides. The rules run as a separate CI step — zero tokens spent on instructions, and the AI already knows how to respond to error messages. See <Link to="/docs/guides/use-cases#ai-guard-railing">AI Guard Railing</Link> for the rationale, and <Link to="/docs/guides/claude-code-hooks">Claude Code Hooks</Link> for real-time feedback during interactive editing.
+      </p>
 
       <h2>Tips</h2>
       <ul>

@@ -317,14 +317,6 @@ Output format [default: gcc]
   claude-code Claude Code hook JSON (use with --hook)")]
     pub format: String,
 
-    /// Reason message for each violation
-    #[arg(long = "reason", help_heading = "Check")]
-    pub reason: Option<String>,
-
-    /// Severity level: error (default) or warning
-    #[arg(long = "severity", default_value = "error", help_heading = "Check")]
-    pub severity: String,
-
     /// Path to a tractor config file (YAML/TOML) for batch checking.
     ///
     /// Uses the standard tractor config format. Example:
@@ -339,6 +331,14 @@ Output format [default: gcc]
     ///           - invalid: "eval(userInput)"
     #[arg(long = "config", help_heading = "Check", verbatim_doc_comment)]
     pub config: Option<String>,
+
+    /// Reason message for each violation
+    #[arg(long = "reason", help_heading = "Check")]
+    pub reason: Option<String>,
+
+    /// Severity level: error (default) or warning
+    #[arg(long = "severity", default_value = "error", help_heading = "Check")]
+    pub severity: String,
 
     /// A code example that should pass the check (no matches expected)
     #[arg(long = "expect-valid", help_heading = "Check")]

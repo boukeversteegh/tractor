@@ -17,6 +17,7 @@ import { SchemaGuide } from './pages/docs/SchemaGuide';
 import { LintRulesGuide } from './pages/docs/LintRulesGuide';
 import { CiCdGuide } from './pages/docs/CiCdGuide';
 import { UseCases } from './pages/docs/UseCases';
+import { ClaudeCodeHooksGuide } from './pages/docs/ClaudeCodeHooksGuide';
 import { CheatSheet } from './pages/docs/CheatSheet';
 
 export function App() {
@@ -42,6 +43,7 @@ export function App() {
         <Route path="/docs/guides/lint-rules" element={<LintRulesGuide />} />
         <Route path="/docs/guides/ci-cd" element={<CiCdGuide />} />
         <Route path="/docs/guides/use-cases" element={<UseCases />} />
+        <Route path="/docs/guides/claude-code-hooks" element={<ClaudeCodeHooksGuide />} />
       </Routes>
     </BrowserRouter>
   );

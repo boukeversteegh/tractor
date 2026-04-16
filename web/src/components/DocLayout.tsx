@@ -47,6 +47,7 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
       { label: 'Exploring with Schema', path: '/docs/guides/schema' },
       { label: 'Writing Lint Rules', path: '/docs/guides/lint-rules' },
       { label: 'CI/CD Integration', path: '/docs/guides/ci-cd' },
+      { label: 'Claude Code Hooks', path: '/docs/guides/claude-code-hooks' },
       { label: 'Use Cases', path: '/docs/guides/use-cases' },
     ],
   },
