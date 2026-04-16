@@ -40,7 +40,7 @@ Extract:
           When omitted, auto-selects: data for JSON/YAML, structure for everything else.
 
   -W, --ignore-whitespace
-          Ignore whitespace in query string matching (strips whitespace from text nodes)
+          Ignore whitespace in XPath string matching (strips whitespace from text nodes)
 
 View:
   -n, --limit <LIMIT>
@@ -95,7 +95,7 @@ View:
 
 Format:
       --no-pretty
-          Disable pretty printing (shows raw XML without formatting)
+          Disable pretty printing (shows XML without formatting, as used by XPath)
 
       --color <COLOR>
           Color output: auto (default), always, never

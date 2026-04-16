@@ -87,7 +87,7 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     let xpath_expr = ctx.xpath.as_ref()
-        .ok_or("check requires a query (-x)")?;
+        .ok_or("check requires an XPath query (-x)")?;
 
     // Build a single-rule check operation and delegate to the executor.
     let mut rule = Rule::new("_check", xpath_expr.clone())

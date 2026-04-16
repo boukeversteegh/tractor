@@ -23,7 +23,7 @@ pub use update::UpdateArgs;
 pub use render::RenderArgs;
 pub use run::RunArgs;
 
-/// Multi-language code query tool
+/// Multi-language code query tool using XPath 3.1
 #[derive(Parser, Debug)]
 #[command(name = "tractor")]
 #[command(author, about, long_about = None)]
@@ -40,7 +40,7 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum Command {
-    /// Query source code ASTs (default when no subcommand given)
+    /// Query source code ASTs with XPath (default when no subcommand given)
     Query(QueryArgs),
     /// Run checks and report violations (lint mode)
     Check(CheckArgs),
@@ -90,7 +90,7 @@ Tree mode [default: auto]
 When omitted, auto-selects: data for JSON/YAML, structure for everything else.")]
     pub tree: Option<String>,
 
-    /// Ignore whitespace in query string matching (strips whitespace from text nodes)
+    /// Ignore whitespace in XPath string matching (strips whitespace from text nodes)
     #[arg(short = 'W', long = "ignore-whitespace", help_heading = "Extract")]
     pub ignore_whitespace: bool,
 
@@ -108,7 +108,7 @@ When omitted, auto-selects: data for JSON/YAML, structure for everything else.")
     pub meta: bool,
 
     // -- Format --
-    /// Disable pretty printing (shows raw XML without formatting)
+    /// Disable pretty printing (shows XML without formatting, as used by XPath)
     #[arg(long = "no-pretty", help_heading = "Format")]
     pub no_pretty: bool,
 

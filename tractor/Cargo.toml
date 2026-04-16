@@ -2,7 +2,7 @@
 name = "tractor"
 version.workspace = true
 edition.workspace = true
-description = "Multi-language code query tool"
+description = "Multi-language code query tool using XPath 3.1"
 
 [[bin]]
 name = "tractor"

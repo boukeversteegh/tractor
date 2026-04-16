@@ -32,7 +32,7 @@ pub struct QueryArgs {
     #[arg(short = 'f', long = "format", default_value = "text", help_heading = "Format")]
     pub format: String,
 
-    /// Show full XML with matches highlighted (for debugging queries)
+    /// Show full XML with matches highlighted (for debugging XPath)
     #[arg(long = "debug", help_heading = "Advanced")]
     pub debug: bool,
 
