@@ -1087,6 +1087,82 @@ fn run_without_path_errors_when_no_default_exists() {
     );
 }
 
+fn run_tractor_in(cwd: &std::path::Path, args: &[&str]) -> std::process::Output {
+    std::process::Command::new(env!("CARGO_BIN_EXE_tractor"))
+        .current_dir(cwd)
+        .args(args)
+        .output()
+        .expect("failed to execute tractor")
+}
+
+#[test]
+fn init_creates_tractor_yaml_with_starter_check_rule() {
+    let temp = tempfile::TempDir::new().expect("tempdir");
+    let result = run_tractor_in(temp.path(), &["init"]);
+    assert_eq!(0, result.status.code().unwrap_or(-1));
+    let stdout = String::from_utf8_lossy(&result.stdout);
+    assert!(
+        stdout.contains("created tractor.yaml"),
+        "expected success message, got: {stdout}"
+    );
+
+    let contents = std::fs::read_to_string(temp.path().join("tractor.yaml"))
+        .expect("tractor.yaml should exist");
+    assert!(contents.contains("check:"), "expected a check key");
+    assert!(
+        contents.contains("no-todo"),
+        "expected the starter TODO rule, got: {contents}"
+    );
+}
+
+#[test]
+fn init_scaffolded_file_is_runnable_by_default() {
+    // After `tractor init`, a bare `tractor run` should pick up the scaffolded
+    // tractor.yaml and surface the starter rule's findings.
+    let temp = tempfile::TempDir::new().expect("tempdir");
+    assert_eq!(0, run_tractor_in(temp.path(), &["init"]).status.code().unwrap_or(-1));
+    std::fs::write(temp.path().join("sample.js"), "// TODO: fix me\n")
+        .expect("failed to write sample");
+
+    let result = run_tractor_in(temp.path(), &["run", "--no-color"]);
+    let combined =
+        String::from_utf8_lossy(&result.stdout).into_owned()
+            + &String::from_utf8_lossy(&result.stderr);
+    assert!(
+        combined.contains("TODO comment found"),
+        "expected starter rule to flag the TODO, got: {combined}"
+    );
+}
+
+#[test]
+fn init_refuses_to_overwrite_without_force() {
+    let temp = tempfile::TempDir::new().expect("tempdir");
+    assert_eq!(0, run_tractor_in(temp.path(), &["init"]).status.code().unwrap_or(-1));
+
+    let result = run_tractor_in(temp.path(), &["init"]);
+    assert_ne!(0, result.status.code().unwrap_or(-1));
+    let combined = String::from_utf8_lossy(&result.stderr).into_owned()
+        + &String::from_utf8_lossy(&result.stdout);
+    assert!(
+        combined.contains("already exists"),
+        "expected conflict error, got: {combined}"
+    );
+}
+
+#[test]
+fn init_force_overwrites_existing_file() {
+    let temp = tempfile::TempDir::new().expect("tempdir");
+    std::fs::write(temp.path().join("tractor.yaml"), "# hand-edited\n")
+        .expect("failed to write pre-existing config");
+
+    let result = run_tractor_in(temp.path(), &["init", "--force"]);
+    assert_eq!(0, result.status.code().unwrap_or(-1));
+
+    let contents = std::fs::read_to_string(temp.path().join("tractor.yaml"))
+        .expect("tractor.yaml should exist");
+    assert!(contents.contains("no-todo"), "expected starter rule to be rewritten");
+}
+
 #[test]
 fn view_modifier_can_drop_lines_in_gcc_output() {
     let result = command([

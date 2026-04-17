@@ -22,11 +22,14 @@ export function RunCommand() {
       </p>
 
       <h2>Usage</h2>
-      <CodeBlock code={`tractor run <CONFIG> [OPTIONS]`} language="bash" />
+      <CodeBlock code={`tractor run [CONFIG] [OPTIONS]`} language="bash" />
+      <p>
+        If <code>CONFIG</code> is omitted, tractor looks for <code>tractor.yml</code> (or <code>tractor.yaml</code>) in the current directory. Create one with <Link to="/docs/commands/init">tractor init</Link>.
+      </p>
 
       <h2>Config File</h2>
       <p>
-        A tractor config file defines rules, file patterns, and operations in YAML or TOML. Place it in your project root as <code>tractor.yml</code>.
+        A tractor config file defines rules, file patterns, and operations in YAML or TOML. Place it in your project root as <code>tractor.yml</code> and it will be picked up automatically.
       </p>
 
       <h3>Minimal Example</h3>
@@ -42,7 +45,7 @@ export function RunCommand() {
       reason: "TODO comments should be resolved"
       severity: warning`}
       />
-      <CodeBlock language="bash" code={`tractor run tractor.yml`} />
+      <CodeBlock language="bash" code={`tractor run`} />
       <OutputBlock output={`src/app.js:1:1: warning: TODO comments should be resolved
 1 | // TODO: fix this later
     ^~~~~~~~~~~~~~~~~~~~~~~

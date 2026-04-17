@@ -260,6 +260,7 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
     ("help/check.txt", &["check", "--help"]),
     ("help/test.txt",  &["test",  "--help"]),
     ("help/run.txt",   &["run",   "--help"]),
+    ("help/init.txt",  &["init",  "--help"]),
     // Error/diagnostic snapshots: invalid XPath across all output formats.
     ("errors/xpath-invalid-text.txt", &[
         "query", "tests/integration/formats/sample.cs", "-x", "//class[bad=(",

@@ -9,6 +9,7 @@ pub mod set;
 pub mod update;
 pub mod render;
 pub mod run;
+pub mod init;
 pub mod config;
 pub mod languages;
 
@@ -22,6 +23,7 @@ pub use set::SetArgs;
 pub use update::UpdateArgs;
 pub use render::RenderArgs;
 pub use run::RunArgs;
+pub use init::InitArgs;
 
 /// Multi-language code query tool using XPath 3.1
 #[derive(Parser, Debug)]
@@ -54,6 +56,8 @@ pub enum Command {
     Render(RenderArgs),
     /// Execute a tractor config file (batch check/set operations)
     Run(RunArgs),
+    /// Create a starter tractor.yaml in the current directory
+    Init(InitArgs),
     /// Show documentation and reference information
     #[command(subcommand)]
     Docs(DocsCommand),

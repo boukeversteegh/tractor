@@ -1,0 +1,7 @@
+Create a starter tractor.yaml in the current directory
+
+Usage: tractor init [OPTIONS]
+
+Options:
+      --force  Overwrite the file if it already exists
+  -h, --help   Print help
