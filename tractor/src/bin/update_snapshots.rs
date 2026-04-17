@@ -154,6 +154,83 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
         "check", "tests/integration/formats/sample.cs", "-x", "class",
         "--reason", "class found", "-v", "tree,reason,severity", "-f", "xml", "--depth", "1",
     ]),
+    // Projection snapshots
+    ("text/project-tree.txt", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "tree",
+    ]),
+    ("json/project-tree.json", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "tree", "-f", "json",
+    ]),
+    ("yaml/project-tree.yaml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "tree", "-f", "yaml",
+    ]),
+    ("xml/project-tree.xml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "tree", "-f", "xml",
+    ]),
+    ("json/project-tree-single.json", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "tree", "--single", "-f", "json",
+    ]),
+    ("yaml/project-tree-single.yaml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "tree", "--single", "-f", "yaml",
+    ]),
+    ("xml/project-tree-single.xml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "tree", "--single", "-f", "xml",
+    ]),
+    ("text/project-value.txt", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-p", "value",
+    ]),
+    ("text/project-schema.txt", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "schema",
+    ]),
+    ("json/project-schema.json", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "schema", "-f", "json",
+    ]),
+    ("yaml/project-schema.yaml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "schema", "-f", "yaml",
+    ]),
+    ("xml/project-schema.xml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "schema", "-f", "xml",
+    ]),
+    ("json/project-results-message.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-m", "hit", "-p", "results", "-f", "json",
+    ]),
+    ("json/project-summary.json", &[
+        "check", "tests/integration/formats/sample.cs", "-x", "class",
+        "--reason", "class found", "-p", "summary", "-f", "json",
+    ]),
+    ("yaml/project-summary.yaml", &[
+        "check", "tests/integration/formats/sample.cs", "-x", "class",
+        "--reason", "class found", "-p", "summary", "-f", "yaml",
+    ]),
+    ("xml/project-summary.xml", &[
+        "check", "tests/integration/formats/sample.cs", "-x", "class",
+        "--reason", "class found", "-p", "summary", "-f", "xml",
+    ]),
+    ("text/project-count.txt", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "count",
+    ]),
+    ("json/project-count.json", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "count", "-f", "json",
+    ]),
+    ("xml/project-count.xml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "count", "-f", "xml",
+    ]),
     // map/array constructor output: XPath 3.1 structured results rendered natively.
     // Uses sample-classes.cs (Calculator + Greeter, each with multiple methods) so
     // the output is realistic and easy to inspect visually.

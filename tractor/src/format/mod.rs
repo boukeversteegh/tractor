@@ -98,54 +98,42 @@ pub fn render_report(
     let render_opts = ctx.render_options();
 
     let render_result: Result<(), ProjectionRenderError> = match ctx.output_format {
-        OutputFormat::Json => {
-            let rendered = json::render_json_output(
-                report,
-                &ctx.view,
-                &render_opts,
-                &dims,
-                ctx.projection,
-                ctx.single,
-            )?;
-            print!("{rendered}");
-            Ok(())
-        }
-        OutputFormat::Yaml => {
-            let rendered = yaml::render_yaml_output(
-                report,
-                &ctx.view,
-                &render_opts,
-                &dims,
-                ctx.projection,
-                ctx.single,
-            )?;
-            print!("{rendered}");
-            Ok(())
-        }
-        OutputFormat::Xml => {
-            let rendered = xml::render_xml_output(
-                report,
-                &ctx.view,
-                &render_opts,
-                &dims,
-                ctx.projection,
-                ctx.single,
-            )?;
-            print!("{rendered}");
-            Ok(())
-        }
-        OutputFormat::Text => {
-            let rendered = text::render_text_output(
-                report,
-                &ctx.view,
-                &render_opts,
-                &dims,
-                ctx.projection,
-                ctx.single,
-            )?;
-            print!("{rendered}");
-            Ok(())
-        }
+        OutputFormat::Json => json::render_json_output(
+            report,
+            &ctx.view,
+            &render_opts,
+            &dims,
+            ctx.projection,
+            ctx.single,
+        )
+        .map(|rendered| print!("{rendered}")),
+        OutputFormat::Yaml => yaml::render_yaml_output(
+            report,
+            &ctx.view,
+            &render_opts,
+            &dims,
+            ctx.projection,
+            ctx.single,
+        )
+        .map(|rendered| print!("{rendered}")),
+        OutputFormat::Xml => xml::render_xml_output(
+            report,
+            &ctx.view,
+            &render_opts,
+            &dims,
+            ctx.projection,
+            ctx.single,
+        )
+        .map(|rendered| print!("{rendered}")),
+        OutputFormat::Text => text::render_text_output(
+            report,
+            &ctx.view,
+            &render_opts,
+            &dims,
+            ctx.projection,
+            ctx.single,
+        )
+        .map(|rendered| print!("{rendered}")),
         OutputFormat::Gcc => {
             if ctx.projection != Projection::Report || ctx.single {
                 Err(ProjectionRenderError::UnsupportedFormat(ctx.output_format.name()))

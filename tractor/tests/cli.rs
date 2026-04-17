@@ -4,6 +4,19 @@
 mod support;
 
 use support::{command, query_command};
+use quick_xml::events::Event;
+use serde_json::Value;
+
+fn assert_well_formed_xml(xml: &str) {
+    let mut reader = quick_xml::Reader::from_str(xml);
+    loop {
+        match reader.read_event() {
+            Ok(Event::Eof) => break,
+            Ok(_) => {}
+            Err(err) => panic!("expected well-formed XML, got {err}: {xml}"),
+        }
+    }
+}
 
 cli_suite! {
     rust in "languages/rust" {
@@ -396,6 +409,418 @@ fn missing_empty_fixture_directory_falls_back_to_temp_workspace() {
     .in_fixture("missing-empty-fixture")
     .assert_stdout("1")
     .run();
+}
+
+#[test]
+fn project_tree_json_is_sequence_and_single_unwraps() {
+    let multi = command([
+        "query",
+        "-s",
+        "<root><item>one</item><item>two</item></root>",
+        "-l",
+        "xml",
+        "-x",
+        "//item",
+        "-p",
+        "tree",
+        "-f",
+        "json",
+    ])
+    .capture();
+    assert_eq!(0, multi.status);
+    let multi_json: Value = serde_json::from_str(&multi.stdout).expect("multi projection should be json");
+    assert!(multi_json.is_array());
+    assert_eq!(2, multi_json.as_array().unwrap().len());
+
+    let single = command([
+        "query",
+        "-s",
+        "<root><item>one</item><item>two</item></root>",
+        "-l",
+        "xml",
+        "-x",
+        "//item",
+        "-p",
+        "tree",
+        "--single",
+        "-f",
+        "json",
+    ])
+    .capture();
+    assert_eq!(0, single.status);
+    let single_json: Value = serde_json::from_str(&single.stdout).expect("single projection should be json");
+    assert!(!single_json.is_array());
+}
+
+#[test]
+fn project_tree_single_empty_exits_with_empty_stdout() {
+    let result = command([
+        "query",
+        "-s",
+        "<root/>",
+        "-l",
+        "xml",
+        "-x",
+        "//item",
+        "-p",
+        "tree",
+        "--single",
+        "-f",
+        "xml",
+    ])
+    .capture();
+
+    assert_eq!(1, result.status);
+    assert_eq!("", result.stdout);
+    assert_eq!("", result.stderr);
+}
+
+#[test]
+fn project_results_keeps_message_field_in_json() {
+    let result = command([
+        "query",
+        "-s",
+        "<root><item>one</item></root>",
+        "-l",
+        "xml",
+        "-x",
+        "//item",
+        "-m",
+        "hit",
+        "-p",
+        "results",
+        "-f",
+        "json",
+    ])
+    .capture();
+
+    assert_eq!(0, result.status);
+    let json: Value = serde_json::from_str(&result.stdout).expect("results projection should be json");
+    assert_eq!("hit", json[0]["message"]);
+}
+
+#[test]
+fn project_summary_warns_when_message_is_unreachable() {
+    let result = command([
+        "query",
+        "-s",
+        "<root><item>one</item></root>",
+        "-l",
+        "xml",
+        "-x",
+        "//item",
+        "-m",
+        "hit",
+        "-p",
+        "summary",
+        "-f",
+        "json",
+    ])
+    .capture();
+
+    assert_eq!(0, result.status);
+    let json: Value = serde_json::from_str(&result.stdout).expect("summary projection should be json");
+    assert!(json.is_object());
+    assert!(result
+        .stderr
+        .contains("warning: -m message template has no effect with -p summary"));
+}
+
+#[test]
+fn count_view_uses_report_path_while_count_projection_restores_scalar() {
+    let report_count = command([
+        "query",
+        "-s",
+        "<root><item>one</item><item>two</item></root>",
+        "-l",
+        "xml",
+        "-x",
+        "//item",
+        "-v",
+        "count",
+    ])
+    .capture();
+    assert_eq!(0, report_count.status);
+    assert_eq!("2 matches", report_count.stdout);
+
+    let scalar_count = command([
+        "query",
+        "-s",
+        "<root><item>one</item><item>two</item></root>",
+        "-l",
+        "xml",
+        "-x",
+        "//item",
+        "-v",
+        "count",
+        "-p",
+        "count",
+    ])
+    .capture();
+    assert_eq!(0, scalar_count.status);
+    assert_eq!("2", scalar_count.stdout);
+}
+
+#[test]
+fn project_invalid_is_rejected_with_valid_values() {
+    let result = command([
+        "query",
+        "-s",
+        "<root><item>one</item></root>",
+        "-l",
+        "xml",
+        "-x",
+        "//item",
+        "-p",
+        "INVALID",
+    ])
+    .capture();
+
+    assert_eq!(1, result.status);
+    assert!(result.combined.contains("invalid project 'INVALID'"));
+    assert!(result
+        .combined
+        .contains("tree, value, source, lines, schema, count, summary, totals, results, report"));
+}
+
+#[test]
+fn project_tree_empty_sequence_preserves_wrapper_and_parseability() {
+    let xml = command([
+        "query",
+        "-s",
+        "<root><item>one</item></root>",
+        "-l",
+        "xml",
+        "-x",
+        "string(//item)",
+        "-p",
+        "tree",
+        "-f",
+        "xml",
+    ])
+    .capture();
+    assert_eq!(0, xml.status);
+    assert!(xml.stdout.contains("<results"));
+    assert_well_formed_xml(&xml.stdout);
+
+    let json = command([
+        "query",
+        "-s",
+        "<root><item>one</item></root>",
+        "-l",
+        "xml",
+        "-x",
+        "string(//item)",
+        "-p",
+        "tree",
+        "-f",
+        "json",
+    ])
+    .capture();
+    assert_eq!(0, json.status);
+    let parsed: Value = serde_json::from_str(&json.stdout).expect("empty tree projection should be json");
+    assert_eq!(Value::Array(vec![]), parsed);
+}
+
+#[test]
+fn project_replacement_warning_lists_all_dropped_fields_and_suggests_results() {
+    let result = command([
+        "query",
+        "-s",
+        "<root><item>one</item></root>",
+        "-l",
+        "xml",
+        "-x",
+        "//item",
+        "-v",
+        "tree,file",
+        "-m",
+        "hit",
+        "-p",
+        "tree",
+        "-f",
+        "json",
+    ])
+    .capture();
+
+    assert_eq!(0, result.status);
+    assert!(result.stderr.contains("warning: requested view items {file, message}"));
+    assert!(result.stderr.contains("use `-p results` (respects -v/-m)"));
+}
+
+#[test]
+fn project_redundant_overlap_does_not_warn() {
+    let result = command([
+        "query",
+        "-s",
+        "<root><item>one</item></root>",
+        "-l",
+        "xml",
+        "-x",
+        "//item",
+        "-v",
+        "tree",
+        "-p",
+        "tree",
+        "-f",
+        "json",
+    ])
+    .capture();
+
+    assert_eq!(0, result.status);
+    assert_eq!("", result.stderr);
+}
+
+#[test]
+fn project_empty_explicit_view_does_not_warn() {
+    let result = command([
+        "query",
+        "-s",
+        "<root><item>one</item></root>",
+        "-l",
+        "xml",
+        "-x",
+        "//item",
+        "-v",
+        "",
+        "-p",
+        "tree",
+        "-f",
+        "json",
+    ])
+    .capture();
+
+    assert_eq!(0, result.status);
+    assert_eq!("", result.stderr);
+}
+
+#[test]
+fn project_count_and_schema_follow_the_report_pipeline_in_structured_formats() {
+    let count = command([
+        "query",
+        "-s",
+        "<root><item>one</item><item>two</item></root>",
+        "-l",
+        "xml",
+        "-x",
+        "//item",
+        "-v",
+        "count",
+        "-f",
+        "json",
+    ])
+    .capture();
+    assert_eq!(0, count.status);
+    let count_json: Value = serde_json::from_str(&count.stdout).expect("count view should be json");
+    assert_eq!(2, count_json["summary"]["totals"]["results"]);
+
+    let schema_report = command([
+        "query",
+        "-s",
+        "<root><item>one</item></root>",
+        "-l",
+        "xml",
+        "-x",
+        "//item",
+        "-v",
+        "schema",
+        "-f",
+        "xml",
+    ])
+    .capture();
+    assert_eq!(0, schema_report.status);
+    assert!(schema_report.stdout.contains("<report>"));
+    assert!(schema_report.stdout.contains("<schema>"));
+    assert_well_formed_xml(&schema_report.stdout);
+
+    let schema_bare = command([
+        "query",
+        "-s",
+        "<root><item>one</item></root>",
+        "-l",
+        "xml",
+        "-x",
+        "//item",
+        "-v",
+        "schema",
+        "-p",
+        "schema",
+        "-f",
+        "xml",
+    ])
+    .capture();
+    assert_eq!(0, schema_bare.status);
+    assert!(!schema_bare.stdout.contains("<report>"));
+    assert!(schema_bare.stdout.contains("<schema>"));
+    assert_well_formed_xml(&schema_bare.stdout);
+}
+
+#[test]
+fn project_summary_is_mode_specific() {
+    let query = command([
+        "query",
+        "-s",
+        "<root><item>one</item></root>",
+        "-l",
+        "xml",
+        "-x",
+        "//item",
+        "-p",
+        "summary",
+        "-f",
+        "json",
+    ])
+    .capture();
+    assert_eq!(0, query.status);
+    let query_json: Value = serde_json::from_str(&query.stdout).expect("query summary should be json");
+    assert!(query_json.get("success").is_none());
+    assert_eq!(1, query_json["totals"]["results"]);
+
+    let test = command([
+        "test",
+        "-s",
+        "<root><item>one</item></root>",
+        "-l",
+        "xml",
+        "-x",
+        "//item",
+        "--expect",
+        "1",
+        "-p",
+        "summary",
+        "-f",
+        "json",
+    ])
+    .capture();
+    assert_eq!(0, test.status);
+    let test_json: Value = serde_json::from_str(&test.stdout).expect("test summary should be json");
+    assert_eq!(Value::Bool(true), test_json["success"]);
+    assert_eq!(Value::String("1".to_string()), test_json["expected"]);
+}
+
+#[test]
+fn project_totals_single_is_a_noop_with_warning() {
+    let result = command([
+        "query",
+        "-s",
+        "<root><item>one</item><item>two</item></root>",
+        "-l",
+        "xml",
+        "-x",
+        "//item",
+        "-p",
+        "totals",
+        "--single",
+        "-f",
+        "xml",
+    ])
+    .capture();
+
+    assert_eq!(0, result.status);
+    assert!(result.stdout.contains("<totals>"));
+    assert!(result
+        .stderr
+        .contains("warning: --single has no effect with -p totals"));
 }
 
 #[test]

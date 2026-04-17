@@ -1,0 +1,16 @@
+|
+  class[public] (2)/ = "class"
+    ├─ name (2) = "Calculator", "Greeter"
+    └─ body (2)/ = {…}
+        └─ method[public] (5)/
+            ├─ body (5)/
+            │   └─ block (5)/ = {…}
+            │       └─ … (12 children)
+            ├─ name (5) = "Add", "Subtract", "Multiply", "Hello", "Goodbye"
+            ├─ parameters (5)/ = "(", ",", ")"
+            │   └─ parameter (8)/
+            │       └─ … (2 children)
+            └─ returns (5)/
+                └─ type (5) = "int", "string"
+
+  (use -d to increase depth, or -x to query specific elements)

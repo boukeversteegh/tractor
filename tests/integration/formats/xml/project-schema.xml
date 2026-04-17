@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema>class[public] (2)/ = "class"
+  ├─ name (2) = "Calculator", "Greeter"
+  └─ body (2)/ = {…}
+      └─ method[public] (5)/
+          ├─ returns (5)/
+          │   └─ type (5) = "int", "string"
+          ├─ parameters (5)/ = "(", ",", ")"
+          │   └─ parameter (8)/
+          │       └─ … (2 children)
+          ├─ name (5) = "Add", "Subtract", "Multiply", "Hello", "Goodbye"
+          └─ body (5)/
+              └─ block (5)/ = {…}
+                  └─ … (12 children)
+
+(use -d to increase depth, or -x to query specific elements)
+</schema>

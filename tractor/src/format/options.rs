@@ -368,7 +368,10 @@ pub fn parse_view_selection(
         .collect();
 
     if tokens.is_empty() {
-        return Err("view cannot be empty".to_string());
+        return Ok(ParsedViewSet {
+            resolved: ViewSet::new(vec![]),
+            explicit_fields: vec![],
+        });
     }
 
     let has_modifier = tokens.iter().any(|p| p.starts_with('+') || p.starts_with('-'));
@@ -504,6 +507,14 @@ mod tests {
         let parsed = parse_view_selection(None, &[ViewField::File, ViewField::Line]).unwrap();
 
         assert_eq!(parsed.resolved.fields, vec![ViewField::File, ViewField::Line]);
+        assert!(parsed.explicit_fields.is_empty());
+    }
+
+    #[test]
+    fn parse_view_selection_allows_an_explicit_empty_view() {
+        let parsed = parse_view_selection(Some(""), &[ViewField::File, ViewField::Line]).unwrap();
+
+        assert!(parsed.resolved.fields.is_empty());
         assert!(parsed.explicit_fields.is_empty());
     }
 }
