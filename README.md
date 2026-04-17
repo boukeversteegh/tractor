@@ -56,7 +56,7 @@ tractor src/**/*.cs -x "count(class)"
 tractor init
 
 # Batch: run all rules from a config file
-# (defaults to tractor.yml / tractor.yaml in the current directory)
+# (defaults to tractor.yml in the current directory)
 tractor run
 ```
 

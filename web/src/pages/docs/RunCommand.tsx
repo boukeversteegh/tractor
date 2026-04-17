@@ -24,7 +24,7 @@ export function RunCommand() {
       <h2>Usage</h2>
       <CodeBlock code={`tractor run [CONFIG] [OPTIONS]`} language="bash" />
       <p>
-        If <code>CONFIG</code> is omitted, tractor looks for <code>tractor.yml</code> (or <code>tractor.yaml</code>) in the current directory. Create one with <Link to="/docs/commands/init">tractor init</Link>.
+        If <code>CONFIG</code> is omitted, tractor looks for <code>tractor.yml</code> in the current directory. Create one with <Link to="/docs/commands/init">tractor init</Link>. A different filename (e.g. <code>tractor.yaml</code>, <code>rules.toml</code>) works fine — just pass it as the argument.
       </p>
 
       <h2>Config File</h2>

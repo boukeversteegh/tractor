@@ -15,26 +15,28 @@ use crate::cli::context::RunContext;
 use crate::format::{ViewField, GroupDimension, render_report};
 use crate::matcher::{project_report, apply_message_template};
 
-/// File names searched (in order) when no config path is given on the CLI.
-pub const DEFAULT_CONFIG_NAMES: &[&str] = &["tractor.yml", "tractor.yaml"];
+/// Canonical file name tractor probes when no config path is given.
+///
+/// Kept to a single name on purpose — one consistent filename across projects
+/// makes it easier for anyone to jump in and recognize the config. Users who
+/// prefer `.yaml` (or any other name) can still point at it explicitly:
+/// `tractor run path/to/config.yaml`.
+pub const DEFAULT_CONFIG_NAME: &str = "tractor.yml";
 
-/// Resolve a config path from an optional CLI argument, falling back to the
-/// first existing default file in the current directory. Returns a clear error
-/// when no path is given and no default config exists.
+/// Resolve a config path from an optional CLI argument, falling back to
+/// `tractor.yml` in the current directory. Returns a clear error when no path
+/// is given and the default does not exist.
 pub fn resolve_config_path(
     explicit: Option<&str>,
 ) -> Result<String, Box<dyn std::error::Error>> {
     if let Some(path) = explicit {
         return Ok(path.to_string());
     }
-    for candidate in DEFAULT_CONFIG_NAMES {
-        if std::path::Path::new(candidate).exists() {
-            return Ok((*candidate).to_string());
-        }
+    if std::path::Path::new(DEFAULT_CONFIG_NAME).exists() {
+        return Ok(DEFAULT_CONFIG_NAME.to_string());
     }
     Err(format!(
-        "no config file given and no default found (looked for {})",
-        DEFAULT_CONFIG_NAMES.join(", ")
+        "no config file given and no {DEFAULT_CONFIG_NAME} found in the current directory"
     )
     .into())
 }

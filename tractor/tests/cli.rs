@@ -1042,38 +1042,22 @@ fn run_without_path_uses_default_tractor_yml() {
 }
 
 #[test]
-fn run_without_path_uses_default_tractor_yaml() {
-    cli_case!({
-        tractor run;
-        expect => {
-            exit 1;
-            combined "settings.yaml:3:10: error: debug should be disabled\n3 |   debug: true\n             ^~~~\n\n1 error in 1 file";
-        }
-    })
-    .temp_fixture()
-    .seed_file("tractor.yaml", DEFAULT_CONFIG_CONTENTS)
-    .seed_file("settings.yaml", DEFAULT_CONFIG_SETTINGS)
-    .strip_temp_prefix()
-    .run();
-}
-
-#[test]
-fn run_without_path_prefers_yml_over_yaml() {
-    // tractor.yml wins over tractor.yaml. The .yml scans settings.yaml and
-    // finds a violation; the .yaml points at a missing file and would error.
-    cli_case!({
-        tractor run;
-        expect => exit 1;
-    })
-    .temp_fixture()
-    .seed_file("tractor.yml", DEFAULT_CONFIG_CONTENTS)
-    .seed_file(
-        "tractor.yaml",
-        "check:\n  files: [\"nonexistent.yaml\"]\n  rules: []\n",
-    )
-    .seed_file("settings.yaml", DEFAULT_CONFIG_SETTINGS)
-    .strip_temp_prefix()
-    .run();
+fn run_without_path_ignores_tractor_yaml() {
+    // `.yaml` is not on the default probe list — only `tractor.yml` is. Users
+    // can still point at `.yaml` explicitly, but with no path argument and no
+    // `tractor.yml`, tractor errors even if a `tractor.yaml` sits right there.
+    let result = command(["run"])
+        .temp_fixture()
+        .seed_file("tractor.yaml", DEFAULT_CONFIG_CONTENTS)
+        .seed_file("settings.yaml", DEFAULT_CONFIG_SETTINGS)
+        .assert_exit(1)
+        .capture();
+    let combined = format!("{}{}", result.stdout, result.stderr);
+    assert!(
+        combined.contains("no tractor.yml"),
+        "expected error about missing tractor.yml, got: {}",
+        combined
+    );
 }
 
 #[test]
@@ -1081,8 +1065,8 @@ fn run_without_path_errors_when_no_default_exists() {
     let result = command(["run"]).temp_fixture().assert_exit(1).capture();
     let combined = format!("{}{}", result.stdout, result.stderr);
     assert!(
-        combined.contains("no config file given and no default found"),
-        "expected error about missing default config, got: {}",
+        combined.contains("no tractor.yml"),
+        "expected error about missing tractor.yml, got: {}",
         combined
     );
 }
