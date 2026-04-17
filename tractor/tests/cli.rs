@@ -1095,8 +1095,14 @@ fn run_tractor_in(cwd: &std::path::Path, args: &[&str]) -> std::process::Output 
         .expect("failed to execute tractor")
 }
 
+/// Source of truth for the scaffolded config. Any drift against what
+/// `tractor init` actually writes should fail this test — that's the point
+/// of tracking it as a fixture.
+const STARTER_SNAPSHOT: &str =
+    include_str!("../../tests/integration/init/tractor.yaml");
+
 #[test]
-fn init_creates_tractor_yaml_with_starter_check_rule() {
+fn init_writes_the_snapshot_starter_config() {
     let temp = tempfile::TempDir::new().expect("tempdir");
     let result = run_tractor_in(temp.path(), &["init"]);
     assert_eq!(0, result.status.code().unwrap_or(-1));
@@ -1108,29 +1114,31 @@ fn init_creates_tractor_yaml_with_starter_check_rule() {
 
     let contents = std::fs::read_to_string(temp.path().join("tractor.yaml"))
         .expect("tractor.yaml should exist");
-    assert!(contents.contains("check:"), "expected a check key");
-    assert!(
-        contents.contains("no-todo"),
-        "expected the starter TODO rule, got: {contents}"
+    assert_eq!(
+        STARTER_SNAPSHOT, contents,
+        "tractor init output drifted from tests/integration/init/tractor.yaml"
     );
 }
 
 #[test]
-fn init_scaffolded_file_is_runnable_by_default() {
-    // After `tractor init`, a bare `tractor run` should pick up the scaffolded
-    // tractor.yaml and surface the starter rule's findings.
+fn init_scaffolded_file_flags_its_own_todo_when_run() {
+    // The starter config deliberately scans tractor.yaml itself and ships with
+    // a `TODO:` marker. A bare `tractor run` should find that single warning,
+    // which demonstrates the tool end-to-end without needing extra sample files.
     let temp = tempfile::TempDir::new().expect("tempdir");
     assert_eq!(0, run_tractor_in(temp.path(), &["init"]).status.code().unwrap_or(-1));
-    std::fs::write(temp.path().join("sample.js"), "// TODO: fix me\n")
-        .expect("failed to write sample");
 
     let result = run_tractor_in(temp.path(), &["run", "--no-color"]);
     let combined =
         String::from_utf8_lossy(&result.stdout).into_owned()
             + &String::from_utf8_lossy(&result.stderr);
     assert!(
-        combined.contains("TODO comment found"),
-        "expected starter rule to flag the TODO, got: {combined}"
+        combined.contains("update this starter rule"),
+        "expected starter rule to flag the baked-in TODO, got: {combined}"
+    );
+    assert!(
+        combined.contains("1 warning in 1 file"),
+        "expected exactly one warning, got: {combined}"
     );
 }
 
@@ -1160,7 +1168,7 @@ fn init_force_overwrites_existing_file() {
 
     let contents = std::fs::read_to_string(temp.path().join("tractor.yaml"))
         .expect("tractor.yaml should exist");
-    assert!(contents.contains("no-todo"), "expected starter rule to be rewritten");
+    assert_eq!(STARTER_SNAPSHOT, contents, "--force should rewrite with the starter snapshot");
 }
 
 #[test]

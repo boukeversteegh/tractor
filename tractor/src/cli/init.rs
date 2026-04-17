@@ -4,24 +4,13 @@ use clap::Args;
 use std::fs;
 use std::path::Path;
 
-/// Starter content written by `tractor init`. Kept intentionally minimal: a
-/// single check rule that flags TODO comments, which works on nearly any
-/// source file and is easy for a new user to recognize and adapt.
-pub const STARTER_CONFIG: &str = "\
-# tractor config — see https://tractor-cli.com/docs/commands/run
-#
-# Run with `tractor run` (this file is picked up automatically when it
-# sits next to the command's working directory).
-
-check:
-  files:
-    - \"**/*\"
-  rules:
-    - id: no-todo
-      xpath: \"//comment[contains(., 'TODO')]\"
-      reason: \"TODO comment found\"
-      severity: warning
-";
+/// Starter content written by `tractor init`.
+///
+/// The template lives in `tests/integration/init/tractor.yaml` so it can be
+/// reviewed and diffed as a fixture file. `include_str!` pulls it in at build
+/// time — same text ships in the binary and the snapshot.
+pub const STARTER_CONFIG: &str =
+    include_str!("../../../tests/integration/init/tractor.yaml");
 
 /// Default file name for the scaffolded config.
 const DEFAULT_FILE: &str = "tractor.yaml";
