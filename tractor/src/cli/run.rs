@@ -6,15 +6,15 @@ use crate::cli::SharedArgs;
 /// Run mode: execute a tractor config file with mixed operations
 #[derive(Args, Debug)]
 pub struct RunArgs {
-    /// Path to the tractor config file (.yaml, .yml, or .toml).
-    /// File patterns in the config are resolved relative to the config file's directory.
-    /// Defaults to `tractor.yml` in the current directory; `tractor init` scaffolds one.
-    #[arg()]
-    pub config: Option<String>,
-
     /// Files to process (intersected with config file globs)
     #[arg()]
     pub files: Vec<String>,
+
+    /// Path to the tractor config file (.yaml, .yml, or .toml).
+    /// File patterns in the config are resolved relative to the config file's directory.
+    /// Defaults to `tractor.yml` in the current directory; `tractor init` scaffolds one.
+    #[arg(long = "config", help_heading = "Config")]
+    pub config: Option<String>,
 
     /// Output format [default: gcc]
     #[arg(short = 'f', long = "format", default_value = "gcc", help_heading = "Output")]

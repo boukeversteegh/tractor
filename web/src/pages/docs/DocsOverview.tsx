@@ -105,7 +105,7 @@ program/
       <div className="doc-cards">
         <Link to="/docs/commands/init" className="doc-card">
           <h3>init</h3>
-          <p>Scaffold a starter <code>tractor.yaml</code> in your project.</p>
+          <p>Scaffold a starter <code>tractor.yml</code> in your project.</p>
         </Link>
         <Link to="/docs/commands/query" className="doc-card">
           <h3>query</h3>

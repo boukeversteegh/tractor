@@ -250,10 +250,10 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
     ]),
     // Multi-op run report (check + test in one config)
     ("xml/run-multiop.xml", &[
-        "run", "tests/integration/formats/multiop.yaml", "-f", "xml",
+        "run", "--config", "tests/integration/formats/multiop.yaml", "-f", "xml",
     ]),
     ("json/run-multiop.json", &[
-        "run", "tests/integration/formats/multiop.yaml", "-f", "json",
+        "run", "--config", "tests/integration/formats/multiop.yaml", "-f", "json",
     ]),
     // --help snapshots: track changes to CLI help text per subcommand
     ("help/query.txt", &["query", "--help"]),

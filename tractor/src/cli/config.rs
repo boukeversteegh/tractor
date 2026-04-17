@@ -15,17 +15,17 @@ use crate::cli::context::RunContext;
 use crate::format::{ViewField, GroupDimension, render_report};
 use crate::matcher::{project_report, apply_message_template};
 
-/// Canonical file name tractor probes when no config path is given.
+/// Canonical file name tractor probes when `--config` is not passed.
 ///
 /// Kept to a single name on purpose — one consistent filename across projects
 /// makes it easier for anyone to jump in and recognize the config. Users who
-/// prefer `.yaml` (or any other name) can still point at it explicitly:
-/// `tractor run path/to/config.yaml`.
+/// prefer `.yaml` (or any other name) can still point at it explicitly via
+/// `tractor run --config path/to/config.yaml`.
 pub const DEFAULT_CONFIG_NAME: &str = "tractor.yml";
 
-/// Resolve a config path from an optional CLI argument, falling back to
-/// `tractor.yml` in the current directory. Returns a clear error when no path
-/// is given and the default does not exist.
+/// Resolve a config path from `--config`, falling back to `tractor.yml` in the
+/// current directory. Returns a clear error when the flag is absent and the
+/// default does not exist.
 pub fn resolve_config_path(
     explicit: Option<&str>,
 ) -> Result<String, Box<dyn std::error::Error>> {
@@ -39,7 +39,7 @@ pub fn resolve_config_path(
         "no {DEFAULT_CONFIG_NAME} in the current directory\n\
          \n\
          hint: run `tractor init` to scaffold one,\n\
-         hint: or pass a config path, e.g. `tractor run path/to/config.yml`"
+         hint: or pass a config path, e.g. `tractor run --config path/to/config.yml`"
     )
     .into())
 }
