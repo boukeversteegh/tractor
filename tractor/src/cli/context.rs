@@ -6,13 +6,20 @@ use tractor::{
 };
 use crate::cli::SharedArgs;
 use crate::input::{InputMode, resolve_input};
-use crate::format::{OutputFormat, GroupDimension, ViewField, ViewSet, parse_view_set, parse_group_by};
+use crate::format::{
+    normalize_output_plan, parse_group_by, parse_view_selection, GroupDimension, OutputFormat,
+    Projection, ViewField, ViewSet,
+};
 use crate::format::options::HookType;
 
 pub struct RunContext {
     pub xpath: Option<NormalizedXpath>,
     /// Output format (-f).
     pub output_format: OutputFormat,
+    /// Projection target (-p).
+    pub projection: Projection,
+    /// Whether to emit the projection as a single bare item.
+    pub single: bool,
     /// View field selection (-v).
     pub view: ViewSet,
     pub use_color: bool,
@@ -67,11 +74,17 @@ impl RunContext {
             }
         };
 
-        let view = if let Some(s) = user_view {
-            parse_view_set(s, default_view)?
-        } else {
-            ViewSet::from_fields(default_view.to_vec())
-        };
+        let parsed_view = parse_view_selection(user_view, default_view)?;
+        let plan = normalize_output_plan(
+            shared.project.as_deref(),
+            shared.single,
+            shared.limit,
+            parsed_view,
+            message,
+        )?;
+        for warning in &plan.warnings {
+            eprintln!("{warning}");
+        }
         let use_color     = if shared.no_color { false } else { should_use_color(&shared.color) };
         let input         = resolve_input(shared, files, content)?;
 
@@ -99,11 +112,13 @@ impl RunContext {
         Ok(RunContext {
             xpath,
             output_format,
-            view,
+            projection: plan.projection,
+            single: plan.single,
+            view: plan.view,
             use_color,
-            message,
+            message: plan.message,
             input,
-            limit: shared.limit,
+            limit: plan.limit,
             depth: shared.depth,
             parse_depth: shared.parse_depth,
             meta: shared.meta,

@@ -296,6 +296,12 @@ pub struct ViewSet {
     pub fields: Vec<ViewField>,
 }
 
+#[derive(Debug, Clone)]
+pub struct ParsedViewSet {
+    pub resolved: ViewSet,
+    pub explicit_fields: Vec<ViewField>,
+}
+
 #[allow(dead_code)]
 impl ViewSet {
     pub fn new(fields: Vec<ViewField>) -> Self {
@@ -345,7 +351,17 @@ impl ViewSet {
 /// `default_fields` is ignored. Duplicate fields are silently ignored.
 ///
 /// Mixing plain field names with `+`/`-` prefixed modifiers is an error.
-pub fn parse_view_set(s: &str, default_fields: &[ViewField]) -> Result<ViewSet, String> {
+pub fn parse_view_selection(
+    user_view: Option<&str>,
+    default_fields: &[ViewField],
+) -> Result<ParsedViewSet, String> {
+    let Some(s) = user_view else {
+        return Ok(ParsedViewSet {
+            resolved: ViewSet::from_fields(default_fields.to_vec()),
+            explicit_fields: vec![],
+        });
+    };
+
     let tokens: Vec<&str> = s.split(',')
         .map(|p| p.trim())
         .filter(|p| !p.is_empty())
@@ -370,11 +386,15 @@ pub fn parse_view_set(s: &str, default_fields: &[ViewField]) -> Result<ViewSet, 
     if has_modifier {
         // Modifier mode: start from the defaults and apply each +/- token.
         let mut fields: Vec<ViewField> = default_fields.to_vec();
+        let mut explicit_fields = Vec::new();
         for token in &tokens {
             if let Some(field_str) = token.strip_prefix('+') {
                 let field = ViewField::from_str(&field_str.to_lowercase())?;
                 if !fields.contains(&field) {
                     fields.push(field);
+                }
+                if !explicit_fields.contains(&field) {
+                    explicit_fields.push(field);
                 }
             } else if let Some(field_str) = token.strip_prefix('-') {
                 let field = ViewField::from_str(&field_str.to_lowercase())?;
@@ -384,7 +404,10 @@ pub fn parse_view_set(s: &str, default_fields: &[ViewField]) -> Result<ViewSet, 
         if fields.is_empty() {
             return Err("view cannot be empty after applying modifiers".to_string());
         }
-        Ok(ViewSet::new(fields))
+        Ok(ParsedViewSet {
+            resolved: ViewSet::new(fields),
+            explicit_fields,
+        })
     } else {
         // Explicit list mode: ignore defaults, parse the fields directly.
         let mut fields = Vec::new();
@@ -395,7 +418,10 @@ pub fn parse_view_set(s: &str, default_fields: &[ViewField]) -> Result<ViewSet, 
                 fields.push(field);
             }
         }
-        Ok(ViewSet::new(fields))
+        Ok(ParsedViewSet {
+            resolved: ViewSet::new(fields.clone()),
+            explicit_fields: fields,
+        })
     }
 }
 
@@ -446,4 +472,38 @@ pub fn parse_group_by(s: &str) -> Result<Vec<GroupDimension>, String> {
     Ok(dims)
 }
 
+#[cfg(test)]
+mod tests {
+    use super::{parse_view_selection, ViewField};
 
+    #[test]
+    fn parse_view_selection_tracks_explicit_fields_for_plain_list() {
+        let parsed = parse_view_selection(Some("tree,file"), &[ViewField::File, ViewField::Line]).unwrap();
+
+        assert_eq!(parsed.resolved.fields, vec![ViewField::Tree, ViewField::File]);
+        assert_eq!(parsed.explicit_fields, vec![ViewField::Tree, ViewField::File]);
+    }
+
+    #[test]
+    fn parse_view_selection_tracks_only_added_fields_for_modifiers() {
+        let parsed = parse_view_selection(
+            Some("+source,-tree"),
+            &[ViewField::File, ViewField::Line, ViewField::Tree],
+        )
+        .unwrap();
+
+        assert_eq!(
+            parsed.resolved.fields,
+            vec![ViewField::File, ViewField::Line, ViewField::Source]
+        );
+        assert_eq!(parsed.explicit_fields, vec![ViewField::Source]);
+    }
+
+    #[test]
+    fn parse_view_selection_uses_defaults_when_view_is_omitted() {
+        let parsed = parse_view_selection(None, &[ViewField::File, ViewField::Line]).unwrap();
+
+        assert_eq!(parsed.resolved.fields, vec![ViewField::File, ViewField::Line]);
+        assert!(parsed.explicit_fields.is_empty());
+    }
+}
