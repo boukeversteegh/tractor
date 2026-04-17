@@ -8,7 +8,7 @@ use crate::cli::SharedArgs;
 pub struct RunArgs {
     /// Path to the tractor config file (.yaml, .yml, or .toml).
     /// File patterns in the config are resolved relative to the config file's directory.
-    /// Defaults to `tractor.yml` or `tractor.yaml` in the current directory.
+    /// Defaults to `tractor.yml` in the current directory; `tractor init` scaffolds one.
     #[arg()]
     pub config: Option<String>,
 
