@@ -72,7 +72,20 @@ View:
           Include metadata attributes (start/end, kind, field) in XML output
 
   -p, --project <ELEMENT>
-          Project a specific element from the report (tree, value, source, lines, schema, count, summary, totals, results, report)
+          Project a specific element from the report [default: report]
+          
+            tree     One <tree> per match (replaces -v)
+            value    One <value> per match (replaces -v)
+            source   One <source> per match (replaces -v)
+            lines    One <lines> per match (replaces -v)
+            schema   Structural schema (replaces -v)
+            count    Total match count as a scalar (replaces -v)
+            summary  Summary container (totals, success, expected, query)
+            totals   Totals element only
+            results  List of matches (respects -v)
+            report   Full <report> envelope (default; respects -v)
+          
+          Use --single to emit one element bare (implies -n 1).
 
       --single
           Emit the first matching element bare (no list wrapper). Implies -n 1

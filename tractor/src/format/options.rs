@@ -490,6 +490,7 @@ impl Projection {
     }
 
     /// Structural projections render per-match content and respect `-v`.
+    #[allow(dead_code)]
     pub fn is_structural(&self) -> bool {
         matches!(self, Projection::Results | Projection::Report)
     }

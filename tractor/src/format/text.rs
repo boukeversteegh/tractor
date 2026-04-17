@@ -302,6 +302,11 @@ fn render_field(
     }
 }
 
+/// Public alias of `format_summary` used by projection rendering.
+pub(crate) fn format_summary_public(totals: &Totals, success: Option<bool>, expected: Option<&str>) -> String {
+    format_summary(totals, success, expected)
+}
+
 /// Format summary text, deriving wording from totals fields and success.
 /// No longer depends on ReportKind — the data itself determines the output.
 fn format_summary(totals: &Totals, success: Option<bool>, expected: Option<&str>) -> String {

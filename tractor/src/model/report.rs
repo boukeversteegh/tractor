@@ -451,7 +451,7 @@ impl Report {
     }
 
     /// Create an empty report (used for sub-groups).
-    fn empty() -> Self {
+    pub fn empty() -> Self {
         Report {
             success: None,
             totals: None,

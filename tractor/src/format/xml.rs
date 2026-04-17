@@ -146,6 +146,24 @@ pub(crate) fn escape_text(s: &str) -> String {
     escape(s)
 }
 
+/// Public XML-escape for use by projection rendering.
+pub(crate) fn escape_xml(s: &str) -> String {
+    escape(s)
+}
+
+/// Public helper for rendering a single `<match>` element, used by
+/// `-p results` projection.
+pub(crate) fn append_match_xml(
+    out: &mut String,
+    rm: &tractor::report::ReportMatch,
+    view: &ViewSet,
+    indent: &str,
+    render_opts: &RenderOptions,
+    skip_dims: &[&str],
+) {
+    append_match(out, rm, view, indent, render_opts, skip_dims);
+}
+
 fn append_match(
     out: &mut String,
     rm: &tractor::report::ReportMatch,

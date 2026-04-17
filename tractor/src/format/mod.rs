@@ -6,6 +6,7 @@ pub mod json;
 pub mod yaml;
 pub mod text;
 pub mod claude_code;
+pub mod projection;
 mod shared;
 
 pub use options::{OutputFormat, GroupDimension, Projection, ViewField, ViewSet, parse_view_set, parse_group_by};
@@ -67,8 +68,36 @@ pub fn render_report(
         return Ok(());
     }
 
-    // Standard format dispatch — same for all report types.
+    // `-p/--project` dispatch: when a projection is explicitly set (and
+    // it's not the default `Report`), route through projection rendering.
+    // ClaudeCode/Gcc/Github don't support `-p` — fall through to their
+    // existing renderers. Projection rendering replaces envelope output.
     let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
+    if let Some(proj) = ctx.projection {
+        if ctx.single && !proj.is_sequence() {
+            projection::warn_single_on_singular(proj);
+        }
+        if proj != options::Projection::Report
+            && matches!(
+                ctx.output_format,
+                OutputFormat::Json | OutputFormat::Yaml | OutputFormat::Xml | OutputFormat::Text
+            )
+        {
+            print!(
+                "{}",
+                projection::render_projection(
+                    report, proj, ctx.single,
+                    ctx.output_format, &ctx.view, &ctx.render_options(), &dims,
+                )
+            );
+            if report.success == Some(false) {
+                return Err(Box::new(crate::SilentExit));
+            }
+            return Ok(());
+        }
+    }
+
+    // Standard format dispatch — same for all report types.
     match ctx.output_format {
         OutputFormat::Json   => print!("{}", render_json_report(report, &ctx.view, &ctx.render_options(), &dims)),
         OutputFormat::Yaml   => print!("{}", render_yaml_report(report, &ctx.view, &ctx.render_options(), &dims)),
