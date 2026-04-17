@@ -1099,7 +1099,7 @@ fn run_tractor_in(cwd: &std::path::Path, args: &[&str]) -> std::process::Output 
 /// `tractor init` actually writes should fail this test — that's the point
 /// of tracking it as a fixture.
 const STARTER_SNAPSHOT: &str =
-    include_str!("../../tests/integration/init/tractor.yaml");
+    include_str!("../../tests/integration/init/tractor.yml");
 
 #[test]
 fn init_writes_the_snapshot_starter_config() {
@@ -1108,15 +1108,15 @@ fn init_writes_the_snapshot_starter_config() {
     assert_eq!(0, result.status.code().unwrap_or(-1));
     let stdout = String::from_utf8_lossy(&result.stdout);
     assert!(
-        stdout.contains("created tractor.yaml"),
+        stdout.contains("created tractor.yml"),
         "expected success message, got: {stdout}"
     );
 
-    let contents = std::fs::read_to_string(temp.path().join("tractor.yaml"))
-        .expect("tractor.yaml should exist");
+    let contents = std::fs::read_to_string(temp.path().join("tractor.yml"))
+        .expect("tractor.yml should exist");
     assert_eq!(
         STARTER_SNAPSHOT, contents,
-        "tractor init output drifted from tests/integration/init/tractor.yaml"
+        "tractor init output drifted from tests/integration/init/tractor.yml"
     );
 }
 
@@ -1161,14 +1161,14 @@ fn init_refuses_to_overwrite_without_force() {
 #[test]
 fn init_force_overwrites_existing_file() {
     let temp = tempfile::TempDir::new().expect("tempdir");
-    std::fs::write(temp.path().join("tractor.yaml"), "# hand-edited\n")
+    std::fs::write(temp.path().join("tractor.yml"), "# hand-edited\n")
         .expect("failed to write pre-existing config");
 
     let result = run_tractor_in(temp.path(), &["init", "--force"]);
     assert_eq!(0, result.status.code().unwrap_or(-1));
 
-    let contents = std::fs::read_to_string(temp.path().join("tractor.yaml"))
-        .expect("tractor.yaml should exist");
+    let contents = std::fs::read_to_string(temp.path().join("tractor.yml"))
+        .expect("tractor.yml should exist");
     assert_eq!(STARTER_SNAPSHOT, contents, "--force should rewrite with the starter snapshot");
 }
 

@@ -56,7 +56,7 @@ pub enum Command {
     Render(RenderArgs),
     /// Execute a tractor config file (batch check/set operations)
     Run(RunArgs),
-    /// Create a starter tractor.yaml in the current directory
+    /// Create a starter tractor.yml in the current directory
     Init(InitArgs),
     /// Show documentation and reference information
     #[command(subcommand)]

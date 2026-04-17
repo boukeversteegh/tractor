@@ -1,4 +1,4 @@
-Create a starter tractor.yaml in the current directory
+Create a starter tractor.yml in the current directory
 
 Usage: tractor init [OPTIONS]
 

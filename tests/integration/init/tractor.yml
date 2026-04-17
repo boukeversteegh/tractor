@@ -2,7 +2,7 @@
 # ---------------
 # This file declares checks that tractor runs against your project.
 # Run `tractor run` from this directory — tractor picks up
-# `tractor.yaml` automatically when it sits next to you.
+# `tractor.yml` automatically when it sits next to you.
 #
 # The sample rule below points at *this file* and matches itself by
 # rule id. When you run tractor, the whole rule block gets flagged —
@@ -14,9 +14,9 @@
 
 check:
   files:
-    - "tractor.yaml"
+    - "tractor.yml"
   rules:
     - id: sample-rule
-      xpath: "/stream/document/check/rules[id='sample-rule']"
+      xpath: "//check/rules[id='sample-rule']"
       reason: "replace this sample rule with your own checks"
       severity: warning
