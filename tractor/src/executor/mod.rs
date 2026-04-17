@@ -22,10 +22,11 @@ use std::path::PathBuf;
 use rayon::prelude::*;
 use tractor::report::{ReportBuilder, ReportMatch};
 use tractor::tree_mode::TreeMode;
-use tractor::{parse_to_documents, Match, NormalizedPath};
+use tractor::{detect_language, Match, NormalizedPath};
 
 use crate::input::filter::ResultFilter;
 use crate::input::file_resolver::{FileResolver, make_fatal_diagnostic};
+use crate::input::Source;
 
 pub use query::{QueryOperation, QueryExpr};
 pub use check::CheckOperation;
@@ -102,6 +103,32 @@ pub(crate) fn filter_refs(filters: &[Box<dyn ResultFilter>]) -> Vec<&dyn ResultF
     filters.iter().map(|f| f.as_ref()).collect()
 }
 
+/// Combine resolved disk file paths with an optional inline source into a
+/// unified `Vec<Source>`. Disk paths adopt `lang_override` when provided,
+/// otherwise fall back to extension-based detection.
+///
+/// This is the single adapter between `FileResolver` (which still returns
+/// `Vec<NormalizedPath>`) and the downstream `run_rules` pipeline that
+/// consumes `&[Source]`. Virtual paths from stdin/`-s` ride alongside disk
+/// sources through the same code path.
+pub(crate) fn build_sources(
+    resolved_paths: Vec<NormalizedPath>,
+    inline_source: Option<&Source>,
+    lang_override: Option<&str>,
+) -> Vec<Source> {
+    let mut sources: Vec<Source> = Vec::with_capacity(resolved_paths.len() + 1);
+    for path in resolved_paths {
+        let lang = lang_override
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| detect_language(path.as_str()).to_string());
+        sources.push(Source::disk(path, lang));
+    }
+    if let Some(s) = inline_source {
+        sources.push(s.clone());
+    }
+    sources
+}
+
 /// Execute a list of operations, pushing results into the given `ReportBuilder`.
 pub fn execute(
     operations: &[Operation],
@@ -164,10 +191,13 @@ pub(crate) fn match_to_report_match(m: Match, command: &str) -> ReportMatch {
     }
 }
 
-/// Parse and query files in parallel with multiple XPath expressions.
-/// Each file is parsed once and all expressions are evaluated against it.
+/// Parse and query sources in parallel with multiple XPath expressions.
+/// Each source is parsed once and all expressions are evaluated against it.
+///
+/// Virtual and disk sources flow through the same loop — `source.parse()`
+/// dispatches on content kind so the caller doesn't branch.
 pub(crate) fn query_files_multi(
-    files: &[NormalizedPath],
+    sources: &[Source],
     xpaths: &[&str],
     lang: Option<&str>,
     tree_mode: Option<TreeMode>,
@@ -177,20 +207,15 @@ pub(crate) fn query_files_multi(
     verbose: bool,
     filters: &[&dyn ResultFilter],
 ) -> Result<Vec<Match>, Box<dyn std::error::Error>> {
-    let mut all_matches: Vec<Match> = files
+    let mut all_matches: Vec<Match> = sources
         .par_iter()
-        .filter_map(|file_path| {
-            let mut result = match parse_to_documents(
-                std::path::Path::new(file_path),
-                lang,
-                tree_mode,
-                ignore_whitespace,
-                parse_depth,
-            ) {
+        .filter_map(|source| {
+            let path_str = source.path.as_str();
+            let mut result = match source.parse(lang, tree_mode, ignore_whitespace, parse_depth) {
                 Ok(r) => r,
                 Err(e) => {
                     if verbose {
-                        eprintln!("warning: {}: {}", file_path, e);
+                        eprintln!("warning: {}: {}", path_str, e);
                     }
                     return None;
                 }
@@ -202,7 +227,7 @@ pub(crate) fn query_files_multi(
                     Ok(matches) => file_matches.extend(matches),
                     Err(e) => {
                         if verbose {
-                            eprintln!("warning: {}: query error: {}", file_path, e);
+                            eprintln!("warning: {}: query error: {}", path_str, e);
                         }
                     }
                 }
@@ -335,7 +360,10 @@ mod tests {
             parse_depth: None,
             ruleset_include: vec![],
             ruleset_exclude: vec![],
-            inline_source: Some(r#"{"debug": true}"#.into()),
+            inline_source: Some(Source::inline_pathless(
+                "json",
+                std::sync::Arc::new(r#"{"debug": true}"#.to_string()),
+            )),
         })];
         let report = run(&ops);
         assert!(!report.success.unwrap(), "inline check should fail when violations found");
@@ -361,7 +389,10 @@ mod tests {
             parse_depth: None,
             ruleset_include: vec![],
             ruleset_exclude: vec![],
-            inline_source: Some(r#"{"debug": false}"#.into()),
+            inline_source: Some(Source::inline_pathless(
+                "json",
+                std::sync::Arc::new(r#"{"debug": false}"#.to_string()),
+            )),
         })];
         let report = run(&ops);
         assert!(report.success.unwrap());

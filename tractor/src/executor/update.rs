@@ -6,6 +6,7 @@ use tractor::{detect_language, apply_replacements, NormalizedPath};
 use tractor::xpath_upsert::update_only;
 
 use crate::input::file_resolver::{FileResolver, FileRequest};
+use crate::input::Source;
 
 use super::{ExecuteOptions, filter_refs, match_to_report_match, query_files_multi};
 
@@ -57,6 +58,8 @@ pub(crate) fn execute_update(
         diff_files: op.diff_files.as_deref(),
         diff_lines: op.diff_lines.as_deref(),
         command: "update",
+        inline: None,
+        has_inline: false,
     };
     let (files, filters) = resolver.resolve(&request, report);
     let mut fallback_files: Vec<NormalizedPath> = Vec::new();
@@ -86,8 +89,17 @@ pub(crate) fn execute_update(
 
     // Legacy fallback for languages without renderers
     if !fallback_files.is_empty() {
+        let fallback_sources: Vec<Source> = fallback_files
+            .into_iter()
+            .map(|p| {
+                let lang = op.language.as_deref()
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| detect_language(p.as_str()).to_string());
+                Source::disk(p, lang)
+            })
+            .collect();
         let matches = query_files_multi(
-            &fallback_files, &[op.xpath.as_str()], op.language.as_deref(),
+            &fallback_sources, &[op.xpath.as_str()], op.language.as_deref(),
             op.tree_mode, op.ignore_whitespace, op.parse_depth,
             None, options.verbose, &filter_refs(&filters),
         )?;

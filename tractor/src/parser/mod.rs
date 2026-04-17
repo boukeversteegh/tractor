@@ -610,12 +610,27 @@ pub fn parse_string_to_documents(
     tree_mode: Option<TreeMode>,
     ignore_whitespace: bool,
 ) -> Result<XeeParseResult, ParseError> {
+    parse_string_to_documents_with_options(source, lang, file_path, tree_mode, ignore_whitespace, None)
+}
+
+/// Unified parse function for strings with full options (including `max_depth`).
+///
+/// Same dispatch logic as [`parse_string_to_documents`] but exposes the
+/// tree-building depth limit, so callers that already hold content in memory
+/// (e.g. the unified `Source` flow) can honour `--parse-depth` without a
+/// file-system round trip.
+pub fn parse_string_to_documents_with_options(
+    source: &str,
+    lang: &str,
+    file_path: String,
+    tree_mode: Option<TreeMode>,
+    ignore_whitespace: bool,
+    max_depth: Option<usize>,
+) -> Result<XeeParseResult, ParseError> {
     if lang == "xml" {
-        // XML passthrough
         load_xml_string_to_documents(source, file_path)
     } else {
-        // Source code: TreeSitter → XeeBuilder → Documents
-        parse_string_to_xee_with_options(source, lang, file_path, tree_mode, ignore_whitespace, None)
+        parse_string_to_xee_with_options(source, lang, file_path, tree_mode, ignore_whitespace, max_depth)
     }
 }
 

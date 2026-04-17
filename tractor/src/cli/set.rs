@@ -117,6 +117,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
             config_path,
             shared: &args.shared,
             cli_files: args.args.clone(),
+            cli_content: None,
             format: &args.format,
             default_view: &[ViewField::File, ViewField::Line, ViewField::Status, ViewField::Reason],
             view_override: args.view.as_deref(),
@@ -178,14 +179,14 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
                 report_mode: SetReportMode::PerMatch,
             })
         }
-        InputMode::InlineSource { source, lang } => Operation::Set(SetOperation {
+        InputMode::Inline(source) => Operation::Set(SetOperation {
             files: vec![],
             exclude: vec![],
             diff_files: None,
             diff_lines: None,
             mappings,
             tree_mode: ctx.tree_mode,
-            language: Some(lang.clone()),
+            language: Some(source.language.clone()),
             limit: ctx.limit,
             ignore_whitespace: ctx.ignore_whitespace,
             inline_source: Some(source.clone()),

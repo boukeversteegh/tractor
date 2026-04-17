@@ -2,13 +2,14 @@
 
 use tractor::report::{ReportBuilder, ReportMatch, ReportOutput};
 use tractor::tree_mode::TreeMode;
-use tractor::{detect_language, parse_string_to_documents, Match};
+use tractor::{parse_string_to_documents, Match};
 use tractor::xpath_upsert::upsert_typed;
 
 use crate::input::filter::ResultFilter;
 use crate::input::file_resolver::{FileResolver, FileRequest};
+use crate::input::Source;
 
-use super::{ExecuteOptions, filter_refs, match_to_report_match};
+use super::{build_sources, ExecuteOptions, filter_refs, match_to_report_match};
 
 // ---------------------------------------------------------------------------
 // Operation type
@@ -35,8 +36,10 @@ pub struct SetOperation {
     pub limit: Option<usize>,
     /// Ignore whitespace-only text nodes while collecting diagnostics.
     pub ignore_whitespace: bool,
-    /// Inline source string to mutate instead of files.
-    pub inline_source: Option<String>,
+    /// Optional inline source (from stdin or `-s/--string`). Unified with
+    /// resolved disk files; virtual sources are auto-routed through Capture
+    /// output (never written back to disk).
+    pub inline_source: Option<Source>,
     /// How transformed content should be applied.
     pub write_mode: SetWriteMode,
     /// How detailed the diagnostic report should be.
@@ -80,45 +83,56 @@ pub(crate) fn execute_set(
         return Ok(());
     }
 
-    if let Some(ref source) = op.inline_source {
-        let lang = op.language.as_deref()
-            .ok_or("inline source requires a language (--lang)")?;
-        let outcome = execute_set_target(None, source, lang, op, &[])?;
-        if matches!(op.write_mode, SetWriteMode::Verify) && outcome.changed {
-            report.fail();
-        }
-        report.add_all(outcome.diagnostics);
-        if let Some(output) = outcome.output {
-            report.add_output(output);
-        }
-        return Ok(());
-    }
-
+    let inline_content_holder = op.inline_source.as_ref().and_then(|s| {
+        if s.is_pathless() { None } else { s.inline_content().map(|c| (&s.path, c)) }
+    });
     let request = FileRequest {
         files: &op.files,
         exclude: &op.exclude,
         diff_files: op.diff_files.as_deref(),
         diff_lines: op.diff_lines.as_deref(),
         command: "set",
+        inline: inline_content_holder,
+        has_inline: op.inline_source.is_some(),
     };
     let (files, filters) = resolver.resolve(&request, report);
+    let sources = build_sources(files, op.inline_source.as_ref(), op.language.as_deref());
+    // Disk sources get filter application; inline sources bypass filters
+    // (they have no match history to filter against in the file scope).
+    let filter_refs = filter_refs(&filters);
 
-    for file_path in &files {
-        let lang_override = op.language.as_deref();
-        let lang = lang_override
-            .unwrap_or_else(|| detect_language(file_path.as_str()));
+    for source in &sources {
+        let content = source.read()?;
+        // Virtual sources can't be written back to disk — auto-route any
+        // non-Verify write mode through Capture so the mutated content
+        // surfaces in the report instead of silently vanishing.
+        let effective_write_mode = if source.is_virtual()
+            && matches!(op.write_mode, SetWriteMode::InPlace)
+        {
+            SetWriteMode::Capture
+        } else {
+            op.write_mode
+        };
 
-        let source = std::fs::read_to_string(file_path)?;
+        let filters_for_source: &[&dyn ResultFilter] = if source.is_virtual() {
+            &[]
+        } else {
+            &filter_refs
+        };
+
         let outcome = execute_set_target(
-            Some(file_path.as_str()),
-            &source,
-            lang,
+            source,
+            &content,
             op,
-            &filter_refs(&filters),
+            effective_write_mode,
+            filters_for_source,
         )?;
 
-        if outcome.changed && matches!(op.write_mode, SetWriteMode::InPlace) {
-            std::fs::write(file_path, &outcome.content)?;
+        if outcome.changed
+            && matches!(effective_write_mode, SetWriteMode::InPlace)
+            && !source.is_virtual()
+        {
+            std::fs::write(source.path.as_str(), &outcome.content)?;
         }
         if matches!(op.write_mode, SetWriteMode::Verify) && outcome.changed {
             report.fail();
@@ -144,14 +158,15 @@ struct SetTargetOutcome {
 }
 
 fn execute_set_target(
-    file: Option<&str>,
-    source: &str,
-    lang: &str,
+    source: &Source,
+    content: &str,
     op: &SetOperation,
+    effective_write_mode: SetWriteMode,
     filters: &[&dyn ResultFilter],
 ) -> Result<SetTargetOutcome, Box<dyn std::error::Error>> {
-    let file_label = file.unwrap_or("<stdin>");
-    let mut current = source.to_string();
+    let file_label = source.path_str();
+    let lang = source.language.as_str();
+    let mut current = content.to_string();
     let mut diagnostics = Vec::new();
     let mut changed = false;
 
@@ -209,9 +224,19 @@ fn execute_set_target(
         });
     }
 
-    let output = if matches!(op.write_mode, SetWriteMode::Capture) {
+    // Pathless inline sources produce outputs with `file: None` (preserving
+    // the prior "no filename in output" signal for -s with no positional
+    // path). Everything else — disk files and virtual paths — carries its
+    // path through.
+    let output_file = if source.is_pathless() {
+        None
+    } else {
+        Some(file_label.to_string())
+    };
+
+    let output = if matches!(effective_write_mode, SetWriteMode::Capture) {
         Some(ReportOutput {
-            file: file.map(|path| path.to_string()),
+            file: output_file,
             content: current.clone(),
         })
     } else {
@@ -376,7 +401,10 @@ mod tests {
             language: Some(lang.into()),
             limit: None,
             ignore_whitespace: false,
-            inline_source: Some(source.into()),
+            inline_source: Some(Source::inline_pathless(
+                lang,
+                std::sync::Arc::new(source.to_string()),
+            )),
             write_mode,
             report_mode: SetReportMode::PerMatch,
         })

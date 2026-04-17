@@ -121,7 +121,7 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
                 inline_source: None,
             })
         }
-        InputMode::InlineSource { source, lang } => {
+        InputMode::Inline(source) => {
             Operation::Check(CheckOperation {
                 files: vec![],
                 exclude: vec![],
@@ -129,7 +129,7 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
                 diff_lines: None,
                 rules: vec![rule],
                 tree_mode: ctx.tree_mode,
-                language: Some(lang.clone()),
+                language: Some(source.language.clone()),
                 ignore_whitespace: ctx.ignore_whitespace,
                 parse_depth: ctx.parse_depth,
                 ruleset_include: vec![],
@@ -179,6 +179,7 @@ fn run_check_config(args: CheckArgs, config_path_str: &str) -> Result<(), Box<dy
         config_path: config_path_str,
         shared: &args.shared,
         cli_files: args.files,
+        cli_content: args.content,
         format: &args.format,
         default_view: &[ViewField::Reason, ViewField::Severity, ViewField::Lines],
         view_override: args.view.as_deref(),

@@ -84,7 +84,7 @@ pub use wasm::ast as wasm_ast;
 #[cfg(feature = "native")]
 pub use parser::{
     detect_language, SUPPORTED_LANGUAGES,
-    parse_to_documents, parse_string_to_documents,
+    parse_to_documents, parse_string_to_documents, parse_string_to_documents_with_options,
     load_xml_string_to_documents, load_xml_file_to_documents,
     XeeParseResult,
     get_language_abi_versions, LanguageAbiInfo,

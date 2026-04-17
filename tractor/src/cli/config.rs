@@ -10,9 +10,10 @@
 use tractor::report::{ReportMatch, Severity};
 
 use crate::cli::SharedArgs;
-use crate::executor::{self, ExecuteOptions, Operation};
+use crate::executor::{self, CheckOperation, ExecuteOptions, Operation, QueryOperation, SetOperation, TestOperation};
 use crate::cli::context::RunContext;
 use crate::format::{ViewField, GroupDimension, render_report};
+use crate::input::{resolve_input, InputMode, Source};
 use crate::matcher::{project_report, apply_message_template};
 
 /// Parameters that vary per command when executing a config file.
@@ -20,6 +21,10 @@ pub struct ConfigRunParams<'a> {
     pub config_path: &'a str,
     pub shared: &'a SharedArgs,
     pub cli_files: Vec<String>,
+    /// CLI-provided inline content (from `-s/--string`). Together with any
+    /// piped stdin, this becomes a virtual `Source` attached to every
+    /// config-loaded operation that can accept one.
+    pub cli_content: Option<String>,
     pub format: &'a str,
     pub default_view: &'a [ViewField],
     pub view_override: Option<&'a str>,
@@ -39,9 +44,34 @@ pub fn run_from_config(params: ConfigRunParams) -> Result<(), Box<dyn std::error
 
     let loaded = crate::tractor_config::load_tractor_config(config_path)?;
 
-    let operations: Vec<_> = loaded.operations.into_iter()
+    // Resolve CLI input once. Inline mode consumes the positional `files`
+    // arg as the Source's virtual path, so it must NOT leak into
+    // `ExecuteOptions.cli_files` (which would ask FileResolver to
+    // intersect the operation against a file the user never wanted to
+    // read from disk). Disk mode keeps the cli_files flowing as today.
+    let (cli_inline_source, cli_files_for_resolver) = match resolve_input(
+        params.shared,
+        params.cli_files.clone(),
+        params.cli_content,
+    )? {
+        InputMode::Inline(source) => (Some(source), Vec::new()),
+        InputMode::Files(files) => (None, files),
+    };
+
+    let mut operations: Vec<_> = loaded.operations.into_iter()
         .filter(params.op_filter)
         .collect();
+
+    // Attach the CLI inline source to every config-loaded operation of a
+    // kind that understands inline input. This is what unlocks
+    //   `cat proposed.cs | tractor check --config tractor.yml src/Foo.cs`
+    // by making the piped content participate in the config's rules exactly
+    // like a disk file at the virtual path.
+    if let Some(ref inline) = cli_inline_source {
+        for op in &mut operations {
+            attach_inline_source(op, inline.clone());
+        }
+    }
 
     let ctx = RunContext::build(
         params.shared, vec![], None, params.format,
@@ -78,7 +108,7 @@ pub fn run_from_config(params: ConfigRunParams) -> Result<(), Box<dyn std::error
             diff_files: params.shared.diff_files.clone(),
             diff_lines: params.shared.diff_lines.clone(),
             max_files: params.shared.max_files,
-            cli_files: params.cli_files,
+            cli_files: cli_files_for_resolver,
             config_root_files: loaded.root_files,
         };
 
@@ -95,4 +125,25 @@ pub fn run_from_config(params: ConfigRunParams) -> Result<(), Box<dyn std::error
     let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
     let report = report.with_grouping(&dims);
     render_report(&report, &ctx, None)
+}
+
+/// Attach a CLI-provided inline source to a config-loaded operation.
+///
+/// Per-operation already-set `inline_source` takes precedence (e.g. set
+/// operations that declare their own inline content in YAML); otherwise
+/// we plant the CLI source. Update operations don't accept inline input.
+fn attach_inline_source(op: &mut Operation, inline: Source) {
+    match op {
+        Operation::Check(CheckOperation { inline_source, .. })
+        | Operation::Query(QueryOperation { inline_source, .. })
+        | Operation::Set(SetOperation { inline_source, .. })
+        | Operation::Test(TestOperation { inline_source, .. }) => {
+            if inline_source.is_none() {
+                *inline_source = Some(inline);
+            }
+        }
+        Operation::Update(_) => {
+            // update mutates disk, no inline flow — intentional no-op.
+        }
+    }
 }

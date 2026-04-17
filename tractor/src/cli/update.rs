@@ -31,7 +31,7 @@ pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     let files = match &ctx.input {
         InputMode::Files(files) => files,
-        InputMode::InlineSource { .. } => {
+        InputMode::Inline(_) => {
             return Err("update cannot be used with stdin input (no file to modify)".into());
         }
     };

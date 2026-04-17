@@ -36,6 +36,15 @@ pub(crate) struct FileRequest<'a> {
     pub diff_lines: Option<&'a str>,
     /// Command name for diagnostics (e.g. "check", "query").
     pub command: &'a str,
+    /// Optional inline source whose virtual path should participate in
+    /// `--diff-lines` hunk computation (diff against the git baseline for
+    /// that path). `None` preserves prior behaviour for disk-only flows.
+    pub inline: Option<(&'a NormalizedPath, &'a str)>,
+    /// `true` when the operation has an inline source in any form
+    /// (path-less or virtual-pathed). Tells FileResolver to treat the
+    /// operation as having a valid input even when no disk-file patterns
+    /// are provided — suppresses the "no file patterns specified" fatal.
+    pub has_inline: bool,
 }
 
 // ---------------------------------------------------------------------------
@@ -251,7 +260,12 @@ impl FileResolver {
     ) -> (Vec<NormalizedPath>, Vec<Box<dyn ResultFilter>>) {
         let cwd = self.base_dir.as_deref()
             .unwrap_or_else(|| Path::new("."));
-        let filters = build_filters(self.global_diff_lines.as_deref(), request.diff_lines, cwd);
+        let filters = build_filters(
+            self.global_diff_lines.as_deref(),
+            request.diff_lines,
+            cwd,
+            request.inline,
+        );
         let files = self.resolve_files(request, &filters, report);
         (files, filters)
     }
@@ -371,9 +385,11 @@ impl FileResolver {
                 eprintln!("  files: using CLI files as base ({} file(s))", cli_set.len());
             }
             (cli_set.iter().cloned().collect(), vec![])
-        } else if self.base_dir.is_some() {
-            // Config-based run with no files at any level — fail with a clear
-            // message rather than silently doing nothing (fix #127 bug 4).
+        } else if self.base_dir.is_some() && !request.has_inline {
+            // Config-based run with no files at any level AND no inline source
+            // — fail with a clear message rather than silently doing nothing
+            // (fix #127 bug 4). An inline source is a complete input on its
+            // own; don't force a `files:` declaration in that case.
             report.add(make_fatal_diagnostic(
                 request.command,
                 "no file patterns specified — add `files:` to your config, pass files as CLI arguments, or add `include:` to your rules".to_string(),
@@ -520,15 +536,20 @@ fn resolve_globs_to_absolute(base_dir: &Option<PathBuf>, patterns: &[String]) ->
 }
 
 /// Build result filters from global and per-operation diff specs.
+///
+/// When `inline` is `Some`, the hunks for the virtual path are computed
+/// against the git baseline at `spec:<virtual_path>` so pre-commit hooks
+/// can lint only the edited hunk even when the content is in memory.
 fn build_filters(
     global_diff: Option<&str>,
     op_diff: Option<&str>,
     cwd: &Path,
+    inline: Option<(&NormalizedPath, &str)>,
 ) -> Vec<Box<dyn ResultFilter>> {
     let mut filters: Vec<Box<dyn ResultFilter>> = Vec::new();
 
     for spec in [global_diff, op_diff].into_iter().flatten() {
-        match git::DiffHunkFilter::from_spec(spec, cwd) {
+        match git::DiffHunkFilter::from_spec_with_inline(spec, cwd, inline) {
             Ok(f) => filters.push(Box::new(f)),
             Err(e) => eprintln!("warning: --diff-lines filter failed: {}", e),
         }
@@ -684,6 +705,8 @@ mod tests {
             diff_files: None,
             diff_lines: None,
             command: "check",
+            inline: None,
+            has_inline: false,
         };
         let (files, _) = resolver.resolve(&request, &mut builder);
         assert!(files.is_empty(), "should return no files");
@@ -716,6 +739,8 @@ mod tests {
             diff_files: None,
             diff_lines: None,
             command: "query",
+            inline: None,
+            has_inline: false,
         };
         let (files, _) = resolver.resolve(&request, &mut builder);
         assert!(files.is_empty());
@@ -754,6 +779,8 @@ mod tests {
             diff_files: None,
             diff_lines: None,
             command: "check",
+            inline: None,
+            has_inline: false,
         };
         let (files, _) = resolver.resolve(&request, &mut builder);
         assert!(files.is_empty(), "invalid exclude must short-circuit resolution");

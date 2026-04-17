@@ -103,11 +103,162 @@ impl DiffHunkFilter {
         Ok(DiffHunkFilter { hunks })
     }
 
+    /// Create a filter that also covers an inline source at a virtual path.
+    ///
+    /// For real files, hunks come from `git diff -U0 <spec>` as usual.
+    /// For the virtual path, hunks are computed as `diff -U0 <git show
+    /// <spec>:<vpath>, inline content>` — the "new side" is the in-memory
+    /// content, so the resulting ranges reflect the caller's proposed edit.
+    ///
+    /// This is what lets pre-commit hooks lint only the hunk they're
+    /// actually changing, even though the stdin content never hits disk.
+    pub fn from_spec_with_inline(
+        spec: &str,
+        cwd: &Path,
+        inline: Option<(&NormalizedPath, &str)>,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        let mut filter = Self::from_spec(spec, cwd)?;
+        if let Some((vpath, content)) = inline {
+            let baseline = git_show_at_spec(spec, vpath, cwd).unwrap_or_default();
+            let ranges = compute_inline_hunks(&baseline, content)?;
+            if ranges.is_empty() {
+                filter.hunks.remove(vpath);
+            } else {
+                filter.hunks.insert(vpath.clone(), ranges);
+            }
+        }
+        Ok(filter)
+    }
+
     /// Create a filter from pre-parsed hunks (for testing).
     #[cfg(test)]
     pub fn from_hunks(hunks: HashMap<NormalizedPath, Vec<LineRange>>) -> Self {
         DiffHunkFilter { hunks }
     }
+}
+
+/// Read the baseline content of `path` at git `spec`.
+///
+/// Uses `git show <spec>:<repo-relative-path>`. Returns `None` if the file
+/// doesn't exist at the spec (new file) or git rejects the path — the
+/// caller should treat that as an empty baseline so every line counts as
+/// added.
+fn git_show_at_spec(spec: &str, path: &NormalizedPath, cwd: &Path) -> Option<String> {
+    // `git show SPEC:PATH` wants a single revision, not a range. If spec is
+    // a range (`A..B`, `A...B`, or `A B`), take the last revision — it's
+    // the "new" side that the caller wants to compare against.
+    let revision = last_revision(spec);
+
+    // git show wants a repo-relative path. Derive it from the repo root.
+    let repo_root = repo_toplevel(cwd)?;
+    let rel = path.as_str().strip_prefix(repo_root.as_str())?
+        .trim_start_matches('/').to_string();
+
+    let output = Command::new("git")
+        .arg("show")
+        .arg(format!("{}:{}", revision, rel))
+        .current_dir(cwd)
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    Some(String::from_utf8_lossy(&output.stdout).to_string())
+}
+
+fn last_revision(spec: &str) -> &str {
+    // Handle "A B" (pair) or "A..B" / "A...B" (range): take the last token.
+    let trimmed = spec.trim();
+    if let Some(idx) = trimmed.rfind("...") {
+        return &trimmed[idx + 3..];
+    }
+    if let Some(idx) = trimmed.rfind("..") {
+        return &trimmed[idx + 2..];
+    }
+    trimmed.split_whitespace().last().unwrap_or(trimmed)
+}
+
+fn repo_toplevel(cwd: &Path) -> Option<NormalizedPath> {
+    let output = Command::new("git")
+        .arg("rev-parse")
+        .arg("--show-toplevel")
+        .current_dir(cwd)
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let raw = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    Some(NormalizedPath::absolute(&raw))
+}
+
+/// Compute line ranges that changed going from `baseline` to `content`.
+///
+/// Shells out to `diff -U0 <base_file> <new_file>` on two temp files and
+/// parses the unified diff hunk headers. Temp files are written to the
+/// system temp dir and removed on the way out; we avoid pulling in the
+/// `tempfile` crate as a regular dependency since this helper is only
+/// used on the inline-source path.
+///
+/// Returns hunk ranges on the new side (line numbers in `content`).
+fn compute_inline_hunks(
+    baseline: &str,
+    content: &str,
+) -> Result<Vec<LineRange>, Box<dyn std::error::Error>> {
+    let base_file = write_scratch_file("tractor_diff_base", baseline)?;
+    let new_file = write_scratch_file("tractor_diff_new", content)?;
+
+    let result = (|| -> Result<Vec<LineRange>, Box<dyn std::error::Error>> {
+        let output = Command::new("diff")
+            .arg("-U0")
+            .arg(&base_file)
+            .arg(&new_file)
+            .output()?;
+
+        // `diff -U0` exits 0 when files are identical, 1 when different,
+        // >1 on error. 0 and 1 both yield parseable output; >1 is a real
+        // failure.
+        if let Some(code) = output.status.code() {
+            if code > 1 {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                return Err(format!("diff -U0 failed: {}", stderr.trim()).into());
+            }
+        }
+
+        let diff = String::from_utf8_lossy(&output.stdout);
+        let mut ranges = Vec::new();
+        for line in diff.lines() {
+            if line.starts_with("@@ ") {
+                if let Some(range) = parse_hunk_header(line) {
+                    ranges.push(range);
+                }
+            }
+        }
+        Ok(ranges)
+    })();
+
+    let _ = std::fs::remove_file(&base_file);
+    let _ = std::fs::remove_file(&new_file);
+    result
+}
+
+/// Create a short-lived scratch file in the OS temp dir. Unique per-call
+/// via PID + nanosecond timestamp + a monotonic counter.
+fn write_scratch_file(tag: &str, content: &str) -> std::io::Result<std::path::PathBuf> {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    use std::time::{SystemTime, UNIX_EPOCH};
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
+
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_nanos() as u64)
+        .unwrap_or(0);
+    let pid = std::process::id();
+    let seq = COUNTER.fetch_add(1, Ordering::Relaxed);
+
+    let path = std::env::temp_dir().join(format!("{}_{}_{}_{}", tag, pid, nanos, seq));
+    std::fs::write(&path, content)?;
+    Ok(path)
 }
 
 impl ResultFilter for DiffHunkFilter {

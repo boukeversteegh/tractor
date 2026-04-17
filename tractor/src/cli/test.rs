@@ -60,6 +60,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
             config_path,
             shared: &args.shared,
             cli_files: args.files.clone(),
+            cli_content: args.content.clone(),
             format: &args.format,
             default_view: &[ViewField::Totals],
             view_override: args.view.as_deref(),
@@ -101,7 +102,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
             parse_depth: ctx.parse_depth,
             inline_source: None,
         }),
-        InputMode::InlineSource { source, lang } => Operation::Test(TestOperation {
+        InputMode::Inline(source) => Operation::Test(TestOperation {
             files: vec![],
             exclude: vec![],
             diff_files: None,
@@ -111,7 +112,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
                 expect: expect.clone(),
             }],
             tree_mode: ctx.tree_mode,
-            language: Some(lang.clone()),
+            language: Some(source.language.clone()),
             limit: ctx.limit,
             ignore_whitespace: ctx.ignore_whitespace,
             parse_depth: ctx.parse_depth,

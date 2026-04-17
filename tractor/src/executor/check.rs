@@ -8,8 +8,9 @@ use tractor::parse_string_to_documents;
 use crate::matcher::validate_xpath_diagnostic;
 use crate::matcher::run_rules;
 use crate::input::file_resolver::{FileResolver, FileRequest};
+use crate::input::Source;
 
-use super::{ExecuteOptions, filter_refs, match_to_report_match};
+use super::{build_sources, ExecuteOptions, filter_refs, match_to_report_match};
 
 // ---------------------------------------------------------------------------
 // Operation type
@@ -43,8 +44,11 @@ pub struct CheckOperation {
     /// Ruleset-level exclude patterns for per-rule glob matching.
     #[doc(hidden)]
     pub ruleset_exclude: Vec<String>,
-    /// Inline source string to parse instead of files.
-    pub inline_source: Option<String>,
+    /// Optional inline source (from stdin or `-s/--string`). When present,
+    /// its virtual path participates in rule glob matching and diagnostics
+    /// exactly like a disk file — the executor threads it into the same
+    /// `run_rules` pipeline.
+    pub inline_source: Option<Source>,
 }
 
 // ---------------------------------------------------------------------------
@@ -73,38 +77,10 @@ pub(crate) fn execute_check(
     // --- Phase 1: Validate rule examples inline ---
     validate_rule_examples(&op.rules, op.language.as_deref(), op.tree_mode, report)?;
 
-    // --- Phase 2: Inline source mode — parse a string and run rules against it ---
-    if let Some(ref source) = op.inline_source {
-        let lang = op.language.as_deref()
-            .ok_or("inline source requires a language (--lang)")?;
-        let mut result = parse_string_to_documents(
-            source, lang, "<stdin>".to_string(), op.tree_mode, op.ignore_whitespace,
-        )?;
-        for rule in &op.rules {
-            let matches = result.query(rule.xpath.as_str())?;
-            let reason = rule
-                .reason
-                .clone()
-                .unwrap_or_else(|| format!("[{}] check failed", rule.id));
-            let severity = rule.severity;
-            let message_tpl = rule.message.as_deref();
-            for m in matches {
-                let message = message_tpl.map(|t| tractor::format_message(t, &m));
-                let mut report_match = match_to_report_match(m, "check");
-                report_match.reason = Some(reason.clone());
-                report_match.severity = Some(severity);
-                report_match.rule_id = Some(rule.id.clone());
-                report_match.message = message;
-                report.add(report_match);
-            }
-        }
-        return Ok(());
-    }
-
-    // --- Phase 3: Run the actual file check ---
+    // --- Phase 2: Resolve disk files and unify with any inline source ---
     // When the operation has no files but rules define include patterns, hoist
     // their union into the file request so patterns drive file discovery (fix #127 bug 3).
-    let hoisted_files: Vec<String> = if op.files.is_empty() {
+    let hoisted_files: Vec<String> = if op.files.is_empty() && op.inline_source.is_none() {
         let mut seen = std::collections::HashSet::new();
         op.rules.iter()
             .flat_map(|r| r.include.iter())
@@ -120,14 +96,21 @@ pub(crate) fn execute_check(
         &op.files
     };
 
+    let inline_content_holder = op.inline_source.as_ref().and_then(|s| {
+        if s.is_pathless() { None } else { s.inline_content().map(|c| (&s.path, c)) }
+    });
     let request = FileRequest {
         files: effective_files,
         exclude: &op.exclude,
         diff_files: op.diff_files.as_deref(),
         diff_lines: op.diff_lines.as_deref(),
         command: "check",
+        inline: inline_content_holder,
+        has_inline: op.inline_source.is_some(),
     };
     let (files, filters) = resolver.resolve(&request, report);
+
+    let sources = build_sources(files, op.inline_source.as_ref(), op.language.as_deref());
 
     // Build a RuleSet from the operation. Ruleset-level include/exclude
     // come from rules files; per-rule patterns still participate in glob matching.
@@ -139,10 +122,10 @@ pub(crate) fn execute_check(
         default_language: op.language.clone(),
     };
 
-    if !files.is_empty() {
+    if !sources.is_empty() {
         let rule_matches = run_rules(
             &ruleset,
-            &files,
+            &sources,
             resolver.base_dir(),
             op.tree_mode,
             op.ignore_whitespace,

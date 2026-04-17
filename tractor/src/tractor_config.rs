@@ -449,6 +449,20 @@ fn convert_set(config: SetConfig, scope: &RootScope) -> Result<Operation, Box<dy
 
     let (files, exclude, diff_files, diff_lines) = merge_scope(scope, config.files, config.exclude, config.diff_files, config.diff_lines);
 
+    // Config-declared inline source becomes a pathless virtual source. The
+    // language override doubles as the Source's language (the input boundary
+    // normally resolves this, but config inputs arrive post-boundary).
+    let inline_source = if let Some(content) = config.inline_source {
+        let lang = config.language.as_deref()
+            .ok_or("set operation with inline source requires `language`")?;
+        Some(crate::input::Source::inline_pathless(
+            lang,
+            std::sync::Arc::new(content),
+        ))
+    } else {
+        None
+    };
+
     Ok(Operation::Set(SetOperation {
         files,
         exclude,
@@ -459,7 +473,7 @@ fn convert_set(config: SetConfig, scope: &RootScope) -> Result<Operation, Box<dy
         language: config.language,
         limit: config.limit,
         ignore_whitespace: config.ignore_whitespace,
-        inline_source: config.inline_source,
+        inline_source,
         write_mode,
         report_mode,
     }))

@@ -208,11 +208,15 @@ pub fn apply_replacements(matches: &[Match], new_value: &str) -> Result<ReplaceS
         });
     }
 
-    // Reject stdin matches
+    // Defensive: reject matches from pathless inline sources. In the unified
+    // Source flow the executor already filters these out before reaching
+    // apply_replacements; this guards against future callers that forget.
+    // Sentinel must stay in sync with `crate::input::PATHLESS_LABEL` in the
+    // binary crate (see docs/design-unified-source.md).
     for m in matches {
-        if m.file == "<stdin>" {
+        if m.file == "<string>" || m.file == "<stdin>" {
             return Err(ReplaceError::NoFilePath {
-                description: "<stdin>".to_string(),
+                description: m.file.clone(),
             });
         }
     }

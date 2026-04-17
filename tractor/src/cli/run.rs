@@ -38,6 +38,7 @@ pub fn run_run(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {
         config_path: &args.config,
         shared: &args.shared,
         cli_files: args.files,
+        cli_content: None,
         format: &args.format,
         default_view: &[ViewField::Command, ViewField::Reason, ViewField::Severity, ViewField::Lines, ViewField::Status, ViewField::Value],
         view_override: args.view.as_deref(),

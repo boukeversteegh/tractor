@@ -3,12 +3,12 @@
 use tractor::normalized_xpath::NormalizedXpath;
 use tractor::report::ReportBuilder;
 use tractor::tree_mode::TreeMode;
-use tractor::parse_string_to_documents;
 
 use crate::matcher::validate_xpath_diagnostic;
 use crate::input::file_resolver::{FileResolver, FileRequest};
+use crate::input::Source;
 
-use super::{ExecuteOptions, filter_refs, match_to_report_match, query_files_multi};
+use super::{build_sources, ExecuteOptions, filter_refs, match_to_report_match, query_files_multi};
 
 // ---------------------------------------------------------------------------
 // Operation type
@@ -44,8 +44,10 @@ pub struct QueryOperation {
     pub ignore_whitespace: bool,
     /// Maximum parse depth.
     pub parse_depth: Option<usize>,
-    /// Inline source string to parse instead of files.
-    pub inline_source: Option<String>,
+    /// Optional inline source (from stdin or `-s/--string`). Unified with
+    /// resolved disk files inside the executor; the same `query_files_multi`
+    /// handles both.
+    pub inline_source: Option<Source>,
 }
 
 /// A single XPath query expression.
@@ -65,28 +67,6 @@ pub(crate) fn execute_query(
     resolver: &FileResolver,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    // Inline source mode: parse a string instead of files.
-    if let Some(ref source) = op.inline_source {
-        let lang = op.language.as_deref()
-            .ok_or("inline source requires a language (--lang)")?;
-        return execute_query_inline(source, lang, op, report);
-    }
-
-    let request = FileRequest {
-        files: &op.files,
-        exclude: &op.exclude,
-        diff_files: op.diff_files.as_deref(),
-        diff_lines: op.diff_lines.as_deref(),
-        command: "query",
-    };
-    let (files, filters) = resolver.resolve(&request, report);
-
-    if files.is_empty() {
-        return Ok(());
-    }
-
-    let xpaths: Vec<&str> = op.queries.iter().map(|q| q.xpath.as_str()).collect();
-
     // Validate all XPath expressions upfront — add fatal diagnostics on failure
     let diagnostics: Vec<_> = op.queries.iter()
         .filter_map(|q| validate_xpath_diagnostic(&q.xpath, "query"))
@@ -96,52 +76,34 @@ pub(crate) fn execute_query(
         return Ok(());
     }
 
+    let inline_content_holder = op.inline_source.as_ref().and_then(|s| {
+        if s.is_pathless() { None } else { s.inline_content().map(|c| (&s.path, c)) }
+    });
+    let request = FileRequest {
+        files: &op.files,
+        exclude: &op.exclude,
+        diff_files: op.diff_files.as_deref(),
+        diff_lines: op.diff_lines.as_deref(),
+        command: "query",
+        inline: inline_content_holder,
+        has_inline: op.inline_source.is_some(),
+    };
+    let (files, filters) = resolver.resolve(&request, report);
+    let sources = build_sources(files, op.inline_source.as_ref(), op.language.as_deref());
+
+    if sources.is_empty() {
+        return Ok(());
+    }
+
+    let xpaths: Vec<&str> = op.queries.iter().map(|q| q.xpath.as_str()).collect();
+
     let matches = query_files_multi(
-        &files, &xpaths, op.language.as_deref(),
+        &sources, &xpaths, op.language.as_deref(),
         op.tree_mode, op.ignore_whitespace, op.parse_depth,
         op.limit, options.verbose, &filter_refs(&filters),
     )?;
 
     report.add_all(matches.into_iter().map(|m| match_to_report_match(m, "query")));
-
-    Ok(())
-}
-
-// ---------------------------------------------------------------------------
-// Inline source
-// ---------------------------------------------------------------------------
-
-/// Inline source query: parse a string and run all XPath expressions.
-fn execute_query_inline(
-    source: &str,
-    lang: &str,
-    op: &QueryOperation,
-    report: &mut ReportBuilder,
-) -> Result<(), Box<dyn std::error::Error>> {
-    // Validate all XPath expressions upfront
-    let diagnostics: Vec<_> = op.queries.iter()
-        .filter_map(|q| validate_xpath_diagnostic(&q.xpath, "query"))
-        .collect();
-    if !diagnostics.is_empty() {
-        report.add_all(diagnostics);
-        return Ok(());
-    }
-
-    let mut result = parse_string_to_documents(
-        source, lang, "<stdin>".to_string(), op.tree_mode, op.ignore_whitespace,
-    )?;
-
-    let mut all_matches = Vec::new();
-    for query in &op.queries {
-        let matches = result.query(query.xpath.as_str())?;
-        all_matches.extend(matches);
-    }
-
-    if let Some(limit) = op.limit {
-        all_matches.truncate(limit);
-    }
-
-    report.add_all(all_matches.into_iter().map(|m| match_to_report_match(m, "query")));
 
     Ok(())
 }
