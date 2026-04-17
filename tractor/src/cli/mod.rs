@@ -111,6 +111,14 @@ When omitted, auto-selects: data for JSON/YAML, structure for everything else.")
     #[arg(long = "meta", help_heading = "View")]
     pub meta: bool,
 
+    /// Project a specific element from the report (tree, value, source, lines, schema, count, summary, totals, results, report)
+    #[arg(short = 'p', long = "project", value_name = "ELEMENT", help_heading = "View")]
+    pub project: Option<String>,
+
+    /// Emit the first matching element bare (no list wrapper). Implies -n 1.
+    #[arg(long = "single", help_heading = "View")]
+    pub single: bool,
+
     // -- Format --
     /// Disable pretty printing (shows XML without formatting, as used by XPath)
     #[arg(long = "no-pretty", help_heading = "Format")]

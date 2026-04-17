@@ -400,6 +400,157 @@ pub fn parse_view_set(s: &str, default_fields: &[ViewField]) -> Result<ViewSet, 
 }
 
 // ---------------------------------------------------------------------------
+// Projection — report projection (-p / --project flag)
+// ---------------------------------------------------------------------------
+
+/// A projection of the report: selects which element of the built report is
+/// emitted. Closed enum; each value names an element in the report structure.
+///
+/// See `docs/design-p-projection-flag.md` for the full semantic table.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Projection {
+    /// `<tree>` elements, one per match. View-level; replaces -v with [tree].
+    Tree,
+    /// `<value>` elements, one per match. View-level.
+    Value,
+    /// `<source>` elements, one per match. View-level.
+    Source,
+    /// `<lines>` elements, one per match. View-level.
+    Lines,
+    /// The `<schema>` element. View-level; expensive — only compute when requested.
+    Schema,
+    /// Scalar total match count (alias for /summary/totals/results). View-level.
+    Count,
+    /// The `<summary>` container. Metadata; -v irrelevant.
+    Summary,
+    /// The `<totals>` element inside summary. Metadata; -v irrelevant.
+    Totals,
+    /// The `<results>` list wrapper (list of matches). Structural; respects -v.
+    Results,
+    /// The whole `<report>` (default when -p omitted). Structural; respects -v.
+    Report,
+}
+
+impl Projection {
+    /// All variants in canonical display order.
+    pub const ALL: &[Projection] = &[
+        Projection::Tree, Projection::Value, Projection::Source, Projection::Lines,
+        Projection::Schema, Projection::Count,
+        Projection::Summary, Projection::Totals,
+        Projection::Results, Projection::Report,
+    ];
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            Projection::Tree    => "tree",
+            Projection::Value   => "value",
+            Projection::Source  => "source",
+            Projection::Lines   => "lines",
+            Projection::Schema  => "schema",
+            Projection::Count   => "count",
+            Projection::Summary => "summary",
+            Projection::Totals  => "totals",
+            Projection::Results => "results",
+            Projection::Report  => "report",
+        }
+    }
+
+    pub fn description(&self) -> &'static str {
+        match self {
+            Projection::Tree    => "One <tree> per match (replaces -v)",
+            Projection::Value   => "One <value> per match (replaces -v)",
+            Projection::Source  => "One <source> per match (replaces -v)",
+            Projection::Lines   => "One <lines> per match (replaces -v)",
+            Projection::Schema  => "Structural schema (replaces -v)",
+            Projection::Count   => "Total match count as a scalar (replaces -v)",
+            Projection::Summary => "Summary container (totals, success, expected, query)",
+            Projection::Totals  => "Totals element only",
+            Projection::Results => "List of matches (respects -v)",
+            Projection::Report  => "Full <report> envelope (default; respects -v)",
+        }
+    }
+
+    /// The corresponding view field, if this projection is view-level.
+    /// View-level projections replace the view set with exactly this field.
+    pub fn as_view_field(&self) -> Option<ViewField> {
+        match self {
+            Projection::Tree    => Some(ViewField::Tree),
+            Projection::Value   => Some(ViewField::Value),
+            Projection::Source  => Some(ViewField::Source),
+            Projection::Lines   => Some(ViewField::Lines),
+            Projection::Schema  => Some(ViewField::Schema),
+            Projection::Count   => Some(ViewField::Count),
+            _ => None,
+        }
+    }
+
+    /// View-level projections replace `-v` with `[field]` during normalization.
+    pub fn is_view_level(&self) -> bool {
+        self.as_view_field().is_some()
+    }
+
+    /// Structural projections render per-match content and respect `-v`.
+    pub fn is_structural(&self) -> bool {
+        matches!(self, Projection::Results | Projection::Report)
+    }
+
+    /// Metadata projections have no per-match fields; any -v/-m is unreachable.
+    pub fn is_metadata(&self) -> bool {
+        matches!(self, Projection::Summary | Projection::Totals)
+    }
+
+    /// Does this projection produce a sequence (list of elements), making
+    /// `--single` meaningful? If false, `--single` is a no-op + warning.
+    pub fn is_sequence(&self) -> bool {
+        matches!(
+            self,
+            Projection::Tree | Projection::Value | Projection::Source
+            | Projection::Lines | Projection::Results
+        )
+    }
+
+    pub fn from_str(s: &str) -> Result<Self, String> {
+        match s.to_lowercase().as_str() {
+            "tree" | "ast" => Ok(Projection::Tree),
+            "value"    => Ok(Projection::Value),
+            "source"   => Ok(Projection::Source),
+            "lines"    => Ok(Projection::Lines),
+            "schema"   => Ok(Projection::Schema),
+            "count"    => Ok(Projection::Count),
+            "summary"  => Ok(Projection::Summary),
+            "totals"   => Ok(Projection::Totals),
+            "results"  => Ok(Projection::Results),
+            "report"   => Ok(Projection::Report),
+            _ => {
+                let names: Vec<&str> = Projection::ALL.iter().map(|p| p.name()).collect();
+                Err(format!(
+                    "invalid projection '{}'. Valid projections: {}",
+                    s, names.join(", "),
+                ))
+            }
+        }
+    }
+
+    /// Full long-help text for the `-p` / `--project` flag.
+    pub fn project_long_help() -> String {
+        let max_name = Projection::ALL.iter().map(|p| p.name().len()).max().unwrap_or(0);
+        let mut lines = vec![
+            "Project a specific element from the report [default: report]".to_string(),
+            String::new(),
+        ];
+        for p in Projection::ALL {
+            lines.push(format!(
+                "  {:width$}  {}",
+                p.name(), p.description(), width = max_name,
+            ));
+        }
+        lines.push(String::new());
+        lines.push("Use --single to emit one element bare (implies -n 1).".to_string());
+        lines.join("\n")
+    }
+}
+
+// ---------------------------------------------------------------------------
 // GroupDimension — grouping dimensions for multi-level grouping
 // ---------------------------------------------------------------------------
 

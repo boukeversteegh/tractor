@@ -71,6 +71,12 @@ View:
       --meta
           Include metadata attributes (start/end, kind, field) in XML output
 
+  -p, --project <ELEMENT>
+          Project a specific element from the report (tree, value, source, lines, schema, count, summary, totals, results, report)
+
+      --single
+          Emit the first matching element bare (no list wrapper). Implies -n 1
+
   -g, --group <GROUP_BY>
           Group output by dimension: none, file, command, rule (comma-separated)
 

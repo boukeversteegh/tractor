@@ -6,14 +6,14 @@ use tractor::{
 };
 use crate::cli::SharedArgs;
 use crate::input::{InputMode, resolve_input};
-use crate::format::{OutputFormat, GroupDimension, ViewField, ViewSet, parse_view_set, parse_group_by};
+use crate::format::{OutputFormat, GroupDimension, Projection, ViewField, ViewSet, parse_view_set, parse_group_by};
 use crate::format::options::HookType;
 
 pub struct RunContext {
     pub xpath: Option<NormalizedXpath>,
     /// Output format (-f).
     pub output_format: OutputFormat,
-    /// View field selection (-v).
+    /// View field selection (-v), after `-p` normalization.
     pub view: ViewSet,
     pub use_color: bool,
     /// Interpolated message template from `-m`, if provided.
@@ -33,6 +33,10 @@ pub struct RunContext {
     pub group_by: Vec<GroupDimension>,
     /// Claude Code hook type (--hook), used with `-f claude-code`.
     pub hook_type: Option<HookType>,
+    /// Report projection (-p). None = default = `Projection::Report`.
+    pub projection: Option<Projection>,
+    /// `--single` modifier. When set with a sequence projection, emits first element bare.
+    pub single: bool,
 }
 
 impl RunContext {
@@ -67,13 +71,48 @@ impl RunContext {
             }
         };
 
-        let view = if let Some(s) = user_view {
+        let user_view_explicit = user_view.is_some();
+        let initial_view = if let Some(s) = user_view {
             parse_view_set(s, default_view)?
         } else {
             ViewSet::from_fields(default_view.to_vec())
         };
         let use_color     = if shared.no_color { false } else { should_use_color(&shared.color) };
         let input         = resolve_input(shared, files, content)?;
+
+        // -- Projection normalization (-p/--project, --single) --
+        // Order: parse `-p`, then apply `--single` defaulting, then validate against `-n`.
+        let mut projection = match shared.project.as_deref() {
+            Some(s) => Some(Projection::from_str(s)?),
+            None => None,
+        };
+
+        // `--single` with `-p` omitted defaults to `-p results` (per design).
+        if shared.single && projection.is_none() {
+            projection = Some(Projection::Results);
+        }
+
+        // `--single -n N` (for any N != 1) is a contradiction.
+        if shared.single {
+            if let Some(n) = shared.limit {
+                if n != 1 {
+                    return Err(format!(
+                        "--single and -n {} conflict: --single implies -n 1 (first match only). \
+                         Drop either --single or -n.", n,
+                    ).into());
+                }
+            }
+        }
+
+        // View replacement rule: when `-p` is view-level, replace `-v` with
+        // `[that field]`. Warn on stderr for any explicitly-requested fields
+        // that get discarded.
+        let view = normalize_view_for_projection(
+            initial_view,
+            projection,
+            user_view_explicit,
+            message.is_some(),
+        );
 
         let group_by = match shared.group_by.as_deref() {
             Some(s) => parse_group_by(s)?,
@@ -96,6 +135,9 @@ impl RunContext {
             .build_global()
             .ok();
 
+        // `--single` implies `-n 1` when no limit set.
+        let limit = if shared.single { Some(1) } else { shared.limit };
+
         Ok(RunContext {
             xpath,
             output_format,
@@ -103,7 +145,7 @@ impl RunContext {
             use_color,
             message,
             input,
-            limit: shared.limit,
+            limit,
             depth: shared.depth,
             parse_depth: shared.parse_depth,
             meta: shared.meta,
@@ -115,6 +157,8 @@ impl RunContext {
             debug,
             group_by,
             hook_type,
+            projection,
+            single: shared.single,
         })
     }
 
@@ -129,5 +173,74 @@ impl RunContext {
 
     pub fn schema_depth(&self) -> Option<usize> {
         self.depth.or(Some(4))
+    }
+}
+
+/// Apply the `-p` view replacement rule and emit stderr warnings for
+/// explicitly-requested view fields that won't appear in the output.
+///
+/// - View-level `-p X` (tree/value/source/lines/schema/count): replaces `-v`
+///   with `[X]` and warns about any other explicitly-set `-v`/`-m` fields.
+/// - Metadata `-p` (summary/totals): leaves `-v` intact (it's irrelevant
+///   anyway) but warns if `-v`/`-m` was set, since those fields are unreachable.
+/// - Structural or absent `-p`: no change.
+///
+/// `user_view_explicit` and `has_message` track whether the user typed `-v`
+/// or `-m` — we only warn when something the user explicitly asked for gets
+/// dropped.
+fn normalize_view_for_projection(
+    initial_view: ViewSet,
+    projection: Option<Projection>,
+    user_view_explicit: bool,
+    has_message: bool,
+) -> ViewSet {
+    let Some(proj) = projection else {
+        return initial_view;
+    };
+
+    if let Some(proj_field) = proj.as_view_field() {
+        // View-level projection: replace the view set with exactly `[proj_field]`.
+        if user_view_explicit {
+            let discarded: Vec<&str> = initial_view.fields.iter()
+                .filter(|f| **f != proj_field)
+                .map(|f| f.name())
+                .collect();
+            if !discarded.is_empty() {
+                eprintln!(
+                    "warning: -v fields {{{}}} were discarded because -p {} replaces the view set.",
+                    discarded.join(", "), proj.name(),
+                );
+                eprintln!(
+                    "  To keep -v intact, use `-p results` (respects -v) instead of `-p {}`.",
+                    proj.name(),
+                );
+            }
+        }
+        if has_message {
+            eprintln!(
+                "warning: -m message template has no effect with -p {} (view replaced).",
+                proj.name(),
+            );
+        }
+        ViewSet::single(proj_field)
+    } else if proj.is_metadata() {
+        // Metadata projection: `-v`/`-m` are unreachable. Warn if user set them.
+        if user_view_explicit && !initial_view.fields.is_empty() {
+            let names: Vec<&str> = initial_view.fields.iter().map(|f| f.name()).collect();
+            eprintln!(
+                "warning: -v fields {{{}}} have no effect with -p {} (no per-match rendering).",
+                names.join(", "), proj.name(),
+            );
+        }
+        if has_message {
+            eprintln!(
+                "warning: -m message template has no effect with -p {} (no per-match rendering).",
+                proj.name(),
+            );
+        }
+        initial_view
+    } else {
+        // Structural (`results`, `report`) — `-v`/`-m` fully respected.
+        initial_view
     }
 }
