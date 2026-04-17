@@ -36,9 +36,10 @@ pub fn resolve_config_path(
         return Ok(DEFAULT_CONFIG_NAME.to_string());
     }
     Err(format!(
-        "no {DEFAULT_CONFIG_NAME} in the current directory — \
-         run `tractor init` to scaffold one, \
-         or pass a config path (e.g. `tractor run path/to/config.yml`)"
+        "no {DEFAULT_CONFIG_NAME} in the current directory\n\
+         \n\
+         hint: run `tractor init` to scaffold one,\n\
+         hint: or pass a config path, e.g. `tractor run path/to/config.yml`"
     )
     .into())
 }
