@@ -298,6 +298,14 @@ impl TestCase {
         self
     }
 
+    /// Opt out of the implicit `--no-color` flag. Useful for subcommands that
+    /// don't accept it (e.g. `init`) or when a test wants to assert that color
+    /// output is produced.
+    pub fn no_color(mut self, enabled: bool) -> Self {
+        self.command = self.command.no_color(enabled);
+        self
+    }
+
     pub fn strip_temp_prefix(mut self) -> Self {
         self.setup.temp_prefix_replacement = Some(String::new());
         self

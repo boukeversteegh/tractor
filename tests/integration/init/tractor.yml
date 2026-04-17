@@ -1,0 +1,22 @@
+# Tractor config
+# ---------------
+# This file declares checks that tractor runs against your project.
+# Run `tractor run` from this directory — tractor picks up
+# `tractor.yml` automatically when it sits next to you.
+#
+# The sample rule below points at *this file* and matches itself by
+# rule id. When you run tractor, the whole rule block gets flagged —
+# a live demonstration of how rules are structured. Edit `files:` to
+# point at your own source, then rewrite the rule to enforce the
+# conventions you care about.
+#
+# Full reference: https://tractor.fly.dev/docs
+
+check:
+  files:
+    - "tractor.yml"
+  rules:
+    - id: sample-rule
+      xpath: "//check/rules[id='sample-rule']"
+      reason: "replace this sample rule with your own checks"
+      severity: warning

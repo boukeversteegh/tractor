@@ -17,6 +17,7 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
   {
     title: 'Commands',
     items: [
+      { label: 'init', path: '/docs/commands/init' },
       { label: 'query', path: '/docs/commands/query' },
       { label: 'check', path: '/docs/commands/check' },
       { label: 'test', path: '/docs/commands/test' },

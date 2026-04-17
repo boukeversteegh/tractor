@@ -7,6 +7,7 @@ import { CheckCommand } from './pages/docs/CheckCommand';
 import { TestCommand } from './pages/docs/TestCommand';
 import { SetCommand } from './pages/docs/SetCommand';
 import { RunCommand } from './pages/docs/RunCommand';
+import { InitCommand } from './pages/docs/InitCommand';
 import { CodeLanguages } from './pages/docs/CodeLanguages';
 import { DocumentLanguages } from './pages/docs/DocumentLanguages';
 import { DataLanguages } from './pages/docs/DataLanguages';
@@ -33,6 +34,7 @@ export function App() {
         <Route path="/docs/commands/test" element={<TestCommand />} />
         <Route path="/docs/commands/set" element={<SetCommand />} />
         <Route path="/docs/commands/run" element={<RunCommand />} />
+        <Route path="/docs/commands/init" element={<InitCommand />} />
         <Route path="/docs/languages/code" element={<CodeLanguages />} />
         <Route path="/docs/languages/documents" element={<DocumentLanguages />} />
         <Route path="/docs/languages/data" element={<DataLanguages />} />

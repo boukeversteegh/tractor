@@ -22,11 +22,14 @@ export function RunCommand() {
       </p>
 
       <h2>Usage</h2>
-      <CodeBlock code={`tractor run <CONFIG> [OPTIONS]`} language="bash" />
+      <CodeBlock code={`tractor run [CONFIG] [OPTIONS]`} language="bash" />
+      <p>
+        If <code>CONFIG</code> is omitted, tractor looks for <code>tractor.yml</code> in the current directory. Create one with <Link to="/docs/commands/init">tractor init</Link>. A different filename (e.g. <code>tractor.yaml</code>, <code>rules.toml</code>) works fine — just pass it as the argument.
+      </p>
 
       <h2>Config File</h2>
       <p>
-        A tractor config file defines rules, file patterns, and operations in YAML or TOML. Place it in your project root as <code>tractor.yml</code>.
+        A tractor config file defines rules, file patterns, and operations in YAML or TOML. Place it in your project root as <code>tractor.yml</code> and it will be picked up automatically.
       </p>
 
       <h3>Minimal Example</h3>
@@ -42,7 +45,7 @@ export function RunCommand() {
       reason: "TODO comments should be resolved"
       severity: warning`}
       />
-      <CodeBlock language="bash" code={`tractor run tractor.yml`} />
+      <CodeBlock language="bash" code={`tractor run`} />
       <OutputBlock output={`src/app.js:1:1: warning: TODO comments should be resolved
 1 | // TODO: fix this later
     ^~~~~~~~~~~~~~~~~~~~~~~
@@ -53,7 +56,7 @@ export function RunCommand() {
       <h3>Multiple Rules</h3>
       <Example
         file={{ name: 'example.js', language: 'js', content: EXAMPLE_JS }}
-        command="tractor run tractor.yml"
+        command="tractor run"
         output={`app.js:1:1: warning: TODO comments should be resolved
 1 | // TODO: fix this later
     ^~~~~~~~~~~~~~~~~~~~~~~
@@ -209,7 +212,7 @@ operations:
 
       <h3>Intersection chain</h3>
       <p>
-        When you run <code>tractor run config.yaml frontend/**/*.js</code>, the file resolution works like this:
+        When you run <code>tractor run --config config.yaml frontend/**/*.js</code>, the file resolution works like this:
       </p>
       <CodeBlock
         language="text"
@@ -262,13 +265,16 @@ operations:
         Pass files or globs as positional arguments to narrow the config's scope to specific files:
       </p>
       <CodeBlock language="bash" code={`# Run config rules, but only on these files
-tractor run tractor.yml src/app.js src/utils.js
+tractor run src/app.js src/utils.js
 
 # Or with globs
-tractor run tractor.yml "src/core/**/*.js"
+tractor run "src/core/**/*.js"
 
 # Absolute paths work too (e.g. from an IDE)
-tractor run tractor.yml /home/user/project/src/app.js`} />
+tractor run /home/user/project/src/app.js
+
+# Use a non-default config with --config
+tractor run --config rules.yaml src/app.js`} />
       <p>
         CLI files are intersected with the resolved config scope. This is useful for checking only the files you changed, without modifying the config.
         If the config has no <code>files:</code> key (neither root nor operation level), CLI files are used directly as the file set.
@@ -309,7 +315,7 @@ tractor run tractor.yml /home/user/project/src/app.js`} />
         <li>If all patterns match 0 files, tractor reports a fatal error instead of silently succeeding.</li>
       </ul>
       <CodeBlock language="bash" code={`# Increase the limit for large monorepos
-tractor run tractor.yml --max-files 50000`} />
+tractor run --max-files 50000`} />
 
       <h3>Debugging with --verbose</h3>
       <p>
@@ -317,7 +323,7 @@ tractor run tractor.yml --max-files 50000`} />
       </p>
       <CodeBlock
         language="text"
-        code={`$ tractor run tractor.yml --verbose
+        code={`$ tractor run --verbose
   files: resolving relative to /home/user/project
   files: max 10000 files, expansion limit 100000
   files: expanding root scope "src/**/*.js" ...

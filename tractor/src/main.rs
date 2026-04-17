@@ -14,7 +14,7 @@ use std::process::ExitCode;
 use clap::{CommandFactory as _, FromArgMatches as _};
 use cli::{Cli, Command, DocsCommand};
 use cli::help::CommandExt as _;
-use cli::{check::run_check, test::run_test, set::run_set, update::run_update, query::run_query, render::run_render, run::run_run, languages::run_languages};
+use cli::{check::run_check, test::run_test, set::run_set, update::run_update, query::run_query, render::run_render, run::run_run, init::run_init, languages::run_languages};
 use tractor::report::{ReportBuilder, ReportMatch, Severity, DiagnosticOrigin};
 use format::{OutputFormat, ViewField, ViewSet, render_gcc, render_text_report, render_json_report, render_yaml_report, render_xml_report, render_github, render_claude_code};
 use tractor::output::{should_use_color, RenderOptions};
@@ -93,7 +93,7 @@ fn main() -> ExitCode {
         Some(Command::Test(a))  => a.format.as_str(),
         Some(Command::Set(a))   => a.format.as_str(),
         Some(Command::Run(a))   => a.format.as_str(),
-        Some(Command::Update(_)) | Some(Command::Render(_)) | Some(Command::Docs(_)) => "text",
+        Some(Command::Update(_)) | Some(Command::Render(_)) | Some(Command::Init(_)) | Some(Command::Docs(_)) => "text",
         None => cli.query.format.as_str(),
     };
     let fallback_format = OutputFormat::from_str(format_str).unwrap_or(OutputFormat::Text);
@@ -104,7 +104,7 @@ fn main() -> ExitCode {
         Some(Command::Set(a))   => &a.shared,
         Some(Command::Update(a)) => &a.shared,
         Some(Command::Run(a))   => &a.shared,
-        Some(Command::Render(_)) | Some(Command::Docs(_)) => &cli.query.shared,
+        Some(Command::Render(_)) | Some(Command::Init(_)) | Some(Command::Docs(_)) => &cli.query.shared,
         None => &cli.query.shared,
     };
     let fallback_color = if shared.no_color { false } else { should_use_color(&shared.color) };
@@ -117,6 +117,7 @@ fn main() -> ExitCode {
         Some(Command::Update(args)) => run_update(args),
         Some(Command::Render(args)) => run_render(args),
         Some(Command::Run(args)) => run_run(args),
+        Some(Command::Init(args)) => run_init(args),
         Some(Command::Docs(docs_cmd)) => match docs_cmd {
             DocsCommand::Languages => run_languages(),
         },

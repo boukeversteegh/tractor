@@ -103,6 +103,10 @@ program/
       <h2>Commands</h2>
 
       <div className="doc-cards">
+        <Link to="/docs/commands/init" className="doc-card">
+          <h3>init</h3>
+          <p>Scaffold a starter <code>tractor.yml</code> in your project.</p>
+        </Link>
         <Link to="/docs/commands/query" className="doc-card">
           <h3>query</h3>
           <p>Explore code structure and extract patterns from your source files.</p>

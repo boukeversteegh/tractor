@@ -52,8 +52,12 @@ tractor src/**/*.cs -x "method[count(parameters/parameter) > 3]"
 # Count classes per file
 tractor src/**/*.cs -x "count(class)"
 
+# Scaffold a tractor.yml in the current directory
+tractor init
+
 # Batch: run all rules from a config file
-tractor run rules.yaml
+# (defaults to tractor.yml in the current directory)
+tractor run
 ```
 
 ## Convention Enforcement
