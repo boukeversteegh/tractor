@@ -41,11 +41,17 @@ Today `/success`, `/totals`, `/expected`, `/query` are all top-level paths, alon
 
 **Change:** introduce `/summary`, moving `/success`, `/totals`, `/expected`, `/query` under it as `/summary/success`, `/summary/totals`, `/summary/expected`, `/summary/query`.
 
-### Issue 2: `schema` has no XML representation
+### Issue 2: `schema` is not part of the report
 
-Today `-v schema` bypasses the XML serializer entirely — it prints the text-mode schema rendering even when `-f xml` is requested. `-p schema` needs a real node at `/schema`.
+Today `-v schema` bypasses the report entirely — it short-circuits in `tractor/src/cli/query.rs` and prints the text-mode schema rendering directly. There is no `/schema` node in the report, so `-p schema` has nothing to project.
 
-**Change:** when schema is computed, emit it at `/schema`, serialized per format like any other element.
+**Change:** when schema is computed, include it at `/schema` as an **opaque string** — the same text rendering produced today, stored verbatim as the node's text content. No structured per-format serialization yet. Concretely:
+
+- XML: `<schema>…text schema…</schema>` (string content, XML-escaped).
+- JSON/YAML: `"schema": "…text schema…"` (string value).
+- Text: printed as-is (the current behavior).
+
+A future iteration can make schema a structured node, but that's out of scope here. The point of this change is to get schema into the pipeline as addressable data so the short-circuit can be removed and `-p schema` works uniformly.
 
 ### Revised report structure
 
@@ -61,9 +67,7 @@ Today `-v schema` bypasses the XML serializer entirely — it prints the text-mo
     <expected>2</expected>
     <query>//a</query>
   </summary>
-  <schema>
-    <!-- structural overview when -v schema or -p schema -->
-  </schema>
+  <schema>&lt;a&gt;...&lt;/a&gt;</schema>  <!-- opaque text rendering, escaped -->
   <results>
     <match file="..." line="1" column="1">
       <tree>...</tree>
@@ -311,9 +315,12 @@ $ tractor src/**/*.cs -x '//class' -p schema -f text
 
 $ tractor src/**/*.cs -x '//class' -p schema -f xml
 <?xml version="1.0" encoding="UTF-8"?>
-<schema>
-  ...
-</schema>
+<schema>&lt;class&gt;
+  &lt;name/&gt;
+  &lt;body&gt;
+    &lt;method/&gt;
+  &lt;/body&gt;
+&lt;/class&gt;</schema>
 ```
 
 Today `-v count` / `-v schema` bypass the renderer via `cli/query.rs:133-142`. With `-p`, they go through the normal pipeline: build report → project → serialize. The short-circuit can be removed. Closes `todo/7-count-schema-short-circuit.md`.
@@ -399,10 +406,11 @@ The core table. For each `-p` value and each format, verify the emitted document
 
 #### 1.2 Singular projections
 
-- [ ] `-p schema -f text` → bare text schema rendering.
-- [ ] `-p schema -f xml` → `<schema>` root element. Parses.
-- [ ] `-p schema -f json` → top-level JSON object.
-- [ ] `-p schema -f yaml` → top-level YAML mapping.
+- [ ] `-p schema -f text` → bare text schema rendering (same as today's `-v schema -f text`).
+- [ ] `-p schema -f xml` → `<schema>…</schema>` root, text content is the rendering (XML-escaped). Parses.
+- [ ] `-p schema -f json` → bare JSON string, e.g. `"…schema text…"`.
+- [ ] `-p schema -f yaml` → bare YAML scalar string.
+- [ ] Schema content is byte-identical across formats after format-specific escaping (no structured serialization).
 - [ ] `-p summary -f xml` → `<summary>` root element.
 - [ ] `-p summary -f json` → top-level JSON object with summary fields.
 - [ ] `-p summary -f yaml` → top-level YAML mapping.
