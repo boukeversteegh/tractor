@@ -44,7 +44,7 @@ use crate::executor::{self, ExecuteOptions, Operation, QueryOperation, QueryExpr
 use crate::cli::context::RunContext;
 use crate::input::InputMode;
 use crate::format::{ViewField, GroupDimension, render_report};
-use crate::matcher::{run_debug, project_report, apply_message_template};
+use crate::matcher::{run_debug, project_report, populate_schema, apply_message_template};
 use super::config::{run_from_config, ConfigRunParams};
 
 pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
@@ -130,33 +130,30 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     executor::execute(&[op], &options, &mut builder)?;
     let mut report = builder.build();
 
-    if ctx.view.has(ViewField::Count) {
-        println!("{}", report.totals.as_ref().unwrap().results);
-    } else if ctx.view.has(ViewField::Schema) {
-        let mut collector = tractor::SchemaCollector::new();
-        for m in report.all_matches() {
-            if let Some(ref node) = m.tree {
-                collector.collect_from_xml_node(node);
-            }
-        }
-        print!("{}", collector.format(ctx.schema_depth(), ctx.use_color));
-    } else {
-        // Set the query field on the report if requested.
-        if ctx.view.has(ViewField::Query) {
-            report.query = ctx.xpath.clone();
-        }
-
-        // Apply CLI message template if provided.
-        if let Some(ref template) = ctx.message {
-            apply_message_template(&mut report, template);
-        }
-
-        // Project for the requested view and render.
-        project_report(&mut report, &ctx.view);
-        let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
-        let report = report.with_grouping(&dims);
-        render_report(&report, &ctx, None)?;
+    // Set the query field on the report if requested.
+    if ctx.view.has(ViewField::Query) {
+        report.query = ctx.xpath.clone();
     }
+
+    // Populate /schema before project_report prunes trees.
+    // Structured formats embed schema as an opaque string — colors would
+    // leak as literal escape codes, so compute plain text for them.
+    if ctx.view.has(ViewField::Schema) {
+        use crate::format::OutputFormat;
+        let schema_color = matches!(ctx.output_format, OutputFormat::Text) && ctx.use_color;
+        populate_schema(&mut report, ctx.schema_depth(), schema_color);
+    }
+
+    // Apply CLI message template if provided.
+    if let Some(ref template) = ctx.message {
+        apply_message_template(&mut report, template);
+    }
+
+    // Project for the requested view and render.
+    project_report(&mut report, &ctx.view);
+    let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
+    let report = report.with_grouping(&dims);
+    render_report(&report, &ctx, None)?;
 
     Ok(())
 }

@@ -23,6 +23,24 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
     let mut out = String::new();
     let mut source_cache: HashMap<String, Option<String>> = HashMap::new();
 
+    // Bare schema — text mode preserves legacy behavior: view == [schema]
+    // emits just the schema (no envelope, no totals, no matches).
+    if view.fields.as_slice() == [ViewField::Schema] {
+        if let Some(ref schema_text) = report.schema {
+            return schema_text.clone();
+        }
+        return out;
+    }
+
+    // Bare count — text mode preserves legacy behavior: view == [count]
+    // emits just the scalar match total.
+    if view.fields.as_slice() == [ViewField::Count] {
+        if let Some(ref totals) = report.totals {
+            out.push_str(&format!("{}\n", totals.results));
+        }
+        return out;
+    }
+
     // Set stdout mode: groups with captured outputs — render group by group.
     let has_group_output = view.has(ViewField::Output) && report.results.iter().any(|item| {
         matches!(item, ResultItem::Group(g) if !g.outputs.is_empty())

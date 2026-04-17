@@ -315,6 +315,28 @@ pub fn run_rules(
 // Report post-processing helpers
 // ---------------------------------------------------------------------------
 
+/// Populate `report.schema` with a text rendering of the structural schema
+/// collected from every match's tree node. Does nothing if there are no
+/// tree nodes to collect from. Call this **before** `project_report`, which
+/// may strip the `tree` field.
+///
+/// `use_color` controls ANSI escape codes in the output. For structured
+/// formats (xml/json/yaml), pass `false`; they embed the schema as an
+/// opaque string and color codes would leak into the output.
+pub fn populate_schema(report: &mut tractor::report::Report, max_depth: Option<usize>, use_color: bool) {
+    let mut collector = tractor::SchemaCollector::new();
+    let mut any = false;
+    for m in report.all_matches() {
+        if let Some(ref node) = m.tree {
+            collector.collect_from_xml_node(node);
+            any = true;
+        }
+    }
+    if any {
+        report.schema = Some(collector.format(max_depth, use_color));
+    }
+}
+
 /// Project a report to only contain the fields requested by the view.
 ///
 /// The executor populates all content fields. This function prunes

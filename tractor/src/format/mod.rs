@@ -50,6 +50,23 @@ pub fn render_report(
         }
     }
 
+    // `-v count` is a cross-format bare-scalar contract (see design:
+    // "For text, today's bare scalar is preserved"). Envelope-heavy formats
+    // would otherwise bury the number, so we short-circuit at the edge.
+    // Only applies when view is exactly [count] — mixing with other fields
+    // falls back to the normal renderer.
+    if ctx.view.fields.as_slice() == [options::ViewField::Count]
+        && !matches!(ctx.output_format, OutputFormat::Text | OutputFormat::ClaudeCode)
+    {
+        if let Some(ref totals) = report.totals {
+            println!("{}", totals.results);
+        }
+        if report.success == Some(false) {
+            return Err(Box::new(crate::SilentExit));
+        }
+        return Ok(());
+    }
+
     // Standard format dispatch — same for all report types.
     let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
     match ctx.output_format {
