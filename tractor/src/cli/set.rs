@@ -1,5 +1,5 @@
 use clap::Args;
-use tractor_core::declarative_set::parse_set_expr;
+use tractor::declarative_set::parse_set_expr;
 use crate::cli::SharedArgs;
 
 /// Set mode: modify matched node values in-place
@@ -81,7 +81,7 @@ fn selector_xpath(expr: &str) -> String {
 }
 
 fn normalize_set_mappings(
-    xpath: Option<&tractor_core::NormalizedXpath>,
+    xpath: Option<&tractor::NormalizedXpath>,
     expr: Option<&str>,
     explicit_value: Option<&str>,
 ) -> Result<Vec<SetMapping>, Box<dyn std::error::Error>> {
@@ -202,7 +202,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
         ..Default::default()
     };
 
-    let mut builder = tractor_core::ReportBuilder::new();
+    let mut builder = tractor::ReportBuilder::new();
     executor::execute(&[op], &options, &mut builder)?;
     let mut report = builder.build();
 

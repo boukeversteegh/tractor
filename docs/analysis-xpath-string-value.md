@@ -41,13 +41,13 @@ The XPath code path does NOT query the xot tree directly. Instead:
 ### Code trace
 
 ```
-tractor-core/src/parser/mod.rs:
+tractor/src/parser/mod.rs:
   parse_string_to_xot() → builds xot tree
 
-tractor-core/src/output/xml_renderer.rs:
+tractor/src/output/xml_renderer.rs:
   render_document() → adds indentation between elements
 
-tractor-core/src/xpath/engine.rs:25-41:
+tractor/src/xpath/engine.rs:25-41:
   pub fn query(&self, xml: &str, ...) {
       let mut documents = Documents::new();
       let doc = documents.add_string("file:///query", xml)  // <-- parses XML STRING

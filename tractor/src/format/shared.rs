@@ -1,16 +1,16 @@
 //! Shared helpers used across multiple format renderers.
 
-use tractor_core::report::ReportMatch;
+use tractor::report::ReportMatch;
 use super::options::{ViewField, ViewSet};
 
 pub fn to_absolute_path(path: &str) -> String {
-    tractor_core::NormalizedPath::absolute(path).to_string()
+    tractor::NormalizedPath::absolute(path).to_string()
 }
 
 /// Whether totals/metadata should be shown for this report.
 /// Always shown when the report has a verdict (success is Some).
 /// For query reports (no verdict), only shown if explicitly requested via view.
-pub fn should_show_totals(report: &tractor_core::report::Report, view: &ViewSet) -> bool {
+pub fn should_show_totals(report: &tractor::report::Report, view: &ViewSet) -> bool {
     if report.success.is_some() {
         true
     } else {

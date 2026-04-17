@@ -14,7 +14,7 @@ pub mod config;
 pub mod languages;
 
 use clap::{Parser, Subcommand, Args};
-use tractor_core::NormalizedXpath;
+use tractor::NormalizedXpath;
 
 pub use query::QueryArgs;
 pub use check::CheckArgs;

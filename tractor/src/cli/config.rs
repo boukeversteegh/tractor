@@ -7,7 +7,7 @@
 //!   `Check` operations, run executes everything).
 //! - **Defaults**: view fields, grouping, format — tuned per command.
 
-use tractor_core::report::{ReportMatch, Severity};
+use tractor::report::{ReportMatch, Severity};
 
 use crate::cli::SharedArgs;
 use crate::executor::{self, ExecuteOptions, Operation};
@@ -73,7 +73,7 @@ pub fn run_from_config(params: ConfigRunParams) -> Result<(), Box<dyn std::error
         params.view_override, params.message, None, false, params.default_group,
     )?;
 
-    let mut builder = tractor_core::ReportBuilder::new();
+    let mut builder = tractor::ReportBuilder::new();
 
     if operations.is_empty() {
         builder.add(ReportMatch {
@@ -92,7 +92,7 @@ pub fn run_from_config(params: ConfigRunParams) -> Result<(), Box<dyn std::error
                 // Absolutize without following symlinks — matches the glob
                 // walker and CLI path resolution, so `base_dir`-derived paths
                 // intersect by set equality with those pipelines.
-                let normalized = tractor_core::NormalizedPath::absolute(&p.to_string_lossy());
+                let normalized = tractor::NormalizedPath::absolute(&p.to_string_lossy());
                 std::path::PathBuf::from(normalized.as_str())
             });
 

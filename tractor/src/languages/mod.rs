@@ -1,8 +1,9 @@
-//! Language-specific transform modules
+//! Language-specific transform modules and metadata.
 //!
 //! Each language owns its complete transform logic.
 //! The shared infrastructure (xot_transform) provides only the walker and helpers.
 
+pub mod info;
 pub mod typescript;
 pub mod csharp;
 pub mod python;

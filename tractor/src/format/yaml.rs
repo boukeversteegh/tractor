@@ -1,5 +1,5 @@
 use serde_json::Value;
-use tractor_core::{report::Report, RenderOptions};
+use tractor::{report::Report, RenderOptions};
 use super::options::{ViewSet};
 use super::json::{emit_report_metadata, outputs_to_json, render_results_json};
 use super::shared::should_show_totals;

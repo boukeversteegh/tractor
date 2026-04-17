@@ -223,10 +223,10 @@ tasks:
   #############################################################################
 
   wasm:
-    desc: Build tractor-core to WASM
+    desc: Build tractor to WASM
     cmds:
-      - cd ../tractor-core && wasm-pack build --target web --no-default-features --features wasm
-      - cp -r ../tractor-core/pkg ./
+      - cd ../tractor && wasm-pack build --target web --no-default-features --features wasm
+      - cp -r ../tractor/pkg ./
 
   install:
     desc: Install npm dependencies

@@ -1,8 +1,8 @@
 use std::io::Read;
 use clap::Args;
-use tractor_core::language_info::{get_language_info, get_language_for_extension};
-use tractor_core::render::{parse_input, render, RenderOptions};
-use tractor_core::TreeMode;
+use tractor::language_info::{get_language_info, get_language_for_extension};
+use tractor::render::{parse_input, render, RenderOptions};
+use tractor::TreeMode;
 
 /// Render mode: convert XML AST back to source code
 #[derive(Args, Debug)]

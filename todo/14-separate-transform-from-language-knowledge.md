@@ -11,7 +11,7 @@ These are conceptually separate concerns. The language knowledge is shared betwe
 ## Current structure
 
 ```
-tractor-core/src/languages/csharp.rs   (~850 lines, everything in one file)
+tractor/src/languages/csharp.rs   (~850 lines, everything in one file)
   pub mod semantic { ... }              — vocabulary consts
   pub const ACCESS_MODIFIERS            — modifier lists
   pub const OTHER_MODIFIERS
@@ -28,7 +28,7 @@ tractor-core/src/languages/csharp.rs   (~850 lines, everything in one file)
 ## Proposed structure
 
 ```
-tractor-core/src/languages/csharp/
+tractor/src/languages/csharp/
   mod.rs                               — re-exports, language knowledge
     pub mod semantic { ... }           — vocabulary consts
     pub const ACCESS_MODIFIERS

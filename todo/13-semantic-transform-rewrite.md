@@ -24,7 +24,7 @@ TreeSitter AST → build_semantic() → xot nodes directly → XPath
 
 ### Step 1: Add `build_semantic()` to XotBuilder
 
-In `tractor-core/src/xot_builder.rs`, add a method similar to `build_raw()` that
+In `tractor/src/xot_builder.rs`, add a method similar to `build_raw()` that
 applies `LangTransforms` while building xot nodes:
 
 1. Rename elements: `binary_expression` → `binary` (via `transforms.rename_element()`)
@@ -37,7 +37,7 @@ applies `LangTransforms` while building xot nodes:
 
 ### Step 2: Update `parse_string()`
 
-In `tractor-core/src/parser/mod.rs`:
+In `tractor/src/parser/mod.rs`:
 ```rust
 if raw_mode {
     builder.build_raw(...)
@@ -58,12 +58,12 @@ Remove:
 
 | File | Purpose |
 |------|---------|
-| `tractor-core/src/xot_builder.rs` | XotBuilder with `build_raw()` — follow this pattern |
-| `tractor-core/src/parser/transform.rs` | LangTransforms struct and helper functions |
-| `tractor-core/src/parser/languages/mod.rs` | `get_transforms()` and language config exports |
-| `tractor-core/src/parser/languages/csharp.rs` | Example language config with `classify_identifier` |
-| `tractor-core/src/parser/semantic.rs` | Current implementation — understand then replace |
-| `tractor-core/src/parser/mod.rs` | Entry point `parse_string()` that needs updating |
+| `tractor/src/xot_builder.rs` | XotBuilder with `build_raw()` — follow this pattern |
+| `tractor/src/parser/transform.rs` | LangTransforms struct and helper functions |
+| `tractor/src/parser/languages/mod.rs` | `get_transforms()` and language config exports |
+| `tractor/src/parser/languages/csharp.rs` | Example language config with `classify_identifier` |
+| `tractor/src/parser/semantic.rs` | Current implementation — understand then replace |
+| `tractor/src/parser/mod.rs` | Entry point `parse_string()` that needs updating |
 
 ## Priority
 

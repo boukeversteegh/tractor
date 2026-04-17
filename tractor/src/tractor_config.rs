@@ -29,11 +29,11 @@
 
 use std::path::Path;
 use serde::Deserialize;
-use tractor_core::declarative_set::parse_set_expr;
-use tractor_core::normalized_xpath::NormalizedXpath;
-use tractor_core::report::Severity;
-use tractor_core::rule::Rule;
-use tractor_core::tree_mode::TreeMode;
+use tractor::declarative_set::parse_set_expr;
+use tractor::normalized_xpath::NormalizedXpath;
+use tractor::report::Severity;
+use tractor::rule::Rule;
+use tractor::tree_mode::TreeMode;
 
 use crate::executor::{
     CheckOperation, Operation, QueryExpr, QueryOperation,

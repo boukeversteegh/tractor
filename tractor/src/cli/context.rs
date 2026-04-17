@@ -1,4 +1,4 @@
-use tractor_core::{
+use tractor::{
     output::should_use_color,
     output::RenderOptions,
     NormalizedXpath,

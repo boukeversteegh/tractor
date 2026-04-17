@@ -1,9 +1,9 @@
 //! Check operation: run XPath rules against files, report violations.
 
-use tractor_core::report::{ReportBuilder, ReportMatch, Severity};
-use tractor_core::tree_mode::TreeMode;
-use tractor_core::rule::{Rule, RuleSet};
-use tractor_core::parse_string_to_documents;
+use tractor::report::{ReportBuilder, ReportMatch, Severity};
+use tractor::tree_mode::TreeMode;
+use tractor::rule::{Rule, RuleSet};
+use tractor::parse_string_to_documents;
 
 use crate::matcher::validate_xpath_diagnostic;
 use crate::matcher::run_rules;
@@ -89,7 +89,7 @@ pub(crate) fn execute_check(
             let severity = rule.severity;
             let message_tpl = rule.message.as_deref();
             for m in matches {
-                let message = message_tpl.map(|t| tractor_core::format_message(t, &m));
+                let message = message_tpl.map(|t| tractor::format_message(t, &m));
                 let mut report_match = match_to_report_match(m, "check");
                 report_match.reason = Some(reason.clone());
                 report_match.severity = Some(severity);
@@ -163,7 +163,7 @@ pub(crate) fn execute_check(
             let message = rule
                 .message
                 .as_deref()
-                .map(|t| tractor_core::format_message(t, &rm.m));
+                .map(|t| tractor::format_message(t, &rm.m));
 
             let mut report_match = match_to_report_match(rm.m, "check");
             report_match.reason = Some(reason);
@@ -269,8 +269,8 @@ fn example_failure_match(rule_id: &str, reason: &str) -> ReportMatch {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tractor_core::report::ReportBuilder;
-    use tractor_core::rule::Rule;
+    use tractor::report::ReportBuilder;
+    use tractor::rule::Rule;
 
     #[test]
     fn test_validate_examples_pass_and_fail_correct() {
@@ -352,10 +352,10 @@ mod tests {
     // Bug 3 regression: rule-level include hoists into file discovery
     // -----------------------------------------------------------------------
 
-    use tractor_core::normalize_path;
+    use tractor::normalize_path;
     use crate::executor::{Operation, ExecuteOptions, execute};
 
-    fn run(ops: &[Operation]) -> tractor_core::report::Report {
+    fn run(ops: &[Operation]) -> tractor::report::Report {
         let mut builder = ReportBuilder::new();
         execute(ops, &ExecuteOptions::default(), &mut builder).unwrap();
         builder.build()
@@ -375,7 +375,7 @@ mod tests {
 
         let include_pattern = format!("{}/**/*.json", normalize_path(&src_dir.to_string_lossy()));
         let rule = Rule::new("no-name", "//name")
-            .with_severity(tractor_core::report::Severity::Error)
+            .with_severity(tractor::report::Severity::Error)
             .with_reason("found name".to_string())
             .with_include(vec![include_pattern]);
 
@@ -420,11 +420,11 @@ mod tests {
         let test_pattern = format!("{}/**/*.json", normalize_path(&test_dir.to_string_lossy()));
 
         let rule_src = Rule::new("src-rule", "//name")
-            .with_severity(tractor_core::report::Severity::Error)
+            .with_severity(tractor::report::Severity::Error)
             .with_reason("src match".to_string())
             .with_include(vec![src_pattern]);
         let rule_test = Rule::new("test-rule", "//name")
-            .with_severity(tractor_core::report::Severity::Error)
+            .with_severity(tractor::report::Severity::Error)
             .with_reason("test match".to_string())
             .with_include(vec![test_pattern]);
 
@@ -470,7 +470,7 @@ mod tests {
             diff_lines: None,
             rules: vec![
                 Rule::new("check-bad", "//bad")
-                    .with_severity(tractor_core::report::Severity::Error)
+                    .with_severity(tractor::report::Severity::Error)
                     .with_reason("found bad".to_string()),
             ],
             tree_mode: None,
@@ -512,11 +512,11 @@ mod tests {
         let narrow = format!("{}/**/*.json", normalize_path(&sub_dir.to_string_lossy()));
 
         let rule_a = Rule::new("rule-a", "//name")
-            .with_severity(tractor_core::report::Severity::Error)
+            .with_severity(tractor::report::Severity::Error)
             .with_reason("found name".to_string())
             .with_include(vec![broad]);
         let rule_b = Rule::new("rule-b", "//name")
-            .with_severity(tractor_core::report::Severity::Error)
+            .with_severity(tractor::report::Severity::Error)
             .with_reason("found name".to_string())
             .with_include(vec![narrow]);
 

@@ -1,6 +1,6 @@
 //! `tractor docs languages` command - list supported languages with their extensions and aliases
 
-use tractor_core::language_info::LANGUAGES;
+use tractor::language_info::LANGUAGES;
 
 /// Run the `docs languages` command, printing a table of all supported languages.
 pub fn run_languages() -> Result<(), Box<dyn std::error::Error>> {

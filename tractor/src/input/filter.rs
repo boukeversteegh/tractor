@@ -4,7 +4,7 @@
 //! at the query engine level. Implementations decide which files to
 //! process and which matches to include in results.
 
-use tractor_core::Match;
+use tractor::Match;
 
 /// A filter that decides which matches to include in results.
 ///
