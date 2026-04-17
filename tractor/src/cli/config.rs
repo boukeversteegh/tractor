@@ -36,7 +36,9 @@ pub fn resolve_config_path(
         return Ok(DEFAULT_CONFIG_NAME.to_string());
     }
     Err(format!(
-        "no config file given and no {DEFAULT_CONFIG_NAME} found in the current directory"
+        "no {DEFAULT_CONFIG_NAME} in the current directory — \
+         run `tractor init` to scaffold one, \
+         or pass a config path (e.g. `tractor run path/to/config.yml`)"
     )
     .into())
 }
