@@ -4,23 +4,19 @@
 # Run `tractor run` from this directory — tractor picks up
 # `tractor.yaml` automatically when it sits next to you.
 #
-# The example rule below scans *this file* for reminder markers, so
-# the TODO further down gets flagged the first time you run tractor.
-# Edit `files:` to point at your own source, then replace the
-# xpath/reason with the conventions you want to enforce.
+# The sample rule below points at *this file* and matches itself by
+# rule id. When you run tractor, the whole rule block gets flagged —
+# a live demonstration of how rules are structured. Edit `files:` to
+# point at your own source, then rewrite the rule to enforce the
+# conventions you care about.
 #
 # Full reference: https://tractor-cli.com/docs
 
 check:
   files:
     - "tractor.yaml"
-  # `raw` keeps YAML comments as queryable nodes — remove it once you
-  # point `files:` at real source code.
-  tree-mode: raw
   rules:
-    - id: update-rules
-      xpath: "//comment[contains(., 'TODO:')]"
-      reason: "update this starter rule to match your project's conventions"
+    - id: sample-rule
+      xpath: "/stream/document/check/rules[id='sample-rule']"
+      reason: "replace this sample rule with your own checks"
       severity: warning
-
-# TODO: replace the example rule above with your own checks

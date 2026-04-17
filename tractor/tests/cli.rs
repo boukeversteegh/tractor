@@ -1121,10 +1121,11 @@ fn init_writes_the_snapshot_starter_config() {
 }
 
 #[test]
-fn init_scaffolded_file_flags_its_own_todo_when_run() {
-    // The starter config deliberately scans tractor.yaml itself and ships with
-    // a `TODO:` marker. A bare `tractor run` should find that single warning,
-    // which demonstrates the tool end-to-end without needing extra sample files.
+fn init_scaffolded_file_flags_the_sample_rule_when_run() {
+    // The starter config deliberately scans tractor.yaml itself with an xpath
+    // that matches its own rule by id. A bare `tractor run` should report a
+    // single warning pointing at the sample rule block — a self-explanatory
+    // demo of how rules map onto the YAML tree.
     let temp = tempfile::TempDir::new().expect("tempdir");
     assert_eq!(0, run_tractor_in(temp.path(), &["init"]).status.code().unwrap_or(-1));
 
@@ -1133,8 +1134,8 @@ fn init_scaffolded_file_flags_its_own_todo_when_run() {
         String::from_utf8_lossy(&result.stdout).into_owned()
             + &String::from_utf8_lossy(&result.stderr);
     assert!(
-        combined.contains("update this starter rule"),
-        "expected starter rule to flag the baked-in TODO, got: {combined}"
+        combined.contains("replace this sample rule"),
+        "expected sample rule to flag itself, got: {combined}"
     );
     assert!(
         combined.contains("1 warning in 1 file"),
