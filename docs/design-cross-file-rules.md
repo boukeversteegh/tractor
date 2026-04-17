@@ -445,7 +445,10 @@ xee but is standard XPath 3.1.
   `src/domain/user.ts` requires understanding of module resolution
   (tsconfig paths, Python sys.path, etc.). For now, users can use
   `contains()` / `matches()` on raw import strings. Proper resolution
-  could be added later.
+  could be added later — see `design-call-graph-exploration.md` for
+  a survey of libraries (notably `github/stack-graphs`) that could
+  provide this, and the use cases in this document that would become
+  precise rather than heuristic as a result.
 
 - **Incremental/cached indexing.** Re-parsing all files on every run
   is acceptable for CI. Caching parsed ASTs or extracted facts for
