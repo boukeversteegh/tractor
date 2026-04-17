@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<value> class Foo
+{
+     int Bar { get; set; }
+     void Baz() { }
+}</value>

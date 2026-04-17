@@ -255,6 +255,81 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
     ("json/run-multiop.json", &[
         "run", "--config", "tests/integration/formats/multiop.yaml", "-f", "json",
     ]),
+    // -p / --project projection snapshots: each projection x format combination.
+    // These verify that the shape of the output is driven by flags, not by the
+    // number of matches. `--single` variants check bare/wrapper stripping.
+    ("text/query-p-value.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-p", "value",
+    ]),
+    ("text/query-p-source.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-p", "source",
+    ]),
+    ("text/query-p-count.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-p", "count",
+    ]),
+    ("text/query-p-summary.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-p", "summary",
+    ]),
+    ("json/query-p-value.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "value", "-f", "json",
+    ]),
+    ("json/query-p-value-single.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "value", "--single", "-f", "json",
+    ]),
+    ("json/query-p-count.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "count", "-f", "json",
+    ]),
+    ("json/query-p-totals.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "totals", "-f", "json",
+    ]),
+    ("json/query-p-summary.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "summary", "-f", "json",
+    ]),
+    ("json/query-p-results.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "results", "-v", "file,line", "-f", "json",
+    ]),
+    ("json/query-p-results-single.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "results", "--single", "-v", "file,line", "-f", "json",
+    ]),
+    ("xml/query-p-value.xml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "value", "-f", "xml",
+    ]),
+    ("xml/query-p-value-single.xml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "value", "--single", "-f", "xml",
+    ]),
+    ("xml/query-p-count.xml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "count", "-f", "xml",
+    ]),
+    ("xml/query-p-summary.xml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "summary", "-f", "xml",
+    ]),
+    ("xml/query-p-totals.xml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "totals", "-f", "xml",
+    ]),
+    ("yaml/query-p-count.yaml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "count", "-f", "yaml",
+    ]),
+    ("yaml/query-p-totals.yaml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "totals", "-f", "yaml",
+    ]),
+    ("yaml/query-p-summary.yaml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "summary", "-f", "yaml",
+    ]),
     // --help snapshots: track changes to CLI help text per subcommand
     ("help/query.txt", &["query", "--help"]),
     ("help/check.txt", &["check", "--help"]),
