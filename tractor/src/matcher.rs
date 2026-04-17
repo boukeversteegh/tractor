@@ -362,6 +362,36 @@ pub fn project_report(report: &mut Report, view: &ViewSet) {
     }
 }
 
+pub fn attach_report_schema(report: &mut Report, depth: Option<usize>) {
+    if report.schema.is_some() {
+        return;
+    }
+
+    let mut collector = tractor::SchemaCollector::new();
+    for m in report.all_matches() {
+        if let Some(ref node) = m.tree {
+            collector.collect_from_xml_node(node);
+        }
+    }
+    report.schema = Some(collector.format(depth, false));
+}
+
+pub fn prepare_report_for_output(report: &mut Report, ctx: &RunContext) {
+    if ctx.view.has(ViewField::Query) {
+        report.query = ctx.xpath.clone();
+    }
+
+    if ctx.view.has(ViewField::Schema) {
+        attach_report_schema(report, ctx.schema_depth());
+    }
+
+    if let Some(ref template) = ctx.message {
+        apply_message_template(report, template);
+    }
+
+    project_report(report, &ctx.view);
+}
+
 /// Apply a CLI-level message template (`-m`) to all matches in a report.
 ///
 /// This overwrites any existing message (e.g. from rule-level templates).
@@ -394,7 +424,11 @@ pub fn apply_message_template(report: &mut Report, template: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::format::{OutputFormat, Projection, ViewSet};
+    use crate::input::InputMode;
+    use tractor::report::ReportBuilder;
     use tractor::language_info::Language;
+    use tractor::NormalizedXpath;
 
     #[test]
     fn test_language_parsing() {
@@ -482,5 +516,63 @@ mod tests {
 
         assert!(rule_language_matches_file(&ruleset, 0, "test.js"));
         assert!(!rule_language_matches_file(&ruleset, 0, "test.md"));
+    }
+
+    #[test]
+    fn prepare_report_for_output_attaches_query_and_schema() {
+        let mut builder = ReportBuilder::new();
+        builder.set_no_verdict();
+        builder.add(ReportMatch {
+            file: "test.xml".to_string(),
+            line: 1,
+            column: 1,
+            end_line: 1,
+            end_column: 1,
+            command: "query".to_string(),
+            tree: Some(tractor::xpath::XmlNode::Element {
+                name: "a".to_string(),
+                attributes: vec![],
+                children: vec![],
+            }),
+            value: Some("1".to_string()),
+            source: Some("<a>1</a>".to_string()),
+            lines: Some(vec!["<a>1</a>".to_string()]),
+            reason: None,
+            severity: None,
+            message: None,
+            origin: None,
+            rule_id: None,
+            status: None,
+            output: None,
+        });
+        let mut report = builder.build();
+
+        let ctx = RunContext {
+            xpath: Some(NormalizedXpath::new("//a")),
+            output_format: OutputFormat::Json,
+            projection: Projection::Report,
+            single: false,
+            view: ViewSet::new(vec![ViewField::Tree, ViewField::Query, ViewField::Schema]),
+            use_color: false,
+            message: None,
+            input: InputMode::Files(vec!["test.xml".to_string()]),
+            limit: None,
+            depth: None,
+            parse_depth: None,
+            meta: false,
+            tree_mode: None,
+            no_pretty: false,
+            ignore_whitespace: false,
+            verbose: false,
+            lang: None,
+            debug: false,
+            group_by: vec![],
+            hook_type: None,
+        };
+
+        prepare_report_for_output(&mut report, &ctx);
+
+        assert_eq!(report.query.as_ref().map(|q| q.as_str()), Some("//a"));
+        assert!(report.schema.is_some());
     }
 }

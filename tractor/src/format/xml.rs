@@ -10,39 +10,49 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
     body.push_str("<report>\n");
 
     if should_show_totals(report, view) {
+        let mut summary = String::new();
         if let Some(passed) = report.success {
-            body.push_str(&format!("  <success>{}</success>\n", passed));
+            summary.push_str(&format!("    <success>{}</success>\n", passed));
         }
         if let Some(ref totals) = report.totals {
-            body.push_str("  <totals>\n");
-            body.push_str(&format!("    <results>{}</results>\n", totals.results));
-            body.push_str(&format!("    <files>{}</files>\n", totals.files));
+            summary.push_str("    <totals>\n");
+            summary.push_str(&format!("      <results>{}</results>\n", totals.results));
+            summary.push_str(&format!("      <files>{}</files>\n", totals.files));
             if totals.fatals > 0 {
-                body.push_str(&format!("    <fatals>{}</fatals>\n", totals.fatals));
+                summary.push_str(&format!("      <fatals>{}</fatals>\n", totals.fatals));
             }
             if totals.errors > 0 {
-                body.push_str(&format!("    <errors>{}</errors>\n", totals.errors));
+                summary.push_str(&format!("      <errors>{}</errors>\n", totals.errors));
             }
             if totals.warnings > 0 {
-                body.push_str(&format!("    <warnings>{}</warnings>\n", totals.warnings));
+                summary.push_str(&format!("      <warnings>{}</warnings>\n", totals.warnings));
             }
             if totals.infos > 0 {
-                body.push_str(&format!("    <infos>{}</infos>\n", totals.infos));
+                summary.push_str(&format!("      <infos>{}</infos>\n", totals.infos));
             }
             if totals.updated > 0 {
-                body.push_str(&format!("    <updated>{}</updated>\n", totals.updated));
+                summary.push_str(&format!("      <updated>{}</updated>\n", totals.updated));
             }
             if totals.unchanged > 0 {
-                body.push_str(&format!("    <unchanged>{}</unchanged>\n", totals.unchanged));
+                summary.push_str(&format!("      <unchanged>{}</unchanged>\n", totals.unchanged));
             }
-            body.push_str("  </totals>\n");
+            summary.push_str("    </totals>\n");
         }
         if let Some(ref expected) = report.expected {
-            body.push_str(&format!("  <expected>{}</expected>\n", escape(expected)));
+            summary.push_str(&format!("    <expected>{}</expected>\n", escape(expected)));
         }
         if let Some(ref query) = report.query {
-            body.push_str(&format!("  <query>{}</query>\n", escape(query.as_str())));
+            summary.push_str(&format!("    <query>{}</query>\n", escape(query.as_str())));
         }
+        if !summary.is_empty() {
+            body.push_str("  <summary>\n");
+            body.push_str(&summary);
+            body.push_str("  </summary>\n");
+        }
+    }
+
+    if let Some(ref schema) = report.schema {
+        body.push_str(&format!("  <schema>{}</schema>\n", escape(schema)));
     }
 
     // Top-level captured outputs — honest view of the report model.

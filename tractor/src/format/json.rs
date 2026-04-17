@@ -7,7 +7,11 @@ pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderO
     let mut root = serde_json::Map::new();
 
     if should_show_totals(report, view) {
-        emit_report_metadata(&mut root, report);
+        emit_report_summary(&mut root, report);
+    }
+
+    if let Some(ref schema) = report.schema {
+        root.insert("schema".into(), json!(schema));
     }
 
     // Top-level captured outputs — honest view of the report model.
@@ -66,10 +70,11 @@ fn group_outputs_to_json(
     ("outputs", outputs_to_json(outputs))
 }
 
-/// Emit success, totals, expected, query as top-level fields.
-pub fn emit_report_metadata(root: &mut serde_json::Map<String, Value>, report: &Report) {
+/// Emit success, totals, expected, query under the structured summary container.
+pub fn emit_report_summary(root: &mut serde_json::Map<String, Value>, report: &Report) {
+    let mut summary = serde_json::Map::new();
     if let Some(success) = report.success {
-        root.insert("success".into(), json!(success));
+        summary.insert("success".into(), json!(success));
     }
     if let Some(ref totals) = report.totals {
         let mut t = serde_json::Map::new();
@@ -81,13 +86,16 @@ pub fn emit_report_metadata(root: &mut serde_json::Map<String, Value>, report: &
         if totals.infos > 0 { t.insert("infos".into(), json!(totals.infos)); }
         if totals.updated > 0 { t.insert("updated".into(), json!(totals.updated)); }
         if totals.unchanged > 0 { t.insert("unchanged".into(), json!(totals.unchanged)); }
-        root.insert("totals".into(), Value::Object(t));
+        summary.insert("totals".into(), Value::Object(t));
     }
     if let Some(ref expected) = report.expected {
-        root.insert("expected".into(), json!(expected));
+        summary.insert("expected".into(), json!(expected));
     }
     if let Some(ref query) = report.query {
-        root.insert("query".into(), json!(query));
+        summary.insert("query".into(), json!(query));
+    }
+    if !summary.is_empty() {
+        root.insert("summary".into(), Value::Object(summary));
     }
 }
 
@@ -116,7 +124,10 @@ pub fn render_results_json(
                 if let Some(ref file) = sub.file { obj.insert("file".into(), json!(file)); }
                 if let Some(ref command) = sub.command { obj.insert("command".into(), json!(command)); }
                 if let Some(ref rule_id) = sub.rule_id { obj.insert("rule_id".into(), json!(rule_id)); }
-                emit_report_metadata(&mut obj, sub);
+                emit_report_summary(&mut obj, sub);
+                if let Some(ref schema) = sub.schema {
+                    obj.insert("schema".into(), json!(schema));
+                }
                 // Sub-grouping dimension (before nested results)
                 if let Some(ref group) = sub.group {
                     obj.insert("group".into(), json!(group));
@@ -310,12 +321,14 @@ mod tests {
             totals: None,
             expected: None,
             query: None,
+            schema: None,
             outputs: vec![],
             results: vec![ResultItem::Group(Box::new(Report {
                 success: None,
                 totals: None,
                 expected: None,
                 query: None,
+                schema: None,
                 outputs: vec![tractor::report::ReportOutput {
                     file: None,
                     content: "hello\n".to_string(),
@@ -336,5 +349,20 @@ mod tests {
         let parsed: serde_json::Value = serde_json::from_str(&rendered).unwrap();
         assert_eq!(parsed["results"][0]["output"], "hello\n");
         assert!(parsed["results"][0].get("outputs").is_none());
+    }
+
+    #[test]
+    fn metadata_renders_under_summary_key() {
+        let mut builder = tractor::ReportBuilder::new();
+        builder.set_expected("1".to_string());
+        let report = builder.build();
+
+        let rendered = render_json_report(&report, &ViewSet::new(vec![ViewField::Totals]), &RenderOptions::new(), &[]);
+        let parsed: serde_json::Value = serde_json::from_str(&rendered).unwrap();
+
+        assert_eq!(parsed["summary"]["success"], true);
+        assert_eq!(parsed["summary"]["totals"]["results"], 0);
+        assert_eq!(parsed["summary"]["expected"], "1");
+        assert!(parsed.get("totals").is_none());
     }
 }
