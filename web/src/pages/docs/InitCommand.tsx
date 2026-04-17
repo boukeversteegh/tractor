@@ -37,7 +37,7 @@ run \`tractor run\` to execute it`} />
 # point at your own source, then rewrite the rule to enforce the
 # conventions you care about.
 #
-# Full reference: https://tractor-cli.com/docs
+# Full reference: https://tractor.fly.dev/docs
 
 check:
   files:
