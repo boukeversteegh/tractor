@@ -1,0 +1,42 @@
+diff --git a/xee-interpreter/src/interpreter/interpret.rs b/xee-interpreter/src/interpreter/interpret.rs
+index 7e2a34a5..1ddf8cfb 100644
+--- a/xee-interpreter/src/interpreter/interpret.rs
++++ b/xee-interpreter/src/interpreter/interpret.rs
+@@ -1045,10 +1045,21 @@ impl<'a> Interpreter<'a> {
+ 
+     fn pop_is_numeric(&mut self) -> error::Result<bool> {
+         let value = self.state.pop()?;
+-        let a = value.atomized_option(self.state.xot())?;
+-        if let Some(a) = a {
+-            Ok(a.is_numeric())
++        // For predicate numeric check, we need exactly one atomized value.
++        // Multiple items should return false (not error), since a multi-item
++        // sequence is never a numeric predicate value.
++        let mut atomized = value.atomized(self.state.xot());
++        if let Some(first) = atomized.next() {
++            // Check if there's more than one item
++            if atomized.next().is_some() {
++                // Multiple items - not numeric
++                Ok(false)
++            } else {
++                // Exactly one item - check if it's numeric
++                Ok(first?.is_numeric())
++            }
+         } else {
++            // Empty sequence - not numeric
+             Ok(false)
+         }
+     }
+diff --git a/xee-xpath/tests/snapshots/xpath__sequence_predicate_sequence_too_long.snap b/xee-xpath/tests/snapshots/xpath__sequence_predicate_sequence_too_long.snap
+index a275f69b..2fce4c22 100644
+--- a/xee-xpath/tests/snapshots/xpath__sequence_predicate_sequence_too_long.snap
++++ b/xee-xpath/tests/snapshots/xpath__sequence_predicate_sequence_too_long.snap
+@@ -4,7 +4,7 @@ expression: "run(\"(1, 2, 3)[(2, 3)]\")"
+ ---
+ Err(
+     SpannedError {
+-        error: XPTY0004,
++        error: FORG0006,
+         span: Some(
+             SourceSpan(
+                 10,
