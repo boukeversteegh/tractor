@@ -1,7 +1,7 @@
 # `-p` / `--project` Projection Flag
 
 **Date:** 2026-04-17
-**Status:** Design proposal
+**Status:** Implemented
 **Related:** [#120](https://github.com/boukeversteegh/tractor/issues/120), `specs/report-model.md`, `todo/7-count-schema-short-circuit.md`
 
 ## Goals
@@ -392,66 +392,66 @@ The core table. For each `-p` value and each format, verify the emitted document
 
 #### 1.1 Per-match projections (sequence-valued)
 
-- [ ] `-p tree -f text multi.xml` → 3 bare trees, newline-separated, no envelope.
-- [ ] `-p tree -f xml multi.xml` → `<results>` root containing 3 `<tree>` children. Parses as XML.
-- [ ] `-p tree -f json multi.xml` → top-level JSON array of 3 tree objects. Parses as JSON.
-- [ ] `-p tree -f yaml multi.xml` → top-level YAML sequence of 3 tree mappings. Parses as YAML.
-- [ ] `-p tree -f xml one.xml` → `<results>` root with 1 `<tree>` child (not a bare `<tree>` — content-independence).
-- [ ] `-p tree -f json one.xml` → top-level array of 1 tree (not a bare object).
-- [ ] `-p tree -f xml empty.xml` → `<results/>` or empty `<results></results>`. Parses.
-- [ ] `-p tree -f json empty.xml` → `[]`.
-- [ ] Same eight cases with `-p value`.
-- [ ] Same eight cases with `-p source`.
-- [ ] Same eight cases with `-p lines`.
+- [x] `-p tree -f text multi.xml` → 3 bare trees, newline-separated, no envelope.
+- [x] `-p tree -f xml multi.xml` → `<results>` root containing 3 `<tree>` children. Parses as XML.
+- [x] `-p tree -f json multi.xml` → top-level JSON array of 3 tree objects. Parses as JSON.
+- [x] `-p tree -f yaml multi.xml` → top-level YAML sequence of 3 tree mappings. Parses as YAML.
+- [x] `-p tree -f xml one.xml` → `<results>` root with 1 `<tree>` child (not a bare `<tree>` — content-independence).
+- [x] `-p tree -f json one.xml` → top-level array of 1 tree (not a bare object).
+- [x] `-p tree -f xml empty.xml` → `<results/>` or empty `<results></results>`. Parses.
+- [x] `-p tree -f json empty.xml` → `[]`.
+- [x] Same eight cases with `-p value`.
+- [x] Same eight cases with `-p source`.
+- [x] Same eight cases with `-p lines`.
 
 #### 1.2 Singular projections
 
-- [ ] `-p schema -f text` → bare text schema rendering (same as today's `-v schema -f text`).
-- [ ] `-p schema -f xml` → `<schema>…</schema>` root, text content is the rendering (XML-escaped). Parses.
-- [ ] `-p schema -f json` → bare JSON string, e.g. `"…schema text…"`.
-- [ ] `-p schema -f yaml` → bare YAML scalar string.
-- [ ] Schema content is byte-identical across formats after format-specific escaping (no structured serialization).
-- [ ] `-p summary -f xml` → `<summary>` root element.
-- [ ] `-p summary -f json` → top-level JSON object with summary fields.
-- [ ] `-p summary -f yaml` → top-level YAML mapping.
-- [ ] `-p totals -f xml` → `<totals>` root element containing `<results>`, `<files>`, `<errors>`.
-- [ ] `-p totals -f json` → top-level JSON object, e.g. `{"results": 3, "files": 1, "errors": 0}`.
-- [ ] `-p totals -f yaml` → top-level YAML mapping.
-- [ ] `-p count -f text` → bare number, e.g. `3`.
-- [ ] `-p count -f json` → bare number, e.g. `3`.
-- [ ] `-p count -f yaml` → bare number, e.g. `3`.
-- [ ] `-p count -f xml` → `<count>3</count>` root element. Parses.
-- [ ] `-p count` value equals `-p totals -f json | jq .results`.
+- [x] `-p schema -f text` → bare text schema rendering (same as today's `-v schema -f text`).
+- [x] `-p schema -f xml` → `<schema>…</schema>` root, text content is the rendering (XML-escaped). Parses.
+- [x] `-p schema -f json` → bare JSON string, e.g. `"…schema text…"`.
+- [x] `-p schema -f yaml` → bare YAML scalar string.
+- [x] Schema content is byte-identical across formats after format-specific escaping (no structured serialization).
+- [x] `-p summary -f xml` → `<summary>` root element.
+- [x] `-p summary -f json` → top-level JSON object with summary fields.
+- [x] `-p summary -f yaml` → top-level YAML mapping.
+- [x] `-p totals -f xml` → `<totals>` root element containing `<results>`, `<files>`, `<errors>`.
+- [x] `-p totals -f json` → top-level JSON object, e.g. `{"results": 3, "files": 1, "errors": 0}`.
+- [x] `-p totals -f yaml` → top-level YAML mapping.
+- [x] `-p count -f text` → bare number, e.g. `3`.
+- [x] `-p count -f json` → bare number, e.g. `3`.
+- [x] `-p count -f yaml` → bare number, e.g. `3`.
+- [x] `-p count -f xml` → `<count>3</count>` root element. Parses.
+- [x] `-p count` value equals `-p totals -f json | jq .results`.
 
 #### 1.3 Structural projections
 
-- [ ] `-p results -f xml` → `<results>` root containing `<match>` children with `-v`-driven fields.
-- [ ] `-p results -f json` → top-level array of match objects.
-- [ ] `-p results -f yaml` → top-level sequence of match mappings.
-- [ ] `-p report -f xml` → full `<report>` envelope (same as no `-p`).
-- [ ] `-p report -f json` → full report object.
-- [ ] `-p report` omitted ≡ `-p report` explicit — output byte-identical.
+- [x] `-p results -f xml` → `<results>` root containing `<match>` children with `-v`-driven fields.
+- [x] `-p results -f json` → top-level array of match objects.
+- [x] `-p results -f yaml` → top-level sequence of match mappings.
+- [x] `-p report -f xml` → full `<report>` envelope (same as no `-p`).
+- [x] `-p report -f json` → full report object.
+- [x] `-p report` omitted ≡ `-p report` explicit — output byte-identical.
 
 ### 2. `--single` flag
 
-- [ ] `-p tree --single -f xml one.xml` → bare `<a/>` (no `<results>` wrapper).
-- [ ] `-p tree --single -f xml multi.xml` → bare first `<a/>`.
-- [ ] `-p tree --single -f xml empty.xml` → empty stdout, non-zero exit.
-- [ ] `-p tree --single -f json` → bare tree object (not array).
-- [ ] `-p tree --single -f yaml` → bare mapping.
-- [ ] `-p value --single -f text` → single value, no newline list.
-- [ ] `-p results --single` → single `<match>` bare, no `<results>` wrapper.
-- [ ] `--single` with `-p` omitted → treated as `-p results --single`.
-- [ ] `-p summary --single` → `<summary>…</summary>` unchanged, warning on stderr.
-- [ ] `-p schema --single` → `<schema>…</schema>` unchanged, warning on stderr.
-- [ ] `-p totals --single` → `<totals>…</totals>` unchanged, warning on stderr.
-- [ ] `-p report --single` → `<report>…</report>` unchanged, warning on stderr.
-- [ ] `-p count --single` → bare number unchanged, warning on stderr.
-- [ ] Warning text names the projection as "already singular" and suggests dropping `--single`.
-- [ ] `-n 1 --single` → same as `--single` (redundant but accepted, no warning).
-- [ ] `--single -n 2` → CLI error with a message explaining the contradiction. Non-zero exit, no output.
-- [ ] `--single -n 3` (or any N ≠ 1) → same error.
-- [ ] `--single` never emits a list wrapper, in any format, for any projection it applies to.
+- [x] `-p tree --single -f xml one.xml` → bare `<a/>` (no `<results>` wrapper).
+- [x] `-p tree --single -f xml multi.xml` → bare first `<a/>`.
+- [x] `-p tree --single -f xml empty.xml` → empty stdout, non-zero exit.
+- [x] `-p tree --single -f json` → bare tree object (not array).
+- [x] `-p tree --single -f yaml` → bare mapping.
+- [x] `-p value --single -f text` → single value, no newline list.
+- [x] `-p results --single` → single `<match>` bare, no `<results>` wrapper.
+- [x] `--single` with `-p` omitted → treated as `-p results --single`.
+- [x] `-p summary --single` → `<summary>…</summary>` unchanged, warning on stderr.
+- [x] `-p schema --single` → `<schema>…</schema>` unchanged, warning on stderr.
+- [x] `-p totals --single` → `<totals>…</totals>` unchanged, warning on stderr.
+- [x] `-p report --single` → `<report>…</report>` unchanged, warning on stderr.
+- [x] `-p count --single` → bare number unchanged, warning on stderr.
+- [x] Warning text names the projection as "already singular" and suggests dropping `--single`.
+- [x] `-n 1 --single` → same as `--single` (redundant but accepted, no warning).
+- [x] `--single -n 2` → CLI error with a message explaining the contradiction. Non-zero exit, no output.
+- [x] `--single -n 3` (or any N ≠ 1) → same error.
+- [x] `--single` never emits a list wrapper, in any format, for any projection it applies to.
 
 ### 3. Report-structure refactor
 
@@ -460,7 +460,7 @@ Paths below are absolute XPaths into the report.
 - [x] `/success`, `/totals`, `/expected`, `/query` move to `/summary/success`, `/summary/totals`, `/summary/expected`, `/summary/query`. No loose summary fields remain at the top level.
 - [x] `/summary/totals/results`, `/summary/totals/files`, `/summary/totals/errors` preserved with original meanings — no rename inside totals.
 - [x] `/results` still exists as the list wrapper for matches (separate from `/summary/totals/results`).
-- [x] `/schema` is a direct child of `/` (not inside `/summary`) when `-v schema` or `-p schema` is set. (element placement done; population from `-p schema` pending projection implementation)
+- [x] `/schema` is a direct child of `/` (not inside `/summary`) when `-v schema` or `-p schema` is set.
 - [x] JSON/YAML shapes mirror the XML paths (e.g. `report.summary.totals.results`).
 
 ### 4. `-v` replacement rule
@@ -476,30 +476,30 @@ For projections where output shape differs across formats (e.g. `-p tree` → `<
 
 Each `-v tree,file -p X` case below *also* triggers the discarded-`-v`-fields warning (verified in §5.1). §4.1 asserts the replacement took effect in stdout; §5.1 asserts the warning fires on stderr.
 
-- [ ] `-v tree,file -p tree` → output contains no file-path data (no `<file>` in xml, no `file` key in json/yaml, no path prefix in text).
-- [ ] `-v tree,file -p value` → output contains neither tree nor file data — just values.
-- [ ] `-v tree,file -p source` → output contains neither tree nor file data — just source text.
-- [ ] `-v tree,file -p lines` → output contains neither tree nor file data — just line snippets.
-- [ ] `-v tree,file -p schema` → output contains neither tree nor file data — just the schema element.
-- [ ] `-v tree,file -p count` → output contains neither tree nor file data — just the scalar count.
-- [ ] Default `-v` with `-p tree` → output contains only tree data per match (no file, line, column, etc. — default view fields suppressed).
-- [ ] `-p schema` always computes schema regardless of `-v` (schema data appears).
-- [ ] `-p tree` never computes schema even if default `-v` would include it (no schema data in output).
+- [x] `-v tree,file -p tree` → output contains no file-path data (no `<file>` in xml, no `file` key in json/yaml, no path prefix in text).
+- [x] `-v tree,file -p value` → output contains neither tree nor file data — just values.
+- [x] `-v tree,file -p source` → output contains neither tree nor file data — just source text.
+- [x] `-v tree,file -p lines` → output contains neither tree nor file data — just line snippets.
+- [x] `-v tree,file -p schema` → output contains neither tree nor file data — just the schema element.
+- [x] `-v tree,file -p count` → output contains neither tree nor file data — just the scalar count.
+- [x] Default `-v` with `-p tree` → output contains only tree data per match (no file, line, column, etc. — default view fields suppressed).
+- [x] `-p schema` always computes schema regardless of `-v` (schema data appears).
+- [x] `-p tree` never computes schema even if default `-v` would include it (no schema data in output).
 
 #### 4.2 Respect cases (structural `-p`)
 
-- [ ] `-v tree,file -p results` → each emitted match contains **both** tree data and file-path data.
-- [ ] `-v tree,file -p report` → same (under the `<report>` envelope).
-- [ ] Default `-v` with `-p results` → each match contains the default view fields.
+- [x] `-v tree,file -p results` → each emitted match contains **both** tree data and file-path data.
+- [x] `-v tree,file -p report` → same (under the `<report>` envelope).
+- [x] Default `-v` with `-p results` → each match contains the default view fields.
 
 #### 4.3 Unreachable cases (metadata `-p`)
 
 These also trigger the discarded-fields warning (§5.1), since the requested `-v`/`-m` fields can't appear in the output.
 
-- [ ] `-v tree,file -p summary` → output is the summary; no tree or file data anywhere. Warning names `tree, file`.
-- [ ] `-v tree,file -p totals` → output is totals; no tree or file data anywhere. Warning names `tree, file`.
-- [ ] `-m 'TEMPLATE' -p summary` → output is the summary; no message rendered. Warning mentions the message template.
-- [ ] `-m 'TEMPLATE' -p totals` → same.
+- [x] `-v tree,file -p summary` → output is the summary; no tree or file data anywhere. Warning names `tree, file`.
+- [x] `-v tree,file -p totals` → output is totals; no tree or file data anywhere. Warning names `tree, file`.
+- [x] `-m 'TEMPLATE' -p summary` → output is the summary; no message rendered. Warning mentions the message template.
+- [x] `-m 'TEMPLATE' -p totals` → same.
 
 ### 5. Warning on discarded `-v` fields
 
@@ -525,103 +525,103 @@ Canonical check (unreachable): `-m 'TEMPLATE' -p summary` produces approximately
 warning: -m message template has no effect with -p summary (no per-match rendering).
 ```
 
-- [ ] Canonical replacement case above prints an equivalent warning.
-- [ ] Canonical unreachable case above prints an equivalent warning.
-- [ ] Same rule holds for any other view-level `-p` and any `-v`/`-m` superset (e.g. `-v tree,file,source -p tree` names `file, source`; `-v tree,file -p schema` names `tree, file`; `-m TMPL -v tree -p value` names `tree` and `message`).
-- [ ] Warning text lists **all** dropped field names (not just the first).
-- [ ] Replacement warning points to `-p results` as the alternative that respects `-v`.
-- [ ] Warning lines begin with `warning:` (lowercase) — matches tractor's convention.
-- [ ] Warnings go to stderr; stdout is unchanged.
-- [ ] Exit code is unchanged (non-zero only if the command itself failed).
+- [x] Canonical replacement case above prints an equivalent warning.
+- [x] Canonical unreachable case above prints an equivalent warning.
+- [x] Same rule holds for any other view-level `-p` and any `-v`/`-m` superset (e.g. `-v tree,file,source -p tree` names `file, source`; `-v tree,file -p schema` names `tree, file`; `-m TMPL -v tree -p value` names `tree` and `message`).
+- [x] Warning text lists **all** dropped field names (not just the first).
+- [x] Replacement warning points to `-p results` as the alternative that respects `-v`.
+- [x] Warning lines begin with `warning:` (lowercase) — matches tractor's convention.
+- [x] Warnings go to stderr; stdout is unchanged.
+- [x] Exit code is unchanged (non-zero only if the command itself failed).
 
 #### 5.2 Warning does NOT fire
 
-- [ ] Redundant overlap — `-v tree -p tree`: user's intent is preserved, no warning.
-- [ ] Structural `-p` — `-v tree,file -p {results | report}`: all `-v`/`-m` fields appear in the output, no warning.
-- [ ] Default view — `-p tree` with no explicit `-v` or `-m` (or `-p tree` alone): nothing the user asked for is dropped, no warning.
-- [ ] `-m TEMPLATE -p results` → `message` field appears per match, no warning.
+- [x] Redundant overlap — `-v tree -p tree`: user's intent is preserved, no warning.
+- [x] Structural `-p` — `-v tree,file -p {results | report}`: all `-v`/`-m` fields appear in the output, no warning.
+- [x] Default view — `-p tree` with no explicit `-v` or `-m` (or `-p tree` alone): nothing the user asked for is dropped, no warning.
+- [x] `-m TEMPLATE -p results` → `message` field appears per match, no warning.
 - [ ] `-m TEMPLATE -p message` (if `-p message` is ever added) → no warning. (N/A today — included for future-proofing.)
 
 ### 6. Pipeline ordering — format-required fields survive
 
 Format-layer adjustments run **after** `-p`'s `-v` replacement. The renderer still adds what it needs.
 
-- [ ] `-p results -f json` → each match includes `file`, `line`, `column` attributes even if `-v` didn't list them (format adds them).
-- [ ] `-p tree -f xml` in a check command → diagnostic extras (`severity`, `reason`, `origin`, `lines`) still appended per match if the match has them — via `render_fields_for_match` at `tractor/src/format/shared.rs:64`.
-- [ ] `-p tree` does not suppress format-required fields in the per-match output.
-- [ ] `-p tree --single` does not suppress format-required fields on the singular match.
+- [x] `-p results -f json` → each match includes `file`, `line`, `column` attributes even if `-v` didn't list them (format adds them).
+- [x] `-p tree -f xml` in a check command → diagnostic extras (`severity`, `reason`, `origin`, `lines`) still appended per match if the match has them — via `render_fields_for_match` at `tractor/src/format/shared.rs:64`.
+- [x] `-p tree` does not suppress format-required fields in the per-match output.
+- [x] `-p tree --single` does not suppress format-required fields on the singular match.
 
 ### 7. Content-independence contract
 
 Same flags → same shape regardless of result cardinality.
 
-- [ ] `-p tree -f xml` emits `<results>` root for 0, 1, 2, 100 matches.
-- [ ] `-p tree -f json` emits a JSON array for 0, 1, 2, 100 matches.
-- [ ] `-p tree --single -f xml` emits a bare tree root for 1, 2, 100 matches (fails for 0).
-- [ ] No flag combo produces a scalar for 1 match and a list for ≥2 matches.
-- [ ] Output shape can be predicted from flags alone, before the query runs.
+- [x] `-p tree -f xml` emits `<results>` root for 0, 1, 2, 100 matches.
+- [x] `-p tree -f json` emits a JSON array for 0, 1, 2, 100 matches.
+- [x] `-p tree --single -f xml` emits a bare tree root for 1, 2, 100 matches (fails for 0).
+- [x] No flag combo produces a scalar for 1 match and a list for ≥2 matches.
+- [x] Output shape can be predicted from flags alone, before the query runs.
 
 ### 8. Parseability contract
 
-- [ ] Every `-f xml` output parses as XML (no multi-root documents).
-- [ ] Every `-f json` output parses as JSON.
-- [ ] Every `-f yaml` output parses as YAML.
-- [ ] Emptiness edge cases also parse: empty `-p tree -f xml` → valid XML; empty `-p tree -f json` → `[]`.
+- [x] Every `-f xml` output parses as XML (no multi-root documents).
+- [x] Every `-f json` output parses as JSON.
+- [x] Every `-f yaml` output parses as YAML.
+- [x] Emptiness edge cases also parse: empty `-p tree -f xml` → valid XML; empty `-p tree -f json` → `[]`.
 
 ### 9. Interaction with other flags
 
-- [ ] `-n 2 -p tree` → first 2 trees in `<results>` wrapper.
-- [ ] `-n 0 -p tree` → empty results (validates content-independence for `-n`).
-- [ ] `-m TMPL -p results -f json` → each match contains a `message` key.
-- [ ] `-m TMPL -p report -f json` → each match (inside `/results`) contains a `message` key.
-- [ ] `-m TMPL -p tree` → warning fires (§5.1 replacement); no message in output.
-- [ ] `-m TMPL -p summary` → warning fires (§5.1 unreachable); output is summary only.
+- [x] `-n 2 -p tree` → first 2 trees in `<results>` wrapper.
+- [x] `-n 0 -p tree` → empty results (validates content-independence for `-n`).
+- [x] `-m TMPL -p results -f json` → each match contains a `message` key.
+- [x] `-m TMPL -p report -f json` → each match (inside `/results`) contains a `message` key.
+- [x] `-m TMPL -p tree` → warning fires (§5.1 replacement); no message in output.
+- [x] `-m TMPL -p summary` → warning fires (§5.1 unreachable); output is summary only.
 - [ ] `--group FIELD -p …` → out of scope for this design (see "Out of scope"); behavior is undefined / CLI may reject.
-- [ ] `-x QUERY -p tree` → works; `-x` unchanged.
-- [ ] `-l LANG -p tree` → works; `-l` unchanged.
-- [ ] `-d DEPTH -p tree` → depth still applies to tree serialization.
-- [ ] `-W -p source` → whitespace still normalized in source field.
+- [x] `-x QUERY -p tree` → works; `-x` unchanged.
+- [x] `-l LANG -p tree` → works; `-l` unchanged.
+- [x] `-d DEPTH -p tree` → depth still applies to tree serialization.
+- [x] `-W -p source` → whitespace still normalized in source field.
 
 ### 10. Migration — removing the count/schema short-circuit
 
-- [ ] `-v count` without `-p`: produces a report with `/totals/results` (breaking change from bare scalar in text — document in CHANGELOG).
-- [ ] `-v count -p totals --single -f text` → bare scalar (restores old UX for the user who wants it).
-- [ ] `-v schema -f xml`: emits `<schema>` as a child of `<report>`, inside the envelope (not bypassed).
-- [ ] `-v schema -p schema`: emits `<schema>` bare as the root.
-- [ ] The short-circuit at `tractor/src/cli/query.rs:133-142` is removed.
-- [ ] `todo/7-count-schema-short-circuit.md` is closed by this change.
+- [x] `-v count` without `-p`: produces a report with `/totals/results` (breaking change from bare scalar in text — document in CHANGELOG).
+- [x] `-v count -p totals --single -f text` → bare scalar (restores old UX for the user who wants it).
+- [x] `-v schema -f xml`: emits `<schema>` as a child of `<report>`, inside the envelope (not bypassed).
+- [x] `-v schema -p schema`: emits `<schema>` bare as the root.
+- [x] The short-circuit at `tractor/src/cli/query.rs:133-142` is removed.
+- [x] `todo/7-count-schema-short-circuit.md` is closed by this change.
 
 ### 11. Mode-specific behavior
 
-- [ ] **Query mode** (`tractor … -x …`) `-p summary` → `<summary>` present, `<success>` absent (no verdict), other fields included if set.
-- [ ] **Check mode** (`tractor check …`) `-p summary` → `<summary>` with `<success>`, `<totals>`, `<expected>`.
-- [ ] **Test mode** (`tractor test …`) `-p summary` → similar to check.
-- [ ] `-p totals` works in all modes.
-- [ ] `-p schema` in query mode → emits schema of matches.
+- [x] **Query mode** (`tractor … -x …`) `-p summary` → `<summary>` present, `<success>` absent (no verdict), other fields included if set.
+- [x] **Check mode** (`tractor check …`) `-p summary` → `<summary>` with `<success>`, `<totals>`, `<expected>`.
+- [x] **Test mode** (`tractor test …`) `-p summary` → similar to check.
+- [x] `-p totals` works in all modes.
+- [x] `-p schema` in query mode → emits schema of matches.
 - [ ] `-p schema` in check mode → behavior per open question (emit schema? error?).
 
 ### 12. Error / edge cases
 
-- [ ] `-p INVALID` → CLI rejects with enum error listing valid values.
-- [ ] `-p tree --single -f xml empty.xml` → exit non-zero, empty stdout.
+- [x] `-p INVALID` → CLI rejects with enum error listing valid values.
+- [x] `-p tree --single -f xml empty.xml` → exit non-zero, empty stdout.
 - [ ] `-p tree` with query that computes no trees (e.g. a query matching non-node values) → empty `<results>` or error (pick one).
-- [ ] `-v '' -p tree` (empty explicit `-v`) → no warning (vacuous replacement).
+- [x] `-v '' -p tree` (empty explicit `-v`) → no warning (vacuous replacement).
 
 ### 13. Spec / documentation
 
 - [ ] `specs/cli-output-design.md:305-355` updated: envelope is always present **when `-p` is omitted or `-p report`**; otherwise the projection determines shape.
 - [ ] `specs/cli-output-design.md` documents the parseability and content-independence contracts.
-- [ ] `--help` for `-p` lists all enum values with one-line descriptions.
-- [ ] `--help` for `--single` documents "first, bare" semantics.
+- [x] `--help` for `-p` lists all enum values with one-line descriptions.
+- [x] `--help` for `--single` documents "first, bare" semantics.
 - [ ] `CHANGELOG` / release notes call out the `-v count` breaking change.
 
 ### 14. Snapshot regressions
 
 - [x] Existing language snapshots under `tests/integration/languages/*/.xml` regenerated with the new `<summary>` / `<schema>` shape.
 - [x] Existing format snapshots under `tests/integration/formats/snapshots/` regenerated.
-- [ ] New snapshot cases added for each `-p` value × format (matrix from §1).
-- [ ] New snapshot cases added for `-p X --single` cases.
-- [ ] `tractor/src/bin/update_snapshots.rs` updated to include projection cases in `OUTPUT_FORMAT_CASES`.
+- [x] New snapshot cases added for each `-p` value × format (matrix from §1).
+- [x] New snapshot cases added for `-p X --single` cases.
+- [x] `tractor/src/bin/update_snapshots.rs` updated to include projection cases in `OUTPUT_FORMAT_CASES`.
 
 ## Out of scope
 

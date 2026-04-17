@@ -1,5 +1,12 @@
 # Count and Schema views bypass the Report pipeline
 
+> **Status: Closed.** Resolved by `docs/design-p-projection-flag.md` —
+> schema is now a real `/schema` node in the report, count/schema route
+> through the normal renderer, and `-p count|schema` gives users the
+> explicit bare-scalar form. The ad-hoc short-circuit in `cli/query.rs`
+> is removed.
+
+
 ## Problem
 
 When `-v count` or `-v schema` is specified, `run_query` short-circuits before building
