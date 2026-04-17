@@ -1,9 +1,11 @@
 {
-  "success": false,
-  "totals": {
-    "results": 3,
-    "files": 2,
-    "errors": 3
+  "summary": {
+    "success": false,
+    "totals": {
+      "results": 3,
+      "files": 2,
+      "errors": 3
+    }
   },
   "results": [
     {

@@ -287,6 +287,11 @@ pub struct Report {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub query: Option<NormalizedXpath>,
 
+    /// Text rendering of the match schema (opaque string: same format as text-mode
+    /// `schema` rendering). Set when `-v schema` or `-p schema` is requested.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub schema: Option<String>,
+
     /// Captured output payloads produced by this report's operation (or,
     /// for sub-groups, payloads that were distributed down to this group
     /// by `with_grouping`). Distinct from diagnostic matches.
@@ -452,6 +457,7 @@ impl Report {
             totals: None,
             expected: None,
             query: None,
+            schema: None,
             outputs: vec![],
             results: vec![],
             group: None,
@@ -683,6 +689,7 @@ impl ReportBuilder {
             totals: Some(totals),
             expected: self.expected,
             query: self.query,
+            schema: None,
             outputs: self.outputs,
             results,
             group: None,

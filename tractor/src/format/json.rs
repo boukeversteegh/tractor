@@ -66,22 +66,66 @@ fn group_outputs_to_json(
     ("outputs", outputs_to_json(outputs))
 }
 
-/// Emit success, totals, expected, query as top-level fields.
+/// Serialize the totals object alone (used when totals is projected to root).
+pub fn totals_to_json(totals: &tractor::report::Totals) -> Value {
+    let mut t = serde_json::Map::new();
+    t.insert("results".into(), json!(totals.results));
+    t.insert("files".into(),   json!(totals.files));
+    if totals.fatals > 0 { t.insert("fatals".into(), json!(totals.fatals)); }
+    if totals.errors > 0 { t.insert("errors".into(), json!(totals.errors)); }
+    if totals.warnings > 0 { t.insert("warnings".into(), json!(totals.warnings)); }
+    if totals.infos > 0 { t.insert("infos".into(), json!(totals.infos)); }
+    if totals.updated > 0 { t.insert("updated".into(), json!(totals.updated)); }
+    if totals.unchanged > 0 { t.insert("unchanged".into(), json!(totals.unchanged)); }
+    Value::Object(t)
+}
+
+/// Build the summary object (success/totals/expected/query) for `report`.
+/// Returns None when every summary field is absent.
+pub fn summary_to_json(report: &Report) -> Option<Value> {
+    let has_any = report.success.is_some()
+        || report.totals.is_some()
+        || report.expected.is_some()
+        || report.query.is_some();
+    if !has_any {
+        return None;
+    }
+    let mut s = serde_json::Map::new();
+    if let Some(success) = report.success {
+        s.insert("success".into(), json!(success));
+    }
+    if let Some(ref totals) = report.totals {
+        s.insert("totals".into(), totals_to_json(totals));
+    }
+    if let Some(ref expected) = report.expected {
+        s.insert("expected".into(), json!(expected));
+    }
+    if let Some(ref query) = report.query {
+        s.insert("query".into(), json!(query));
+    }
+    Some(Value::Object(s))
+}
+
+/// Emit the `summary` block (if any) at the given object. For sub-groups the
+/// old shape (loose at top level) is retained — groups hoist their own fields.
 pub fn emit_report_metadata(root: &mut serde_json::Map<String, Value>, report: &Report) {
+    if let Some(summary) = summary_to_json(report) {
+        root.insert("summary".into(), summary);
+    }
+    if let Some(ref schema_text) = report.schema {
+        root.insert("schema".into(), json!(schema_text));
+    }
+}
+
+/// Legacy metadata emission used by group serialization: keeps totals at the
+/// group's own level rather than wrapping inside `summary`, because groups
+/// carry totals as a direct property of the group.
+pub fn emit_group_metadata(root: &mut serde_json::Map<String, Value>, report: &Report) {
     if let Some(success) = report.success {
         root.insert("success".into(), json!(success));
     }
     if let Some(ref totals) = report.totals {
-        let mut t = serde_json::Map::new();
-        t.insert("results".into(), json!(totals.results));
-        t.insert("files".into(),   json!(totals.files));
-        if totals.fatals > 0 { t.insert("fatals".into(), json!(totals.fatals)); }
-        if totals.errors > 0 { t.insert("errors".into(), json!(totals.errors)); }
-        if totals.warnings > 0 { t.insert("warnings".into(), json!(totals.warnings)); }
-        if totals.infos > 0 { t.insert("infos".into(), json!(totals.infos)); }
-        if totals.updated > 0 { t.insert("updated".into(), json!(totals.updated)); }
-        if totals.unchanged > 0 { t.insert("unchanged".into(), json!(totals.unchanged)); }
-        root.insert("totals".into(), Value::Object(t));
+        root.insert("totals".into(), totals_to_json(totals));
     }
     if let Some(ref expected) = report.expected {
         root.insert("expected".into(), json!(expected));
@@ -116,7 +160,7 @@ pub fn render_results_json(
                 if let Some(ref file) = sub.file { obj.insert("file".into(), json!(file)); }
                 if let Some(ref command) = sub.command { obj.insert("command".into(), json!(command)); }
                 if let Some(ref rule_id) = sub.rule_id { obj.insert("rule_id".into(), json!(rule_id)); }
-                emit_report_metadata(&mut obj, sub);
+                emit_group_metadata(&mut obj, sub);
                 // Sub-grouping dimension (before nested results)
                 if let Some(ref group) = sub.group {
                     obj.insert("group".into(), json!(group));
@@ -310,12 +354,14 @@ mod tests {
             totals: None,
             expected: None,
             query: None,
+            schema: None,
             outputs: vec![],
             results: vec![ResultItem::Group(Box::new(Report {
                 success: None,
                 totals: None,
                 expected: None,
                 query: None,
+                schema: None,
                 outputs: vec![tractor::report::ReportOutput {
                     file: None,
                     content: "hello\n".to_string(),

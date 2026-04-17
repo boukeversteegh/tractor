@@ -457,11 +457,11 @@ The core table. For each `-p` value and each format, verify the emitted document
 
 Paths below are absolute XPaths into the report.
 
-- [ ] `/success`, `/totals`, `/expected`, `/query` move to `/summary/success`, `/summary/totals`, `/summary/expected`, `/summary/query`. No loose summary fields remain at the top level.
-- [ ] `/summary/totals/results`, `/summary/totals/files`, `/summary/totals/errors` preserved with original meanings — no rename inside totals.
-- [ ] `/results` still exists as the list wrapper for matches (separate from `/summary/totals/results`).
-- [ ] `/schema` is a direct child of `/` (not inside `/summary`) when `-v schema` or `-p schema` is set.
-- [ ] JSON/YAML shapes mirror the XML paths (e.g. `report.summary.totals.results`).
+- [x] `/success`, `/totals`, `/expected`, `/query` move to `/summary/success`, `/summary/totals`, `/summary/expected`, `/summary/query`. No loose summary fields remain at the top level.
+- [x] `/summary/totals/results`, `/summary/totals/files`, `/summary/totals/errors` preserved with original meanings — no rename inside totals.
+- [x] `/results` still exists as the list wrapper for matches (separate from `/summary/totals/results`).
+- [x] `/schema` is a direct child of `/` (not inside `/summary`) when `-v schema` or `-p schema` is set. (element placement done; population from `-p schema` pending projection implementation)
+- [x] JSON/YAML shapes mirror the XML paths (e.g. `report.summary.totals.results`).
 
 ### 4. `-v` replacement rule
 
@@ -617,8 +617,8 @@ Same flags → same shape regardless of result cardinality.
 
 ### 14. Snapshot regressions
 
-- [ ] Existing language snapshots under `tests/integration/languages/*/.xml` regenerated with the new `<summary>` / `<schema>` shape.
-- [ ] Existing format snapshots under `tests/integration/formats/snapshots/` regenerated.
+- [x] Existing language snapshots under `tests/integration/languages/*/.xml` regenerated with the new `<summary>` / `<schema>` shape.
+- [x] Existing format snapshots under `tests/integration/formats/snapshots/` regenerated.
 - [ ] New snapshot cases added for each `-p` value × format (matrix from §1).
 - [ ] New snapshot cases added for `-p X --single` cases.
 - [ ] `tractor/src/bin/update_snapshots.rs` updated to include projection cases in `OUTPUT_FORMAT_CASES`.

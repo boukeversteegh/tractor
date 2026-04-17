@@ -447,6 +447,7 @@ mod tests {
             }),
             expected: None,
             query: None,
+            schema: None,
             outputs: vec![],
             results: vec![ResultItem::Match(ReportMatch {
                 file: "app-config.json".to_string(),
