@@ -29,27 +29,23 @@ This principle drives two report-structure changes below.
 
 The current report has two structural issues that `-p` exposes. Fixing them is part of this refactor.
 
-### Issue 1: `<results>` naming collision
+### On the `results` naming overlap
 
-Today `<results>` is used twice:
-- Inside `<totals>` as a scalar count (number of matches).
-- At the top level as the list wrapper containing matches / groups.
+`results` appears twice in the report — once at `/summary/totals/results` as a scalar count ("total number of results"), and once at `/results` as the list wrapper containing matches/groups. They sit at different paths and don't collide, but the shared name is conceptually awkward.
 
-With `-p results` meaning "the list wrapper", the scalar inside totals needs a new name.
+**Decision for this refactor:** keep both as they are. `/summary/totals/results` means "total number of results" and that meaning is stable. `-p results` projects to `/results`, the naturally expected target. A future cleanup could rename the match element to `result` for symmetry, but that is **out of scope here** — no change to match-element naming.
 
-**Change:** rename `<totals>/<results>` → `<totals>/<matches>`. Reads naturally — `totals.matches` is the number of matches, consistent with `totals.files`, `totals.errors`, etc.
+### Issue 1: Summary fields are loose at the top level
 
-### Issue 2: Summary fields are loose at the top level
+Today `/success`, `/totals`, `/expected`, `/query` are all top-level paths, alongside `/results`. There's no container that groups them, so `-p summary` can't map to a real element.
 
-Today `<success>`, `<totals>`, `<expected>`, `<query>` are all direct children of `<report>`, alongside `<results>`. There's no container that groups them, so `-p summary` can't map to a real element.
+**Change:** introduce `/summary`, moving `/success`, `/totals`, `/expected`, `/query` under it as `/summary/success`, `/summary/totals`, `/summary/expected`, `/summary/query`.
 
-**Change:** introduce a `<summary>` container that wraps the verdict/metadata fields.
+### Issue 2: `schema` has no XML representation
 
-### Issue 3: `<schema>` has no XML representation
+Today `-v schema` bypasses the XML serializer entirely — it prints the text-mode schema rendering even when `-f xml` is requested. `-p schema` needs a real node at `/schema`.
 
-Today `-v schema` bypasses the XML serializer entirely — it prints the text-mode schema rendering even when `-f xml` is requested. `-p schema` needs a real `<schema>` element in the report.
-
-**Change:** when schema is computed, emit it as a `<schema>` element inside the report, serialized per format like any other element.
+**Change:** when schema is computed, emit it at `/schema`, serialized per format like any other element.
 
 ### Revised report structure
 
@@ -58,7 +54,7 @@ Today `-v schema` bypasses the XML serializer entirely — it prints the text-mo
   <summary>
     <success>true</success>
     <totals>
-      <matches>2</matches>
+      <results>2</results>
       <files>1</files>
       <errors>0</errors>
     </totals>
@@ -128,6 +124,7 @@ All values correspond to elements in the revised report structure:
 | `source` | `<source>` elements, one per match | **Replace** with `[source]` |
 | `lines` | `<lines>` elements, one per match | **Replace** with `[lines]` |
 | `schema` | The `<schema>` element | **Replace** with `[schema]` (expensive — only compute when requested) |
+| `count` | Scalar total match count (= `/totals/results`) | **Replace** with `[count]` |
 | `summary` | The `<summary>` container | None — `-v` doesn't apply |
 | `totals` | The `<totals>` element inside summary | None — `-v` doesn't apply |
 | `results` | The `<results>` list wrapper (list of matches) | None — respects user's `-v` |
@@ -135,7 +132,11 @@ All values correspond to elements in the revised report structure:
 
 ### The `-v` replacement rule
 
-When `-p` is a **view-level field** (`tree`, `value`, `source`, `lines`, `schema`), it **replaces** the view set with exactly `[that field]`. Reason: `-p tree` means "I just want trees" — keeping `-v file,source` alongside would compute data that's thrown away. If the user wanted multiple fields per match, they'd use `-p results` (which respects `-v`) instead.
+When `-p` is a **view-level field** (`tree`, `value`, `source`, `lines`, `schema`, `count`), it **replaces** the view set with exactly `[that field]`. Reason: `-p tree` means "I just want trees" — keeping `-v file,source` alongside would compute data that's thrown away. If the user wanted multiple fields per match, they'd use `-p results` (which respects `-v`) instead.
+
+`count` is a sugar alias for the scalar `/totals/results` — no `<count>` element exists in the report. This matches the existing `-v count`, which is sugar in the same way.
+
+`-m TEMPLATE` is a view-level field too: it contributes a `message` field to each match (rendered inline in text, as a `message` key in structured formats). It composes with `-p` via the same rules — `-p message` would be a hypothetical future addition, but today `-m` simply adds `message` to the view set. `-p results`/`-p report` preserves it; any view-level `-p X ≠ message` discards it (with the warning below); `-p summary`/`-p totals` drops it as an unreachable per-match field (also warned).
 
 When `-p` is **structural** (`results`, `report`), `-v` is respected — those projections emit per-match content, so `-v` still drives what each match contains.
 
@@ -143,15 +144,14 @@ When `-p` is a **metadata container** (`summary`, `totals`), `-v` is untouched b
 
 Schema is notable: it's the only view-level field with real computation cost. The replacement rule ensures `-p schema` always triggers schema computation, and `-p tree` (or any other projection) never does.
 
-### Warning on discarded `-v` fields
+### Warning on discarded view fields
 
-When `-p` replaces the view set, any fields the user explicitly passed to `-v` that aren't the new single field are silently discarded by the replacement rule. That would be confusing — the user wrote them, expected them, and won't see them.
+Any explicitly-requested view field (via `-v` or `-m`) that won't appear in stdout should be reported. The user wrote it, expected to see it, and won't — that's worth surfacing.
 
-**Rule:** warn on stderr when all of the following hold:
+**Rule:** warn on stderr when an explicitly-passed view field is dropped from the output. Two cases produce drops:
 
-1. The user explicitly passed `-v` (not the default view).
-2. `-p` is a view-level field (`tree`/`value`/`source`/`lines`/`schema`).
-3. The user's `-v` contains fields other than the one `-p` resolved to.
+1. **Replacement drop** — `-p X` is view-level and the user's `-v`/`-m` contains fields other than `X`. Those extras are replaced away.
+2. **Unreachable drop** — `-p` is `summary` or `totals` (metadata containers with no per-match rendering). Any explicit `-v`/`-m` field is unreachable under these projections.
 
 Warning text should name the dropped fields and point to the fix:
 
@@ -160,12 +160,16 @@ warning: -v fields {file, source} were discarded because -p tree replaces the vi
   To keep -v intact, use `-p results` (respects -v) instead of `-p tree`.
 ```
 
+```
+warning: -m message template has no effect with -p summary (no per-match rendering).
+```
+
 No warning for:
 - Redundant overlap: `-v tree -p tree` — user's intent is preserved.
-- Structural / metadata `-p`: `-p results`, `-p report`, `-p summary`, `-p totals` don't replace `-v`.
-- Default `-v` (no explicit flag): the replacement can't surprise a user who didn't specify anything.
+- Structural `-p`: `-p results`, `-p report` honor `-v`/`-m` in full.
+- Default view (no explicit `-v` or `-m`): the replacement can't surprise a user who didn't specify anything.
 
-This is a warning, not an error — combinations like `-v tree,file -p tree` are malformed but not fatal, and tractor should produce the output anyway.
+This is a warning, not an error — malformed combinations still produce output.
 
 ### Pipeline ordering: early normalization
 
@@ -195,10 +199,14 @@ Default: `-p report` (the full tree). Preserves today's behavior exactly.
 
 ### Rule
 
-`--single` is a modifier on projection. It:
+`--single` is a modifier on sequence projections. It:
 
 1. Limits match processing to the first match (implicit `-n 1`).
 2. Strips list wrappers from the output — the projected element is emitted bare, no `<results>` root, no JSON array, no YAML sequence.
+
+`--single` applies only to projections that return a sequence — `tree`, `value`, `source`, `lines`, `results`. For singular projections (`summary`, `schema`, `totals`, `report`, `count`), `--single` is a no-op and emits a warning on stderr. There is no list to flatten, so the flag has nothing to do.
+
+`--single -n N` (for any N ≠ 1) is a contradiction — `--single` means "first match only", and `-n` setting a different bound contradicts that. Treat as a CLI error with a clear message. `--single -n 1` is redundant but accepted.
 
 When `-p` is omitted, `--single` implies `-p results` (not `-p report`) — asking for one thing while emitting the whole singular report is a no-op, which is never what the user meant.
 
@@ -213,8 +221,12 @@ The cleanest way to see how `-v`, `-p`, and `--single` compose:
 | `-p tree` | `<results><tree/><tree/>…</results>` (list of trees) |
 | `-p tree --single` | `<tree/>` (one tree bare — the #120 snapshot case) |
 | `-p summary` | `<summary>…</summary>` (already singular) |
-| `-p summary --single` | `<summary>…</summary>` (no-op — already one element) |
-| `-p schema --single` | `<schema>…</schema>` (no-op) |
+| `-p summary --single` | `<summary>…</summary>` (no-op + warning — already singular) |
+| `-p schema --single` | `<schema>…</schema>` (no-op + warning) |
+| `-p totals --single` | `<totals>…</totals>` (no-op + warning) |
+| `-p report --single` | `<report>…</report>` (no-op + warning) |
+| `-p count` | Bare number, e.g. `3` (already singular) |
+| `-p count --single` | Bare number (no-op + warning) |
 
 Each row is one step toward "less wrapping". Every step is input-driven. `--single` always means "first, bare". `-p` always means "which element type".
 
@@ -262,7 +274,7 @@ Each format serializes the projection:
 | `yaml` | Top-level sequence | Top-level mapping | Bare mapping |
 | `xml` | `<results>…</results>` root ¹ | Single root element | Bare root element |
 
-¹ XML requires a single root for validity. The stable wrapper is `<results>` for any multi-node per-match projection (e.g. `-p tree`). For singular projections (`-p summary`, `-p schema`, `-p totals`), the element itself is the root.
+¹ XML requires a single root for validity. The stable wrapper is `<results>` for any multi-node per-match projection (e.g. `-p tree`). For singular projections (`-p summary`, `-p schema`, `-p totals`), the element itself is the root. `-p count` is a bare scalar in text/json/yaml, and emits a synthetic `<count>N</count>` root in XML (same name as the flag, keeps XML parseable).
 
 ## Interaction with `-n`
 
@@ -287,7 +299,7 @@ $ tractor file.cs -p tree --single -f json
 
 ```bash
 $ tractor src/**/*.cs -x '//method' -p totals -f json
-{"matches": 42, "files": 7}
+{"results": 42, "files": 7}
 
 $ tractor src/**/*.cs -x '//class' -p schema -f text
 <class>
@@ -312,7 +324,7 @@ Today `-v count` / `-v schema` bypass the renderer via `cli/query.rs:133-142`. W
 $ tractor check src/**/*.cs -x '//comment[contains(.,"TODO")]' --reason TODO -p summary -f json
 {
   "success": false,
-  "totals": {"matches": 3, "files": 2, "errors": 3},
+  "totals": {"results": 3, "files": 2, "errors": 3},
   "query": "//comment[contains(.,\"TODO\")]"
 }
 ```
@@ -341,7 +353,7 @@ If backwards-compat is a concern, `-v count` without `-p`/`--single` can keep th
 
 ### Report shape changes
 
-Introducing `<summary>` and `<schema>`, and renaming `<totals>/<results>` → `<totals>/<matches>`, changes the XML/JSON/YAML shape of reports. Snapshot tests under `tests/integration/languages/*/.xml` and `tests/integration/formats/snapshots/` regenerate. No code-level compatibility layer needed — the report model is an output contract, not a stable API surface.
+Introducing `<summary>` and `<schema>` changes the XML/JSON/YAML shape of reports. Snapshot tests under `tests/integration/languages/*/.xml` and `tests/integration/formats/snapshots/` regenerate. No code-level compatibility layer needed — the report model is an output contract, not a stable API surface.
 
 ### Spec update
 
@@ -355,10 +367,7 @@ Introducing `<summary>` and `<schema>`, and renaming `<totals>/<results>` → `<
 ## Open questions
 
 1. **Field naming: `tree` vs `ast`.** `specs/report-model.md` uses `<ast>` in several places; the current `-v` uses `tree`. This doc keeps `tree` for consistency with the existing flag. If the report-model doc ever migrates to `<ast>`, `-p` follows.
-2. **`-p count` shorthand.** Dropped from the initial enum — `<count>` isn't a single element. If the ergonomic shorthand is missed, reintroduce later as sugar (e.g. `-p count` = `-p totals --single` + value extraction). For now users can do `-p totals` and pick out `matches`.
-3. **Grouped reports.** When `--group` is active, the `<results>` wrapper contains `<group>` elements that contain `<match>` elements. Does `-p tree` descend into groups? Proposal: yes — it flattens trees across all groups. If the user wants group structure, they keep the default report.
-4. **`-p summary` in query mode.** Query reports have no verdict (no `<success>`), so `<summary>` may be empty or absent. Proposal: emit `<summary>` with whatever fields are present (e.g. just `<query>` if `-v query` was set). If nothing is present, `-p summary` emits an empty element.
-5. **Interaction with `-m` (message template).** Message templates replace tree/value rendering in text. Does `-p tree` with `-m` emit the template output instead of the tree? Proposal: `-p` takes precedence — `-p tree` means trees, message template is ignored (or errors).
+2. **`-p summary` in query mode.** Query reports have no verdict (no `/summary/success`), so `/summary` may be empty or near-empty. Proposal: emit `/summary` with whatever fields are present (e.g. just `/summary/query` if `-v query` was set). If nothing is present, `-p summary` emits an empty element.
 
 ## Implementation checklist (test cases)
 
@@ -397,9 +406,14 @@ The core table. For each `-p` value and each format, verify the emitted document
 - [ ] `-p summary -f xml` → `<summary>` root element.
 - [ ] `-p summary -f json` → top-level JSON object with summary fields.
 - [ ] `-p summary -f yaml` → top-level YAML mapping.
-- [ ] `-p totals -f xml` → `<totals>` root element containing `<matches>`, `<files>`, `<errors>`.
-- [ ] `-p totals -f json` → top-level JSON object, e.g. `{"matches": 3, "files": 1, "errors": 0}`.
+- [ ] `-p totals -f xml` → `<totals>` root element containing `<results>`, `<files>`, `<errors>`.
+- [ ] `-p totals -f json` → top-level JSON object, e.g. `{"results": 3, "files": 1, "errors": 0}`.
 - [ ] `-p totals -f yaml` → top-level YAML mapping.
+- [ ] `-p count -f text` → bare number, e.g. `3`.
+- [ ] `-p count -f json` → bare number, e.g. `3`.
+- [ ] `-p count -f yaml` → bare number, e.g. `3`.
+- [ ] `-p count -f xml` → `<count>3</count>` root element. Parses.
+- [ ] `-p count` value equals `-p totals -f json | jq .results`.
 
 #### 1.3 Structural projections
 
@@ -420,51 +434,64 @@ The core table. For each `-p` value and each format, verify the emitted document
 - [ ] `-p value --single -f text` → single value, no newline list.
 - [ ] `-p results --single` → single `<match>` bare, no `<results>` wrapper.
 - [ ] `--single` with `-p` omitted → treated as `-p results --single`.
-- [ ] `-p summary --single` → `<summary>…</summary>` (no-op; already singular).
-- [ ] `-p schema --single` → `<schema>…</schema>` (no-op).
-- [ ] `-p totals --single` → `<totals>…</totals>` (no-op).
-- [ ] `-p report --single` → first `<match>` bare? Or error? (document explicit choice; proposal: same as `-p results --single`.)
-- [ ] `-n 1 --single` → same as `--single` (redundant but accepted).
-- [ ] `--single -n 2` → treated as `-n 1`; `--single` takes precedence (or error — pick one).
-- [ ] `--single` never emits a list wrapper, in any format.
+- [ ] `-p summary --single` → `<summary>…</summary>` unchanged, warning on stderr.
+- [ ] `-p schema --single` → `<schema>…</schema>` unchanged, warning on stderr.
+- [ ] `-p totals --single` → `<totals>…</totals>` unchanged, warning on stderr.
+- [ ] `-p report --single` → `<report>…</report>` unchanged, warning on stderr.
+- [ ] `-p count --single` → bare number unchanged, warning on stderr.
+- [ ] Warning text names the projection as "already singular" and suggests dropping `--single`.
+- [ ] `-n 1 --single` → same as `--single` (redundant but accepted, no warning).
+- [ ] `--single -n 2` → CLI error with a message explaining the contradiction. Non-zero exit, no output.
+- [ ] `--single -n 3` (or any N ≠ 1) → same error.
+- [ ] `--single` never emits a list wrapper, in any format, for any projection it applies to.
 
 ### 3. Report-structure refactor
 
-- [ ] Default report XML contains `<summary>` child with `<success>`, `<totals>`, `<expected>`, `<query>` inside it (when applicable).
-- [ ] `<success>` is no longer a direct child of `<report>`.
-- [ ] `<totals>` appears **inside** `<summary>` — not at the top level.
-- [ ] `<totals>/<matches>` exists (renamed from `<totals>/<results>`).
-- [ ] `<totals>/<results>` no longer exists.
-- [ ] `<totals>/<files>` and `<totals>/<errors>` preserved.
-- [ ] Top-level `<results>` still exists as the list wrapper for matches.
-- [ ] `<schema>` is a direct child of `<report>` (not inside `<summary>`) when `-v schema` or `-p schema` is set.
-- [ ] JSON shape mirrors XML: `report.summary.totals.matches` (not `report.summary.totals.results`).
-- [ ] YAML shape mirrors JSON.
-- [ ] Existing snapshot fixtures regenerate cleanly — no ad-hoc transforms needed.
+Paths below are absolute XPaths into the report.
+
+- [ ] `/success`, `/totals`, `/expected`, `/query` move to `/summary/success`, `/summary/totals`, `/summary/expected`, `/summary/query`. No loose summary fields remain at the top level.
+- [ ] `/summary/totals/results`, `/summary/totals/files`, `/summary/totals/errors` preserved with original meanings — no rename inside totals.
+- [ ] `/results` still exists as the list wrapper for matches (separate from `/summary/totals/results`).
+- [ ] `/schema` is a direct child of `/` (not inside `/summary`) when `-v schema` or `-p schema` is set.
+- [ ] JSON/YAML shapes mirror the XML paths (e.g. `report.summary.totals.results`).
 
 ### 4. `-v` replacement rule
 
+The intent here is to verify that `-p` replaces / respects / ignores `-v`. The assertions are about which fields are **present in the output**, regardless of how each format renders them. Concretely:
+
+- "field X is absent" = no corresponding XML element, no JSON/YAML key, no text-mode line for X.
+- "field X is present" = the field's data appears wherever the format puts it (wrapped element, key, or rendered line).
+
+For projections where output shape differs across formats (e.g. `-p tree` → `<tree>` wrappers in XML but raw tree values in JSON), these items assert *whether file-path information or other unrequested data appears anywhere*, not the wrapper shape (that's §1).
+
 #### 4.1 Replace cases (view-level `-p`)
 
-- [ ] `-v tree,file -p tree` → match contains only `<tree>`, no `<file>`.
-- [ ] `-v tree,file -p value` → match contains only `<value>`, no `<tree>` or `<file>`.
-- [ ] `-v tree,file -p source` → match contains only `<source>`.
-- [ ] `-v tree,file -p lines` → match contains only `<lines>`.
-- [ ] `-v tree,file -p schema` → `<schema>` emitted; `<tree>`/`<file>` not.
-- [ ] Default `-v` with `-p tree` → only `<tree>` per match.
-- [ ] `-p schema` always computes schema regardless of `-v`.
-- [ ] `-p tree` never computes schema even if default `-v` would.
+Each `-v tree,file -p X` case below *also* triggers the discarded-`-v`-fields warning (verified in §5.1). §4.1 asserts the replacement took effect in stdout; §5.1 asserts the warning fires on stderr.
+
+- [ ] `-v tree,file -p tree` → output contains no file-path data (no `<file>` in xml, no `file` key in json/yaml, no path prefix in text).
+- [ ] `-v tree,file -p value` → output contains neither tree nor file data — just values.
+- [ ] `-v tree,file -p source` → output contains neither tree nor file data — just source text.
+- [ ] `-v tree,file -p lines` → output contains neither tree nor file data — just line snippets.
+- [ ] `-v tree,file -p schema` → output contains neither tree nor file data — just the schema element.
+- [ ] `-v tree,file -p count` → output contains neither tree nor file data — just the scalar count.
+- [ ] Default `-v` with `-p tree` → output contains only tree data per match (no file, line, column, etc. — default view fields suppressed).
+- [ ] `-p schema` always computes schema regardless of `-v` (schema data appears).
+- [ ] `-p tree` never computes schema even if default `-v` would include it (no schema data in output).
 
 #### 4.2 Respect cases (structural `-p`)
 
-- [ ] `-v tree,file -p results` → each match contains `<tree>` and `<file>`.
-- [ ] `-v tree,file -p report` → same.
-- [ ] Default `-v` with `-p results` → match contains default view fields.
+- [ ] `-v tree,file -p results` → each emitted match contains **both** tree data and file-path data.
+- [ ] `-v tree,file -p report` → same (under the `<report>` envelope).
+- [ ] Default `-v` with `-p results` → each match contains the default view fields.
 
-#### 4.3 Irrelevant cases (metadata `-p`)
+#### 4.3 Unreachable cases (metadata `-p`)
 
-- [ ] `-v tree,file -p summary` → output is `<summary>`; `-v` has no effect.
-- [ ] `-v tree,file -p totals` → output is `<totals>`; `-v` has no effect.
+These also trigger the discarded-fields warning (§5.1), since the requested `-v`/`-m` fields can't appear in the output.
+
+- [ ] `-v tree,file -p summary` → output is the summary; no tree or file data anywhere. Warning names `tree, file`.
+- [ ] `-v tree,file -p totals` → output is totals; no tree or file data anywhere. Warning names `tree, file`.
+- [ ] `-m 'TEMPLATE' -p summary` → output is the summary; no message rendered. Warning mentions the message template.
+- [ ] `-m 'TEMPLATE' -p totals` → same.
 
 ### 5. Warning on discarded `-v` fields
 
@@ -472,25 +499,40 @@ Warning fires on stderr; output still produced on stdout.
 
 #### 5.1 Warning fires
 
-- [ ] `-v tree,file -p tree` → warning naming `file` as dropped.
-- [ ] `-v tree,file,source -p tree` → warning naming `file, source`.
-- [ ] `-v file -p tree` → warning naming `file`.
-- [ ] `-v tree,file -p schema` → warning naming `tree, file`.
-- [ ] `-v value,source -p lines` → warning naming `value, source`.
-- [ ] Warning text includes the dropped field names.
-- [ ] Warning text points to `-p results` as the alternative.
-- [ ] Warning goes to stderr, not stdout.
+Rule: any explicitly-requested view field (via `-v` or `-m`) that won't appear in stdout → warning on stderr naming the dropped field(s). Two drop modes:
+
+- **Replacement** — `-p X` is view-level (`tree`/`value`/`source`/`lines`/`schema`/`count`), and the explicit `-v`/`-m` set contains fields other than `X`.
+- **Unreachable** — `-p` is `summary` or `totals` (no per-match rendering), and any `-v`/`-m` field is explicitly requested.
+
+Canonical check (replacement): `-v tree,file -p tree` produces approximately this on stderr:
+
+```
+warning: -v fields {file} were discarded because -p tree replaces the view set.
+  To keep -v intact, use `-p results` (respects -v) instead of `-p tree`.
+```
+
+Canonical check (unreachable): `-m 'TEMPLATE' -p summary` produces approximately:
+
+```
+warning: -m message template has no effect with -p summary (no per-match rendering).
+```
+
+- [ ] Canonical replacement case above prints an equivalent warning.
+- [ ] Canonical unreachable case above prints an equivalent warning.
+- [ ] Same rule holds for any other view-level `-p` and any `-v`/`-m` superset (e.g. `-v tree,file,source -p tree` names `file, source`; `-v tree,file -p schema` names `tree, file`; `-m TMPL -v tree -p value` names `tree` and `message`).
+- [ ] Warning text lists **all** dropped field names (not just the first).
+- [ ] Replacement warning points to `-p results` as the alternative that respects `-v`.
+- [ ] Warning lines begin with `warning:` (lowercase) — matches tractor's convention.
+- [ ] Warnings go to stderr; stdout is unchanged.
 - [ ] Exit code is unchanged (non-zero only if the command itself failed).
 
 #### 5.2 Warning does NOT fire
 
-- [ ] `-v tree -p tree` (redundant overlap) → no warning.
-- [ ] `-v tree,file -p results` (structural) → no warning.
-- [ ] `-v tree,file -p report` (structural) → no warning.
-- [ ] `-v tree,file -p summary` (metadata) → no warning.
-- [ ] `-v tree,file -p totals` (metadata) → no warning.
-- [ ] Default `-v` (no explicit flag) with `-p tree` → no warning.
-- [ ] `-p tree` alone (no `-v`) → no warning.
+- [ ] Redundant overlap — `-v tree -p tree`: user's intent is preserved, no warning.
+- [ ] Structural `-p` — `-v tree,file -p {results | report}`: all `-v`/`-m` fields appear in the output, no warning.
+- [ ] Default view — `-p tree` with no explicit `-v` or `-m` (or `-p tree` alone): nothing the user asked for is dropped, no warning.
+- [ ] `-m TEMPLATE -p results` → `message` field appears per match, no warning.
+- [ ] `-m TEMPLATE -p message` (if `-p message` is ever added) → no warning. (N/A today — included for future-proofing.)
 
 ### 6. Pipeline ordering — format-required fields survive
 
@@ -522,10 +564,11 @@ Same flags → same shape regardless of result cardinality.
 
 - [ ] `-n 2 -p tree` → first 2 trees in `<results>` wrapper.
 - [ ] `-n 0 -p tree` → empty results (validates content-independence for `-n`).
-- [ ] `-m TEMPLATE -p tree` → behavior per the chosen resolution of open question #5 (proposal: `-p` wins; template ignored or errors).
-- [ ] `--group FIELD -p tree` → per open question #3 (proposal: trees flattened across groups).
-- [ ] `--group FIELD -p results` → `<results>` contains `<group>` elements.
-- [ ] `--group FIELD -p report` → default grouped report shape.
+- [ ] `-m TMPL -p results -f json` → each match contains a `message` key.
+- [ ] `-m TMPL -p report -f json` → each match (inside `/results`) contains a `message` key.
+- [ ] `-m TMPL -p tree` → warning fires (§5.1 replacement); no message in output.
+- [ ] `-m TMPL -p summary` → warning fires (§5.1 unreachable); output is summary only.
+- [ ] `--group FIELD -p …` → out of scope for this design (see "Out of scope"); behavior is undefined / CLI may reject.
 - [ ] `-x QUERY -p tree` → works; `-x` unchanged.
 - [ ] `-l LANG -p tree` → works; `-l` unchanged.
 - [ ] `-d DEPTH -p tree` → depth still applies to tree serialization.
@@ -533,7 +576,7 @@ Same flags → same shape regardless of result cardinality.
 
 ### 10. Migration — removing the count/schema short-circuit
 
-- [ ] `-v count` without `-p`: produces a report with `<totals>/<matches>` (breaking change from bare scalar in text — document in CHANGELOG).
+- [ ] `-v count` without `-p`: produces a report with `/totals/results` (breaking change from bare scalar in text — document in CHANGELOG).
 - [ ] `-v count -p totals --single -f text` → bare scalar (restores old UX for the user who wants it).
 - [ ] `-v schema -f xml`: emits `<schema>` as a child of `<report>`, inside the envelope (not bypassed).
 - [ ] `-v schema -p schema`: emits `<schema>` bare as the root.
@@ -566,7 +609,7 @@ Same flags → same shape regardless of result cardinality.
 
 ### 14. Snapshot regressions
 
-- [ ] Existing language snapshots under `tests/integration/languages/*/.xml` regenerated with the new `<summary>` / `<matches>` shape.
+- [ ] Existing language snapshots under `tests/integration/languages/*/.xml` regenerated with the new `<summary>` / `<schema>` shape.
 - [ ] Existing format snapshots under `tests/integration/formats/snapshots/` regenerated.
 - [ ] New snapshot cases added for each `-p` value × format (matrix from §1).
 - [ ] New snapshot cases added for `-p X --single` cases.
@@ -577,12 +620,14 @@ Same flags → same shape regardless of result cardinality.
 - **Full XPath on `-p`.** Closed enum only. Arbitrary XPath is a future extension, blocked on the open questions in `specs/report-model.md`.
 - **Multi-document aggregation.** E.g. "sum match counts across files into one scalar". Not an envelope problem; needs separate aggregation design.
 - **Deprecating `-v`.** `-v` keeps its current role and field set. The migration is additive.
+- **Single-scalar projection of other summary fields** (e.g. `-p success`, `-p query`, `-p expected`). Acknowledged inconsistency: `-p count` is supported because it mirrors `-v count` and covers the most common use case, but the other scalar summary fields are not addressable. Revisit once dotted paths or XPath on `-p` is on the table.
+- **Grouping with projection.** `--group FIELD` combined with any `-p` value is not supported in this design. Behavior is undefined; the CLI may reject the combination or produce a reasonable default. Revisit once the grouped-report shape interacts cleanly with projections.
 
 ## Summary
 
 - Add `-p` with a closed enum of values, each naming a real element in the (revised) report.
 - Add `--single` to emit one element bare, composable with `-p`.
-- Refactor the report: wrap summary fields in `<summary>`, introduce `<schema>`, rename `<totals>/<results>` → `<totals>/<matches>` to resolve the naming collision.
+- Refactor the report: wrap summary fields in `<summary>` and introduce `<schema>`. Keep `/totals/results` as-is (no rename).
 - `-v` replacement rule: `-p X` replaces `-v` with `[X]` when X is a view-level field (`tree`/`value`/`source`/`lines`/`schema`). Schema is the cost-bearing case; structural projections (`results`/`report`) respect `-v` instead.
 - Replace the `count`/`schema` ad-hoc short-circuit with the principled render path.
 - No breaking changes to `-v`'s field set; report-shape changes are accepted as part of the refactor.
