@@ -43,7 +43,7 @@ pub struct QueryArgs {
 use crate::executor::{self, ExecuteOptions, Operation, QueryOperation, QueryExpr};
 use crate::cli::context::RunContext;
 use crate::input::InputMode;
-use crate::format::{ViewField, GroupDimension, render_report};
+use crate::format::{GroupDimension, ViewField, render_report};
 use crate::matcher::{prepare_report_for_output, run_debug};
 use super::config::{run_from_config, ConfigRunParams};
 
@@ -130,16 +130,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     executor::execute(&[op], &options, &mut builder)?;
     let mut report = builder.build();
     prepare_report_for_output(&mut report, &ctx);
-
-    if ctx.view.has(ViewField::Count) {
-        println!("{}", report.totals.as_ref().unwrap().results);
-    } else if ctx.view.has(ViewField::Schema) {
-        print!("{}", report.schema.as_deref().unwrap_or(""));
-    } else {
-        let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
-        let report = report.with_grouping(&dims);
-        render_report(&report, &ctx, None)?;
-    }
+    render_report(&report, &ctx, None)?;
 
     Ok(())
 }

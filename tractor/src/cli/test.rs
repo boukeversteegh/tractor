@@ -134,8 +134,6 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
     let mut report = builder.build();
 
     prepare_report_for_output(&mut report, &ctx);
-    let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
-    let report = report.with_grouping(&dims);
     let test_opts = TestRenderOptions { message, error_template };
     render_report(&report, &ctx, Some(&test_opts))
 }

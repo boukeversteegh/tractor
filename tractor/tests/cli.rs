@@ -309,7 +309,7 @@ cli_suite! {
         expect_some => tractor query -s "fn a() {} fn b() {}" -l "rust" -x "function" => count some;
         expect_none => tractor query -s "let x = 1;" -l "rust" -x "function" => count none;
         value_output => tractor query -s "class Foo { }" -l "csharp" -x "class/name" -v "value" => count 1;
-        count_output => tractor query -s "class Foo { }" -l "csharp" -x "class" -v "count" => stdout "1";
+        count_output => tractor query -s "class Foo { }" -l "csharp" -x "class" -v "count" -p "count" => stdout "1";
         gcc_output => tractor query -s "class Foo { }" -l "csharp" -x "class" -f "gcc" => count 1;
         without_xpath => tractor query -s "let x = 1;" -l "rust" => count some;
     }
@@ -361,6 +361,8 @@ fn markdown_round_trip_extracts_javascript_block() {
         "//function[name]",
         "-v",
         "count",
+        "-p",
+        "count",
     ])
     .stdin(format!("{}\n", extracted.stdout))
     .capture();
@@ -387,6 +389,8 @@ fn missing_empty_fixture_directory_falls_back_to_temp_workspace() {
         "-x",
         "function",
         "-v",
+        "count",
+        "-p",
         "count",
     ])
     .in_fixture("missing-empty-fixture")

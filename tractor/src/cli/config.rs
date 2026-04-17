@@ -117,7 +117,5 @@ pub fn run_from_config(params: ConfigRunParams) -> Result<(), Box<dyn std::error
     let mut report = builder.build();
 
     prepare_report_for_output(&mut report, &ctx);
-    let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
-    let report = report.with_grouping(&dims);
     render_report(&report, &ctx, None)
 }

@@ -157,10 +157,6 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     prepare_report_for_output(&mut report, &ctx);
-    let report = {
-        let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
-        report.with_grouping(&dims)
-    };
     render_report(&report, &ctx, None)
 }
 

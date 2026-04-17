@@ -94,7 +94,15 @@ impl TractorInvocation {
                 Some("-v") | Some("--view") => {
                     let _ = iter.next();
                 }
+                Some("-f") | Some("--format") => {
+                    let _ = iter.next();
+                }
+                Some("-p") | Some("--project") => {
+                    let _ = iter.next();
+                }
                 Some(value) if value.starts_with("-v=") || value.starts_with("--view=") => {}
+                Some(value) if value.starts_with("-f=") || value.starts_with("--format=") => {}
+                Some(value) if value.starts_with("-p=") || value.starts_with("--project=") => {}
                 _ => args.push(arg),
             }
         }
@@ -105,6 +113,10 @@ impl TractorInvocation {
             no_color: self.no_color,
         };
         invocation.args.push(CommandArg::Literal("-v".to_string()));
+        invocation
+            .args
+            .push(CommandArg::Literal("count".to_string()));
+        invocation.args.push(CommandArg::Literal("-p".to_string()));
         invocation
             .args
             .push(CommandArg::Literal("count".to_string()));

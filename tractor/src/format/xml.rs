@@ -1,49 +1,71 @@
-use tractor::{report::{Report, ResultItem}, normalize_path, render_xml_string, render_xml_node, RenderOptions};
-use super::options::{ViewField, ViewSet};
-use super::shared::{render_fields_for_match, should_emit_command, should_emit_file, should_emit_rule_id, should_show_totals};
+use tractor::{
+    normalize_path,
+    render_xml_node,
+    render_xml_string,
+    report::{Report, ReportMatch, ReportOutput, ResultItem, Totals},
+    RenderOptions,
+};
 
-pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, dimensions: &[&str]) -> String {
+use super::options::{ViewField, ViewSet};
+use super::shared::{
+    render_fields_for_match, should_emit_command, should_emit_file, should_emit_rule_id,
+    should_show_totals,
+};
+use super::{Projection, ProjectionRenderError};
+
+pub fn render_xml_report(
+    report: &Report,
+    view: &ViewSet,
+    render_opts: &RenderOptions,
+    dimensions: &[&str],
+) -> String {
+    render_xml_output(report, view, render_opts, dimensions, Projection::Report, false)
+        .expect("report rendering should not fail")
+}
+
+pub fn render_xml_output(
+    report: &Report,
+    view: &ViewSet,
+    render_opts: &RenderOptions,
+    dimensions: &[&str],
+    projection: Projection,
+    single: bool,
+) -> Result<String, ProjectionRenderError> {
     let mut tree_opts = render_opts.clone();
     tree_opts.use_color = false;
 
+    let body = match projection {
+        Projection::Report => render_xml_report_body(report, view, &tree_opts, dimensions),
+        Projection::Results => render_xml_results_projection(report, view, &tree_opts, dimensions, single)?,
+        Projection::Summary => render_xml_summary(report),
+        Projection::Totals => render_xml_totals(report),
+        Projection::Count => format!(
+            "<count>{}</count>\n",
+            report.totals.as_ref().map(|totals| totals.results).unwrap_or(0)
+        ),
+        Projection::Schema => format!(
+            "<schema>{}</schema>\n",
+            escape(report.schema.as_deref().unwrap_or(""))
+        ),
+        Projection::Tree | Projection::Value | Projection::Source | Projection::Lines => {
+            render_xml_field_projection(report, &tree_opts, projection, single)?
+        }
+    };
+
+    Ok(finish_xml_output(body, render_opts))
+}
+
+fn render_xml_report_body(
+    report: &Report,
+    view: &ViewSet,
+    tree_opts: &RenderOptions,
+    dimensions: &[&str],
+) -> String {
     let mut body = String::new();
     body.push_str("<report>\n");
 
     if should_show_totals(report, view) {
-        let mut summary = String::new();
-        if let Some(passed) = report.success {
-            summary.push_str(&format!("    <success>{}</success>\n", passed));
-        }
-        if let Some(ref totals) = report.totals {
-            summary.push_str("    <totals>\n");
-            summary.push_str(&format!("      <results>{}</results>\n", totals.results));
-            summary.push_str(&format!("      <files>{}</files>\n", totals.files));
-            if totals.fatals > 0 {
-                summary.push_str(&format!("      <fatals>{}</fatals>\n", totals.fatals));
-            }
-            if totals.errors > 0 {
-                summary.push_str(&format!("      <errors>{}</errors>\n", totals.errors));
-            }
-            if totals.warnings > 0 {
-                summary.push_str(&format!("      <warnings>{}</warnings>\n", totals.warnings));
-            }
-            if totals.infos > 0 {
-                summary.push_str(&format!("      <infos>{}</infos>\n", totals.infos));
-            }
-            if totals.updated > 0 {
-                summary.push_str(&format!("      <updated>{}</updated>\n", totals.updated));
-            }
-            if totals.unchanged > 0 {
-                summary.push_str(&format!("      <unchanged>{}</unchanged>\n", totals.unchanged));
-            }
-            summary.push_str("    </totals>\n");
-        }
-        if let Some(ref expected) = report.expected {
-            summary.push_str(&format!("    <expected>{}</expected>\n", escape(expected)));
-        }
-        if let Some(ref query) = report.query {
-            summary.push_str(&format!("    <query>{}</query>\n", escape(query.as_str())));
-        }
+        let summary = render_xml_summary_inner(report, "    ");
         if !summary.is_empty() {
             body.push_str("  <summary>\n");
             body.push_str(&summary);
@@ -55,25 +77,16 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
         body.push_str(&format!("  <schema>{}</schema>\n", escape(schema)));
     }
 
-    // Top-level captured outputs — honest view of the report model.
-    // Any file-bound outputs that matched a file-group have been moved
-    // into their group during `with_grouping`; what remains here is
-    // genuinely ungrouped output (stdin payloads or orphans).
     if !report.outputs.is_empty() {
         append_outputs(&mut body, &report.outputs, "  ");
     }
 
-    // Render results
     if let Some(ref group) = report.group {
         body.push_str(&format!("  <group-by>{}</group-by>\n", escape(group)));
     }
     if !report.results.is_empty() {
-        // Render into a temp buffer first so we can skip the <results> wrapper
-        // entirely when the view selects no per-match fields (e.g. `-v summary`
-        // or `-v query`). json/yaml skip empty objects automatically via serde;
-        // xml needs to do it explicitly to stay consistent across formats.
         let mut results_body = String::new();
-        render_xml_results(&mut results_body, &report.results, view, "    ", &tree_opts, dimensions);
+        render_xml_results(&mut results_body, &report.results, view, "    ", tree_opts, dimensions);
         if !results_body.is_empty() {
             body.push_str("  <results>\n");
             body.push_str(&results_body);
@@ -82,11 +95,158 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
     }
 
     body.push_str("</report>\n");
+    body
+}
 
-    // Colorize the whole report XML in one pass via the unified XML renderer.
-    // Always use with_meta(true) here: the report body already contains only
-    // the attributes it wants. The meta filter would incorrectly strip report
-    // attributes like "line" and "column" from <match> elements.
+fn render_xml_results_projection(
+    report: &Report,
+    view: &ViewSet,
+    tree_opts: &RenderOptions,
+    dimensions: &[&str],
+    single: bool,
+) -> Result<String, ProjectionRenderError> {
+    if single {
+        let Some(first) = report.results.first() else {
+            return Err(ProjectionRenderError::EmptySingle);
+        };
+        let mut out = String::new();
+        match first {
+            ResultItem::Match(rm) => append_match(&mut out, rm, view, "", tree_opts, dimensions),
+            ResultItem::Group(group) => append_group(&mut out, group, view, "", tree_opts, dimensions),
+        }
+        return Ok(out);
+    }
+
+    if report.results.is_empty() {
+        return Ok("<results/>\n".to_string());
+    }
+
+    let mut body = String::new();
+    render_xml_results(&mut body, &report.results, view, "  ", tree_opts, dimensions);
+    Ok(format!("<results>\n{body}</results>\n"))
+}
+
+fn render_xml_field_projection(
+    report: &Report,
+    tree_opts: &RenderOptions,
+    projection: Projection,
+    single: bool,
+) -> Result<String, ProjectionRenderError> {
+    let projected: Vec<String> = report
+        .all_matches()
+        .into_iter()
+        .filter_map(|rm| project_match_field_xml(rm, tree_opts, projection))
+        .collect();
+
+    if single {
+        projected
+            .into_iter()
+            .next()
+            .ok_or(ProjectionRenderError::EmptySingle)
+    } else if projected.is_empty() {
+        Ok("<results/>\n".to_string())
+    } else {
+        let mut out = String::from("<results>\n");
+        for item in projected {
+            out.push_str(&indent_xml_fragment(&item, "  "));
+        }
+        out.push_str("</results>\n");
+        Ok(out)
+    }
+}
+
+fn project_match_field_xml(
+    rm: &ReportMatch,
+    tree_opts: &RenderOptions,
+    projection: Projection,
+) -> Option<String> {
+    match projection {
+        Projection::Tree => rm
+            .tree
+            .as_ref()
+            .map(|node| ensure_xml_fragment_newline(render_xml_node(node, tree_opts))),
+        Projection::Value => rm
+            .value
+            .as_ref()
+            .map(|value| format!("<value>{}</value>\n", escape(value))),
+        Projection::Source => rm
+            .source
+            .as_ref()
+            .map(|source| format!("<source>{}</source>\n", escape(source))),
+        Projection::Lines => rm.lines.as_ref().map(|lines| {
+            let mut out = String::from("<lines>\n");
+            for line in lines {
+                out.push_str(&format!("  <line>{}</line>\n", escape(line)));
+            }
+            out.push_str("</lines>\n");
+            out
+        }),
+        _ => None,
+    }
+}
+
+fn render_xml_summary(report: &Report) -> String {
+    let inner = render_xml_summary_inner(report, "  ");
+    if inner.is_empty() {
+        "<summary/>\n".to_string()
+    } else {
+        format!("<summary>\n{inner}</summary>\n")
+    }
+}
+
+fn render_xml_summary_inner(report: &Report, indent: &str) -> String {
+    let mut summary = String::new();
+    if let Some(passed) = report.success {
+        summary.push_str(&format!("{indent}<success>{passed}</success>\n"));
+    }
+    if let Some(ref totals) = report.totals {
+        summary.push_str(&render_xml_totals_inner(totals, indent));
+    }
+    if let Some(ref expected) = report.expected {
+        summary.push_str(&format!("{indent}<expected>{}</expected>\n", escape(expected)));
+    }
+    if let Some(ref query) = report.query {
+        summary.push_str(&format!("{indent}<query>{}</query>\n", escape(query.as_str())));
+    }
+    summary
+}
+
+fn render_xml_totals(report: &Report) -> String {
+    match report.totals.as_ref() {
+        Some(totals) => render_xml_totals_inner(totals, ""),
+        None => "<totals/>\n".to_string(),
+    }
+}
+
+fn render_xml_totals_inner(totals: &Totals, indent: &str) -> String {
+    let inner = format!("{indent}  ");
+    let mut out = String::new();
+    out.push_str(&format!("{indent}<totals>\n"));
+    out.push_str(&format!("{inner}<results>{}</results>\n", totals.results));
+    out.push_str(&format!("{inner}<files>{}</files>\n", totals.files));
+    if totals.fatals > 0 {
+        out.push_str(&format!("{inner}<fatals>{}</fatals>\n", totals.fatals));
+    }
+    if totals.errors > 0 {
+        out.push_str(&format!("{inner}<errors>{}</errors>\n", totals.errors));
+    }
+    if totals.warnings > 0 {
+        out.push_str(&format!("{inner}<warnings>{}</warnings>\n", totals.warnings));
+    }
+    if totals.infos > 0 {
+        out.push_str(&format!("{inner}<infos>{}</infos>\n", totals.infos));
+    }
+    if totals.updated > 0 {
+        out.push_str(&format!("{inner}<updated>{}</updated>\n", totals.updated));
+    }
+    if totals.unchanged > 0 {
+        out.push_str(&format!("{inner}<unchanged>{}</unchanged>\n", totals.unchanged));
+    }
+    out.push_str(&format!("{indent}</totals>\n"));
+    out
+}
+
+fn finish_xml_output(body: String, render_opts: &RenderOptions) -> String {
     if render_opts.use_color {
         let color_opts = RenderOptions::new()
             .with_color(true)
@@ -101,7 +261,7 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
 
 fn append_match(
     out: &mut String,
-    rm: &tractor::report::ReportMatch,
+    rm: &ReportMatch,
     view: &ViewSet,
     indent: &str,
     render_opts: &RenderOptions,
@@ -112,22 +272,36 @@ fn append_match(
     let has_position = rm.line > 0;
     if !show_file {
         if has_position {
-            out.push_str(&format!("{}<match line=\"{}\" column=\"{}\"", indent, rm.line, rm.column));
+            out.push_str(&format!(
+                "{indent}<match line=\"{}\" column=\"{}\"",
+                rm.line, rm.column
+            ));
         } else {
-            out.push_str(&format!("{}<match", indent));
+            out.push_str(&format!("{indent}<match"));
         }
     } else if has_position {
-        out.push_str(&format!("{}<match file=\"{}\" line=\"{}\" column=\"{}\"", indent, escape_attr(&file_str), rm.line, rm.column));
+        out.push_str(&format!(
+            "{indent}<match file=\"{}\" line=\"{}\" column=\"{}\"",
+            escape_attr(&file_str),
+            rm.line,
+            rm.column
+        ));
     } else {
-        out.push_str(&format!("{}<match file=\"{}\"", indent, escape_attr(&file_str)));
+        out.push_str(&format!(
+            "{indent}<match file=\"{}\"",
+            escape_attr(&file_str)
+        ));
     }
     if has_position && (rm.end_line != rm.line || rm.end_column != rm.column) {
-        out.push_str(&format!(" end_line=\"{}\" end_column=\"{}\"", rm.end_line, rm.end_column));
+        out.push_str(&format!(
+            " end_line=\"{}\" end_column=\"{}\"",
+            rm.end_line, rm.end_column
+        ));
     }
     out.push_str(">\n");
 
-    let inner = &format!("{}  ", indent);
-    let deep  = &format!("{}    ", indent);
+    let inner = format!("{indent}  ");
+    let deep = format!("{indent}    ");
 
     let (view_fields, extra_fields) = render_fields_for_match(view, rm);
     let all_fields: Vec<ViewField> = view_fields.into_iter().chain(extra_fields).collect();
@@ -136,59 +310,59 @@ fn append_match(
         match field {
             ViewField::Value => {
                 if let Some(ref v) = rm.value {
-                    out.push_str(&format!("{}<value>{}</value>\n", inner, escape(v)));
+                    out.push_str(&format!("{inner}<value>{}</value>\n", escape(v)));
                 }
             }
             ViewField::Source => {
                 if let Some(ref s) = rm.source {
-                    out.push_str(&format!("{}<source>{}</source>\n", inner, escape(s)));
+                    out.push_str(&format!("{inner}<source>{}</source>\n", escape(s)));
                 }
             }
             ViewField::Lines => {
                 if let Some(ref ls) = rm.lines {
-                    out.push_str(&format!("{}<lines>\n", inner));
+                    out.push_str(&format!("{inner}<lines>\n"));
                     for line in ls {
-                        out.push_str(&format!("{}<line>{}</line>\n", deep, escape(line)));
+                        out.push_str(&format!("{deep}<line>{}</line>\n", escape(line)));
                     }
-                    out.push_str(&format!("{}</lines>\n", inner));
+                    out.push_str(&format!("{inner}</lines>\n"));
                 }
             }
             ViewField::Reason => {
                 if let Some(ref reason) = rm.reason {
-                    out.push_str(&format!("{}<reason>{}</reason>\n", inner, escape(reason)));
+                    out.push_str(&format!("{inner}<reason>{}</reason>\n", escape(reason)));
                 }
             }
             ViewField::Severity => {
                 if let Some(severity) = rm.severity {
-                    out.push_str(&format!("{}<severity>{}</severity>\n", inner, severity.as_str()));
+                    out.push_str(&format!("{inner}<severity>{}</severity>\n", severity.as_str()));
                 }
             }
             ViewField::Status => {
                 if let Some(ref status) = rm.status {
-                    out.push_str(&format!("{}<status>{}</status>\n", inner, escape(status)));
+                    out.push_str(&format!("{inner}<status>{}</status>\n", escape(status)));
                 }
             }
             ViewField::Output => {
                 if let Some(ref output) = rm.output {
-                    out.push_str(&format!("{}<output>{}</output>\n", inner, escape(output)));
+                    out.push_str(&format!("{inner}<output>{}</output>\n", escape(output)));
                 }
             }
             ViewField::Tree => {
                 if let Some(ref node) = rm.tree {
                     let rendered = render_xml_node(node, render_opts);
-                    out.push_str(&format!("{}<tree>\n", inner));
+                    out.push_str(&format!("{inner}<tree>\n"));
                     for line in rendered.lines() {
-                        out.push_str(deep);
+                        out.push_str(&deep);
                         out.push_str(line);
                         out.push('\n');
                     }
-                    out.push_str(&format!("{}</tree>\n", inner));
+                    out.push_str(&format!("{inner}</tree>\n"));
                 }
             }
             ViewField::Origin => {
                 if rm.file.is_empty() {
                     if let Some(origin) = rm.origin {
-                        out.push_str(&format!("{}<origin>{}</origin>\n", inner, origin.as_str()));
+                        out.push_str(&format!("{inner}<origin>{}</origin>\n", origin.as_str()));
                     }
                 }
             }
@@ -197,19 +371,21 @@ fn append_match(
     }
 
     if should_emit_command(rm, view, skip_dims) {
-        out.push_str(&format!("{}<command>{}</command>\n", inner, escape(&rm.command)));
+        out.push_str(&format!("{inner}<command>{}</command>\n", escape(&rm.command)));
     }
     if let Some(ref message) = rm.message {
-        out.push_str(&format!("{}<message>{}</message>\n", inner, escape(message)));
+        out.push_str(&format!("{inner}<message>{}</message>\n", escape(message)));
     }
     if should_emit_rule_id(rm, skip_dims) {
-        out.push_str(&format!("{}<rule-id>{}</rule-id>\n", inner, escape(rm.rule_id.as_deref().unwrap())));
+        out.push_str(&format!(
+            "{inner}<rule-id>{}</rule-id>\n",
+            escape(rm.rule_id.as_deref().unwrap())
+        ));
     }
 
-    out.push_str(&format!("{}</match>\n", indent));
+    out.push_str(&format!("{indent}</match>\n"));
 }
 
-/// Render results list recursively as XML.
 fn render_xml_results(
     out: &mut String,
     items: &[ResultItem],
@@ -218,7 +394,6 @@ fn render_xml_results(
     tree_opts: &RenderOptions,
     dimensions: &[&str],
 ) {
-    let inner = format!("{}  ", indent);
     for item in items {
         match item {
             ResultItem::Match(rm) => {
@@ -226,64 +401,66 @@ fn render_xml_results(
                     append_match(out, rm, view, indent, tree_opts, dimensions);
                 }
             }
-            ResultItem::Group(sub) => {
-                // Build group element with hoisted attributes
-                let mut attrs = String::new();
-                if let Some(ref file) = sub.file {
-                    attrs.push_str(&format!(" file=\"{}\"", escape_attr(file)));
-                }
-                if let Some(ref command) = sub.command {
-                    attrs.push_str(&format!(" command=\"{}\"", escape_attr(command)));
-                }
-                if let Some(ref rule_id) = sub.rule_id {
-                    attrs.push_str(&format!(" rule-id=\"{}\"", escape_attr(rule_id)));
-                }
-                out.push_str(&format!("{}<group{}>\n", indent, attrs));
-                // Sub-group's own grouping dimension
-                if let Some(ref group) = sub.group {
-                    out.push_str(&format!("{}<group-by>{}</group-by>\n", inner, escape(group)));
-                }
-                // Group-level captured outputs — unconditional honest view.
-                if !sub.outputs.is_empty() {
-                    append_group_outputs(out, &sub.outputs, sub.file.as_deref(), &inner);
-                }
-                // Recurse — this group's children skip the same field that was hoisted
-                // to create this group. If this group has sub-grouping, that applies too.
-                render_xml_results(out, &sub.results, view, &inner, tree_opts, dimensions);
-                out.push_str(&format!("{}</group>\n", indent));
-            }
+            ResultItem::Group(sub) => append_group(out, sub, view, indent, tree_opts, dimensions),
         }
     }
 }
 
-/// Render a list of captured outputs as `<outputs><output file="...">...</output>...</outputs>`.
-/// Content is XML-escaped but newlines are preserved literally, matching how
-/// `<lines><line>` is rendered elsewhere.
-fn append_outputs(out: &mut String, outputs: &[tractor::report::ReportOutput], indent: &str) {
-    let inner = format!("{}  ", indent);
-    out.push_str(&format!("{}<outputs>\n", indent));
+fn append_group(
+    out: &mut String,
+    sub: &Report,
+    view: &ViewSet,
+    indent: &str,
+    tree_opts: &RenderOptions,
+    dimensions: &[&str],
+) {
+    let inner = format!("{indent}  ");
+    let mut attrs = String::new();
+    if let Some(ref file) = sub.file {
+        attrs.push_str(&format!(" file=\"{}\"", escape_attr(file)));
+    }
+    if let Some(ref command) = sub.command {
+        attrs.push_str(&format!(" command=\"{}\"", escape_attr(command)));
+    }
+    if let Some(ref rule_id) = sub.rule_id {
+        attrs.push_str(&format!(" rule-id=\"{}\"", escape_attr(rule_id)));
+    }
+    out.push_str(&format!("{indent}<group{attrs}>\n"));
+    if let Some(ref group) = sub.group {
+        out.push_str(&format!("{inner}<group-by>{}</group-by>\n", escape(group)));
+    }
+    if !sub.outputs.is_empty() {
+        append_group_outputs(out, &sub.outputs, sub.file.as_deref(), &inner);
+    }
+    render_xml_results(out, &sub.results, view, &inner, tree_opts, dimensions);
+    out.push_str(&format!("{indent}</group>\n"));
+}
+
+fn append_outputs(out: &mut String, outputs: &[ReportOutput], indent: &str) {
+    let inner = format!("{indent}  ");
+    out.push_str(&format!("{indent}<outputs>\n"));
     for captured in outputs {
         match &captured.file {
-            Some(file) => out.push_str(&format!("{}<output file=\"{}\">", inner, escape_attr(file))),
-            None => out.push_str(&format!("{}<output>", inner)),
+            Some(file) => out.push_str(&format!("{inner}<output file=\"{}\">", escape_attr(file))),
+            None => out.push_str(&format!("{inner}<output>")),
         }
         out.push_str(&escape(&captured.content));
         out.push_str("</output>\n");
     }
-    out.push_str(&format!("{}</outputs>\n", indent));
+    out.push_str(&format!("{indent}</outputs>\n"));
 }
 
 fn append_group_outputs(
     out: &mut String,
-    outputs: &[tractor::report::ReportOutput],
+    outputs: &[ReportOutput],
     group_file: Option<&str>,
     indent: &str,
 ) {
     if group_file.is_some() && outputs.len() == 1 {
         let captured = &outputs[0];
         match &captured.file {
-            Some(file) => out.push_str(&format!("{}<output file=\"{}\">", indent, escape_attr(file))),
-            None => out.push_str(&format!("{}<output>", indent)),
+            Some(file) => out.push_str(&format!("{indent}<output file=\"{}\">", escape_attr(file))),
+            None => out.push_str(&format!("{indent}<output>")),
         }
         out.push_str(&escape(&captured.content));
         out.push_str("</output>\n");
@@ -293,8 +470,27 @@ fn append_group_outputs(
     append_outputs(out, outputs, indent);
 }
 
+fn indent_xml_fragment(fragment: &str, indent: &str) -> String {
+    let mut out = String::new();
+    for line in fragment.lines() {
+        out.push_str(indent);
+        out.push_str(line);
+        out.push('\n');
+    }
+    out
+}
+
+fn ensure_xml_fragment_newline(mut fragment: String) -> String {
+    if !fragment.ends_with('\n') {
+        fragment.push('\n');
+    }
+    fragment
+}
+
 fn escape(s: &str) -> String {
-    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;")
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
 }
 
 fn escape_attr(s: &str) -> String {
