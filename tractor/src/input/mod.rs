@@ -5,6 +5,7 @@ pub mod source;
 
 #[allow(unused_imports)]
 pub use source::{Source, SourceContent, PATHLESS_LABEL};
+pub use file_resolver::{FileResolver, SourceRequest, ResolverOptions, make_fatal_diagnostic};
 
 use std::io::{self, BufRead, Read};
 use std::sync::Arc;

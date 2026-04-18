@@ -7,10 +7,14 @@
 //! - CLI commands (`tractor check`, `tractor query`, etc.)
 //! - Programmatic construction
 //!
-//! Each operation is self-contained: it declares the files, xpath/rules, and
-//! options it needs. The executor handles file resolution, parsing, querying,
-//! and pushes matches into a `ReportBuilder` that can be finalized into a
-//! `Report` and rendered in any format.
+//! ## Input-resolution boundary
+//!
+//! An `Operation` arriving here is already input-resolved: it carries a
+//! `Vec<Source>` and the `ResultFilter`s it needs. Glob expansion, CLI
+//! intersection, diff-files intersection, language detection and inline
+//! stdin/`-s` handling all happen *before* construction (see `input::resolve_operation_inputs`).
+//! The executor therefore treats disk files and virtual inline sources
+//! identically — a single `Vec<Source>` per operation, no branching.
 
 mod query;
 mod check;
@@ -19,13 +23,13 @@ mod set;
 mod update;
 
 use std::path::PathBuf;
+
 use rayon::prelude::*;
 use tractor::report::{ReportBuilder, ReportMatch};
 use tractor::tree_mode::TreeMode;
-use tractor::{detect_language, Match, NormalizedPath};
+use tractor::Match;
 
 use crate::input::filter::ResultFilter;
-use crate::input::file_resolver::{FileResolver, make_fatal_diagnostic};
 use crate::input::Source;
 
 pub use query::{QueryOperation, QueryExpr};
@@ -41,7 +45,10 @@ pub use update::UpdateOperation;
 /// A single operation to execute. This is the stable intermediate
 /// representation — config files parse into this, CLI commands construct
 /// it, and the executor consumes it.
-#[derive(Debug, Clone)]
+///
+/// Note: `Operation` is not `Clone` or `Debug` because it carries
+/// `Vec<Box<dyn ResultFilter>>` which is neither. Construct, execute,
+/// and discard.
 pub enum Operation {
     Query(QueryOperation),
     Check(CheckOperation),
@@ -58,40 +65,17 @@ pub enum Operation {
 pub const DEFAULT_MAX_FILES: usize = 10_000;
 
 /// Options controlling how operations are executed.
-#[derive(Debug, Clone)]
+///
+/// This is pared down after the input-resolution boundary moved upstream:
+/// glob/CLI/diff-files intersection is resolved into `Operation.sources`
+/// *before* `execute()`, so only execution-time knobs remain here.
+#[derive(Debug, Clone, Default)]
 pub struct ExecuteOptions {
     /// Print verbose diagnostics to stderr.
     pub verbose: bool,
-    /// Base directory for resolving relative file paths.
-    /// If None, uses the current working directory.
+    /// Base directory for resolving relative file paths in rule includes.
+    /// Used by `run_rules` to anchor per-rule `include:` globs.
     pub base_dir: Option<PathBuf>,
-    /// Git diff spec for filtering to changed files (e.g. "HEAD~3", "main..HEAD").
-    /// When set, resolved files are intersected with the set of changed files.
-    pub diff_files: Option<String>,
-    /// Git diff spec for filtering matches to changed hunks.
-    /// When set, only matches whose lines overlap with changed hunks are included.
-    pub diff_lines: Option<String>,
-    /// Maximum number of files to process. Glob expansion aborts at 10x this limit.
-    pub max_files: usize,
-    /// CLI-provided file patterns, intersected with operation file globs.
-    pub cli_files: Vec<String>,
-    /// Root-level file patterns from config.
-    /// `None` = key missing (unrestricted); `Some(vec![])` = explicitly empty.
-    pub config_root_files: Option<Vec<String>>,
-}
-
-impl Default for ExecuteOptions {
-    fn default() -> Self {
-        ExecuteOptions {
-            verbose: false,
-            base_dir: None,
-            diff_files: None,
-            diff_lines: None,
-            max_files: DEFAULT_MAX_FILES,
-            cli_files: Vec::new(),
-            config_root_files: None,
-        }
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -103,54 +87,22 @@ pub(crate) fn filter_refs(filters: &[Box<dyn ResultFilter>]) -> Vec<&dyn ResultF
     filters.iter().map(|f| f.as_ref()).collect()
 }
 
-/// Combine resolved disk file paths with an optional inline source into a
-/// unified `Vec<Source>`. Disk paths adopt `lang_override` when provided,
-/// otherwise fall back to extension-based detection.
-///
-/// This is the single adapter between `FileResolver` (which still returns
-/// `Vec<NormalizedPath>`) and the downstream `run_rules` pipeline that
-/// consumes `&[Source]`. Virtual paths from stdin/`-s` ride alongside disk
-/// sources through the same code path.
-pub(crate) fn build_sources(
-    resolved_paths: Vec<NormalizedPath>,
-    inline_source: Option<&Source>,
-    lang_override: Option<&str>,
-) -> Vec<Source> {
-    let mut sources: Vec<Source> = Vec::with_capacity(resolved_paths.len() + 1);
-    for path in resolved_paths {
-        let lang = lang_override
-            .map(|s| s.to_string())
-            .unwrap_or_else(|| detect_language(path.as_str()).to_string());
-        sources.push(Source::disk(path, lang));
-    }
-    if let Some(s) = inline_source {
-        sources.push(s.clone());
-    }
-    sources
-}
-
 /// Execute a list of operations, pushing results into the given `ReportBuilder`.
+///
+/// Operations must already carry resolved `sources` and `filters`; this
+/// function is a thin dispatcher.
 pub fn execute(
     operations: &[Operation],
     options: &ExecuteOptions,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    // Build centralized file resolver once (root globs, CLI globs, global diff).
-    let resolver = match FileResolver::new(options) {
-        Ok(r) => r,
-        Err(msg) => {
-            report.add(make_fatal_diagnostic("config", msg));
-            return Ok(());
-        }
-    };
-
     for op in operations {
         match op {
-            Operation::Query(q) => query::execute_query(q, options, &resolver, report)?,
-            Operation::Check(c) => check::execute_check(c, options, &resolver, report)?,
-            Operation::Test(t) => test::execute_test(t, options, &resolver, report)?,
-            Operation::Set(s) => set::execute_set(s, options, &resolver, report)?,
-            Operation::Update(u) => update::execute_update(u, options, &resolver, report)?,
+            Operation::Query(q) => query::execute_query(q, options, report)?,
+            Operation::Check(c) => check::execute_check(c, options, report)?,
+            Operation::Test(t) => test::execute_test(t, options, report)?,
+            Operation::Set(s) => set::execute_set(s, options, report)?,
+            Operation::Update(u) => update::execute_update(u, options, report)?,
         }
     }
 
@@ -275,6 +227,7 @@ mod tests {
     use super::*;
     use tractor::report::{ReportBuilder, Severity};
     use tractor::rule::Rule;
+    use tractor::NormalizedPath;
 
     fn temp_json_file(content: &str) -> (tempfile::TempDir, String) {
         let dir = tempfile::tempdir().unwrap();
@@ -289,26 +242,34 @@ mod tests {
         builder.build()
     }
 
+    fn disk_sources(paths: &[&str]) -> Vec<Source> {
+        paths
+            .iter()
+            .map(|p| {
+                let np = NormalizedPath::absolute(p);
+                let lang = tractor::detect_language(np.as_str()).to_string();
+                Source::disk(np, lang)
+            })
+            .collect()
+    }
+
     #[test]
     fn check_finds_violations() {
         let (_dir, path) = temp_json_file(r#"{"debug": true, "verbose": true}"#);
         let ops = vec![Operation::Check(CheckOperation {
-            files: vec![path.clone()],
-            exclude: vec![],
-            diff_files: None,
-            diff_lines: None,
+            sources: disk_sources(&[&path]),
+            filters: vec![],
             rules: vec![
                 Rule::new("no-debug", "//debug[.='true']")
                     .with_reason("debug should not be enabled")
                     .with_severity(Severity::Error),
             ],
             tree_mode: None,
-            language: None,
             ignore_whitespace: false,
             parse_depth: None,
             ruleset_include: vec![],
             ruleset_exclude: vec![],
-            inline_source: None,
+            ruleset_default_language: None,
         })];
         let report = run(&ops);
         assert!(!report.success.unwrap(), "check should fail when violations found");
@@ -322,21 +283,18 @@ mod tests {
     fn check_passes_when_no_violations() {
         let (_dir, path) = temp_json_file(r#"{"debug": false}"#);
         let ops = vec![Operation::Check(CheckOperation {
-            files: vec![path.clone()],
-            exclude: vec![],
-            diff_files: None,
-            diff_lines: None,
+            sources: disk_sources(&[&path]),
+            filters: vec![],
             rules: vec![
                 Rule::new("no-debug", "//debug[.='true']")
                     .with_reason("debug should not be enabled"),
             ],
             tree_mode: None,
-            language: None,
             ignore_whitespace: false,
             parse_depth: None,
             ruleset_include: vec![],
             ruleset_exclude: vec![],
-            inline_source: None,
+            ruleset_default_language: None,
         })];
         let report = run(&ops);
         assert!(report.success.unwrap());
@@ -344,26 +302,24 @@ mod tests {
 
     #[test]
     fn check_inline_source_finds_violations() {
+        let inline = Source::inline_pathless(
+            "json",
+            std::sync::Arc::new(r#"{"debug": true}"#.to_string()),
+        );
         let ops = vec![Operation::Check(CheckOperation {
-            files: vec![],
-            exclude: vec![],
-            diff_files: None,
-            diff_lines: None,
+            sources: vec![inline],
+            filters: vec![],
             rules: vec![
                 Rule::new("no-debug", "//debug[.='true']")
                     .with_reason("debug should not be enabled")
                     .with_severity(Severity::Error),
             ],
             tree_mode: None,
-            language: Some("json".into()),
             ignore_whitespace: false,
             parse_depth: None,
             ruleset_include: vec![],
             ruleset_exclude: vec![],
-            inline_source: Some(Source::inline_pathless(
-                "json",
-                std::sync::Arc::new(r#"{"debug": true}"#.to_string()),
-            )),
+            ruleset_default_language: Some("json".into()),
         })];
         let report = run(&ops);
         assert!(!report.success.unwrap(), "inline check should fail when violations found");
@@ -374,25 +330,23 @@ mod tests {
 
     #[test]
     fn check_inline_source_passes_when_no_violations() {
+        let inline = Source::inline_pathless(
+            "json",
+            std::sync::Arc::new(r#"{"debug": false}"#.to_string()),
+        );
         let ops = vec![Operation::Check(CheckOperation {
-            files: vec![],
-            exclude: vec![],
-            diff_files: None,
-            diff_lines: None,
+            sources: vec![inline],
+            filters: vec![],
             rules: vec![
                 Rule::new("no-debug", "//debug[.='true']")
                     .with_reason("debug should not be enabled"),
             ],
             tree_mode: None,
-            language: Some("json".into()),
             ignore_whitespace: false,
             parse_depth: None,
             ruleset_include: vec![],
             ruleset_exclude: vec![],
-            inline_source: Some(Source::inline_pathless(
-                "json",
-                std::sync::Arc::new(r#"{"debug": false}"#.to_string()),
-            )),
+            ruleset_default_language: Some("json".into()),
         })];
         let report = run(&ops);
         assert!(report.success.unwrap());
@@ -409,37 +363,30 @@ mod tests {
 
         let ops = vec![
             Operation::Check(CheckOperation {
-                files: vec![data_path.to_str().unwrap().into()],
-                exclude: vec![],
-                diff_files: None,
-                diff_lines: None,
+                sources: disk_sources(&[data_path.to_str().unwrap()]),
+                filters: vec![],
                 rules: vec![
                     Rule::new("has-name", "//name[.='missing']")
                         .with_reason("name should not be 'missing'"),
                 ],
                 tree_mode: None,
-                language: None,
                 ignore_whitespace: false,
                 parse_depth: None,
                 ruleset_include: vec![],
                 ruleset_exclude: vec![],
-                inline_source: None,
+                ruleset_default_language: None,
             }),
             Operation::Set(set::SetOperation {
-                files: vec![config_path.to_str().unwrap().into()],
-                exclude: vec![],
-                diff_files: None,
-                diff_lines: None,
+                sources: disk_sources(&[config_path.to_str().unwrap()]),
+                filters: vec![],
                 mappings: vec![set::SetMapping {
                     xpath: "//host".into(),
                     value: "new-host".into(),
                     value_kind: Some("string".into()),
                 }],
                 tree_mode: None,
-                language: None,
                 limit: None,
                 ignore_whitespace: false,
-                inline_source: None,
                 write_mode: set::SetWriteMode::InPlace,
                 report_mode: set::SetReportMode::PerMatch,
             }),

@@ -2,10 +2,10 @@
 
 use tractor::report::{ReportBuilder, ReportMatch};
 use tractor::tree_mode::TreeMode;
-use tractor::{detect_language, apply_replacements, NormalizedPath};
+use tractor::{apply_replacements, NormalizedPath};
 use tractor::xpath_upsert::update_only;
 
-use crate::input::file_resolver::{FileResolver, FileRequest};
+use crate::input::filter::ResultFilter;
 use crate::input::Source;
 
 use super::{ExecuteOptions, filter_refs, match_to_report_match, query_files_multi};
@@ -14,18 +14,15 @@ use super::{ExecuteOptions, filter_refs, match_to_report_match, query_files_mult
 // Operation type
 // ---------------------------------------------------------------------------
 
-/// An update operation: modify existing matched nodes without creating new structure.
-/// Unlike set, update fails if the XPath does not match any existing nodes.
-#[derive(Debug, Clone)]
+/// An update operation: modify existing matched nodes without creating new
+/// structure. Unlike set, update fails if the XPath does not match any
+/// existing nodes. Inline (virtual) sources are rejected at construction
+/// time — update always mutates real files.
 pub struct UpdateOperation {
-    /// File glob patterns to include.
-    pub files: Vec<String>,
-    /// File glob patterns to exclude.
-    pub exclude: Vec<String>,
-    /// Git diff spec: only consider files changed in this diff.
-    pub diff_files: Option<String>,
-    /// Git diff spec: only include matches in changed hunks.
-    pub diff_lines: Option<String>,
+    /// Pre-resolved unified input list (disk-only for update).
+    pub sources: Vec<Source>,
+    /// Pre-built result filters (used by the fallback path).
+    pub filters: Vec<Box<dyn ResultFilter>>,
     /// XPath expression to match nodes to update.
     pub xpath: String,
     /// New value for matched nodes.
@@ -49,29 +46,23 @@ pub struct UpdateOperation {
 pub(crate) fn execute_update(
     op: &UpdateOperation,
     options: &ExecuteOptions,
-    resolver: &FileResolver,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let request = FileRequest {
-        files: &op.files,
-        exclude: &op.exclude,
-        diff_files: op.diff_files.as_deref(),
-        diff_lines: op.diff_lines.as_deref(),
-        command: "update",
-        inline: None,
-        has_inline: false,
-    };
-    let (files, filters) = resolver.resolve(&request, report);
-    let mut fallback_files: Vec<NormalizedPath> = Vec::new();
+    let mut fallback_sources: Vec<Source> = Vec::new();
 
-    for file_path in &files {
-        let lang = op.language.as_deref()
-            .unwrap_or_else(|| detect_language(file_path.as_str()));
-        let source = std::fs::read_to_string(file_path)?;
+    for source in &op.sources {
+        // update writes to disk, so a virtual source here is a construction
+        // bug. Skip defensively rather than panic.
+        if source.is_virtual() {
+            continue;
+        }
+        let lang = op.language.as_deref().unwrap_or(&source.language);
+        let file_path: &NormalizedPath = &source.path;
+        let disk_bytes = std::fs::read_to_string(file_path)?;
 
-        match update_only(&source, lang, &op.xpath, &op.value, op.limit) {
+        match update_only(&disk_bytes, lang, &op.xpath, &op.value, op.limit) {
             Ok(result) => {
-                if result.source != source {
+                if result.source != disk_bytes {
                     std::fs::write(file_path, &result.source)?;
                     for m in &result.matches {
                         let mut rm = match_to_report_match(m.clone(), "update");
@@ -81,27 +72,18 @@ pub(crate) fn execute_update(
                 }
             }
             Err(tractor::xpath_upsert::UpsertError::UnsupportedLanguage(_)) => {
-                fallback_files.push(file_path.clone());
+                fallback_sources.push(source.clone());
             }
             Err(e) => return Err(e.into()),
         }
     }
 
     // Legacy fallback for languages without renderers
-    if !fallback_files.is_empty() {
-        let fallback_sources: Vec<Source> = fallback_files
-            .into_iter()
-            .map(|p| {
-                let lang = op.language.as_deref()
-                    .map(|s| s.to_string())
-                    .unwrap_or_else(|| detect_language(p.as_str()).to_string());
-                Source::disk(p, lang)
-            })
-            .collect();
+    if !fallback_sources.is_empty() {
         let matches = query_files_multi(
             &fallback_sources, &[op.xpath.as_str()], op.language.as_deref(),
             op.tree_mode, op.ignore_whitespace, op.parse_depth,
-            None, options.verbose, &filter_refs(&filters),
+            None, options.verbose, &filter_refs(&op.filters),
         )?;
         if !matches.is_empty() {
             let summary = apply_replacements(&matches, &op.value)?;

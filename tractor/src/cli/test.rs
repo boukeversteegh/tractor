@@ -42,7 +42,7 @@ pub struct TestArgs {
 }
 use crate::executor::{self, ExecuteOptions, Operation, TestOperation, TestAssertion};
 use crate::cli::context::RunContext;
-use crate::input::InputMode;
+use crate::input::{InputMode, FileResolver, ResolverOptions, SourceRequest};
 use crate::format::{ViewField, TestRenderOptions, render_report};
 use crate::matcher::project_report;
 use super::config::{run_from_config, ConfigRunParams};
@@ -66,7 +66,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
             view_override: args.view.as_deref(),
             message: args.message.clone(),
             default_group: &[],
-            op_filter: |op| matches!(op, Operation::Test(_)),
+            op_filter: |kind| matches!(kind, crate::tractor_config::ConfigOperationKind::Test),
             filter_label: "test",
         });
     }
@@ -84,52 +84,59 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
     let dot = NormalizedXpath::new(".");
     let xpath_expr = ctx.xpath.as_ref().unwrap_or(&dot);
 
-    // Build the test operation for either files or inline source.
-    let op = match &ctx.input {
-        InputMode::Files(files) => Operation::Test(TestOperation {
-            files: files.clone(),
-            exclude: vec![],
-            diff_files: None,
-            diff_lines: None,
-            assertions: vec![TestAssertion {
-                xpath: xpath_expr.clone(),
-                expect: expect.clone(),
-            }],
-            tree_mode: ctx.tree_mode,
-            language: ctx.lang.clone(),
-            limit: ctx.limit,
-            ignore_whitespace: ctx.ignore_whitespace,
-            parse_depth: ctx.parse_depth,
-            inline_source: None,
-        }),
-        InputMode::Inline(source) => Operation::Test(TestOperation {
-            files: vec![],
-            exclude: vec![],
-            diff_files: None,
-            diff_lines: None,
-            assertions: vec![TestAssertion {
-                xpath: xpath_expr.clone(),
-                expect: expect.clone(),
-            }],
-            tree_mode: ctx.tree_mode,
-            language: Some(source.language.clone()),
-            limit: ctx.limit,
-            ignore_whitespace: ctx.ignore_whitespace,
-            parse_depth: ctx.parse_depth,
-            inline_source: Some(source.clone()),
-        }),
-    };
-
-    let options = ExecuteOptions {
+    // Build the file resolver for this single-op run.
+    let resolver_opts = ResolverOptions {
         verbose: ctx.verbose,
+        base_dir: None,
         diff_files: args.shared.diff_files.clone(),
         diff_lines: args.shared.diff_lines.clone(),
         max_files: args.shared.max_files,
-        ..Default::default()
+        cli_files: Vec::new(),
+        config_root_files: None,
     };
+    let resolver = FileResolver::new(&resolver_opts)
+        .map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
 
     let mut builder = tractor::ReportBuilder::new();
-    executor::execute(&[op], &options, &mut builder)?;
+
+    let (op_files, inline_source, op_language): (Vec<String>, Option<&crate::input::Source>, Option<String>) = match &ctx.input {
+        InputMode::Files(files) => (files.clone(), None, ctx.lang.clone()),
+        InputMode::Inline(source) => (Vec::new(), Some(source), Some(source.language.clone())),
+    };
+
+    let request = SourceRequest {
+        files: &op_files,
+        exclude: &[],
+        diff_files: None,
+        diff_lines: None,
+        command: "test",
+        language: op_language.as_deref(),
+        inline_source,
+    };
+    let (sources, filters) = resolver.resolve(&request, &mut builder);
+
+    if !builder.has_fatals() {
+        let op = Operation::Test(TestOperation {
+            sources,
+            filters,
+            assertions: vec![TestAssertion {
+                xpath: xpath_expr.clone(),
+                expect: expect.clone(),
+            }],
+            tree_mode: ctx.tree_mode,
+            language: op_language,
+            limit: ctx.limit,
+            ignore_whitespace: ctx.ignore_whitespace,
+            parse_depth: ctx.parse_depth,
+        });
+
+        let options = ExecuteOptions {
+            verbose: ctx.verbose,
+            base_dir: None,
+        };
+
+        executor::execute(&[op], &options, &mut builder)?;
+    }
     // Set expected value for test summary rendering (test-mode only, not shared with run mode)
     builder.set_expected(expect.clone());
     let mut report = builder.build();

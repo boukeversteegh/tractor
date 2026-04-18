@@ -6,40 +6,32 @@ use tractor::{parse_string_to_documents, Match};
 use tractor::xpath_upsert::upsert_typed;
 
 use crate::input::filter::ResultFilter;
-use crate::input::file_resolver::{FileResolver, FileRequest};
 use crate::input::Source;
 
-use super::{build_sources, ExecuteOptions, filter_refs, match_to_report_match};
+use super::{ExecuteOptions, filter_refs, match_to_report_match};
 
 // ---------------------------------------------------------------------------
 // Operation type
 // ---------------------------------------------------------------------------
 
 /// A set operation: ensure values exist at specified XPaths.
-#[derive(Debug, Clone)]
+///
+/// Virtual inline sources share the same `Vec<Source>` as disk files.
+/// Write-mode is automatically routed to Capture for virtual sources
+/// (nothing to write back to disk).
 pub struct SetOperation {
-    /// File glob patterns to include.
-    pub files: Vec<String>,
-    /// File glob patterns to exclude.
-    pub exclude: Vec<String>,
-    /// Git diff spec: only consider files changed in this diff.
-    pub diff_files: Option<String>,
-    /// Git diff spec: only include matches in changed hunks.
-    pub diff_lines: Option<String>,
+    /// Pre-resolved unified input list.
+    pub sources: Vec<Source>,
+    /// Pre-built result filters.
+    pub filters: Vec<Box<dyn ResultFilter>>,
     /// Mappings to apply.
     pub mappings: Vec<SetMapping>,
     /// Tree mode override for parsing diagnostics.
     pub tree_mode: Option<TreeMode>,
-    /// Language override for parsing.
-    pub language: Option<String>,
     /// Maximum number of matches to update per mapping.
     pub limit: Option<usize>,
     /// Ignore whitespace-only text nodes while collecting diagnostics.
     pub ignore_whitespace: bool,
-    /// Optional inline source (from stdin or `-s/--string`). Unified with
-    /// resolved disk files; virtual sources are auto-routed through Capture
-    /// output (never written back to disk).
-    pub inline_source: Option<Source>,
     /// How transformed content should be applied.
     pub write_mode: SetWriteMode,
     /// How detailed the diagnostic report should be.
@@ -76,32 +68,15 @@ pub enum SetReportMode {
 pub(crate) fn execute_set(
     op: &SetOperation,
     _options: &ExecuteOptions,
-    resolver: &FileResolver,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if op.mappings.is_empty() {
         return Ok(());
     }
 
-    let inline_content_holder = op.inline_source.as_ref().and_then(|s| {
-        if s.is_pathless() { None } else { s.inline_content().map(|c| (&s.path, c)) }
-    });
-    let request = FileRequest {
-        files: &op.files,
-        exclude: &op.exclude,
-        diff_files: op.diff_files.as_deref(),
-        diff_lines: op.diff_lines.as_deref(),
-        command: "set",
-        inline: inline_content_holder,
-        has_inline: op.inline_source.is_some(),
-    };
-    let (files, filters) = resolver.resolve(&request, report);
-    let sources = build_sources(files, op.inline_source.as_ref(), op.language.as_deref());
-    // Disk sources get filter application; inline sources bypass filters
-    // (they have no match history to filter against in the file scope).
-    let filter_refs = filter_refs(&filters);
+    let filter_refs = filter_refs(&op.filters);
 
-    for source in &sources {
+    for source in &op.sources {
         let content = source.read()?;
         // Virtual sources can't be written back to disk — auto-route any
         // non-Verify write mode through Capture so the mutated content
@@ -344,6 +319,7 @@ fn query_set_matches(
 mod tests {
     use super::*;
     use tractor::report::ReportBuilder;
+    use tractor::NormalizedPath;
     use crate::executor::{Operation, ExecuteOptions, execute};
 
     fn temp_json_file(content: &str) -> (tempfile::TempDir, String) {
@@ -360,6 +336,12 @@ mod tests {
         (dir, path.to_str().unwrap().to_string())
     }
 
+    fn disk_source(path: &str) -> Source {
+        let np = NormalizedPath::absolute(path);
+        let lang = tractor::detect_language(np.as_str()).to_string();
+        Source::disk(np, lang)
+    }
+
     fn string_mapping(xpath: &str, value: &str) -> SetMapping {
         SetMapping {
             xpath: xpath.into(),
@@ -370,16 +352,12 @@ mod tests {
 
     fn set_operation(path: String, mappings: Vec<SetMapping>, write_mode: SetWriteMode) -> Operation {
         Operation::Set(SetOperation {
-            files: vec![path],
-            exclude: vec![],
-            diff_files: None,
-            diff_lines: None,
+            sources: vec![disk_source(&path)],
+            filters: vec![],
             mappings,
             tree_mode: None,
-            language: None,
             limit: None,
             ignore_whitespace: false,
-            inline_source: None,
             write_mode,
             report_mode: SetReportMode::PerMatch,
         })
@@ -391,20 +369,17 @@ mod tests {
         mappings: Vec<SetMapping>,
         write_mode: SetWriteMode,
     ) -> Operation {
+        let inline = Source::inline_pathless(
+            lang,
+            std::sync::Arc::new(source.to_string()),
+        );
         Operation::Set(SetOperation {
-            files: vec![],
-            exclude: vec![],
-            diff_files: None,
-            diff_lines: None,
+            sources: vec![inline],
+            filters: vec![],
             mappings,
             tree_mode: None,
-            language: Some(lang.into()),
             limit: None,
             ignore_whitespace: false,
-            inline_source: Some(Source::inline_pathless(
-                lang,
-                std::sync::Arc::new(source.to_string()),
-            )),
             write_mode,
             report_mode: SetReportMode::PerMatch,
         })
@@ -533,16 +508,12 @@ mod tests {
         let (_dir_a, path_a) = temp_yaml_file("database:\n  host: a\n");
         let (_dir_b, path_b) = temp_yaml_file("database:\n  host: b\n");
         let ops = vec![Operation::Set(SetOperation {
-            files: vec![path_a.clone(), path_b.clone()],
-            exclude: vec![],
-            diff_files: None,
-            diff_lines: None,
+            sources: vec![disk_source(&path_a), disk_source(&path_b)],
+            filters: vec![],
             mappings: vec![string_mapping("//database/host", "db.example.com")],
             tree_mode: None,
-            language: None,
             limit: None,
             ignore_whitespace: false,
-            inline_source: None,
             write_mode: SetWriteMode::Capture,
             report_mode: SetReportMode::PerMatch,
         })];

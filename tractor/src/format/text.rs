@@ -98,7 +98,7 @@ fn append_match(
     let file = group_file.unwrap_or(&rm.file);
     let has_location = view.has(ViewField::File) || view.has(ViewField::Line) || view.has(ViewField::Column);
     let inline_status_reason = should_inline_status_reason(view, rm);
-    if has_location && !file.is_empty() && file != crate::input::PATHLESS_LABEL {
+    if has_location && !file.is_empty() && file != tractor::PATHLESS_LABEL {
         let mut loc = String::new();
         if view.has(ViewField::File) {
             loc.push_str(&normalize_path(file));
@@ -170,7 +170,7 @@ fn load_source_for_match(
     file: &str,
     source_cache: &mut HashMap<String, Option<String>>,
 ) -> Option<String> {
-    if !file.is_empty() && file != crate::input::PATHLESS_LABEL {
+    if !file.is_empty() && file != tractor::PATHLESS_LABEL {
         if let Some(cached) = source_cache.get(file) {
             return cached.clone();
         }

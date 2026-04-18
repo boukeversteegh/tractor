@@ -1,4 +1,4 @@
-//! Check operation: run XPath rules against files, report violations.
+//! Check operation: run XPath rules against sources, report violations.
 
 use tractor::report::{ReportBuilder, ReportMatch, Severity};
 use tractor::tree_mode::TreeMode;
@@ -7,32 +7,30 @@ use tractor::parse_string_to_documents;
 
 use crate::matcher::validate_xpath_diagnostic;
 use crate::matcher::run_rules;
-use crate::input::file_resolver::{FileResolver, FileRequest};
+use crate::input::filter::ResultFilter;
 use crate::input::Source;
 
-use super::{build_sources, ExecuteOptions, filter_refs, match_to_report_match};
+use super::{ExecuteOptions, filter_refs, match_to_report_match};
 
 // ---------------------------------------------------------------------------
 // Operation type
 // ---------------------------------------------------------------------------
 
-/// A check operation: run XPath rules against files, report violations.
-#[derive(Debug, Clone)]
+/// A check operation: run XPath rules against sources, report violations.
+///
+/// Construction site has already resolved file globs, CLI intersection,
+/// diff-files filter, inline-source wiring, and language detection into
+/// `sources`. Downstream is a plain `Vec<Source>` loop.
 pub struct CheckOperation {
-    /// File glob patterns to include.
-    pub files: Vec<String>,
-    /// File glob patterns to exclude.
-    pub exclude: Vec<String>,
-    /// Git diff spec: only consider files changed in this diff.
-    pub diff_files: Option<String>,
-    /// Git diff spec: only include matches in changed hunks.
-    pub diff_lines: Option<String>,
+    /// Pre-resolved unified input list (disk and/or inline).
+    pub sources: Vec<Source>,
+    /// Pre-built result filters (diff-lines, etc.). Applied inside
+    /// `run_rules` to every match.
+    pub filters: Vec<Box<dyn ResultFilter>>,
     /// Rules to check.
     pub rules: Vec<Rule>,
     /// Default tree mode for all rules (rules can override).
     pub tree_mode: Option<TreeMode>,
-    /// Default language for all rules (rules can override).
-    pub language: Option<String>,
     /// Ignore whitespace-only text nodes during parsing.
     pub ignore_whitespace: bool,
     /// Maximum parse depth.
@@ -44,11 +42,9 @@ pub struct CheckOperation {
     /// Ruleset-level exclude patterns for per-rule glob matching.
     #[doc(hidden)]
     pub ruleset_exclude: Vec<String>,
-    /// Optional inline source (from stdin or `-s/--string`). When present,
-    /// its virtual path participates in rule glob matching and diagnostics
-    /// exactly like a disk file — the executor threads it into the same
-    /// `run_rules` pipeline.
-    pub inline_source: Option<Source>,
+    /// Default language for the ruleset (fallback when a rule has none).
+    /// Used both during example validation and during source parsing.
+    pub ruleset_default_language: Option<String>,
 }
 
 // ---------------------------------------------------------------------------
@@ -58,7 +54,6 @@ pub struct CheckOperation {
 pub(crate) fn execute_check(
     op: &CheckOperation,
     options: &ExecuteOptions,
-    resolver: &FileResolver,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if op.rules.is_empty() {
@@ -75,42 +70,11 @@ pub(crate) fn execute_check(
     }
 
     // --- Phase 1: Validate rule examples inline ---
-    validate_rule_examples(&op.rules, op.language.as_deref(), op.tree_mode, report)?;
+    validate_rule_examples(&op.rules, op.ruleset_default_language.as_deref(), op.tree_mode, report)?;
 
-    // --- Phase 2: Resolve disk files and unify with any inline source ---
-    // When the operation has no files but rules define include patterns, hoist
-    // their union into the file request so patterns drive file discovery (fix #127 bug 3).
-    let hoisted_files: Vec<String> = if op.files.is_empty() && op.inline_source.is_none() {
-        let mut seen = std::collections::HashSet::new();
-        op.rules.iter()
-            .flat_map(|r| r.include.iter())
-            .filter(|p| seen.insert((*p).clone()))
-            .cloned()
-            .collect()
-    } else {
-        vec![]
-    };
-    let effective_files = if !hoisted_files.is_empty() {
-        &hoisted_files
-    } else {
-        &op.files
-    };
-
-    let inline_content_holder = op.inline_source.as_ref().and_then(|s| {
-        if s.is_pathless() { None } else { s.inline_content().map(|c| (&s.path, c)) }
-    });
-    let request = FileRequest {
-        files: effective_files,
-        exclude: &op.exclude,
-        diff_files: op.diff_files.as_deref(),
-        diff_lines: op.diff_lines.as_deref(),
-        command: "check",
-        inline: inline_content_holder,
-        has_inline: op.inline_source.is_some(),
-    };
-    let (files, filters) = resolver.resolve(&request, report);
-
-    let sources = build_sources(files, op.inline_source.as_ref(), op.language.as_deref());
+    if op.sources.is_empty() {
+        return Ok(());
+    }
 
     // Build a RuleSet from the operation. Ruleset-level include/exclude
     // come from rules files; per-rule patterns still participate in glob matching.
@@ -119,42 +83,40 @@ pub(crate) fn execute_check(
         include: op.ruleset_include.clone(),
         exclude: op.ruleset_exclude.clone(),
         default_tree_mode: op.tree_mode,
-        default_language: op.language.clone(),
+        default_language: op.ruleset_default_language.clone(),
     };
 
-    if !sources.is_empty() {
-        let rule_matches = run_rules(
-            &ruleset,
-            &sources,
-            resolver.base_dir(),
-            op.tree_mode,
-            op.ignore_whitespace,
-            op.parse_depth,
-            options.verbose,
-            &filter_refs(&filters),
-        )?;
+    let rule_matches = run_rules(
+        &ruleset,
+        &op.sources,
+        options.base_dir.as_deref(),
+        op.tree_mode,
+        op.ignore_whitespace,
+        op.parse_depth,
+        options.verbose,
+        &filter_refs(&op.filters),
+    )?;
 
-        for rm in rule_matches {
-            let rule = &ruleset.rules[rm.rule_index];
-            let reason = rule
-                .reason
-                .clone()
-                .unwrap_or_else(|| format!("[{}] check failed", rule.id));
-            let severity = rule.severity;
+    for rm in rule_matches {
+        let rule = &ruleset.rules[rm.rule_index];
+        let reason = rule
+            .reason
+            .clone()
+            .unwrap_or_else(|| format!("[{}] check failed", rule.id));
+        let severity = rule.severity;
 
-            // Apply rule-level message template (if the rule defines one)
-            let message = rule
-                .message
-                .as_deref()
-                .map(|t| tractor::format_message(t, &rm.m));
+        // Apply rule-level message template (if the rule defines one)
+        let message = rule
+            .message
+            .as_deref()
+            .map(|t| tractor::format_message(t, &rm.m));
 
-            let mut report_match = match_to_report_match(rm.m, "check");
-            report_match.reason = Some(reason);
-            report_match.severity = Some(severity);
-            report_match.rule_id = Some(rule.id.clone());
-            report_match.message = message;
-            report.add(report_match);
-        }
+        let mut report_match = match_to_report_match(rm.m, "check");
+        report_match.reason = Some(reason);
+        report_match.severity = Some(severity);
+        report_match.rule_id = Some(rule.id.clone());
+        report_match.message = message;
+        report.add(report_match);
     }
 
     Ok(())
@@ -329,199 +291,5 @@ mod tests {
         validate_rule_examples(&rules, None, None, &mut builder).unwrap();
         let report = builder.build();
         assert!(report.all_matches().is_empty());
-    }
-
-    // -----------------------------------------------------------------------
-    // Bug 3 regression: rule-level include hoists into file discovery
-    // -----------------------------------------------------------------------
-
-    use tractor::normalize_path;
-    use crate::executor::{Operation, ExecuteOptions, execute};
-
-    fn run(ops: &[Operation]) -> tractor::report::Report {
-        let mut builder = ReportBuilder::new();
-        execute(ops, &ExecuteOptions::default(), &mut builder).unwrap();
-        builder.build()
-    }
-
-    /// Fix #127 bug 3: when a check operation has no files but rules have
-    /// include patterns, those patterns must drive file discovery.
-    #[test]
-    fn check_rule_include_discovers_files() {
-        let dir = tempfile::tempdir().unwrap();
-        #[allow(clippy::disallowed_methods)] // test-only filesystem setup
-        let canon_dir = std::fs::canonicalize(dir.path()).unwrap();
-        let src_dir = canon_dir.join("src");
-        std::fs::create_dir_all(&src_dir).unwrap();
-        let json_path = src_dir.join("data.json");
-        std::fs::write(&json_path, r#"{"name": "test"}"#).unwrap();
-
-        let include_pattern = format!("{}/**/*.json", normalize_path(&src_dir.to_string_lossy()));
-        let rule = Rule::new("no-name", "//name")
-            .with_severity(tractor::report::Severity::Error)
-            .with_reason("found name".to_string())
-            .with_include(vec![include_pattern]);
-
-        let ops = vec![Operation::Check(CheckOperation {
-            files: vec![],
-            exclude: vec![],
-            diff_files: None,
-            diff_lines: None,
-            rules: vec![rule],
-            tree_mode: None,
-            language: None,
-            ignore_whitespace: false,
-            parse_depth: None,
-            ruleset_include: vec![],
-            ruleset_exclude: vec![],
-            inline_source: None,
-        })];
-
-        let report = run(&ops);
-        assert!(
-            !report.all_matches().is_empty(),
-            "rule include pattern should discover files and find matches"
-        );
-        assert_eq!(report.all_matches()[0].reason.as_deref(), Some("found name"));
-    }
-
-    /// Fix #127 bug 3: multiple rules with different include patterns — each
-    /// rule's include is expanded for discovery, but only matches its own files.
-    #[test]
-    fn check_multiple_rule_includes_discover_union() {
-        let dir = tempfile::tempdir().unwrap();
-        #[allow(clippy::disallowed_methods)] // test-only filesystem setup
-        let canon_dir = std::fs::canonicalize(dir.path()).unwrap();
-        let src_dir = canon_dir.join("src");
-        let test_dir = canon_dir.join("test");
-        std::fs::create_dir_all(&src_dir).unwrap();
-        std::fs::create_dir_all(&test_dir).unwrap();
-        std::fs::write(src_dir.join("data.json"), r#"{"name": "src"}"#).unwrap();
-        std::fs::write(test_dir.join("data.json"), r#"{"name": "test"}"#).unwrap();
-
-        let src_pattern = format!("{}/**/*.json", normalize_path(&src_dir.to_string_lossy()));
-        let test_pattern = format!("{}/**/*.json", normalize_path(&test_dir.to_string_lossy()));
-
-        let rule_src = Rule::new("src-rule", "//name")
-            .with_severity(tractor::report::Severity::Error)
-            .with_reason("src match".to_string())
-            .with_include(vec![src_pattern]);
-        let rule_test = Rule::new("test-rule", "//name")
-            .with_severity(tractor::report::Severity::Error)
-            .with_reason("test match".to_string())
-            .with_include(vec![test_pattern]);
-
-        let ops = vec![Operation::Check(CheckOperation {
-            files: vec![],
-            exclude: vec![],
-            diff_files: None,
-            diff_lines: None,
-            rules: vec![rule_src, rule_test],
-            tree_mode: None,
-            language: None,
-            ignore_whitespace: false,
-            parse_depth: None,
-            ruleset_include: vec![],
-            ruleset_exclude: vec![],
-            inline_source: None,
-        })];
-
-        let report = run(&ops);
-        let reasons: Vec<&str> = report.all_matches().iter()
-            .filter_map(|m| m.reason.as_deref())
-            .collect();
-        assert!(reasons.contains(&"src match"), "should find src match");
-        assert!(reasons.contains(&"test match"), "should find test match");
-    }
-
-    /// Fix #127 bug 1: verify that CLI files intersect correctly with root
-    /// files when both refer to the same canonical file.
-    #[test]
-    fn check_cli_root_intersection_on_real_files() {
-        let dir = tempfile::tempdir().unwrap();
-        let json_path = dir.path().join("test.json");
-        std::fs::write(&json_path, r#"{"bad": true}"#).unwrap();
-
-        #[allow(clippy::disallowed_methods)] // test-only filesystem setup
-        let canonical = std::fs::canonicalize(&json_path).unwrap();
-        let canonical_str = normalize_path(&canonical.to_string_lossy());
-
-        let ops = vec![Operation::Check(CheckOperation {
-            files: vec![],
-            exclude: vec![],
-            diff_files: None,
-            diff_lines: None,
-            rules: vec![
-                Rule::new("check-bad", "//bad")
-                    .with_severity(tractor::report::Severity::Error)
-                    .with_reason("found bad".to_string()),
-            ],
-            tree_mode: None,
-            language: None,
-            ignore_whitespace: false,
-            parse_depth: None,
-            ruleset_include: vec![],
-            ruleset_exclude: vec![],
-            inline_source: None,
-        })];
-
-        let options = ExecuteOptions {
-            config_root_files: Some(vec![canonical_str.clone()]),
-            cli_files: vec![canonical_str.clone()],
-            ..Default::default()
-        };
-        let mut builder = ReportBuilder::new();
-        execute(&ops, &options, &mut builder).unwrap();
-        let report = builder.build();
-        assert!(
-            !report.all_matches().is_empty(),
-            "intersection of identical canonical paths should find the file"
-        );
-    }
-
-    /// When multiple rules have overlapping include patterns, each file should
-    /// be processed once — not once per pattern that matched it.
-    #[test]
-    fn check_overlapping_rule_includes_no_duplicate_matches() {
-        let dir = tempfile::tempdir().unwrap();
-        #[allow(clippy::disallowed_methods)] // test-only filesystem setup
-        let canon_dir = std::fs::canonicalize(dir.path()).unwrap();
-        let sub_dir = canon_dir.join("src").join("sub");
-        std::fs::create_dir_all(&sub_dir).unwrap();
-        let json_path = sub_dir.join("data.json");
-        std::fs::write(&json_path, r#"{"name": "test"}"#).unwrap();
-
-        let broad = format!("{}/**/*.json", normalize_path(&canon_dir.join("src").to_string_lossy()));
-        let narrow = format!("{}/**/*.json", normalize_path(&sub_dir.to_string_lossy()));
-
-        let rule_a = Rule::new("rule-a", "//name")
-            .with_severity(tractor::report::Severity::Error)
-            .with_reason("found name".to_string())
-            .with_include(vec![broad]);
-        let rule_b = Rule::new("rule-b", "//name")
-            .with_severity(tractor::report::Severity::Error)
-            .with_reason("found name".to_string())
-            .with_include(vec![narrow]);
-
-        let ops = vec![Operation::Check(CheckOperation {
-            files: vec![],
-            exclude: vec![],
-            diff_files: None,
-            diff_lines: None,
-            rules: vec![rule_a, rule_b],
-            tree_mode: None,
-            language: None,
-            ignore_whitespace: false,
-            parse_depth: None,
-            ruleset_include: vec![],
-            ruleset_exclude: vec![],
-            inline_source: None,
-        })];
-
-        let report = run(&ops);
-        assert_eq!(
-            report.all_matches().len(), 2,
-            "each rule should match the file exactly once, not once per overlapping glob"
-        );
     }
 }

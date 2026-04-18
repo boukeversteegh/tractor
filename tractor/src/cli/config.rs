@@ -10,11 +10,12 @@
 use tractor::report::{ReportMatch, Severity};
 
 use crate::cli::SharedArgs;
-use crate::executor::{self, CheckOperation, ExecuteOptions, Operation, QueryOperation, SetOperation, TestOperation};
+use crate::executor::{self, ExecuteOptions, Operation};
 use crate::cli::context::RunContext;
 use crate::format::{ViewField, GroupDimension, render_report};
-use crate::input::{resolve_input, InputMode, Source};
+use crate::input::{resolve_input, InputMode, FileResolver, ResolverOptions, SourceRequest};
 use crate::matcher::{project_report, apply_message_template};
+use crate::tractor_config::{ConfigOperation, ConfigOperationKind};
 
 /// Parameters that vary per command when executing a config file.
 pub struct ConfigRunParams<'a> {
@@ -30,7 +31,7 @@ pub struct ConfigRunParams<'a> {
     pub view_override: Option<&'a str>,
     pub message: Option<String>,
     pub default_group: &'a [GroupDimension],
-    pub op_filter: fn(&Operation) -> bool,
+    pub op_filter: fn(ConfigOperationKind) -> bool,
     pub filter_label: &'a str,
 }
 
@@ -46,7 +47,7 @@ pub fn run_from_config(params: ConfigRunParams) -> Result<(), Box<dyn std::error
 
     // Resolve CLI input once. Inline mode consumes the positional `files`
     // arg as the Source's virtual path, so it must NOT leak into
-    // `ExecuteOptions.cli_files` (which would ask FileResolver to
+    // `ResolverOptions.cli_files` (which would ask FileResolver to
     // intersect the operation against a file the user never wanted to
     // read from disk). Disk mode keeps the cli_files flowing as today.
     let (cli_inline_source, cli_files_for_resolver) = match resolve_input(
@@ -58,18 +59,21 @@ pub fn run_from_config(params: ConfigRunParams) -> Result<(), Box<dyn std::error
         InputMode::Files(files) => (None, files),
     };
 
-    let mut operations: Vec<_> = loaded.operations.into_iter()
-        .filter(params.op_filter)
+    let mut config_ops: Vec<ConfigOperation> = loaded.operations.into_iter()
+        .filter(|op| (params.op_filter)(op.kind()))
         .collect();
 
     // Attach the CLI inline source to every config-loaded operation of a
     // kind that understands inline input. This is what unlocks
     //   `cat proposed.cs | tractor check --config tractor.yml src/Foo.cs`
     // by making the piped content participate in the config's rules exactly
-    // like a disk file at the virtual path.
+    // like a disk file at the virtual path. Per-op already-set sources win.
     if let Some(ref inline) = cli_inline_source {
-        for op in &mut operations {
-            attach_inline_source(op, inline.clone());
+        for op in &mut config_ops {
+            let inputs = op.inputs_mut();
+            if inputs.inline_source.is_none() {
+                inputs.inline_source = Some(inline.clone());
+            }
         }
     }
 
@@ -81,7 +85,7 @@ pub fn run_from_config(params: ConfigRunParams) -> Result<(), Box<dyn std::error
 
     let mut builder = tractor::ReportBuilder::new();
 
-    if operations.is_empty() {
+    if config_ops.is_empty() {
         builder.add(ReportMatch {
             file: params.config_path.to_string(),
             line: 0, column: 0, end_line: 0, end_column: 0,
@@ -102,14 +106,51 @@ pub fn run_from_config(params: ConfigRunParams) -> Result<(), Box<dyn std::error
                 std::path::PathBuf::from(normalized.as_str())
             });
 
-        let options = ExecuteOptions {
+        // Build the resolver ONCE for the whole config run — shared state
+        // (root files, CLI files, global diff) is expanded here.
+        let resolver_opts = ResolverOptions {
             verbose: ctx.verbose,
-            base_dir,
+            base_dir: base_dir.clone(),
             diff_files: params.shared.diff_files.clone(),
             diff_lines: params.shared.diff_lines.clone(),
             max_files: params.shared.max_files,
             cli_files: cli_files_for_resolver,
             config_root_files: loaded.root_files,
+        };
+        let resolver = match FileResolver::new(&resolver_opts) {
+            Ok(r) => r,
+            Err(e) => {
+                builder.add(crate::input::make_fatal_diagnostic(params.filter_label, e));
+                let mut report = builder.build();
+                project_report(&mut report, &ctx.view);
+                let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
+                let report = report.with_grouping(&dims);
+                return render_report(&report, &ctx, None);
+            }
+        };
+
+        // For each config operation, resolve its inputs into the unified
+        // `sources + filters` pair, then inject into the operation skeleton.
+        let mut operations: Vec<Operation> = Vec::with_capacity(config_ops.len());
+        for config_op in config_ops {
+            let inputs = config_op.inputs().clone();
+            // Build the SourceRequest from per-op inputs.
+            let request = SourceRequest {
+                files: &inputs.files,
+                exclude: &inputs.exclude,
+                diff_files: inputs.diff_files.as_deref(),
+                diff_lines: inputs.diff_lines.as_deref(),
+                command: params.filter_label,
+                language: inputs.language.as_deref(),
+                inline_source: inputs.inline_source.as_ref(),
+            };
+            let (sources, filters) = resolver.resolve(&request, &mut builder);
+            operations.push(config_op.into_operation(sources, filters));
+        }
+
+        let options = ExecuteOptions {
+            verbose: ctx.verbose,
+            base_dir,
         };
 
         executor::execute(&operations, &options, &mut builder)?;
@@ -127,23 +168,3 @@ pub fn run_from_config(params: ConfigRunParams) -> Result<(), Box<dyn std::error
     render_report(&report, &ctx, None)
 }
 
-/// Attach a CLI-provided inline source to a config-loaded operation.
-///
-/// Per-operation already-set `inline_source` takes precedence (e.g. set
-/// operations that declare their own inline content in YAML); otherwise
-/// we plant the CLI source. Update operations don't accept inline input.
-fn attach_inline_source(op: &mut Operation, inline: Source) {
-    match op {
-        Operation::Check(CheckOperation { inline_source, .. })
-        | Operation::Query(QueryOperation { inline_source, .. })
-        | Operation::Set(SetOperation { inline_source, .. })
-        | Operation::Test(TestOperation { inline_source, .. }) => {
-            if inline_source.is_none() {
-                *inline_source = Some(inline);
-            }
-        }
-        Operation::Update(_) => {
-            // update mutates disk, no inline flow — intentional no-op.
-        }
-    }
-}

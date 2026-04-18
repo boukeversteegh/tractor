@@ -30,10 +30,9 @@ use tractor::{
 };
 use tractor::parser::ParseError;
 
-/// Display label for a path-less inline source (stdin or `-s` with no
-/// positional path). One constant, one concern — the formatter checks this
-/// to suppress location prefixes in the truly path-less case.
-pub const PATHLESS_LABEL: &str = "<string>";
+// The sentinel for path-less sources lives in the library crate; re-export
+// here so existing `crate::input::PATHLESS_LABEL` callers still work.
+pub use tractor::PATHLESS_LABEL;
 
 /// A single input to an operation. Virtual and disk sources share this
 /// shape so the executor can treat them uniformly.

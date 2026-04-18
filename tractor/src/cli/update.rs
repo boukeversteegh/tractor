@@ -17,7 +17,7 @@ pub struct UpdateArgs {
 }
 use crate::executor::{self, ExecuteOptions, Operation, UpdateOperation};
 use crate::cli::context::RunContext;
-use crate::input::InputMode;
+use crate::input::{InputMode, FileResolver, ResolverOptions, SourceRequest};
 use crate::format::ViewField;
 
 pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
@@ -36,30 +36,52 @@ pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    let op = Operation::Update(UpdateOperation {
-        files: files.clone(),
-        exclude: vec![],
-        diff_files: None,
-        diff_lines: None,
-        xpath: xpath_expr.to_string(),
-        value: args.value.clone(),
-        tree_mode: ctx.tree_mode,
-        language: ctx.lang.clone(),
-        limit: ctx.limit,
-        ignore_whitespace: ctx.ignore_whitespace,
-        parse_depth: ctx.parse_depth,
-    });
-
-    let options = ExecuteOptions {
+    // Build the file resolver for this single-op run.
+    let resolver_opts = ResolverOptions {
         verbose: ctx.verbose,
+        base_dir: None,
         diff_files: args.shared.diff_files.clone(),
         diff_lines: args.shared.diff_lines.clone(),
         max_files: args.shared.max_files,
-        ..Default::default()
+        cli_files: Vec::new(),
+        config_root_files: None,
     };
+    let resolver = FileResolver::new(&resolver_opts)
+        .map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
 
     let mut builder = tractor::ReportBuilder::new();
-    executor::execute(&[op], &options, &mut builder)?;
+
+    let request = SourceRequest {
+        files,
+        exclude: &[],
+        diff_files: None,
+        diff_lines: None,
+        command: "update",
+        language: ctx.lang.as_deref(),
+        inline_source: None,
+    };
+    let (sources, filters) = resolver.resolve(&request, &mut builder);
+
+    if !builder.has_fatals() {
+        let op = Operation::Update(UpdateOperation {
+            sources,
+            filters,
+            xpath: xpath_expr.to_string(),
+            value: args.value.clone(),
+            tree_mode: ctx.tree_mode,
+            language: ctx.lang.clone(),
+            limit: ctx.limit,
+            ignore_whitespace: ctx.ignore_whitespace,
+            parse_depth: ctx.parse_depth,
+        });
+
+        let options = ExecuteOptions {
+            verbose: ctx.verbose,
+            base_dir: None,
+        };
+
+        executor::execute(&[op], &options, &mut builder)?;
+    }
     let report = builder.build();
     if report.success == Some(false) {
         return Err("update matched no nodes".into());

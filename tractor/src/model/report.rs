@@ -82,6 +82,23 @@ impl DiagnosticOrigin {
 }
 
 // ---------------------------------------------------------------------------
+// PATHLESS_LABEL — single sentinel for "this input has no meaningful path"
+// ---------------------------------------------------------------------------
+
+/// Display label for a path-less source (piped stdin or `-s/--string` without
+/// a positional path). One sentinel, used in three places:
+///
+/// - `Source::inline_pathless` stores it as the source path so downstream code
+///   never special-cases "no path" through `Option`s.
+/// - `format/text.rs` checks it to suppress the `file:line:col` prefix when
+///   there's no meaningful path to print.
+/// - `mutation/replace.rs` checks it to refuse disk writes for pathless inputs.
+///
+/// Lives in the library crate so both `format` and `mutation` can import it
+/// without crossing the binary/library module-role boundary.
+pub const PATHLESS_LABEL: &str = "<string>";
+
+// ---------------------------------------------------------------------------
 // ReportMatch
 // ---------------------------------------------------------------------------
 

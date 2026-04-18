@@ -5,9 +5,10 @@
 //! `resolve_files()`, `resolve_op_files()`, `build_filters()`, and
 //! `apply_diff_files_filter()` into a single `FileResolver` struct.
 //!
-//! The resolver is constructed once from `ExecuteOptions`, pre-computing shared
-//! state (root files, CLI files, global diff). Each operation then calls
-//! `resolve()` with a `FileRequest` to get its resolved file set.
+//! The resolver is constructed once from `ResolverOptions`, pre-computing shared
+//! state (root files, CLI files, global diff). Each operation-construction
+//! site then calls `resolve()` with a `SourceRequest` to get a unified
+//! `Vec<Source>` plus the `ResultFilter`s the operation must apply.
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -15,17 +16,43 @@ use std::path::{Path, PathBuf};
 use tractor::{expand_globs_checked, detect_language, normalize_path, pattern_literal_prefix, FilePrune, NormalizedPath, GlobPattern, CompiledPattern};
 use tractor::report::{ReportBuilder, ReportMatch, Severity, DiagnosticOrigin};
 
-use crate::executor::ExecuteOptions;
 use super::filter::ResultFilter;
+use super::source::Source;
 use super::git;
 
 // ---------------------------------------------------------------------------
-// FileRequest
+// ResolverOptions
 // ---------------------------------------------------------------------------
 
-/// Describes what files an operation needs. The FileResolver decides how
-/// to resolve them (glob expansion, intersection, filtering).
-pub(crate) struct FileRequest<'a> {
+/// Settings the `FileResolver` needs to build its shared state (root globs,
+/// CLI globs, global diff). These are the CLI/config knobs the executor
+/// itself no longer cares about — moved here so `ExecuteOptions` only
+/// carries execution-time state.
+#[derive(Debug, Clone, Default)]
+pub struct ResolverOptions {
+    pub verbose: bool,
+    pub base_dir: Option<PathBuf>,
+    pub diff_files: Option<String>,
+    pub diff_lines: Option<String>,
+    pub max_files: usize,
+    /// Positional CLI file patterns, intersected with operation file globs.
+    pub cli_files: Vec<String>,
+    /// Root-level file patterns from config.
+    /// `None` = key missing (unrestricted); `Some(vec![])` = explicitly empty.
+    pub config_root_files: Option<Vec<String>>,
+}
+
+// ---------------------------------------------------------------------------
+// SourceRequest — what a single operation needs, as input to the resolver
+// ---------------------------------------------------------------------------
+
+/// Describes the inputs of a single operation. The resolver expands globs,
+/// applies filters, then produces the unified `Vec<Source>` the executor runs.
+///
+/// There is no `has_inline` flag — the inline source's presence is derived
+/// from `inline_source.is_some()`. And there is no separate disk-vs-virtual
+/// branch — both collapse into the same `Vec<Source>` output.
+pub struct SourceRequest<'a> {
     /// Operation-level glob patterns (from operation `files:` field).
     pub files: &'a [String],
     /// Exclude patterns (union of root + operation excludes).
@@ -36,15 +63,11 @@ pub(crate) struct FileRequest<'a> {
     pub diff_lines: Option<&'a str>,
     /// Command name for diagnostics (e.g. "check", "query").
     pub command: &'a str,
-    /// Optional inline source whose virtual path should participate in
-    /// `--diff-lines` hunk computation (diff against the git baseline for
-    /// that path). `None` preserves prior behaviour for disk-only flows.
-    pub inline: Option<(&'a NormalizedPath, &'a str)>,
-    /// `true` when the operation has an inline source in any form
-    /// (path-less or virtual-pathed). Tells FileResolver to treat the
-    /// operation as having a valid input even when no disk-file patterns
-    /// are provided — suppresses the "no file patterns specified" fatal.
-    pub has_inline: bool,
+    /// Language override for disk sources (rule/operation-level `-l`).
+    /// Inline sources carry their own language; this only affects disk.
+    pub language: Option<&'a str>,
+    /// Optional inline source; rides alongside disk sources in the result.
+    pub inline_source: Option<&'a Source>,
 }
 
 // ---------------------------------------------------------------------------
@@ -52,9 +75,9 @@ pub(crate) struct FileRequest<'a> {
 // ---------------------------------------------------------------------------
 
 /// Centralized file resolver that owns all glob expansion, intersection,
-/// exclusion, and filtering. Constructed once from ExecuteOptions, then
-/// called per-operation with a FileRequest.
-pub(crate) struct FileResolver {
+/// exclusion, and filtering. Constructed once from `ResolverOptions`, then
+/// called per-operation with a `SourceRequest`.
+pub struct FileResolver {
     /// Expanded root-level files (from config `files:`).
     /// `None` when the config key was missing (unrestricted).
     /// `Some(empty)` when explicitly `files: []`.
@@ -70,7 +93,7 @@ pub(crate) struct FileResolver {
     /// Literal path prefixes of the CLI file args. Plays the same role
     /// as `root_prefixes` — sibling constraint during expansion.
     cli_prefixes: Vec<NormalizedPath>,
-    // Resolution parameters (copied from ExecuteOptions for self-containment)
+    // Resolution parameters (copied from ResolverOptions for self-containment)
     verbose: bool,
     base_dir: Option<PathBuf>,
     max_files: usize,
@@ -91,10 +114,10 @@ fn prefixes_of_patterns(patterns: &[String]) -> Vec<NormalizedPath> {
 }
 
 impl FileResolver {
-    /// Build from ExecuteOptions, expanding shared globs once.
+    /// Build from resolver-scope options, expanding shared globs once.
     /// Normalizes all paths to forward slashes (fix #98).
     /// Returns Err with a fatal diagnostic message on expansion failure.
-    pub fn new(options: &ExecuteOptions) -> Result<Self, String> {
+    pub fn new(options: &ResolverOptions) -> Result<Self, String> {
         let expansion_limit = options.max_files * 10;
 
         let format_patterns = |patterns: &[String]| -> String {
@@ -251,30 +274,57 @@ impl FileResolver {
         self.base_dir.as_deref()
     }
 
-    /// Resolve files for an operation and build result filters.
-    /// Public entry point replacing resolve_op_files().
+    /// Resolve a single operation's inputs into the unified `Vec<Source>`
+    /// the executor runs, plus the `ResultFilter`s it must apply.
+    ///
+    /// This is the single entry point for turning "what the user declared"
+    /// into "what the executor consumes". Disk globs are expanded through
+    /// the full pipeline (intersections, excludes, diff, limits) and then
+    /// wrapped as `Source::disk`. An inline source, if present, is appended
+    /// to the result so downstream code sees one uniform list.
     pub fn resolve(
         &self,
-        request: &FileRequest,
+        request: &SourceRequest,
         report: &mut ReportBuilder,
-    ) -> (Vec<NormalizedPath>, Vec<Box<dyn ResultFilter>>) {
+    ) -> (Vec<Source>, Vec<Box<dyn ResultFilter>>) {
         let cwd = self.base_dir.as_deref()
             .unwrap_or_else(|| Path::new("."));
+        let inline_for_diff = request.inline_source.and_then(|s| {
+            if s.is_pathless() {
+                None
+            } else {
+                s.inline_content().map(|c| (&s.path, c))
+            }
+        });
         let filters = build_filters(
             self.global_diff_lines.as_deref(),
             request.diff_lines,
             cwd,
-            request.inline,
+            inline_for_diff,
         );
-        let files = self.resolve_files(request, &filters, report);
-        (files, filters)
+        let paths = self.resolve_files(request, &filters, report);
+
+        // Unify: wrap resolved paths as disk sources, then append the
+        // inline source (if any). Disk sources pick up the language
+        // override; inline sources already carry their own.
+        let mut sources: Vec<Source> = Vec::with_capacity(paths.len() + 1);
+        for path in paths {
+            let lang = request.language
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| detect_language(path.as_str()).to_string());
+            sources.push(Source::disk(path, lang));
+        }
+        if let Some(inline) = request.inline_source {
+            sources.push(inline.clone());
+        }
+        (sources, filters)
     }
 
     /// Internal: the core resolution pipeline.
     /// expansion → intersection → excludes → language → diff → limits
     fn resolve_files(
         &self,
-        request: &FileRequest,
+        request: &SourceRequest,
         filters: &[Box<dyn ResultFilter>],
         report: &mut ReportBuilder,
     ) -> Vec<NormalizedPath> {
@@ -385,7 +435,7 @@ impl FileResolver {
                 eprintln!("  files: using CLI files as base ({} file(s))", cli_set.len());
             }
             (cli_set.iter().cloned().collect(), vec![])
-        } else if self.base_dir.is_some() && !request.has_inline {
+        } else if self.base_dir.is_some() && request.inline_source.is_none() {
             // Config-based run with no files at any level AND no inline source
             // — fail with a clear message rather than silently doing nothing
             // (fix #127 bug 4). An inline source is a complete input on its
@@ -574,7 +624,7 @@ fn apply_diff_files_filter(files: Vec<NormalizedPath>, spec: Option<&str>, cwd: 
 }
 
 /// Build a fatal diagnostic for file resolution failures.
-pub(crate) fn make_fatal_diagnostic(command: &str, reason: String) -> ReportMatch {
+pub fn make_fatal_diagnostic(command: &str, reason: String) -> ReportMatch {
     ReportMatch {
         file: String::new(),
         line: 0, column: 0, end_line: 0, end_column: 0,
@@ -699,14 +749,14 @@ mod tests {
         };
 
         let mut builder = tractor::ReportBuilder::new();
-        let request = FileRequest {
+        let request = SourceRequest {
             files: &[],
             exclude: &[],
             diff_files: None,
             diff_lines: None,
             command: "check",
-            inline: None,
-            has_inline: false,
+            language: None,
+            inline_source: None,
         };
         let (files, _) = resolver.resolve(&request, &mut builder);
         assert!(files.is_empty(), "should return no files");
@@ -733,17 +783,17 @@ mod tests {
         };
 
         let mut builder = tractor::ReportBuilder::new();
-        let request = FileRequest {
+        let request = SourceRequest {
             files: &[],
             exclude: &[],
             diff_files: None,
             diff_lines: None,
             command: "query",
-            inline: None,
-            has_inline: false,
+            language: None,
+            inline_source: None,
         };
-        let (files, _) = resolver.resolve(&request, &mut builder);
-        assert!(files.is_empty());
+        let (sources, _) = resolver.resolve(&request, &mut builder);
+        assert!(sources.is_empty());
 
         let report = builder.build();
         assert!(report.all_matches().is_empty(), "should not emit diagnostic in non-config mode");
@@ -773,17 +823,17 @@ mod tests {
         let mut builder = tractor::ReportBuilder::new();
         // `[abc]` character classes are rejected by CompiledPattern.
         let exclude = vec!["/tmp/[abc]/**".to_string()];
-        let request = FileRequest {
+        let request = SourceRequest {
             files: &[],
             exclude: &exclude,
             diff_files: None,
             diff_lines: None,
             command: "check",
-            inline: None,
-            has_inline: false,
+            language: None,
+            inline_source: None,
         };
-        let (files, _) = resolver.resolve(&request, &mut builder);
-        assert!(files.is_empty(), "invalid exclude must short-circuit resolution");
+        let (sources, _) = resolver.resolve(&request, &mut builder);
+        assert!(sources.is_empty(), "invalid exclude must short-circuit resolution");
 
         let report = builder.build();
         let has_fatal = report.all_matches().iter().any(|m| {

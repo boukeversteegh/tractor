@@ -39,6 +39,7 @@ use crate::executor::{
     CheckOperation, Operation, QueryExpr, QueryOperation,
     SetMapping, SetOperation, SetReportMode, SetWriteMode, TestAssertion, TestOperation,
 };
+use crate::input::Source;
 
 // ---------------------------------------------------------------------------
 // Serde schema
@@ -334,7 +335,121 @@ struct RootScope {
     diff_lines: Option<String>,
 }
 
-fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<Operation, Box<dyn std::error::Error>> {
+// ---------------------------------------------------------------------------
+// ConfigOperation — parsed operation with its per-op input resolution data
+// ---------------------------------------------------------------------------
+
+/// Per-operation input-resolution data that lives on the config side until
+/// the `FileResolver` runs. Mirrors the fields that used to live directly
+/// on each `Operation*` struct: files, exclude, diff-files/lines, language
+/// override, inline source. The runner in `cli/config.rs` consumes these
+/// to drive `FileResolver::resolve`, then hands `sources`/`filters` into
+/// the final operation.
+#[derive(Debug, Clone, Default)]
+pub struct OperationInputs {
+    pub files: Vec<String>,
+    pub exclude: Vec<String>,
+    pub diff_files: Option<String>,
+    pub diff_lines: Option<String>,
+    /// Language override for disk sources (rule/operation-level).
+    pub language: Option<String>,
+    /// Inline content declared in config (e.g. set operation with
+    /// `inline-source:` key). None means no inline source at config level;
+    /// the CLI may still attach one via the shared resolver flow.
+    pub inline_source: Option<Source>,
+}
+
+/// A config-sourced operation, paired with the per-op input-resolution data
+/// that the runner needs to call `FileResolver::resolve`. The variant's
+/// enclosed `CheckOperation`/etc. is a skeleton with `sources` and
+/// `filters` empty — the runner fills them in from the resolver.
+pub enum ConfigOperation {
+    Check { inputs: OperationInputs, op: CheckOperation },
+    Set { inputs: OperationInputs, op: SetOperation },
+    Query { inputs: OperationInputs, op: QueryOperation },
+    Test { inputs: OperationInputs, op: TestOperation },
+}
+
+impl ConfigOperation {
+    /// Consumes the skeleton, injecting already-resolved sources/filters,
+    /// and returns the wrapped [`Operation`] ready for the executor.
+    pub fn into_operation(
+        self,
+        sources: Vec<Source>,
+        filters: Vec<Box<dyn crate::input::filter::ResultFilter>>,
+    ) -> Operation {
+        match self {
+            ConfigOperation::Check { op, .. } => {
+                let mut op = op;
+                op.sources = sources;
+                op.filters = filters;
+                Operation::Check(op)
+            }
+            ConfigOperation::Set { op, .. } => {
+                let mut op = op;
+                op.sources = sources;
+                op.filters = filters;
+                Operation::Set(op)
+            }
+            ConfigOperation::Query { op, .. } => {
+                let mut op = op;
+                op.sources = sources;
+                op.filters = filters;
+                Operation::Query(op)
+            }
+            ConfigOperation::Test { op, .. } => {
+                let mut op = op;
+                op.sources = sources;
+                op.filters = filters;
+                Operation::Test(op)
+            }
+        }
+    }
+
+    /// Borrow the input-resolution data for the runner.
+    pub fn inputs(&self) -> &OperationInputs {
+        match self {
+            ConfigOperation::Check { inputs, .. }
+            | ConfigOperation::Set { inputs, .. }
+            | ConfigOperation::Query { inputs, .. }
+            | ConfigOperation::Test { inputs, .. } => inputs,
+        }
+    }
+
+    /// Mutable borrow — used by the CLI runner to attach a CLI-provided
+    /// inline source to config-loaded operations that accept one.
+    pub fn inputs_mut(&mut self) -> &mut OperationInputs {
+        match self {
+            ConfigOperation::Check { inputs, .. }
+            | ConfigOperation::Set { inputs, .. }
+            | ConfigOperation::Query { inputs, .. }
+            | ConfigOperation::Test { inputs, .. } => inputs,
+        }
+    }
+
+    /// Predicate-style accessor for the existing `op_filter` API in
+    /// `ConfigRunParams`. Returns an `Operation`-shaped token suitable for
+    /// matches!() checks without actually materialising the operation.
+    pub fn kind(&self) -> ConfigOperationKind {
+        match self {
+            ConfigOperation::Check { .. } => ConfigOperationKind::Check,
+            ConfigOperation::Set { .. } => ConfigOperationKind::Set,
+            ConfigOperation::Query { .. } => ConfigOperationKind::Query,
+            ConfigOperation::Test { .. } => ConfigOperationKind::Test,
+        }
+    }
+}
+
+/// Lightweight operation-kind marker used by `op_filter`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ConfigOperationKind {
+    Check,
+    Set,
+    Query,
+    Test,
+}
+
+fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<ConfigOperation, Box<dyn std::error::Error>> {
     let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
     let rules: Vec<Rule> = config.rules.into_iter().map(|r| {
@@ -372,20 +487,29 @@ fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<Operation, Bo
 
     let (files, exclude, diff_files, diff_lines) = merge_scope(scope, config.files, config.exclude, config.diff_files, config.diff_lines);
 
-    Ok(Operation::Check(CheckOperation {
+    let inputs = OperationInputs {
         files,
         exclude,
         diff_files,
         diff_lines,
+        language: config.language.clone(),
+        inline_source: None,
+    };
+
+    // Operation skeleton — sources/filters filled in by runner after resolve.
+    let op = CheckOperation {
+        sources: Vec::new(),
+        filters: Vec::new(),
         rules,
         tree_mode,
-        language: config.language,
         ignore_whitespace: false,
         parse_depth: None,
         ruleset_include: vec![],
         ruleset_exclude: vec![],
-        inline_source: None,
-    }))
+        ruleset_default_language: config.language,
+    };
+
+    Ok(ConfigOperation::Check { inputs, op })
 }
 
 fn selector_xpath(expr: &str) -> String {
@@ -415,7 +539,7 @@ fn normalize_set_expression(
     }).collect())
 }
 
-fn convert_set(config: SetConfig, scope: &RootScope) -> Result<Operation, Box<dyn std::error::Error>> {
+fn convert_set(config: SetConfig, scope: &RootScope) -> Result<ConfigOperation, Box<dyn std::error::Error>> {
     let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
     let mut mappings = config.mappings.into_iter().map(|m| {
@@ -463,23 +587,30 @@ fn convert_set(config: SetConfig, scope: &RootScope) -> Result<Operation, Box<dy
         None
     };
 
-    Ok(Operation::Set(SetOperation {
+    let inputs = OperationInputs {
         files,
         exclude,
         diff_files,
         diff_lines,
+        language: config.language,
+        inline_source,
+    };
+
+    let op = SetOperation {
+        sources: Vec::new(),
+        filters: Vec::new(),
         mappings,
         tree_mode,
-        language: config.language,
         limit: config.limit,
         ignore_whitespace: config.ignore_whitespace,
-        inline_source,
         write_mode,
         report_mode,
-    }))
+    };
+
+    Ok(ConfigOperation::Set { inputs, op })
 }
 
-fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<Operation, Box<dyn std::error::Error>> {
+fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<ConfigOperation, Box<dyn std::error::Error>> {
     let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
     let queries = config.queries.into_iter().map(|q| {
@@ -488,22 +619,30 @@ fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<Operation, Bo
 
     let (files, exclude, diff_files, diff_lines) = merge_scope(scope, config.files, config.exclude, config.diff_files, config.diff_lines);
 
-    Ok(Operation::Query(QueryOperation {
+    let inputs = OperationInputs {
         files,
         exclude,
         diff_files,
         diff_lines,
+        language: config.language.clone(),
+        inline_source: None,
+    };
+
+    let op = QueryOperation {
+        sources: Vec::new(),
+        filters: Vec::new(),
         queries,
         tree_mode,
         language: config.language,
         limit: config.limit,
         ignore_whitespace: false,
         parse_depth: None,
-        inline_source: None,
-    }))
+    };
+
+    Ok(ConfigOperation::Query { inputs, op })
 }
 
-fn convert_test(config: TestConfig, scope: &RootScope) -> Result<Operation, Box<dyn std::error::Error>> {
+fn convert_test(config: TestConfig, scope: &RootScope) -> Result<ConfigOperation, Box<dyn std::error::Error>> {
     let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
     let assertions = config.assertions.into_iter().map(|a| {
@@ -515,19 +654,27 @@ fn convert_test(config: TestConfig, scope: &RootScope) -> Result<Operation, Box<
 
     let (files, exclude, diff_files, diff_lines) = merge_scope(scope, config.files, config.exclude, config.diff_files, config.diff_lines);
 
-    Ok(Operation::Test(TestOperation {
+    let inputs = OperationInputs {
         files,
         exclude,
         diff_files,
         diff_lines,
+        language: config.language.clone(),
+        inline_source: None,
+    };
+
+    let op = TestOperation {
+        sources: Vec::new(),
+        filters: Vec::new(),
         assertions,
         tree_mode,
         language: config.language,
         limit: config.limit,
         ignore_whitespace: false,
         parse_depth: None,
-        inline_source: None,
-    }))
+    };
+
+    Ok(ConfigOperation::Test { inputs, op })
 }
 
 /// Merge root-level scope with per-operation scope.
@@ -610,14 +757,15 @@ fn config_to_operations(config: ConfigFile) -> Result<LoadedConfig, Box<dyn std:
 ///
 /// Root-level `files` are intersected with each operation's files at resolve
 /// time, so they must be preserved independently rather than merged away.
-#[derive(Debug)]
 pub struct LoadedConfig {
     /// Root-level file glob patterns that constrain all operations.
     /// `None` when the key is missing (unrestricted); `Some(vec![])` when
     /// explicitly empty.
     pub root_files: Option<Vec<String>>,
-    /// Parsed operations (with their own files, excludes, etc.).
-    pub operations: Vec<Operation>,
+    /// Parsed operations paired with their per-op input-resolution data.
+    /// Sources/filters are filled in by the runner once the shared
+    /// `FileResolver` has resolved each operation's file set.
+    pub operations: Vec<ConfigOperation>,
 }
 
 /// Parse a tractor config file into a `LoadedConfig`.
