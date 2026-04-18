@@ -161,6 +161,9 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
         apply_message_template(&mut report, template);
     }
 
+    // Populate /schema before project_report prunes trees.
+    ctx.populate_schema_if_requested(&mut report);
+
     // Project for the requested view and render.
     project_report(&mut report, &ctx.view);
     let report = {

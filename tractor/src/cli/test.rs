@@ -133,6 +133,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
     builder.set_expected(expect.clone());
     let mut report = builder.build();
 
+    ctx.populate_schema_if_requested(&mut report);
     project_report(&mut report, &ctx.view);
     let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
     let report = report.with_grouping(&dims);

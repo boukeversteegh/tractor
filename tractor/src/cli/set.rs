@@ -219,6 +219,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
         apply_message_template(&mut report, template);
     }
 
+    ctx.populate_schema_if_requested(&mut report);
     project_report(&mut report, &ctx.view);
     let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
     let report = report.with_grouping(&dims);

@@ -174,6 +174,23 @@ impl RunContext {
     pub fn schema_depth(&self) -> Option<usize> {
         self.depth.or(Some(4))
     }
+
+    /// Populate `report.schema` when the view requests it and schema is
+    /// not already set. Mode-agnostic so query, check, test, set, run, and
+    /// config all support `-v schema` / `-p schema` uniformly.
+    ///
+    /// Must be called **before** `project_report`, which strips tree nodes
+    /// that the schema collector reads from.
+    ///
+    /// Structured formats embed schema as an opaque string — colors would
+    /// leak as literal escape codes, so compute plain text for them.
+    pub fn populate_schema_if_requested(&self, report: &mut tractor::report::Report) {
+        if !self.view.has(ViewField::Schema) || report.schema.is_some() {
+            return;
+        }
+        let use_color = matches!(self.output_format, OutputFormat::Text) && self.use_color;
+        crate::matcher::populate_schema(report, self.schema_depth(), use_color);
+    }
 }
 
 /// Apply the `-p` view replacement rule and emit stderr warnings for

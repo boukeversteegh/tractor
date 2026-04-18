@@ -44,7 +44,7 @@ use crate::executor::{self, ExecuteOptions, Operation, QueryOperation, QueryExpr
 use crate::cli::context::RunContext;
 use crate::input::InputMode;
 use crate::format::{ViewField, GroupDimension, render_report};
-use crate::matcher::{run_debug, project_report, populate_schema, apply_message_template};
+use crate::matcher::{run_debug, project_report, apply_message_template};
 use super::config::{run_from_config, ConfigRunParams};
 
 pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
@@ -136,13 +136,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Populate /schema before project_report prunes trees.
-    // Structured formats embed schema as an opaque string — colors would
-    // leak as literal escape codes, so compute plain text for them.
-    if ctx.view.has(ViewField::Schema) {
-        use crate::format::OutputFormat;
-        let schema_color = matches!(ctx.output_format, OutputFormat::Text) && ctx.use_color;
-        populate_schema(&mut report, ctx.schema_depth(), schema_color);
-    }
+    ctx.populate_schema_if_requested(&mut report);
 
     // Apply CLI message template if provided.
     if let Some(ref template) = ctx.message {
