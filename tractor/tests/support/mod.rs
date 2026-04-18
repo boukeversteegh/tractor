@@ -91,10 +91,14 @@ impl TractorInvocation {
             };
 
             match literal {
-                Some("-v") | Some("--view") => {
+                Some("-v") | Some("--view") | Some("-f") | Some("--format") => {
                     let _ = iter.next();
                 }
-                Some(value) if value.starts_with("-v=") || value.starts_with("--view=") => {}
+                Some(value)
+                    if value.starts_with("-v=")
+                        || value.starts_with("--view=")
+                        || value.starts_with("-f=")
+                        || value.starts_with("--format=") => {}
                 _ => args.push(arg),
             }
         }
@@ -104,6 +108,11 @@ impl TractorInvocation {
             stdin: self.stdin.clone(),
             no_color: self.no_color,
         };
+        // Bare scalar count for assertions: -f text honors the text-mode
+        // bare-count contract (see format/text.rs). Avoids structural output
+        // from gcc/json/xml/etc. for this helper-invocation only.
+        invocation.args.push(CommandArg::Literal("-f".to_string()));
+        invocation.args.push(CommandArg::Literal("text".to_string()));
         invocation.args.push(CommandArg::Literal("-v".to_string()));
         invocation
             .args
