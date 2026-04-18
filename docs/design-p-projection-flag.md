@@ -179,7 +179,9 @@ This is a warning, not an error — malformed combinations still produce output.
 
 The `-p` replacement of `-v` is an **early-stage normalization**, applied right after flag parsing. It is not the final view set the renderer sees.
 
-Downstream stages still run as today. In particular, each output format may adjust the view set to include fields it structurally requires — e.g. formats that always emit location may add `file`/`line`/`column`, and the per-match renderer injects diagnostic extras (`severity`, `reason`, `origin`, `lines`) when a match has them, via `render_fields_for_match` in `tractor/src/format/shared.rs:64`. That behavior remains intact.
+Downstream stages still run as today. For **structural** projections (`-p results`, `-p report`), each output format may adjust the view set to include fields it structurally requires — e.g. formats that always emit location may add `file`/`line`/`column`, and the per-match renderer injects diagnostic extras (`severity`, `reason`, `origin`, `lines`) when a match has them, via `render_fields_for_match` in `tractor/src/format/shared.rs:64`. That behavior remains intact.
+
+**View-level projections (`-p tree|value|source|lines|schema|count`) are strict:** they emit exactly the projected field, with no `<match>` wrapper and no diagnostic extras. This preserves the "bare projection" shape from §1.1 and honors the "no file-path data" rule from §4.1. Users who want diagnostic extras alongside the tree/value/etc. should use `-p results -v tree,severity,reason` (which respects `-v`).
 
 So the order is:
 
@@ -547,9 +549,8 @@ warning: -m message template has no effect with -p summary (no per-match renderi
 Format-layer adjustments run **after** `-p`'s `-v` replacement. The renderer still adds what it needs.
 
 - [x] `-p results -f json` → each match includes `file`, `line`, `column` attributes even if `-v` didn't list them (format adds them).
-- [x] `-p tree -f xml` in a check command → diagnostic extras (`severity`, `reason`, `origin`, `lines`) still appended per match if the match has them — via `render_fields_for_match` at `tractor/src/format/shared.rs:64`.
-- [x] `-p tree` does not suppress format-required fields in the per-match output.
-- [x] `-p tree --single` does not suppress format-required fields on the singular match.
+- [x] `-p results -f xml` in a check command → diagnostic extras (`severity`, `reason`, `origin`, `lines`) still appended per match if the match has them — via `render_fields_for_match` at `tractor/src/format/shared.rs:64`.
+- [x] View-level per-match projections (`-p tree|value|source|lines`) are strict: they emit exactly the projected field, no `<match>` wrapper, no diagnostic extras. Users wanting extras alongside the tree should use `-p results -v tree,severity,reason`.
 
 ### 7. Content-independence contract
 

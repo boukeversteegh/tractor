@@ -16,7 +16,7 @@ use tractor::{
     RenderOptions,
 };
 
-use super::options::{OutputFormat, Projection, ViewField, ViewSet};
+use super::options::{OutputFormat, Projection, ViewSet};
 use super::json::{match_to_value, summary_to_json, totals_to_json};
 use super::xml::{append_summary_xml, append_totals_xml, escape_xml};
 use super::text::render_text_report;
@@ -168,8 +168,19 @@ fn render_match_field_xml(
                 .map(|n| render_xml_node(n, render_opts))
                 .unwrap_or_default();
             let body = body.trim_end();
-            let inner = if body.is_empty() { String::new() } else { format!("\n{}{}\n{}", indent, body.replace('\n', &format!("\n{}", indent)), indent) };
-            format!("{}<tree>{}</tree>\n", indent, inner)
+            if body.is_empty() {
+                return format!("{}<tree/>\n", indent);
+            }
+            let deep = format!("{}  ", indent);
+            let mut out = String::new();
+            out.push_str(&format!("{}<tree>\n", indent));
+            for line in body.lines() {
+                out.push_str(&deep);
+                out.push_str(line);
+                out.push('\n');
+            }
+            out.push_str(&format!("{}</tree>\n", indent));
+            out
         }
         Projection::Value => {
             let v = rm.value.as_deref().unwrap_or("");
@@ -180,9 +191,10 @@ fn render_match_field_xml(
             format!("{}<source>{}</source>\n", indent, escape_xml(s))
         }
         Projection::Lines => {
+            let deep = format!("{}  ", indent);
             let inner = rm.lines.as_deref().map(|ls| {
                 ls.iter()
-                    .map(|l| format!("{}  <line>{}</line>\n", indent, escape_xml(l)))
+                    .map(|l| format!("{}<line>{}</line>\n", deep, escape_xml(l)))
                     .collect::<String>()
             }).unwrap_or_default();
             if inner.is_empty() {
@@ -397,7 +409,7 @@ fn render_summary_projection(report: &Report, format: OutputFormat) -> String {
                 out.push_str(&format!("Query: {}\n", query));
             }
             if let Some(ref totals) = report.totals {
-                out.push_str(&super::text::format_summary_public(totals, report.success, report.expected.as_deref()));
+                out.push_str(&super::text::format_summary(totals, report.success, report.expected.as_deref()));
             }
             out
         }
@@ -421,7 +433,7 @@ fn render_totals_projection(report: &Report, format: OutputFormat) -> String {
             body
         }
         OutputFormat::Text => {
-            super::text::format_summary_public(totals, report.success, report.expected.as_deref())
+            super::text::format_summary(totals, report.success, report.expected.as_deref())
         }
         _ => String::new(),
     }
@@ -473,7 +485,3 @@ pub fn warn_single_on_singular(projection: Projection) {
         projection.name(),
     );
 }
-
-// The unused-imports guard — these are pulled in only for specific arms.
-#[allow(dead_code)]
-fn _unused(_: ViewField) {}

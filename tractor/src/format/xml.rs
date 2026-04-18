@@ -112,7 +112,6 @@ pub(crate) fn append_summary_xml(body: &mut String, report: &tractor::report::Re
 }
 
 /// Render the totals block alone (used when totals is projected to root).
-#[allow(dead_code)]
 pub(crate) fn append_totals_xml(body: &mut String, totals: &tractor::report::Totals, indent: &str) {
     let inner = format!("{}  ", indent);
     body.push_str(&format!("{}<totals>\n", indent));
@@ -137,13 +136,6 @@ pub(crate) fn append_totals_xml(body: &mut String, totals: &tractor::report::Tot
         body.push_str(&format!("{}<unchanged>{}</unchanged>\n", inner, totals.unchanged));
     }
     body.push_str(&format!("{}</totals>\n", indent));
-}
-
-/// Expose `escape` to sibling modules (needed when projections serialize
-/// strings outside of the report envelope).
-#[allow(dead_code)]
-pub(crate) fn escape_text(s: &str) -> String {
-    escape(s)
 }
 
 /// Public XML-escape for use by projection rendering.
