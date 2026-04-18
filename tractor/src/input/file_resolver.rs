@@ -270,6 +270,7 @@ impl FileResolver {
     }
 
     /// The base directory used for resolving relative paths.
+    #[allow(dead_code)]
     pub fn base_dir(&self) -> Option<&Path> {
         self.base_dir.as_deref()
     }

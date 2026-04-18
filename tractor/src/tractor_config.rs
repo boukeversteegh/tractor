@@ -370,6 +370,20 @@ pub enum ConfigOperation {
     Test { inputs: OperationInputs, op: TestOperation },
 }
 
+// Manual Debug impl because the inner `*Operation` structs hold
+// `Vec<Box<dyn ResultFilter>>`, which is not `Debug`. This prints only
+// the variant name + input-resolution data, which is all tests rely on.
+impl std::fmt::Debug for ConfigOperation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ConfigOperation::Check { inputs, .. } => f.debug_struct("ConfigOperation::Check").field("inputs", inputs).finish_non_exhaustive(),
+            ConfigOperation::Set { inputs, .. }   => f.debug_struct("ConfigOperation::Set").field("inputs", inputs).finish_non_exhaustive(),
+            ConfigOperation::Query { inputs, .. } => f.debug_struct("ConfigOperation::Query").field("inputs", inputs).finish_non_exhaustive(),
+            ConfigOperation::Test { inputs, .. }  => f.debug_struct("ConfigOperation::Test").field("inputs", inputs).finish_non_exhaustive(),
+        }
+    }
+}
+
 impl ConfigOperation {
     /// Consumes the skeleton, injecting already-resolved sources/filters,
     /// and returns the wrapped [`Operation`] ready for the executor.
@@ -768,6 +782,15 @@ pub struct LoadedConfig {
     pub operations: Vec<ConfigOperation>,
 }
 
+impl std::fmt::Debug for LoadedConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("LoadedConfig")
+            .field("root_files", &self.root_files)
+            .field("operations", &self.operations)
+            .finish()
+    }
+}
+
 /// Parse a tractor config file into a `LoadedConfig`.
 /// Format is detected from the file extension.
 pub fn load_tractor_config(path: &Path) -> Result<LoadedConfig, Box<dyn std::error::Error>> {
@@ -807,6 +830,32 @@ pub fn parse_config_toml(content: &str) -> Result<LoadedConfig, Box<dyn std::err
 mod tests {
     use super::*;
 
+    /// Unwrap a `ConfigOperation::Check` into (`&OperationInputs`, `&CheckOperation`).
+    fn as_check(op: &ConfigOperation) -> (&OperationInputs, &CheckOperation) {
+        match op {
+            ConfigOperation::Check { inputs, op } => (inputs, op),
+            _ => panic!("expected Check operation"),
+        }
+    }
+    fn as_set(op: &ConfigOperation) -> (&OperationInputs, &SetOperation) {
+        match op {
+            ConfigOperation::Set { inputs, op } => (inputs, op),
+            _ => panic!("expected Set operation"),
+        }
+    }
+    fn as_query(op: &ConfigOperation) -> (&OperationInputs, &QueryOperation) {
+        match op {
+            ConfigOperation::Query { inputs, op } => (inputs, op),
+            _ => panic!("expected Query operation"),
+        }
+    }
+    fn as_test(op: &ConfigOperation) -> (&OperationInputs, &TestOperation) {
+        match op {
+            ConfigOperation::Test { inputs, op } => (inputs, op),
+            _ => panic!("expected Test operation"),
+        }
+    }
+
     #[test]
     fn parse_yaml_root_level_check() {
         let yaml = r#"
@@ -819,15 +868,11 @@ check:
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
         assert_eq!(ops.len(), 1);
-        match &ops[0] {
-            Operation::Check(c) => {
-                assert_eq!(c.files, vec!["src/**/*.rs"]);
-                assert_eq!(c.rules.len(), 1);
-                assert_eq!(c.rules[0].id, "no-todo");
-                assert_eq!(c.rules[0].reason.as_deref(), Some("TODO found"));
-            }
-            _ => panic!("expected Check operation"),
-        }
+        let (inputs, c) = as_check(&ops[0]);
+        assert_eq!(inputs.files, vec!["src/**/*.rs"]);
+        assert_eq!(c.rules.len(), 1);
+        assert_eq!(c.rules[0].id, "no-todo");
+        assert_eq!(c.rules[0].reason.as_deref(), Some("TODO found"));
     }
 
     #[test]
@@ -843,17 +888,13 @@ set:
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
         assert_eq!(ops.len(), 1);
-        match &ops[0] {
-            Operation::Set(s) => {
-                assert_eq!(s.files, vec!["config.json"]);
-                assert_eq!(s.mappings.len(), 2);
-                assert_eq!(s.mappings[0].xpath, "//database/host");
-                assert_eq!(s.mappings[0].value, "localhost");
-                assert_eq!(s.mappings[1].xpath, "//database/port");
-                assert_eq!(s.mappings[1].value, "5432");
-            }
-            _ => panic!("expected Set operation"),
-        }
+        let (inputs, s) = as_set(&ops[0]);
+        assert_eq!(inputs.files, vec!["config.json"]);
+        assert_eq!(s.mappings.len(), 2);
+        assert_eq!(s.mappings[0].xpath, "//database/host");
+        assert_eq!(s.mappings[0].value, "localhost");
+        assert_eq!(s.mappings[1].xpath, "//database/port");
+        assert_eq!(s.mappings[1].value, "5432");
     }
 
     #[test]
@@ -872,8 +913,8 @@ set:
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
         assert_eq!(ops.len(), 2);
-        assert!(matches!(&ops[0], Operation::Check(_)));
-        assert!(matches!(&ops[1], Operation::Set(_)));
+        assert!(matches!(&ops[0], ConfigOperation::Check { .. }));
+        assert!(matches!(&ops[1], ConfigOperation::Set { .. }));
     }
 
     #[test]
@@ -898,17 +939,15 @@ operations:
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
         assert_eq!(ops.len(), 3);
-        assert!(matches!(&ops[0], Operation::Check(_)));
-        assert!(matches!(&ops[1], Operation::Set(_)));
-        assert!(matches!(&ops[2], Operation::Check(_)));
+        assert!(matches!(&ops[0], ConfigOperation::Check { .. }));
+        assert!(matches!(&ops[1], ConfigOperation::Set { .. }));
+        assert!(matches!(&ops[2], ConfigOperation::Check { .. }));
 
         // Verify ordering is preserved
-        if let Operation::Check(c) = &ops[0] {
-            assert_eq!(c.rules[0].id, "rule-a");
-        }
-        if let Operation::Check(c) = &ops[2] {
-            assert_eq!(c.rules[0].id, "rule-b");
-        }
+        let (_, c0) = as_check(&ops[0]);
+        assert_eq!(c0.rules[0].id, "rule-a");
+        let (_, c2) = as_check(&ops[2]);
+        assert_eq!(c2.rules[0].id, "rule-b");
     }
 
     #[test]
@@ -929,9 +968,9 @@ operations:
         let ops = parse_config_yaml(yaml).unwrap().operations;
         assert_eq!(ops.len(), 2);
         // Root-level check comes first
-        assert!(matches!(&ops[0], Operation::Check(_)));
+        assert!(matches!(&ops[0], ConfigOperation::Check { .. }));
         // Then operations list
-        assert!(matches!(&ops[1], Operation::Set(_)));
+        assert!(matches!(&ops[1], ConfigOperation::Set { .. }));
     }
 
     #[test]
@@ -948,10 +987,9 @@ check:
       severity: error
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
-        if let Operation::Check(c) = &ops[0] {
-            assert_eq!(c.rules[0].severity, Severity::Warning);
-            assert_eq!(c.rules[1].severity, Severity::Error);
-        }
+        let (_, c) = as_check(&ops[0]);
+        assert_eq!(c.rules[0].severity, Severity::Warning);
+        assert_eq!(c.rules[1].severity, Severity::Error);
     }
 
     #[test]
@@ -965,9 +1003,8 @@ set:
       value: "2.0"
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
-        if let Operation::Set(s) = &ops[0] {
-            assert_eq!(s.exclude, vec!["node_modules/**"]);
-        }
+        let (inputs, _) = as_set(&ops[0]);
+        assert_eq!(inputs.exclude, vec!["node_modules/**"]);
     }
 
     #[test]
@@ -978,19 +1015,16 @@ set:
   expression: "database[host='db.example.com'][port=5432]"
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
-        if let Operation::Set(s) = &ops[0] {
-            assert_eq!(s.mappings.len(), 2);
-            assert_eq!(s.mappings[0].xpath, "//database/host");
-            assert_eq!(s.mappings[0].value, "db.example.com");
-            assert_eq!(s.mappings[0].value_kind.as_deref(), Some("string"));
-            assert_eq!(s.mappings[1].xpath, "//database/port");
-            assert_eq!(s.mappings[1].value, "5432");
-            assert_eq!(s.mappings[1].value_kind.as_deref(), Some("number"));
-            assert_eq!(s.write_mode, SetWriteMode::InPlace);
-            assert_eq!(s.report_mode, SetReportMode::PerMatch);
-        } else {
-            panic!("expected Set operation");
-        }
+        let (_, s) = as_set(&ops[0]);
+        assert_eq!(s.mappings.len(), 2);
+        assert_eq!(s.mappings[0].xpath, "//database/host");
+        assert_eq!(s.mappings[0].value, "db.example.com");
+        assert_eq!(s.mappings[0].value_kind.as_deref(), Some("string"));
+        assert_eq!(s.mappings[1].xpath, "//database/port");
+        assert_eq!(s.mappings[1].value, "5432");
+        assert_eq!(s.mappings[1].value_kind.as_deref(), Some("number"));
+        assert_eq!(s.write_mode, SetWriteMode::InPlace);
+        assert_eq!(s.report_mode, SetReportMode::PerMatch);
     }
 
     #[test]
@@ -1004,14 +1038,11 @@ set:
   report: per-file
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
-        if let Operation::Set(s) = &ops[0] {
-            assert_eq!(s.language.as_deref(), Some("yaml"));
-            assert!(s.inline_source.is_some());
-            assert_eq!(s.write_mode, SetWriteMode::Capture);
-            assert_eq!(s.report_mode, SetReportMode::PerFile);
-        } else {
-            panic!("expected Set operation");
-        }
+        let (inputs, s) = as_set(&ops[0]);
+        assert_eq!(inputs.language.as_deref(), Some("yaml"));
+        assert!(inputs.inline_source.is_some());
+        assert_eq!(s.write_mode, SetWriteMode::Capture);
+        assert_eq!(s.report_mode, SetReportMode::PerFile);
     }
 
     #[test]
@@ -1023,14 +1054,11 @@ set:
   value: "5433"
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
-        if let Operation::Set(s) = &ops[0] {
-            assert_eq!(s.mappings.len(), 1);
-            assert_eq!(s.mappings[0].xpath, "//servers[host='localhost']/port");
-            assert_eq!(s.mappings[0].value, "5433");
-            assert_eq!(s.mappings[0].value_kind.as_deref(), Some("string"));
-        } else {
-            panic!("expected Set operation");
-        }
+        let (_, s) = as_set(&ops[0]);
+        assert_eq!(s.mappings.len(), 1);
+        assert_eq!(s.mappings[0].xpath, "//servers[host='localhost']/port");
+        assert_eq!(s.mappings[0].value, "5433");
+        assert_eq!(s.mappings[0].value_kind.as_deref(), Some("string"));
     }
 
     #[test]
@@ -1064,15 +1092,11 @@ query:
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
         assert_eq!(ops.len(), 1);
-        match &ops[0] {
-            Operation::Query(q) => {
-                assert_eq!(q.files, vec!["src/**/*.rs"]);
-                assert_eq!(q.queries.len(), 2);
-                assert_eq!(q.queries[0].xpath, "//function");
-                assert_eq!(q.queries[1].xpath, "//class");
-            }
-            _ => panic!("expected Query operation"),
-        }
+        let (inputs, q) = as_query(&ops[0]);
+        assert_eq!(inputs.files, vec!["src/**/*.rs"]);
+        assert_eq!(q.queries.len(), 2);
+        assert_eq!(q.queries[0].xpath, "//function");
+        assert_eq!(q.queries[1].xpath, "//class");
     }
 
     #[test]
@@ -1088,17 +1112,13 @@ test:
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
         assert_eq!(ops.len(), 1);
-        match &ops[0] {
-            Operation::Test(t) => {
-                assert_eq!(t.files, vec!["src/**/*.rs"]);
-                assert_eq!(t.assertions.len(), 2);
-                assert_eq!(t.assertions[0].xpath, "//function");
-                assert_eq!(t.assertions[0].expect, "some");
-                assert_eq!(t.assertions[1].xpath, "//class");
-                assert_eq!(t.assertions[1].expect, "none");
-            }
-            _ => panic!("expected Test operation"),
-        }
+        let (inputs, t) = as_test(&ops[0]);
+        assert_eq!(inputs.files, vec!["src/**/*.rs"]);
+        assert_eq!(t.assertions.len(), 2);
+        assert_eq!(t.assertions[0].xpath, "//function");
+        assert_eq!(t.assertions[0].expect, "some");
+        assert_eq!(t.assertions[1].xpath, "//class");
+        assert_eq!(t.assertions[1].expect, "none");
     }
 
     #[test]
@@ -1110,9 +1130,8 @@ test:
     - xpath: "//name"
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
-        if let Operation::Test(t) = &ops[0] {
-            assert_eq!(t.assertions[0].expect, "some");
-        }
+        let (_, t) = as_test(&ops[0]);
+        assert_eq!(t.assertions[0].expect, "some");
     }
 
     #[test]
@@ -1131,8 +1150,8 @@ operations:
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
         assert_eq!(ops.len(), 2);
-        assert!(matches!(&ops[0], Operation::Query(_)));
-        assert!(matches!(&ops[1], Operation::Test(_)));
+        assert!(matches!(&ops[0], ConfigOperation::Query { .. }));
+        assert!(matches!(&ops[1], ConfigOperation::Test { .. }));
     }
 
     #[test]
@@ -1147,13 +1166,9 @@ value = "localhost"
 "#;
         let ops = parse_config_toml(toml).unwrap().operations;
         assert_eq!(ops.len(), 1);
-        match &ops[0] {
-            Operation::Set(s) => {
-                assert_eq!(s.mappings.len(), 1);
-                assert_eq!(s.mappings[0].value, "localhost");
-            }
-            _ => panic!("expected Set operation"),
-        }
+        let (_, s) = as_set(&ops[0]);
+        assert_eq!(s.mappings.len(), 1);
+        assert_eq!(s.mappings[0].value, "localhost");
     }
 
     // -----------------------------------------------------------------------
@@ -1173,11 +1188,8 @@ check:
 "#;
         let loaded = parse_config_yaml(yaml).unwrap();
         assert_eq!(loaded.root_files, Some(vec!["src/**/*.rs".to_string()]));
-        if let Operation::Check(c) = &loaded.operations[0] {
-            assert!(c.files.is_empty(), "operation should have no files when not specified");
-        } else {
-            panic!("expected Check");
-        }
+        let (inputs, _) = as_check(&loaded.operations[0]);
+        assert!(inputs.files.is_empty(), "operation should have no files when not specified");
     }
 
     #[test]
@@ -1192,11 +1204,8 @@ check:
 "#;
         let loaded = parse_config_yaml(yaml).unwrap();
         assert_eq!(loaded.root_files, Some(vec!["src/**/*.rs".to_string()]));
-        if let Operation::Check(c) = &loaded.operations[0] {
-            assert_eq!(c.files, vec!["test/**/*.rs"]);
-        } else {
-            panic!("expected Check");
-        }
+        let (inputs, _) = as_check(&loaded.operations[0]);
+        assert_eq!(inputs.files, vec!["test/**/*.rs"]);
     }
 
     #[test]
@@ -1211,11 +1220,8 @@ check:
       xpath: "//comment"
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
-        if let Operation::Check(c) = &ops[0] {
-            assert_eq!(c.exclude, vec!["target/**", "src/generated/**"]);
-        } else {
-            panic!("expected Check");
-        }
+        let (inputs, _) = as_check(&ops[0]);
+        assert_eq!(inputs.exclude, vec!["target/**", "src/generated/**"]);
     }
 
     #[test]
@@ -1229,11 +1235,8 @@ check:
       xpath: "//comment"
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
-        if let Operation::Check(c) = &ops[0] {
-            assert_eq!(c.diff_files.as_deref(), Some("main..HEAD"));
-        } else {
-            panic!("expected Check");
-        }
+        let (inputs, _) = as_check(&ops[0]);
+        assert_eq!(inputs.diff_files.as_deref(), Some("main..HEAD"));
     }
 
     #[test]
@@ -1248,11 +1251,8 @@ check:
       xpath: "//comment"
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
-        if let Operation::Check(c) = &ops[0] {
-            assert_eq!(c.diff_files.as_deref(), Some("HEAD~3"));
-        } else {
-            panic!("expected Check");
-        }
+        let (inputs, _) = as_check(&ops[0]);
+        assert_eq!(inputs.diff_files.as_deref(), Some("HEAD~3"));
     }
 
     #[test]
@@ -1266,11 +1266,8 @@ check:
       xpath: "//comment"
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
-        if let Operation::Check(c) = &ops[0] {
-            assert_eq!(c.diff_lines.as_deref(), Some("main..HEAD"));
-        } else {
-            panic!("expected Check");
-        }
+        let (inputs, _) = as_check(&ops[0]);
+        assert_eq!(inputs.diff_lines.as_deref(), Some("main..HEAD"));
     }
 
     #[test]
@@ -1295,21 +1292,15 @@ operations:
 
         // Operations have no files of their own — root files are applied
         // at resolve time via FileResolver.
-        if let Operation::Check(c) = &ops[0] {
-            assert!(c.files.is_empty());
-            assert_eq!(c.exclude, vec!["vendor/**"]);
-            assert_eq!(c.diff_files.as_deref(), Some("main..HEAD"));
-        } else {
-            panic!("expected Check");
-        }
+        let (check_inputs, _) = as_check(&ops[0]);
+        assert!(check_inputs.files.is_empty());
+        assert_eq!(check_inputs.exclude, vec!["vendor/**"]);
+        assert_eq!(check_inputs.diff_files.as_deref(), Some("main..HEAD"));
 
-        if let Operation::Query(q) = &ops[1] {
-            assert!(q.files.is_empty());
-            assert_eq!(q.exclude, vec!["vendor/**"]);
-            assert_eq!(q.diff_files.as_deref(), Some("main..HEAD"));
-        } else {
-            panic!("expected Query");
-        }
+        let (query_inputs, _) = as_query(&ops[1]);
+        assert!(query_inputs.files.is_empty());
+        assert_eq!(query_inputs.exclude, vec!["vendor/**"]);
+        assert_eq!(query_inputs.diff_files.as_deref(), Some("main..HEAD"));
     }
 
     #[test]
@@ -1367,11 +1358,8 @@ check:
         assert_eq!(loaded.root_files, Some(vec!["src/**/*.rs".to_string()]));
         // Operation files are kept as-is (merge_scope overrides at parse time;
         // actual intersection happens in FileResolver::resolve_files)
-        if let Operation::Check(c) = &loaded.operations[0] {
-            assert_eq!(c.files, vec!["test/**/*.rs"]);
-        } else {
-            panic!("expected Check");
-        }
+        let (inputs, _) = as_check(&loaded.operations[0]);
+        assert_eq!(inputs.files, vec!["test/**/*.rs"]);
     }
 
     #[test]
@@ -1387,12 +1375,9 @@ check:
         - invalid: "// TODO: fix"
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
-        if let Operation::Check(c) = &ops[0] {
-            assert_eq!(c.rules[0].valid_examples, vec!["fn main() {}"]);
-            assert_eq!(c.rules[0].invalid_examples, vec!["// TODO: fix"]);
-        } else {
-            panic!("expected Check");
-        }
+        let (_, c) = as_check(&ops[0]);
+        assert_eq!(c.rules[0].valid_examples, vec!["fn main() {}"]);
+        assert_eq!(c.rules[0].invalid_examples, vec!["// TODO: fix"]);
     }
 
     // -- XPath normalization (implicit // prefix) --
@@ -1407,11 +1392,8 @@ check:
       xpath: "debug"
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
-        if let Operation::Check(c) = &ops[0] {
-            assert_eq!(c.rules[0].xpath, "//debug");
-        } else {
-            panic!("expected Check");
-        }
+        let (_, c) = as_check(&ops[0]);
+        assert_eq!(c.rules[0].xpath, "//debug");
     }
 
     #[test]
@@ -1423,11 +1405,8 @@ query:
     - xpath: "debug"
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
-        if let Operation::Query(q) = &ops[0] {
-            assert_eq!(q.queries[0].xpath, "//debug");
-        } else {
-            panic!("expected Query");
-        }
+        let (_, q) = as_query(&ops[0]);
+        assert_eq!(q.queries[0].xpath, "//debug");
     }
 
     #[test]
@@ -1440,10 +1419,7 @@ test:
       expect: 1
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
-        if let Operation::Test(t) = &ops[0] {
-            assert_eq!(t.assertions[0].xpath, "//debug");
-        } else {
-            panic!("expected Test");
-        }
+        let (_, t) = as_test(&ops[0]);
+        assert_eq!(t.assertions[0].xpath, "//debug");
     }
 }

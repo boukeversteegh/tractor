@@ -62,6 +62,7 @@ pub enum Operation {
 // ---------------------------------------------------------------------------
 
 /// Default maximum number of files tractor will process.
+#[allow(dead_code)]
 pub const DEFAULT_MAX_FILES: usize = 10_000;
 
 /// Options controlling how operations are executed.
