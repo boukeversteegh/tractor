@@ -1,4 +1,4 @@
-﻿use std::collections::HashSet;
+use std::collections::HashSet;
 use std::path::Path;
 
 use rayon::prelude::*;
@@ -163,9 +163,9 @@ fn rule_language_matches_file(
     let effective_lang = ruleset.effective_language(rule);
 
     match effective_lang {
-        // No language specified â†’ rule uses auto-detection, always matches
+        // No language specified → rule uses auto-detection, always matches
         None => true,
-        // Language specified â†’ must match file's detected language
+        // Language specified → must match file's detected language
         Some(rule_lang) => {
             let file_lang = detect_language(file_path);
             // Use Language enum for type-safe comparison
@@ -322,12 +322,12 @@ pub fn run_rules(
 /// for unselected fields (matching the behaviour of `match_to_report_match`).
 pub fn project_report(report: &mut Report, view: &ViewSet) {
     for m in report.all_matches_mut() {
-        // Fatal diagnostics (broken XPath, bad config) always keep their fields â€”
+        // Fatal diagnostics (broken XPath, bad config) always keep their fields —
         // the user needs to see why their query failed regardless of -v settings.
         // Error/Warning matches from user rules are normal output, subject to view.
         let is_diagnostic = matches!(m.severity, Some(Severity::Fatal));
         if !is_diagnostic {
-            // Map/Array nodes are always kept â€” they're the only representation for data formats.
+            // Map/Array nodes are always kept — they're the only representation for data formats.
             // For other nodes, keep when tree/lines/source is selected (needed for rendering).
             let keep_tree = match &m.tree {
                 Some(node) if matches!(
@@ -398,7 +398,7 @@ pub fn prepare_report_for_output(report: &mut Report, ctx: &RunContext) {
 /// Placeholders: `{file}`, `{line}`, `{col}`, `{value}`.
 pub fn apply_message_template(report: &mut Report, template: &str) {
     if !template.contains('{') {
-        // Static template â€” same for every match.
+        // Static template — same for every match.
         let msg = template.to_string();
         for m in report.all_matches_mut() {
             m.message = Some(msg.clone());
