@@ -64,7 +64,7 @@ use crate::executor::{self, CheckOperation, ExecuteOptions, Operation};
 use crate::cli::context::RunContext;
 use crate::input::InputMode;
 use crate::format::{ViewField, GroupDimension, render_report};
-use crate::matcher::{project_report, apply_message_template};
+use crate::matcher::{prune_match_fields_by_view, apply_message_template};
 use super::config::{run_from_config, ConfigRunParams};
 
 pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
@@ -162,7 +162,7 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Project for the requested view and render.
-    project_report(&mut report, &ctx.view);
+    prune_match_fields_by_view(&mut report, &ctx.view);
     let report = {
         let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
         report.with_grouping(&dims)

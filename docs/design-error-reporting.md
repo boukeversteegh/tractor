@@ -19,7 +19,7 @@ The goal is to route errors through the same `Report`/`ReportMatch`/formatter pi
 - **Errors absorbed into Report** — executor catches expected failures (e.g. invalid XPath) and adds them as fatal `ReportMatch` entries to the `ReportBuilder`. Unexpected errors that reach `main()` are wrapped in a minimal fatal report.
 - **Validation consolidated at executor level** — XPath validation happens once in `execute_query`/`execute_check`.
 - **ReportBuilder collector** — a single `ReportBuilder` accumulates matches across all operations. Totals and success are derived from match data on `build()`.
-- **Diagnostic field preservation** — `project_report` skips view-field stripping for Fatal matches, so diagnostic fields (reason, severity, lines, etc.) are always available to renderers.
+- **Diagnostic field preservation** — `prune_match_fields_by_view` skips view-field stripping for Fatal matches, so diagnostic fields (reason, severity, lines, etc.) are always available to renderers.
 - **Shared render_fields_for_match** — all renderers use a shared function to determine which fields to render: view-requested fields first, then diagnostic extras.
 - **XPath error rendering** — invalid XPath shows severity, reason, origin, and source with caret highlighting across all formats.
 

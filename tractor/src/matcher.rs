@@ -315,12 +315,15 @@ pub fn run_rules(
 // Report post-processing helpers
 // ---------------------------------------------------------------------------
 
-/// Project a report to only contain the fields requested by the view.
+/// Prune per-match content fields that are not selected by the view.
 ///
-/// The executor populates all content fields. This function prunes
+/// The executor populates all content fields. This function clears
 /// fields that are not in the view, ensuring renderers see `None`
 /// for unselected fields (matching the behaviour of `match_to_report_match`).
-pub fn project_report(report: &mut Report, view: &ViewSet) {
+///
+/// Fatal-severity diagnostic matches keep all their fields regardless of
+/// the view — users need that context to understand why a query failed.
+pub fn prune_match_fields_by_view(report: &mut Report, view: &ViewSet) {
     for m in report.all_matches_mut() {
         // Fatal diagnostics (broken XPath, bad config) always keep their fields —
         // the user needs to see why their query failed regardless of -v settings.

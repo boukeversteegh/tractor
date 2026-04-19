@@ -44,7 +44,7 @@ use crate::executor::{self, ExecuteOptions, Operation, QueryOperation, QueryExpr
 use crate::cli::context::RunContext;
 use crate::input::InputMode;
 use crate::format::{ViewField, GroupDimension, render_report};
-use crate::matcher::{run_debug, project_report, apply_message_template};
+use crate::matcher::{run_debug, prune_match_fields_by_view, apply_message_template};
 use super::config::{run_from_config, ConfigRunParams};
 
 pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
@@ -152,7 +152,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
         }
 
         // Project for the requested view and render.
-        project_report(&mut report, &ctx.view);
+        prune_match_fields_by_view(&mut report, &ctx.view);
         let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
         let report = report.with_grouping(&dims);
         render_report(&report, &ctx, None)?;

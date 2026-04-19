@@ -13,7 +13,7 @@ use crate::cli::SharedArgs;
 use crate::executor::{self, ExecuteOptions, Operation};
 use crate::cli::context::RunContext;
 use crate::format::{ViewField, GroupDimension, render_report};
-use crate::matcher::{project_report, apply_message_template};
+use crate::matcher::{prune_match_fields_by_view, apply_message_template};
 
 /// Canonical file name tractor probes when `--config` is not passed.
 ///
@@ -120,7 +120,7 @@ pub fn run_from_config(params: ConfigRunParams) -> Result<(), Box<dyn std::error
         apply_message_template(&mut report, template);
     }
 
-    project_report(&mut report, &ctx.view);
+    prune_match_fields_by_view(&mut report, &ctx.view);
     let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
     let report = report.with_grouping(&dims);
     render_report(&report, &ctx, None)

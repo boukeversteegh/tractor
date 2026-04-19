@@ -44,7 +44,7 @@ use crate::executor::{self, ExecuteOptions, Operation, TestOperation, TestAssert
 use crate::cli::context::RunContext;
 use crate::input::InputMode;
 use crate::format::{ViewField, TestRenderOptions, render_report};
-use crate::matcher::project_report;
+use crate::matcher::prune_match_fields_by_view;
 use super::config::{run_from_config, ConfigRunParams};
 
 pub mod test_colors {
@@ -133,7 +133,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
     builder.set_expected(expect.clone());
     let mut report = builder.build();
 
-    project_report(&mut report, &ctx.view);
+    prune_match_fields_by_view(&mut report, &ctx.view);
     let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
     let report = report.with_grouping(&dims);
     let test_opts = TestRenderOptions { message, error_template };
