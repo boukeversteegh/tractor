@@ -527,12 +527,12 @@ fn count_projection_restores_scalar() {
 }
 
 #[test]
-fn project_invalid_is_rejected_with_valid_values() {
+fn projection_invalid_is_rejected_with_valid_values() {
     cli_case!({
         tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -p "INVALID";
         expect => {
             exit 1;
-            combined_contains "invalid project 'INVALID'";
+            combined_contains "invalid projection 'INVALID'";
             combined_contains "tree, value, source, lines, schema, count, summary, totals, results, report";
         }
     })

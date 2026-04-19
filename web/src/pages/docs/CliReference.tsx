@@ -120,7 +120,7 @@ document/
              ^~~`}
       />
 
-      <h3>-p, --project</h3>
+      <h3>-p, --projection</h3>
       <p>
         Emit one part of the report instead of the full report. Use this when you want a scalar, a bare list, or one metadata section.
       </p>

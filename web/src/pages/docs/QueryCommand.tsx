@@ -262,7 +262,7 @@ fn add(a: i32, b: i32) -> i32 {
         <tbody>
           <tr><td><code>-x, --extract</code></td><td><Link to="/docs/guides/query-syntax">Query</Link> to match</td></tr>
           <tr><td><code>-v, --view</code></td><td>View mode: tree, value, source, lines, count, schema</td></tr>
-          <tr><td><code>-p, --project</code></td><td>Emit one report element: tree, value, source, lines, schema, count, summary, totals, results, report</td></tr>
+          <tr><td><code>-p, --projection</code></td><td>Emit one report element: tree, value, source, lines, schema, count, summary, totals, results, report</td></tr>
           <tr><td><code>--single</code></td><td>Emit only the first projected item, bare with no list wrapper</td></tr>
           <tr><td><code>-f, --format</code></td><td>Output format: text, json, yaml, xml, gcc, github, claude-code</td></tr>
           <tr><td><code>-l, --lang</code></td><td>Language override (auto-detected from file extension)</td></tr>

@@ -65,7 +65,7 @@ View:
   -n, --limit <LIMIT>
           Limit output to first N matches
 
-  -p, --project <TARGET>
+  -p, --projection <TARGET>
           Choose which report element is emitted [default: report]
             tree     Project matched trees
             value    Project matched values

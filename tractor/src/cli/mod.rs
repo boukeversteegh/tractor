@@ -103,9 +103,15 @@ When omitted, auto-selects: data for JSON/YAML, structure for everything else.")
     #[arg(short = 'n', long = "limit", help_heading = "View")]
     pub limit: Option<usize>,
 
-    /// Project a specific report element (tree, summary, results, report, ...)
-    #[arg(short = 'p', long = "project", value_name = "TARGET", help_heading = "View")]
-    pub project: Option<String>,
+    /// Select a specific report projection (tree, summary, results, report, ...)
+    #[arg(
+        short = 'p',
+        long = "projection",
+        alias = "project",
+        value_name = "TARGET",
+        help_heading = "View"
+    )]
+    pub projection: Option<String>,
 
     /// Emit only the first projected item, bare with no list wrapper
     #[arg(long = "single", help_heading = "View")]

@@ -97,12 +97,15 @@ impl TractorInvocation {
                 Some("-f") | Some("--format") => {
                     let _ = iter.next();
                 }
-                Some("-p") | Some("--project") => {
+                Some("-p") | Some("--projection") | Some("--project") => {
                     let _ = iter.next();
                 }
                 Some(value) if value.starts_with("-v=") || value.starts_with("--view=") => {}
                 Some(value) if value.starts_with("-f=") || value.starts_with("--format=") => {}
-                Some(value) if value.starts_with("-p=") || value.starts_with("--project=") => {}
+                Some(value)
+                    if value.starts_with("-p=")
+                        || value.starts_with("--projection=")
+                        || value.starts_with("--project=") => {}
                 _ => args.push(arg),
             }
         }

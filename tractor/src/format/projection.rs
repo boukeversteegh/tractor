@@ -90,7 +90,7 @@ impl Projection {
             "results" => Ok(Projection::Results),
             "report" => Ok(Projection::Report),
             _ => Err(format!(
-                "invalid project '{}'. Valid values: {}",
+                "invalid projection '{}'. Valid values: {}",
                 s,
                 Self::ALL
                     .iter()
@@ -161,7 +161,7 @@ impl RequestedItem {
 }
 
 pub fn normalize_output_plan(
-    project_arg: Option<&str>,
+    projection_arg: Option<&str>,
     single_requested: bool,
     limit: Option<usize>,
     view: ParsedViewSet,
@@ -173,7 +173,7 @@ pub fn normalize_output_plan(
         return Err("--single contradicts -n/--limit unless the limit is exactly 1".to_string());
     }
 
-    let projection = match project_arg {
+    let projection = match projection_arg {
         Some(value) => Projection::from_str(value)?,
         None if single_requested => Projection::Results,
         None => Projection::Report,

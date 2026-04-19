@@ -76,7 +76,7 @@ impl RunContext {
 
         let parsed_view = parse_view_selection(user_view, default_view)?;
         let plan = normalize_output_plan(
-            shared.project.as_deref(),
+            shared.projection.as_deref(),
             shared.single,
             shared.limit,
             parsed_view,

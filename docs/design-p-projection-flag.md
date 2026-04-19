@@ -1,4 +1,4 @@
-# `-p` / `--project` Projection Flag
+# `-p` / `--projection` Projection Flag
 
 **Date:** 2026-04-19  
 **Status:** Implemented  

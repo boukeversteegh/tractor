@@ -96,12 +96,12 @@ EXAMPLES:
 fn augment_arg_help(cmd: clap::Command, view_defaults: &[ViewField], format_default: &str) -> clap::Command {
     let view_help = ViewField::view_long_help(view_defaults);
     let format_help = OutputFormat::format_long_help(format_default);
-    let project_help = Projection::help_text();
+    let projection_help = Projection::help_text();
     cmd.mut_args(|arg| {
         match arg.get_id().as_str() {
             "view"   => arg.long_help(view_help.clone()),
             "format" => arg.long_help(format_help.clone()),
-            "project" => arg.long_help(project_help.clone()),
+            "projection" => arg.long_help(projection_help.clone()),
             "single" => arg.long_help("Emit only the first projected item, bare with no list wrapper. Implies -n 1 for sequence projections."),
             _ => arg,
         }
