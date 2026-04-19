@@ -500,6 +500,40 @@ fn project_results_keeps_message_field_in_json() {
 }
 
 #[test]
+fn project_results_preserves_grouping_in_json() {
+    let result = command([
+        "query",
+        "sample.cs",
+        "sample2.cs",
+        "-x",
+        "//class/name",
+        "-v",
+        "file,value",
+        "-g",
+        "file",
+        "-p",
+        "results",
+        "-f",
+        "json",
+    ])
+    .in_fixture("formats")
+    .capture();
+
+    assert_eq!(0, result.status);
+    let json: Value = serde_json::from_str(&result.stdout).expect("grouped results projection should be json");
+    let groups = json.as_array().expect("results projection should stay a sequence");
+    assert_eq!(2, groups.len());
+
+    for group in groups {
+        assert!(group["file"].is_string(), "expected file key on grouped result: {group}");
+        let matches = group["results"].as_array().expect("expected nested results under each group");
+        assert!(!matches.is_empty(), "expected at least one match in grouped results");
+        assert!(matches.iter().all(|item| item.get("value").is_some()));
+        assert!(matches.iter().all(|item| item.get("file").is_none()));
+    }
+}
+
+#[test]
 fn project_summary_warns_when_message_is_unreachable() {
     let result = command([
         "query",

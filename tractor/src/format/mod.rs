@@ -82,7 +82,8 @@ pub fn render_report(
         }
     }
 
-    let grouped_report = if ctx.projection == Projection::Report {
+    let group_results = ctx.projection.keeps_match_fields();
+    let grouped_report = if group_results {
         Some(report.clone().with_grouping(
             &ctx.group_by.iter().map(|d| d.as_str()).collect::<Vec<_>>(),
         ))
@@ -90,7 +91,7 @@ pub fn render_report(
         None
     };
     let report = grouped_report.as_ref().unwrap_or(report);
-    let dims: Vec<&str> = if ctx.projection == Projection::Report {
+    let dims: Vec<&str> = if group_results {
         ctx.group_by.iter().map(|d| d.as_str()).collect()
     } else {
         vec![]
