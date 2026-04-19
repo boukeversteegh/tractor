@@ -1,29 +1,28 @@
-pub mod options;
+pub mod claude_code;
 pub mod gcc;
 pub mod github;
-pub mod xml;
 pub mod json;
-pub mod yaml;
-pub mod text;
-pub mod claude_code;
+pub mod options;
 pub mod projection;
 mod shared;
+pub mod text;
+pub mod xml;
+pub mod yaml;
 
-pub use options::{GroupDimension, OutputFormat, ViewField, ViewSet, parse_group_by, parse_view_selection};
-pub use projection::{Projection, normalize_output_plan};
+pub use claude_code::render_claude_code;
 pub use gcc::{render_gcc, render_gcc_report_with_template};
 pub use github::render_github;
-pub use xml::render_xml_report;
 pub use json::render_json_report;
-pub use yaml::render_yaml_report;
+pub use options::{
+    parse_group_by, parse_view_selection, GroupDimension, OutputFormat, ViewField, ViewSet,
+};
+pub use projection::{normalize_output_plan, Projection};
 pub use text::render_text_report;
-pub use claude_code::render_claude_code;
+pub use xml::render_xml_report;
+pub use yaml::render_yaml_report;
 
 use tractor::{
-    render_lines,
-    render_query_tree_node,
-    render_source_precomputed,
-    render_xml_node,
+    render_lines, render_query_tree_node, render_source_precomputed, render_xml_node,
     report::{Report, ReportMatch},
 };
 
@@ -33,7 +32,6 @@ use crate::cli::test::test_colors;
 #[derive(Debug)]
 pub enum ProjectionRenderError {
     EmptySingle,
-    UnsupportedFormat(&'static str),
 }
 
 impl std::fmt::Display for ProjectionRenderError {
@@ -42,11 +40,6 @@ impl std::fmt::Display for ProjectionRenderError {
             ProjectionRenderError::EmptySingle => {
                 write!(f, "projection produced no values for --single")
             }
-            ProjectionRenderError::UnsupportedFormat(format) => write!(
-                f,
-                "format '{}' only supports the default report projection",
-                format
-            ),
         }
     }
 }
@@ -84,9 +77,11 @@ pub fn render_report(
 
     let group_results = ctx.projection.keeps_match_fields();
     let grouped_report = if group_results {
-        Some(report.clone().with_grouping(
-            &ctx.group_by.iter().map(|d| d.as_str()).collect::<Vec<_>>(),
-        ))
+        Some(
+            report
+                .clone()
+                .with_grouping(&ctx.group_by.iter().map(|d| d.as_str()).collect::<Vec<_>>()),
+        )
     } else {
         None
     };
@@ -136,47 +131,32 @@ pub fn render_report(
         )
         .map(|rendered| print!("{rendered}")),
         OutputFormat::Gcc => {
-            if ctx.projection != Projection::Report || ctx.single {
-                Err(ProjectionRenderError::UnsupportedFormat(ctx.output_format.name()))
-            } else {
-                print!("{}", render_gcc(report, &render_opts, &dims));
-                if let Some(summary) = gcc_summary_string(report) {
-                    print!("{summary}");
-                }
-                Ok(())
+            print!("{}", render_gcc(report, &render_opts, &dims));
+            if let Some(summary) = gcc_summary_string(report) {
+                print!("{summary}");
             }
+            Ok(())
         }
         OutputFormat::Github => {
-            if ctx.projection != Projection::Report || ctx.single {
-                Err(ProjectionRenderError::UnsupportedFormat(ctx.output_format.name()))
-            } else {
-                print!("{}", render_github(report, &dims));
-                Ok(())
-            }
+            print!("{}", render_github(report, &dims));
+            Ok(())
         }
         OutputFormat::ClaudeCode => {
-            if ctx.projection != Projection::Report || ctx.single {
-                Err(ProjectionRenderError::UnsupportedFormat(ctx.output_format.name()))
-            } else {
-                print!(
-                    "{}",
-                    render_claude_code(
-                        report,
-                        ctx.hook_type.unwrap_or(options::HookType::PostToolUse),
-                        &render_opts,
-                        &dims,
-                    )
-                );
-                Ok(())
-            }
+            print!(
+                "{}",
+                render_claude_code(
+                    report,
+                    ctx.hook_type.unwrap_or(options::HookType::PostToolUse),
+                    &render_opts,
+                    &dims,
+                )
+            );
+            Ok(())
         }
     };
 
-    if let Err(err) = render_result {
-        return match err {
-            ProjectionRenderError::EmptySingle => Err(Box::new(crate::SilentExit)),
-            other => Err(Box::new(other)),
-        };
+    if let Err(ProjectionRenderError::EmptySingle) = render_result {
+        return Err(Box::new(crate::SilentExit));
     }
 
     if report.success == Some(false) {
@@ -191,7 +171,10 @@ fn render_test_text(
     opts: &TestRenderOptions,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let success = report.success.unwrap_or(true);
-    let totals = report.totals.as_ref().expect("test report must have totals");
+    let totals = report
+        .totals
+        .as_ref()
+        .expect("test report must have totals");
 
     let (symbol, color) = if success {
         ("\u{2713}", test_colors::GREEN)
@@ -249,8 +232,12 @@ fn render_test_text(
     if !success && !all_matches.is_empty() {
         if let Some(ref error_tmpl) = opts.error_template {
             let flat_matches: Vec<ReportMatch> = all_matches.into_iter().cloned().collect();
-            let out =
-                render_gcc_report_with_template(&flat_matches, error_tmpl, false, &ctx.render_options());
+            let out = render_gcc_report_with_template(
+                &flat_matches,
+                error_tmpl,
+                false,
+                &ctx.render_options(),
+            );
             for line in out.lines() {
                 if ctx.use_color {
                     println!("  {}{}{}", color, line, test_colors::RESET);
@@ -357,7 +344,11 @@ fn gcc_summary_string(report: &Report) -> Option<String> {
 
     let file_part =
         if totals.files > 0 && (totals.fatals > 0 || totals.errors > 0 || totals.warnings > 0) {
-            format!(" in {} file{}", totals.files, if totals.files == 1 { "" } else { "s" })
+            format!(
+                " in {} file{}",
+                totals.files,
+                if totals.files == 1 { "" } else { "s" }
+            )
         } else {
             String::new()
         };
@@ -400,7 +391,10 @@ mod tests {
         builder.add(set_match("b.yaml", "unchanged"));
         let report = builder.build();
 
-        assert_eq!(gcc_summary_string(&report).as_deref(), Some("updated 1 file\n"));
+        assert_eq!(
+            gcc_summary_string(&report).as_deref(),
+            Some("updated 1 file\n")
+        );
     }
 
     #[test]

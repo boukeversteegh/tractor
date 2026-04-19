@@ -1,4 +1,4 @@
-use super::options::{ParsedViewSet, ViewField, ViewSet};
+use super::options::{OutputFormat, ParsedViewSet, ViewField, ViewSet};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Projection {
@@ -59,8 +59,13 @@ impl Projection {
     }
 
     pub fn help_text() -> String {
-        let max_name = Self::ALL.iter().map(|value| value.name().len()).max().unwrap_or(0);
-        let mut lines = vec!["Choose which report element is emitted [default: report]".to_string()];
+        let max_name = Self::ALL
+            .iter()
+            .map(|value| value.name().len())
+            .max()
+            .unwrap_or(0);
+        let mut lines =
+            vec!["Choose which report element is emitted [default: report]".to_string()];
         for value in Self::ALL {
             lines.push(format!(
                 "  {:width$}  {}",
@@ -87,7 +92,11 @@ impl Projection {
             _ => Err(format!(
                 "invalid project '{}'. Valid values: {}",
                 s,
-                Self::ALL.iter().map(|value| value.name()).collect::<Vec<_>>().join(", ")
+                Self::ALL
+                    .iter()
+                    .map(|value| value.name())
+                    .collect::<Vec<_>>()
+                    .join(", ")
             )),
         }
     }
@@ -100,10 +109,9 @@ impl Projection {
             Projection::Lines => Some(ViewField::Lines),
             Projection::Schema => Some(ViewField::Schema),
             Projection::Count => Some(ViewField::Count),
-            Projection::Summary
-            | Projection::Totals
-            | Projection::Results
-            | Projection::Report => None,
+            Projection::Summary | Projection::Totals | Projection::Results | Projection::Report => {
+                None
+            }
         }
     }
 
@@ -158,6 +166,8 @@ pub fn normalize_output_plan(
     limit: Option<usize>,
     view: ParsedViewSet,
     message: Option<String>,
+    output_format: OutputFormat,
+    has_group_by: bool,
 ) -> Result<OutputPlan, String> {
     if single_requested && limit.is_some_and(|value| value != 1) {
         return Err("--single contradicts -n/--limit unless the limit is exactly 1".to_string());
@@ -168,6 +178,20 @@ pub fn normalize_output_plan(
         None if single_requested => Projection::Results,
         None => Projection::Report,
     };
+
+    let non_default = projection != Projection::Report || single_requested;
+    if non_default && !output_format.supports_projection() {
+        return Err(format!(
+            "-p/--single is not supported with -f {} (line-oriented format)",
+            output_format.name(),
+        ));
+    }
+    if non_default && has_group_by && !projection.keeps_match_fields() {
+        return Err(format!(
+            "-p {} is not compatible with --group",
+            projection.name(),
+        ));
+    }
 
     let mut warnings = Vec::new();
     let explicit_items = explicit_items(&view, message.is_some());
@@ -259,14 +283,18 @@ fn format_unreachable_warning(projection: Projection, dropped: &[RequestedItem])
 }
 
 fn format_requested_items(items: &[RequestedItem]) -> String {
-    let names = items.iter().map(RequestedItem::label).collect::<Vec<_>>().join(", ");
+    let names = items
+        .iter()
+        .map(RequestedItem::label)
+        .collect::<Vec<_>>()
+        .join(", ");
     format!("{{{names}}}")
 }
 
 #[cfg(test)]
 mod tests {
     use super::{normalize_output_plan, Projection};
-    use crate::format::options::{ParsedViewSet, ViewField, ViewSet};
+    use crate::format::options::{OutputFormat, ParsedViewSet, ViewField, ViewSet};
 
     fn parsed_view(resolved: &[ViewField], explicit: &[ViewField]) -> ParsedViewSet {
         ParsedViewSet {
@@ -283,6 +311,8 @@ mod tests {
             None,
             parsed_view(&[ViewField::File, ViewField::Tree], &[]),
             None,
+            OutputFormat::Text,
+            false,
         )
         .unwrap();
 
@@ -297,8 +327,13 @@ mod tests {
             Some("tree"),
             false,
             None,
-            parsed_view(&[ViewField::File, ViewField::Tree], &[ViewField::File, ViewField::Tree]),
+            parsed_view(
+                &[ViewField::File, ViewField::Tree],
+                &[ViewField::File, ViewField::Tree],
+            ),
             Some("{file}".to_string()),
+            OutputFormat::Text,
+            false,
         )
         .unwrap();
 
@@ -316,6 +351,8 @@ mod tests {
             None,
             parsed_view(&[ViewField::Reason], &[]),
             Some("hello".to_string()),
+            OutputFormat::Text,
+            false,
         )
         .unwrap();
 
@@ -334,6 +371,8 @@ mod tests {
             Some(2),
             parsed_view(&[ViewField::Tree], &[]),
             None,
+            OutputFormat::Text,
+            false,
         )
         .unwrap_err();
 
@@ -348,6 +387,8 @@ mod tests {
             Some(1),
             parsed_view(&[ViewField::Totals], &[]),
             None,
+            OutputFormat::Text,
+            false,
         )
         .unwrap();
 
@@ -357,5 +398,56 @@ mod tests {
             plan.warnings,
             vec!["warning: --single has no effect with -p summary (already singular). Remove --single to silence this warning.".to_string()]
         );
+    }
+
+    #[test]
+    fn rejects_projection_for_line_oriented_formats() {
+        let err = normalize_output_plan(
+            Some("tree"),
+            false,
+            None,
+            parsed_view(&[ViewField::Tree], &[]),
+            None,
+            OutputFormat::Gcc,
+            false,
+        )
+        .unwrap_err();
+
+        assert_eq!(
+            err,
+            "-p/--single is not supported with -f gcc (line-oriented format)"
+        );
+    }
+
+    #[test]
+    fn rejects_grouping_for_non_match_preserving_projection() {
+        let err = normalize_output_plan(
+            Some("summary"),
+            false,
+            None,
+            parsed_view(&[ViewField::Totals], &[]),
+            None,
+            OutputFormat::Json,
+            true,
+        )
+        .unwrap_err();
+
+        assert_eq!(err, "-p summary is not compatible with --group");
+    }
+
+    #[test]
+    fn allows_grouping_for_results_projection() {
+        let plan = normalize_output_plan(
+            Some("results"),
+            false,
+            None,
+            parsed_view(&[ViewField::File, ViewField::Tree], &[ViewField::Tree]),
+            None,
+            OutputFormat::Json,
+            true,
+        )
+        .unwrap();
+
+        assert_eq!(plan.projection, Projection::Results);
     }
 }

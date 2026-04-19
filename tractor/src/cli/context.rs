@@ -1,16 +1,11 @@
-use tractor::{
-    output::should_use_color,
-    output::RenderOptions,
-    NormalizedXpath,
-    TreeMode,
-};
 use crate::cli::SharedArgs;
-use crate::input::{InputMode, resolve_input};
+use crate::format::options::HookType;
 use crate::format::{
     normalize_output_plan, parse_group_by, parse_view_selection, GroupDimension, OutputFormat,
     Projection, ViewField, ViewSet,
 };
-use crate::format::options::HookType;
+use crate::input::{resolve_input, InputMode};
+use tractor::{output::should_use_color, output::RenderOptions, NormalizedXpath, TreeMode};
 
 pub struct RunContext {
     pub xpath: Option<NormalizedXpath>,
@@ -74,6 +69,11 @@ impl RunContext {
             }
         };
 
+        let group_by = match shared.group_by.as_deref() {
+            Some(s) => parse_group_by(s)?,
+            None => default_group_by.to_vec(),
+        };
+
         let parsed_view = parse_view_selection(user_view, default_view)?;
         let plan = normalize_output_plan(
             shared.project.as_deref(),
@@ -81,25 +81,30 @@ impl RunContext {
             shared.limit,
             parsed_view,
             message,
+            output_format,
+            !group_by.is_empty(),
         )?;
         for warning in &plan.warnings {
             eprintln!("{warning}");
         }
-        let use_color     = if shared.no_color { false } else { should_use_color(&shared.color) };
-        let input         = resolve_input(shared, files, content)?;
-
-        let group_by = match shared.group_by.as_deref() {
-            Some(s) => parse_group_by(s)?,
-            None => default_group_by.to_vec(),
+        let use_color = if shared.no_color {
+            false
+        } else {
+            should_use_color(&shared.color)
         };
+        let input = resolve_input(shared, files, content)?;
 
         let tree_mode = match shared.tree.as_deref() {
             Some("raw") => Some(TreeMode::Raw),
             Some("structure") => Some(TreeMode::Structure),
             Some("data") => Some(TreeMode::Data),
-            Some(other) => return Err(format!(
-                "invalid --tree value '{}': use 'raw', 'structure', or 'data'", other
-            ).into()),
+            Some(other) => {
+                return Err(format!(
+                    "invalid --tree value '{}': use 'raw', 'structure', or 'data'",
+                    other
+                )
+                .into())
+            }
             None => None, // auto-detect at parse time
         };
 
