@@ -58,6 +58,16 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         append_match(&mut out, rm, view, render_opts, *group_file, &mut source_cache);
     }
 
+    if let Some(ref schema) = report.schema {
+        if !out.is_empty() && !out.ends_with('\n') {
+            out.push('\n');
+        }
+        out.push_str(schema);
+        if !schema.ends_with('\n') {
+            out.push('\n');
+        }
+    }
+
     if should_show_totals(report, view) {
         if let Some(ref totals) = report.totals {
             if !out.is_empty() && !out.ends_with('\n') {
@@ -447,6 +457,7 @@ mod tests {
             }),
             expected: None,
             query: None,
+            schema: None,
             outputs: vec![],
             results: vec![ResultItem::Match(ReportMatch {
                 file: "app-config.json".to_string(),

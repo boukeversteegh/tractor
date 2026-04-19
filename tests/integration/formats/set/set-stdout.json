@@ -1,9 +1,11 @@
 {
-  "success": true,
-  "totals": {
-    "results": 1,
-    "files": 1,
-    "updated": 1
+  "summary": {
+    "success": true,
+    "totals": {
+      "results": 1,
+      "files": 1,
+      "updated": 1
+    }
   },
   "group": "file",
   "results": [

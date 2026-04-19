@@ -7,7 +7,12 @@ pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderO
     let mut root = serde_json::Map::new();
 
     if should_show_totals(report, view) {
-        emit_report_metadata(&mut root, report);
+        if let Some(summary) = build_summary_object(report) {
+            root.insert("summary".into(), Value::Object(summary));
+        }
+    }
+    if let Some(ref schema) = report.schema {
+        root.insert("schema".into(), json!(schema));
     }
 
     // Top-level captured outputs — honest view of the report model.
@@ -66,22 +71,16 @@ fn group_outputs_to_json(
     ("outputs", outputs_to_json(outputs))
 }
 
-/// Emit success, totals, expected, query as top-level fields.
+/// Emit success, totals, expected, query as flat fields on the given map.
+///
+/// Used for group-level metadata (groups don't wrap these in a `summary`
+/// container). Top-level reports use `build_summary_object` instead.
 pub fn emit_report_metadata(root: &mut serde_json::Map<String, Value>, report: &Report) {
     if let Some(success) = report.success {
         root.insert("success".into(), json!(success));
     }
     if let Some(ref totals) = report.totals {
-        let mut t = serde_json::Map::new();
-        t.insert("results".into(), json!(totals.results));
-        t.insert("files".into(),   json!(totals.files));
-        if totals.fatals > 0 { t.insert("fatals".into(), json!(totals.fatals)); }
-        if totals.errors > 0 { t.insert("errors".into(), json!(totals.errors)); }
-        if totals.warnings > 0 { t.insert("warnings".into(), json!(totals.warnings)); }
-        if totals.infos > 0 { t.insert("infos".into(), json!(totals.infos)); }
-        if totals.updated > 0 { t.insert("updated".into(), json!(totals.updated)); }
-        if totals.unchanged > 0 { t.insert("unchanged".into(), json!(totals.unchanged)); }
-        root.insert("totals".into(), Value::Object(t));
+        root.insert("totals".into(), Value::Object(totals_to_map(totals)));
     }
     if let Some(ref expected) = report.expected {
         root.insert("expected".into(), json!(expected));
@@ -89,6 +88,37 @@ pub fn emit_report_metadata(root: &mut serde_json::Map<String, Value>, report: &
     if let Some(ref query) = report.query {
         root.insert("query".into(), json!(query));
     }
+}
+
+/// Build a `summary` object containing success, totals, expected, query.
+/// Returns `None` when none of those fields are present, so the caller can
+/// skip emitting an empty container.
+pub fn build_summary_object(report: &Report) -> Option<serde_json::Map<String, Value>> {
+    let has_any = report.success.is_some()
+        || report.totals.is_some()
+        || report.expected.is_some()
+        || report.query.is_some();
+    if !has_any {
+        return None;
+    }
+    let mut obj = serde_json::Map::new();
+    emit_report_metadata(&mut obj, report);
+    Some(obj)
+}
+
+/// Convert a `Totals` into its JSON object form, omitting zero-valued
+/// severity/status counts for the same reason the XML renderer does.
+pub fn totals_to_map(totals: &tractor::report::Totals) -> serde_json::Map<String, Value> {
+    let mut t = serde_json::Map::new();
+    t.insert("results".into(), json!(totals.results));
+    t.insert("files".into(),   json!(totals.files));
+    if totals.fatals > 0 { t.insert("fatals".into(), json!(totals.fatals)); }
+    if totals.errors > 0 { t.insert("errors".into(), json!(totals.errors)); }
+    if totals.warnings > 0 { t.insert("warnings".into(), json!(totals.warnings)); }
+    if totals.infos > 0 { t.insert("infos".into(), json!(totals.infos)); }
+    if totals.updated > 0 { t.insert("updated".into(), json!(totals.updated)); }
+    if totals.unchanged > 0 { t.insert("unchanged".into(), json!(totals.unchanged)); }
+    t
 }
 
 /// Render a results list as JSON.
@@ -310,12 +340,14 @@ mod tests {
             totals: None,
             expected: None,
             query: None,
+            schema: None,
             outputs: vec![],
             results: vec![ResultItem::Group(Box::new(Report {
                 success: None,
                 totals: None,
                 expected: None,
                 query: None,
+                schema: None,
                 outputs: vec![tractor::report::ReportOutput {
                     file: None,
                     content: "hello\n".to_string(),

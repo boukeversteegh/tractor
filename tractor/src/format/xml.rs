@@ -10,39 +10,10 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
     body.push_str("<report>\n");
 
     if should_show_totals(report, view) {
-        if let Some(passed) = report.success {
-            body.push_str(&format!("  <success>{}</success>\n", passed));
-        }
-        if let Some(ref totals) = report.totals {
-            body.push_str("  <totals>\n");
-            body.push_str(&format!("    <results>{}</results>\n", totals.results));
-            body.push_str(&format!("    <files>{}</files>\n", totals.files));
-            if totals.fatals > 0 {
-                body.push_str(&format!("    <fatals>{}</fatals>\n", totals.fatals));
-            }
-            if totals.errors > 0 {
-                body.push_str(&format!("    <errors>{}</errors>\n", totals.errors));
-            }
-            if totals.warnings > 0 {
-                body.push_str(&format!("    <warnings>{}</warnings>\n", totals.warnings));
-            }
-            if totals.infos > 0 {
-                body.push_str(&format!("    <infos>{}</infos>\n", totals.infos));
-            }
-            if totals.updated > 0 {
-                body.push_str(&format!("    <updated>{}</updated>\n", totals.updated));
-            }
-            if totals.unchanged > 0 {
-                body.push_str(&format!("    <unchanged>{}</unchanged>\n", totals.unchanged));
-            }
-            body.push_str("  </totals>\n");
-        }
-        if let Some(ref expected) = report.expected {
-            body.push_str(&format!("  <expected>{}</expected>\n", escape(expected)));
-        }
-        if let Some(ref query) = report.query {
-            body.push_str(&format!("  <query>{}</query>\n", escape(query.as_str())));
-        }
+        append_summary(&mut body, report, "  ");
+    }
+    if let Some(ref schema) = report.schema {
+        body.push_str(&format!("  <schema>{}</schema>\n", escape(schema)));
     }
 
     // Top-level captured outputs — honest view of the report model.
@@ -283,7 +254,65 @@ fn append_group_outputs(
     append_outputs(out, outputs, indent);
 }
 
-fn escape(s: &str) -> String {
+/// Append the `<summary>…</summary>` container with the report's
+/// success / totals / expected / query fields. Returns early without
+/// emitting anything if none of those fields are present, keeping the
+/// container purely structural (no empty `<summary/>`).
+pub fn append_summary(body: &mut String, report: &tractor::report::Report, indent: &str) {
+    let has_any = report.success.is_some()
+        || report.totals.is_some()
+        || report.expected.is_some()
+        || report.query.is_some();
+    if !has_any {
+        return;
+    }
+
+    let inner = format!("{}  ", indent);
+    body.push_str(&format!("{}<summary>\n", indent));
+    if let Some(passed) = report.success {
+        body.push_str(&format!("{}<success>{}</success>\n", inner, passed));
+    }
+    if let Some(ref totals) = report.totals {
+        append_totals(body, totals, &inner);
+    }
+    if let Some(ref expected) = report.expected {
+        body.push_str(&format!("{}<expected>{}</expected>\n", inner, escape(expected)));
+    }
+    if let Some(ref query) = report.query {
+        body.push_str(&format!("{}<query>{}</query>\n", inner, escape(query.as_str())));
+    }
+    body.push_str(&format!("{}</summary>\n", indent));
+}
+
+/// Append a `<totals>` element with all non-zero fields.
+pub fn append_totals(body: &mut String, totals: &tractor::report::Totals, indent: &str) {
+    let inner = format!("{}  ", indent);
+    body.push_str(&format!("{}<totals>\n", indent));
+    body.push_str(&format!("{}<results>{}</results>\n", inner, totals.results));
+    body.push_str(&format!("{}<files>{}</files>\n", inner, totals.files));
+    if totals.fatals > 0 {
+        body.push_str(&format!("{}<fatals>{}</fatals>\n", inner, totals.fatals));
+    }
+    if totals.errors > 0 {
+        body.push_str(&format!("{}<errors>{}</errors>\n", inner, totals.errors));
+    }
+    if totals.warnings > 0 {
+        body.push_str(&format!("{}<warnings>{}</warnings>\n", inner, totals.warnings));
+    }
+    if totals.infos > 0 {
+        body.push_str(&format!("{}<infos>{}</infos>\n", inner, totals.infos));
+    }
+    if totals.updated > 0 {
+        body.push_str(&format!("{}<updated>{}</updated>\n", inner, totals.updated));
+    }
+    if totals.unchanged > 0 {
+        body.push_str(&format!("{}<unchanged>{}</unchanged>\n", inner, totals.unchanged));
+    }
+    body.push_str(&format!("{}</totals>\n", indent));
+}
+
+/// Escape text for use inside an XML element.
+pub fn escape(s: &str) -> String {
     s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;")
 }
 
