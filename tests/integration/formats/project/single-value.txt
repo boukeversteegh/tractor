@@ -1,0 +1,5 @@
+ class Foo
+{
+     int Bar { get; set; }
+     void Baz() { }
+}

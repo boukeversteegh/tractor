@@ -1,0 +1,15 @@
+class[public] (2)/ = "class"
+  ├─ body (2)/ = "{", "}", "{ }"
+  │   ├─ property[public]/
+  │   │   ├─ name = "Bar"
+  │   │   ├─ accessors/ = {…}
+  │   │   │   └─ accessor (2) = "get;", "set;"
+  │   │   └─ type = "int"
+  │   └─ method[public]/
+  │       ├─ parameters = "()"
+  │       ├─ body/
+  │       │   └─ block = "{ }"
+  │       ├─ returns/
+  │       │   └─ type = "void"
+  │       └─ name = "Baz"
+  └─ name (2) = "Foo", "Qux"

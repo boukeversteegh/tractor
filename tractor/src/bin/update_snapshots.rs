@@ -290,6 +290,70 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
         "check", "tests/integration/formats/sample.cs", "-x", "//class[bad=(",
         "--reason", "test", "--no-color",
     ]),
+    // -p/--project projection snapshots
+    ("project/count.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-p", "count",
+    ]),
+    ("project/count.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-p", "count", "-f", "json",
+    ]),
+    ("project/count.xml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-p", "count", "-f", "xml",
+    ]),
+    ("project/count.yaml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-p", "count", "-f", "yaml",
+    ]),
+    ("project/summary.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-p", "summary", "-f", "json",
+    ]),
+    ("project/summary.xml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-p", "summary", "-f", "xml",
+    ]),
+    ("project/summary.yaml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-p", "summary", "-f", "yaml",
+    ]),
+    ("project/totals.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-p", "totals", "-f", "json",
+    ]),
+    ("project/totals.xml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-p", "totals", "-f", "xml",
+    ]),
+    ("project/totals.yaml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-p", "totals", "-f", "yaml",
+    ]),
+    ("project/results.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-p", "results", "-f", "json",
+    ]),
+    ("project/results.xml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-p", "results", "-f", "xml",
+    ]),
+    ("project/results.yaml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-p", "results", "-f", "yaml",
+    ]),
+    ("project/value.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-p", "value",
+    ]),
+    ("project/value.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-p", "value", "-f", "json",
+    ]),
+    ("project/value.xml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-p", "value", "-f", "xml",
+    ]),
+    ("project/source.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-p", "source",
+    ]),
+    ("project/schema.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-p", "schema",
+    ]),
+    ("project/schema.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-p", "schema", "-f", "json",
+    ]),
+    ("project/single-value.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-p", "value", "--single",
+    ]),
+    ("project/single-tree.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-p", "tree", "--single",
+    ]),
 ];
 
 struct Mismatch {
