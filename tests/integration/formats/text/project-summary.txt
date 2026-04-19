@@ -1,1 +1,1 @@
-cli: error: format 'gcc' only supports the default report projection
+cli: error: -p/--single is not supported with -f gcc (line-oriented format)

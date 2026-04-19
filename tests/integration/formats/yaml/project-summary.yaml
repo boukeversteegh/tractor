@@ -1,5 +1,10 @@
-success: false
-totals:
-  results: 2
-  files: 1
-  errors: 2
+summary:
+  success: false
+  totals:
+    results: 1
+    files: 0
+    fatals: 1
+results:
+- origin: cli
+  reason: -p summary is not compatible with --group
+  severity: fatal
