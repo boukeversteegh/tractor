@@ -1,0 +1,23 @@
+[
+  {
+    "file": "tests/integration/formats/projection/multi.xml",
+    "line": 1,
+    "tree": {
+      "a": "1"
+    }
+  },
+  {
+    "file": "tests/integration/formats/projection/multi.xml",
+    "line": 1,
+    "tree": {
+      "a": "2"
+    }
+  },
+  {
+    "file": "tests/integration/formats/projection/multi.xml",
+    "line": 1,
+    "tree": {
+      "a": "3"
+    }
+  }
+]

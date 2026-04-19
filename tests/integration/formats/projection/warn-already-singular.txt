@@ -1,0 +1,2 @@
+1 matches
+❌ warning: --single has no effect with -p summary (already singular). Drop --single.

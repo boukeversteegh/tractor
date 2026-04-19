@@ -1,0 +1,5 @@
+a = "1"
+a = "2"
+a = "3"
+❌ warning: -v fields {file} were discarded because -p tree replaces the view set.
+❌   To keep -v intact, use `-p results` (respects -v) instead of `-p tree`.

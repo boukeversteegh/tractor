@@ -290,6 +290,124 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
         "check", "tests/integration/formats/sample.cs", "-x", "//class[bad=(",
         "--reason", "test", "--no-color",
     ]),
+    // Projection (-p / --single) matrix. Uses dedicated XML fixtures so
+    // every shape (0/1/many matches) has a predictable target.
+    //
+    // -p tree (sequence) — list wrapper per format
+    ("projection/tree-multi.xml", &[
+        "query", "tests/integration/formats/projection/multi.xml",
+        "-x", "//a", "-p", "tree", "-f", "xml",
+    ]),
+    ("projection/tree-multi.json", &[
+        "query", "tests/integration/formats/projection/multi.xml",
+        "-x", "//a", "-p", "tree", "-f", "json",
+    ]),
+    ("projection/tree-multi.yaml", &[
+        "query", "tests/integration/formats/projection/multi.xml",
+        "-x", "//a", "-p", "tree", "-f", "yaml",
+    ]),
+    ("projection/tree-multi.txt", &[
+        "query", "tests/integration/formats/projection/multi.xml",
+        "-x", "//a", "-p", "tree", "-f", "text",
+    ]),
+    ("projection/tree-one.xml", &[
+        "query", "tests/integration/formats/projection/one.xml",
+        "-x", "//a", "-p", "tree", "-f", "xml",
+    ]),
+    ("projection/tree-one.json", &[
+        "query", "tests/integration/formats/projection/one.xml",
+        "-x", "//a", "-p", "tree", "-f", "json",
+    ]),
+    ("projection/tree-empty.xml", &[
+        "query", "tests/integration/formats/projection/empty.xml",
+        "-x", "//a", "-p", "tree", "-f", "xml",
+    ]),
+    ("projection/tree-empty.json", &[
+        "query", "tests/integration/formats/projection/empty.xml",
+        "-x", "//a", "-p", "tree", "-f", "json",
+    ]),
+    // -p tree --single — bare element, no wrapper (issue #120 shape)
+    ("projection/tree-single-one.xml", &[
+        "query", "tests/integration/formats/projection/one.xml",
+        "-x", "//a", "-p", "tree", "--single", "-f", "xml",
+    ]),
+    ("projection/tree-single-multi.xml", &[
+        "query", "tests/integration/formats/projection/multi.xml",
+        "-x", "//a", "-p", "tree", "--single", "-f", "xml",
+    ]),
+    ("projection/tree-single-multi.json", &[
+        "query", "tests/integration/formats/projection/multi.xml",
+        "-x", "//a", "-p", "tree", "--single", "-f", "json",
+    ]),
+    // -p value (sequence + singular)
+    ("projection/value-multi.json", &[
+        "query", "tests/integration/formats/projection/multi.xml",
+        "-x", "//a", "-p", "value", "-f", "json",
+    ]),
+    ("projection/value-multi.txt", &[
+        "query", "tests/integration/formats/projection/multi.xml",
+        "-x", "//a", "-p", "value", "-f", "text",
+    ]),
+    ("projection/value-single-multi.json", &[
+        "query", "tests/integration/formats/projection/multi.xml",
+        "-x", "//a", "-p", "value", "--single", "-f", "json",
+    ]),
+    // -p summary / -p totals / -p schema / -p count (singular projections)
+    ("projection/summary.xml", &[
+        "query", "tests/integration/formats/projection/multi.xml",
+        "-x", "//a", "-p", "summary", "-f", "xml",
+    ]),
+    ("projection/summary.json", &[
+        "query", "tests/integration/formats/projection/multi.xml",
+        "-x", "//a", "-p", "summary", "-f", "json",
+    ]),
+    ("projection/totals.json", &[
+        "query", "tests/integration/formats/projection/multi.xml",
+        "-x", "//a", "-p", "totals", "-f", "json",
+    ]),
+    ("projection/schema.xml", &[
+        "query", "tests/integration/formats/projection/multi.xml",
+        "-x", "//a", "-p", "schema", "-f", "xml",
+    ]),
+    ("projection/schema.txt", &[
+        "query", "tests/integration/formats/projection/multi.xml",
+        "-x", "//a", "-p", "schema", "-f", "text",
+    ]),
+    ("projection/count.xml", &[
+        "query", "tests/integration/formats/projection/multi.xml",
+        "-x", "//a", "-p", "count", "-f", "xml",
+    ]),
+    ("projection/count.txt", &[
+        "query", "tests/integration/formats/projection/multi.xml",
+        "-x", "//a", "-p", "count", "-f", "text",
+    ]),
+    ("projection/count.json", &[
+        "query", "tests/integration/formats/projection/multi.xml",
+        "-x", "//a", "-p", "count", "-f", "json",
+    ]),
+    // -p results (structural — respects -v; singular strips list wrapper)
+    ("projection/results.json", &[
+        "query", "tests/integration/formats/projection/multi.xml",
+        "-x", "//a", "-p", "results", "-f", "json",
+    ]),
+    ("projection/results-single.xml", &[
+        "query", "tests/integration/formats/projection/multi.xml",
+        "-x", "//a", "-p", "results", "--single", "-f", "xml",
+    ]),
+    // Warning cases — replacement and unreachable drops (stderr goes to
+    // stdout via update_snapshots' `❌` prefix merge).
+    ("projection/warn-replacement.txt", &[
+        "query", "tests/integration/formats/projection/multi.xml",
+        "-x", "//a", "-v", "tree,file", "-p", "tree", "-f", "text",
+    ]),
+    ("projection/warn-unreachable.txt", &[
+        "query", "tests/integration/formats/projection/multi.xml",
+        "-x", "//a", "-v", "tree,file", "-p", "summary", "-f", "text",
+    ]),
+    ("projection/warn-already-singular.txt", &[
+        "query", "tests/integration/formats/projection/multi.xml",
+        "-x", "//a", "-p", "summary", "--single", "-f", "text",
+    ]),
 ];
 
 struct Mismatch {

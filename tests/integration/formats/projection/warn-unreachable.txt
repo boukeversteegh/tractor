@@ -1,0 +1,2 @@
+3 matches
+❌ warning: -v fields {tree, file} has no effect with -p summary (no per-match rendering).
