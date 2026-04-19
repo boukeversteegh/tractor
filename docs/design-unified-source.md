@@ -1,5 +1,7 @@
 # Unified `Source`: virtual paths as a first-class citizen
 
+> **Status: shipped** on `claude/separate-factors-6meGf` (commits `63c6b97`, `ff8cb29`, `8d2b376`). Closes #133. The UX decision settled on: **reuse the positional `files` argument (single value) to name the virtual path when inline content is active**. No new flag like `--stdin-filename` was introduced.
+
 ## Context
 
 Issue #133. Pre-commit / pre-edit hook workflows want to lint *proposed* content before it lands on disk. Today, stdin / `-s` content has no path, so:
@@ -9,7 +11,7 @@ Issue #133. Pre-commit / pre-edit hook workflows want to lint *proposed* content
 - Diagnostics say `<stdin>`
 - `--diff-lines` can't isolate the edited hunk
 
-Prior art: ruff, prettier, eslint all expose `--stdin-filename`. Tractor can do it more elegantly because the CLI already has a positional `files` argument — we let it name the virtual path when content is inline.
+Prior art: ruff, prettier, eslint all expose `--stdin-filename`. Tractor does it more elegantly because the CLI already has a positional `files` argument — we reuse it to name the virtual path when content is inline, avoiding a redundant flag surface.
 
 The root cause is that the operation layer carries two *structurally different* input shapes: `files: Vec<String>` (disk) and `inline_source: Option<String>` (stdin/`-s`), and every executor branches on them. The magic sentinel `"<stdin>"` is a symptom — it's the string we need because `inline_source` has no path field.
 
@@ -54,15 +56,18 @@ impl Source {
 pub const PATHLESS_LABEL: &str = "<string>";
 ```
 
-Each `Operation` drops `files: Vec<String>`, `inline_source: Option<String>`, and `language: Option<String>`, and gains:
+Each `Operation` drops `files: Vec<String>`, `inline_source: Option<String>`, `language: Option<String>`, and the per-op diff/exclude fields, and gains:
 
 ```rust
 pub sources: Vec<Source>,
+pub filters: Vec<Box<dyn ResultFilter>>,
 ```
+
+Both fields are **pre-resolved before the Operation is constructed**. The executor is a pure consumer — it never expands globs, never calls `FileResolver`, never touches raw pattern strings for file resolution. (Per-rule `include:`/`exclude:` globs still live on `Rule` and are applied at match time inside `run_rules`; that is a different concern — "which rules apply to this source" — from file resolution.)
 
 ## UX: no new flag — reuse the positional `files` arg
 
-When inline content is active (stdin or `-s`), the positional `files` arg, if present, must be exactly one entry and names the virtual path.
+**Decision (shipped):** when inline content is active (stdin or `-s`), the positional `files` arg, if present, must be exactly one entry and names the virtual path. No `--stdin-filename`-style flag is added — the CLI already accepts positional paths, and giving one while piping content is unambiguously "label this content with this path".
 
 ```bash
 # Path-less (today's behaviour):
@@ -158,11 +163,11 @@ Language is resolved at the input boundary: `-l` overrides, otherwise `detect_la
 | `tractor/src/cli/{check,query,set,test}.rs` | Build each `Operation` with a single `sources: Vec<Source>` field. Remove the Phase-2-vs-Phase-3 dispatch. |
 | `tractor/src/executor/{check,query,set,test}.rs` | `Operation` struct loses `files`, `inline_source`, `language`; gains `sources`. Execution body drops the inline branch. Parsing goes through `source.read()` + `parse_string_to_documents(&content, &source.language, source.path.as_str(), ...)`. |
 | `tractor/src/matcher.rs:187` (`run_rules`) | Signature: `&[Source]` instead of `&[NormalizedPath]`. Per-rule glob match still on `&source.path`. Parsing switches from `parse_file_to_xot` to `source.read()` piped into `parse_string_to_xot`. Parallel iteration preserved. |
-| `tractor/src/input/file_resolver.rs` | `FileResolver::resolve` returns `Vec<Source>` (all `SourceContent::Disk`) instead of `Vec<NormalizedPath>`. Or: keep `resolve` producing paths and add a thin `into_sources()` adapter — decide during implementation based on call-site count. |
+| `tractor/src/input/file_resolver.rs` | `FileResolver::resolve` returns `(Vec<Source>, Vec<Box<dyn ResultFilter>>)` directly — no adapter. Takes a `SourceRequest` (single `inline_source: Option<&Source>` field, no dual `inline`/`has_inline`). Constructor takes a new `ResolverOptions` struct (split off from `ExecuteOptions`). |
 | `tractor/src/input/git.rs` | `DiffHunkFilter::from_spec_with_sources(spec, cwd, sources)` — for any `is_virtual()` source, replace that path's hunks with `diff(<spec>:path, inline content)`; disk sources unchanged. |
 | `tractor/src/executor/set.rs` | Write-side branches on `source.content`: `Disk` writes to file, `Inline` routes to `report.add_output()`. One `match`, replaces the entire Phase-2/Phase-3 duplication. |
-| `tractor/src/mutation/replace.rs:213` | Rejection check: `if source.is_virtual() { reject }` — wired via the caller passing source context, not a string comparison. |
-| `tractor/src/format/text.rs:101,173` | `file != "<stdin>"` → `file != PATHLESS_LABEL`. Narrow: only the truly path-less case. |
+| `tractor/src/mutation/replace.rs:216` | Rejection check uses the single sentinel: `if m.file == PATHLESS_LABEL`. `PATHLESS_LABEL` moved to the library crate (`tractor/src/model/report.rs`) so library and binary share one constant — replaces the prior two-string defensive check. |
+| `tractor/src/format/text.rs:101,173` | `file != "<stdin>"` → `file != tractor::PATHLESS_LABEL`. Narrow: only the truly path-less case. Imports from library crate, not from the `input` sibling module. |
 
 ## `--diff-lines` + virtual source
 
@@ -175,9 +180,10 @@ A virtual source whose path doesn't match any rule's `include:` produces zero ma
 ## What the unification buys
 
 - **Four executor bodies shrink.** The Phase-2 (inline) vs Phase-3 (files) branch disappears in `check`, `query`, `set`, `test`. One loop, one code path.
-- **The sentinel is quarantined.** It appears in exactly one place — as a display label when a user pipes content without a positional path — and the formatter's `file != PATHLESS_LABEL` check remains as a local, narrow concern.
+- **The sentinel is quarantined.** It appears in exactly one place — as a display label when a user pipes content without a positional path — and the formatter's `file != PATHLESS_LABEL` check remains as a local, narrow concern. `PATHLESS_LABEL` itself lives in the library crate and is the single source of truth.
 - **Glob matching, diff-lines, filtering: free.** All of it already keys off `NormalizedPath`. Unifying sources means the virtual path participates in these pipelines exactly like a real path, with no new code.
 - **Factor separation made structural, not conventional.** Today "is this inline?" is answered by inspecting the operation's shape (is `inline_source` Some?). After: answered by `source.is_virtual()` — a property of the thing itself, not the container.
+- **File resolution lifted out of operations.** As a direct consequence of unifying to `Vec<Source>`, `FileResolver` now runs **before** the `Operation` is constructed (in `cli/*.rs` and `cli/config.rs`). Operations are pure consumers of pre-resolved `sources`/`filters`. Executors no longer import `FileResolver`. Config loading goes through an intermediate `ConfigOperation { inputs: OperationInputs, op: … }` so each op-specific parser declares its pattern shape (an `OperationInputs` bag of `files`/`exclude`/`diff_*`/`language`/`inline_source`) and a single runner in `cli/config.rs` drives `resolver.resolve(...)` uniformly, then calls `config_op.into_operation(sources, filters)`. The resolver knows nothing about operation types; operations contain no resolution logic.
 
 ## Verification
 
