@@ -290,6 +290,111 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
         "check", "tests/integration/formats/sample.cs", "-x", "//class[bad=(",
         "--reason", "test", "--no-color",
     ]),
+    // ---- Projection (`-p`) × format matrix ----------------------------------
+    // Each projection is exercised in every parseable format so regressions in
+    // envelope shape, list wrapping, or --single flattening show up in diffs.
+    //
+    // -p tree (per-match sequence)
+    ("project/tree.xml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "tree", "-f", "xml",
+    ]),
+    ("project/tree.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "tree", "-f", "json",
+    ]),
+    ("project/tree.yaml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "tree", "-f", "yaml",
+    ]),
+    ("project/tree.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "tree",
+    ]),
+    // -p tree --single: bare first element, no list wrapper.
+    ("project/tree-single.xml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "tree", "--single", "-f", "xml",
+    ]),
+    ("project/tree-single.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "tree", "--single", "-f", "json",
+    ]),
+    // -p value
+    ("project/value.xml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class/name",
+        "-p", "value", "-f", "xml",
+    ]),
+    ("project/value.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class/name",
+        "-p", "value", "-f", "json",
+    ]),
+    ("project/value-single.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class/name",
+        "-p", "value", "--single",
+    ]),
+    // -p results — respects -v.
+    ("project/results.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "results", "-v", "file,line,tree", "-f", "json",
+    ]),
+    ("project/results.xml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "results", "-v", "file,line,tree", "-f", "xml",
+    ]),
+    // -p summary (metadata projection)
+    ("project/summary.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "summary", "-f", "json",
+    ]),
+    ("project/summary.xml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "summary", "-f", "xml",
+    ]),
+    // -p totals
+    ("project/totals.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "totals", "-f", "json",
+    ]),
+    ("project/totals.xml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "totals", "-f", "xml",
+    ]),
+    // -p count
+    ("project/count.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "count",
+    ]),
+    ("project/count.xml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "count", "-f", "xml",
+    ]),
+    ("project/count.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-p", "count", "-f", "json",
+    ]),
+    // -p schema: no snapshot — schema collection uses a HashMap internally,
+    // so byte-level output ordering is unstable across runs. The semantic
+    // contract (schema triggers collection, emits text/xml/json with expected
+    // shape) is covered by `projection::p_schema_*` tests in tests/cli.rs.
+    // Empty-match behavior: same flags → same shape regardless of cardinality.
+    ("project/tree-empty.xml", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "interface",
+        "-p", "tree", "-f", "xml",
+    ]),
+    ("project/tree-empty.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "interface",
+        "-p", "tree", "-f", "json",
+    ]),
+    // Discarded-view warnings go to stderr (captured into the snapshot).
+    ("project/warn-replace.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-v", "tree,file", "-p", "tree",
+    ]),
+    ("project/warn-unreachable.txt", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-v", "tree,file", "-p", "summary",
+    ]),
 ];
 
 struct Mismatch {

@@ -1,0 +1,3 @@
+results: 2
+files: 1
+❌ warning: -v fields {tree, file} were discarded because -p summary has no per-match rendering.

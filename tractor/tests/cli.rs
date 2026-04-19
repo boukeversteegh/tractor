@@ -1227,3 +1227,289 @@ fn view_modifier_rejects_invalid_combinations() {
         .assert_exit(1)
         .run();
 }
+
+// ---------------------------------------------------------------------------
+// -p / --project projection flag — semantic contract tests
+//
+// These assert the rules from docs/design-p-projection-flag.md directly rather
+// than relying on broad snapshots. Snapshots (under tests/integration/formats/
+// project/) catch byte-level regressions; these tests catch behavioral regressions
+// where the shape of the output is wrong even though bytes may shift for other
+// reasons (field reordering, formatting tweaks, etc.).
+// ---------------------------------------------------------------------------
+
+mod projection {
+    use super::support::{command, query_command};
+
+    // ----- Sequence projections wrap in the stable root (no cardinality peek) -----
+
+    #[test]
+    fn p_tree_xml_wraps_in_results_root_for_multiple_matches() {
+        let result = query_command("sample.cs", "class")
+            .arg("-p").arg("tree").arg("-f").arg("xml")
+            .in_fixture("formats")
+            .capture();
+        assert_eq!(0, result.status);
+        // Every -p tree -f xml output is rooted at <results>, with one <tree>
+        // per match — content-independence invariant.
+        assert!(result.stdout.contains("<results>"), "stdout:\n{}", result.stdout);
+        assert_eq!(2, result.stdout.matches("<tree>").count());
+    }
+
+    #[test]
+    fn p_tree_xml_emits_empty_results_for_zero_matches() {
+        // Same flags must produce the same root regardless of match count.
+        let result = query_command("sample.cs", "interface")
+            .arg("-p").arg("tree").arg("-f").arg("xml")
+            .in_fixture("formats")
+            .capture();
+        assert_eq!(0, result.status);
+        assert!(
+            result.stdout.contains("<results/>") || result.stdout.contains("<results></results>"),
+            "expected empty <results/> root, got:\n{}", result.stdout,
+        );
+    }
+
+    #[test]
+    fn p_tree_json_is_top_level_array() {
+        let result = query_command("sample.cs", "class")
+            .arg("-p").arg("tree").arg("-f").arg("json")
+            .in_fixture("formats")
+            .capture();
+        assert_eq!(0, result.status);
+        let v: serde_json::Value = serde_json::from_str(&result.stdout)
+            .expect("output should parse as JSON");
+        assert!(v.is_array(), "expected top-level JSON array, got: {v}");
+        assert_eq!(2, v.as_array().unwrap().len());
+    }
+
+    #[test]
+    fn p_tree_json_is_empty_array_for_zero_matches() {
+        let result = query_command("sample.cs", "interface")
+            .arg("-p").arg("tree").arg("-f").arg("json")
+            .in_fixture("formats")
+            .capture();
+        assert_eq!(0, result.status);
+        let v: serde_json::Value = serde_json::from_str(&result.stdout).unwrap();
+        assert_eq!(&serde_json::json!([]), &v);
+    }
+
+    // ----- --single strips list wrappers -----
+
+    #[test]
+    fn p_tree_single_xml_is_bare_tree_element() {
+        let result = query_command("sample.cs", "class")
+            .arg("-p").arg("tree").arg("--single").arg("-f").arg("xml")
+            .in_fixture("formats")
+            .capture();
+        assert_eq!(0, result.status);
+        // Bare <tree> root, no <results> wrapper.
+        assert!(result.stdout.contains("<tree>"), "stdout:\n{}", result.stdout);
+        assert!(!result.stdout.contains("<results>"), "unexpected <results> wrapper:\n{}", result.stdout);
+    }
+
+    #[test]
+    fn p_tree_single_json_is_bare_object_not_array() {
+        let result = query_command("sample.cs", "class")
+            .arg("-p").arg("tree").arg("--single").arg("-f").arg("json")
+            .in_fixture("formats")
+            .capture();
+        assert_eq!(0, result.status);
+        let v: serde_json::Value = serde_json::from_str(&result.stdout).unwrap();
+        assert!(v.is_object(), "expected bare object, got: {v}");
+    }
+
+    #[test]
+    fn single_with_n_other_than_1_is_rejected() {
+        // --single -n 2 is contradictory: one says "first match", the other "first two".
+        command(["query", "sample.cs", "-x", "class", "--single", "-n", "2"])
+            .in_fixture("formats")
+            .assert_exit(1)
+            .run();
+    }
+
+    #[test]
+    fn single_on_singular_projection_warns_and_keeps_output() {
+        let result = query_command("sample.cs", "class")
+            .arg("-p").arg("summary").arg("--single").arg("-f").arg("json")
+            .in_fixture("formats")
+            .capture();
+        assert_eq!(0, result.status);
+        assert!(result.stderr.contains("warning: --single has no effect"));
+        // Still emits the summary, just with a warning on stderr.
+        assert!(serde_json::from_str::<serde_json::Value>(&result.stdout).is_ok());
+    }
+
+    // ----- -v replacement rule -----
+
+    #[test]
+    fn p_tree_replaces_v_and_warns_on_discarded_fields() {
+        let result = query_command("sample.cs", "class")
+            .args(["-v", "tree,file", "-p", "tree", "-f", "json"])
+            .in_fixture("formats")
+            .capture();
+        assert_eq!(0, result.status);
+        // stderr warns about `file` being discarded.
+        assert!(
+            result.stderr.contains("warning: -v fields")
+                && result.stderr.contains("file")
+                && result.stderr.contains("-p tree replaces"),
+            "stderr should warn about discarded field, got:\n{}",
+            result.stderr,
+        );
+        // stdout contains bare tree values — no `file` key anywhere.
+        let v: serde_json::Value = serde_json::from_str(&result.stdout).unwrap();
+        let serialized = serde_json::to_string(&v).unwrap();
+        assert!(!serialized.contains("\"file\""), "file leaked into output: {serialized}");
+    }
+
+    #[test]
+    fn p_results_respects_v_without_warning() {
+        let result = query_command("sample.cs", "class")
+            .args(["-v", "tree,file", "-p", "results", "-f", "json"])
+            .in_fixture("formats")
+            .capture();
+        assert_eq!(0, result.status);
+        assert!(
+            !result.stderr.contains("warning:"),
+            "p results should not warn on -v, got: {}", result.stderr,
+        );
+        let v: serde_json::Value = serde_json::from_str(&result.stdout).unwrap();
+        // Each match preserves `file` (respecting -v).
+        let arr = v.as_array().expect("results is top-level array");
+        assert!(arr[0].get("file").is_some(), "file missing from match: {v}");
+        assert!(arr[0].get("tree").is_some(), "tree missing from match: {v}");
+    }
+
+    #[test]
+    fn p_summary_warns_on_explicit_v() {
+        let result = query_command("sample.cs", "class")
+            .args(["-v", "tree,file", "-p", "summary"])
+            .in_fixture("formats")
+            .capture();
+        assert_eq!(0, result.status);
+        assert!(
+            result.stderr.contains("warning: -v fields")
+                && result.stderr.contains("tree")
+                && result.stderr.contains("file")
+                && result.stderr.contains("-p summary has no per-match rendering"),
+            "stderr should warn about unreachable fields, got:\n{}", result.stderr,
+        );
+    }
+
+    #[test]
+    fn default_view_with_p_tree_suppresses_warnings() {
+        // User didn't ask for anything specific — the replacement can't surprise them.
+        let result = query_command("sample.cs", "class")
+            .args(["-p", "tree"])
+            .in_fixture("formats")
+            .capture();
+        assert_eq!(0, result.status);
+        assert!(
+            !result.stderr.contains("warning:"),
+            "default view + -p tree should be silent, got: {}", result.stderr,
+        );
+    }
+
+    // ----- Report-shape refactor (/summary, /schema) -----
+
+    #[test]
+    fn default_report_nests_summary_under_summary_key() {
+        let result = query_command("sample.cs", "class")
+            .args(["-v", "summary", "-f", "json"])
+            .in_fixture("formats")
+            .capture();
+        assert_eq!(0, result.status);
+        let v: serde_json::Value = serde_json::from_str(&result.stdout).unwrap();
+        // Old shape: v.totals; new shape: v.summary.totals.
+        assert!(v.get("totals").is_none(), "totals should be nested, not top-level: {v}");
+        assert!(v["summary"]["totals"].is_object(), "missing /summary/totals: {v}");
+    }
+
+    #[test]
+    fn totals_still_preserves_results_count_meaning() {
+        // Design: /summary/totals/results stays as scalar count (no rename inside totals).
+        let result = query_command("sample.cs", "class")
+            .args(["-p", "totals", "-f", "json"])
+            .in_fixture("formats")
+            .capture();
+        let v: serde_json::Value = serde_json::from_str(&result.stdout).unwrap();
+        assert_eq!(2, v["results"].as_u64().unwrap());
+    }
+
+    // ----- -p count vs -p totals -----
+
+    #[test]
+    fn p_count_is_a_bare_scalar_in_text_json_yaml() {
+        for fmt in ["text", "json", "yaml"] {
+            let result = query_command("sample.cs", "class")
+                .args(["-p", "count", "-f", fmt])
+                .in_fixture("formats")
+                .capture();
+            let trimmed = result.stdout.trim();
+            assert_eq!(
+                "2", trimmed,
+                "expected bare scalar for -p count -f {fmt}, got: {trimmed:?}",
+            );
+        }
+    }
+
+    #[test]
+    fn p_count_xml_wraps_in_count_element() {
+        let result = query_command("sample.cs", "class")
+            .args(["-p", "count", "-f", "xml"])
+            .in_fixture("formats")
+            .capture();
+        assert!(result.stdout.contains("<count>2</count>"), "stdout:\n{}", result.stdout);
+    }
+
+    // ----- Schema routes through the report -----
+
+    #[test]
+    fn p_schema_triggers_schema_collection_and_emits_text() {
+        let result = query_command("sample.cs", "class")
+            .args(["-p", "schema"])
+            .in_fixture("formats")
+            .capture();
+        assert_eq!(0, result.status);
+        // Schema rendering contains element names from the matched class trees.
+        assert!(result.stdout.contains("class"), "schema should mention class: {}", result.stdout);
+    }
+
+    #[test]
+    fn p_tree_does_not_compute_schema() {
+        // No schema should appear in tree projection output.
+        let result = query_command("sample.cs", "class")
+            .args(["-p", "tree", "-f", "json"])
+            .in_fixture("formats")
+            .capture();
+        let serialized = result.stdout;
+        assert!(!serialized.contains("\"schema\""), "schema leaked: {serialized}");
+    }
+
+    // ----- Invalid -p value -----
+
+    #[test]
+    fn invalid_projection_is_rejected() {
+        command(["query", "sample.cs", "-x", "class", "-p", "bogus"])
+            .in_fixture("formats")
+            .assert_exit(1)
+            .run();
+    }
+
+    // ----- -p report is the default -----
+
+    #[test]
+    fn p_report_is_byte_identical_to_omitting_p() {
+        let default = query_command("sample.cs", "class")
+            .args(["-v", "tree", "-f", "json"])
+            .in_fixture("formats")
+            .capture();
+        let explicit = query_command("sample.cs", "class")
+            .args(["-v", "tree", "-p", "report", "-f", "json"])
+            .in_fixture("formats")
+            .capture();
+        assert_eq!(default.stdout, explicit.stdout);
+    }
+}
+

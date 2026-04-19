@@ -1,8 +1,9 @@
-success: true
-totals:
-  results: 2
-  files: 1
-  updated: 2
+summary:
+  success: true
+  totals:
+    results: 2
+    files: 1
+    updated: 2
 outputs:
 - file: tests/integration/formats/set/sample.yaml
   content: |

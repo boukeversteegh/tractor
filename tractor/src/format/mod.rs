@@ -9,7 +9,7 @@ pub mod claude_code;
 pub mod project;
 mod shared;
 
-pub use options::{OutputFormat, GroupDimension, ViewField, ViewSet, parse_view_set, parse_group_by, Projection, ProjectionKind, ProjectionPlan};
+pub use options::{OutputFormat, GroupDimension, ViewField, ViewSet, parse_group_by, ProjectionPlan};
 pub use gcc::{render_gcc, render_gcc_report_with_template};
 pub use github::render_github;
 pub use xml::render_xml_report;

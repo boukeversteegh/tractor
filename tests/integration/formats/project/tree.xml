@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<results>
+  <tree>
+    <class>
+      <public/>
+      class
+      <name>Foo</name>
+      <body>
+        {
+        <property>
+          <public/>
+          <type>int</type>
+          <name>Bar</name>
+          <accessors>
+            {
+            <accessor>get;</accessor>
+            <accessor>set;</accessor>
+            }
+          </accessors>
+        </property>
+        <method>
+          <public/>
+          <returns>
+            <type>void</type>
+          </returns>
+          <name>Baz</name>
+          <parameters>()</parameters>
+          <body>
+            <block>{ }</block>
+          </body>
+        </method>
+        }
+      </body>
+    </class>
+  </tree>
+  <tree>
+    <class>
+      <public/>
+      class
+      <name>Qux</name>
+      <body>{ }</body>
+    </class>
+  </tree>
+</results>

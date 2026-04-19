@@ -305,10 +305,16 @@ templates — distinct from `-m` which produces data.
 ## 2. The Report Envelope
 
 Every tractor command produces a **report**. The report envelope is
-always present, in every format, for every command. This ensures output
-is always valid XML/JSON and pipeable.
+present by default, in every format, for every command — ensuring output
+is always valid XML/JSON and pipeable without any extra flags.
 
-### Why always an envelope
+Users who want a subset of the report pick the element they want via
+`-p` / `--project` (see §2b). For those projections tractor still guarantees
+that structured output is parseable — sequences project to the stable
+`<results>` wrapper (XML) or an array (JSON), never to a bare list that
+would break standard parsers.
+
+### Why always an envelope (by default)
 
 Without an envelope, query mode outputs bare fragments:
 
@@ -318,8 +324,8 @@ Without an envelope, query mode outputs bare fragments:
 ```
 
 This is not valid XML (no single root element). Similarly, bare JSON
-objects without an array break standard parsers. The envelope makes
-output reliably parseable.
+objects without an array break standard parsers. The default envelope makes
+output reliably parseable, and `-p` keeps parseability for projected output.
 
 ### Structure by command
 
@@ -377,6 +383,53 @@ The same structure in JSON:
   ]
 }
 ```
+
+---
+
+## 2b. Projection (`-p`, `--single`)
+
+`-p` / `--project` names which element of the report to emit. The report is
+the API; `-p` is navigation over it.
+
+| `-p` value | Projects to | `-v` interaction |
+|---|---|---|
+| `report` (default) | Full `<report>` envelope | Respects `-v` |
+| `results` | The `<results>` list (array of matches) | Respects `-v` |
+| `summary` | The `<summary>` container | Irrelevant (warns on explicit `-v`/`-m`) |
+| `totals` | The `<totals>` element | Irrelevant (warns on explicit `-v`/`-m`) |
+| `schema` | The `<schema>` element (triggers collection) | Replaces `-v` with `[schema]` |
+| `count` | Scalar match count (`/summary/totals/results`) | Replaces `-v` with `[count]` |
+| `tree` \| `value` \| `source` \| `lines` | Per-match elements, one per match | Replaces `-v` with `[that field]` |
+
+**`--single`** strips list wrappers on sequence projections and limits match
+processing to the first match (implicit `-n 1`). On singular projections
+(`summary`, `totals`, `schema`, `count`, `report`) it is a no-op and emits a
+warning. `--single -n N` (for N ≠ 1) is a CLI error.
+
+### Output shape contracts
+
+- **Parseability.** Every `-f xml` output parses as XML (no multi-root documents).
+  Sequence projections use the stable `<results>` wrapper in XML; `-p count` uses
+  a synthetic `<count>N</count>` root. JSON/YAML projections emit top-level arrays
+  for sequences and top-level objects/scalars for singulars.
+- **Content-independence.** Output shape is determined by the flags, not by
+  result cardinality. `-p tree -f xml` emits `<results>…</results>` whether
+  there are 0, 1, or 100 matches. `--single` never becomes an implicit list.
+- **Warnings for discarded fields.** When `-p X` replaces the view set or makes
+  explicit view fields unreachable, tractor writes a warning to stderr naming
+  the dropped fields. The canonical fix is `-p results` (respects `-v`). Default
+  view sets never trigger these warnings — they can't surprise a user who didn't
+  ask for anything specific.
+
+### Migration
+
+- `-v count` and `-v schema` no longer short-circuit the render pipeline.
+  Schema is now an addressable `<schema>` element inside the report; count
+  routes through the renderer. For bare-scalar output, use `-p count` or
+  `-p count --single`. In text mode, `-v count` preserves the bare-scalar UX
+  via a localized render case so existing pipes keep working.
+- Summary fields (`success`, `totals`, `expected`, `query`) are nested under
+  `<summary>` / `"summary"` so `-p summary` projects a real element.
 
 ---
 

@@ -511,6 +511,7 @@ impl Projection {
     }
 
     /// One-line description for help output.
+    #[allow(dead_code)]
     pub fn description(&self) -> &'static str {
         match self {
             Projection::Report  => "Full report envelope (default)",
@@ -590,6 +591,7 @@ impl Projection {
     }
 
     /// Help text listing all projection values with descriptions.
+    #[allow(dead_code)]
     pub fn help_text() -> String {
         let max = Projection::ALL.iter().map(|p| p.name().len()).max().unwrap_or(0);
         let mut lines = Vec::new();
@@ -617,26 +619,9 @@ pub struct ProjectionPlan {
     /// normalization so later stages don't have to recompute which fields the
     /// user asked for that won't appear.
     pub warnings: Vec<String>,
-    /// True when `-v` was explicitly set by the user (not the mode default).
-    /// Used to suppress "redundant overlap" warnings.
-    pub view_was_explicit: bool,
-    /// True when `-m` (message template) was explicitly set. Used for warnings.
-    pub message_was_explicit: bool,
 }
 
 impl ProjectionPlan {
-    /// Default plan — no projection override, no `--single`, keep the default view.
-    pub fn default_with_view(view: ViewSet) -> Self {
-        ProjectionPlan {
-            projection: Projection::Report,
-            single: false,
-            view,
-            warnings: Vec::new(),
-            view_was_explicit: false,
-            message_was_explicit: false,
-        }
-    }
-
     /// Normalize `-p`, `--single`, and `-v`/`-m` into a single plan.
     ///
     /// Rules (from design):
@@ -711,8 +696,6 @@ impl ProjectionPlan {
             single,
             view,
             warnings,
-            view_was_explicit,
-            message_was_explicit,
         })
     }
 }

@@ -81,6 +81,10 @@ impl TractorInvocation {
     }
 
     fn with_count_view(&self) -> Self {
+        // Count assertions ask tractor for a bare scalar count. Use the new
+        // `-p count -f text` projection (post short-circuit removal) so the
+        // result is guaranteed to be the bare integer regardless of the
+        // original invocation's `-v` or `-f` flags.
         let mut args = Vec::new();
         let mut iter = self.args.iter().cloned();
 
@@ -91,10 +95,15 @@ impl TractorInvocation {
             };
 
             match literal {
-                Some("-v") | Some("--view") => {
+                Some("-v") | Some("--view") | Some("-f") | Some("--format")
+                | Some("-p") | Some("--project") => {
                     let _ = iter.next();
                 }
-                Some(value) if value.starts_with("-v=") || value.starts_with("--view=") => {}
+                Some(value)
+                    if value.starts_with("-v=") || value.starts_with("--view=")
+                        || value.starts_with("-f=") || value.starts_with("--format=")
+                        || value.starts_with("-p=") || value.starts_with("--project=") => {}
+                Some("--single") => {}
                 _ => args.push(arg),
             }
         }
@@ -104,10 +113,10 @@ impl TractorInvocation {
             stdin: self.stdin.clone(),
             no_color: self.no_color,
         };
-        invocation.args.push(CommandArg::Literal("-v".to_string()));
-        invocation
-            .args
-            .push(CommandArg::Literal("count".to_string()));
+        invocation.args.push(CommandArg::Literal("-p".to_string()));
+        invocation.args.push(CommandArg::Literal("count".to_string()));
+        invocation.args.push(CommandArg::Literal("-f".to_string()));
+        invocation.args.push(CommandArg::Literal("text".to_string()));
         invocation
     }
 }

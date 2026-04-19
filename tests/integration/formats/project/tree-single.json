@@ -1,0 +1,37 @@
+{
+  "$type": "class",
+  "public": true,
+  "name": "Foo",
+  "body": {
+    "children": [
+      {
+        "$type": "property",
+        "public": true,
+        "type": "int",
+        "name": "Bar",
+        "accessors": {
+          "children": [
+            {
+              "accessor": "get;"
+            },
+            {
+              "accessor": "set;"
+            }
+          ]
+        }
+      },
+      {
+        "$type": "method",
+        "public": true,
+        "returns": {
+          "type": "void"
+        },
+        "name": "Baz",
+        "parameters": "()",
+        "body": {
+          "block": "{ }"
+        }
+      }
+    ]
+  }
+}

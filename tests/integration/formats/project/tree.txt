@@ -1,0 +1,24 @@
+class[public]/
+  ├─ "class"
+  ├─ name = "Foo"
+  └─ body/
+      ├─ "{"
+      ├─ property[public]/
+      │   ├─ type = "int"
+      │   ├─ name = "Bar"
+      │   └─ accessors/
+      │       ├─ "{"
+      │       ├─ accessor = "get;"
+      │       ├─ accessor = "set;"
+      │       └─ "}"
+      ├─ method[public]/
+      │   ├─ returns/type = "void"
+      │   ├─ name = "Baz"
+      │   ├─ parameters = "()"
+      │   └─ body/block = "{ }"
+      └─ "}"
+
+class[public]/
+  ├─ "class"
+  ├─ name = "Qux"
+  └─ body = "{ }"

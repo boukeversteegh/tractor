@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <report>
-  <success>true</success>
-  <totals>
-    <results>1</results>
-    <files>1</files>
-    <updated>1</updated>
-  </totals>
+  <summary>
+    <success>true</success>
+    <totals>
+      <results>1</results>
+      <files>1</files>
+      <updated>1</updated>
+    </totals>
+  </summary>
   <group-by>file</group-by>
   <results>
     <group file="tests/integration/formats/set/sample.yaml">
