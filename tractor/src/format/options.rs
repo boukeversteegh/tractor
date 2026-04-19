@@ -446,4 +446,206 @@ pub fn parse_group_by(s: &str) -> Result<Vec<GroupDimension>, String> {
     Ok(dims)
 }
 
+// ---------------------------------------------------------------------------
+// Projection — what subtree of the report to emit (-p / --project flag)
+// ---------------------------------------------------------------------------
 
+/// A selection of a report element to emit. Values are names of real elements
+/// in the revised report shape (`<summary>`, `<schema>`, `<results>`, etc.) or
+/// singular scalar aliases (`count`).
+///
+/// Each projection has:
+/// - a [`ProjectionKind`] determining how it interacts with the `-v` view set,
+/// - a natural [`Cardinality`] (how many elements it selects per run), with
+///   `--single` collapsing sequences to a single element.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Projection {
+    /// `<tree>` elements, one per match. Replaces `-v` with `[tree]`.
+    Tree,
+    /// `<value>` elements, one per match. Replaces `-v` with `[value]`.
+    Value,
+    /// `<source>` elements, one per match. Replaces `-v` with `[source]`.
+    Source,
+    /// `<lines>` elements, one per match. Replaces `-v` with `[lines]`.
+    Lines,
+    /// The `<schema>` element. Replaces `-v` with `[schema]` (triggers schema
+    /// computation — the only view-level projection with real cost).
+    Schema,
+    /// The scalar total result count (`/summary/totals/results`). Replaces
+    /// `-v` with `[count]`. No `<count>` element exists in the report shape;
+    /// `count` is sugar in the same way `-v count` is.
+    Count,
+    /// The `<summary>` container. Metadata — `-v` has no effect.
+    Summary,
+    /// The `<totals>` element inside summary. Metadata — `-v` has no effect.
+    Totals,
+    /// The `<results>` list wrapper. Structural — `-v` drives per-match
+    /// field selection as usual.
+    Results,
+    /// The whole `<report>` envelope. Default when `-p` is omitted;
+    /// structural — `-v` drives per-match field selection as usual.
+    Report,
+}
+
+/// How a projection interacts with the `-v` view set.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ProjectionKind {
+    /// A view-level field (`tree`, `value`, `source`, `lines`, `schema`,
+    /// `count`): the projection *replaces* the view set with `[that field]`.
+    /// Any explicit `-v`/`-m` fields other than the target are discarded
+    /// (warning emitted).
+    ViewLevel,
+    /// A report-structural element (`results`, `report`): the projection
+    /// *respects* the user's `-v` because these elements contain per-match
+    /// fields that `-v` controls.
+    Structural,
+    /// A metadata container with no per-match content (`summary`, `totals`):
+    /// `-v` is irrelevant. Any explicit `-v`/`-m` is unreachable (warning).
+    Metadata,
+}
+
+/// How many elements the projection selects from the report.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Cardinality {
+    /// Emits exactly one element (or zero, for empty sequences with `--single`).
+    Singular,
+    /// Emits a sequence of zero-or-more elements, wrapped in a list root.
+    Sequence,
+}
+
+impl Projection {
+    /// All variants in display/help order.
+    const ALL: &[Projection] = &[
+        Projection::Tree, Projection::Value, Projection::Source, Projection::Lines,
+        Projection::Schema, Projection::Count,
+        Projection::Summary, Projection::Totals,
+        Projection::Results, Projection::Report,
+    ];
+
+    /// Canonical CLI name for this projection (the name used in `-p <NAME>`).
+    pub fn name(&self) -> &'static str {
+        match self {
+            Projection::Tree    => "tree",
+            Projection::Value   => "value",
+            Projection::Source  => "source",
+            Projection::Lines   => "lines",
+            Projection::Schema  => "schema",
+            Projection::Count   => "count",
+            Projection::Summary => "summary",
+            Projection::Totals  => "totals",
+            Projection::Results => "results",
+            Projection::Report  => "report",
+        }
+    }
+
+    /// Short description for help and error output.
+    pub fn description(&self) -> &'static str {
+        match self {
+            Projection::Tree    => "<tree> per match (replaces -v)",
+            Projection::Value   => "<value> per match (replaces -v)",
+            Projection::Source  => "<source> per match (replaces -v)",
+            Projection::Lines   => "<lines> per match (replaces -v)",
+            Projection::Schema  => "<schema> rendering (replaces -v, triggers schema)",
+            Projection::Count   => "scalar total match count (replaces -v)",
+            Projection::Summary => "<summary> container (success, totals, expected, query)",
+            Projection::Totals  => "<totals> element inside summary",
+            Projection::Results => "<results> list wrapper (respects -v)",
+            Projection::Report  => "whole <report> envelope (default)",
+        }
+    }
+
+    /// How this projection interacts with the user's `-v`.
+    pub fn kind(&self) -> ProjectionKind {
+        match self {
+            Projection::Tree | Projection::Value | Projection::Source
+            | Projection::Lines | Projection::Schema | Projection::Count
+                => ProjectionKind::ViewLevel,
+            Projection::Results | Projection::Report
+                => ProjectionKind::Structural,
+            Projection::Summary | Projection::Totals
+                => ProjectionKind::Metadata,
+        }
+    }
+
+    /// The cardinality this projection emits, accounting for `--single`.
+    ///
+    /// `--single` always collapses to `Singular`. For projections that are
+    /// already singular, this returns `Singular` regardless of `single`.
+    pub fn cardinality(&self, single: bool) -> Cardinality {
+        if single {
+            return Cardinality::Singular;
+        }
+        match self {
+            Projection::Tree | Projection::Value | Projection::Source
+            | Projection::Lines | Projection::Results
+                => Cardinality::Sequence,
+            Projection::Schema | Projection::Count
+            | Projection::Summary | Projection::Totals
+            | Projection::Report
+                => Cardinality::Singular,
+        }
+    }
+
+    /// True when `--single` on this projection is a no-op (already singular).
+    /// Used to emit a warning when the user passes `--single` with one of
+    /// these projections.
+    pub fn is_already_singular(&self) -> bool {
+        matches!(self,
+            Projection::Schema | Projection::Count
+            | Projection::Summary | Projection::Totals
+            | Projection::Report
+        )
+    }
+
+    /// If this projection is view-level, the single [`ViewField`] that the
+    /// view set should be replaced with. `Count`/`Schema` map to the
+    /// matching `ViewField` so downstream code that keys off view fields
+    /// (e.g. schema computation) still fires.
+    pub fn replacement_view_field(&self) -> Option<ViewField> {
+        match self {
+            Projection::Tree   => Some(ViewField::Tree),
+            Projection::Value  => Some(ViewField::Value),
+            Projection::Source => Some(ViewField::Source),
+            Projection::Lines  => Some(ViewField::Lines),
+            Projection::Schema => Some(ViewField::Schema),
+            Projection::Count  => Some(ViewField::Count),
+            _ => None,
+        }
+    }
+
+    /// Full `long_help` text for the `-p` / `--project` flag.
+    pub fn project_long_help() -> String {
+        let mut lines = vec!["Project a single element from the report [default: report]".to_string()];
+        let max_name = Projection::ALL.iter().map(|p| p.name().len()).max().unwrap_or(0);
+        for p in Projection::ALL {
+            lines.push(format!("  {:width$}  {}", p.name(), p.description(), width = max_name));
+        }
+        lines.push(String::new());
+        lines.push("Use --single to emit one element bare (strip the list wrapper).".to_string());
+        lines.join("\n")
+    }
+}
+
+/// Parse a `-p <NAME>` value into a [`Projection`].
+pub fn parse_projection(s: &str) -> Result<Projection, String> {
+    match s.to_lowercase().as_str() {
+        "tree"    => Ok(Projection::Tree),
+        "value"   => Ok(Projection::Value),
+        "source"  => Ok(Projection::Source),
+        "lines"   => Ok(Projection::Lines),
+        "schema"  => Ok(Projection::Schema),
+        "count"   => Ok(Projection::Count),
+        "summary" => Ok(Projection::Summary),
+        "totals"  => Ok(Projection::Totals),
+        "results" => Ok(Projection::Results),
+        "report"  => Ok(Projection::Report),
+        _ => {
+            let valid: Vec<&str> = Projection::ALL.iter().map(|p| p.name()).collect();
+            Err(format!(
+                "invalid -p value '{}'. Valid values: {}",
+                s,
+                valid.join(", "),
+            ))
+        }
+    }
+}
