@@ -147,6 +147,48 @@ function add(a, b) {
 (use -d to increase depth, or -x to query specific elements)`}
       />
 
+      <h2>Project what you need</h2>
+      <p>
+        Use <code>-p</code> when you want one part of the report instead of the full report envelope. This is useful in scripts, pipes, and quick one-off exploration.
+      </p>
+
+      <h3>Project values directly</h3>
+      <p>
+        Use <code>-p value</code> when you want the matched values as the whole output, not nested under <code>results</code>.
+      </p>
+      <Example
+        command={`tractor greeter.js -x "//function/name" -p value`}
+        output={`greet\nadd`}
+      />
+
+      <h3>Keep per-match fields with results</h3>
+      <p>
+        Use <code>-p results</code> when you still want match objects and your <code>-v</code> selection should control what each match contains.
+      </p>
+      <Example
+        command={`tractor greeter.js -x "//function/name" -v file,value -p results -f json`}
+        outputLanguage="json"
+        output={`[
+  {
+    "file": "greeter.js",
+    "value": "greet"
+  },
+  {
+    "file": "greeter.js",
+    "value": "add"
+  }
+]`}
+      />
+
+      <h3>Unwrap the first item</h3>
+      <p>
+        Add <code>--single</code> to emit only the first projected item with no list wrapper. This works with sequence projections like <code>tree</code>, <code>value</code>, <code>source</code>, <code>lines</code>, and <code>results</code>.
+      </p>
+      <Example
+        command={`tractor greeter.js -x "//function/name" -p value --single`}
+        output="greet"
+      />
+
       <h2>Multi-language</h2>
       <p>Tractor works with 20+ languages. The same query syntax applies everywhere:</p>
 
@@ -200,6 +242,17 @@ fn add(a: i32, b: i32) -> i32 {
   ]
 }`}
       />
+      <p>
+        If you want the array itself, not the surrounding report, project it:
+      </p>
+      <Example
+        command={`tractor greeter.js -x "//function/name" -p value -f json`}
+        outputLanguage="json"
+        output={`[
+  "greet",
+  "add"
+]`}
+      />
 
       <h2>Options Reference</h2>
       <table className="doc-table">
@@ -209,6 +262,8 @@ fn add(a: i32, b: i32) -> i32 {
         <tbody>
           <tr><td><code>-x, --extract</code></td><td><Link to="/docs/guides/query-syntax">Query</Link> to match</td></tr>
           <tr><td><code>-v, --view</code></td><td>View mode: tree, value, source, lines, count, schema</td></tr>
+          <tr><td><code>-p, --project</code></td><td>Emit one report element: tree, value, source, lines, schema, count, summary, totals, results, report</td></tr>
+          <tr><td><code>--single</code></td><td>Emit only the first projected item, bare with no list wrapper</td></tr>
           <tr><td><code>-f, --format</code></td><td>Output format: text, json, yaml, xml, gcc, github, claude-code</td></tr>
           <tr><td><code>-l, --lang</code></td><td>Language override (auto-detected from file extension)</td></tr>
           <tr><td><code>-s, --string</code></td><td>Inline source code (alternative to file)</td></tr>

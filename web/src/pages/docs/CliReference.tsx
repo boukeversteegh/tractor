@@ -120,6 +120,62 @@ document/
              ^~~`}
       />
 
+      <h3>-p, --project</h3>
+      <p>
+        Emit one part of the report instead of the full report. Use this when you want a scalar, a bare list, or one metadata section.
+      </p>
+      <table className="doc-table">
+        <thead>
+          <tr><th>Target</th><th>What you get</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>tree</code></td><td>Matched trees only</td></tr>
+          <tr><td><code>value</code></td><td>Matched values only</td></tr>
+          <tr><td><code>source</code></td><td>Matched source snippets only</td></tr>
+          <tr><td><code>lines</code></td><td>Matched source lines only</td></tr>
+          <tr><td><code>schema</code></td><td>Schema summary only</td></tr>
+          <tr><td><code>count</code></td><td>Total result count only</td></tr>
+          <tr><td><code>summary</code></td><td>Summary section only</td></tr>
+          <tr><td><code>totals</code></td><td>Summary totals only</td></tr>
+          <tr><td><code>results</code></td><td>Results list only</td></tr>
+          <tr><td><code>report</code></td><td>The full report (default)</td></tr>
+        </tbody>
+      </table>
+      <p>
+        View-level projections like <code>tree</code> and <code>value</code> replace <code>-v</code>. Structural projections like <code>results</code> and <code>report</code> keep <code>-v</code> and use it to shape each match.
+      </p>
+      <Example
+        command={`tractor greeter.js -x "//function/name" -p value -f json`}
+        outputLanguage="json"
+        output={`[
+  "greet",
+  "add"
+]`}
+      />
+      <Example
+        command={`tractor greeter.js -x "//function/name" -v file,value -p results -f json`}
+        outputLanguage="json"
+        output={`[
+  {
+    "file": "greeter.js",
+    "value": "greet"
+  },
+  {
+    "file": "greeter.js",
+    "value": "add"
+  }
+]`}
+      />
+
+      <h3>--single</h3>
+      <p>
+        Emit only the first projected item, bare with no list wrapper. Tractor also treats this as <code>-n 1</code> for sequence projections.
+      </p>
+      <Example
+        command={`tractor greeter.js -x "//function/name" -p value --single`}
+        output="greet"
+      />
+
       <h4>View modifiers: <code>-v=+field</code> / <code>-v=-field</code></h4>
       <p>
         Instead of specifying a full view, you can add or remove individual fields from the default view
@@ -282,6 +338,11 @@ name[line=5][column=10][end_line=5][end_column=13][field=name] = "add"`}
   </results>
 </report>`}
       />
+
+      <h4>Projection + format</h4>
+      <p>
+        Format still matters when you project. <code>-p results -f json</code> gives a JSON array. <code>-p tree -f xml</code> gives XML tree elements. <code>-p count</code> gives a scalar in the chosen format.
+      </p>
 
       <h4>GitHub</h4>
       <Example
