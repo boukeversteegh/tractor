@@ -111,6 +111,12 @@ Format:
       --hook <HOOK>
           Claude Code hook type (used with -f claude-code): post-tool-use, pre-tool-use, stop, context
 
+  -p, --project <PROJECT>
+          Select which part of the report to emit (tree, value, source, lines, schema, count, summary, totals, results, report)
+
+      --single
+          Emit first result only, without list wrappers (for sequence projections)
+
 Filter:
       --diff-files <RANGE>
           Only consider files changed in a git diff (e.g. "HEAD~3", "main..HEAD")

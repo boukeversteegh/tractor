@@ -158,4 +158,13 @@ When omitted, auto-selects: data for JSON/YAML, structure for everything else.")
     /// Show verbose output
     #[arg(long = "verbose", help_heading = "Advanced")]
     pub verbose: bool,
+
+    // -- Projection --
+    /// Select which part of the report to emit (tree, value, source, lines, schema, count, summary, totals, results, report)
+    #[arg(short = 'p', long = "project", help_heading = "Format")]
+    pub project: Option<String>,
+
+    /// Emit first result only, without list wrappers (for sequence projections)
+    #[arg(long = "single", help_heading = "Format")]
+    pub single: bool,
 }

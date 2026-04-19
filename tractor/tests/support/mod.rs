@@ -90,11 +90,13 @@ impl TractorInvocation {
                 CommandArg::FixturePath { .. } => None,
             };
 
+            // Strip existing -p/--project and -f/--format flags so we can replace them
             match literal {
-                Some("-v") | Some("--view") => {
+                Some("-p") | Some("--project") | Some("-f") | Some("--format") => {
                     let _ = iter.next();
                 }
-                Some(value) if value.starts_with("-v=") || value.starts_with("--view=") => {}
+                Some(value) if value.starts_with("-p=") || value.starts_with("--project=") => {}
+                Some(value) if value.starts_with("-f=") || value.starts_with("--format=") => {}
                 _ => args.push(arg),
             }
         }
@@ -104,10 +106,11 @@ impl TractorInvocation {
             stdin: self.stdin.clone(),
             no_color: self.no_color,
         };
-        invocation.args.push(CommandArg::Literal("-v".to_string()));
-        invocation
-            .args
-            .push(CommandArg::Literal("count".to_string()));
+        // Force text format so count is a bare number regardless of original format
+        invocation.args.push(CommandArg::Literal("-f".to_string()));
+        invocation.args.push(CommandArg::Literal("text".to_string()));
+        invocation.args.push(CommandArg::Literal("-p".to_string()));
+        invocation.args.push(CommandArg::Literal("count".to_string()));
         invocation
     }
 }

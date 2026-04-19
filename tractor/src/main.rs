@@ -46,14 +46,15 @@ fn render_error_report(
         ViewField::Origin, ViewField::Reason, ViewField::Severity, ViewField::Lines,
     ]);
     let render_opts = RenderOptions::new().with_color(use_color);
+    use format::Projection;
     match format {
-        OutputFormat::Json   => print!("{}", render_json_report(report, &view, &render_opts, &[])),
-        OutputFormat::Yaml   => print!("{}", render_yaml_report(report, &view, &render_opts, &[])),
-        OutputFormat::Xml    => print!("{}", render_xml_report(report, &view, &render_opts, &[])),
+        OutputFormat::Json   => print!("{}", render_json_report(report, &view, &render_opts, &[], Projection::Report, false)),
+        OutputFormat::Yaml   => print!("{}", render_yaml_report(report, &view, &render_opts, &[], Projection::Report, false)),
+        OutputFormat::Xml    => print!("{}", render_xml_report(report, &view, &render_opts, &[], Projection::Report, false)),
         OutputFormat::Github => print!("{}", render_github(report, &[])),
         OutputFormat::Gcc    => print!("{}", render_gcc(report, &render_opts, &[])),
         OutputFormat::ClaudeCode => print!("{}", render_claude_code(report, format::options::HookType::PostToolUse, &render_opts, &[])),
-        OutputFormat::Text   => print!("{}", render_text_report(report, &view, &render_opts, &[])),
+        OutputFormat::Text   => print!("{}", render_text_report(report, &view, &render_opts, &[], Projection::Report, false)),
     }
 }
 

@@ -1,29 +1,58 @@
 use serde_json::{json, Value};
 use tractor::{report::{Report, ReportMatch, ResultItem}, normalize_path, xml_node_to_json, RenderOptions};
-use super::options::{ViewField, ViewSet};
+use super::options::{ViewField, ViewSet, Projection};
 use super::shared::{render_fields_for_match, should_emit_command, should_emit_file, should_emit_rule_id, should_show_totals};
 
-pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, dimensions: &[&str]) -> String {
+pub fn render_json_report(
+    report: &Report,
+    view: &ViewSet,
+    render_opts: &RenderOptions,
+    dimensions: &[&str],
+    projection: Projection,
+    single: bool,
+) -> String {
+    let value = match projection {
+        Projection::Report  => render_full_report_json(report, view, render_opts, dimensions),
+        Projection::Results => render_results_projection_json(report, view, render_opts, dimensions, single),
+        Projection::Summary => render_summary_projection_json(report),
+        Projection::Totals  => render_totals_projection_json(report),
+        Projection::Count   => render_count_projection_json(report),
+        Projection::Schema  => render_schema_projection_json(report),
+        Projection::Tree | Projection::Value | Projection::Source | Projection::Lines => {
+            render_per_match_projection_json(report, render_opts, projection, single)
+        }
+    };
+    serde_json::to_string_pretty(&value).unwrap_or_else(|_| "null".to_string())
+}
+
+fn render_full_report_json(
+    report: &Report,
+    view: &ViewSet,
+    render_opts: &RenderOptions,
+    dimensions: &[&str],
+) -> Value {
     let mut root = serde_json::Map::new();
 
     if should_show_totals(report, view) {
-        emit_report_metadata(&mut root, report);
+        let mut summary = serde_json::Map::new();
+        emit_report_metadata(&mut summary, report);
+        if !summary.is_empty() {
+            root.insert("summary".into(), Value::Object(summary));
+        }
     }
 
-    // Top-level captured outputs — honest view of the report model.
-    // Any file-bound outputs that matched a file-group will have already
-    // been moved into their group during `with_grouping`; what remains
-    // here is genuinely ungrouped output (stdin payloads or orphans).
+    if let Some(ref schema) = report.schema {
+        root.insert("schema".into(), json!(schema));
+    }
+
     if !report.outputs.is_empty() {
         root.insert("outputs".into(), outputs_to_json(&report.outputs));
     }
 
-    // Group dimension (before results, so readers see the grouping context first)
     if let Some(ref group) = report.group {
         root.insert("group".into(), json!(group));
     }
 
-    // Render results
     if !report.results.is_empty() {
         let results_json = render_results_json(&report.results, view, render_opts, dimensions);
         if !results_json.is_empty() {
@@ -31,7 +60,80 @@ pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         }
     }
 
-    serde_json::to_string_pretty(&Value::Object(root)).unwrap_or_else(|_| "{}".to_string())
+    Value::Object(root)
+}
+
+fn render_results_projection_json(
+    report: &Report,
+    view: &ViewSet,
+    render_opts: &RenderOptions,
+    dimensions: &[&str],
+    single: bool,
+) -> Value {
+    let results = render_results_json(&report.results, view, render_opts, dimensions);
+    if single {
+        results.into_iter().next().unwrap_or(Value::Null)
+    } else {
+        Value::Array(results)
+    }
+}
+
+fn render_summary_projection_json(report: &Report) -> Value {
+    let mut obj = serde_json::Map::new();
+    emit_report_metadata(&mut obj, report);
+    Value::Object(obj)
+}
+
+fn render_totals_projection_json(report: &Report) -> Value {
+    if let Some(ref totals) = report.totals {
+        let mut t = serde_json::Map::new();
+        t.insert("results".into(), json!(totals.results));
+        t.insert("files".into(),   json!(totals.files));
+        if totals.fatals > 0    { t.insert("fatals".into(),    json!(totals.fatals));    }
+        if totals.errors > 0    { t.insert("errors".into(),    json!(totals.errors));    }
+        if totals.warnings > 0  { t.insert("warnings".into(),  json!(totals.warnings));  }
+        if totals.infos > 0     { t.insert("infos".into(),     json!(totals.infos));     }
+        if totals.updated > 0   { t.insert("updated".into(),   json!(totals.updated));   }
+        if totals.unchanged > 0 { t.insert("unchanged".into(), json!(totals.unchanged)); }
+        Value::Object(t)
+    } else {
+        Value::Null
+    }
+}
+
+fn render_count_projection_json(report: &Report) -> Value {
+    json!(report.all_matches().len())
+}
+
+fn render_schema_projection_json(report: &Report) -> Value {
+    if let Some(ref schema) = report.schema {
+        json!(schema)
+    } else {
+        Value::Null
+    }
+}
+
+fn render_per_match_projection_json(
+    report: &Report,
+    render_opts: &RenderOptions,
+    projection: Projection,
+    single: bool,
+) -> Value {
+    let values: Vec<Value> = report.all_matches().iter().filter_map(|rm| {
+        match projection {
+            Projection::Tree   => rm.tree.as_ref().map(|node| xml_node_to_json(node, render_opts.max_depth)),
+            Projection::Value  => rm.value.as_ref().map(|v| json!(v)),
+            Projection::Source => rm.source.as_ref().map(|s| json!(s)),
+            Projection::Lines  => rm.lines.as_ref().map(|ls| json!(ls)),
+            _ => None,
+        }
+    }).collect();
+
+    if single {
+        values.into_iter().next().unwrap_or(Value::Null)
+    } else {
+        Value::Array(values)
+    }
 }
 
 /// Serialize a list of captured outputs as a JSON array of objects.
@@ -66,7 +168,8 @@ fn group_outputs_to_json(
     ("outputs", outputs_to_json(outputs))
 }
 
-/// Emit success, totals, expected, query as top-level fields.
+/// Emit success, totals, expected, query as flat fields into `root`.
+/// Used for sub-group metadata and summary projection rendering.
 pub fn emit_report_metadata(root: &mut serde_json::Map<String, Value>, report: &Report) {
     if let Some(success) = report.success {
         root.insert("success".into(), json!(success));
@@ -75,11 +178,11 @@ pub fn emit_report_metadata(root: &mut serde_json::Map<String, Value>, report: &
         let mut t = serde_json::Map::new();
         t.insert("results".into(), json!(totals.results));
         t.insert("files".into(),   json!(totals.files));
-        if totals.fatals > 0 { t.insert("fatals".into(), json!(totals.fatals)); }
-        if totals.errors > 0 { t.insert("errors".into(), json!(totals.errors)); }
-        if totals.warnings > 0 { t.insert("warnings".into(), json!(totals.warnings)); }
-        if totals.infos > 0 { t.insert("infos".into(), json!(totals.infos)); }
-        if totals.updated > 0 { t.insert("updated".into(), json!(totals.updated)); }
+        if totals.fatals > 0    { t.insert("fatals".into(),    json!(totals.fatals));    }
+        if totals.errors > 0    { t.insert("errors".into(),    json!(totals.errors));    }
+        if totals.warnings > 0  { t.insert("warnings".into(),  json!(totals.warnings));  }
+        if totals.infos > 0     { t.insert("infos".into(),     json!(totals.infos));     }
+        if totals.updated > 0   { t.insert("updated".into(),   json!(totals.updated));   }
         if totals.unchanged > 0 { t.insert("unchanged".into(), json!(totals.unchanged)); }
         root.insert("totals".into(), Value::Object(t));
     }
@@ -295,7 +398,7 @@ mod tests {
         let report = builder.build();
         let view = ViewSet::new(vec![ViewField::File, ViewField::Tree]);
         let opts = RenderOptions::new();
-        let output = render_json_report(&report, &view, &opts, &[]);
+        let output = render_json_report(&report, &view, &opts, &[], Projection::Report, false);
         let parsed: serde_json::Value = serde_json::from_str(&output).unwrap();
         let match_tree = &parsed["results"][0]["tree"];
         assert!(match_tree.is_object(), "Map tree should be a JSON object in report output, got: {}", match_tree);
@@ -311,6 +414,7 @@ mod tests {
             expected: None,
             query: None,
             outputs: vec![],
+            schema: None,
             results: vec![ResultItem::Group(Box::new(Report {
                 success: None,
                 totals: None,
@@ -320,6 +424,7 @@ mod tests {
                     file: None,
                     content: "hello\n".to_string(),
                 }],
+                schema: None,
                 results: vec![],
                 group: None,
                 file: Some("test.xml".to_string()),
@@ -332,7 +437,7 @@ mod tests {
             rule_id: None,
         };
 
-        let rendered = render_json_report(&report, &ViewSet::new(vec![]), &RenderOptions::new(), &[]);
+        let rendered = render_json_report(&report, &ViewSet::new(vec![]), &RenderOptions::new(), &[], Projection::Report, false);
         let parsed: serde_json::Value = serde_json::from_str(&rendered).unwrap();
         assert_eq!(parsed["results"][0]["output"], "hello\n");
         assert!(parsed["results"][0].get("outputs").is_none());

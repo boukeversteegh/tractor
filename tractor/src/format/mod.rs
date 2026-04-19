@@ -8,7 +8,7 @@ pub mod text;
 pub mod claude_code;
 mod shared;
 
-pub use options::{OutputFormat, GroupDimension, ViewField, ViewSet, parse_view_set, parse_group_by};
+pub use options::{OutputFormat, GroupDimension, ViewField, ViewSet, parse_view_set, parse_group_by, Projection};
 pub use gcc::{render_gcc, render_gcc_report_with_template};
 pub use github::render_github;
 pub use xml::render_xml_report;
@@ -43,6 +43,9 @@ pub fn render_report(
     ctx: &RunContext,
     test_opts: Option<&TestRenderOptions>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let projection = ctx.projection;
+    let single = ctx.single;
+
     // Test reports with text/gcc/github get special colored pass/fail rendering.
     if let Some(opts) = test_opts {
         if matches!(ctx.output_format, OutputFormat::Text | OutputFormat::Gcc | OutputFormat::Github) {
@@ -50,12 +53,21 @@ pub fn render_report(
         }
     }
 
+    // --single with sequence projections: check for empty result → non-zero exit.
+    if single && projection.is_sequence() {
+        let match_count = report.all_matches().len();
+        if match_count == 0 {
+            // Empty stdout, non-zero exit.
+            return Err(Box::new(crate::SilentExit));
+        }
+    }
+
     // Standard format dispatch — same for all report types.
     let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
     match ctx.output_format {
-        OutputFormat::Json   => print!("{}", render_json_report(report, &ctx.view, &ctx.render_options(), &dims)),
-        OutputFormat::Yaml   => print!("{}", render_yaml_report(report, &ctx.view, &ctx.render_options(), &dims)),
-        OutputFormat::Xml    => print!("{}", render_xml_report(report, &ctx.view, &ctx.render_options(), &dims)),
+        OutputFormat::Json   => print!("{}", render_json_report(report, &ctx.view, &ctx.render_options(), &dims, projection, single)),
+        OutputFormat::Yaml   => print!("{}", render_yaml_report(report, &ctx.view, &ctx.render_options(), &dims, projection, single)),
+        OutputFormat::Xml    => print!("{}", render_xml_report(report, &ctx.view, &ctx.render_options(), &dims, projection, single)),
         OutputFormat::Gcc    => {
             print!("{}", render_gcc(report, &ctx.render_options(), &dims));
             if let Some(summary) = gcc_summary_string(report) {
@@ -64,7 +76,7 @@ pub fn render_report(
         }
         OutputFormat::Github => print!("{}", render_github(report, &dims)),
         OutputFormat::ClaudeCode => print!("{}", render_claude_code(report, ctx.hook_type.unwrap_or(options::HookType::PostToolUse), &ctx.render_options(), &dims)),
-        OutputFormat::Text   => print!("{}", render_text_report(report, &ctx.view, &ctx.render_options(), &dims)),
+        OutputFormat::Text   => print!("{}", render_text_report(report, &ctx.view, &ctx.render_options(), &dims, projection, single)),
     }
 
     // Exit code: fail when success is explicitly false.

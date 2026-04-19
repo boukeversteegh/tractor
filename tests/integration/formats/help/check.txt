@@ -127,6 +127,12 @@ Format:
       --hook <HOOK>
           Claude Code hook type (used with -f claude-code): post-tool-use, pre-tool-use, stop, context
 
+  -p, --project <PROJECT>
+          Select which part of the report to emit (tree, value, source, lines, schema, count, summary, totals, results, report)
+
+      --single
+          Emit first result only, without list wrappers (for sequence projections)
+
   -f, --format <FORMAT>
           Output format [default: gcc]
             text         Human-readable plain text

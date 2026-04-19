@@ -14,12 +14,56 @@ use tractor::{
     report::{Report, ReportMatch, ResultItem, Totals},
     RenderOptions,
 };
-use super::options::{ViewField, ViewSet};
+use super::options::{ViewField, ViewSet, Projection};
 use super::shared::{should_show_totals, render_fields_for_match};
 
 /// Text is human-readable — grouping affects display structure but matches
 /// are rendered with inherited file context from groups, not field omission.
-pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, _dimensions: &[&str]) -> String {
+pub fn render_text_report(
+    report: &Report,
+    view: &ViewSet,
+    render_opts: &RenderOptions,
+    _dimensions: &[&str],
+    projection: Projection,
+    single: bool,
+) -> String {
+    // Short-circuit for scalar/metadata projections
+    match projection {
+        Projection::Count => {
+            return format!("{}\n", report.all_matches().len());
+        }
+        Projection::Schema => {
+            return report.schema.as_deref()
+                .map(|s| format!("{}\n", s))
+                .unwrap_or_default();
+        }
+        Projection::Summary => {
+            let mut out = String::new();
+            if let Some(ref query) = report.query {
+                out.push_str(&format!("Query: {}\n", query));
+            }
+            if let Some(ref totals) = report.totals {
+                out.push_str(&format_summary(totals, report.success, report.expected.as_deref()));
+            }
+            return out;
+        }
+        Projection::Totals => {
+            let mut out = String::new();
+            if let Some(ref totals) = report.totals {
+                out.push_str(&format!("results: {}\n", totals.results));
+                out.push_str(&format!("files: {}\n", totals.files));
+                if totals.fatals > 0    { out.push_str(&format!("fatals: {}\n", totals.fatals)); }
+                if totals.errors > 0    { out.push_str(&format!("errors: {}\n", totals.errors)); }
+                if totals.warnings > 0  { out.push_str(&format!("warnings: {}\n", totals.warnings)); }
+                if totals.infos > 0     { out.push_str(&format!("infos: {}\n", totals.infos)); }
+                if totals.updated > 0   { out.push_str(&format!("updated: {}\n", totals.updated)); }
+                if totals.unchanged > 0 { out.push_str(&format!("unchanged: {}\n", totals.unchanged)); }
+            }
+            return out;
+        }
+        _ => {}
+    }
+
     let mut out = String::new();
     let mut source_cache: HashMap<String, Option<String>> = HashMap::new();
 
@@ -32,8 +76,13 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         return out;
     }
 
-    // Collect matches with optional group file context
-    let matches: Vec<(Option<&str>, &ReportMatch)> = collect_matches_with_file(&report.results, None);
+    // Collect matches; --single limits to first match only
+    let all_matches = collect_matches_with_file(&report.results, None);
+    let matches: Vec<(Option<&str>, &ReportMatch)> = if single {
+        all_matches.into_iter().take(1).collect()
+    } else {
+        all_matches
+    };
 
     // Blank line between matches when a single match produces more than one output line.
     // File/line/column are combined onto one location line — they don't count individually.
@@ -58,7 +107,8 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         append_match(&mut out, rm, view, render_opts, *group_file, &mut source_cache);
     }
 
-    if should_show_totals(report, view) {
+    // Results projection skips the summary footer; Report projection keeps it.
+    if projection != Projection::Results && should_show_totals(report, view) {
         if let Some(ref totals) = report.totals {
             if !out.is_empty() && !out.ends_with('\n') {
                 out.push('\n');
@@ -427,7 +477,7 @@ fn render_set_stdout_results(items: &[ResultItem], view: &ViewSet, render_opts: 
 #[cfg(test)]
 mod tests {
     use super::render_text_report;
-    use crate::format::{ViewField, ViewSet};
+    use crate::format::{ViewField, ViewSet, Projection};
     use tractor::report::{Report, ReportMatch, ResultItem, Totals};
     use tractor::RenderOptions;
 
@@ -448,6 +498,7 @@ mod tests {
             expected: None,
             query: None,
             outputs: vec![],
+            schema: None,
             results: vec![ResultItem::Match(ReportMatch {
                 file: "app-config.json".to_string(),
                 line: 3,
@@ -474,7 +525,7 @@ mod tests {
         };
 
         let view = ViewSet::new(vec![ViewField::File, ViewField::Line, ViewField::Status, ViewField::Reason]);
-        let rendered = render_text_report(&report, &view, &RenderOptions::default(), &[]);
+        let rendered = render_text_report(&report, &view, &RenderOptions::default(), &[], Projection::Report, false);
 
         assert_eq!(
             rendered,

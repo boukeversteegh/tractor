@@ -1,11 +1,13 @@
 🟫<?xml version="1.0" encoding="UTF-8"?>🟫
 🟫<🟫🟦report🟦🟫>🟫
-  🟫<🟫🟦success🟦🟫>false🟫🟫</🟫🟦success🟦🟫>🟫
-  🟫<🟫🟦totals🟦🟫>🟫
-    🟫<🟫🟦results🟦🟫>2🟫🟫</🟫🟦results🟦🟫>🟫
-    🟫<🟫🟦files🟦🟫>1🟫🟫</🟫🟦files🟦🟫>🟫
-    🟫<🟫🟦errors🟦🟫>2🟫🟫</🟫🟦errors🟦🟫>🟫
-  🟫</🟫🟦totals🟦🟫>🟫
+  🟫<🟫🟦summary🟦🟫>🟫
+    🟫<🟫🟦success🟦🟫>false🟫🟫</🟫🟦success🟦🟫>🟫
+    🟫<🟫🟦totals🟦🟫>🟫
+      🟫<🟫🟦results🟦🟫>2🟫🟫</🟫🟦results🟦🟫>🟫
+      🟫<🟫🟦files🟦🟫>1🟫🟫</🟫🟦files🟦🟫>🟫
+      🟫<🟫🟦errors🟦🟫>2🟫🟫</🟫🟦errors🟦🟫>🟫
+    🟫</🟫🟦totals🟦🟫>🟫
+  🟫</🟫🟦summary🟦🟫>🟫
   🟫<🟫🟦group-by🟦🟫>file🟫🟫</🟫🟦group-by🟦🟫>🟫
   🟫<🟫🟦results🟦🟫>🟫
     🟫<🟫🟦group🟦 🟪file🟪🟫="🟫🟨tests/integration/formats/sample.cs🟨🟫"🟫🟫>🟫

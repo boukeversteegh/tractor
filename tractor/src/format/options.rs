@@ -400,6 +400,133 @@ pub fn parse_view_set(s: &str, default_fields: &[ViewField]) -> Result<ViewSet, 
 }
 
 // ---------------------------------------------------------------------------
+// Projection — -p / --project flag
+// ---------------------------------------------------------------------------
+
+/// Which element of the built report is emitted (-p / --project flag).
+///
+/// Three categories:
+/// - **View-level**: replace -v with one field (tree, value, source, lines, schema, count).
+/// - **Structural**: respect -v, emit a container (results, report).
+/// - **Metadata**: -v is irrelevant, emit a metadata container (summary, totals).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Projection {
+    /// Full report (default when -p is omitted). Preserves existing behavior.
+    Report,
+    /// `/results` list — `-v` drives per-match content.
+    Results,
+    /// `/summary` container — `-v` is irrelevant (no per-match rendering).
+    Summary,
+    /// `/summary/totals` element — `-v` is irrelevant.
+    Totals,
+    /// Scalar match count (`/summary/totals/results`). View-level.
+    Count,
+    /// `/schema` element (opaque text rendering). View-level.
+    Schema,
+    /// `<tree>` from each match. Replaces `-v` with `[tree]`.
+    Tree,
+    /// `<value>` from each match. Replaces `-v` with `[value]`.
+    Value,
+    /// `<source>` from each match. Replaces `-v` with `[source]`.
+    Source,
+    /// `<lines>` from each match. Replaces `-v` with `[lines]`.
+    Lines,
+}
+
+impl Projection {
+    pub const ALL: &[Projection] = &[
+        Projection::Report, Projection::Results, Projection::Summary,
+        Projection::Totals, Projection::Count, Projection::Schema,
+        Projection::Tree, Projection::Value, Projection::Source,
+        Projection::Lines,
+    ];
+
+    pub fn name(self) -> &'static str {
+        match self {
+            Projection::Report  => "report",
+            Projection::Results => "results",
+            Projection::Summary => "summary",
+            Projection::Totals  => "totals",
+            Projection::Count   => "count",
+            Projection::Schema  => "schema",
+            Projection::Tree    => "tree",
+            Projection::Value   => "value",
+            Projection::Source  => "source",
+            Projection::Lines   => "lines",
+        }
+    }
+
+    /// True for projections that yield a sequence (one item per match).
+    pub fn is_sequence(self) -> bool {
+        matches!(self,
+            Projection::Tree | Projection::Value | Projection::Source
+            | Projection::Lines | Projection::Results
+        )
+    }
+
+    /// True for view-level projections that replace `-v` with a single field.
+    pub fn is_view_level(self) -> bool {
+        matches!(self,
+            Projection::Tree | Projection::Value | Projection::Source
+            | Projection::Lines | Projection::Schema | Projection::Count
+        )
+    }
+
+    /// The corresponding ViewField for per-match projections (tree/value/source/lines).
+    pub fn as_per_match_view_field(self) -> Option<ViewField> {
+        match self {
+            Projection::Tree   => Some(ViewField::Tree),
+            Projection::Value  => Some(ViewField::Value),
+            Projection::Source => Some(ViewField::Source),
+            Projection::Lines  => Some(ViewField::Lines),
+            _                  => None,
+        }
+    }
+
+    pub fn from_str(s: &str) -> Result<Self, String> {
+        match s.to_lowercase().as_str() {
+            "report"       => Ok(Projection::Report),
+            "results"      => Ok(Projection::Results),
+            "summary"      => Ok(Projection::Summary),
+            "totals"       => Ok(Projection::Totals),
+            "count"        => Ok(Projection::Count),
+            "schema"       => Ok(Projection::Schema),
+            "tree" | "ast" => Ok(Projection::Tree),
+            "value"        => Ok(Projection::Value),
+            "source"       => Ok(Projection::Source),
+            "lines"        => Ok(Projection::Lines),
+            other => Err(format!(
+                "invalid projection '{}'. Valid values: {}",
+                other,
+                Self::ALL.iter().map(|p| p.name()).collect::<Vec<_>>().join(", "),
+            )),
+        }
+    }
+
+    /// Long help text for the `-p` / `--project` flag.
+    pub fn project_long_help() -> String {
+        let entries: &[(&str, &str)] = &[
+            ("report",  "Full report envelope (default)"),
+            ("results", "Results list — respects -v for per-match content"),
+            ("summary", "Summary container (success, totals, expected, query)"),
+            ("totals",  "Totals element (results, files, errors)"),
+            ("count",   "Scalar match count"),
+            ("schema",  "Schema element (opaque text rendering of node types)"),
+            ("tree",    "Tree per match — replaces -v with [tree]"),
+            ("value",   "Value per match — replaces -v with [value]"),
+            ("source",  "Source per match — replaces -v with [source]"),
+            ("lines",   "Lines per match — replaces -v with [lines]"),
+        ];
+        let max_len = entries.iter().map(|(k, _)| k.len()).max().unwrap_or(0);
+        let mut lines = vec!["Select which part of the report to emit [default: report]".to_string()];
+        for (name, desc) in entries {
+            lines.push(format!("  {:width$}  {}", name, desc, width = max_len));
+        }
+        lines.join("\n")
+    }
+}
+
+// ---------------------------------------------------------------------------
 // GroupDimension — grouping dimensions for multi-level grouping
 // ---------------------------------------------------------------------------
 

@@ -138,12 +138,14 @@ mod tests {
             expected: None,
             query: None,
             outputs: vec![],
+            schema: None,
             results: vec![ResultItem::Group(Box::new(Report {
                 success: None,
                 totals: None,
                 expected: None,
                 query: None,
                 outputs: vec![],
+                schema: None,
                 results: vec![
                     ResultItem::Match(set_match("app-config.json", 3, 5, "updated", "//database/host")),
                     ResultItem::Match(set_match("app-config.json", 8, 5, "updated", "//cache/ttl")),
@@ -186,6 +188,7 @@ mod tests {
             expected: None,
             query: None,
             outputs: vec![],
+            schema: None,
             results: vec![ResultItem::Match(ReportMatch {
                 file: "sample.json".to_string(),
                 line: 2,
