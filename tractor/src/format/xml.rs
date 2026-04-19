@@ -60,7 +60,7 @@ pub fn render_xml_report(report: &Report, view: &ViewSet, render_opts: &RenderOp
     }
 }
 
-fn append_match(
+pub fn append_match(
     out: &mut String,
     rm: &tractor::report::ReportMatch,
     view: &ViewSet,
@@ -171,7 +171,7 @@ fn append_match(
 }
 
 /// Render results list recursively as XML.
-fn render_xml_results(
+pub fn render_xml_results(
     out: &mut String,
     items: &[ResultItem],
     view: &ViewSet,
@@ -316,6 +316,6 @@ pub fn escape(s: &str) -> String {
     s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;")
 }
 
-fn escape_attr(s: &str) -> String {
+pub fn escape_attr(s: &str) -> String {
     escape(s).replace('"', "&quot;")
 }

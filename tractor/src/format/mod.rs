@@ -6,6 +6,7 @@ pub mod json;
 pub mod yaml;
 pub mod text;
 pub mod claude_code;
+pub mod projection_render;
 mod shared;
 
 pub use options::{
@@ -53,9 +54,31 @@ pub fn render_report(
         }
     }
 
-    // Standard format dispatch — same for all report types.
+    // Standard format dispatch. When `-p`/`--single` selects something
+    // other than the default full-report envelope, route through the
+    // projection renderers; otherwise fall through to the legacy
+    // per-format report renderers that own the envelope.
     let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
+    let plan = &ctx.plan;
+    let is_default_envelope = plan.target == options::Projection::Report && !plan.single;
+
     match ctx.output_format {
+        OutputFormat::Xml if !is_default_envelope => print!(
+            "{}",
+            projection_render::render_xml_projection(report, plan, &ctx.render_options())
+        ),
+        OutputFormat::Json if !is_default_envelope => print!(
+            "{}",
+            projection_render::render_json_projection(report, plan, &ctx.render_options())
+        ),
+        OutputFormat::Yaml if !is_default_envelope => print!(
+            "{}",
+            projection_render::render_yaml_projection(report, plan, &ctx.render_options())
+        ),
+        OutputFormat::Text if !is_default_envelope => print!(
+            "{}",
+            projection_render::render_text_projection(report, plan, &ctx.render_options())
+        ),
         OutputFormat::Json   => print!("{}", render_json_report(report, &ctx.view, &ctx.render_options(), &dims)),
         OutputFormat::Yaml   => print!("{}", render_yaml_report(report, &ctx.view, &ctx.render_options(), &dims)),
         OutputFormat::Xml    => print!("{}", render_xml_report(report, &ctx.view, &ctx.render_options(), &dims)),
@@ -70,8 +93,11 @@ pub fn render_report(
         OutputFormat::Text   => print!("{}", render_text_report(report, &ctx.view, &ctx.render_options(), &dims)),
     }
 
-    // Exit code: fail when success is explicitly false.
-    if report.success == Some(false) {
+    // Exit code: fail when success is explicitly false, or when `--single`
+    // was asked for and no match was produced (empty stdout + non-zero exit
+    // per the design's content-independence contract).
+    let single_empty = plan.single && report.all_matches().is_empty();
+    if report.success == Some(false) || single_empty {
         return Err(Box::new(crate::SilentExit));
     }
     Ok(())
