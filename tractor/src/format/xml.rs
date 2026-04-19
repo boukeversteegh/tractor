@@ -3,7 +3,7 @@ use tractor::{
     normalize_path,
     render_xml_node,
     render_xml_string,
-    report::{Report, ReportMatch, ReportOutput, ResultItem, Totals},
+    report::{Report, ReportMatch, ReportOutput, ResultItem, Summary, Totals},
     RenderOptions,
 };
 
@@ -63,7 +63,7 @@ fn render_xml_report_body(
     body.push_str("<report>\n");
 
     if should_show_totals(report, view) {
-        let summary = render_xml_summary_inner(report, "    ");
+        let summary = render_xml_summary_inner(Summary::from_report(report), "    ");
         if !summary.is_empty() {
             body.push_str("  <summary>\n");
             body.push_str(&summary);
@@ -130,20 +130,23 @@ fn render_xml_field_projection(
     projection: Projection,
     single: bool,
 ) -> Result<String, ProjectionRenderError> {
-    let projected: Vec<String> = report
-        .all_matches()
-        .into_iter()
-        .filter_map(|rm| project_match_field_xml(rm, tree_opts, projection))
-        .collect();
-
     if single {
-        projected
+        report
+            .all_matches()
             .into_iter()
-            .next()
+            .find_map(|rm| match_field_bare(rm, tree_opts, projection))
             .ok_or(ProjectionRenderError::EmptySingle)
-    } else if projected.is_empty() {
-        Ok("<results/>\n".to_string())
     } else {
+        let projected: Vec<String> = report
+            .all_matches()
+            .into_iter()
+            .filter_map(|rm| project_match_field_xml(rm, tree_opts, projection))
+            .collect();
+
+        if projected.is_empty() {
+            return Ok("<results/>\n".to_string());
+        }
+
         let mut out = String::from("<results>\n");
         for item in projected {
             out.push_str(&indent_xml_fragment(&item, "  "));
@@ -153,7 +156,7 @@ fn render_xml_field_projection(
     }
 }
 
-fn project_match_field_xml(
+fn match_field_bare(
     rm: &ReportMatch,
     tree_opts: &RenderOptions,
     projection: Projection,
@@ -183,8 +186,25 @@ fn project_match_field_xml(
     }
 }
 
+fn project_match_field_xml(
+    rm: &ReportMatch,
+    tree_opts: &RenderOptions,
+    projection: Projection,
+) -> Option<String> {
+    match projection {
+        Projection::Tree => rm
+            .tree
+            .as_ref()
+            .map(|node| wrap_projection_element("tree", &render_xml_node(node, tree_opts))),
+        Projection::Value | Projection::Source | Projection::Lines => {
+            match_field_bare(rm, tree_opts, projection)
+        }
+        _ => None,
+    }
+}
+
 fn render_xml_summary(report: &Report) -> String {
-    let inner = render_xml_summary_inner(report, "  ");
+    let inner = render_xml_summary_inner(Summary::from_report(report), "  ");
     if inner.is_empty() {
         "<summary/>\n".to_string()
     } else {
@@ -192,21 +212,21 @@ fn render_xml_summary(report: &Report) -> String {
     }
 }
 
-fn render_xml_summary_inner(report: &Report, indent: &str) -> String {
-    let mut summary = String::new();
-    if let Some(passed) = report.success {
-        summary.push_str(&format!("{indent}<success>{passed}</success>\n"));
+fn render_xml_summary_inner(summary: Summary<'_>, indent: &str) -> String {
+    let mut rendered = String::new();
+    if let Some(passed) = summary.success {
+        rendered.push_str(&format!("{indent}<success>{passed}</success>\n"));
     }
-    if let Some(ref totals) = report.totals {
-        summary.push_str(&render_xml_totals_inner(totals, indent));
+    if let Some(totals) = summary.totals {
+        rendered.push_str(&render_xml_totals_inner(totals, indent));
     }
-    if let Some(ref expected) = report.expected {
-        summary.push_str(&format!("{indent}<expected>{}</expected>\n", escape(expected)));
+    if let Some(expected) = summary.expected {
+        rendered.push_str(&format!("{indent}<expected>{}</expected>\n", escape(expected)));
     }
-    if let Some(ref query) = report.query {
-        summary.push_str(&format!("{indent}<query>{}</query>\n", escape(query.as_str())));
+    if let Some(query) = summary.query {
+        rendered.push_str(&format!("{indent}<query>{}</query>\n", escape(query.as_str())));
     }
-    summary
+    rendered
 }
 
 fn render_xml_totals(report: &Report) -> String {
@@ -474,6 +494,23 @@ fn append_group_outputs(
     }
 
     append_outputs(out, outputs, indent);
+}
+
+fn wrap_projection_element(name: &str, body: &str) -> String {
+    let body = body.trim_end();
+    if body.is_empty() {
+        return format!("<{name}/>\n");
+    }
+
+    let mut out = String::new();
+    out.push_str(&format!("<{name}>\n"));
+    for line in body.lines() {
+        out.push_str("  ");
+        out.push_str(line);
+        out.push('\n');
+    }
+    out.push_str(&format!("</{name}>\n"));
+    out
 }
 
 fn indent_xml_fragment(fragment: &str, indent: &str) -> String {

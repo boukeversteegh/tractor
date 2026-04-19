@@ -1,5 +1,5 @@
 use serde_json::{json, Value};
-use tractor::{report::{Report, ReportMatch, ResultItem}, format_schema_tree, normalize_path, xml_node_to_json, RenderOptions};
+use tractor::{report::{Report, ReportMatch, ResultItem, Summary}, format_schema_tree, normalize_path, xml_node_to_json, RenderOptions};
 use super::options::{ViewField, ViewSet};
 use super::shared::{render_fields_for_match, should_emit_command, should_emit_file, should_emit_rule_id, should_show_totals};
 use super::{Projection, ProjectionRenderError};
@@ -71,7 +71,9 @@ fn report_to_json_value(
     let mut root = serde_json::Map::new();
 
     if should_show_totals(report, view) {
-        emit_report_summary(&mut root, report);
+        if let Some(summary) = summary_value(report) {
+            root.insert("summary".into(), summary);
+        }
     }
 
     if report.schema.is_some() {
@@ -134,39 +136,17 @@ fn group_outputs_to_json(
     ("outputs", outputs_to_json(outputs))
 }
 
-/// Emit success, totals, expected, query under the structured summary container.
-pub fn emit_report_summary(root: &mut serde_json::Map<String, Value>, report: &Report) {
-    let mut summary = serde_json::Map::new();
-    if let Some(success) = report.success {
-        summary.insert("success".into(), json!(success));
-    }
-    if let Some(ref totals) = report.totals {
-        let mut t = serde_json::Map::new();
-        t.insert("results".into(), json!(totals.results));
-        t.insert("files".into(),   json!(totals.files));
-        if totals.fatals > 0 { t.insert("fatals".into(), json!(totals.fatals)); }
-        if totals.errors > 0 { t.insert("errors".into(), json!(totals.errors)); }
-        if totals.warnings > 0 { t.insert("warnings".into(), json!(totals.warnings)); }
-        if totals.infos > 0 { t.insert("infos".into(), json!(totals.infos)); }
-        if totals.updated > 0 { t.insert("updated".into(), json!(totals.updated)); }
-        if totals.unchanged > 0 { t.insert("unchanged".into(), json!(totals.unchanged)); }
-        summary.insert("totals".into(), Value::Object(t));
-    }
-    if let Some(ref expected) = report.expected {
-        summary.insert("expected".into(), json!(expected));
-    }
-    if let Some(ref query) = report.query {
-        summary.insert("query".into(), json!(query));
-    }
-    if !summary.is_empty() {
-        root.insert("summary".into(), Value::Object(summary));
+fn summary_value(report: &Report) -> Option<Value> {
+    let summary = Summary::from_report(report);
+    if summary.is_empty() {
+        None
+    } else {
+        serde_json::to_value(summary).ok()
     }
 }
 
 fn summary_to_json(report: &Report) -> Value {
-    let mut root = serde_json::Map::new();
-    emit_report_summary(&mut root, report);
-    root.remove("summary").unwrap_or_else(|| Value::Object(serde_json::Map::new()))
+    summary_value(report).unwrap_or_else(|| Value::Object(serde_json::Map::new()))
 }
 
 fn totals_to_json(report: &Report) -> Value {
@@ -240,7 +220,9 @@ pub fn render_results_json(
                 if let Some(ref file) = sub.file { obj.insert("file".into(), json!(file)); }
                 if let Some(ref command) = sub.command { obj.insert("command".into(), json!(command)); }
                 if let Some(ref rule_id) = sub.rule_id { obj.insert("rule_id".into(), json!(rule_id)); }
-                emit_report_summary(&mut obj, sub);
+                if let Some(summary) = summary_value(sub) {
+                    obj.insert("summary".into(), summary);
+                }
                 if let Some(ref schema) = sub.schema {
                     obj.insert("schema".into(), json!(schema));
                 }

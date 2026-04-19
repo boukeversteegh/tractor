@@ -194,9 +194,9 @@ fn render_test_text(
     let totals = report.totals.as_ref().expect("test report must have totals");
 
     let (symbol, color) = if success {
-        ("âœ“", test_colors::GREEN)
+        ("\u{2713}", test_colors::GREEN)
     } else {
-        ("âœ—", test_colors::RED)
+        ("\u{2717}", test_colors::RED)
     };
 
     let label = opts.message.as_deref().unwrap_or("");

@@ -453,6 +453,54 @@ fn project_tree_json_is_sequence_and_single_unwraps() {
 }
 
 #[test]
+fn project_tree_xml_multi_wraps_named_tree_elements() {
+    let result = command([
+        "query",
+        "-s",
+        "<root><item>one</item><item>two</item></root>",
+        "-l",
+        "xml",
+        "-x",
+        "//item",
+        "-p",
+        "tree",
+        "-f",
+        "xml",
+    ])
+    .capture();
+
+    assert_eq!(0, result.status);
+    assert!(result.stdout.contains("<results>"));
+    assert!(result.stdout.contains("<tree>"));
+    assert!(result.stdout.contains("</tree>"));
+    assert_well_formed_xml(&result.stdout);
+}
+
+#[test]
+fn project_tree_xml_single_stays_bare() {
+    let result = command([
+        "query",
+        "-s",
+        "<root><item>one</item><item>two</item></root>",
+        "-l",
+        "xml",
+        "-x",
+        "//item",
+        "-p",
+        "tree",
+        "--single",
+        "-f",
+        "xml",
+    ])
+    .capture();
+
+    assert_eq!(0, result.status);
+    assert!(!result.stdout.contains("<tree>"));
+    assert!(result.stdout.contains("<item>"));
+    assert_well_formed_xml(&result.stdout);
+}
+
+#[test]
 fn project_tree_single_empty_exits_with_empty_stdout() {
     let result = command([
         "query",
