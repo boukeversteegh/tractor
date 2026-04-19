@@ -1,18 +1,20 @@
 {
-  "success": true,
-  "totals": {
-    "results": 2,
-    "files": 1,
-    "updated": 2
+  "summary": {
+    "success": true,
+    "totals": {
+      "results": 2,
+      "files": 1,
+      "unchanged": 2
+    }
   },
   "outputs": [
     {
       "file": "tests/integration/formats/set/sample.yaml",
-      "content": "database:\n  host: db.example.com\n  port: 5432\n"
+      "content": "database:\n  host: db.example.com\n  port: 5433\n"
     },
     {
       "file": "tests/integration/formats/set/sample.yaml",
-      "content": "database:\n  host: localhost\n  port: 5433\n"
+      "content": "database:\n  host: db.example.com\n  port: 5433\n"
     }
   ],
   "group": "command",
@@ -27,18 +29,18 @@
             {
               "reason": "//database/host",
               "lines": [
-                "  host: localhost"
+                "  host: db.example.com"
               ],
-              "status": "updated",
-              "value": "localhost"
+              "status": "unchanged",
+              "value": "db.example.com"
             },
             {
               "reason": "//database/port",
               "lines": [
-                "  port: 5432"
+                "  port: 5433"
               ],
-              "status": "updated",
-              "value": "5432"
+              "status": "unchanged",
+              "value": "5433"
             }
           ]
         }

@@ -292,6 +292,23 @@ fn append_group_outputs(
     append_outputs(out, outputs, indent);
 }
 
+/// Render a flat list of matches as XML (without `<results>` or `<report>` wrapper).
+/// Used by projection rendering for `-p results` and `-p tree --single`.
+pub fn render_xml_matches_only(
+    matches: &[&tractor::report::ReportMatch],
+    view: &ViewSet,
+    render_opts: &RenderOptions,
+    skip_dims: &[&str],
+) -> String {
+    let mut tree_opts = render_opts.clone();
+    tree_opts.use_color = false;
+    let mut out = String::new();
+    for rm in matches {
+        append_match(&mut out, rm, view, "  ", &tree_opts, skip_dims);
+    }
+    out
+}
+
 fn escape(s: &str) -> String {
     s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;")
 }

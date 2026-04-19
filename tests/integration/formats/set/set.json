@@ -1,9 +1,11 @@
 {
-  "success": true,
-  "totals": {
-    "results": 1,
-    "files": 1,
-    "updated": 1
+  "summary": {
+    "success": true,
+    "totals": {
+      "results": 1,
+      "files": 1,
+      "unchanged": 1
+    }
   },
   "group": "file",
   "results": [
@@ -12,7 +14,7 @@
       "results": [
         {
           "line": 2,
-          "status": "updated",
+          "status": "unchanged",
           "reason": "//database/host"
         }
       ]

@@ -90,11 +90,13 @@ impl TractorInvocation {
                 CommandArg::FixturePath { .. } => None,
             };
 
+            // Strip any existing -v/--view and -p/--project flags.
             match literal {
-                Some("-v") | Some("--view") => {
+                Some("-v") | Some("--view") | Some("-p") | Some("--project") => {
                     let _ = iter.next();
                 }
-                Some(value) if value.starts_with("-v=") || value.starts_with("--view=") => {}
+                Some(value) if value.starts_with("-v=") || value.starts_with("--view=")
+                    || value.starts_with("-p=") || value.starts_with("--project=") => {}
                 _ => args.push(arg),
             }
         }
@@ -104,10 +106,8 @@ impl TractorInvocation {
             stdin: self.stdin.clone(),
             no_color: self.no_color,
         };
-        invocation.args.push(CommandArg::Literal("-v".to_string()));
-        invocation
-            .args
-            .push(CommandArg::Literal("count".to_string()));
+        invocation.args.push(CommandArg::Literal("-p".to_string()));
+        invocation.args.push(CommandArg::Literal("count".to_string()));
         invocation
     }
 }

@@ -1,12 +1,13 @@
-success: true
-totals:
-  results: 1
-  files: 1
-  updated: 1
+summary:
+  success: true
+  totals:
+    results: 1
+    files: 1
+    unchanged: 1
 group: file
 results:
 - file: tests/integration/formats/set/sample.yaml
   output: |
     database:
       host: db.example.com
-      port: 5432
+      port: 5433

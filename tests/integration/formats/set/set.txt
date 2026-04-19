@@ -1,2 +1,2 @@
-tests/integration/formats/set/sample.yaml:2: updated //database/host
-Set 1 match in 1 file
+tests/integration/formats/set/sample.yaml:2: unchanged //database/host
+Set 0 matches in 1 file (1 unchanged)

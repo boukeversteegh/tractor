@@ -21,6 +21,7 @@ use tractor::{
     render_query_tree_node, render_xml_node,
     render_source_precomputed, render_lines,
     report::{Report, ReportMatch},
+    RenderOptions,
 };
 use crate::cli::context::RunContext;
 use crate::cli::test::test_colors;
@@ -50,6 +51,23 @@ pub fn render_report(
         }
     }
 
+    // Projection dispatch: for non-report projections, render the projected element.
+    if ctx.projection != Projection::Report {
+        let exit_fail = report.success == Some(false);
+        let got_output = render_projection(report, ctx)?;
+        // --single with 0 matches → empty stdout, non-zero exit.
+        if ctx.single && !got_output && ctx.projection.is_per_match() {
+            return Err(Box::new(crate::SilentExit));
+        }
+        if ctx.single && !got_output && ctx.projection == Projection::Results {
+            return Err(Box::new(crate::SilentExit));
+        }
+        if exit_fail {
+            return Err(Box::new(crate::SilentExit));
+        }
+        return Ok(());
+    }
+
     // Standard format dispatch — same for all report types.
     let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
     match ctx.output_format {
@@ -72,6 +90,429 @@ pub fn render_report(
         return Err(Box::new(crate::SilentExit));
     }
     Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// Projection rendering
+// ---------------------------------------------------------------------------
+
+/// Render a projected element from the report. Dispatches based on ctx.projection.
+/// Returns true if any output was produced (used for --single empty-result detection).
+fn render_projection(
+    report: &Report,
+    ctx: &RunContext,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    let render_opts = ctx.render_options();
+    let single = ctx.single;
+
+    // Warn when --single is used on a projection that is already singular.
+    if single && ctx.projection.is_singular() {
+        eprintln!(
+            "warning: --single has no effect with -p {} (already singular). Drop --single.",
+            ctx.projection.name()
+        );
+    }
+
+    let had_output = match ctx.projection {
+        Projection::Count => {
+            render_projection_count(report, &ctx.output_format);
+            true
+        }
+        Projection::Schema => {
+            render_projection_schema(report, &ctx.output_format, &render_opts);
+            true
+        }
+        Projection::Summary => {
+            render_projection_summary(report, &ctx.output_format, &render_opts);
+            true
+        }
+        Projection::Totals => {
+            render_projection_totals(report, &ctx.output_format, &render_opts);
+            true
+        }
+        Projection::Results => {
+            let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
+            render_projection_results(report, ctx, &dims, single)
+        }
+        Projection::Tree | Projection::Value | Projection::Source | Projection::Lines => {
+            render_projection_per_match(report, ctx, single)
+        }
+        Projection::Report => unreachable!("report projection is handled before this function"),
+    };
+    Ok(had_output)
+}
+
+fn render_projection_count(report: &Report, format: &OutputFormat) {
+    let count = report.totals.as_ref().map_or(0, |t| t.results);
+    match format {
+        OutputFormat::Xml => {
+            println!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+            println!("<count>{count}</count>");
+        }
+        OutputFormat::Json => println!("{count}"),
+        OutputFormat::Yaml => println!("{count}"),
+        _ => println!("{count}"),
+    }
+}
+
+fn render_projection_schema(report: &Report, format: &OutputFormat, _render_opts: &RenderOptions) {
+    let schema = report.schema.as_deref().unwrap_or("");
+    match format {
+        OutputFormat::Xml => {
+            let escaped = schema.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;");
+            println!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+            println!("<schema>{escaped}</schema>");
+        }
+        OutputFormat::Json => {
+            print!("{}", serde_json::to_string_pretty(&serde_json::Value::String(schema.to_string())).unwrap_or_default());
+            println!();
+        }
+        OutputFormat::Yaml => {
+            print!("{}", serde_yaml::to_string(&serde_json::Value::String(schema.to_string())).unwrap_or_default());
+        }
+        _ => print!("{schema}"),
+    }
+}
+
+fn render_projection_summary(report: &Report, format: &OutputFormat, _render_opts: &RenderOptions) {
+    use json::build_summary_json;
+    match format {
+        OutputFormat::Xml => {
+            let mut body = String::new();
+            if let Some(passed) = report.success {
+                body.push_str(&format!("  <success>{passed}</success>\n"));
+            }
+            if let Some(ref totals) = report.totals {
+                body.push_str("  <totals>\n");
+                body.push_str(&format!("    <results>{}</results>\n", totals.results));
+                body.push_str(&format!("    <files>{}</files>\n", totals.files));
+                if totals.fatals   > 0 { body.push_str(&format!("    <fatals>{}</fatals>\n", totals.fatals)); }
+                if totals.errors   > 0 { body.push_str(&format!("    <errors>{}</errors>\n", totals.errors)); }
+                if totals.warnings > 0 { body.push_str(&format!("    <warnings>{}</warnings>\n", totals.warnings)); }
+                if totals.infos    > 0 { body.push_str(&format!("    <infos>{}</infos>\n", totals.infos)); }
+                if totals.updated  > 0 { body.push_str(&format!("    <updated>{}</updated>\n", totals.updated)); }
+                if totals.unchanged > 0 { body.push_str(&format!("    <unchanged>{}</unchanged>\n", totals.unchanged)); }
+                body.push_str("  </totals>\n");
+            }
+            if let Some(ref expected) = report.expected {
+                let e = expected.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;");
+                body.push_str(&format!("  <expected>{e}</expected>\n"));
+            }
+            if let Some(ref query) = report.query {
+                let q = query.as_str().replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;");
+                body.push_str(&format!("  <query>{q}</query>\n"));
+            }
+            println!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+            print!("<summary>\n{body}</summary>\n");
+        }
+        OutputFormat::Json => {
+            let summary = build_summary_json(report);
+            println!("{}", serde_json::to_string_pretty(&serde_json::Value::Object(summary)).unwrap_or_default());
+        }
+        OutputFormat::Yaml => {
+            let summary = build_summary_json(report);
+            print!("{}", serde_yaml::to_string(&serde_json::Value::Object(summary)).unwrap_or_default());
+        }
+        _ => {
+            // Text: render summary line(s)
+            if let Some(ref totals) = report.totals {
+                use text::format_summary_text;
+                print!("{}", format_summary_text(totals, report.success, report.expected.as_deref()));
+            }
+            if let Some(ref query) = report.query {
+                println!("Query: {query}");
+            }
+        }
+    }
+}
+
+fn render_projection_totals(report: &Report, format: &OutputFormat, _render_opts: &RenderOptions) {
+    let totals = match report.totals.as_ref() {
+        Some(t) => t,
+        None => return,
+    };
+    match format {
+        OutputFormat::Xml => {
+            println!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+            let mut body = String::new();
+            body.push_str(&format!("  <results>{}</results>\n", totals.results));
+            body.push_str(&format!("  <files>{}</files>\n", totals.files));
+            if totals.fatals   > 0 { body.push_str(&format!("  <fatals>{}</fatals>\n", totals.fatals)); }
+            if totals.errors   > 0 { body.push_str(&format!("  <errors>{}</errors>\n", totals.errors)); }
+            if totals.warnings > 0 { body.push_str(&format!("  <warnings>{}</warnings>\n", totals.warnings)); }
+            if totals.infos    > 0 { body.push_str(&format!("  <infos>{}</infos>\n", totals.infos)); }
+            if totals.updated  > 0 { body.push_str(&format!("  <updated>{}</updated>\n", totals.updated)); }
+            if totals.unchanged > 0 { body.push_str(&format!("  <unchanged>{}</unchanged>\n", totals.unchanged)); }
+            print!("<totals>\n{body}</totals>\n");
+        }
+        OutputFormat::Json => {
+            let mut t = serde_json::Map::new();
+            t.insert("results".into(), serde_json::json!(totals.results));
+            t.insert("files".into(),   serde_json::json!(totals.files));
+            if totals.fatals   > 0 { t.insert("fatals".into(),    serde_json::json!(totals.fatals)); }
+            if totals.errors   > 0 { t.insert("errors".into(),    serde_json::json!(totals.errors)); }
+            if totals.warnings > 0 { t.insert("warnings".into(),  serde_json::json!(totals.warnings)); }
+            if totals.infos    > 0 { t.insert("infos".into(),     serde_json::json!(totals.infos)); }
+            if totals.updated  > 0 { t.insert("updated".into(),   serde_json::json!(totals.updated)); }
+            if totals.unchanged > 0 { t.insert("unchanged".into(), serde_json::json!(totals.unchanged)); }
+            println!("{}", serde_json::to_string_pretty(&serde_json::Value::Object(t)).unwrap_or_default());
+        }
+        OutputFormat::Yaml => {
+            let mut t = serde_json::Map::new();
+            t.insert("results".into(), serde_json::json!(totals.results));
+            t.insert("files".into(),   serde_json::json!(totals.files));
+            if totals.fatals   > 0 { t.insert("fatals".into(),    serde_json::json!(totals.fatals)); }
+            if totals.errors   > 0 { t.insert("errors".into(),    serde_json::json!(totals.errors)); }
+            if totals.warnings > 0 { t.insert("warnings".into(),  serde_json::json!(totals.warnings)); }
+            if totals.infos    > 0 { t.insert("infos".into(),     serde_json::json!(totals.infos)); }
+            if totals.updated  > 0 { t.insert("updated".into(),   serde_json::json!(totals.updated)); }
+            if totals.unchanged > 0 { t.insert("unchanged".into(), serde_json::json!(totals.unchanged)); }
+            print!("{}", serde_yaml::to_string(&serde_json::Value::Object(t)).unwrap_or_default());
+        }
+        _ => {
+            println!("results: {}", totals.results);
+            println!("files: {}", totals.files);
+        }
+    }
+}
+
+/// Render just the results list (without the report envelope). Returns true if output was produced.
+fn render_projection_results(
+    report: &Report,
+    ctx: &RunContext,
+    dims: &[&str],
+    single: bool,
+) -> bool {
+    let render_opts = ctx.render_options();
+    let all_matches: Vec<&ReportMatch> = report.all_matches();
+    if all_matches.is_empty() && single {
+        return false;
+    }
+    let matches_to_render: &[&ReportMatch] = if single {
+        &all_matches[..all_matches.len().min(1)]
+    } else {
+        &all_matches
+    };
+
+    match ctx.output_format {
+        OutputFormat::Xml => {
+            let xml_body = xml::render_xml_matches_only(matches_to_render, &ctx.view, &render_opts, dims);
+            if single {
+                if xml_body.is_empty() {
+                    return false;
+                }
+                print!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n{xml_body}");
+            } else {
+                print!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<results>\n{xml_body}</results>\n");
+            }
+        }
+        OutputFormat::Json => {
+            let items: Vec<serde_json::Value> = matches_to_render.iter()
+                .map(|rm| json::match_to_value(rm, &ctx.view, &render_opts, dims))
+                .filter(|v| !v.as_object().is_some_and(|o| o.is_empty()))
+                .collect();
+            if single {
+                if let Some(first) = items.into_iter().next() {
+                    println!("{}", serde_json::to_string_pretty(&first).unwrap_or_default());
+                } else {
+                    return false;
+                }
+            } else {
+                println!("{}", serde_json::to_string_pretty(&serde_json::Value::Array(items)).unwrap_or_default());
+            }
+        }
+        OutputFormat::Yaml => {
+            let items: Vec<serde_json::Value> = matches_to_render.iter()
+                .map(|rm| json::match_to_value(rm, &ctx.view, &render_opts, dims))
+                .filter(|v| !v.as_object().is_some_and(|o| o.is_empty()))
+                .collect();
+            if single {
+                if let Some(first) = items.into_iter().next() {
+                    print!("{}", serde_yaml::to_string(&first).unwrap_or_default());
+                } else {
+                    return false;
+                }
+            } else {
+                print!("{}", serde_yaml::to_string(&serde_json::Value::Array(items)).unwrap_or_default());
+            }
+        }
+        _ => {
+            // For text/gcc/github: use normal text rendering without the summary envelope.
+            let tmp = make_results_only_report(report);
+            print!("{}", render_text_report(&tmp, &ctx.view, &render_opts, dims));
+        }
+    }
+    true
+}
+
+/// Render per-match projection (tree, value, source, lines). Returns true if output was produced.
+fn render_projection_per_match(
+    report: &Report,
+    ctx: &RunContext,
+    single: bool,
+) -> bool {
+    let render_opts = ctx.render_options();
+    let field = ctx.projection;
+    let all_matches: Vec<&ReportMatch> = report.all_matches();
+    if all_matches.is_empty() && single {
+        return false;
+    }
+    let matches_to_render: &[&ReportMatch] = if single {
+        &all_matches[..all_matches.len().min(1)]
+    } else {
+        &all_matches
+    };
+
+    match ctx.output_format {
+        OutputFormat::Xml => {
+            let xml_parts: Vec<String> = matches_to_render.iter()
+                .filter_map(|rm| extract_field_as_xml(rm, field, &render_opts))
+                .collect();
+            if single {
+                if let Some(bare) = xml_parts.into_iter().next() {
+                    // For --single: emit the inner tree content (unwrapped), not the <tree> element.
+                    let unwrapped = unwrap_xml_element(&bare);
+                    print!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n{unwrapped}");
+                } else {
+                    return false;
+                }
+            } else {
+                let inner: String = xml_parts.into_iter().map(|s| {
+                    s.lines().map(|l| format!("  {l}\n")).collect::<String>()
+                }).collect();
+                print!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<results>\n{inner}</results>\n");
+            }
+        }
+        OutputFormat::Json => {
+            let items: Vec<serde_json::Value> = matches_to_render.iter()
+                .filter_map(|rm| extract_field_as_json(rm, field, &render_opts))
+                .collect();
+            if single {
+                if let Some(first) = items.into_iter().next() {
+                    println!("{}", serde_json::to_string_pretty(&first).unwrap_or_default());
+                } else {
+                    return false;
+                }
+            } else {
+                println!("{}", serde_json::to_string_pretty(&serde_json::Value::Array(items)).unwrap_or_default());
+            }
+        }
+        OutputFormat::Yaml => {
+            let items: Vec<serde_json::Value> = matches_to_render.iter()
+                .filter_map(|rm| extract_field_as_json(rm, field, &render_opts))
+                .collect();
+            if single {
+                if let Some(first) = items.into_iter().next() {
+                    print!("{}", serde_yaml::to_string(&first).unwrap_or_default());
+                } else {
+                    return false;
+                }
+            } else {
+                print!("{}", serde_yaml::to_string(&serde_json::Value::Array(items)).unwrap_or_default());
+            }
+        }
+        _ => {
+            // Text: re-use existing text renderer, which already outputs bare fields.
+            let tmp = make_results_only_report(report);
+            print!("{}", render_text_report(&tmp, &ctx.view, &render_opts, &[]));
+        }
+    }
+    true
+}
+
+/// Unwrap an outer XML element wrapper, returning just its inner content.
+/// Used for `--single` tree/value/source/lines projections: strips the `<tree>`, `<value>`, etc. wrapper.
+fn unwrap_xml_element(xml: &str) -> String {
+    // Simple approach: strip first line (opening tag) and last non-empty line (closing tag),
+    // then de-indent the remaining content.
+    let lines: Vec<&str> = xml.lines().collect();
+    if lines.len() <= 2 {
+        return xml.to_string();
+    }
+    // Find opening line (first) and closing line (last non-empty).
+    let inner_lines = &lines[1..lines.len()-1];
+    // De-indent by 2 spaces if all lines have it.
+    let all_indented = inner_lines.iter().all(|l| l.is_empty() || l.starts_with("  "));
+    let result: String = inner_lines.iter().map(|l| {
+        if all_indented && l.starts_with("  ") {
+            format!("{}\n", &l[2..])
+        } else {
+            format!("{l}\n")
+        }
+    }).collect();
+    result
+}
+
+/// Extract a per-match field as XML text (the field's content, with its wrapper element).
+///
+/// For Tree: returns the rendered tree node (bare, without the `<tree>` wrapper when single,
+/// but `<tree>content</tree>` when listing).
+fn extract_field_as_xml(rm: &ReportMatch, projection: Projection, render_opts: &RenderOptions) -> Option<String> {
+    match projection {
+        Projection::Tree => {
+            rm.tree.as_ref().map(|node| {
+                let rendered = render_xml_node(node, render_opts);
+                format!("<tree>\n{}</tree>\n",
+                    rendered.lines().map(|l| format!("  {l}\n")).collect::<String>()
+                )
+            })
+        }
+        Projection::Value => {
+            rm.value.as_ref().map(|v| {
+                let escaped = v.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;");
+                format!("<value>{escaped}</value>\n")
+            })
+        }
+        Projection::Source => {
+            rm.source.as_ref().map(|s| {
+                let escaped = s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;");
+                format!("<source>{escaped}</source>\n")
+            })
+        }
+        Projection::Lines => {
+            rm.lines.as_ref().map(|ls| {
+                let mut out = String::from("<lines>\n");
+                for l in ls {
+                    let escaped = l.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;");
+                    out.push_str(&format!("  <line>{escaped}</line>\n"));
+                }
+                out.push_str("</lines>\n");
+                out
+            })
+        }
+        _ => None,
+    }
+}
+
+/// Extract a per-match field as a JSON value.
+fn extract_field_as_json(rm: &ReportMatch, projection: Projection, render_opts: &RenderOptions) -> Option<serde_json::Value> {
+    match projection {
+        Projection::Tree => {
+            rm.tree.as_ref().map(|node| tractor::xml_node_to_json(node, render_opts.max_depth))
+        }
+        Projection::Value => rm.value.as_ref().map(|v| serde_json::json!(v)),
+        Projection::Source => rm.source.as_ref().map(|s| serde_json::json!(s)),
+        Projection::Lines => rm.lines.as_ref().map(|ls| serde_json::json!(ls)),
+        _ => None,
+    }
+}
+
+/// Create a temporary report with only results (no success/totals) for text rendering
+/// of results/per-match projections.
+fn make_results_only_report(report: &Report) -> Report {
+    Report {
+        success: None,
+        totals: None,
+        expected: None,
+        query: None,
+        outputs: vec![],
+        schema: None,
+        results: report.results.clone(),
+        group: report.group.clone(),
+        file: report.file.clone(),
+        command: report.command.clone(),
+        rule_id: report.rule_id.clone(),
+    }
 }
 
 // ---------------------------------------------------------------------------

@@ -1,18 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <report>
-  <success>true</success>
-  <totals>
-    <results>2</results>
-    <files>1</files>
-    <updated>2</updated>
-  </totals>
+  <summary>
+    <success>true</success>
+    <totals>
+      <results>2</results>
+      <files>1</files>
+      <unchanged>2</unchanged>
+    </totals>
+  </summary>
   <outputs>
     <output file="tests/integration/formats/set/sample.yaml">database:
   host: db.example.com
-  port: 5432
+  port: 5433
 </output>
     <output file="tests/integration/formats/set/sample.yaml">database:
-  host: localhost
+  host: db.example.com
   port: 5433
 </output>
   </outputs>
@@ -21,21 +23,21 @@
     <group command="set">
       <group-by>file</group-by>
       <group file="tests/integration/formats/set/sample.yaml">
-        <match line="2" column="9" end_line="2" end_column="18">
+        <match line="2" column="9" end_line="2" end_column="23">
           <reason>//database/host</reason>
           <lines>
-            <line>  host: localhost</line>
+            <line>  host: db.example.com</line>
           </lines>
-          <status>updated</status>
-          <value>localhost</value>
+          <status>unchanged</status>
+          <value>db.example.com</value>
         </match>
         <match line="3" column="9" end_line="3" end_column="13">
           <reason>//database/port</reason>
           <lines>
-            <line>  port: 5432</line>
+            <line>  port: 5433</line>
           </lines>
-          <status>updated</status>
-          <value>5432</value>
+          <status>unchanged</status>
+          <value>5433</value>
         </match>
       </group>
     </group>

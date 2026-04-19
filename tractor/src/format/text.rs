@@ -286,6 +286,10 @@ fn render_field(
 
 /// Format summary text, deriving wording from totals fields and success.
 /// No longer depends on ReportKind — the data itself determines the output.
+pub fn format_summary_text(totals: &Totals, success: Option<bool>, expected: Option<&str>) -> String {
+    format_summary(totals, success, expected)
+}
+
 fn format_summary(totals: &Totals, success: Option<bool>, expected: Option<&str>) -> String {
     let success_val = success.unwrap_or(true);
     let has_check = totals.fatals > 0 || totals.errors > 0 || totals.warnings > 0;

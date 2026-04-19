@@ -1,18 +1,19 @@
-success: true
-totals:
-  results: 2
-  files: 1
-  updated: 2
+summary:
+  success: true
+  totals:
+    results: 2
+    files: 1
+    unchanged: 2
 outputs:
 - file: tests/integration/formats/set/sample.yaml
   content: |
     database:
       host: db.example.com
-      port: 5432
+      port: 5433
 - file: tests/integration/formats/set/sample.yaml
   content: |
     database:
-      host: localhost
+      host: db.example.com
       port: 5433
 group: command
 results:
@@ -23,11 +24,11 @@ results:
     results:
     - reason: //database/host
       lines:
-      - '  host: localhost'
-      status: updated
-      value: localhost
+      - '  host: db.example.com'
+      status: unchanged
+      value: db.example.com
     - reason: //database/port
       lines:
-      - '  port: 5432'
-      status: updated
-      value: '5432'
+      - '  port: 5433'
+      status: unchanged
+      value: '5433'
