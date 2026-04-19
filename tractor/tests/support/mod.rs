@@ -150,7 +150,11 @@ pub(crate) enum Assertion {
     Exit(i32),
     Count(CountExpectation),
     Stdout(ExpectedText),
+    Stderr(ExpectedText),
     Combined(ExpectedText),
+    StdoutContains(String),
+    StderrContains(String),
+    CombinedContains(String),
     FileEq {
         relative: String,
         expected: ExpectedText,
@@ -186,12 +190,32 @@ impl Assertion {
         Self::Stdout(ExpectedText::Snapshot(snapshot.into()))
     }
 
+    pub fn stderr(expected: impl Into<String>) -> Self {
+        Self::Stderr(ExpectedText::Inline(expected.into()))
+    }
+
+    pub fn stderr_snapshot(snapshot: impl Into<String>) -> Self {
+        Self::Stderr(ExpectedText::Snapshot(snapshot.into()))
+    }
+
     pub fn combined(expected: impl Into<String>) -> Self {
         Self::Combined(ExpectedText::Inline(expected.into()))
     }
 
     pub fn combined_snapshot(snapshot: impl Into<String>) -> Self {
         Self::Combined(ExpectedText::Snapshot(snapshot.into()))
+    }
+
+    pub fn stdout_contains(needle: impl Into<String>) -> Self {
+        Self::StdoutContains(needle.into())
+    }
+
+    pub fn stderr_contains(needle: impl Into<String>) -> Self {
+        Self::StderrContains(needle.into())
+    }
+
+    pub fn combined_contains(needle: impl Into<String>) -> Self {
+        Self::CombinedContains(needle.into())
     }
 
     pub fn file_eq(relative: impl Into<String>, expected: impl Into<String>) -> Self {
@@ -370,12 +394,32 @@ impl TestCase {
         self.with_assertion(Assertion::stdout_snapshot(snapshot))
     }
 
+    pub fn assert_stderr(self, expected: impl Into<String>) -> Self {
+        self.with_assertion(Assertion::stderr(expected))
+    }
+
+    pub fn assert_stderr_snapshot(self, snapshot: impl Into<String>) -> Self {
+        self.with_assertion(Assertion::stderr_snapshot(snapshot))
+    }
+
     pub fn assert_combined(self, expected: impl Into<String>) -> Self {
         self.with_assertion(Assertion::combined(expected))
     }
 
     pub fn assert_combined_snapshot(self, snapshot: impl Into<String>) -> Self {
         self.with_assertion(Assertion::combined_snapshot(snapshot))
+    }
+
+    pub fn assert_stdout_contains(self, needle: impl Into<String>) -> Self {
+        self.with_assertion(Assertion::stdout_contains(needle))
+    }
+
+    pub fn assert_stderr_contains(self, needle: impl Into<String>) -> Self {
+        self.with_assertion(Assertion::stderr_contains(needle))
+    }
+
+    pub fn assert_combined_contains(self, needle: impl Into<String>) -> Self {
+        self.with_assertion(Assertion::combined_contains(needle))
     }
 
     pub fn assert_file_eq(self, relative: impl Into<String>, expected: impl Into<String>) -> Self {
@@ -613,11 +657,39 @@ fn evaluate_assertion(
                 "unexpected stdout output"
             );
         }
+        Assertion::Stderr(expected) => {
+            assert_eq!(
+                load_expected(expected),
+                result.stderr,
+                "unexpected stderr output"
+            );
+        }
         Assertion::Combined(expected) => {
             assert_eq!(
                 load_expected(expected),
                 result.combined,
                 "unexpected combined output"
+            );
+        }
+        Assertion::StdoutContains(needle) => {
+            assert!(
+                result.stdout.contains(needle),
+                "expected stdout to contain {needle:?}, got:\n{}",
+                result.stdout
+            );
+        }
+        Assertion::StderrContains(needle) => {
+            assert!(
+                result.stderr.contains(needle),
+                "expected stderr to contain {needle:?}, got:\n{}",
+                result.stderr
+            );
+        }
+        Assertion::CombinedContains(needle) => {
+            assert!(
+                result.combined.contains(needle),
+                "expected combined output to contain {needle:?}, got:\n{}",
+                result.combined
             );
         }
         Assertion::FileEq { relative, expected } => {
@@ -991,12 +1063,32 @@ macro_rules! cli_assertions {
         $assertions.push($crate::support::Assertion::stdout_snapshot($snapshot));
         $crate::cli_assertions!(@push $assertions; $($rest)*);
     }};
+    (@push $assertions:ident; stderr $expected:literal; $($rest:tt)*) => {{
+        $assertions.push($crate::support::Assertion::stderr($expected));
+        $crate::cli_assertions!(@push $assertions; $($rest)*);
+    }};
+    (@push $assertions:ident; stderr_snapshot $snapshot:literal; $($rest:tt)*) => {{
+        $assertions.push($crate::support::Assertion::stderr_snapshot($snapshot));
+        $crate::cli_assertions!(@push $assertions; $($rest)*);
+    }};
     (@push $assertions:ident; combined $expected:literal; $($rest:tt)*) => {{
         $assertions.push($crate::support::Assertion::combined($expected));
         $crate::cli_assertions!(@push $assertions; $($rest)*);
     }};
     (@push $assertions:ident; combined_snapshot $snapshot:literal; $($rest:tt)*) => {{
         $assertions.push($crate::support::Assertion::combined_snapshot($snapshot));
+        $crate::cli_assertions!(@push $assertions; $($rest)*);
+    }};
+    (@push $assertions:ident; stdout_contains $needle:literal; $($rest:tt)*) => {{
+        $assertions.push($crate::support::Assertion::stdout_contains($needle));
+        $crate::cli_assertions!(@push $assertions; $($rest)*);
+    }};
+    (@push $assertions:ident; stderr_contains $needle:literal; $($rest:tt)*) => {{
+        $assertions.push($crate::support::Assertion::stderr_contains($needle));
+        $crate::cli_assertions!(@push $assertions; $($rest)*);
+    }};
+    (@push $assertions:ident; combined_contains $needle:literal; $($rest:tt)*) => {{
+        $assertions.push($crate::support::Assertion::combined_contains($needle));
         $crate::cli_assertions!(@push $assertions; $($rest)*);
     }};
     (@push $assertions:ident; file_eq $path:literal $expected:literal; $($rest:tt)*) => {{

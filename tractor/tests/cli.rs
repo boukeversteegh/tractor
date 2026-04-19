@@ -502,25 +502,15 @@ fn project_tree_xml_single_stays_bare() {
 
 #[test]
 fn project_tree_single_empty_exits_with_empty_stdout() {
-    let result = command([
-        "query",
-        "-s",
-        "<root/>",
-        "-l",
-        "xml",
-        "-x",
-        "//item",
-        "-p",
-        "tree",
-        "--single",
-        "-f",
-        "xml",
-    ])
-    .capture();
-
-    assert_eq!(1, result.status);
-    assert_eq!("", result.stdout);
-    assert_eq!("", result.stderr);
+    cli_case!({
+        tractor query -s "<root/>" -l "xml" -x "//item" -p "tree" --single -f "xml";
+        expect => {
+            exit 1;
+            stdout "";
+            stderr "";
+        }
+    })
+    .run();
 }
 
 #[test]
@@ -609,60 +599,34 @@ fn project_summary_warns_when_message_is_unreachable() {
 }
 
 #[test]
-fn count_view_uses_report_path_while_count_projection_restores_scalar() {
-    let report_count = command([
-        "query",
-        "-s",
-        "<root><item>one</item><item>two</item></root>",
-        "-l",
-        "xml",
-        "-x",
-        "//item",
-        "-v",
-        "count",
-    ])
-    .capture();
-    assert_eq!(0, report_count.status);
-    assert_eq!("2 matches", report_count.stdout);
+fn count_view_uses_report_path() {
+    cli_case!({
+        tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -v "count";
+        expect => stdout "2 matches";
+    })
+    .run();
+}
 
-    let scalar_count = command([
-        "query",
-        "-s",
-        "<root><item>one</item><item>two</item></root>",
-        "-l",
-        "xml",
-        "-x",
-        "//item",
-        "-v",
-        "count",
-        "-p",
-        "count",
-    ])
-    .capture();
-    assert_eq!(0, scalar_count.status);
-    assert_eq!("2", scalar_count.stdout);
+#[test]
+fn count_projection_restores_scalar() {
+    cli_case!({
+        tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -v "count" -p "count";
+        expect => stdout "2";
+    })
+    .run();
 }
 
 #[test]
 fn project_invalid_is_rejected_with_valid_values() {
-    let result = command([
-        "query",
-        "-s",
-        "<root><item>one</item></root>",
-        "-l",
-        "xml",
-        "-x",
-        "//item",
-        "-p",
-        "INVALID",
-    ])
-    .capture();
-
-    assert_eq!(1, result.status);
-    assert!(result.combined.contains("invalid project 'INVALID'"));
-    assert!(result
-        .combined
-        .contains("tree, value, source, lines, schema, count, summary, totals, results, report"));
+    cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -p "INVALID";
+        expect => {
+            exit 1;
+            combined_contains "invalid project 'INVALID'";
+            combined_contains "tree, value, source, lines, schema, count, summary, totals, results, report";
+        }
+    })
+    .run();
 }
 
 #[test]
@@ -706,74 +670,32 @@ fn project_tree_empty_sequence_preserves_wrapper_and_parseability() {
 
 #[test]
 fn project_replacement_warning_lists_all_dropped_fields_and_suggests_results() {
-    let result = command([
-        "query",
-        "-s",
-        "<root><item>one</item></root>",
-        "-l",
-        "xml",
-        "-x",
-        "//item",
-        "-v",
-        "tree,file",
-        "-m",
-        "hit",
-        "-p",
-        "tree",
-        "-f",
-        "json",
-    ])
-    .capture();
-
-    assert_eq!(0, result.status);
-    assert!(result.stderr.contains("warning: requested view items {file, message}"));
-    assert!(result.stderr.contains("use `-p results` (respects -v/-m)"));
+    cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -v "tree,file" -m "hit" -p "tree" -f "json";
+        expect => {
+            stderr_contains "warning: requested view items {file, message}";
+            stderr_contains "use `-p results` (respects -v/-m)";
+        }
+    })
+    .run();
 }
 
 #[test]
 fn project_redundant_overlap_does_not_warn() {
-    let result = command([
-        "query",
-        "-s",
-        "<root><item>one</item></root>",
-        "-l",
-        "xml",
-        "-x",
-        "//item",
-        "-v",
-        "tree",
-        "-p",
-        "tree",
-        "-f",
-        "json",
-    ])
-    .capture();
-
-    assert_eq!(0, result.status);
-    assert_eq!("", result.stderr);
+    cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -v "tree" -p "tree" -f "json";
+        expect => stderr "";
+    })
+    .run();
 }
 
 #[test]
 fn project_empty_explicit_view_does_not_warn() {
-    let result = command([
-        "query",
-        "-s",
-        "<root><item>one</item></root>",
-        "-l",
-        "xml",
-        "-x",
-        "//item",
-        "-v",
-        "",
-        "-p",
-        "tree",
-        "-f",
-        "json",
-    ])
-    .capture();
-
-    assert_eq!(0, result.status);
-    assert_eq!("", result.stderr);
+    cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -v "" -p "tree" -f "json";
+        expect => stderr "";
+    })
+    .run();
 }
 
 #[test]
@@ -904,46 +826,23 @@ fn project_schema_respects_color_output() {
 
 #[test]
 fn view_schema_renders_in_text_output() {
-    let result = command([
-        "query",
-        "-s",
-        "<root><item>one</item></root>",
-        "-l",
-        "xml",
-        "-x",
-        "//item",
-        "-v",
-        "schema",
-    ])
-    .capture();
-
-    assert_eq!(0, result.status);
-    assert!(result.stdout.contains("item = \"one\""));
+    cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -v "schema";
+        expect => stdout_contains "item = \"one\"";
+    })
+    .run();
 }
 
 #[test]
 fn project_totals_single_is_a_noop_with_warning() {
-    let result = command([
-        "query",
-        "-s",
-        "<root><item>one</item><item>two</item></root>",
-        "-l",
-        "xml",
-        "-x",
-        "//item",
-        "-p",
-        "totals",
-        "--single",
-        "-f",
-        "xml",
-    ])
-    .capture();
-
-    assert_eq!(0, result.status);
-    assert!(result.stdout.contains("<totals>"));
-    assert!(result
-        .stderr
-        .contains("warning: --single has no effect with -p totals"));
+    cli_case!({
+        tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -p "totals" --single -f "xml";
+        expect => {
+            stdout_contains "<totals>";
+            stderr_contains "warning: --single has no effect with -p totals";
+        }
+    })
+    .run();
 }
 
 #[test]
