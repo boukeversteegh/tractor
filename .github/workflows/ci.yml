@@ -75,7 +75,7 @@ jobs:
         run: cargo build --release -p tractor
 
       - name: Lint
-        run: ./target/release/tractor run .tractor.yml
+        run: ./target/release/tractor run
 
   gate:
     needs: [test, test-windows, lint]

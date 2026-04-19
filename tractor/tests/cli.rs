@@ -483,7 +483,7 @@ fn set_snapshot_json() {
 #[test]
 fn set_snapshot_xml() {
     cli_case!({
-        tractor run "set-config.yaml" -f "xml";
+        tractor run --config "set-config.yaml" -f "xml";
         expect => stdout_snapshot "formats/set/set.xml";
     })
     .in_fixture("formats/set")
@@ -508,7 +508,7 @@ fn set_snapshot_stdout_xml() {
 #[test]
 fn run_set_capture_duplicate_file_outputs_stay_rooted() {
     cli_case!({
-        tractor run "set-capture-duplicate.config.yaml" -f "xml";
+        tractor run --config "set-capture-duplicate.config.yaml" -f "xml";
         expect => stdout_snapshot "formats/set/set-stdout-duplicate.xml";
     })
     .in_fixture("formats/set")
@@ -519,7 +519,7 @@ fn run_set_capture_duplicate_file_outputs_stay_rooted() {
 #[test]
 fn run_set_capture_duplicate_file_outputs_stay_rooted_json() {
     cli_case!({
-        tractor run "set-capture-duplicate.config.yaml" -f "json";
+        tractor run --config "set-capture-duplicate.config.yaml" -f "json";
         expect => stdout_snapshot "formats/set/set-stdout-duplicate.json";
     })
     .in_fixture("formats/set")
@@ -530,7 +530,7 @@ fn run_set_capture_duplicate_file_outputs_stay_rooted_json() {
 #[test]
 fn run_set_capture_duplicate_file_outputs_stay_rooted_yaml() {
     cli_case!({
-        tractor run "set-capture-duplicate.config.yaml" -f "yaml";
+        tractor run --config "set-capture-duplicate.config.yaml" -f "yaml";
         expect => stdout_snapshot "formats/set/set-stdout-duplicate.yaml";
     })
     .in_fixture("formats/set")
@@ -730,7 +730,7 @@ fn update_rejects_stdin_input() {
 #[test]
 fn run_multirule_output_is_stable() {
     cli_case!({
-        tractor run "check-multirule.yaml";
+        tractor run --config "check-multirule.yaml";
         expect => {
             exit 1;
             combined "settings.yaml:3:10: error: debug should be disabled in production\n3 |   debug: true\n             ^~~~\n\nsettings.yaml:4:14: warning: log level should not be debug in production\n4 |   log_level: debug\n                 ^~~~~\n\n1 error in 1 file";
@@ -744,7 +744,7 @@ fn run_multirule_output_is_stable() {
 #[test]
 fn run_multifile_check_scans_multiple_files() {
     cli_case!({
-        tractor run "check-multifile.yaml";
+        tractor run --config "check-multifile.yaml";
         expect => {
             exit 1;
             combined "settings.yaml:3:10: error: debug mode must be disabled\n3 |   debug: true\n             ^~~~\n\n1 error in 1 file";
@@ -758,7 +758,7 @@ fn run_multifile_check_scans_multiple_files() {
 #[test]
 fn run_set_applies_mappings_to_files() {
     cli_case!({
-        tractor run "set-config.yaml";
+        tractor run --config "set-config.yaml";
         expect => combined "app-config.json:3:13: note: updated //database/host\napp-config.json:8:12: note: updated //cache/ttl\nupdated 1 file";
     })
     .in_fixture("run")
@@ -771,7 +771,7 @@ fn run_set_applies_mappings_to_files() {
 #[test]
 fn run_scope_intersection_respects_root() {
     cli_case!({
-        tractor run "scope-intersection/intersect-narrow.yaml";
+        tractor run --config "scope-intersection/intersect-narrow.yaml";
         expect => combined "scope-intersection/frontend/config.yml:1:8: warning: debug must be disabled\n1 | debug: true\n           ^~~~\n\n1 warning in 1 file";
     })
     .in_fixture("run")
@@ -782,7 +782,7 @@ fn run_scope_intersection_respects_root() {
 #[test]
 fn run_scope_intersection_falls_back_to_root_when_operation_has_no_files() {
     cli_case!({
-        tractor run "scope-intersection/intersect-fallback.yaml";
+        tractor run --config "scope-intersection/intersect-fallback.yaml";
         expect => combined "";
     })
     .in_fixture("run")
@@ -797,7 +797,7 @@ fn run_scope_intersection_fatal_when_empty() {
     // rather than silently succeeding. This holds whether the emptiness
     // came from a pattern genuinely matching nothing or from sibling
     // intersections (root ∩ operation) reducing the set to zero.
-    let result = command(["run", "scope-intersection/intersect-disjoint.yaml"])
+    let result = command(["run", "--config", "scope-intersection/intersect-disjoint.yaml"])
         .in_fixture("run")
         .fixture_prefix("")
         .assert_exit(1)
@@ -813,7 +813,7 @@ fn run_scope_intersection_fatal_when_empty() {
 #[test]
 fn run_double_star_glob_matches_recursively() {
     cli_case!({
-        tractor run "glob-double-star/check-double-star.yaml";
+        tractor run --config "glob-double-star/check-double-star.yaml";
         expect => combined "glob-double-star/config.yml:1:8: warning: debug must be disabled\n1 | debug: true\n           ^~~~\n\nglob-double-star/nested/config.yml:1:8: warning: debug must be disabled\n1 | debug: true\n           ^~~~\n\n2 warnings in 2 files";
     })
     .in_fixture("run")
@@ -824,7 +824,7 @@ fn run_double_star_glob_matches_recursively() {
 #[test]
 fn run_nested_double_star_glob_matches_nested_files() {
     cli_case!({
-        tractor run "glob-double-star/check-dir-double-star.yaml";
+        tractor run --config "glob-double-star/check-dir-double-star.yaml";
         expect => combined "glob-double-star/nested/config.yml:1:8: warning: debug must be disabled\n1 | debug: true\n           ^~~~\n\n1 warning in 1 file";
     })
     .in_fixture("run")
@@ -834,7 +834,7 @@ fn run_nested_double_star_glob_matches_nested_files() {
 
 #[test]
 fn run_absolute_cli_path_with_root_files_intersection() {
-    command(["run", "absolute-paths/check-root-files.yaml"])
+    command(["run", "--config", "absolute-paths/check-root-files.yaml"])
         .abs_arg("absolute-paths/config.yml")
         .in_fixture("run")
         .fixture_prefix("")
@@ -844,7 +844,7 @@ fn run_absolute_cli_path_with_root_files_intersection() {
 
 #[test]
 fn run_absolute_cli_path_with_per_rule_include_matches() {
-    command(["run", "absolute-paths/check-per-rule-include.yaml"])
+    command(["run", "--config", "absolute-paths/check-per-rule-include.yaml"])
         .abs_arg("absolute-paths/config.yml")
         .in_fixture("run")
         .fixture_prefix("")
@@ -854,7 +854,7 @@ fn run_absolute_cli_path_with_per_rule_include_matches() {
 
 #[test]
 fn run_absolute_cli_path_with_per_rule_exclude_filters_out() {
-    command(["run", "absolute-paths/check-per-rule-exclude.yaml"])
+    command(["run", "--config", "absolute-paths/check-per-rule-exclude.yaml"])
         .abs_arg("absolute-paths/config.yml")
         .in_fixture("run")
         .fixture_prefix("")
@@ -864,7 +864,7 @@ fn run_absolute_cli_path_with_per_rule_exclude_filters_out() {
 
 #[test]
 fn run_absolute_cli_path_with_root_exclude_filters_out() {
-    command(["run", "absolute-paths/check-root-exclude.yaml"])
+    command(["run", "--config", "absolute-paths/check-root-exclude.yaml"])
         .abs_arg("absolute-paths/config.yml")
         .in_fixture("run")
         .fixture_prefix("")
@@ -874,7 +874,7 @@ fn run_absolute_cli_path_with_root_exclude_filters_out() {
 
 #[test]
 fn run_dot_relative_cli_path_with_per_rule_include_matches() {
-    command(["run", "absolute-paths/check-per-rule-include.yaml"])
+    command(["run", "--config", "absolute-paths/check-per-rule-include.yaml"])
         .arg("./absolute-paths/config.yml")
         .in_fixture("run")
         .fixture_prefix("")
@@ -884,7 +884,7 @@ fn run_dot_relative_cli_path_with_per_rule_include_matches() {
 
 #[test]
 fn run_dot_relative_cli_path_with_per_rule_exclude_filters_out() {
-    command(["run", "absolute-paths/check-per-rule-exclude.yaml"])
+    command(["run", "--config", "absolute-paths/check-per-rule-exclude.yaml"])
         .arg("./absolute-paths/config.yml")
         .in_fixture("run")
         .fixture_prefix("")
@@ -894,7 +894,7 @@ fn run_dot_relative_cli_path_with_per_rule_exclude_filters_out() {
 
 #[test]
 fn run_dot_relative_cli_path_with_root_files_intersection() {
-    command(["run", "absolute-paths/check-root-files.yaml"])
+    command(["run", "--config", "absolute-paths/check-root-files.yaml"])
         .arg("./absolute-paths/config.yml")
         .in_fixture("run")
         .fixture_prefix("")
@@ -904,7 +904,7 @@ fn run_dot_relative_cli_path_with_root_files_intersection() {
 
 #[test]
 fn run_dot_relative_cli_path_with_root_exclude_filters_out() {
-    command(["run", "absolute-paths/check-root-exclude.yaml"])
+    command(["run", "--config", "absolute-paths/check-root-exclude.yaml"])
         .arg("./absolute-paths/config.yml")
         .in_fixture("run")
         .fixture_prefix("")
@@ -915,7 +915,7 @@ fn run_dot_relative_cli_path_with_root_exclude_filters_out() {
 #[test]
 fn run_mixed_language_rules_report_all_findings() {
     cli_case!({
-        tractor run "mixed-language/three-langs.yaml";
+        tractor run --config "mixed-language/three-langs.yaml";
         expect => {
             exit 1;
             combined "mixed-language/config.yaml:3:10: error: Debug mode must be disabled\n3 |   debug: true\n             ^~~~\n\nmixed-language/sample.js:1:1: error: TODO comment found\n1 | // TODO: Fix this code\n    ^~~~~~~~~~~~~~~~~~~~~~\n\nmixed-language/todo-doc.md:3:1: warning: TODO comment found\n3 >| <!-- TODO: Complete this section -->\n4 >| \n\n2 errors in 3 files";
@@ -929,7 +929,7 @@ fn run_mixed_language_rules_report_all_findings() {
 #[test]
 fn run_mixed_language_rules_report_javascript_and_markdown_findings() {
     cli_case!({
-        tractor run "mixed-language/mixed-rules.yaml";
+        tractor run --config "mixed-language/mixed-rules.yaml";
         expect => {
             exit 1;
             combined "mixed-language/sample.js:1:1: error: TODO comment found\n1 | // TODO: Fix this code\n    ^~~~~~~~~~~~~~~~~~~~~~\n\nmixed-language/todo-doc.md:3:1: warning: TODO comment found\n3 >| <!-- TODO: Complete this section -->\n4 >| \n\n1 error in 2 files";
@@ -943,7 +943,7 @@ fn run_mixed_language_rules_report_javascript_and_markdown_findings() {
 #[test]
 fn run_mixed_language_javascript_only_rules_skip_markdown() {
     cli_case!({
-        tractor run "mixed-language/js-only-rules.yaml";
+        tractor run --config "mixed-language/js-only-rules.yaml";
         expect => {
             exit 1;
             combined "mixed-language/sample.js:1:1: error: TODO comment found\n1 | // TODO: Fix this code\n    ^~~~~~~~~~~~~~~~~~~~~~\n\n1 error in 1 file";
@@ -957,7 +957,7 @@ fn run_mixed_language_javascript_only_rules_skip_markdown() {
 #[test]
 fn run_mixed_language_markdown_only_rules_skip_javascript() {
     cli_case!({
-        tractor run "mixed-language/md-only-rules.yaml";
+        tractor run --config "mixed-language/md-only-rules.yaml";
         expect => combined "mixed-language/todo-doc.md:3:1: warning: TODO comment found\n3 >| <!-- TODO: Complete this section -->\n4 >| \n\n1 warning in 1 file";
     })
     .in_fixture("run")
@@ -968,7 +968,7 @@ fn run_mixed_language_markdown_only_rules_skip_javascript() {
 #[test]
 fn run_mixed_language_auto_detect_uses_file_extension() {
     cli_case!({
-        tractor run "mixed-language/auto-detect.yaml";
+        tractor run --config "mixed-language/auto-detect.yaml";
         expect => {
             exit 1;
             combined "mixed-language/sample.js:1:1: error: TODO comment found\n1 | // TODO: Fix this code\n    ^~~~~~~~~~~~~~~~~~~~~~\n\n1 error in 1 file";
@@ -982,7 +982,7 @@ fn run_mixed_language_auto_detect_uses_file_extension() {
 #[test]
 fn run_mixed_language_multiple_rules_for_same_language_report_all_findings() {
     cli_case!({
-        tractor run "mixed-language/same-lang-rules.yaml";
+        tractor run --config "mixed-language/same-lang-rules.yaml";
         expect => {
             exit 1;
             combined "mixed-language/sample.js:1:1: error: TODO comment found\n1 | // TODO: Fix this code\n    ^~~~~~~~~~~~~~~~~~~~~~\n\nmixed-language/sample.js:3:5: warning: No console.log calls allowed\n3 |     console.log(\"Hello\");\n        ^~~~~~~~~~~~~~~~~~~~\n\nmixed-language/sample.js:7:5: warning: No console.log calls allowed\n7 |     console.log(\"Goodbye\");\n        ^~~~~~~~~~~~~~~~~~~~~~\n\n1 error in 1 file";
@@ -996,7 +996,7 @@ fn run_mixed_language_multiple_rules_for_same_language_report_all_findings() {
 #[test]
 fn run_mixed_language_aliases_are_resolved() {
     cli_case!({
-        tractor run "mixed-language/lang-alias.yaml";
+        tractor run --config "mixed-language/lang-alias.yaml";
         expect => {
             exit 1;
             combined "mixed-language/sample.js:1:1: error: TODO comment found\n1 | // TODO: Fix this code\n    ^~~~~~~~~~~~~~~~~~~~~~\n\n1 error in 1 file";
@@ -1010,13 +1010,131 @@ fn run_mixed_language_aliases_are_resolved() {
 #[test]
 fn run_mixed_check_and_set_succeeds_when_check_passes() {
     cli_case!({
-        tractor run "mixed-ops.yaml";
+        tractor run --config "mixed-ops.yaml";
         expect => combined "app-config.json:3:13: note: updated //database/host\nupdated 1 file";
     })
     .in_fixture("run")
     .fixture_prefix("")
     .temp_fixture()
     .strip_temp_prefix()
+    .run();
+}
+
+const DEFAULT_CONFIG_CONTENTS: &str =
+    "check:\n  files: [\"settings.yaml\"]\n  rules:\n    - id: no-debug\n      xpath: \"//debug[.='true']\"\n      reason: \"debug should be disabled\"\n      severity: error\n";
+
+const DEFAULT_CONFIG_SETTINGS: &str = "app:\n  name: myapp\n  debug: true\n";
+
+#[test]
+fn run_without_path_uses_default_tractor_yml() {
+    cli_case!({
+        tractor run;
+        expect => {
+            exit 1;
+            combined "settings.yaml:3:10: error: debug should be disabled\n3 |   debug: true\n             ^~~~\n\n1 error in 1 file";
+        }
+    })
+    .temp_fixture()
+    .seed_file("tractor.yml", DEFAULT_CONFIG_CONTENTS)
+    .seed_file("settings.yaml", DEFAULT_CONFIG_SETTINGS)
+    .strip_temp_prefix()
+    .run();
+}
+
+#[test]
+fn run_without_path_ignores_tractor_yaml() {
+    // `.yaml` is not on the default probe list — only `tractor.yml` is. Users
+    // can still point at `.yaml` explicitly, but with no path argument and no
+    // `tractor.yml`, tractor errors even if a `tractor.yaml` sits right there.
+    let result = command(["run"])
+        .temp_fixture()
+        .seed_file("tractor.yaml", DEFAULT_CONFIG_CONTENTS)
+        .seed_file("settings.yaml", DEFAULT_CONFIG_SETTINGS)
+        .assert_exit(1)
+        .capture();
+    let combined = format!("{}{}", result.stdout, result.stderr);
+    assert!(
+        combined.contains("no tractor.yml"),
+        "expected error about missing tractor.yml, got: {}",
+        combined
+    );
+}
+
+#[test]
+fn run_without_path_errors_when_no_default_exists() {
+    let result = command(["run"]).temp_fixture().assert_exit(1).capture();
+    let combined = format!("{}{}", result.stdout, result.stderr);
+    assert!(
+        combined.contains("no tractor.yml"),
+        "expected error about missing tractor.yml, got: {}",
+        combined
+    );
+}
+
+/// Source of truth for the scaffolded config — used when we need to seed a
+/// temp directory with the starter to exercise an end-to-end flow. The
+/// byte-equality check against the fixture lives in the DSL tests below via
+/// `file_snapshot`.
+const STARTER_SNAPSHOT: &str =
+    include_str!("../../tests/integration/init/tractor.yml");
+
+#[test]
+fn init_writes_the_snapshot_starter_config() {
+    cli_case!({
+        tractor init;
+        expect => {
+            stdout "created tractor.yml\nrun `tractor run` to execute it";
+            file_snapshot "tractor.yml" "init/tractor.yml";
+        }
+    })
+    .no_color(false)
+    .temp_fixture()
+    .run();
+}
+
+#[test]
+fn starter_config_flags_the_sample_rule_when_run() {
+    // The starter config deliberately scans tractor.yml itself with an xpath
+    // that matches its own rule by id. A bare `tractor run` should report a
+    // single warning pointing at the sample rule block — a self-explanatory
+    // demo of how rules map onto the YAML tree.
+    cli_case!({
+        tractor run;
+        expect => combined "tractor.yml:19:7: warning: replace this sample rule with your own checks\n19 >|     - id: sample-rule\n20  |       xpath: \"//check/rules[id='sample-rule']\"\n21  |       reason: \"replace this sample rule with your own checks\"\n22 >|       severity: warning\n\n1 warning in 1 file";
+    })
+    .temp_fixture()
+    .seed_file("tractor.yml", STARTER_SNAPSHOT)
+    .strip_temp_prefix()
+    .run();
+}
+
+#[test]
+fn init_refuses_to_overwrite_without_force() {
+    cli_case!({
+        tractor init;
+        expect => {
+            exit 1;
+            combined "cli\nfatal(cli): tractor.yml already exists — pass --force to overwrite\n1 fatal in 0 files";
+        }
+    })
+    .no_color(false)
+    .temp_fixture()
+    .seed_file("tractor.yml", "# hand-edited\n")
+    .run();
+}
+
+#[test]
+fn init_force_overwrites_existing_file() {
+    cli_case!({
+        tractor init --force;
+        expect => {
+            stdout "created tractor.yml\nrun `tractor run` to execute it";
+            file_snapshot "tractor.yml" "init/tractor.yml";
+        }
+    })
+    .no_color(false)
+    .temp_fixture()
+    .seed_file("tractor.yml", "# hand-edited\n")
     .run();
 }
 
