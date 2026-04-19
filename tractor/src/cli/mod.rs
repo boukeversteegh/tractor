@@ -128,6 +128,14 @@ When omitted, auto-selects: data for JSON/YAML, structure for everything else.")
     #[arg(long = "hook", help_heading = "Format")]
     pub hook: Option<String>,
 
+    /// Project a single report element (tree, value, source, lines, schema, count, summary, totals, results, report) [default: report]
+    #[arg(short = 'p', long = "project", help_heading = "View", value_name = "TARGET")]
+    pub project: Option<String>,
+
+    /// Emit exactly one element, bare (strips list wrappers; implies -n 1)
+    #[arg(long = "single", help_heading = "View")]
+    pub single: bool,
+
     // -- Group --
     /// Group output by dimension: none, file, command, rule (comma-separated)
     #[arg(short = 'g', long = "group", help_heading = "View")]

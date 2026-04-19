@@ -93,6 +93,12 @@ View:
       --meta
           Include metadata attributes (start/end, kind, field) in XML output
 
+  -p, --project <TARGET>
+          Project a single report element (tree, value, source, lines, schema, count, summary, totals, results, report) [default: report]
+
+      --single
+          Emit exactly one element, bare (strips list wrappers; implies -n 1)
+
   -g, --group <GROUP_BY>
           Group output by dimension: none, file, command, rule (comma-separated)
 
