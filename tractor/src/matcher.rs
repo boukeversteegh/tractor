@@ -362,6 +362,20 @@ pub fn project_report(report: &mut Report, view: &ViewSet) {
     }
 }
 
+/// Populate `report.schema` with the opaque text rendering of all matched
+/// node trees. Called when the user asked for schema via `-v schema` or
+/// `-p schema` so the short-circuit in query.rs stays removed: schema flows
+/// through the normal report pipeline as addressable data.
+pub fn populate_schema(report: &mut Report, depth: Option<usize>, use_color: bool) {
+    let mut collector = tractor::SchemaCollector::new();
+    for m in report.all_matches() {
+        if let Some(ref node) = m.tree {
+            collector.collect_from_xml_node(node);
+        }
+    }
+    report.schema = Some(collector.format(depth, use_color));
+}
+
 /// Apply a CLI-level message template (`-m`) to all matches in a report.
 ///
 /// This overwrites any existing message (e.g. from rule-level templates).

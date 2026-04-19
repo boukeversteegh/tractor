@@ -1,5 +1,5 @@
 use serde_json::{json, Value};
-use tractor::{report::{Report, ReportMatch, ResultItem}, normalize_path, xml_node_to_json, RenderOptions};
+use tractor::{report::{Report, ReportMatch, ResultItem, Summary}, normalize_path, xml_node_to_json, RenderOptions};
 use super::options::{ViewField, ViewSet};
 use super::shared::{render_fields_for_match, should_emit_command, should_emit_file, should_emit_rule_id, should_show_totals};
 
@@ -7,7 +7,11 @@ pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderO
     let mut root = serde_json::Map::new();
 
     if should_show_totals(report, view) {
-        emit_report_metadata(&mut root, report);
+        emit_report_summary(&mut root, report);
+    }
+
+    if let Some(ref schema) = report.schema {
+        root.insert("schema".into(), json!(schema));
     }
 
     // Top-level captured outputs — honest view of the report model.
@@ -32,6 +36,41 @@ pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderO
     }
 
     serde_json::to_string_pretty(&Value::Object(root)).unwrap_or_else(|_| "{}".to_string())
+}
+
+/// Build the `{success,totals,expected,query}` sub-object that `-p summary`
+/// projects to. Shared by the full-report renderer (emits it under `summary`)
+/// and the projection renderer (emits it bare at the document root).
+pub fn summary_to_json(summary: &Summary<'_>) -> Value {
+    let mut obj = serde_json::Map::new();
+    if let Some(success) = summary.success {
+        obj.insert("success".into(), json!(success));
+    }
+    if let Some(totals) = summary.totals {
+        obj.insert("totals".into(), totals_to_json(totals));
+    }
+    if let Some(expected) = summary.expected {
+        obj.insert("expected".into(), json!(expected));
+    }
+    if let Some(query) = summary.query {
+        obj.insert("query".into(), json!(query));
+    }
+    Value::Object(obj)
+}
+
+/// Serialize `Totals` as a JSON object, skipping zero-valued fields the same
+/// way the serde derive on `Totals` does.
+pub fn totals_to_json(totals: &tractor::report::Totals) -> Value {
+    let mut t = serde_json::Map::new();
+    t.insert("results".into(), json!(totals.results));
+    t.insert("files".into(),   json!(totals.files));
+    if totals.fatals > 0    { t.insert("fatals".into(), json!(totals.fatals)); }
+    if totals.errors > 0    { t.insert("errors".into(), json!(totals.errors)); }
+    if totals.warnings > 0  { t.insert("warnings".into(), json!(totals.warnings)); }
+    if totals.infos > 0     { t.insert("infos".into(), json!(totals.infos)); }
+    if totals.updated > 0   { t.insert("updated".into(), json!(totals.updated)); }
+    if totals.unchanged > 0 { t.insert("unchanged".into(), json!(totals.unchanged)); }
+    Value::Object(t)
 }
 
 /// Serialize a list of captured outputs as a JSON array of objects.
@@ -66,29 +105,14 @@ fn group_outputs_to_json(
     ("outputs", outputs_to_json(outputs))
 }
 
-/// Emit success, totals, expected, query as top-level fields.
-pub fn emit_report_metadata(root: &mut serde_json::Map<String, Value>, report: &Report) {
-    if let Some(success) = report.success {
-        root.insert("success".into(), json!(success));
+/// Emit the `summary` object (containing success/totals/expected/query) on the
+/// given report root. Nothing is emitted when the summary is empty.
+pub fn emit_report_summary(root: &mut serde_json::Map<String, Value>, report: &Report) {
+    let summary = Summary::from_report(report);
+    if summary.is_empty() {
+        return;
     }
-    if let Some(ref totals) = report.totals {
-        let mut t = serde_json::Map::new();
-        t.insert("results".into(), json!(totals.results));
-        t.insert("files".into(),   json!(totals.files));
-        if totals.fatals > 0 { t.insert("fatals".into(), json!(totals.fatals)); }
-        if totals.errors > 0 { t.insert("errors".into(), json!(totals.errors)); }
-        if totals.warnings > 0 { t.insert("warnings".into(), json!(totals.warnings)); }
-        if totals.infos > 0 { t.insert("infos".into(), json!(totals.infos)); }
-        if totals.updated > 0 { t.insert("updated".into(), json!(totals.updated)); }
-        if totals.unchanged > 0 { t.insert("unchanged".into(), json!(totals.unchanged)); }
-        root.insert("totals".into(), Value::Object(t));
-    }
-    if let Some(ref expected) = report.expected {
-        root.insert("expected".into(), json!(expected));
-    }
-    if let Some(ref query) = report.query {
-        root.insert("query".into(), json!(query));
-    }
+    root.insert("summary".into(), summary_to_json(&summary));
 }
 
 /// Render a results list as JSON.
@@ -116,7 +140,7 @@ pub fn render_results_json(
                 if let Some(ref file) = sub.file { obj.insert("file".into(), json!(file)); }
                 if let Some(ref command) = sub.command { obj.insert("command".into(), json!(command)); }
                 if let Some(ref rule_id) = sub.rule_id { obj.insert("rule_id".into(), json!(rule_id)); }
-                emit_report_metadata(&mut obj, sub);
+                emit_report_summary(&mut obj, sub);
                 // Sub-grouping dimension (before nested results)
                 if let Some(ref group) = sub.group {
                     obj.insert("group".into(), json!(group));
@@ -310,12 +334,14 @@ mod tests {
             totals: None,
             expected: None,
             query: None,
+            schema: None,
             outputs: vec![],
             results: vec![ResultItem::Group(Box::new(Report {
                 success: None,
                 totals: None,
                 expected: None,
                 query: None,
+                schema: None,
                 outputs: vec![tractor::report::ReportOutput {
                     file: None,
                     content: "hello\n".to_string(),

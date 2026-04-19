@@ -13,7 +13,7 @@ use crate::cli::SharedArgs;
 use crate::executor::{self, ExecuteOptions, Operation};
 use crate::cli::context::RunContext;
 use crate::format::{ViewField, GroupDimension, render_report};
-use crate::matcher::{project_report, apply_message_template};
+use crate::matcher::{project_report, apply_message_template, populate_schema};
 
 /// Canonical file name tractor probes when `--config` is not passed.
 ///
@@ -115,6 +115,10 @@ pub fn run_from_config(params: ConfigRunParams) -> Result<(), Box<dyn std::error
     }
 
     let mut report = builder.build();
+
+    if ctx.view.has(ViewField::Schema) {
+        populate_schema(&mut report, ctx.schema_depth(), ctx.use_color);
+    }
 
     if let Some(ref template) = ctx.message {
         apply_message_template(&mut report, template);

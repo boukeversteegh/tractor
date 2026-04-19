@@ -64,7 +64,7 @@ use crate::executor::{self, CheckOperation, ExecuteOptions, Operation};
 use crate::cli::context::RunContext;
 use crate::input::InputMode;
 use crate::format::{ViewField, GroupDimension, render_report};
-use crate::matcher::{project_report, apply_message_template};
+use crate::matcher::{project_report, apply_message_template, populate_schema};
 use super::config::{run_from_config, ConfigRunParams};
 
 pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
@@ -154,6 +154,10 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
     // Single-xpath check: don't expose internal rule ID in output.
     for m in report.all_matches_mut() {
         m.rule_id = None;
+    }
+
+    if ctx.view.has(ViewField::Schema) {
+        populate_schema(&mut report, ctx.schema_depth(), ctx.use_color);
     }
 
     // Apply CLI-level message template (-m) if provided.

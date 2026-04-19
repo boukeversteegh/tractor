@@ -6,15 +6,18 @@ use tractor::{
 };
 use crate::cli::SharedArgs;
 use crate::input::{InputMode, resolve_input};
-use crate::format::{OutputFormat, GroupDimension, ViewField, ViewSet, parse_view_set, parse_group_by};
+use crate::format::{OutputFormat, GroupDimension, ViewField, ViewSet, parse_group_by, ProjectionPlan};
 use crate::format::options::HookType;
 
 pub struct RunContext {
     pub xpath: Option<NormalizedXpath>,
     /// Output format (-f).
     pub output_format: OutputFormat,
-    /// View field selection (-v).
+    /// View field selection (-v) — normalized against -p's replacement rule.
     pub view: ViewSet,
+    /// Normalized projection plan: which element of the report to emit, whether
+    /// to flatten list wrappers (--single), and which view fields were dropped.
+    pub projection: ProjectionPlan,
     pub use_color: bool,
     /// Interpolated message template from `-m`, if provided.
     pub message: Option<String>,
@@ -67,11 +70,26 @@ impl RunContext {
             }
         };
 
-        let view = if let Some(s) = user_view {
-            parse_view_set(s, default_view)?
-        } else {
-            ViewSet::from_fields(default_view.to_vec())
-        };
+        // Normalize -p/--single/-v into a single ProjectionPlan. The plan owns
+        // warnings for discarded view fields and the final (replaced) view set.
+        let plan = ProjectionPlan::resolve(
+            shared.project.as_deref(),
+            shared.single,
+            user_view,
+            default_view,
+            message.as_deref(),
+            shared.limit,
+        )?;
+
+        // Emit any warnings on stderr now — one place, right after CLI parsing.
+        for w in &plan.warnings {
+            eprintln!("{}", w);
+        }
+
+        let view = plan.view.clone();
+        // --single implies -n 1 unless explicitly redundant.
+        let effective_limit = if shared.single { Some(1) } else { shared.limit };
+
         let use_color     = if shared.no_color { false } else { should_use_color(&shared.color) };
         let input         = resolve_input(shared, files, content)?;
 
@@ -100,10 +118,11 @@ impl RunContext {
             xpath,
             output_format,
             view,
+            projection: plan,
             use_color,
             message,
             input,
-            limit: shared.limit,
+            limit: effective_limit,
             depth: shared.depth,
             parse_depth: shared.parse_depth,
             meta: shared.meta,

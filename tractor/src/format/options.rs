@@ -446,4 +446,350 @@ pub fn parse_group_by(s: &str) -> Result<Vec<GroupDimension>, String> {
     Ok(dims)
 }
 
+// ---------------------------------------------------------------------------
+// Projection — `-p` / `--project` selects which element of the report to emit.
+// ---------------------------------------------------------------------------
 
+/// Which element of the report the user wants emitted.
+///
+/// Every variant names a real element in the report shape (`<report>/<summary>`,
+/// `<report>/<results>`, `<report>/<schema>`, `<report>/<results>/<match>/<tree>`, …).
+/// `-p report` is the default — emit the whole envelope.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Projection {
+    /// Full report envelope (default when `-p` is omitted).
+    Report,
+    /// The `<results>` list — sequence of matches.
+    Results,
+    /// The `<summary>` container.
+    Summary,
+    /// The `<totals>` element inside summary.
+    Totals,
+    /// The `<schema>` element.
+    Schema,
+    /// Scalar match count (sugar alias for `/summary/totals/results`).
+    Count,
+    /// `<tree>` elements, one per match.
+    Tree,
+    /// `<value>` elements, one per match.
+    Value,
+    /// `<source>` elements, one per match.
+    Source,
+    /// `<lines>` elements, one per match.
+    Lines,
+}
+
+/// Category of a projection — drives `-v` interaction.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ProjectionKind {
+    /// One view-level field per match: `-v` is **replaced** with `[that field]`.
+    /// Members: tree, value, source, lines, schema, count.
+    ViewField,
+    /// Full-report shapes: `-v` is **respected** (drives per-match fields).
+    /// Members: results, report.
+    Structural,
+    /// Summary/totals: `-v` is **irrelevant** (no per-match rendering).
+    /// Members: summary, totals.
+    Metadata,
+}
+
+impl Projection {
+    /// Canonical CLI name.
+    pub fn name(&self) -> &'static str {
+        match self {
+            Projection::Report  => "report",
+            Projection::Results => "results",
+            Projection::Summary => "summary",
+            Projection::Totals  => "totals",
+            Projection::Schema  => "schema",
+            Projection::Count   => "count",
+            Projection::Tree    => "tree",
+            Projection::Value   => "value",
+            Projection::Source  => "source",
+            Projection::Lines   => "lines",
+        }
+    }
+
+    /// One-line description for help output.
+    pub fn description(&self) -> &'static str {
+        match self {
+            Projection::Report  => "Full report envelope (default)",
+            Projection::Results => "Just the <results> list (respects -v)",
+            Projection::Summary => "Just the <summary> container",
+            Projection::Totals  => "Just the <totals> element",
+            Projection::Schema  => "Just the <schema> element (triggers schema collection)",
+            Projection::Count   => "Scalar match count",
+            Projection::Tree    => "Per-match <tree> elements",
+            Projection::Value   => "Per-match <value> elements",
+            Projection::Source  => "Per-match <source> elements",
+            Projection::Lines   => "Per-match <lines> elements",
+        }
+    }
+
+    pub const ALL: &[Projection] = &[
+        Projection::Report,  Projection::Results, Projection::Summary, Projection::Totals,
+        Projection::Schema,  Projection::Count,   Projection::Tree,    Projection::Value,
+        Projection::Source,  Projection::Lines,
+    ];
+
+    pub fn from_str(s: &str) -> Result<Self, String> {
+        match s {
+            "report"  => Ok(Projection::Report),
+            "results" => Ok(Projection::Results),
+            "summary" => Ok(Projection::Summary),
+            "totals"  => Ok(Projection::Totals),
+            "schema"  => Ok(Projection::Schema),
+            "count"   => Ok(Projection::Count),
+            "tree" | "ast" => Ok(Projection::Tree),
+            "value"   => Ok(Projection::Value),
+            "source"  => Ok(Projection::Source),
+            "lines"   => Ok(Projection::Lines),
+            _ => {
+                let names: Vec<&str> = Projection::ALL.iter().map(|p| p.name()).collect();
+                Err(format!(
+                    "invalid -p / --project value '{}'. Valid values: {}",
+                    s, names.join(", "),
+                ))
+            }
+        }
+    }
+
+    /// Which category of interaction this projection has with `-v`.
+    pub fn kind(&self) -> ProjectionKind {
+        match self {
+            Projection::Tree | Projection::Value | Projection::Source
+            | Projection::Lines | Projection::Schema | Projection::Count => ProjectionKind::ViewField,
+            Projection::Results | Projection::Report => ProjectionKind::Structural,
+            Projection::Summary | Projection::Totals => ProjectionKind::Metadata,
+        }
+    }
+
+    /// When this projection corresponds to a single `ViewField`, return it —
+    /// used to replace the view set under the `-v` replacement rule. `count`
+    /// is sugar for `/summary/totals/results` and maps to `ViewField::Count`.
+    pub fn as_view_field(&self) -> Option<ViewField> {
+        match self {
+            Projection::Tree   => Some(ViewField::Tree),
+            Projection::Value  => Some(ViewField::Value),
+            Projection::Source => Some(ViewField::Source),
+            Projection::Lines  => Some(ViewField::Lines),
+            Projection::Schema => Some(ViewField::Schema),
+            Projection::Count  => Some(ViewField::Count),
+            _ => None,
+        }
+    }
+
+    /// True when the projection conceptually returns a sequence of elements
+    /// (one per match). `--single` applies only to these.
+    pub fn is_sequence(&self) -> bool {
+        matches!(
+            self,
+            Projection::Tree | Projection::Value | Projection::Source
+            | Projection::Lines | Projection::Results
+        )
+    }
+
+    /// Help text listing all projection values with descriptions.
+    pub fn help_text() -> String {
+        let max = Projection::ALL.iter().map(|p| p.name().len()).max().unwrap_or(0);
+        let mut lines = Vec::new();
+        for p in Projection::ALL {
+            lines.push(format!("  {:width$}  {}", p.name(), p.description(), width = max));
+        }
+        lines.join("\n")
+    }
+}
+
+/// A normalized projection plan — the single source of truth for output shape.
+///
+/// Computed once from `(user projection, --single, -v, -m, -n)` at the CLI
+/// boundary, so downstream stages never re-derive "what did the user mean".
+#[derive(Debug, Clone)]
+pub struct ProjectionPlan {
+    pub projection: Projection,
+    /// True when `--single` is in effect (strip list wrappers, take first match).
+    pub single: bool,
+    /// Final view set after the replacement rule. This is the set of per-match
+    /// fields downstream renderers should consume for structural projections;
+    /// for view-level projections it has been replaced by `[that field]`.
+    pub view: ViewSet,
+    /// Warnings to emit on stderr for discarded view fields. Accumulated during
+    /// normalization so later stages don't have to recompute which fields the
+    /// user asked for that won't appear.
+    pub warnings: Vec<String>,
+    /// True when `-v` was explicitly set by the user (not the mode default).
+    /// Used to suppress "redundant overlap" warnings.
+    pub view_was_explicit: bool,
+    /// True when `-m` (message template) was explicitly set. Used for warnings.
+    pub message_was_explicit: bool,
+}
+
+impl ProjectionPlan {
+    /// Default plan — no projection override, no `--single`, keep the default view.
+    pub fn default_with_view(view: ViewSet) -> Self {
+        ProjectionPlan {
+            projection: Projection::Report,
+            single: false,
+            view,
+            warnings: Vec::new(),
+            view_was_explicit: false,
+            message_was_explicit: false,
+        }
+    }
+
+    /// Normalize `-p`, `--single`, and `-v`/`-m` into a single plan.
+    ///
+    /// Rules (from design):
+    /// - `-p X` (view-level) replaces the view set with exactly `[X]`.
+    /// - `-p X` (structural) keeps the user's view set intact.
+    /// - `-p X` (metadata) leaves the view set alone but warns if the user
+    ///   explicitly requested any per-match view field.
+    /// - `--single` alone (no `-p`) implies `-p results`.
+    /// - `--single -n N` (for N != 1) is a CLI error — contradictory bounds.
+    /// - `--single` on a singular projection is a no-op with a warning.
+    pub fn resolve(
+        projection_str: Option<&str>,
+        single: bool,
+        user_view: Option<&str>,
+        default_view: &[ViewField],
+        user_message: Option<&str>,
+        limit: Option<usize>,
+    ) -> Result<Self, String> {
+        let view_was_explicit = user_view.is_some();
+        let message_was_explicit = user_message.is_some();
+
+        // `--single` is incompatible with `-n` when they set different bounds.
+        if single {
+            match limit {
+                Some(1) | None => {}
+                Some(n) => {
+                    return Err(format!(
+                        "--single is incompatible with -n {n}: --single takes the first match, \
+                         but -n {n} asks for {n}. Use `-n 1` or drop `--single`.",
+                    ));
+                }
+            }
+        }
+
+        // Resolve the user's base view set (before projection replacement).
+        let base_view = if let Some(s) = user_view {
+            parse_view_set(s, default_view)?
+        } else {
+            ViewSet::from_fields(default_view.to_vec())
+        };
+
+        // --single alone implies -p results (emitting the whole report with a
+        // single match bare would be a no-op — never what the user meant).
+        let projection = match projection_str {
+            Some(s) => Projection::from_str(s)?,
+            None if single => Projection::Results,
+            None => Projection::Report,
+        };
+
+        let mut warnings: Vec<String> = Vec::new();
+        let view = compute_view(
+            projection,
+            base_view.clone(),
+            default_view,
+            view_was_explicit,
+            message_was_explicit,
+            &mut warnings,
+        );
+
+        // `--single` on a singular projection is a no-op — warn so the user
+        // knows the flag is doing nothing, but keep producing output.
+        if single && !projection.is_sequence() {
+            warnings.push(format!(
+                "warning: --single has no effect with -p {name} ({name} is already singular). \
+                 Drop --single.",
+                name = projection.name(),
+            ));
+        }
+
+        Ok(ProjectionPlan {
+            projection,
+            single,
+            view,
+            warnings,
+            view_was_explicit,
+            message_was_explicit,
+        })
+    }
+}
+
+/// Apply the `-v` replacement rule and build up the final view set.
+///
+/// Warnings are appended to `out_warnings` so the caller can emit them on
+/// stderr after normalization completes. Centralizing the logic here keeps
+/// the policy in one place: renderers never have to recompute "which fields
+/// are dropped under this projection".
+fn compute_view(
+    projection: Projection,
+    base_view: ViewSet,
+    _default_view: &[ViewField],
+    view_was_explicit: bool,
+    message_was_explicit: bool,
+    out_warnings: &mut Vec<String>,
+) -> ViewSet {
+    match projection.kind() {
+        ProjectionKind::Structural => {
+            // Respect -v — every explicitly-requested field appears in each match.
+            base_view
+        }
+        ProjectionKind::ViewField => {
+            let replacement_field = projection.as_view_field()
+                .expect("view-level projection must map to a ViewField");
+            let replaced = ViewSet::single(replacement_field);
+
+            // Warn when explicit -v contained anything other than the replacement.
+            if view_was_explicit {
+                let dropped: Vec<&'static str> = base_view.fields.iter()
+                    .filter(|f| **f != replacement_field)
+                    .map(|f| f.name())
+                    .collect();
+                if !dropped.is_empty() {
+                    out_warnings.push(format!(
+                        "warning: -v fields {{{fields}}} were discarded because \
+                         -p {proj} replaces the view set.\n  \
+                         To keep -v intact, use `-p results` (respects -v) instead of `-p {proj}`.",
+                        fields = dropped.join(", "),
+                        proj = projection.name(),
+                    ));
+                }
+            }
+            if message_was_explicit {
+                out_warnings.push(format!(
+                    "warning: -m message template has no effect with -p {proj} \
+                     ({proj} replaces the view set).",
+                    proj = projection.name(),
+                ));
+            }
+            replaced
+        }
+        ProjectionKind::Metadata => {
+            // Leave the view alone, but warn: explicit per-match fields have
+            // no way to surface in summary/totals output.
+            if view_was_explicit {
+                let dropped: Vec<&'static str> = base_view.fields.iter()
+                    .map(|f| f.name())
+                    .collect();
+                if !dropped.is_empty() {
+                    out_warnings.push(format!(
+                        "warning: -v fields {{{fields}}} were discarded because \
+                         -p {proj} has no per-match rendering.",
+                        fields = dropped.join(", "),
+                        proj = projection.name(),
+                    ));
+                }
+            }
+            if message_was_explicit {
+                out_warnings.push(format!(
+                    "warning: -m message template has no effect with -p {proj} \
+                     (no per-match rendering).",
+                    proj = projection.name(),
+                ));
+            }
+            base_view
+        }
+    }
+}

@@ -9,7 +9,7 @@
 //!                → [stage 3: output]        → stdout
 
 use serde::{Serialize, Serializer};
-use serde::ser::SerializeMap;
+use serde::ser::{SerializeMap, SerializeStruct};
 
 use crate::normalized_xpath::NormalizedXpath;
 use crate::output::{normalize_path, xml_node_to_string};
@@ -269,52 +269,106 @@ impl ResultItem {
 ///
 /// A Report is a recursive group structure. The root and sub-groups share
 /// the same type. `results` contains either leaf matches or sub-groups.
-#[derive(Debug, Clone, Serialize)]
+///
+/// Internally the summary fields (`success`, `totals`, `expected`, `query`)
+/// are kept flat for ergonomic access. On the serialized boundary they are
+/// nested under a `summary` object so that `-p summary` names a real element.
+#[derive(Debug, Clone)]
 pub struct Report {
     /// Did the command succeed? False if check errors, test failures, or set drift.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub success: Option<bool>,
 
     /// Numeric aggregates (result count, file count, command-specific counts).
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub totals: Option<Totals>,
 
     /// Test-specific: the expected value string (`none`, `some`, or a number).
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub expected: Option<String>,
 
     /// The XPath query as received by tractor (set when `-v query` is used).
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub query: Option<NormalizedXpath>,
+
+    /// Structural overview of matched nodes, captured as opaque text so `-p schema`
+    /// has a concrete element to project. Populated when `-v schema` or `-p schema`
+    /// is requested; otherwise `None` so schema computation stays opt-in.
+    pub schema: Option<String>,
 
     /// Captured output payloads produced by this report's operation (or,
     /// for sub-groups, payloads that were distributed down to this group
     /// by `with_grouping`). Distinct from diagnostic matches.
-    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub outputs: Vec<ReportOutput>,
 
-    // ---- New unified fields (Step 3) ----
-
     /// Unified results list. Contains either leaf matches or sub-groups.
-    #[serde(skip)]
     pub results: Vec<ResultItem>,
 
     /// What the children in `results` are grouped by ("file", "command", "rule_id").
     /// None when `results` contains ungrouped leaf matches.
-    #[serde(skip)]
     pub group: Option<String>,
 
     /// Hoisted file path (when this Report is a file group).
-    #[serde(skip)]
     pub file: Option<String>,
 
     /// Hoisted command (when this Report is a command group).
-    #[serde(skip)]
     pub command: Option<String>,
 
     /// Hoisted rule_id (when this Report is a rule group).
-    #[serde(skip)]
     pub rule_id: Option<String>,
+}
+
+/// The set of top-level summary fields, nested under `summary` in serialized
+/// output. Used as the source of truth for the `-p summary` projection so the
+/// `<summary>` element shape is owned by one place.
+#[derive(Debug, Clone, Serialize)]
+pub struct Summary<'a> {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub success: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub totals: Option<&'a Totals>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expected: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub query: Option<&'a NormalizedXpath>,
+}
+
+impl<'a> Summary<'a> {
+    pub fn from_report(report: &'a Report) -> Self {
+        Summary {
+            success: report.success,
+            totals: report.totals.as_ref(),
+            expected: report.expected.as_deref(),
+            query: report.query.as_ref(),
+        }
+    }
+
+    /// True when none of the summary fields are populated — lets renderers skip
+    /// emitting an empty `<summary>` element in query mode without a verdict.
+    pub fn is_empty(&self) -> bool {
+        self.success.is_none()
+            && self.totals.is_none()
+            && self.expected.is_none()
+            && self.query.is_none()
+    }
+}
+
+impl Serialize for Report {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let summary = Summary::from_report(self);
+        let has_summary = !summary.is_empty();
+        let has_schema = self.schema.is_some();
+        let has_outputs = !self.outputs.is_empty();
+
+        let field_count = has_summary as usize + has_schema as usize + has_outputs as usize;
+        let mut st = serializer.serialize_struct("Report", field_count)?;
+        if has_summary {
+            st.serialize_field("summary", &summary)?;
+        }
+        if let Some(ref schema) = self.schema {
+            st.serialize_field("schema", schema)?;
+        }
+        if has_outputs {
+            st.serialize_field("outputs", &self.outputs)?;
+        }
+        st.end()
+    }
 }
 
 impl Report {
@@ -452,6 +506,7 @@ impl Report {
             totals: None,
             expected: None,
             query: None,
+            schema: None,
             outputs: vec![],
             results: vec![],
             group: None,
@@ -683,6 +738,7 @@ impl ReportBuilder {
             totals: Some(totals),
             expected: self.expected,
             query: self.query,
+            schema: None,
             outputs: self.outputs,
             results,
             group: None,
@@ -766,12 +822,12 @@ mod tests {
         let json = report.to_json();
         let v: serde_json::Value = serde_json::from_str(&json).unwrap();
 
-        // Totals + passed
-        assert_eq!(v["success"], false);
-        assert_eq!(v["totals"]["results"], 2);
-        assert_eq!(v["totals"]["files"], 2);
-        assert_eq!(v["totals"]["errors"], 1);
-        assert_eq!(v["totals"]["warnings"], 1);
+        // Summary fields are nested under /summary so `-p summary` can project them.
+        assert_eq!(v["summary"]["success"], false);
+        assert_eq!(v["summary"]["totals"]["results"], 2);
+        assert_eq!(v["summary"]["totals"]["files"], 2);
+        assert_eq!(v["summary"]["totals"]["errors"], 1);
+        assert_eq!(v["summary"]["totals"]["warnings"], 1);
 
         // Matches (via all_matches helper since results is the sole storage)
         let matches = report.all_matches();
@@ -790,8 +846,8 @@ mod tests {
         let json = report.to_json();
         let v: serde_json::Value = serde_json::from_str(&json).unwrap();
 
-        assert_eq!(v["success"], true);
-        assert_eq!(v["expected"], "some");
+        assert_eq!(v["summary"]["success"], true);
+        assert_eq!(v["summary"]["expected"], "some");
         // No reason/severity on plain match
         let matches = report.all_matches();
         assert_eq!(matches.len(), 1);

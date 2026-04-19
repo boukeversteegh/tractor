@@ -1,14 +1,18 @@
-use serde_json::Value;
+use serde_json::{json, Value};
 use tractor::{report::Report, RenderOptions};
 use super::options::{ViewSet};
-use super::json::{emit_report_metadata, outputs_to_json, render_results_json};
+use super::json::{emit_report_summary, outputs_to_json, render_results_json};
 use super::shared::should_show_totals;
 
 pub fn render_yaml_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, dimensions: &[&str]) -> String {
     let mut root = serde_json::Map::new();
 
     if should_show_totals(report, view) {
-        emit_report_metadata(&mut root, report);
+        emit_report_summary(&mut root, report);
+    }
+
+    if let Some(ref schema) = report.schema {
+        root.insert("schema".into(), json!(schema));
     }
 
     if !report.outputs.is_empty() {

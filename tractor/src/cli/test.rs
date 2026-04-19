@@ -44,7 +44,7 @@ use crate::executor::{self, ExecuteOptions, Operation, TestOperation, TestAssert
 use crate::cli::context::RunContext;
 use crate::input::InputMode;
 use crate::format::{ViewField, TestRenderOptions, render_report};
-use crate::matcher::project_report;
+use crate::matcher::{project_report, populate_schema};
 use super::config::{run_from_config, ConfigRunParams};
 
 pub mod test_colors {
@@ -132,6 +132,10 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
     // Set expected value for test summary rendering (test-mode only, not shared with run mode)
     builder.set_expected(expect.clone());
     let mut report = builder.build();
+
+    if ctx.view.has(ViewField::Schema) {
+        populate_schema(&mut report, ctx.schema_depth(), ctx.use_color);
+    }
 
     project_report(&mut report, &ctx.view);
     let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();

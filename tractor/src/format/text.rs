@@ -20,6 +20,25 @@ use super::shared::{should_show_totals, render_fields_for_match};
 /// Text is human-readable — grouping affects display structure but matches
 /// are rendered with inherited file context from groups, not field omission.
 pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, _dimensions: &[&str]) -> String {
+    // Preserve the bare-scalar UX for `-v count` (today's behavior). When the
+    // user's view is exactly `{count}`, emit just the number — that's the same
+    // contract the removed count short-circuit honored, but now via the normal
+    // render path instead of a pre-renderer bypass.
+    if view.fields.len() == 1 && view.fields[0] == ViewField::Count {
+        let n = report.totals.as_ref().map(|t| t.results).unwrap_or(0);
+        return format!("{}\n", n);
+    }
+
+    // `-v schema` on text: emit the report-level schema bare. Preserves the
+    // pre-refactor short-circuit UX via the unified render path.
+    if view.fields.len() == 1 && view.fields[0] == ViewField::Schema {
+        let mut out = report.schema.clone().unwrap_or_default();
+        if !out.is_empty() && !out.ends_with('\n') {
+            out.push('\n');
+        }
+        return out;
+    }
+
     let mut out = String::new();
     let mut source_cache: HashMap<String, Option<String>> = HashMap::new();
 
@@ -447,6 +466,7 @@ mod tests {
             }),
             expected: None,
             query: None,
+            schema: None,
             outputs: vec![],
             results: vec![ResultItem::Match(ReportMatch {
                 file: "app-config.json".to_string(),

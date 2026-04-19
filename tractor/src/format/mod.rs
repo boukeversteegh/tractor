@@ -6,9 +6,10 @@ pub mod json;
 pub mod yaml;
 pub mod text;
 pub mod claude_code;
+pub mod project;
 mod shared;
 
-pub use options::{OutputFormat, GroupDimension, ViewField, ViewSet, parse_view_set, parse_group_by};
+pub use options::{OutputFormat, GroupDimension, ViewField, ViewSet, parse_view_set, parse_group_by, Projection, ProjectionKind, ProjectionPlan};
 pub use gcc::{render_gcc, render_gcc_report_with_template};
 pub use github::render_github;
 pub use xml::render_xml_report;
@@ -50,8 +51,28 @@ pub fn render_report(
         }
     }
 
-    // Standard format dispatch — same for all report types.
     let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
+
+    // Projection dispatch — `-p report` (the default) keeps the existing
+    // full-envelope path; any other projection routes through `project::`
+    // so shape decisions stay in one place.
+    if ctx.projection.projection != options::Projection::Report {
+        print!("{}", project::render_projected(
+            report,
+            ctx.projection.projection,
+            ctx.projection.single,
+            &ctx.view,
+            &ctx.render_options(),
+            ctx.output_format,
+            &dims,
+        ));
+        if report.success == Some(false) {
+            return Err(Box::new(crate::SilentExit));
+        }
+        return Ok(());
+    }
+
+    // Standard format dispatch — same for all report types.
     match ctx.output_format {
         OutputFormat::Json   => print!("{}", render_json_report(report, &ctx.view, &ctx.render_options(), &dims)),
         OutputFormat::Yaml   => print!("{}", render_yaml_report(report, &ctx.view, &ctx.render_options(), &dims)),

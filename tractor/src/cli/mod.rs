@@ -111,6 +111,16 @@ When omitted, auto-selects: data for JSON/YAML, structure for everything else.")
     #[arg(long = "meta", help_heading = "View")]
     pub meta: bool,
 
+    /// Project output to a specific report element: report, results, summary,
+    /// totals, schema, count, tree, value, source, lines
+    #[arg(short = 'p', long = "project", value_name = "ELEM", help_heading = "View")]
+    pub project: Option<String>,
+
+    /// Emit exactly one element bare (no list wrapper, first match only).
+    /// Valid only with sequence projections (tree, value, source, lines, results).
+    #[arg(long = "single", help_heading = "View")]
+    pub single: bool,
+
     // -- Format --
     /// Disable pretty printing (shows XML without formatting, as used by XPath)
     #[arg(long = "no-pretty", help_heading = "Format")]

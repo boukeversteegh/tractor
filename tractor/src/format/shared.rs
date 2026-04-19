@@ -10,11 +10,15 @@ pub fn to_absolute_path(path: &str) -> String {
 /// Whether totals/metadata should be shown for this report.
 /// Always shown when the report has a verdict (success is Some).
 /// For query reports (no verdict), only shown if explicitly requested via view.
+///
+/// `-v count` is treated like `-v totals` — both say "I want to see the totals
+/// block in the envelope". For a bare-scalar count without the envelope, users
+/// write `-p count` instead (post-short-circuit removal).
 pub fn should_show_totals(report: &tractor::report::Report, view: &ViewSet) -> bool {
     if report.success.is_some() {
         true
     } else {
-        view.has(ViewField::Totals) || view.has(ViewField::Query)
+        view.has(ViewField::Totals) || view.has(ViewField::Query) || view.has(ViewField::Count)
     }
 }
 
