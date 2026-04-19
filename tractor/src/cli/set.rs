@@ -139,7 +139,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
         &[ViewField::File, ViewField::Line, ViewField::Status, ViewField::Reason]
     };
 
-    let ctx = RunContext::build(
+    let mut ctx = RunContext::build(
         &args.shared,
         files,
         args.shared.xpath.clone(),
@@ -151,6 +151,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
         false,
         &[GroupDimension::File],
     )?;
+    ctx.plan.flush_warnings();
 
     let mappings = normalize_set_mappings(
         ctx.xpath.as_ref(),

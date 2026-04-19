@@ -5,6 +5,7 @@ use tractor::{
     TreeMode,
 };
 use crate::cli::SharedArgs;
+use crate::cli::projection::{ProjectionInputs, ProjectionPlan};
 use crate::input::{InputMode, resolve_input};
 use crate::format::{OutputFormat, GroupDimension, ViewField, ViewSet, parse_view_set, parse_group_by};
 use crate::format::options::HookType;
@@ -13,12 +14,15 @@ pub struct RunContext {
     pub xpath: Option<NormalizedXpath>,
     /// Output format (-f).
     pub output_format: OutputFormat,
-    /// View field selection (-v).
+    /// View field selection (-v), with `-p` replacement already applied.
+    /// Mirror of `plan.effective_view` kept for the many downstream
+    /// callers that read `ctx.view` directly.
     pub view: ViewSet,
     pub use_color: bool,
     /// Interpolated message template from `-m`, if provided.
     pub message: Option<String>,
     pub input: InputMode,
+    /// Match limit (`-n`), reconciled with `--single`. Mirror of `plan.limit`.
     pub limit: Option<usize>,
     pub depth: Option<usize>,
     pub parse_depth: Option<usize>,
@@ -33,6 +37,9 @@ pub struct RunContext {
     pub group_by: Vec<GroupDimension>,
     /// Claude Code hook type (--hook), used with `-f claude-code`.
     pub hook_type: Option<HookType>,
+    /// Normalized projection state — target element, `--single`, warnings.
+    /// Built once here and read throughout the pipeline.
+    pub plan: ProjectionPlan,
 }
 
 impl RunContext {
@@ -67,11 +74,6 @@ impl RunContext {
             }
         };
 
-        let view = if let Some(s) = user_view {
-            parse_view_set(s, default_view)?
-        } else {
-            ViewSet::from_fields(default_view.to_vec())
-        };
         let use_color     = if shared.no_color { false } else { should_use_color(&shared.color) };
         let input         = resolve_input(shared, files, content)?;
 
@@ -79,6 +81,20 @@ impl RunContext {
             Some(s) => parse_group_by(s)?,
             None => default_group_by.to_vec(),
         };
+
+        // Normalize projection inputs once here. `plan.effective_view` replaces
+        // any raw -v parsing and incorporates the -p replacement rule.
+        let plan = ProjectionPlan::from_inputs(&ProjectionInputs {
+            project_raw: shared.project.as_deref(),
+            single: shared.single,
+            view_raw: user_view,
+            default_view,
+            explicit_message: message.is_some(),
+            limit: shared.limit,
+            output_format,
+            has_group_by: shared.group_by.is_some(),
+        })?;
+        let view = plan.effective_view.clone();
 
         let tree_mode = match shared.tree.as_deref() {
             Some("raw") => Some(TreeMode::Raw),
@@ -103,7 +119,7 @@ impl RunContext {
             use_color,
             message,
             input,
-            limit: shared.limit,
+            limit: plan.limit,
             depth: shared.depth,
             parse_depth: shared.parse_depth,
             meta: shared.meta,
@@ -115,6 +131,7 @@ impl RunContext {
             debug,
             group_by,
             hook_type,
+            plan,
         })
     }
 

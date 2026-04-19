@@ -75,10 +75,11 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
     let error_template = args.error.clone();
     let message = args.message.clone();
 
-    let ctx = RunContext::build(
+    let mut ctx = RunContext::build(
         &args.shared, args.files, args.shared.xpath.clone(),
         &args.format, &[ViewField::Totals], args.view.as_deref(), args.message, args.content, false, &[],
     )?;
+    ctx.plan.flush_warnings();
 
     let dot = NormalizedXpath::new(".");
     let xpath_expr = ctx.xpath.as_ref().unwrap_or(&dot);

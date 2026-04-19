@@ -72,11 +72,12 @@ pub fn run_from_config(params: ConfigRunParams) -> Result<(), Box<dyn std::error
         .filter(params.op_filter)
         .collect();
 
-    let ctx = RunContext::build(
+    let mut ctx = RunContext::build(
         params.shared, vec![], None, params.format,
         params.default_view,
         params.view_override, params.message, None, false, params.default_group,
     )?;
+    ctx.plan.flush_warnings();
 
     let mut builder = tractor::ReportBuilder::new();
 

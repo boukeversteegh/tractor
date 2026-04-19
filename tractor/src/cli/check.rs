@@ -81,10 +81,11 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
     let reason = args.reason.clone().unwrap_or_else(|| "check failed".to_string());
 
     // Build RunContext for input resolution + rendering config.
-    let ctx = RunContext::build(
+    let mut ctx = RunContext::build(
         &args.shared, args.files, args.shared.xpath.clone(),
         &args.format, &[ViewField::Reason, ViewField::Severity, ViewField::Lines], args.view.as_deref(), args.message, args.content, false, &[GroupDimension::File],
     )?;
+    ctx.plan.flush_warnings();
 
     let xpath_expr = ctx.xpath.as_ref()
         .ok_or("check requires an XPath query (-x)")?;

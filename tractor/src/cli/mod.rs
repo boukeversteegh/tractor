@@ -2,6 +2,7 @@
 
 pub mod help;
 pub mod context;
+pub mod projection;
 pub mod query;
 pub mod check;
 pub mod test;

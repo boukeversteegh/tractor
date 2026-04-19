@@ -63,10 +63,11 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
         });
     }
 
-    let ctx = RunContext::build(
+    let mut ctx = RunContext::build(
         &args.shared, args.files, args.shared.xpath.clone(),
         &args.format, &[ViewField::File, ViewField::Line, ViewField::Tree], args.view.as_deref(), args.message, args.content, args.debug, &[],
     )?;
+    ctx.plan.flush_warnings();
 
     if let InputMode::Files(ref files) = ctx.input {
         if files.is_empty() {

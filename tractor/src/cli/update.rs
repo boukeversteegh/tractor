@@ -21,10 +21,11 @@ use crate::input::InputMode;
 use crate::format::ViewField;
 
 pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
-    let ctx = RunContext::build(
+    let mut ctx = RunContext::build(
         &args.shared, args.files, args.shared.xpath.clone(),
         "text", &[ViewField::Tree], None, None, None, false, &[],
     )?;
+    ctx.plan.flush_warnings();
 
     let xpath_expr = ctx.xpath.as_ref()
         .ok_or("update requires an XPath query (-x)")?;
