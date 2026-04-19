@@ -213,7 +213,12 @@ impl SchemaCollector {
 
         // Sort paths by length to ensure parents are created before children
         let mut sorted_paths: Vec<_> = self.paths.iter().collect();
-        sorted_paths.sort_by_key(|(path, _)| path.len());
+        sorted_paths.sort_by(|(left_path, _), (right_path, _)| {
+            left_path
+                .len()
+                .cmp(&right_path.len())
+                .then_with(|| left_path.cmp(right_path))
+        });
 
         for (path, info) in sorted_paths {
             let mut node = &mut root;

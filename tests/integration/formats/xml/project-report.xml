@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report>
+  <summary>
+    <totals>
+      <results>2</results>
+      <files>1</files>
+    </totals>
+  </summary>
+  <results>
+    <match file="tests/integration/formats/sample-classes.cs" line="1" column="14" end_line="1" end_column="24">
+      <value>Calculator</value>
+    </match>
+    <match file="tests/integration/formats/sample-classes.cs" line="8" column="14" end_line="8" end_column="21">
+      <value>Greeter</value>
+    </match>
+  </results>
+</report>
