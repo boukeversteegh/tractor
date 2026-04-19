@@ -1139,6 +1139,9 @@ macro_rules! cli_case {
     (@block_command [$($command:tt)*] ; expect => $assertion:ident $($rest:tt)*) => {
         $crate::cli_case!(@block_assert [$($command)*] $assertion [] $($rest)*)
     };
+    (@block_command [$($command:tt)*] ;) => {{
+        $crate::support::TestCase::new($crate::tractor_invocation!($($command)+))
+    }};
     (@block_command [$($command:tt)*] $next:tt $($rest:tt)*) => {
         $crate::cli_case!(@block_command [$($command)* $next] $($rest)*)
     };

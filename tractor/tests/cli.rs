@@ -413,63 +413,28 @@ fn missing_empty_fixture_directory_falls_back_to_temp_workspace() {
 
 #[test]
 fn project_tree_json_is_sequence_and_single_unwraps() {
-    let multi = command([
-        "query",
-        "-s",
-        "<root><item>one</item><item>two</item></root>",
-        "-l",
-        "xml",
-        "-x",
-        "//item",
-        "-p",
-        "tree",
-        "-f",
-        "json",
-    ])
-    .capture();
-    assert_eq!(0, multi.status);
+    let multi = cli_case!({
+        tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -p "tree" -f "json";
+    })
+    .run();
     let multi_json: Value = serde_json::from_str(&multi.stdout).expect("multi projection should be json");
     assert!(multi_json.is_array());
     assert_eq!(2, multi_json.as_array().unwrap().len());
 
-    let single = command([
-        "query",
-        "-s",
-        "<root><item>one</item><item>two</item></root>",
-        "-l",
-        "xml",
-        "-x",
-        "//item",
-        "-p",
-        "tree",
-        "--single",
-        "-f",
-        "json",
-    ])
-    .capture();
-    assert_eq!(0, single.status);
+    let single = cli_case!({
+        tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -p "tree" --single -f "json";
+    })
+    .run();
     let single_json: Value = serde_json::from_str(&single.stdout).expect("single projection should be json");
     assert!(!single_json.is_array());
 }
 
 #[test]
 fn project_tree_xml_multi_wraps_named_tree_elements() {
-    let result = command([
-        "query",
-        "-s",
-        "<root><item>one</item><item>two</item></root>",
-        "-l",
-        "xml",
-        "-x",
-        "//item",
-        "-p",
-        "tree",
-        "-f",
-        "xml",
-    ])
-    .capture();
-
-    assert_eq!(0, result.status);
+    let result = cli_case!({
+        tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -p "tree" -f "xml";
+    })
+    .run();
     assert!(result.stdout.contains("<results>"));
     assert!(result.stdout.contains("<tree>"));
     assert!(result.stdout.contains("</tree>"));
@@ -478,23 +443,10 @@ fn project_tree_xml_multi_wraps_named_tree_elements() {
 
 #[test]
 fn project_tree_xml_single_stays_bare() {
-    let result = command([
-        "query",
-        "-s",
-        "<root><item>one</item><item>two</item></root>",
-        "-l",
-        "xml",
-        "-x",
-        "//item",
-        "-p",
-        "tree",
-        "--single",
-        "-f",
-        "xml",
-    ])
-    .capture();
-
-    assert_eq!(0, result.status);
+    let result = cli_case!({
+        tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -p "tree" --single -f "xml";
+    })
+    .run();
     assert!(!result.stdout.contains("<tree>"));
     assert!(result.stdout.contains("<item>"));
     assert_well_formed_xml(&result.stdout);
@@ -515,49 +467,21 @@ fn project_tree_single_empty_exits_with_empty_stdout() {
 
 #[test]
 fn project_results_keeps_message_field_in_json() {
-    let result = command([
-        "query",
-        "-s",
-        "<root><item>one</item></root>",
-        "-l",
-        "xml",
-        "-x",
-        "//item",
-        "-m",
-        "hit",
-        "-p",
-        "results",
-        "-f",
-        "json",
-    ])
-    .capture();
-
-    assert_eq!(0, result.status);
+    let result = cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -m "hit" -p "results" -f "json";
+    })
+    .run();
     let json: Value = serde_json::from_str(&result.stdout).expect("results projection should be json");
     assert_eq!("hit", json[0]["message"]);
 }
 
 #[test]
 fn project_results_preserves_grouping_in_json() {
-    let result = command([
-        "query",
-        "sample.cs",
-        "sample2.cs",
-        "-x",
-        "//class/name",
-        "-v",
-        "file,value",
-        "-g",
-        "file",
-        "-p",
-        "results",
-        "-f",
-        "json",
-    ])
+    let result = cli_case!({
+        tractor query "sample.cs" "sample2.cs" -x "//class/name" -v "file,value" -g "file" -p "results" -f "json";
+    })
     .in_fixture("formats")
-    .capture();
-
-    assert_eq!(0, result.status);
+    .run();
     let json: Value = serde_json::from_str(&result.stdout).expect("grouped results projection should be json");
     let groups = json.as_array().expect("results projection should stay a sequence");
     assert_eq!(2, groups.len());
@@ -573,24 +497,10 @@ fn project_results_preserves_grouping_in_json() {
 
 #[test]
 fn project_summary_warns_when_message_is_unreachable() {
-    let result = command([
-        "query",
-        "-s",
-        "<root><item>one</item></root>",
-        "-l",
-        "xml",
-        "-x",
-        "//item",
-        "-m",
-        "hit",
-        "-p",
-        "summary",
-        "-f",
-        "json",
-    ])
-    .capture();
-
-    assert_eq!(0, result.status);
+    let result = cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -m "hit" -p "summary" -f "json";
+    })
+    .run();
     let json: Value = serde_json::from_str(&result.stdout).expect("summary projection should be json");
     assert!(json.is_object());
     assert!(result
@@ -631,39 +541,17 @@ fn project_invalid_is_rejected_with_valid_values() {
 
 #[test]
 fn project_tree_empty_sequence_preserves_wrapper_and_parseability() {
-    let xml = command([
-        "query",
-        "-s",
-        "<root><item>one</item></root>",
-        "-l",
-        "xml",
-        "-x",
-        "string(//item)",
-        "-p",
-        "tree",
-        "-f",
-        "xml",
-    ])
-    .capture();
-    assert_eq!(0, xml.status);
+    let xml = cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "string(//item)" -p "tree" -f "xml";
+    })
+    .run();
     assert!(xml.stdout.contains("<results"));
     assert_well_formed_xml(&xml.stdout);
 
-    let json = command([
-        "query",
-        "-s",
-        "<root><item>one</item></root>",
-        "-l",
-        "xml",
-        "-x",
-        "string(//item)",
-        "-p",
-        "tree",
-        "-f",
-        "json",
-    ])
-    .capture();
-    assert_eq!(0, json.status);
+    let json = cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "string(//item)" -p "tree" -f "json";
+    })
+    .run();
     let parsed: Value = serde_json::from_str(&json.stdout).expect("empty tree projection should be json");
     assert_eq!(Value::Array(vec![]), parsed);
 }
@@ -700,60 +588,25 @@ fn project_empty_explicit_view_does_not_warn() {
 
 #[test]
 fn project_count_and_schema_follow_the_report_pipeline_in_structured_formats() {
-    let count = command([
-        "query",
-        "-s",
-        "<root><item>one</item><item>two</item></root>",
-        "-l",
-        "xml",
-        "-x",
-        "//item",
-        "-v",
-        "count",
-        "-f",
-        "json",
-    ])
-    .capture();
-    assert_eq!(0, count.status);
+    let count = cli_case!({
+        tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -v "count" -f "json";
+    })
+    .run();
     let count_json: Value = serde_json::from_str(&count.stdout).expect("count view should be json");
     assert_eq!(2, count_json["summary"]["totals"]["results"]);
 
-    let schema_report = command([
-        "query",
-        "-s",
-        "<root><item>one</item></root>",
-        "-l",
-        "xml",
-        "-x",
-        "//item",
-        "-v",
-        "schema",
-        "-f",
-        "xml",
-    ])
-    .capture();
-    assert_eq!(0, schema_report.status);
+    let schema_report = cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -v "schema" -f "xml";
+    })
+    .run();
     assert!(schema_report.stdout.contains("<report>"));
     assert!(schema_report.stdout.contains("<schema>"));
     assert_well_formed_xml(&schema_report.stdout);
 
-    let schema_bare = command([
-        "query",
-        "-s",
-        "<root><item>one</item></root>",
-        "-l",
-        "xml",
-        "-x",
-        "//item",
-        "-v",
-        "schema",
-        "-p",
-        "schema",
-        "-f",
-        "xml",
-    ])
-    .capture();
-    assert_eq!(0, schema_bare.status);
+    let schema_bare = cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -v "schema" -p "schema" -f "xml";
+    })
+    .run();
     assert!(!schema_bare.stdout.contains("<report>"));
     assert!(schema_bare.stdout.contains("<schema>"));
     assert_well_formed_xml(&schema_bare.stdout);
@@ -761,42 +614,18 @@ fn project_count_and_schema_follow_the_report_pipeline_in_structured_formats() {
 
 #[test]
 fn project_summary_is_mode_specific() {
-    let query = command([
-        "query",
-        "-s",
-        "<root><item>one</item></root>",
-        "-l",
-        "xml",
-        "-x",
-        "//item",
-        "-p",
-        "summary",
-        "-f",
-        "json",
-    ])
-    .capture();
-    assert_eq!(0, query.status);
+    let query = cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -p "summary" -f "json";
+    })
+    .run();
     let query_json: Value = serde_json::from_str(&query.stdout).expect("query summary should be json");
     assert!(query_json.get("success").is_none());
     assert_eq!(1, query_json["totals"]["results"]);
 
-    let test = command([
-        "test",
-        "-s",
-        "<root><item>one</item></root>",
-        "-l",
-        "xml",
-        "-x",
-        "//item",
-        "--expect",
-        "1",
-        "-p",
-        "summary",
-        "-f",
-        "json",
-    ])
-    .capture();
-    assert_eq!(0, test.status);
+    let test = cli_case!({
+        tractor test -s "<root><item>one</item></root>" -l "xml" -x "//item" --expect "1" -p "summary" -f "json";
+    })
+    .run();
     let test_json: Value = serde_json::from_str(&test.stdout).expect("test summary should be json");
     assert_eq!(Value::Bool(true), test_json["success"]);
     assert_eq!(Value::String("1".to_string()), test_json["expected"]);
@@ -804,23 +633,11 @@ fn project_summary_is_mode_specific() {
 
 #[test]
 fn project_schema_respects_color_output() {
-    let result = command([
-        "query",
-        "-s",
-        "<root><item>one</item></root>",
-        "-l",
-        "xml",
-        "-x",
-        "//item",
-        "-p",
-        "schema",
-        "--color",
-        "always",
-    ])
+    let result = cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -p "schema" --color "always";
+    })
     .no_color(false)
-    .capture();
-
-    assert_eq!(0, result.status);
+    .run();
     assert!(result.stdout.contains("\u{1b}["));
 }
 
@@ -1497,29 +1314,30 @@ fn run_without_path_ignores_tractor_yaml() {
     // `.yaml` is not on the default probe list — only `tractor.yml` is. Users
     // can still point at `.yaml` explicitly, but with no path argument and no
     // `tractor.yml`, tractor errors even if a `tractor.yaml` sits right there.
-    let result = command(["run"])
-        .temp_fixture()
-        .seed_file("tractor.yaml", DEFAULT_CONFIG_CONTENTS)
-        .seed_file("settings.yaml", DEFAULT_CONFIG_SETTINGS)
-        .assert_exit(1)
-        .capture();
-    let combined = format!("{}{}", result.stdout, result.stderr);
-    assert!(
-        combined.contains("no tractor.yml"),
-        "expected error about missing tractor.yml, got: {}",
-        combined
-    );
+    cli_case!({
+        tractor run;
+        expect => {
+            exit 1;
+            combined_contains "no tractor.yml";
+        }
+    })
+    .temp_fixture()
+    .seed_file("tractor.yaml", DEFAULT_CONFIG_CONTENTS)
+    .seed_file("settings.yaml", DEFAULT_CONFIG_SETTINGS)
+    .run();
 }
 
 #[test]
 fn run_without_path_errors_when_no_default_exists() {
-    let result = command(["run"]).temp_fixture().assert_exit(1).capture();
-    let combined = format!("{}{}", result.stdout, result.stderr);
-    assert!(
-        combined.contains("no tractor.yml"),
-        "expected error about missing tractor.yml, got: {}",
-        combined
-    );
+    cli_case!({
+        tractor run;
+        expect => {
+            exit 1;
+            combined_contains "no tractor.yml";
+        }
+    })
+    .temp_fixture()
+    .run();
 }
 
 /// Source of truth for the scaffolded config — used when we need to seed a
