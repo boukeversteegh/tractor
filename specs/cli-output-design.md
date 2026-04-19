@@ -305,10 +305,30 @@ templates — distinct from `-m` which produces data.
 ## 2. The Report Envelope
 
 Every tractor command produces a **report**. The report envelope is
-always present, in every format, for every command. This ensures output
-is always valid XML/JSON and pipeable.
+present by default — `-p report` (the implicit default) emits the full
+`<report>…</report>` tree, in every format, for every command. This
+preserves the original contract: parseable, pipeable output with a
+single root.
 
-### Why always an envelope
+The `-p` / `--project` flag (see `docs/design-p-projection-flag.md`)
+lets users project a single element instead, and `--single` strips
+list wrappers from sequence projections. Under projection:
+
+- `-p report` (explicit) — identical to the default.
+- `-p results` / `-p summary` / `-p totals` / `-p schema` — that
+  element becomes the XML root / JSON top-level value.
+- `-p tree` / `-p value` / `-p source` / `-p lines` (sequence) —
+  wrapped in `<results>…</results>` (XML) or a top-level array
+  (JSON/YAML) for parseability.
+- `-p count` — bare number in text/json/yaml, synthetic
+  `<count>N</count>` root in XML.
+- `--single` — emits the first element bare (no list wrapper).
+
+`-p`/`--single` are not supported with `-f gcc`/`github`/`claude-code`
+(line-oriented formats) or with `--group`; both combinations fail
+early with a CLI error.
+
+### Why always an envelope by default
 
 Without an envelope, query mode outputs bare fragments:
 
@@ -319,7 +339,7 @@ Without an envelope, query mode outputs bare fragments:
 
 This is not valid XML (no single root element). Similarly, bare JSON
 objects without an array break standard parsers. The envelope makes
-output reliably parseable.
+default output reliably parseable.
 
 ### Structure by command
 

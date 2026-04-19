@@ -1,5 +1,11 @@
 # Count and Schema views bypass the Report pipeline
 
+**Status:** Resolved by the `-p` / `--project` projection work
+(`docs/design-p-projection-flag.md`). `run_query` no longer short-circuits
+for `-v count` / `-v schema`; `<schema>` is computed as a real report
+field and every format emits it through `render_projection`. See commit
+that removes `cli/query.rs:133-142`.
+
 ## Problem
 
 When `-v count` or `-v schema` is specified, `run_query` short-circuits before building
