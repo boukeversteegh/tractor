@@ -131,33 +131,35 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     executor::execute(&[op], &options, &mut builder)?;
     let mut report = builder.build();
 
-    if ctx.view.has(ViewField::Count) {
-        println!("{}", report.totals.as_ref().unwrap().results);
-    } else if ctx.view.has(ViewField::Schema) {
+    // Compute schema as a real report field when requested. Runs before
+    // field-pruning because the collector walks each match's tree, which
+    // the pruner would otherwise clear for view-level projections that
+    // drop `tree` from the effective view.
+    if ctx.view.has(ViewField::Schema) {
         let mut collector = tractor::SchemaCollector::new();
         for m in report.all_matches() {
             if let Some(ref node) = m.tree {
                 collector.collect_from_xml_node(node);
             }
         }
-        print!("{}", collector.format(ctx.schema_depth(), ctx.use_color));
-    } else {
-        // Set the query field on the report if requested.
-        if ctx.view.has(ViewField::Query) {
-            report.query = ctx.xpath.clone();
-        }
-
-        // Apply CLI message template if provided.
-        if let Some(ref template) = ctx.message {
-            apply_message_template(&mut report, template);
-        }
-
-        // Project for the requested view and render.
-        prune_match_fields_by_view(&mut report, &ctx.view);
-        let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
-        let report = report.with_grouping(&dims);
-        render_report(&report, &ctx, None)?;
+        report.schema = Some(collector.format(ctx.schema_depth(), ctx.use_color));
     }
+
+    // Set the query field on the report if requested.
+    if ctx.view.has(ViewField::Query) {
+        report.query = ctx.xpath.clone();
+    }
+
+    // Apply CLI message template if provided.
+    if let Some(ref template) = ctx.message {
+        apply_message_template(&mut report, template);
+    }
+
+    // Project for the requested view and render.
+    prune_match_fields_by_view(&mut report, &ctx.view);
+    let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
+    let report = report.with_grouping(&dims);
+    render_report(&report, &ctx, None)?;
 
     Ok(())
 }

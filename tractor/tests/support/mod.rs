@@ -84,6 +84,8 @@ impl TractorInvocation {
         let mut args = Vec::new();
         let mut iter = self.args.iter().cloned();
 
+        // Strip any pre-existing -v / -p / -f flags. -p count needs -f text
+        // (other formats add wrappers that break the bare-scalar parse below).
         while let Some(arg) = iter.next() {
             let literal = match &arg {
                 CommandArg::Literal(value) => Some(value.as_str()),
@@ -91,10 +93,18 @@ impl TractorInvocation {
             };
 
             match literal {
-                Some("-v") | Some("--view") => {
+                Some("-v") | Some("--view")
+                | Some("-p") | Some("--project")
+                | Some("-f") | Some("--format") => {
                     let _ = iter.next();
                 }
-                Some(value) if value.starts_with("-v=") || value.starts_with("--view=") => {}
+                Some(value)
+                    if value.starts_with("-v=")
+                        || value.starts_with("--view=")
+                        || value.starts_with("-p=")
+                        || value.starts_with("--project=")
+                        || value.starts_with("-f=")
+                        || value.starts_with("--format=") => {}
                 _ => args.push(arg),
             }
         }
@@ -104,10 +114,10 @@ impl TractorInvocation {
             stdin: self.stdin.clone(),
             no_color: self.no_color,
         };
-        invocation.args.push(CommandArg::Literal("-v".to_string()));
-        invocation
-            .args
-            .push(CommandArg::Literal("count".to_string()));
+        invocation.args.push(CommandArg::Literal("-p".to_string()));
+        invocation.args.push(CommandArg::Literal("count".to_string()));
+        invocation.args.push(CommandArg::Literal("-f".to_string()));
+        invocation.args.push(CommandArg::Literal("text".to_string()));
         invocation
     }
 }
