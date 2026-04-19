@@ -1,4 +1,5 @@
 use tractor::{
+    format_schema_tree,
     normalize_path,
     render_xml_node,
     render_xml_string,
@@ -43,10 +44,7 @@ pub fn render_xml_output(
             "<count>{}</count>\n",
             report.totals.as_ref().map(|totals| totals.results).unwrap_or(0)
         ),
-        Projection::Schema => format!(
-            "<schema>{}</schema>\n",
-            escape(report.schema.as_deref().unwrap_or(""))
-        ),
+        Projection::Schema => format!("<schema>{}</schema>\n", escape(&schema_to_string(report, render_opts))),
         Projection::Tree | Projection::Value | Projection::Source | Projection::Lines => {
             render_xml_field_projection(report, &tree_opts, projection, single)?
         }
@@ -73,8 +71,8 @@ fn render_xml_report_body(
         }
     }
 
-    if let Some(ref schema) = report.schema {
-        body.push_str(&format!("  <schema>{}</schema>\n", escape(schema)));
+    if report.schema.is_some() {
+        body.push_str(&format!("  <schema>{}</schema>\n", escape(&schema_to_string(report, tree_opts))));
     }
 
     if !report.outputs.is_empty() {
@@ -257,6 +255,14 @@ fn finish_xml_output(body: String, render_opts: &RenderOptions) -> String {
     } else {
         format!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n{}", body)
     }
+}
+
+fn schema_to_string(report: &Report, render_opts: &RenderOptions) -> String {
+    report
+        .schema
+        .as_ref()
+        .map(|schema| format_schema_tree(schema, render_opts.max_depth.or(Some(4)), false))
+        .unwrap_or_default()
 }
 
 fn append_match(

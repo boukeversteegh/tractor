@@ -1,5 +1,5 @@
 use serde_json::{json, Value};
-use tractor::{report::{Report, ReportMatch, ResultItem}, normalize_path, xml_node_to_json, RenderOptions};
+use tractor::{report::{Report, ReportMatch, ResultItem}, format_schema_tree, normalize_path, xml_node_to_json, RenderOptions};
 use super::options::{ViewField, ViewSet};
 use super::shared::{render_fields_for_match, should_emit_command, should_emit_file, should_emit_rule_id, should_show_totals};
 use super::{Projection, ProjectionRenderError};
@@ -46,7 +46,7 @@ pub(crate) fn project_json_value(
         Projection::Summary => Ok(summary_to_json(report)),
         Projection::Totals => Ok(totals_to_json(report)),
         Projection::Count => Ok(json!(report.totals.as_ref().map(|totals| totals.results).unwrap_or(0))),
-        Projection::Schema => Ok(json!(report.schema.as_deref().unwrap_or(""))),
+        Projection::Schema => Ok(json!(schema_to_string(report, render_opts))),
         Projection::Tree | Projection::Value | Projection::Source | Projection::Lines => {
             let projected: Vec<Value> = report
                 .all_matches()
@@ -74,8 +74,8 @@ fn report_to_json_value(
         emit_report_summary(&mut root, report);
     }
 
-    if let Some(ref schema) = report.schema {
-        root.insert("schema".into(), json!(schema));
+    if report.schema.is_some() {
+        root.insert("schema".into(), json!(schema_to_string(report, render_opts)));
     }
 
     // Top-level captured outputs — honest view of the report model.
@@ -184,6 +184,14 @@ fn totals_to_json(report: &Report) -> Value {
     } else {
         Value::Object(serde_json::Map::new())
     }
+}
+
+fn schema_to_string(report: &Report, render_opts: &RenderOptions) -> String {
+    report
+        .schema
+        .as_ref()
+        .map(|schema| format_schema_tree(schema, render_opts.max_depth.or(Some(4)), false))
+        .unwrap_or_default()
 }
 
 fn project_match_field_to_json(

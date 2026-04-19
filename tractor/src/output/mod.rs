@@ -25,6 +25,6 @@ pub use formatter::{format_message, normalize_path};
 pub use query_tree_renderer::{render_query_tree_node, render_query_tree_with_source};
 pub use colors::should_use_color;
 pub use xml_renderer::{render_node, render_document, render_xml_string, render_xml_node, xml_node_to_string, RenderOptions};
-pub use schema::{format_schema, SchemaCollector, SchemaNode};
+pub use schema::{format_schema, format_schema_tree, SchemaCollector, SchemaNode};
 pub use xml_to_json::xml_node_to_json;
 pub use syntax_highlight::extract_syntax_spans_from_xml_node;

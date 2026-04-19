@@ -10,7 +10,7 @@ use std::collections::HashMap;
 
 use tractor::{
     render_query_tree_node, render_query_tree_with_source, normalize_path,
-    render_source_precomputed, render_lines,
+    render_source_precomputed, render_lines, format_schema_tree,
     report::{Report, ReportMatch, ResultItem, Totals},
     RenderOptions,
 };
@@ -47,7 +47,7 @@ pub fn render_text_output(
             "{}\n",
             report.totals.as_ref().map(|totals| totals.results).unwrap_or(0)
         )),
-        Projection::Schema => Ok(report.schema.clone().unwrap_or_default()),
+        Projection::Schema => Ok(render_text_schema(report, render_opts)),
         Projection::Tree | Projection::Value | Projection::Source | Projection::Lines => {
             render_text_field_projection(report, projection, render_opts, single)
         }
@@ -96,6 +96,16 @@ fn render_text_results(
             out.push('\n');
         }
         append_match(&mut out, rm, view, render_opts, *group_file, &mut source_cache);
+    }
+
+    if report.schema.is_some() {
+        let schema = render_text_schema(report, render_opts);
+        if !schema.is_empty() {
+            if !out.is_empty() && !out.ends_with('\n') {
+                out.push('\n');
+            }
+            out.push_str(&schema);
+        }
     }
 
     if include_summary && should_show_totals(report, view) {
@@ -167,6 +177,14 @@ fn render_text_totals(report: &Report) -> String {
         lines.push(format!("unchanged: {}", totals.unchanged));
     }
     format!("{}\n", lines.join("\n"))
+}
+
+fn render_text_schema(report: &Report, render_opts: &RenderOptions) -> String {
+    report
+        .schema
+        .as_ref()
+        .map(|schema| format_schema_tree(schema, render_opts.max_depth.or(Some(4)), render_opts.use_color))
+        .unwrap_or_default()
 }
 
 fn render_text_field_projection(

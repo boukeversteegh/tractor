@@ -12,7 +12,7 @@ use serde::{Serialize, Serializer};
 use serde::ser::SerializeMap;
 
 use crate::normalized_xpath::NormalizedXpath;
-use crate::output::{normalize_path, xml_node_to_string};
+use crate::output::{normalize_path, xml_node_to_string, SchemaNode};
 use crate::xpath::XmlNode;
 
 // ---------------------------------------------------------------------------
@@ -287,9 +287,9 @@ pub struct Report {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub query: Option<NormalizedXpath>,
 
-    /// Opaque schema text computed from matched trees.
+    /// Structured schema tree computed from matched trees.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub schema: Option<String>,
+    pub schema: Option<Vec<SchemaNode>>,
 
     /// Captured output payloads produced by this report's operation (or,
     /// for sub-groups, payloads that were distributed down to this group

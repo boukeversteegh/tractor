@@ -191,6 +191,10 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
         "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
         "-p", "schema",
     ]),
+    ("text/project-schema-color.txt", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "schema", "--color", "always",
+    ]),
     ("json/project-schema.json", &[
         "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
         "-p", "schema", "-f", "json",

@@ -799,6 +799,47 @@ fn project_summary_is_mode_specific() {
 }
 
 #[test]
+fn project_schema_respects_color_output() {
+    let result = command([
+        "query",
+        "-s",
+        "<root><item>one</item></root>",
+        "-l",
+        "xml",
+        "-x",
+        "//item",
+        "-p",
+        "schema",
+        "--color",
+        "always",
+    ])
+    .no_color(false)
+    .capture();
+
+    assert_eq!(0, result.status);
+    assert!(result.stdout.contains("\u{1b}["));
+}
+
+#[test]
+fn view_schema_renders_in_text_output() {
+    let result = command([
+        "query",
+        "-s",
+        "<root><item>one</item></root>",
+        "-l",
+        "xml",
+        "-x",
+        "//item",
+        "-v",
+        "schema",
+    ])
+    .capture();
+
+    assert_eq!(0, result.status);
+    assert!(result.stdout.contains("item = \"one\""));
+}
+
+#[test]
 fn project_totals_single_is_a_noop_with_warning() {
     let result = command([
         "query",

@@ -204,24 +204,7 @@ impl SchemaCollector {
 
     /// Format the collected paths as a tree
     pub fn format(&self, max_depth: Option<usize>, use_color: bool) -> String {
-        let tree = self.build_tree();
-        let mut output = String::new();
-        let mut truncated = false;
-        format_node(&tree, "", true, 0, max_depth, use_color, &mut output, &mut truncated);
-
-        // Add helpful note if truncation occurred
-        if truncated {
-            output.push('\n');
-            if use_color {
-                output.push_str("\x1b[2m"); // dim
-            }
-            output.push_str("(use -d to increase depth, or -x to query specific elements)\n");
-            if use_color {
-                output.push_str("\x1b[0m"); // reset
-            }
-        }
-
-        output
+        format_schema_tree(&self.to_schema_tree(), max_depth, use_color)
     }
 
     fn build_tree(&self) -> TreeNode {
@@ -245,6 +228,27 @@ impl SchemaCollector {
 
         root
     }
+}
+
+/// Format a structured schema tree for text output.
+pub fn format_schema_tree(nodes: &[SchemaNode], max_depth: Option<usize>, use_color: bool) -> String {
+    let tree = tree_from_schema_nodes(nodes);
+    let mut output = String::new();
+    let mut truncated = false;
+    format_node(&tree, "", true, 0, max_depth, use_color, &mut output, &mut truncated);
+
+    if truncated {
+        output.push('\n');
+        if use_color {
+            output.push_str("\x1b[2m");
+        }
+        output.push_str("(use -d to increase depth, or -x to query specific elements)\n");
+        if use_color {
+            output.push_str("\x1b[0m");
+        }
+    }
+
+    output
 }
 
 impl Default for SchemaCollector {
@@ -317,6 +321,30 @@ impl TreeNode {
             self.children.push((name.to_string(), TreeNode::default()));
             &mut self.children.last_mut().unwrap().1
         }
+    }
+}
+
+fn tree_from_schema_nodes(nodes: &[SchemaNode]) -> TreeNode {
+    fn convert(nodes: &[SchemaNode]) -> Vec<(String, TreeNode)> {
+        nodes
+            .iter()
+            .map(|node| {
+                (
+                    node.name.clone(),
+                    TreeNode {
+                        children: convert(&node.children),
+                        values: node.values.clone(),
+                        count: node.count,
+                    },
+                )
+            })
+            .collect()
+    }
+
+    TreeNode {
+        children: convert(nodes),
+        values: Vec::new(),
+        count: 1,
     }
 }
 
