@@ -7,7 +7,7 @@ use tractor::{
 use crate::cli::SharedArgs;
 use crate::cli::projection::{ProjectionInputs, ProjectionPlan};
 use crate::input::{InputMode, resolve_input};
-use crate::format::{OutputFormat, GroupDimension, ViewField, ViewSet, parse_view_set, parse_group_by};
+use crate::format::{OutputFormat, GroupDimension, ViewField, ViewSet, parse_group_by};
 use crate::format::options::HookType;
 
 pub struct RunContext {
