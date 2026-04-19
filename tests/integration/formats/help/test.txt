@@ -43,6 +43,12 @@ Extract:
           Ignore whitespace in XPath string matching (strips whitespace from text nodes)
 
 View:
+  -p, --project <PROJECT>
+          Project a specific element from the report (tree, value, source, lines, schema, count, summary, totals, results, report)
+
+      --single
+          Emit the first projected element bare (no list wrapper). Implies -n 1 for sequence projections
+
   -n, --limit <LIMIT>
           Limit output to first N matches
 

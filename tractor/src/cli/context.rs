@@ -6,14 +6,14 @@ use tractor::{
 };
 use crate::cli::SharedArgs;
 use crate::input::{InputMode, resolve_input};
-use crate::format::{OutputFormat, GroupDimension, ViewField, ViewSet, parse_view_set, parse_group_by};
+use crate::format::{OutputFormat, GroupDimension, ViewField, ViewSet, Projection, parse_view_set, parse_group_by};
 use crate::format::options::HookType;
 
 pub struct RunContext {
     pub xpath: Option<NormalizedXpath>,
     /// Output format (-f).
     pub output_format: OutputFormat,
-    /// View field selection (-v).
+    /// View field selection (-v), after early normalization from -p.
     pub view: ViewSet,
     pub use_color: bool,
     /// Interpolated message template from `-m`, if provided.
@@ -33,6 +33,10 @@ pub struct RunContext {
     pub group_by: Vec<GroupDimension>,
     /// Claude Code hook type (--hook), used with `-f claude-code`.
     pub hook_type: Option<HookType>,
+    /// Report projection (-p flag). Defaults to Projection::Report.
+    pub projection: Projection,
+    /// Emit first projected element bare, no list wrapper (--single flag).
+    pub single: bool,
 }
 
 impl RunContext {
@@ -67,11 +71,86 @@ impl RunContext {
             }
         };
 
-        let view = if let Some(s) = user_view {
+        // Parse -p / --project flag.
+        let projection = match shared.project.as_deref() {
+            Some(s) => Projection::from_str(s).map_err(|e| e)?,
+            None => Projection::Report,
+        };
+
+        // --single: validate that it's not combined with a contradicting -n.
+        let single = shared.single;
+        if single {
+            if let Some(n) = shared.limit {
+                if n != 1 {
+                    return Err(format!(
+                        "--single contradicts -n {n}: --single means first match only (-n 1). \
+                         Use -n 1 --single, or omit --single to keep -n {n}."
+                    ).into());
+                }
+            }
+        }
+
+        // When --single is set and -p is omitted, default to -p results instead of -p report.
+        let projection = if single && shared.project.is_none() {
+            Projection::Results
+        } else {
+            projection
+        };
+
+        // Parse user view, then apply early normalization from -p.
+        let view_explicit = user_view.is_some();
+        let mut view = if let Some(s) = user_view {
             parse_view_set(s, default_view)?
         } else {
             ViewSet::from_fields(default_view.to_vec())
         };
+
+        // Early normalization: -p view-level field replaces -v.
+        // Also warn when explicit -v or -m fields are discarded.
+        if let Some(replacement) = projection.view_field_replacement() {
+            if view_explicit {
+                // Check which explicitly-requested fields are being dropped.
+                let dropped: Vec<ViewField> = view.fields.iter()
+                    .filter(|&&f| f != replacement)
+                    .copied()
+                    .collect();
+                if !dropped.is_empty() {
+                    let names: Vec<&str> = dropped.iter().map(|f| f.name()).collect();
+                    eprintln!(
+                        "warning: -v fields {{{}}} were discarded because -p {} replaces the view set.\n  \
+                         To keep -v intact, use `-p results` (respects -v) instead of `-p {}`.",
+                        names.join(", "), projection.name(), projection.name()
+                    );
+                }
+            }
+            if view_explicit && message.is_some() {
+                let has_message_in_dropped = !view.fields.contains(&replacement);
+                if has_message_in_dropped || view.fields.iter().all(|&f| f == replacement) {
+                    eprintln!(
+                        "warning: -m message template was discarded because -p {} replaces the view set.\n  \
+                         To keep -m intact, use `-p results` (respects -v) instead of `-p {}`.",
+                        projection.name(), projection.name()
+                    );
+                }
+            }
+            view = ViewSet::single(replacement);
+        } else if projection.is_metadata_only() && view_explicit {
+            // Metadata-only projections (summary, totals) have no per-match rendering.
+            let names: Vec<&str> = view.fields.iter().map(|f| f.name()).collect();
+            if !names.is_empty() {
+                eprintln!(
+                    "warning: -v fields {{{}}} have no effect with -p {} (no per-match rendering).",
+                    names.join(", "), projection.name()
+                );
+            }
+            if message.is_some() {
+                eprintln!(
+                    "warning: -m message template has no effect with -p {} (no per-match rendering).",
+                    projection.name()
+                );
+            }
+        }
+
         let use_color     = if shared.no_color { false } else { should_use_color(&shared.color) };
         let input         = resolve_input(shared, files, content)?;
 
@@ -90,6 +169,13 @@ impl RunContext {
             None => None, // auto-detect at parse time
         };
 
+        // --single with a sequence projection implies -n 1.
+        let limit = if single && projection.is_per_match() || (single && projection == Projection::Results) {
+            Some(1)
+        } else {
+            shared.limit
+        };
+
         let concurrency = shared.concurrency.unwrap_or_else(|| num_cpus::get());
         rayon::ThreadPoolBuilder::new()
             .num_threads(concurrency)
@@ -103,7 +189,7 @@ impl RunContext {
             use_color,
             message,
             input,
-            limit: shared.limit,
+            limit,
             depth: shared.depth,
             parse_depth: shared.parse_depth,
             meta: shared.meta,
@@ -115,6 +201,8 @@ impl RunContext {
             debug,
             group_by,
             hook_type,
+            projection,
+            single,
         })
     }
 

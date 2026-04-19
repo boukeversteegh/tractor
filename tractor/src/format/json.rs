@@ -7,7 +7,13 @@ pub fn render_json_report(report: &Report, view: &ViewSet, render_opts: &RenderO
     let mut root = serde_json::Map::new();
 
     if should_show_totals(report, view) {
-        emit_report_metadata(&mut root, report);
+        let summary = build_summary_json(report);
+        if !summary.is_empty() {
+            root.insert("summary".into(), Value::Object(summary));
+        }
+    }
+    if let Some(ref schema) = report.schema {
+        root.insert("schema".into(), Value::String(schema.clone()));
     }
 
     // Top-level captured outputs — honest view of the report model.
@@ -66,10 +72,11 @@ fn group_outputs_to_json(
     ("outputs", outputs_to_json(outputs))
 }
 
-/// Emit success, totals, expected, query as top-level fields.
-pub fn emit_report_metadata(root: &mut serde_json::Map<String, Value>, report: &Report) {
+/// Build a summary object (success, totals, expected, query) as a JSON map.
+pub fn build_summary_json(report: &Report) -> serde_json::Map<String, Value> {
+    let mut summary = serde_json::Map::new();
     if let Some(success) = report.success {
-        root.insert("success".into(), json!(success));
+        summary.insert("success".into(), json!(success));
     }
     if let Some(ref totals) = report.totals {
         let mut t = serde_json::Map::new();
@@ -81,13 +88,22 @@ pub fn emit_report_metadata(root: &mut serde_json::Map<String, Value>, report: &
         if totals.infos > 0 { t.insert("infos".into(), json!(totals.infos)); }
         if totals.updated > 0 { t.insert("updated".into(), json!(totals.updated)); }
         if totals.unchanged > 0 { t.insert("unchanged".into(), json!(totals.unchanged)); }
-        root.insert("totals".into(), Value::Object(t));
+        summary.insert("totals".into(), Value::Object(t));
     }
     if let Some(ref expected) = report.expected {
-        root.insert("expected".into(), json!(expected));
+        summary.insert("expected".into(), json!(expected));
     }
     if let Some(ref query) = report.query {
-        root.insert("query".into(), json!(query));
+        summary.insert("query".into(), json!(query));
+    }
+    summary
+}
+
+/// Emit success, totals, expected, query into a root map (for group sub-reports).
+pub fn emit_report_metadata(root: &mut serde_json::Map<String, Value>, report: &Report) {
+    let summary = build_summary_json(report);
+    if !summary.is_empty() {
+        root.insert("summary".into(), Value::Object(summary));
     }
 }
 

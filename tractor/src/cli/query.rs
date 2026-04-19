@@ -46,6 +46,7 @@ use crate::input::InputMode;
 use crate::format::{ViewField, GroupDimension, render_report};
 use crate::matcher::{run_debug, project_report, apply_message_template};
 use super::config::{run_from_config, ConfigRunParams};
+use crate::format::Projection;
 
 pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(ref config_path) = args.config {
@@ -130,33 +131,34 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     executor::execute(&[op], &options, &mut builder)?;
     let mut report = builder.build();
 
-    if ctx.view.has(ViewField::Count) {
-        println!("{}", report.totals.as_ref().unwrap().results);
-    } else if ctx.view.has(ViewField::Schema) {
+    // Compute schema when requested (either via -v schema or -p schema).
+    let needs_schema = ctx.view.has(ViewField::Schema)
+        || ctx.projection == Projection::Schema;
+    if needs_schema {
         let mut collector = tractor::SchemaCollector::new();
         for m in report.all_matches() {
             if let Some(ref node) = m.tree {
                 collector.collect_from_xml_node(node);
             }
         }
-        print!("{}", collector.format(ctx.schema_depth(), ctx.use_color));
-    } else {
-        // Set the query field on the report if requested.
-        if ctx.view.has(ViewField::Query) {
-            report.query = ctx.xpath.clone();
-        }
-
-        // Apply CLI message template if provided.
-        if let Some(ref template) = ctx.message {
-            apply_message_template(&mut report, template);
-        }
-
-        // Project for the requested view and render.
-        project_report(&mut report, &ctx.view);
-        let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
-        let report = report.with_grouping(&dims);
-        render_report(&report, &ctx, None)?;
+        report.schema = Some(collector.format(ctx.schema_depth(), false));
     }
+
+    // Set the query field on the report if requested.
+    if ctx.view.has(ViewField::Query) {
+        report.query = ctx.xpath.clone();
+    }
+
+    // Apply CLI message template if provided.
+    if let Some(ref template) = ctx.message {
+        apply_message_template(&mut report, template);
+    }
+
+    // Project for the requested view and render.
+    project_report(&mut report, &ctx.view);
+    let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
+    let report = report.with_grouping(&dims);
+    render_report(&report, &ctx, None)?;
 
     Ok(())
 }

@@ -293,6 +293,11 @@ pub struct Report {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub outputs: Vec<ReportOutput>,
 
+    /// Schema text rendering (populated when -v schema or -p schema is used).
+    /// Stored as opaque text: the same rendering produced by SchemaCollector::format().
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub schema: Option<String>,
+
     // ---- New unified fields (Step 3) ----
 
     /// Unified results list. Contains either leaf matches or sub-groups.
@@ -453,6 +458,7 @@ impl Report {
             expected: None,
             query: None,
             outputs: vec![],
+            schema: None,
             results: vec![],
             group: None,
             file: None,
@@ -684,6 +690,7 @@ impl ReportBuilder {
             expected: self.expected,
             query: self.query,
             outputs: self.outputs,
+            schema: None,
             results,
             group: None,
             file: None,

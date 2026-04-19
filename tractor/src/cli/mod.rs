@@ -98,6 +98,15 @@ When omitted, auto-selects: data for JSON/YAML, structure for everything else.")
     #[arg(short = 'W', long = "ignore-whitespace", help_heading = "Extract")]
     pub ignore_whitespace: bool,
 
+    // -- Projection --
+    /// Project a specific element from the report (tree, value, source, lines, schema, count, summary, totals, results, report)
+    #[arg(short = 'p', long = "project", help_heading = "View")]
+    pub project: Option<String>,
+
+    /// Emit the first projected element bare (no list wrapper). Implies -n 1 for sequence projections.
+    #[arg(long = "single", help_heading = "View")]
+    pub single: bool,
+
     // -- View --
     /// Limit output to first N matches
     #[arg(short = 'n', long = "limit", help_heading = "View")]

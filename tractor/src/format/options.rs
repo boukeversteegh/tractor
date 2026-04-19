@@ -424,6 +424,142 @@ impl GroupDimension {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Projection — output projection (-p flag)
+// ---------------------------------------------------------------------------
+
+/// Which element of the report to project to the output.
+///
+/// Values correspond to concrete elements in the report structure:
+/// - Per-match (sequence): tree, value, source, lines
+/// - Structural (container respecting -v): results, report
+/// - Aggregate/singular: summary, totals, schema, count
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Projection {
+    /// Per-match: `<tree>` elements, one per match. Replaces -v with [tree].
+    Tree,
+    /// Per-match: `<value>` elements, one per match. Replaces -v with [value].
+    Value,
+    /// Per-match: `<source>` elements, one per match. Replaces -v with [source].
+    Source,
+    /// Per-match: `<lines>` elements, one per match. Replaces -v with [lines].
+    Lines,
+    /// Singular: the `<schema>` element. Replaces -v with [schema].
+    Schema,
+    /// Singular: bare scalar count (= /summary/totals/results). Replaces -v with [count].
+    Count,
+    /// Structural: the `<summary>` container. -v is irrelevant (no per-match fields).
+    Summary,
+    /// Structural: the `<totals>` element inside summary. -v is irrelevant.
+    Totals,
+    /// Structural: the `<results>` list wrapper (list of matches). Respects -v.
+    Results,
+    /// Structural: the whole `<report>` (default when -p omitted). Respects -v.
+    Report,
+}
+
+impl Projection {
+    const ALL: &[Projection] = &[
+        Projection::Tree, Projection::Value, Projection::Source, Projection::Lines,
+        Projection::Schema, Projection::Count, Projection::Summary, Projection::Totals,
+        Projection::Results, Projection::Report,
+    ];
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            Projection::Tree    => "tree",
+            Projection::Value   => "value",
+            Projection::Source  => "source",
+            Projection::Lines   => "lines",
+            Projection::Schema  => "schema",
+            Projection::Count   => "count",
+            Projection::Summary => "summary",
+            Projection::Totals  => "totals",
+            Projection::Results => "results",
+            Projection::Report  => "report",
+        }
+    }
+
+    pub fn description(&self) -> &'static str {
+        match self {
+            Projection::Tree    => "One tree per match (replaces -v with [tree])",
+            Projection::Value   => "One value per match (replaces -v with [value])",
+            Projection::Source  => "One source snippet per match (replaces -v with [source])",
+            Projection::Lines   => "One lines block per match (replaces -v with [lines])",
+            Projection::Schema  => "The schema element (replaces -v with [schema])",
+            Projection::Count   => "Bare scalar match count",
+            Projection::Summary => "The summary container element",
+            Projection::Totals  => "The totals element",
+            Projection::Results => "The results list (respects -v)",
+            Projection::Report  => "The full report (default; respects -v)",
+        }
+    }
+
+    /// Full long_help text for the -p / --project flag.
+    pub fn project_long_help() -> String {
+        let mut lines = vec!["Project a specific element from the report [default: report]".to_string()];
+        let max_name = Projection::ALL.iter().map(|p| p.name().len()).max().unwrap_or(0);
+        for p in Projection::ALL {
+            lines.push(format!("  {:width$}  {}", p.name(), p.description(), width = max_name));
+        }
+        lines.push(String::new());
+        lines.push("  Per-match projections (tree/value/source/lines) return a sequence.".to_string());
+        lines.push("  Use --single to get the first element bare (no list wrapper).".to_string());
+        lines.join("\n")
+    }
+
+    pub fn from_str(s: &str) -> Result<Self, String> {
+        match s {
+            "tree"    => Ok(Projection::Tree),
+            "value"   => Ok(Projection::Value),
+            "source"  => Ok(Projection::Source),
+            "lines"   => Ok(Projection::Lines),
+            "schema"  => Ok(Projection::Schema),
+            "count"   => Ok(Projection::Count),
+            "summary" => Ok(Projection::Summary),
+            "totals"  => Ok(Projection::Totals),
+            "results" => Ok(Projection::Results),
+            "report"  => Ok(Projection::Report),
+            _ => {
+                let valid: Vec<&str> = Projection::ALL.iter().map(|p| p.name()).collect();
+                Err(format!(
+                    "invalid projection '{}'. Valid values: {}",
+                    s, valid.join(", ")
+                ))
+            }
+        }
+    }
+
+    /// Whether this projection is a per-match sequence (returns one element per match).
+    pub fn is_per_match(&self) -> bool {
+        matches!(self, Projection::Tree | Projection::Value | Projection::Source | Projection::Lines)
+    }
+
+    /// Whether this projection is already singular (no list to flatten).
+    pub fn is_singular(&self) -> bool {
+        matches!(self, Projection::Schema | Projection::Count | Projection::Summary | Projection::Totals | Projection::Report)
+    }
+
+    /// The ViewField this projection replaces -v with, if it's a view-level projection.
+    /// Returns None for structural/aggregate projections that don't replace -v.
+    pub fn view_field_replacement(&self) -> Option<ViewField> {
+        match self {
+            Projection::Tree   => Some(ViewField::Tree),
+            Projection::Value  => Some(ViewField::Value),
+            Projection::Source => Some(ViewField::Source),
+            Projection::Lines  => Some(ViewField::Lines),
+            Projection::Schema => Some(ViewField::Schema),
+            Projection::Count  => Some(ViewField::Count),
+            _ => None,
+        }
+    }
+
+    /// Whether this projection has no per-match rendering at all (v/ and -m have no effect).
+    pub fn is_metadata_only(&self) -> bool {
+        matches!(self, Projection::Summary | Projection::Totals)
+    }
+}
+
 /// Parse a `-g` flag value into a list of group dimensions.
 /// Supports: "none", "file", "command", "command,file", "file,command", etc.
 pub fn parse_group_by(s: &str) -> Result<Vec<GroupDimension>, String> {
