@@ -56,14 +56,14 @@ impl Source {
 pub const PATHLESS_LABEL: &str = "<string>";
 ```
 
-Each `Operation` drops `files: Vec<String>`, `inline_source: Option<String>`, `language: Option<String>`, and the per-op diff/exclude fields, and gains:
+Each `OperationPlan` drops `files: Vec<String>`, `inline_source: Option<String>`, `language: Option<String>`, and the per-op diff/exclude fields, and gains:
 
 ```rust
 pub sources: Vec<Source>,
 pub filters: Vec<Box<dyn ResultFilter>>,
 ```
 
-Both fields are **pre-resolved before the Operation is constructed**. The executor is a pure consumer — it never expands globs, never calls `FileResolver`, never touches raw pattern strings for file resolution. (Per-rule `include:`/`exclude:` globs still live on `Rule` and are applied at match time inside `run_rules`; that is a different concern — "which rules apply to this source" — from file resolution.)
+Both fields are **pre-resolved before the `OperationPlan` is constructed**. The executor is a pure consumer — it never expands globs, never calls `FileResolver`, never touches raw pattern strings for file resolution. (Per-rule `include:`/`exclude:` globs still live on `Rule` and are applied at match time inside `run_rules`; that is a different concern — "which rules apply to this source" — from file resolution.)
 
 ## UX: no new flag — reuse the positional `files` arg
 
@@ -115,7 +115,7 @@ Language is resolved at the input boundary: `-l` overrides, otherwise `detect_la
                    │
                    ▼
  ┌─────────────────────────────────┐
- │ Operation {                     │
+ │ OperationPlan {                 │
  │   sources: Vec<Source>,         │◀── ONE unified list
  │   rules / xpath / ...           │
  │ }                               │
@@ -160,8 +160,8 @@ Language is resolved at the input boundary: `-l` overrides, otherwise `detect_la
 |---|---|
 | `tractor/src/input/source.rs` | **NEW**. `Source`, `SourceContent`, `PATHLESS_LABEL`, constructors `Source::disk`, `Source::inline_at`, `Source::inline_pathless`, `Source::read()`. |
 | `tractor/src/input/mod.rs` | `InputMode` → `Vec<Source>` (drops the `Files` vs `InlineSource` split). `resolve_input` validates inline+files≤1, glob-expands disk files, pre-detects language, returns a unified `Vec<Source>`. |
-| `tractor/src/cli/{check,query,set,test}.rs` | Build each `Operation` with a single `sources: Vec<Source>` field. Remove the Phase-2-vs-Phase-3 dispatch. |
-| `tractor/src/executor/{check,query,set,test}.rs` | `Operation` struct loses `files`, `inline_source`, `language`; gains `sources`. Execution body drops the inline branch. Parsing goes through `source.read()` + `parse_string_to_documents(&content, &source.language, source.path.as_str(), ...)`. |
+| `tractor/src/cli/{check,query,set,test}.rs` | Build each `OperationPlan` with a single `sources: Vec<Source>` field. Remove the Phase-2-vs-Phase-3 dispatch. |
+| `tractor/src/executor/{check,query,set,test}.rs` | `OperationPlan` struct loses `files`, `inline_source`, `language`; gains `sources`. Execution body drops the inline branch. Parsing goes through `source.read()` + `parse_string_to_documents(&content, &source.language, source.path.as_str(), ...)`. |
 | `tractor/src/matcher.rs:187` (`run_rules`) | Signature: `&[Source]` instead of `&[NormalizedPath]`. Per-rule glob match still on `&source.path`. Parsing switches from `parse_file_to_xot` to `source.read()` piped into `parse_string_to_xot`. Parallel iteration preserved. |
 | `tractor/src/input/file_resolver.rs` | `FileResolver::resolve` returns `(Vec<Source>, Vec<Box<dyn ResultFilter>>)` directly — no adapter. Takes a `SourceRequest` (single `inline_source: Option<&Source>` field, no dual `inline`/`has_inline`). Constructor takes a new `ResolverOptions` struct (split off from `ExecuteOptions`). |
 | `tractor/src/input/git.rs` | `DiffHunkFilter::from_spec_with_sources(spec, cwd, sources)` — for any `is_virtual()` source, replace that path's hunks with `diff(<spec>:path, inline content)`; disk sources unchanged. |
@@ -183,7 +183,7 @@ A virtual source whose path doesn't match any rule's `include:` produces zero ma
 - **The sentinel is quarantined.** It appears in exactly one place — as a display label when a user pipes content without a positional path — and the formatter's `file != PATHLESS_LABEL` check remains as a local, narrow concern. `PATHLESS_LABEL` itself lives in the library crate and is the single source of truth.
 - **Glob matching, diff-lines, filtering: free.** All of it already keys off `NormalizedPath`. Unifying sources means the virtual path participates in these pipelines exactly like a real path, with no new code.
 - **Factor separation made structural, not conventional.** Today "is this inline?" is answered by inspecting the operation's shape (is `inline_source` Some?). After: answered by `source.is_virtual()` — a property of the thing itself, not the container.
-- **File resolution lifted out of operations.** As a direct consequence of unifying to `Vec<Source>`, `FileResolver` now runs **before** the `Operation` is constructed (in `cli/*.rs` and `cli/config.rs`). Operations are pure consumers of pre-resolved `sources`/`filters`. Executors no longer import `FileResolver`. Config loading goes through an intermediate `ConfigOperation { inputs: OperationInputs, op: … }` so each op-specific parser declares its pattern shape (an `OperationInputs` bag of `files`/`exclude`/`diff_*`/`language`/`inline_source`) and a single runner in `cli/config.rs` drives `resolver.resolve(...)` uniformly, then calls `config_op.into_operation(sources, filters)`. The resolver knows nothing about operation types; operations contain no resolution logic.
+- **File resolution lifted out of operations.** As a direct consequence of unifying to `Vec<Source>`, `FileResolver` now runs **before** the `OperationPlan` is constructed (in `cli/*.rs` and `cli/config.rs`). `OperationPlan`s are pure consumers of pre-resolved `sources`/`filters`. Executors no longer import `FileResolver`. Config loading goes through an intermediate `ConfigOperation { inputs: OperationInputs, op: … }` so each op-specific parser declares its pattern shape (an `OperationInputs` bag of `files`/`exclude`/`diff_*`/`language`/`inline_source`) and a single runner in `input::plan` drives `resolver.resolve(...)` uniformly, then calls `config_op.into_parts()` to split off the `Operation` and hands the resolved sources/filters to `Operation::into_plan(...)`. The resolver knows nothing about operation types; operations contain no resolution logic.
 
 ## Verification
 
