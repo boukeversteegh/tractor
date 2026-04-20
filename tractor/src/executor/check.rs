@@ -153,7 +153,7 @@ fn validate_rule_examples(
         // Validate valid examples: expect "none" (query should NOT match valid code)
         for (i, example) in rule.valid_examples.iter().enumerate() {
             let mut result = parse_string_to_documents(
-                example, lang, "<stdin>".to_string(), tree_mode, false,
+                example, lang, tractor::PATHLESS_LABEL.to_string(), tree_mode, false,
             )?;
             let matches = result.query(rule.xpath.as_str())?;
             if !super::check_expectation("none", matches.len())? {
@@ -170,7 +170,7 @@ fn validate_rule_examples(
         // Validate invalid examples: expect "some" (query SHOULD match invalid code)
         for (i, example) in rule.invalid_examples.iter().enumerate() {
             let mut result = parse_string_to_documents(
-                example, lang, "<stdin>".to_string(), tree_mode, false,
+                example, lang, tractor::PATHLESS_LABEL.to_string(), tree_mode, false,
             )?;
             let matches = result.query(rule.xpath.as_str())?;
             if !super::check_expectation("some", matches.len())? {

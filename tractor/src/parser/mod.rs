@@ -57,7 +57,7 @@ pub struct XotParseResult {
     pub root: xot::Node,
     /// Original source lines for location-based output
     pub source_lines: Vec<String>,
-    /// File path or "<stdin>"
+    /// File path or [`PATHLESS_LABEL`](crate::PATHLESS_LABEL) for pathless input
     pub file_path: String,
     /// Language used for parsing
     pub language: String,
@@ -392,7 +392,7 @@ pub struct XeeParseResult {
     pub doc_handle: DocumentHandle,
     /// Original source lines for location-based output (Arc for cheap cloning)
     pub source_lines: std::sync::Arc<Vec<String>>,
-    /// File path or "<stdin>"
+    /// File path or [`PATHLESS_LABEL`](crate::PATHLESS_LABEL) for pathless input
     pub file_path: String,
     /// Language used for parsing
     pub language: String,
