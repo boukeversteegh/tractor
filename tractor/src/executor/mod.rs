@@ -234,23 +234,31 @@ mod tests {
             .collect()
     }
 
+    /// Helper: compile a vec of rules the way CLI paths do, with no ruleset
+    /// boundary and no base_dir (suitable for tests with already-absolute
+    /// paths and no per-rule globs).
+    fn compile(rules: Vec<Rule>, default_language: Option<&str>) -> Vec<tractor::CompiledRule> {
+        tractor::compile_ruleset(&[], &[], default_language, None, rules, None)
+            .expect("no globs → compile cannot fail")
+    }
+
     #[test]
     fn check_finds_violations() {
         let (_dir, path) = temp_json_file(r#"{"debug": true, "verbose": true}"#);
         let ops = vec![Operation::Check(CheckOperation {
             sources: disk_sources(&[&path]),
             filters: Filters::default(),
-            rules: vec![
-                Rule::new("no-debug", "//debug[.='true']")
-                    .with_reason("debug should not be enabled")
-                    .with_severity(Severity::Error),
-            ],
+            compiled_rules: compile(
+                vec![
+                    Rule::new("no-debug", "//debug[.='true']")
+                        .with_reason("debug should not be enabled")
+                        .with_severity(Severity::Error),
+                ],
+                None,
+            ),
             tree_mode: None,
             ignore_whitespace: false,
             parse_depth: None,
-            ruleset_include: vec![],
-            ruleset_exclude: vec![],
-            ruleset_default_language: None,
         })];
         let report = run(&ops);
         assert!(!report.success.unwrap(), "check should fail when violations found");
@@ -266,16 +274,16 @@ mod tests {
         let ops = vec![Operation::Check(CheckOperation {
             sources: disk_sources(&[&path]),
             filters: Filters::default(),
-            rules: vec![
-                Rule::new("no-debug", "//debug[.='true']")
-                    .with_reason("debug should not be enabled"),
-            ],
+            compiled_rules: compile(
+                vec![
+                    Rule::new("no-debug", "//debug[.='true']")
+                        .with_reason("debug should not be enabled"),
+                ],
+                None,
+            ),
             tree_mode: None,
             ignore_whitespace: false,
             parse_depth: None,
-            ruleset_include: vec![],
-            ruleset_exclude: vec![],
-            ruleset_default_language: None,
         })];
         let report = run(&ops);
         assert!(report.success.unwrap());
@@ -290,17 +298,17 @@ mod tests {
         let ops = vec![Operation::Check(CheckOperation {
             sources: vec![inline],
             filters: Filters::default(),
-            rules: vec![
-                Rule::new("no-debug", "//debug[.='true']")
-                    .with_reason("debug should not be enabled")
-                    .with_severity(Severity::Error),
-            ],
+            compiled_rules: compile(
+                vec![
+                    Rule::new("no-debug", "//debug[.='true']")
+                        .with_reason("debug should not be enabled")
+                        .with_severity(Severity::Error),
+                ],
+                Some("json"),
+            ),
             tree_mode: None,
             ignore_whitespace: false,
             parse_depth: None,
-            ruleset_include: vec![],
-            ruleset_exclude: vec![],
-            ruleset_default_language: Some("json".into()),
         })];
         let report = run(&ops);
         assert!(!report.success.unwrap(), "inline check should fail when violations found");
@@ -318,16 +326,16 @@ mod tests {
         let ops = vec![Operation::Check(CheckOperation {
             sources: vec![inline],
             filters: Filters::default(),
-            rules: vec![
-                Rule::new("no-debug", "//debug[.='true']")
-                    .with_reason("debug should not be enabled"),
-            ],
+            compiled_rules: compile(
+                vec![
+                    Rule::new("no-debug", "//debug[.='true']")
+                        .with_reason("debug should not be enabled"),
+                ],
+                Some("json"),
+            ),
             tree_mode: None,
             ignore_whitespace: false,
             parse_depth: None,
-            ruleset_include: vec![],
-            ruleset_exclude: vec![],
-            ruleset_default_language: Some("json".into()),
         })];
         let report = run(&ops);
         assert!(report.success.unwrap());
@@ -346,16 +354,16 @@ mod tests {
             Operation::Check(CheckOperation {
                 sources: disk_sources(&[data_path.to_str().unwrap()]),
                 filters: Filters::default(),
-                rules: vec![
-                    Rule::new("has-name", "//name[.='missing']")
-                        .with_reason("name should not be 'missing'"),
-                ],
+                compiled_rules: compile(
+                    vec![
+                        Rule::new("has-name", "//name[.='missing']")
+                            .with_reason("name should not be 'missing'"),
+                    ],
+                    None,
+                ),
                 tree_mode: None,
                 ignore_whitespace: false,
                 parse_depth: None,
-                ruleset_include: vec![],
-                ruleset_exclude: vec![],
-                ruleset_default_language: None,
             }),
             Operation::Set(set::SetOperation {
                 sources: disk_sources(&[config_path.to_str().unwrap()]),

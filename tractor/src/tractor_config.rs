@@ -359,13 +359,31 @@ pub struct OperationInputs {
     pub inline_source: Option<Source>,
 }
 
+/// A check operation as it exists in config-land — pre-compilation.
+///
+/// Globs are still raw strings here because the base directory they
+/// should resolve against isn't known until the CLI layer determines
+/// `base_dir` from the config file's location. Compiled into a
+/// [`CheckOperation`] inside [`ConfigOperation::into_operation`].
+#[derive(Debug, Clone)]
+pub struct CheckDraft {
+    pub rules: Vec<Rule>,
+    pub ruleset_include: Vec<String>,
+    pub ruleset_exclude: Vec<String>,
+    pub ruleset_default_language: Option<String>,
+    pub tree_mode: Option<TreeMode>,
+    pub ignore_whitespace: bool,
+    pub parse_depth: Option<usize>,
+}
+
 /// A config-sourced operation, paired with the per-op input-resolution data
-/// that the runner needs to call `FileResolver::resolve`. The variant's
-/// enclosed `CheckOperation`/etc. is a skeleton with `sources` and
-/// `filters` empty — the runner fills them in from the resolver.
+/// that the runner needs to call `FileResolver::resolve`. The non-Check
+/// variants enclose a skeleton with `sources`/`filters` empty — the runner
+/// fills them in from the resolver. The Check variant additionally defers
+/// glob compilation until `base_dir` is known (see [`CheckDraft`]).
 #[derive(Debug, Clone)]
 pub enum ConfigOperation {
-    Check { inputs: OperationInputs, op: CheckOperation },
+    Check { inputs: OperationInputs, draft: CheckDraft },
     Set { inputs: OperationInputs, op: SetOperation },
     Query { inputs: OperationInputs, op: QueryOperation },
     Test { inputs: OperationInputs, op: TestOperation },
@@ -374,35 +392,54 @@ pub enum ConfigOperation {
 impl ConfigOperation {
     /// Consumes the skeleton, injecting already-resolved sources/filters,
     /// and returns the wrapped [`Operation`] ready for the executor.
+    ///
+    /// For `Check`, this is also where per-rule glob patterns become the
+    /// domain form: `base_dir` lets us resolve them and compile each
+    /// rule's `GlobMatcher` once, so the executor never touches raw
+    /// strings again.
     pub fn into_operation(
         self,
         sources: Vec<Source>,
         filters: crate::input::filter::Filters,
-    ) -> Operation {
+        base_dir: Option<&std::path::Path>,
+    ) -> Result<Operation, Box<dyn std::error::Error>> {
         match self {
-            ConfigOperation::Check { op, .. } => {
-                let mut op = op;
-                op.sources = sources;
-                op.filters = filters;
-                Operation::Check(op)
+            ConfigOperation::Check { draft, .. } => {
+                let compiled_rules = tractor::compile_ruleset(
+                    &draft.ruleset_include,
+                    &draft.ruleset_exclude,
+                    draft.ruleset_default_language.as_deref(),
+                    draft.tree_mode,
+                    draft.rules,
+                    base_dir,
+                )
+                .map_err(|e| -> Box<dyn std::error::Error> { e.to_string().into() })?;
+                Ok(Operation::Check(CheckOperation {
+                    sources,
+                    filters,
+                    compiled_rules,
+                    tree_mode: draft.tree_mode,
+                    ignore_whitespace: draft.ignore_whitespace,
+                    parse_depth: draft.parse_depth,
+                }))
             }
             ConfigOperation::Set { op, .. } => {
                 let mut op = op;
                 op.sources = sources;
                 op.filters = filters;
-                Operation::Set(op)
+                Ok(Operation::Set(op))
             }
             ConfigOperation::Query { op, .. } => {
                 let mut op = op;
                 op.sources = sources;
                 op.filters = filters;
-                Operation::Query(op)
+                Ok(Operation::Query(op))
             }
             ConfigOperation::Test { op, .. } => {
                 let mut op = op;
                 op.sources = sources;
                 op.filters = filters;
-                Operation::Test(op)
+                Ok(Operation::Test(op))
             }
         }
     }
@@ -497,20 +534,20 @@ fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<ConfigOperati
         inline_source: None,
     };
 
-    // Operation skeleton — sources/filters filled in by runner after resolve.
-    let op = CheckOperation {
-        sources: Vec::new(),
-        filters: crate::input::filter::Filters::default(),
+    // Draft — per-rule globs stay as raw strings until `base_dir` is
+    // known in the CLI layer; `into_operation` compiles them into a
+    // ready-to-match `Vec<CompiledRule>`.
+    let draft = CheckDraft {
         rules,
-        tree_mode,
-        ignore_whitespace: false,
-        parse_depth: None,
         ruleset_include: vec![],
         ruleset_exclude: vec![],
         ruleset_default_language: config.language,
+        tree_mode,
+        ignore_whitespace: false,
+        parse_depth: None,
     };
 
-    Ok(ConfigOperation::Check { inputs, op })
+    Ok(ConfigOperation::Check { inputs, draft })
 }
 
 fn selector_xpath(expr: &str) -> String {
@@ -817,10 +854,10 @@ pub fn parse_config_toml(content: &str) -> Result<LoadedConfig, Box<dyn std::err
 mod tests {
     use super::*;
 
-    /// Unwrap a `ConfigOperation::Check` into (`&OperationInputs`, `&CheckOperation`).
-    fn as_check(op: &ConfigOperation) -> (&OperationInputs, &CheckOperation) {
+    /// Unwrap a `ConfigOperation::Check` into (`&OperationInputs`, `&CheckDraft`).
+    fn as_check(op: &ConfigOperation) -> (&OperationInputs, &CheckDraft) {
         match op {
-            ConfigOperation::Check { inputs, op } => (inputs, op),
+            ConfigOperation::Check { inputs, draft } => (inputs, draft),
             _ => panic!("expected Check operation"),
         }
     }

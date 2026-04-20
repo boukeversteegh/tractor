@@ -143,16 +143,26 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     // If the file resolver emitted a fatal diagnostic, skip execution.
     if !builder.has_fatals() {
+        // Compile the rule's globs against the current `base_dir` so the
+        // executor receives already-resolved matchers. No ruleset boundary
+        // here — this is a single-xpath CLI check.
+        let compiled_rules = tractor::compile_ruleset(
+            &[],
+            &[],
+            op_language.as_deref(),
+            ctx.tree_mode,
+            vec![rule],
+            env.base_dir,
+        )
+        .map_err(|e| -> Box<dyn std::error::Error> { e.to_string().into() })?;
+
         let op = Operation::Check(CheckOperation {
             sources,
             filters,
-            rules: vec![rule],
+            compiled_rules,
             tree_mode: ctx.tree_mode,
             ignore_whitespace: ctx.ignore_whitespace,
             parse_depth: ctx.parse_depth,
-            ruleset_include: vec![],
-            ruleset_exclude: vec![],
-            ruleset_default_language: op_language,
         });
 
         executor::execute(&[op], &env, &mut builder)?;

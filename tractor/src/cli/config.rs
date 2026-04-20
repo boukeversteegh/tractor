@@ -177,7 +177,7 @@ pub fn run_from_config(params: ConfigRunParams) -> Result<(), Box<dyn std::error
                 inline_source: inputs.inline_source.as_ref(),
             };
             let (sources, filters) = resolver.resolve(&request, &mut builder);
-            operations.push(config_op.into_operation(sources, filters));
+            operations.push(config_op.into_operation(sources, filters, env.base_dir)?);
         }
 
         executor::execute(&operations, &env, &mut builder)?;

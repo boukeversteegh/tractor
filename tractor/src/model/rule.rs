@@ -34,6 +34,8 @@ use crate::tree_mode::TreeMode;
 pub use glob_matcher::GlobMatcher;
 #[cfg(feature = "native")]
 pub use glob_matcher::GlobError;
+#[cfg(feature = "native")]
+pub use compiled::{CompiledRule, compile_ruleset};
 
 #[cfg(feature = "native")]
 mod glob_matcher {
@@ -138,6 +140,120 @@ mod glob_matcher {
         pub fn is_empty(&self) -> bool {
             self.rs_include.is_empty() && self.r_include.is_empty() && self.exclude.is_empty()
         }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// CompiledRule (native only — carries a compiled GlobMatcher)
+// ---------------------------------------------------------------------------
+
+#[cfg(feature = "native")]
+mod compiled {
+    use std::path::Path;
+
+    use super::{GlobError, GlobMatcher, Rule};
+    use crate::normalized_xpath::NormalizedXpath;
+    use crate::report::Severity;
+    use crate::tree_mode::TreeMode;
+
+    /// A rule whose glob patterns have been resolved against a known
+    /// `base_dir` and compiled into a ready-to-match [`GlobMatcher`].
+    ///
+    /// The storage form (`Rule` with raw string globs) is kept around
+    /// for config parsing and YAML round-trips. The domain form used at
+    /// match time is this `CompiledRule` — constructed once per operation
+    /// in [`compile_ruleset`] and handed to `run_rules` as-is. The
+    /// ruleset-level `include`/`exclude` boundary is baked into each
+    /// rule's `GlobMatcher`, so `run_rules` never needs to consult the
+    /// original [`RuleSet`].
+    ///
+    /// All fields needed at match time and for report enrichment are
+    /// carried directly on the `CompiledRule`. This includes example
+    /// data so that `execute_check`'s example-validation pass can run
+    /// without a parallel `&[Rule]` argument.
+    #[derive(Debug, Clone)]
+    pub struct CompiledRule {
+        /// Unique identifier for this rule.
+        pub id: String,
+        /// XPath expression to execute against each parsed document.
+        pub xpath: NormalizedXpath,
+        /// Human-readable explanation shown for each match.
+        pub reason: Option<String>,
+        /// Severity of matches.
+        pub severity: Severity,
+        /// Custom message template.
+        pub message: Option<String>,
+        /// Effective language (rule override || ruleset default). None
+        /// means "use the source's language as-is".
+        pub language: Option<String>,
+        /// Effective tree mode (rule override || ruleset default). The
+        /// operation-level tree mode still applies as a final fallback.
+        pub tree_mode: Option<TreeMode>,
+        /// Code examples that should pass the check.
+        pub valid_examples: Vec<String>,
+        /// Code examples that should fail the check.
+        pub invalid_examples: Vec<String>,
+        /// Compiled glob matcher combining ruleset and rule layers.
+        pub glob: GlobMatcher,
+    }
+
+    impl CompiledRule {
+        /// Returns true if this rule has any examples to validate.
+        pub fn has_examples(&self) -> bool {
+            !self.valid_examples.is_empty() || !self.invalid_examples.is_empty()
+        }
+    }
+
+    /// Compile every rule in a ruleset into a [`CompiledRule`], folding
+    /// the ruleset-level `include`/`exclude` boundary into each per-rule
+    /// [`GlobMatcher`].
+    ///
+    /// Glob patterns are resolved against `base_dir` at this point so
+    /// subsequent matching is a pure pattern-vs-path check. The effective
+    /// language and tree mode are also pre-resolved per rule using the
+    /// ruleset defaults as fallbacks, so the caller never has to consult
+    /// the original [`RuleSet`] at match time.
+    pub fn compile_ruleset(
+        ruleset_include: &[String],
+        ruleset_exclude: &[String],
+        ruleset_default_language: Option<&str>,
+        ruleset_default_tree_mode: Option<TreeMode>,
+        rules: Vec<Rule>,
+        base_dir: Option<&Path>,
+    ) -> Result<Vec<CompiledRule>, GlobError> {
+        let base_buf = base_dir.map(|p| p.to_path_buf());
+        let resolve = |patterns: &[String]| -> Vec<crate::GlobPattern> {
+            crate::GlobPattern::resolve_all(patterns, &base_buf)
+        };
+
+        let rs_include = resolve(ruleset_include);
+        let rs_exclude = resolve(ruleset_exclude);
+
+        rules
+            .into_iter()
+            .map(|rule| {
+                let glob = GlobMatcher::new(
+                    &rs_include,
+                    &rs_exclude,
+                    &resolve(&rule.include),
+                    &resolve(&rule.exclude),
+                )?;
+                Ok(CompiledRule {
+                    id: rule.id,
+                    xpath: rule.xpath,
+                    reason: rule.reason,
+                    severity: rule.severity,
+                    message: rule.message,
+                    language: rule
+                        .language
+                        .or_else(|| ruleset_default_language.map(|s| s.to_string())),
+                    tree_mode: rule.tree_mode.or(ruleset_default_tree_mode),
+                    valid_examples: rule.valid_examples,
+                    invalid_examples: rule.invalid_examples,
+                    glob,
+                })
+            })
+            .collect()
     }
 }
 
@@ -574,8 +690,9 @@ mod tests {
             assert!(!m.matches_str("test/foo.rs"));
             // ...but does NOT reject the same file via absolute path (glob does
             // full-string matching, so the pattern can't match the leading /).
-            // In practice, run_rules() resolves patterns to absolute before
-            // building the GlobMatcher, so this limitation doesn't surface.
+            // In practice, compile_ruleset() resolves patterns to absolute
+            // before building the GlobMatcher, so this limitation doesn't
+            // surface at match time.
             assert!(m.matches_str("/home/user/project/test/foo.rs"));
         }
 

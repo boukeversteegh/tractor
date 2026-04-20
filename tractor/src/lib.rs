@@ -97,7 +97,7 @@ pub use replace::{apply_replacements, apply_set_to_string, ReplaceSummary, Repla
 pub use report::{Report, ReportBuilder, ReportMatch, ResultItem, Totals, Severity, DiagnosticOrigin, PATHLESS_LABEL, is_pathless_file};
 pub use rule::{Rule, RuleSet};
 #[cfg(feature = "native")]
-pub use rule::{GlobMatcher, GlobError};
+pub use rule::{GlobMatcher, GlobError, CompiledRule, compile_ruleset};
 #[cfg(feature = "native")]
 pub use files::{expand_globs, expand_globs_checked, GlobExpansion, GlobExpansionError};
 pub use xot_builder::{XotBuilder, XeeBuilder};

@@ -1,14 +1,13 @@
 use std::collections::HashSet;
-use std::path::Path;
 
 use rayon::prelude::*;
 use tractor::{
-    Match, NormalizedXpath, GlobPattern,
+    Match, NormalizedXpath,
     language_info::parse_language,
     output::{render_document, RenderOptions},
     parse_to_documents,
     report::{Report, ReportMatch, Severity, DiagnosticOrigin},
-    rule::{RuleSet, GlobMatcher},
+    rule::CompiledRule,
     xpath::validate_xpath,
 };
 use crate::input::filter::Filters;
@@ -139,13 +138,8 @@ pub struct RuleMatch {
     pub m: Match,
 }
 
-/// Precomputed per-rule state: the glob matcher and the XPath expression.
-struct CompiledRule {
-    glob: GlobMatcher,
-    xpath: NormalizedXpath,
-}
-
-/// Check if a rule's language matches the source's pre-resolved language.
+/// Check if a rule's (already-resolved) language matches the source's
+/// pre-resolved language.
 ///
 /// Returns `true` if:
 /// - The rule has no explicit language (uses the source's language as-is)
@@ -157,14 +151,10 @@ struct CompiledRule {
 /// sources (language from extension detection) and inline sources
 /// (language from `-l`).
 fn rule_language_matches_source(
-    ruleset: &RuleSet,
-    rule_idx: usize,
+    rule: &CompiledRule,
     source_language: &str,
 ) -> bool {
-    let rule = &ruleset.rules[rule_idx];
-    let effective_lang = ruleset.effective_language(rule);
-
-    match effective_lang {
+    match rule.language.as_deref() {
         // No language specified → rule uses the source's language as-is
         None => true,
         // Language specified → must match source's language
@@ -176,7 +166,12 @@ fn rule_language_matches_source(
     }
 }
 
-/// Execute all rules in a `RuleSet` against a list of sources.
+/// Execute all compiled rules against a list of sources.
+///
+/// The caller has already resolved per-rule glob patterns against the
+/// appropriate `base_dir` and compiled them into [`CompiledRule`] entries
+/// via `tractor::compile_ruleset`. This function is a pure consumer — it
+/// never compiles patterns and never resolves paths.
 ///
 /// Virtual (inline) and disk sources share the same code path: each [`Source`]
 /// carries its own path, language, and content accessor, so `run_rules` doesn't
@@ -191,43 +186,18 @@ fn rule_language_matches_source(
 ///
 /// `verbose` controls whether parse/query warnings are printed to stderr.
 pub fn run_rules(
-    ruleset: &RuleSet,
+    rules: &[CompiledRule],
     sources: &[Source],
-    base_dir: Option<&Path>,
     tree_mode: Option<tractor::TreeMode>,
     ignore_whitespace: bool,
     parse_depth: Option<usize>,
     verbose: bool,
     filters: &Filters,
 ) -> Result<Vec<RuleMatch>, Box<dyn std::error::Error>> {
-    // Resolve per-rule include/exclude patterns to absolute GlobPatterns so
-    // they match correctly against absolute NormalizedPath file paths.
-    let resolve = |patterns: &[String]| -> Vec<GlobPattern> {
-        GlobPattern::resolve_all(patterns, &base_dir.map(|p| p.to_path_buf()))
-    };
-
-    // Compile glob matchers for each rule upfront.
-    let compiled: Vec<CompiledRule> = ruleset
-        .rules
-        .iter()
-        .map(|rule| {
-            let glob = GlobMatcher::new(
-                &resolve(&ruleset.include),
-                &resolve(&ruleset.exclude),
-                &resolve(&rule.include),
-                &resolve(&rule.exclude),
-            )?;
-            Ok(CompiledRule {
-                glob,
-                xpath: rule.xpath.clone(),
-            })
-        })
-        .collect::<Result<Vec<_>, tractor::rule::GlobError>>()?;
-
     // Process sources in parallel. Each source is parsed once using either:
     // - The source's detected language (when no rules specify a language override)
     // - The effective language from the first applicable rule (when rules specify a language)
-    // Note: rule_language_matches_file() ensures all applicable rules are compatible
+    // Note: rule_language_matches_source() ensures all applicable rules are compatible
     // with the source's language, so we won't try to parse a source in multiple languages.
     let results: Vec<Vec<RuleMatch>> = sources
         .par_iter()
@@ -236,12 +206,12 @@ pub fn run_rules(
             let path_str = file_path.as_str();
 
             // Determine which rules apply to this source based on globs AND language.
-            let applicable: Vec<usize> = compiled
+            let applicable: Vec<usize> = rules
                 .iter()
                 .enumerate()
-                .filter(|(i, cr)| {
-                    cr.glob.matches(file_path)
-                        && rule_language_matches_source(ruleset, *i, &source.language)
+                .filter(|(_, rule)| {
+                    rule.glob.matches(file_path)
+                        && rule_language_matches_source(rule, &source.language)
                 })
                 .map(|(i, _)| i)
                 .collect();
@@ -252,10 +222,10 @@ pub fn run_rules(
 
             // Resolve language and tree_mode from the first applicable rule.
             // All applicable rules are compatible with this source's language
-            // (ensured by rule_language_matches_file filter above).
-            let first_rule = &ruleset.rules[applicable[0]];
-            let lang_override = ruleset.effective_language(first_rule);
-            let effective_tree_mode = ruleset.effective_tree_mode(first_rule).or(tree_mode);
+            // (ensured by rule_language_matches_source filter above).
+            let first_rule = &rules[applicable[0]];
+            let lang_override = first_rule.language.as_deref();
+            let effective_tree_mode = first_rule.tree_mode.or(tree_mode);
 
             let mut result = match source.parse(
                 lang_override,
@@ -276,7 +246,7 @@ pub fn run_rules(
 
             // Run all applicable rules against the parsed result
             for rule_idx in applicable {
-                match result.query(compiled[rule_idx].xpath.as_str()) {
+                match result.query(rules[rule_idx].xpath.as_str()) {
                     Ok(matches) => {
                         for m in matches {
                             file_matches.push(RuleMatch {
@@ -289,7 +259,7 @@ pub fn run_rules(
                         if verbose {
                             eprintln!(
                                 "warning: {}: rule '{}' query error: {}",
-                                file_path, ruleset.rules[rule_idx].id, e
+                                file_path, rules[rule_idx].id, e
                             );
                         }
                     }
@@ -464,65 +434,73 @@ mod tests {
         assert_eq!(parse_language("nonexistent"), Language::Unknown);
     }
 
+    /// Compile a single rule into a `CompiledRule` with optional ruleset
+    /// defaults, mirroring the old `RuleSet`-based test setup.
+    fn compile_for_lang(
+        rule: tractor::rule::Rule,
+        ruleset_default_language: Option<&str>,
+    ) -> CompiledRule {
+        tractor::compile_ruleset(&[], &[], ruleset_default_language, None, vec![rule], None)
+            .expect("no globs → compile cannot fail")
+            .pop()
+            .unwrap()
+    }
+
     #[test]
     fn test_rule_language_matches_source_no_language_specified() {
         // When no language is specified, rule should match any source
-        let mut ruleset = RuleSet::new();
-        ruleset.add(tractor::rule::Rule::new("test", "//any"));
+        let rule = compile_for_lang(tractor::rule::Rule::new("test", "//any"), None);
 
-        assert!(rule_language_matches_source(&ruleset, 0, "javascript"));
-        assert!(rule_language_matches_source(&ruleset, 0, "rust"));
-        assert!(rule_language_matches_source(&ruleset, 0, "markdown"));
-        assert!(rule_language_matches_source(&ruleset, 0, "unknown"));
+        assert!(rule_language_matches_source(&rule, "javascript"));
+        assert!(rule_language_matches_source(&rule, "rust"));
+        assert!(rule_language_matches_source(&rule, "markdown"));
+        assert!(rule_language_matches_source(&rule, "unknown"));
     }
 
     #[test]
     fn test_rule_language_matches_source_with_language() {
         // When language is specified, only matching sources should match
-        let mut ruleset = RuleSet::new();
-        let rule = tractor::rule::Rule::new("test", "//any")
-            .with_language("javascript");
-        ruleset.add(rule);
+        let rule = compile_for_lang(
+            tractor::rule::Rule::new("test", "//any").with_language("javascript"),
+            None,
+        );
 
-        assert!(rule_language_matches_source(&ruleset, 0, "javascript"));
-        assert!(!rule_language_matches_source(&ruleset, 0, "rust"));
-        assert!(!rule_language_matches_source(&ruleset, 0, "markdown"));
+        assert!(rule_language_matches_source(&rule, "javascript"));
+        assert!(!rule_language_matches_source(&rule, "rust"));
+        assert!(!rule_language_matches_source(&rule, "markdown"));
     }
 
     #[test]
     fn test_rule_language_matches_source_with_alias() {
         // Language aliases should work on both sides
-        let mut ruleset = RuleSet::new();
-        let rule = tractor::rule::Rule::new("test", "//any")
-            .with_language("js");  // alias for javascript
-        ruleset.add(rule);
+        let rule = compile_for_lang(
+            tractor::rule::Rule::new("test", "//any").with_language("js"), // alias for javascript
+            None,
+        );
 
-        assert!(rule_language_matches_source(&ruleset, 0, "javascript"));
-        assert!(!rule_language_matches_source(&ruleset, 0, "rust"));
+        assert!(rule_language_matches_source(&rule, "javascript"));
+        assert!(!rule_language_matches_source(&rule, "rust"));
     }
 
     #[test]
     fn test_rule_language_matches_source_with_default_language() {
         // Default language on ruleset should be used
-        let mut ruleset = RuleSet::new();
-        ruleset.default_language = Some("markdown".to_string());
-        ruleset.add(tractor::rule::Rule::new("test", "//any"));
+        let rule = compile_for_lang(tractor::rule::Rule::new("test", "//any"), Some("markdown"));
 
-        assert!(rule_language_matches_source(&ruleset, 0, "markdown"));
-        assert!(!rule_language_matches_source(&ruleset, 0, "javascript"));
+        assert!(rule_language_matches_source(&rule, "markdown"));
+        assert!(!rule_language_matches_source(&rule, "javascript"));
     }
 
     #[test]
     fn test_rule_language_overrides_default() {
         // Rule language should override default
-        let mut ruleset = RuleSet::new();
-        ruleset.default_language = Some("markdown".to_string());
-        let rule = tractor::rule::Rule::new("test", "//any")
-            .with_language("javascript");
-        ruleset.add(rule);
+        let rule = compile_for_lang(
+            tractor::rule::Rule::new("test", "//any").with_language("javascript"),
+            Some("markdown"),
+        );
 
-        assert!(rule_language_matches_source(&ruleset, 0, "javascript"));
-        assert!(!rule_language_matches_source(&ruleset, 0, "markdown"));
+        assert!(rule_language_matches_source(&rule, "javascript"));
+        assert!(!rule_language_matches_source(&rule, "markdown"));
     }
 
     #[test]

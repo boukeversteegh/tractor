@@ -2,7 +2,7 @@
 
 use tractor::report::{ReportBuilder, ReportMatch, Severity};
 use tractor::tree_mode::TreeMode;
-use tractor::rule::{Rule, RuleSet};
+use tractor::rule::CompiledRule;
 use tractor::parse_string_to_documents;
 
 use crate::matcher::validate_xpath_diagnostic;
@@ -22,7 +22,10 @@ use super::match_to_report_match;
 ///
 /// Construction site has already resolved file globs, CLI intersection,
 /// diff-files filter, inline-source wiring, and language detection into
-/// `sources`. Downstream is a plain `Vec<Source>` loop.
+/// `sources`. Per-rule glob patterns have also been resolved against the
+/// known `base_dir` and compiled into [`CompiledRule`] entries — so the
+/// executor just runs already-prepared matchers. Downstream is a plain
+/// `Vec<Source>` × `Vec<CompiledRule>` loop.
 #[derive(Debug, Clone)]
 pub struct CheckOperation {
     /// Pre-resolved unified input list (disk and/or inline).
@@ -30,24 +33,19 @@ pub struct CheckOperation {
     /// Pre-built result filters (diff-lines, etc.). Applied inside
     /// `run_rules` to every match.
     pub filters: Filters,
-    /// Rules to check.
-    pub rules: Vec<Rule>,
-    /// Default tree mode for all rules (rules can override).
+    /// Rules with globs already resolved + compiled against `base_dir`.
+    /// The ruleset-level `include`/`exclude` boundary is folded into
+    /// each rule's `GlobMatcher`, and the effective language / tree mode
+    /// are pre-resolved using the ruleset defaults.
+    pub compiled_rules: Vec<CompiledRule>,
+    /// Default tree mode for all rules (rules can override, and then
+    /// this value is the final fallback if neither the rule nor the
+    /// ruleset specify one).
     pub tree_mode: Option<TreeMode>,
     /// Ignore whitespace-only text nodes during parsing.
     pub ignore_whitespace: bool,
     /// Maximum parse depth.
     pub parse_depth: Option<usize>,
-    /// Ruleset-level include patterns for per-rule glob matching.
-    /// Used by rules-file configs; empty for single-xpath checks.
-    #[doc(hidden)]
-    pub ruleset_include: Vec<String>,
-    /// Ruleset-level exclude patterns for per-rule glob matching.
-    #[doc(hidden)]
-    pub ruleset_exclude: Vec<String>,
-    /// Default language for the ruleset (fallback when a rule has none).
-    /// Used both during example validation and during source parsing.
-    pub ruleset_default_language: Option<String>,
 }
 
 // ---------------------------------------------------------------------------
@@ -59,12 +57,12 @@ pub(crate) fn execute_check(
     ctx: &ExecCtx<'_>,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    if op.rules.is_empty() {
+    if op.compiled_rules.is_empty() {
         return Ok(());
     }
 
     // --- Phase 0: Validate XPath expressions upfront ---
-    let diagnostics: Vec<_> = op.rules.iter()
+    let diagnostics: Vec<_> = op.compiled_rules.iter()
         .filter_map(|rule| validate_xpath_diagnostic(&rule.xpath, "check"))
         .collect();
     if !diagnostics.is_empty() {
@@ -73,26 +71,15 @@ pub(crate) fn execute_check(
     }
 
     // --- Phase 1: Validate rule examples inline ---
-    validate_rule_examples(&op.rules, op.ruleset_default_language.as_deref(), op.tree_mode, report)?;
+    validate_rule_examples(&op.compiled_rules, op.tree_mode, report)?;
 
     if op.sources.is_empty() {
         return Ok(());
     }
 
-    // Build a RuleSet from the operation. Ruleset-level include/exclude
-    // come from rules files; per-rule patterns still participate in glob matching.
-    let ruleset = RuleSet {
-        rules: op.rules.clone(),
-        include: op.ruleset_include.clone(),
-        exclude: op.ruleset_exclude.clone(),
-        default_tree_mode: op.tree_mode,
-        default_language: op.ruleset_default_language.clone(),
-    };
-
     let rule_matches = run_rules(
-        &ruleset,
+        &op.compiled_rules,
         &op.sources,
-        ctx.base_dir,
         op.tree_mode,
         op.ignore_whitespace,
         op.parse_depth,
@@ -101,7 +88,7 @@ pub(crate) fn execute_check(
     )?;
 
     for rm in rule_matches {
-        let rule = &ruleset.rules[rm.rule_index];
+        let rule = &op.compiled_rules[rm.rule_index];
         let reason = rule
             .reason
             .clone()
@@ -134,8 +121,7 @@ pub(crate) fn execute_check(
 /// For each rule with examples, parses the example source and runs the rule's
 /// XPath query. Adds failure matches to the builder for any unmet expectations.
 fn validate_rule_examples(
-    rules: &[Rule],
-    default_language: Option<&str>,
+    rules: &[CompiledRule],
     default_tree_mode: Option<TreeMode>,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -145,7 +131,6 @@ fn validate_rule_examples(
         }
 
         let lang = rule.language.as_deref()
-            .or(default_language)
             .ok_or_else(|| format!(
                 "rule '{}' has examples but no language specified (set language on the rule or check operation)",
                 rule.id
@@ -220,29 +205,41 @@ mod tests {
     use tractor::report::ReportBuilder;
     use tractor::rule::Rule;
 
+    /// Compile a single rule into a `CompiledRule`, optionally with a
+    /// fallback default language. Used by the example-validation tests
+    /// below to mirror the old `default_language` argument.
+    fn compile(rule: Rule, default_language: Option<&str>) -> CompiledRule {
+        tractor::compile_ruleset(&[], &[], default_language, None, vec![rule], None)
+            .expect("compile_ruleset should not fail on no-glob rules")
+            .pop()
+            .unwrap()
+    }
+
     #[test]
     fn test_validate_examples_pass_and_fail_correct() {
-        let rules = vec![
+        let rules = vec![compile(
             Rule::new("no-comments", "//line_comment")
                 .with_language("rust")
                 .with_valid_examples(vec!["fn main() {}".to_string()])
                 .with_invalid_examples(vec!["// hello\nfn main() {}".to_string()]),
-        ];
+            None,
+        )];
         let mut builder = ReportBuilder::new();
-        validate_rule_examples(&rules, None, None, &mut builder).unwrap();
+        validate_rule_examples(&rules, None, &mut builder).unwrap();
         let report = builder.build();
         assert!(report.all_matches().is_empty(), "expected no failures: {:?}", report.all_matches());
     }
 
     #[test]
     fn test_validate_examples_valid_unexpectedly_matches() {
-        let rules = vec![
+        let rules = vec![compile(
             Rule::new("no-comments", "//line_comment")
                 .with_language("rust")
                 .with_valid_examples(vec!["// oops this is a comment".to_string()]),
-        ];
+            None,
+        )];
         let mut builder = ReportBuilder::new();
-        validate_rule_examples(&rules, None, None, &mut builder).unwrap();
+        validate_rule_examples(&rules, None, &mut builder).unwrap();
         let report = builder.build();
         let matches = report.all_matches();
         assert_eq!(matches.len(), 1);
@@ -251,13 +248,14 @@ mod tests {
 
     #[test]
     fn test_validate_examples_invalid_does_not_match() {
-        let rules = vec![
+        let rules = vec![compile(
             Rule::new("no-comments", "//line_comment")
                 .with_language("rust")
                 .with_invalid_examples(vec!["fn main() {}".to_string()]),
-        ];
+            None,
+        )];
         let mut builder = ReportBuilder::new();
-        validate_rule_examples(&rules, None, None, &mut builder).unwrap();
+        validate_rule_examples(&rules, None, &mut builder).unwrap();
         let report = builder.build();
         let matches = report.all_matches();
         assert_eq!(matches.len(), 1);
@@ -266,32 +264,34 @@ mod tests {
 
     #[test]
     fn test_validate_examples_language_from_operation() {
-        let rules = vec![
+        let rules = vec![compile(
             Rule::new("no-comments", "//line_comment")
                 .with_valid_examples(vec!["fn main() {}".to_string()]),
-        ];
+            Some("rust"),
+        )];
         let mut builder = ReportBuilder::new();
-        validate_rule_examples(&rules, Some("rust"), None, &mut builder).unwrap();
+        validate_rule_examples(&rules, None, &mut builder).unwrap();
         let report = builder.build();
         assert!(report.all_matches().is_empty());
     }
 
     #[test]
     fn test_validate_examples_no_language_errors() {
-        let rules = vec![
+        let rules = vec![compile(
             Rule::new("no-comments", "//line_comment")
                 .with_valid_examples(vec!["fn main() {}".to_string()]),
-        ];
+            None,
+        )];
         let mut builder = ReportBuilder::new();
-        let err = validate_rule_examples(&rules, None, None, &mut builder).unwrap_err();
+        let err = validate_rule_examples(&rules, None, &mut builder).unwrap_err();
         assert!(err.to_string().contains("no language specified"));
     }
 
     #[test]
     fn test_validate_examples_no_examples_is_noop() {
-        let rules = vec![Rule::new("simple", "//function")];
+        let rules = vec![compile(Rule::new("simple", "//function"), None)];
         let mut builder = ReportBuilder::new();
-        validate_rule_examples(&rules, None, None, &mut builder).unwrap();
+        validate_rule_examples(&rules, None, &mut builder).unwrap();
         let report = builder.build();
         assert!(report.all_matches().is_empty());
     }
