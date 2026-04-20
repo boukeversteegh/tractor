@@ -593,13 +593,12 @@ fn resolve_globs_to_absolute(base_dir: &Option<PathBuf>, patterns: &[String]) ->
 
 /// Build the [`Filters`] envelope from global and per-operation diff specs.
 ///
-/// Both specs feed the same `diff_hunks` slot. When both are present, the
-/// per-operation spec wins (it's built second and overwrites the global
-/// slot). Callers that set both don't have a tested story for what the
-/// intersection should mean — having op override CLI gives the narrower,
-/// more explicit scope the caller just typed. If users ever ask for a
-/// real intersection, grow a dedicated combinator on `DiffHunkFilter`
-/// instead of resurrecting the trait.
+/// Each applicable spec becomes a distinct `DiffHunkFilter` pushed into
+/// `filters.diff_hunks`. The filters AND-compose: a match must pass
+/// every one of them to be kept. This upholds the project-wide
+/// invariant that file/line scoping rules at every level are
+/// intersectional — global `--diff-lines` narrows the same result set
+/// that per-op `diff-lines:` narrows, neither overrides the other.
 ///
 /// When `inline` is `Some`, the hunks for the virtual path are computed
 /// against the git baseline at `spec:<virtual_path>` so pre-commit hooks
@@ -614,7 +613,7 @@ fn build_filters(
 
     for spec in [global_diff, op_diff].into_iter().flatten() {
         match git::DiffHunkFilter::from_spec_with_inline(spec, cwd, inline) {
-            Ok(f) => filters.diff_hunks = Some(f),
+            Ok(f) => filters.diff_hunks.push(f),
             Err(e) => eprintln!("warning: --diff-lines filter failed: {}", e),
         }
     }
@@ -873,5 +872,44 @@ mod tests {
 
         // Lowercase path should still be excluded on Windows
         assert!(!m.matches(&NormalizedPath::new("vendor/lib.rs")));
+    }
+
+    // -----------------------------------------------------------------------
+    // Intersection regression tests for diff-files specs
+    // -----------------------------------------------------------------------
+    //
+    // Guards the contract that global (`--diff-files`) and per-op
+    // (`diff-files:`) narrow the same set of files: a file must appear
+    // in BOTH change sets to survive. Composed via sequential calls to
+    // `git::intersect_changed` in `FileResolver::resolve_files`.
+
+    /// Direct composition test: chaining two `intersect_changed` calls
+    /// yields the intersection of both change sets. This is what
+    /// `resolve_files` does for global + per-op diff-files.
+    #[test]
+    fn diff_files_global_and_per_op_intersect_not_override() {
+        let a = NormalizedPath::new("/repo/src/a.rs");
+        let b = NormalizedPath::new("/repo/src/b.rs");
+        let c = NormalizedPath::new("/repo/src/c.rs");
+
+        // Starting set: the full expansion before any diff-files filter.
+        let files = vec![a.clone(), b.clone(), c.clone()];
+
+        // Global --diff-files: touches a.rs + b.rs.
+        let global: HashSet<NormalizedPath> =
+            [a.clone(), b.clone()].into_iter().collect();
+
+        // Per-op diff-files: touches b.rs + c.rs.
+        let per_op: HashSet<NormalizedPath> =
+            [b.clone(), c.clone()].into_iter().collect();
+
+        // Apply both, sequentially — the same order `resolve_files` uses.
+        let after_global = git::intersect_changed(files, &global);
+        let after_both = git::intersect_changed(after_global, &per_op);
+
+        // Only b.rs is in both → it's the intersection. If either
+        // filter were an override, we'd see a.rs or c.rs sneak through.
+        assert_eq!(after_both.len(), 1, "only the intersection must survive");
+        assert_eq!(after_both[0], b);
     }
 }
