@@ -1,0 +1,30 @@
+(: Map a TypeScript interface into the shape Tractor's Python renderer expects. :)
+(: Pipe usage: :)
+(:   tractor samples/user.ts -x "$(cat samples/ts-to-python.xpath)" \ :)
+(:     -f json -p tree --single | tractor render -l python :)
+map {
+  "$type": "class",
+  "name": //interface/name/type/string(),
+  "body": map {
+    "children": array {
+      for $p in //property_signature return map {
+        "$type": "field",
+        "name": $p/name/type/string(),
+        "type": if (exists($p/node()[. = "?"])) then map {
+                  "optional": true(),
+                  "children": array {
+                    if ($p//predefined_type = "string") then "str"
+                    else if ($p//predefined_type = "number") then "int"
+                    else if ($p//predefined_type = "boolean") then "bool"
+                    else "object"
+                  }
+                } else (
+                  if ($p//predefined_type = "string") then "str"
+                  else if ($p//predefined_type = "number") then "int"
+                  else if ($p//predefined_type = "boolean") then "bool"
+                  else "object"
+                )
+      }
+    }
+  }
+}

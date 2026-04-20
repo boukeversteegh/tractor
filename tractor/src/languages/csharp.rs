@@ -50,6 +50,18 @@ pub mod semantic {
     // Type markers
     pub const NULLABLE: &str = "nullable";
     pub const GENERIC: &str = "generic";
+    pub const ARRAY: &str = "array";
+
+    // Base list (inheritance)
+    pub const BASE: &str = "base";
+    pub const REF: &str = "ref";
+
+    // Method-specific children
+    pub const RETURNS: &str = "returns";
+
+    // Enum members
+    pub const ENUM_MEMBER: &str = "enum_member";
+    pub const VALUE: &str = "value";
 
     // Comment markers
     pub const TRAILING: &str = "trailing";

@@ -4,6 +4,37 @@ use xot::{Xot, Node as XotNode};
 use crate::xot_transform::{TransformAction, helpers::*};
 use crate::output::syntax_highlight::SyntaxCategory;
 
+/// Semantic element names — tractor's Python XML vocabulary shared with the renderer.
+pub mod semantic {
+    // Top-level / structural
+    pub const MODULE: &str = "module";
+    pub const IMPORT: &str = "import";
+    pub const BODY: &str = "body";
+
+    // Declarations
+    pub const CLASS: &str = "class";
+    pub const FUNCTION: &str = "function";
+    pub const METHOD: &str = "method";
+    pub const FIELD: &str = "field";
+    pub const COMMENT: &str = "comment";
+
+    // Members / shared children
+    pub const NAME: &str = "name";
+    pub const TYPE: &str = "type";
+    pub const PARAMETERS: &str = "parameters";
+    pub const PARAMETER: &str = "parameter";
+    pub const RETURNS: &str = "returns";
+    pub const DEFAULT: &str = "default";
+    pub const BASE: &str = "base";
+    pub const REF: &str = "ref";
+    pub const DECORATORS: &str = "decorators";
+    pub const DECORATOR: &str = "decorator";
+
+    // Type markers
+    pub const OPTIONAL: &str = "optional";
+    pub const LIST: &str = "list";
+}
+
 /// Transform a Python AST node
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let kind = match get_element_name(xot, node) {
