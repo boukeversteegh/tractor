@@ -1588,3 +1588,205 @@ fn view_modifier_rejects_invalid_combinations() {
         .assert_exit(1)
         .run();
 }
+
+// ---------------------------------------------------------------------------
+// `--diff-lines` + pathless inline input: fatal at plan time
+//
+// Pathless inline input has no git baseline to compute hunks against, so
+// combining it with `--diff-lines` is a misconfiguration. The planner rejects
+// it with a fatal diagnostic rather than silently dropping every match. This
+// makes `Filters` apply uniformly across all executors (see `executor/set.rs`
+// — no longer bypasses filters for `InlineWithPath`).
+// ---------------------------------------------------------------------------
+
+#[test]
+fn diff_lines_with_pathless_string_is_fatal() {
+    // `-s` + `--diff-lines` with no positional path → fatal at plan time.
+    let result = command([
+        "check",
+        "--diff-lines",
+        "HEAD",
+        "-l",
+        "javascript",
+        "-s",
+        "let x = 1",
+        "-x",
+        "//call",
+    ])
+    .capture();
+    assert_eq!(1, result.status, "expected fatal exit");
+    let combined = format!("{}{}", result.stdout, result.stderr);
+    assert!(
+        combined.contains("--diff-lines"),
+        "fatal must mention --diff-lines: {}",
+        combined
+    );
+    assert!(
+        combined.contains("file path") || combined.contains("positional path"),
+        "fatal should explain the path requirement: {}",
+        combined
+    );
+}
+
+#[test]
+fn diff_lines_with_pathless_stdin_is_fatal() {
+    // Piped stdin + `--diff-lines` with no positional path → fatal at plan time.
+    let result = command([
+        "check",
+        "--diff-lines",
+        "HEAD",
+        "-l",
+        "javascript",
+        "-x",
+        "//call",
+    ])
+    .stdin("let x = 1\n")
+    .capture();
+    assert_eq!(1, result.status, "expected fatal exit");
+    let combined = format!("{}{}", result.stdout, result.stderr);
+    assert!(
+        combined.contains("--diff-lines"),
+        "fatal must mention --diff-lines: {}",
+        combined
+    );
+}
+
+#[test]
+fn set_diff_lines_with_pathless_stdin_is_fatal() {
+    // `tractor set` with piped stdin (pathless) + `--diff-lines` → fatal.
+    // Regression guard for the set.rs bug where filters were silently
+    // bypassed for inline sources (including InlineWithPath). The new
+    // contract: reject pathless + diff-lines at plan time; other inline
+    // shapes flow through the executor with filters applied uniformly.
+    let result = command([
+        "set",
+        "--diff-lines",
+        "HEAD",
+        "-l",
+        "yaml",
+        "//foo",
+        "--value",
+        "y",
+    ])
+    .stdin("foo: bar\n")
+    .capture();
+    assert_eq!(1, result.status, "expected fatal exit");
+    let combined = format!("{}{}", result.stdout, result.stderr);
+    assert!(
+        combined.contains("--diff-lines"),
+        "fatal must mention --diff-lines: {}",
+        combined
+    );
+}
+
+#[test]
+fn set_inline_with_path_plus_diff_lines_is_accepted_at_plan_time() {
+    // Regression guard for the pre-refactor set.rs bug that silently
+    // bypassed filters for *all* inline sources. The new contract:
+    //
+    //   InlinePathless + --diff-lines → fatal at plan time.
+    //   InlineWithPath + --diff-lines → plan succeeds; the operation runs
+    //       with its filter envelope built, just like disk sources.
+    //
+    // This test guards the InlineWithPath path: with a real git baseline
+    // and a virtual path pointing at a committed file, the planner must
+    // NOT emit the pathless fatal and the run must complete without
+    // error. Previously this combination could reach the executor with a
+    // filter silently dropped; now it threads through uniformly.
+    use std::io::Write;
+
+    let temp = tempfile::tempdir().expect("temp dir");
+    let repo = temp.path();
+
+    // Initial commit baseline: two entries on distinct lines.
+    let src_dir = repo.join("src");
+    std::fs::create_dir_all(&src_dir).expect("mkdir src");
+    let baseline = "kept: old\nchanged: old\n";
+    std::fs::write(src_dir.join("x.yaml"), baseline).expect("write baseline");
+
+    let git = |args: &[&str]| {
+        let out = std::process::Command::new("git")
+            .args(args)
+            .current_dir(repo)
+            .env("GIT_AUTHOR_NAME", "t")
+            .env("GIT_AUTHOR_EMAIL", "t@t")
+            .env("GIT_COMMITTER_NAME", "t")
+            .env("GIT_COMMITTER_EMAIL", "t@t")
+            .output()
+            .expect("run git");
+        assert!(
+            out.status.success(),
+            "git {:?} failed: {}",
+            args,
+            String::from_utf8_lossy(&out.stderr)
+        );
+    };
+    git(&["init", "-q"]);
+    git(&["add", "src/x.yaml"]);
+    git(&["-c", "commit.gpgsign=false", "commit", "-q", "-m", "baseline"]);
+
+    // Modified content fed via stdin: only `changed:` has a new value.
+    // `kept:` stays identical — it's outside the changed hunk.
+    let modified = "kept: old\nchanged: new\n";
+
+    // Run `tractor set --diff-lines HEAD -l yaml src/x.yaml //changed
+    // --value patched` with the modified content piped over stdin. The
+    // positional path `src/x.yaml` makes this an InlineWithPath source.
+    let mut child = std::process::Command::new(env!("CARGO_BIN_EXE_tractor"))
+        .args([
+            "set",
+            "--diff-lines",
+            "HEAD",
+            "-l",
+            "yaml",
+            "--stdout",
+            "src/x.yaml",
+            "//changed",
+            "--value",
+            "patched",
+            "--no-color",
+        ])
+        .current_dir(repo)
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .expect("spawn tractor");
+    {
+        let stdin = child.stdin.as_mut().expect("open stdin");
+        stdin.write_all(modified.as_bytes()).expect("write stdin");
+    }
+    let out = child.wait_with_output().expect("wait tractor");
+    let combined = format!(
+        "{}{}",
+        String::from_utf8_lossy(&out.stdout),
+        String::from_utf8_lossy(&out.stderr)
+    );
+
+    // Must succeed (no pathless-fatal) and must NOT mention --diff-lines
+    // in an error context. The operation runs end-to-end.
+    assert_eq!(
+        0,
+        out.status.code().unwrap_or(-1),
+        "InlineWithPath + --diff-lines must not trip the pathless fatal: {}",
+        combined
+    );
+    assert!(
+        !combined.contains("fatal"),
+        "no fatal diagnostic expected for InlineWithPath: {}",
+        combined
+    );
+    // The mutation reaches the output channel (the captured content
+    // carries the patched value) — proving the source was actually
+    // processed rather than silently dropped.
+    assert!(
+        combined.contains("patched"),
+        "set should have produced mutated output: {}",
+        combined
+    );
+
+    // On-disk baseline must be untouched: set with stdin input captures
+    // to stdout rather than writing back to the file.
+    let on_disk = std::fs::read_to_string(src_dir.join("x.yaml")).expect("read baseline");
+    assert_eq!(on_disk, baseline, "working tree must be untouched");
+}

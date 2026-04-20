@@ -297,6 +297,25 @@ impl FileResolver {
         request: &SourceRequest,
         report: &mut ReportBuilder,
     ) -> (Vec<Source>, Filters) {
+        // Guardrail: `--diff-lines` with pathless inline input is a
+        // misconfiguration — there is no git baseline to compute hunks
+        // against. Reject at plan time (here) so every executor downstream
+        // can apply `Filters` uniformly without per-source bypasses.
+        // Both the global `--diff-lines` spec and any per-op `diff-lines:`
+        // entries count as "active" for this check.
+        let has_diff_lines = self.global_diff_lines.is_some() || !request.diff_lines.is_empty();
+        if has_diff_lines
+            && request.inline_source.map(|s| s.is_pathless()).unwrap_or(false)
+        {
+            report.add(make_fatal_diagnostic(
+                request.command,
+                "`--diff-lines` requires a file path to compute hunks against the git baseline. \
+                 Pipe content with a positional path to name the virtual source, e.g. \
+                 `cat x.cs | tractor check --diff-lines HEAD src/Foo.cs`.".to_string(),
+            ));
+            return (Vec::new(), Filters::default());
+        }
+
         let cwd = self.base_dir.as_deref()
             .unwrap_or_else(|| Path::new("."));
         let inline_for_diff = request.inline_source.and_then(|s| {

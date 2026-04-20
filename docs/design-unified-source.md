@@ -238,6 +238,8 @@ Not in the original plan: the three `parse_to_documents` / `parse_string_to_docu
 
 Explicitly stated after-the-fact, but a first-class invariant of the shipped design: **every file/line scoping layer composes intersectionally.** Global CLI `--diff-lines` / `--diff-files`, config-root `diff-lines` / `diff-files`, per-operation `diff-lines` / `diff-files`, root `files` / `exclude`, per-op `files` / `exclude`, CLI positional files, ruleset `include` / `exclude`, rule `include` / `exclude` — all AND-compose when narrowing; excludes union-reject. No layer overrides another. The `Filters.diff_hunks: Vec<DiffHunkFilter>` shape, sequential `intersect_changed` on `diff_files`, and `OperationInputs.diff_files`/`diff_lines: Vec<String>` (concatenated from root + per-op) all follow from this contract. Regression tests guard the intersection at each boundary.
 
+`--diff-lines` with pathless inline input is rejected at plan time with a fatal diagnostic — there's no git baseline to compute hunks against. This makes filter application uniform across all executors (set no longer needs a per-source filter bypass).
+
 ### Config ceremony
 
 - **`ConfigOperation { Check { inputs, op: CheckOperation }, ... }`** — carries the `OperationInputs` bag alongside the pre-resolved `Operation`. `into_parts()` splits into `(OperationInputs, Operation)` for the planner.

@@ -114,26 +114,23 @@ pub(crate) fn execute_set(
         return Ok(());
     }
 
-    // Virtual sources never see the filters — inline content has no on-disk
-    // baseline to diff against — so we precompute an empty envelope to pass
-    // through in that case. A single `Filters` reference threads through
-    // `execute_set_target` / `apply_set_mapping` / `query_set_matches`,
-    // keeping the signatures concrete.
-    let empty_filters = Filters::default();
-
     for source in &op.sources {
         let content = source.read()?;
 
-        // The three-state disposition drives every policy choice below:
-        //   Disk              → honour the requested write mode, run filters,
-        //                        write back to disk on in-place success.
-        //   InlineWithPath    → capture in-memory output, no filters, no
-        //                        disk write; output carries the virtual path.
-        //   InlinePathless    → same as InlineWithPath but the captured
-        //                        output omits the sentinel path.
-        // Stacking is_virtual() + is_pathless() booleans would reconstruct
-        // the same branches less explicitly; a single match makes the
-        // domain states the primary axis.
+        // Disposition drives write-mode routing only:
+        //   Disk              → honour the requested write mode; writes go
+        //                        back to the file on in-place success.
+        //   InlineWithPath    → force Capture; the virtual path is known so
+        //                        the output carries it through the report.
+        //   InlinePathless    → force Capture; the captured output omits the
+        //                        sentinel path instead of rendering it.
+        //
+        // `op.filters` applies uniformly to every source regardless of
+        // disposition. `InlineWithPath` sources are filterable against
+        // their git baseline at the virtual path; `InlinePathless` + a
+        // `--diff-lines` spec is rejected at plan time, so this executor
+        // never sees that combination and needs no per-source filter
+        // bypass.
         let disposition = source.disposition();
         let effective_write_mode = match disposition {
             SourceDisposition::Disk => op.write_mode,
@@ -148,17 +145,12 @@ pub(crate) fn execute_set(
             }
         };
 
-        let filters_for_source: &Filters = match disposition {
-            SourceDisposition::Disk => &op.filters,
-            SourceDisposition::InlineWithPath | SourceDisposition::InlinePathless => &empty_filters,
-        };
-
         let outcome = execute_set_target(
             source,
             &content,
             op,
             effective_write_mode,
-            filters_for_source,
+            &op.filters,
         )?;
 
         if outcome.changed
