@@ -1,3 +1,5 @@
+use std::path::{Path, PathBuf};
+
 use crate::cli::SharedArgs;
 use crate::format::options::HookType;
 use crate::format::{
@@ -30,11 +32,26 @@ pub struct RunContext {
     pub no_pretty: bool,
     pub ignore_whitespace: bool,
     pub verbose: bool,
+    /// Base directory for resolving relative paths (config root). Set once
+    /// per invocation — None for single-op CLI runs, Some for `run --config`.
+    pub base_dir: Option<PathBuf>,
     pub lang: Option<String>,
     pub debug: bool,
     pub group_by: Vec<GroupDimension>,
     /// Claude Code hook type (--hook), used with `-f claude-code`.
     pub hook_type: Option<HookType>,
+}
+
+/// Lightweight borrowed view of environmental state that the executor and
+/// file resolver need. Built from `RunContext` via `ctx.exec_ctx()`; built
+/// directly in tests and other non-CLI entry points.
+///
+/// Centralizes `verbose` + `base_dir` so no caller can populate them in two
+/// places with conflicting values.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ExecCtx<'a> {
+    pub verbose: bool,
+    pub base_dir: Option<&'a Path>,
 }
 
 impl RunContext {
@@ -131,11 +148,20 @@ impl RunContext {
             no_pretty: shared.no_pretty,
             ignore_whitespace: shared.ignore_whitespace,
             verbose: shared.verbose,
+            base_dir: None,
             lang: shared.lang.clone(),
             debug,
             group_by,
             hook_type,
         })
+    }
+
+    /// Borrow the environmental state the executor / resolver consume.
+    pub fn exec_ctx(&self) -> ExecCtx<'_> {
+        ExecCtx {
+            verbose: self.verbose,
+            base_dir: self.base_dir.as_deref(),
+        }
     }
 
     pub fn render_options(&self) -> RenderOptions {

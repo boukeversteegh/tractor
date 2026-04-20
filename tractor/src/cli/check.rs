@@ -60,9 +60,10 @@ pub struct CheckArgs {
     #[arg(short = 'f', long = "format", default_value = "gcc", help_heading = "Format")]
     pub format: String,
 }
-use crate::executor::{self, CheckOperation, ExecuteOptions, Operation};
+use crate::executor;
 use crate::cli::context::RunContext;
-use crate::input::InputMode;
+use crate::input::{plan_single, InputMode, Operation, SingleOpRequest};
+use crate::tractor_config::{CheckOperation, OperationInputs};
 use crate::format::{ViewField, GroupDimension, render_report};
 use crate::matcher::prepare_report_for_output;
 use super::config::{run_from_config, ConfigRunParams};
@@ -101,54 +102,55 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
         rule = rule.with_invalid_examples(vec![ex.clone()]);
     }
 
-    let op = match &ctx.input {
+    // Resolve inputs into per-op `OperationInputs`. Inline sources ride
+    // attached to `inputs`; disk mode goes through `files`.
+    let (op_files, inline_source, op_language): (Vec<String>, Option<crate::input::Source>, Option<String>) = match &ctx.input {
         InputMode::Files(files) => {
             if files.is_empty() {
                 return Ok(());
             }
-            Operation::Check(CheckOperation {
-                files: files.clone(),
-                exclude: vec![],
-                diff_files: None,
-                diff_lines: None,
-                rules: vec![rule],
-                tree_mode: ctx.tree_mode,
-                language: ctx.lang.clone(),
-                ignore_whitespace: ctx.ignore_whitespace,
-                parse_depth: ctx.parse_depth,
-                ruleset_include: vec![],
-                ruleset_exclude: vec![],
-                inline_source: None,
-            })
+            (files.clone(), None, ctx.lang.clone())
         }
-        InputMode::InlineSource { source, lang } => {
-            Operation::Check(CheckOperation {
-                files: vec![],
-                exclude: vec![],
-                diff_files: None,
-                diff_lines: None,
-                rules: vec![rule],
-                tree_mode: ctx.tree_mode,
-                language: Some(lang.clone()),
-                ignore_whitespace: ctx.ignore_whitespace,
-                parse_depth: ctx.parse_depth,
-                ruleset_include: vec![],
-                ruleset_exclude: vec![],
-                inline_source: Some(source.clone()),
-            })
-        }
+        InputMode::Inline(source) => (
+            Vec::new(),
+            Some(source.clone()),
+            Some(source.language.clone()),
+        ),
     };
 
-    let options = ExecuteOptions {
-        verbose: ctx.verbose,
-        diff_files: args.shared.diff_files.clone(),
-        diff_lines: args.shared.diff_lines.clone(),
-        max_files: args.shared.max_files,
-        ..Default::default()
+    let inputs = OperationInputs {
+        files: op_files,
+        exclude: Vec::new(),
+        diff_files: Vec::new(),
+        diff_lines: Vec::new(),
+        language: op_language,
+        inline_source,
     };
+
+    let op = Operation::Check(CheckOperation {
+        rules: vec![rule],
+        ruleset_include: Vec::new(),
+        ruleset_exclude: Vec::new(),
+        ruleset_default_language: inputs.language.clone(),
+        tree_mode: ctx.tree_mode,
+        ignore_whitespace: ctx.ignore_whitespace,
+        parse_depth: ctx.parse_depth,
+    });
 
     let mut builder = tractor::ReportBuilder::new();
-    executor::execute(&[op], &options, &mut builder)?;
+    let env = ctx.exec_ctx();
+    let plan = plan_single(
+        SingleOpRequest { op, inputs, command: "check" },
+        args.shared.diff_files.clone(),
+        args.shared.diff_lines.clone(),
+        args.shared.max_files,
+        &env,
+        &mut builder,
+    )?;
+
+    if let Some(plan) = plan {
+        executor::execute(&[plan], &env, &mut builder)?;
+    }
     let mut report = builder.build();
 
     // Single-xpath check: don't expose internal rule ID in output.
@@ -169,12 +171,13 @@ fn run_check_config(args: CheckArgs, config_path_str: &str) -> Result<(), Box<dy
         config_path: config_path_str,
         shared: &args.shared,
         cli_files: args.files,
+        cli_content: args.content,
         format: &args.format,
         default_view: &[ViewField::Reason, ViewField::Severity, ViewField::Lines],
         view_override: args.view.as_deref(),
         message: args.message,
         default_group: &[GroupDimension::File],
-        op_filter: |op| matches!(op, Operation::Check(_)),
+        op_filter: |kind| matches!(kind, crate::tractor_config::ConfigOperationKind::Check),
         filter_label: "check",
     })
 }

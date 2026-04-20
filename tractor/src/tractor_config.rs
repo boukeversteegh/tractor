@@ -36,9 +36,10 @@ use tractor::rule::Rule;
 use tractor::tree_mode::TreeMode;
 
 use crate::executor::{
-    CheckOperation, Operation, QueryExpr, QueryOperation,
-    SetMapping, SetOperation, SetReportMode, SetWriteMode, TestAssertion, TestOperation,
+    QueryExpr, QueryOperation, SetMapping, SetOperation, SetReportMode, SetWriteMode,
+    TestAssertion, TestOperation,
 };
+use crate::input::Source;
 
 // ---------------------------------------------------------------------------
 // Serde schema
@@ -334,7 +335,121 @@ struct RootScope {
     diff_lines: Option<String>,
 }
 
-fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<Operation, Box<dyn std::error::Error>> {
+// ---------------------------------------------------------------------------
+// ConfigOperation — parsed operation with its per-op input resolution data
+// ---------------------------------------------------------------------------
+
+/// Per-operation input-resolution data that lives on the config side until
+/// the `FileResolver` runs. Mirrors the fields that used to live directly
+/// on each `Operation*` struct: files, exclude, diff-files/lines, language
+/// override, inline source. The runner in `cli/config.rs` consumes these
+/// to drive `FileResolver::resolve`, then hands `sources`/`filters` into
+/// the final operation.
+#[derive(Debug, Clone, Default)]
+pub struct OperationInputs {
+    pub files: Vec<String>,
+    pub exclude: Vec<String>,
+    /// Git diff-files specs narrowing the set of files. Every spec in this
+    /// Vec gets intersected with the resolved file set — they AND-compose
+    /// rather than override. Populated by `merge_scope` by concatenating
+    /// the root-level spec (if any) with the per-operation spec (if any).
+    /// Empty Vec means "no diff-files filter applies at this layer".
+    pub diff_files: Vec<String>,
+    /// Git diff-lines specs. Each spec becomes a distinct `DiffHunkFilter`
+    /// in `Filters.diff_hunks`; filters AND-compose so every spec narrows.
+    /// Populated by `merge_scope` by concatenating root + per-op specs.
+    pub diff_lines: Vec<String>,
+    /// Language override for disk sources (rule/operation-level).
+    pub language: Option<String>,
+    /// Inline content declared in config (e.g. set operation with
+    /// `inline-source:` key). None means no inline source at config level;
+    /// the CLI may still attach one via the shared resolver flow.
+    pub inline_source: Option<Source>,
+}
+
+/// A check operation as it exists in config-land — pre-compilation.
+///
+/// Globs are still raw strings here because the base directory they
+/// should resolve against isn't known until the CLI layer determines
+/// `base_dir` from the config file's location. Compiled into a
+/// [`crate::executor::CheckOperationPlan`] by the input planner once the
+/// shared `FileResolver` has resolved the op's sources and filters.
+#[derive(Debug, Clone)]
+pub struct CheckOperation {
+    pub rules: Vec<Rule>,
+    pub ruleset_include: Vec<String>,
+    pub ruleset_exclude: Vec<String>,
+    pub ruleset_default_language: Option<String>,
+    pub tree_mode: Option<TreeMode>,
+    pub ignore_whitespace: bool,
+    pub parse_depth: Option<usize>,
+}
+
+/// A config-sourced operation, paired with the per-op input-resolution data
+/// that the runner needs to call `FileResolver::resolve`. Every variant
+/// carries the op-specific metadata only, with no `sources`/`filters`
+/// placeholder state. The planner hands resolved inputs to
+/// `Operation::into_plan` to produce the final executor-ready
+/// `OperationPlan`. The Check variant additionally defers glob compilation
+/// until `base_dir` is known (see [`CheckOperation`]).
+#[derive(Debug, Clone)]
+pub enum ConfigOperation {
+    Check { inputs: OperationInputs, op: CheckOperation },
+    Set { inputs: OperationInputs, op: SetOperation },
+    Query { inputs: OperationInputs, op: QueryOperation },
+    Test { inputs: OperationInputs, op: TestOperation },
+}
+
+impl ConfigOperation {
+    /// Split the config-side data into the two parts the input planner needs:
+    /// the per-op `OperationInputs` (what files/filters the op asked for) and
+    /// the `Operation` (everything else the executor needs). The planner
+    /// calls the resolver with `OperationInputs`, then hands the resolved
+    /// sources/filters back to `Operation::into_plan`.
+    pub fn into_parts(self) -> (OperationInputs, crate::input::plan::Operation) {
+        use crate::input::plan::Operation;
+        match self {
+            ConfigOperation::Check { inputs, op } => (inputs, Operation::Check(op)),
+            ConfigOperation::Set { inputs, op } => (inputs, Operation::Set(op)),
+            ConfigOperation::Query { inputs, op } => (inputs, Operation::Query(op)),
+            ConfigOperation::Test { inputs, op } => (inputs, Operation::Test(op)),
+        }
+    }
+
+    /// Mutable borrow — used by the CLI runner to attach a CLI-provided
+    /// inline source to config-loaded operations that accept one.
+    pub fn inputs_mut(&mut self) -> &mut OperationInputs {
+        match self {
+            ConfigOperation::Check { inputs, .. }
+            | ConfigOperation::Set { inputs, .. }
+            | ConfigOperation::Query { inputs, .. }
+            | ConfigOperation::Test { inputs, .. } => inputs,
+        }
+    }
+
+    /// Predicate-style accessor for the existing `op_filter` API in
+    /// `ConfigRunParams`. Returns an operation-kind token suitable for
+    /// matches!() checks without actually materialising the operation.
+    pub fn kind(&self) -> ConfigOperationKind {
+        match self {
+            ConfigOperation::Check { .. } => ConfigOperationKind::Check,
+            ConfigOperation::Set { .. } => ConfigOperationKind::Set,
+            ConfigOperation::Query { .. } => ConfigOperationKind::Query,
+            ConfigOperation::Test { .. } => ConfigOperationKind::Test,
+        }
+    }
+}
+
+/// Lightweight operation-kind marker used by `op_filter`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ConfigOperationKind {
+    Check,
+    Set,
+    Query,
+    Test,
+}
+
+fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<ConfigOperation, Box<dyn std::error::Error>> {
     let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
     let rules: Vec<Rule> = config.rules.into_iter().map(|r| {
@@ -372,20 +487,29 @@ fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<Operation, Bo
 
     let (files, exclude, diff_files, diff_lines) = merge_scope(scope, config.files, config.exclude, config.diff_files, config.diff_lines);
 
-    Ok(Operation::Check(CheckOperation {
+    let inputs = OperationInputs {
         files,
         exclude,
         diff_files,
         diff_lines,
+        language: config.language.clone(),
+        inline_source: None,
+    };
+
+    // Pre-resolution op — per-rule globs stay as raw strings until
+    // `base_dir` is known in the CLI layer; `into_plan` compiles them into
+    // a ready-to-match `Vec<CompiledRule>`.
+    let op = CheckOperation {
         rules,
-        tree_mode,
-        language: config.language,
-        ignore_whitespace: false,
-        parse_depth: None,
         ruleset_include: vec![],
         ruleset_exclude: vec![],
-        inline_source: None,
-    }))
+        ruleset_default_language: config.language,
+        tree_mode,
+        ignore_whitespace: false,
+        parse_depth: None,
+    };
+
+    Ok(ConfigOperation::Check { inputs, op })
 }
 
 fn selector_xpath(expr: &str) -> String {
@@ -415,7 +539,7 @@ fn normalize_set_expression(
     }).collect())
 }
 
-fn convert_set(config: SetConfig, scope: &RootScope) -> Result<Operation, Box<dyn std::error::Error>> {
+fn convert_set(config: SetConfig, scope: &RootScope) -> Result<ConfigOperation, Box<dyn std::error::Error>> {
     let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
     let mut mappings = config.mappings.into_iter().map(|m| {
@@ -449,23 +573,42 @@ fn convert_set(config: SetConfig, scope: &RootScope) -> Result<Operation, Box<dy
 
     let (files, exclude, diff_files, diff_lines) = merge_scope(scope, config.files, config.exclude, config.diff_files, config.diff_lines);
 
-    Ok(Operation::Set(SetOperation {
+    // Config-declared inline source becomes a pathless virtual source. The
+    // language override doubles as the Source's language (the input boundary
+    // normally resolves this, but config inputs arrive post-boundary).
+    let inline_source = if let Some(content) = config.inline_source {
+        let lang = config.language.as_deref()
+            .ok_or("set operation with inline source requires `language`")?;
+        Some(crate::input::Source::inline_pathless(
+            lang,
+            std::sync::Arc::new(content),
+        ))
+    } else {
+        None
+    };
+
+    let inputs = OperationInputs {
         files,
         exclude,
         diff_files,
         diff_lines,
+        language: config.language,
+        inline_source,
+    };
+
+    let op = SetOperation {
         mappings,
         tree_mode,
-        language: config.language,
         limit: config.limit,
         ignore_whitespace: config.ignore_whitespace,
-        inline_source: config.inline_source,
         write_mode,
         report_mode,
-    }))
+    };
+
+    Ok(ConfigOperation::Set { inputs, op })
 }
 
-fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<Operation, Box<dyn std::error::Error>> {
+fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<ConfigOperation, Box<dyn std::error::Error>> {
     let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
     let queries = config.queries.into_iter().map(|q| {
@@ -474,22 +617,28 @@ fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<Operation, Bo
 
     let (files, exclude, diff_files, diff_lines) = merge_scope(scope, config.files, config.exclude, config.diff_files, config.diff_lines);
 
-    Ok(Operation::Query(QueryOperation {
+    let inputs = OperationInputs {
         files,
         exclude,
         diff_files,
         diff_lines,
+        language: config.language.clone(),
+        inline_source: None,
+    };
+
+    let op = QueryOperation {
         queries,
         tree_mode,
         language: config.language,
         limit: config.limit,
         ignore_whitespace: false,
         parse_depth: None,
-        inline_source: None,
-    }))
+    };
+
+    Ok(ConfigOperation::Query { inputs, op })
 }
 
-fn convert_test(config: TestConfig, scope: &RootScope) -> Result<Operation, Box<dyn std::error::Error>> {
+fn convert_test(config: TestConfig, scope: &RootScope) -> Result<ConfigOperation, Box<dyn std::error::Error>> {
     let tree_mode = config.tree_mode.as_deref().map(parse_tree_mode).transpose()?;
 
     let assertions = config.assertions.into_iter().map(|a| {
@@ -501,19 +650,25 @@ fn convert_test(config: TestConfig, scope: &RootScope) -> Result<Operation, Box<
 
     let (files, exclude, diff_files, diff_lines) = merge_scope(scope, config.files, config.exclude, config.diff_files, config.diff_lines);
 
-    Ok(Operation::Test(TestOperation {
+    let inputs = OperationInputs {
         files,
         exclude,
         diff_files,
         diff_lines,
+        language: config.language.clone(),
+        inline_source: None,
+    };
+
+    let op = TestOperation {
         assertions,
         tree_mode,
         language: config.language,
         limit: config.limit,
         ignore_whitespace: false,
         parse_depth: None,
-        inline_source: None,
-    }))
+    };
+
+    Ok(ConfigOperation::Test { inputs, op })
 }
 
 /// Merge root-level scope with per-operation scope.
@@ -523,20 +678,30 @@ fn convert_test(config: TestConfig, scope: &RootScope) -> Result<Operation, Box<
 ///   resolve time — intersection when both exist, root as fallback when
 ///   the operation has none.
 /// - `exclude`: union of root and operation excludes (both narrow the scope).
-/// - `diff-files`/`diff-lines`: operation takes precedence; root is the
-///   fallback. CLI flags are applied separately via `ExecuteOptions`.
+/// - `diff-files`/`diff-lines`: root and per-op specs are BOTH retained
+///   (root first, then per-op). Downstream (`FileResolver`) iterates the
+///   resulting Vec and intersects each spec, so all scope layers
+///   AND-compose. Neither overrides the other.  CLI flags are applied
+///   separately via the file resolver, also as an intersection.
 fn merge_scope(
     scope: &RootScope,
     op_files: Vec<String>,
     op_exclude: Vec<String>,
     op_diff_files: Option<String>,
     op_diff_lines: Option<String>,
-) -> (Vec<String>, Vec<String>, Option<String>, Option<String>) {
+) -> (Vec<String>, Vec<String>, Vec<String>, Vec<String>) {
     let mut exclude = scope.exclude.clone();
     exclude.extend(op_exclude);
 
-    let diff_files = op_diff_files.or_else(|| scope.diff_files.clone());
-    let diff_lines = op_diff_lines.or_else(|| scope.diff_lines.clone());
+    // Concatenate root then per-op — both will be intersected downstream.
+    // A `None` at either layer simply contributes nothing to the Vec.
+    let mut diff_files = Vec::new();
+    if let Some(s) = scope.diff_files.clone() { diff_files.push(s); }
+    if let Some(s) = op_diff_files { diff_files.push(s); }
+
+    let mut diff_lines = Vec::new();
+    if let Some(s) = scope.diff_lines.clone() { diff_lines.push(s); }
+    if let Some(s) = op_diff_lines { diff_lines.push(s); }
 
     (op_files, exclude, diff_files, diff_lines)
 }
@@ -596,14 +761,24 @@ fn config_to_operations(config: ConfigFile) -> Result<LoadedConfig, Box<dyn std:
 ///
 /// Root-level `files` are intersected with each operation's files at resolve
 /// time, so they must be preserved independently rather than merged away.
-#[derive(Debug)]
 pub struct LoadedConfig {
     /// Root-level file glob patterns that constrain all operations.
     /// `None` when the key is missing (unrestricted); `Some(vec![])` when
     /// explicitly empty.
     pub root_files: Option<Vec<String>>,
-    /// Parsed operations (with their own files, excludes, etc.).
-    pub operations: Vec<Operation>,
+    /// Parsed operations paired with their per-op input-resolution data.
+    /// Sources/filters are filled in by the runner once the shared
+    /// `FileResolver` has resolved each operation's file set.
+    pub operations: Vec<ConfigOperation>,
+}
+
+impl std::fmt::Debug for LoadedConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("LoadedConfig")
+            .field("root_files", &self.root_files)
+            .field("operations", &self.operations)
+            .finish()
+    }
 }
 
 /// Parse a tractor config file into a `LoadedConfig`.
@@ -645,6 +820,32 @@ pub fn parse_config_toml(content: &str) -> Result<LoadedConfig, Box<dyn std::err
 mod tests {
     use super::*;
 
+    /// Unwrap a `ConfigOperation::Check` into (`&OperationInputs`, `&CheckOperation`).
+    fn as_check(config_op: &ConfigOperation) -> (&OperationInputs, &CheckOperation) {
+        match config_op {
+            ConfigOperation::Check { inputs, op } => (inputs, op),
+            _ => panic!("expected Check operation"),
+        }
+    }
+    fn as_set(config_op: &ConfigOperation) -> (&OperationInputs, &SetOperation) {
+        match config_op {
+            ConfigOperation::Set { inputs, op } => (inputs, op),
+            _ => panic!("expected Set operation"),
+        }
+    }
+    fn as_query(config_op: &ConfigOperation) -> (&OperationInputs, &QueryOperation) {
+        match config_op {
+            ConfigOperation::Query { inputs, op } => (inputs, op),
+            _ => panic!("expected Query operation"),
+        }
+    }
+    fn as_test(config_op: &ConfigOperation) -> (&OperationInputs, &TestOperation) {
+        match config_op {
+            ConfigOperation::Test { inputs, op } => (inputs, op),
+            _ => panic!("expected Test operation"),
+        }
+    }
+
     #[test]
     fn parse_yaml_root_level_check() {
         let yaml = r#"
@@ -657,15 +858,11 @@ check:
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
         assert_eq!(ops.len(), 1);
-        match &ops[0] {
-            Operation::Check(c) => {
-                assert_eq!(c.files, vec!["src/**/*.rs"]);
-                assert_eq!(c.rules.len(), 1);
-                assert_eq!(c.rules[0].id, "no-todo");
-                assert_eq!(c.rules[0].reason.as_deref(), Some("TODO found"));
-            }
-            _ => panic!("expected Check operation"),
-        }
+        let (inputs, c) = as_check(&ops[0]);
+        assert_eq!(inputs.files, vec!["src/**/*.rs"]);
+        assert_eq!(c.rules.len(), 1);
+        assert_eq!(c.rules[0].id, "no-todo");
+        assert_eq!(c.rules[0].reason.as_deref(), Some("TODO found"));
     }
 
     #[test]
@@ -681,17 +878,13 @@ set:
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
         assert_eq!(ops.len(), 1);
-        match &ops[0] {
-            Operation::Set(s) => {
-                assert_eq!(s.files, vec!["config.json"]);
-                assert_eq!(s.mappings.len(), 2);
-                assert_eq!(s.mappings[0].xpath, "//database/host");
-                assert_eq!(s.mappings[0].value, "localhost");
-                assert_eq!(s.mappings[1].xpath, "//database/port");
-                assert_eq!(s.mappings[1].value, "5432");
-            }
-            _ => panic!("expected Set operation"),
-        }
+        let (inputs, s) = as_set(&ops[0]);
+        assert_eq!(inputs.files, vec!["config.json"]);
+        assert_eq!(s.mappings.len(), 2);
+        assert_eq!(s.mappings[0].xpath, "//database/host");
+        assert_eq!(s.mappings[0].value, "localhost");
+        assert_eq!(s.mappings[1].xpath, "//database/port");
+        assert_eq!(s.mappings[1].value, "5432");
     }
 
     #[test]
@@ -710,8 +903,8 @@ set:
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
         assert_eq!(ops.len(), 2);
-        assert!(matches!(&ops[0], Operation::Check(_)));
-        assert!(matches!(&ops[1], Operation::Set(_)));
+        assert!(matches!(&ops[0], ConfigOperation::Check { .. }));
+        assert!(matches!(&ops[1], ConfigOperation::Set { .. }));
     }
 
     #[test]
@@ -736,17 +929,15 @@ operations:
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
         assert_eq!(ops.len(), 3);
-        assert!(matches!(&ops[0], Operation::Check(_)));
-        assert!(matches!(&ops[1], Operation::Set(_)));
-        assert!(matches!(&ops[2], Operation::Check(_)));
+        assert!(matches!(&ops[0], ConfigOperation::Check { .. }));
+        assert!(matches!(&ops[1], ConfigOperation::Set { .. }));
+        assert!(matches!(&ops[2], ConfigOperation::Check { .. }));
 
         // Verify ordering is preserved
-        if let Operation::Check(c) = &ops[0] {
-            assert_eq!(c.rules[0].id, "rule-a");
-        }
-        if let Operation::Check(c) = &ops[2] {
-            assert_eq!(c.rules[0].id, "rule-b");
-        }
+        let (_, c0) = as_check(&ops[0]);
+        assert_eq!(c0.rules[0].id, "rule-a");
+        let (_, c2) = as_check(&ops[2]);
+        assert_eq!(c2.rules[0].id, "rule-b");
     }
 
     #[test]
@@ -767,9 +958,9 @@ operations:
         let ops = parse_config_yaml(yaml).unwrap().operations;
         assert_eq!(ops.len(), 2);
         // Root-level check comes first
-        assert!(matches!(&ops[0], Operation::Check(_)));
+        assert!(matches!(&ops[0], ConfigOperation::Check { .. }));
         // Then operations list
-        assert!(matches!(&ops[1], Operation::Set(_)));
+        assert!(matches!(&ops[1], ConfigOperation::Set { .. }));
     }
 
     #[test]
@@ -786,10 +977,9 @@ check:
       severity: error
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
-        if let Operation::Check(c) = &ops[0] {
-            assert_eq!(c.rules[0].severity, Severity::Warning);
-            assert_eq!(c.rules[1].severity, Severity::Error);
-        }
+        let (_, c) = as_check(&ops[0]);
+        assert_eq!(c.rules[0].severity, Severity::Warning);
+        assert_eq!(c.rules[1].severity, Severity::Error);
     }
 
     #[test]
@@ -803,9 +993,8 @@ set:
       value: "2.0"
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
-        if let Operation::Set(s) = &ops[0] {
-            assert_eq!(s.exclude, vec!["node_modules/**"]);
-        }
+        let (inputs, _) = as_set(&ops[0]);
+        assert_eq!(inputs.exclude, vec!["node_modules/**"]);
     }
 
     #[test]
@@ -816,19 +1005,16 @@ set:
   expression: "database[host='db.example.com'][port=5432]"
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
-        if let Operation::Set(s) = &ops[0] {
-            assert_eq!(s.mappings.len(), 2);
-            assert_eq!(s.mappings[0].xpath, "//database/host");
-            assert_eq!(s.mappings[0].value, "db.example.com");
-            assert_eq!(s.mappings[0].value_kind.as_deref(), Some("string"));
-            assert_eq!(s.mappings[1].xpath, "//database/port");
-            assert_eq!(s.mappings[1].value, "5432");
-            assert_eq!(s.mappings[1].value_kind.as_deref(), Some("number"));
-            assert_eq!(s.write_mode, SetWriteMode::InPlace);
-            assert_eq!(s.report_mode, SetReportMode::PerMatch);
-        } else {
-            panic!("expected Set operation");
-        }
+        let (_, s) = as_set(&ops[0]);
+        assert_eq!(s.mappings.len(), 2);
+        assert_eq!(s.mappings[0].xpath, "//database/host");
+        assert_eq!(s.mappings[0].value, "db.example.com");
+        assert_eq!(s.mappings[0].value_kind.as_deref(), Some("string"));
+        assert_eq!(s.mappings[1].xpath, "//database/port");
+        assert_eq!(s.mappings[1].value, "5432");
+        assert_eq!(s.mappings[1].value_kind.as_deref(), Some("number"));
+        assert_eq!(s.write_mode, SetWriteMode::InPlace);
+        assert_eq!(s.report_mode, SetReportMode::PerMatch);
     }
 
     #[test]
@@ -842,14 +1028,11 @@ set:
   report: per-file
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
-        if let Operation::Set(s) = &ops[0] {
-            assert_eq!(s.language.as_deref(), Some("yaml"));
-            assert!(s.inline_source.is_some());
-            assert_eq!(s.write_mode, SetWriteMode::Capture);
-            assert_eq!(s.report_mode, SetReportMode::PerFile);
-        } else {
-            panic!("expected Set operation");
-        }
+        let (inputs, s) = as_set(&ops[0]);
+        assert_eq!(inputs.language.as_deref(), Some("yaml"));
+        assert!(inputs.inline_source.is_some());
+        assert_eq!(s.write_mode, SetWriteMode::Capture);
+        assert_eq!(s.report_mode, SetReportMode::PerFile);
     }
 
     #[test]
@@ -861,14 +1044,11 @@ set:
   value: "5433"
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
-        if let Operation::Set(s) = &ops[0] {
-            assert_eq!(s.mappings.len(), 1);
-            assert_eq!(s.mappings[0].xpath, "//servers[host='localhost']/port");
-            assert_eq!(s.mappings[0].value, "5433");
-            assert_eq!(s.mappings[0].value_kind.as_deref(), Some("string"));
-        } else {
-            panic!("expected Set operation");
-        }
+        let (_, s) = as_set(&ops[0]);
+        assert_eq!(s.mappings.len(), 1);
+        assert_eq!(s.mappings[0].xpath, "//servers[host='localhost']/port");
+        assert_eq!(s.mappings[0].value, "5433");
+        assert_eq!(s.mappings[0].value_kind.as_deref(), Some("string"));
     }
 
     #[test]
@@ -902,15 +1082,11 @@ query:
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
         assert_eq!(ops.len(), 1);
-        match &ops[0] {
-            Operation::Query(q) => {
-                assert_eq!(q.files, vec!["src/**/*.rs"]);
-                assert_eq!(q.queries.len(), 2);
-                assert_eq!(q.queries[0].xpath, "//function");
-                assert_eq!(q.queries[1].xpath, "//class");
-            }
-            _ => panic!("expected Query operation"),
-        }
+        let (inputs, q) = as_query(&ops[0]);
+        assert_eq!(inputs.files, vec!["src/**/*.rs"]);
+        assert_eq!(q.queries.len(), 2);
+        assert_eq!(q.queries[0].xpath, "//function");
+        assert_eq!(q.queries[1].xpath, "//class");
     }
 
     #[test]
@@ -926,17 +1102,13 @@ test:
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
         assert_eq!(ops.len(), 1);
-        match &ops[0] {
-            Operation::Test(t) => {
-                assert_eq!(t.files, vec!["src/**/*.rs"]);
-                assert_eq!(t.assertions.len(), 2);
-                assert_eq!(t.assertions[0].xpath, "//function");
-                assert_eq!(t.assertions[0].expect, "some");
-                assert_eq!(t.assertions[1].xpath, "//class");
-                assert_eq!(t.assertions[1].expect, "none");
-            }
-            _ => panic!("expected Test operation"),
-        }
+        let (inputs, t) = as_test(&ops[0]);
+        assert_eq!(inputs.files, vec!["src/**/*.rs"]);
+        assert_eq!(t.assertions.len(), 2);
+        assert_eq!(t.assertions[0].xpath, "//function");
+        assert_eq!(t.assertions[0].expect, "some");
+        assert_eq!(t.assertions[1].xpath, "//class");
+        assert_eq!(t.assertions[1].expect, "none");
     }
 
     #[test]
@@ -948,9 +1120,8 @@ test:
     - xpath: "//name"
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
-        if let Operation::Test(t) = &ops[0] {
-            assert_eq!(t.assertions[0].expect, "some");
-        }
+        let (_, t) = as_test(&ops[0]);
+        assert_eq!(t.assertions[0].expect, "some");
     }
 
     #[test]
@@ -969,8 +1140,8 @@ operations:
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
         assert_eq!(ops.len(), 2);
-        assert!(matches!(&ops[0], Operation::Query(_)));
-        assert!(matches!(&ops[1], Operation::Test(_)));
+        assert!(matches!(&ops[0], ConfigOperation::Query { .. }));
+        assert!(matches!(&ops[1], ConfigOperation::Test { .. }));
     }
 
     #[test]
@@ -985,13 +1156,9 @@ value = "localhost"
 "#;
         let ops = parse_config_toml(toml).unwrap().operations;
         assert_eq!(ops.len(), 1);
-        match &ops[0] {
-            Operation::Set(s) => {
-                assert_eq!(s.mappings.len(), 1);
-                assert_eq!(s.mappings[0].value, "localhost");
-            }
-            _ => panic!("expected Set operation"),
-        }
+        let (_, s) = as_set(&ops[0]);
+        assert_eq!(s.mappings.len(), 1);
+        assert_eq!(s.mappings[0].value, "localhost");
     }
 
     // -----------------------------------------------------------------------
@@ -1011,11 +1178,8 @@ check:
 "#;
         let loaded = parse_config_yaml(yaml).unwrap();
         assert_eq!(loaded.root_files, Some(vec!["src/**/*.rs".to_string()]));
-        if let Operation::Check(c) = &loaded.operations[0] {
-            assert!(c.files.is_empty(), "operation should have no files when not specified");
-        } else {
-            panic!("expected Check");
-        }
+        let (inputs, _) = as_check(&loaded.operations[0]);
+        assert!(inputs.files.is_empty(), "operation should have no files when not specified");
     }
 
     #[test]
@@ -1030,11 +1194,8 @@ check:
 "#;
         let loaded = parse_config_yaml(yaml).unwrap();
         assert_eq!(loaded.root_files, Some(vec!["src/**/*.rs".to_string()]));
-        if let Operation::Check(c) = &loaded.operations[0] {
-            assert_eq!(c.files, vec!["test/**/*.rs"]);
-        } else {
-            panic!("expected Check");
-        }
+        let (inputs, _) = as_check(&loaded.operations[0]);
+        assert_eq!(inputs.files, vec!["test/**/*.rs"]);
     }
 
     #[test]
@@ -1049,11 +1210,8 @@ check:
       xpath: "//comment"
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
-        if let Operation::Check(c) = &ops[0] {
-            assert_eq!(c.exclude, vec!["target/**", "src/generated/**"]);
-        } else {
-            panic!("expected Check");
-        }
+        let (inputs, _) = as_check(&ops[0]);
+        assert_eq!(inputs.exclude, vec!["target/**", "src/generated/**"]);
     }
 
     #[test]
@@ -1067,15 +1225,17 @@ check:
       xpath: "//comment"
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
-        if let Operation::Check(c) = &ops[0] {
-            assert_eq!(c.diff_files.as_deref(), Some("main..HEAD"));
-        } else {
-            panic!("expected Check");
-        }
+        let (inputs, _) = as_check(&ops[0]);
+        // Root-only → just the root spec is propagated.
+        assert_eq!(inputs.diff_files, vec!["main..HEAD".to_string()]);
     }
 
     #[test]
-    fn operation_diff_files_overrides_root() {
+    fn root_and_operation_diff_files_both_retained_for_intersection() {
+        // Invariant: root and per-op diff-files AND-compose — both
+        // specs end up in `OperationInputs.diff_files` so the resolver
+        // can intersect each against the file set.  Neither overrides
+        // the other (regression of the pre-fix `or_else` behavior).
         let yaml = r#"
 diff-files: "main..HEAD"
 check:
@@ -1086,11 +1246,32 @@ check:
       xpath: "//comment"
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
-        if let Operation::Check(c) = &ops[0] {
-            assert_eq!(c.diff_files.as_deref(), Some("HEAD~3"));
-        } else {
-            panic!("expected Check");
-        }
+        let (inputs, _) = as_check(&ops[0]);
+        // Root first, then per-op — both present so the resolver
+        // intersects both; the per-op spec does NOT override the root.
+        assert_eq!(
+            inputs.diff_files,
+            vec!["main..HEAD".to_string(), "HEAD~3".to_string()],
+            "both root and per-op diff-files must survive merge_scope",
+        );
+    }
+
+    #[test]
+    fn per_op_diff_files_alone_survives_when_root_empty() {
+        // Regression guard: when no root `diff-files:` is set, the
+        // per-op spec is the only entry — equivalent to the old
+        // fallback semantics for the root-missing case.
+        let yaml = r#"
+check:
+  files: ["src/**/*.rs"]
+  diff-files: "HEAD~3"
+  rules:
+    - id: no-todo
+      xpath: "//comment"
+"#;
+        let ops = parse_config_yaml(yaml).unwrap().operations;
+        let (inputs, _) = as_check(&ops[0]);
+        assert_eq!(inputs.diff_files, vec!["HEAD~3".to_string()]);
     }
 
     #[test]
@@ -1104,11 +1285,30 @@ check:
       xpath: "//comment"
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
-        if let Operation::Check(c) = &ops[0] {
-            assert_eq!(c.diff_lines.as_deref(), Some("main..HEAD"));
-        } else {
-            panic!("expected Check");
-        }
+        let (inputs, _) = as_check(&ops[0]);
+        assert_eq!(inputs.diff_lines, vec!["main..HEAD".to_string()]);
+    }
+
+    #[test]
+    fn root_and_operation_diff_lines_both_retained_for_intersection() {
+        // Same invariant as diff-files: both the root-level and
+        // per-op `diff-lines:` specs survive `merge_scope` so each
+        // becomes its own `DiffHunkFilter` and they AND-compose.
+        let yaml = r#"
+diff-lines: "main..HEAD"
+check:
+  files: ["src/**/*.rs"]
+  diff-lines: "HEAD~3"
+  rules:
+    - id: no-todo
+      xpath: "//comment"
+"#;
+        let ops = parse_config_yaml(yaml).unwrap().operations;
+        let (inputs, _) = as_check(&ops[0]);
+        assert_eq!(
+            inputs.diff_lines,
+            vec!["main..HEAD".to_string(), "HEAD~3".to_string()],
+        );
     }
 
     #[test]
@@ -1133,21 +1333,15 @@ operations:
 
         // Operations have no files of their own — root files are applied
         // at resolve time via FileResolver.
-        if let Operation::Check(c) = &ops[0] {
-            assert!(c.files.is_empty());
-            assert_eq!(c.exclude, vec!["vendor/**"]);
-            assert_eq!(c.diff_files.as_deref(), Some("main..HEAD"));
-        } else {
-            panic!("expected Check");
-        }
+        let (check_inputs, _) = as_check(&ops[0]);
+        assert!(check_inputs.files.is_empty());
+        assert_eq!(check_inputs.exclude, vec!["vendor/**"]);
+        assert_eq!(check_inputs.diff_files, vec!["main..HEAD".to_string()]);
 
-        if let Operation::Query(q) = &ops[1] {
-            assert!(q.files.is_empty());
-            assert_eq!(q.exclude, vec!["vendor/**"]);
-            assert_eq!(q.diff_files.as_deref(), Some("main..HEAD"));
-        } else {
-            panic!("expected Query");
-        }
+        let (query_inputs, _) = as_query(&ops[1]);
+        assert!(query_inputs.files.is_empty());
+        assert_eq!(query_inputs.exclude, vec!["vendor/**"]);
+        assert_eq!(query_inputs.diff_files, vec!["main..HEAD".to_string()]);
     }
 
     #[test]
@@ -1205,11 +1399,8 @@ check:
         assert_eq!(loaded.root_files, Some(vec!["src/**/*.rs".to_string()]));
         // Operation files are kept as-is (merge_scope overrides at parse time;
         // actual intersection happens in FileResolver::resolve_files)
-        if let Operation::Check(c) = &loaded.operations[0] {
-            assert_eq!(c.files, vec!["test/**/*.rs"]);
-        } else {
-            panic!("expected Check");
-        }
+        let (inputs, _) = as_check(&loaded.operations[0]);
+        assert_eq!(inputs.files, vec!["test/**/*.rs"]);
     }
 
     #[test]
@@ -1225,12 +1416,9 @@ check:
         - invalid: "// TODO: fix"
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
-        if let Operation::Check(c) = &ops[0] {
-            assert_eq!(c.rules[0].valid_examples, vec!["fn main() {}"]);
-            assert_eq!(c.rules[0].invalid_examples, vec!["// TODO: fix"]);
-        } else {
-            panic!("expected Check");
-        }
+        let (_, c) = as_check(&ops[0]);
+        assert_eq!(c.rules[0].valid_examples, vec!["fn main() {}"]);
+        assert_eq!(c.rules[0].invalid_examples, vec!["// TODO: fix"]);
     }
 
     // -- XPath normalization (implicit // prefix) --
@@ -1245,11 +1433,8 @@ check:
       xpath: "debug"
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
-        if let Operation::Check(c) = &ops[0] {
-            assert_eq!(c.rules[0].xpath, "//debug");
-        } else {
-            panic!("expected Check");
-        }
+        let (_, c) = as_check(&ops[0]);
+        assert_eq!(c.rules[0].xpath, "//debug");
     }
 
     #[test]
@@ -1261,11 +1446,8 @@ query:
     - xpath: "debug"
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
-        if let Operation::Query(q) = &ops[0] {
-            assert_eq!(q.queries[0].xpath, "//debug");
-        } else {
-            panic!("expected Query");
-        }
+        let (_, q) = as_query(&ops[0]);
+        assert_eq!(q.queries[0].xpath, "//debug");
     }
 
     #[test]
@@ -1278,10 +1460,7 @@ test:
       expect: 1
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
-        if let Operation::Test(t) = &ops[0] {
-            assert_eq!(t.assertions[0].xpath, "//debug");
-        } else {
-            panic!("expected Test");
-        }
+        let (_, t) = as_test(&ops[0]);
+        assert_eq!(t.assertions[0].xpath, "//debug");
     }
 }

@@ -40,10 +40,11 @@ pub struct QueryArgs {
     #[arg(short = 'V', long = "version", help_heading = "Advanced")]
     pub version: bool,
 }
-use crate::executor::{self, ExecuteOptions, Operation, QueryOperation, QueryExpr};
+use crate::executor::{self, QueryExpr, QueryOperation};
 use crate::cli::context::RunContext;
-use crate::input::InputMode;
-use crate::format::{GroupDimension, ViewField, render_report};
+use crate::input::{plan_single, InputMode, Operation, SingleOpRequest};
+use crate::tractor_config::OperationInputs;
+use crate::format::{ViewField, GroupDimension, render_report};
 use crate::matcher::{prepare_report_for_output, run_debug};
 use super::config::{run_from_config, ConfigRunParams};
 
@@ -53,12 +54,13 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
             config_path,
             shared: &args.shared,
             cli_files: args.files.clone(),
+            cli_content: args.content.clone(),
             format: &args.format,
             default_view: &[ViewField::File, ViewField::Line, ViewField::Tree],
             view_override: args.view.as_deref(),
             message: args.message.clone(),
             default_group: &[GroupDimension::File],
-            op_filter: |op| matches!(op, Operation::Query(_)),
+            op_filter: |kind| matches!(kind, crate::tractor_config::ConfigOperationKind::Query),
             filter_label: "query",
         });
     }
@@ -87,47 +89,44 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     let default_xpath = NormalizedXpath::new("/");
     let xpath_expr = ctx.xpath.as_ref().unwrap_or(&default_xpath);
 
-    // Build the query operation for either files or inline source.
-    let op = match &ctx.input {
-        InputMode::Files(files) => Operation::Query(QueryOperation {
-            files: files.clone(),
-            exclude: vec![],
-            diff_files: None,
-            diff_lines: None,
-            queries: vec![QueryExpr { xpath: xpath_expr.clone() }],
-            tree_mode: ctx.tree_mode,
-            language: ctx.lang.clone(),
-            limit: ctx.limit,
-            ignore_whitespace: ctx.ignore_whitespace,
-            parse_depth: ctx.parse_depth,
-            inline_source: None,
-        }),
-        InputMode::InlineSource { source, lang } => Operation::Query(QueryOperation {
-            files: vec![],
-            exclude: vec![],
-            diff_files: None,
-            diff_lines: None,
-            queries: vec![QueryExpr { xpath: xpath_expr.clone() }],
-            tree_mode: ctx.tree_mode,
-            language: Some(lang.clone()),
-            limit: ctx.limit,
-            ignore_whitespace: ctx.ignore_whitespace,
-            parse_depth: ctx.parse_depth,
-            inline_source: Some(source.clone()),
-        }),
+    let (op_files, inline_source, op_language): (Vec<String>, Option<crate::input::Source>, Option<String>) = match &ctx.input {
+        InputMode::Files(files) => (files.clone(), None, ctx.lang.clone()),
+        InputMode::Inline(source) => (Vec::new(), Some(source.clone()), Some(source.language.clone())),
     };
 
-    let options = ExecuteOptions {
-        verbose: ctx.verbose,
-        diff_files: args.shared.diff_files.clone(),
-        diff_lines: args.shared.diff_lines.clone(),
-        max_files: args.shared.max_files,
-        ..Default::default()
+    let inputs = OperationInputs {
+        files: op_files,
+        exclude: Vec::new(),
+        diff_files: Vec::new(),
+        diff_lines: Vec::new(),
+        language: op_language.clone(),
+        inline_source,
     };
+
+    let op = Operation::Query(QueryOperation {
+        queries: vec![QueryExpr { xpath: xpath_expr.clone() }],
+        tree_mode: ctx.tree_mode,
+        language: op_language,
+        limit: ctx.limit,
+        ignore_whitespace: ctx.ignore_whitespace,
+        parse_depth: ctx.parse_depth,
+    });
 
     let mut builder = tractor::ReportBuilder::new();
     builder.set_no_verdict();
-    executor::execute(&[op], &options, &mut builder)?;
+    let env = ctx.exec_ctx();
+    let plan = plan_single(
+        SingleOpRequest { op, inputs, command: "query" },
+        args.shared.diff_files.clone(),
+        args.shared.diff_lines.clone(),
+        args.shared.max_files,
+        &env,
+        &mut builder,
+    )?;
+
+    if let Some(plan) = plan {
+        executor::execute(&[plan], &env, &mut builder)?;
+    }
     let mut report = builder.build();
     prepare_report_for_output(&mut report, &ctx);
     render_report(&report, &ctx, None)?;

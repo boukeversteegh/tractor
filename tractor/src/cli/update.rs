@@ -15,9 +15,10 @@ pub struct UpdateArgs {
     #[command(flatten)]
     pub shared: SharedArgs,
 }
-use crate::executor::{self, ExecuteOptions, Operation, UpdateOperation};
+use crate::executor::{self, UpdateOperation};
 use crate::cli::context::RunContext;
-use crate::input::InputMode;
+use crate::input::{plan_single, InputMode, Operation, SingleOpRequest};
+use crate::tractor_config::OperationInputs;
 use crate::format::ViewField;
 
 pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
@@ -30,17 +31,22 @@ pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
         .ok_or("update requires an XPath query (-x)")?;
 
     let files = match &ctx.input {
-        InputMode::Files(files) => files,
-        InputMode::InlineSource { .. } => {
+        InputMode::Files(files) => files.clone(),
+        InputMode::Inline(_) => {
             return Err("update cannot be used with stdin input (no file to modify)".into());
         }
     };
 
+    let inputs = OperationInputs {
+        files,
+        exclude: Vec::new(),
+        diff_files: Vec::new(),
+        diff_lines: Vec::new(),
+        language: ctx.lang.clone(),
+        inline_source: None,
+    };
+
     let op = Operation::Update(UpdateOperation {
-        files: files.clone(),
-        exclude: vec![],
-        diff_files: None,
-        diff_lines: None,
         xpath: xpath_expr.to_string(),
         value: args.value.clone(),
         tree_mode: ctx.tree_mode,
@@ -50,16 +56,20 @@ pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
         parse_depth: ctx.parse_depth,
     });
 
-    let options = ExecuteOptions {
-        verbose: ctx.verbose,
-        diff_files: args.shared.diff_files.clone(),
-        diff_lines: args.shared.diff_lines.clone(),
-        max_files: args.shared.max_files,
-        ..Default::default()
-    };
-
     let mut builder = tractor::ReportBuilder::new();
-    executor::execute(&[op], &options, &mut builder)?;
+    let env = ctx.exec_ctx();
+    let plan = plan_single(
+        SingleOpRequest { op, inputs, command: "update" },
+        args.shared.diff_files.clone(),
+        args.shared.diff_lines.clone(),
+        args.shared.max_files,
+        &env,
+        &mut builder,
+    )?;
+
+    if let Some(plan) = plan {
+        executor::execute(&[plan], &env, &mut builder)?;
+    }
     let report = builder.build();
     if report.success == Some(false) {
         return Err("update matched no nodes".into());

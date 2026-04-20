@@ -983,6 +983,98 @@ fn update_partial_path_fails_without_creating_leaf() {
     .run();
 }
 
+// ---------------------------------------------------------------------------
+// Virtual paths for inline sources (issue #133)
+//
+// The positional `files` arg, when an inline source is active (stdin or -s),
+// becomes a virtual path. The executor treats the inline content as if it
+// lived at that path for glob matching, diff-lines, and diagnostics.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn inline_stdin_virtual_path_matches_include_glob() {
+    // Rule has `include: ["src/**/*.js"]`. When stdin content is piped with
+    // a virtual path under src/, the rule fires — proof that globs see the
+    // virtual path instead of the old "<stdin>" sentinel that never matched.
+    let config = "check:\n  rules:\n    - id: no-console\n      xpath: \"//call//object[.='console']\"\n      severity: error\n      reason: \"no console\"\n      language: javascript\n      include: [\"src/**/*.js\"]\n";
+    cli_case!({
+        tractor check --config "tractor.yml" -l "javascript" "src/foo.js";
+        expect => exit 1;
+    })
+    .in_fixture("replace")
+    .temp_fixture()
+    .seed_file("tractor.yml", config)
+    .stdin("console.log('hi');\n")
+    .run();
+}
+
+#[test]
+fn inline_stdin_virtual_path_outside_include_glob_is_clean() {
+    // Same rule/content, but virtual path doesn't match `include:` — rule
+    // doesn't fire. Mirrors the disk-file behaviour for non-matching paths.
+    let config = "check:\n  rules:\n    - id: no-console\n      xpath: \"//call//object[.='console']\"\n      severity: error\n      reason: \"no console\"\n      language: javascript\n      include: [\"src/**/*.js\"]\n";
+    cli_case!({
+        tractor check --config "tractor.yml" -l "javascript" "test/foo.js";
+        expect => exit 0;
+    })
+    .in_fixture("replace")
+    .temp_fixture()
+    .seed_file("tractor.yml", config)
+    .stdin("console.log('hi');\n")
+    .run();
+}
+
+#[test]
+fn inline_string_virtual_path_appears_in_diagnostic_output() {
+    // `-s` content + virtual path: the diagnostic should mention the virtual
+    // path, never the "<string>" or "<stdin>" sentinel. Regression guard
+    // against the sentinel leaking past the input boundary.
+    let config = "check:\n  rules:\n    - id: no-console\n      xpath: \"//call//object[.='console']\"\n      severity: error\n      reason: \"no console\"\n      language: javascript\n      include: [\"src/**/*.js\"]\n";
+    let result = command([
+        "check",
+        "--config",
+        "tractor.yml",
+        "-l",
+        "javascript",
+        "-s",
+        "console.log('hi');",
+        "src/foo.js",
+    ])
+    .in_fixture("replace")
+    .temp_fixture()
+    .seed_file("tractor.yml", config)
+    .capture();
+
+    assert_eq!(1, result.status);
+    assert!(
+        result.stdout.contains("src/foo.js"),
+        "virtual path should appear in output: {}",
+        result.stdout
+    );
+    assert!(
+        !result.stdout.contains("<string>") && !result.stdout.contains("<stdin>"),
+        "sentinel must not leak into output: {}",
+        result.stdout
+    );
+}
+
+#[test]
+fn inline_stdin_pathless_does_not_match_include_globs() {
+    // Pathless inline source (no positional path) cannot match any rule
+    // with an `include:` pattern — preserves the prior behaviour and makes
+    // the difference vs. virtual-path mode explicit.
+    let config = "check:\n  rules:\n    - id: no-console\n      xpath: \"//call//object[.='console']\"\n      severity: error\n      reason: \"no console\"\n      language: javascript\n      include: [\"src/**/*.js\"]\n";
+    cli_case!({
+        tractor check --config "tractor.yml" -l "javascript";
+        expect => exit 0;
+    })
+    .in_fixture("replace")
+    .temp_fixture()
+    .seed_file("tractor.yml", config)
+    .stdin("console.log('hi');\n")
+    .run();
+}
+
 #[test]
 fn update_rejects_stdin_input() {
     cli_case!({
@@ -1495,4 +1587,206 @@ fn view_modifier_rejects_invalid_combinations() {
         .in_fixture("formats")
         .assert_exit(1)
         .run();
+}
+
+// ---------------------------------------------------------------------------
+// `--diff-lines` + pathless inline input: fatal at plan time
+//
+// Pathless inline input has no git baseline to compute hunks against, so
+// combining it with `--diff-lines` is a misconfiguration. The planner rejects
+// it with a fatal diagnostic rather than silently dropping every match. This
+// makes `Filters` apply uniformly across all executors (see `executor/set.rs`
+// — no longer bypasses filters for `InlineWithPath`).
+// ---------------------------------------------------------------------------
+
+#[test]
+fn diff_lines_with_pathless_string_is_fatal() {
+    // `-s` + `--diff-lines` with no positional path → fatal at plan time.
+    let result = command([
+        "check",
+        "--diff-lines",
+        "HEAD",
+        "-l",
+        "javascript",
+        "-s",
+        "let x = 1",
+        "-x",
+        "//call",
+    ])
+    .capture();
+    assert_eq!(1, result.status, "expected fatal exit");
+    let combined = format!("{}{}", result.stdout, result.stderr);
+    assert!(
+        combined.contains("--diff-lines"),
+        "fatal must mention --diff-lines: {}",
+        combined
+    );
+    assert!(
+        combined.contains("file path") || combined.contains("positional path"),
+        "fatal should explain the path requirement: {}",
+        combined
+    );
+}
+
+#[test]
+fn diff_lines_with_pathless_stdin_is_fatal() {
+    // Piped stdin + `--diff-lines` with no positional path → fatal at plan time.
+    let result = command([
+        "check",
+        "--diff-lines",
+        "HEAD",
+        "-l",
+        "javascript",
+        "-x",
+        "//call",
+    ])
+    .stdin("let x = 1\n")
+    .capture();
+    assert_eq!(1, result.status, "expected fatal exit");
+    let combined = format!("{}{}", result.stdout, result.stderr);
+    assert!(
+        combined.contains("--diff-lines"),
+        "fatal must mention --diff-lines: {}",
+        combined
+    );
+}
+
+#[test]
+fn set_diff_lines_with_pathless_stdin_is_fatal() {
+    // `tractor set` with piped stdin (pathless) + `--diff-lines` → fatal.
+    // Regression guard for the set.rs bug where filters were silently
+    // bypassed for inline sources (including InlineWithPath). The new
+    // contract: reject pathless + diff-lines at plan time; other inline
+    // shapes flow through the executor with filters applied uniformly.
+    let result = command([
+        "set",
+        "--diff-lines",
+        "HEAD",
+        "-l",
+        "yaml",
+        "//foo",
+        "--value",
+        "y",
+    ])
+    .stdin("foo: bar\n")
+    .capture();
+    assert_eq!(1, result.status, "expected fatal exit");
+    let combined = format!("{}{}", result.stdout, result.stderr);
+    assert!(
+        combined.contains("--diff-lines"),
+        "fatal must mention --diff-lines: {}",
+        combined
+    );
+}
+
+#[test]
+fn set_inline_with_path_plus_diff_lines_is_accepted_at_plan_time() {
+    // Regression guard for the pre-refactor set.rs bug that silently
+    // bypassed filters for *all* inline sources. The new contract:
+    //
+    //   InlinePathless + --diff-lines → fatal at plan time.
+    //   InlineWithPath + --diff-lines → plan succeeds; the operation runs
+    //       with its filter envelope built, just like disk sources.
+    //
+    // This test guards the InlineWithPath path: with a real git baseline
+    // and a virtual path pointing at a committed file, the planner must
+    // NOT emit the pathless fatal and the run must complete without
+    // error. Previously this combination could reach the executor with a
+    // filter silently dropped; now it threads through uniformly.
+    use std::io::Write;
+
+    let temp = tempfile::tempdir().expect("temp dir");
+    let repo = temp.path();
+
+    // Initial commit baseline: two entries on distinct lines.
+    let src_dir = repo.join("src");
+    std::fs::create_dir_all(&src_dir).expect("mkdir src");
+    let baseline = "kept: old\nchanged: old\n";
+    std::fs::write(src_dir.join("x.yaml"), baseline).expect("write baseline");
+
+    let git = |args: &[&str]| {
+        let out = std::process::Command::new("git")
+            .args(args)
+            .current_dir(repo)
+            .env("GIT_AUTHOR_NAME", "t")
+            .env("GIT_AUTHOR_EMAIL", "t@t")
+            .env("GIT_COMMITTER_NAME", "t")
+            .env("GIT_COMMITTER_EMAIL", "t@t")
+            .output()
+            .expect("run git");
+        assert!(
+            out.status.success(),
+            "git {:?} failed: {}",
+            args,
+            String::from_utf8_lossy(&out.stderr)
+        );
+    };
+    git(&["init", "-q"]);
+    git(&["add", "src/x.yaml"]);
+    git(&["-c", "commit.gpgsign=false", "commit", "-q", "-m", "baseline"]);
+
+    // Modified content fed via stdin: only `changed:` has a new value.
+    // `kept:` stays identical — it's outside the changed hunk.
+    let modified = "kept: old\nchanged: new\n";
+
+    // Run `tractor set --diff-lines HEAD -l yaml src/x.yaml //changed
+    // --value patched` with the modified content piped over stdin. The
+    // positional path `src/x.yaml` makes this an InlineWithPath source.
+    let mut child = std::process::Command::new(env!("CARGO_BIN_EXE_tractor"))
+        .args([
+            "set",
+            "--diff-lines",
+            "HEAD",
+            "-l",
+            "yaml",
+            "--stdout",
+            "src/x.yaml",
+            "//changed",
+            "--value",
+            "patched",
+            "--no-color",
+        ])
+        .current_dir(repo)
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .expect("spawn tractor");
+    {
+        let stdin = child.stdin.as_mut().expect("open stdin");
+        stdin.write_all(modified.as_bytes()).expect("write stdin");
+    }
+    let out = child.wait_with_output().expect("wait tractor");
+    let combined = format!(
+        "{}{}",
+        String::from_utf8_lossy(&out.stdout),
+        String::from_utf8_lossy(&out.stderr)
+    );
+
+    // Must succeed (no pathless-fatal) and must NOT mention --diff-lines
+    // in an error context. The operation runs end-to-end.
+    assert_eq!(
+        0,
+        out.status.code().unwrap_or(-1),
+        "InlineWithPath + --diff-lines must not trip the pathless fatal: {}",
+        combined
+    );
+    assert!(
+        !combined.contains("fatal"),
+        "no fatal diagnostic expected for InlineWithPath: {}",
+        combined
+    );
+    // The mutation reaches the output channel (the captured content
+    // carries the patched value) — proving the source was actually
+    // processed rather than silently dropped.
+    assert!(
+        combined.contains("patched"),
+        "set should have produced mutated output: {}",
+        combined
+    );
+
+    // On-disk baseline must be untouched: set with stdin input captures
+    // to stdout rather than writing back to the file.
+    let on_disk = std::fs::read_to_string(src_dir.join("x.yaml")).expect("read baseline");
+    assert_eq!(on_disk, baseline, "working tree must be untouched");
 }

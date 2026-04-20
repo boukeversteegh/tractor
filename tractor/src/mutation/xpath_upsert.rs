@@ -18,7 +18,7 @@
 //! All language-specific knowledge lives in the parser and renderer.
 //! The upsert algorithm itself is language-agnostic.
 
-use crate::parser::{parse_string_to_documents, XeeParseResult};
+use crate::parser::{parse, ParseInput, ParseOptions, XeeParseResult};
 use crate::render::{self, RenderOptions};
 use crate::tree_mode::TreeMode;
 use crate::xpath::xot_node_to_xml_node;
@@ -92,12 +92,17 @@ pub fn update_only(
     }
 
     // Parse source into data tree
-    let mut result = parse_string_to_documents(
-        source,
-        lang,
-        "<update>".to_string(),
-        Some(TreeMode::Data),
-        false,
+    let mut result = parse(
+        ParseInput::Inline {
+            content: source,
+            file_label: "<update>",
+        },
+        ParseOptions {
+            language: Some(lang),
+            tree_mode: Some(TreeMode::Data),
+            ignore_whitespace: false,
+            parse_depth: None,
+        },
     )
     .map_err(|e| UpsertError::Parse(e.to_string()))?;
 
@@ -173,12 +178,17 @@ pub fn upsert_typed(
     }
 
     // Step 1: Parse source into data tree
-    let mut result = parse_string_to_documents(
-        source,
-        lang,
-        "<upsert>".to_string(),
-        Some(TreeMode::Data),
-        false,
+    let mut result = parse(
+        ParseInput::Inline {
+            content: source,
+            file_label: "<upsert>",
+        },
+        ParseOptions {
+            language: Some(lang),
+            tree_mode: Some(TreeMode::Data),
+            ignore_whitespace: false,
+            parse_depth: None,
+        },
     )
     .map_err(|e| UpsertError::Parse(e.to_string()))?;
 

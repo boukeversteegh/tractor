@@ -57,7 +57,7 @@ pub struct XotParseResult {
     pub root: xot::Node,
     /// Original source lines for location-based output
     pub source_lines: Vec<String>,
-    /// File path or "<stdin>"
+    /// File path or [`PATHLESS_LABEL`](crate::PATHLESS_LABEL) for pathless input
     pub file_path: String,
     /// Language used for parsing
     pub language: String,
@@ -392,7 +392,7 @@ pub struct XeeParseResult {
     pub doc_handle: DocumentHandle,
     /// Original source lines for location-based output (Arc for cheap cloning)
     pub source_lines: std::sync::Arc<Vec<String>>,
-    /// File path or "<stdin>"
+    /// File path or [`PATHLESS_LABEL`](crate::PATHLESS_LABEL) for pathless input
     pub file_path: String,
     /// Language used for parsing
     pub language: String,
@@ -572,50 +572,106 @@ pub fn load_xml_file_to_documents(path: &Path) -> Result<XeeParseResult, ParseEr
     load_xml_string_to_documents(&xml, path.to_string_lossy().to_string())
 }
 
-/// Unified parse function - returns Documents regardless of input type
+/// Where the bytes to parse come from.
 ///
-/// This is the main entry point for parsing. It handles:
-/// - XML files: loaded directly into Documents (passthrough)
-/// - Source code: parsed with TreeSitter, built into Documents
-///
-/// The result can always be queried with `XPathEngine::query_documents()`.
-/// Use `max_depth` to limit tree building depth (skip deeper nodes for speed).
-pub fn parse_to_documents(
-    path: &Path,
-    lang_override: Option<&str>,
-    tree_mode: Option<TreeMode>,
-    ignore_whitespace: bool,
-    max_depth: Option<usize>,
-) -> Result<XeeParseResult, ParseError> {
-    if lang_override.is_none() {
-        check_ambiguous_extension(path)?;
-    }
-    let lang = lang_override.unwrap_or_else(|| detect_language(path.to_str().unwrap_or("")));
-
-    if lang == "xml" {
-        // XML passthrough: load directly into Documents
-        load_xml_file_to_documents(path)
-    } else {
-        // Source code: TreeSitter → XeeBuilder → Documents
-        let source = fs::read_to_string(path)?;
-        parse_string_to_xee_with_options(&source, lang, path.to_string_lossy().to_string(), tree_mode, ignore_whitespace, max_depth)
-    }
+/// The input kind is an explicit parameter of [`parse`] rather than being
+/// encoded in which-function-you-called. `Disk` paths are read lazily and
+/// subject to ambiguous-extension checks when the language is auto-detected;
+/// `Inline` paths carry a user-supplied `file_label` that propagates through
+/// to diagnostics and query results.
+pub enum ParseInput<'a> {
+    /// Read the source from a file on disk.
+    Disk { path: &'a Path },
+    /// Parse in-memory content, labelling it with `file_label` (virtual path
+    /// or sentinel) for diagnostics.
+    Inline { content: &'a str, file_label: &'a str },
 }
 
-/// Unified parse function for strings
-pub fn parse_string_to_documents(
-    source: &str,
-    lang: &str,
-    file_path: String,
-    tree_mode: Option<TreeMode>,
-    ignore_whitespace: bool,
+/// Parse knobs shared by every entry point.
+///
+/// Keeping these in one struct means adding a new knob (e.g. `parse_depth`)
+/// doesn't force yet another `*_with_options` function to appear; it's just
+/// another field.
+#[derive(Default, Clone, Copy)]
+pub struct ParseOptions<'a> {
+    /// Explicit language override. If `None`, [`parse`] auto-detects from the
+    /// path (disk) or treats the absence as an error for inline inputs — the
+    /// old inline entry points required a non-optional language, which this
+    /// struct mirrors by requiring `Inline` callers to populate this field.
+    pub language: Option<&'a str>,
+    /// Tree-building mode. `None` defers to per-language defaults.
+    pub tree_mode: Option<TreeMode>,
+    /// Collapse whitespace-only text nodes during tree building.
+    pub ignore_whitespace: bool,
+    /// Cap tree-building depth (skip deeper nodes for speed).
+    pub parse_depth: Option<usize>,
+}
+
+/// The one principled parse entry point.
+///
+/// This is the primary library-level parse function. It handles both on-disk
+/// files and in-memory content uniformly, dispatching internally on
+/// [`ParseInput`]:
+///
+/// - `Disk`: runs ambiguous-extension checks when the language was
+///   auto-detected, reads the file, then routes XML to the passthrough loader
+///   and everything else to TreeSitter + `XeeBuilder`.
+/// - `Inline`: routes XML to the string passthrough and everything else to
+///   TreeSitter, carrying `file_label` through to diagnostics.
+///
+/// This is the single public parse entry point; callers build a `ParseInput`
+/// and a `ParseOptions` explicitly rather than picking between overloaded
+/// convenience wrappers.
+pub fn parse(
+    input: ParseInput<'_>,
+    options: ParseOptions<'_>,
 ) -> Result<XeeParseResult, ParseError> {
-    if lang == "xml" {
-        // XML passthrough
-        load_xml_string_to_documents(source, file_path)
-    } else {
-        // Source code: TreeSitter → XeeBuilder → Documents
-        parse_string_to_xee_with_options(source, lang, file_path, tree_mode, ignore_whitespace, None)
+    match input {
+        ParseInput::Disk { path } => {
+            if options.language.is_none() {
+                check_ambiguous_extension(path)?;
+            }
+            let lang = options
+                .language
+                .unwrap_or_else(|| detect_language(path.to_str().unwrap_or("")));
+
+            if lang == "xml" {
+                // XML passthrough: load directly into Documents
+                load_xml_file_to_documents(path)
+            } else {
+                // Source code: TreeSitter → XeeBuilder → Documents
+                let source = fs::read_to_string(path)?;
+                parse_string_to_xee_with_options(
+                    &source,
+                    lang,
+                    path.to_string_lossy().to_string(),
+                    options.tree_mode,
+                    options.ignore_whitespace,
+                    options.parse_depth,
+                )
+            }
+        }
+        ParseInput::Inline { content, file_label } => {
+            // Inline entry points always had a non-optional language; preserve
+            // that invariant by requiring `options.language` to be populated.
+            // Auto-detection from a virtual label would be meaningless.
+            let lang = options
+                .language
+                .unwrap_or_else(|| detect_language(file_label));
+
+            if lang == "xml" {
+                load_xml_string_to_documents(content, file_label.to_string())
+            } else {
+                parse_string_to_xee_with_options(
+                    content,
+                    lang,
+                    file_label.to_string(),
+                    options.tree_mode,
+                    options.ignore_whitespace,
+                    options.parse_depth,
+                )
+            }
+        }
     }
 }
 
@@ -640,8 +696,17 @@ mod tests {
     fn test_parse_simple_class() {
         use crate::output::{render_node, RenderOptions};
 
-        let result = parse_string_to_documents(
-            "public class Foo { }", "csharp", "<test>".to_string(), None, false
+        let result = parse(
+            ParseInput::Inline {
+                content: "public class Foo { }",
+                file_label: "<test>",
+            },
+            ParseOptions {
+                language: Some("csharp"),
+                tree_mode: None,
+                ignore_whitespace: false,
+                parse_depth: None,
+            },
         ).unwrap();
 
         let doc_node = result.documents.document_node(result.doc_handle).unwrap();

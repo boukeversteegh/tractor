@@ -82,6 +82,33 @@ impl DiagnosticOrigin {
 }
 
 // ---------------------------------------------------------------------------
+// PATHLESS_LABEL — single sentinel for "this input has no meaningful path"
+// ---------------------------------------------------------------------------
+
+/// Display label for a path-less source (piped stdin or `-s/--string` without
+/// a positional path). One sentinel, used in three places:
+///
+/// - `Source::inline_pathless` stores it as the source path so downstream code
+///   never special-cases "no path" through `Option`s.
+/// - `format/text.rs` checks it to suppress the `file:line:col` prefix when
+///   there's no meaningful path to print.
+/// - `mutation/replace.rs` checks it to refuse disk writes for pathless inputs.
+///
+/// Lives in the library crate so both `format` and `mutation` can import it
+/// without crossing the binary/library module-role boundary.
+pub const PATHLESS_LABEL: &str = "<string>";
+
+/// Returns `true` when a file path equals the pathless sentinel.
+///
+/// Consumers should prefer a typed predicate (`Match::is_pathless`,
+/// `ReportMatch::is_pathless`) over re-deriving the check at a call site.
+/// This helper exists for the cases where only a bare `&str` is available
+/// (e.g. a group-hoisted file path in a renderer).
+pub fn is_pathless_file(file: &str) -> bool {
+    file == PATHLESS_LABEL
+}
+
+// ---------------------------------------------------------------------------
 // ReportMatch
 // ---------------------------------------------------------------------------
 
@@ -135,6 +162,15 @@ pub struct ReportOutput {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub file: Option<String>,
     pub content: String,
+}
+
+impl ReportMatch {
+    /// Returns `true` when this match's file is the pathless sentinel —
+    /// i.e. the match came from inline input (`-s`/stdin) with no
+    /// meaningful path to display or write back to.
+    pub fn is_pathless(&self) -> bool {
+        is_pathless_file(&self.file)
+    }
 }
 
 impl Serialize for ReportMatch {
@@ -678,6 +714,13 @@ impl ReportBuilder {
     /// Check if any fatal-severity matches have been added.
     pub fn has_fatals(&self) -> bool {
         self.matches.iter().any(|m| m.severity == Some(Severity::Fatal))
+    }
+
+    /// Count fatal-severity matches. Used by the input planner to detect
+    /// whether *this* operation's resolver call added a new fatal (a
+    /// before/after delta of this count).
+    pub fn fatal_count(&self) -> usize {
+        self.matches.iter().filter(|m| m.severity == Some(Severity::Fatal)).count()
     }
 
     /// Check if any matches with status="updated" have been added.

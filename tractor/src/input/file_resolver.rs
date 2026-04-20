@@ -5,9 +5,10 @@
 //! `resolve_files()`, `resolve_op_files()`, `build_filters()`, and
 //! `apply_diff_files_filter()` into a single `FileResolver` struct.
 //!
-//! The resolver is constructed once from `ExecuteOptions`, pre-computing shared
-//! state (root files, CLI files, global diff). Each operation then calls
-//! `resolve()` with a `FileRequest` to get its resolved file set.
+//! The resolver is constructed once from `ResolverOptions`, pre-computing shared
+//! state (root files, CLI files, global diff). Each operation-construction
+//! site then calls `resolve()` with a `SourceRequest` to get a unified
+//! `Vec<Source>` plus the [`Filters`] envelope the operation must apply.
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -15,27 +16,63 @@ use std::path::{Path, PathBuf};
 use tractor::{expand_globs_checked, detect_language, normalize_path, pattern_literal_prefix, FilePrune, NormalizedPath, GlobPattern, CompiledPattern};
 use tractor::report::{ReportBuilder, ReportMatch, Severity, DiagnosticOrigin};
 
-use crate::executor::ExecuteOptions;
-use super::filter::ResultFilter;
+use crate::cli::context::ExecCtx;
+
+use super::filter::Filters;
+use super::source::Source;
 use super::git;
 
 // ---------------------------------------------------------------------------
-// FileRequest
+// ResolverOptions
 // ---------------------------------------------------------------------------
 
-/// Describes what files an operation needs. The FileResolver decides how
-/// to resolve them (glob expansion, intersection, filtering).
-pub(crate) struct FileRequest<'a> {
+/// Settings the `FileResolver` needs to build its shared state (root globs,
+/// CLI globs, global diff). These are resolver-scoped knobs only —
+/// environmental state (`verbose`, `base_dir`) lives on `RunContext` and
+/// is threaded in as an `ExecCtx` at construction time. This avoids having
+/// two structs carry the same fields with the risk of disagreement.
+#[derive(Debug, Clone, Default)]
+pub struct ResolverOptions {
+    pub diff_files: Option<String>,
+    pub diff_lines: Option<String>,
+    pub max_files: usize,
+    /// Positional CLI file patterns, intersected with operation file globs.
+    pub cli_files: Vec<String>,
+    /// Root-level file patterns from config.
+    /// `None` = key missing (unrestricted); `Some(vec![])` = explicitly empty.
+    pub config_root_files: Option<Vec<String>>,
+}
+
+// ---------------------------------------------------------------------------
+// SourceRequest — what a single operation needs, as input to the resolver
+// ---------------------------------------------------------------------------
+
+/// Describes the inputs of a single operation. The resolver expands globs,
+/// applies filters, then produces the unified `Vec<Source>` the executor runs.
+///
+/// There is no `has_inline` flag — the inline source's presence is derived
+/// from `inline_source.is_some()`. And there is no separate disk-vs-virtual
+/// branch — both collapse into the same `Vec<Source>` output.
+pub struct SourceRequest<'a> {
     /// Operation-level glob patterns (from operation `files:` field).
     pub files: &'a [String],
     /// Exclude patterns (union of root + operation excludes).
     pub exclude: &'a [String],
-    /// Per-operation diff-files spec (e.g. "HEAD~3").
-    pub diff_files: Option<&'a str>,
-    /// Per-operation diff-lines spec.
-    pub diff_lines: Option<&'a str>,
+    /// Per-operation diff-files specs (root + per-op concatenated by
+    /// `merge_scope`). Each spec AND-intersects the resolved file set;
+    /// empty slice means "no per-op diff-files narrowing".
+    pub diff_files: &'a [String],
+    /// Per-operation diff-lines specs. Each becomes a distinct
+    /// `DiffHunkFilter` in the resulting `Filters.diff_hunks`; filters
+    /// AND-compose so every spec narrows further.
+    pub diff_lines: &'a [String],
     /// Command name for diagnostics (e.g. "check", "query").
     pub command: &'a str,
+    /// Language override for disk sources (rule/operation-level `-l`).
+    /// Inline sources carry their own language; this only affects disk.
+    pub language: Option<&'a str>,
+    /// Optional inline source; rides alongside disk sources in the result.
+    pub inline_source: Option<&'a Source>,
 }
 
 // ---------------------------------------------------------------------------
@@ -43,9 +80,9 @@ pub(crate) struct FileRequest<'a> {
 // ---------------------------------------------------------------------------
 
 /// Centralized file resolver that owns all glob expansion, intersection,
-/// exclusion, and filtering. Constructed once from ExecuteOptions, then
-/// called per-operation with a FileRequest.
-pub(crate) struct FileResolver {
+/// exclusion, and filtering. Constructed once from `ResolverOptions`, then
+/// called per-operation with a `SourceRequest`.
+pub struct FileResolver {
     /// Expanded root-level files (from config `files:`).
     /// `None` when the config key was missing (unrestricted).
     /// `Some(empty)` when explicitly `files: []`.
@@ -61,7 +98,7 @@ pub(crate) struct FileResolver {
     /// Literal path prefixes of the CLI file args. Plays the same role
     /// as `root_prefixes` — sibling constraint during expansion.
     cli_prefixes: Vec<NormalizedPath>,
-    // Resolution parameters (copied from ExecuteOptions for self-containment)
+    // Resolution parameters (copied from ResolverOptions for self-containment)
     verbose: bool,
     base_dir: Option<PathBuf>,
     max_files: usize,
@@ -82,22 +119,26 @@ fn prefixes_of_patterns(patterns: &[String]) -> Vec<NormalizedPath> {
 }
 
 impl FileResolver {
-    /// Build from ExecuteOptions, expanding shared globs once.
+    /// Build from resolver-scope options plus the shared environmental
+    /// context (`verbose`, `base_dir`) owned by `RunContext`. Expanding
+    /// shared globs happens once here.
     /// Normalizes all paths to forward slashes (fix #98).
     /// Returns Err with a fatal diagnostic message on expansion failure.
-    pub fn new(options: &ExecuteOptions) -> Result<Self, String> {
+    pub fn new(options: &ResolverOptions, env: &ExecCtx<'_>) -> Result<Self, String> {
         let expansion_limit = options.max_files * 10;
+        let verbose = env.verbose;
+        let base_dir: Option<PathBuf> = env.base_dir.map(|p| p.to_path_buf());
 
         let format_patterns = |patterns: &[String]| -> String {
             patterns.iter().map(|g| format!("\"{}\"", g)).collect::<Vec<_>>().join(", ")
         };
 
-        let base_dir_display = options.base_dir.as_ref()
+        let base_dir_display = base_dir.as_ref()
             .map(|b| normalize_path(&b.display().to_string()))
             .unwrap_or_else(|| ".".to_string());
 
         let relative_path = |path: &str| -> String {
-            if let Some(base) = &options.base_dir {
+            if let Some(base) = &base_dir {
                 let base_str = normalize_path(&base.display().to_string());
                 path.strip_prefix(&base_str)
                     .and_then(|p| p.strip_prefix('/'))
@@ -118,7 +159,7 @@ impl FileResolver {
             };
         }
 
-        if options.verbose {
+        if verbose {
             let cwd_display = std::env::current_dir()
                 .map(|p| NormalizedPath::absolute(&p.display().to_string()).to_string())
                 .unwrap_or_else(|_| ".".to_string());
@@ -142,7 +183,7 @@ impl FileResolver {
         // the root expansion (feeds pre-absolutised patterns).
         let resolved_root_patterns: Option<Vec<String>> = options.config_root_files.as_ref()
             .filter(|p| !p.is_empty())
-            .map(|p| resolve_globs_to_absolute(&options.base_dir, p));
+            .map(|p| resolve_globs_to_absolute(&base_dir, p));
 
         let root_prefixes: Vec<NormalizedPath> = resolved_root_patterns.as_deref()
             .map(prefixes_of_patterns).unwrap_or_default();
@@ -161,7 +202,7 @@ impl FileResolver {
                             e.pattern, e.limit
                         )
                     })?;
-                if options.verbose {
+                if verbose {
                     eprintln!("  files: root scope {} expanded to {} file(s)",
                         format_patterns(patterns), expansion.files.len());
                     log_files!(&expansion.files);
@@ -189,7 +230,7 @@ impl FileResolver {
                 ))?;
             let cli_set: HashSet<NormalizedPath> = expansion.files.into_iter()
                 .map(|f| NormalizedPath::absolute(f.as_str())).collect();
-            if options.verbose {
+            if verbose {
                 eprintln!("  files: CLI args {} expanded to {} file(s)",
                     format_patterns(&options.cli_files), cli_set.len());
                 for f in cli_set.iter().take(5) {
@@ -206,11 +247,11 @@ impl FileResolver {
 
         // --- Global diff-files ---
         let global_diff_files = if let Some(ref spec) = options.diff_files {
-            let cwd = options.base_dir.as_deref()
+            let cwd = base_dir.as_deref()
                 .unwrap_or_else(|| Path::new("."));
             match git::git_changed_files(spec, cwd) {
                 Ok(changed) => {
-                    if options.verbose {
+                    if verbose {
                         eprintln!("  files: git diff \"{}\" found {} changed file(s)", spec, changed.len());
                     }
                     Some(changed)
@@ -230,38 +271,93 @@ impl FileResolver {
             global_diff_files,
             root_prefixes,
             cli_prefixes,
-            verbose: options.verbose,
-            base_dir: options.base_dir.clone(),
+            verbose,
+            base_dir,
             max_files: options.max_files,
             global_diff_lines: options.diff_lines.clone(),
         })
     }
 
     /// The base directory used for resolving relative paths.
+    #[allow(dead_code)]
     pub fn base_dir(&self) -> Option<&Path> {
         self.base_dir.as_deref()
     }
 
-    /// Resolve files for an operation and build result filters.
-    /// Public entry point replacing resolve_op_files().
+    /// Resolve a single operation's inputs into the unified `Vec<Source>`
+    /// the executor runs, plus the [`Filters`] envelope it must apply.
+    ///
+    /// This is the single entry point for turning "what the user declared"
+    /// into "what the executor consumes". Disk globs are expanded through
+    /// the full pipeline (intersections, excludes, diff, limits) and then
+    /// wrapped as `Source::disk`. An inline source, if present, is appended
+    /// to the result so downstream code sees one uniform list.
     pub fn resolve(
         &self,
-        request: &FileRequest,
+        request: &SourceRequest,
         report: &mut ReportBuilder,
-    ) -> (Vec<NormalizedPath>, Vec<Box<dyn ResultFilter>>) {
+    ) -> (Vec<Source>, Filters) {
+        // Guardrail: `--diff-lines` with pathless inline input is a
+        // misconfiguration — there is no git baseline to compute hunks
+        // against. Reject at plan time (here) so every executor downstream
+        // can apply `Filters` uniformly without per-source bypasses.
+        // Both the global `--diff-lines` spec and any per-op `diff-lines:`
+        // entries count as "active" for this check.
+        let has_diff_lines = self.global_diff_lines.is_some() || !request.diff_lines.is_empty();
+        if has_diff_lines
+            && request.inline_source.map(|s| s.is_pathless()).unwrap_or(false)
+        {
+            report.add(make_fatal_diagnostic(
+                request.command,
+                "`--diff-lines` requires a file path to compute hunks against the git baseline. \
+                 Pipe content with a positional path to name the virtual source, e.g. \
+                 `cat x.cs | tractor check --diff-lines HEAD src/Foo.cs`.".to_string(),
+            ));
+            return (Vec::new(), Filters::default());
+        }
+
         let cwd = self.base_dir.as_deref()
             .unwrap_or_else(|| Path::new("."));
-        let filters = build_filters(self.global_diff_lines.as_deref(), request.diff_lines, cwd);
-        let files = self.resolve_files(request, &filters, report);
-        (files, filters)
+        let inline_for_diff = request.inline_source.and_then(|s| {
+            if s.is_pathless() {
+                None
+            } else {
+                s.inline_content().map(|c| (&s.path, c))
+            }
+        });
+        let filters = build_filters(
+            self.global_diff_lines.as_deref(),
+            request.diff_lines,
+            cwd,
+            inline_for_diff,
+        );
+        // `filters` here already covers global + all per-op diff-lines
+        // specs — every one becomes an entry in `Filters.diff_hunks` so
+        // they AND-compose naturally at match time.
+        let paths = self.resolve_files(request, &filters, report);
+
+        // Unify: wrap resolved paths as disk sources, then append the
+        // inline source (if any). Disk sources pick up the language
+        // override; inline sources already carry their own.
+        let mut sources: Vec<Source> = Vec::with_capacity(paths.len() + 1);
+        for path in paths {
+            let lang = request.language
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| detect_language(path.as_str()).to_string());
+            sources.push(Source::disk(path, lang));
+        }
+        if let Some(inline) = request.inline_source {
+            sources.push(inline.clone());
+        }
+        (sources, filters)
     }
 
     /// Internal: the core resolution pipeline.
     /// expansion → intersection → excludes → language → diff → limits
     fn resolve_files(
         &self,
-        request: &FileRequest,
-        filters: &[Box<dyn ResultFilter>],
+        request: &SourceRequest,
+        filters: &Filters,
         report: &mut ReportBuilder,
     ) -> Vec<NormalizedPath> {
         let expansion_limit = self.max_files * 10;
@@ -371,9 +467,11 @@ impl FileResolver {
                 eprintln!("  files: using CLI files as base ({} file(s))", cli_set.len());
             }
             (cli_set.iter().cloned().collect(), vec![])
-        } else if self.base_dir.is_some() {
-            // Config-based run with no files at any level — fail with a clear
-            // message rather than silently doing nothing (fix #127 bug 4).
+        } else if self.base_dir.is_some() && request.inline_source.is_none() {
+            // Config-based run with no files at any level AND no inline source
+            // — fail with a clear message rather than silently doing nothing
+            // (fix #127 bug 4). An inline source is a complete input on its
+            // own; don't force a `files:` declaration in that case.
             report.add(make_fatal_diagnostic(
                 request.command,
                 "no file patterns specified — add `files:` to your config, pass files as CLI arguments, or add `include:` to your rules".to_string(),
@@ -438,14 +536,18 @@ impl FileResolver {
 
         // --- Intersect with git diff-files ---
         // Both sides of the intersection are already `NormalizedPath`,
-        // produced via `NormalizedPath::absolute` — compare as-is.
+        // produced via `NormalizedPath::absolute` — compare as-is. The
+        // global spec (if any) and every per-op spec all narrow the set
+        // sequentially; the result is the intersection of all of them.
         let before_diff = files.len();
         if let Some(ref global_diff) = self.global_diff_files {
             files = git::intersect_changed(files, global_diff);
         }
         let cwd = self.base_dir.as_deref()
             .unwrap_or_else(|| Path::new("."));
-        files = apply_diff_files_filter(files, request.diff_files, cwd);
+        for spec in request.diff_files {
+            files = apply_diff_files_filter(files, Some(spec.as_str()), cwd);
+        }
         if self.verbose && files.len() != before_diff {
             eprintln!("  files: {} file(s) after diff filter (was {})", files.len(), before_diff);
         }
@@ -453,7 +555,7 @@ impl FileResolver {
         // --- Apply file-level result filters ---
         if !filters.is_empty() {
             let before = files.len();
-            files.retain(|f| filters.iter().all(|filter| filter.include_file(f.as_str())));
+            files.retain(|f| filters.include_file(f.as_str()));
             if self.verbose && files.len() != before {
                 eprintln!("  files: {} file(s) after diff-lines filter (was {})", files.len(), before);
             }
@@ -519,17 +621,41 @@ fn resolve_globs_to_absolute(base_dir: &Option<PathBuf>, patterns: &[String]) ->
     }
 }
 
-/// Build result filters from global and per-operation diff specs.
+/// Build the [`Filters`] envelope from global and per-operation diff specs.
+///
+/// Each applicable spec becomes a distinct `DiffHunkFilter` pushed into
+/// `filters.diff_hunks`. The filters AND-compose: a match must pass
+/// every one of them to be kept. This upholds the project-wide
+/// invariant that file/line scoping rules at every level are
+/// intersectional — global `--diff-lines` narrows the same result set
+/// that per-op `diff-lines:` narrows, neither overrides the other.
+///
+/// The per-op slice may carry multiple specs because `merge_scope`
+/// concatenates root + per-operation `diff-lines:` entries rather than
+/// letting one override the other. Every spec in the slice is lowered
+/// into its own `DiffHunkFilter` so all layers AND-compose with each
+/// other and with the global filter.
+///
+/// When `inline` is `Some`, the hunks for the virtual path are computed
+/// against the git baseline at `spec:<virtual_path>` so pre-commit hooks
+/// can lint only the edited hunk even when the content is in memory.
 fn build_filters(
     global_diff: Option<&str>,
-    op_diff: Option<&str>,
+    op_diffs: &[String],
     cwd: &Path,
-) -> Vec<Box<dyn ResultFilter>> {
-    let mut filters: Vec<Box<dyn ResultFilter>> = Vec::new();
+    inline: Option<(&NormalizedPath, &str)>,
+) -> Filters {
+    let mut filters = Filters::default();
 
-    for spec in [global_diff, op_diff].into_iter().flatten() {
-        match git::DiffHunkFilter::from_spec(spec, cwd) {
-            Ok(f) => filters.push(Box::new(f)),
+    if let Some(spec) = global_diff {
+        match git::DiffHunkFilter::from_spec_with_inline(spec, cwd, inline) {
+            Ok(f) => filters.diff_hunks.push(f),
+            Err(e) => eprintln!("warning: --diff-lines filter failed: {}", e),
+        }
+    }
+    for spec in op_diffs {
+        match git::DiffHunkFilter::from_spec_with_inline(spec.as_str(), cwd, inline) {
+            Ok(f) => filters.diff_hunks.push(f),
             Err(e) => eprintln!("warning: --diff-lines filter failed: {}", e),
         }
     }
@@ -553,7 +679,7 @@ fn apply_diff_files_filter(files: Vec<NormalizedPath>, spec: Option<&str>, cwd: 
 }
 
 /// Build a fatal diagnostic for file resolution failures.
-pub(crate) fn make_fatal_diagnostic(command: &str, reason: String) -> ReportMatch {
+pub fn make_fatal_diagnostic(command: &str, reason: String) -> ReportMatch {
     ReportMatch {
         file: String::new(),
         line: 0, column: 0, end_line: 0, end_column: 0,
@@ -678,12 +804,14 @@ mod tests {
         };
 
         let mut builder = tractor::ReportBuilder::new();
-        let request = FileRequest {
+        let request = SourceRequest {
             files: &[],
             exclude: &[],
-            diff_files: None,
-            diff_lines: None,
+            diff_files: &[],
+            diff_lines: &[],
             command: "check",
+            language: None,
+            inline_source: None,
         };
         let (files, _) = resolver.resolve(&request, &mut builder);
         assert!(files.is_empty(), "should return no files");
@@ -710,15 +838,17 @@ mod tests {
         };
 
         let mut builder = tractor::ReportBuilder::new();
-        let request = FileRequest {
+        let request = SourceRequest {
             files: &[],
             exclude: &[],
-            diff_files: None,
-            diff_lines: None,
+            diff_files: &[],
+            diff_lines: &[],
             command: "query",
+            language: None,
+            inline_source: None,
         };
-        let (files, _) = resolver.resolve(&request, &mut builder);
-        assert!(files.is_empty());
+        let (sources, _) = resolver.resolve(&request, &mut builder);
+        assert!(sources.is_empty());
 
         let report = builder.build();
         assert!(report.all_matches().is_empty(), "should not emit diagnostic in non-config mode");
@@ -748,15 +878,17 @@ mod tests {
         let mut builder = tractor::ReportBuilder::new();
         // `[abc]` character classes are rejected by CompiledPattern.
         let exclude = vec!["/tmp/[abc]/**".to_string()];
-        let request = FileRequest {
+        let request = SourceRequest {
             files: &[],
             exclude: &exclude,
-            diff_files: None,
-            diff_lines: None,
+            diff_files: &[],
+            diff_lines: &[],
             command: "check",
+            language: None,
+            inline_source: None,
         };
-        let (files, _) = resolver.resolve(&request, &mut builder);
-        assert!(files.is_empty(), "invalid exclude must short-circuit resolution");
+        let (sources, _) = resolver.resolve(&request, &mut builder);
+        assert!(sources.is_empty(), "invalid exclude must short-circuit resolution");
 
         let report = builder.build();
         let has_fatal = report.all_matches().iter().any(|m| {
@@ -782,5 +914,139 @@ mod tests {
 
         // Lowercase path should still be excluded on Windows
         assert!(!m.matches(&NormalizedPath::new("vendor/lib.rs")));
+    }
+
+    // -----------------------------------------------------------------------
+    // Intersection regression tests for diff-files specs
+    // -----------------------------------------------------------------------
+    //
+    // Guards the contract that global (`--diff-files`) and per-op
+    // (`diff-files:`) narrow the same set of files: a file must appear
+    // in BOTH change sets to survive. Composed via sequential calls to
+    // `git::intersect_changed` in `FileResolver::resolve_files`.
+
+    /// Direct composition test: chaining two `intersect_changed` calls
+    /// yields the intersection of both change sets. This is what
+    /// `resolve_files` does for global + per-op diff-files.
+    #[test]
+    fn diff_files_global_and_per_op_intersect_not_override() {
+        let a = NormalizedPath::new("/repo/src/a.rs");
+        let b = NormalizedPath::new("/repo/src/b.rs");
+        let c = NormalizedPath::new("/repo/src/c.rs");
+
+        // Starting set: the full expansion before any diff-files filter.
+        let files = vec![a.clone(), b.clone(), c.clone()];
+
+        // Global --diff-files: touches a.rs + b.rs.
+        let global: HashSet<NormalizedPath> =
+            [a.clone(), b.clone()].into_iter().collect();
+
+        // Per-op diff-files: touches b.rs + c.rs.
+        let per_op: HashSet<NormalizedPath> =
+            [b.clone(), c.clone()].into_iter().collect();
+
+        // Apply both, sequentially — the same order `resolve_files` uses.
+        let after_global = git::intersect_changed(files, &global);
+        let after_both = git::intersect_changed(after_global, &per_op);
+
+        // Only b.rs is in both → it's the intersection. If either
+        // filter were an override, we'd see a.rs or c.rs sneak through.
+        assert_eq!(after_both.len(), 1, "only the intersection must survive");
+        assert_eq!(after_both[0], b);
+    }
+
+    /// Three-layer composition: global CLI (`--diff-files`), root
+    /// config (`diff-files:` at top level), and per-op
+    /// (`check.diff-files:`) must all AND-compose. `merge_scope`
+    /// concatenates root + per-op into the `Vec<String>` that lives on
+    /// `SourceRequest.diff_files`; `resolve_files` then iterates both
+    /// entries and also intersects `self.global_diff_files`, so every
+    /// layer narrows the surviving set. A file must appear in ALL
+    /// three change sets to survive.
+    #[test]
+    fn diff_files_three_layers_all_intersect() {
+        let a = NormalizedPath::new("/repo/src/a.rs");
+        let b = NormalizedPath::new("/repo/src/b.rs");
+        let c = NormalizedPath::new("/repo/src/c.rs");
+        let d = NormalizedPath::new("/repo/src/d.rs");
+
+        // Full starting set, pre-diff.
+        let files = vec![a.clone(), b.clone(), c.clone(), d.clone()];
+
+        // Layer 1 — global CLI: touches a + b + c (not d).
+        let global: HashSet<NormalizedPath> =
+            [a.clone(), b.clone(), c.clone()].into_iter().collect();
+        // Layer 2 — root config: touches b + c + d (not a).
+        let root_spec: HashSet<NormalizedPath> =
+            [b.clone(), c.clone(), d.clone()].into_iter().collect();
+        // Layer 3 — per-op: touches c + d (not a or b).
+        let per_op_spec: HashSet<NormalizedPath> =
+            [c.clone(), d.clone()].into_iter().collect();
+
+        // Apply sequentially in the order `resolve_files` does:
+        // global, then every entry in request.diff_files (root first,
+        // then per-op — the concatenation `merge_scope` produces).
+        let after_global = git::intersect_changed(files, &global);
+        let after_root = git::intersect_changed(after_global, &root_spec);
+        let after_per_op = git::intersect_changed(after_root, &per_op_spec);
+
+        // Only c appears in all three layers.
+        assert_eq!(after_per_op.len(), 1,
+            "only files present in every layer's change set survive");
+        assert_eq!(after_per_op[0], c);
+    }
+
+    /// Three-layer composition for `diff-lines`: global CLI
+    /// (`--diff-lines`), root config (`diff-lines:`), and per-op
+    /// (`check.diff-lines:`) each produce a distinct `DiffHunkFilter`
+    /// in `Filters.diff_hunks`. `build_filters` pushes the global first
+    /// then every entry of the per-op slice (which `merge_scope`
+    /// populates with root-first-then-per-op). `Filters.include`
+    /// requires a match to pass ALL of them, so any layer that doesn't
+    /// cover the match's line range excludes it — no override.
+    #[test]
+    fn diff_lines_three_layers_all_intersect_in_filters() {
+        use std::collections::HashMap;
+        use tractor::Match;
+        use super::super::git::LineRange;
+        use super::super::filter::Filters;
+
+        let file = NormalizedPath::new("/repo/src/foo.rs");
+
+        // Build one DiffHunkFilter per scope layer, as `build_filters` would.
+        let hunk_filter = |start: u32, end: u32| {
+            let mut h = HashMap::new();
+            h.insert(file.clone(), vec![LineRange { start, end }]);
+            git::DiffHunkFilter::from_hunks(h)
+        };
+
+        let filters = Filters {
+            diff_hunks: vec![
+                hunk_filter(1, 20),  // Layer 1 — global CLI
+                hunk_filter(10, 30), // Layer 2 — root config
+                hunk_filter(15, 25), // Layer 3 — per-op
+            ],
+        };
+        assert_eq!(filters.diff_hunks.len(), 3,
+            "every spec at every layer must lower into its own DiffHunkFilter");
+
+        // Helper: build a `Match` on `file` at a given line span.
+        let match_at = |line: u32, end_line: u32| {
+            let m = Match::new(file.as_str().to_string(), "x".into());
+            Match { line, end_line, ..m }
+        };
+
+        // Line 5 → only in global (1..=20); fails root (10..=30) and per-op (15..=25).
+        assert!(!filters.include(&match_at(5, 5)),
+            "match outside any one layer must be rejected");
+        // Line 12 → in global (1..=20) and root (10..=30); fails per-op (15..=25).
+        assert!(!filters.include(&match_at(12, 12)),
+            "match must satisfy the per-op layer too");
+        // Line 27 → in root (10..=30); fails global (1..=20) and per-op (15..=25).
+        assert!(!filters.include(&match_at(27, 27)),
+            "match must satisfy every layer, not just root");
+        // Line 18 → in all three layers (1..=20, 10..=30, 15..=25); passes.
+        assert!(filters.include(&match_at(18, 18)),
+            "match inside every layer's range must pass");
     }
 }

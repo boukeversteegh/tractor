@@ -208,11 +208,13 @@ pub fn apply_replacements(matches: &[Match], new_value: &str) -> Result<ReplaceS
         });
     }
 
-    // Reject stdin matches
+    // Defensive: reject matches from pathless inline sources. In the unified
+    // Source flow the executor already filters these out before reaching
+    // apply_replacements; this guards against future callers that forget.
     for m in matches {
-        if m.file == "<stdin>" {
+        if m.is_pathless() {
             return Err(ReplaceError::NoFilePath {
-                description: "<stdin>".to_string(),
+                description: m.file.clone(),
             });
         }
     }
@@ -255,6 +257,7 @@ pub fn apply_replacements(matches: &[Match], new_value: &str) -> Result<ReplaceS
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::model::report::PATHLESS_LABEL;
     use std::sync::Arc;
 
     #[test]
@@ -395,10 +398,10 @@ mod tests {
     }
 
     #[test]
-    fn test_apply_replacements_stdin_rejected() {
-        let matches = vec![Match::new("<stdin>".to_string(), "value".to_string())];
+    fn test_apply_replacements_pathless_rejected() {
+        let matches = vec![Match::new(PATHLESS_LABEL.to_string(), "value".to_string())];
         let result = apply_replacements(&matches, "x");
-        assert!(result.is_err());
+        assert!(matches!(result, Err(ReplaceError::NoFilePath { .. })));
     }
 
     #[test]

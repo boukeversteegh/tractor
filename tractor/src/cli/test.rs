@@ -40,9 +40,10 @@ pub struct TestArgs {
     #[arg(short = 'f', long = "format", default_value = "text", help_heading = "Format")]
     pub format: String,
 }
-use crate::executor::{self, ExecuteOptions, Operation, TestOperation, TestAssertion};
+use crate::executor::{self, TestAssertion, TestOperation};
 use crate::cli::context::RunContext;
-use crate::input::InputMode;
+use crate::input::{plan_single, InputMode, Operation, SingleOpRequest};
+use crate::tractor_config::OperationInputs;
 use crate::format::{ViewField, TestRenderOptions, render_report};
 use crate::matcher::prepare_report_for_output;
 use super::config::{run_from_config, ConfigRunParams};
@@ -60,12 +61,13 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
             config_path,
             shared: &args.shared,
             cli_files: args.files.clone(),
+            cli_content: args.content.clone(),
             format: &args.format,
             default_view: &[ViewField::Totals],
             view_override: args.view.as_deref(),
             message: args.message.clone(),
             default_group: &[],
-            op_filter: |op| matches!(op, Operation::Test(_)),
+            op_filter: |kind| matches!(kind, crate::tractor_config::ConfigOperationKind::Test),
             filter_label: "test",
         });
     }
@@ -83,52 +85,46 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
     let dot = NormalizedXpath::new(".");
     let xpath_expr = ctx.xpath.as_ref().unwrap_or(&dot);
 
-    // Build the test operation for either files or inline source.
-    let op = match &ctx.input {
-        InputMode::Files(files) => Operation::Test(TestOperation {
-            files: files.clone(),
-            exclude: vec![],
-            diff_files: None,
-            diff_lines: None,
-            assertions: vec![TestAssertion {
-                xpath: xpath_expr.clone(),
-                expect: expect.clone(),
-            }],
-            tree_mode: ctx.tree_mode,
-            language: ctx.lang.clone(),
-            limit: ctx.limit,
-            ignore_whitespace: ctx.ignore_whitespace,
-            parse_depth: ctx.parse_depth,
-            inline_source: None,
-        }),
-        InputMode::InlineSource { source, lang } => Operation::Test(TestOperation {
-            files: vec![],
-            exclude: vec![],
-            diff_files: None,
-            diff_lines: None,
-            assertions: vec![TestAssertion {
-                xpath: xpath_expr.clone(),
-                expect: expect.clone(),
-            }],
-            tree_mode: ctx.tree_mode,
-            language: Some(lang.clone()),
-            limit: ctx.limit,
-            ignore_whitespace: ctx.ignore_whitespace,
-            parse_depth: ctx.parse_depth,
-            inline_source: Some(source.clone()),
-        }),
+    let (op_files, inline_source, op_language): (Vec<String>, Option<crate::input::Source>, Option<String>) = match &ctx.input {
+        InputMode::Files(files) => (files.clone(), None, ctx.lang.clone()),
+        InputMode::Inline(source) => (Vec::new(), Some(source.clone()), Some(source.language.clone())),
     };
 
-    let options = ExecuteOptions {
-        verbose: ctx.verbose,
-        diff_files: args.shared.diff_files.clone(),
-        diff_lines: args.shared.diff_lines.clone(),
-        max_files: args.shared.max_files,
-        ..Default::default()
+    let inputs = OperationInputs {
+        files: op_files,
+        exclude: Vec::new(),
+        diff_files: Vec::new(),
+        diff_lines: Vec::new(),
+        language: op_language.clone(),
+        inline_source,
     };
+
+    let op = Operation::Test(TestOperation {
+        assertions: vec![TestAssertion {
+            xpath: xpath_expr.clone(),
+            expect: expect.clone(),
+        }],
+        tree_mode: ctx.tree_mode,
+        language: op_language,
+        limit: ctx.limit,
+        ignore_whitespace: ctx.ignore_whitespace,
+        parse_depth: ctx.parse_depth,
+    });
 
     let mut builder = tractor::ReportBuilder::new();
-    executor::execute(&[op], &options, &mut builder)?;
+    let env = ctx.exec_ctx();
+    let plan = plan_single(
+        SingleOpRequest { op, inputs, command: "test" },
+        args.shared.diff_files.clone(),
+        args.shared.diff_lines.clone(),
+        args.shared.max_files,
+        &env,
+        &mut builder,
+    )?;
+
+    if let Some(plan) = plan {
+        executor::execute(&[plan], &env, &mut builder)?;
+    }
     // Set expected value for test summary rendering (test-mode only, not shared with run mode)
     builder.set_expected(expect.clone());
     let mut report = builder.build();

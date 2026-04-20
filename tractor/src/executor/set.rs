@@ -2,45 +2,80 @@
 
 use tractor::report::{ReportBuilder, ReportMatch, ReportOutput};
 use tractor::tree_mode::TreeMode;
-use tractor::{detect_language, parse_string_to_documents, Match};
+use tractor::{parse, ParseInput, ParseOptions, Match};
 use tractor::xpath_upsert::upsert_typed;
 
-use crate::input::filter::ResultFilter;
-use crate::input::file_resolver::{FileResolver, FileRequest};
+use crate::input::filter::Filters;
+use crate::input::source::SourceDisposition;
+use crate::input::Source;
 
-use super::{ExecuteOptions, filter_refs, match_to_report_match};
+use crate::cli::context::ExecCtx;
+
+use super::match_to_report_match;
 
 // ---------------------------------------------------------------------------
 // Operation type
 // ---------------------------------------------------------------------------
 
-/// A set operation: ensure values exist at specified XPaths.
+/// A set operation plan: ensure values exist at specified XPaths.
+///
+/// Virtual inline sources share the same `Vec<Source>` as disk files.
+/// Write-mode is automatically routed to Capture for virtual sources
+/// (nothing to write back to disk).
 #[derive(Debug, Clone)]
-pub struct SetOperation {
-    /// File glob patterns to include.
-    pub files: Vec<String>,
-    /// File glob patterns to exclude.
-    pub exclude: Vec<String>,
-    /// Git diff spec: only consider files changed in this diff.
-    pub diff_files: Option<String>,
-    /// Git diff spec: only include matches in changed hunks.
-    pub diff_lines: Option<String>,
+pub struct SetOperationPlan {
+    /// Pre-resolved unified input list.
+    pub sources: Vec<Source>,
+    /// Pre-built result filters.
+    pub filters: Filters,
     /// Mappings to apply.
     pub mappings: Vec<SetMapping>,
     /// Tree mode override for parsing diagnostics.
     pub tree_mode: Option<TreeMode>,
-    /// Language override for parsing.
-    pub language: Option<String>,
     /// Maximum number of matches to update per mapping.
     pub limit: Option<usize>,
     /// Ignore whitespace-only text nodes while collecting diagnostics.
     pub ignore_whitespace: bool,
-    /// Inline source string to mutate instead of files.
-    pub inline_source: Option<String>,
     /// How transformed content should be applied.
     pub write_mode: SetWriteMode,
     /// How detailed the diagnostic report should be.
     pub report_mode: SetReportMode,
+}
+
+/// Pre-resolution shape for a set operation. Mirrors [`SetOperationPlan`] but
+/// omits the input-resolution-derived fields (`sources`, `filters`). Produced
+/// by the config parser and CLI layer, then turned into a fully-resolved
+/// `SetOperationPlan` by the planner via [`SetOperation::into_plan`].
+#[derive(Debug, Clone)]
+pub struct SetOperation {
+    /// Mappings to apply.
+    pub mappings: Vec<SetMapping>,
+    /// Tree mode override for parsing diagnostics.
+    pub tree_mode: Option<TreeMode>,
+    /// Maximum number of matches to update per mapping.
+    pub limit: Option<usize>,
+    /// Ignore whitespace-only text nodes while collecting diagnostics.
+    pub ignore_whitespace: bool,
+    /// How transformed content should be applied.
+    pub write_mode: SetWriteMode,
+    /// How detailed the diagnostic report should be.
+    pub report_mode: SetReportMode,
+}
+
+impl SetOperation {
+    /// Attach resolved inputs and produce the final executor-ready plan.
+    pub fn into_plan(self, sources: Vec<Source>, filters: Filters) -> SetOperationPlan {
+        SetOperationPlan {
+            sources,
+            filters,
+            mappings: self.mappings,
+            tree_mode: self.tree_mode,
+            limit: self.limit,
+            ignore_whitespace: self.ignore_whitespace,
+            write_mode: self.write_mode,
+            report_mode: self.report_mode,
+        }
+    }
 }
 
 /// A single xpath → value mapping for set operations.
@@ -71,54 +106,58 @@ pub enum SetReportMode {
 // ---------------------------------------------------------------------------
 
 pub(crate) fn execute_set(
-    op: &SetOperation,
-    _options: &ExecuteOptions,
-    resolver: &FileResolver,
+    op: &SetOperationPlan,
+    _ctx: &ExecCtx<'_>,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if op.mappings.is_empty() {
         return Ok(());
     }
 
-    if let Some(ref source) = op.inline_source {
-        let lang = op.language.as_deref()
-            .ok_or("inline source requires a language (--lang)")?;
-        let outcome = execute_set_target(None, source, lang, op, &[])?;
-        if matches!(op.write_mode, SetWriteMode::Verify) && outcome.changed {
-            report.fail();
-        }
-        report.add_all(outcome.diagnostics);
-        if let Some(output) = outcome.output {
-            report.add_output(output);
-        }
-        return Ok(());
-    }
+    for source in &op.sources {
+        let content = source.read()?;
 
-    let request = FileRequest {
-        files: &op.files,
-        exclude: &op.exclude,
-        diff_files: op.diff_files.as_deref(),
-        diff_lines: op.diff_lines.as_deref(),
-        command: "set",
-    };
-    let (files, filters) = resolver.resolve(&request, report);
+        // Disposition drives write-mode routing only:
+        //   Disk              → honour the requested write mode; writes go
+        //                        back to the file on in-place success.
+        //   InlineWithPath    → force Capture; the virtual path is known so
+        //                        the output carries it through the report.
+        //   InlinePathless    → force Capture; the captured output omits the
+        //                        sentinel path instead of rendering it.
+        //
+        // `op.filters` applies uniformly to every source regardless of
+        // disposition. `InlineWithPath` sources are filterable against
+        // their git baseline at the virtual path; `InlinePathless` + a
+        // `--diff-lines` spec is rejected at plan time, so this executor
+        // never sees that combination and needs no per-source filter
+        // bypass.
+        let disposition = source.disposition();
+        let effective_write_mode = match disposition {
+            SourceDisposition::Disk => op.write_mode,
+            // Virtual sources can't be written back to disk — auto-route
+            // any InPlace request through Capture so the mutated content
+            // surfaces in the report instead of silently vanishing.
+            SourceDisposition::InlineWithPath | SourceDisposition::InlinePathless => {
+                match op.write_mode {
+                    SetWriteMode::InPlace => SetWriteMode::Capture,
+                    other => other,
+                }
+            }
+        };
 
-    for file_path in &files {
-        let lang_override = op.language.as_deref();
-        let lang = lang_override
-            .unwrap_or_else(|| detect_language(file_path.as_str()));
-
-        let source = std::fs::read_to_string(file_path)?;
         let outcome = execute_set_target(
-            Some(file_path.as_str()),
-            &source,
-            lang,
+            source,
+            &content,
             op,
-            &filter_refs(&filters),
+            effective_write_mode,
+            &op.filters,
         )?;
 
-        if outcome.changed && matches!(op.write_mode, SetWriteMode::InPlace) {
-            std::fs::write(file_path, &outcome.content)?;
+        if outcome.changed
+            && matches!(effective_write_mode, SetWriteMode::InPlace)
+            && matches!(disposition, SourceDisposition::Disk)
+        {
+            std::fs::write(source.path.as_str(), &outcome.content)?;
         }
         if matches!(op.write_mode, SetWriteMode::Verify) && outcome.changed {
             report.fail();
@@ -144,14 +183,15 @@ struct SetTargetOutcome {
 }
 
 fn execute_set_target(
-    file: Option<&str>,
-    source: &str,
-    lang: &str,
-    op: &SetOperation,
-    filters: &[&dyn ResultFilter],
+    source: &Source,
+    content: &str,
+    op: &SetOperationPlan,
+    effective_write_mode: SetWriteMode,
+    filters: &Filters,
 ) -> Result<SetTargetOutcome, Box<dyn std::error::Error>> {
-    let file_label = file.unwrap_or("<stdin>");
-    let mut current = source.to_string();
+    let file_label = source.path_str();
+    let lang = source.language.as_str();
+    let mut current = content.to_string();
     let mut diagnostics = Vec::new();
     let mut changed = false;
 
@@ -209,9 +249,21 @@ fn execute_set_target(
         });
     }
 
-    let output = if matches!(op.write_mode, SetWriteMode::Capture) {
+    // Pathless inline sources produce outputs with `file: None` (preserving
+    // the prior "no filename in output" signal for -s with no positional
+    // path). Disk files and virtual-path inline sources both carry their
+    // path through — matching on the three-way disposition makes that
+    // grouping explicit.
+    let output_file = match source.disposition() {
+        SourceDisposition::Disk | SourceDisposition::InlineWithPath => {
+            Some(file_label.to_string())
+        }
+        SourceDisposition::InlinePathless => None,
+    };
+
+    let output = if matches!(effective_write_mode, SetWriteMode::Capture) {
         Some(ReportOutput {
-            file: file.map(|path| path.to_string()),
+            file: output_file,
             content: current.clone(),
         })
     } else {
@@ -236,8 +288,8 @@ fn apply_set_mapping(
     file_label: &str,
     lang: &str,
     mapping: &SetMapping,
-    op: &SetOperation,
-    filters: &[&dyn ResultFilter],
+    op: &SetOperationPlan,
+    filters: &Filters,
     before_matches: &[Match],
 ) -> Result<SetMappingResult, Box<dyn std::error::Error>> {
     match upsert_typed(
@@ -291,19 +343,24 @@ fn query_set_matches(
     file_label: &str,
     lang: &str,
     mapping: &SetMapping,
-    op: &SetOperation,
-    filters: &[&dyn ResultFilter],
+    op: &SetOperationPlan,
+    filters: &Filters,
 ) -> Result<Vec<Match>, Box<dyn std::error::Error>> {
-    let mut result = parse_string_to_documents(
-        source,
-        lang,
-        file_label.to_string(),
-        op.tree_mode,
-        op.ignore_whitespace,
+    let mut result = parse(
+        ParseInput::Inline {
+            content: source,
+            file_label,
+        },
+        ParseOptions {
+            language: Some(lang),
+            tree_mode: op.tree_mode,
+            ignore_whitespace: op.ignore_whitespace,
+            parse_depth: None,
+        },
     )?;
     let mut matches = result.query(&mapping.xpath)?;
     if !filters.is_empty() {
-        matches.retain(|m| filters.iter().all(|f| f.include(m)));
+        matches.retain(|m| filters.include(m));
     }
     if let Some(limit) = op.limit {
         matches.truncate(limit);
@@ -319,7 +376,9 @@ fn query_set_matches(
 mod tests {
     use super::*;
     use tractor::report::ReportBuilder;
-    use crate::executor::{Operation, ExecuteOptions, execute};
+    use tractor::NormalizedPath;
+    use crate::cli::context::ExecCtx;
+    use crate::executor::{OperationPlan, execute};
 
     fn temp_json_file(content: &str) -> (tempfile::TempDir, String) {
         let dir = tempfile::tempdir().unwrap();
@@ -335,6 +394,12 @@ mod tests {
         (dir, path.to_str().unwrap().to_string())
     }
 
+    fn disk_source(path: &str) -> Source {
+        let np = NormalizedPath::absolute(path);
+        let lang = tractor::detect_language(np.as_str()).to_string();
+        Source::disk(np, lang)
+    }
+
     fn string_mapping(xpath: &str, value: &str) -> SetMapping {
         SetMapping {
             xpath: xpath.into(),
@@ -343,18 +408,14 @@ mod tests {
         }
     }
 
-    fn set_operation(path: String, mappings: Vec<SetMapping>, write_mode: SetWriteMode) -> Operation {
-        Operation::Set(SetOperation {
-            files: vec![path],
-            exclude: vec![],
-            diff_files: None,
-            diff_lines: None,
+    fn set_operation(path: String, mappings: Vec<SetMapping>, write_mode: SetWriteMode) -> OperationPlan {
+        OperationPlan::Set(SetOperationPlan {
+            sources: vec![disk_source(&path)],
+            filters: Filters::default(),
             mappings,
             tree_mode: None,
-            language: None,
             limit: None,
             ignore_whitespace: false,
-            inline_source: None,
             write_mode,
             report_mode: SetReportMode::PerMatch,
         })
@@ -365,27 +426,27 @@ mod tests {
         source: &str,
         mappings: Vec<SetMapping>,
         write_mode: SetWriteMode,
-    ) -> Operation {
-        Operation::Set(SetOperation {
-            files: vec![],
-            exclude: vec![],
-            diff_files: None,
-            diff_lines: None,
+    ) -> OperationPlan {
+        let inline = Source::inline_pathless(
+            lang,
+            std::sync::Arc::new(source.to_string()),
+        );
+        OperationPlan::Set(SetOperationPlan {
+            sources: vec![inline],
+            filters: Filters::default(),
             mappings,
             tree_mode: None,
-            language: Some(lang.into()),
             limit: None,
             ignore_whitespace: false,
-            inline_source: Some(source.into()),
             write_mode,
             report_mode: SetReportMode::PerMatch,
         })
     }
 
     /// Helper: execute operations and build a report.
-    fn run(ops: &[Operation]) -> tractor::report::Report {
+    fn run(ops: &[OperationPlan]) -> tractor::report::Report {
         let mut builder = ReportBuilder::new();
-        execute(ops, &ExecuteOptions::default(), &mut builder).unwrap();
+        execute(ops, &ExecCtx::default(), &mut builder).unwrap();
         builder.build()
     }
 
@@ -504,17 +565,13 @@ mod tests {
     fn set_capture_files_emits_file_outputs() {
         let (_dir_a, path_a) = temp_yaml_file("database:\n  host: a\n");
         let (_dir_b, path_b) = temp_yaml_file("database:\n  host: b\n");
-        let ops = vec![Operation::Set(SetOperation {
-            files: vec![path_a.clone(), path_b.clone()],
-            exclude: vec![],
-            diff_files: None,
-            diff_lines: None,
+        let ops = vec![OperationPlan::Set(SetOperationPlan {
+            sources: vec![disk_source(&path_a), disk_source(&path_b)],
+            filters: Filters::default(),
             mappings: vec![string_mapping("//database/host", "db.example.com")],
             tree_mode: None,
-            language: None,
             limit: None,
             ignore_whitespace: false,
-            inline_source: None,
             write_mode: SetWriteMode::Capture,
             report_mode: SetReportMode::PerMatch,
         })];
@@ -524,8 +581,8 @@ mod tests {
         let files: std::collections::HashSet<_> = report.outputs.iter()
             .filter_map(|output| output.file.as_deref())
             .collect();
-        assert!(files.contains(tractor::normalize_path(&path_a).as_str()));
-        assert!(files.contains(tractor::normalize_path(&path_b).as_str()));
+        assert!(files.contains(tractor::NormalizedPath::absolute(&path_a).as_str()));
+        assert!(files.contains(tractor::NormalizedPath::absolute(&path_b).as_str()));
         assert!(report.outputs.iter().all(|output| output.content.contains("db.example.com")));
         let content_a = std::fs::read_to_string(&path_a).unwrap();
         let content_b = std::fs::read_to_string(&path_b).unwrap();

@@ -2,29 +2,30 @@
 
 use tractor::report::{ReportBuilder, ReportMatch};
 use tractor::tree_mode::TreeMode;
-use tractor::{detect_language, apply_replacements, NormalizedPath};
+use tractor::{apply_replacements, NormalizedPath};
 use tractor::xpath_upsert::update_only;
 
-use crate::input::file_resolver::{FileResolver, FileRequest};
+use crate::input::filter::Filters;
+use crate::input::Source;
 
-use super::{ExecuteOptions, filter_refs, match_to_report_match, query_files_multi};
+use crate::cli::context::ExecCtx;
+
+use super::{match_to_report_match, query_files_multi};
 
 // ---------------------------------------------------------------------------
 // Operation type
 // ---------------------------------------------------------------------------
 
-/// An update operation: modify existing matched nodes without creating new structure.
-/// Unlike set, update fails if the XPath does not match any existing nodes.
+/// An update operation plan: modify existing matched nodes without creating
+/// new structure. Unlike set, update fails if the XPath does not match any
+/// existing nodes. Inline (virtual) sources are rejected at construction
+/// time — update always mutates real files.
 #[derive(Debug, Clone)]
-pub struct UpdateOperation {
-    /// File glob patterns to include.
-    pub files: Vec<String>,
-    /// File glob patterns to exclude.
-    pub exclude: Vec<String>,
-    /// Git diff spec: only consider files changed in this diff.
-    pub diff_files: Option<String>,
-    /// Git diff spec: only include matches in changed hunks.
-    pub diff_lines: Option<String>,
+pub struct UpdateOperationPlan {
+    /// Pre-resolved unified input list (disk-only for update).
+    pub sources: Vec<Source>,
+    /// Pre-built result filters (used by the fallback path).
+    pub filters: Filters,
     /// XPath expression to match nodes to update.
     pub xpath: String,
     /// New value for matched nodes.
@@ -41,34 +42,70 @@ pub struct UpdateOperation {
     pub parse_depth: Option<usize>,
 }
 
+/// Pre-resolution shape for an update operation. Mirrors [`UpdateOperationPlan`]
+/// but omits the input-resolution-derived fields (`sources`, `filters`).
+/// Produced by the CLI layer (update has no config form), then turned into
+/// a fully-resolved `UpdateOperationPlan` by the planner via
+/// [`UpdateOperation::into_plan`].
+#[derive(Debug, Clone)]
+pub struct UpdateOperation {
+    /// XPath expression to match nodes to update.
+    pub xpath: String,
+    /// New value for matched nodes.
+    pub value: String,
+    /// Tree mode override for parsing.
+    pub tree_mode: Option<TreeMode>,
+    /// Language override for parsing.
+    pub language: Option<String>,
+    /// Maximum number of matches to update per file.
+    pub limit: Option<usize>,
+    /// Ignore whitespace-only text nodes during parsing.
+    pub ignore_whitespace: bool,
+    /// Maximum parse depth.
+    pub parse_depth: Option<usize>,
+}
+
+impl UpdateOperation {
+    /// Attach resolved inputs and produce the final executor-ready plan.
+    pub fn into_plan(self, sources: Vec<Source>, filters: Filters) -> UpdateOperationPlan {
+        UpdateOperationPlan {
+            sources,
+            filters,
+            xpath: self.xpath,
+            value: self.value,
+            tree_mode: self.tree_mode,
+            language: self.language,
+            limit: self.limit,
+            ignore_whitespace: self.ignore_whitespace,
+            parse_depth: self.parse_depth,
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Execution
 // ---------------------------------------------------------------------------
 
 pub(crate) fn execute_update(
-    op: &UpdateOperation,
-    options: &ExecuteOptions,
-    resolver: &FileResolver,
+    op: &UpdateOperationPlan,
+    ctx: &ExecCtx<'_>,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let request = FileRequest {
-        files: &op.files,
-        exclude: &op.exclude,
-        diff_files: op.diff_files.as_deref(),
-        diff_lines: op.diff_lines.as_deref(),
-        command: "update",
-    };
-    let (files, filters) = resolver.resolve(&request, report);
-    let mut fallback_files: Vec<NormalizedPath> = Vec::new();
+    let mut fallback_sources: Vec<Source> = Vec::new();
 
-    for file_path in &files {
-        let lang = op.language.as_deref()
-            .unwrap_or_else(|| detect_language(file_path.as_str()));
-        let source = std::fs::read_to_string(file_path)?;
+    for source in &op.sources {
+        // update writes to disk, so a virtual source here is a construction
+        // bug. Skip defensively rather than panic.
+        if source.is_virtual() {
+            continue;
+        }
+        let lang = op.language.as_deref().unwrap_or(&source.language);
+        let file_path: &NormalizedPath = &source.path;
+        let disk_bytes = std::fs::read_to_string(file_path)?;
 
-        match update_only(&source, lang, &op.xpath, &op.value, op.limit) {
+        match update_only(&disk_bytes, lang, &op.xpath, &op.value, op.limit) {
             Ok(result) => {
-                if result.source != source {
+                if result.source != disk_bytes {
                     std::fs::write(file_path, &result.source)?;
                     for m in &result.matches {
                         let mut rm = match_to_report_match(m.clone(), "update");
@@ -78,18 +115,18 @@ pub(crate) fn execute_update(
                 }
             }
             Err(tractor::xpath_upsert::UpsertError::UnsupportedLanguage(_)) => {
-                fallback_files.push(file_path.clone());
+                fallback_sources.push(source.clone());
             }
             Err(e) => return Err(e.into()),
         }
     }
 
     // Legacy fallback for languages without renderers
-    if !fallback_files.is_empty() {
+    if !fallback_sources.is_empty() {
         let matches = query_files_multi(
-            &fallback_files, &[op.xpath.as_str()], op.language.as_deref(),
+            &fallback_sources, &[op.xpath.as_str()], op.language.as_deref(),
             op.tree_mode, op.ignore_whitespace, op.parse_depth,
-            None, options.verbose, &filter_refs(&filters),
+            None, ctx.verbose, &op.filters,
         )?;
         if !matches.is_empty() {
             let summary = apply_replacements(&matches, &op.value)?;
