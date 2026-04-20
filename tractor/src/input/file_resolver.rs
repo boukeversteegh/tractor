@@ -58,10 +58,14 @@ pub struct SourceRequest<'a> {
     pub files: &'a [String],
     /// Exclude patterns (union of root + operation excludes).
     pub exclude: &'a [String],
-    /// Per-operation diff-files spec (e.g. "HEAD~3").
-    pub diff_files: Option<&'a str>,
-    /// Per-operation diff-lines spec.
-    pub diff_lines: Option<&'a str>,
+    /// Per-operation diff-files specs (root + per-op concatenated by
+    /// `merge_scope`). Each spec AND-intersects the resolved file set;
+    /// empty slice means "no per-op diff-files narrowing".
+    pub diff_files: &'a [String],
+    /// Per-operation diff-lines specs. Each becomes a distinct
+    /// `DiffHunkFilter` in the resulting `Filters.diff_hunks`; filters
+    /// AND-compose so every spec narrows further.
+    pub diff_lines: &'a [String],
     /// Command name for diagnostics (e.g. "check", "query").
     pub command: &'a str,
     /// Language override for disk sources (rule/operation-level `-l`).
@@ -308,6 +312,9 @@ impl FileResolver {
             cwd,
             inline_for_diff,
         );
+        // `filters` here already covers global + all per-op diff-lines
+        // specs — every one becomes an entry in `Filters.diff_hunks` so
+        // they AND-compose naturally at match time.
         let paths = self.resolve_files(request, &filters, report);
 
         // Unify: wrap resolved paths as disk sources, then append the
@@ -510,14 +517,18 @@ impl FileResolver {
 
         // --- Intersect with git diff-files ---
         // Both sides of the intersection are already `NormalizedPath`,
-        // produced via `NormalizedPath::absolute` — compare as-is.
+        // produced via `NormalizedPath::absolute` — compare as-is. The
+        // global spec (if any) and every per-op spec all narrow the set
+        // sequentially; the result is the intersection of all of them.
         let before_diff = files.len();
         if let Some(ref global_diff) = self.global_diff_files {
             files = git::intersect_changed(files, global_diff);
         }
         let cwd = self.base_dir.as_deref()
             .unwrap_or_else(|| Path::new("."));
-        files = apply_diff_files_filter(files, request.diff_files, cwd);
+        for spec in request.diff_files {
+            files = apply_diff_files_filter(files, Some(spec.as_str()), cwd);
+        }
         if self.verbose && files.len() != before_diff {
             eprintln!("  files: {} file(s) after diff filter (was {})", files.len(), before_diff);
         }
@@ -600,19 +611,31 @@ fn resolve_globs_to_absolute(base_dir: &Option<PathBuf>, patterns: &[String]) ->
 /// intersectional — global `--diff-lines` narrows the same result set
 /// that per-op `diff-lines:` narrows, neither overrides the other.
 ///
+/// The per-op slice may carry multiple specs because `merge_scope`
+/// concatenates root + per-operation `diff-lines:` entries rather than
+/// letting one override the other. Every spec in the slice is lowered
+/// into its own `DiffHunkFilter` so all layers AND-compose with each
+/// other and with the global filter.
+///
 /// When `inline` is `Some`, the hunks for the virtual path are computed
 /// against the git baseline at `spec:<virtual_path>` so pre-commit hooks
 /// can lint only the edited hunk even when the content is in memory.
 fn build_filters(
     global_diff: Option<&str>,
-    op_diff: Option<&str>,
+    op_diffs: &[String],
     cwd: &Path,
     inline: Option<(&NormalizedPath, &str)>,
 ) -> Filters {
     let mut filters = Filters::default();
 
-    for spec in [global_diff, op_diff].into_iter().flatten() {
+    if let Some(spec) = global_diff {
         match git::DiffHunkFilter::from_spec_with_inline(spec, cwd, inline) {
+            Ok(f) => filters.diff_hunks.push(f),
+            Err(e) => eprintln!("warning: --diff-lines filter failed: {}", e),
+        }
+    }
+    for spec in op_diffs {
+        match git::DiffHunkFilter::from_spec_with_inline(spec.as_str(), cwd, inline) {
             Ok(f) => filters.diff_hunks.push(f),
             Err(e) => eprintln!("warning: --diff-lines filter failed: {}", e),
         }
@@ -765,8 +788,8 @@ mod tests {
         let request = SourceRequest {
             files: &[],
             exclude: &[],
-            diff_files: None,
-            diff_lines: None,
+            diff_files: &[],
+            diff_lines: &[],
             command: "check",
             language: None,
             inline_source: None,
@@ -799,8 +822,8 @@ mod tests {
         let request = SourceRequest {
             files: &[],
             exclude: &[],
-            diff_files: None,
-            diff_lines: None,
+            diff_files: &[],
+            diff_lines: &[],
             command: "query",
             language: None,
             inline_source: None,
@@ -839,8 +862,8 @@ mod tests {
         let request = SourceRequest {
             files: &[],
             exclude: &exclude,
-            diff_files: None,
-            diff_lines: None,
+            diff_files: &[],
+            diff_lines: &[],
             command: "check",
             language: None,
             inline_source: None,
@@ -911,5 +934,100 @@ mod tests {
         // filter were an override, we'd see a.rs or c.rs sneak through.
         assert_eq!(after_both.len(), 1, "only the intersection must survive");
         assert_eq!(after_both[0], b);
+    }
+
+    /// Three-layer composition: global CLI (`--diff-files`), root
+    /// config (`diff-files:` at top level), and per-op
+    /// (`check.diff-files:`) must all AND-compose. `merge_scope`
+    /// concatenates root + per-op into the `Vec<String>` that lives on
+    /// `SourceRequest.diff_files`; `resolve_files` then iterates both
+    /// entries and also intersects `self.global_diff_files`, so every
+    /// layer narrows the surviving set. A file must appear in ALL
+    /// three change sets to survive.
+    #[test]
+    fn diff_files_three_layers_all_intersect() {
+        let a = NormalizedPath::new("/repo/src/a.rs");
+        let b = NormalizedPath::new("/repo/src/b.rs");
+        let c = NormalizedPath::new("/repo/src/c.rs");
+        let d = NormalizedPath::new("/repo/src/d.rs");
+
+        // Full starting set, pre-diff.
+        let files = vec![a.clone(), b.clone(), c.clone(), d.clone()];
+
+        // Layer 1 — global CLI: touches a + b + c (not d).
+        let global: HashSet<NormalizedPath> =
+            [a.clone(), b.clone(), c.clone()].into_iter().collect();
+        // Layer 2 — root config: touches b + c + d (not a).
+        let root_spec: HashSet<NormalizedPath> =
+            [b.clone(), c.clone(), d.clone()].into_iter().collect();
+        // Layer 3 — per-op: touches c + d (not a or b).
+        let per_op_spec: HashSet<NormalizedPath> =
+            [c.clone(), d.clone()].into_iter().collect();
+
+        // Apply sequentially in the order `resolve_files` does:
+        // global, then every entry in request.diff_files (root first,
+        // then per-op — the concatenation `merge_scope` produces).
+        let after_global = git::intersect_changed(files, &global);
+        let after_root = git::intersect_changed(after_global, &root_spec);
+        let after_per_op = git::intersect_changed(after_root, &per_op_spec);
+
+        // Only c appears in all three layers.
+        assert_eq!(after_per_op.len(), 1,
+            "only files present in every layer's change set survive");
+        assert_eq!(after_per_op[0], c);
+    }
+
+    /// Three-layer composition for `diff-lines`: global CLI
+    /// (`--diff-lines`), root config (`diff-lines:`), and per-op
+    /// (`check.diff-lines:`) each produce a distinct `DiffHunkFilter`
+    /// in `Filters.diff_hunks`. `build_filters` pushes the global first
+    /// then every entry of the per-op slice (which `merge_scope`
+    /// populates with root-first-then-per-op). `Filters.include`
+    /// requires a match to pass ALL of them, so any layer that doesn't
+    /// cover the match's line range excludes it — no override.
+    #[test]
+    fn diff_lines_three_layers_all_intersect_in_filters() {
+        use std::collections::HashMap;
+        use tractor::Match;
+        use super::super::git::LineRange;
+        use super::super::filter::Filters;
+
+        let file = NormalizedPath::new("/repo/src/foo.rs");
+
+        // Build one DiffHunkFilter per scope layer, as `build_filters` would.
+        let hunk_filter = |start: u32, end: u32| {
+            let mut h = HashMap::new();
+            h.insert(file.clone(), vec![LineRange { start, end }]);
+            git::DiffHunkFilter::from_hunks(h)
+        };
+
+        let filters = Filters {
+            diff_hunks: vec![
+                hunk_filter(1, 20),  // Layer 1 — global CLI
+                hunk_filter(10, 30), // Layer 2 — root config
+                hunk_filter(15, 25), // Layer 3 — per-op
+            ],
+        };
+        assert_eq!(filters.diff_hunks.len(), 3,
+            "every spec at every layer must lower into its own DiffHunkFilter");
+
+        // Helper: build a `Match` on `file` at a given line span.
+        let match_at = |line: u32, end_line: u32| {
+            let m = Match::new(file.as_str().to_string(), "x".into());
+            Match { line, end_line, ..m }
+        };
+
+        // Line 5 → only in global (1..=20); fails root (10..=30) and per-op (15..=25).
+        assert!(!filters.include(&match_at(5, 5)),
+            "match outside any one layer must be rejected");
+        // Line 12 → in global (1..=20) and root (10..=30); fails per-op (15..=25).
+        assert!(!filters.include(&match_at(12, 12)),
+            "match must satisfy the per-op layer too");
+        // Line 27 → in root (10..=30); fails global (1..=20) and per-op (15..=25).
+        assert!(!filters.include(&match_at(27, 27)),
+            "match must satisfy every layer, not just root");
+        // Line 18 → in all three layers (1..=20, 10..=30, 15..=25); passes.
+        assert!(filters.include(&match_at(18, 18)),
+            "match inside every layer's range must pass");
     }
 }

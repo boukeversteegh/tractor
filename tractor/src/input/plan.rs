@@ -165,8 +165,8 @@ fn resolve_one(
     let request = SourceRequest {
         files: &inputs.files,
         exclude: &inputs.exclude,
-        diff_files: inputs.diff_files.as_deref(),
-        diff_lines: inputs.diff_lines.as_deref(),
+        diff_files: &inputs.diff_files,
+        diff_lines: &inputs.diff_lines,
         command,
         language: inputs.language.as_deref(),
         inline_source: inputs.inline_source.as_ref(),

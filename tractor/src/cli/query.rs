@@ -97,8 +97,8 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     let inputs = OperationInputs {
         files: op_files,
         exclude: Vec::new(),
-        diff_files: None,
-        diff_lines: None,
+        diff_files: Vec::new(),
+        diff_lines: Vec::new(),
         language: op_language.clone(),
         inline_source,
     };

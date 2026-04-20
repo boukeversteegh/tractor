@@ -40,8 +40,8 @@ pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
     let inputs = OperationInputs {
         files,
         exclude: Vec::new(),
-        diff_files: None,
-        diff_lines: None,
+        diff_files: Vec::new(),
+        diff_lines: Vec::new(),
         language: ctx.lang.clone(),
         inline_source: None,
     };

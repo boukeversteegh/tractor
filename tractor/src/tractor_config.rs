@@ -349,8 +349,16 @@ struct RootScope {
 pub struct OperationInputs {
     pub files: Vec<String>,
     pub exclude: Vec<String>,
-    pub diff_files: Option<String>,
-    pub diff_lines: Option<String>,
+    /// Git diff-files specs narrowing the set of files. Every spec in this
+    /// Vec gets intersected with the resolved file set — they AND-compose
+    /// rather than override. Populated by `merge_scope` by concatenating
+    /// the root-level spec (if any) with the per-operation spec (if any).
+    /// Empty Vec means "no diff-files filter applies at this layer".
+    pub diff_files: Vec<String>,
+    /// Git diff-lines specs. Each spec becomes a distinct `DiffHunkFilter`
+    /// in `Filters.diff_hunks`; filters AND-compose so every spec narrows.
+    /// Populated by `merge_scope` by concatenating root + per-op specs.
+    pub diff_lines: Vec<String>,
     /// Language override for disk sources (rule/operation-level).
     pub language: Option<String>,
     /// Inline content declared in config (e.g. set operation with
@@ -670,20 +678,30 @@ fn convert_test(config: TestConfig, scope: &RootScope) -> Result<ConfigOperation
 ///   resolve time — intersection when both exist, root as fallback when
 ///   the operation has none.
 /// - `exclude`: union of root and operation excludes (both narrow the scope).
-/// - `diff-files`/`diff-lines`: operation takes precedence; root is the
-///   fallback. CLI flags are applied separately via the file resolver.
+/// - `diff-files`/`diff-lines`: root and per-op specs are BOTH retained
+///   (root first, then per-op). Downstream (`FileResolver`) iterates the
+///   resulting Vec and intersects each spec, so all scope layers
+///   AND-compose. Neither overrides the other.  CLI flags are applied
+///   separately via the file resolver, also as an intersection.
 fn merge_scope(
     scope: &RootScope,
     op_files: Vec<String>,
     op_exclude: Vec<String>,
     op_diff_files: Option<String>,
     op_diff_lines: Option<String>,
-) -> (Vec<String>, Vec<String>, Option<String>, Option<String>) {
+) -> (Vec<String>, Vec<String>, Vec<String>, Vec<String>) {
     let mut exclude = scope.exclude.clone();
     exclude.extend(op_exclude);
 
-    let diff_files = op_diff_files.or_else(|| scope.diff_files.clone());
-    let diff_lines = op_diff_lines.or_else(|| scope.diff_lines.clone());
+    // Concatenate root then per-op — both will be intersected downstream.
+    // A `None` at either layer simply contributes nothing to the Vec.
+    let mut diff_files = Vec::new();
+    if let Some(s) = scope.diff_files.clone() { diff_files.push(s); }
+    if let Some(s) = op_diff_files { diff_files.push(s); }
+
+    let mut diff_lines = Vec::new();
+    if let Some(s) = scope.diff_lines.clone() { diff_lines.push(s); }
+    if let Some(s) = op_diff_lines { diff_lines.push(s); }
 
     (op_files, exclude, diff_files, diff_lines)
 }
@@ -1208,11 +1226,16 @@ check:
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
         let (inputs, _) = as_check(&ops[0]);
-        assert_eq!(inputs.diff_files.as_deref(), Some("main..HEAD"));
+        // Root-only → just the root spec is propagated.
+        assert_eq!(inputs.diff_files, vec!["main..HEAD".to_string()]);
     }
 
     #[test]
-    fn operation_diff_files_overrides_root() {
+    fn root_and_operation_diff_files_both_retained_for_intersection() {
+        // Invariant: root and per-op diff-files AND-compose — both
+        // specs end up in `OperationInputs.diff_files` so the resolver
+        // can intersect each against the file set.  Neither overrides
+        // the other (regression of the pre-fix `or_else` behavior).
         let yaml = r#"
 diff-files: "main..HEAD"
 check:
@@ -1224,7 +1247,31 @@ check:
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
         let (inputs, _) = as_check(&ops[0]);
-        assert_eq!(inputs.diff_files.as_deref(), Some("HEAD~3"));
+        // Root first, then per-op — both present so the resolver
+        // intersects both; the per-op spec does NOT override the root.
+        assert_eq!(
+            inputs.diff_files,
+            vec!["main..HEAD".to_string(), "HEAD~3".to_string()],
+            "both root and per-op diff-files must survive merge_scope",
+        );
+    }
+
+    #[test]
+    fn per_op_diff_files_alone_survives_when_root_empty() {
+        // Regression guard: when no root `diff-files:` is set, the
+        // per-op spec is the only entry — equivalent to the old
+        // fallback semantics for the root-missing case.
+        let yaml = r#"
+check:
+  files: ["src/**/*.rs"]
+  diff-files: "HEAD~3"
+  rules:
+    - id: no-todo
+      xpath: "//comment"
+"#;
+        let ops = parse_config_yaml(yaml).unwrap().operations;
+        let (inputs, _) = as_check(&ops[0]);
+        assert_eq!(inputs.diff_files, vec!["HEAD~3".to_string()]);
     }
 
     #[test]
@@ -1239,7 +1286,29 @@ check:
 "#;
         let ops = parse_config_yaml(yaml).unwrap().operations;
         let (inputs, _) = as_check(&ops[0]);
-        assert_eq!(inputs.diff_lines.as_deref(), Some("main..HEAD"));
+        assert_eq!(inputs.diff_lines, vec!["main..HEAD".to_string()]);
+    }
+
+    #[test]
+    fn root_and_operation_diff_lines_both_retained_for_intersection() {
+        // Same invariant as diff-files: both the root-level and
+        // per-op `diff-lines:` specs survive `merge_scope` so each
+        // becomes its own `DiffHunkFilter` and they AND-compose.
+        let yaml = r#"
+diff-lines: "main..HEAD"
+check:
+  files: ["src/**/*.rs"]
+  diff-lines: "HEAD~3"
+  rules:
+    - id: no-todo
+      xpath: "//comment"
+"#;
+        let ops = parse_config_yaml(yaml).unwrap().operations;
+        let (inputs, _) = as_check(&ops[0]);
+        assert_eq!(
+            inputs.diff_lines,
+            vec!["main..HEAD".to_string(), "HEAD~3".to_string()],
+        );
     }
 
     #[test]
@@ -1267,12 +1336,12 @@ operations:
         let (check_inputs, _) = as_check(&ops[0]);
         assert!(check_inputs.files.is_empty());
         assert_eq!(check_inputs.exclude, vec!["vendor/**"]);
-        assert_eq!(check_inputs.diff_files.as_deref(), Some("main..HEAD"));
+        assert_eq!(check_inputs.diff_files, vec!["main..HEAD".to_string()]);
 
         let (query_inputs, _) = as_query(&ops[1]);
         assert!(query_inputs.files.is_empty());
         assert_eq!(query_inputs.exclude, vec!["vendor/**"]);
-        assert_eq!(query_inputs.diff_files.as_deref(), Some("main..HEAD"));
+        assert_eq!(query_inputs.diff_files, vec!["main..HEAD".to_string()]);
     }
 
     #[test]
