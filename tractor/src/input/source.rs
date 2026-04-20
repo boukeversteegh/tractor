@@ -25,9 +25,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use tractor::tree_mode::TreeMode;
-use tractor::{
-    parse_string_to_documents_with_options, parse_to_documents, NormalizedPath, XeeParseResult,
-};
+use tractor::{parse, NormalizedPath, ParseInput, ParseOptions, XeeParseResult};
 use tractor::parser::ParseError;
 
 // The sentinel for path-less sources lives in the library crate; re-export
@@ -186,11 +184,11 @@ impl Source {
 
     /// Parse this source into queryable `Documents`.
     ///
-    /// Dispatches on content kind:
-    /// - `Inline` → in-memory parse via `parse_string_to_documents_with_options`
-    /// - `Disk`   → file parse via `parse_to_documents` (preserves the existing
-    ///              disk-read-then-parse flow, including ambiguous-extension
-    ///              checks when the language was auto-detected)
+    /// Constructs a [`ParseInput`] from `self.content` + `self.path` and calls
+    /// the unified [`parse`] entry point, so both disk and inline sources flow
+    /// through a single library-level path. Ambiguous-extension checks on
+    /// disk reads and `file_label` propagation on inline reads are preserved
+    /// by the unified function.
     ///
     /// `lang_override` lets the caller (e.g. `run_rules`) substitute a
     /// rule-level language override for the source's default language.
@@ -202,23 +200,25 @@ impl Source {
         parse_depth: Option<usize>,
     ) -> Result<XeeParseResult, ParseError> {
         let lang = lang_override.unwrap_or(&self.language);
-        match &self.content {
-            SourceContent::Disk => parse_to_documents(
-                Path::new(self.path.as_str()),
-                Some(lang),
+        let path_str = self.path.as_str();
+        let input = match &self.content {
+            SourceContent::Disk => ParseInput::Disk {
+                path: Path::new(path_str),
+            },
+            SourceContent::Inline(content) => ParseInput::Inline {
+                content: content.as_str(),
+                file_label: path_str,
+            },
+        };
+        parse(
+            input,
+            ParseOptions {
+                language: Some(lang),
                 tree_mode,
                 ignore_whitespace,
                 parse_depth,
-            ),
-            SourceContent::Inline(content) => parse_string_to_documents_with_options(
-                content.as_str(),
-                lang,
-                self.path.as_str().to_string(),
-                tree_mode,
-                ignore_whitespace,
-                parse_depth,
-            ),
-        }
+            },
+        )
     }
 }
 
