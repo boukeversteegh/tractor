@@ -8,14 +8,12 @@
           <import>
             import
             <import_clause>
-              <type>React</type>
+              <name>React</name>
               ,
               <named_imports>
                 {
                 <import_specifier>
-                  <name>
-                    <type>useState</type>
-                  </name>
+                  <name>useState</name>
                 </import_specifier>
                 }
               </named_imports>
@@ -36,9 +34,7 @@
             <body>
               {
               <property_signature>
-                <name>
-                  <type>name</type>
-                </name>
+                <name>name</name>
                 <typeof>
                   :
                   <predefined_type>string</predefined_type>
@@ -46,9 +42,7 @@
               </property_signature>
               ;
               <property_signature>
-                <name>
-                  <type>age</type>
-                </name>
+                <name>age</name>
                 ?
                 <typeof>
                   :
@@ -91,9 +85,9 @@
                   <name>
                     <array_pattern>
                       [
-                      <type>count</type>
+                      <name>count</name>
                       ,
-                      <type>setCount</type>
+                      <name>setCount</name>
                       ]
                     </array_pattern>
                   </name>
@@ -122,11 +116,9 @@
                     <jsx_element>
                       <jsx_opening_element>
                         &lt;
-                        <name>
-                          <type>div</type>
-                        </name>
+                        <name>div</name>
                         <jsx_attribute>
-                          <type>className</type>
+                          <name>className</name>
                           =
                           <string>
                             &quot;
@@ -139,23 +131,19 @@
                       <jsx_element>
                         <jsx_opening_element>
                           &lt;
-                          <name>
-                            <type>h1</type>
-                          </name>
+                          <name>h1</name>
                           &gt;
                         </jsx_opening_element>
                         <jsx_text>Hello, </jsx_text>
                         <jsx_expression>
                           {
-                          <type>name</type>
+                          <name>name</name>
                           }
                         </jsx_expression>
                         <jsx_text>!</jsx_text>
                         <jsx_closing_element>
                           &lt;/
-                          <name>
-                            <type>h1</type>
-                          </name>
+                          <name>h1</name>
                           &gt;
                         </jsx_closing_element>
                       </jsx_element>
@@ -169,29 +157,25 @@
                             &amp;&amp;
                           </op>
                           <left>
-                            <type>age</type>
+                            <name>age</name>
                           </left>
                           &amp;&amp;
                           <right>
                             <jsx_element>
                               <jsx_opening_element>
                                 &lt;
-                                <name>
-                                  <type>span</type>
-                                </name>
+                                <name>span</name>
                                 &gt;
                               </jsx_opening_element>
                               <jsx_text>Age: </jsx_text>
                               <jsx_expression>
                                 {
-                                <type>age</type>
+                                <name>age</name>
                                 }
                               </jsx_expression>
                               <jsx_closing_element>
                                 &lt;/
-                                <name>
-                                  <type>span</type>
-                                </name>
+                                <name>span</name>
                                 &gt;
                               </jsx_closing_element>
                             </jsx_element>
@@ -202,11 +186,9 @@
                       <jsx_element>
                         <jsx_opening_element>
                           &lt;
-                          <name>
-                            <type>button</type>
-                          </name>
+                          <name>button</name>
                           <jsx_attribute>
-                            <type>onClick</type>
+                            <name>onClick</name>
                             =
                             <jsx_expression>
                               {
@@ -230,7 +212,7 @@
                                             +
                                           </op>
                                           <left>
-                                            <type>count</type>
+                                            <name>count</name>
                                           </left>
                                           +
                                           <right>
@@ -252,24 +234,20 @@
                         Clicked </jsx_text>
                         <jsx_expression>
                           {
-                          <type>count</type>
+                          <name>count</name>
                           }
                         </jsx_expression>
                         <jsx_text> times
                     </jsx_text>
                         <jsx_closing_element>
                           &lt;/
-                          <name>
-                            <type>button</type>
-                          </name>
+                          <name>button</name>
                           &gt;
                         </jsx_closing_element>
                       </jsx_element>
                       <jsx_closing_element>
                         &lt;/
-                        <name>
-                          <type>div</type>
-                        </name>
+                        <name>div</name>
                         &gt;
                       </jsx_closing_element>
                     </jsx_element>
@@ -284,7 +262,7 @@
           <export>
             export default
             <value>
-              <type>Greeting</type>
+              <name>Greeting</name>
             </value>
             ;
           </export>

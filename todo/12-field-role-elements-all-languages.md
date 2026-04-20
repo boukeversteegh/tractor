@@ -1,23 +1,24 @@
 # Field-as-role-element for all languages
 
-JS/TS now promotes tree-sitter field names (`function`, `object`, `property`) to
-wrapper elements in call/member expressions, replacing the global `identifier` →
-`type` rename with a `<ref/>` marker for simple references.
+Replaced the per-language `classify_identifier` heuristic (default
+`identifier → type`) with the simpler rule: tree-sitter already distinguishes
+type positions via `type_identifier`, `primitive_type`, `predefined_type`, etc.,
+so bare `identifier` → `name` with no context inspection.
 
-Apply the same pattern to other languages:
+Done:
+- [x] Rust (`rust_lang.rs`)
+- [x] Python (`python.rs`)
+- [x] Java (`java.rs`)
+- [x] Go (`go.rs`)
+- [x] TypeScript/JavaScript (`typescript.rs`) — kept call/member field promotion
+      for `<function>`/`<object>`/`<property>` wrappers with `<ref/>` markers
 
-- [ ] C# (`csharp.rs`) — `classify_identifier` returns `"type"`, `"name"`, or `"ref"`
-- [ ] Java (`java.rs`) — same pattern
-- [ ] Python (`python.rs`) — same pattern
-- [ ] Go (`go.rs`) — same pattern
-- [ ] Rust (`rust_lang.rs`) — same pattern
-- [ ] T-SQL (`tsql.rs`) — uses `transform_identifier` with different categories
+Not migrated:
+- C# (`csharp.rs`) — uses `name`/`type`/`ref` trio with namespace-aware logic;
+  not broken, but diverges from the spec's `<name>`-for-references convention.
+- T-SQL (`tsql.rs`) — uses its own `transform_identifier` with categories
+  specific to SQL; out of scope for the identifier-to-type fix.
 
-Each language should:
-1. Identify which field names to promote (language-specific — may differ from JS/TS)
-2. Call `promote_field_to_wrapper` on appropriate parent nodes
-3. Add `inline_identifier_with_ref` handler for the new wrapper elements
-4. Stop renaming identifiers to `<type>` in non-type contexts
-5. Update integration tests and snapshots
-
-The shared helper `promote_field_to_wrapper` in `xot_transform::helpers` is ready.
+JS/TS keeps `promote_field_to_wrapper` for call/member expressions so call
+targets and member chains render as `<function><ref/>x</function>` etc. Other
+languages do not currently promote fields beyond the builder's defaults.

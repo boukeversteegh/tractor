@@ -13,13 +13,13 @@
               <params>
                 (
                 <param>
-                  <type>a</type>
+                  <name>a</name>
                   :
                   <type>i32</type>
                 </param>
                 ,
                 <param>
-                  <type>b</type>
+                  <name>b</name>
                   :
                   <type>i32</type>
                 </param>
@@ -36,11 +36,11 @@
                   +
                 </op>
                 <left>
-                  <type>a</type>
+                  <name>a</name>
                 </left>
                 +
                 <right>
-                  <type>b</type>
+                  <name>b</name>
                 </right>
               </binary>
               }
@@ -57,11 +57,11 @@
               {
               <let>
                 let
-                <type>result</type>
+                <name>result</name>
                 =
                 <value>
                   <call>
-                    <type>add</type>
+                    <name>add</name>
                     <arguments>
                       <arguments>
                         (
@@ -76,7 +76,7 @@
                 ;
               </let>
               <macro>
-                <type>println</type>
+                <name>println</name>
                 !
                 <token_tree>
                   (
@@ -86,7 +86,7 @@
                     &quot;
                   </string>
                   ,
-                  <type>result</type>
+                  <name>result</name>
                   )
                 </token_tree>
               </macro>
@@ -120,17 +120,13 @@
                 {
                 <field_declaration>
                   <pub/>
-                  <name>
-                    <field_identifier>x</field_identifier>
-                  </name>
+                  <name>x</name>
                   :
                   <type>i32</type>
                 </field_declaration>
                 ,
                 <field_declaration>
-                  <name>
-                    <field_identifier>y</field_identifier>
-                  </name>
+                  <name>y</name>
                   :
                   <type>i32</type>
                 </field_declaration>
@@ -147,21 +143,15 @@
               <enum_variant_list>
                 {
                 <enum_variant>
-                  <name>
-                    <type>Red</type>
-                  </name>
+                  <name>Red</name>
                 </enum_variant>
                 ,
                 <enum_variant>
-                  <name>
-                    <type>Green</type>
-                  </name>
+                  <name>Green</name>
                 </enum_variant>
                 ,
                 <enum_variant>
-                  <name>
-                    <type>Blue</type>
-                  </name>
+                  <name>Blue</name>
                 </enum_variant>
                 ,
         }
@@ -176,9 +166,7 @@
               {
               <function_signature_item>
                 fn
-                <name>
-                  <type>draw</type>
-                </name>
+                <name>draw</name>
                 <params>
                   <params>
                     (

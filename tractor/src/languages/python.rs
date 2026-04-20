@@ -15,32 +15,18 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         "expression_statement" => Ok(TransformAction::Skip),
         "block" => Ok(TransformAction::Flatten),
 
-        // Name wrappers - inline identifier text directly
+        // Name wrappers created by the builder for field="name".
+        // Inline the single identifier child as text:
+        //   <name><identifier>foo</identifier></name> -> <name>foo</name>
         "name" => {
-            if let Some(parent) = get_parent(xot, node) {
-                let parent_kind = get_element_name(xot, parent).unwrap_or_default();
-                if matches!(parent_kind.as_str(),
-                    "function_definition" | "class_definition"
-                    | "function" | "class"
-                ) {
-                    let children: Vec<_> = xot.children(node).collect();
-                    for child in children {
-                        if let Some(child_name) = get_element_name(xot, child) {
-                            if child_name == "identifier" {
-                                if let Some(text) = get_text_content(xot, child) {
-                                    let all_children: Vec<_> = xot.children(node).collect();
-                                    for c in all_children {
-                                        xot.detach(c)?;
-                                    }
-                                    let text_node = xot.new_text(&text);
-                                    xot.append(node, text_node)?;
-                                    return Ok(TransformAction::Done);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            inline_single_identifier(xot, node)?;
+            Ok(TransformAction::Continue)
+        }
+
+        // Type wrappers from Python's tree-sitter grammar contain a single
+        // identifier — inline it so the result is `<type>int</type>`.
+        "type" => {
+            inline_single_identifier(xot, node)?;
             Ok(TransformAction::Continue)
         }
 
@@ -64,10 +50,11 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
 
-        // Identifiers
+        // Identifiers are always names (definitions or references).
+        // Tree-sitter uses a separate `type` node for type annotations, so
+        // bare identifiers never need a heuristic — they are never types.
         "identifier" => {
-            let classification = classify_identifier(xot, node);
-            rename(xot, node, classification);
+            rename(xot, node, "name");
             Ok(TransformAction::Continue)
         }
 
@@ -140,19 +127,28 @@ fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     Ok(())
 }
 
-fn classify_identifier(xot: &Xot, node: XotNode) -> &'static str {
-    let parent = match get_parent(xot, node) {
-        Some(p) => p,
-        None => return "name",
-    };
-    let parent_kind = get_element_name(xot, parent).unwrap_or_default();
-
-    match parent_kind.as_str() {
-        "function_definition" | "class_definition" => "name",
-        "parameter" | "default_parameter" | "typed_parameter" => "name",
-        "assignment" => "name",
-        _ => "type",
+/// If `node` contains a single identifier child, replace the node's children
+/// with that identifier's text. Used to flatten builder-created wrappers like
+/// `<name><identifier>foo</identifier></name>` to `<name>foo</name>`.
+fn inline_single_identifier(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
+    let children: Vec<_> = xot.children(node).collect();
+    for child in children {
+        if get_element_name(xot, child).as_deref() != Some("identifier") {
+            continue;
+        }
+        let text = match get_text_content(xot, child) {
+            Some(t) => t,
+            None => continue,
+        };
+        let all_children: Vec<_> = xot.children(node).collect();
+        for c in all_children {
+            xot.detach(c)?;
+        }
+        let text_node = xot.new_text(&text);
+        xot.append(node, text_node)?;
+        return Ok(());
     }
+    Ok(())
 }
 
 /// Map a transformed element name to a syntax category for highlighting

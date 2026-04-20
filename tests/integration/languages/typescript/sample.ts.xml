@@ -13,7 +13,7 @@
                 (
                 <param>
                   <required/>
-                  <type>a</type>
+                  <name>a</name>
                   <typeof>
                     :
                     <predefined_type>number</predefined_type>
@@ -22,7 +22,7 @@
                 ,
                 <param>
                   <required/>
-                  <type>b</type>
+                  <name>b</name>
                   <typeof>
                     :
                     <predefined_type>number</predefined_type>
@@ -46,11 +46,11 @@
                       +
                     </op>
                     <left>
-                      <type>a</type>
+                      <name>a</name>
                     </left>
                     +
                     <right>
-                      <type>b</type>
+                      <name>b</name>
                     </right>
                   </binary>
                   ;
@@ -75,9 +75,7 @@
                 <variable>
                   <const/>
                   const
-                  <name>
-                    <type>result</type>
-                  </name>
+                  <name>result</name>
                   =
                   <value>
                     <call>
@@ -120,7 +118,7 @@
                         <string_fragment>Result: </string_fragment>
                         <template_substitution>
                           ${
-                          <type>result</type>
+                          <name>result</name>
                           }
                         </template_substitution>
                         `
@@ -152,9 +150,7 @@
             <body>
               {
               <property_signature>
-                <name>
-                  <type>name</type>
-                </name>
+                <name>name</name>
                 <typeof>
                   :
                   <predefined_type>string</predefined_type>
@@ -162,9 +158,7 @@
               </property_signature>
               ;
               <property_signature>
-                <name>
-                  <type>age</type>
-                </name>
+                <name>age</name>
                 <typeof>
                   :
                   <predefined_type>number</predefined_type>
@@ -176,22 +170,14 @@
           </interface>
           <enum>
             enum
-            <name>
-              <type>Color</type>
-            </name>
+            <name>Color</name>
             <body>
               {
-              <name>
-                <type>Red</type>
-              </name>
+              <name>Red</name>
               ,
-              <name>
-                <type>Green</type>
-              </name>
+              <name>Green</name>
               ,
-              <name>
-                <type>Blue</type>
-              </name>
+              <name>Blue</name>
               }
             </body>
           </enum>
@@ -203,7 +189,7 @@
                 (
                 <param>
                   <required/>
-                  <type>name</type>
+                  <name>name</name>
                   <typeof>
                     :
                     <predefined_type>string</predefined_type>
@@ -212,7 +198,7 @@
                 ,
                 <param>
                   <optional/>
-                  <type>title</type>
+                  <name>title</name>
                   ?
                   <typeof>
                     :
@@ -233,7 +219,7 @@
                   return
                   <ternary>
                     <condition>
-                      <type>title</type>
+                      <name>title</name>
                     </condition>
                     ?
                     <consequence>
@@ -241,13 +227,13 @@
                         `
                         <template_substitution>
                           ${
-                          <type>title</type>
+                          <name>title</name>
                           }
                         </template_substitution>
                         <string_fragment> </string_fragment>
                         <template_substitution>
                           ${
-                          <type>name</type>
+                          <name>name</name>
                           }
                         </template_substitution>
                         `
@@ -255,7 +241,7 @@
                     </consequence>
                     :
                     <alternative>
-                      <type>name</type>
+                      <name>name</name>
                     </alternative>
                   </ternary>
                   ;
@@ -272,7 +258,7 @@
                 (
                 <param>
                   <required/>
-                  <type>host</type>
+                  <name>host</name>
                   <typeof>
                     :
                     <predefined_type>string</predefined_type>
@@ -281,7 +267,7 @@
                 ,
                 <param>
                   <required/>
-                  <type>port</type>
+                  <name>port</name>
                   <typeof>
                     :
                     <predefined_type>number</predefined_type>
@@ -290,7 +276,7 @@
                 ,
                 <param>
                   <optional/>
-                  <type>timeout</type>
+                  <name>timeout</name>
                   ?
                   <typeof>
                     :
@@ -324,11 +310,11 @@
                   <arguments>
                     <arguments>
                       (
-                      <type>host</type>
+                      <name>host</name>
                       ,
-                      <type>port</type>
+                      <name>port</name>
                       ,
-                      <type>timeout</type>
+                      <name>timeout</name>
                       )
                     </arguments>
                   </arguments>

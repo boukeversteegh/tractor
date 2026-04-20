@@ -15,9 +15,9 @@
             <params>
               <params>
                 (
-                <type>a</type>
+                <name>a</name>
                 ,
-                <type>b</type>
+                <name>b</name>
                 )
               </params>
             </params>
@@ -36,11 +36,11 @@
                     +
                   </op>
                   <left>
-                    <type>a</type>
+                    <name>a</name>
                   </left>
                   +
                   <right>
-                    <type>b</type>
+                    <name>b</name>
                   </right>
                 </binary>
               </return>
@@ -53,7 +53,7 @@
             <params>
               <params>
                 (
-                <type>url</type>
+                <name>url</name>
                 )
               </params>
             </params>
@@ -66,7 +66,7 @@
               </string>
               <return>
                 return
-                <type>url</type>
+                <name>url</name>
               </return>
             </body>
           </function>
@@ -80,12 +80,12 @@
             <body>
               <assign>
                 <left>
-                  <type>result</type>
+                  <name>result</name>
                 </left>
                 =
                 <right>
                   <call>
-                    <type>add</type>
+                    <name>add</name>
                     <arguments>
                       <argument_list>
                         (
@@ -99,7 +99,7 @@
                 </right>
               </assign>
               <call>
-                <type>print</type>
+                <name>print</name>
                 <arguments>
                   <argument_list>
                     (
@@ -108,7 +108,7 @@
                       <string_content>Result: </string_content>
                       <interpolation>
                         {
-                        <type>result</type>
+                        <name>result</name>
                         }
                       </interpolation>
                       <string_end>&quot;</string_end>
@@ -127,7 +127,7 @@
                   <equals/>
                   ==
                 </op>
-                <type>__name__</type>
+                <name>__name__</name>
                 ==
                 <string>
                   <string_start>&quot;</string_start>
@@ -139,7 +139,7 @@
             :
             <consequence>
               <call>
-                <type>main</type>
+                <name>main</name>
                 <arguments>
                   <argument_list>()</argument_list>
                 </arguments>
