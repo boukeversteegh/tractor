@@ -1,7 +1,7 @@
 //! CLI help enhancements: shared `--view` long_help and parse error hints.
 
 use super::Cli;
-use crate::format::{OutputFormat, ViewField};
+use crate::format::{OutputFormat, Projection, ViewField};
 
 // ---------------------------------------------------------------------------
 // --view long_help injection
@@ -96,10 +96,13 @@ EXAMPLES:
 fn augment_arg_help(cmd: clap::Command, view_defaults: &[ViewField], format_default: &str) -> clap::Command {
     let view_help = ViewField::view_long_help(view_defaults);
     let format_help = OutputFormat::format_long_help(format_default);
+    let projection_help = Projection::help_text();
     cmd.mut_args(|arg| {
         match arg.get_id().as_str() {
             "view"   => arg.long_help(view_help.clone()),
             "format" => arg.long_help(format_help.clone()),
+            "projection" => arg.long_help(projection_help.clone()),
+            "single" => arg.long_help("Emit only the first projected item, bare with no list wrapper. Implies -n 1 for sequence projections."),
             _ => arg,
         }
     })

@@ -1,11 +1,8 @@
 Execute a tractor config file (batch check/set operations)
 
-Usage: tractor run [OPTIONS] <CONFIG> [FILES]...
+Usage: tractor run [OPTIONS] [FILES]...
 
 Arguments:
-  <CONFIG>
-          Path to the tractor config file (.yaml, .yml, or .toml). File patterns in the config are resolved relative to the config file's directory
-
   [FILES]...
           Files to process (intersected with config file globs)
 
@@ -15,6 +12,10 @@ Options:
 
   -h, --help
           Print help (see a summary with '-h')
+
+Config:
+      --config <CONFIG>
+          Path to the tractor config file (.yaml, .yml, or .toml). File patterns in the config are resolved relative to the config file's directory. Defaults to `tractor.yml` in the current directory; `tractor init` scaffolds one
 
 Output:
   -f, --format <FORMAT>
@@ -85,6 +86,22 @@ Extract:
 View:
   -n, --limit <LIMIT>
           Limit output to first N matches
+
+  -p, --projection <TARGET>
+          Choose which report element is emitted [default: report]
+            tree     Project matched trees
+            value    Project matched values
+            source   Project matched source snippets
+            lines    Project matched source lines
+            schema   Project the schema summary
+            count    Project the total result count
+            summary  Project the summary section
+            totals   Project summary totals
+            results  Project the results list
+            report   Project the full report
+
+      --single
+          Emit only the first projected item, bare with no list wrapper. Implies -n 1 for sequence projections.
 
   -d, --depth <DEPTH>
           Limit XML output depth (useful for large ASTs)

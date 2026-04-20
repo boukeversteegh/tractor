@@ -9,6 +9,7 @@ pub mod set;
 pub mod update;
 pub mod render;
 pub mod run;
+pub mod init;
 pub mod config;
 pub mod languages;
 
@@ -22,6 +23,7 @@ pub use set::SetArgs;
 pub use update::UpdateArgs;
 pub use render::RenderArgs;
 pub use run::RunArgs;
+pub use init::InitArgs;
 
 /// Multi-language code query tool using XPath 3.1
 #[derive(Parser, Debug)]
@@ -54,6 +56,8 @@ pub enum Command {
     Render(RenderArgs),
     /// Execute a tractor config file (batch check/set operations)
     Run(RunArgs),
+    /// Create a starter tractor.yml in the current directory
+    Init(InitArgs),
     /// Show documentation and reference information
     #[command(subcommand)]
     Docs(DocsCommand),
@@ -98,6 +102,20 @@ When omitted, auto-selects: data for JSON/YAML, structure for everything else.")
     /// Limit output to first N matches
     #[arg(short = 'n', long = "limit", help_heading = "View")]
     pub limit: Option<usize>,
+
+    /// Select a specific report projection (tree, summary, results, report, ...)
+    #[arg(
+        short = 'p',
+        long = "projection",
+        alias = "project",
+        value_name = "TARGET",
+        help_heading = "View"
+    )]
+    pub projection: Option<String>,
+
+    /// Emit only the first projected item, bare with no list wrapper
+    #[arg(long = "single", help_heading = "View")]
+    pub single: bool,
 
     /// Limit XML output depth (useful for large ASTs)
     #[arg(short = 'd', long = "depth", help_heading = "View")]

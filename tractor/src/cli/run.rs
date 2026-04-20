@@ -6,14 +6,15 @@ use crate::cli::SharedArgs;
 /// Run mode: execute a tractor config file with mixed operations
 #[derive(Args, Debug)]
 pub struct RunArgs {
-    /// Path to the tractor config file (.yaml, .yml, or .toml).
-    /// File patterns in the config are resolved relative to the config file's directory.
-    #[arg()]
-    pub config: String,
-
     /// Files to process (intersected with config file globs)
     #[arg()]
     pub files: Vec<String>,
+
+    /// Path to the tractor config file (.yaml, .yml, or .toml).
+    /// File patterns in the config are resolved relative to the config file's directory.
+    /// Defaults to `tractor.yml` in the current directory; `tractor init` scaffolds one.
+    #[arg(long = "config", help_heading = "Config")]
+    pub config: Option<String>,
 
     /// Output format [default: gcc]
     #[arg(short = 'f', long = "format", default_value = "gcc", help_heading = "Output")]
@@ -31,11 +32,12 @@ pub struct RunArgs {
     pub shared: SharedArgs,
 }
 use crate::format::{ViewField, GroupDimension};
-use super::config::{run_from_config, ConfigRunParams};
+use super::config::{run_from_config, resolve_config_path, ConfigRunParams};
 
 pub fn run_run(args: RunArgs) -> Result<(), Box<dyn std::error::Error>> {
+    let config_path = resolve_config_path(args.config.as_deref())?;
     run_from_config(ConfigRunParams {
-        config_path: &args.config,
+        config_path: &config_path,
         shared: &args.shared,
         cli_files: args.files,
         cli_content: None,

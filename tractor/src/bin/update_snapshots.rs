@@ -154,6 +154,255 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
         "check", "tests/integration/formats/sample.cs", "-x", "class",
         "--reason", "class found", "-v", "tree,reason,severity", "-f", "xml", "--depth", "1",
     ]),
+    // Projection snapshots
+    ("text/project-tree.txt", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "tree",
+    ]),
+    ("json/project-tree.json", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "tree", "-f", "json",
+    ]),
+    ("yaml/project-tree.yaml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "tree", "-f", "yaml",
+    ]),
+    ("xml/project-tree.xml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "tree", "-f", "xml",
+    ]),
+    ("json/project-tree-single.json", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "tree", "--single", "-f", "json",
+    ]),
+    ("yaml/project-tree-single.yaml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "tree", "--single", "-f", "yaml",
+    ]),
+    ("xml/project-tree-single.xml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "tree", "--single", "-f", "xml",
+    ]),
+    ("text/project-tree-single.txt", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "tree", "--single",
+    ]),
+    ("text/project-value.txt", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-p", "value",
+    ]),
+    ("text/project-value-single.txt", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-p", "value", "--single",
+    ]),
+    ("json/project-value.json", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-p", "value", "-f", "json",
+    ]),
+    ("json/project-value-single.json", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-p", "value", "--single", "-f", "json",
+    ]),
+    ("yaml/project-value.yaml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-p", "value", "-f", "yaml",
+    ]),
+    ("yaml/project-value-single.yaml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-p", "value", "--single", "-f", "yaml",
+    ]),
+    ("xml/project-value.xml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-p", "value", "-f", "xml",
+    ]),
+    ("xml/project-value-single.xml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-p", "value", "--single", "-f", "xml",
+    ]),
+    ("text/project-source.txt", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-p", "source",
+    ]),
+    ("text/project-source-single.txt", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-p", "source", "--single",
+    ]),
+    ("json/project-source.json", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-p", "source", "-f", "json",
+    ]),
+    ("json/project-source-single.json", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-p", "source", "--single", "-f", "json",
+    ]),
+    ("yaml/project-source.yaml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-p", "source", "-f", "yaml",
+    ]),
+    ("yaml/project-source-single.yaml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-p", "source", "--single", "-f", "yaml",
+    ]),
+    ("xml/project-source.xml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-p", "source", "-f", "xml",
+    ]),
+    ("xml/project-source-single.xml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-p", "source", "--single", "-f", "xml",
+    ]),
+    ("text/project-lines.txt", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-p", "lines",
+    ]),
+    ("text/project-lines-single.txt", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-p", "lines", "--single",
+    ]),
+    ("json/project-lines.json", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-p", "lines", "-f", "json",
+    ]),
+    ("json/project-lines-single.json", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-p", "lines", "--single", "-f", "json",
+    ]),
+    ("yaml/project-lines.yaml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-p", "lines", "-f", "yaml",
+    ]),
+    ("yaml/project-lines-single.yaml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-p", "lines", "--single", "-f", "yaml",
+    ]),
+    ("xml/project-lines.xml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-p", "lines", "-f", "xml",
+    ]),
+    ("xml/project-lines-single.xml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-p", "lines", "--single", "-f", "xml",
+    ]),
+    ("text/project-schema.txt", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "schema",
+    ]),
+    ("text/project-schema-color.txt", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "schema", "--color", "always",
+    ]),
+    ("json/project-schema.json", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "schema", "-f", "json",
+    ]),
+    ("yaml/project-schema.yaml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "schema", "-f", "yaml",
+    ]),
+    ("xml/project-schema.xml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "schema", "-f", "xml",
+    ]),
+    ("json/project-results-message.json", &[
+        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "-m", "hit", "-p", "results", "-f", "json",
+    ]),
+    ("json/project-summary.json", &[
+        "check", "tests/integration/formats/sample.cs", "-x", "class",
+        "--reason", "class found", "-p", "summary", "-f", "json",
+    ]),
+    ("yaml/project-summary.yaml", &[
+        "check", "tests/integration/formats/sample.cs", "-x", "class",
+        "--reason", "class found", "-p", "summary", "-f", "yaml",
+    ]),
+    ("xml/project-summary.xml", &[
+        "check", "tests/integration/formats/sample.cs", "-x", "class",
+        "--reason", "class found", "-p", "summary", "-f", "xml",
+    ]),
+    ("text/project-summary.txt", &[
+        "check", "tests/integration/formats/sample.cs", "-x", "class",
+        "--reason", "class found", "-p", "summary",
+    ]),
+    ("text/project-results.txt", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-v", "file,value", "-p", "results",
+    ]),
+    ("text/project-results-single.txt", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-v", "file,value", "-p", "results", "--single",
+    ]),
+    ("json/project-results.json", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-v", "file,value", "-p", "results", "-f", "json",
+    ]),
+    ("json/project-results-single.json", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-v", "file,value", "-p", "results", "--single", "-f", "json",
+    ]),
+    ("yaml/project-results.yaml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-v", "file,value", "-p", "results", "-f", "yaml",
+    ]),
+    ("yaml/project-results-single.yaml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-v", "file,value", "-p", "results", "--single", "-f", "yaml",
+    ]),
+    ("xml/project-results.xml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-v", "file,value", "-p", "results", "-f", "xml",
+    ]),
+    ("xml/project-results-single.xml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-v", "file,value", "-p", "results", "--single", "-f", "xml",
+    ]),
+    ("text/project-report.txt", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-v", "summary,file,value", "-p", "report",
+    ]),
+    ("json/project-report.json", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-v", "summary,file,value", "-p", "report", "-f", "json",
+    ]),
+    ("yaml/project-report.yaml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-v", "summary,file,value", "-p", "report", "-f", "yaml",
+    ]),
+    ("xml/project-report.xml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
+        "-v", "summary,file,value", "-p", "report", "-f", "xml",
+    ]),
+    ("text/project-count.txt", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "count",
+    ]),
+    ("json/project-count.json", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "count", "-f", "json",
+    ]),
+    ("xml/project-count.xml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "count", "-f", "xml",
+    ]),
+    ("yaml/project-count.yaml", &[
+        "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
+        "-p", "count", "-f", "yaml",
+    ]),
+    ("text/project-totals.txt", &[
+        "check", "tests/integration/formats/sample.cs", "-x", "class",
+        "--reason", "class found", "-p", "totals",
+    ]),
+    ("json/project-totals.json", &[
+        "check", "tests/integration/formats/sample.cs", "-x", "class",
+        "--reason", "class found", "-p", "totals", "-f", "json",
+    ]),
+    ("yaml/project-totals.yaml", &[
+        "check", "tests/integration/formats/sample.cs", "-x", "class",
+        "--reason", "class found", "-p", "totals", "-f", "yaml",
+    ]),
+    ("xml/project-totals.xml", &[
+        "check", "tests/integration/formats/sample.cs", "-x", "class",
+        "--reason", "class found", "-p", "totals", "-f", "xml",
+    ]),
     // map/array constructor output: XPath 3.1 structured results rendered natively.
     // Uses sample-classes.cs (Calculator + Greeter, each with multiple methods) so
     // the output is realistic and easy to inspect visually.
@@ -250,16 +499,17 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
     ]),
     // Multi-op run report (check + test in one config)
     ("xml/run-multiop.xml", &[
-        "run", "tests/integration/formats/multiop.yaml", "-f", "xml",
+        "run", "--config", "tests/integration/formats/multiop.yaml", "-f", "xml",
     ]),
     ("json/run-multiop.json", &[
-        "run", "tests/integration/formats/multiop.yaml", "-f", "json",
+        "run", "--config", "tests/integration/formats/multiop.yaml", "-f", "json",
     ]),
     // --help snapshots: track changes to CLI help text per subcommand
     ("help/query.txt", &["query", "--help"]),
     ("help/check.txt", &["check", "--help"]),
     ("help/test.txt",  &["test",  "--help"]),
     ("help/run.txt",   &["run",   "--help"]),
+    ("help/init.txt",  &["init",  "--help"]),
     // Error/diagnostic snapshots: invalid XPath across all output formats.
     ("errors/xpath-invalid-text.txt", &[
         "query", "tests/integration/formats/sample.cs", "-x", "//class[bad=(",

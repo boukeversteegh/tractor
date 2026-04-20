@@ -135,6 +135,25 @@ tractor file.cs -f json -x '//class ! map {
         </tbody>
       </table>
 
+      <h2>Projections (<code>-p</code>)</h2>
+      <table className="doc-table">
+        <thead>
+          <tr><th>Projection</th><th>Emits</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>tree</code>, <code>value</code>, <code>source</code>, <code>lines</code></td><td>Just that field for each match</td></tr>
+          <tr><td><code>schema</code></td><td>Schema summary only</td></tr>
+          <tr><td><code>count</code></td><td>Total match count only</td></tr>
+          <tr><td><code>summary</code></td><td>The summary section only</td></tr>
+          <tr><td><code>totals</code></td><td>Summary totals only</td></tr>
+          <tr><td><code>results</code></td><td>The results list only, shaped by <code>-v</code></td></tr>
+          <tr><td><code>report</code></td><td>The full report (default)</td></tr>
+        </tbody>
+      </table>
+      <p>
+        Add <code>--single</code> to emit only the first projected item with no list wrapper.
+      </p>
+
       <h2>Output Formats (<code>-f</code>)</h2>
       <table className="doc-table">
         <thead>
@@ -160,6 +179,9 @@ tractor file.js -x "//function" -v schema  # zoom into functions
 tractor file.js -x "//function/name" -v value      # function names
 tractor file.js -x "//class" -v source              # full class source
 tractor file.js -x "//function" -v count            # count functions
+tractor file.js -x "//function/name" -p value       # bare projected values
+tractor file.js -x "//function/name" -p value --single  # first value only
+tractor file.js -x "//function/name" -v file,value -p results -f json
 
 # Filter
 tractor file.js -x "//method[public][not(static)]/name" -v value

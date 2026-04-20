@@ -91,7 +91,7 @@ pub use parser::{
     print_parse_timing_stats,
 };
 pub use xpath::{XPathEngine, Match, XmlNode, print_timing_stats, Documents, DocumentHandle};
-pub use output::{render_tree_match, render_source_match, render_lines_match, render_source_precomputed, render_lines, format_message, normalize_path, render_node, render_document, render_xml_string, render_xml_node, render_query_tree_node, render_query_tree_with_source, xml_node_to_string, RenderOptions, format_schema, SchemaCollector, xml_node_to_json, extract_syntax_spans_from_xml_node};
+pub use output::{render_tree_match, render_source_match, render_lines_match, render_source_precomputed, render_lines, format_message, normalize_path, render_node, render_document, render_xml_string, render_xml_node, render_query_tree_node, render_query_tree_with_source, xml_node_to_string, RenderOptions, format_schema, format_schema_tree, SchemaCollector, xml_node_to_json, extract_syntax_spans_from_xml_node};
 pub use replace::{apply_replacements, apply_set_to_string, ReplaceSummary, ReplaceError};
 pub use report::{Report, ReportBuilder, ReportMatch, ResultItem, Totals, Severity, DiagnosticOrigin, PATHLESS_LABEL};
 pub use rule::{Rule, RuleSet};

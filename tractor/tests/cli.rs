@@ -4,6 +4,19 @@
 mod support;
 
 use support::{command, query_command};
+use quick_xml::events::Event;
+use serde_json::Value;
+
+fn assert_well_formed_xml(xml: &str) {
+    let mut reader = quick_xml::Reader::from_str(xml);
+    loop {
+        match reader.read_event() {
+            Ok(Event::Eof) => break,
+            Ok(_) => {}
+            Err(err) => panic!("expected well-formed XML, got {err}: {xml}"),
+        }
+    }
+}
 
 cli_suite! {
     rust in "languages/rust" {
@@ -309,7 +322,7 @@ cli_suite! {
         expect_some => tractor query -s "fn a() {} fn b() {}" -l "rust" -x "function" => count some;
         expect_none => tractor query -s "let x = 1;" -l "rust" -x "function" => count none;
         value_output => tractor query -s "class Foo { }" -l "csharp" -x "class/name" -v "value" => count 1;
-        count_output => tractor query -s "class Foo { }" -l "csharp" -x "class" -v "count" => stdout "1";
+        count_output => tractor query -s "class Foo { }" -l "csharp" -x "class" -v "count" -p "count" => stdout "1";
         gcc_output => tractor query -s "class Foo { }" -l "csharp" -x "class" -f "gcc" => count 1;
         without_xpath => tractor query -s "let x = 1;" -l "rust" => count some;
     }
@@ -361,6 +374,8 @@ fn markdown_round_trip_extracts_javascript_block() {
         "//function[name]",
         "-v",
         "count",
+        "-p",
+        "count",
     ])
     .stdin(format!("{}\n", extracted.stdout))
     .capture();
@@ -388,9 +403,262 @@ fn missing_empty_fixture_directory_falls_back_to_temp_workspace() {
         "function",
         "-v",
         "count",
+        "-p",
+        "count",
     ])
     .in_fixture("missing-empty-fixture")
     .assert_stdout("1")
+    .run();
+}
+
+#[test]
+fn project_tree_json_is_sequence_and_single_unwraps() {
+    let multi = cli_case!({
+        tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -p "tree" -f "json";
+    })
+    .run();
+    let multi_json: Value = serde_json::from_str(&multi.stdout).expect("multi projection should be json");
+    assert!(multi_json.is_array());
+    assert_eq!(2, multi_json.as_array().unwrap().len());
+
+    let single = cli_case!({
+        tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -p "tree" --single -f "json";
+    })
+    .run();
+    let single_json: Value = serde_json::from_str(&single.stdout).expect("single projection should be json");
+    assert!(!single_json.is_array());
+}
+
+#[test]
+fn project_tree_xml_multi_wraps_named_tree_elements() {
+    let result = cli_case!({
+        tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -p "tree" -f "xml";
+    })
+    .run();
+    assert!(result.stdout.contains("<results>"));
+    assert!(result.stdout.contains("<tree>"));
+    assert!(result.stdout.contains("</tree>"));
+    assert_well_formed_xml(&result.stdout);
+}
+
+#[test]
+fn project_tree_xml_single_stays_bare() {
+    let result = cli_case!({
+        tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -p "tree" --single -f "xml";
+    })
+    .run();
+    assert!(!result.stdout.contains("<tree>"));
+    assert!(result.stdout.contains("<item>"));
+    assert_well_formed_xml(&result.stdout);
+}
+
+#[test]
+fn project_tree_single_empty_exits_with_empty_stdout() {
+    cli_case!({
+        tractor query -s "<root/>" -l "xml" -x "//item" -p "tree" --single -f "xml";
+        expect => {
+            exit 1;
+            stdout "";
+            stderr "";
+        }
+    })
+    .run();
+}
+
+#[test]
+fn project_results_keeps_message_field_in_json() {
+    let result = cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -m "hit" -p "results" -f "json";
+    })
+    .run();
+    let json: Value = serde_json::from_str(&result.stdout).expect("results projection should be json");
+    assert_eq!("hit", json[0]["message"]);
+}
+
+#[test]
+fn project_results_preserves_grouping_in_json() {
+    let result = cli_case!({
+        tractor query "sample.cs" "sample2.cs" -x "//class/name" -v "file,value" -g "file" -p "results" -f "json";
+    })
+    .in_fixture("formats")
+    .run();
+    let json: Value = serde_json::from_str(&result.stdout).expect("grouped results projection should be json");
+    let groups = json.as_array().expect("results projection should stay a sequence");
+    assert_eq!(2, groups.len());
+
+    for group in groups {
+        assert!(group["file"].is_string(), "expected file key on grouped result: {group}");
+        let matches = group["results"].as_array().expect("expected nested results under each group");
+        assert!(!matches.is_empty(), "expected at least one match in grouped results");
+        assert!(matches.iter().all(|item| item.get("value").is_some()));
+        assert!(matches.iter().all(|item| item.get("file").is_none()));
+    }
+}
+
+#[test]
+fn project_summary_warns_when_message_is_unreachable() {
+    let result = cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -m "hit" -p "summary" -f "json";
+    })
+    .run();
+    let json: Value = serde_json::from_str(&result.stdout).expect("summary projection should be json");
+    assert!(json.is_object());
+    assert!(result
+        .stderr
+        .contains("warning: -m message template has no effect with -p summary"));
+}
+
+#[test]
+fn count_view_uses_report_path() {
+    cli_case!({
+        tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -v "count";
+        expect => stdout "2 matches";
+    })
+    .run();
+}
+
+#[test]
+fn count_projection_restores_scalar() {
+    cli_case!({
+        tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -v "count" -p "count";
+        expect => stdout "2";
+    })
+    .run();
+}
+
+#[test]
+fn projection_invalid_is_rejected_with_valid_values() {
+    cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -p "INVALID";
+        expect => {
+            exit 1;
+            combined_contains "invalid projection 'INVALID'";
+            combined_contains "tree, value, source, lines, schema, count, summary, totals, results, report";
+        }
+    })
+    .run();
+}
+
+#[test]
+fn project_tree_empty_sequence_preserves_wrapper_and_parseability() {
+    let xml = cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "string(//item)" -p "tree" -f "xml";
+    })
+    .run();
+    assert!(xml.stdout.contains("<results"));
+    assert_well_formed_xml(&xml.stdout);
+
+    let json = cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "string(//item)" -p "tree" -f "json";
+    })
+    .run();
+    let parsed: Value = serde_json::from_str(&json.stdout).expect("empty tree projection should be json");
+    assert_eq!(Value::Array(vec![]), parsed);
+}
+
+#[test]
+fn project_replacement_warning_lists_all_dropped_fields_and_suggests_results() {
+    cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -v "tree,file" -m "hit" -p "tree" -f "json";
+        expect => {
+            stderr_contains "warning: requested view items {file, message}";
+            stderr_contains "use `-p results` (respects -v/-m)";
+        }
+    })
+    .run();
+}
+
+#[test]
+fn project_redundant_overlap_does_not_warn() {
+    cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -v "tree" -p "tree" -f "json";
+        expect => stderr "";
+    })
+    .run();
+}
+
+#[test]
+fn project_empty_explicit_view_does_not_warn() {
+    cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -v "" -p "tree" -f "json";
+        expect => stderr "";
+    })
+    .run();
+}
+
+#[test]
+fn project_count_and_schema_follow_the_report_pipeline_in_structured_formats() {
+    let count = cli_case!({
+        tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -v "count" -f "json";
+    })
+    .run();
+    let count_json: Value = serde_json::from_str(&count.stdout).expect("count view should be json");
+    assert_eq!(2, count_json["summary"]["totals"]["results"]);
+
+    let schema_report = cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -v "schema" -f "xml";
+    })
+    .run();
+    assert!(schema_report.stdout.contains("<report>"));
+    assert!(schema_report.stdout.contains("<schema>"));
+    assert_well_formed_xml(&schema_report.stdout);
+
+    let schema_bare = cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -v "schema" -p "schema" -f "xml";
+    })
+    .run();
+    assert!(!schema_bare.stdout.contains("<report>"));
+    assert!(schema_bare.stdout.contains("<schema>"));
+    assert_well_formed_xml(&schema_bare.stdout);
+}
+
+#[test]
+fn project_summary_is_mode_specific() {
+    let query = cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -p "summary" -f "json";
+    })
+    .run();
+    let query_json: Value = serde_json::from_str(&query.stdout).expect("query summary should be json");
+    assert!(query_json.get("success").is_none());
+    assert_eq!(1, query_json["totals"]["results"]);
+
+    let test = cli_case!({
+        tractor test -s "<root><item>one</item></root>" -l "xml" -x "//item" --expect "1" -p "summary" -f "json";
+    })
+    .run();
+    let test_json: Value = serde_json::from_str(&test.stdout).expect("test summary should be json");
+    assert_eq!(Value::Bool(true), test_json["success"]);
+    assert_eq!(Value::String("1".to_string()), test_json["expected"]);
+}
+
+#[test]
+fn project_schema_respects_color_output() {
+    let result = cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -p "schema" --color "always";
+    })
+    .no_color(false)
+    .run();
+    assert!(result.stdout.contains("\u{1b}["));
+}
+
+#[test]
+fn view_schema_renders_in_text_output() {
+    cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -v "schema";
+        expect => stdout_contains "item = \"one\"";
+    })
+    .run();
+}
+
+#[test]
+fn project_totals_single_is_a_noop_with_warning() {
+    cli_case!({
+        tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -p "totals" --single -f "xml";
+        expect => {
+            stdout_contains "<totals>";
+            stderr_contains "warning: --single has no effect with -p totals";
+        }
+    })
     .run();
 }
 
@@ -483,7 +751,7 @@ fn set_snapshot_json() {
 #[test]
 fn set_snapshot_xml() {
     cli_case!({
-        tractor run "set-config.yaml" -f "xml";
+        tractor run --config "set-config.yaml" -f "xml";
         expect => stdout_snapshot "formats/set/set.xml";
     })
     .in_fixture("formats/set")
@@ -508,7 +776,7 @@ fn set_snapshot_stdout_xml() {
 #[test]
 fn run_set_capture_duplicate_file_outputs_stay_rooted() {
     cli_case!({
-        tractor run "set-capture-duplicate.config.yaml" -f "xml";
+        tractor run --config "set-capture-duplicate.config.yaml" -f "xml";
         expect => stdout_snapshot "formats/set/set-stdout-duplicate.xml";
     })
     .in_fixture("formats/set")
@@ -519,7 +787,7 @@ fn run_set_capture_duplicate_file_outputs_stay_rooted() {
 #[test]
 fn run_set_capture_duplicate_file_outputs_stay_rooted_json() {
     cli_case!({
-        tractor run "set-capture-duplicate.config.yaml" -f "json";
+        tractor run --config "set-capture-duplicate.config.yaml" -f "json";
         expect => stdout_snapshot "formats/set/set-stdout-duplicate.json";
     })
     .in_fixture("formats/set")
@@ -530,7 +798,7 @@ fn run_set_capture_duplicate_file_outputs_stay_rooted_json() {
 #[test]
 fn run_set_capture_duplicate_file_outputs_stay_rooted_yaml() {
     cli_case!({
-        tractor run "set-capture-duplicate.config.yaml" -f "yaml";
+        tractor run --config "set-capture-duplicate.config.yaml" -f "yaml";
         expect => stdout_snapshot "formats/set/set-stdout-duplicate.yaml";
     })
     .in_fixture("formats/set")
@@ -822,7 +1090,7 @@ fn update_rejects_stdin_input() {
 #[test]
 fn run_multirule_output_is_stable() {
     cli_case!({
-        tractor run "check-multirule.yaml";
+        tractor run --config "check-multirule.yaml";
         expect => {
             exit 1;
             combined "settings.yaml:3:10: error: debug should be disabled in production\n3 |   debug: true\n             ^~~~\n\nsettings.yaml:4:14: warning: log level should not be debug in production\n4 |   log_level: debug\n                 ^~~~~\n\n1 error in 1 file";
@@ -836,7 +1104,7 @@ fn run_multirule_output_is_stable() {
 #[test]
 fn run_multifile_check_scans_multiple_files() {
     cli_case!({
-        tractor run "check-multifile.yaml";
+        tractor run --config "check-multifile.yaml";
         expect => {
             exit 1;
             combined "settings.yaml:3:10: error: debug mode must be disabled\n3 |   debug: true\n             ^~~~\n\n1 error in 1 file";
@@ -850,7 +1118,7 @@ fn run_multifile_check_scans_multiple_files() {
 #[test]
 fn run_set_applies_mappings_to_files() {
     cli_case!({
-        tractor run "set-config.yaml";
+        tractor run --config "set-config.yaml";
         expect => combined "app-config.json:3:13: note: updated //database/host\napp-config.json:8:12: note: updated //cache/ttl\nupdated 1 file";
     })
     .in_fixture("run")
@@ -863,7 +1131,7 @@ fn run_set_applies_mappings_to_files() {
 #[test]
 fn run_scope_intersection_respects_root() {
     cli_case!({
-        tractor run "scope-intersection/intersect-narrow.yaml";
+        tractor run --config "scope-intersection/intersect-narrow.yaml";
         expect => combined "scope-intersection/frontend/config.yml:1:8: warning: debug must be disabled\n1 | debug: true\n           ^~~~\n\n1 warning in 1 file";
     })
     .in_fixture("run")
@@ -874,7 +1142,7 @@ fn run_scope_intersection_respects_root() {
 #[test]
 fn run_scope_intersection_falls_back_to_root_when_operation_has_no_files() {
     cli_case!({
-        tractor run "scope-intersection/intersect-fallback.yaml";
+        tractor run --config "scope-intersection/intersect-fallback.yaml";
         expect => combined "";
     })
     .in_fixture("run")
@@ -889,7 +1157,7 @@ fn run_scope_intersection_fatal_when_empty() {
     // rather than silently succeeding. This holds whether the emptiness
     // came from a pattern genuinely matching nothing or from sibling
     // intersections (root ∩ operation) reducing the set to zero.
-    let result = command(["run", "scope-intersection/intersect-disjoint.yaml"])
+    let result = command(["run", "--config", "scope-intersection/intersect-disjoint.yaml"])
         .in_fixture("run")
         .fixture_prefix("")
         .assert_exit(1)
@@ -905,7 +1173,7 @@ fn run_scope_intersection_fatal_when_empty() {
 #[test]
 fn run_double_star_glob_matches_recursively() {
     cli_case!({
-        tractor run "glob-double-star/check-double-star.yaml";
+        tractor run --config "glob-double-star/check-double-star.yaml";
         expect => combined "glob-double-star/config.yml:1:8: warning: debug must be disabled\n1 | debug: true\n           ^~~~\n\nglob-double-star/nested/config.yml:1:8: warning: debug must be disabled\n1 | debug: true\n           ^~~~\n\n2 warnings in 2 files";
     })
     .in_fixture("run")
@@ -916,7 +1184,7 @@ fn run_double_star_glob_matches_recursively() {
 #[test]
 fn run_nested_double_star_glob_matches_nested_files() {
     cli_case!({
-        tractor run "glob-double-star/check-dir-double-star.yaml";
+        tractor run --config "glob-double-star/check-dir-double-star.yaml";
         expect => combined "glob-double-star/nested/config.yml:1:8: warning: debug must be disabled\n1 | debug: true\n           ^~~~\n\n1 warning in 1 file";
     })
     .in_fixture("run")
@@ -926,7 +1194,7 @@ fn run_nested_double_star_glob_matches_nested_files() {
 
 #[test]
 fn run_absolute_cli_path_with_root_files_intersection() {
-    command(["run", "absolute-paths/check-root-files.yaml"])
+    command(["run", "--config", "absolute-paths/check-root-files.yaml"])
         .abs_arg("absolute-paths/config.yml")
         .in_fixture("run")
         .fixture_prefix("")
@@ -936,7 +1204,7 @@ fn run_absolute_cli_path_with_root_files_intersection() {
 
 #[test]
 fn run_absolute_cli_path_with_per_rule_include_matches() {
-    command(["run", "absolute-paths/check-per-rule-include.yaml"])
+    command(["run", "--config", "absolute-paths/check-per-rule-include.yaml"])
         .abs_arg("absolute-paths/config.yml")
         .in_fixture("run")
         .fixture_prefix("")
@@ -946,7 +1214,7 @@ fn run_absolute_cli_path_with_per_rule_include_matches() {
 
 #[test]
 fn run_absolute_cli_path_with_per_rule_exclude_filters_out() {
-    command(["run", "absolute-paths/check-per-rule-exclude.yaml"])
+    command(["run", "--config", "absolute-paths/check-per-rule-exclude.yaml"])
         .abs_arg("absolute-paths/config.yml")
         .in_fixture("run")
         .fixture_prefix("")
@@ -956,7 +1224,7 @@ fn run_absolute_cli_path_with_per_rule_exclude_filters_out() {
 
 #[test]
 fn run_absolute_cli_path_with_root_exclude_filters_out() {
-    command(["run", "absolute-paths/check-root-exclude.yaml"])
+    command(["run", "--config", "absolute-paths/check-root-exclude.yaml"])
         .abs_arg("absolute-paths/config.yml")
         .in_fixture("run")
         .fixture_prefix("")
@@ -966,7 +1234,7 @@ fn run_absolute_cli_path_with_root_exclude_filters_out() {
 
 #[test]
 fn run_dot_relative_cli_path_with_per_rule_include_matches() {
-    command(["run", "absolute-paths/check-per-rule-include.yaml"])
+    command(["run", "--config", "absolute-paths/check-per-rule-include.yaml"])
         .arg("./absolute-paths/config.yml")
         .in_fixture("run")
         .fixture_prefix("")
@@ -976,7 +1244,7 @@ fn run_dot_relative_cli_path_with_per_rule_include_matches() {
 
 #[test]
 fn run_dot_relative_cli_path_with_per_rule_exclude_filters_out() {
-    command(["run", "absolute-paths/check-per-rule-exclude.yaml"])
+    command(["run", "--config", "absolute-paths/check-per-rule-exclude.yaml"])
         .arg("./absolute-paths/config.yml")
         .in_fixture("run")
         .fixture_prefix("")
@@ -986,7 +1254,7 @@ fn run_dot_relative_cli_path_with_per_rule_exclude_filters_out() {
 
 #[test]
 fn run_dot_relative_cli_path_with_root_files_intersection() {
-    command(["run", "absolute-paths/check-root-files.yaml"])
+    command(["run", "--config", "absolute-paths/check-root-files.yaml"])
         .arg("./absolute-paths/config.yml")
         .in_fixture("run")
         .fixture_prefix("")
@@ -996,7 +1264,7 @@ fn run_dot_relative_cli_path_with_root_files_intersection() {
 
 #[test]
 fn run_dot_relative_cli_path_with_root_exclude_filters_out() {
-    command(["run", "absolute-paths/check-root-exclude.yaml"])
+    command(["run", "--config", "absolute-paths/check-root-exclude.yaml"])
         .arg("./absolute-paths/config.yml")
         .in_fixture("run")
         .fixture_prefix("")
@@ -1007,7 +1275,7 @@ fn run_dot_relative_cli_path_with_root_exclude_filters_out() {
 #[test]
 fn run_mixed_language_rules_report_all_findings() {
     cli_case!({
-        tractor run "mixed-language/three-langs.yaml";
+        tractor run --config "mixed-language/three-langs.yaml";
         expect => {
             exit 1;
             combined "mixed-language/config.yaml:3:10: error: Debug mode must be disabled\n3 |   debug: true\n             ^~~~\n\nmixed-language/sample.js:1:1: error: TODO comment found\n1 | // TODO: Fix this code\n    ^~~~~~~~~~~~~~~~~~~~~~\n\nmixed-language/todo-doc.md:3:1: warning: TODO comment found\n3 >| <!-- TODO: Complete this section -->\n4 >| \n\n2 errors in 3 files";
@@ -1021,7 +1289,7 @@ fn run_mixed_language_rules_report_all_findings() {
 #[test]
 fn run_mixed_language_rules_report_javascript_and_markdown_findings() {
     cli_case!({
-        tractor run "mixed-language/mixed-rules.yaml";
+        tractor run --config "mixed-language/mixed-rules.yaml";
         expect => {
             exit 1;
             combined "mixed-language/sample.js:1:1: error: TODO comment found\n1 | // TODO: Fix this code\n    ^~~~~~~~~~~~~~~~~~~~~~\n\nmixed-language/todo-doc.md:3:1: warning: TODO comment found\n3 >| <!-- TODO: Complete this section -->\n4 >| \n\n1 error in 2 files";
@@ -1035,7 +1303,7 @@ fn run_mixed_language_rules_report_javascript_and_markdown_findings() {
 #[test]
 fn run_mixed_language_javascript_only_rules_skip_markdown() {
     cli_case!({
-        tractor run "mixed-language/js-only-rules.yaml";
+        tractor run --config "mixed-language/js-only-rules.yaml";
         expect => {
             exit 1;
             combined "mixed-language/sample.js:1:1: error: TODO comment found\n1 | // TODO: Fix this code\n    ^~~~~~~~~~~~~~~~~~~~~~\n\n1 error in 1 file";
@@ -1049,7 +1317,7 @@ fn run_mixed_language_javascript_only_rules_skip_markdown() {
 #[test]
 fn run_mixed_language_markdown_only_rules_skip_javascript() {
     cli_case!({
-        tractor run "mixed-language/md-only-rules.yaml";
+        tractor run --config "mixed-language/md-only-rules.yaml";
         expect => combined "mixed-language/todo-doc.md:3:1: warning: TODO comment found\n3 >| <!-- TODO: Complete this section -->\n4 >| \n\n1 warning in 1 file";
     })
     .in_fixture("run")
@@ -1060,7 +1328,7 @@ fn run_mixed_language_markdown_only_rules_skip_javascript() {
 #[test]
 fn run_mixed_language_auto_detect_uses_file_extension() {
     cli_case!({
-        tractor run "mixed-language/auto-detect.yaml";
+        tractor run --config "mixed-language/auto-detect.yaml";
         expect => {
             exit 1;
             combined "mixed-language/sample.js:1:1: error: TODO comment found\n1 | // TODO: Fix this code\n    ^~~~~~~~~~~~~~~~~~~~~~\n\n1 error in 1 file";
@@ -1074,7 +1342,7 @@ fn run_mixed_language_auto_detect_uses_file_extension() {
 #[test]
 fn run_mixed_language_multiple_rules_for_same_language_report_all_findings() {
     cli_case!({
-        tractor run "mixed-language/same-lang-rules.yaml";
+        tractor run --config "mixed-language/same-lang-rules.yaml";
         expect => {
             exit 1;
             combined "mixed-language/sample.js:1:1: error: TODO comment found\n1 | // TODO: Fix this code\n    ^~~~~~~~~~~~~~~~~~~~~~\n\nmixed-language/sample.js:3:5: warning: No console.log calls allowed\n3 |     console.log(\"Hello\");\n        ^~~~~~~~~~~~~~~~~~~~\n\nmixed-language/sample.js:7:5: warning: No console.log calls allowed\n7 |     console.log(\"Goodbye\");\n        ^~~~~~~~~~~~~~~~~~~~~~\n\n1 error in 1 file";
@@ -1088,7 +1356,7 @@ fn run_mixed_language_multiple_rules_for_same_language_report_all_findings() {
 #[test]
 fn run_mixed_language_aliases_are_resolved() {
     cli_case!({
-        tractor run "mixed-language/lang-alias.yaml";
+        tractor run --config "mixed-language/lang-alias.yaml";
         expect => {
             exit 1;
             combined "mixed-language/sample.js:1:1: error: TODO comment found\n1 | // TODO: Fix this code\n    ^~~~~~~~~~~~~~~~~~~~~~\n\n1 error in 1 file";
@@ -1102,13 +1370,132 @@ fn run_mixed_language_aliases_are_resolved() {
 #[test]
 fn run_mixed_check_and_set_succeeds_when_check_passes() {
     cli_case!({
-        tractor run "mixed-ops.yaml";
+        tractor run --config "mixed-ops.yaml";
         expect => combined "app-config.json:3:13: note: updated //database/host\nupdated 1 file";
     })
     .in_fixture("run")
     .fixture_prefix("")
     .temp_fixture()
     .strip_temp_prefix()
+    .run();
+}
+
+const DEFAULT_CONFIG_CONTENTS: &str =
+    "check:\n  files: [\"settings.yaml\"]\n  rules:\n    - id: no-debug\n      xpath: \"//debug[.='true']\"\n      reason: \"debug should be disabled\"\n      severity: error\n";
+
+const DEFAULT_CONFIG_SETTINGS: &str = "app:\n  name: myapp\n  debug: true\n";
+
+#[test]
+fn run_without_path_uses_default_tractor_yml() {
+    cli_case!({
+        tractor run;
+        expect => {
+            exit 1;
+            combined "settings.yaml:3:10: error: debug should be disabled\n3 |   debug: true\n             ^~~~\n\n1 error in 1 file";
+        }
+    })
+    .temp_fixture()
+    .seed_file("tractor.yml", DEFAULT_CONFIG_CONTENTS)
+    .seed_file("settings.yaml", DEFAULT_CONFIG_SETTINGS)
+    .strip_temp_prefix()
+    .run();
+}
+
+#[test]
+fn run_without_path_ignores_tractor_yaml() {
+    // `.yaml` is not on the default probe list — only `tractor.yml` is. Users
+    // can still point at `.yaml` explicitly, but with no path argument and no
+    // `tractor.yml`, tractor errors even if a `tractor.yaml` sits right there.
+    cli_case!({
+        tractor run;
+        expect => {
+            exit 1;
+            combined_contains "no tractor.yml";
+        }
+    })
+    .temp_fixture()
+    .seed_file("tractor.yaml", DEFAULT_CONFIG_CONTENTS)
+    .seed_file("settings.yaml", DEFAULT_CONFIG_SETTINGS)
+    .run();
+}
+
+#[test]
+fn run_without_path_errors_when_no_default_exists() {
+    cli_case!({
+        tractor run;
+        expect => {
+            exit 1;
+            combined_contains "no tractor.yml";
+        }
+    })
+    .temp_fixture()
+    .run();
+}
+
+/// Source of truth for the scaffolded config — used when we need to seed a
+/// temp directory with the starter to exercise an end-to-end flow. The
+/// byte-equality check against the fixture lives in the DSL tests below via
+/// `file_snapshot`.
+const STARTER_SNAPSHOT: &str =
+    include_str!("../../tests/integration/init/tractor.yml");
+
+#[test]
+fn init_writes_the_snapshot_starter_config() {
+    cli_case!({
+        tractor init;
+        expect => {
+            stdout "created tractor.yml\nrun `tractor run` to execute it";
+            file_snapshot "tractor.yml" "init/tractor.yml";
+        }
+    })
+    .no_color(false)
+    .temp_fixture()
+    .run();
+}
+
+#[test]
+fn starter_config_flags_the_sample_rule_when_run() {
+    // The starter config deliberately scans tractor.yml itself with an xpath
+    // that matches its own rule by id. A bare `tractor run` should report a
+    // single warning pointing at the sample rule block — a self-explanatory
+    // demo of how rules map onto the YAML tree.
+    cli_case!({
+        tractor run;
+        expect => combined "tractor.yml:19:7: warning: replace this sample rule with your own checks\n19 >|     - id: sample-rule\n20  |       xpath: \"//check/rules[id='sample-rule']\"\n21  |       reason: \"replace this sample rule with your own checks\"\n22 >|       severity: warning\n\n1 warning in 1 file";
+    })
+    .temp_fixture()
+    .seed_file("tractor.yml", STARTER_SNAPSHOT)
+    .strip_temp_prefix()
+    .run();
+}
+
+#[test]
+fn init_refuses_to_overwrite_without_force() {
+    cli_case!({
+        tractor init;
+        expect => {
+            exit 1;
+            combined "cli\nfatal(cli): tractor.yml already exists — pass --force to overwrite\n1 fatal in 0 files";
+        }
+    })
+    .no_color(false)
+    .temp_fixture()
+    .seed_file("tractor.yml", "# hand-edited\n")
+    .run();
+}
+
+#[test]
+fn init_force_overwrites_existing_file() {
+    cli_case!({
+        tractor init --force;
+        expect => {
+            stdout "created tractor.yml\nrun `tractor run` to execute it";
+            file_snapshot "tractor.yml" "init/tractor.yml";
+        }
+    })
+    .no_color(false)
+    .temp_fixture()
+    .seed_file("tractor.yml", "# hand-edited\n")
     .run();
 }
 

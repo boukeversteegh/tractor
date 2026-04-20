@@ -64,7 +64,7 @@ use crate::executor::{self, CheckOperation, ExecuteOptions, Operation};
 use crate::cli::context::RunContext;
 use crate::input::{InputMode, FileResolver, ResolverOptions, SourceRequest};
 use crate::format::{ViewField, GroupDimension, render_report};
-use crate::matcher::{project_report, apply_message_template};
+use crate::matcher::prepare_report_for_output;
 use super::config::{run_from_config, ConfigRunParams};
 
 pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
@@ -170,17 +170,7 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
         m.rule_id = None;
     }
 
-    // Apply CLI-level message template (-m) if provided.
-    if let Some(ref template) = ctx.message {
-        apply_message_template(&mut report, template);
-    }
-
-    // Project for the requested view and render.
-    project_report(&mut report, &ctx.view);
-    let report = {
-        let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
-        report.with_grouping(&dims)
-    };
+    prepare_report_for_output(&mut report, &ctx);
     render_report(&report, &ctx, None)
 }
 
