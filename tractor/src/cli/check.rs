@@ -60,9 +60,10 @@ pub struct CheckArgs {
     #[arg(short = 'f', long = "format", default_value = "gcc", help_heading = "Format")]
     pub format: String,
 }
-use crate::executor::{self, CheckOperation, Operation};
+use crate::executor;
 use crate::cli::context::RunContext;
-use crate::input::{InputMode, FileResolver, ResolverOptions, SourceRequest};
+use crate::input::{plan_single, InputMode, OperationDraft, SingleOpRequest};
+use crate::tractor_config::{CheckDraft, OperationInputs};
 use crate::format::{ViewField, GroupDimension, render_report};
 use crate::matcher::prepare_report_for_output;
 use super::config::{run_from_config, ConfigRunParams};
@@ -101,22 +102,9 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
         rule = rule.with_invalid_examples(vec![ex.clone()]);
     }
 
-    // Build the file resolver for this single-operation run. No config file
-    // is involved, so root files are None and there is no base_dir.
-    let resolver_opts = ResolverOptions {
-        diff_files: args.shared.diff_files.clone(),
-        diff_lines: args.shared.diff_lines.clone(),
-        max_files: args.shared.max_files,
-        cli_files: Vec::new(),
-        config_root_files: None,
-    };
-    let env = ctx.exec_ctx();
-    let resolver = FileResolver::new(&resolver_opts, &env)
-        .map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
-
-    let mut builder = tractor::ReportBuilder::new();
-
-    let (op_files, inline_source, op_language): (Vec<String>, Option<&crate::input::Source>, Option<String>) = match &ctx.input {
+    // Resolve inputs into per-op `OperationInputs`. Inline sources ride
+    // attached to `inputs`; disk mode goes through `files`.
+    let (op_files, inline_source, op_language): (Vec<String>, Option<crate::input::Source>, Option<String>) = match &ctx.input {
         InputMode::Files(files) => {
             if files.is_empty() {
                 return Ok(());
@@ -125,46 +113,42 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
         }
         InputMode::Inline(source) => (
             Vec::new(),
-            Some(source),
+            Some(source.clone()),
             Some(source.language.clone()),
         ),
     };
 
-    let request = SourceRequest {
-        files: &op_files,
-        exclude: &[],
+    let inputs = OperationInputs {
+        files: op_files,
+        exclude: Vec::new(),
         diff_files: None,
         diff_lines: None,
-        command: "check",
-        language: op_language.as_deref(),
+        language: op_language,
         inline_source,
     };
-    let (sources, filters) = resolver.resolve(&request, &mut builder);
 
-    // If the file resolver emitted a fatal diagnostic, skip execution.
-    if !builder.has_fatals() {
-        // Compile the rule's globs against the current `base_dir` so the
-        // executor receives already-resolved matchers. No ruleset boundary
-        // here — this is a single-xpath CLI check.
-        let compiled_rules = tractor::compile_ruleset(
-            &[],
-            &[],
-            op_language.as_deref(),
-            ctx.tree_mode,
-            vec![rule],
-            env.base_dir,
-        )
-        .map_err(|e| -> Box<dyn std::error::Error> { e.to_string().into() })?;
+    let draft = OperationDraft::Check(CheckDraft {
+        rules: vec![rule],
+        ruleset_include: Vec::new(),
+        ruleset_exclude: Vec::new(),
+        ruleset_default_language: inputs.language.clone(),
+        tree_mode: ctx.tree_mode,
+        ignore_whitespace: ctx.ignore_whitespace,
+        parse_depth: ctx.parse_depth,
+    });
 
-        let op = Operation::Check(CheckOperation {
-            sources,
-            filters,
-            compiled_rules,
-            tree_mode: ctx.tree_mode,
-            ignore_whitespace: ctx.ignore_whitespace,
-            parse_depth: ctx.parse_depth,
-        });
+    let mut builder = tractor::ReportBuilder::new();
+    let env = ctx.exec_ctx();
+    let op = plan_single(
+        SingleOpRequest { draft, inputs, command: "check" },
+        args.shared.diff_files.clone(),
+        args.shared.diff_lines.clone(),
+        args.shared.max_files,
+        &env,
+        &mut builder,
+    )?;
 
+    if let Some(op) = op {
         executor::execute(&[op], &env, &mut builder)?;
     }
     let mut report = builder.build();

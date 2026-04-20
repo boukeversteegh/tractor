@@ -15,9 +15,11 @@ pub struct UpdateArgs {
     #[command(flatten)]
     pub shared: SharedArgs,
 }
-use crate::executor::{self, Operation, UpdateOperation};
+use crate::executor::{self, UpdateOperation};
 use crate::cli::context::RunContext;
-use crate::input::{InputMode, FileResolver, ResolverOptions, SourceRequest};
+use crate::input::{plan_single, InputMode, OperationDraft, SingleOpRequest};
+use crate::input::filter::Filters;
+use crate::tractor_config::OperationInputs;
 use crate::format::ViewField;
 
 pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
@@ -30,50 +32,45 @@ pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
         .ok_or("update requires an XPath query (-x)")?;
 
     let files = match &ctx.input {
-        InputMode::Files(files) => files,
+        InputMode::Files(files) => files.clone(),
         InputMode::Inline(_) => {
             return Err("update cannot be used with stdin input (no file to modify)".into());
         }
     };
 
-    // Build the file resolver for this single-op run.
-    let resolver_opts = ResolverOptions {
-        diff_files: args.shared.diff_files.clone(),
-        diff_lines: args.shared.diff_lines.clone(),
-        max_files: args.shared.max_files,
-        cli_files: Vec::new(),
-        config_root_files: None,
-    };
-    let env = ctx.exec_ctx();
-    let resolver = FileResolver::new(&resolver_opts, &env)
-        .map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
-
-    let mut builder = tractor::ReportBuilder::new();
-
-    let request = SourceRequest {
+    let inputs = OperationInputs {
         files,
-        exclude: &[],
+        exclude: Vec::new(),
         diff_files: None,
         diff_lines: None,
-        command: "update",
-        language: ctx.lang.as_deref(),
+        language: ctx.lang.clone(),
         inline_source: None,
     };
-    let (sources, filters) = resolver.resolve(&request, &mut builder);
 
-    if !builder.has_fatals() {
-        let op = Operation::Update(UpdateOperation {
-            sources,
-            filters,
-            xpath: xpath_expr.to_string(),
-            value: args.value.clone(),
-            tree_mode: ctx.tree_mode,
-            language: ctx.lang.clone(),
-            limit: ctx.limit,
-            ignore_whitespace: ctx.ignore_whitespace,
-            parse_depth: ctx.parse_depth,
-        });
+    let draft = OperationDraft::Update(UpdateOperation {
+        sources: Vec::new(),
+        filters: Filters::default(),
+        xpath: xpath_expr.to_string(),
+        value: args.value.clone(),
+        tree_mode: ctx.tree_mode,
+        language: ctx.lang.clone(),
+        limit: ctx.limit,
+        ignore_whitespace: ctx.ignore_whitespace,
+        parse_depth: ctx.parse_depth,
+    });
 
+    let mut builder = tractor::ReportBuilder::new();
+    let env = ctx.exec_ctx();
+    let op = plan_single(
+        SingleOpRequest { draft, inputs, command: "update" },
+        args.shared.diff_files.clone(),
+        args.shared.diff_lines.clone(),
+        args.shared.max_files,
+        &env,
+        &mut builder,
+    )?;
+
+    if let Some(op) = op {
         executor::execute(&[op], &env, &mut builder)?;
     }
     let report = builder.build();

@@ -716,6 +716,13 @@ impl ReportBuilder {
         self.matches.iter().any(|m| m.severity == Some(Severity::Fatal))
     }
 
+    /// Count fatal-severity matches. Used by the input planner to detect
+    /// whether *this* operation's resolver call added a new fatal (a
+    /// before/after delta of this count).
+    pub fn fatal_count(&self) -> usize {
+        self.matches.iter().filter(|m| m.severity == Some(Severity::Fatal)).count()
+    }
+
     /// Check if any matches with status="updated" have been added.
     pub fn has_updates(&self) -> bool {
         self.matches.iter().any(|m| m.status.as_deref() == Some("updated"))

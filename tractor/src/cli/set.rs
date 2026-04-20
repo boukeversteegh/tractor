@@ -41,10 +41,12 @@ pub struct SetArgs {
     pub format: String,
 }
 use crate::executor::{
-    self, Operation, SetMapping, SetOperation, SetReportMode, SetWriteMode,
+    self, SetMapping, SetOperation, SetReportMode, SetWriteMode,
 };
 use crate::cli::context::RunContext;
-use crate::input::{InputMode, FileResolver, ResolverOptions, SourceRequest};
+use crate::input::{plan_single, InputMode, OperationDraft, SingleOpRequest};
+use crate::input::filter::Filters;
+use crate::tractor_config::OperationInputs;
 use crate::format::{ViewField, GroupDimension, render_report};
 use crate::matcher::prepare_report_for_output;
 use super::config::{ConfigRunParams, run_from_config};
@@ -159,21 +161,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
         args.value.as_deref(),
     )?;
 
-    // Build the file resolver for this single-op run.
-    let resolver_opts = ResolverOptions {
-        diff_files: args.shared.diff_files.clone(),
-        diff_lines: args.shared.diff_lines.clone(),
-        max_files: args.shared.max_files,
-        cli_files: Vec::new(),
-        config_root_files: None,
-    };
-    let env = ctx.exec_ctx();
-    let resolver = FileResolver::new(&resolver_opts, &env)
-        .map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
-
-    let mut builder = tractor::ReportBuilder::new();
-
-    let (op_files, inline_source, op_language, write_mode): (Vec<String>, Option<&crate::input::Source>, Option<String>, SetWriteMode) = match &ctx.input {
+    let (op_files, inline_source, op_language, write_mode): (Vec<String>, Option<crate::input::Source>, Option<String>, SetWriteMode) = match &ctx.input {
         InputMode::Files(files) => {
             if files.is_empty() {
                 return Err("set requires at least one file or inline source".into());
@@ -187,35 +175,44 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
         }
         InputMode::Inline(source) => (
             Vec::new(),
-            Some(source),
+            Some(source.clone()),
             Some(source.language.clone()),
             SetWriteMode::Capture,
         ),
     };
 
-    let request = SourceRequest {
-        files: &op_files,
-        exclude: &[],
+    let inputs = OperationInputs {
+        files: op_files,
+        exclude: Vec::new(),
         diff_files: None,
         diff_lines: None,
-        command: "set",
-        language: op_language.as_deref(),
+        language: op_language,
         inline_source,
     };
-    let (sources, filters) = resolver.resolve(&request, &mut builder);
 
-    if !builder.has_fatals() {
-        let op = Operation::Set(SetOperation {
-            sources,
-            filters,
-            mappings,
-            tree_mode: ctx.tree_mode,
-            limit: ctx.limit,
-            ignore_whitespace: ctx.ignore_whitespace,
-            write_mode,
-            report_mode: SetReportMode::PerMatch,
-        });
+    let draft = OperationDraft::Set(SetOperation {
+        sources: Vec::new(),
+        filters: Filters::default(),
+        mappings,
+        tree_mode: ctx.tree_mode,
+        limit: ctx.limit,
+        ignore_whitespace: ctx.ignore_whitespace,
+        write_mode,
+        report_mode: SetReportMode::PerMatch,
+    });
 
+    let mut builder = tractor::ReportBuilder::new();
+    let env = ctx.exec_ctx();
+    let op = plan_single(
+        SingleOpRequest { draft, inputs, command: "set" },
+        args.shared.diff_files.clone(),
+        args.shared.diff_lines.clone(),
+        args.shared.max_files,
+        &env,
+        &mut builder,
+    )?;
+
+    if let Some(op) = op {
         executor::execute(&[op], &env, &mut builder)?;
     }
     let mut report = builder.build();

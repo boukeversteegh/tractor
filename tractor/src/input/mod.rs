@@ -1,11 +1,14 @@
 pub mod git;
 pub mod filter;
 pub mod file_resolver;
+pub mod plan;
 pub mod source;
 
 #[allow(unused_imports)]
 pub use source::{Source, SourceContent, SourceDisposition, PATHLESS_LABEL};
 pub use file_resolver::{FileResolver, SourceRequest, ResolverOptions, make_fatal_diagnostic};
+#[allow(unused_imports)]
+pub use plan::{plan_multi, plan_single, InputPlan, MultiOpRequest, OperationDraft, SingleOpRequest};
 
 use std::io::{self, BufRead, Read};
 use std::sync::Arc;

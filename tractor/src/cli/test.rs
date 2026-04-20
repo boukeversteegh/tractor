@@ -40,9 +40,11 @@ pub struct TestArgs {
     #[arg(short = 'f', long = "format", default_value = "text", help_heading = "Format")]
     pub format: String,
 }
-use crate::executor::{self, Operation, TestOperation, TestAssertion};
+use crate::executor::{self, TestOperation, TestAssertion};
 use crate::cli::context::RunContext;
-use crate::input::{InputMode, FileResolver, ResolverOptions, SourceRequest};
+use crate::input::{plan_single, InputMode, OperationDraft, SingleOpRequest};
+use crate::input::filter::Filters;
+use crate::tractor_config::OperationInputs;
 use crate::format::{ViewField, TestRenderOptions, render_report};
 use crate::matcher::prepare_report_for_output;
 use super::config::{run_from_config, ConfigRunParams};
@@ -84,51 +86,46 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
     let dot = NormalizedXpath::new(".");
     let xpath_expr = ctx.xpath.as_ref().unwrap_or(&dot);
 
-    // Build the file resolver for this single-op run.
-    let resolver_opts = ResolverOptions {
-        diff_files: args.shared.diff_files.clone(),
-        diff_lines: args.shared.diff_lines.clone(),
-        max_files: args.shared.max_files,
-        cli_files: Vec::new(),
-        config_root_files: None,
-    };
-    let env = ctx.exec_ctx();
-    let resolver = FileResolver::new(&resolver_opts, &env)
-        .map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
-
-    let mut builder = tractor::ReportBuilder::new();
-
-    let (op_files, inline_source, op_language): (Vec<String>, Option<&crate::input::Source>, Option<String>) = match &ctx.input {
+    let (op_files, inline_source, op_language): (Vec<String>, Option<crate::input::Source>, Option<String>) = match &ctx.input {
         InputMode::Files(files) => (files.clone(), None, ctx.lang.clone()),
-        InputMode::Inline(source) => (Vec::new(), Some(source), Some(source.language.clone())),
+        InputMode::Inline(source) => (Vec::new(), Some(source.clone()), Some(source.language.clone())),
     };
 
-    let request = SourceRequest {
-        files: &op_files,
-        exclude: &[],
+    let inputs = OperationInputs {
+        files: op_files,
+        exclude: Vec::new(),
         diff_files: None,
         diff_lines: None,
-        command: "test",
-        language: op_language.as_deref(),
+        language: op_language.clone(),
         inline_source,
     };
-    let (sources, filters) = resolver.resolve(&request, &mut builder);
 
-    if !builder.has_fatals() {
-        let op = Operation::Test(TestOperation {
-            sources,
-            filters,
-            assertions: vec![TestAssertion {
-                xpath: xpath_expr.clone(),
-                expect: expect.clone(),
-            }],
-            tree_mode: ctx.tree_mode,
-            language: op_language,
-            limit: ctx.limit,
-            ignore_whitespace: ctx.ignore_whitespace,
-            parse_depth: ctx.parse_depth,
-        });
+    let draft = OperationDraft::Test(TestOperation {
+        sources: Vec::new(),
+        filters: Filters::default(),
+        assertions: vec![TestAssertion {
+            xpath: xpath_expr.clone(),
+            expect: expect.clone(),
+        }],
+        tree_mode: ctx.tree_mode,
+        language: op_language,
+        limit: ctx.limit,
+        ignore_whitespace: ctx.ignore_whitespace,
+        parse_depth: ctx.parse_depth,
+    });
 
+    let mut builder = tractor::ReportBuilder::new();
+    let env = ctx.exec_ctx();
+    let op = plan_single(
+        SingleOpRequest { draft, inputs, command: "test" },
+        args.shared.diff_files.clone(),
+        args.shared.diff_lines.clone(),
+        args.shared.max_files,
+        &env,
+        &mut builder,
+    )?;
+
+    if let Some(op) = op {
         executor::execute(&[op], &env, &mut builder)?;
     }
     // Set expected value for test summary rendering (test-mode only, not shared with run mode)

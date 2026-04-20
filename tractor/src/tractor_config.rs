@@ -36,8 +36,8 @@ use tractor::rule::Rule;
 use tractor::tree_mode::TreeMode;
 
 use crate::executor::{
-    CheckOperation, Operation, QueryExpr, QueryOperation,
-    SetMapping, SetOperation, SetReportMode, SetWriteMode, TestAssertion, TestOperation,
+    QueryExpr, QueryOperation, SetMapping, SetOperation, SetReportMode, SetWriteMode,
+    TestAssertion, TestOperation,
 };
 use crate::input::Source;
 
@@ -364,7 +364,8 @@ pub struct OperationInputs {
 /// Globs are still raw strings here because the base directory they
 /// should resolve against isn't known until the CLI layer determines
 /// `base_dir` from the config file's location. Compiled into a
-/// [`CheckOperation`] inside [`ConfigOperation::into_operation`].
+/// [`crate::executor::CheckOperation`] by the input planner once the
+/// shared `FileResolver` has resolved the op's sources and filters.
 #[derive(Debug, Clone)]
 pub struct CheckDraft {
     pub rules: Vec<Rule>,
@@ -390,67 +391,18 @@ pub enum ConfigOperation {
 }
 
 impl ConfigOperation {
-    /// Consumes the skeleton, injecting already-resolved sources/filters,
-    /// and returns the wrapped [`Operation`] ready for the executor.
-    ///
-    /// For `Check`, this is also where per-rule glob patterns become the
-    /// domain form: `base_dir` lets us resolve them and compile each
-    /// rule's `GlobMatcher` once, so the executor never touches raw
-    /// strings again.
-    pub fn into_operation(
-        self,
-        sources: Vec<Source>,
-        filters: crate::input::filter::Filters,
-        base_dir: Option<&std::path::Path>,
-    ) -> Result<Operation, Box<dyn std::error::Error>> {
+    /// Split the config-side data into the two parts the input planner needs:
+    /// the per-op `OperationInputs` (what files/filters the op asked for) and
+    /// the `OperationDraft` (everything else the executor needs). The planner
+    /// calls the resolver with `OperationInputs`, then hands the resolved
+    /// sources/filters back to `OperationDraft::into_operation`.
+    pub fn into_draft(self) -> (OperationInputs, crate::input::plan::OperationDraft) {
+        use crate::input::plan::OperationDraft;
         match self {
-            ConfigOperation::Check { draft, .. } => {
-                let compiled_rules = tractor::compile_ruleset(
-                    &draft.ruleset_include,
-                    &draft.ruleset_exclude,
-                    draft.ruleset_default_language.as_deref(),
-                    draft.tree_mode,
-                    draft.rules,
-                    base_dir,
-                )
-                .map_err(|e| -> Box<dyn std::error::Error> { e.to_string().into() })?;
-                Ok(Operation::Check(CheckOperation {
-                    sources,
-                    filters,
-                    compiled_rules,
-                    tree_mode: draft.tree_mode,
-                    ignore_whitespace: draft.ignore_whitespace,
-                    parse_depth: draft.parse_depth,
-                }))
-            }
-            ConfigOperation::Set { op, .. } => {
-                let mut op = op;
-                op.sources = sources;
-                op.filters = filters;
-                Ok(Operation::Set(op))
-            }
-            ConfigOperation::Query { op, .. } => {
-                let mut op = op;
-                op.sources = sources;
-                op.filters = filters;
-                Ok(Operation::Query(op))
-            }
-            ConfigOperation::Test { op, .. } => {
-                let mut op = op;
-                op.sources = sources;
-                op.filters = filters;
-                Ok(Operation::Test(op))
-            }
-        }
-    }
-
-    /// Borrow the input-resolution data for the runner.
-    pub fn inputs(&self) -> &OperationInputs {
-        match self {
-            ConfigOperation::Check { inputs, .. }
-            | ConfigOperation::Set { inputs, .. }
-            | ConfigOperation::Query { inputs, .. }
-            | ConfigOperation::Test { inputs, .. } => inputs,
+            ConfigOperation::Check { inputs, draft } => (inputs, OperationDraft::Check(draft)),
+            ConfigOperation::Set { inputs, op } => (inputs, OperationDraft::Set(op)),
+            ConfigOperation::Query { inputs, op } => (inputs, OperationDraft::Query(op)),
+            ConfigOperation::Test { inputs, op } => (inputs, OperationDraft::Test(op)),
         }
     }
 

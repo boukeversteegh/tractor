@@ -10,11 +10,11 @@
 use tractor::report::{ReportMatch, Severity};
 
 use crate::cli::SharedArgs;
-use crate::executor::{self, Operation};
+use crate::executor;
 use crate::cli::context::RunContext;
 use crate::format::{ViewField, GroupDimension, render_report};
-use crate::input::{resolve_input, InputMode, FileResolver, ResolverOptions, SourceRequest};
-use crate::matcher::{project_report, prepare_report_for_output};
+use crate::input::{plan_multi, resolve_input, InputMode, MultiOpRequest};
+use crate::matcher::prepare_report_for_output;
 use crate::tractor_config::{ConfigOperation, ConfigOperationKind};
 
 /// Canonical file name tractor probes when `--config` is not passed.
@@ -139,48 +139,26 @@ pub fn run_from_config(params: ConfigRunParams) -> Result<(), Box<dyn std::error
             message: None, origin: None, rule_id: None, status: None, output: None,
         });
     } else {
-        // Build the resolver ONCE for the whole config run — shared state
-        // (root files, CLI files, global diff) is expanded here.
-        let resolver_opts = ResolverOptions {
-            diff_files: params.shared.diff_files.clone(),
-            diff_lines: params.shared.diff_lines.clone(),
-            max_files: params.shared.max_files,
-            cli_files: cli_files_for_resolver,
-            config_root_files: loaded.root_files,
-        };
+        // Normalize all inputs once through the shared planner — it builds
+        // one `FileResolver` for the whole config run and resolves each op
+        // through it. Operations that hit a fatal diagnostic are dropped
+        // from the plan.
         let env = ctx.exec_ctx();
-        let resolver = match FileResolver::new(&resolver_opts, &env) {
-            Ok(r) => r,
-            Err(e) => {
-                builder.add(crate::input::make_fatal_diagnostic(params.filter_label, e));
-                let mut report = builder.build();
-                project_report(&mut report, &ctx.view);
-                let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
-                let report = report.with_grouping(&dims);
-                return render_report(&report, &ctx, None);
-            }
-        };
+        let plan = plan_multi(
+            MultiOpRequest {
+                operations: config_ops,
+                cli_files: cli_files_for_resolver,
+                config_root_files: loaded.root_files,
+                shared_diff_files: params.shared.diff_files.clone(),
+                shared_diff_lines: params.shared.diff_lines.clone(),
+                max_files: params.shared.max_files,
+                command_label: params.filter_label.to_string(),
+            },
+            &env,
+            &mut builder,
+        )?;
 
-        // For each config operation, resolve its inputs into the unified
-        // `sources + filters` pair, then inject into the operation skeleton.
-        let mut operations: Vec<Operation> = Vec::with_capacity(config_ops.len());
-        for config_op in config_ops {
-            let inputs = config_op.inputs().clone();
-            // Build the SourceRequest from per-op inputs.
-            let request = SourceRequest {
-                files: &inputs.files,
-                exclude: &inputs.exclude,
-                diff_files: inputs.diff_files.as_deref(),
-                diff_lines: inputs.diff_lines.as_deref(),
-                command: params.filter_label,
-                language: inputs.language.as_deref(),
-                inline_source: inputs.inline_source.as_ref(),
-            };
-            let (sources, filters) = resolver.resolve(&request, &mut builder);
-            operations.push(config_op.into_operation(sources, filters, env.base_dir)?);
-        }
-
-        executor::execute(&operations, &env, &mut builder)?;
+        executor::execute(&plan.operations, &env, &mut builder)?;
     }
 
     let mut report = builder.build();
