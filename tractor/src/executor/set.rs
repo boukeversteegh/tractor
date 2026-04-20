@@ -2,7 +2,7 @@
 
 use tractor::report::{ReportBuilder, ReportMatch, ReportOutput};
 use tractor::tree_mode::TreeMode;
-use tractor::{parse_string_to_documents, Match};
+use tractor::{parse, ParseInput, ParseOptions, Match};
 use tractor::xpath_upsert::upsert_typed;
 
 use crate::input::filter::Filters;
@@ -354,12 +354,17 @@ fn query_set_matches(
     op: &SetOperationPlan,
     filters: &Filters,
 ) -> Result<Vec<Match>, Box<dyn std::error::Error>> {
-    let mut result = parse_string_to_documents(
-        source,
-        lang,
-        file_label.to_string(),
-        op.tree_mode,
-        op.ignore_whitespace,
+    let mut result = parse(
+        ParseInput::Inline {
+            content: source,
+            file_label,
+        },
+        ParseOptions {
+            language: Some(lang),
+            tree_mode: op.tree_mode,
+            ignore_whitespace: op.ignore_whitespace,
+            parse_depth: None,
+        },
     )?;
     let mut matches = result.query(&mapping.xpath)?;
     if !filters.is_empty() {

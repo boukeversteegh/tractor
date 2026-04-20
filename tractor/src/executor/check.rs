@@ -3,7 +3,7 @@
 use tractor::report::{ReportBuilder, ReportMatch, Severity};
 use tractor::tree_mode::TreeMode;
 use tractor::rule::CompiledRule;
-use tractor::parse_string_to_documents;
+use tractor::{parse, ParseInput, ParseOptions};
 
 use crate::matcher::validate_xpath_diagnostic;
 use crate::matcher::run_rules;
@@ -140,8 +140,17 @@ fn validate_rule_examples(
 
         // Validate valid examples: expect "none" (query should NOT match valid code)
         for (i, example) in rule.valid_examples.iter().enumerate() {
-            let mut result = parse_string_to_documents(
-                example, lang, tractor::PATHLESS_LABEL.to_string(), tree_mode, false,
+            let mut result = parse(
+                ParseInput::Inline {
+                    content: example,
+                    file_label: tractor::PATHLESS_LABEL,
+                },
+                ParseOptions {
+                    language: Some(lang),
+                    tree_mode,
+                    ignore_whitespace: false,
+                    parse_depth: None,
+                },
             )?;
             let matches = result.query(rule.xpath.as_str())?;
             if !super::check_expectation("none", matches.len())? {
@@ -157,8 +166,17 @@ fn validate_rule_examples(
 
         // Validate invalid examples: expect "some" (query SHOULD match invalid code)
         for (i, example) in rule.invalid_examples.iter().enumerate() {
-            let mut result = parse_string_to_documents(
-                example, lang, tractor::PATHLESS_LABEL.to_string(), tree_mode, false,
+            let mut result = parse(
+                ParseInput::Inline {
+                    content: example,
+                    file_label: tractor::PATHLESS_LABEL,
+                },
+                ParseOptions {
+                    language: Some(lang),
+                    tree_mode,
+                    ignore_whitespace: false,
+                    parse_depth: None,
+                },
             )?;
             let matches = result.query(rule.xpath.as_str())?;
             if !super::check_expectation("some", matches.len())? {

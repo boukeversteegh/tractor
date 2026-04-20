@@ -834,11 +834,20 @@ mod tests {
 
     #[test]
     fn test_query_parsed_typescript() {
-        use crate::parse_string_to_documents;
+        use crate::parser::{parse, ParseInput, ParseOptions};
 
         let source = "let x = 1;";
-        let mut result = parse_string_to_documents(
-            source, "typescript", "test.ts".to_string(), None, false
+        let mut result = parse(
+            ParseInput::Inline {
+                content: source,
+                file_label: "test.ts",
+            },
+            ParseOptions {
+                language: Some("typescript"),
+                tree_mode: None,
+                ignore_whitespace: false,
+                parse_depth: None,
+            },
         ).unwrap();
 
         let engine = XPathEngine::new();

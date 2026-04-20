@@ -8,10 +8,42 @@
 use std::path::PathBuf;
 use tractor::{
     load_xml_string_to_documents, load_xml_file_to_documents,
-    parse_string_to_documents, parse_to_documents,
+    parse, ParseInput, ParseOptions,
     XPathEngine, XeeParseResult, SchemaCollector,
     output::{render_node, RenderOptions},
 };
+
+/// Parse an in-memory source string for tests. Collapses the common
+/// `parse(ParseInput::Inline {..}, ParseOptions {..})` boilerplate with
+/// `ignore_whitespace=false` and no depth cap — the only knobs the test
+/// suite actually varies are `lang` and `tree_mode`.
+fn parse_test_inline(
+    source: &str,
+    lang: &str,
+    tree_mode: Option<tractor::TreeMode>,
+) -> Result<XeeParseResult, tractor::parser::ParseError> {
+    parse(
+        ParseInput::Inline {
+            content: source,
+            file_label: "<test>",
+        },
+        ParseOptions {
+            language: Some(lang),
+            tree_mode,
+            ignore_whitespace: false,
+            parse_depth: None,
+        },
+    )
+}
+
+/// Parse a fixture file from disk for tests. Uses default options (language
+/// auto-detected from path, no tree-mode override, no depth cap).
+fn parse_test_disk(path: &std::path::Path) -> Result<XeeParseResult, tractor::parser::ParseError> {
+    parse(
+        ParseInput::Disk { path },
+        ParseOptions::default(),
+    )
+}
 
 fn get_test_fixtures_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -118,7 +150,7 @@ fn test_snapshot_matches_current_output() {
     }
 
     // Parse the fixture using unified pipeline
-    let parsed = parse_to_documents(&fixture_path, None, None, false, None)
+    let parsed = parse_test_disk(&fixture_path)
         .expect("Should parse fixture");
     let current_xml = render_to_xml(&parsed);
 
@@ -179,7 +211,7 @@ fn test_xpath_structure_assertions() {
         return;
     }
 
-    let mut parsed = parse_to_documents(&fixture_path, None, None, false, None)
+    let mut parsed = parse_test_disk(&fixture_path)
         .expect("Should parse fixture");
 
     let engine = XPathEngine::new();
@@ -274,7 +306,7 @@ fn test_multi_language_snapshots() {
 fn test_xpath_string_value_preserves_whitespace() {
     // Test that inter-token whitespace is preserved in string-value
     let source = "let mut batches = Vec::new();";
-    let mut result = parse_string_to_documents(source, "rust", "<test>".to_string(), Some(tractor::TreeMode::Raw), false)
+    let mut result = parse_test_inline(source, "rust", Some(tractor::TreeMode::Raw))
         .expect("Should parse Rust");
 
     let engine = XPathEngine::new();
@@ -311,7 +343,7 @@ fn test_xpath_string_value_preserves_whitespace() {
 fn test_xpath_exact_string_match_without_formatting_whitespace() {
     // Test that exact string matching works (no extra formatting whitespace)
     let source = "class T { List<string> x; }";
-    let mut result = parse_string_to_documents(source, "csharp", "<test>".to_string(), None, false)
+    let mut result = parse_test_inline(source, "csharp", None)
         .expect("Should parse C#");
 
     let engine = XPathEngine::new();
@@ -333,7 +365,7 @@ fn test_csharp_null_forgiving_operator() {
     // Test that C# null-forgiving operator (!) is parsed correctly as postfix_unary_expression
     // This was historically broken due to shell escaping issues during testing (! -> \!)
     let source = "class T { void M() { var x = name!.Length; } }";
-    let mut result = parse_string_to_documents(source, "csharp", "<test>".to_string(), None, false)
+    let mut result = parse_test_inline(source, "csharp", None)
         .expect("Should parse C#");
 
     let engine = XPathEngine::new();
@@ -377,7 +409,7 @@ fn test_csharp_null_forgiving_operator() {
 fn test_json_default_is_data_tree() {
     // Default tree mode for JSON should produce data tree (no syntax/data wrappers)
     let source = r#"{"name": "John", "age": 30}"#;
-    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), None, false)
+    let mut result = parse_test_inline(source, "json", None)
         .expect("Should parse JSON");
 
     let engine = XPathEngine::new();
@@ -408,7 +440,7 @@ fn test_json_default_is_data_tree() {
 fn test_json_structure_mode_vocabulary() {
     // Verify JSON structure mode uses normalized syntax vocabulary
     let source = r#"{"name": "John", "age": 30, "active": true, "x": null}"#;
-    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), Some(tractor::TreeMode::Structure), false)
+    let mut result = parse_test_inline(source, "json", Some(tractor::TreeMode::Structure))
         .expect("Should parse JSON");
 
     let engine = XPathEngine::new();
@@ -460,7 +492,7 @@ fn test_json_structure_mode_vocabulary() {
 fn test_json_data_view_simple() {
     // Verify JSON data view has key-as-element-name projection
     let source = r#"{"user": {"name": "John", "age": 30}}"#;
-    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), None, false)
+    let mut result = parse_test_inline(source, "json", None)
         .expect("Should parse JSON");
 
     let engine = XPathEngine::new();
@@ -485,7 +517,7 @@ fn test_json_data_view_simple() {
 fn test_json_data_view_arrays() {
     // Verify array handling in data view
     let source = r#"{"tags": ["math", "science"]}"#;
-    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), None, false)
+    let mut result = parse_test_inline(source, "json", None)
         .expect("Should parse JSON");
 
     let engine = XPathEngine::new();
@@ -512,7 +544,7 @@ fn test_json_data_view_arrays() {
 fn test_json_data_view_top_level_array() {
     // Top-level arrays should use <item> directly under the document root
     let source = r#"[1, "two", [3, 4]]"#;
-    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), None, false)
+    let mut result = parse_test_inline(source, "json", None)
         .expect("Should parse JSON");
 
     let engine = XPathEngine::new();
@@ -535,7 +567,7 @@ fn test_json_data_view_top_level_array() {
 fn test_json_data_view_objects_in_array() {
     // Objects inside arrays get <item> wrappers with nested key elements
     let source = r#"[{"a": 1}, {"b": 2}]"#;
-    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), None, false)
+    let mut result = parse_test_inline(source, "json", None)
         .expect("Should parse JSON");
 
     let engine = XPathEngine::new();
@@ -559,7 +591,7 @@ fn test_json_data_view_objects_in_array() {
 fn test_json_source_output_from_data() {
     // -o source should work from data branch nodes via span attributes
     let source = r#"{"name": "John", "age": 30}"#;
-    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), None, false)
+    let mut result = parse_test_inline(source, "json", None)
         .expect("Should parse JSON");
 
     let engine = XPathEngine::new();
@@ -583,7 +615,7 @@ fn test_json_source_output_from_data() {
 fn test_json_data_view_spans_point_to_values() {
     // Data view spans should point to the VALUE, not the whole property
     let source = r#"{"user": {"name": "John"}, "age": 30}"#;
-    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), None, false)
+    let mut result = parse_test_inline(source, "json", None)
         .expect("Should parse JSON");
 
     let engine = XPathEngine::new();
@@ -621,7 +653,7 @@ fn test_json_data_view_spans_point_to_values() {
 fn test_json_data_view_escape_decoding() {
     // Data view should decode JSON escape sequences
     let source = r#"{"greeting": "hello\nworld", "tab": "a\tb", "quote": "say \"hi\""}"#;
-    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), None, false)
+    let mut result = parse_test_inline(source, "json", None)
         .expect("Should parse JSON");
 
     let engine = XPathEngine::new();
@@ -655,7 +687,7 @@ fn test_json_data_view_escape_decoding() {
 fn test_json_data_view_null_handling() {
     // Null values should appear as "null" text in data view
     let source = r#"{"name": "John", "nickname": null, "active": true, "count": false}"#;
-    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), None, false)
+    let mut result = parse_test_inline(source, "json", None)
         .expect("Should parse JSON");
 
     let engine = XPathEngine::new();
@@ -686,7 +718,7 @@ fn test_json_data_view_null_handling() {
 fn test_yaml_data_view_spans_point_to_values() {
     // YAML data view spans should point to values
     let source = "name: John\nage: 30";
-    let mut result = parse_string_to_documents(source, "yaml", "<test>".to_string(), None, false)
+    let mut result = parse_test_inline(source, "yaml", None)
         .expect("Should parse YAML");
 
     let engine = XPathEngine::new();
@@ -714,7 +746,7 @@ fn test_yaml_data_view_spans_point_to_values() {
 fn test_yaml_data_view_null_handling() {
     // YAML null values should appear as "null" text in data view
     let source = "name: John\nnickname: null\nempty: ~";
-    let mut result = parse_string_to_documents(source, "yaml", "<test>".to_string(), None, false)
+    let mut result = parse_test_inline(source, "yaml", None)
         .expect("Should parse YAML");
 
     let engine = XPathEngine::new();
@@ -738,7 +770,7 @@ fn test_yaml_data_view_null_handling() {
 fn test_json_raw_mode_unchanged() {
     // --raw mode should produce single tree (no syntax/data branches)
     let source = r#"{"a": 1}"#;
-    let mut result = parse_string_to_documents(source, "json", "<test>".to_string(), Some(tractor::TreeMode::Raw), false)
+    let mut result = parse_test_inline(source, "json", Some(tractor::TreeMode::Raw))
         .expect("Should parse JSON in raw mode");
 
     let engine = XPathEngine::new();
@@ -762,7 +794,7 @@ fn test_json_raw_mode_unchanged() {
 fn test_yaml_default_is_data_tree() {
     // Default tree mode for YAML should produce data tree (no wrappers)
     let source = "name: John\nage: 30";
-    let mut result = parse_string_to_documents(source, "yaml", "<test>".to_string(), None, false)
+    let mut result = parse_test_inline(source, "yaml", None)
         .expect("Should parse YAML");
 
     let engine = XPathEngine::new();
@@ -793,7 +825,7 @@ fn test_yaml_default_is_data_tree() {
 fn test_yaml_structure_mode_vocabulary() {
     // Verify YAML structure mode uses same vocabulary as JSON structure mode
     let source = "name: John\ncount: 42\nactive: true\nempty: null";
-    let mut result = parse_string_to_documents(source, "yaml", "<test>".to_string(), Some(tractor::TreeMode::Structure), false)
+    let mut result = parse_test_inline(source, "yaml", Some(tractor::TreeMode::Structure))
         .expect("Should parse YAML");
 
     let engine = XPathEngine::new();
@@ -835,7 +867,7 @@ fn test_yaml_data_view() {
     // Verify YAML data view navigation
     // Default data mode: single-doc YAML has <document> flattened
     let source = "user:\n  name: John\n  age: 30\n  tags:\n    - math\n    - science";
-    let mut result = parse_string_to_documents(source, "yaml", "<test>".to_string(), None, false)
+    let mut result = parse_test_inline(source, "yaml", None)
         .expect("Should parse YAML");
 
     let engine = XPathEngine::new();
@@ -860,7 +892,7 @@ fn test_yaml_data_view() {
 fn test_typescript_not_affected() {
     // Non-data languages should not have dual branches
     let source = "let x = 1;";
-    let mut result = parse_string_to_documents(source, "typescript", "<test>".to_string(), None, false)
+    let mut result = parse_test_inline(source, "typescript", None)
         .expect("Should parse TypeScript");
 
     let engine = XPathEngine::new();
@@ -883,7 +915,7 @@ fn test_typescript_not_affected() {
 fn test_json_empty_structures() {
     // Empty objects and arrays in structure mode
     let source = r#"{"obj": {}, "arr": []}"#;
-    let mut result_structure = parse_string_to_documents(source, "json", "<test>".to_string(), Some(tractor::TreeMode::Structure), false)
+    let mut result_structure = parse_test_inline(source, "json", Some(tractor::TreeMode::Structure))
         .expect("Should parse JSON");
 
     let engine = XPathEngine::new();
@@ -903,7 +935,7 @@ fn test_json_empty_structures() {
     assert_eq!(matches.len(), 1, "Should find empty array");
 
     // Data mode: empty containers become empty elements
-    let mut result_data = parse_string_to_documents(source, "json", "<test>".to_string(), None, false)
+    let mut result_data = parse_test_inline(source, "json", None)
         .expect("Should parse JSON");
     let matches = engine.query_documents(
         &mut result_data.documents, result_data.doc_handle,
@@ -923,7 +955,7 @@ fn test_schema_collector_from_xot() {
         class Foo { void Bar() {} }
         class Baz { void Qux() {} int x; }
     "#;
-    let result = parse_string_to_documents(source, "csharp", "<test>".to_string(), None, false)
+    let result = parse_test_inline(source, "csharp", None)
         .expect("Should parse C#");
 
     let doc_node = result.documents.document_node(result.doc_handle).unwrap();
@@ -965,7 +997,7 @@ fn test_schema_collector_from_xml_string() {
 fn test_schema_depth_limit() {
     // Test that depth limit works
     let source = "class Foo { void Bar() { int x = 1; } }";
-    let result = parse_string_to_documents(source, "csharp", "<test>".to_string(), None, false)
+    let result = parse_test_inline(source, "csharp", None)
         .expect("Should parse C#");
 
     let doc_node = result.documents.document_node(result.doc_handle).unwrap();
@@ -1004,7 +1036,7 @@ fn test_schema_multiple_values_truncation() {
         class A { } class B { } class C { } class D { }
         class E { } class F { } class G { }
     "#;
-    let result = parse_string_to_documents(source, "csharp", "<test>".to_string(), None, false)
+    let result = parse_test_inline(source, "csharp", None)
         .expect("Should parse C#");
 
     let doc_node = result.documents.document_node(result.doc_handle).unwrap();

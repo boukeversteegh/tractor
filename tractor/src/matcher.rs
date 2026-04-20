@@ -5,7 +5,7 @@ use tractor::{
     Match, NormalizedXpath,
     language_info::parse_language,
     output::{render_document, RenderOptions},
-    parse_to_documents,
+    parse, ParseInput, ParseOptions,
     report::{Report, ReportMatch, Severity, DiagnosticOrigin},
     rule::CompiledRule,
     xpath::validate_xpath,
@@ -75,12 +75,16 @@ pub fn run_debug(ctx: &RunContext, files: &[String], xpath_expr: &NormalizedXpat
             break;
         }
 
-        let mut result = match parse_to_documents(
-            std::path::Path::new(file_path),
-            ctx.lang.as_deref(),
-            ctx.tree_mode,
-            ctx.ignore_whitespace,
-            ctx.parse_depth,
+        let mut result = match parse(
+            ParseInput::Disk {
+                path: std::path::Path::new(file_path),
+            },
+            ParseOptions {
+                language: ctx.lang.as_deref(),
+                tree_mode: ctx.tree_mode,
+                ignore_whitespace: ctx.ignore_whitespace,
+                parse_depth: ctx.parse_depth,
+            },
         ) {
             Ok(r) => r,
             Err(e) => {

@@ -169,7 +169,7 @@ impl Source {
     }
 
     /// The path as a `&str`, for places that still accept a bare path label
-    /// (e.g. `parse_string_to_documents`, diagnostic `ReportMatch.file`).
+    /// (e.g. `parse` inline inputs, diagnostic `ReportMatch.file`).
     pub fn path_str(&self) -> &str {
         self.path.as_str()
     }

@@ -619,9 +619,9 @@ pub struct ParseOptions<'a> {
 /// - `Inline`: routes XML to the string passthrough and everything else to
 ///   TreeSitter, carrying `file_label` through to diagnostics.
 ///
-/// The thin wrappers [`parse_to_documents`], [`parse_string_to_documents`] and
-/// [`parse_string_to_documents_with_options`] remain as backwards-compatible
-/// shims over this function.
+/// This is the single public parse entry point; callers build a `ParseInput`
+/// and a `ParseOptions` explicitly rather than picking between overloaded
+/// convenience wrappers.
 pub fn parse(
     input: ParseInput<'_>,
     options: ParseOptions<'_>,
@@ -675,68 +675,6 @@ pub fn parse(
     }
 }
 
-/// Thin shim over [`parse`] for disk inputs.
-///
-/// Kept for backwards compatibility with existing call sites. New code should
-/// prefer [`parse`] with a [`ParseInput::Disk`] variant.
-pub fn parse_to_documents(
-    path: &Path,
-    lang_override: Option<&str>,
-    tree_mode: Option<TreeMode>,
-    ignore_whitespace: bool,
-    max_depth: Option<usize>,
-) -> Result<XeeParseResult, ParseError> {
-    parse(
-        ParseInput::Disk { path },
-        ParseOptions {
-            language: lang_override,
-            tree_mode,
-            ignore_whitespace,
-            parse_depth: max_depth,
-        },
-    )
-}
-
-/// Thin shim over [`parse`] for inline inputs with default depth.
-///
-/// Kept for backwards compatibility with existing call sites. New code should
-/// prefer [`parse`] with a [`ParseInput::Inline`] variant.
-pub fn parse_string_to_documents(
-    source: &str,
-    lang: &str,
-    file_path: String,
-    tree_mode: Option<TreeMode>,
-    ignore_whitespace: bool,
-) -> Result<XeeParseResult, ParseError> {
-    parse_string_to_documents_with_options(source, lang, file_path, tree_mode, ignore_whitespace, None)
-}
-
-/// Thin shim over [`parse`] for inline inputs with an explicit depth cap.
-///
-/// Kept for backwards compatibility with existing call sites. New code should
-/// prefer [`parse`] with a [`ParseInput::Inline`] variant.
-pub fn parse_string_to_documents_with_options(
-    source: &str,
-    lang: &str,
-    file_path: String,
-    tree_mode: Option<TreeMode>,
-    ignore_whitespace: bool,
-    max_depth: Option<usize>,
-) -> Result<XeeParseResult, ParseError> {
-    parse(
-        ParseInput::Inline {
-            content: source,
-            file_label: file_path.as_str(),
-        },
-        ParseOptions {
-            language: Some(lang),
-            tree_mode,
-            ignore_whitespace,
-            parse_depth: max_depth,
-        },
-    )
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -758,8 +696,17 @@ mod tests {
     fn test_parse_simple_class() {
         use crate::output::{render_node, RenderOptions};
 
-        let result = parse_string_to_documents(
-            "public class Foo { }", "csharp", "<test>".to_string(), None, false
+        let result = parse(
+            ParseInput::Inline {
+                content: "public class Foo { }",
+                file_label: "<test>",
+            },
+            ParseOptions {
+                language: Some("csharp"),
+                tree_mode: None,
+                ignore_whitespace: false,
+                parse_depth: None,
+            },
         ).unwrap();
 
         let doc_node = result.documents.document_node(result.doc_handle).unwrap();
