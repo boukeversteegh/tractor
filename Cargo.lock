@@ -2739,7 +2739,7 @@ dependencies = [
 [[package]]
 name = "xee-interpreter"
 version = "0.2.0"
-source = "git+https://github.com/Paligo/xee#f1068e5788271316d4ee47333efc97d6a013f79f"
+source = "git+https://github.com/Paligo/xee#0293025ed4ac1d42e864f278a60443002fd45297"
 dependencies = [
  "ahash 0.8.12",
  "arrayvec",
@@ -2778,7 +2778,7 @@ dependencies = [
 [[package]]
 name = "xee-ir"
 version = "0.1.5"
-source = "git+https://github.com/Paligo/xee#f1068e5788271316d4ee47333efc97d6a013f79f"
+source = "git+https://github.com/Paligo/xee#0293025ed4ac1d42e864f278a60443002fd45297"
 dependencies = [
  "ahash 0.8.12",
  "ibig",
@@ -2793,7 +2793,7 @@ dependencies = [
 [[package]]
 name = "xee-name"
 version = "0.1.5"
-source = "git+https://github.com/Paligo/xee#f1068e5788271316d4ee47333efc97d6a013f79f"
+source = "git+https://github.com/Paligo/xee#0293025ed4ac1d42e864f278a60443002fd45297"
 dependencies = [
  "ahash 0.8.12",
  "xot",
@@ -2802,7 +2802,7 @@ dependencies = [
 [[package]]
 name = "xee-schema-type"
 version = "0.1.4"
-source = "git+https://github.com/Paligo/xee#f1068e5788271316d4ee47333efc97d6a013f79f"
+source = "git+https://github.com/Paligo/xee#0293025ed4ac1d42e864f278a60443002fd45297"
 dependencies = [
  "ahash 0.8.12",
 ]
@@ -2810,7 +2810,7 @@ dependencies = [
 [[package]]
 name = "xee-xpath"
 version = "0.1.5"
-source = "git+https://github.com/Paligo/xee#f1068e5788271316d4ee47333efc97d6a013f79f"
+source = "git+https://github.com/Paligo/xee#0293025ed4ac1d42e864f278a60443002fd45297"
 dependencies = [
  "ahash 0.8.12",
  "chrono",
@@ -2830,7 +2830,7 @@ dependencies = [
 [[package]]
 name = "xee-xpath-ast"
 version = "0.1.4"
-source = "git+https://github.com/Paligo/xee#f1068e5788271316d4ee47333efc97d6a013f79f"
+source = "git+https://github.com/Paligo/xee#0293025ed4ac1d42e864f278a60443002fd45297"
 dependencies = [
  "ahash 0.8.12",
  "blanket",
@@ -2849,7 +2849,7 @@ dependencies = [
 [[package]]
 name = "xee-xpath-compiler"
 version = "0.1.5"
-source = "git+https://github.com/Paligo/xee#f1068e5788271316d4ee47333efc97d6a013f79f"
+source = "git+https://github.com/Paligo/xee#0293025ed4ac1d42e864f278a60443002fd45297"
 dependencies = [
  "ahash 0.8.12",
  "ibig",
@@ -2867,7 +2867,7 @@ dependencies = [
 [[package]]
 name = "xee-xpath-lexer"
 version = "0.1.4"
-source = "git+https://github.com/Paligo/xee#f1068e5788271316d4ee47333efc97d6a013f79f"
+source = "git+https://github.com/Paligo/xee#0293025ed4ac1d42e864f278a60443002fd45297"
 dependencies = [
  "ibig",
  "itertools",
@@ -2878,7 +2878,7 @@ dependencies = [
 [[package]]
 name = "xee-xpath-macros"
 version = "0.1.4"
-source = "git+https://github.com/Paligo/xee#f1068e5788271316d4ee47333efc97d6a013f79f"
+source = "git+https://github.com/Paligo/xee#0293025ed4ac1d42e864f278a60443002fd45297"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2891,7 +2891,7 @@ dependencies = [
 [[package]]
 name = "xee-xpath-type"
 version = "0.1.4"
-source = "git+https://github.com/Paligo/xee#f1068e5788271316d4ee47333efc97d6a013f79f"
+source = "git+https://github.com/Paligo/xee#0293025ed4ac1d42e864f278a60443002fd45297"
 dependencies = [
  "xee-name",
  "xee-schema-type",
