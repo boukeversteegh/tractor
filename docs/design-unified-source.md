@@ -205,3 +205,40 @@ cargo build
 cargo test -p tractor cli
 cat proposed.cs | tractor check --config tractor.yml -l csharp src/Foo.cs
 ```
+
+## Deviations from the original plan
+
+The unification shipped, but the original plan was scoped narrowly around the `Source` type. Implementation surfaced a larger structural opportunity, and the final design deviates from this document's earlier sketches in several ways. Captured here so readers can reconcile the doc with current code.
+
+### Type shapes
+
+- **`Operation` is now a pre-resolution type; `OperationPlan` is the executor-ready form.** The original plan showed a single `Operation` with `sources: Vec<Source>` gained. Shipped: `Operation` (pre-resolution, aligns with user-facing YAML `operations:` key) is constructed from CLI args or config parsing and holds everything *except* sources and filters. `plan_single` / `plan_multi` resolve it into `OperationPlan`, which the executor consumes. The pre-resolution type never carries empty-placeholder sources/filters.
+- **`filters: Filters` struct, no trait object.** The original plan showed `Vec<Box<dyn ResultFilter>>`. Shipped: `Filters { diff_hunks: Vec<DiffHunkFilter> }` — a concrete envelope with the single real filter impl inlined. No `dyn` dispatch, no boxing, and `#[derive(Debug, Clone)]` works on every `OperationPlan`. The envelope leaves room for named additional filter fields if they ever emerge.
+- **Two draft-like types per op variant became one: the `Operation`.** There is no `*Draft` type in shipped code. `CheckOperation`, `SetOperation`, `QueryOperation`, `TestOperation`, `UpdateOperation` are each "the pre-resolved form"; `*::into_plan(sources, filters [, base_dir])` produces the corresponding `*OperationPlan`.
+- **`ExecutionPlan` is the resolved-operations envelope.** The container returned by `plan_single`/`plan_multi` was briefly called `InputPlan`; final name is `ExecutionPlan` to pair cleanly with the existing `OutputPlan` on the rendering axis.
+
+### Placement decisions
+
+- **`PATHLESS_LABEL` lives in the library crate** (`tractor/src/model/report.rs`), not the binary. This lets `mutation/replace.rs` import the constant directly instead of inlining the string.
+- **`ReportMatch::is_pathless()` and `is_pathless_file(&str)` encapsulate the sentinel check.** Consumers ask the match / file, not the constant. Direct `== PATHLESS_LABEL` comparisons live only inside the library's own module.
+- **Per-rule glob patterns compile at construction, not at match time.** `compile_ruleset(...)` builds a `Vec<CompiledRule>` where each entry bundles rule metadata with a pre-compiled `GlobMatcher` and pre-resolved effective language (ruleset default + rule override collapsed). `run_rules` stops compiling on every call and just iterates compiled rules.
+- **`Source::disposition() -> SourceDisposition { Disk, InlineWithPath, InlinePathless }`** is the three-variant domain ADT. `is_virtual()` / `is_pathless()` remain as thin derivations. The set executor matches on `disposition` to pick write-mode / filter-slice / disk-write-gate in one local binding instead of three scattered boolean checks.
+- **`FileResolver` never enters the executor.** Lifted entirely upstream into a single `input::plan` module. Operations are pure consumers of `sources: Vec<Source>` + `filters: Filters`. `ResolverOptions { ... }`, `FileResolver::new`, `SourceRequest { ... }`, and `resolver.resolve(...)` each appear in exactly one production call site.
+- **`ExecuteOptions` is gone.** Collapsed into `ExecCtx<'a>` — a borrowed view over `RunContext`, the single owner of `verbose` / `base_dir`. No caller can populate the two fields in two structs with different values.
+
+### Write-side predicate
+
+The original plan proposed `if source.is_virtual() { reject }` in `mutation/replace.rs`. The shipped check is `if m.file == PATHLESS_LABEL` (or equivalently `m.is_pathless()`). **Different semantics, deliberately.** A virtual-with-path source *could* in principle have its mutation captured (the output path is known); only a genuinely pathless source has nowhere to route the result. The check gates on "does the match have a writable target?" — and for set operations, virtual-with-path is routed through Capture mode instead of being rejected, so the mutated content still reaches the caller.
+
+### Parse entry points
+
+Not in the original plan: the three `parse_to_documents` / `parse_string_to_documents` / `parse_string_to_documents_with_options` functions are unified behind `parse(ParseInput, ParseOptions) -> Result<...>`. `Source::parse` constructs a `ParseInput` from `self.content` + `self.path`. The old three functions remain as thin shims for the 20+ call sites that pre-existed the refactor.
+
+### Scoping contract: all intersectional
+
+Explicitly stated after-the-fact, but a first-class invariant of the shipped design: **every file/line scoping layer composes intersectionally.** Global CLI `--diff-lines` / `--diff-files`, config-root `diff-lines` / `diff-files`, per-operation `diff-lines` / `diff-files`, root `files` / `exclude`, per-op `files` / `exclude`, CLI positional files, ruleset `include` / `exclude`, rule `include` / `exclude` — all AND-compose when narrowing; excludes union-reject. No layer overrides another. The `Filters.diff_hunks: Vec<DiffHunkFilter>` shape, sequential `intersect_changed` on `diff_files`, and `OperationInputs.diff_files`/`diff_lines: Vec<String>` (concatenated from root + per-op) all follow from this contract. Regression tests guard the intersection at each boundary.
+
+### Config ceremony
+
+- **`ConfigOperation { Check { inputs, op: CheckOperation }, ... }`** — carries the `OperationInputs` bag alongside the pre-resolved `Operation`. `into_parts()` splits into `(OperationInputs, Operation)` for the planner.
+- **Single normalization seam.** Every CLI subcommand and the config-mode runner go through `plan_single` or `plan_multi`. Policy about valid inputs, intersection semantics, resolver construction, and `Operation → OperationPlan` materialisation lives in one module.
