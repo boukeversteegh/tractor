@@ -9,7 +9,9 @@ use crate::input::filter::ResultFilter;
 use crate::input::source::SourceDisposition;
 use crate::input::Source;
 
-use super::{ExecuteOptions, filter_refs, match_to_report_match};
+use crate::cli::context::ExecCtx;
+
+use super::{filter_refs, match_to_report_match};
 
 // ---------------------------------------------------------------------------
 // Operation type
@@ -68,7 +70,7 @@ pub enum SetReportMode {
 
 pub(crate) fn execute_set(
     op: &SetOperation,
-    _options: &ExecuteOptions,
+    _ctx: &ExecCtx<'_>,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if op.mappings.is_empty() {
@@ -336,7 +338,8 @@ mod tests {
     use super::*;
     use tractor::report::ReportBuilder;
     use tractor::NormalizedPath;
-    use crate::executor::{Operation, ExecuteOptions, execute};
+    use crate::cli::context::ExecCtx;
+    use crate::executor::{Operation, execute};
 
     fn temp_json_file(content: &str) -> (tempfile::TempDir, String) {
         let dir = tempfile::tempdir().unwrap();
@@ -404,7 +407,7 @@ mod tests {
     /// Helper: execute operations and build a report.
     fn run(ops: &[Operation]) -> tractor::report::Report {
         let mut builder = ReportBuilder::new();
-        execute(ops, &ExecuteOptions::default(), &mut builder).unwrap();
+        execute(ops, &ExecCtx::default(), &mut builder).unwrap();
         builder.build()
     }
 

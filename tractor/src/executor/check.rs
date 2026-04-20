@@ -10,7 +10,9 @@ use crate::matcher::run_rules;
 use crate::input::filter::ResultFilter;
 use crate::input::Source;
 
-use super::{ExecuteOptions, filter_refs, match_to_report_match};
+use crate::cli::context::ExecCtx;
+
+use super::{filter_refs, match_to_report_match};
 
 // ---------------------------------------------------------------------------
 // Operation type
@@ -53,7 +55,7 @@ pub struct CheckOperation {
 
 pub(crate) fn execute_check(
     op: &CheckOperation,
-    options: &ExecuteOptions,
+    ctx: &ExecCtx<'_>,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if op.rules.is_empty() {
@@ -89,11 +91,11 @@ pub(crate) fn execute_check(
     let rule_matches = run_rules(
         &ruleset,
         &op.sources,
-        options.base_dir.as_deref(),
+        ctx.base_dir,
         op.tree_mode,
         op.ignore_whitespace,
         op.parse_depth,
-        options.verbose,
+        ctx.verbose,
         &filter_refs(&op.filters),
     )?;
 

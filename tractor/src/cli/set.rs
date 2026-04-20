@@ -41,7 +41,7 @@ pub struct SetArgs {
     pub format: String,
 }
 use crate::executor::{
-    self, ExecuteOptions, Operation, SetMapping, SetOperation, SetReportMode, SetWriteMode,
+    self, Operation, SetMapping, SetOperation, SetReportMode, SetWriteMode,
 };
 use crate::cli::context::RunContext;
 use crate::input::{InputMode, FileResolver, ResolverOptions, SourceRequest};
@@ -161,15 +161,14 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     // Build the file resolver for this single-op run.
     let resolver_opts = ResolverOptions {
-        verbose: ctx.verbose,
-        base_dir: None,
         diff_files: args.shared.diff_files.clone(),
         diff_lines: args.shared.diff_lines.clone(),
         max_files: args.shared.max_files,
         cli_files: Vec::new(),
         config_root_files: None,
     };
-    let resolver = FileResolver::new(&resolver_opts)
+    let env = ctx.exec_ctx();
+    let resolver = FileResolver::new(&resolver_opts, &env)
         .map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
 
     let mut builder = tractor::ReportBuilder::new();
@@ -217,12 +216,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
             report_mode: SetReportMode::PerMatch,
         });
 
-        let options = ExecuteOptions {
-            verbose: ctx.verbose,
-            base_dir: None,
-        };
-
-        executor::execute(&[op], &options, &mut builder)?;
+        executor::execute(&[op], &env, &mut builder)?;
     }
     let mut report = builder.build();
 

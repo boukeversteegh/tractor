@@ -8,7 +8,9 @@ use crate::matcher::validate_xpath_diagnostic;
 use crate::input::filter::ResultFilter;
 use crate::input::Source;
 
-use super::{ExecuteOptions, filter_refs, match_to_report_match, query_files_multi};
+use crate::cli::context::ExecCtx;
+
+use super::{filter_refs, match_to_report_match, query_files_multi};
 
 // ---------------------------------------------------------------------------
 // Operation type
@@ -53,7 +55,7 @@ pub struct QueryExpr {
 
 pub(crate) fn execute_query(
     op: &QueryOperation,
-    options: &ExecuteOptions,
+    ctx: &ExecCtx<'_>,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Validate all XPath expressions upfront — add fatal diagnostics on failure
@@ -74,7 +76,7 @@ pub(crate) fn execute_query(
     let matches = query_files_multi(
         &op.sources, &xpaths, op.language.as_deref(),
         op.tree_mode, op.ignore_whitespace, op.parse_depth,
-        op.limit, options.verbose, &filter_refs(&op.filters),
+        op.limit, ctx.verbose, &filter_refs(&op.filters),
     )?;
 
     report.add_all(matches.into_iter().map(|m| match_to_report_match(m, "query")));
@@ -91,7 +93,8 @@ mod tests {
     use super::*;
     use tractor::report::ReportBuilder;
     use tractor::NormalizedPath;
-    use crate::executor::{Operation, ExecuteOptions, execute};
+    use crate::cli::context::ExecCtx;
+    use crate::executor::{Operation, execute};
 
     fn temp_json_file(content: &str) -> (tempfile::TempDir, String) {
         let dir = tempfile::tempdir().unwrap();
@@ -109,7 +112,7 @@ mod tests {
     fn run_query_ops(ops: &[Operation]) -> tractor::report::Report {
         let mut builder = ReportBuilder::new();
         builder.set_no_verdict();
-        execute(ops, &ExecuteOptions::default(), &mut builder).unwrap();
+        execute(ops, &ExecCtx::default(), &mut builder).unwrap();
         builder.build()
     }
 

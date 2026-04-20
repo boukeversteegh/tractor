@@ -699,7 +699,7 @@ fn convert_test(config: TestConfig, scope: &RootScope) -> Result<ConfigOperation
 ///   the operation has none.
 /// - `exclude`: union of root and operation excludes (both narrow the scope).
 /// - `diff-files`/`diff-lines`: operation takes precedence; root is the
-///   fallback. CLI flags are applied separately via `ExecuteOptions`.
+///   fallback. CLI flags are applied separately via the file resolver.
 fn merge_scope(
     scope: &RootScope,
     op_files: Vec<String>,

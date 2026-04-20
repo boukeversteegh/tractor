@@ -7,7 +7,9 @@ use tractor::tree_mode::TreeMode;
 use crate::input::filter::ResultFilter;
 use crate::input::Source;
 
-use super::{ExecuteOptions, filter_refs, match_to_report_match, query_files_multi, check_expectation};
+use crate::cli::context::ExecCtx;
+
+use super::{filter_refs, match_to_report_match, query_files_multi, check_expectation};
 
 // ---------------------------------------------------------------------------
 // Operation type
@@ -51,7 +53,7 @@ pub struct TestAssertion {
 
 pub(crate) fn execute_test(
     op: &TestOperation,
-    options: &ExecuteOptions,
+    ctx: &ExecCtx<'_>,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if op.sources.is_empty() {
@@ -69,7 +71,7 @@ pub(crate) fn execute_test(
         let matches = query_files_multi(
             &op.sources, &[assertion.xpath.as_str()], op.language.as_deref(),
             op.tree_mode, op.ignore_whitespace, op.parse_depth,
-            op.limit, options.verbose, &refs,
+            op.limit, ctx.verbose, &refs,
         )?;
         if !check_expectation(&assertion.expect, matches.len())? {
             report.fail();

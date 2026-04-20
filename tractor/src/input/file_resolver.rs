@@ -16,6 +16,8 @@ use std::path::{Path, PathBuf};
 use tractor::{expand_globs_checked, detect_language, normalize_path, pattern_literal_prefix, FilePrune, NormalizedPath, GlobPattern, CompiledPattern};
 use tractor::report::{ReportBuilder, ReportMatch, Severity, DiagnosticOrigin};
 
+use crate::cli::context::ExecCtx;
+
 use super::filter::ResultFilter;
 use super::source::Source;
 use super::git;
@@ -25,13 +27,12 @@ use super::git;
 // ---------------------------------------------------------------------------
 
 /// Settings the `FileResolver` needs to build its shared state (root globs,
-/// CLI globs, global diff). These are the CLI/config knobs the executor
-/// itself no longer cares about — moved here so `ExecuteOptions` only
-/// carries execution-time state.
+/// CLI globs, global diff). These are resolver-scoped knobs only —
+/// environmental state (`verbose`, `base_dir`) lives on `RunContext` and
+/// is threaded in as an `ExecCtx` at construction time. This avoids having
+/// two structs carry the same fields with the risk of disagreement.
 #[derive(Debug, Clone, Default)]
 pub struct ResolverOptions {
-    pub verbose: bool,
-    pub base_dir: Option<PathBuf>,
     pub diff_files: Option<String>,
     pub diff_lines: Option<String>,
     pub max_files: usize,
@@ -114,22 +115,26 @@ fn prefixes_of_patterns(patterns: &[String]) -> Vec<NormalizedPath> {
 }
 
 impl FileResolver {
-    /// Build from resolver-scope options, expanding shared globs once.
+    /// Build from resolver-scope options plus the shared environmental
+    /// context (`verbose`, `base_dir`) owned by `RunContext`. Expanding
+    /// shared globs happens once here.
     /// Normalizes all paths to forward slashes (fix #98).
     /// Returns Err with a fatal diagnostic message on expansion failure.
-    pub fn new(options: &ResolverOptions) -> Result<Self, String> {
+    pub fn new(options: &ResolverOptions, env: &ExecCtx<'_>) -> Result<Self, String> {
         let expansion_limit = options.max_files * 10;
+        let verbose = env.verbose;
+        let base_dir: Option<PathBuf> = env.base_dir.map(|p| p.to_path_buf());
 
         let format_patterns = |patterns: &[String]| -> String {
             patterns.iter().map(|g| format!("\"{}\"", g)).collect::<Vec<_>>().join(", ")
         };
 
-        let base_dir_display = options.base_dir.as_ref()
+        let base_dir_display = base_dir.as_ref()
             .map(|b| normalize_path(&b.display().to_string()))
             .unwrap_or_else(|| ".".to_string());
 
         let relative_path = |path: &str| -> String {
-            if let Some(base) = &options.base_dir {
+            if let Some(base) = &base_dir {
                 let base_str = normalize_path(&base.display().to_string());
                 path.strip_prefix(&base_str)
                     .and_then(|p| p.strip_prefix('/'))
@@ -150,7 +155,7 @@ impl FileResolver {
             };
         }
 
-        if options.verbose {
+        if verbose {
             let cwd_display = std::env::current_dir()
                 .map(|p| NormalizedPath::absolute(&p.display().to_string()).to_string())
                 .unwrap_or_else(|_| ".".to_string());
@@ -174,7 +179,7 @@ impl FileResolver {
         // the root expansion (feeds pre-absolutised patterns).
         let resolved_root_patterns: Option<Vec<String>> = options.config_root_files.as_ref()
             .filter(|p| !p.is_empty())
-            .map(|p| resolve_globs_to_absolute(&options.base_dir, p));
+            .map(|p| resolve_globs_to_absolute(&base_dir, p));
 
         let root_prefixes: Vec<NormalizedPath> = resolved_root_patterns.as_deref()
             .map(prefixes_of_patterns).unwrap_or_default();
@@ -193,7 +198,7 @@ impl FileResolver {
                             e.pattern, e.limit
                         )
                     })?;
-                if options.verbose {
+                if verbose {
                     eprintln!("  files: root scope {} expanded to {} file(s)",
                         format_patterns(patterns), expansion.files.len());
                     log_files!(&expansion.files);
@@ -221,7 +226,7 @@ impl FileResolver {
                 ))?;
             let cli_set: HashSet<NormalizedPath> = expansion.files.into_iter()
                 .map(|f| NormalizedPath::absolute(f.as_str())).collect();
-            if options.verbose {
+            if verbose {
                 eprintln!("  files: CLI args {} expanded to {} file(s)",
                     format_patterns(&options.cli_files), cli_set.len());
                 for f in cli_set.iter().take(5) {
@@ -238,11 +243,11 @@ impl FileResolver {
 
         // --- Global diff-files ---
         let global_diff_files = if let Some(ref spec) = options.diff_files {
-            let cwd = options.base_dir.as_deref()
+            let cwd = base_dir.as_deref()
                 .unwrap_or_else(|| Path::new("."));
             match git::git_changed_files(spec, cwd) {
                 Ok(changed) => {
-                    if options.verbose {
+                    if verbose {
                         eprintln!("  files: git diff \"{}\" found {} changed file(s)", spec, changed.len());
                     }
                     Some(changed)
@@ -262,8 +267,8 @@ impl FileResolver {
             global_diff_files,
             root_prefixes,
             cli_prefixes,
-            verbose: options.verbose,
-            base_dir: options.base_dir.clone(),
+            verbose,
+            base_dir,
             max_files: options.max_files,
             global_diff_lines: options.diff_lines.clone(),
         })

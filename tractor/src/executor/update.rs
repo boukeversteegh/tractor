@@ -8,7 +8,9 @@ use tractor::xpath_upsert::update_only;
 use crate::input::filter::ResultFilter;
 use crate::input::Source;
 
-use super::{ExecuteOptions, filter_refs, match_to_report_match, query_files_multi};
+use crate::cli::context::ExecCtx;
+
+use super::{filter_refs, match_to_report_match, query_files_multi};
 
 // ---------------------------------------------------------------------------
 // Operation type
@@ -45,7 +47,7 @@ pub struct UpdateOperation {
 
 pub(crate) fn execute_update(
     op: &UpdateOperation,
-    options: &ExecuteOptions,
+    ctx: &ExecCtx<'_>,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut fallback_sources: Vec<Source> = Vec::new();
@@ -83,7 +85,7 @@ pub(crate) fn execute_update(
         let matches = query_files_multi(
             &fallback_sources, &[op.xpath.as_str()], op.language.as_deref(),
             op.tree_mode, op.ignore_whitespace, op.parse_depth,
-            None, options.verbose, &filter_refs(&op.filters),
+            None, ctx.verbose, &filter_refs(&op.filters),
         )?;
         if !matches.is_empty() {
             let summary = apply_replacements(&matches, &op.value)?;

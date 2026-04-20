@@ -15,7 +15,7 @@ pub struct UpdateArgs {
     #[command(flatten)]
     pub shared: SharedArgs,
 }
-use crate::executor::{self, ExecuteOptions, Operation, UpdateOperation};
+use crate::executor::{self, Operation, UpdateOperation};
 use crate::cli::context::RunContext;
 use crate::input::{InputMode, FileResolver, ResolverOptions, SourceRequest};
 use crate::format::ViewField;
@@ -38,15 +38,14 @@ pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     // Build the file resolver for this single-op run.
     let resolver_opts = ResolverOptions {
-        verbose: ctx.verbose,
-        base_dir: None,
         diff_files: args.shared.diff_files.clone(),
         diff_lines: args.shared.diff_lines.clone(),
         max_files: args.shared.max_files,
         cli_files: Vec::new(),
         config_root_files: None,
     };
-    let resolver = FileResolver::new(&resolver_opts)
+    let env = ctx.exec_ctx();
+    let resolver = FileResolver::new(&resolver_opts, &env)
         .map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
 
     let mut builder = tractor::ReportBuilder::new();
@@ -75,12 +74,7 @@ pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
             parse_depth: ctx.parse_depth,
         });
 
-        let options = ExecuteOptions {
-            verbose: ctx.verbose,
-            base_dir: None,
-        };
-
-        executor::execute(&[op], &options, &mut builder)?;
+        executor::execute(&[op], &env, &mut builder)?;
     }
     let report = builder.build();
     if report.success == Some(false) {

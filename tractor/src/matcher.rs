@@ -571,6 +571,7 @@ mod tests {
             no_pretty: false,
             ignore_whitespace: false,
             verbose: false,
+            base_dir: None,
             lang: None,
             debug: false,
             group_by: vec![],

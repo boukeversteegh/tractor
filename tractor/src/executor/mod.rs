@@ -22,13 +22,12 @@ mod test;
 mod set;
 mod update;
 
-use std::path::PathBuf;
-
 use rayon::prelude::*;
 use tractor::report::{ReportBuilder, ReportMatch};
 use tractor::tree_mode::TreeMode;
 use tractor::Match;
 
+use crate::cli::context::ExecCtx;
 use crate::input::filter::ResultFilter;
 use crate::input::Source;
 
@@ -58,26 +57,12 @@ pub enum Operation {
 }
 
 // ---------------------------------------------------------------------------
-// Execution options
+// Execution defaults
 // ---------------------------------------------------------------------------
 
 /// Default maximum number of files tractor will process.
 #[allow(dead_code)]
 pub const DEFAULT_MAX_FILES: usize = 10_000;
-
-/// Options controlling how operations are executed.
-///
-/// This is pared down after the input-resolution boundary moved upstream:
-/// glob/CLI/diff-files intersection is resolved into `Operation.sources`
-/// *before* `execute()`, so only execution-time knobs remain here.
-#[derive(Debug, Clone, Default)]
-pub struct ExecuteOptions {
-    /// Print verbose diagnostics to stderr.
-    pub verbose: bool,
-    /// Base directory for resolving relative file paths in rule includes.
-    /// Used by `run_rules` to anchor per-rule `include:` globs.
-    pub base_dir: Option<PathBuf>,
-}
 
 // ---------------------------------------------------------------------------
 // Executor
@@ -91,19 +76,21 @@ pub(crate) fn filter_refs(filters: &[Box<dyn ResultFilter>]) -> Vec<&dyn ResultF
 /// Execute a list of operations, pushing results into the given `ReportBuilder`.
 ///
 /// Operations must already carry resolved `sources` and `filters`; this
-/// function is a thin dispatcher.
+/// function is a thin dispatcher. The `ExecCtx` carries the environmental
+/// state (verbose, base_dir) that originates in `RunContext` — the single
+/// source of truth per CLI invocation.
 pub fn execute(
     operations: &[Operation],
-    options: &ExecuteOptions,
+    ctx: &ExecCtx<'_>,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
     for op in operations {
         match op {
-            Operation::Query(q) => query::execute_query(q, options, report)?,
-            Operation::Check(c) => check::execute_check(c, options, report)?,
-            Operation::Test(t) => test::execute_test(t, options, report)?,
-            Operation::Set(s) => set::execute_set(s, options, report)?,
-            Operation::Update(u) => update::execute_update(u, options, report)?,
+            Operation::Query(q) => query::execute_query(q, ctx, report)?,
+            Operation::Check(c) => check::execute_check(c, ctx, report)?,
+            Operation::Test(t) => test::execute_test(t, ctx, report)?,
+            Operation::Set(s) => set::execute_set(s, ctx, report)?,
+            Operation::Update(u) => update::execute_update(u, ctx, report)?,
         }
     }
 
@@ -239,7 +226,7 @@ mod tests {
 
     fn run(ops: &[Operation]) -> tractor::report::Report {
         let mut builder = ReportBuilder::new();
-        execute(ops, &ExecuteOptions::default(), &mut builder).unwrap();
+        execute(ops, &ExecCtx::default(), &mut builder).unwrap();
         builder.build()
     }
 

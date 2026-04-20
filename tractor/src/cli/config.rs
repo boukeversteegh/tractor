@@ -10,7 +10,7 @@
 use tractor::report::{ReportMatch, Severity};
 
 use crate::cli::SharedArgs;
-use crate::executor::{self, ExecuteOptions, Operation};
+use crate::executor::{self, Operation};
 use crate::cli::context::RunContext;
 use crate::format::{ViewField, GroupDimension, render_report};
 use crate::input::{resolve_input, InputMode, FileResolver, ResolverOptions, SourceRequest};
@@ -106,11 +106,25 @@ pub fn run_from_config(params: ConfigRunParams) -> Result<(), Box<dyn std::error
         }
     }
 
-    let ctx = RunContext::build(
+    let mut ctx = RunContext::build(
         params.shared, vec![], None, params.format,
         params.default_view,
         params.view_override, params.message, None, false, params.default_group,
     )?;
+
+    // The config-run `base_dir` is the directory of the config file,
+    // absolutized. Planted on `RunContext` so the executor and resolver
+    // both observe the same value via `ctx.exec_ctx()` — single source of
+    // truth for environmental state.
+    ctx.base_dir = config_path.parent()
+        .map(|p| if p.as_os_str().is_empty() { std::path::Path::new(".") } else { p })
+        .map(|p| {
+            // Absolutize without following symlinks — matches the glob
+            // walker and CLI path resolution, so `base_dir`-derived paths
+            // intersect by set equality with those pipelines.
+            let normalized = tractor::NormalizedPath::absolute(&p.to_string_lossy());
+            std::path::PathBuf::from(normalized.as_str())
+        });
 
     let mut builder = tractor::ReportBuilder::new();
 
@@ -125,28 +139,17 @@ pub fn run_from_config(params: ConfigRunParams) -> Result<(), Box<dyn std::error
             message: None, origin: None, rule_id: None, status: None, output: None,
         });
     } else {
-        let base_dir = config_path.parent()
-            .map(|p| if p.as_os_str().is_empty() { std::path::Path::new(".") } else { p })
-            .map(|p| {
-                // Absolutize without following symlinks — matches the glob
-                // walker and CLI path resolution, so `base_dir`-derived paths
-                // intersect by set equality with those pipelines.
-                let normalized = tractor::NormalizedPath::absolute(&p.to_string_lossy());
-                std::path::PathBuf::from(normalized.as_str())
-            });
-
         // Build the resolver ONCE for the whole config run — shared state
         // (root files, CLI files, global diff) is expanded here.
         let resolver_opts = ResolverOptions {
-            verbose: ctx.verbose,
-            base_dir: base_dir.clone(),
             diff_files: params.shared.diff_files.clone(),
             diff_lines: params.shared.diff_lines.clone(),
             max_files: params.shared.max_files,
             cli_files: cli_files_for_resolver,
             config_root_files: loaded.root_files,
         };
-        let resolver = match FileResolver::new(&resolver_opts) {
+        let env = ctx.exec_ctx();
+        let resolver = match FileResolver::new(&resolver_opts, &env) {
             Ok(r) => r,
             Err(e) => {
                 builder.add(crate::input::make_fatal_diagnostic(params.filter_label, e));
@@ -177,12 +180,7 @@ pub fn run_from_config(params: ConfigRunParams) -> Result<(), Box<dyn std::error
             operations.push(config_op.into_operation(sources, filters));
         }
 
-        let options = ExecuteOptions {
-            verbose: ctx.verbose,
-            base_dir,
-        };
-
-        executor::execute(&operations, &options, &mut builder)?;
+        executor::execute(&operations, &env, &mut builder)?;
     }
 
     let mut report = builder.build();

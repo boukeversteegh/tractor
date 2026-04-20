@@ -60,7 +60,7 @@ pub struct CheckArgs {
     #[arg(short = 'f', long = "format", default_value = "gcc", help_heading = "Format")]
     pub format: String,
 }
-use crate::executor::{self, CheckOperation, ExecuteOptions, Operation};
+use crate::executor::{self, CheckOperation, Operation};
 use crate::cli::context::RunContext;
 use crate::input::{InputMode, FileResolver, ResolverOptions, SourceRequest};
 use crate::format::{ViewField, GroupDimension, render_report};
@@ -104,15 +104,14 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
     // Build the file resolver for this single-operation run. No config file
     // is involved, so root files are None and there is no base_dir.
     let resolver_opts = ResolverOptions {
-        verbose: ctx.verbose,
-        base_dir: None,
         diff_files: args.shared.diff_files.clone(),
         diff_lines: args.shared.diff_lines.clone(),
         max_files: args.shared.max_files,
         cli_files: Vec::new(),
         config_root_files: None,
     };
-    let resolver = FileResolver::new(&resolver_opts)
+    let env = ctx.exec_ctx();
+    let resolver = FileResolver::new(&resolver_opts, &env)
         .map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
 
     let mut builder = tractor::ReportBuilder::new();
@@ -156,12 +155,7 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
             ruleset_default_language: op_language,
         });
 
-        let options = ExecuteOptions {
-            verbose: ctx.verbose,
-            base_dir: None,
-        };
-
-        executor::execute(&[op], &options, &mut builder)?;
+        executor::execute(&[op], &env, &mut builder)?;
     }
     let mut report = builder.build();
 
