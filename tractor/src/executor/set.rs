@@ -584,8 +584,8 @@ mod tests {
         let files: std::collections::HashSet<_> = report.outputs.iter()
             .filter_map(|output| output.file.as_deref())
             .collect();
-        assert!(files.contains(tractor::normalize_path(&path_a).as_str()));
-        assert!(files.contains(tractor::normalize_path(&path_b).as_str()));
+        assert!(files.contains(tractor::NormalizedPath::absolute(&path_a).as_str()));
+        assert!(files.contains(tractor::NormalizedPath::absolute(&path_b).as_str()));
         assert!(report.outputs.iter().all(|output| output.content.contains("db.example.com")));
         let content_a = std::fs::read_to_string(&path_a).unwrap();
         let content_b = std::fs::read_to_string(&path_b).unwrap();
