@@ -8,7 +8,7 @@
 //! The resolver is constructed once from `ResolverOptions`, pre-computing shared
 //! state (root files, CLI files, global diff). Each operation-construction
 //! site then calls `resolve()` with a `SourceRequest` to get a unified
-//! `Vec<Source>` plus the `ResultFilter`s the operation must apply.
+//! `Vec<Source>` plus the [`Filters`] envelope the operation must apply.
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -18,7 +18,7 @@ use tractor::report::{ReportBuilder, ReportMatch, Severity, DiagnosticOrigin};
 
 use crate::cli::context::ExecCtx;
 
-use super::filter::ResultFilter;
+use super::filter::Filters;
 use super::source::Source;
 use super::git;
 
@@ -281,7 +281,7 @@ impl FileResolver {
     }
 
     /// Resolve a single operation's inputs into the unified `Vec<Source>`
-    /// the executor runs, plus the `ResultFilter`s it must apply.
+    /// the executor runs, plus the [`Filters`] envelope it must apply.
     ///
     /// This is the single entry point for turning "what the user declared"
     /// into "what the executor consumes". Disk globs are expanded through
@@ -292,7 +292,7 @@ impl FileResolver {
         &self,
         request: &SourceRequest,
         report: &mut ReportBuilder,
-    ) -> (Vec<Source>, Vec<Box<dyn ResultFilter>>) {
+    ) -> (Vec<Source>, Filters) {
         let cwd = self.base_dir.as_deref()
             .unwrap_or_else(|| Path::new("."));
         let inline_for_diff = request.inline_source.and_then(|s| {
@@ -331,7 +331,7 @@ impl FileResolver {
     fn resolve_files(
         &self,
         request: &SourceRequest,
-        filters: &[Box<dyn ResultFilter>],
+        filters: &Filters,
         report: &mut ReportBuilder,
     ) -> Vec<NormalizedPath> {
         let expansion_limit = self.max_files * 10;
@@ -525,7 +525,7 @@ impl FileResolver {
         // --- Apply file-level result filters ---
         if !filters.is_empty() {
             let before = files.len();
-            files.retain(|f| filters.iter().all(|filter| filter.include_file(f.as_str())));
+            files.retain(|f| filters.include_file(f.as_str()));
             if self.verbose && files.len() != before {
                 eprintln!("  files: {} file(s) after diff-lines filter (was {})", files.len(), before);
             }
@@ -591,7 +591,15 @@ fn resolve_globs_to_absolute(base_dir: &Option<PathBuf>, patterns: &[String]) ->
     }
 }
 
-/// Build result filters from global and per-operation diff specs.
+/// Build the [`Filters`] envelope from global and per-operation diff specs.
+///
+/// Both specs feed the same `diff_hunks` slot. When both are present, the
+/// per-operation spec wins (it's built second and overwrites the global
+/// slot). Callers that set both don't have a tested story for what the
+/// intersection should mean — having op override CLI gives the narrower,
+/// more explicit scope the caller just typed. If users ever ask for a
+/// real intersection, grow a dedicated combinator on `DiffHunkFilter`
+/// instead of resurrecting the trait.
 ///
 /// When `inline` is `Some`, the hunks for the virtual path are computed
 /// against the git baseline at `spec:<virtual_path>` so pre-commit hooks
@@ -601,12 +609,12 @@ fn build_filters(
     op_diff: Option<&str>,
     cwd: &Path,
     inline: Option<(&NormalizedPath, &str)>,
-) -> Vec<Box<dyn ResultFilter>> {
-    let mut filters: Vec<Box<dyn ResultFilter>> = Vec::new();
+) -> Filters {
+    let mut filters = Filters::default();
 
     for spec in [global_diff, op_diff].into_iter().flatten() {
         match git::DiffHunkFilter::from_spec_with_inline(spec, cwd, inline) {
-            Ok(f) => filters.push(Box::new(f)),
+            Ok(f) => filters.diff_hunks = Some(f),
             Err(e) => eprintln!("warning: --diff-lines filter failed: {}", e),
         }
     }

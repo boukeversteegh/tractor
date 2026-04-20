@@ -10,11 +10,12 @@
 //! ## Input-resolution boundary
 //!
 //! An `Operation` arriving here is already input-resolved: it carries a
-//! `Vec<Source>` and the `ResultFilter`s it needs. Glob expansion, CLI
-//! intersection, diff-files intersection, language detection and inline
-//! stdin/`-s` handling all happen *before* construction (see `input::resolve_operation_inputs`).
-//! The executor therefore treats disk files and virtual inline sources
-//! identically — a single `Vec<Source>` per operation, no branching.
+//! `Vec<Source>` and the [`Filters`] envelope it needs. Glob expansion,
+//! CLI intersection, diff-files intersection, language detection and
+//! inline stdin/`-s` handling all happen *before* construction (see
+//! `input::resolve_operation_inputs`). The executor therefore treats
+//! disk files and virtual inline sources identically — a single
+//! `Vec<Source>` per operation, no branching.
 
 mod query;
 mod check;
@@ -28,7 +29,7 @@ use tractor::tree_mode::TreeMode;
 use tractor::Match;
 
 use crate::cli::context::ExecCtx;
-use crate::input::filter::ResultFilter;
+use crate::input::filter::Filters;
 use crate::input::Source;
 
 pub use query::{QueryOperation, QueryExpr};
@@ -44,10 +45,7 @@ pub use update::UpdateOperation;
 /// A single operation to execute. This is the stable intermediate
 /// representation — config files parse into this, CLI commands construct
 /// it, and the executor consumes it.
-///
-/// Note: `Operation` is not `Clone` or `Debug` because it carries
-/// `Vec<Box<dyn ResultFilter>>` which is neither. Construct, execute,
-/// and discard.
+#[derive(Debug, Clone)]
 pub enum Operation {
     Query(QueryOperation),
     Check(CheckOperation),
@@ -67,11 +65,6 @@ pub const DEFAULT_MAX_FILES: usize = 10_000;
 // ---------------------------------------------------------------------------
 // Executor
 // ---------------------------------------------------------------------------
-
-/// Convert owned filters to borrowed references for passing to query engine.
-pub(crate) fn filter_refs(filters: &[Box<dyn ResultFilter>]) -> Vec<&dyn ResultFilter> {
-    filters.iter().map(|f| f.as_ref()).collect()
-}
 
 /// Execute a list of operations, pushing results into the given `ReportBuilder`.
 ///
@@ -145,7 +138,7 @@ pub(crate) fn query_files_multi(
     parse_depth: Option<usize>,
     limit: Option<usize>,
     verbose: bool,
-    filters: &[&dyn ResultFilter],
+    filters: &Filters,
 ) -> Result<Vec<Match>, Box<dyn std::error::Error>> {
     let mut all_matches: Vec<Match> = sources
         .par_iter()
@@ -175,7 +168,7 @@ pub(crate) fn query_files_multi(
 
             // Apply result filters at the query engine level.
             if !filters.is_empty() {
-                file_matches.retain(|m| filters.iter().all(|f| f.include(m)));
+                file_matches.retain(|m| filters.include(m));
             }
 
             if file_matches.is_empty() { None } else { Some(file_matches) }
@@ -246,7 +239,7 @@ mod tests {
         let (_dir, path) = temp_json_file(r#"{"debug": true, "verbose": true}"#);
         let ops = vec![Operation::Check(CheckOperation {
             sources: disk_sources(&[&path]),
-            filters: vec![],
+            filters: Filters::default(),
             rules: vec![
                 Rule::new("no-debug", "//debug[.='true']")
                     .with_reason("debug should not be enabled")
@@ -272,7 +265,7 @@ mod tests {
         let (_dir, path) = temp_json_file(r#"{"debug": false}"#);
         let ops = vec![Operation::Check(CheckOperation {
             sources: disk_sources(&[&path]),
-            filters: vec![],
+            filters: Filters::default(),
             rules: vec![
                 Rule::new("no-debug", "//debug[.='true']")
                     .with_reason("debug should not be enabled"),
@@ -296,7 +289,7 @@ mod tests {
         );
         let ops = vec![Operation::Check(CheckOperation {
             sources: vec![inline],
-            filters: vec![],
+            filters: Filters::default(),
             rules: vec![
                 Rule::new("no-debug", "//debug[.='true']")
                     .with_reason("debug should not be enabled")
@@ -324,7 +317,7 @@ mod tests {
         );
         let ops = vec![Operation::Check(CheckOperation {
             sources: vec![inline],
-            filters: vec![],
+            filters: Filters::default(),
             rules: vec![
                 Rule::new("no-debug", "//debug[.='true']")
                     .with_reason("debug should not be enabled"),
@@ -352,7 +345,7 @@ mod tests {
         let ops = vec![
             Operation::Check(CheckOperation {
                 sources: disk_sources(&[data_path.to_str().unwrap()]),
-                filters: vec![],
+                filters: Filters::default(),
                 rules: vec![
                     Rule::new("has-name", "//name[.='missing']")
                         .with_reason("name should not be 'missing'"),
@@ -366,7 +359,7 @@ mod tests {
             }),
             Operation::Set(set::SetOperation {
                 sources: disk_sources(&[config_path.to_str().unwrap()]),
-                filters: vec![],
+                filters: Filters::default(),
                 mappings: vec![set::SetMapping {
                     xpath: "//host".into(),
                     value: "new-host".into(),

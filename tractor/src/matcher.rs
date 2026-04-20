@@ -11,7 +11,7 @@ use tractor::{
     rule::{RuleSet, GlobMatcher},
     xpath::validate_xpath,
 };
-use crate::input::filter::ResultFilter;
+use crate::input::filter::Filters;
 use crate::input::Source;
 
 use crate::cli::context::RunContext;
@@ -198,7 +198,7 @@ pub fn run_rules(
     ignore_whitespace: bool,
     parse_depth: Option<usize>,
     verbose: bool,
-    filters: &[&dyn ResultFilter],
+    filters: &Filters,
 ) -> Result<Vec<RuleMatch>, Box<dyn std::error::Error>> {
     // Resolve per-rule include/exclude patterns to absolute GlobPatterns so
     // they match correctly against absolute NormalizedPath file paths.
@@ -298,7 +298,7 @@ pub fn run_rules(
 
             // Apply result filters at the query engine level.
             if !filters.is_empty() {
-                file_matches.retain(|rm| filters.iter().all(|f| f.include(&rm.m)));
+                file_matches.retain(|rm| filters.include(&rm.m));
             }
 
             if file_matches.is_empty() {

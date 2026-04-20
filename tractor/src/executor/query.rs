@@ -5,12 +5,12 @@ use tractor::report::ReportBuilder;
 use tractor::tree_mode::TreeMode;
 
 use crate::matcher::validate_xpath_diagnostic;
-use crate::input::filter::ResultFilter;
+use crate::input::filter::Filters;
 use crate::input::Source;
 
 use crate::cli::context::ExecCtx;
 
-use super::{filter_refs, match_to_report_match, query_files_multi};
+use super::{match_to_report_match, query_files_multi};
 
 // ---------------------------------------------------------------------------
 // Operation type
@@ -23,11 +23,12 @@ use super::{filter_refs, match_to_report_match, query_files_multi};
 ///
 /// Multiple queries can target the same set of sources — each source is parsed
 /// once and all XPath expressions are evaluated against it.
+#[derive(Debug, Clone)]
 pub struct QueryOperation {
     /// Pre-resolved unified input list.
     pub sources: Vec<Source>,
     /// Pre-built result filters (diff-lines, etc.).
-    pub filters: Vec<Box<dyn ResultFilter>>,
+    pub filters: Filters,
     /// XPath queries to evaluate.
     pub queries: Vec<QueryExpr>,
     /// Tree mode override for parsing.
@@ -76,7 +77,7 @@ pub(crate) fn execute_query(
     let matches = query_files_multi(
         &op.sources, &xpaths, op.language.as_deref(),
         op.tree_mode, op.ignore_whitespace, op.parse_depth,
-        op.limit, ctx.verbose, &filter_refs(&op.filters),
+        op.limit, ctx.verbose, &op.filters,
     )?;
 
     report.add_all(matches.into_iter().map(|m| match_to_report_match(m, "query")));
@@ -121,7 +122,7 @@ mod tests {
         let (_dir, path) = temp_json_file(r#"{"name": "alice", "age": 30}"#);
         let ops = vec![Operation::Query(QueryOperation {
             sources: vec![disk_source(&path)],
-            filters: vec![],
+            filters: Filters::default(),
             queries: vec![QueryExpr { xpath: "//name".into() }],
             tree_mode: None,
             language: None,
@@ -140,7 +141,7 @@ mod tests {
         let (_dir, path) = temp_json_file(r#"{"a": 1, "b": 2, "c": 3}"#);
         let ops = vec![Operation::Query(QueryOperation {
             sources: vec![disk_source(&path)],
-            filters: vec![],
+            filters: Filters::default(),
             queries: vec![QueryExpr { xpath: "//*[number(.) > 0]".into() }],
             tree_mode: None,
             language: None,
@@ -156,7 +157,7 @@ mod tests {
     fn query_empty_sources() {
         let ops = vec![Operation::Query(QueryOperation {
             sources: vec![],
-            filters: vec![],
+            filters: Filters::default(),
             queries: vec![QueryExpr { xpath: "//x".into() }],
             tree_mode: None,
             language: None,

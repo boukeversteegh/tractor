@@ -5,13 +5,13 @@ use tractor::tree_mode::TreeMode;
 use tractor::{parse_string_to_documents, Match};
 use tractor::xpath_upsert::upsert_typed;
 
-use crate::input::filter::ResultFilter;
+use crate::input::filter::Filters;
 use crate::input::source::SourceDisposition;
 use crate::input::Source;
 
 use crate::cli::context::ExecCtx;
 
-use super::{filter_refs, match_to_report_match};
+use super::match_to_report_match;
 
 // ---------------------------------------------------------------------------
 // Operation type
@@ -22,11 +22,12 @@ use super::{filter_refs, match_to_report_match};
 /// Virtual inline sources share the same `Vec<Source>` as disk files.
 /// Write-mode is automatically routed to Capture for virtual sources
 /// (nothing to write back to disk).
+#[derive(Debug, Clone)]
 pub struct SetOperation {
     /// Pre-resolved unified input list.
     pub sources: Vec<Source>,
     /// Pre-built result filters.
-    pub filters: Vec<Box<dyn ResultFilter>>,
+    pub filters: Filters,
     /// Mappings to apply.
     pub mappings: Vec<SetMapping>,
     /// Tree mode override for parsing diagnostics.
@@ -77,7 +78,12 @@ pub(crate) fn execute_set(
         return Ok(());
     }
 
-    let filter_refs = filter_refs(&op.filters);
+    // Virtual sources never see the filters — inline content has no on-disk
+    // baseline to diff against — so we precompute an empty envelope to pass
+    // through in that case. A single `Filters` reference threads through
+    // `execute_set_target` / `apply_set_mapping` / `query_set_matches`,
+    // keeping the signatures concrete.
+    let empty_filters = Filters::default();
 
     for source in &op.sources {
         let content = source.read()?;
@@ -106,9 +112,9 @@ pub(crate) fn execute_set(
             }
         };
 
-        let filters_for_source: &[&dyn ResultFilter] = match disposition {
-            SourceDisposition::Disk => &filter_refs,
-            SourceDisposition::InlineWithPath | SourceDisposition::InlinePathless => &[],
+        let filters_for_source: &Filters = match disposition {
+            SourceDisposition::Disk => &op.filters,
+            SourceDisposition::InlineWithPath | SourceDisposition::InlinePathless => &empty_filters,
         };
 
         let outcome = execute_set_target(
@@ -153,7 +159,7 @@ fn execute_set_target(
     content: &str,
     op: &SetOperation,
     effective_write_mode: SetWriteMode,
-    filters: &[&dyn ResultFilter],
+    filters: &Filters,
 ) -> Result<SetTargetOutcome, Box<dyn std::error::Error>> {
     let file_label = source.path_str();
     let lang = source.language.as_str();
@@ -255,7 +261,7 @@ fn apply_set_mapping(
     lang: &str,
     mapping: &SetMapping,
     op: &SetOperation,
-    filters: &[&dyn ResultFilter],
+    filters: &Filters,
     before_matches: &[Match],
 ) -> Result<SetMappingResult, Box<dyn std::error::Error>> {
     match upsert_typed(
@@ -310,7 +316,7 @@ fn query_set_matches(
     lang: &str,
     mapping: &SetMapping,
     op: &SetOperation,
-    filters: &[&dyn ResultFilter],
+    filters: &Filters,
 ) -> Result<Vec<Match>, Box<dyn std::error::Error>> {
     let mut result = parse_string_to_documents(
         source,
@@ -321,7 +327,7 @@ fn query_set_matches(
     )?;
     let mut matches = result.query(&mapping.xpath)?;
     if !filters.is_empty() {
-        matches.retain(|m| filters.iter().all(|f| f.include(m)));
+        matches.retain(|m| filters.include(m));
     }
     if let Some(limit) = op.limit {
         matches.truncate(limit);
@@ -372,7 +378,7 @@ mod tests {
     fn set_operation(path: String, mappings: Vec<SetMapping>, write_mode: SetWriteMode) -> Operation {
         Operation::Set(SetOperation {
             sources: vec![disk_source(&path)],
-            filters: vec![],
+            filters: Filters::default(),
             mappings,
             tree_mode: None,
             limit: None,
@@ -394,7 +400,7 @@ mod tests {
         );
         Operation::Set(SetOperation {
             sources: vec![inline],
-            filters: vec![],
+            filters: Filters::default(),
             mappings,
             tree_mode: None,
             limit: None,
@@ -528,7 +534,7 @@ mod tests {
         let (_dir_b, path_b) = temp_yaml_file("database:\n  host: b\n");
         let ops = vec![Operation::Set(SetOperation {
             sources: vec![disk_source(&path_a), disk_source(&path_b)],
-            filters: vec![],
+            filters: Filters::default(),
             mappings: vec![string_mapping("//database/host", "db.example.com")],
             tree_mode: None,
             limit: None,

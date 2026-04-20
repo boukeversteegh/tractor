@@ -363,25 +363,12 @@ pub struct OperationInputs {
 /// that the runner needs to call `FileResolver::resolve`. The variant's
 /// enclosed `CheckOperation`/etc. is a skeleton with `sources` and
 /// `filters` empty — the runner fills them in from the resolver.
+#[derive(Debug, Clone)]
 pub enum ConfigOperation {
     Check { inputs: OperationInputs, op: CheckOperation },
     Set { inputs: OperationInputs, op: SetOperation },
     Query { inputs: OperationInputs, op: QueryOperation },
     Test { inputs: OperationInputs, op: TestOperation },
-}
-
-// Manual Debug impl because the inner `*Operation` structs hold
-// `Vec<Box<dyn ResultFilter>>`, which is not `Debug`. This prints only
-// the variant name + input-resolution data, which is all tests rely on.
-impl std::fmt::Debug for ConfigOperation {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ConfigOperation::Check { inputs, .. } => f.debug_struct("ConfigOperation::Check").field("inputs", inputs).finish_non_exhaustive(),
-            ConfigOperation::Set { inputs, .. }   => f.debug_struct("ConfigOperation::Set").field("inputs", inputs).finish_non_exhaustive(),
-            ConfigOperation::Query { inputs, .. } => f.debug_struct("ConfigOperation::Query").field("inputs", inputs).finish_non_exhaustive(),
-            ConfigOperation::Test { inputs, .. }  => f.debug_struct("ConfigOperation::Test").field("inputs", inputs).finish_non_exhaustive(),
-        }
-    }
 }
 
 impl ConfigOperation {
@@ -390,7 +377,7 @@ impl ConfigOperation {
     pub fn into_operation(
         self,
         sources: Vec<Source>,
-        filters: Vec<Box<dyn crate::input::filter::ResultFilter>>,
+        filters: crate::input::filter::Filters,
     ) -> Operation {
         match self {
             ConfigOperation::Check { op, .. } => {
@@ -513,7 +500,7 @@ fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<ConfigOperati
     // Operation skeleton — sources/filters filled in by runner after resolve.
     let op = CheckOperation {
         sources: Vec::new(),
-        filters: Vec::new(),
+        filters: crate::input::filter::Filters::default(),
         rules,
         tree_mode,
         ignore_whitespace: false,
@@ -612,7 +599,7 @@ fn convert_set(config: SetConfig, scope: &RootScope) -> Result<ConfigOperation, 
 
     let op = SetOperation {
         sources: Vec::new(),
-        filters: Vec::new(),
+        filters: crate::input::filter::Filters::default(),
         mappings,
         tree_mode,
         limit: config.limit,
@@ -644,7 +631,7 @@ fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<ConfigOperati
 
     let op = QueryOperation {
         sources: Vec::new(),
-        filters: Vec::new(),
+        filters: crate::input::filter::Filters::default(),
         queries,
         tree_mode,
         language: config.language,
@@ -679,7 +666,7 @@ fn convert_test(config: TestConfig, scope: &RootScope) -> Result<ConfigOperation
 
     let op = TestOperation {
         sources: Vec::new(),
-        filters: Vec::new(),
+        filters: crate::input::filter::Filters::default(),
         assertions,
         tree_mode,
         language: config.language,

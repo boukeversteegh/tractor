@@ -7,12 +7,12 @@ use tractor::parse_string_to_documents;
 
 use crate::matcher::validate_xpath_diagnostic;
 use crate::matcher::run_rules;
-use crate::input::filter::ResultFilter;
+use crate::input::filter::Filters;
 use crate::input::Source;
 
 use crate::cli::context::ExecCtx;
 
-use super::{filter_refs, match_to_report_match};
+use super::match_to_report_match;
 
 // ---------------------------------------------------------------------------
 // Operation type
@@ -23,12 +23,13 @@ use super::{filter_refs, match_to_report_match};
 /// Construction site has already resolved file globs, CLI intersection,
 /// diff-files filter, inline-source wiring, and language detection into
 /// `sources`. Downstream is a plain `Vec<Source>` loop.
+#[derive(Debug, Clone)]
 pub struct CheckOperation {
     /// Pre-resolved unified input list (disk and/or inline).
     pub sources: Vec<Source>,
     /// Pre-built result filters (diff-lines, etc.). Applied inside
     /// `run_rules` to every match.
-    pub filters: Vec<Box<dyn ResultFilter>>,
+    pub filters: Filters,
     /// Rules to check.
     pub rules: Vec<Rule>,
     /// Default tree mode for all rules (rules can override).
@@ -96,7 +97,7 @@ pub(crate) fn execute_check(
         op.ignore_whitespace,
         op.parse_depth,
         ctx.verbose,
-        &filter_refs(&op.filters),
+        &op.filters,
     )?;
 
     for rm in rule_matches {

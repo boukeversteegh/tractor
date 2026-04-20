@@ -5,12 +5,12 @@ use tractor::tree_mode::TreeMode;
 use tractor::{apply_replacements, NormalizedPath};
 use tractor::xpath_upsert::update_only;
 
-use crate::input::filter::ResultFilter;
+use crate::input::filter::Filters;
 use crate::input::Source;
 
 use crate::cli::context::ExecCtx;
 
-use super::{filter_refs, match_to_report_match, query_files_multi};
+use super::{match_to_report_match, query_files_multi};
 
 // ---------------------------------------------------------------------------
 // Operation type
@@ -20,11 +20,12 @@ use super::{filter_refs, match_to_report_match, query_files_multi};
 /// structure. Unlike set, update fails if the XPath does not match any
 /// existing nodes. Inline (virtual) sources are rejected at construction
 /// time — update always mutates real files.
+#[derive(Debug, Clone)]
 pub struct UpdateOperation {
     /// Pre-resolved unified input list (disk-only for update).
     pub sources: Vec<Source>,
     /// Pre-built result filters (used by the fallback path).
-    pub filters: Vec<Box<dyn ResultFilter>>,
+    pub filters: Filters,
     /// XPath expression to match nodes to update.
     pub xpath: String,
     /// New value for matched nodes.
@@ -85,7 +86,7 @@ pub(crate) fn execute_update(
         let matches = query_files_multi(
             &fallback_sources, &[op.xpath.as_str()], op.language.as_deref(),
             op.tree_mode, op.ignore_whitespace, op.parse_depth,
-            None, ctx.verbose, &filter_refs(&op.filters),
+            None, ctx.verbose, &op.filters,
         )?;
         if !matches.is_empty() {
             let summary = apply_replacements(&matches, &op.value)?;

@@ -10,7 +10,6 @@ use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::process::Command;
 use tractor::{Match, NormalizedPath};
-use super::filter::ResultFilter;
 
 /// Run `git diff --name-only` with the given spec and return the set of
 /// changed file paths, resolved relative to `cwd`.
@@ -85,8 +84,9 @@ pub struct LineRange {
 }
 
 /// Filters matches to only those whose line ranges overlap with changed
-/// hunks from a git diff. Also implements file-level filtering: files
+/// hunks from a git diff. Also supports file-level filtering: files
 /// not present in the diff are skipped entirely.
+#[derive(Debug, Clone)]
 pub struct DiffHunkFilter {
     /// Map from normalized absolute file path → changed line ranges.
     hunks: HashMap<NormalizedPath, Vec<LineRange>>,
@@ -261,8 +261,9 @@ fn write_scratch_file(tag: &str, content: &str) -> std::io::Result<std::path::Pa
     Ok(path)
 }
 
-impl ResultFilter for DiffHunkFilter {
-    fn include(&self, m: &Match) -> bool {
+impl DiffHunkFilter {
+    /// Returns true if this match overlaps one of the changed hunks.
+    pub fn include(&self, m: &Match) -> bool {
         // `Match::file` originates from the file resolver (already absolute
         // + normalized), so wrapping it as `NormalizedPath` without going
         // through `absolute()` again is safe and cheap.
@@ -276,7 +277,8 @@ impl ResultFilter for DiffHunkFilter {
         }
     }
 
-    fn include_file(&self, file: &str) -> bool {
+    /// Returns true if the file is touched by the diff at all.
+    pub fn include_file(&self, file: &str) -> bool {
         self.hunks.contains_key(&NormalizedPath::new(file))
     }
 }
