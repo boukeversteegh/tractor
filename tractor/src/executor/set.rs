@@ -6,6 +6,7 @@ use tractor::{parse_string_to_documents, Match};
 use tractor::xpath_upsert::upsert_typed;
 
 use crate::input::filter::ResultFilter;
+use crate::input::source::SourceDisposition;
 use crate::input::Source;
 
 use super::{ExecuteOptions, filter_refs, match_to_report_match};
@@ -78,21 +79,34 @@ pub(crate) fn execute_set(
 
     for source in &op.sources {
         let content = source.read()?;
-        // Virtual sources can't be written back to disk — auto-route any
-        // non-Verify write mode through Capture so the mutated content
-        // surfaces in the report instead of silently vanishing.
-        let effective_write_mode = if source.is_virtual()
-            && matches!(op.write_mode, SetWriteMode::InPlace)
-        {
-            SetWriteMode::Capture
-        } else {
-            op.write_mode
+
+        // The three-state disposition drives every policy choice below:
+        //   Disk              → honour the requested write mode, run filters,
+        //                        write back to disk on in-place success.
+        //   InlineWithPath    → capture in-memory output, no filters, no
+        //                        disk write; output carries the virtual path.
+        //   InlinePathless    → same as InlineWithPath but the captured
+        //                        output omits the sentinel path.
+        // Stacking is_virtual() + is_pathless() booleans would reconstruct
+        // the same branches less explicitly; a single match makes the
+        // domain states the primary axis.
+        let disposition = source.disposition();
+        let effective_write_mode = match disposition {
+            SourceDisposition::Disk => op.write_mode,
+            // Virtual sources can't be written back to disk — auto-route
+            // any InPlace request through Capture so the mutated content
+            // surfaces in the report instead of silently vanishing.
+            SourceDisposition::InlineWithPath | SourceDisposition::InlinePathless => {
+                match op.write_mode {
+                    SetWriteMode::InPlace => SetWriteMode::Capture,
+                    other => other,
+                }
+            }
         };
 
-        let filters_for_source: &[&dyn ResultFilter] = if source.is_virtual() {
-            &[]
-        } else {
-            &filter_refs
+        let filters_for_source: &[&dyn ResultFilter] = match disposition {
+            SourceDisposition::Disk => &filter_refs,
+            SourceDisposition::InlineWithPath | SourceDisposition::InlinePathless => &[],
         };
 
         let outcome = execute_set_target(
@@ -105,7 +119,7 @@ pub(crate) fn execute_set(
 
         if outcome.changed
             && matches!(effective_write_mode, SetWriteMode::InPlace)
-            && !source.is_virtual()
+            && matches!(disposition, SourceDisposition::Disk)
         {
             std::fs::write(source.path.as_str(), &outcome.content)?;
         }
@@ -201,12 +215,14 @@ fn execute_set_target(
 
     // Pathless inline sources produce outputs with `file: None` (preserving
     // the prior "no filename in output" signal for -s with no positional
-    // path). Everything else — disk files and virtual paths — carries its
-    // path through.
-    let output_file = if source.is_pathless() {
-        None
-    } else {
-        Some(file_label.to_string())
+    // path). Disk files and virtual-path inline sources both carry their
+    // path through — matching on the three-way disposition makes that
+    // grouping explicit.
+    let output_file = match source.disposition() {
+        SourceDisposition::Disk | SourceDisposition::InlineWithPath => {
+            Some(file_label.to_string())
+        }
+        SourceDisposition::InlinePathless => None,
     };
 
     let output = if matches!(effective_write_mode, SetWriteMode::Capture) {

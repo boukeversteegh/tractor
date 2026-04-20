@@ -64,6 +64,27 @@ pub enum SourceContent {
     Inline(Arc<String>),
 }
 
+/// The three-way domain state of a source, combining content provenance
+/// (disk vs. in-memory) with path identity (real/virtual path vs. the
+/// pathless sentinel).
+///
+/// This is the primary classifier; `Source::is_virtual` and
+/// `Source::is_pathless` are thin derivations of this enum so existing
+/// single-question boolean callers stay ergonomic.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SourceDisposition {
+    /// On-disk file. Reads lazily from the filesystem; writes go back to
+    /// disk.
+    Disk,
+    /// In-memory content carrying a user-supplied virtual path (e.g. via
+    /// `--stdin-filename`). Writes are captured; display keeps the path.
+    InlineWithPath,
+    /// In-memory content with no user-supplied path — uses the
+    /// `PATHLESS_LABEL` sentinel. Writes are captured; display omits the
+    /// path prefix.
+    InlinePathless,
+}
+
 impl Source {
     /// Construct a disk source. Caller is expected to have already resolved
     /// the language (via override or `detect_language`).
@@ -102,18 +123,39 @@ impl Source {
         }
     }
 
+    /// The source's domain state as a three-variant enum. This is the
+    /// primary classifier — prefer `match source.disposition()` over
+    /// stacking `is_virtual()` + `is_pathless()` boolean checks when the
+    /// call site actually cares about which of the three states applies.
+    pub fn disposition(&self) -> SourceDisposition {
+        match &self.content {
+            SourceContent::Disk => SourceDisposition::Disk,
+            SourceContent::Inline(_) => {
+                if self.path.as_str() == PATHLESS_LABEL {
+                    SourceDisposition::InlinePathless
+                } else {
+                    SourceDisposition::InlineWithPath
+                }
+            }
+        }
+    }
+
     /// True for inline sources (both pathless and with a virtual path).
     /// The one place this matters outside the parse site is the mutation
     /// layer, which refuses to write inline content back to disk.
+    ///
+    /// Thin derivation of [`Source::disposition`].
     pub fn is_virtual(&self) -> bool {
-        matches!(self.content, SourceContent::Inline(_))
+        !matches!(self.disposition(), SourceDisposition::Disk)
     }
 
     /// True for a path-less inline source. Used by the formatter to
     /// suppress location prefixes in the one narrow case where there's no
     /// meaningful path to display.
+    ///
+    /// Thin derivation of [`Source::disposition`].
     pub fn is_pathless(&self) -> bool {
-        self.path.as_str() == PATHLESS_LABEL
+        matches!(self.disposition(), SourceDisposition::InlinePathless)
     }
 
     /// Fetch the bytes to parse. Borrows from memory for inline sources;
@@ -215,6 +257,33 @@ mod tests {
         assert!(!s.is_virtual());
         assert!(!s.is_pathless());
         assert!(s.inline_content().is_none());
+    }
+
+    #[test]
+    fn disposition_covers_all_three_states() {
+        // Disk source.
+        let disk = Source::disk(NormalizedPath::new("src/foo.rs"), "rust");
+        assert_eq!(disk.disposition(), SourceDisposition::Disk);
+
+        // Inline source with a user-supplied virtual path.
+        let with_path = Source::inline_at(
+            NormalizedPath::new("src/Foo.cs"),
+            "csharp",
+            Arc::new("code".to_string()),
+        );
+        assert_eq!(with_path.disposition(), SourceDisposition::InlineWithPath);
+
+        // Path-less inline source (PATHLESS_LABEL sentinel).
+        let pathless = Source::inline_pathless("csharp", Arc::new("code".to_string()));
+        assert_eq!(pathless.disposition(), SourceDisposition::InlinePathless);
+
+        // And the boolean derivations must stay consistent with the enum.
+        assert!(!disk.is_virtual());
+        assert!(!disk.is_pathless());
+        assert!(with_path.is_virtual());
+        assert!(!with_path.is_pathless());
+        assert!(pathless.is_virtual());
+        assert!(pathless.is_pathless());
     }
 
     #[test]
