@@ -1,4 +1,5 @@
-totals:
-  results: 2
-  files: 1
-query: //class
+summary:
+  totals:
+    results: 2
+    files: 1
+  query: //class

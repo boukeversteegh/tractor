@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <report>
-  <success>false</success>
-  <totals>
-    <results>5</results>
-    <files>1</files>
-    <errors>2</errors>
-    <warnings>1</warnings>
-  </totals>
+  <summary>
+    <success>false</success>
+    <totals>
+      <results>5</results>
+      <files>1</files>
+      <errors>2</errors>
+      <warnings>1</warnings>
+    </totals>
+  </summary>
   <group-by>command</group-by>
   <results>
     <group command="check">

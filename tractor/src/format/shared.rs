@@ -14,7 +14,7 @@ pub fn should_show_totals(report: &tractor::report::Report, view: &ViewSet) -> b
     if report.success.is_some() {
         true
     } else {
-        view.has(ViewField::Totals) || view.has(ViewField::Query)
+        view.has(ViewField::Totals) || view.has(ViewField::Count) || view.has(ViewField::Query)
     }
 }
 

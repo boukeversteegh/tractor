@@ -4,6 +4,19 @@
 mod support;
 
 use support::{command, query_command};
+use quick_xml::events::Event;
+use serde_json::Value;
+
+fn assert_well_formed_xml(xml: &str) {
+    let mut reader = quick_xml::Reader::from_str(xml);
+    loop {
+        match reader.read_event() {
+            Ok(Event::Eof) => break,
+            Ok(_) => {}
+            Err(err) => panic!("expected well-formed XML, got {err}: {xml}"),
+        }
+    }
+}
 
 cli_suite! {
     rust in "languages/rust" {
@@ -309,7 +322,7 @@ cli_suite! {
         expect_some => tractor query -s "fn a() {} fn b() {}" -l "rust" -x "function" => count some;
         expect_none => tractor query -s "let x = 1;" -l "rust" -x "function" => count none;
         value_output => tractor query -s "class Foo { }" -l "csharp" -x "class/name" -v "value" => count 1;
-        count_output => tractor query -s "class Foo { }" -l "csharp" -x "class" -v "count" => stdout "1";
+        count_output => tractor query -s "class Foo { }" -l "csharp" -x "class" -v "count" -p "count" => stdout "1";
         gcc_output => tractor query -s "class Foo { }" -l "csharp" -x "class" -f "gcc" => count 1;
         without_xpath => tractor query -s "let x = 1;" -l "rust" => count some;
     }
@@ -361,6 +374,8 @@ fn markdown_round_trip_extracts_javascript_block() {
         "//function[name]",
         "-v",
         "count",
+        "-p",
+        "count",
     ])
     .stdin(format!("{}\n", extracted.stdout))
     .capture();
@@ -388,9 +403,262 @@ fn missing_empty_fixture_directory_falls_back_to_temp_workspace() {
         "function",
         "-v",
         "count",
+        "-p",
+        "count",
     ])
     .in_fixture("missing-empty-fixture")
     .assert_stdout("1")
+    .run();
+}
+
+#[test]
+fn project_tree_json_is_sequence_and_single_unwraps() {
+    let multi = cli_case!({
+        tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -p "tree" -f "json";
+    })
+    .run();
+    let multi_json: Value = serde_json::from_str(&multi.stdout).expect("multi projection should be json");
+    assert!(multi_json.is_array());
+    assert_eq!(2, multi_json.as_array().unwrap().len());
+
+    let single = cli_case!({
+        tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -p "tree" --single -f "json";
+    })
+    .run();
+    let single_json: Value = serde_json::from_str(&single.stdout).expect("single projection should be json");
+    assert!(!single_json.is_array());
+}
+
+#[test]
+fn project_tree_xml_multi_wraps_named_tree_elements() {
+    let result = cli_case!({
+        tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -p "tree" -f "xml";
+    })
+    .run();
+    assert!(result.stdout.contains("<results>"));
+    assert!(result.stdout.contains("<tree>"));
+    assert!(result.stdout.contains("</tree>"));
+    assert_well_formed_xml(&result.stdout);
+}
+
+#[test]
+fn project_tree_xml_single_stays_bare() {
+    let result = cli_case!({
+        tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -p "tree" --single -f "xml";
+    })
+    .run();
+    assert!(!result.stdout.contains("<tree>"));
+    assert!(result.stdout.contains("<item>"));
+    assert_well_formed_xml(&result.stdout);
+}
+
+#[test]
+fn project_tree_single_empty_exits_with_empty_stdout() {
+    cli_case!({
+        tractor query -s "<root/>" -l "xml" -x "//item" -p "tree" --single -f "xml";
+        expect => {
+            exit 1;
+            stdout "";
+            stderr "";
+        }
+    })
+    .run();
+}
+
+#[test]
+fn project_results_keeps_message_field_in_json() {
+    let result = cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -m "hit" -p "results" -f "json";
+    })
+    .run();
+    let json: Value = serde_json::from_str(&result.stdout).expect("results projection should be json");
+    assert_eq!("hit", json[0]["message"]);
+}
+
+#[test]
+fn project_results_preserves_grouping_in_json() {
+    let result = cli_case!({
+        tractor query "sample.cs" "sample2.cs" -x "//class/name" -v "file,value" -g "file" -p "results" -f "json";
+    })
+    .in_fixture("formats")
+    .run();
+    let json: Value = serde_json::from_str(&result.stdout).expect("grouped results projection should be json");
+    let groups = json.as_array().expect("results projection should stay a sequence");
+    assert_eq!(2, groups.len());
+
+    for group in groups {
+        assert!(group["file"].is_string(), "expected file key on grouped result: {group}");
+        let matches = group["results"].as_array().expect("expected nested results under each group");
+        assert!(!matches.is_empty(), "expected at least one match in grouped results");
+        assert!(matches.iter().all(|item| item.get("value").is_some()));
+        assert!(matches.iter().all(|item| item.get("file").is_none()));
+    }
+}
+
+#[test]
+fn project_summary_warns_when_message_is_unreachable() {
+    let result = cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -m "hit" -p "summary" -f "json";
+    })
+    .run();
+    let json: Value = serde_json::from_str(&result.stdout).expect("summary projection should be json");
+    assert!(json.is_object());
+    assert!(result
+        .stderr
+        .contains("warning: -m message template has no effect with -p summary"));
+}
+
+#[test]
+fn count_view_uses_report_path() {
+    cli_case!({
+        tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -v "count";
+        expect => stdout "2 matches";
+    })
+    .run();
+}
+
+#[test]
+fn count_projection_restores_scalar() {
+    cli_case!({
+        tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -v "count" -p "count";
+        expect => stdout "2";
+    })
+    .run();
+}
+
+#[test]
+fn projection_invalid_is_rejected_with_valid_values() {
+    cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -p "INVALID";
+        expect => {
+            exit 1;
+            combined_contains "invalid projection 'INVALID'";
+            combined_contains "tree, value, source, lines, schema, count, summary, totals, results, report";
+        }
+    })
+    .run();
+}
+
+#[test]
+fn project_tree_empty_sequence_preserves_wrapper_and_parseability() {
+    let xml = cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "string(//item)" -p "tree" -f "xml";
+    })
+    .run();
+    assert!(xml.stdout.contains("<results"));
+    assert_well_formed_xml(&xml.stdout);
+
+    let json = cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "string(//item)" -p "tree" -f "json";
+    })
+    .run();
+    let parsed: Value = serde_json::from_str(&json.stdout).expect("empty tree projection should be json");
+    assert_eq!(Value::Array(vec![]), parsed);
+}
+
+#[test]
+fn project_replacement_warning_lists_all_dropped_fields_and_suggests_results() {
+    cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -v "tree,file" -m "hit" -p "tree" -f "json";
+        expect => {
+            stderr_contains "warning: requested view items {file, message}";
+            stderr_contains "use `-p results` (respects -v/-m)";
+        }
+    })
+    .run();
+}
+
+#[test]
+fn project_redundant_overlap_does_not_warn() {
+    cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -v "tree" -p "tree" -f "json";
+        expect => stderr "";
+    })
+    .run();
+}
+
+#[test]
+fn project_empty_explicit_view_does_not_warn() {
+    cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -v "" -p "tree" -f "json";
+        expect => stderr "";
+    })
+    .run();
+}
+
+#[test]
+fn project_count_and_schema_follow_the_report_pipeline_in_structured_formats() {
+    let count = cli_case!({
+        tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -v "count" -f "json";
+    })
+    .run();
+    let count_json: Value = serde_json::from_str(&count.stdout).expect("count view should be json");
+    assert_eq!(2, count_json["summary"]["totals"]["results"]);
+
+    let schema_report = cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -v "schema" -f "xml";
+    })
+    .run();
+    assert!(schema_report.stdout.contains("<report>"));
+    assert!(schema_report.stdout.contains("<schema>"));
+    assert_well_formed_xml(&schema_report.stdout);
+
+    let schema_bare = cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -v "schema" -p "schema" -f "xml";
+    })
+    .run();
+    assert!(!schema_bare.stdout.contains("<report>"));
+    assert!(schema_bare.stdout.contains("<schema>"));
+    assert_well_formed_xml(&schema_bare.stdout);
+}
+
+#[test]
+fn project_summary_is_mode_specific() {
+    let query = cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -p "summary" -f "json";
+    })
+    .run();
+    let query_json: Value = serde_json::from_str(&query.stdout).expect("query summary should be json");
+    assert!(query_json.get("success").is_none());
+    assert_eq!(1, query_json["totals"]["results"]);
+
+    let test = cli_case!({
+        tractor test -s "<root><item>one</item></root>" -l "xml" -x "//item" --expect "1" -p "summary" -f "json";
+    })
+    .run();
+    let test_json: Value = serde_json::from_str(&test.stdout).expect("test summary should be json");
+    assert_eq!(Value::Bool(true), test_json["success"]);
+    assert_eq!(Value::String("1".to_string()), test_json["expected"]);
+}
+
+#[test]
+fn project_schema_respects_color_output() {
+    let result = cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -p "schema" --color "always";
+    })
+    .no_color(false)
+    .run();
+    assert!(result.stdout.contains("\u{1b}["));
+}
+
+#[test]
+fn view_schema_renders_in_text_output() {
+    cli_case!({
+        tractor query -s "<root><item>one</item></root>" -l "xml" -x "//item" -v "schema";
+        expect => stdout_contains "item = \"one\"";
+    })
+    .run();
+}
+
+#[test]
+fn project_totals_single_is_a_noop_with_warning() {
+    cli_case!({
+        tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -p "totals" --single -f "xml";
+        expect => {
+            stdout_contains "<totals>";
+            stderr_contains "warning: --single has no effect with -p totals";
+        }
+    })
     .run();
 }
 
@@ -1046,29 +1314,30 @@ fn run_without_path_ignores_tractor_yaml() {
     // `.yaml` is not on the default probe list — only `tractor.yml` is. Users
     // can still point at `.yaml` explicitly, but with no path argument and no
     // `tractor.yml`, tractor errors even if a `tractor.yaml` sits right there.
-    let result = command(["run"])
-        .temp_fixture()
-        .seed_file("tractor.yaml", DEFAULT_CONFIG_CONTENTS)
-        .seed_file("settings.yaml", DEFAULT_CONFIG_SETTINGS)
-        .assert_exit(1)
-        .capture();
-    let combined = format!("{}{}", result.stdout, result.stderr);
-    assert!(
-        combined.contains("no tractor.yml"),
-        "expected error about missing tractor.yml, got: {}",
-        combined
-    );
+    cli_case!({
+        tractor run;
+        expect => {
+            exit 1;
+            combined_contains "no tractor.yml";
+        }
+    })
+    .temp_fixture()
+    .seed_file("tractor.yaml", DEFAULT_CONFIG_CONTENTS)
+    .seed_file("settings.yaml", DEFAULT_CONFIG_SETTINGS)
+    .run();
 }
 
 #[test]
 fn run_without_path_errors_when_no_default_exists() {
-    let result = command(["run"]).temp_fixture().assert_exit(1).capture();
-    let combined = format!("{}{}", result.stdout, result.stderr);
-    assert!(
-        combined.contains("no tractor.yml"),
-        "expected error about missing tractor.yml, got: {}",
-        combined
-    );
+    cli_case!({
+        tractor run;
+        expect => {
+            exit 1;
+            combined_contains "no tractor.yml";
+        }
+    })
+    .temp_fixture()
+    .run();
 }
 
 /// Source of truth for the scaffolded config — used when we need to seed a

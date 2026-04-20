@@ -10,16 +10,56 @@ use std::collections::HashMap;
 
 use tractor::{
     render_query_tree_node, render_query_tree_with_source, normalize_path,
-    render_source_precomputed, render_lines,
+    render_source_precomputed, render_lines, format_schema_tree,
     report::{Report, ReportMatch, ResultItem, Totals},
     RenderOptions,
 };
 use super::options::{ViewField, ViewSet};
 use super::shared::{should_show_totals, render_fields_for_match};
+use super::{Projection, ProjectionRenderError};
 
 /// Text is human-readable — grouping affects display structure but matches
 /// are rendered with inherited file context from groups, not field omission.
 pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderOptions, _dimensions: &[&str]) -> String {
+    render_text_results(report, view, render_opts, true)
+}
+
+pub fn render_text_output(
+    report: &Report,
+    view: &ViewSet,
+    render_opts: &RenderOptions,
+    _dimensions: &[&str],
+    projection: Projection,
+    single: bool,
+) -> Result<String, ProjectionRenderError> {
+    match projection {
+        Projection::Report => Ok(render_text_report(report, view, render_opts, &[])),
+        Projection::Results => {
+            if single {
+                render_single_text_result(report, view, render_opts)
+            } else {
+                Ok(render_text_results(report, view, render_opts, false))
+            }
+        }
+        Projection::Summary => Ok(render_text_summary(report)),
+        Projection::Totals => Ok(render_text_totals(report)),
+        Projection::Count => Ok(format!(
+            "{}\n",
+            report.totals.as_ref().map(|totals| totals.results).unwrap_or(0)
+        )),
+        Projection::Schema => Ok(render_text_schema(report, render_opts)),
+        Projection::Tree | Projection::Value | Projection::Source | Projection::Lines => {
+            render_text_field_projection(report, projection, render_opts, single)
+        }
+    }
+}
+
+fn render_text_results(
+    report: &Report,
+    view: &ViewSet,
+    render_opts: &RenderOptions,
+    include_summary: bool,
+) -> String {
     let mut out = String::new();
     let mut source_cache: HashMap<String, Option<String>> = HashMap::new();
 
@@ -58,7 +98,17 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
         append_match(&mut out, rm, view, render_opts, *group_file, &mut source_cache);
     }
 
-    if should_show_totals(report, view) {
+    if report.schema.is_some() {
+        let schema = render_text_schema(report, render_opts);
+        if !schema.is_empty() {
+            if !out.is_empty() && !out.ends_with('\n') {
+                out.push('\n');
+            }
+            out.push_str(&schema);
+        }
+    }
+
+    if include_summary && should_show_totals(report, view) {
         if let Some(ref totals) = report.totals {
             if !out.is_empty() && !out.ends_with('\n') {
                 out.push('\n');
@@ -71,6 +121,126 @@ pub fn render_text_report(report: &Report, view: &ViewSet, render_opts: &RenderO
     }
 
     out
+}
+
+fn render_single_text_result(
+    report: &Report,
+    view: &ViewSet,
+    render_opts: &RenderOptions,
+) -> Result<String, ProjectionRenderError> {
+    let mut out = String::new();
+    let mut source_cache: HashMap<String, Option<String>> = HashMap::new();
+    let matches = collect_matches_with_file(&report.results, None);
+    let Some((group_file, rm)) = matches.into_iter().next() else {
+        return Err(ProjectionRenderError::EmptySingle);
+    };
+    append_match(&mut out, rm, view, render_opts, group_file, &mut source_cache);
+    Ok(out)
+}
+
+fn render_text_summary(report: &Report) -> String {
+    let mut out = String::new();
+    if let Some(ref query) = report.query {
+        out.push_str(&format!("Query: {}\n", query));
+    }
+    if let Some(ref totals) = report.totals {
+        out.push_str(&format_summary(totals, report.success, report.expected.as_deref()));
+    }
+    out
+}
+
+fn render_text_totals(report: &Report) -> String {
+    let Some(ref totals) = report.totals else {
+        return String::new();
+    };
+
+    let mut lines = vec![
+        format!("results: {}", totals.results),
+        format!("files: {}", totals.files),
+    ];
+    if totals.fatals > 0 {
+        lines.push(format!("fatals: {}", totals.fatals));
+    }
+    if totals.errors > 0 {
+        lines.push(format!("errors: {}", totals.errors));
+    }
+    if totals.warnings > 0 {
+        lines.push(format!("warnings: {}", totals.warnings));
+    }
+    if totals.infos > 0 {
+        lines.push(format!("infos: {}", totals.infos));
+    }
+    if totals.updated > 0 {
+        lines.push(format!("updated: {}", totals.updated));
+    }
+    if totals.unchanged > 0 {
+        lines.push(format!("unchanged: {}", totals.unchanged));
+    }
+    format!("{}\n", lines.join("\n"))
+}
+
+fn render_text_schema(report: &Report, render_opts: &RenderOptions) -> String {
+    report
+        .schema
+        .as_ref()
+        .map(|schema| format_schema_tree(schema, render_opts.max_depth.or(Some(4)), render_opts.use_color))
+        .unwrap_or_default()
+}
+
+fn render_text_field_projection(
+    report: &Report,
+    projection: Projection,
+    render_opts: &RenderOptions,
+    single: bool,
+) -> Result<String, ProjectionRenderError> {
+    let projected: Vec<String> = report
+        .all_matches()
+        .into_iter()
+        .filter_map(|rm| render_projected_field(rm, projection, render_opts))
+        .collect();
+
+    if single {
+        projected
+            .into_iter()
+            .next()
+            .ok_or(ProjectionRenderError::EmptySingle)
+    } else {
+        Ok(projected.concat())
+    }
+}
+
+fn render_projected_field(
+    rm: &ReportMatch,
+    projection: Projection,
+    render_opts: &RenderOptions,
+) -> Option<String> {
+    match projection {
+        Projection::Tree => rm.tree.as_ref().map(|node| render_query_tree_node(node, render_opts)),
+        Projection::Value => rm.value.as_ref().map(|value| format!("{value}\n")),
+        Projection::Source => rm.source.as_ref().map(|source| {
+            render_source_precomputed(
+                source,
+                rm.tree.as_ref(),
+                rm.line,
+                rm.column,
+                rm.end_line,
+                rm.end_column,
+                render_opts,
+            )
+        }),
+        Projection::Lines => rm.lines.as_ref().map(|lines| {
+            render_lines(
+                lines,
+                rm.tree.as_ref(),
+                rm.line,
+                rm.column,
+                rm.end_line,
+                rm.end_column,
+                render_opts,
+            )
+        }),
+        _ => None,
+    }
 }
 
 fn append_match(
@@ -447,6 +617,7 @@ mod tests {
             }),
             expected: None,
             query: None,
+            schema: None,
             outputs: vec![],
             results: vec![ResultItem::Match(ReportMatch {
                 file: "app-config.json".to_string(),

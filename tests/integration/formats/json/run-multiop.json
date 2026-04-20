@@ -1,10 +1,12 @@
 {
-  "success": false,
-  "totals": {
-    "results": 5,
-    "files": 1,
-    "errors": 2,
-    "warnings": 1
+  "summary": {
+    "success": false,
+    "totals": {
+      "results": 5,
+      "files": 1,
+      "errors": 2,
+      "warnings": 1
+    }
   },
   "group": "command",
   "results": [
