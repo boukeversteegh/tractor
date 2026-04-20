@@ -42,6 +42,46 @@ pub struct UpdateOperation {
     pub parse_depth: Option<usize>,
 }
 
+/// Pre-resolution shape for an update operation. Mirrors [`UpdateOperation`]
+/// but omits the input-resolution-derived fields (`sources`, `filters`).
+/// Produced by the CLI layer (update has no config form), then turned into
+/// a fully-resolved `UpdateOperation` by the planner via
+/// [`UpdateDraft::into_operation`].
+#[derive(Debug, Clone)]
+pub struct UpdateDraft {
+    /// XPath expression to match nodes to update.
+    pub xpath: String,
+    /// New value for matched nodes.
+    pub value: String,
+    /// Tree mode override for parsing.
+    pub tree_mode: Option<TreeMode>,
+    /// Language override for parsing.
+    pub language: Option<String>,
+    /// Maximum number of matches to update per file.
+    pub limit: Option<usize>,
+    /// Ignore whitespace-only text nodes during parsing.
+    pub ignore_whitespace: bool,
+    /// Maximum parse depth.
+    pub parse_depth: Option<usize>,
+}
+
+impl UpdateDraft {
+    /// Attach resolved inputs and produce the final executor-ready operation.
+    pub fn into_operation(self, sources: Vec<Source>, filters: Filters) -> UpdateOperation {
+        UpdateOperation {
+            sources,
+            filters,
+            xpath: self.xpath,
+            value: self.value,
+            tree_mode: self.tree_mode,
+            language: self.language,
+            limit: self.limit,
+            ignore_whitespace: self.ignore_whitespace,
+            parse_depth: self.parse_depth,
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Execution
 // ---------------------------------------------------------------------------

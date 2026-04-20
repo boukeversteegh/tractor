@@ -40,10 +40,9 @@ pub struct TestArgs {
     #[arg(short = 'f', long = "format", default_value = "text", help_heading = "Format")]
     pub format: String,
 }
-use crate::executor::{self, TestOperation, TestAssertion};
+use crate::executor::{self, TestDraft, TestAssertion};
 use crate::cli::context::RunContext;
 use crate::input::{plan_single, InputMode, OperationDraft, SingleOpRequest};
-use crate::input::filter::Filters;
 use crate::tractor_config::OperationInputs;
 use crate::format::{ViewField, TestRenderOptions, render_report};
 use crate::matcher::prepare_report_for_output;
@@ -100,9 +99,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
         inline_source,
     };
 
-    let draft = OperationDraft::Test(TestOperation {
-        sources: Vec::new(),
-        filters: Filters::default(),
+    let draft = OperationDraft::Test(TestDraft {
         assertions: vec![TestAssertion {
             xpath: xpath_expr.clone(),
             expect: expect.clone(),

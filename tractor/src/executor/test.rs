@@ -39,6 +39,43 @@ pub struct TestOperation {
     pub parse_depth: Option<usize>,
 }
 
+/// Pre-resolution shape for a test operation. Mirrors [`TestOperation`]
+/// but omits the input-resolution-derived fields (`sources`, `filters`).
+/// Produced by the config parser and CLI layer, then turned into a
+/// fully-resolved `TestOperation` by the planner via
+/// [`TestDraft::into_operation`].
+#[derive(Debug, Clone)]
+pub struct TestDraft {
+    /// Assertions to evaluate.
+    pub assertions: Vec<TestAssertion>,
+    /// Tree mode override for parsing.
+    pub tree_mode: Option<TreeMode>,
+    /// Language override applied during parsing.
+    pub language: Option<String>,
+    /// Maximum number of matches to return per assertion.
+    pub limit: Option<usize>,
+    /// Ignore whitespace-only text nodes during parsing.
+    pub ignore_whitespace: bool,
+    /// Maximum parse depth.
+    pub parse_depth: Option<usize>,
+}
+
+impl TestDraft {
+    /// Attach resolved inputs and produce the final executor-ready operation.
+    pub fn into_operation(self, sources: Vec<Source>, filters: Filters) -> TestOperation {
+        TestOperation {
+            sources,
+            filters,
+            assertions: self.assertions,
+            tree_mode: self.tree_mode,
+            language: self.language,
+            limit: self.limit,
+            ignore_whitespace: self.ignore_whitespace,
+            parse_depth: self.parse_depth,
+        }
+    }
+}
+
 /// A single test assertion: an XPath query with an expected match count.
 #[derive(Debug, Clone)]
 pub struct TestAssertion {

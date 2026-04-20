@@ -41,11 +41,10 @@ pub struct SetArgs {
     pub format: String,
 }
 use crate::executor::{
-    self, SetMapping, SetOperation, SetReportMode, SetWriteMode,
+    self, SetDraft, SetMapping, SetReportMode, SetWriteMode,
 };
 use crate::cli::context::RunContext;
 use crate::input::{plan_single, InputMode, OperationDraft, SingleOpRequest};
-use crate::input::filter::Filters;
 use crate::tractor_config::OperationInputs;
 use crate::format::{ViewField, GroupDimension, render_report};
 use crate::matcher::prepare_report_for_output;
@@ -190,9 +189,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
         inline_source,
     };
 
-    let draft = OperationDraft::Set(SetOperation {
-        sources: Vec::new(),
-        filters: Filters::default(),
+    let draft = OperationDraft::Set(SetDraft {
         mappings,
         tree_mode: ctx.tree_mode,
         limit: ctx.limit,

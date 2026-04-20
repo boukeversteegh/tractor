@@ -15,10 +15,9 @@ pub struct UpdateArgs {
     #[command(flatten)]
     pub shared: SharedArgs,
 }
-use crate::executor::{self, UpdateOperation};
+use crate::executor::{self, UpdateDraft};
 use crate::cli::context::RunContext;
 use crate::input::{plan_single, InputMode, OperationDraft, SingleOpRequest};
-use crate::input::filter::Filters;
 use crate::tractor_config::OperationInputs;
 use crate::format::ViewField;
 
@@ -47,9 +46,7 @@ pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
         inline_source: None,
     };
 
-    let draft = OperationDraft::Update(UpdateOperation {
-        sources: Vec::new(),
-        filters: Filters::default(),
+    let draft = OperationDraft::Update(UpdateDraft {
         xpath: xpath_expr.to_string(),
         value: args.value.clone(),
         tree_mode: ctx.tree_mode,

@@ -26,7 +26,7 @@ use tractor::report::ReportBuilder;
 
 use crate::cli::context::ExecCtx;
 use crate::executor::{
-    CheckOperation, Operation, QueryOperation, SetOperation, TestOperation, UpdateOperation,
+    CheckOperation, Operation, QueryDraft, SetDraft, TestDraft, UpdateDraft,
 };
 use crate::tractor_config::{CheckDraft, ConfigOperation, OperationInputs};
 
@@ -37,20 +37,20 @@ use super::{FileResolver, ResolverOptions, Source, SourceRequest};
 // ---------------------------------------------------------------------------
 
 /// Per-kind skeleton that knows everything about an operation except its
-/// input list. The planner attaches `sources` + `filters` to produce the
-/// final `Operation`.
+/// input list. The planner attaches `sources` + `filters` via each draft's
+/// `into_operation` to produce the final `Operation`.
 ///
-/// The `Set`, `Query`, `Test`, `Update` variants carry their operation struct
-/// with `sources`/`filters` left empty (to be filled in by the planner).
-/// The `Check` variant uses `CheckDraft` because rule-glob compilation can
-/// only happen once `base_dir` is known — the planner does that compilation
-/// inline during conversion.
+/// Every variant is a true draft — it carries only op-specific metadata, so
+/// no `*Operation` struct in the system exists in an "unresolved" shape with
+/// placeholder empty `sources` / default `filters`. The `Check` variant
+/// additionally defers rule-glob compilation until `base_dir` is known — the
+/// planner drives that compilation inline during conversion.
 pub enum OperationDraft {
     Check(CheckDraft),
-    Query(QueryOperation),
-    Set(SetOperation),
-    Test(TestOperation),
-    Update(UpdateOperation),
+    Query(QueryDraft),
+    Set(SetDraft),
+    Test(TestDraft),
+    Update(UpdateDraft),
 }
 
 impl OperationDraft {
@@ -81,25 +81,17 @@ impl OperationDraft {
                     parse_depth: draft.parse_depth,
                 }))
             }
-            OperationDraft::Query(mut op) => {
-                op.sources = sources;
-                op.filters = filters;
-                Ok(Operation::Query(op))
+            OperationDraft::Query(draft) => {
+                Ok(Operation::Query(draft.into_operation(sources, filters)))
             }
-            OperationDraft::Set(mut op) => {
-                op.sources = sources;
-                op.filters = filters;
-                Ok(Operation::Set(op))
+            OperationDraft::Set(draft) => {
+                Ok(Operation::Set(draft.into_operation(sources, filters)))
             }
-            OperationDraft::Test(mut op) => {
-                op.sources = sources;
-                op.filters = filters;
-                Ok(Operation::Test(op))
+            OperationDraft::Test(draft) => {
+                Ok(Operation::Test(draft.into_operation(sources, filters)))
             }
-            OperationDraft::Update(mut op) => {
-                op.sources = sources;
-                op.filters = filters;
-                Ok(Operation::Update(op))
+            OperationDraft::Update(draft) => {
+                Ok(Operation::Update(draft.into_operation(sources, filters)))
             }
         }
     }

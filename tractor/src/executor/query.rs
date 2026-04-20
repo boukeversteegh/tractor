@@ -43,6 +43,43 @@ pub struct QueryOperation {
     pub parse_depth: Option<usize>,
 }
 
+/// Pre-resolution shape for a query operation. Mirrors [`QueryOperation`]
+/// but omits the input-resolution-derived fields (`sources`, `filters`).
+/// Produced by the config parser and CLI layer, then turned into a
+/// fully-resolved `QueryOperation` by the planner via
+/// [`QueryDraft::into_operation`].
+#[derive(Debug, Clone)]
+pub struct QueryDraft {
+    /// XPath queries to evaluate.
+    pub queries: Vec<QueryExpr>,
+    /// Tree mode override for parsing.
+    pub tree_mode: Option<TreeMode>,
+    /// Language override applied during parsing (per-op, overrides source's own).
+    pub language: Option<String>,
+    /// Maximum number of matches to return (across all queries).
+    pub limit: Option<usize>,
+    /// Ignore whitespace-only text nodes during parsing.
+    pub ignore_whitespace: bool,
+    /// Maximum parse depth.
+    pub parse_depth: Option<usize>,
+}
+
+impl QueryDraft {
+    /// Attach resolved inputs and produce the final executor-ready operation.
+    pub fn into_operation(self, sources: Vec<Source>, filters: Filters) -> QueryOperation {
+        QueryOperation {
+            sources,
+            filters,
+            queries: self.queries,
+            tree_mode: self.tree_mode,
+            language: self.language,
+            limit: self.limit,
+            ignore_whitespace: self.ignore_whitespace,
+            parse_depth: self.parse_depth,
+        }
+    }
+}
+
 /// A single XPath query expression.
 #[derive(Debug, Clone)]
 pub struct QueryExpr {

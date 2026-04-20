@@ -36,8 +36,8 @@ use tractor::rule::Rule;
 use tractor::tree_mode::TreeMode;
 
 use crate::executor::{
-    QueryExpr, QueryOperation, SetMapping, SetOperation, SetReportMode, SetWriteMode,
-    TestAssertion, TestOperation,
+    QueryDraft, QueryExpr, SetDraft, SetMapping, SetReportMode, SetWriteMode,
+    TestAssertion, TestDraft,
 };
 use crate::input::Source;
 
@@ -378,16 +378,18 @@ pub struct CheckDraft {
 }
 
 /// A config-sourced operation, paired with the per-op input-resolution data
-/// that the runner needs to call `FileResolver::resolve`. The non-Check
-/// variants enclose a skeleton with `sources`/`filters` empty — the runner
-/// fills them in from the resolver. The Check variant additionally defers
+/// that the runner needs to call `FileResolver::resolve`. Every variant
+/// carries a draft — the op-specific metadata only, with no
+/// `sources`/`filters` placeholder state. The planner hands resolved
+/// inputs to `OperationDraft::into_operation` to produce the final
+/// executor-ready `Operation`. The Check variant additionally defers
 /// glob compilation until `base_dir` is known (see [`CheckDraft`]).
 #[derive(Debug, Clone)]
 pub enum ConfigOperation {
     Check { inputs: OperationInputs, draft: CheckDraft },
-    Set { inputs: OperationInputs, op: SetOperation },
-    Query { inputs: OperationInputs, op: QueryOperation },
-    Test { inputs: OperationInputs, op: TestOperation },
+    Set { inputs: OperationInputs, draft: SetDraft },
+    Query { inputs: OperationInputs, draft: QueryDraft },
+    Test { inputs: OperationInputs, draft: TestDraft },
 }
 
 impl ConfigOperation {
@@ -400,9 +402,9 @@ impl ConfigOperation {
         use crate::input::plan::OperationDraft;
         match self {
             ConfigOperation::Check { inputs, draft } => (inputs, OperationDraft::Check(draft)),
-            ConfigOperation::Set { inputs, op } => (inputs, OperationDraft::Set(op)),
-            ConfigOperation::Query { inputs, op } => (inputs, OperationDraft::Query(op)),
-            ConfigOperation::Test { inputs, op } => (inputs, OperationDraft::Test(op)),
+            ConfigOperation::Set { inputs, draft } => (inputs, OperationDraft::Set(draft)),
+            ConfigOperation::Query { inputs, draft } => (inputs, OperationDraft::Query(draft)),
+            ConfigOperation::Test { inputs, draft } => (inputs, OperationDraft::Test(draft)),
         }
     }
 
@@ -586,9 +588,7 @@ fn convert_set(config: SetConfig, scope: &RootScope) -> Result<ConfigOperation, 
         inline_source,
     };
 
-    let op = SetOperation {
-        sources: Vec::new(),
-        filters: crate::input::filter::Filters::default(),
+    let draft = SetDraft {
         mappings,
         tree_mode,
         limit: config.limit,
@@ -597,7 +597,7 @@ fn convert_set(config: SetConfig, scope: &RootScope) -> Result<ConfigOperation, 
         report_mode,
     };
 
-    Ok(ConfigOperation::Set { inputs, op })
+    Ok(ConfigOperation::Set { inputs, draft })
 }
 
 fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<ConfigOperation, Box<dyn std::error::Error>> {
@@ -618,9 +618,7 @@ fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<ConfigOperati
         inline_source: None,
     };
 
-    let op = QueryOperation {
-        sources: Vec::new(),
-        filters: crate::input::filter::Filters::default(),
+    let draft = QueryDraft {
         queries,
         tree_mode,
         language: config.language,
@@ -629,7 +627,7 @@ fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<ConfigOperati
         parse_depth: None,
     };
 
-    Ok(ConfigOperation::Query { inputs, op })
+    Ok(ConfigOperation::Query { inputs, draft })
 }
 
 fn convert_test(config: TestConfig, scope: &RootScope) -> Result<ConfigOperation, Box<dyn std::error::Error>> {
@@ -653,9 +651,7 @@ fn convert_test(config: TestConfig, scope: &RootScope) -> Result<ConfigOperation
         inline_source: None,
     };
 
-    let op = TestOperation {
-        sources: Vec::new(),
-        filters: crate::input::filter::Filters::default(),
+    let draft = TestDraft {
         assertions,
         tree_mode,
         language: config.language,
@@ -664,7 +660,7 @@ fn convert_test(config: TestConfig, scope: &RootScope) -> Result<ConfigOperation
         parse_depth: None,
     };
 
-    Ok(ConfigOperation::Test { inputs, op })
+    Ok(ConfigOperation::Test { inputs, draft })
 }
 
 /// Merge root-level scope with per-operation scope.
@@ -813,21 +809,21 @@ mod tests {
             _ => panic!("expected Check operation"),
         }
     }
-    fn as_set(op: &ConfigOperation) -> (&OperationInputs, &SetOperation) {
+    fn as_set(op: &ConfigOperation) -> (&OperationInputs, &SetDraft) {
         match op {
-            ConfigOperation::Set { inputs, op } => (inputs, op),
+            ConfigOperation::Set { inputs, draft } => (inputs, draft),
             _ => panic!("expected Set operation"),
         }
     }
-    fn as_query(op: &ConfigOperation) -> (&OperationInputs, &QueryOperation) {
+    fn as_query(op: &ConfigOperation) -> (&OperationInputs, &QueryDraft) {
         match op {
-            ConfigOperation::Query { inputs, op } => (inputs, op),
+            ConfigOperation::Query { inputs, draft } => (inputs, draft),
             _ => panic!("expected Query operation"),
         }
     }
-    fn as_test(op: &ConfigOperation) -> (&OperationInputs, &TestOperation) {
+    fn as_test(op: &ConfigOperation) -> (&OperationInputs, &TestDraft) {
         match op {
-            ConfigOperation::Test { inputs, op } => (inputs, op),
+            ConfigOperation::Test { inputs, draft } => (inputs, draft),
             _ => panic!("expected Test operation"),
         }
     }

@@ -32,11 +32,11 @@ use crate::cli::context::ExecCtx;
 use crate::input::filter::Filters;
 use crate::input::Source;
 
-pub use query::{QueryOperation, QueryExpr};
+pub use query::{QueryDraft, QueryOperation, QueryExpr};
 pub use check::CheckOperation;
-pub use test::{TestOperation, TestAssertion};
-pub use set::{SetOperation, SetMapping, SetWriteMode, SetReportMode};
-pub use update::UpdateOperation;
+pub use test::{TestDraft, TestOperation, TestAssertion};
+pub use set::{SetDraft, SetOperation, SetMapping, SetWriteMode, SetReportMode};
+pub use update::{UpdateDraft, UpdateOperation};
 
 // ---------------------------------------------------------------------------
 // Operation types (stable API)

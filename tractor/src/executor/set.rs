@@ -42,6 +42,42 @@ pub struct SetOperation {
     pub report_mode: SetReportMode,
 }
 
+/// Pre-resolution shape for a set operation. Mirrors [`SetOperation`] but
+/// omits the input-resolution-derived fields (`sources`, `filters`). Produced
+/// by the config parser and CLI layer, then turned into a fully-resolved
+/// `SetOperation` by the planner via [`SetDraft::into_operation`].
+#[derive(Debug, Clone)]
+pub struct SetDraft {
+    /// Mappings to apply.
+    pub mappings: Vec<SetMapping>,
+    /// Tree mode override for parsing diagnostics.
+    pub tree_mode: Option<TreeMode>,
+    /// Maximum number of matches to update per mapping.
+    pub limit: Option<usize>,
+    /// Ignore whitespace-only text nodes while collecting diagnostics.
+    pub ignore_whitespace: bool,
+    /// How transformed content should be applied.
+    pub write_mode: SetWriteMode,
+    /// How detailed the diagnostic report should be.
+    pub report_mode: SetReportMode,
+}
+
+impl SetDraft {
+    /// Attach resolved inputs and produce the final executor-ready operation.
+    pub fn into_operation(self, sources: Vec<Source>, filters: Filters) -> SetOperation {
+        SetOperation {
+            sources,
+            filters,
+            mappings: self.mappings,
+            tree_mode: self.tree_mode,
+            limit: self.limit,
+            ignore_whitespace: self.ignore_whitespace,
+            write_mode: self.write_mode,
+            report_mode: self.report_mode,
+        }
+    }
+}
+
 /// A single xpath → value mapping for set operations.
 #[derive(Debug, Clone)]
 pub struct SetMapping {
