@@ -15,9 +15,7 @@
                 <private/>
                 <integral_type>int</integral_type>
                 <variable_declarator>
-                  <name>
-                    <type>value</type>
-                  </name>
+                  <name>value</name>
                 </variable_declarator>
                 ;
               </field>
@@ -29,9 +27,7 @@
                     (
                     <param>
                       <integral_type>int</integral_type>
-                      <name>
-                        <type>value</type>
-                      </name>
+                      <name>value</name>
                     </param>
                     )
                   </params>
@@ -45,12 +41,12 @@
                         <member>
                           <this>this</this>
                           .
-                          <type>value</type>
+                          <name>value</name>
                         </member>
                       </left>
                       =
                       <right>
-                        <type>value</type>
+                        <name>value</name>
                       </right>
                     </assign>
                     ;
@@ -68,16 +64,12 @@
                     (
                     <param>
                       <integral_type>int</integral_type>
-                      <name>
-                        <type>a</type>
-                      </name>
+                      <name>a</name>
                     </param>
                     ,
                     <param>
                       <integral_type>int</integral_type>
-                      <name>
-                        <type>b</type>
-                      </name>
+                      <name>b</name>
                     </param>
                     )
                   </params>
@@ -92,11 +84,11 @@
                         +
                       </op>
                       <left>
-                        <type>a</type>
+                        <name>a</name>
                       </left>
                       +
                       <right>
-                        <type>b</type>
+                        <name>b</name>
                       </right>
                     </binary>
                     ;
@@ -113,9 +105,7 @@
                     (
                     <param>
                       <type>String</type>
-                      <name>
-                        <type>message</type>
-                      </name>
+                      <name>message</name>
                     </param>
                     )
                   </params>
@@ -124,18 +114,16 @@
                   {
                   <call>
                     <member>
-                      <type>System</type>
+                      <name>System</name>
                       .
-                      <type>out</type>
+                      <name>out</name>
                     </member>
                     .
-                    <name>
-                      <type>println</type>
-                    </name>
+                    <name>println</name>
                     <arguments>
                       <args>
                         (
-                        <type>message</type>
+                        <name>message</name>
                         )
                       </args>
                     </arguments>
@@ -170,9 +158,7 @@
                         <type>String</type>
                         <dimensions>[]</dimensions>
                       </array>
-                      <name>
-                        <type>args</type>
-                      </name>
+                      <name>args</name>
                     </param>
                     )
                   </params>
@@ -182,15 +168,11 @@
                   <local_variable_declaration>
                     <integral_type>int</integral_type>
                     <variable_declarator>
-                      <name>
-                        <type>result</type>
-                      </name>
+                      <name>result</name>
                       =
                       <value>
                         <call>
-                          <name>
-                            <type>add</type>
-                          </name>
+                          <name>add</name>
                           <arguments>
                             <args>
                               (
@@ -207,14 +189,12 @@
                   </local_variable_declaration>
                   <call>
                     <member>
-                      <type>System</type>
+                      <name>System</name>
                       .
-                      <type>out</type>
+                      <name>out</name>
                     </member>
                     .
-                    <name>
-                      <type>println</type>
-                    </name>
+                    <name>println</name>
                     <arguments>
                       <args>
                         (
@@ -232,7 +212,7 @@
                           </left>
                           +
                           <right>
-                            <type>result</type>
+                            <name>result</name>
                           </right>
                         </binary>
                         )
@@ -272,15 +252,11 @@
               <enum_body>
                 {
                 <enum_constant>
-                  <name>
-                    <type>ACTIVE</type>
-                  </name>
+                  <name>ACTIVE</name>
                 </enum_constant>
                 ,
                 <enum_constant>
-                  <name>
-                    <type>INACTIVE</type>
-                  </name>
+                  <name>INACTIVE</name>
                 </enum_constant>
                 }
               </enum_body>

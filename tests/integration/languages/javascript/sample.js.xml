@@ -11,9 +11,9 @@
             <parameters>
               <params>
                 (
-                <type>a</type>
+                <name>a</name>
                 ,
-                <type>b</type>
+                <name>b</name>
                 )
               </params>
             </parameters>
@@ -28,11 +28,11 @@
                       +
                     </op>
                     <left>
-                      <type>a</type>
+                      <name>a</name>
                     </left>
                     +
                     <right>
-                      <type>b</type>
+                      <name>b</name>
                     </right>
                   </binary>
                   ;
@@ -53,9 +53,7 @@
                 <variable>
                   <const/>
                   const
-                  <name>
-                    <type>result</type>
-                  </name>
+                  <name>result</name>
                   =
                   <value>
                     <call>
@@ -98,7 +96,7 @@
                         <string_fragment>Result: </string_fragment>
                         <template_substitution>
                           ${
-                          <type>result</type>
+                          <name>result</name>
                           }
                         </template_substitution>
                         `

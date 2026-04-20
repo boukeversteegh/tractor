@@ -27,16 +27,12 @@
               <params>
                 (
                 <param>
-                  <name>
-                    <type>a</type>
-                  </name>
+                  <name>a</name>
                   <type>int</type>
                 </param>
                 ,
                 <param>
-                  <name>
-                    <type>b</type>
-                  </name>
+                  <name>b</name>
                   <type>int</type>
                 </param>
                 )
@@ -54,11 +50,11 @@
                       +
                     </op>
                     <left>
-                      <type>a</type>
+                      <name>a</name>
                     </left>
                     +
                     <right>
-                      <type>b</type>
+                      <name>b</name>
                     </right>
                   </binary>
                 </expression_list>
@@ -78,14 +74,14 @@
               <short_var_declaration>
                 <left>
                   <expression_list>
-                    <type>result</type>
+                    <name>result</name>
                   </expression_list>
                 </left>
                 :=
                 <right>
                   <expression_list>
                     <call>
-                      <type>add</type>
+                      <name>add</name>
                       <arguments>
                         <argument_list>
                           (
@@ -101,7 +97,7 @@
               </short_var_declaration>
               <call>
                 <member>
-                  <type>fmt</type>
+                  <name>fmt</name>
                   .
                   <field>Printf</field>
                 </member>
@@ -115,7 +111,7 @@
                       &quot;
                     </string>
                     ,
-                    <type>result</type>
+                    <name>result</name>
                     )
                   </argument_list>
                 </arguments>

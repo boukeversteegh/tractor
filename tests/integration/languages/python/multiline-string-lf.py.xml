@@ -6,7 +6,7 @@
         <module>
           <assign>
             <left>
-              <type>msg</type>
+              <name>msg</name>
             </left>
             =
             <right>
