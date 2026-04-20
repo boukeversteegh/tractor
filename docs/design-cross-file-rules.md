@@ -40,6 +40,18 @@ This means you cannot write rules about relationships between files.
    must export a function whose name matches the filename." Requires
    relating file-system metadata to AST content.
 
+7. **Repeated string literals** — "any string literal longer than 4
+   characters that appears more than 3 times across the project should
+   be extracted into a constant." The closest today is
+   `tractor test -x "string[.='some literal']" --expect 4`, which runs
+   across all globbed files but falls short: the `--expect` assertion
+   has no `<` / `>` comparison operator, and there is no way to group
+   *by distinct string* and count each group. What's needed is a map
+   of `literal -> occurrences`, reduced by count, with an assertion
+   (`count > 3`) applied to each entry — impossible when each file is
+   queried in isolation and the per-file matches are never aggregated
+   by value.
+
 All of these are **project-level conventions** — the kind of hard-won
 lessons that tractor's mission ("Write a rule once. Enforce it
 everywhere.") is designed to capture.
@@ -187,6 +199,19 @@ let $expected := replace(
 where not($f/export/function[name = $expected])
 return $f
 ```
+
+**Repeated string literals:**
+```xpath
+(: String literals >4 chars occurring >3 times across the project :)
+for $lit in distinct-values(//file//string[string-length(.) > 4])
+let $uses := //file//string[. = $lit]
+where count($uses) > 3
+return $lit
+```
+Unlike the per-file `--expect` assertion, this groups by distinct
+value (`distinct-values()`), counts occurrences across the merged
+project document, and applies a `>` comparison — none of which are
+expressible when each file is queried in isolation.
 
 All pure XPath 3.1. No new syntax. AI can write these.
 
