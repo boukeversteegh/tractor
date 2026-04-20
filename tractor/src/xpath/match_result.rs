@@ -119,6 +119,13 @@ impl Match {
         self
     }
 
+    /// Returns `true` when this match's file is the pathless sentinel —
+    /// i.e. the match came from inline input (`-s`/stdin) with no
+    /// meaningful path to display or write back to.
+    pub fn is_pathless(&self) -> bool {
+        crate::model::report::is_pathless_file(&self.file)
+    }
+
     /// Extract source snippet from source lines based on location
     pub fn extract_source_snippet(&self) -> String {
         if self.source_lines.is_empty() || self.line == 0 {

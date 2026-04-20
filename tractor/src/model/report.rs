@@ -98,6 +98,16 @@ impl DiagnosticOrigin {
 /// without crossing the binary/library module-role boundary.
 pub const PATHLESS_LABEL: &str = "<string>";
 
+/// Returns `true` when a file path equals the pathless sentinel.
+///
+/// Consumers should prefer a typed predicate (`Match::is_pathless`,
+/// `ReportMatch::is_pathless`) over re-deriving the check at a call site.
+/// This helper exists for the cases where only a bare `&str` is available
+/// (e.g. a group-hoisted file path in a renderer).
+pub fn is_pathless_file(file: &str) -> bool {
+    file == PATHLESS_LABEL
+}
+
 // ---------------------------------------------------------------------------
 // ReportMatch
 // ---------------------------------------------------------------------------
@@ -152,6 +162,15 @@ pub struct ReportOutput {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub file: Option<String>,
     pub content: String,
+}
+
+impl ReportMatch {
+    /// Returns `true` when this match's file is the pathless sentinel —
+    /// i.e. the match came from inline input (`-s`/stdin) with no
+    /// meaningful path to display or write back to.
+    pub fn is_pathless(&self) -> bool {
+        is_pathless_file(&self.file)
+    }
 }
 
 impl Serialize for ReportMatch {

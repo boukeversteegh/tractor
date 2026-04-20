@@ -5,7 +5,6 @@
 //! (literal text splice — the caller is responsible for escaping/formatting).
 
 use crate::xpath::Match;
-use crate::model::report::PATHLESS_LABEL;
 use std::collections::HashMap;
 use std::fmt;
 use std::fs;
@@ -213,7 +212,7 @@ pub fn apply_replacements(matches: &[Match], new_value: &str) -> Result<ReplaceS
     // Source flow the executor already filters these out before reaching
     // apply_replacements; this guards against future callers that forget.
     for m in matches {
-        if m.file == PATHLESS_LABEL {
+        if m.is_pathless() {
             return Err(ReplaceError::NoFilePath {
                 description: m.file.clone(),
             });
@@ -258,6 +257,7 @@ pub fn apply_replacements(matches: &[Match], new_value: &str) -> Result<ReplaceS
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::model::report::PATHLESS_LABEL;
     use std::sync::Arc;
 
     #[test]
