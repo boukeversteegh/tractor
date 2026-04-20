@@ -304,11 +304,12 @@ templates — distinct from `-m` which produces data.
 
 ## 2. The Report Envelope
 
-Every tractor command produces a **report**. The report envelope is
-always present, in every format, for every command. This ensures output
-is always valid XML/JSON and pipeable.
+Every tractor command produces a **report**. By default, or with
+`-p report`, tractor emits the full report envelope. With any other
+`-p` value, tractor emits the selected projection instead of the full
+envelope.
 
-### Why always an envelope
+### Why the default is an envelope
 
 Without an envelope, query mode outputs bare fragments:
 
@@ -318,39 +319,40 @@ Without an envelope, query mode outputs bare fragments:
 ```
 
 This is not valid XML (no single root element). Similarly, bare JSON
-objects without an array break standard parsers. The envelope makes
-output reliably parseable.
+objects without an array break standard parsers. The envelope keeps the
+default output reliably parseable.
 
-### Structure by command
+### Default report shape
 
-**Query mode** (minimal — no summary):
+**Query mode** (no verdict; summary omitted unless requested by the view):
 ```xml
 <report>
-  <matches>
+  <results>
     <match file="src/Foo.cs" line="5" column="1">
-      <function><name>main</name>...</function>
+      <tree><function><name>main</name>...</function></tree>
     </match>
-  </matches>
+  </results>
 </report>
 ```
 
-**Check/test mode** (with summary):
+**Check/test/set mode** (summary container present):
 ```xml
 <report>
   <summary>
-    <passed>false</passed>
-    <total>3</total>
-    <files>2</files>
-    <errors>3</errors>
-    <warnings>0</warnings>
+    <success>false</success>
+    <totals>
+      <results>3</results>
+      <files>2</files>
+      <errors>3</errors>
+    </totals>
   </summary>
-  <matches>
+  <results>
     <match file="src/Foo.cs" line="12" column="5">
       <value>// TODO fix</value>
       <reason>TODO found</reason>
       <severity>error</severity>
     </match>
-  </matches>
+  </results>
 </report>
 ```
 
@@ -359,13 +361,14 @@ The same structure in JSON:
 ```json
 {
   "summary": {
-    "passed": false,
-    "total": 3,
-    "files": 2,
-    "errors": 3,
-    "warnings": 0
+    "success": false,
+    "totals": {
+      "results": 3,
+      "files": 2,
+      "errors": 3
+    }
   },
-  "matches": [
+  "results": [
     {
       "file": "src/Foo.cs",
       "line": 12,
@@ -378,7 +381,27 @@ The same structure in JSON:
 }
 ```
 
+### Projection shape
+
+When `-p` is present and not `report`, the selected projection determines
+the top-level shape:
+
+- `-p results` emits the results list directly.
+- `-p tree`, `value`, `source`, and `lines` emit sequences in JSON/YAML,
+  `<results>`-wrapped sequences in XML, and newline-separated items in text.
+- `-p summary`, `totals`, and `schema` emit those singular sections directly.
+- `-p count` emits a bare scalar in text/JSON/YAML and a synthetic
+  `<count>` root in XML.
+
+### Contracts
+
+- Parseability: XML output is always a single rooted document, JSON is
+  always valid JSON, and YAML is always valid YAML.
+- Content-independence: the output shape is determined by flags alone,
+  not by whether the query returns 0, 1, or many results.
+
 ---
+
 
 ## 3. File Grouping
 

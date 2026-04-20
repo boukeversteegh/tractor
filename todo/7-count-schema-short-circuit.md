@@ -1,5 +1,11 @@
 # Count and Schema views bypass the Report pipeline
 
+**Status**: Resolved by the projection/render-path refactor.
+
+`-v count` and `-v schema` now flow through the normal report builder and
+renderer, so they compose with `-f` and the new `-p` projection model. Bare
+scalar count output is available explicitly via `-p count`.
+
 ## Problem
 
 When `-v count` or `-v schema` is specified, `run_query` short-circuits before building

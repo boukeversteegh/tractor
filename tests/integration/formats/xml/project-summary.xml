@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report>
+  <summary>
+    <success>false</success>
+    <totals>
+      <results>1</results>
+      <files>0</files>
+      <fatals>1</fatals>
+    </totals>
+  </summary>
+  <results>
+    <match>
+      <origin>cli</origin>
+      <reason>-p summary is not compatible with --group</reason>
+      <severity>fatal</severity>
+    </match>
+  </results>
+</report>

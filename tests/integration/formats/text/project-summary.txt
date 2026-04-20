@@ -1,0 +1,1 @@
+cli: error: -p/--single is not supported with -f gcc (line-oriented format)

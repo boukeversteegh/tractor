@@ -20,20 +20,24 @@ pub enum OutputFormat {
 impl OutputFormat {
     /// All variants in display order.
     const ALL: &[OutputFormat] = &[
-        OutputFormat::Text, OutputFormat::Json, OutputFormat::Yaml,
-        OutputFormat::Xml, OutputFormat::Gcc, OutputFormat::Github,
+        OutputFormat::Text,
+        OutputFormat::Json,
+        OutputFormat::Yaml,
+        OutputFormat::Xml,
+        OutputFormat::Gcc,
+        OutputFormat::Github,
         OutputFormat::ClaudeCode,
     ];
 
     /// Canonical CLI name for this format.
     pub fn name(&self) -> &'static str {
         match self {
-            OutputFormat::Text      => FORMAT_TEXT,
-            OutputFormat::Json      => FORMAT_JSON,
-            OutputFormat::Yaml      => FORMAT_YAML,
-            OutputFormat::Xml       => FORMAT_XML,
-            OutputFormat::Gcc       => FORMAT_GCC,
-            OutputFormat::Github    => FORMAT_GITHUB,
+            OutputFormat::Text => FORMAT_TEXT,
+            OutputFormat::Json => FORMAT_JSON,
+            OutputFormat::Yaml => FORMAT_YAML,
+            OutputFormat::Xml => FORMAT_XML,
+            OutputFormat::Gcc => FORMAT_GCC,
+            OutputFormat::Github => FORMAT_GITHUB,
             OutputFormat::ClaudeCode => FORMAT_CLAUDE_CODE,
         }
     }
@@ -41,22 +45,38 @@ impl OutputFormat {
     /// Short description for help and error output.
     pub fn description(&self) -> &'static str {
         match self {
-            OutputFormat::Text      => "Human-readable plain text",
-            OutputFormat::Json      => "JSON report envelope",
-            OutputFormat::Yaml      => "YAML report envelope",
-            OutputFormat::Xml       => "XML report envelope",
-            OutputFormat::Gcc       => "file:line:col: severity: reason (for CI/editors)",
-            OutputFormat::Github    => "GitHub Actions annotation (::error file=...)",
+            OutputFormat::Text => "Human-readable plain text",
+            OutputFormat::Json => "JSON report envelope",
+            OutputFormat::Yaml => "YAML report envelope",
+            OutputFormat::Xml => "XML report envelope",
+            OutputFormat::Gcc => "file:line:col: severity: reason (for CI/editors)",
+            OutputFormat::Github => "GitHub Actions annotation (::error file=...)",
             OutputFormat::ClaudeCode => "Claude Code hook JSON (use with --hook)",
         }
+    }
+
+    pub fn supports_projection(&self) -> bool {
+        matches!(
+            self,
+            OutputFormat::Text | OutputFormat::Json | OutputFormat::Yaml | OutputFormat::Xml
+        )
     }
 
     /// Full `long_help` text for the `-f` / `--format` flag.
     pub fn format_long_help(default: &str) -> String {
         let mut lines = vec![format!("Output format [default: {default}]")];
-        let max_name = OutputFormat::ALL.iter().map(|f| f.name().len()).max().unwrap_or(0);
+        let max_name = OutputFormat::ALL
+            .iter()
+            .map(|f| f.name().len())
+            .max()
+            .unwrap_or(0);
         for f in OutputFormat::ALL {
-            lines.push(format!("  {:width$}  {}", f.name(), f.description(), width = max_name));
+            lines.push(format!(
+                "  {:width$}  {}",
+                f.name(),
+                f.description(),
+                width = max_name
+            ));
         }
         lines.join("\n")
     }
@@ -64,26 +84,28 @@ impl OutputFormat {
     pub fn from_str(s: &str) -> Result<Self, String> {
         let all_names: Vec<&str> = OutputFormat::ALL.iter().map(|f| f.name()).collect();
         match s.to_lowercase().as_str() {
-            FORMAT_TEXT    => Ok(OutputFormat::Text),
-            FORMAT_JSON    => Ok(OutputFormat::Json),
-            FORMAT_YAML    => Ok(OutputFormat::Yaml),
-            FORMAT_XML     => Ok(OutputFormat::Xml),
-            FORMAT_GCC     => Ok(OutputFormat::Gcc),
-            FORMAT_GITHUB     => Ok(OutputFormat::Github),
+            FORMAT_TEXT => Ok(OutputFormat::Text),
+            FORMAT_JSON => Ok(OutputFormat::Json),
+            FORMAT_YAML => Ok(OutputFormat::Yaml),
+            FORMAT_XML => Ok(OutputFormat::Xml),
+            FORMAT_GCC => Ok(OutputFormat::Gcc),
+            FORMAT_GITHUB => Ok(OutputFormat::Github),
             FORMAT_CLAUDE_CODE => Ok(OutputFormat::ClaudeCode),
             _ => Err(format!(
-                "invalid format '{}'. Valid formats: {}", s, all_names.join(", "),
+                "invalid format '{}'. Valid formats: {}",
+                s,
+                all_names.join(", "),
             )),
         }
     }
 }
 
-pub const FORMAT_TEXT:   &str = "text";
-pub const FORMAT_JSON:   &str = "json";
-pub const FORMAT_YAML:   &str = "yaml";
-pub const FORMAT_XML:    &str = "xml";
-pub const FORMAT_GCC:    &str = "gcc";
-pub const FORMAT_GITHUB:     &str = "github";
+pub const FORMAT_TEXT: &str = "text";
+pub const FORMAT_JSON: &str = "json";
+pub const FORMAT_YAML: &str = "yaml";
+pub const FORMAT_XML: &str = "xml";
+pub const FORMAT_GCC: &str = "gcc";
+pub const FORMAT_GITHUB: &str = "github";
 pub const FORMAT_CLAUDE_CODE: &str = "claude-code";
 
 // ---------------------------------------------------------------------------
@@ -106,11 +128,12 @@ impl HookType {
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s.to_lowercase().replace('_', "-").as_str() {
             "post-tool-use" => Ok(HookType::PostToolUse),
-            "pre-tool-use"  => Ok(HookType::PreToolUse),
-            "stop"          => Ok(HookType::PostToolUse), // same envelope as post-tool-use
-            "context"       => Ok(HookType::Context),
+            "pre-tool-use" => Ok(HookType::PreToolUse),
+            "stop" => Ok(HookType::PostToolUse), // same envelope as post-tool-use
+            "context" => Ok(HookType::Context),
             _ => Err(format!(
-                "invalid hook type '{}'. Valid types: post-tool-use, pre-tool-use, stop, context", s,
+                "invalid hook type '{}'. Valid types: post-tool-use, pre-tool-use, stop, context",
+                s,
             )),
         }
     }
@@ -149,67 +172,83 @@ pub enum ViewField {
 impl ViewField {
     /// All variants in canonical display order.
     const ALL: &[ViewField] = &[
-        ViewField::Tree, ViewField::Value, ViewField::Source, ViewField::Lines,
-        ViewField::File, ViewField::Line, ViewField::Column,
-        ViewField::Reason, ViewField::Severity, ViewField::Totals,
-        ViewField::Count, ViewField::Schema, ViewField::Query,
-        ViewField::Status, ViewField::Output, ViewField::Command, ViewField::Origin,
+        ViewField::Tree,
+        ViewField::Value,
+        ViewField::Source,
+        ViewField::Lines,
+        ViewField::File,
+        ViewField::Line,
+        ViewField::Column,
+        ViewField::Reason,
+        ViewField::Severity,
+        ViewField::Totals,
+        ViewField::Count,
+        ViewField::Schema,
+        ViewField::Query,
+        ViewField::Status,
+        ViewField::Output,
+        ViewField::Command,
+        ViewField::Origin,
     ];
 
     /// Canonical CLI name for this field (the primary name accepted by `-v`).
     pub fn name(&self) -> &'static str {
         match self {
-            ViewField::Tree     => "tree",
-            ViewField::Value    => "value",
-            ViewField::Source   => "source",
-            ViewField::Lines    => "lines",
-            ViewField::File     => "file",
-            ViewField::Line     => "line",
-            ViewField::Column   => "column",
-            ViewField::Reason   => "reason",
+            ViewField::Tree => "tree",
+            ViewField::Value => "value",
+            ViewField::Source => "source",
+            ViewField::Lines => "lines",
+            ViewField::File => "file",
+            ViewField::Line => "line",
+            ViewField::Column => "column",
+            ViewField::Reason => "reason",
             ViewField::Severity => "severity",
-            ViewField::Totals   => "totals",
-            ViewField::Count    => "count",
-            ViewField::Schema   => "schema",
-            ViewField::Query    => "query",
-            ViewField::Status   => "status",
-            ViewField::Output   => "output",
-            ViewField::Command  => "command",
-            ViewField::Origin   => "origin",
+            ViewField::Totals => "totals",
+            ViewField::Count => "count",
+            ViewField::Schema => "schema",
+            ViewField::Query => "query",
+            ViewField::Status => "status",
+            ViewField::Output => "output",
+            ViewField::Command => "command",
+            ViewField::Origin => "origin",
         }
     }
 
     /// Short description for help and error output.
     pub fn description(&self) -> &'static str {
         match self {
-            ViewField::Tree     => "Parsed source tree",
-            ViewField::Value    => "Text content of matched nodes",
-            ViewField::Source   => "Exact matched source text",
-            ViewField::Lines    => "Full source lines containing each match",
-            ViewField::File     => "File path of the match",
-            ViewField::Line     => "Line number of the match",
-            ViewField::Column   => "Column number of the match",
-            ViewField::Reason   => "Reason message for violations",
+            ViewField::Tree => "Parsed source tree",
+            ViewField::Value => "Text content of matched nodes",
+            ViewField::Source => "Exact matched source text",
+            ViewField::Lines => "Full source lines containing each match",
+            ViewField::File => "File path of the match",
+            ViewField::Line => "Line number of the match",
+            ViewField::Column => "Column number of the match",
+            ViewField::Reason => "Reason message for violations",
             ViewField::Severity => "Severity level (error/warning)",
-            ViewField::Totals   => "Summary totals across all matches",
-            ViewField::Count    => "Total match count",
-            ViewField::Schema   => "Structural overview of element types",
-            ViewField::Query    => "Echo the XPath query as received",
-            ViewField::Status   => "Whether each match was updated or unchanged",
-            ViewField::Output   => "Full modified content (for --stdout)",
-            ViewField::Command  => "Operation type (check, query, etc.)",
-            ViewField::Origin   => "Diagnostic origin (xpath, cli, etc.)",
+            ViewField::Totals => "Summary totals across all matches",
+            ViewField::Count => "Total match count",
+            ViewField::Schema => "Structural overview of element types",
+            ViewField::Query => "Echo the XPath query as received",
+            ViewField::Status => "Whether each match was updated or unchanged",
+            ViewField::Output => "Full modified content (for --stdout)",
+            ViewField::Command => "Operation type (check, query, etc.)",
+            ViewField::Origin => "Diagnostic origin (xpath, cli, etc.)",
         }
     }
 
     /// Category label for grouping in help output.
     fn category(&self) -> &'static str {
         match self {
-            ViewField::Tree | ViewField::Value | ViewField::Source
-            | ViewField::Lines | ViewField::Schema => "content",
+            ViewField::Tree
+            | ViewField::Value
+            | ViewField::Source
+            | ViewField::Lines
+            | ViewField::Schema => "content",
             ViewField::File | ViewField::Line | ViewField::Column => "location",
-            ViewField::Reason | ViewField::Severity | ViewField::Origin
-            | ViewField::Command => "diagnostic",
+            ViewField::Reason | ViewField::Severity | ViewField::Origin | ViewField::Command => {
+                "diagnostic"
+            }
             ViewField::Count | ViewField::Totals | ViewField::Query => "summary",
             ViewField::Status | ViewField::Output => "set mode",
         }
@@ -219,16 +258,28 @@ impl ViewField {
     /// Used by both `--help` (via `view_long_help`) and error messages.
     pub fn help_text() -> String {
         let categories: &[&str] = &["content", "location", "diagnostic", "summary", "set mode"];
-        let max_name_len = ViewField::ALL.iter().map(|f| f.name().len()).max().unwrap_or(0);
+        let max_name_len = ViewField::ALL
+            .iter()
+            .map(|f| f.name().len())
+            .max()
+            .unwrap_or(0);
         let mut sections = Vec::new();
         for &cat in categories {
-            let fields: Vec<&ViewField> = ViewField::ALL.iter()
+            let fields: Vec<&ViewField> = ViewField::ALL
+                .iter()
                 .filter(|f| f.category() == cat)
                 .collect();
-            if fields.is_empty() { continue; }
+            if fields.is_empty() {
+                continue;
+            }
             let mut lines = vec![format!("  {}:", cat)];
             for f in fields {
-                lines.push(format!("    {:width$}  {}", f.name(), f.description(), width = max_name_len));
+                lines.push(format!(
+                    "    {:width$}  {}",
+                    f.name(),
+                    f.description(),
+                    width = max_name_len
+                ));
             }
             sections.push(lines.join("\n"));
         }
@@ -260,28 +311,30 @@ impl ViewField {
     fn from_str(s: &str) -> Result<Self, String> {
         match s {
             "tree" | "ast" => Ok(ViewField::Tree),
-            "value"        => Ok(ViewField::Value),
-            "source"       => Ok(ViewField::Source),
-            "lines"        => Ok(ViewField::Lines),
-            "file"         => Ok(ViewField::File),
-            "line"         => Ok(ViewField::Line),
-            "column"       => Ok(ViewField::Column),
-            "reason"       => Ok(ViewField::Reason),
-            "severity"     => Ok(ViewField::Severity),
+            "value" => Ok(ViewField::Value),
+            "source" => Ok(ViewField::Source),
+            "lines" => Ok(ViewField::Lines),
+            "file" => Ok(ViewField::File),
+            "line" => Ok(ViewField::Line),
+            "column" => Ok(ViewField::Column),
+            "reason" => Ok(ViewField::Reason),
+            "severity" => Ok(ViewField::Severity),
             "totals" | "summary" => Ok(ViewField::Totals),
-            "count"        => Ok(ViewField::Count),
-            "schema"       => Ok(ViewField::Schema),
-            "query"        => Ok(ViewField::Query),
-            "status"       => Ok(ViewField::Status),
-            "output"       => Ok(ViewField::Output),
-            "command"      => Ok(ViewField::Command),
-            "origin"       => Ok(ViewField::Origin),
+            "count" => Ok(ViewField::Count),
+            "schema" => Ok(ViewField::Schema),
+            "query" => Ok(ViewField::Query),
+            "status" => Ok(ViewField::Status),
+            "output" => Ok(ViewField::Output),
+            "command" => Ok(ViewField::Command),
+            "origin" => Ok(ViewField::Origin),
             "gcc" | "github" => Err(format!(
-                "'{}' is a format, not a view. Use -f {} instead of -v {}", s, s, s,
+                "'{}' is a format, not a view. Use -f {} instead of -v {}",
+                s, s, s,
             )),
             _ => Err(format!(
                 "invalid view '{}'.\n\nValid views:\n{}",
-                s, ViewField::help_text(),
+                s,
+                ViewField::help_text(),
             )),
         }
     }
@@ -296,6 +349,12 @@ pub struct ViewSet {
     pub fields: Vec<ViewField>,
 }
 
+#[derive(Debug, Clone)]
+pub struct ParsedViewSet {
+    pub resolved: ViewSet,
+    pub explicit_fields: Vec<ViewField>,
+}
+
 #[allow(dead_code)]
 impl ViewSet {
     pub fn new(fields: Vec<ViewField>) -> Self {
@@ -303,7 +362,9 @@ impl ViewSet {
     }
 
     pub fn single(field: ViewField) -> Self {
-        ViewSet { fields: vec![field] }
+        ViewSet {
+            fields: vec![field],
+        }
     }
 
     pub fn from_fields(fields: Vec<ViewField>) -> Self {
@@ -345,36 +406,56 @@ impl ViewSet {
 /// `default_fields` is ignored. Duplicate fields are silently ignored.
 ///
 /// Mixing plain field names with `+`/`-` prefixed modifiers is an error.
-pub fn parse_view_set(s: &str, default_fields: &[ViewField]) -> Result<ViewSet, String> {
-    let tokens: Vec<&str> = s.split(',')
+pub fn parse_view_selection(
+    user_view: Option<&str>,
+    default_fields: &[ViewField],
+) -> Result<ParsedViewSet, String> {
+    let Some(s) = user_view else {
+        return Ok(ParsedViewSet {
+            resolved: ViewSet::from_fields(default_fields.to_vec()),
+            explicit_fields: vec![],
+        });
+    };
+
+    let tokens: Vec<&str> = s
+        .split(',')
         .map(|p| p.trim())
         .filter(|p| !p.is_empty())
         .collect();
 
     if tokens.is_empty() {
-        return Err("view cannot be empty".to_string());
+        return Ok(ParsedViewSet {
+            resolved: ViewSet::new(vec![]),
+            explicit_fields: vec![],
+        });
     }
 
-    let has_modifier = tokens.iter().any(|p| p.starts_with('+') || p.starts_with('-'));
-    let has_plain = tokens.iter().any(|p| !p.starts_with('+') && !p.starts_with('-'));
+    let has_modifier = tokens
+        .iter()
+        .any(|p| p.starts_with('+') || p.starts_with('-'));
+    let has_plain = tokens
+        .iter()
+        .any(|p| !p.starts_with('+') && !p.starts_with('-'));
 
     if has_modifier && has_plain {
-        return Err(
-            "cannot mix plain field names with +/- modifiers in -v. \
+        return Err("cannot mix plain field names with +/- modifiers in -v. \
              Use either an explicit list (e.g. -v file,line,reason) \
              or only modifiers (e.g. -v -lines,+source)."
-                .to_string(),
-        );
+            .to_string());
     }
 
     if has_modifier {
         // Modifier mode: start from the defaults and apply each +/- token.
         let mut fields: Vec<ViewField> = default_fields.to_vec();
+        let mut explicit_fields = Vec::new();
         for token in &tokens {
             if let Some(field_str) = token.strip_prefix('+') {
                 let field = ViewField::from_str(&field_str.to_lowercase())?;
                 if !fields.contains(&field) {
                     fields.push(field);
+                }
+                if !explicit_fields.contains(&field) {
+                    explicit_fields.push(field);
                 }
             } else if let Some(field_str) = token.strip_prefix('-') {
                 let field = ViewField::from_str(&field_str.to_lowercase())?;
@@ -384,7 +465,10 @@ pub fn parse_view_set(s: &str, default_fields: &[ViewField]) -> Result<ViewSet, 
         if fields.is_empty() {
             return Err("view cannot be empty after applying modifiers".to_string());
         }
-        Ok(ViewSet::new(fields))
+        Ok(ParsedViewSet {
+            resolved: ViewSet::new(fields),
+            explicit_fields,
+        })
     } else {
         // Explicit list mode: ignore defaults, parse the fields directly.
         let mut fields = Vec::new();
@@ -395,7 +479,10 @@ pub fn parse_view_set(s: &str, default_fields: &[ViewField]) -> Result<ViewSet, 
                 fields.push(field);
             }
         }
-        Ok(ViewSet::new(fields))
+        Ok(ParsedViewSet {
+            resolved: ViewSet::new(fields.clone()),
+            explicit_fields: fields,
+        })
     }
 }
 
@@ -446,4 +533,67 @@ pub fn parse_group_by(s: &str) -> Result<Vec<GroupDimension>, String> {
     Ok(dims)
 }
 
+#[cfg(test)]
+mod tests {
+    use super::{parse_view_selection, OutputFormat, ViewField};
 
+    #[test]
+    fn parse_view_selection_tracks_explicit_fields_for_plain_list() {
+        let parsed =
+            parse_view_selection(Some("tree,file"), &[ViewField::File, ViewField::Line]).unwrap();
+
+        assert_eq!(
+            parsed.resolved.fields,
+            vec![ViewField::Tree, ViewField::File]
+        );
+        assert_eq!(
+            parsed.explicit_fields,
+            vec![ViewField::Tree, ViewField::File]
+        );
+    }
+
+    #[test]
+    fn parse_view_selection_tracks_only_added_fields_for_modifiers() {
+        let parsed = parse_view_selection(
+            Some("+source,-tree"),
+            &[ViewField::File, ViewField::Line, ViewField::Tree],
+        )
+        .unwrap();
+
+        assert_eq!(
+            parsed.resolved.fields,
+            vec![ViewField::File, ViewField::Line, ViewField::Source]
+        );
+        assert_eq!(parsed.explicit_fields, vec![ViewField::Source]);
+    }
+
+    #[test]
+    fn parse_view_selection_uses_defaults_when_view_is_omitted() {
+        let parsed = parse_view_selection(None, &[ViewField::File, ViewField::Line]).unwrap();
+
+        assert_eq!(
+            parsed.resolved.fields,
+            vec![ViewField::File, ViewField::Line]
+        );
+        assert!(parsed.explicit_fields.is_empty());
+    }
+
+    #[test]
+    fn parse_view_selection_allows_an_explicit_empty_view() {
+        let parsed = parse_view_selection(Some(""), &[ViewField::File, ViewField::Line]).unwrap();
+
+        assert!(parsed.resolved.fields.is_empty());
+        assert!(parsed.explicit_fields.is_empty());
+    }
+
+    #[test]
+    fn supports_projection_matches_structured_formats_only() {
+        assert!(OutputFormat::Text.supports_projection());
+        assert!(OutputFormat::Json.supports_projection());
+        assert!(OutputFormat::Yaml.supports_projection());
+        assert!(OutputFormat::Xml.supports_projection());
+        assert!(!OutputFormat::Gcc.supports_projection());
+        assert!(!OutputFormat::Github.supports_projection());
+        assert!(!OutputFormat::ClaudeCode.supports_projection());
+    }
+}

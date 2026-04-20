@@ -87,6 +87,22 @@ View:
   -n, --limit <LIMIT>
           Limit output to first N matches
 
+  -p, --projection <TARGET>
+          Choose which report element is emitted [default: report]
+            tree     Project matched trees
+            value    Project matched values
+            source   Project matched source snippets
+            lines    Project matched source lines
+            schema   Project the schema summary
+            count    Project the total result count
+            summary  Project the summary section
+            totals   Project summary totals
+            results  Project the results list
+            report   Project the full report
+
+      --single
+          Emit only the first projected item, bare with no list wrapper. Implies -n 1 for sequence projections.
+
   -d, --depth <DEPTH>
           Limit XML output depth (useful for large ASTs)
 

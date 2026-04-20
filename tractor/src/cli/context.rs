@@ -1,18 +1,20 @@
-use tractor::{
-    output::should_use_color,
-    output::RenderOptions,
-    NormalizedXpath,
-    TreeMode,
-};
 use crate::cli::SharedArgs;
-use crate::input::{InputMode, resolve_input};
-use crate::format::{OutputFormat, GroupDimension, ViewField, ViewSet, parse_view_set, parse_group_by};
 use crate::format::options::HookType;
+use crate::format::{
+    normalize_output_plan, parse_group_by, parse_view_selection, GroupDimension, OutputFormat,
+    Projection, ViewField, ViewSet,
+};
+use crate::input::{resolve_input, InputMode};
+use tractor::{output::should_use_color, output::RenderOptions, NormalizedXpath, TreeMode};
 
 pub struct RunContext {
     pub xpath: Option<NormalizedXpath>,
     /// Output format (-f).
     pub output_format: OutputFormat,
+    /// Projection target (-p).
+    pub projection: Projection,
+    /// Whether to emit the projection as a single bare item.
+    pub single: bool,
     /// View field selection (-v).
     pub view: ViewSet,
     pub use_color: bool,
@@ -67,26 +69,42 @@ impl RunContext {
             }
         };
 
-        let view = if let Some(s) = user_view {
-            parse_view_set(s, default_view)?
-        } else {
-            ViewSet::from_fields(default_view.to_vec())
-        };
-        let use_color     = if shared.no_color { false } else { should_use_color(&shared.color) };
-        let input         = resolve_input(shared, files, content)?;
-
         let group_by = match shared.group_by.as_deref() {
             Some(s) => parse_group_by(s)?,
             None => default_group_by.to_vec(),
         };
 
+        let parsed_view = parse_view_selection(user_view, default_view)?;
+        let plan = normalize_output_plan(
+            shared.projection.as_deref(),
+            shared.single,
+            shared.limit,
+            parsed_view,
+            message,
+            output_format,
+            !group_by.is_empty(),
+        )?;
+        for warning in &plan.warnings {
+            eprintln!("{warning}");
+        }
+        let use_color = if shared.no_color {
+            false
+        } else {
+            should_use_color(&shared.color)
+        };
+        let input = resolve_input(shared, files, content)?;
+
         let tree_mode = match shared.tree.as_deref() {
             Some("raw") => Some(TreeMode::Raw),
             Some("structure") => Some(TreeMode::Structure),
             Some("data") => Some(TreeMode::Data),
-            Some(other) => return Err(format!(
-                "invalid --tree value '{}': use 'raw', 'structure', or 'data'", other
-            ).into()),
+            Some(other) => {
+                return Err(format!(
+                    "invalid --tree value '{}': use 'raw', 'structure', or 'data'",
+                    other
+                )
+                .into())
+            }
             None => None, // auto-detect at parse time
         };
 
@@ -99,11 +117,13 @@ impl RunContext {
         Ok(RunContext {
             xpath,
             output_format,
-            view,
+            projection: plan.projection,
+            single: plan.single,
+            view: plan.view,
             use_color,
-            message,
+            message: plan.message,
             input,
-            limit: shared.limit,
+            limit: plan.limit,
             depth: shared.depth,
             parse_depth: shared.parse_depth,
             meta: shared.meta,

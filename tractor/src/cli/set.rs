@@ -46,7 +46,7 @@ use crate::executor::{
 use crate::cli::context::RunContext;
 use crate::input::InputMode;
 use crate::format::{ViewField, GroupDimension, render_report};
-use crate::matcher::{project_report, apply_message_template};
+use crate::matcher::prepare_report_for_output;
 use super::config::{ConfigRunParams, run_from_config};
 
 /// Separate positional args into files and an optional path expression.
@@ -215,13 +215,7 @@ pub fn run_set(args: SetArgs) -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
-    if let Some(ref template) = ctx.message {
-        apply_message_template(&mut report, template);
-    }
-
-    project_report(&mut report, &ctx.view);
-    let dims: Vec<&str> = ctx.group_by.iter().map(|d| d.as_str()).collect();
-    let report = report.with_grouping(&dims);
+    prepare_report_for_output(&mut report, &ctx);
     render_report(&report, &ctx, None)
 }
 
