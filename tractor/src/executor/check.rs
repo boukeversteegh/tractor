@@ -18,7 +18,7 @@ use super::match_to_report_match;
 // Operation type
 // ---------------------------------------------------------------------------
 
-/// A check operation: run XPath rules against sources, report violations.
+/// A check operation plan: run XPath rules against sources, report violations.
 ///
 /// Construction site has already resolved file globs, CLI intersection,
 /// diff-files filter, inline-source wiring, and language detection into
@@ -27,7 +27,7 @@ use super::match_to_report_match;
 /// executor just runs already-prepared matchers. Downstream is a plain
 /// `Vec<Source>` × `Vec<CompiledRule>` loop.
 #[derive(Debug, Clone)]
-pub struct CheckOperation {
+pub struct CheckOperationPlan {
     /// Pre-resolved unified input list (disk and/or inline).
     pub sources: Vec<Source>,
     /// Pre-built result filters (diff-lines, etc.). Applied inside
@@ -53,7 +53,7 @@ pub struct CheckOperation {
 // ---------------------------------------------------------------------------
 
 pub(crate) fn execute_check(
-    op: &CheckOperation,
+    op: &CheckOperationPlan,
     ctx: &ExecCtx<'_>,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {

@@ -36,8 +36,8 @@ use tractor::rule::Rule;
 use tractor::tree_mode::TreeMode;
 
 use crate::executor::{
-    QueryDraft, QueryExpr, SetDraft, SetMapping, SetReportMode, SetWriteMode,
-    TestAssertion, TestDraft,
+    QueryExpr, QueryOperation, SetMapping, SetOperation, SetReportMode, SetWriteMode,
+    TestAssertion, TestOperation,
 };
 use crate::input::Source;
 
@@ -372,10 +372,10 @@ pub struct OperationInputs {
 /// Globs are still raw strings here because the base directory they
 /// should resolve against isn't known until the CLI layer determines
 /// `base_dir` from the config file's location. Compiled into a
-/// [`crate::executor::CheckOperation`] by the input planner once the
+/// [`crate::executor::CheckOperationPlan`] by the input planner once the
 /// shared `FileResolver` has resolved the op's sources and filters.
 #[derive(Debug, Clone)]
-pub struct CheckDraft {
+pub struct CheckOperation {
     pub rules: Vec<Rule>,
     pub ruleset_include: Vec<String>,
     pub ruleset_exclude: Vec<String>,
@@ -387,32 +387,32 @@ pub struct CheckDraft {
 
 /// A config-sourced operation, paired with the per-op input-resolution data
 /// that the runner needs to call `FileResolver::resolve`. Every variant
-/// carries a draft — the op-specific metadata only, with no
-/// `sources`/`filters` placeholder state. The planner hands resolved
-/// inputs to `OperationDraft::into_operation` to produce the final
-/// executor-ready `Operation`. The Check variant additionally defers
-/// glob compilation until `base_dir` is known (see [`CheckDraft`]).
+/// carries the op-specific metadata only, with no `sources`/`filters`
+/// placeholder state. The planner hands resolved inputs to
+/// `Operation::into_plan` to produce the final executor-ready
+/// `OperationPlan`. The Check variant additionally defers glob compilation
+/// until `base_dir` is known (see [`CheckOperation`]).
 #[derive(Debug, Clone)]
 pub enum ConfigOperation {
-    Check { inputs: OperationInputs, draft: CheckDraft },
-    Set { inputs: OperationInputs, draft: SetDraft },
-    Query { inputs: OperationInputs, draft: QueryDraft },
-    Test { inputs: OperationInputs, draft: TestDraft },
+    Check { inputs: OperationInputs, op: CheckOperation },
+    Set { inputs: OperationInputs, op: SetOperation },
+    Query { inputs: OperationInputs, op: QueryOperation },
+    Test { inputs: OperationInputs, op: TestOperation },
 }
 
 impl ConfigOperation {
     /// Split the config-side data into the two parts the input planner needs:
     /// the per-op `OperationInputs` (what files/filters the op asked for) and
-    /// the `OperationDraft` (everything else the executor needs). The planner
+    /// the `Operation` (everything else the executor needs). The planner
     /// calls the resolver with `OperationInputs`, then hands the resolved
-    /// sources/filters back to `OperationDraft::into_operation`.
-    pub fn into_draft(self) -> (OperationInputs, crate::input::plan::OperationDraft) {
-        use crate::input::plan::OperationDraft;
+    /// sources/filters back to `Operation::into_plan`.
+    pub fn into_parts(self) -> (OperationInputs, crate::input::plan::Operation) {
+        use crate::input::plan::Operation;
         match self {
-            ConfigOperation::Check { inputs, draft } => (inputs, OperationDraft::Check(draft)),
-            ConfigOperation::Set { inputs, draft } => (inputs, OperationDraft::Set(draft)),
-            ConfigOperation::Query { inputs, draft } => (inputs, OperationDraft::Query(draft)),
-            ConfigOperation::Test { inputs, draft } => (inputs, OperationDraft::Test(draft)),
+            ConfigOperation::Check { inputs, op } => (inputs, Operation::Check(op)),
+            ConfigOperation::Set { inputs, op } => (inputs, Operation::Set(op)),
+            ConfigOperation::Query { inputs, op } => (inputs, Operation::Query(op)),
+            ConfigOperation::Test { inputs, op } => (inputs, Operation::Test(op)),
         }
     }
 
@@ -428,7 +428,7 @@ impl ConfigOperation {
     }
 
     /// Predicate-style accessor for the existing `op_filter` API in
-    /// `ConfigRunParams`. Returns an `Operation`-shaped token suitable for
+    /// `ConfigRunParams`. Returns an operation-kind token suitable for
     /// matches!() checks without actually materialising the operation.
     pub fn kind(&self) -> ConfigOperationKind {
         match self {
@@ -496,10 +496,10 @@ fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<ConfigOperati
         inline_source: None,
     };
 
-    // Draft — per-rule globs stay as raw strings until `base_dir` is
-    // known in the CLI layer; `into_operation` compiles them into a
-    // ready-to-match `Vec<CompiledRule>`.
-    let draft = CheckDraft {
+    // Pre-resolution op — per-rule globs stay as raw strings until
+    // `base_dir` is known in the CLI layer; `into_plan` compiles them into
+    // a ready-to-match `Vec<CompiledRule>`.
+    let op = CheckOperation {
         rules,
         ruleset_include: vec![],
         ruleset_exclude: vec![],
@@ -509,7 +509,7 @@ fn convert_check(config: CheckConfig, scope: &RootScope) -> Result<ConfigOperati
         parse_depth: None,
     };
 
-    Ok(ConfigOperation::Check { inputs, draft })
+    Ok(ConfigOperation::Check { inputs, op })
 }
 
 fn selector_xpath(expr: &str) -> String {
@@ -596,7 +596,7 @@ fn convert_set(config: SetConfig, scope: &RootScope) -> Result<ConfigOperation, 
         inline_source,
     };
 
-    let draft = SetDraft {
+    let op = SetOperation {
         mappings,
         tree_mode,
         limit: config.limit,
@@ -605,7 +605,7 @@ fn convert_set(config: SetConfig, scope: &RootScope) -> Result<ConfigOperation, 
         report_mode,
     };
 
-    Ok(ConfigOperation::Set { inputs, draft })
+    Ok(ConfigOperation::Set { inputs, op })
 }
 
 fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<ConfigOperation, Box<dyn std::error::Error>> {
@@ -626,7 +626,7 @@ fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<ConfigOperati
         inline_source: None,
     };
 
-    let draft = QueryDraft {
+    let op = QueryOperation {
         queries,
         tree_mode,
         language: config.language,
@@ -635,7 +635,7 @@ fn convert_query(config: QueryConfig, scope: &RootScope) -> Result<ConfigOperati
         parse_depth: None,
     };
 
-    Ok(ConfigOperation::Query { inputs, draft })
+    Ok(ConfigOperation::Query { inputs, op })
 }
 
 fn convert_test(config: TestConfig, scope: &RootScope) -> Result<ConfigOperation, Box<dyn std::error::Error>> {
@@ -659,7 +659,7 @@ fn convert_test(config: TestConfig, scope: &RootScope) -> Result<ConfigOperation
         inline_source: None,
     };
 
-    let draft = TestDraft {
+    let op = TestOperation {
         assertions,
         tree_mode,
         language: config.language,
@@ -668,7 +668,7 @@ fn convert_test(config: TestConfig, scope: &RootScope) -> Result<ConfigOperation
         parse_depth: None,
     };
 
-    Ok(ConfigOperation::Test { inputs, draft })
+    Ok(ConfigOperation::Test { inputs, op })
 }
 
 /// Merge root-level scope with per-operation scope.
@@ -820,28 +820,28 @@ pub fn parse_config_toml(content: &str) -> Result<LoadedConfig, Box<dyn std::err
 mod tests {
     use super::*;
 
-    /// Unwrap a `ConfigOperation::Check` into (`&OperationInputs`, `&CheckDraft`).
-    fn as_check(op: &ConfigOperation) -> (&OperationInputs, &CheckDraft) {
-        match op {
-            ConfigOperation::Check { inputs, draft } => (inputs, draft),
+    /// Unwrap a `ConfigOperation::Check` into (`&OperationInputs`, `&CheckOperation`).
+    fn as_check(config_op: &ConfigOperation) -> (&OperationInputs, &CheckOperation) {
+        match config_op {
+            ConfigOperation::Check { inputs, op } => (inputs, op),
             _ => panic!("expected Check operation"),
         }
     }
-    fn as_set(op: &ConfigOperation) -> (&OperationInputs, &SetDraft) {
-        match op {
-            ConfigOperation::Set { inputs, draft } => (inputs, draft),
+    fn as_set(config_op: &ConfigOperation) -> (&OperationInputs, &SetOperation) {
+        match config_op {
+            ConfigOperation::Set { inputs, op } => (inputs, op),
             _ => panic!("expected Set operation"),
         }
     }
-    fn as_query(op: &ConfigOperation) -> (&OperationInputs, &QueryDraft) {
-        match op {
-            ConfigOperation::Query { inputs, draft } => (inputs, draft),
+    fn as_query(config_op: &ConfigOperation) -> (&OperationInputs, &QueryOperation) {
+        match config_op {
+            ConfigOperation::Query { inputs, op } => (inputs, op),
             _ => panic!("expected Query operation"),
         }
     }
-    fn as_test(op: &ConfigOperation) -> (&OperationInputs, &TestDraft) {
-        match op {
-            ConfigOperation::Test { inputs, draft } => (inputs, draft),
+    fn as_test(config_op: &ConfigOperation) -> (&OperationInputs, &TestOperation) {
+        match config_op {
+            ConfigOperation::Test { inputs, op } => (inputs, op),
             _ => panic!("expected Test operation"),
         }
     }

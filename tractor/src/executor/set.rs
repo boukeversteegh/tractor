@@ -17,13 +17,13 @@ use super::match_to_report_match;
 // Operation type
 // ---------------------------------------------------------------------------
 
-/// A set operation: ensure values exist at specified XPaths.
+/// A set operation plan: ensure values exist at specified XPaths.
 ///
 /// Virtual inline sources share the same `Vec<Source>` as disk files.
 /// Write-mode is automatically routed to Capture for virtual sources
 /// (nothing to write back to disk).
 #[derive(Debug, Clone)]
-pub struct SetOperation {
+pub struct SetOperationPlan {
     /// Pre-resolved unified input list.
     pub sources: Vec<Source>,
     /// Pre-built result filters.
@@ -42,12 +42,12 @@ pub struct SetOperation {
     pub report_mode: SetReportMode,
 }
 
-/// Pre-resolution shape for a set operation. Mirrors [`SetOperation`] but
+/// Pre-resolution shape for a set operation. Mirrors [`SetOperationPlan`] but
 /// omits the input-resolution-derived fields (`sources`, `filters`). Produced
 /// by the config parser and CLI layer, then turned into a fully-resolved
-/// `SetOperation` by the planner via [`SetDraft::into_operation`].
+/// `SetOperationPlan` by the planner via [`SetOperation::into_plan`].
 #[derive(Debug, Clone)]
-pub struct SetDraft {
+pub struct SetOperation {
     /// Mappings to apply.
     pub mappings: Vec<SetMapping>,
     /// Tree mode override for parsing diagnostics.
@@ -62,10 +62,10 @@ pub struct SetDraft {
     pub report_mode: SetReportMode,
 }
 
-impl SetDraft {
-    /// Attach resolved inputs and produce the final executor-ready operation.
-    pub fn into_operation(self, sources: Vec<Source>, filters: Filters) -> SetOperation {
-        SetOperation {
+impl SetOperation {
+    /// Attach resolved inputs and produce the final executor-ready plan.
+    pub fn into_plan(self, sources: Vec<Source>, filters: Filters) -> SetOperationPlan {
+        SetOperationPlan {
             sources,
             filters,
             mappings: self.mappings,
@@ -106,7 +106,7 @@ pub enum SetReportMode {
 // ---------------------------------------------------------------------------
 
 pub(crate) fn execute_set(
-    op: &SetOperation,
+    op: &SetOperationPlan,
     _ctx: &ExecCtx<'_>,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -193,7 +193,7 @@ struct SetTargetOutcome {
 fn execute_set_target(
     source: &Source,
     content: &str,
-    op: &SetOperation,
+    op: &SetOperationPlan,
     effective_write_mode: SetWriteMode,
     filters: &Filters,
 ) -> Result<SetTargetOutcome, Box<dyn std::error::Error>> {
@@ -296,7 +296,7 @@ fn apply_set_mapping(
     file_label: &str,
     lang: &str,
     mapping: &SetMapping,
-    op: &SetOperation,
+    op: &SetOperationPlan,
     filters: &Filters,
     before_matches: &[Match],
 ) -> Result<SetMappingResult, Box<dyn std::error::Error>> {
@@ -351,7 +351,7 @@ fn query_set_matches(
     file_label: &str,
     lang: &str,
     mapping: &SetMapping,
-    op: &SetOperation,
+    op: &SetOperationPlan,
     filters: &Filters,
 ) -> Result<Vec<Match>, Box<dyn std::error::Error>> {
     let mut result = parse_string_to_documents(
@@ -381,7 +381,7 @@ mod tests {
     use tractor::report::ReportBuilder;
     use tractor::NormalizedPath;
     use crate::cli::context::ExecCtx;
-    use crate::executor::{Operation, execute};
+    use crate::executor::{OperationPlan, execute};
 
     fn temp_json_file(content: &str) -> (tempfile::TempDir, String) {
         let dir = tempfile::tempdir().unwrap();
@@ -411,8 +411,8 @@ mod tests {
         }
     }
 
-    fn set_operation(path: String, mappings: Vec<SetMapping>, write_mode: SetWriteMode) -> Operation {
-        Operation::Set(SetOperation {
+    fn set_operation(path: String, mappings: Vec<SetMapping>, write_mode: SetWriteMode) -> OperationPlan {
+        OperationPlan::Set(SetOperationPlan {
             sources: vec![disk_source(&path)],
             filters: Filters::default(),
             mappings,
@@ -429,12 +429,12 @@ mod tests {
         source: &str,
         mappings: Vec<SetMapping>,
         write_mode: SetWriteMode,
-    ) -> Operation {
+    ) -> OperationPlan {
         let inline = Source::inline_pathless(
             lang,
             std::sync::Arc::new(source.to_string()),
         );
-        Operation::Set(SetOperation {
+        OperationPlan::Set(SetOperationPlan {
             sources: vec![inline],
             filters: Filters::default(),
             mappings,
@@ -447,7 +447,7 @@ mod tests {
     }
 
     /// Helper: execute operations and build a report.
-    fn run(ops: &[Operation]) -> tractor::report::Report {
+    fn run(ops: &[OperationPlan]) -> tractor::report::Report {
         let mut builder = ReportBuilder::new();
         execute(ops, &ExecCtx::default(), &mut builder).unwrap();
         builder.build()
@@ -568,7 +568,7 @@ mod tests {
     fn set_capture_files_emits_file_outputs() {
         let (_dir_a, path_a) = temp_yaml_file("database:\n  host: a\n");
         let (_dir_b, path_b) = temp_yaml_file("database:\n  host: b\n");
-        let ops = vec![Operation::Set(SetOperation {
+        let ops = vec![OperationPlan::Set(SetOperationPlan {
             sources: vec![disk_source(&path_a), disk_source(&path_b)],
             filters: Filters::default(),
             mappings: vec![string_mapping("//database/host", "db.example.com")],

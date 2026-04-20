@@ -1,7 +1,7 @@
 //! Batch executor for tractor operations.
 //!
-//! The executor is the core engine of tractor. It takes a list of operations
-//! and pushes results into a `ReportBuilder`. Operations can come from:
+//! The executor is the core engine of tractor. It takes a list of operation
+//! plans and pushes results into a `ReportBuilder`. Plans can come from:
 //!
 //! - A config file (`tractor run config.yaml`)
 //! - CLI commands (`tractor check`, `tractor query`, etc.)
@@ -9,7 +9,7 @@
 //!
 //! ## Input-resolution boundary
 //!
-//! An `Operation` arriving here is already input-resolved: it carries a
+//! An `OperationPlan` arriving here is already input-resolved: it carries a
 //! `Vec<Source>` and the [`Filters`] envelope it needs. Glob expansion,
 //! CLI intersection, diff-files intersection, language detection and
 //! inline stdin/`-s` handling all happen *before* construction (see
@@ -32,26 +32,26 @@ use crate::cli::context::ExecCtx;
 use crate::input::filter::Filters;
 use crate::input::Source;
 
-pub use query::{QueryDraft, QueryOperation, QueryExpr};
-pub use check::CheckOperation;
-pub use test::{TestDraft, TestOperation, TestAssertion};
-pub use set::{SetDraft, SetOperation, SetMapping, SetWriteMode, SetReportMode};
-pub use update::{UpdateDraft, UpdateOperation};
+pub use query::{QueryOperation, QueryOperationPlan, QueryExpr};
+pub use check::CheckOperationPlan;
+pub use test::{TestOperation, TestOperationPlan, TestAssertion};
+pub use set::{SetOperation, SetOperationPlan, SetMapping, SetWriteMode, SetReportMode};
+pub use update::{UpdateOperation, UpdateOperationPlan};
 
 // ---------------------------------------------------------------------------
 // Operation types (stable API)
 // ---------------------------------------------------------------------------
 
-/// A single operation to execute. This is the stable intermediate
-/// representation — config files parse into this, CLI commands construct
-/// it, and the executor consumes it.
+/// A single operation plan to execute. This is the stable intermediate
+/// representation the executor consumes — config files and CLI commands
+/// build an `Operation`, which the planner resolves into an `OperationPlan`.
 #[derive(Debug, Clone)]
-pub enum Operation {
-    Query(QueryOperation),
-    Check(CheckOperation),
-    Test(TestOperation),
-    Set(SetOperation),
-    Update(UpdateOperation),
+pub enum OperationPlan {
+    Query(QueryOperationPlan),
+    Check(CheckOperationPlan),
+    Test(TestOperationPlan),
+    Set(SetOperationPlan),
+    Update(UpdateOperationPlan),
 }
 
 // ---------------------------------------------------------------------------
@@ -66,24 +66,24 @@ pub const DEFAULT_MAX_FILES: usize = 10_000;
 // Executor
 // ---------------------------------------------------------------------------
 
-/// Execute a list of operations, pushing results into the given `ReportBuilder`.
+/// Execute a list of operation plans, pushing results into the given `ReportBuilder`.
 ///
-/// Operations must already carry resolved `sources` and `filters`; this
-/// function is a thin dispatcher. The `ExecCtx` carries the environmental
-/// state (verbose, base_dir) that originates in `RunContext` — the single
-/// source of truth per CLI invocation.
+/// Plans must already carry resolved `sources` and `filters`; this function
+/// is a thin dispatcher. The `ExecCtx` carries the environmental state
+/// (verbose, base_dir) that originates in `RunContext` — the single source
+/// of truth per CLI invocation.
 pub fn execute(
-    operations: &[Operation],
+    operations: &[OperationPlan],
     ctx: &ExecCtx<'_>,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
     for op in operations {
         match op {
-            Operation::Query(q) => query::execute_query(q, ctx, report)?,
-            Operation::Check(c) => check::execute_check(c, ctx, report)?,
-            Operation::Test(t) => test::execute_test(t, ctx, report)?,
-            Operation::Set(s) => set::execute_set(s, ctx, report)?,
-            Operation::Update(u) => update::execute_update(u, ctx, report)?,
+            OperationPlan::Query(q) => query::execute_query(q, ctx, report)?,
+            OperationPlan::Check(c) => check::execute_check(c, ctx, report)?,
+            OperationPlan::Test(t) => test::execute_test(t, ctx, report)?,
+            OperationPlan::Set(s) => set::execute_set(s, ctx, report)?,
+            OperationPlan::Update(u) => update::execute_update(u, ctx, report)?,
         }
     }
 
@@ -217,7 +217,7 @@ mod tests {
         (dir, path.to_str().unwrap().to_string())
     }
 
-    fn run(ops: &[Operation]) -> tractor::report::Report {
+    fn run(ops: &[OperationPlan]) -> tractor::report::Report {
         let mut builder = ReportBuilder::new();
         execute(ops, &ExecCtx::default(), &mut builder).unwrap();
         builder.build()
@@ -245,7 +245,7 @@ mod tests {
     #[test]
     fn check_finds_violations() {
         let (_dir, path) = temp_json_file(r#"{"debug": true, "verbose": true}"#);
-        let ops = vec![Operation::Check(CheckOperation {
+        let ops = vec![OperationPlan::Check(CheckOperationPlan {
             sources: disk_sources(&[&path]),
             filters: Filters::default(),
             compiled_rules: compile(
@@ -271,7 +271,7 @@ mod tests {
     #[test]
     fn check_passes_when_no_violations() {
         let (_dir, path) = temp_json_file(r#"{"debug": false}"#);
-        let ops = vec![Operation::Check(CheckOperation {
+        let ops = vec![OperationPlan::Check(CheckOperationPlan {
             sources: disk_sources(&[&path]),
             filters: Filters::default(),
             compiled_rules: compile(
@@ -295,7 +295,7 @@ mod tests {
             "json",
             std::sync::Arc::new(r#"{"debug": true}"#.to_string()),
         );
-        let ops = vec![Operation::Check(CheckOperation {
+        let ops = vec![OperationPlan::Check(CheckOperationPlan {
             sources: vec![inline],
             filters: Filters::default(),
             compiled_rules: compile(
@@ -323,7 +323,7 @@ mod tests {
             "json",
             std::sync::Arc::new(r#"{"debug": false}"#.to_string()),
         );
-        let ops = vec![Operation::Check(CheckOperation {
+        let ops = vec![OperationPlan::Check(CheckOperationPlan {
             sources: vec![inline],
             filters: Filters::default(),
             compiled_rules: compile(
@@ -351,7 +351,7 @@ mod tests {
         std::fs::write(&data_path, r#"{"name": "test"}"#).unwrap();
 
         let ops = vec![
-            Operation::Check(CheckOperation {
+            OperationPlan::Check(CheckOperationPlan {
                 sources: disk_sources(&[data_path.to_str().unwrap()]),
                 filters: Filters::default(),
                 compiled_rules: compile(
@@ -365,7 +365,7 @@ mod tests {
                 ignore_whitespace: false,
                 parse_depth: None,
             }),
-            Operation::Set(set::SetOperation {
+            OperationPlan::Set(set::SetOperationPlan {
                 sources: disk_sources(&[config_path.to_str().unwrap()]),
                 filters: Filters::default(),
                 mappings: vec![set::SetMapping {

@@ -15,9 +15,9 @@ pub struct UpdateArgs {
     #[command(flatten)]
     pub shared: SharedArgs,
 }
-use crate::executor::{self, UpdateDraft};
+use crate::executor::{self, UpdateOperation};
 use crate::cli::context::RunContext;
-use crate::input::{plan_single, InputMode, OperationDraft, SingleOpRequest};
+use crate::input::{plan_single, InputMode, Operation, SingleOpRequest};
 use crate::tractor_config::OperationInputs;
 use crate::format::ViewField;
 
@@ -46,7 +46,7 @@ pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
         inline_source: None,
     };
 
-    let draft = OperationDraft::Update(UpdateDraft {
+    let op = Operation::Update(UpdateOperation {
         xpath: xpath_expr.to_string(),
         value: args.value.clone(),
         tree_mode: ctx.tree_mode,
@@ -58,8 +58,8 @@ pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     let mut builder = tractor::ReportBuilder::new();
     let env = ctx.exec_ctx();
-    let op = plan_single(
-        SingleOpRequest { draft, inputs, command: "update" },
+    let plan = plan_single(
+        SingleOpRequest { op, inputs, command: "update" },
         args.shared.diff_files.clone(),
         args.shared.diff_lines.clone(),
         args.shared.max_files,
@@ -67,8 +67,8 @@ pub fn run_update(args: UpdateArgs) -> Result<(), Box<dyn std::error::Error>> {
         &mut builder,
     )?;
 
-    if let Some(op) = op {
-        executor::execute(&[op], &env, &mut builder)?;
+    if let Some(plan) = plan {
+        executor::execute(&[plan], &env, &mut builder)?;
     }
     let report = builder.build();
     if report.success == Some(false) {

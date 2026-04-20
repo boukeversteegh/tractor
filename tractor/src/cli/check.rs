@@ -62,8 +62,8 @@ pub struct CheckArgs {
 }
 use crate::executor;
 use crate::cli::context::RunContext;
-use crate::input::{plan_single, InputMode, OperationDraft, SingleOpRequest};
-use crate::tractor_config::{CheckDraft, OperationInputs};
+use crate::input::{plan_single, InputMode, Operation, SingleOpRequest};
+use crate::tractor_config::{CheckOperation, OperationInputs};
 use crate::format::{ViewField, GroupDimension, render_report};
 use crate::matcher::prepare_report_for_output;
 use super::config::{run_from_config, ConfigRunParams};
@@ -127,7 +127,7 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
         inline_source,
     };
 
-    let draft = OperationDraft::Check(CheckDraft {
+    let op = Operation::Check(CheckOperation {
         rules: vec![rule],
         ruleset_include: Vec::new(),
         ruleset_exclude: Vec::new(),
@@ -139,8 +139,8 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     let mut builder = tractor::ReportBuilder::new();
     let env = ctx.exec_ctx();
-    let op = plan_single(
-        SingleOpRequest { draft, inputs, command: "check" },
+    let plan = plan_single(
+        SingleOpRequest { op, inputs, command: "check" },
         args.shared.diff_files.clone(),
         args.shared.diff_lines.clone(),
         args.shared.max_files,
@@ -148,8 +148,8 @@ pub fn run_check(args: CheckArgs) -> Result<(), Box<dyn std::error::Error>> {
         &mut builder,
     )?;
 
-    if let Some(op) = op {
-        executor::execute(&[op], &env, &mut builder)?;
+    if let Some(plan) = plan {
+        executor::execute(&[plan], &env, &mut builder)?;
     }
     let mut report = builder.build();
 

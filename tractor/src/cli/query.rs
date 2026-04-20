@@ -40,9 +40,9 @@ pub struct QueryArgs {
     #[arg(short = 'V', long = "version", help_heading = "Advanced")]
     pub version: bool,
 }
-use crate::executor::{self, QueryDraft, QueryExpr};
+use crate::executor::{self, QueryExpr, QueryOperation};
 use crate::cli::context::RunContext;
-use crate::input::{plan_single, InputMode, OperationDraft, SingleOpRequest};
+use crate::input::{plan_single, InputMode, Operation, SingleOpRequest};
 use crate::tractor_config::OperationInputs;
 use crate::format::{ViewField, GroupDimension, render_report};
 use crate::matcher::{prepare_report_for_output, run_debug};
@@ -103,7 +103,7 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
         inline_source,
     };
 
-    let draft = OperationDraft::Query(QueryDraft {
+    let op = Operation::Query(QueryOperation {
         queries: vec![QueryExpr { xpath: xpath_expr.clone() }],
         tree_mode: ctx.tree_mode,
         language: op_language,
@@ -115,8 +115,8 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     let mut builder = tractor::ReportBuilder::new();
     builder.set_no_verdict();
     let env = ctx.exec_ctx();
-    let op = plan_single(
-        SingleOpRequest { draft, inputs, command: "query" },
+    let plan = plan_single(
+        SingleOpRequest { op, inputs, command: "query" },
         args.shared.diff_files.clone(),
         args.shared.diff_lines.clone(),
         args.shared.max_files,
@@ -124,8 +124,8 @@ pub fn run_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
         &mut builder,
     )?;
 
-    if let Some(op) = op {
-        executor::execute(&[op], &env, &mut builder)?;
+    if let Some(plan) = plan {
+        executor::execute(&[plan], &env, &mut builder)?;
     }
     let mut report = builder.build();
     prepare_report_for_output(&mut report, &ctx);

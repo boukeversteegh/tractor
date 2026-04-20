@@ -15,12 +15,12 @@ use super::{match_to_report_match, query_files_multi, check_expectation};
 // Operation type
 // ---------------------------------------------------------------------------
 
-/// A test operation: run XPath queries and check match counts against expectations.
+/// A test operation plan: run XPath queries and check match counts against expectations.
 ///
 /// Multiple assertions can target the same set of sources — each source is
 /// parsed once per assertion.
 #[derive(Debug, Clone)]
-pub struct TestOperation {
+pub struct TestOperationPlan {
     /// Pre-resolved unified input list.
     pub sources: Vec<Source>,
     /// Pre-built result filters.
@@ -39,13 +39,13 @@ pub struct TestOperation {
     pub parse_depth: Option<usize>,
 }
 
-/// Pre-resolution shape for a test operation. Mirrors [`TestOperation`]
+/// Pre-resolution shape for a test operation. Mirrors [`TestOperationPlan`]
 /// but omits the input-resolution-derived fields (`sources`, `filters`).
 /// Produced by the config parser and CLI layer, then turned into a
-/// fully-resolved `TestOperation` by the planner via
-/// [`TestDraft::into_operation`].
+/// fully-resolved `TestOperationPlan` by the planner via
+/// [`TestOperation::into_plan`].
 #[derive(Debug, Clone)]
-pub struct TestDraft {
+pub struct TestOperation {
     /// Assertions to evaluate.
     pub assertions: Vec<TestAssertion>,
     /// Tree mode override for parsing.
@@ -60,10 +60,10 @@ pub struct TestDraft {
     pub parse_depth: Option<usize>,
 }
 
-impl TestDraft {
-    /// Attach resolved inputs and produce the final executor-ready operation.
-    pub fn into_operation(self, sources: Vec<Source>, filters: Filters) -> TestOperation {
-        TestOperation {
+impl TestOperation {
+    /// Attach resolved inputs and produce the final executor-ready plan.
+    pub fn into_plan(self, sources: Vec<Source>, filters: Filters) -> TestOperationPlan {
+        TestOperationPlan {
             sources,
             filters,
             assertions: self.assertions,
@@ -90,7 +90,7 @@ pub struct TestAssertion {
 // ---------------------------------------------------------------------------
 
 pub(crate) fn execute_test(
-    op: &TestOperation,
+    op: &TestOperationPlan,
     ctx: &ExecCtx<'_>,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {

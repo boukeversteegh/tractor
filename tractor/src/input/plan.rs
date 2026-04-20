@@ -1,5 +1,5 @@
 //! Input planning: the single seam where CLI invocations and config files
-//! turn into a list of executor-ready `Operation`s.
+//! turn into a list of executor-ready `OperationPlan`s.
 //!
 //! Every CLI command (single-op) and `run_from_config` (multi-op) funnels
 //! through here. This module is the *only* place that:
@@ -14,10 +14,10 @@
 //!
 //! ## Shape
 //!
-//! - `OperationDraft` — op-kind-specific metadata without sources/filters.
+//! - `Operation` — op-kind-specific metadata without sources/filters.
 //! - `SingleOpRequest` / `plan_single` — single-op CLI path (check/query/...).
 //! - `plan_multi` — config-mode path; iterates over `ConfigOperation`s.
-//! - `InputPlan` — return envelope (a `Vec<Operation>`, room to grow).
+//! - `ExecutionPlan` — return envelope (a `Vec<OperationPlan>`, room to grow).
 //!
 //! The single-op path is a one-op specialization of the multi-op path: both
 //! go through the same `resolve_one` helper.
@@ -26,98 +26,99 @@ use tractor::report::ReportBuilder;
 
 use crate::cli::context::ExecCtx;
 use crate::executor::{
-    CheckOperation, Operation, QueryDraft, SetDraft, TestDraft, UpdateDraft,
+    CheckOperationPlan, OperationPlan, QueryOperation, SetOperation, TestOperation, UpdateOperation,
 };
-use crate::tractor_config::{CheckDraft, ConfigOperation, OperationInputs};
+use crate::tractor_config::{CheckOperation, ConfigOperation, OperationInputs};
 
 use super::{FileResolver, ResolverOptions, Source, SourceRequest};
 
 // ---------------------------------------------------------------------------
-// OperationDraft — op-kind-specific metadata without sources/filters
+// Operation — op-kind-specific metadata without sources/filters
 // ---------------------------------------------------------------------------
 
 /// Per-kind skeleton that knows everything about an operation except its
-/// input list. The planner attaches `sources` + `filters` via each draft's
-/// `into_operation` to produce the final `Operation`.
+/// input list. The planner attaches `sources` + `filters` via each variant's
+/// `into_plan` to produce the final `OperationPlan`.
 ///
-/// Every variant is a true draft — it carries only op-specific metadata, so
-/// no `*Operation` struct in the system exists in an "unresolved" shape with
-/// placeholder empty `sources` / default `filters`. The `Check` variant
-/// additionally defers rule-glob compilation until `base_dir` is known — the
-/// planner drives that compilation inline during conversion.
-pub enum OperationDraft {
-    Check(CheckDraft),
-    Query(QueryDraft),
-    Set(SetDraft),
-    Test(TestDraft),
-    Update(UpdateDraft),
+/// Every variant is a true pre-resolution shape — it carries only op-specific
+/// metadata, so no `*OperationPlan` struct in the system exists in an
+/// "unresolved" shape with placeholder empty `sources` / default `filters`.
+/// The `Check` variant additionally defers rule-glob compilation until
+/// `base_dir` is known — the planner drives that compilation inline during
+/// conversion.
+pub enum Operation {
+    Check(CheckOperation),
+    Query(QueryOperation),
+    Set(SetOperation),
+    Test(TestOperation),
+    Update(UpdateOperation),
 }
 
-impl OperationDraft {
-    /// Attach resolved inputs and produce an `Operation` ready for the executor.
-    fn into_operation(
+impl Operation {
+    /// Attach resolved inputs and produce an `OperationPlan` ready for the executor.
+    fn into_plan(
         self,
         sources: Vec<Source>,
         filters: crate::input::filter::Filters,
         base_dir: Option<&std::path::Path>,
-    ) -> Result<Operation, Box<dyn std::error::Error>> {
+    ) -> Result<OperationPlan, Box<dyn std::error::Error>> {
         match self {
-            OperationDraft::Check(draft) => {
+            Operation::Check(op) => {
                 let compiled_rules = tractor::compile_ruleset(
-                    &draft.ruleset_include,
-                    &draft.ruleset_exclude,
-                    draft.ruleset_default_language.as_deref(),
-                    draft.tree_mode,
-                    draft.rules,
+                    &op.ruleset_include,
+                    &op.ruleset_exclude,
+                    op.ruleset_default_language.as_deref(),
+                    op.tree_mode,
+                    op.rules,
                     base_dir,
                 )
                 .map_err(|e| -> Box<dyn std::error::Error> { e.to_string().into() })?;
-                Ok(Operation::Check(CheckOperation {
+                Ok(OperationPlan::Check(CheckOperationPlan {
                     sources,
                     filters,
                     compiled_rules,
-                    tree_mode: draft.tree_mode,
-                    ignore_whitespace: draft.ignore_whitespace,
-                    parse_depth: draft.parse_depth,
+                    tree_mode: op.tree_mode,
+                    ignore_whitespace: op.ignore_whitespace,
+                    parse_depth: op.parse_depth,
                 }))
             }
-            OperationDraft::Query(draft) => {
-                Ok(Operation::Query(draft.into_operation(sources, filters)))
+            Operation::Query(op) => {
+                Ok(OperationPlan::Query(op.into_plan(sources, filters)))
             }
-            OperationDraft::Set(draft) => {
-                Ok(Operation::Set(draft.into_operation(sources, filters)))
+            Operation::Set(op) => {
+                Ok(OperationPlan::Set(op.into_plan(sources, filters)))
             }
-            OperationDraft::Test(draft) => {
-                Ok(Operation::Test(draft.into_operation(sources, filters)))
+            Operation::Test(op) => {
+                Ok(OperationPlan::Test(op.into_plan(sources, filters)))
             }
-            OperationDraft::Update(draft) => {
-                Ok(Operation::Update(draft.into_operation(sources, filters)))
+            Operation::Update(op) => {
+                Ok(OperationPlan::Update(op.into_plan(sources, filters)))
             }
         }
     }
 }
 
 // ---------------------------------------------------------------------------
-// Plan envelope
+// ExecutionPlan envelope
 // ---------------------------------------------------------------------------
 
-/// The plan a CLI invocation produces. Today it's just a `Vec<Operation>`;
+/// The plan a CLI invocation produces. Today it's just a `Vec<OperationPlan>`;
 /// future slices may carry warnings, a shared language map, or other
 /// plan-time facts without changing the call sites.
-pub struct InputPlan {
-    pub operations: Vec<Operation>,
+pub struct ExecutionPlan {
+    pub operations: Vec<OperationPlan>,
 }
 
 // ---------------------------------------------------------------------------
 // Single-op request
 // ---------------------------------------------------------------------------
 
-/// A single-op plan request: one `OperationDraft` + its per-op `OperationInputs`.
+/// A single-op plan request: one `Operation` + its per-op `OperationInputs`.
 pub struct SingleOpRequest<'a> {
-    pub draft: OperationDraft,
+    pub op: Operation,
     pub inputs: OperationInputs,
     /// Command name for fatal diagnostics (e.g. "check", "query"). Typically
-    /// matches the kind of `draft`, but passed explicitly to preserve the
+    /// matches the kind of `op`, but passed explicitly to preserve the
     /// exact labels each CLI path used pre-refactor.
     pub command: &'a str,
 }
@@ -151,15 +152,15 @@ fn build_resolver(
 /// The sole call site of `resolver.resolve` and `SourceRequest { ... }`.
 ///
 /// Returns `Ok(None)` when the resolver emitted a fatal diagnostic (the
-/// operation should be skipped). Returns `Ok(Some(operation))` otherwise.
+/// operation should be skipped). Returns `Ok(Some(plan))` otherwise.
 fn resolve_one(
     resolver: &FileResolver,
-    draft: OperationDraft,
+    op: Operation,
     inputs: &OperationInputs,
     command: &str,
     base_dir: Option<&std::path::Path>,
     report: &mut ReportBuilder,
-) -> Result<Option<Operation>, Box<dyn std::error::Error>> {
+) -> Result<Option<OperationPlan>, Box<dyn std::error::Error>> {
     let fatal_count_before = report.fatal_count();
 
     let request = SourceRequest {
@@ -179,8 +180,8 @@ fn resolve_one(
         return Ok(None);
     }
 
-    let operation = draft.into_operation(sources, filters, base_dir)?;
-    Ok(Some(operation))
+    let plan = op.into_plan(sources, filters, base_dir)?;
+    Ok(Some(plan))
 }
 
 // ---------------------------------------------------------------------------
@@ -192,7 +193,7 @@ fn resolve_one(
 ///
 /// Constructs the `FileResolver` for this one-op run (no `cli_files`, no
 /// `config_root_files`), runs it, and returns the ready-to-execute
-/// `Operation` — or `None` when the resolver emitted a fatal.
+/// `OperationPlan` — or `None` when the resolver emitted a fatal.
 pub fn plan_single(
     req: SingleOpRequest<'_>,
     shared_diff_files: Option<String>,
@@ -200,7 +201,7 @@ pub fn plan_single(
     max_files: usize,
     env: &ExecCtx<'_>,
     report: &mut ReportBuilder,
-) -> Result<Option<Operation>, Box<dyn std::error::Error>> {
+) -> Result<Option<OperationPlan>, Box<dyn std::error::Error>> {
     let resolver = build_resolver(
         shared_diff_files,
         shared_diff_lines,
@@ -213,7 +214,7 @@ pub fn plan_single(
 
     resolve_one(
         &resolver,
-        req.draft,
+        req.op,
         &req.inputs,
         req.command,
         env.base_dir,
@@ -247,7 +248,7 @@ pub fn plan_multi(
     req: MultiOpRequest,
     env: &ExecCtx<'_>,
     report: &mut ReportBuilder,
-) -> Result<InputPlan, Box<dyn std::error::Error>> {
+) -> Result<ExecutionPlan, Box<dyn std::error::Error>> {
     let resolver = match build_resolver(
         req.shared_diff_files,
         req.shared_diff_lines,
@@ -259,24 +260,24 @@ pub fn plan_multi(
         Ok(r) => r,
         Err(e) => {
             report.add(super::make_fatal_diagnostic(&req.command_label, e));
-            return Ok(InputPlan { operations: Vec::new() });
+            return Ok(ExecutionPlan { operations: Vec::new() });
         }
     };
 
     let mut operations = Vec::with_capacity(req.operations.len());
     for config_op in req.operations {
-        let (inputs, draft) = config_op.into_draft();
-        if let Some(op) = resolve_one(
+        let (inputs, op) = config_op.into_parts();
+        if let Some(plan) = resolve_one(
             &resolver,
-            draft,
+            op,
             &inputs,
             &req.command_label,
             env.base_dir,
             report,
         )? {
-            operations.push(op);
+            operations.push(plan);
         }
     }
 
-    Ok(InputPlan { operations })
+    Ok(ExecutionPlan { operations })
 }

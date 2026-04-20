@@ -40,9 +40,9 @@ pub struct TestArgs {
     #[arg(short = 'f', long = "format", default_value = "text", help_heading = "Format")]
     pub format: String,
 }
-use crate::executor::{self, TestDraft, TestAssertion};
+use crate::executor::{self, TestAssertion, TestOperation};
 use crate::cli::context::RunContext;
-use crate::input::{plan_single, InputMode, OperationDraft, SingleOpRequest};
+use crate::input::{plan_single, InputMode, Operation, SingleOpRequest};
 use crate::tractor_config::OperationInputs;
 use crate::format::{ViewField, TestRenderOptions, render_report};
 use crate::matcher::prepare_report_for_output;
@@ -99,7 +99,7 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
         inline_source,
     };
 
-    let draft = OperationDraft::Test(TestDraft {
+    let op = Operation::Test(TestOperation {
         assertions: vec![TestAssertion {
             xpath: xpath_expr.clone(),
             expect: expect.clone(),
@@ -113,8 +113,8 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
 
     let mut builder = tractor::ReportBuilder::new();
     let env = ctx.exec_ctx();
-    let op = plan_single(
-        SingleOpRequest { draft, inputs, command: "test" },
+    let plan = plan_single(
+        SingleOpRequest { op, inputs, command: "test" },
         args.shared.diff_files.clone(),
         args.shared.diff_lines.clone(),
         args.shared.max_files,
@@ -122,8 +122,8 @@ pub fn run_test(args: TestArgs) -> Result<(), Box<dyn std::error::Error>> {
         &mut builder,
     )?;
 
-    if let Some(op) = op {
-        executor::execute(&[op], &env, &mut builder)?;
+    if let Some(plan) = plan {
+        executor::execute(&[plan], &env, &mut builder)?;
     }
     // Set expected value for test summary rendering (test-mode only, not shared with run mode)
     builder.set_expected(expect.clone());

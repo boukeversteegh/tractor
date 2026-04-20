@@ -16,7 +16,7 @@ use super::{match_to_report_match, query_files_multi};
 // Operation type
 // ---------------------------------------------------------------------------
 
-/// A query operation: run XPath expressions against sources, return matches.
+/// A query operation plan: run XPath expressions against sources, return matches.
 ///
 /// Disk and inline inputs are already unified into `sources` at construction
 /// time — the executor does not branch on input kind.
@@ -24,7 +24,7 @@ use super::{match_to_report_match, query_files_multi};
 /// Multiple queries can target the same set of sources — each source is parsed
 /// once and all XPath expressions are evaluated against it.
 #[derive(Debug, Clone)]
-pub struct QueryOperation {
+pub struct QueryOperationPlan {
     /// Pre-resolved unified input list.
     pub sources: Vec<Source>,
     /// Pre-built result filters (diff-lines, etc.).
@@ -43,13 +43,13 @@ pub struct QueryOperation {
     pub parse_depth: Option<usize>,
 }
 
-/// Pre-resolution shape for a query operation. Mirrors [`QueryOperation`]
+/// Pre-resolution shape for a query operation. Mirrors [`QueryOperationPlan`]
 /// but omits the input-resolution-derived fields (`sources`, `filters`).
 /// Produced by the config parser and CLI layer, then turned into a
-/// fully-resolved `QueryOperation` by the planner via
-/// [`QueryDraft::into_operation`].
+/// fully-resolved `QueryOperationPlan` by the planner via
+/// [`QueryOperation::into_plan`].
 #[derive(Debug, Clone)]
-pub struct QueryDraft {
+pub struct QueryOperation {
     /// XPath queries to evaluate.
     pub queries: Vec<QueryExpr>,
     /// Tree mode override for parsing.
@@ -64,10 +64,10 @@ pub struct QueryDraft {
     pub parse_depth: Option<usize>,
 }
 
-impl QueryDraft {
-    /// Attach resolved inputs and produce the final executor-ready operation.
-    pub fn into_operation(self, sources: Vec<Source>, filters: Filters) -> QueryOperation {
-        QueryOperation {
+impl QueryOperation {
+    /// Attach resolved inputs and produce the final executor-ready plan.
+    pub fn into_plan(self, sources: Vec<Source>, filters: Filters) -> QueryOperationPlan {
+        QueryOperationPlan {
             sources,
             filters,
             queries: self.queries,
@@ -92,7 +92,7 @@ pub struct QueryExpr {
 // ---------------------------------------------------------------------------
 
 pub(crate) fn execute_query(
-    op: &QueryOperation,
+    op: &QueryOperationPlan,
     ctx: &ExecCtx<'_>,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -132,7 +132,7 @@ mod tests {
     use tractor::report::ReportBuilder;
     use tractor::NormalizedPath;
     use crate::cli::context::ExecCtx;
-    use crate::executor::{Operation, execute};
+    use crate::executor::{OperationPlan, execute};
 
     fn temp_json_file(content: &str) -> (tempfile::TempDir, String) {
         let dir = tempfile::tempdir().unwrap();
@@ -147,7 +147,7 @@ mod tests {
         Source::disk(np, lang)
     }
 
-    fn run_query_ops(ops: &[Operation]) -> tractor::report::Report {
+    fn run_query_ops(ops: &[OperationPlan]) -> tractor::report::Report {
         let mut builder = ReportBuilder::new();
         builder.set_no_verdict();
         execute(ops, &ExecCtx::default(), &mut builder).unwrap();
@@ -157,7 +157,7 @@ mod tests {
     #[test]
     fn query_returns_matches() {
         let (_dir, path) = temp_json_file(r#"{"name": "alice", "age": 30}"#);
-        let ops = vec![Operation::Query(QueryOperation {
+        let ops = vec![OperationPlan::Query(QueryOperationPlan {
             sources: vec![disk_source(&path)],
             filters: Filters::default(),
             queries: vec![QueryExpr { xpath: "//name".into() }],
@@ -176,7 +176,7 @@ mod tests {
     #[test]
     fn query_with_limit() {
         let (_dir, path) = temp_json_file(r#"{"a": 1, "b": 2, "c": 3}"#);
-        let ops = vec![Operation::Query(QueryOperation {
+        let ops = vec![OperationPlan::Query(QueryOperationPlan {
             sources: vec![disk_source(&path)],
             filters: Filters::default(),
             queries: vec![QueryExpr { xpath: "//*[number(.) > 0]".into() }],
@@ -192,7 +192,7 @@ mod tests {
 
     #[test]
     fn query_empty_sources() {
-        let ops = vec![Operation::Query(QueryOperation {
+        let ops = vec![OperationPlan::Query(QueryOperationPlan {
             sources: vec![],
             filters: Filters::default(),
             queries: vec![QueryExpr { xpath: "//x".into() }],

@@ -16,12 +16,12 @@ use super::{match_to_report_match, query_files_multi};
 // Operation type
 // ---------------------------------------------------------------------------
 
-/// An update operation: modify existing matched nodes without creating new
-/// structure. Unlike set, update fails if the XPath does not match any
+/// An update operation plan: modify existing matched nodes without creating
+/// new structure. Unlike set, update fails if the XPath does not match any
 /// existing nodes. Inline (virtual) sources are rejected at construction
 /// time — update always mutates real files.
 #[derive(Debug, Clone)]
-pub struct UpdateOperation {
+pub struct UpdateOperationPlan {
     /// Pre-resolved unified input list (disk-only for update).
     pub sources: Vec<Source>,
     /// Pre-built result filters (used by the fallback path).
@@ -42,13 +42,13 @@ pub struct UpdateOperation {
     pub parse_depth: Option<usize>,
 }
 
-/// Pre-resolution shape for an update operation. Mirrors [`UpdateOperation`]
+/// Pre-resolution shape for an update operation. Mirrors [`UpdateOperationPlan`]
 /// but omits the input-resolution-derived fields (`sources`, `filters`).
 /// Produced by the CLI layer (update has no config form), then turned into
-/// a fully-resolved `UpdateOperation` by the planner via
-/// [`UpdateDraft::into_operation`].
+/// a fully-resolved `UpdateOperationPlan` by the planner via
+/// [`UpdateOperation::into_plan`].
 #[derive(Debug, Clone)]
-pub struct UpdateDraft {
+pub struct UpdateOperation {
     /// XPath expression to match nodes to update.
     pub xpath: String,
     /// New value for matched nodes.
@@ -65,10 +65,10 @@ pub struct UpdateDraft {
     pub parse_depth: Option<usize>,
 }
 
-impl UpdateDraft {
-    /// Attach resolved inputs and produce the final executor-ready operation.
-    pub fn into_operation(self, sources: Vec<Source>, filters: Filters) -> UpdateOperation {
-        UpdateOperation {
+impl UpdateOperation {
+    /// Attach resolved inputs and produce the final executor-ready plan.
+    pub fn into_plan(self, sources: Vec<Source>, filters: Filters) -> UpdateOperationPlan {
+        UpdateOperationPlan {
             sources,
             filters,
             xpath: self.xpath,
@@ -87,7 +87,7 @@ impl UpdateDraft {
 // ---------------------------------------------------------------------------
 
 pub(crate) fn execute_update(
-    op: &UpdateOperation,
+    op: &UpdateOperationPlan,
     ctx: &ExecCtx<'_>,
     report: &mut ReportBuilder,
 ) -> Result<(), Box<dyn std::error::Error>> {
