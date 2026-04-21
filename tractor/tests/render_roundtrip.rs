@@ -101,3 +101,9 @@ fn python_supported_fixture_round_trips() {
     let path = fixture("python", "supported.py");
     assert_fixture_round_trips(&path, "python");
 }
+
+#[test]
+fn typescript_supported_fixture_round_trips() {
+    let path = fixture("typescript", "supported.ts");
+    assert_fixture_round_trips(&path, "typescript");
+}
