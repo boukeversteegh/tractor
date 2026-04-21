@@ -3,12 +3,12 @@ unit/                                                                           
   │                                                                                                             │  2 ├ // Handles startup configuration
   ├─ import/                                                                                                    ┤    │ 
   │   ├─ "using"                                                                                                ┤  3 ├ using System;
-  │   ├─ name[bind] = "System"                                                                                  ┤    │ 
+  │   ├─ name = "System"                                                                                        ┤    │ 
   │   └─ ";"                                                                                                    ┤    │ 
   └─ namespace/                                                                                                 ┤    │ 
       │                                                                                                         │  4 │ 
       ├─ "namespace"                                                                                            ┤  5 ├ namespace Comments
-      ├─ name[bind] = "Comments"                                                                                ┤    │ 
+      ├─ name = "Comments"                                                                                      ┤    │ 
       └─ body/                                                                                                  ┤    │ 
           ├─ "{"                                                                                                ┤  6 ├ {
           ├─ comment[leading] = "/// <summary>\n/// Sample class demonstrating comment patterns\n/// </summary>"┤  7 ├     /// <summary>
@@ -16,13 +16,13 @@ unit/                                                                           
           │                                                                                                     │  9 ├     /// </summary>
           ├─ class[public]/                                                                                     ┤    │ 
           │   ├─ "class"                                                                                        ┤ 10 ├     public class Demo
-          │   ├─ name[bind] = "Demo"                                                                            ┤    │ 
+          │   ├─ name = "Demo"                                                                                  ┤    │ 
           │   └─ body/                                                                                          ┤    │ 
           │       ├─ "{"                                                                                        ┤ 11 ├     {
           │       ├─ field[private]/                                                                            ┤    │ 
           │       │   ├─ variable/                                                                              ┤    │ 
           │       │   │   ├─ type = "int"                                                                       ┤ 12 ├         private int _count; // instance counter
-          │       │   │   └─ declarator/name[bind] = "_count"                                                   ┤    │ 
+          │       │   │   └─ declarator/name = "_count"                                                         ┤    │ 
           │       │   └─ ";"                                                                                    ┤    │ 
           │       ├─ comment[trailing] = "// instance counter"                                                  ┤    │ 
           │       │                                                                                             │ 13 │ 
@@ -30,7 +30,7 @@ unit/                                                                           
           │       │                                                                                             │ 15 ├         // loaded from environment
           │       ├─ property[public]/                                                                          ┤    │ 
           │       │   ├─ type = "string"                                                                        ┤ 16 ├         public string Config { get; set; }
-          │       │   ├─ name[bind] = "Config"                                                                  ┤    │ 
+          │       │   ├─ name = "Config"                                                                        ┤    │ 
           │       │   ├─ "{"                                                                                    ┤    │ 
           │       │   ├─ accessor = "get;"                                                                      ┤    │ 
           │       │   ├─ accessor = "set;"                                                                      ┤    │ 
@@ -39,13 +39,13 @@ unit/                                                                           
           │       ├─ comment[leading] = "/* block comment */"                                                   ┤ 18 ├         /* block comment */
           │       ├─ method[public]/                                                                            ┤    │ 
           │       │   ├─ returns/type = "void"                                                                  ┤ 19 ├         public void Run()
-          │       │   ├─ name[bind] = "Run"                                                                     ┤    │ 
+          │       │   ├─ name = "Run"                                                                           ┤    │ 
           │       │   ├─ "()"                                                                                   ┤    │ 
           │       │   └─ body/block/                                                                            ┤    │ 
           │       │       ├─ "{"                                                                                ┤ 20 ├         {
           │       │       ├─ expression_statement/                                                              ┤    │ 
           │       │       │   ├─ postfix_unary_expression/                                                      ┤    │ 
-          │       │       │   │   ├─ name[use] = "_count"                                                       ┤ 21 ├             _count++;
+          │       │       │   │   ├─ name = "_count"                                                            ┤ 21 ├             _count++;
           │       │       │   │   └─ "++"                                                                       ┤    │ 
           │       │       │   └─ ";"                                                                            ┤    │ 
           │       │       └─ "}"                                                                                ┤ 22 ├         }

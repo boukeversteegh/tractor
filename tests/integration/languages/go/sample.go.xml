@@ -7,10 +7,7 @@
           <comment>// Simple Go example</comment>
           <package>
             package
-            <name>
-              <bind/>
-              main
-            </name>
+            <name>main</name>
           </package>
           <import_declaration>
             import
@@ -25,24 +22,15 @@
           <function>
             <unexported/>
             func
-            <name>
-              <bind/>
-              add
-            </name>
+            <name>add</name>
             (
             <param>
-              <name>
-                <bind/>
-                a
-              </name>
+              <name>a</name>
               <type>int</type>
             </param>
             ,
             <param>
-              <name>
-                <bind/>
-                b
-              </name>
+              <name>b</name>
               <type>int</type>
             </param>
             )
@@ -60,17 +48,11 @@
                       +
                     </op>
                     <left>
-                      <name>
-                        <use/>
-                        a
-                      </name>
+                      <name>a</name>
                     </left>
                     +
                     <right>
-                      <name>
-                        <use/>
-                        b
-                      </name>
+                      <name>b</name>
                     </right>
                   </binary>
                 </expression_list>
@@ -81,30 +63,21 @@
           <function>
             <unexported/>
             func
-            <name>
-              <bind/>
-              main
-            </name>
+            <name>main</name>
             ()
             <body>
               {
               <short_var_declaration>
                 <left>
                   <expression_list>
-                    <name>
-                      <use/>
-                      result
-                    </name>
+                    <name>result</name>
                   </expression_list>
                 </left>
                 :=
                 <right>
                   <expression_list>
                     <call>
-                      <name>
-                        <use/>
-                        add
-                      </name>
+                      <name>add</name>
                       (
                       <int>5</int>
                       ,
@@ -116,10 +89,7 @@
               </short_var_declaration>
               <call>
                 <member>
-                  <name>
-                    <use/>
-                    fmt
-                  </name>
+                  <name>fmt</name>
                   .
                   <field>Printf</field>
                 </member>
@@ -131,10 +101,7 @@
                   &quot;
                 </string>
                 ,
-                <name>
-                  <use/>
-                  result
-                </name>
+                <name>result</name>
                 )
               </call>
               }
@@ -144,10 +111,7 @@
           <function>
             <exported/>
             func
-            <name>
-              <bind/>
-              PublicHelper
-            </name>
+            <name>PublicHelper</name>
             ()
             <returns>
               <type>string</type>
@@ -170,24 +134,19 @@
           type
           <type>
             <exported/>
-            <name>
-              <use/>
-              Point
-            </name>
+            <name>Point</name>
             <struct>
               struct
               <field_declaration_list>
                 {
                 <field_declaration>
                   <name>
-                    <use/>
                     <field>X</field>
                   </name>
                   <type>int</type>
                 </field_declaration>
                 <field_declaration>
                   <name>
-                    <use/>
                     <field>Y</field>
                   </name>
                   <type>int</type>
@@ -199,15 +158,11 @@
           type
           <type>
             <exported/>
-            <name>
-              <use/>
-              Shape
-            </name>
+            <name>Shape</name>
             <interface>
               interface {
               <method_elem>
                 <name>
-                  <use/>
                   <field>Area</field>
                 </name>
                 ()

@@ -7,10 +7,7 @@
           <comment># Simple Ruby example</comment>
           <method>
             def
-            <name>
-              <bind/>
-              add
-            </name>
+            <name>add</name>
             (
             <identifier>a</identifier>
             ,
@@ -31,10 +28,7 @@
           </method>
           <method>
             def
-            <name>
-              <bind/>
-              main
-            </name>
+            <name>main</name>
             <body>
               <assign>
                 <left>

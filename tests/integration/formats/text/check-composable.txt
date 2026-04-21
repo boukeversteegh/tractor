@@ -1,18 +1,18 @@
 class[public]/
   ├─ "class"
-  ├─ name[bind] = "Foo"
+  ├─ name = "Foo"
   └─ body/
       ├─ "{"
       ├─ property[public]/
       │   ├─ type = "int"
-      │   ├─ name[bind] = "Bar"
+      │   ├─ name = "Bar"
       │   ├─ "{"
       │   ├─ accessor = "get;"
       │   ├─ accessor = "set;"
       │   └─ "}"
       ├─ method[public]/
       │   ├─ returns/type = "void"
-      │   ├─ name[bind] = "Baz"
+      │   ├─ name = "Baz"
       │   ├─ "()"
       │   └─ body/block = "{ }"
       └─ "}"
@@ -20,7 +20,7 @@ error: class found
 
 class[public]/
   ├─ "class"
-  ├─ name[bind] = "Qux"
+  ├─ name = "Qux"
   └─ body = "{ }"
 error: class found
 2 errors in 1 file

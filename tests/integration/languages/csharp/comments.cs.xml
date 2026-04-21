@@ -11,18 +11,12 @@
           </comment>
           <import>
             using
-            <name>
-              <bind/>
-              System
-            </name>
+            <name>System</name>
             ;
           </import>
           <namespace>
             namespace
-            <name>
-              <bind/>
-              Comments
-            </name>
+            <name>Comments</name>
             <body>
               {
               <comment>
@@ -34,10 +28,7 @@
               <class>
                 <public/>
                 class
-                <name>
-                  <bind/>
-                  Demo
-                </name>
+                <name>Demo</name>
                 <body>
                   {
                   <field>
@@ -45,10 +36,7 @@
                     <variable>
                       <type>int</type>
                       <declarator>
-                        <name>
-                          <bind/>
-                          _count
-                        </name>
+                        <name>_count</name>
                       </declarator>
                     </variable>
                     ;
@@ -65,10 +53,7 @@
                   <property>
                     <public/>
                     <type>string</type>
-                    <name>
-                      <bind/>
-                      Config
-                    </name>
+                    <name>Config</name>
                     {
                     <accessor>get;</accessor>
                     <accessor>set;</accessor>
@@ -83,20 +68,14 @@
                     <returns>
                       <type>void</type>
                     </returns>
-                    <name>
-                      <bind/>
-                      Run
-                    </name>
+                    <name>Run</name>
                     ()
                     <body>
                       <block>
                         {
                         <expression_statement>
                           <postfix_unary_expression>
-                            <name>
-                              <use/>
-                              _count
-                            </name>
+                            <name>_count</name>
                             ++
                           </postfix_unary_expression>
                           ;

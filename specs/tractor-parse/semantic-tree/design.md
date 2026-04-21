@@ -233,88 +233,111 @@ source code — the parens and commas of the list live as sibling text
 nodes either way — so removing it loses no renderer-relevant
 information.
 
-### 13. Identifiers are `<name>`; declaration vs reference via markers
+### 13. Identifiers are `<name>`; role is inferred from tree position
 
 An identifier in the tree is always `<name>` — whether it labels something
 being declared (`<class><name>Foo</name>`) or refers to something already
 in scope (`<binary><left><name>a</name>`). Likewise, a type reference or
 inline type expression is always `<type>`.
 
-Tree position already distinguishes a *declaration site* from a *reference
-site* (source code works the same way — `Foo` after `class` is a
-declaration; `Foo` in an expression is a reference). But because
-reference resolution is a common cross-cutting query need, every `<name>`
-carries an exhaustive marker (Principle #9) indicating its role:
+The declaration-vs-reference role is not encoded in the element itself;
+it's inferred from the parent (tree position). Source code works the
+same way — `Foo` after the `class` keyword is a declaration; `Foo` inside
+an expression is a reference. The tree faithfully preserves that
+contextual cue, so we don't need to encode the role twice.
 
 ```xml
-<!-- Declaration: name introduces a binding into scope -->
-<class><name><bind/>Foo</name></class>
-<variable><let/><name><bind/>x</name></variable>
-<param><name><bind/>a</name></param>
+<!-- Declaration: position says so (direct child of a declaration element) -->
+<class><name>Foo</name></class>
+<variable><let/><name>x</name></variable>
+<param><name>a</name></param>
 
-<!-- Reference: name refers to an already-bound identifier -->
+<!-- Reference: position says so (inside an expression wrapper) -->
 <binary>
-  <left><name><use/>a</name></left>
-  <right><name><use/>b</name></right>
+  <left><name>a</name></left>
+  <right><name>b</name></right>
 </binary>
-<call><function><name><use/>print</name></function>...</call>
+<call><function><name>print</name></function>...</call>
 ```
-
-The markers are `<bind/>` and `<use/>` — short, symmetric, and established
-PL-theory vocabulary (name binding, def-use chains).
 
 #### Query ergonomics
 
-Position-based queries don't need to mention the markers — they're only
-useful when the query spans declaration kinds:
-
-| Intent | Query |
-|---|---|
-| All identifier occurrences | `//name` |
-| All declarations of `foo` (any kind) | `//name[bind][.='foo']` |
-| All references to `foo` (any kind) | `//name[use][.='foo']` |
-| Variable declarations named `foo` | `//variable[name='foo']` (marker redundant) |
-| Uses of a variable that's declared as `x` | `//name[use][.='x']` |
-
-Prefer the element name (`<variable>`, `<function>`, `<class>`) when the
-query is about a specific kind of declaration. Use `[bind]`/`[use]`
-markers when the query is about identifier roles across kinds, or when
-filtering role on its own.
-
-#### Why no marker on `<type>`
-
-A `<type>` is always a reference to a type — even in a type alias
-declaration, the declared *name* lives in a `<name>` element inside the
-alias, and the `<type>` expression on the right-hand side is always a
-reference to an existing type. So type declarations and references are
-not a mutually exclusive variant pair the same way identifier
-declarations and references are; no marker needed.
-
-#### Edge cases
-
-Some source constructs introduce a binding *and* reference an existing
-one in the same syntactic position. Mark them with both:
-
-```xml
-<!-- Destructuring: const {a} = obj
-     `a` declares a new local AND references obj.a. Both roles apply. -->
-<name><bind/><use/>a</name>
+```
+//name='foo'                           — does <name>foo</name> appear anywhere?
+//variable[name='foo']                 — variable declarations named foo
+//class[name='Foo']                    — class declarations named Foo
+//binary/left[name='x']                — binary expressions with x on the left
+//call[function/name='print']          — calls to print
+//object[name='console']/property[name='log']   — console.log access
 ```
 
-#### Advanced: attribute escape hatch
+Simple, matches the source shape, no role marker noise in JSON (a
+`<name>` is a text-only leaf, so JSON serialises it as a bare string
+like `"name": "console"`).
 
-For users who prefer category-level selection without the marker
-predicate, the same role information is also available as `is="…"`
-on declaration elements (class, function, variable, param, …):
-`//*[@is='declaration']/name`. This violates the usual Elements-Over-
-Attributes rule and is reserved for advanced cross-cutting queries; the
-marker form is the documented default.
+#### Why not markers / role elements?
 
-**Rationale:** Supports Design Goal #1 (intuitive queries — reference
-resolution becomes `//name[use][.='x']`), #2 (readable tree — one element
-name per identifier, not a vocabulary of decl/ref variants), and #4
-(minimal query complexity — `//name` unions both roles in one query).
-Applies Principle #9 (exhaustive markers) to identifier role.
+Earlier drafts considered two alternatives:
+
+1. **Empty child markers** on `<name>` — `<name><bind/>Foo</name>` for
+   declarations, `<name><use/>x</name>` for references. Clean in XPath
+   but breaks the JSON text-only-leaf optimisation: every identifier
+   serialises as an object (`{bind: true, text: "Foo"}`) rather than a
+   bare string. Since `name` is among the most-consumed leaf fields,
+   this regression was unacceptable.
+
+2. **Split into two elements** — `<name>` for declarations, `<ref>` for
+   references. Symmetric in XPath but doubles the vocabulary for a
+   distinction that the tree shape already makes, and `<ref>` became
+   ambiguous enough (see issue #73) that keeping the single `<name>`
+   element won out.
+
+#### Cross-cutting "all declarations" query
+
+Because role isn't marked, "every declaration of `foo` regardless of
+kind" needs a union of declaration-parent elements:
+
+```
+((//class | //function | //variable | //method | //param
+  | //generic | //field | //property | //alias | //import)/name)[.='foo']
+```
+
+This is verbose but uncommon — rules usually target a specific kind
+(`//variable[name='foo']`). When it's needed, two mechanisms are
+available:
+
+- A tractor-bound XPath variable `$declaration` that evaluates to the
+  union above: `$declaration/name[.='foo']`.
+- Once a name-resolver pass is available, references can carry a
+  resolved attribute (`<name ref="path/to/decl">x</name>`) pointing at
+  their declaration. Attributes are dropped in JSON by default, so
+  this remains an advanced/structural signal.
+
+Both are additive — they don't change the default tree shape.
+
+#### Why `<type>` also has no marker
+
+A `<type>` is always a reference to a type. In a type alias declaration,
+the declared *name* lives in a `<name>` element inside the alias, and
+the `<type>` on the right-hand side is always a reference. Types don't
+form a mutually-exclusive declaration/reference pair, so nothing to
+encode.
+
+#### Leaf-node marker caveat
+
+In general, empty-element markers placed inside text-only leaves
+(`<name>`, `<type>`) are cheap in XML but expensive in JSON — a leaf
+with any marker child serialises as an object (`{marker: true, text:
+"…"}`) rather than the bare string (`"…"`). Identifier-carrying leaves
+are the most common fields in downstream consumption, so mark
+sparingly and prefer attributes or position-based inference instead.
+
+**Rationale:** Supports Design Goal #1 (intuitive queries —
+`//class[name='Foo']` matches the source), #2 (readable tree — one
+element per concept, no role variants), #4 (minimal query complexity),
+and keeps the JSON serialisation of the most-queried leaf as a bare
+string. Accepts verbose "all declarations" as a rare-query trade-off
+with additive escape hatches.
 
 ---
 

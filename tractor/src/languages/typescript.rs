@@ -40,22 +40,14 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         // ---------------------------------------------------------------------
-        // Call/member expressions - promote field attributes to role wrappers
+        // Call/member expressions — field wrapping (function→callee,
+        // object→object, property→property) is handled by apply_field_wrappings
+        // per TS_FIELD_WRAPPINGS, so we just rename the outer node here.
         // ---------------------------------------------------------------------
         "call_expression" | "member_expression" => {
-            promote_children_fields(xot, node)?;
             if let Some(new_name) = map_element_name(&kind) {
                 rename(xot, node, new_name);
             }
-            Ok(TransformAction::Continue)
-        }
-
-        // ---------------------------------------------------------------------
-        // Role wrappers (created by field promotion above)
-        // Inline identifiers with <ref/> marker
-        // ---------------------------------------------------------------------
-        "function" | "object" | "property" if !has_kind(xot, node) => {
-            inline_identifier_with_ref(xot, node)?;
             Ok(TransformAction::Continue)
         }
 
@@ -284,52 +276,9 @@ fn wrap_bare_identifier_params(xot: &mut Xot, list: XotNode) -> Result<(), xot::
     Ok(())
 }
 
-/// Fields to promote to wrapper elements for call/member expressions
-const PROMOTED_FIELDS: &[&str] = &["function", "object", "property"];
-
 /// Check if a node has a `kind` attribute (i.e., it's a tree-sitter node, not a wrapper)
 fn has_kind(xot: &Xot, node: XotNode) -> bool {
     get_kind(xot, node).is_some()
-}
-
-/// Promote field attributes on children to wrapper elements
-fn promote_children_fields(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
-    let children: Vec<XotNode> = xot.children(node)
-        .filter(|&c| xot.element(c).is_some())
-        .collect();
-    for child in children {
-        promote_field_to_wrapper(xot, child, PROMOTED_FIELDS)?;
-    }
-    Ok(())
-}
-
-/// Inline an identifier child into the role wrapper with a `<ref/>` marker.
-///
-/// `<function><identifier>require</identifier></function>`
-/// becomes `<function><ref/>require</function>`
-///
-/// If the child is not an identifier (e.g., member_expression), does nothing.
-fn inline_identifier_with_ref(xot: &mut Xot, wrapper: XotNode) -> Result<(), xot::Error> {
-    let children: Vec<_> = xot.children(wrapper).collect();
-    for child in children {
-        if let Some(child_name) = get_element_name(xot, child) {
-            if child_name == "identifier" || child_name == "property_identifier" {
-                if let Some(text) = get_text_content(xot, child) {
-                    // Remove all children from wrapper
-                    let all_children: Vec<_> = xot.children(wrapper).collect();
-                    for c in all_children {
-                        xot.detach(c)?;
-                    }
-                    // Add <ref/> marker and text
-                    prepend_empty_element(xot, wrapper, "ref")?;
-                    let text_node = xot.new_text(&text);
-                    xot.append(wrapper, text_node)?;
-                    return Ok(());
-                }
-            }
-        }
-    }
-    Ok(())
 }
 
 /// If `node` contains a single identifier child, replace the node's children

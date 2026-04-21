@@ -379,11 +379,6 @@ pub fn parse_string_to_xot_with_options(
         let transform_fn = languages::get_transform(lang);
         crate::xot_transform::walk_transform(&mut xot, root, transform_fn)
             .map_err(|e| ParseError::Parse(e.to_string()))?;
-        // Post-pass: mark every <name> with <bind/> or <use/> (Principle #13)
-        if languages::is_programming_language(lang) {
-            crate::xot_transform::mark_name_roles(&mut xot, root)
-                .map_err(|e| ParseError::Parse(e.to_string()))?;
-        }
     }
 
     Ok(XotParseResult {

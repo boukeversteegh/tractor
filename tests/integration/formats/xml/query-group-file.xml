@@ -8,19 +8,13 @@
           <class>
             <public/>
             class
-            <name>
-              <bind/>
-              Foo
-            </name>
+            <name>Foo</name>
             <body>
               {
               <property>
                 <public/>
                 <type>int</type>
-                <name>
-                  <bind/>
-                  Bar
-                </name>
+                <name>Bar</name>
                 {
                 <accessor>get;</accessor>
                 <accessor>set;</accessor>
@@ -31,10 +25,7 @@
                 <returns>
                   <type>void</type>
                 </returns>
-                <name>
-                  <bind/>
-                  Baz
-                </name>
+                <name>Baz</name>
                 ()
                 <body>
                   <block>{ }</block>
@@ -50,10 +41,7 @@
           <class>
             <public/>
             class
-            <name>
-              <bind/>
-              Qux
-            </name>
+            <name>Qux</name>
             <body>{ }</body>
           </class>
         </tree>
@@ -65,19 +53,13 @@
           <class>
             <public/>
             class
-            <name>
-              <bind/>
-              Alpha
-            </name>
+            <name>Alpha</name>
             <body>
               {
               <property>
                 <public/>
                 <type>string</type>
-                <name>
-                  <bind/>
-                  Name
-                </name>
+                <name>Name</name>
                 {
                 <accessor>get;</accessor>
                 <accessor>set;</accessor>

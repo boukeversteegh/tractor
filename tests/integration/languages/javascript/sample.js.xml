@@ -7,23 +7,14 @@
           <comment>// Simple JavaScript example</comment>
           <function>
             function
-            <name>
-              <bind/>
-              add
-            </name>
+            <name>add</name>
             (
             <param>
-              <name>
-                <bind/>
-                a
-              </name>
+              <name>a</name>
             </param>
             ,
             <param>
-              <name>
-                <bind/>
-                b
-              </name>
+              <name>b</name>
             </param>
             )
             <body>
@@ -37,17 +28,11 @@
                       +
                     </op>
                     <left>
-                      <name>
-                        <use/>
-                        a
-                      </name>
+                      <name>a</name>
                     </left>
                     +
                     <right>
-                      <name>
-                        <use/>
-                        b
-                      </name>
+                      <name>b</name>
                     </right>
                   </binary>
                   ;
@@ -58,10 +43,7 @@
           </function>
           <function>
             function
-            <name>
-              <bind/>
-              main
-            </name>
+            <name>main</name>
             ()
             <body>
               <block>
@@ -69,17 +51,13 @@
                 <variable>
                   <const/>
                   const
-                  <name>
-                    <bind/>
-                    result
-                  </name>
+                  <name>result</name>
                   =
                   <value>
                     <call>
-                      <function>
-                        <ref/>
-                        add
-                      </function>
+                      <callee>
+                        <name>add</name>
+                      </callee>
                       (
                       <number>5</number>
                       ,
@@ -90,29 +68,24 @@
                   ;
                 </variable>
                 <call>
-                  <function>
+                  <callee>
                     <member>
                       <object>
-                        <ref/>
-                        console
+                        <name>console</name>
                       </object>
                       .
                       <property>
-                        <ref/>
-                        log
+                        <name>log</name>
                       </property>
                     </member>
-                  </function>
+                  </callee>
                   (
                   <template_string>
                     `
                     <string_fragment>Result: </string_fragment>
                     <template_substitution>
                       ${
-                      <name>
-                        <use/>
-                        result
-                      </name>
+                      <name>result</name>
                       }
                     </template_substitution>
                     `
@@ -125,10 +98,9 @@
             </body>
           </function>
           <call>
-            <function>
-              <ref/>
-              main
-            </function>
+            <callee>
+              <name>main</name>
+            </callee>
             ()
           </call>
           ;

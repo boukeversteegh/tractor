@@ -7,21 +7,14 @@
           <class>
             <public/>
             class
-            <name>
-              <bind/>
-              UserRecord
-            </name>
+            <name>UserRecord</name>
             <body>
               {
               <property>
                 [
                 <attribute>
                   <name>
-                    <use/>
-                    <name>
-                      <use/>
-                      MaxLength
-                    </name>
+                    <name>MaxLength</name>
                   </name>
                   (
                   <argument>
@@ -32,10 +25,7 @@
                 ]
                 <public/>
                 <type>bool</type>
-                <name>
-                  <bind/>
-                  IsActive
-                </name>
+                <name>IsActive</name>
                 {
                 <accessor>get;</accessor>
                 <accessor>set;</accessor>
@@ -49,11 +39,7 @@
                 [
                 <attribute>
                   <name>
-                    <use/>
-                    <name>
-                      <use/>
-                      MaxLength
-                    </name>
+                    <name>MaxLength</name>
                   </name>
                   (
                   <argument>
@@ -64,10 +50,7 @@
                 ]
                 <public/>
                 <type>string</type>
-                <name>
-                  <bind/>
-                  Name
-                </name>
+                <name>Name</name>
                 {
                 <accessor>get;</accessor>
                 <accessor>set;</accessor>

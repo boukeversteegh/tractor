@@ -115,6 +115,12 @@ const TS_FIELD_WRAPPINGS: &[(&str, &str)] = &[
     ("consequence", "consequence"),
     ("alternative", "alternative"),
     ("return_type", "returns"),
+    // The callee of a call expression. Renamed from the tree-sitter
+    // field `function` to avoid colliding with `<function>` used for
+    // function declarations.
+    ("function", "callee"),
+    ("object", "object"),
+    ("property", "property"),
 ];
 
 const RUST_FIELD_WRAPPINGS: &[(&str, &str)] = &[

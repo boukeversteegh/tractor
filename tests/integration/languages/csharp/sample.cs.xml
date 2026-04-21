@@ -10,27 +10,18 @@
           </comment>
           <import>
             using
-            <name>
-              <bind/>
-              System
-            </name>
+            <name>System</name>
             ;
           </import>
           <namespace>
             namespace
-            <name>
-              <bind/>
-              SampleApp
-            </name>
+            <name>SampleApp</name>
             <body>
               {
               <class>
                 <public/>
                 class
-                <name>
-                  <bind/>
-                  Sample
-                </name>
+                <name>Sample</name>
                 <body>
                   {
                   <field>
@@ -39,27 +30,18 @@
                     <variable>
                       <type>int</type>
                       <declarator>
-                        <name>
-                          <bind/>
-                          _value
-                        </name>
+                        <name>_value</name>
                       </declarator>
                     </variable>
                     ;
                   </field>
                   <constructor>
                     <public/>
-                    <name>
-                      <bind/>
-                      Sample
-                    </name>
+                    <name>Sample</name>
                     (
                     <parameter>
                       <type>int</type>
-                      <name>
-                        <bind/>
-                        value
-                      </name>
+                      <name>value</name>
                     </parameter>
                     )
                     <body>
@@ -69,17 +51,11 @@
                           <assign>
                             <op>=</op>
                             <left>
-                              <name>
-                                <use/>
-                                _value
-                              </name>
+                              <name>_value</name>
                             </left>
                             =
                             <right>
-                              <name>
-                                <use/>
-                                value
-                              </name>
+                              <name>value</name>
                             </right>
                           </assign>
                           ;
@@ -94,25 +70,16 @@
                     <returns>
                       <type>int</type>
                     </returns>
-                    <name>
-                      <bind/>
-                      Add
-                    </name>
+                    <name>Add</name>
                     (
                     <parameter>
                       <type>int</type>
-                      <name>
-                        <bind/>
-                        a
-                      </name>
+                      <name>a</name>
                     </parameter>
                     ,
                     <parameter>
                       <type>int</type>
-                      <name>
-                        <bind/>
-                        b
-                      </name>
+                      <name>b</name>
                     </parameter>
                     )
                     <body>
@@ -126,17 +93,11 @@
                               +
                             </op>
                             <left>
-                              <name>
-                                <use/>
-                                a
-                              </name>
+                              <name>a</name>
                             </left>
                             +
                             <right>
-                              <name>
-                                <use/>
-                                b
-                              </name>
+                              <name>b</name>
                             </right>
                           </binary>
                           ;
@@ -150,17 +111,11 @@
                     <returns>
                       <type>void</type>
                     </returns>
-                    <name>
-                      <bind/>
-                      Log
-                    </name>
+                    <name>Log</name>
                     (
                     <parameter>
                       <type>string</type>
-                      <name>
-                        <bind/>
-                        message
-                      </name>
+                      <name>message</name>
                     </parameter>
                     )
                     <body>
@@ -169,25 +124,15 @@
                         <expression_statement>
                           <call>
                             <member>
-                              <name>
-                                <use/>
-                                Console
-                              </name>
+                              <name>Console</name>
                               .
                               <name>
-                                <use/>
-                                <name>
-                                  <use/>
-                                  WriteLine
-                                </name>
+                                <name>WriteLine</name>
                               </name>
                             </member>
                             (
                             <argument>
-                              <name>
-                                <use/>
-                                message
-                              </name>
+                              <name>message</name>
                             </argument>
                             )
                           </call>
@@ -203,10 +148,7 @@
                     <returns>
                       <type>string</type>
                     </returns>
-                    <name>
-                      <bind/>
-                      Format
-                    </name>
+                    <name>Format</name>
                     ()
                     <body>
                       <block>
@@ -215,17 +157,10 @@
                           return
                           <call>
                             <member>
-                              <name>
-                                <use/>
-                                _value
-                              </name>
+                              <name>_value</name>
                               .
                               <name>
-                                <use/>
-                                <name>
-                                  <use/>
-                                  ToString
-                                </name>
+                                <name>ToString</name>
                               </name>
                             </member>
                             ()
@@ -242,10 +177,7 @@
                     <returns>
                       <type>void</type>
                     </returns>
-                    <name>
-                      <bind/>
-                      Main
-                    </name>
+                    <name>Main</name>
                     ()
                     <body>
                       <block>
@@ -254,16 +186,10 @@
                           <variable>
                             <type>int</type>
                             <declarator>
-                              <name>
-                                <bind/>
-                                result
-                              </name>
+                              <name>result</name>
                               =
                               <call>
-                                <name>
-                                  <use/>
-                                  Add
-                                </name>
+                                <name>Add</name>
                                 (
                                 <argument>
                                   <int>5</int>
@@ -281,17 +207,10 @@
                         <expression_statement>
                           <call>
                             <member>
-                              <name>
-                                <use/>
-                                Console
-                              </name>
+                              <name>Console</name>
                               .
                               <name>
-                                <use/>
-                                <name>
-                                  <use/>
-                                  WriteLine
-                                </name>
+                                <name>WriteLine</name>
                               </name>
                             </member>
                             (
@@ -302,10 +221,7 @@
                                 <string_content>Result: </string_content>
                                 <interpolation>
                                   <interpolation_brace>{</interpolation_brace>
-                                  <name>
-                                    <use/>
-                                    result
-                                  </name>
+                                  <name>result</name>
                                   <interpolation_brace>}</interpolation_brace>
                                 </interpolation>
                                 &quot;
@@ -325,10 +241,7 @@
               <interface>
                 <internal/>
                 interface
-                <name>
-                  <bind/>
-                  IService
-                </name>
+                <name>IService</name>
                 <body>
                   {
                   <method>
@@ -336,10 +249,7 @@
                     <returns>
                       <type>void</type>
                     </returns>
-                    <name>
-                      <bind/>
-                      Execute
-                    </name>
+                    <name>Execute</name>
                     ();
                   </method>
                   }
@@ -348,30 +258,19 @@
               <enum>
                 <internal/>
                 enum
-                <name>
-                  <bind/>
-                  Status
-                </name>
+                <name>Status</name>
                 <body>
                   <enum_member_declaration_list>
                     {
                     <enum_member_declaration>
                       <name>
-                        <use/>
-                        <name>
-                          <use/>
-                          Active
-                        </name>
+                        <name>Active</name>
                       </name>
                     </enum_member_declaration>
                     ,
                     <enum_member_declaration>
                       <name>
-                        <use/>
-                        <name>
-                          <use/>
-                          Inactive
-                        </name>
+                        <name>Inactive</name>
                       </name>
                     </enum_member_declaration>
                     }
@@ -381,10 +280,7 @@
               <struct>
                 <internal/>
                 struct
-                <name>
-                  <bind/>
-                  Point
-                </name>
+                <name>Point</name>
                 <body>
                   {
                   <field>
@@ -392,10 +288,7 @@
                     <variable>
                       <type>int</type>
                       <declarator>
-                        <name>
-                          <bind/>
-                          X
-                        </name>
+                        <name>X</name>
                       </declarator>
                     </variable>
                     ;
@@ -405,10 +298,7 @@
                     <variable>
                       <type>int</type>
                       <declarator>
-                        <name>
-                          <bind/>
-                          Y
-                        </name>
+                        <name>Y</name>
                       </declarator>
                     </variable>
                     ;

@@ -567,9 +567,6 @@ impl XeeBuilder {
                     crate::languages::get_transform(lang)
                 };
                 crate::xot_transform::walk_transform(self.documents.xot_mut(), doc_node, transform_fn)?;
-                if crate::languages::is_programming_language(lang) {
-                    crate::xot_transform::mark_name_roles(self.documents.xot_mut(), doc_node)?;
-                }
             }
             TreeMode::Data => {
                 // Single-branch data transform (caller already validated lang supports it)

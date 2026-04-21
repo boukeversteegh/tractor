@@ -2,10 +2,7 @@
 <class>
   <public/>
   class
-  <name>
-    <bind/>
-    Calculator
-  </name>
+  <name>Calculator</name>
   <body>
     {
     <method>
@@ -13,25 +10,16 @@
       <returns>
         <type>int</type>
       </returns>
-      <name>
-        <bind/>
-        Add
-      </name>
+      <name>Add</name>
       (
       <parameter>
         <type>int</type>
-        <name>
-          <bind/>
-          a
-        </name>
+        <name>a</name>
       </parameter>
       ,
       <parameter>
         <type>int</type>
-        <name>
-          <bind/>
-          b
-        </name>
+        <name>b</name>
       </parameter>
       )
       <body>
@@ -45,17 +33,11 @@
                 +
               </op>
               <left>
-                <name>
-                  <use/>
-                  a
-                </name>
+                <name>a</name>
               </left>
               +
               <right>
-                <name>
-                  <use/>
-                  b
-                </name>
+                <name>b</name>
               </right>
             </binary>
             ;
@@ -69,25 +51,16 @@
       <returns>
         <type>int</type>
       </returns>
-      <name>
-        <bind/>
-        Subtract
-      </name>
+      <name>Subtract</name>
       (
       <parameter>
         <type>int</type>
-        <name>
-          <bind/>
-          a
-        </name>
+        <name>a</name>
       </parameter>
       ,
       <parameter>
         <type>int</type>
-        <name>
-          <bind/>
-          b
-        </name>
+        <name>b</name>
       </parameter>
       )
       <body>
@@ -101,17 +74,11 @@
                 -
               </op>
               <left>
-                <name>
-                  <use/>
-                  a
-                </name>
+                <name>a</name>
               </left>
               -
               <right>
-                <name>
-                  <use/>
-                  b
-                </name>
+                <name>b</name>
               </right>
             </binary>
             ;
@@ -125,25 +92,16 @@
       <returns>
         <type>int</type>
       </returns>
-      <name>
-        <bind/>
-        Multiply
-      </name>
+      <name>Multiply</name>
       (
       <parameter>
         <type>int</type>
-        <name>
-          <bind/>
-          a
-        </name>
+        <name>a</name>
       </parameter>
       ,
       <parameter>
         <type>int</type>
-        <name>
-          <bind/>
-          b
-        </name>
+        <name>b</name>
       </parameter>
       )
       <body>
@@ -157,17 +115,11 @@
                 *
               </op>
               <left>
-                <name>
-                  <use/>
-                  a
-                </name>
+                <name>a</name>
               </left>
               *
               <right>
-                <name>
-                  <use/>
-                  b
-                </name>
+                <name>b</name>
               </right>
             </binary>
             ;

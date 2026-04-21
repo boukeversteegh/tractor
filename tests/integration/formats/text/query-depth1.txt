@@ -1,12 +1,12 @@
 tests/integration/formats/sample.cs:1
 class[public]/
   ├─ "class"
-  ├─ name[bind] = "Foo"
+  ├─ name = "Foo"
   └─ body/
-      └─ ... (15 children)
+      └─ ... (13 children)
 
 tests/integration/formats/sample.cs:7
 class[public]/
   ├─ "class"
-  ├─ name[bind] = "Qux"
+  ├─ name = "Qux"
   └─ body = "{ }"

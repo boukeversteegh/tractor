@@ -8,36 +8,24 @@
           <class>
             <public/>
             class
-            <name>
-              <bind/>
-              Sample
-            </name>
+            <name>Sample</name>
             <body>
               {
               <field>
                 <private/>
                 <type>int</type>
                 <variable_declarator>
-                  <name>
-                    <use/>
-                    value
-                  </name>
+                  <name>value</name>
                 </variable_declarator>
                 ;
               </field>
               <constructor>
                 <public/>
-                <name>
-                  <bind/>
-                  Sample
-                </name>
+                <name>Sample</name>
                 (
                 <param>
                   <type>int</type>
-                  <name>
-                    <bind/>
-                    value
-                  </name>
+                  <name>value</name>
                 </param>
                 )
                 <body>
@@ -49,18 +37,12 @@
                         <member>
                           <this>this</this>
                           .
-                          <name>
-                            <use/>
-                            value
-                          </name>
+                          <name>value</name>
                         </member>
                       </left>
                       =
                       <right>
-                        <name>
-                          <use/>
-                          value
-                        </name>
+                        <name>value</name>
                       </right>
                     </assign>
                     ;
@@ -74,25 +56,16 @@
                 <returns>
                   <type>int</type>
                 </returns>
-                <name>
-                  <bind/>
-                  add
-                </name>
+                <name>add</name>
                 (
                 <param>
                   <type>int</type>
-                  <name>
-                    <bind/>
-                    a
-                  </name>
+                  <name>a</name>
                 </param>
                 ,
                 <param>
                   <type>int</type>
-                  <name>
-                    <bind/>
-                    b
-                  </name>
+                  <name>b</name>
                 </param>
                 )
                 <body>
@@ -105,17 +78,11 @@
                         +
                       </op>
                       <left>
-                        <name>
-                          <use/>
-                          a
-                        </name>
+                        <name>a</name>
                       </left>
                       +
                       <right>
-                        <name>
-                          <use/>
-                          b
-                        </name>
+                        <name>b</name>
                       </right>
                     </binary>
                     ;
@@ -128,43 +95,25 @@
                 <returns>
                   <type>void</type>
                 </returns>
-                <name>
-                  <bind/>
-                  log
-                </name>
+                <name>log</name>
                 (
                 <param>
                   <type>String</type>
-                  <name>
-                    <bind/>
-                    message
-                  </name>
+                  <name>message</name>
                 </param>
                 )
                 <body>
                   {
                   <call>
                     <member>
-                      <name>
-                        <use/>
-                        System
-                      </name>
+                      <name>System</name>
                       .
-                      <name>
-                        <use/>
-                        out
-                      </name>
+                      <name>out</name>
                     </member>
                     .
-                    <name>
-                      <use/>
-                      println
-                    </name>
+                    <name>println</name>
                     (
-                    <name>
-                      <use/>
-                      message
-                    </name>
+                    <name>message</name>
                     )
                   </call>
                   ;
@@ -176,10 +125,7 @@
                 <returns>
                   <type>void</type>
                 </returns>
-                <name>
-                  <bind/>
-                  defaultAccess
-                </name>
+                <name>defaultAccess</name>
                 ()
                 <body>
                   {
@@ -193,20 +139,14 @@
                 <returns>
                   <type>void</type>
                 </returns>
-                <name>
-                  <bind/>
-                  main
-                </name>
+                <name>main</name>
                 (
                 <param>
                   <array>
                     <type>String</type>
                     <dimensions>[]</dimensions>
                   </array>
-                  <name>
-                    <bind/>
-                    args
-                  </name>
+                  <name>args</name>
                 </param>
                 )
                 <body>
@@ -214,17 +154,11 @@
                   <local_variable_declaration>
                     <type>int</type>
                     <variable_declarator>
-                      <name>
-                        <use/>
-                        result
-                      </name>
+                      <name>result</name>
                       =
                       <value>
                         <call>
-                          <name>
-                            <use/>
-                            add
-                          </name>
+                          <name>add</name>
                           (
                           <int>5</int>
                           ,
@@ -237,21 +171,12 @@
                   </local_variable_declaration>
                   <call>
                     <member>
-                      <name>
-                        <use/>
-                        System
-                      </name>
+                      <name>System</name>
                       .
-                      <name>
-                        <use/>
-                        out
-                      </name>
+                      <name>out</name>
                     </member>
                     .
-                    <name>
-                      <use/>
-                      println
-                    </name>
+                    <name>println</name>
                     (
                     <binary>
                       <op>
@@ -267,10 +192,7 @@
                       </left>
                       +
                       <right>
-                        <name>
-                          <use/>
-                          result
-                        </name>
+                        <name>result</name>
                       </right>
                     </binary>
                     )
@@ -285,10 +207,7 @@
           <interface>
             <package/>
             interface
-            <name>
-              <bind/>
-              Service
-            </name>
+            <name>Service</name>
             <body>
               {
               <method>
@@ -296,10 +215,7 @@
                 <returns>
                   <type>void</type>
                 </returns>
-                <name>
-                  <bind/>
-                  execute
-                </name>
+                <name>execute</name>
                 ();
               </method>
               }
@@ -308,25 +224,16 @@
           <enum>
             <package/>
             enum
-            <name>
-              <bind/>
-              Status
-            </name>
+            <name>Status</name>
             <body>
               <enum_body>
                 {
                 <enum_constant>
-                  <name>
-                    <use/>
-                    ACTIVE
-                  </name>
+                  <name>ACTIVE</name>
                 </enum_constant>
                 ,
                 <enum_constant>
-                  <name>
-                    <use/>
-                    INACTIVE
-                  </name>
+                  <name>INACTIVE</name>
                 </enum_constant>
                 }
               </enum_body>

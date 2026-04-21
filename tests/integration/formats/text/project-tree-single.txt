@@ -1,19 +1,19 @@
 class[public]/
   ├─ "class"
-  ├─ name[bind] = "Calculator"
+  ├─ name = "Calculator"
   └─ body/
       ├─ "{"
       ├─ method[public]/
       │   ├─ returns/type = "int"
-      │   ├─ name[bind] = "Add"
+      │   ├─ name = "Add"
       │   ├─ "("
       │   ├─ parameter/
       │   │   ├─ type = "int"
-      │   │   └─ name[bind] = "a"
+      │   │   └─ name = "a"
       │   ├─ ","
       │   ├─ parameter/
       │   │   ├─ type = "int"
-      │   │   └─ name[bind] = "b"
+      │   │   └─ name = "b"
       │   ├─ ")"
       │   └─ body/block/
       │       ├─ "{"
@@ -21,22 +21,22 @@ class[public]/
       │       │   ├─ "return"
       │       │   ├─ binary/
       │       │   │   ├─ op[plus] = "+"
-      │       │   │   ├─ left/name[use] = "a"
+      │       │   │   ├─ left/name = "a"
       │       │   │   ├─ "+"
-      │       │   │   └─ right/name[use] = "b"
+      │       │   │   └─ right/name = "b"
       │       │   └─ ";"
       │       └─ "}"
       ├─ method[public]/
       │   ├─ returns/type = "int"
-      │   ├─ name[bind] = "Subtract"
+      │   ├─ name = "Subtract"
       │   ├─ "("
       │   ├─ parameter/
       │   │   ├─ type = "int"
-      │   │   └─ name[bind] = "a"
+      │   │   └─ name = "a"
       │   ├─ ","
       │   ├─ parameter/
       │   │   ├─ type = "int"
-      │   │   └─ name[bind] = "b"
+      │   │   └─ name = "b"
       │   ├─ ")"
       │   └─ body/block/
       │       ├─ "{"
@@ -44,22 +44,22 @@ class[public]/
       │       │   ├─ "return"
       │       │   ├─ binary/
       │       │   │   ├─ op[minus] = "-"
-      │       │   │   ├─ left/name[use] = "a"
+      │       │   │   ├─ left/name = "a"
       │       │   │   ├─ "-"
-      │       │   │   └─ right/name[use] = "b"
+      │       │   │   └─ right/name = "b"
       │       │   └─ ";"
       │       └─ "}"
       ├─ method[public]/
       │   ├─ returns/type = "int"
-      │   ├─ name[bind] = "Multiply"
+      │   ├─ name = "Multiply"
       │   ├─ "("
       │   ├─ parameter/
       │   │   ├─ type = "int"
-      │   │   └─ name[bind] = "a"
+      │   │   └─ name = "a"
       │   ├─ ","
       │   ├─ parameter/
       │   │   ├─ type = "int"
-      │   │   └─ name[bind] = "b"
+      │   │   └─ name = "b"
       │   ├─ ")"
       │   └─ body/block/
       │       ├─ "{"
@@ -67,9 +67,9 @@ class[public]/
       │       │   ├─ "return"
       │       │   ├─ binary/
       │       │   │   ├─ op[multiply] = "*"
-      │       │   │   ├─ left/name[use] = "a"
+      │       │   │   ├─ left/name = "a"
       │       │   │   ├─ "*"
-      │       │   │   └─ right/name[use] = "b"
+      │       │   │   └─ right/name = "b"
       │       │   └─ ";"
       │       └─ "}"
       └─ "}"

@@ -8,25 +8,16 @@
           <function>
             <pub/>
             fn
-            <name>
-              <bind/>
-              add
-            </name>
+            <name>add</name>
             (
             <param>
-              <name>
-                <bind/>
-                a
-              </name>
+              <name>a</name>
               :
               <type>i32</type>
             </param>
             ,
             <param>
-              <name>
-                <bind/>
-                b
-              </name>
+              <name>b</name>
               :
               <type>i32</type>
             </param>
@@ -42,17 +33,11 @@
                   +
                 </op>
                 <left>
-                  <name>
-                    <use/>
-                    a
-                  </name>
+                  <name>a</name>
                 </left>
                 +
                 <right>
-                  <name>
-                    <use/>
-                    b
-                  </name>
+                  <name>b</name>
                 </right>
               </binary>
               }
@@ -61,26 +46,17 @@
           <function>
             <private/>
             fn
-            <name>
-              <bind/>
-              main
-            </name>
+            <name>main</name>
             ()
             <body>
               {
               <let>
                 let
-                <name>
-                  <bind/>
-                  result
-                </name>
+                <name>result</name>
                 =
                 <value>
                   <call>
-                    <name>
-                      <use/>
-                      add
-                    </name>
+                    <name>add</name>
                     (
                     <int>5</int>
                     ,
@@ -91,10 +67,7 @@
                 ;
               </let>
               <macro>
-                <name>
-                  <use/>
-                  println
-                </name>
+                <name>println</name>
                 !
                 <token_tree>
                   (
@@ -104,10 +77,7 @@
                     &quot;
                   </string>
                   ,
-                  <name>
-                    <use/>
-                    result
-                  </name>
+                  <name>result</name>
                   )
                 </token_tree>
               </macro>
@@ -120,10 +90,7 @@
               <crate>crate</crate>
             </pub>
             fn
-            <name>
-              <bind/>
-              helper
-            </name>
+            <name>helper</name>
             () -&gt;
             <returns>
               <type>bool</type>
@@ -137,28 +104,19 @@
           <struct>
             <pub/>
             struct
-            <name>
-              <bind/>
-              Point
-            </name>
+            <name>Point</name>
             <body>
               <field_declaration_list>
                 {
                 <field_declaration>
                   <pub/>
-                  <name>
-                    <use/>
-                    x
-                  </name>
+                  <name>x</name>
                   :
                   <type>i32</type>
                 </field_declaration>
                 ,
                 <field_declaration>
-                  <name>
-                    <use/>
-                    y
-                  </name>
+                  <name>y</name>
                   :
                   <type>i32</type>
                 </field_declaration>
@@ -170,32 +128,20 @@
           <enum>
             <private/>
             enum
-            <name>
-              <bind/>
-              Color
-            </name>
+            <name>Color</name>
             <body>
               <enum_variant_list>
                 {
                 <enum_variant>
-                  <name>
-                    <use/>
-                    Red
-                  </name>
+                  <name>Red</name>
                 </enum_variant>
                 ,
                 <enum_variant>
-                  <name>
-                    <use/>
-                    Green
-                  </name>
+                  <name>Green</name>
                 </enum_variant>
                 ,
                 <enum_variant>
-                  <name>
-                    <use/>
-                    Blue
-                  </name>
+                  <name>Blue</name>
                 </enum_variant>
                 ,
         }
@@ -205,18 +151,12 @@
           <trait>
             <pub/>
             trait
-            <name>
-              <bind/>
-              Drawable
-            </name>
+            <name>Drawable</name>
             <body>
               {
               <function_signature_item>
                 fn
-                <name>
-                  <use/>
-                  draw
-                </name>
+                <name>draw</name>
                 (
                 <self>
                   &amp;
@@ -230,10 +170,7 @@
           <mod>
             <private/>
             mod
-            <name>
-              <bind/>
-              internal
-            </name>
+            <name>internal</name>
             <body>
               {
               <function>
@@ -241,10 +178,7 @@
                   <super>super</super>
                 </pub>
                 fn
-                <name>
-                  <bind/>
-                  secret
-                </name>
+                <name>secret</name>
                 ()
                 <body>{}</body>
               </function>

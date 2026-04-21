@@ -7,27 +7,18 @@
           <comment>// Simple TypeScript example</comment>
           <function>
             function
-            <name>
-              <bind/>
-              add
-            </name>
+            <name>add</name>
             (
             <param>
               <required/>
-              <name>
-                <bind/>
-                a
-              </name>
+              <name>a</name>
               :
               <type>number</type>
             </param>
             ,
             <param>
               <required/>
-              <name>
-                <bind/>
-                b
-              </name>
+              <name>b</name>
               :
               <type>number</type>
             </param>
@@ -47,17 +38,11 @@
                       +
                     </op>
                     <left>
-                      <name>
-                        <use/>
-                        a
-                      </name>
+                      <name>a</name>
                     </left>
                     +
                     <right>
-                      <name>
-                        <use/>
-                        b
-                      </name>
+                      <name>b</name>
                     </right>
                   </binary>
                   ;
@@ -68,10 +53,7 @@
           </function>
           <function>
             function
-            <name>
-              <bind/>
-              main
-            </name>
+            <name>main</name>
             ()
             <returns>
               :
@@ -83,17 +65,13 @@
                 <variable>
                   <const/>
                   const
-                  <name>
-                    <bind/>
-                    result
-                  </name>
+                  <name>result</name>
                   =
                   <value>
                     <call>
-                      <function>
-                        <ref/>
-                        add
-                      </function>
+                      <callee>
+                        <name>add</name>
+                      </callee>
                       (
                       <number>5</number>
                       ,
@@ -104,29 +82,24 @@
                   ;
                 </variable>
                 <call>
-                  <function>
+                  <callee>
                     <member>
                       <object>
-                        <ref/>
-                        console
+                        <name>console</name>
                       </object>
                       .
                       <property>
-                        <ref/>
-                        log
+                        <name>log</name>
                       </property>
                     </member>
-                  </function>
+                  </callee>
                   (
                   <template_string>
                     `
                     <string_fragment>Result: </string_fragment>
                     <template_substitution>
                       ${
-                      <name>
-                        <use/>
-                        result
-                      </name>
+                      <name>result</name>
                       }
                     </template_substitution>
                     `
@@ -139,35 +112,27 @@
             </body>
           </function>
           <call>
-            <function>
-              <ref/>
-              main
-            </function>
+            <callee>
+              <name>main</name>
+            </callee>
             ()
           </call>
           ;
           <interface>
             interface
             <name>
-              <bind/>
               <type>Person</type>
             </name>
             <body>
               {
               <property_signature>
-                <name>
-                  <use/>
-                  name
-                </name>
+                <name>name</name>
                 :
                 <type>string</type>
               </property_signature>
               ;
               <property_signature>
-                <name>
-                  <use/>
-                  age
-                </name>
+                <name>age</name>
                 :
                 <type>number</type>
               </property_signature>
@@ -177,52 +142,31 @@
           </interface>
           <enum>
             enum
-            <name>
-              <bind/>
-              Color
-            </name>
+            <name>Color</name>
             <body>
               {
-              <name>
-                <use/>
-                Red
-              </name>
+              <name>Red</name>
               ,
-              <name>
-                <use/>
-                Green
-              </name>
+              <name>Green</name>
               ,
-              <name>
-                <use/>
-                Blue
-              </name>
+              <name>Blue</name>
               }
             </body>
           </enum>
           <function>
             function
-            <name>
-              <bind/>
-              greet
-            </name>
+            <name>greet</name>
             (
             <param>
               <required/>
-              <name>
-                <bind/>
-                name
-              </name>
+              <name>name</name>
               :
               <type>string</type>
             </param>
             ,
             <param>
               <optional/>
-              <name>
-                <bind/>
-                title
-              </name>
+              <name>title</name>
               ?:
               <type>string</type>
             </param>
@@ -238,10 +182,7 @@
                   return
                   <ternary>
                     <condition>
-                      <name>
-                        <use/>
-                        title
-                      </name>
+                      <name>title</name>
                     </condition>
                     ?
                     <consequence>
@@ -249,19 +190,13 @@
                         `
                         <template_substitution>
                           ${
-                          <name>
-                            <use/>
-                            title
-                          </name>
+                          <name>title</name>
                           }
                         </template_substitution>
                         <string_fragment> </string_fragment>
                         <template_substitution>
                           ${
-                          <name>
-                            <use/>
-                            name
-                          </name>
+                          <name>name</name>
                           }
                         </template_substitution>
                         `
@@ -269,10 +204,7 @@
                     </consequence>
                     :
                     <alternative>
-                      <name>
-                        <use/>
-                        name
-                      </name>
+                      <name>name</name>
                     </alternative>
                   </ternary>
                   ;
@@ -283,37 +215,25 @@
           </function>
           <function>
             function
-            <name>
-              <bind/>
-              configure
-            </name>
+            <name>configure</name>
             (
             <param>
               <required/>
-              <name>
-                <bind/>
-                host
-              </name>
+              <name>host</name>
               :
               <type>string</type>
             </param>
             ,
             <param>
               <required/>
-              <name>
-                <bind/>
-                port
-              </name>
+              <name>port</name>
               :
               <type>number</type>
             </param>
             ,
             <param>
               <optional/>
-              <name>
-                <bind/>
-                timeout
-              </name>
+              <name>timeout</name>
               ?:
               <type>number</type>
             </param>
@@ -326,34 +246,23 @@
               <block>
                 {
                 <call>
-                  <function>
+                  <callee>
                     <member>
                       <object>
-                        <ref/>
-                        console
+                        <name>console</name>
                       </object>
                       .
                       <property>
-                        <ref/>
-                        log
+                        <name>log</name>
                       </property>
                     </member>
-                  </function>
+                  </callee>
                   (
-                  <name>
-                    <use/>
-                    host
-                  </name>
+                  <name>host</name>
                   ,
-                  <name>
-                    <use/>
-                    port
-                  </name>
+                  <name>port</name>
                   ,
-                  <name>
-                    <use/>
-                    timeout
-                  </name>
+                  <name>timeout</name>
                   )
                 </call>
                 ;

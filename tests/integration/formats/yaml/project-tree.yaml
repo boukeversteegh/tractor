@@ -1,26 +1,18 @@
 - $type: class
   public: true
-  name:
-    bind: true
-    text: Calculator
+  name: Calculator
   body:
     children:
     - $type: method
       public: true
       returns:
         type: int
-      name:
-        bind: true
-        text: Add
+      name: Add
       parameters:
       - type: int
-        name:
-          bind: true
-          text: a
+        name: a
       - type: int
-        name:
-          bind: true
-          text: b
+        name: b
       body:
         block:
           children:
@@ -28,13 +20,9 @@
             children:
             - $type: binary
               left:
-                name:
-                  use: true
-                  text: a
+                name: a
               right:
-                name:
-                  use: true
-                  text: b
+                name: b
               children:
               - $type: op
                 plus: true
@@ -43,18 +31,12 @@
       public: true
       returns:
         type: int
-      name:
-        bind: true
-        text: Subtract
+      name: Subtract
       parameters:
       - type: int
-        name:
-          bind: true
-          text: a
+        name: a
       - type: int
-        name:
-          bind: true
-          text: b
+        name: b
       body:
         block:
           children:
@@ -62,13 +44,9 @@
             children:
             - $type: binary
               left:
-                name:
-                  use: true
-                  text: a
+                name: a
               right:
-                name:
-                  use: true
-                  text: b
+                name: b
               children:
               - $type: op
                 minus: true
@@ -77,18 +55,12 @@
       public: true
       returns:
         type: int
-      name:
-        bind: true
-        text: Multiply
+      name: Multiply
       parameters:
       - type: int
-        name:
-          bind: true
-          text: a
+        name: a
       - type: int
-        name:
-          bind: true
-          text: b
+        name: b
       body:
         block:
           children:
@@ -96,36 +68,26 @@
             children:
             - $type: binary
               left:
-                name:
-                  use: true
-                  text: a
+                name: a
               right:
-                name:
-                  use: true
-                  text: b
+                name: b
               children:
               - $type: op
                 multiply: true
                 text: '*'
 - $type: class
   public: true
-  name:
-    bind: true
-    text: Greeter
+  name: Greeter
   body:
     children:
     - $type: method
       public: true
       returns:
         type: string
-      name:
-        bind: true
-        text: Hello
+      name: Hello
       parameters:
         type: string
-        name:
-          bind: true
-          text: name
+        name: name
       body:
         block:
           children:
@@ -137,9 +99,7 @@
                   children:
                   - string_literal_content: Hello,
               right:
-                name:
-                  use: true
-                  text: name
+                name: name
               children:
               - $type: op
                 plus: true
@@ -148,14 +108,10 @@
       public: true
       returns:
         type: string
-      name:
-        bind: true
-        text: Goodbye
+      name: Goodbye
       parameters:
         type: string
-        name:
-          bind: true
-          text: name
+        name: name
       body:
         block:
           children:
@@ -167,9 +123,7 @@
                   children:
                   - string_literal_content: Goodbye,
               right:
-                name:
-                  use: true
-                  text: name
+                name: name
               children:
               - $type: op
                 plus: true

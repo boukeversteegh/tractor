@@ -7,19 +7,11 @@
           <namespace>
             namespace
             <name>
-              <bind/>
               <qualified_name>
-                <name>
-                  <use/>
-                  MyApp
-                </name>
+                <name>MyApp</name>
                 .
                 <name>
-                  <use/>
-                  <name>
-                    <use/>
-                    Services
-                  </name>
+                  <name>Services</name>
                 </name>
               </qualified_name>
             </name>
@@ -28,10 +20,7 @@
               <class>
                 <public/>
                 class
-                <name>
-                  <bind/>
-                  UserService
-                </name>
+                <name>UserService</name>
                 <body>{ }</body>
               </class>
               }

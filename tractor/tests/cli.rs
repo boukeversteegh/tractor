@@ -121,9 +121,9 @@ cli_suite! {
         main_name => tractor query "sample.js" -x "function[name='main']" => count 1;
         program => tractor query "sample.js" -x "program" => count 1;
         calls => tractor query "sample.js" -x "call" => count 3;
-        call_function_child => tractor query "sample.js" -x "call/function" => count 3;
-        direct_call_ref => tractor query "sample.js" -x "call/function[ref]" => count 2;
-        member_call_shape => tractor query "sample.js" -x "call/function/member" => count 1;
+        call_callee_child => tractor query "sample.js" -x "call/callee" => count 3;
+        direct_callee => tractor query "sample.js" -x "call/callee[name]" => count 2;
+        member_call_shape => tractor query "sample.js" -x "call/callee/member" => count 1;
         member_object => tractor query "sample.js" -x "member/object" => count 1;
         member_property => tractor query "sample.js" -x "member/property" => count 1;
     }

@@ -118,10 +118,6 @@ fn parse_ast_to_xml(
         let transform_fn = get_transform(language);
         walk_transform(&mut xot, root, transform_fn)
             .map_err(|e| format!("Transform failed: {}", e))?;
-        if crate::languages::is_programming_language(language) {
-            crate::xot_transform::mark_name_roles(&mut xot, root)
-                .map_err(|e| format!("Mark name roles failed: {}", e))?;
-        }
     }
 
     // Render to XML string
@@ -177,10 +173,6 @@ pub fn get_schema_tree(
         let transform_fn = get_transform(language);
         walk_transform(&mut xot, root, transform_fn)
             .map_err(|e| JsValue::from_str(&format!("Transform failed: {}", e)))?;
-        if crate::languages::is_programming_language(language) {
-            crate::xot_transform::mark_name_roles(&mut xot, root)
-                .map_err(|e| JsValue::from_str(&format!("Mark name roles failed: {}", e)))?;
-        }
     }
 
     // Collect schema from the xot tree

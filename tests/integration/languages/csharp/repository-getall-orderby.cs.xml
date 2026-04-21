@@ -7,10 +7,7 @@
           <class>
             <public/>
             class
-            <name>
-              <bind/>
-              UserRepository
-            </name>
+            <name>UserRepository</name>
             <body>
               {
               <method>
@@ -23,10 +20,7 @@
                     &gt;
                   </type>
                 </returns>
-                <name>
-                  <bind/>
-                  GetAll
-                </name>
+                <name>GetAll</name>
                 ()
                 <body>
                   <block>
@@ -36,26 +30,15 @@
                       <call>
                         <member>
                           <member>
-                            <name>
-                              <use/>
-                              _context
-                            </name>
+                            <name>_context</name>
                             .
                             <name>
-                              <use/>
-                              <name>
-                                <use/>
-                                Users
-                              </name>
+                              <name>Users</name>
                             </name>
                           </member>
                           .
                           <name>
-                            <use/>
-                            <name>
-                              <use/>
-                              ToList
-                            </name>
+                            <name>ToList</name>
                           </name>
                         </member>
                         ()
@@ -80,10 +63,7 @@
                     &gt;
                   </type>
                 </returns>
-                <name>
-                  <bind/>
-                  GetAllOrdered
-                </name>
+                <name>GetAllOrdered</name>
                 ()
                 <body>
                   <block>
@@ -95,26 +75,15 @@
                           <call>
                             <member>
                               <member>
-                                <name>
-                                  <use/>
-                                  _context
-                                </name>
+                                <name>_context</name>
                                 .
                                 <name>
-                                  <use/>
-                                  <name>
-                                    <use/>
-                                    Users
-                                  </name>
+                                  <name>Users</name>
                                 </name>
                               </member>
                               .
                               <name>
-                                <use/>
-                                <name>
-                                  <use/>
-                                  OrderBy
-                                </name>
+                                <name>OrderBy</name>
                               </name>
                             </member>
                             (
@@ -124,17 +93,10 @@
                                 =&gt;
                                 <body>
                                   <member>
-                                    <name>
-                                      <use/>
-                                      u
-                                    </name>
+                                    <name>u</name>
                                     .
                                     <name>
-                                      <use/>
-                                      <name>
-                                        <use/>
-                                        Name
-                                      </name>
+                                      <name>Name</name>
                                     </name>
                                   </member>
                                 </body>
@@ -144,11 +106,7 @@
                           </call>
                           .
                           <name>
-                            <use/>
-                            <name>
-                              <use/>
-                              ToList
-                            </name>
+                            <name>ToList</name>
                           </name>
                         </member>
                         ()
@@ -169,10 +127,7 @@
           <class>
             <public/>
             class
-            <name>
-              <bind/>
-              MockUserRepository
-            </name>
+            <name>MockUserRepository</name>
             <body>
               {
               <method>
@@ -185,10 +140,7 @@
                     &gt;
                   </type>
                 </returns>
-                <name>
-                  <bind/>
-                  GetAll
-                </name>
+                <name>GetAll</name>
                 ()
                 <body>
                   <block>
@@ -197,17 +149,10 @@
                       return
                       <call>
                         <member>
-                          <name>
-                            <use/>
-                            mock
-                          </name>
+                          <name>mock</name>
                           .
                           <name>
-                            <use/>
-                            <name>
-                              <use/>
-                              ToList
-                            </name>
+                            <name>ToList</name>
                           </name>
                         </member>
                         ()
