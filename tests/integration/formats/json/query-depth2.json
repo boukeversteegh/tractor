@@ -4,7 +4,7 @@
       "tree": {
         "$type": "class",
         "public": true,
-        "name": "Foo",
+        "name": {},
         "body": {}
       }
     },
@@ -12,7 +12,7 @@
       "tree": {
         "$type": "class",
         "public": true,
-        "name": "Qux",
+        "name": {},
         "body": "{ }"
       }
     }

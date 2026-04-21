@@ -1,7 +1,10 @@
 {
   "$type": "class",
   "public": true,
-  "name": "Calculator",
+  "name": {
+    "bind": true,
+    "text": "Calculator"
+  },
   "body": {
     "children": [
       {
@@ -10,15 +13,24 @@
         "returns": {
           "type": "int"
         },
-        "name": "Add",
+        "name": {
+          "bind": true,
+          "text": "Add"
+        },
         "parameters": [
           {
             "type": "int",
-            "name": "a"
+            "name": {
+              "bind": true,
+              "text": "a"
+            }
           },
           {
             "type": "int",
-            "name": "b"
+            "name": {
+              "bind": true,
+              "text": "b"
+            }
           }
         ],
         "body": {
@@ -30,10 +42,16 @@
                   {
                     "$type": "binary",
                     "left": {
-                      "ref": "a"
+                      "name": {
+                        "use": true,
+                        "text": "a"
+                      }
                     },
                     "right": {
-                      "ref": "b"
+                      "name": {
+                        "use": true,
+                        "text": "b"
+                      }
                     },
                     "children": [
                       {
@@ -55,15 +73,24 @@
         "returns": {
           "type": "int"
         },
-        "name": "Subtract",
+        "name": {
+          "bind": true,
+          "text": "Subtract"
+        },
         "parameters": [
           {
             "type": "int",
-            "name": "a"
+            "name": {
+              "bind": true,
+              "text": "a"
+            }
           },
           {
             "type": "int",
-            "name": "b"
+            "name": {
+              "bind": true,
+              "text": "b"
+            }
           }
         ],
         "body": {
@@ -75,10 +102,16 @@
                   {
                     "$type": "binary",
                     "left": {
-                      "ref": "a"
+                      "name": {
+                        "use": true,
+                        "text": "a"
+                      }
                     },
                     "right": {
-                      "ref": "b"
+                      "name": {
+                        "use": true,
+                        "text": "b"
+                      }
                     },
                     "children": [
                       {
@@ -100,15 +133,24 @@
         "returns": {
           "type": "int"
         },
-        "name": "Multiply",
+        "name": {
+          "bind": true,
+          "text": "Multiply"
+        },
         "parameters": [
           {
             "type": "int",
-            "name": "a"
+            "name": {
+              "bind": true,
+              "text": "a"
+            }
           },
           {
             "type": "int",
-            "name": "b"
+            "name": {
+              "bind": true,
+              "text": "b"
+            }
           }
         ],
         "body": {
@@ -120,10 +162,16 @@
                   {
                     "$type": "binary",
                     "left": {
-                      "ref": "a"
+                      "name": {
+                        "use": true,
+                        "text": "a"
+                      }
                     },
                     "right": {
-                      "ref": "b"
+                      "name": {
+                        "use": true,
+                        "text": "b"
+                      }
                     },
                     "children": [
                       {

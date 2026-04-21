@@ -534,8 +534,11 @@ fn classify_identifier(xot: &Xot, node: XotNode) -> &'static str {
         // Type annotations - use type
         "type_argument_list" | "type_parameter" => "type",
 
-        // Default to ref (variable/constant reference in expressions)
-        _ => "ref",
+        // Default: all other identifiers are <name>. The post-transform
+        // pass marks each <name> as <bind/> or <use/> by context, so we
+        // no longer need a separate <ref> element for value references.
+        // See Principle #13.
+        _ => "name",
     }
 }
 

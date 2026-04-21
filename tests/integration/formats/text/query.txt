@@ -1,19 +1,19 @@
 tests/integration/formats/sample.cs:1
 class[public]/
   ├─ "class"
-  ├─ name = "Foo"
+  ├─ name[bind] = "Foo"
   └─ body/
       ├─ "{"
       ├─ property[public]/
       │   ├─ type = "int"
-      │   ├─ name = "Bar"
+      │   ├─ name[bind] = "Bar"
       │   ├─ "{"
       │   ├─ accessor = "get;"
       │   ├─ accessor = "set;"
       │   └─ "}"
       ├─ method[public]/
       │   ├─ returns/type = "void"
-      │   ├─ name = "Baz"
+      │   ├─ name[bind] = "Baz"
       │   ├─ "()"
       │   └─ body/block = "{ }"
       └─ "}"
@@ -21,5 +21,5 @@ class[public]/
 tests/integration/formats/sample.cs:7
 class[public]/
   ├─ "class"
-  ├─ name = "Qux"
+  ├─ name[bind] = "Qux"
   └─ body = "{ }"

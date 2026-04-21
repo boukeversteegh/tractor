@@ -6,7 +6,10 @@
         <module>
           <assign>
             <left>
-              <name>msg</name>
+              <name>
+                <use/>
+                msg
+              </name>
             </left>
             =
             <right>

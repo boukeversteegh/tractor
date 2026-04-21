@@ -7,7 +7,10 @@
           <class>
             <public/>
             class
-            <name>DataService</name>
+            <name>
+              <bind/>
+              DataService
+            </name>
             <body>
               {
               <method>
@@ -20,7 +23,10 @@
                     &gt;
                   </type>
                 </returns>
-                <name>GetNames</name>
+                <name>
+                  <bind/>
+                  GetNames
+                </name>
                 ()
                 <body>
                   <block>
@@ -55,7 +61,10 @@
                     &gt;
                   </type>
                 </returns>
-                <name>GetCounts</name>
+                <name>
+                  <bind/>
+                  GetCounts
+                </name>
                 ()
                 <body>
                   <block>
@@ -97,7 +106,10 @@
                     &gt;
                   </type>
                 </returns>
-                <name>GetUserMaps</name>
+                <name>
+                  <bind/>
+                  GetUserMaps
+                </name>
                 ()
                 <body>
                   <block>

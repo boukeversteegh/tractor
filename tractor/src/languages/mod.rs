@@ -73,6 +73,24 @@ pub fn supports_data_tree(lang: &str) -> bool {
     matches!(lang, "json" | "yaml" | "yml")
 }
 
+/// True for programming languages (as opposed to data/config languages).
+/// Used to gate post-transforms like identifier-role marking that only
+/// make sense when the tree has declaration/reference semantics.
+pub fn is_programming_language(lang: &str) -> bool {
+    matches!(
+        lang,
+        "typescript" | "ts" | "tsx"
+            | "javascript" | "js" | "jsx"
+            | "csharp" | "cs"
+            | "python" | "py"
+            | "go"
+            | "rust" | "rs"
+            | "java"
+            | "ruby" | "rb"
+            | "tsql" | "mssql"
+    )
+}
+
 /// Get the syntax category function for a language
 /// This maps transformed element names to syntax categories for highlighting
 pub fn get_syntax_category(lang: &str) -> SyntaxCategoryFn {

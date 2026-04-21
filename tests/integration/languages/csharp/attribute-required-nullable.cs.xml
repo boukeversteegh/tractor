@@ -7,20 +7,30 @@
           <class>
             <public/>
             class
-            <name>UserRecord</name>
+            <name>
+              <bind/>
+              UserRecord
+            </name>
             <body>
               {
               <property>
                 [
                 <attribute>
                   <name>
-                    <ref>Required</ref>
+                    <use/>
+                    <name>
+                      <use/>
+                      Required
+                    </name>
                   </name>
                 </attribute>
                 ]
                 <public/>
                 <type>Guid</type>
-                <name>UserId</name>
+                <name>
+                  <bind/>
+                  UserId
+                </name>
                 {
                 <accessor>get;</accessor>
                 <accessor>set;</accessor>
@@ -34,7 +44,11 @@
                 [
                 <attribute>
                   <name>
-                    <ref>Required</ref>
+                    <use/>
+                    <name>
+                      <use/>
+                      Required
+                    </name>
                   </name>
                 </attribute>
                 ]
@@ -43,7 +57,10 @@
                   Guid
                   <nullable/>
                 </type>
-                <name>NullableId</name>
+                <name>
+                  <bind/>
+                  NullableId
+                </name>
                 {
                 <accessor>get;</accessor>
                 <accessor>set;</accessor>
@@ -57,13 +74,20 @@
                 [
                 <attribute>
                   <name>
-                    <ref>Required</ref>
+                    <use/>
+                    <name>
+                      <use/>
+                      Required
+                    </name>
                   </name>
                 </attribute>
                 ]
                 <public/>
                 <type>string</type>
-                <name>Name</name>
+                <name>
+                  <bind/>
+                  Name
+                </name>
                 {
                 <accessor>get;</accessor>
                 <accessor>set;</accessor>

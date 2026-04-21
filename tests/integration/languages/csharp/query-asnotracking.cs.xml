@@ -7,7 +7,10 @@
           <class>
             <public/>
             class
-            <name>UserService</name>
+            <name>
+              <bind/>
+              UserService
+            </name>
             <body>
               {
               <comment>
@@ -17,13 +20,22 @@
               <method>
                 <public/>
                 <returns>
-                  <ref>UserDto</ref>
+                  <name>
+                    <use/>
+                    UserDto
+                  </name>
                 </returns>
-                <name>GetUser</name>
+                <name>
+                  <bind/>
+                  GetUser
+                </name>
                 (
                 <parameter>
                   <type>int</type>
-                  <name>id</name>
+                  <name>
+                    <bind/>
+                    id
+                  </name>
                 </parameter>
                 )
                 <body>
@@ -33,20 +45,34 @@
                       <variable>
                         <implicit_type>var</implicit_type>
                         <declarator>
-                          <name>user</name>
+                          <name>
+                            <bind/>
+                            user
+                          </name>
                           =
                           <call>
                             <member>
                               <member>
-                                <ref>_context</ref>
+                                <name>
+                                  <use/>
+                                  _context
+                                </name>
                                 .
                                 <name>
-                                  <ref>Users</ref>
+                                  <use/>
+                                  <name>
+                                    <use/>
+                                    Users
+                                  </name>
                                 </name>
                               </member>
                               .
                               <name>
-                                <ref>First</ref>
+                                <use/>
+                                <name>
+                                  <use/>
+                                  First
+                                </name>
                               </name>
                             </member>
                             (
@@ -62,16 +88,26 @@
                                     </op>
                                     <left>
                                       <member>
-                                        <ref>u</ref>
+                                        <name>
+                                          <use/>
+                                          u
+                                        </name>
                                         .
                                         <name>
-                                          <ref>Id</ref>
+                                          <use/>
+                                          <name>
+                                            <use/>
+                                            Id
+                                          </name>
                                         </name>
                                       </member>
                                     </left>
                                     ==
                                     <right>
-                                      <ref>id</ref>
+                                      <name>
+                                        <use/>
+                                        id
+                                      </name>
                                     </right>
                                   </binary>
                                 </body>
@@ -86,10 +122,16 @@
                     <return>
                       return
                       <call>
-                        <ref>Map</ref>
+                        <name>
+                          <use/>
+                          Map
+                        </name>
                         (
                         <argument>
-                          <ref>user</ref>
+                          <name>
+                            <use/>
+                            user
+                          </name>
                         </argument>
                         )
                       </call>
@@ -106,13 +148,22 @@
               <method>
                 <public/>
                 <returns>
-                  <ref>UserDto</ref>
+                  <name>
+                    <use/>
+                    UserDto
+                  </name>
                 </returns>
-                <name>GetUserTracked</name>
+                <name>
+                  <bind/>
+                  GetUserTracked
+                </name>
                 (
                 <parameter>
                   <type>int</type>
-                  <name>id</name>
+                  <name>
+                    <bind/>
+                    id
+                  </name>
                 </parameter>
                 )
                 <body>
@@ -122,29 +173,47 @@
                       <variable>
                         <implicit_type>var</implicit_type>
                         <declarator>
-                          <name>user</name>
+                          <name>
+                            <bind/>
+                            user
+                          </name>
                           =
                           <call>
                             <member>
                               <call>
                                 <member>
                                   <member>
-                                    <ref>_context</ref>
+                                    <name>
+                                      <use/>
+                                      _context
+                                    </name>
                                     .
                                     <name>
-                                      <ref>Users</ref>
+                                      <use/>
+                                      <name>
+                                        <use/>
+                                        Users
+                                      </name>
                                     </name>
                                   </member>
                                   .
                                   <name>
-                                    <ref>AsNoTracking</ref>
+                                    <use/>
+                                    <name>
+                                      <use/>
+                                      AsNoTracking
+                                    </name>
                                   </name>
                                 </member>
                                 ()
                               </call>
                               .
                               <name>
-                                <ref>First</ref>
+                                <use/>
+                                <name>
+                                  <use/>
+                                  First
+                                </name>
                               </name>
                             </member>
                             (
@@ -160,16 +229,26 @@
                                     </op>
                                     <left>
                                       <member>
-                                        <ref>u</ref>
+                                        <name>
+                                          <use/>
+                                          u
+                                        </name>
                                         .
                                         <name>
-                                          <ref>Id</ref>
+                                          <use/>
+                                          <name>
+                                            <use/>
+                                            Id
+                                          </name>
                                         </name>
                                       </member>
                                     </left>
                                     ==
                                     <right>
-                                      <ref>id</ref>
+                                      <name>
+                                        <use/>
+                                        id
+                                      </name>
                                     </right>
                                   </binary>
                                 </body>
@@ -184,10 +263,16 @@
                     <return>
                       return
                       <call>
-                        <ref>Map</ref>
+                        <name>
+                          <use/>
+                          Map
+                        </name>
                         (
                         <argument>
-                          <ref>user</ref>
+                          <name>
+                            <use/>
+                            user
+                          </name>
                         </argument>
                         )
                       </call>

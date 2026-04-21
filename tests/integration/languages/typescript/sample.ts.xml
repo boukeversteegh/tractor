@@ -7,18 +7,27 @@
           <comment>// Simple TypeScript example</comment>
           <function>
             function
-            <name>add</name>
+            <name>
+              <bind/>
+              add
+            </name>
             (
             <param>
               <required/>
-              <name>a</name>
+              <name>
+                <bind/>
+                a
+              </name>
               :
               <type>number</type>
             </param>
             ,
             <param>
               <required/>
-              <name>b</name>
+              <name>
+                <bind/>
+                b
+              </name>
               :
               <type>number</type>
             </param>
@@ -38,11 +47,17 @@
                       +
                     </op>
                     <left>
-                      <name>a</name>
+                      <name>
+                        <use/>
+                        a
+                      </name>
                     </left>
                     +
                     <right>
-                      <name>b</name>
+                      <name>
+                        <use/>
+                        b
+                      </name>
                     </right>
                   </binary>
                   ;
@@ -53,7 +68,10 @@
           </function>
           <function>
             function
-            <name>main</name>
+            <name>
+              <bind/>
+              main
+            </name>
             ()
             <returns>
               :
@@ -65,7 +83,10 @@
                 <variable>
                   <const/>
                   const
-                  <name>result</name>
+                  <name>
+                    <bind/>
+                    result
+                  </name>
                   =
                   <value>
                     <call>
@@ -102,7 +123,10 @@
                     <string_fragment>Result: </string_fragment>
                     <template_substitution>
                       ${
-                      <name>result</name>
+                      <name>
+                        <use/>
+                        result
+                      </name>
                       }
                     </template_substitution>
                     `
@@ -125,18 +149,25 @@
           <interface>
             interface
             <name>
+              <bind/>
               <type>Person</type>
             </name>
             <body>
               {
               <property_signature>
-                <name>name</name>
+                <name>
+                  <use/>
+                  name
+                </name>
                 :
                 <type>string</type>
               </property_signature>
               ;
               <property_signature>
-                <name>age</name>
+                <name>
+                  <use/>
+                  age
+                </name>
                 :
                 <type>number</type>
               </property_signature>
@@ -146,31 +177,52 @@
           </interface>
           <enum>
             enum
-            <name>Color</name>
+            <name>
+              <bind/>
+              Color
+            </name>
             <body>
               {
-              <name>Red</name>
+              <name>
+                <use/>
+                Red
+              </name>
               ,
-              <name>Green</name>
+              <name>
+                <use/>
+                Green
+              </name>
               ,
-              <name>Blue</name>
+              <name>
+                <use/>
+                Blue
+              </name>
               }
             </body>
           </enum>
           <function>
             function
-            <name>greet</name>
+            <name>
+              <bind/>
+              greet
+            </name>
             (
             <param>
               <required/>
-              <name>name</name>
+              <name>
+                <bind/>
+                name
+              </name>
               :
               <type>string</type>
             </param>
             ,
             <param>
               <optional/>
-              <name>title</name>
+              <name>
+                <bind/>
+                title
+              </name>
               ?:
               <type>string</type>
             </param>
@@ -186,7 +238,10 @@
                   return
                   <ternary>
                     <condition>
-                      <name>title</name>
+                      <name>
+                        <use/>
+                        title
+                      </name>
                     </condition>
                     ?
                     <consequence>
@@ -194,13 +249,19 @@
                         `
                         <template_substitution>
                           ${
-                          <name>title</name>
+                          <name>
+                            <use/>
+                            title
+                          </name>
                           }
                         </template_substitution>
                         <string_fragment> </string_fragment>
                         <template_substitution>
                           ${
-                          <name>name</name>
+                          <name>
+                            <use/>
+                            name
+                          </name>
                           }
                         </template_substitution>
                         `
@@ -208,7 +269,10 @@
                     </consequence>
                     :
                     <alternative>
-                      <name>name</name>
+                      <name>
+                        <use/>
+                        name
+                      </name>
                     </alternative>
                   </ternary>
                   ;
@@ -219,25 +283,37 @@
           </function>
           <function>
             function
-            <name>configure</name>
+            <name>
+              <bind/>
+              configure
+            </name>
             (
             <param>
               <required/>
-              <name>host</name>
+              <name>
+                <bind/>
+                host
+              </name>
               :
               <type>string</type>
             </param>
             ,
             <param>
               <required/>
-              <name>port</name>
+              <name>
+                <bind/>
+                port
+              </name>
               :
               <type>number</type>
             </param>
             ,
             <param>
               <optional/>
-              <name>timeout</name>
+              <name>
+                <bind/>
+                timeout
+              </name>
               ?:
               <type>number</type>
             </param>
@@ -264,11 +340,20 @@
                     </member>
                   </function>
                   (
-                  <name>host</name>
+                  <name>
+                    <use/>
+                    host
+                  </name>
                   ,
-                  <name>port</name>
+                  <name>
+                    <use/>
+                    port
+                  </name>
                   ,
-                  <name>timeout</name>
+                  <name>
+                    <use/>
+                    timeout
+                  </name>
                   )
                 </call>
                 ;

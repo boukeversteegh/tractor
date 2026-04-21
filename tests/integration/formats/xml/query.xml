@@ -6,13 +6,19 @@
         <class>
           <public/>
           class
-          <name>Foo</name>
+          <name>
+            <bind/>
+            Foo
+          </name>
           <body>
             {
             <property>
               <public/>
               <type>int</type>
-              <name>Bar</name>
+              <name>
+                <bind/>
+                Bar
+              </name>
               {
               <accessor>get;</accessor>
               <accessor>set;</accessor>
@@ -23,7 +29,10 @@
               <returns>
                 <type>void</type>
               </returns>
-              <name>Baz</name>
+              <name>
+                <bind/>
+                Baz
+              </name>
               ()
               <body>
                 <block>{ }</block>
@@ -39,7 +48,10 @@
         <class>
           <public/>
           class
-          <name>Qux</name>
+          <name>
+            <bind/>
+            Qux
+          </name>
           <body>{ }</body>
         </class>
       </tree>

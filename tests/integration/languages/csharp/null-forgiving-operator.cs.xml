@@ -9,7 +9,10 @@
           <class>
             <public/>
             class
-            <name>NullForgivingTest</name>
+            <name>
+              <bind/>
+              NullForgivingTest
+            </name>
             <body>
               {
               <method>
@@ -17,7 +20,10 @@
                 <returns>
                   <type>void</type>
                 </returns>
-                <name>TestMethod</name>
+                <name>
+                  <bind/>
+                  TestMethod
+                </name>
                 ()
                 <body>
                   <block>
@@ -29,10 +35,16 @@
                           <nullable/>
                         </type>
                         <declarator>
-                          <name>nullable</name>
+                          <name>
+                            <bind/>
+                            nullable
+                          </name>
                           =
                           <call>
-                            <ref>GetNullable</ref>
+                            <name>
+                              <use/>
+                              GetNullable
+                            </name>
                             ()
                           </call>
                         </declarator>
@@ -47,16 +59,26 @@
                       <variable>
                         <implicit_type>var</implicit_type>
                         <declarator>
-                          <name>length</name>
+                          <name>
+                            <bind/>
+                            length
+                          </name>
                           =
                           <member>
                             <postfix_unary_expression>
-                              <ref>nullable</ref>
+                              <name>
+                                <use/>
+                                nullable
+                              </name>
                               !
                             </postfix_unary_expression>
                             .
                             <name>
-                              <ref>Length</ref>
+                              <use/>
+                              <name>
+                                <use/>
+                                Length
+                              </name>
                             </name>
                           </member>
                         </declarator>
@@ -71,25 +93,39 @@
                       <variable>
                         <implicit_type>var</implicit_type>
                         <declarator>
-                          <name>upper</name>
+                          <name>
+                            <bind/>
+                            upper
+                          </name>
                           =
                           <member>
                             <call>
                               <member>
                                 <postfix_unary_expression>
-                                  <ref>nullable</ref>
+                                  <name>
+                                    <use/>
+                                    nullable
+                                  </name>
                                   !
                                 </postfix_unary_expression>
                                 .
                                 <name>
-                                  <ref>ToUpper</ref>
+                                  <use/>
+                                  <name>
+                                    <use/>
+                                    ToUpper
+                                  </name>
                                 </name>
                               </member>
                               ()
                             </call>
                             .
                             <name>
-                              <ref>Length</ref>
+                              <use/>
+                              <name>
+                                <use/>
+                                Length
+                              </name>
                             </name>
                           </member>
                         </declarator>
@@ -102,11 +138,17 @@
                     </comment>
                     <expression_statement>
                       <call>
-                        <ref>Process</ref>
+                        <name>
+                          <use/>
+                          Process
+                        </name>
                         (
                         <argument>
                           <postfix_unary_expression>
-                            <ref>nullable</ref>
+                            <name>
+                              <use/>
+                              nullable
+                            </name>
                             !
                           </postfix_unary_expression>
                         </argument>
@@ -122,7 +164,10 @@
                       <variable>
                         <implicit_type>var</implicit_type>
                         <declarator>
-                          <name>combined</name>
+                          <name>
+                            <bind/>
+                            combined
+                          </name>
                           =
                           <binary>
                             <op>
@@ -132,12 +177,19 @@
                             <left>
                               <member>
                                 <postfix_unary_expression>
-                                  <ref>first</ref>
+                                  <name>
+                                    <use/>
+                                    first
+                                  </name>
                                   !
                                 </postfix_unary_expression>
                                 .
                                 <name>
-                                  <ref>Length</ref>
+                                  <use/>
+                                  <name>
+                                    <use/>
+                                    Length
+                                  </name>
                                 </name>
                               </member>
                             </left>
@@ -145,12 +197,19 @@
                             <right>
                               <member>
                                 <postfix_unary_expression>
-                                  <ref>second</ref>
+                                  <name>
+                                    <use/>
+                                    second
+                                  </name>
                                   !
                                 </postfix_unary_expression>
                                 .
                                 <name>
-                                  <ref>Length</ref>
+                                  <use/>
+                                  <name>
+                                    <use/>
+                                    Length
+                                  </name>
                                 </name>
                               </member>
                             </right>
@@ -171,7 +230,10 @@
                     <nullable/>
                   </type>
                 </returns>
-                <name>GetNullable</name>
+                <name>
+                  <bind/>
+                  GetNullable
+                </name>
                 ()
                 <body>
                   <arrow_expression_clause>
@@ -186,11 +248,17 @@
                 <returns>
                   <type>void</type>
                 </returns>
-                <name>Process</name>
+                <name>
+                  <bind/>
+                  Process
+                </name>
                 (
                 <parameter>
                   <type>string</type>
-                  <name>s</name>
+                  <name>
+                    <bind/>
+                    s
+                  </name>
                 </parameter>
                 )
                 <body>
@@ -205,7 +273,10 @@
                     <nullable/>
                   </type>
                   <declarator>
-                    <name>first</name>
+                    <name>
+                      <bind/>
+                      first
+                    </name>
                   </declarator>
                 </variable>
                 ;
@@ -218,7 +289,10 @@
                     <nullable/>
                   </type>
                   <declarator>
-                    <name>second</name>
+                    <name>
+                      <bind/>
+                      second
+                    </name>
                   </declarator>
                 </variable>
                 ;

@@ -4,13 +4,14 @@
     │   └─ method[public] (5)/ = "(", ",", ")"
     │       ├─ body (5)/
     │       │   └─ block (5)/ = {…}
-    │       │       └─ … (12 children)
-    │       ├─ name (5) = "Add", "Subtract", "Multiply", "Hello", "Goodbye"
+    │       │       └─ … (14 children)
+    │       ├─ name[bind] (5)/ = "Add", "Subtract", "Multiply", "Hello", "Goodbye"
     │       ├─ parameter (8)/
-    │       │   ├─ name (8) = "a", "b", "name"
+    │       │   ├─ name[bind] (8)/ = "a", "b", "name"
+    │       │   │   └─ … (1 children)
     │       │   └─ type (8) = "int", "string"
     │       └─ returns (5)/
     │           └─ type (5) = "int", "string"
-    └─ name (2) = "Calculator", "Greeter"
+    └─ name[bind] (2)/ = "Calculator", "Greeter"
 
   (use -d to increase depth, or -x to query specific elements)

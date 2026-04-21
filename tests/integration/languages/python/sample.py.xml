@@ -11,11 +11,20 @@
           </string>
           <function>
             def
-            <name>add</name>
+            <name>
+              <bind/>
+              add
+            </name>
             (
-            <name>a</name>
+            <name>
+              <bind/>
+              a
+            </name>
             ,
-            <name>b</name>
+            <name>
+              <bind/>
+              b
+            </name>
             ):
             <body>
               <string>
@@ -31,11 +40,17 @@
                     +
                   </op>
                   <left>
-                    <name>a</name>
+                    <name>
+                      <use/>
+                      a
+                    </name>
                   </left>
                   +
                   <right>
-                    <name>b</name>
+                    <name>
+                      <use/>
+                      b
+                    </name>
                   </right>
                 </binary>
               </return>
@@ -44,9 +59,15 @@
           <function>
             <async/>
             async def
-            <name>fetch_data</name>
+            <name>
+              <bind/>
+              fetch_data
+            </name>
             (
-            <name>url</name>
+            <name>
+              <bind/>
+              url
+            </name>
             ):
             <body>
               <string>
@@ -56,23 +77,35 @@
               </string>
               <return>
                 return
-                <name>url</name>
+                <name>
+                  <use/>
+                  url
+                </name>
               </return>
             </body>
           </function>
           <function>
             def
-            <name>main</name>
+            <name>
+              <bind/>
+              main
+            </name>
             ():
             <body>
               <assign>
                 <left>
-                  <name>result</name>
+                  <name>
+                    <use/>
+                    result
+                  </name>
                 </left>
                 =
                 <right>
                   <call>
-                    <name>add</name>
+                    <name>
+                      <use/>
+                      add
+                    </name>
                     (
                     <int>5</int>
                     ,
@@ -82,14 +115,20 @@
                 </right>
               </assign>
               <call>
-                <name>print</name>
+                <name>
+                  <use/>
+                  print
+                </name>
                 (
                 <string>
                   <string_start>f&quot;</string_start>
                   <string_content>Result: </string_content>
                   <interpolation>
                     {
-                    <name>result</name>
+                    <name>
+                      <use/>
+                      result
+                    </name>
                     }
                   </interpolation>
                   <string_end>&quot;</string_end>
@@ -106,7 +145,10 @@
                   <equals/>
                   ==
                 </op>
-                <name>__name__</name>
+                <name>
+                  <use/>
+                  __name__
+                </name>
                 ==
                 <string>
                   <string_start>&quot;</string_start>
@@ -118,7 +160,10 @@
             :
             <consequence>
               <call>
-                <name>main</name>
+                <name>
+                  <use/>
+                  main
+                </name>
                 ()
               </call>
             </consequence>

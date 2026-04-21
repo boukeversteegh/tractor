@@ -4,7 +4,10 @@
     <class>
       <public/>
       class
-      <name>Calculator</name>
+      <name>
+        <bind/>
+        Calculator
+      </name>
       <body>
         {
         <method>
@@ -12,16 +15,25 @@
           <returns>
             <type>int</type>
           </returns>
-          <name>Add</name>
+          <name>
+            <bind/>
+            Add
+          </name>
           (
           <parameter>
             <type>int</type>
-            <name>a</name>
+            <name>
+              <bind/>
+              a
+            </name>
           </parameter>
           ,
           <parameter>
             <type>int</type>
-            <name>b</name>
+            <name>
+              <bind/>
+              b
+            </name>
           </parameter>
           )
           <body>
@@ -35,11 +47,17 @@
                     +
                   </op>
                   <left>
-                    <ref>a</ref>
+                    <name>
+                      <use/>
+                      a
+                    </name>
                   </left>
                   +
                   <right>
-                    <ref>b</ref>
+                    <name>
+                      <use/>
+                      b
+                    </name>
                   </right>
                 </binary>
                 ;
@@ -53,16 +71,25 @@
           <returns>
             <type>int</type>
           </returns>
-          <name>Subtract</name>
+          <name>
+            <bind/>
+            Subtract
+          </name>
           (
           <parameter>
             <type>int</type>
-            <name>a</name>
+            <name>
+              <bind/>
+              a
+            </name>
           </parameter>
           ,
           <parameter>
             <type>int</type>
-            <name>b</name>
+            <name>
+              <bind/>
+              b
+            </name>
           </parameter>
           )
           <body>
@@ -76,11 +103,17 @@
                     -
                   </op>
                   <left>
-                    <ref>a</ref>
+                    <name>
+                      <use/>
+                      a
+                    </name>
                   </left>
                   -
                   <right>
-                    <ref>b</ref>
+                    <name>
+                      <use/>
+                      b
+                    </name>
                   </right>
                 </binary>
                 ;
@@ -94,16 +127,25 @@
           <returns>
             <type>int</type>
           </returns>
-          <name>Multiply</name>
+          <name>
+            <bind/>
+            Multiply
+          </name>
           (
           <parameter>
             <type>int</type>
-            <name>a</name>
+            <name>
+              <bind/>
+              a
+            </name>
           </parameter>
           ,
           <parameter>
             <type>int</type>
-            <name>b</name>
+            <name>
+              <bind/>
+              b
+            </name>
           </parameter>
           )
           <body>
@@ -117,11 +159,17 @@
                     *
                   </op>
                   <left>
-                    <ref>a</ref>
+                    <name>
+                      <use/>
+                      a
+                    </name>
                   </left>
                   *
                   <right>
-                    <ref>b</ref>
+                    <name>
+                      <use/>
+                      b
+                    </name>
                   </right>
                 </binary>
                 ;
@@ -138,7 +186,10 @@
     <class>
       <public/>
       class
-      <name>Greeter</name>
+      <name>
+        <bind/>
+        Greeter
+      </name>
       <body>
         {
         <method>
@@ -146,11 +197,17 @@
           <returns>
             <type>string</type>
           </returns>
-          <name>Hello</name>
+          <name>
+            <bind/>
+            Hello
+          </name>
           (
           <parameter>
             <type>string</type>
-            <name>name</name>
+            <name>
+              <bind/>
+              name
+            </name>
           </parameter>
           )
           <body>
@@ -172,7 +229,10 @@
                   </left>
                   +
                   <right>
-                    <ref>name</ref>
+                    <name>
+                      <use/>
+                      name
+                    </name>
                   </right>
                 </binary>
                 ;
@@ -186,11 +246,17 @@
           <returns>
             <type>string</type>
           </returns>
-          <name>Goodbye</name>
+          <name>
+            <bind/>
+            Goodbye
+          </name>
           (
           <parameter>
             <type>string</type>
-            <name>name</name>
+            <name>
+              <bind/>
+              name
+            </name>
           </parameter>
           )
           <body>
@@ -212,7 +278,10 @@
                   </left>
                   +
                   <right>
-                    <ref>name</ref>
+                    <name>
+                      <use/>
+                      name
+                    </name>
                   </right>
                 </binary>
                 ;

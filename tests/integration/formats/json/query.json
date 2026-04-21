@@ -6,14 +6,20 @@
       "tree": {
         "$type": "class",
         "public": true,
-        "name": "Foo",
+        "name": {
+          "bind": true,
+          "text": "Foo"
+        },
         "body": {
           "children": [
             {
               "$type": "property",
               "public": true,
               "type": "int",
-              "name": "Bar",
+              "name": {
+                "bind": true,
+                "text": "Bar"
+              },
               "accessors": [
                 "get;",
                 "set;"
@@ -25,7 +31,10 @@
               "returns": {
                 "type": "void"
               },
-              "name": "Baz",
+              "name": {
+                "bind": true,
+                "text": "Baz"
+              },
               "body": {
                 "block": "{ }"
               }
@@ -40,7 +49,10 @@
       "tree": {
         "$type": "class",
         "public": true,
-        "name": "Qux",
+        "name": {
+          "bind": true,
+          "text": "Qux"
+        },
         "body": "{ }"
       }
     }

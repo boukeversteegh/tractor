@@ -5,7 +5,7 @@
 //!
 //! ## Architecture
 //! ```text
-//! AST → build_raw() → xot tree → walk_transform(lang_fn) → transformed tree
+//! AST → build_raw() → xot tree → walk_transform(lang_fn) → mark_name_roles → transformed tree
 //! ```
 
 use xot::{Xot, Node as XotNode, NameId};
@@ -81,6 +81,88 @@ fn find_content_root(xot: &Xot, node: XotNode) -> XotNode {
         }
     }
     node
+}
+
+/// Element kinds whose direct `<name>` child represents a declaration
+/// (the identifier being introduced into scope). A `<name>` with any
+/// other parent is treated as a reference. See Principle #13.
+///
+/// Covers both full-word and short-form element names used across the
+/// per-language transforms (e.g. both `param` and `parameter`).
+const DECLARATION_PARENTS: &[&str] = &[
+    // Type declarations
+    "class", "struct", "interface", "enum", "record", "trait", "impl",
+    "namespace", "module", "mod", "package",
+    // Function-like declarations
+    "function", "method", "constructor",
+    // Variable-like declarations
+    "variable", "declarator", "param", "parameter",
+    "field", "property", "accessor",
+    "let", "const", "var",
+    // Type parameters
+    "generic",
+    // Type aliases
+    "alias", "typedef",
+    // Import bindings
+    "import",
+];
+
+/// Walk the tree and mark every `<name>` element with either a
+/// `<bind/>` or `<use/>` child marker (Principle #13).
+///
+/// A `<name>` whose immediate parent element is in `DECLARATION_PARENTS`
+/// is a declaration site — it gets `<bind/>`. All other `<name>` elements
+/// are identifier references — they get `<use/>`.
+///
+/// Idempotent: if a `<name>` already has a bind/use marker, it is left
+/// alone (so this helper can be re-invoked safely).
+pub fn mark_name_roles(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    use helpers::*;
+    let root = find_content_root(xot, root);
+    let names: Vec<XotNode> = collect_descendant_names(xot, root);
+    for name_node in names {
+        // Skip if already marked (idempotent)
+        if has_role_marker(xot, name_node) {
+            continue;
+        }
+        let parent_name = xot.parent(name_node)
+            .and_then(|p| get_element_name(xot, p));
+        let is_decl = parent_name
+            .as_deref()
+            .map(|n| DECLARATION_PARENTS.contains(&n))
+            .unwrap_or(false);
+        let marker = if is_decl { "bind" } else { "use" };
+        prepend_empty_element(xot, name_node, marker)?;
+    }
+    Ok(())
+}
+
+fn collect_descendant_names(xot: &Xot, root: XotNode) -> Vec<XotNode> {
+    let mut out = Vec::new();
+    walk_collect_names(xot, root, &mut out);
+    out
+}
+
+fn walk_collect_names(xot: &Xot, node: XotNode, out: &mut Vec<XotNode>) {
+    if xot.element(node).is_some() {
+        if helpers::get_element_name(xot, node).as_deref() == Some("name") {
+            out.push(node);
+        }
+        for child in xot.children(node) {
+            walk_collect_names(xot, child, out);
+        }
+    }
+}
+
+fn has_role_marker(xot: &Xot, name_node: XotNode) -> bool {
+    for child in xot.children(name_node) {
+        if let Some(n) = helpers::get_element_name(xot, child) {
+            if n == "bind" || n == "use" {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 /// Recursively walk and transform a node

@@ -16,9 +16,11 @@
           <class>
             <public/>
             class
-            <name>Foo</name>
+            <name>
+              <!-- ... (1 children) -->
+            </name>
             <body>
-              <!-- ... (13 children) -->
+              <!-- ... (15 children) -->
             </body>
           </class>
         </tree>
@@ -30,7 +32,9 @@
           <class>
             <public/>
             class
-            <name>Qux</name>
+            <name>
+              <!-- ... (1 children) -->
+            </name>
             <body>{ }</body>
           </class>
         </tree>

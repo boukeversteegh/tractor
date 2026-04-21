@@ -8,20 +8,32 @@
             <public/>
             <static/>
             class
-            <name>UserMapper</name>
+            <name>
+              <bind/>
+              UserMapper
+            </name>
             <body>
               {
               <method>
                 <public/>
                 <static/>
                 <returns>
-                  <ref>UserDto</ref>
+                  <name>
+                    <use/>
+                    UserDto
+                  </name>
                 </returns>
-                <name>Map</name>
+                <name>
+                  <bind/>
+                  Map
+                </name>
                 (
                 <parameter>
                   <type>User</type>
-                  <name>user</name>
+                  <name>
+                    <bind/>
+                    user
+                  </name>
                 </parameter>
                 )
                 <body>
@@ -48,14 +60,23 @@
                 <public/>
                 <static/>
                 <returns>
-                  <ref>UserDto</ref>
+                  <name>
+                    <use/>
+                    UserDto
+                  </name>
                 </returns>
-                <name>MapExt</name>
+                <name>
+                  <bind/>
+                  MapExt
+                </name>
                 (
                 <parameter>
                   <this/>
                   <type>User</type>
-                  <name>user</name>
+                  <name>
+                    <bind/>
+                    user
+                  </name>
                 </parameter>
                 )
                 <body>
@@ -82,18 +103,30 @@
                 <public/>
                 <static/>
                 <returns>
-                  <ref>UserDto</ref>
+                  <name>
+                    <use/>
+                    UserDto
+                  </name>
                 </returns>
-                <name>MapTwo</name>
+                <name>
+                  <bind/>
+                  MapTwo
+                </name>
                 (
                 <parameter>
                   <type>User</type>
-                  <name>a</name>
+                  <name>
+                    <bind/>
+                    a
+                  </name>
                 </parameter>
                 ,
                 <parameter>
                   <type>User</type>
-                  <name>b</name>
+                  <name>
+                    <bind/>
+                    b
+                  </name>
                 </parameter>
                 )
                 <body>

@@ -1,17 +1,17 @@
 tests/integration/formats/sample.cs:1
 class[public]/
   ├─ "class"
-  ├─ name = "Foo"
+  ├─ name[bind] = "Foo"
   └─ body/
       ├─ "{"
       ├─ property[public]/
-      │   └─ ... (5 children)
-      ├─ method[public]/
       │   └─ ... (6 children)
+      ├─ method[public]/
+      │   └─ ... (7 children)
       └─ "}"
 
 tests/integration/formats/sample.cs:7
 class[public]/
   ├─ "class"
-  ├─ name = "Qux"
+  ├─ name[bind] = "Qux"
   └─ body = "{ }"

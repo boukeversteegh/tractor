@@ -9,24 +9,39 @@
             <select>
               <column>
                 <ref>
-                  <name>u</name>
+                  <name>
+                    <use/>
+                    u
+                  </name>
                 </ref>
                 .
-                <name>Name</name>
+                <name>
+                  <use/>
+                  Name
+                </name>
               </column>
               ,
               <column>
                 <ref>
-                  <name>u</name>
+                  <name>
+                    <use/>
+                    u
+                  </name>
                 </ref>
                 .
-                <name>Age</name>
+                <name>
+                  <use/>
+                  Age
+                </name>
               </column>
             </select>
             <from>
               <relation>
                 <ref>
-                  <name>Users</name>
+                  <name>
+                    <use/>
+                    Users
+                  </name>
                 </ref>
                 <alias>u</alias>
               </relation>
@@ -40,10 +55,16 @@
                   </op>
                   <column>
                     <ref>
-                      <name>u</name>
+                      <name>
+                        <use/>
+                        u
+                      </name>
                     </ref>
                     .
-                    <name>Age</name>
+                    <name>
+                      <use/>
+                      Age
+                    </name>
                   </column>
                   &gt;
                   <literal>18</literal>
@@ -53,10 +74,16 @@
                 <order_target>
                   <column>
                     <ref>
-                      <name>u</name>
+                      <name>
+                        <use/>
+                        u
+                      </name>
                     </ref>
                     .
-                    <name>Name</name>
+                    <name>
+                      <use/>
+                      Name
+                    </name>
                   </column>
                 </order_target>
               </order_by>
@@ -66,16 +93,25 @@
           <statement>
             <insert>
               <ref>
-                <name>AuditLog</name>
+                <name>
+                  <use/>
+                  AuditLog
+                </name>
               </ref>
               <list>
                 (
                 <col>
-                  <name>Action</name>
+                  <name>
+                    <use/>
+                    Action
+                  </name>
                 </col>
                 ,
                 <col>
-                  <name>Timestamp</name>
+                  <name>
+                    <use/>
+                    Timestamp
+                  </name>
                 </col>
                 )
               </list>
@@ -85,7 +121,10 @@
                 ,
                 <call>
                   <ref>
-                    <name>GETDATE</name>
+                    <name>
+                      <use/>
+                      GETDATE
+                    </name>
                   </ref>
                   ()
                 </call>
@@ -98,7 +137,10 @@
             <delete/>
             <from>
               <ref>
-                <name>OldRecords</name>
+                <name>
+                  <use/>
+                  OldRecords
+                </name>
               </ref>
               <where>
                 <compare>
@@ -109,7 +151,10 @@
                     &lt;
                   </op>
                   <column>
-                    <name>CreatedAt</name>
+                    <name>
+                      <use/>
+                      CreatedAt
+                    </name>
                   </column>
                   &lt;
                   <literal>'2020-01-01'</literal>
@@ -125,10 +170,16 @@
                 <ref>
                   <schema>dbo</schema>
                   .
-                  <name>Users</name>
+                  <name>
+                    <use/>
+                    Users
+                  </name>
                 </ref>
                 .
-                <name>Name</name>
+                <name>
+                  <use/>
+                  Name
+                </name>
               </column>
               <alias>UserName</alias>
               ,
@@ -141,13 +192,19 @@
                 <ref>
                   <schema>dbo</schema>
                   .
-                  <name>Users</name>
+                  <name>
+                    <use/>
+                    Users
+                  </name>
                 </ref>
               </relation>
               <where>
                 <between>
                   <column>
-                    <name>Age</name>
+                    <name>
+                      <use/>
+                      Age
+                    </name>
                   </column>
                   <literal>18</literal>
                   <literal>65</literal>
@@ -163,13 +220,19 @@
                 <ref>
                   <schema>dbo</schema>
                   .
-                  <name>Config</name>
+                  <name>
+                    <use/>
+                    Config
+                  </name>
                 </ref>
               </relation>
               <assign>
                 <op>=</op>
                 <column>
-                  <name>Value</name>
+                  <name>
+                    <use/>
+                    Value
+                  </name>
                 </column>
                 =
                 <column>
@@ -180,7 +243,10 @@
                 <compare>
                   <op>=</op>
                   <column>
-                    <name>Key</name>
+                    <name>
+                      <use/>
+                      Key
+                    </name>
                   </column>
                   =
                   <column>
@@ -196,39 +262,63 @@
             <select>
               <column>
                 <ref>
-                  <name>o</name>
+                  <name>
+                    <use/>
+                    o
+                  </name>
                 </ref>
                 .
-                <name>ID</name>
+                <name>
+                  <use/>
+                  ID
+                </name>
               </column>
               ,
               <column>
                 <ref>
-                  <name>u</name>
+                  <name>
+                    <use/>
+                    u
+                  </name>
                 </ref>
                 .
-                <name>Name</name>
+                <name>
+                  <use/>
+                  Name
+                </name>
               </column>
               ,
               <column>
                 <ref>
-                  <name>a</name>
+                  <name>
+                    <use/>
+                    a
+                  </name>
                 </ref>
                 .
-                <name>City</name>
+                <name>
+                  <use/>
+                  City
+                </name>
               </column>
             </select>
             <from>
               <relation>
                 <ref>
-                  <name>Orders</name>
+                  <name>
+                    <use/>
+                    Orders
+                  </name>
                 </ref>
                 <alias>o</alias>
               </relation>
               <join>
                 <relation>
                   <ref>
-                    <name>Users</name>
+                    <name>
+                      <use/>
+                      Users
+                    </name>
                   </ref>
                   <alias>u</alias>
                 </relation>
@@ -236,25 +326,40 @@
                   <op>=</op>
                   <column>
                     <ref>
-                      <name>o</name>
+                      <name>
+                        <use/>
+                        o
+                      </name>
                     </ref>
                     .
-                    <name>UserID</name>
+                    <name>
+                      <use/>
+                      UserID
+                    </name>
                   </column>
                   =
                   <column>
                     <ref>
-                      <name>u</name>
+                      <name>
+                        <use/>
+                        u
+                      </name>
                     </ref>
                     .
-                    <name>ID</name>
+                    <name>
+                      <use/>
+                      ID
+                    </name>
                   </column>
                 </compare>
               </join>
               <join>
                 <relation>
                   <ref>
-                    <name>Addresses</name>
+                    <name>
+                      <use/>
+                      Addresses
+                    </name>
                   </ref>
                   <alias>a</alias>
                 </relation>
@@ -262,18 +367,30 @@
                   <op>=</op>
                   <column>
                     <ref>
-                      <name>u</name>
+                      <name>
+                        <use/>
+                        u
+                      </name>
                     </ref>
                     .
-                    <name>ID</name>
+                    <name>
+                      <use/>
+                      ID
+                    </name>
                   </column>
                   =
                   <column>
                     <ref>
-                      <name>a</name>
+                      <name>
+                        <use/>
+                        a
+                      </name>
                     </ref>
                     .
-                    <name>UserID</name>
+                    <name>
+                      <use/>
+                      UserID
+                    </name>
                   </column>
                 </compare>
               </join>
@@ -287,10 +404,16 @@
                   </op>
                   <column>
                     <ref>
-                      <name>o</name>
+                      <name>
+                        <use/>
+                        o
+                      </name>
                     </ref>
                     .
-                    <name>Total</name>
+                    <name>
+                      <use/>
+                      Total
+                    </name>
                   </column>
                   &gt;
                   <literal>100</literal>
@@ -303,31 +426,46 @@
           <statement>
             <select>
               <column>
-                <name>Name</name>
+                <name>
+                  <use/>
+                  Name
+                </name>
               </column>
             </select>
             <from>
               <relation>
                 <ref>
-                  <name>Users</name>
+                  <name>
+                    <use/>
+                    Users
+                  </name>
                 </ref>
               </relation>
               <where>
                 <compare>
                   <column>
-                    <name>ID</name>
+                    <name>
+                      <use/>
+                      ID
+                    </name>
                   </column>
                   <subquery>
                     (
                     <select>
                       <column>
-                        <name>UserID</name>
+                        <name>
+                          <use/>
+                          UserID
+                        </name>
                       </column>
                     </select>
                     <from>
                       <relation>
                         <ref>
-                          <name>Orders</name>
+                          <name>
+                            <use/>
+                            Orders
+                          </name>
                         </ref>
                       </relation>
                       <where>
@@ -339,7 +477,10 @@
                             &gt;
                           </op>
                           <column>
-                            <name>Total</name>
+                            <name>
+                              <use/>
+                              Total
+                            </name>
                           </column>
                           &gt;
                           <literal>50</literal>
@@ -358,16 +499,25 @@
             <select>
               <column>
                 <ref>
-                  <name>u</name>
+                  <name>
+                    <use/>
+                    u
+                  </name>
                 </ref>
                 .
-                <name>Name</name>
+                <name>
+                  <use/>
+                  Name
+                </name>
               </column>
             </select>
             <from>
               <relation>
                 <ref>
-                  <name>Users</name>
+                  <name>
+                    <use/>
+                    Users
+                  </name>
                 </ref>
                 <alias>u</alias>
               </relation>
@@ -381,7 +531,10 @@
                     <from>
                       <relation>
                         <ref>
-                          <name>Orders</name>
+                          <name>
+                            <use/>
+                            Orders
+                          </name>
                         </ref>
                         <alias>o</alias>
                       </relation>
@@ -390,18 +543,30 @@
                           <op>=</op>
                           <column>
                             <ref>
-                              <name>o</name>
+                              <name>
+                                <use/>
+                                o
+                              </name>
                             </ref>
                             .
-                            <name>UserID</name>
+                            <name>
+                              <use/>
+                              UserID
+                            </name>
                           </column>
                           =
                           <column>
                             <ref>
-                              <name>u</name>
+                              <name>
+                                <use/>
+                                u
+                              </name>
                             </ref>
                             .
-                            <name>ID</name>
+                            <name>
+                              <use/>
+                              ID
+                            </name>
                           </column>
                         </compare>
                       </where>
@@ -417,12 +582,18 @@
           <statement>
             <select>
               <column>
-                <name>Department</name>
+                <name>
+                  <use/>
+                  Department
+                </name>
               </column>
               ,
               <call>
                 <ref>
-                  <name>COUNT</name>
+                  <name>
+                    <use/>
+                    COUNT
+                  </name>
                 </ref>
                 (
                 <star>*</star>
@@ -432,11 +603,17 @@
               ,
               <call>
                 <ref>
-                  <name>AVG</name>
+                  <name>
+                    <use/>
+                    AVG
+                  </name>
                 </ref>
                 (
                 <column>
-                  <name>Salary</name>
+                  <name>
+                    <use/>
+                    Salary
+                  </name>
                 </column>
                 )
               </call>
@@ -445,12 +622,18 @@
             <from>
               <relation>
                 <ref>
-                  <name>Employees</name>
+                  <name>
+                    <use/>
+                    Employees
+                  </name>
                 </ref>
               </relation>
               <group_by>
                 <column>
-                  <name>Department</name>
+                  <name>
+                    <use/>
+                    Department
+                  </name>
                 </column>
               </group_by>
               <having>
@@ -463,7 +646,10 @@
                   </op>
                   <call>
                     <ref>
-                      <name>COUNT</name>
+                      <name>
+                        <use/>
+                        COUNT
+                      </name>
                     </ref>
                     (
                     <star>*</star>
@@ -480,7 +666,10 @@
           <statement>
             <select>
               <column>
-                <name>Name</name>
+                <name>
+                  <use/>
+                  Name
+                </name>
               </column>
               ,
               <case>
@@ -493,7 +682,10 @@
                     &gt;=
                   </op>
                   <column>
-                    <name>Age</name>
+                    <name>
+                      <use/>
+                      Age
+                    </name>
                   </column>
                   &gt;=
                   <literal>18</literal>
@@ -506,7 +698,10 @@
             <from>
               <relation>
                 <ref>
-                  <name>Users</name>
+                  <name>
+                    <use/>
+                    Users
+                  </name>
                 </ref>
               </relation>
             </from>
@@ -515,29 +710,44 @@
           <comment>-- CTE (Common Table Expression)</comment>
           <statement>
             <cte>
-              <name>ActiveUsers</name>
+              <name>
+                <use/>
+                ActiveUsers
+              </name>
               (
               <statement>
                 <select>
                   <column>
-                    <name>ID</name>
+                    <name>
+                      <use/>
+                      ID
+                    </name>
                   </column>
                   ,
                   <column>
-                    <name>Name</name>
+                    <name>
+                      <use/>
+                      Name
+                    </name>
                   </column>
                 </select>
                 <from>
                   <relation>
                     <ref>
-                      <name>Users</name>
+                      <name>
+                        <use/>
+                        Users
+                      </name>
                     </ref>
                   </relation>
                   <where>
                     <compare>
                       <op>=</op>
                       <column>
-                        <name>Active</name>
+                        <name>
+                          <use/>
+                          Active
+                        </name>
                       </column>
                       =
                       <literal>1</literal>
@@ -549,13 +759,19 @@
             </cte>
             <select>
               <column>
-                <name>Name</name>
+                <name>
+                  <use/>
+                  Name
+                </name>
               </column>
             </select>
             <from>
               <relation>
                 <ref>
-                  <name>ActiveUsers</name>
+                  <name>
+                    <use/>
+                    ActiveUsers
+                  </name>
                 </ref>
               </relation>
             </from>
@@ -566,7 +782,10 @@
             <union>
               <select>
                 <column>
-                  <name>Name</name>
+                  <name>
+                    <use/>
+                    Name
+                  </name>
                 </column>
                 ,
                 <literal>'User'</literal>
@@ -575,13 +794,19 @@
               <from>
                 <relation>
                   <ref>
-                    <name>Users</name>
+                    <name>
+                      <use/>
+                      Users
+                    </name>
                   </ref>
                 </relation>
               </from>
               <select>
                 <column>
-                  <name>Name</name>
+                  <name>
+                    <use/>
+                    Name
+                  </name>
                 </column>
                 ,
                 <literal>'Admin'</literal>
@@ -590,7 +815,10 @@
               <from>
                 <relation>
                   <ref>
-                    <name>Admins</name>
+                    <name>
+                      <use/>
+                      Admins
+                    </name>
                   </ref>
                 </relation>
               </from>
@@ -601,13 +829,19 @@
           <statement>
             <select>
               <column>
-                <name>Name</name>
+                <name>
+                  <use/>
+                  Name
+                </name>
               </column>
               ,
               <window>
                 <call>
                   <ref>
-                    <name>ROW_NUMBER</name>
+                    <name>
+                      <use/>
+                      ROW_NUMBER
+                    </name>
                   </ref>
                   ()
                 </call>
@@ -615,13 +849,19 @@
                   (
                   <partition_by>
                     <column>
-                      <name>Department</name>
+                      <name>
+                        <use/>
+                        Department
+                      </name>
                     </column>
                   </partition_by>
                   <order_by>
                     <order_target>
                       <column>
-                        <name>Salary</name>
+                        <name>
+                          <use/>
+                          Salary
+                        </name>
                       </column>
                       <direction/>
                     </order_target>
@@ -634,7 +874,10 @@
             <from>
               <relation>
                 <ref>
-                  <name>Employees</name>
+                  <name>
+                    <use/>
+                    Employees
+                  </name>
                 </ref>
               </relation>
             </from>
@@ -645,25 +888,39 @@
             <select>
               <call>
                 <ref>
-                  <name>COALESCE</name>
+                  <name>
+                    <use/>
+                    COALESCE
+                  </name>
                 </ref>
                 (
                 <column>
-                  <name>Nickname</name>
+                  <name>
+                    <use/>
+                    Nickname
+                  </name>
                 </column>
                 ,
                 <column>
-                  <name>Name</name>
+                  <name>
+                    <use/>
+                    Name
+                  </name>
                 </column>
                 )
               </call>
               <alias>DisplayName</alias>
               ,
               <cast>
-                <name/>
+                <name>
+                  <use/>
+                </name>
                 (
                 <column>
-                  <name>Age</name>
+                  <name>
+                    <use/>
+                    Age
+                  </name>
                 </column>
                 <varchar>
                   (
@@ -677,7 +934,10 @@
             <from>
               <relation>
                 <ref>
-                  <name>Users</name>
+                  <name>
+                    <use/>
+                    Users
+                  </name>
                 </ref>
               </relation>
               <where>
@@ -685,20 +945,29 @@
                   <compare>
                     <compare>
                       <column>
-                        <name>Email</name>
+                        <name>
+                          <use/>
+                          Email
+                        </name>
                       </column>
                       <literal>'%@gmail.com'</literal>
                     </compare>
                     <compare>
                       <column>
-                        <name>DeletedAt</name>
+                        <name>
+                          <use/>
+                          DeletedAt
+                        </name>
                       </column>
                       <literal/>
                     </compare>
                   </compare>
                   <compare>
                     <column>
-                      <name>Role</name>
+                      <name>
+                        <use/>
+                        Role
+                      </name>
                     </column>
                     <list>
                       (
@@ -717,19 +986,28 @@
           <statement>
             <select>
               <column>
-                <name>Department</name>
+                <name>
+                  <use/>
+                  Department
+                </name>
               </column>
             </select>
             <from>
               <relation>
                 <ref>
-                  <name>Employees</name>
+                  <name>
+                    <use/>
+                    Employees
+                  </name>
                 </ref>
               </relation>
               <order_by>
                 <order_target>
                   <column>
-                    <name>Department</name>
+                    <name>
+                      <use/>
+                      Department
+                    </name>
                   </column>
                   <direction/>
                 </order_target>
@@ -741,17 +1019,26 @@
           <statement>
             <create_table>
               <ref>
-                <name>Audit</name>
+                <name>
+                  <use/>
+                  Audit
+                </name>
               </ref>
               <columns>
                 (
                 <col_def>
-                  <name>ID</name>
+                  <name>
+                    <use/>
+                    ID
+                  </name>
                   <int/>
                 </col_def>
                 ,
                 <col_def>
-                  <name>Action</name>
+                  <name>
+                    <use/>
+                    Action
+                  </name>
                   <nvarchar>
                     (
                     <literal>100</literal>
@@ -760,10 +1047,16 @@
                 </col_def>
                 ,
                 <col_def>
-                  <name>CreatedAt</name>
+                  <name>
+                    <use/>
+                    CreatedAt
+                  </name>
                   <call>
                     <ref>
-                      <name>GETDATE</name>
+                      <name>
+                        <use/>
+                        GETDATE
+                      </name>
                     </ref>
                     ()
                   </call>
@@ -776,29 +1069,47 @@
           <comment>-- MERGE statement</comment>
           <statement>
             <ref>
-              <name>Target</name>
+              <name>
+                <use/>
+                Target
+              </name>
             </ref>
             <alias>t</alias>
             <ref>
-              <name>Source</name>
+              <name>
+                <use/>
+                Source
+              </name>
             </ref>
             <alias>s</alias>
             <compare>
               <op>=</op>
               <column>
                 <ref>
-                  <name>t</name>
+                  <name>
+                    <use/>
+                    t
+                  </name>
                 </ref>
                 .
-                <name>ID</name>
+                <name>
+                  <use/>
+                  ID
+                </name>
               </column>
               =
               <column>
                 <ref>
-                  <name>s</name>
+                  <name>
+                    <use/>
+                    s
+                  </name>
                 </ref>
                 .
-                <name>ID</name>
+                <name>
+                  <use/>
+                  ID
+                </name>
               </column>
             </compare>
             <when>
@@ -806,18 +1117,30 @@
                 <op>=</op>
                 <column>
                   <ref>
-                    <name>t</name>
+                    <name>
+                      <use/>
+                      t
+                    </name>
                   </ref>
                   .
-                  <name>Name</name>
+                  <name>
+                    <use/>
+                    Name
+                  </name>
                 </column>
                 =
                 <column>
                   <ref>
-                    <name>s</name>
+                    <name>
+                      <use/>
+                      s
+                    </name>
                   </ref>
                   .
-                  <name>Name</name>
+                  <name>
+                    <use/>
+                    Name
+                  </name>
                 </column>
               </assign>
             </when>
@@ -825,11 +1148,17 @@
               <list>
                 (
                 <col>
-                  <name>ID</name>
+                  <name>
+                    <use/>
+                    ID
+                  </name>
                 </col>
                 ,
                 <col>
-                  <name>Name</name>
+                  <name>
+                    <use/>
+                    Name
+                  </name>
                 </col>
                 )
               </list>
@@ -837,18 +1166,30 @@
                 (
                 <column>
                   <ref>
-                    <name>s</name>
+                    <name>
+                      <use/>
+                      s
+                    </name>
                   </ref>
                   .
-                  <name>ID</name>
+                  <name>
+                    <use/>
+                    ID
+                  </name>
                 </column>
                 ,
                 <column>
                   <ref>
-                    <name>s</name>
+                    <name>
+                      <use/>
+                      s
+                    </name>
                   </ref>
                   .
-                  <name>Name</name>
+                  <name>
+                    <use/>
+                    Name
+                  </name>
                 </column>
                 )
               </list>
@@ -859,25 +1200,37 @@
           <statement>
             <select>
               <column>
-                <name>Name</name>
+                <name>
+                  <use/>
+                  Name
+                </name>
               </column>
               ,
               <column>
-                <name>Age</name>
+                <name>
+                  <use/>
+                  Age
+                </name>
               </column>
             </select>
             <temp_ref>#TempUsers</temp_ref>
             <from>
               <relation>
                 <ref>
-                  <name>Users</name>
+                  <name>
+                    <use/>
+                    Users
+                  </name>
                 </ref>
               </relation>
               <where>
                 <compare>
                   <op>=</op>
                   <column>
-                    <name>Active</name>
+                    <name>
+                      <use/>
+                      Active
+                    </name>
                   </column>
                   =
                   <literal>1</literal>
@@ -893,13 +1246,19 @@
               <update>
                 <relation>
                   <ref>
-                    <name>Accounts</name>
+                    <name>
+                      <use/>
+                      Accounts
+                    </name>
                   </ref>
                 </relation>
                 <assign>
                   <op>=</op>
                   <column>
-                    <name>Balance</name>
+                    <name>
+                      <use/>
+                      Balance
+                    </name>
                   </column>
                   =
                   <compare>
@@ -908,7 +1267,10 @@
                       -
                     </op>
                     <column>
-                      <name>Balance</name>
+                      <name>
+                        <use/>
+                        Balance
+                      </name>
                     </column>
                     -
                     <literal>100</literal>
@@ -918,7 +1280,10 @@
                   <compare>
                     <op>=</op>
                     <column>
-                      <name>ID</name>
+                      <name>
+                        <use/>
+                        ID
+                      </name>
                     </column>
                     =
                     <literal>1</literal>
@@ -931,13 +1296,19 @@
               <update>
                 <relation>
                   <ref>
-                    <name>Accounts</name>
+                    <name>
+                      <use/>
+                      Accounts
+                    </name>
                   </ref>
                 </relation>
                 <assign>
                   <op>=</op>
                   <column>
-                    <name>Balance</name>
+                    <name>
+                      <use/>
+                      Balance
+                    </name>
                   </column>
                   =
                   <compare>
@@ -946,7 +1317,10 @@
                       +
                     </op>
                     <column>
-                      <name>Balance</name>
+                      <name>
+                        <use/>
+                        Balance
+                      </name>
                     </column>
                     +
                     <literal>100</literal>
@@ -956,7 +1330,10 @@
                   <compare>
                     <op>=</op>
                     <column>
-                      <name>ID</name>
+                      <name>
+                        <use/>
+                        ID
+                      </name>
                     </column>
                     =
                     <literal>2</literal>
@@ -984,7 +1361,10 @@
               <ref>
                 <schema>dbo</schema>
                 .
-                <name>GetAge</name>
+                <name>
+                  <use/>
+                  GetAge
+                </name>
               </ref>
               <arg>
                 (
@@ -997,11 +1377,17 @@
               <body>
                 <call>
                   <ref>
-                    <name>DATEDIFF</name>
+                    <name>
+                      <use/>
+                      DATEDIFF
+                    </name>
                   </ref>
                   (
                   <column>
-                    <name>YEAR</name>
+                    <name>
+                      <use/>
+                      YEAR
+                    </name>
                   </column>
                   ,
                   <column>
@@ -1010,7 +1396,10 @@
                   ,
                   <call>
                     <ref>
-                      <name>GETDATE</name>
+                      <name>
+                        <use/>
+                        GETDATE
+                      </name>
                     </ref>
                     ()
                   </call>
@@ -1025,7 +1414,10 @@
           <statement>
             <exec>
               <ref>
-                <name>sp_helpdb</name>
+                <name>
+                  <use/>
+                  sp_helpdb
+                </name>
               </ref>
             </exec>
           </statement>

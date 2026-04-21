@@ -7,14 +7,23 @@
           <comment>// Simple JavaScript example</comment>
           <function>
             function
-            <name>add</name>
+            <name>
+              <bind/>
+              add
+            </name>
             (
             <param>
-              <name>a</name>
+              <name>
+                <bind/>
+                a
+              </name>
             </param>
             ,
             <param>
-              <name>b</name>
+              <name>
+                <bind/>
+                b
+              </name>
             </param>
             )
             <body>
@@ -28,11 +37,17 @@
                       +
                     </op>
                     <left>
-                      <name>a</name>
+                      <name>
+                        <use/>
+                        a
+                      </name>
                     </left>
                     +
                     <right>
-                      <name>b</name>
+                      <name>
+                        <use/>
+                        b
+                      </name>
                     </right>
                   </binary>
                   ;
@@ -43,7 +58,10 @@
           </function>
           <function>
             function
-            <name>main</name>
+            <name>
+              <bind/>
+              main
+            </name>
             ()
             <body>
               <block>
@@ -51,7 +69,10 @@
                 <variable>
                   <const/>
                   const
-                  <name>result</name>
+                  <name>
+                    <bind/>
+                    result
+                  </name>
                   =
                   <value>
                     <call>
@@ -88,7 +109,10 @@
                     <string_fragment>Result: </string_fragment>
                     <template_substitution>
                       ${
-                      <name>result</name>
+                      <name>
+                        <use/>
+                        result
+                      </name>
                       }
                     </template_substitution>
                     `

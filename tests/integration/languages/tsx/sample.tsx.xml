@@ -8,12 +8,18 @@
           <import>
             import
             <import_clause>
-              <name>React</name>
+              <name>
+                <use/>
+                React
+              </name>
               ,
               <named_imports>
                 {
                 <import_specifier>
-                  <name>useState</name>
+                  <name>
+                    <use/>
+                    useState
+                  </name>
                 </import_specifier>
                 }
               </named_imports>
@@ -29,18 +35,25 @@
           <interface>
             interface
             <name>
+              <bind/>
               <type>Props</type>
             </name>
             <body>
               {
               <property_signature>
-                <name>name</name>
+                <name>
+                  <use/>
+                  name
+                </name>
                 :
                 <type>string</type>
               </property_signature>
               ;
               <property_signature>
-                <name>age</name>
+                <name>
+                  <use/>
+                  age
+                </name>
                 ?:
                 <type>number</type>
               </property_signature>
@@ -50,7 +63,10 @@
           </interface>
           <function>
             function
-            <name>Greeting</name>
+            <name>
+              <bind/>
+              Greeting
+            </name>
             (
             <param>
               <required/>
@@ -72,11 +88,18 @@
                   <const/>
                   const
                   <name>
+                    <bind/>
                     <array_pattern>
                       [
-                      <name>count</name>
+                      <name>
+                        <use/>
+                        count
+                      </name>
                       ,
-                      <name>setCount</name>
+                      <name>
+                        <use/>
+                        setCount
+                      </name>
                       ]
                     </array_pattern>
                   </name>
@@ -101,9 +124,15 @@
                     <jsx_element>
                       <jsx_opening_element>
                         &lt;
-                        <name>div</name>
+                        <name>
+                          <use/>
+                          div
+                        </name>
                         <jsx_attribute>
-                          <name>className</name>
+                          <name>
+                            <use/>
+                            className
+                          </name>
                           =
                           <string>
                             &quot;
@@ -116,19 +145,28 @@
                       <jsx_element>
                         <jsx_opening_element>
                           &lt;
-                          <name>h1</name>
+                          <name>
+                            <use/>
+                            h1
+                          </name>
                           &gt;
                         </jsx_opening_element>
                         <jsx_text>Hello, </jsx_text>
                         <jsx_expression>
                           {
-                          <name>name</name>
+                          <name>
+                            <use/>
+                            name
+                          </name>
                           }
                         </jsx_expression>
                         <jsx_text>!</jsx_text>
                         <jsx_closing_element>
                           &lt;/
-                          <name>h1</name>
+                          <name>
+                            <use/>
+                            h1
+                          </name>
                           &gt;
                         </jsx_closing_element>
                       </jsx_element>
@@ -142,25 +180,37 @@
                             &amp;&amp;
                           </op>
                           <left>
-                            <name>age</name>
+                            <name>
+                              <use/>
+                              age
+                            </name>
                           </left>
                           &amp;&amp;
                           <right>
                             <jsx_element>
                               <jsx_opening_element>
                                 &lt;
-                                <name>span</name>
+                                <name>
+                                  <use/>
+                                  span
+                                </name>
                                 &gt;
                               </jsx_opening_element>
                               <jsx_text>Age: </jsx_text>
                               <jsx_expression>
                                 {
-                                <name>age</name>
+                                <name>
+                                  <use/>
+                                  age
+                                </name>
                                 }
                               </jsx_expression>
                               <jsx_closing_element>
                                 &lt;/
-                                <name>span</name>
+                                <name>
+                                  <use/>
+                                  span
+                                </name>
                                 &gt;
                               </jsx_closing_element>
                             </jsx_element>
@@ -171,9 +221,15 @@
                       <jsx_element>
                         <jsx_opening_element>
                           &lt;
-                          <name>button</name>
+                          <name>
+                            <use/>
+                            button
+                          </name>
                           <jsx_attribute>
-                            <name>onClick</name>
+                            <name>
+                              <use/>
+                              onClick
+                            </name>
                             =
                             <jsx_expression>
                               {
@@ -192,7 +248,10 @@
                                         +
                                       </op>
                                       <left>
-                                        <name>count</name>
+                                        <name>
+                                          <use/>
+                                          count
+                                        </name>
                                       </left>
                                       +
                                       <right>
@@ -212,20 +271,29 @@
                         Clicked </jsx_text>
                         <jsx_expression>
                           {
-                          <name>count</name>
+                          <name>
+                            <use/>
+                            count
+                          </name>
                           }
                         </jsx_expression>
                         <jsx_text> times
                     </jsx_text>
                         <jsx_closing_element>
                           &lt;/
-                          <name>button</name>
+                          <name>
+                            <use/>
+                            button
+                          </name>
                           &gt;
                         </jsx_closing_element>
                       </jsx_element>
                       <jsx_closing_element>
                         &lt;/
-                        <name>div</name>
+                        <name>
+                          <use/>
+                          div
+                        </name>
                         &gt;
                       </jsx_closing_element>
                     </jsx_element>
@@ -240,7 +308,10 @@
           <export>
             export default
             <value>
-              <name>Greeting</name>
+              <name>
+                <use/>
+                Greeting
+              </name>
             </value>
             ;
           </export>

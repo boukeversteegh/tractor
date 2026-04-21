@@ -233,6 +233,89 @@ source code — the parens and commas of the list live as sibling text
 nodes either way — so removing it loses no renderer-relevant
 information.
 
+### 13. Identifiers are `<name>`; declaration vs reference via markers
+
+An identifier in the tree is always `<name>` — whether it labels something
+being declared (`<class><name>Foo</name>`) or refers to something already
+in scope (`<binary><left><name>a</name>`). Likewise, a type reference or
+inline type expression is always `<type>`.
+
+Tree position already distinguishes a *declaration site* from a *reference
+site* (source code works the same way — `Foo` after `class` is a
+declaration; `Foo` in an expression is a reference). But because
+reference resolution is a common cross-cutting query need, every `<name>`
+carries an exhaustive marker (Principle #9) indicating its role:
+
+```xml
+<!-- Declaration: name introduces a binding into scope -->
+<class><name><bind/>Foo</name></class>
+<variable><let/><name><bind/>x</name></variable>
+<param><name><bind/>a</name></param>
+
+<!-- Reference: name refers to an already-bound identifier -->
+<binary>
+  <left><name><use/>a</name></left>
+  <right><name><use/>b</name></right>
+</binary>
+<call><function><name><use/>print</name></function>...</call>
+```
+
+The markers are `<bind/>` and `<use/>` — short, symmetric, and established
+PL-theory vocabulary (name binding, def-use chains).
+
+#### Query ergonomics
+
+Position-based queries don't need to mention the markers — they're only
+useful when the query spans declaration kinds:
+
+| Intent | Query |
+|---|---|
+| All identifier occurrences | `//name` |
+| All declarations of `foo` (any kind) | `//name[bind][.='foo']` |
+| All references to `foo` (any kind) | `//name[use][.='foo']` |
+| Variable declarations named `foo` | `//variable[name='foo']` (marker redundant) |
+| Uses of a variable that's declared as `x` | `//name[use][.='x']` |
+
+Prefer the element name (`<variable>`, `<function>`, `<class>`) when the
+query is about a specific kind of declaration. Use `[bind]`/`[use]`
+markers when the query is about identifier roles across kinds, or when
+filtering role on its own.
+
+#### Why no marker on `<type>`
+
+A `<type>` is always a reference to a type — even in a type alias
+declaration, the declared *name* lives in a `<name>` element inside the
+alias, and the `<type>` expression on the right-hand side is always a
+reference to an existing type. So type declarations and references are
+not a mutually exclusive variant pair the same way identifier
+declarations and references are; no marker needed.
+
+#### Edge cases
+
+Some source constructs introduce a binding *and* reference an existing
+one in the same syntactic position. Mark them with both:
+
+```xml
+<!-- Destructuring: const {a} = obj
+     `a` declares a new local AND references obj.a. Both roles apply. -->
+<name><bind/><use/>a</name>
+```
+
+#### Advanced: attribute escape hatch
+
+For users who prefer category-level selection without the marker
+predicate, the same role information is also available as `is="…"`
+on declaration elements (class, function, variable, param, …):
+`//*[@is='declaration']/name`. This violates the usual Elements-Over-
+Attributes rule and is reserved for advanced cross-cutting queries; the
+marker form is the documented default.
+
+**Rationale:** Supports Design Goal #1 (intuitive queries — reference
+resolution becomes `//name[use][.='x']`), #2 (readable tree — one element
+name per identifier, not a vocabulary of decl/ref variants), and #4
+(minimal query complexity — `//name` unions both roles in one query).
+Applies Principle #9 (exhaustive markers) to identifier role.
+
 ---
 
 ## Decisions
