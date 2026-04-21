@@ -50,6 +50,38 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
 
+        // Collections unify with their produced type. The construction
+        // form is an exhaustive marker (Principle #9):
+        //   <list><literal/>...</list>        -- [1, 2, 3]
+        //   <list><comprehension/>...</list>  -- [x for x in xs]
+        // Same for dict/set. Generator expressions have no literal
+        // form in Python (parens make a tuple), so <generator> is
+        // left bare — only one variant, no marker needed.
+        "list" | "set" => {
+            prepend_empty_element(xot, node, "literal")?;
+            Ok(TransformAction::Continue)
+        }
+        "dictionary" => {
+            prepend_empty_element(xot, node, "literal")?;
+            rename(xot, node, "dict");
+            Ok(TransformAction::Continue)
+        }
+        "list_comprehension" => {
+            prepend_empty_element(xot, node, "comprehension")?;
+            rename(xot, node, "list");
+            Ok(TransformAction::Continue)
+        }
+        "dictionary_comprehension" => {
+            prepend_empty_element(xot, node, "comprehension")?;
+            rename(xot, node, "dict");
+            Ok(TransformAction::Continue)
+        }
+        "set_comprehension" => {
+            prepend_empty_element(xot, node, "comprehension")?;
+            rename(xot, node, "set");
+            Ok(TransformAction::Continue)
+        }
+
         // Identifiers are always names (definitions or references).
         // Tree-sitter uses a separate `type` node for type annotations, so
         // bare identifiers never need a heuristic — they are never types.
@@ -103,10 +135,10 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "conditional_expression" => Some("ternary"),
         "lambda" => Some("lambda"),
         "await" => Some("await"),
-        "list_comprehension" => Some("listcomp"),
-        "dictionary_comprehension" => Some("dictcomp"),
-        "set_comprehension" => Some("setcomp"),
-        "generator_expression" => Some("genexp"),
+        // Collection literals and comprehensions are handled specially
+        // above (renamed to their produced type + <literal/> or
+        // <comprehension/> marker).
+        "generator_expression" => Some("generator"),
         "string" => Some("string"),
         "integer" => Some("int"),
         "float" => Some("float"),
@@ -193,8 +225,8 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
         // Comments
         "comment" => SyntaxCategory::Comment,
 
-        // Comprehensions
-        "listcomp" | "dictcomp" | "setcomp" | "genexp" => SyntaxCategory::Keyword,
+        // Collection construction markers
+        "literal" | "comprehension" | "generator" => SyntaxCategory::Keyword,
 
         // Structural elements - no color
         _ => SyntaxCategory::Default,
