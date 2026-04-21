@@ -52,8 +52,8 @@ pub mod semantic {
     pub const GENERIC: &str = "generic";
     pub const ARRAY: &str = "array";
 
-    // Base list (inheritance)
-    pub const BASE: &str = "base";
+    // Base list (inheritance) — list of base types/interfaces following `:`
+    pub const BASES: &str = "bases";
     pub const REF: &str = "ref";
 
     // Method-specific children
@@ -101,7 +101,9 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // ---------------------------------------------------------------------
         // Flatten nodes - transform children, then remove wrapper
         // ---------------------------------------------------------------------
-        "declaration_list" | "parameters" => Ok(TransformAction::Flatten),
+        "declaration_list" | "parameters" | "enum_member_declaration_list" => {
+            Ok(TransformAction::Flatten)
+        }
 
         // ---------------------------------------------------------------------
         // Name wrappers - inline identifier text directly
@@ -262,8 +264,9 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         | "method_declaration" | "constructor_declaration"
         | "property_declaration" | "field_declaration" => {
             if !has_access_modifier_child(xot, node) {
-                let default = default_access_modifier(xot, node);
-                prepend_empty_element(xot, node, default)?;
+                if let Some(default) = default_access_modifier(xot, node) {
+                    prepend_empty_element(xot, node, default)?;
+                }
             }
             if let Some(new_name) = map_element_name(&kind) {
                 rename(xot, node, new_name);
@@ -358,15 +361,21 @@ fn has_access_modifier_child(xot: &Xot, node: XotNode) -> bool {
 }
 
 /// Determine the default access modifier for a C# declaration based on context.
-/// Looks through `declaration_list` wrappers (which get Flatten'd, so children are
-/// processed while still inside the wrapper).
-fn default_access_modifier(xot: &Xot, node: XotNode) -> &'static str {
+/// Returns `None` for contexts where leaving the modifier off is the canonical
+/// source form (e.g. interface members, whose access is implicitly `public`).
+/// Looks through `declaration_list` wrappers (which get Flatten'd, so children
+/// are processed while still inside the wrapper).
+fn default_access_modifier(xot: &Xot, node: XotNode) -> Option<&'static str> {
     let mut current = get_parent(xot, node);
     while let Some(parent) = current {
         if let Some(parent_kind) = get_kind(xot, parent).as_deref().map(str::to_owned) {
             match parent_kind.as_str() {
-                "class_declaration" | "struct_declaration" | "interface_declaration"
-                | "record_declaration" => return "private",
+                // Interface members are implicitly public — don't inject a modifier
+                // so round-trips preserve the source's lack of one.
+                "interface_declaration" => return None,
+                "class_declaration" | "struct_declaration" | "record_declaration" => {
+                    return Some("private")
+                }
                 // declaration_list is a transparent wrapper — look through it
                 "declaration_list" => {}
                 _ => break,
@@ -374,7 +383,7 @@ fn default_access_modifier(xot: &Xot, node: XotNode) -> &'static str {
         }
         current = get_parent(xot, parent);
     }
-    "internal"
+    Some("internal")
 }
 
 /// Known C# modifiers (access + other + "this" for extension methods)
@@ -427,6 +436,8 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "variable_declaration" => Some(VARIABLE),
         "variable_declarator" => Some(DECLARATOR),
         "local_declaration_statement" => Some("local"),
+        "base_list" => Some(BASES),
+        "enum_member_declaration" => Some(ENUM_MEMBER),
         "string_literal" => Some("string"),
         "integer_literal" => Some("int"),
         "real_literal" => Some("float"),

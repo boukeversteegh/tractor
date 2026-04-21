@@ -112,13 +112,23 @@ fn render_type(node: &XmlNode) -> Result<String, RenderError> {
     }
 }
 
-/// Render a type-position child — looks first for <type>, then <array>.
+/// Render a type-position child — looks first for direct <type>/<array>,
+/// then falls back to the <variable> wrapper emitted by the C# parser for
+/// field declarations (`<field><variable><type>…</type><declarator>…</declarator></variable></field>`).
 fn render_type_slot(node: &XmlNode, parent_label: &str) -> Result<String, RenderError> {
     if let Some(t) = get_child(node, TYPE) {
         return render_type(t);
     }
     if let Some(a) = get_child(node, ARRAY) {
         return render_type(a);
+    }
+    if let Some(v) = get_child(node, VARIABLE) {
+        if let Some(t) = get_child(v, TYPE) {
+            return render_type(t);
+        }
+        if let Some(a) = get_child(v, ARRAY) {
+            return render_type(a);
+        }
     }
     Err(RenderError::MissingChild {
         parent: parent_label.into(),
@@ -128,7 +138,7 @@ fn render_type_slot(node: &XmlNode, parent_label: &str) -> Result<String, Render
 
 /// Render a <base> list: `: Foo, IBar`
 fn render_base_list(node: &XmlNode) -> String {
-    let base = match get_child(node, BASE) {
+    let base = match get_child(node, BASES) {
         Some(b) => b,
         None => return String::new(),
     };
@@ -216,16 +226,19 @@ fn render_attributes(node: &XmlNode, opts: &RenderOptions) -> Result<String, Ren
 }
 
 fn render_single_attribute(node: &XmlNode) -> Result<String, RenderError> {
-    let name = get_child_text(node, NAME).ok_or_else(|| RenderError::MissingChild {
-        parent: ATTRIBUTE.into(),
-        child: NAME.into(),
-    })?;
+    let name = get_child_text(node, NAME)
+        .map(|s| s.trim().to_string())
+        .ok_or_else(|| RenderError::MissingChild {
+            parent: ATTRIBUTE.into(),
+            child: NAME.into(),
+        })?;
 
     let args = get_child(node, ARGUMENTS);
     if let Some(args_node) = args {
         let arg_values: Vec<String> = get_children(args_node, ARGUMENT)
             .iter()
-            .filter_map(|a| text_content(a))
+            .filter_map(|a| text_content(a).map(|s| s.trim().to_string()))
+            .filter(|s| !s.is_empty())
             .collect();
         if !arg_values.is_empty() {
             return Ok(format!("{}({})", name, arg_values.join(", ")));
@@ -412,13 +425,16 @@ fn render_enum(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderErr
 
 /// Return enum members as (name, optional value) pairs.
 /// Accepts either a flat list of <enum_member> children or a <body> wrapper.
+/// Names and values are trimmed: the parser wraps them as
+/// `<name><ref>Red</ref></name>` / `<value><int>2</int></value>`, so concatenated
+/// text can include surrounding whitespace from pretty-printing.
 fn collect_enum_members(node: &XmlNode) -> Vec<(String, Option<String>)> {
     let container = get_child(node, BODY).unwrap_or(node);
     get_children(container, ENUM_MEMBER)
         .iter()
         .filter_map(|m| {
-            let n = get_child_text(m, NAME)?;
-            let v = get_child_text(m, VALUE);
+            let n = get_child_text(m, NAME).map(|s| s.trim().to_string())?;
+            let v = get_child_text(m, VALUE).map(|s| s.trim().to_string());
             Some((n, v))
         })
         .collect()
@@ -532,27 +548,36 @@ fn collect_body_members(node: &XmlNode, opts: &RenderOptions) -> Result<Vec<Stri
 // ---------------------------------------------------------------------------
 
 fn render_namespace(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderError> {
-    let name = get_child_text(node, NAME).ok_or_else(|| RenderError::MissingChild {
-        parent: NAMESPACE.into(),
-        child: NAME.into(),
-    })?;
+    let indent = opts.current_indent();
+    let name = get_child_text(node, NAME)
+        .map(|s| s.trim().to_string())
+        .ok_or_else(|| RenderError::MissingChild {
+            parent: NAMESPACE.into(),
+            child: NAME.into(),
+        })?;
 
     let has_body = get_child(node, BODY).is_some();
 
     if has_body {
         let body_opts = opts.indented();
         let members = collect_namespace_members(node, &body_opts)?;
-        let mut result = format!("namespace {}{{{}", name, opts.newline);
-        for member in &members {
+        let mut result = format!(
+            "{}namespace {}{}{}{{{}",
+            indent, name, opts.newline, indent, opts.newline
+        );
+        for (i, member) in members.iter().enumerate() {
             result.push_str(member);
             result.push_str(&opts.newline);
+            if i < members.len() - 1 {
+                result.push_str(&opts.newline);
+            }
         }
-        result.push('}');
+        result.push_str(&format!("{}}}", indent));
         Ok(result)
     } else {
         // File-scoped: just the declaration + members at same indent level
         let members = collect_namespace_members(node, opts)?;
-        let mut result = format!("namespace {};{}{}", name, opts.newline, opts.newline);
+        let mut result = format!("{}namespace {};{}{}", indent, name, opts.newline, opts.newline);
         for member in &members {
             result.push_str(member);
             result.push_str(&opts.newline);
@@ -565,7 +590,10 @@ fn collect_namespace_members(
     node: &XmlNode,
     opts: &RenderOptions,
 ) -> Result<Vec<String>, RenderError> {
-    let XmlNode::Element { children, .. } = node else {
+    // Parser form wraps members in <body>; hand-authored shapes may put them
+    // directly under the namespace.
+    let container = get_child(node, BODY).unwrap_or(node);
+    let XmlNode::Element { children, .. } = container else {
         return Ok(Vec::new());
     };
 
@@ -588,14 +616,25 @@ fn collect_namespace_members(
 // ---------------------------------------------------------------------------
 
 fn render_import(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderError> {
-    let text = text_content(node).unwrap_or_default();
-    // The text content should contain "using X;" or just the namespace
-    let trimmed = text.trim();
-    if trimmed.starts_with("using") {
-        Ok(format!("{}{}", opts.current_indent(), trimmed))
-    } else {
-        Ok(format!("{}using {};", opts.current_indent(), trimmed))
+    // Prefer the child <ref> (parser form: `<import>using<ref>X</ref>;</import>`).
+    if let Some(r) = get_child(node, REF) {
+        if let Some(ns) = text_content(r) {
+            let ns = ns.trim();
+            if !ns.is_empty() {
+                return Ok(format!("{}using {};", opts.current_indent(), ns));
+            }
+        }
     }
+    // Fall back to the flat text form.
+    let text = text_content(node).unwrap_or_default();
+    let trimmed = text.trim();
+    let line = if let Some(rest) = trimmed.strip_prefix("using") {
+        let ns = rest.trim().trim_end_matches(';').trim();
+        format!("using {};", ns)
+    } else {
+        format!("using {};", trimmed.trim_end_matches(';'))
+    };
+    Ok(format!("{}{}", opts.current_indent(), line))
 }
 
 // ---------------------------------------------------------------------------
@@ -616,19 +655,33 @@ fn render_unit(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderErr
         return Ok(String::new());
     };
 
-    let mut parts = Vec::new();
+    let mut parts: Vec<(&str, String)> = Vec::new();
     for child in children {
         if let XmlNode::Element { name, .. } = child {
             match name.as_str() {
                 IMPORT | NAMESPACE | CLASS | STRUCT | INTERFACE | ENUM | COMMENT => {
-                    parts.push(render_node(child, opts)?);
+                    parts.push((name.as_str(), render_node(child, opts)?));
                 }
                 _ => {}
             }
         }
     }
 
-    Ok(parts.join(&format!("{}", opts.newline)))
+    // Join with a blank line between different kinds (e.g. imports → types) and
+    // between top-level declarations; consecutive imports stay tight.
+    let mut result = String::new();
+    for (i, (kind, text)) in parts.iter().enumerate() {
+        if i > 0 {
+            let prev_kind = parts[i - 1].0;
+            let tight = prev_kind == IMPORT && *kind == IMPORT;
+            result.push_str(&opts.newline);
+            if !tight {
+                result.push_str(&opts.newline);
+            }
+        }
+        result.push_str(text);
+    }
+    Ok(result)
 }
 
 // ---------------------------------------------------------------------------
@@ -640,135 +693,41 @@ mod tests {
     use super::*;
     use crate::render::parse_xml;
 
+    // Round-trip coverage for the C# renderer lives in the fixture-based
+    // integration test `tractor/tests/render_roundtrip.rs`, which reads
+    // `tests/integration/render/csharp/supported.cs` as its single snapshot.
+    // The tests below anchor individual renderer behaviors on hand-authored
+    // XML, independent of the parser, and document the input contract.
+
+    fn render_xml(xml: &str) -> String {
+        let node = parse_xml(xml).unwrap();
+        render_node(&node, &RenderOptions::default()).unwrap()
+    }
+
     #[test]
-    fn test_render_simple_property() {
+    fn property_from_flat_shape() {
         let xml = r#"<property><public/><type>string</type><name>Name</name><accessors><accessor>get;</accessor><accessor>set;</accessor></accessors></property>"#;
-        let node = parse_xml(xml).unwrap();
-        let result = render_node(&node, &RenderOptions::default()).unwrap();
-        assert_eq!(result, "public string Name { get; set; }");
+        assert_eq!(render_xml(xml), "public string Name { get; set; }");
     }
 
     #[test]
-    fn test_render_nullable_property() {
-        let xml = r#"<property><public/><type>Guid<nullable/></type><name>UserId</name><accessors><accessor>get;</accessor><accessor>set;</accessor></accessors></property>"#;
-        let node = parse_xml(xml).unwrap();
-        let result = render_node(&node, &RenderOptions::default()).unwrap();
-        assert_eq!(result, "public Guid? UserId { get; set; }");
+    fn field_from_variable_wrapper() {
+        // The parser emits fields as <field><variable><type>..</type><declarator><name>..</name></declarator></variable></field>
+        let xml = r#"<field><private/><readonly/><variable><type>int</type><declarator><name>_count</name></declarator></variable></field>"#;
+        assert_eq!(render_xml(xml), "private readonly int _count;");
     }
 
     #[test]
-    fn test_render_property_with_attribute() {
-        let xml = r#"<property><attributes><attribute><name>Required</name></attribute></attributes><public/><type>string</type><name>Name</name><accessors><accessor>get;</accessor><accessor>set;</accessor></accessors></property>"#;
-        let node = parse_xml(xml).unwrap();
-        let result = render_node(&node, &RenderOptions::default()).unwrap();
-        assert_eq!(result, "[Required]\npublic string Name { get; set; }");
-    }
-
-    #[test]
-    fn test_render_field() {
-        let xml = r#"<field><private/><readonly/><type>int</type><name>_count</name></field>"#;
-        let node = parse_xml(xml).unwrap();
-        let result = render_node(&node, &RenderOptions::default()).unwrap();
-        assert_eq!(result, "private readonly int _count;");
-    }
-
-    #[test]
-    fn test_render_static_field() {
-        let xml =
-            r#"<field><private/><static/><type>string</type><name>DefaultName</name></field>"#;
-        let node = parse_xml(xml).unwrap();
-        let result = render_node(&node, &RenderOptions::default()).unwrap();
-        assert_eq!(result, "private static string DefaultName;");
-    }
-
-    #[test]
-    fn test_render_class_with_members() {
-        let xml = r#"<class><public/><name>User</name><body><property><public/><type>string</type><name>Name</name><accessors><accessor>get;</accessor><accessor>set;</accessor></accessors></property><field><private/><readonly/><type>int</type><name>_id</name></field></body></class>"#;
-        let node = parse_xml(xml).unwrap();
-        let result = render_node(&node, &RenderOptions::default()).unwrap();
-        let expected = "public class User\n{\n    public string Name { get; set; }\n\n    private readonly int _id;\n}";
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn test_render_generic_type_property() {
-        let xml = r#"<property><public/><type><generic/>List<arguments><type>string</type></arguments></type><name>Items</name><accessors><accessor>get;</accessor><accessor>set;</accessor></accessors></property>"#;
-        let node = parse_xml(xml).unwrap();
-        let result = render_node(&node, &RenderOptions::default()).unwrap();
-        assert_eq!(result, "public List<string> Items { get; set; }");
-    }
-
-    #[test]
-    fn test_render_nested_generic_type() {
-        let xml = r#"<property><public/><type><generic/>Dictionary<arguments><type>string</type><type>int</type></arguments></type><name>Map</name><accessors><accessor>get;</accessor><accessor>set;</accessor></accessors></property>"#;
-        let node = parse_xml(xml).unwrap();
-        let result = render_node(&node, &RenderOptions::default()).unwrap();
-        assert_eq!(result, "public Dictionary<string, int> Map { get; set; }");
-    }
-
-    #[test]
-    fn test_render_property_with_indentation() {
+    fn property_indented_by_option() {
         let xml = r#"<property><public/><type>string</type><name>Name</name><accessors><accessor>get;</accessor><accessor>set;</accessor></accessors></property>"#;
-        let node = parse_xml(xml).unwrap();
         let opts = RenderOptions {
             indent_level: 1,
             ..Default::default()
         };
-        let result = render_node(&node, &opts).unwrap();
-        assert_eq!(result, "    public string Name { get; set; }");
-    }
-
-    #[test]
-    fn test_render_empty_class() {
-        let xml = r#"<class><public/><name>Empty</name></class>"#;
         let node = parse_xml(xml).unwrap();
-        let result = render_node(&node, &RenderOptions::default()).unwrap();
-        assert_eq!(result, "public class Empty\n{\n}");
-    }
-
-    #[test]
-    fn test_render_interface_with_signature_method() {
-        let xml = r#"<interface><public/><name>IUser</name><body><method><returns><type>void</type></returns><name>Save</name><parameters><parameter><type>int</type><name>id</name></parameter></parameters></method></body></interface>"#;
-        let node = parse_xml(xml).unwrap();
-        let result = render_node(&node, &RenderOptions::default()).unwrap();
         assert_eq!(
-            result,
-            "public interface IUser\n{\n    void Save(int id);\n}"
+            render_node(&node, &opts).unwrap(),
+            "    public string Name { get; set; }"
         );
-    }
-
-    #[test]
-    fn test_render_enum_with_values() {
-        let xml = r#"<enum><public/><name>Color</name><body><enum_member><name>Red</name></enum_member><enum_member><name>Green</name><value>2</value></enum_member><enum_member><name>Blue</name></enum_member></body></enum>"#;
-        let node = parse_xml(xml).unwrap();
-        let result = render_node(&node, &RenderOptions::default()).unwrap();
-        assert_eq!(
-            result,
-            "public enum Color\n{\n    Red,\n    Green = 2,\n    Blue\n}"
-        );
-    }
-
-    #[test]
-    fn test_render_array_property() {
-        let xml = r#"<property><public/><array><type>int</type></array><name>Ids</name><accessors><accessor>get;</accessor><accessor>set;</accessor></accessors></property>"#;
-        let node = parse_xml(xml).unwrap();
-        let result = render_node(&node, &RenderOptions::default()).unwrap();
-        assert_eq!(result, "public int[] Ids { get; set; }");
-    }
-
-    #[test]
-    fn test_render_class_with_base_list() {
-        let xml = r#"<class><public/><name>Dog</name><base><ref>Animal</ref><ref>IBarker</ref></base></class>"#;
-        let node = parse_xml(xml).unwrap();
-        let result = render_node(&node, &RenderOptions::default()).unwrap();
-        assert_eq!(result, "public class Dog : Animal, IBarker\n{\n}");
-    }
-
-    #[test]
-    fn test_render_constructor_with_body() {
-        let xml = r#"<constructor><public/><name>Dog</name><parameters><parameter><type>string</type><name>breed</name></parameter></parameters><body/></constructor>"#;
-        let node = parse_xml(xml).unwrap();
-        let result = render_node(&node, &RenderOptions::default()).unwrap();
-        assert_eq!(result, "public Dog(string breed)\n{\n}");
     }
 }

@@ -265,7 +265,6 @@
                 <body>
                   {
                   <method>
-                    <private/>
                     <returns>
                       <type>void</type>
                     </returns>
@@ -281,21 +280,19 @@
                 enum
                 <name>Status</name>
                 <body>
-                  <enum_member_declaration_list>
-                    {
-                    <enum_member_declaration>
-                      <name>
-                        <ref>Active</ref>
-                      </name>
-                    </enum_member_declaration>
-                    ,
-                    <enum_member_declaration>
-                      <name>
-                        <ref>Inactive</ref>
-                      </name>
-                    </enum_member_declaration>
-                    }
-                  </enum_member_declaration_list>
+                  {
+                  <enum_member>
+                    <name>
+                      <ref>Active</ref>
+                    </name>
+                  </enum_member>
+                  ,
+                  <enum_member>
+                    <name>
+                      <ref>Inactive</ref>
+                    </name>
+                  </enum_member>
+                  }
                 </body>
               </enum>
               <struct>
