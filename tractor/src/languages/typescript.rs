@@ -134,7 +134,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "method_definition" => Some("method"),
         "arrow_function" => Some("lambda"),
         "interface_declaration" => Some("interface"),
-        "type_alias_declaration" => Some("typealias"),
+        "type_alias_declaration" => Some("alias"),
         "enum_declaration" => Some("enum"),
         "lexical_declaration" | "variable_declaration" => Some("variable"),
 
@@ -179,8 +179,8 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
 
         // Types
         "type_annotation" => Some("typeof"),
-        "type_parameters" => Some("typeparams"),
-        "type_parameter" => Some("typeparam"),
+        "type_parameters" => Some("generics"),
+        "type_parameter" => Some("generic"),
 
         // Default - no mapping
         _ => None,
@@ -312,7 +312,7 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
         "true" | "false" | "null" => SyntaxCategory::Keyword,
 
         // Keywords - declarations
-        "class" | "interface" | "enum" | "typealias" => SyntaxCategory::Keyword,
+        "class" | "interface" | "enum" | "alias" => SyntaxCategory::Keyword,
         "function" | "method" => SyntaxCategory::Keyword,
         "variable" | "param" | "params" | "optional" | "required" => SyntaxCategory::Keyword,
         "import" | "export" => SyntaxCategory::Keyword,
@@ -341,7 +341,7 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
         "comment" => SyntaxCategory::Comment,
 
         // Types
-        "typeof" | "typeparams" | "typeparam" => SyntaxCategory::Type,
+        "typeof" | "generics" | "generic" => SyntaxCategory::Type,
 
         // Structural elements - no color
         _ => SyntaxCategory::Default,

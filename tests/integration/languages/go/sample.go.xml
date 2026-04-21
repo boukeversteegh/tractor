@@ -7,7 +7,7 @@
           <comment>// Simple Go example</comment>
           <package>
             package
-            <pkg>main</pkg>
+            <name>main</name>
           </package>
           <import_declaration>
             import
@@ -143,52 +143,48 @@
               }
             </body>
           </function>
-          <typedef>
-            type
-            <typespec>
-              <exported/>
-              <name>Point</name>
-              <struct>
-                struct
-                <field_declaration_list>
-                  {
-                  <field_declaration>
-                    <name>
-                      <field>X</field>
-                    </name>
-                    <type>int</type>
-                  </field_declaration>
-                  <field_declaration>
-                    <name>
-                      <field>Y</field>
-                    </name>
-                    <type>int</type>
-                  </field_declaration>
-                  }
-                </field_declaration_list>
-              </struct>
-            </typespec>
-          </typedef>
-          <typedef>
-            type
-            <typespec>
-              <exported/>
-              <name>Shape</name>
-              <interface>
-                interface {
-                <method_elem>
+          type
+          <type>
+            <exported/>
+            <name>Point</name>
+            <struct>
+              struct
+              <field_declaration_list>
+                {
+                <field_declaration>
                   <name>
-                    <field>Area</field>
+                    <field>X</field>
                   </name>
-                  <parameters>
-                    <params>()</params>
-                  </parameters>
-                  <type>float64</type>
-                </method_elem>
+                  <type>int</type>
+                </field_declaration>
+                <field_declaration>
+                  <name>
+                    <field>Y</field>
+                  </name>
+                  <type>int</type>
+                </field_declaration>
                 }
-              </interface>
-            </typespec>
-          </typedef>
+              </field_declaration_list>
+            </struct>
+          </type>
+          type
+          <type>
+            <exported/>
+            <name>Shape</name>
+            <interface>
+              interface {
+              <method_elem>
+                <name>
+                  <field>Area</field>
+                </name>
+                <parameters>
+                  <params>()</params>
+                </parameters>
+                <type>float64</type>
+              </method_elem>
+              }
+            </interface>
+          </type>
         </file>
       </tree>
     </match>

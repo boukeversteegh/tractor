@@ -94,7 +94,8 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "attribute" => Some("member"),
         "subscript" => Some("subscript"),
         "assignment" => Some("assign"),
-        "augmented_assignment" => Some("augassign"),
+        // augmented_assignment collapses to <assign>; the <op> child (e.g., +=) distinguishes it.
+        "augmented_assignment" => Some("assign"),
         "binary_operator" => Some("binary"),
         "unary_operator" => Some("unary"),
         "comparison_operator" => Some("compare"),
@@ -187,7 +188,7 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
         "op" => SyntaxCategory::Operator,
         _ if is_operator_marker(element) => SyntaxCategory::Operator,
         "binary" | "unary" | "compare" | "logical" => SyntaxCategory::Operator,
-        "assign" | "augassign" | "ternary" => SyntaxCategory::Operator,
+        "assign" | "ternary" => SyntaxCategory::Operator,
 
         // Comments
         "comment" => SyntaxCategory::Comment,

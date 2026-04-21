@@ -109,7 +109,7 @@ cli_suite! {
         binary_ops => tractor query "sample.java" -x "binary[op='+']" => count 2;
         calls => tractor query "sample.java" -x "call" => count 3;
         public_methods => tractor query "sample.java" -x "//method[public]" => count 2;
-        package_private => tractor query "sample.java" -x "//method[package-private]" => count 2;
+        package_private => tractor query "sample.java" -x "//method[package]" => count 2;
         protected_methods => tractor query "sample.java" -x "//method[protected]" => count 1;
     }
 }

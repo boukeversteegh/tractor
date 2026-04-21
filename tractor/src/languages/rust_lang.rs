@@ -71,6 +71,13 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
 
+        // Raw string literal — rename to <string> and prepend <raw/> marker
+        "raw_string_literal" => {
+            prepend_empty_element(xot, node, "raw")?;
+            rename(xot, node, "string");
+            Ok(TransformAction::Continue)
+        }
+
         // let declarations - extract mut modifier
         "let_declaration" => {
             extract_modifiers(xot, node)?;
@@ -112,7 +119,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "use_declaration" => Some("use"),
         "const_item" => Some("const"),
         "static_item" => Some("static"),
-        "type_item" => Some("typedef"),
+        "type_item" => Some("alias"),
         "parameters" => Some("params"),
         "parameter" => Some("param"),
         "self_parameter" => Some("self"),
@@ -128,7 +135,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "match_expression" => Some("match"),
         "match_arm" => Some("arm"),
         "call_expression" => Some("call"),
-        "method_call_expression" => Some("methodcall"),
+        "method_call_expression" => Some("call"),
         "field_expression" => Some("field"),
         "index_expression" => Some("index"),
         "binary_expression" => Some("binary"),
@@ -138,7 +145,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "try_expression" => Some("try"),
         "macro_invocation" => Some("macro"),
         "string_literal" => Some("string"),
-        "raw_string_literal" => Some("rawstring"),
+        // raw_string_literal is handled in the match above (rename + prepend <raw/>)
         "integer_literal" => Some("int"),
         "float_literal" => Some("float"),
         "boolean_literal" => Some("bool"),
@@ -209,7 +216,7 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
         "type" => SyntaxCategory::Type,
 
         // Literals
-        "string" | "rawstring" => SyntaxCategory::String,
+        "string" => SyntaxCategory::String,
         "int" | "float" => SyntaxCategory::Number,
         "bool" => SyntaxCategory::Keyword,
 
@@ -217,7 +224,7 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
         "function" | "impl" => SyntaxCategory::Keyword,
         "struct" | "enum" | "trait" => SyntaxCategory::Keyword,
         "mod" | "use" => SyntaxCategory::Keyword,
-        "const" | "static" | "typedef" => SyntaxCategory::Keyword,
+        "const" | "static" | "alias" => SyntaxCategory::Keyword,
         "let" | "param" | "params" | "self" => SyntaxCategory::Keyword,
 
         // Keywords - control flow
@@ -233,7 +240,7 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
         "ref" | "generic" | "path" => SyntaxCategory::Type,
 
         // Functions/calls
-        "call" | "methodcall" => SyntaxCategory::Function,
+        "call" => SyntaxCategory::Function,
         "closure" => SyntaxCategory::Function,
         "macro" => SyntaxCategory::Function,
 

@@ -38,7 +38,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // ---------------------------------------------------------------------
         // Modifier wrappers - Java wraps modifiers in "modifiers" element
         // Convert <modifiers>public static</modifiers> to <public/><static/>
-        // Also inserts <package-private/> if no access modifier found (Principle #9)
+        // Also inserts <package/> if no access modifier found (Principle #9)
         // ---------------------------------------------------------------------
         "modifiers" => {
             let mut has_access = false;
@@ -57,7 +57,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
                 }
             }
             if !has_access {
-                insert_empty_before(xot, node, "package-private")?;
+                insert_empty_before(xot, node, "package")?;
             }
             // Remove the wrapper node entirely
             detach(xot, node)?;
@@ -90,12 +90,12 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         // ---------------------------------------------------------------------
-        // Declarations — prepend <package-private/> if no modifiers child
+        // Declarations — prepend <package/> if no modifiers child
         // ---------------------------------------------------------------------
         "class_declaration" | "interface_declaration" | "enum_declaration"
         | "method_declaration" | "constructor_declaration" | "field_declaration" => {
             if !has_modifiers_child(xot, node) {
-                prepend_empty_element(xot, node, "package-private")?;
+                prepend_empty_element(xot, node, "package")?;
             }
             if let Some(new_name) = map_element_name(&kind) {
                 rename(xot, node, new_name);
@@ -149,7 +149,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "interface_declaration" => Some("interface"),
         "enum_declaration" => Some("enum"),
         "method_declaration" => Some("method"),
-        "constructor_declaration" => Some("ctor"),
+        "constructor_declaration" => Some("constructor"),
         "field_declaration" => Some("field"),
         "formal_parameters" => Some("params"),
         "formal_parameter" => Some("param"),
@@ -239,7 +239,7 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
 
         // Keywords - declarations
         "class" | "interface" | "enum" => SyntaxCategory::Keyword,
-        "method" | "ctor" | "field" => SyntaxCategory::Keyword,
+        "method" | "constructor" | "field" => SyntaxCategory::Keyword,
         "param" | "params" => SyntaxCategory::Keyword,
         "import" | "package" => SyntaxCategory::Keyword,
 
@@ -250,8 +250,8 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
         "try" | "catch" | "finally" | "throw" => SyntaxCategory::Keyword,
         "return" | "break" | "continue" => SyntaxCategory::Keyword,
 
-        // Keywords - modifiers
-        "public" | "private" | "protected" | "package-private" => SyntaxCategory::Keyword,
+        // Keywords - modifiers (note: "package" is covered earlier)
+        "public" | "private" | "protected" => SyntaxCategory::Keyword,
         "static" | "final" | "abstract" | "synchronized" => SyntaxCategory::Keyword,
         "volatile" | "transient" | "native" | "strictfp" => SyntaxCategory::Keyword,
         "new" | "this" | "super" => SyntaxCategory::Keyword,

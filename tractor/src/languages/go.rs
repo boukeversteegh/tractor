@@ -15,6 +15,17 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         "expression_statement" => Ok(TransformAction::Skip),
         "block" => Ok(TransformAction::Flatten),
 
+        // Type declarations: drop the outer wrapper; the type_spec child
+        // carries the name and type directly.
+        "type_declaration" => Ok(TransformAction::Flatten),
+
+        // Raw string literal — rename to <string> and prepend <raw/> marker
+        "raw_string_literal" => {
+            prepend_empty_element(xot, node, "raw")?;
+            rename(xot, node, "string");
+            Ok(TransformAction::Continue)
+        }
+
         // Name wrappers created by the builder for field="name".
         // Inline the single identifier/type_identifier child as text:
         //   <name><identifier>foo</identifier></name> -> <name>foo</name>
@@ -108,8 +119,8 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "package_clause" => Some("package"),
         "function_declaration" => Some("function"),
         "method_declaration" => Some("method"),
-        "type_declaration" => Some("typedef"),
-        "type_spec" => Some("typespec"),
+        // type_declaration is flattened in the match above.
+        "type_spec" => Some("type"),
         "struct_type" => Some("struct"),
         "interface_type" => Some("interface"),
         "const_declaration" => Some("const"),
@@ -138,14 +149,14 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "binary_expression" => Some("binary"),
         "unary_expression" => Some("unary"),
         "interpreted_string_literal" => Some("string"),
-        "raw_string_literal" => Some("rawstring"),
+        // raw_string_literal is handled in the match above (rename + prepend <raw/>)
         "int_literal" => Some("int"),
         "float_literal" => Some("float"),
         "true" => Some("true"),
         "false" => Some("false"),
         "nil" => Some("nil"),
         "field_identifier" => Some("field"),
-        "package_identifier" => Some("pkg"),
+        "package_identifier" => Some("name"),
         _ => None,
     }
 }
@@ -196,17 +207,15 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
         "name" => SyntaxCategory::Identifier,
         "type" => SyntaxCategory::Type,
         "field" => SyntaxCategory::Identifier,
-        "pkg" => SyntaxCategory::Identifier,
 
         // Literals
-        "string" | "rawstring" => SyntaxCategory::String,
+        "string" => SyntaxCategory::String,
         "int" | "float" => SyntaxCategory::Number,
         "true" | "false" | "nil" => SyntaxCategory::Keyword,
 
         // Keywords - declarations
         "function" | "method" => SyntaxCategory::Keyword,
         "struct" | "interface" => SyntaxCategory::Keyword,
-        "typedef" | "typespec" => SyntaxCategory::Keyword,
         "const" | "var" => SyntaxCategory::Keyword,
         "package" => SyntaxCategory::Keyword,
         "param" | "params" => SyntaxCategory::Keyword,
