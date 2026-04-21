@@ -264,9 +264,8 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         | "method_declaration" | "constructor_declaration"
         | "property_declaration" | "field_declaration" => {
             if !has_access_modifier_child(xot, node) {
-                if let Some(default) = default_access_modifier(xot, node) {
-                    prepend_empty_element(xot, node, default)?;
-                }
+                let default = default_access_modifier(xot, node);
+                prepend_empty_element(xot, node, default)?;
             }
             if let Some(new_name) = map_element_name(&kind) {
                 rename(xot, node, new_name);
@@ -361,21 +360,22 @@ fn has_access_modifier_child(xot: &Xot, node: XotNode) -> bool {
 }
 
 /// Determine the default access modifier for a C# declaration based on context.
-/// Returns `None` for contexts where leaving the modifier off is the canonical
-/// source form (e.g. interface members, whose access is implicitly `public`).
+/// Tractor always injects an explicit access modifier when the source omits
+/// one, so queries never need to branch between implicit and explicit values
+/// (e.g. `[public]` matches both an explicitly-written `public` and the
+/// implicit default for interface members). Canonical source form — what the
+/// renderer emits and what the fixture round-trip tests assert — therefore
+/// always spells the modifier out.
 /// Looks through `declaration_list` wrappers (which get Flatten'd, so children
 /// are processed while still inside the wrapper).
-fn default_access_modifier(xot: &Xot, node: XotNode) -> Option<&'static str> {
+fn default_access_modifier(xot: &Xot, node: XotNode) -> &'static str {
     let mut current = get_parent(xot, node);
     while let Some(parent) = current {
         if let Some(parent_kind) = get_kind(xot, parent).as_deref().map(str::to_owned) {
             match parent_kind.as_str() {
-                // Interface members are implicitly public — don't inject a modifier
-                // so round-trips preserve the source's lack of one.
-                "interface_declaration" => return None,
-                "class_declaration" | "struct_declaration" | "record_declaration" => {
-                    return Some("private")
-                }
+                // Interface and record members are implicitly public in C#.
+                "interface_declaration" | "record_declaration" => return "public",
+                "class_declaration" | "struct_declaration" => return "private",
                 // declaration_list is a transparent wrapper — look through it
                 "declaration_list" => {}
                 _ => break,
@@ -383,7 +383,7 @@ fn default_access_modifier(xot: &Xot, node: XotNode) -> Option<&'static str> {
         }
         current = get_parent(xot, parent);
     }
-    Some("internal")
+    "internal"
 }
 
 /// Known C# modifiers (access + other + "this" for extension methods)

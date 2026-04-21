@@ -265,6 +265,7 @@
                 <body>
                   {
                   <method>
+                    <public/>
                     <returns>
                       <type>void</type>
                     </returns>

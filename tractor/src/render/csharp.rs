@@ -17,6 +17,7 @@ pub fn render_node(node: &XmlNode, opts: &RenderOptions) -> Result<String, Rende
             CLASS => render_class(node, opts),
             STRUCT => render_struct(node, opts),
             INTERFACE => render_interface(node, opts),
+            RECORD => render_record(node, opts),
             ENUM => render_enum(node, opts),
             PROPERTY => render_property(node, opts),
             FIELD => render_field(node, opts),
@@ -136,23 +137,80 @@ fn render_type_slot(node: &XmlNode, parent_label: &str) -> Result<String, Render
     })
 }
 
-/// Render a <base> list: `: Foo, IBar`
+/// Render a `<bases>` list: `: Foo, IBar` or `: byte` (enum underlying type).
+/// Accepts either `<ref>` children (inheritance) or `<type>` children
+/// (enum underlying type).
 fn render_base_list(node: &XmlNode) -> String {
     let base = match get_child(node, BASES) {
         Some(b) => b,
         None => return String::new(),
     };
-    let refs: Vec<String> = get_children(base, REF)
+    let XmlNode::Element { children, .. } = base else {
+        return String::new();
+    };
+    let items: Vec<String> = children
         .iter()
-        .filter_map(|r| text_content(r))
+        .filter_map(|c| match c {
+            XmlNode::Element { name, .. } if name == REF => text_content(c),
+            XmlNode::Element { name, .. } if name == TYPE => render_type(c).ok(),
+            _ => None,
+        })
         .map(|t| t.trim().to_string())
         .filter(|t| !t.is_empty())
         .collect();
-    if refs.is_empty() {
+    if items.is_empty() {
         String::new()
     } else {
-        format!(" : {}", refs.join(", "))
+        format!(" : {}", items.join(", "))
     }
+}
+
+// ---------------------------------------------------------------------------
+// Literals (for field/property initializers, enum values, attribute args)
+// ---------------------------------------------------------------------------
+
+/// Render a typed literal element (`<int>`, `<float>`, `<bool>`, `<null>`,
+/// `<string>`) back to C# source form. Returns `None` when the node isn't a
+/// recognised literal.
+///
+/// Strings are reassembled from the parser's
+/// `<string>"<string_literal_content>…</string_literal_content>"</string>`
+/// shape so internal whitespace is preserved verbatim while the
+/// pretty-printer's surrounding whitespace is discarded.
+fn render_literal(node: &XmlNode) -> Option<String> {
+    let XmlNode::Element { name, children, .. } = node else {
+        return None;
+    };
+    match name.as_str() {
+        "int" | "float" | "bool" | "null" => text_content(node).map(|t| t.trim().to_string()),
+        "string" => {
+            let inner = children
+                .iter()
+                .find_map(|c| match c {
+                    XmlNode::Element { name: n, .. } if n == "string_literal_content" => {
+                        text_content(c)
+                    }
+                    _ => None,
+                })
+                .unwrap_or_default();
+            Some(format!("\"{}\"", inner))
+        }
+        _ => None,
+    }
+}
+
+/// Find the first literal-valued child of `node` and render it.
+/// Accepts either a direct literal child (fields: `<declarator>…<int>5</int></declarator>`)
+/// or a `<value>` wrapper (properties, enum members: `<value><int>2</int></value>`).
+fn render_literal_slot(node: &XmlNode) -> Option<String> {
+    let XmlNode::Element { name, children, .. } = node else {
+        return None;
+    };
+    if name == VALUE {
+        // Inside <value>, look for the first literal element.
+        return children.iter().find_map(render_literal);
+    }
+    children.iter().find_map(render_literal)
 }
 
 /// Render a generic type like <type><generic/>List<arguments>...</arguments></type>
@@ -298,7 +356,15 @@ fn render_property(node: &XmlNode, opts: &RenderOptions) -> Result<String, Rende
     // Accessors
     let accessors = render_accessors(node)?;
 
-    let decl = format!("{}{}{} {} {}", indent, mods, type_str, name, accessors);
+    // Optional initializer: `<value>…</value>` after the accessors renders as
+    // `= <literal>;`. Property initializers always end with `;`, unlike the
+    // bare accessor form.
+    let initializer = get_child(node, VALUE).and_then(render_literal_slot);
+
+    let decl = match initializer {
+        Some(init) => format!("{}{}{} {} {} = {};", indent, mods, type_str, name, accessors, init),
+        None => format!("{}{}{} {} {}", indent, mods, type_str, name, accessors),
+    };
 
     Ok(format!("{}{}", attrs, decl))
 }
@@ -316,20 +382,27 @@ fn render_field(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderEr
     // Type — fields may have type as a child element or as a variable/declarator structure
     let type_str = render_type_slot(node, FIELD)?;
 
-    // Name — may be in <name> directly or in a <variable><declarator><name>
-    let name = get_child_text(node, NAME)
-        .or_else(|| {
-            get_child(node, VARIABLE)
-                .and_then(|v| get_child(v, DECLARATOR))
-                .and_then(|d| get_child_text(d, NAME))
-        })
-        .or_else(|| get_child(node, DECLARATOR).and_then(|d| get_child_text(d, NAME)))
+    // Locate the declarator that carries name + optional initializer.
+    let declarator = get_child(node, VARIABLE)
+        .and_then(|v| get_child(v, DECLARATOR))
+        .or_else(|| get_child(node, DECLARATOR));
+
+    let name = declarator
+        .and_then(|d| get_child_text(d, NAME))
+        .or_else(|| get_child_text(node, NAME))
         .ok_or_else(|| RenderError::MissingChild {
             parent: FIELD.into(),
             child: NAME.into(),
         })?;
 
-    let decl = format!("{}{}{} {};", indent, mods, type_str, name);
+    // Optional field initializer: a literal directly inside the declarator
+    // (the parser places it after the `=` text node).
+    let initializer = declarator.and_then(render_literal_slot);
+
+    let decl = match initializer {
+        Some(init) => format!("{}{}{} {} = {};", indent, mods, type_str, name, init),
+        None => format!("{}{}{} {};", indent, mods, type_str, name),
+    };
     Ok(format!("{}{}", attrs, decl))
 }
 
@@ -347,6 +420,53 @@ fn render_struct(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderE
 
 fn render_interface(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderError> {
     render_type_declaration(node, INTERFACE, opts)
+}
+
+/// Render a record declaration. Supports the positional form
+/// (`public record User(string Name);`) and the body form
+/// (`public record User(string Name) { ... }`). Presence of a primary
+/// parameter list is optional.
+fn render_record(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderError> {
+    let indent = opts.current_indent();
+    let attrs = render_attributes(node, opts)?;
+    let mods = modifiers_str(node);
+    let name = get_child_text(node, NAME)
+        .map(|s| s.trim().to_string())
+        .ok_or_else(|| RenderError::MissingChild {
+            parent: RECORD.into(),
+            child: NAME.into(),
+        })?;
+
+    let params = if get_child(node, PARAMETERS).is_some() {
+        render_parameters(node)
+    } else {
+        String::new()
+    };
+    let base = render_base_list(node);
+
+    let header = format!("{}{}{} {}{}{}", indent, mods, RECORD, name, params, base);
+
+    // If a body exists, render members inside Allman braces; otherwise emit the
+    // positional-only statement form with a trailing semicolon.
+    if get_child(node, BODY).is_some() {
+        let body_opts = opts.indented();
+        let members = collect_body_members(node, &body_opts)?;
+        let mut result = String::new();
+        result.push_str(&attrs);
+        result.push_str(&header);
+        result.push_str(&format!("{}{}{{{}", opts.newline, indent, opts.newline));
+        for (i, member) in members.iter().enumerate() {
+            result.push_str(member);
+            result.push_str(&opts.newline);
+            if i < members.len() - 1 {
+                result.push_str(&opts.newline);
+            }
+        }
+        result.push_str(&format!("{}}}", indent));
+        Ok(result)
+    } else {
+        Ok(format!("{}{};", attrs, header))
+    }
 }
 
 fn render_type_declaration(
@@ -411,9 +531,11 @@ fn render_enum(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderErr
         })
         .collect();
 
+    let base = render_base_list(node);
+
     let mut result = String::new();
     result.push_str(&attrs);
-    result.push_str(&format!("{}{}{} {}", indent, mods, ENUM, name));
+    result.push_str(&format!("{}{}{} {}{}", indent, mods, ENUM, name, base));
     result.push_str(&format!("{}{}{{{}", opts.newline, indent, opts.newline));
     result.push_str(&members.join(&format!(",{}", opts.newline)));
     if !members.is_empty() {
@@ -425,16 +547,17 @@ fn render_enum(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderErr
 
 /// Return enum members as (name, optional value) pairs.
 /// Accepts either a flat list of <enum_member> children or a <body> wrapper.
-/// Names and values are trimmed: the parser wraps them as
-/// `<name><ref>Red</ref></name>` / `<value><int>2</int></value>`, so concatenated
-/// text can include surrounding whitespace from pretty-printing.
+/// The name is extracted from the `<name>` wrapper (parser shape wraps it in
+/// `<ref>…</ref>`, but `text_content` handles that). The value goes through
+/// `render_literal_slot` so typed literals like `<value><int>2</int></value>`
+/// render correctly.
 fn collect_enum_members(node: &XmlNode) -> Vec<(String, Option<String>)> {
     let container = get_child(node, BODY).unwrap_or(node);
     get_children(container, ENUM_MEMBER)
         .iter()
         .filter_map(|m| {
             let n = get_child_text(m, NAME).map(|s| s.trim().to_string())?;
-            let v = get_child_text(m, VALUE).map(|s| s.trim().to_string());
+            let v = get_child(m, VALUE).and_then(render_literal_slot);
             Some((n, v))
         })
         .collect()
@@ -531,7 +654,7 @@ fn collect_body_members(node: &XmlNode, opts: &RenderOptions) -> Result<Vec<Stri
         if let XmlNode::Element { name, .. } = child {
             match name.as_str() {
                 PROPERTY | FIELD | METHOD | CONSTRUCTOR
-                | CLASS | STRUCT | INTERFACE | ENUM | COMMENT => {
+                | CLASS | STRUCT | INTERFACE | ENUM | RECORD | COMMENT => {
                     members.push(render_node(child, opts)?);
                 }
                 // Skip non-renderable elements (body wrapper text like { })
@@ -601,7 +724,7 @@ fn collect_namespace_members(
     for child in children {
         if let XmlNode::Element { name, .. } = child {
             match name.as_str() {
-                CLASS | STRUCT | INTERFACE | ENUM | IMPORT | COMMENT => {
+                CLASS | STRUCT | INTERFACE | ENUM | RECORD | IMPORT | COMMENT => {
                     members.push(render_node(child, opts)?);
                 }
                 _ => {}
@@ -616,25 +739,46 @@ fn collect_namespace_members(
 // ---------------------------------------------------------------------------
 
 fn render_import(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderError> {
-    // Prefer the child <ref> (parser form: `<import>using<ref>X</ref>;</import>`).
-    if let Some(r) = get_child(node, REF) {
-        if let Some(ns) = text_content(r) {
-            let ns = ns.trim();
-            if !ns.is_empty() {
-                return Ok(format!("{}using {};", opts.current_indent(), ns));
-            }
-        }
+    // Parser shapes:
+    //   <import>using<ref>System</ref>;</import>
+    //   <import>using<qualified_name>..dotted..</qualified_name>;</import>
+    // Both reduce to "using <namespace>;" — extract the namespace from whichever
+    // child is present.
+    let ns = extract_qualified_name(node)
+        .or_else(|| text_content(node).map(|t| strip_import_keywords(&t)))
+        .unwrap_or_default();
+    let ns = ns.trim();
+    if ns.is_empty() {
+        return Ok(format!("{}using ;", opts.current_indent()));
     }
-    // Fall back to the flat text form.
-    let text = text_content(node).unwrap_or_default();
-    let trimmed = text.trim();
-    let line = if let Some(rest) = trimmed.strip_prefix("using") {
-        let ns = rest.trim().trim_end_matches(';').trim();
-        format!("using {};", ns)
-    } else {
-        format!("using {};", trimmed.trim_end_matches(';'))
-    };
-    Ok(format!("{}{}", opts.current_indent(), line))
+    Ok(format!("{}using {};", opts.current_indent(), ns))
+}
+
+/// Collect a dotted namespace from a `<qualified_name>` or `<ref>` child.
+/// Pretty-printed XML puts whitespace between the dots and the refs, so we
+/// strip whitespace from the raw text content — `System.Collections.Generic`
+/// is whitespace-free regardless of formatting.
+fn extract_qualified_name(node: &XmlNode) -> Option<String> {
+    if let Some(q) = get_child(node, "qualified_name") {
+        return Some(strip_whitespace(&text_content(q)?));
+    }
+    if let Some(r) = get_child(node, REF) {
+        return Some(strip_whitespace(&text_content(r)?));
+    }
+    None
+}
+
+fn strip_import_keywords(text: &str) -> String {
+    let cleaned = strip_whitespace(text);
+    cleaned
+        .strip_prefix("using")
+        .unwrap_or(&cleaned)
+        .trim_end_matches(';')
+        .to_string()
+}
+
+fn strip_whitespace(s: &str) -> String {
+    s.chars().filter(|c| !c.is_whitespace()).collect()
 }
 
 // ---------------------------------------------------------------------------
@@ -659,7 +803,7 @@ fn render_unit(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderErr
     for child in children {
         if let XmlNode::Element { name, .. } = child {
             match name.as_str() {
-                IMPORT | NAMESPACE | CLASS | STRUCT | INTERFACE | ENUM | COMMENT => {
+                IMPORT | NAMESPACE | CLASS | STRUCT | INTERFACE | ENUM | RECORD | COMMENT => {
                     parts.push((name.as_str(), render_node(child, opts)?));
                 }
                 _ => {}
