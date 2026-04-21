@@ -34,7 +34,9 @@
               <type>int</type>
             </param>
             )
-            <type>int</type>
+            <returns>
+              <type>int</type>
+            </returns>
             <body>
               {
               <return>
@@ -111,7 +113,9 @@
             func
             <name>PublicHelper</name>
             ()
-            <type>string</type>
+            <returns>
+              <type>string</type>
+            </returns>
             <body>
               {
               <return>
@@ -162,7 +166,9 @@
                   <field>Area</field>
                 </name>
                 ()
-                <type>float64</type>
+                <returns>
+                  <type>float64</type>
+                </returns>
               </method_elem>
               }
             </interface>

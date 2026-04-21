@@ -99,8 +99,19 @@ impl<'a> TreeBuilder<'a> {
         "condition",   // if/while/for condition
         "consequence", // if true branch
         "alternative", // if else branch
-        "returns",     // return type
+        "returns",     // return type (canonical; see canonical_field_name)
     ];
+
+    /// Canonicalise tree-sitter field names so equivalent concepts produce
+    /// the same wrapper element across languages. For example, TS/JS/Rust
+    /// use field `return_type`, Go uses `result`, C# uses `returns` — we
+    /// want `<returns>` in all of them.
+    fn canonical_field_name(field: &str) -> &str {
+        match field {
+            "return_type" | "result" => "returns",
+            other => other,
+        }
+    }
 
     /// Check if a field should be wrapped in a semantic element
     fn should_wrap_field(field: &str) -> bool {
@@ -215,6 +226,7 @@ impl<'a> TreeBuilder<'a> {
 
         // Wrap in field element if needed, or just append directly
         if let Some(field) = field_name {
+            let field = Self::canonical_field_name(field);
             if Self::should_wrap_field(field) {
                 let wrapper_name = self.get_name(field);
                 let wrapper = self.xot.new_element(wrapper_name);

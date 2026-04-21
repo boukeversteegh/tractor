@@ -22,7 +22,9 @@
               <type>i32</type>
             </param>
             ) -&gt;
-            <type>i32</type>
+            <returns>
+              <type>i32</type>
+            </returns>
             <body>
               {
               <binary>
@@ -90,7 +92,9 @@
             fn
             <name>helper</name>
             () -&gt;
-            <type>bool</type>
+            <returns>
+              <type>bool</type>
+            </returns>
             <body>
               {
               <bool>true</bool>

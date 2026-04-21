@@ -36,6 +36,20 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             distribute_field_to_children(xot, node, "arguments");
             Ok(TransformAction::Flatten)
         }
+        "type_arguments" => {
+            distribute_field_to_children(xot, node, "arguments");
+            Ok(TransformAction::Flatten)
+        }
+
+        // ---------------------------------------------------------------------
+        // Generic type references: apply the C# pattern.
+        //   generic_type(<type_identifier>Foo</type_identifier>, type_arguments)
+        //     -> <type><generic/>Foo <type field="arguments">Bar</type>...</type>
+        // ---------------------------------------------------------------------
+        "generic_type" => {
+            rewrite_generic_type(xot, node, &["type_identifier", "scoped_type_identifier"])?;
+            Ok(TransformAction::Continue)
+        }
 
         // ---------------------------------------------------------------------
         // Name wrappers created by the builder for field="name".
@@ -96,7 +110,8 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             rename(xot, node, "name");
             Ok(TransformAction::Continue)
         }
-        "type_identifier" => {
+        "type_identifier" | "integral_type" | "floating_point_type"
+        | "boolean_type" | "void_type" => {
             rename(xot, node, "type");
             Ok(TransformAction::Continue)
         }
@@ -108,6 +123,12 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         | "method_declaration" | "constructor_declaration" | "field_declaration" => {
             if !has_modifiers_child(xot, node) {
                 prepend_empty_element(xot, node, "package")?;
+            }
+            // Java's grammar tags the method return type as field="type"
+            // (the same field name used on parameters), so the builder
+            // can't wrap it by name. Do it here for methods only.
+            if kind == "method_declaration" {
+                wrap_method_return_type(xot, node)?;
             }
             if let Some(new_name) = map_element_name(&kind) {
                 rename(xot, node, new_name);
@@ -125,6 +146,33 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
     }
+}
+
+/// Wrap a method's return type (the child with field="type") in a `<returns>`
+/// element so it's symmetric with C#/Rust/TS. Java's tree-sitter grammar
+/// uses the ambiguous field name `type` for both return types and parameter
+/// types, so this can't be done generically by the builder.
+fn wrap_method_return_type(xot: &mut Xot, method: XotNode) -> Result<(), xot::Error> {
+    let children: Vec<XotNode> = xot.children(method).collect();
+    for child in children {
+        if xot.element(child).is_none() {
+            continue;
+        }
+        if get_attr(xot, child, "field").as_deref() != Some("type") {
+            continue;
+        }
+        let returns_name = xot.add_name("returns");
+        let wrapper = xot.new_element(returns_name);
+        copy_source_location(xot, child, wrapper);
+        set_attr(xot, wrapper, "field", "returns");
+        xot.insert_before(child, wrapper)?;
+        xot.detach(child)?;
+        xot.append(wrapper, child)?;
+        // Drop field="type" on the inner type — it's now "returns" at the wrapper level
+        remove_attr(xot, child, "field");
+        break;
+    }
+    Ok(())
 }
 
 /// Check if text is an access modifier keyword

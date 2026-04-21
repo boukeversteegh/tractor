@@ -59,7 +59,7 @@ cli_suite! {
         generic_dictionary_match => tractor query "generic-type-match.cs" -x "//type[.='Dictionary<string, int>']" => count 2;
         generic_count => tractor query "generic-type-match.cs" -x "//type[generic]" => count 8;
         nested_generic_match => tractor query "generic-type-match.cs" -x "//type[.='List<Dictionary<string, User>>']" => count 2;
-        generic_string_args => tractor query "generic-type-match.cs" -x "//type[generic]/arguments/type[.='string']" => count 6;
+        generic_string_args => tractor query "generic-type-match.cs" -x "//type[generic]/type[.='string']" => count 6;
         ignore_whitespace => tractor query "generic-type-match.cs" -x "//type[.='Dictionary<string,int>']" -W => count 2;
         null_forgiving_postfix => tractor query "null-forgiving-operator.cs" -x "//postfix_unary_expression" => count 5;
         null_forgiving_no_errors => tractor query "null-forgiving-operator.cs" -x "//ERROR" => count 0;

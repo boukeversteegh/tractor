@@ -670,6 +670,93 @@ pub mod helpers {
         }
     }
 
+    /// Rewrite a tree-sitter `generic_type` node into the canonical
+    /// shape shared across languages:
+    ///
+    /// ```text
+    /// <type>
+    ///   <generic/>
+    ///   Name
+    ///   <type field="arguments">Arg1</type>
+    ///   <type field="arguments">Arg2</type>
+    /// </type>
+    /// ```
+    ///
+    /// The `name_kinds` slice is the list of tree-sitter kinds to accept
+    /// as the simple type name (typically `type_identifier` and
+    /// `identifier`). Any child whose `kind` matches is collapsed to plain
+    /// text; a `<name>` field wrapper around a simple name is also
+    /// collapsed. Non-simple names (qualified identifiers, etc.) are left
+    /// as a `<name>` sub-element so they remain queryable.
+    pub fn rewrite_generic_type(
+        xot: &mut Xot,
+        node: XotNode,
+        name_kinds: &[&str],
+    ) -> Result<(), xot::Error> {
+        let children: Vec<XotNode> = xot.children(node).collect();
+        for child in children {
+            let child_name = match get_element_name(xot, child) {
+                Some(n) => n,
+                None => continue,
+            };
+
+            // Case 1: the name is a <name> field-wrapper created by the
+            // builder. If it wraps a single simple identifier, collapse
+            // it to text.
+            if child_name == "name" {
+                let grandchildren: Vec<XotNode> = xot.children(child).collect();
+                let is_simple = !grandchildren.is_empty()
+                    && grandchildren.iter().all(|&gc| {
+                        match get_kind(xot, gc).as_deref() {
+                            Some(k) => name_kinds.contains(&k),
+                            None => xot.text_str(gc).is_some(),
+                        }
+                    });
+                if is_simple {
+                    let mut buf = String::new();
+                    collect_descendant_text(xot, child, &mut buf);
+                    if !buf.is_empty() {
+                        let text_node = xot.new_text(&buf);
+                        xot.insert_before(child, text_node)?;
+                        xot.detach(child)?;
+                    }
+                }
+                break;
+            }
+
+            // Case 2: the name is a bare identifier child with no field
+            // wrapper (happens when the grammar doesn't tag it as a
+            // field). Collapse to text directly.
+            if let Some(kind) = get_kind(xot, child) {
+                if name_kinds.contains(&kind.as_str()) {
+                    let text_owned: Option<String> = xot
+                        .children(child)
+                        .find_map(|c| xot.text_str(c).map(|s| s.to_string()));
+                    if let Some(text) = text_owned {
+                        let text_node = xot.new_text(&text);
+                        xot.insert_before(child, text_node)?;
+                        xot.detach(child)?;
+                    }
+                    break;
+                }
+            }
+        }
+        prepend_empty_element(xot, node, "generic")?;
+        rename(xot, node, "type");
+        Ok(())
+    }
+
+    /// Walk `node`'s descendants and append every text-node's content to `buf`.
+    fn collect_descendant_text(xot: &Xot, node: XotNode, buf: &mut String) {
+        for child in xot.children(node) {
+            if let Some(text) = xot.text_str(child) {
+                buf.push_str(text);
+            } else if xot.element(child).is_some() {
+                collect_descendant_text(xot, child, buf);
+            }
+        }
+    }
+
     /// Remove all text children from a node
     pub fn remove_text_children(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
         let text_children: Vec<XotNode> = xot.children(node)

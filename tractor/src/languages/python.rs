@@ -24,6 +24,19 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             distribute_field_to_children(xot, node, "arguments");
             Ok(TransformAction::Flatten)
         }
+        "type_parameter" => {
+            // Python's `type_parameter` is the `[X]` portion of `List[X]` —
+            // the list of type arguments, not a single parameter. Flatten
+            // so each inner type is a sibling with field="arguments".
+            distribute_field_to_children(xot, node, "arguments");
+            Ok(TransformAction::Flatten)
+        }
+
+        // Generic type references: apply the C# pattern.
+        "generic_type" => {
+            rewrite_generic_type(xot, node, &["identifier", "type_identifier"])?;
+            Ok(TransformAction::Continue)
+        }
 
         // Name wrappers created by the builder for field="name".
         // Inline the single identifier child as text:
@@ -35,7 +48,17 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 
         // Type wrappers from Python's tree-sitter grammar contain a single
         // identifier — inline it so the result is `<type>int</type>`.
+        // If the content is a generic_type (rewritten below into its own
+        // `<type>` element) drop the outer wrapper so we don't double-nest.
         "type" => {
+            let single_child = xot.children(node)
+                .filter(|&c| xot.element(c).is_some())
+                .next();
+            if let Some(child) = single_child {
+                if get_kind(xot, child).as_deref() == Some("generic_type") {
+                    return Ok(TransformAction::Flatten);
+                }
+            }
             inline_single_identifier(xot, node)?;
             Ok(TransformAction::Continue)
         }

@@ -12,25 +12,21 @@
             <param>
               <required/>
               <name>a</name>
-              <typeof>
-                :
-                <predefined_type>number</predefined_type>
-              </typeof>
+              :
+              <type>number</type>
             </param>
             ,
             <param>
               <required/>
               <name>b</name>
-              <typeof>
-                :
-                <predefined_type>number</predefined_type>
-              </typeof>
+              :
+              <type>number</type>
             </param>
             )
-            <typeof>
+            <returns>
               :
-              <predefined_type>number</predefined_type>
-            </typeof>
+              <type>number</type>
+            </returns>
             <body>
               <block>
                 {
@@ -59,10 +55,10 @@
             function
             <name>main</name>
             ()
-            <typeof>
+            <returns>
               :
-              <predefined_type>void</predefined_type>
-            </typeof>
+              <type>void</type>
+            </returns>
             <body>
               <block>
                 {
@@ -135,18 +131,14 @@
               {
               <property_signature>
                 <name>name</name>
-                <typeof>
-                  :
-                  <predefined_type>string</predefined_type>
-                </typeof>
+                :
+                <type>string</type>
               </property_signature>
               ;
               <property_signature>
                 <name>age</name>
-                <typeof>
-                  :
-                  <predefined_type>number</predefined_type>
-                </typeof>
+                :
+                <type>number</type>
               </property_signature>
               ;
         }
@@ -172,26 +164,21 @@
             <param>
               <required/>
               <name>name</name>
-              <typeof>
-                :
-                <predefined_type>string</predefined_type>
-              </typeof>
+              :
+              <type>string</type>
             </param>
             ,
             <param>
               <optional/>
               <name>title</name>
-              ?
-              <typeof>
-                :
-                <predefined_type>string</predefined_type>
-              </typeof>
+              ?:
+              <type>string</type>
             </param>
             )
-            <typeof>
+            <returns>
               :
-              <predefined_type>string</predefined_type>
-            </typeof>
+              <type>string</type>
+            </returns>
             <body>
               <block>
                 {
@@ -237,35 +224,28 @@
             <param>
               <required/>
               <name>host</name>
-              <typeof>
-                :
-                <predefined_type>string</predefined_type>
-              </typeof>
+              :
+              <type>string</type>
             </param>
             ,
             <param>
               <required/>
               <name>port</name>
-              <typeof>
-                :
-                <predefined_type>number</predefined_type>
-              </typeof>
+              :
+              <type>number</type>
             </param>
             ,
             <param>
               <optional/>
               <name>timeout</name>
-              ?
-              <typeof>
-                :
-                <predefined_type>number</predefined_type>
-              </typeof>
+              ?:
+              <type>number</type>
             </param>
             )
-            <typeof>
+            <returns>
               :
-              <predefined_type>void</predefined_type>
-            </typeof>
+              <type>void</type>
+            </returns>
             <body>
               <block>
                 {

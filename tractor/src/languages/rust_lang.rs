@@ -24,6 +24,18 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             distribute_field_to_children(xot, node, "arguments");
             Ok(TransformAction::Flatten)
         }
+        "type_arguments" => {
+            distribute_field_to_children(xot, node, "arguments");
+            Ok(TransformAction::Flatten)
+        }
+
+        // Generic type references: apply the C# pattern.
+        //   generic_type(<type_identifier>Vec</type_identifier>, type_arguments)
+        //     -> <type><generic/>Vec <type field="arguments">i32</type>...</type>
+        "generic_type" => {
+            rewrite_generic_type(xot, node, &["type_identifier", "scoped_type_identifier"])?;
+            Ok(TransformAction::Continue)
+        }
 
         // Name wrappers created by the builder for field="name".
         // Inline the single identifier/type_identifier/field_identifier child as text:

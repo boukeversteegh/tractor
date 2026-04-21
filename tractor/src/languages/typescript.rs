@@ -90,6 +90,25 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             distribute_field_to_children(xot, node, "arguments");
             Ok(TransformAction::Flatten)
         }
+        "type_arguments" => {
+            distribute_field_to_children(xot, node, "arguments");
+            Ok(TransformAction::Flatten)
+        }
+
+        // Type annotations (`:` prefix) are just a colon-prefixed form of
+        // the underlying type. Drop the wrapper; the colon stays as a text
+        // sibling for renderability and the actual `<type>` appears as a
+        // child directly.
+        "type_annotation" => Ok(TransformAction::Flatten),
+
+        // Generic type references: apply the C# pattern.
+        //   generic_type(name=Foo, type_arguments=[Bar, Baz])
+        //     -> <type><generic/>Foo <type field="arguments">Bar</type>
+        //                             <type field="arguments">Baz</type></type>
+        "generic_type" => {
+            rewrite_generic_type(xot, node, &["type_identifier", "identifier"])?;
+            Ok(TransformAction::Continue)
+        }
 
         // ---------------------------------------------------------------------
         // Variable declarations - extract let/const/var modifier
@@ -197,7 +216,8 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "null" => Some("null"),
 
         // Types
-        "type_annotation" => Some("typeof"),
+        // type_annotation is flattened in the match above.
+        "predefined_type" => Some("type"),
         "type_parameters" => Some("generics"),
         "type_parameter" => Some("generic"),
 

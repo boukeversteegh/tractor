@@ -35,19 +35,14 @@
               {
               <property_signature>
                 <name>name</name>
-                <typeof>
-                  :
-                  <predefined_type>string</predefined_type>
-                </typeof>
+                :
+                <type>string</type>
               </property_signature>
               ;
               <property_signature>
                 <name>age</name>
-                ?
-                <typeof>
-                  :
-                  <predefined_type>number</predefined_type>
-                </typeof>
+                ?:
+                <type>number</type>
               </property_signature>
               ;
         }
@@ -66,10 +61,8 @@
                 <shorthand_property_identifier_pattern>age</shorthand_property_identifier_pattern>
                 }
               </object_pattern>
-              <typeof>
-                :
-                <type>Props</type>
-              </typeof>
+              :
+              <type>Props</type>
             </param>
             )
             <body>

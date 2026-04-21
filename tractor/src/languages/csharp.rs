@@ -99,7 +99,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             distribute_field_to_children(xot, node, "parameters");
             Ok(TransformAction::Flatten)
         }
-        "argument_list" | "attribute_argument_list" => {
+        "argument_list" | "attribute_argument_list" | "type_argument_list" => {
             distribute_field_to_children(xot, node, "arguments");
             Ok(TransformAction::Flatten)
         }

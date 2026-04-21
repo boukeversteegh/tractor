@@ -15,12 +15,9 @@
                 <returns>
                   <type>
                     <generic/>
-                    List
-                    <arguments>
-                      &lt;
-                      <type>User</type>
-                      &gt;
-                    </arguments>
+                    List&lt;
+                    <type>User</type>
+                    &gt;
                   </type>
                 </returns>
                 <name>GetAll</name>
@@ -61,12 +58,9 @@
                 <returns>
                   <type>
                     <generic/>
-                    List
-                    <arguments>
-                      &lt;
-                      <type>User</type>
-                      &gt;
-                    </arguments>
+                    List&lt;
+                    <type>User</type>
+                    &gt;
                   </type>
                 </returns>
                 <name>GetAllOrdered</name>
@@ -141,12 +135,9 @@
                 <returns>
                   <type>
                     <generic/>
-                    List
-                    <arguments>
-                      &lt;
-                      <type>User</type>
-                      &gt;
-                    </arguments>
+                    List&lt;
+                    <type>User</type>
+                    &gt;
                   </type>
                 </returns>
                 <name>GetAll</name>

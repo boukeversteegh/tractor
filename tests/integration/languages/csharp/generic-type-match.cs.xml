@@ -15,12 +15,9 @@
                 <returns>
                   <type>
                     <generic/>
-                    List
-                    <arguments>
-                      &lt;
-                      <type>string</type>
-                      &gt;
-                    </arguments>
+                    List&lt;
+                    <type>string</type>
+                    &gt;
                   </type>
                 </returns>
                 <name>GetNames</name>
@@ -34,12 +31,9 @@
                         new
                         <type>
                           <generic/>
-                          List
-                          <arguments>
-                            &lt;
-                            <type>string</type>
-                            &gt;
-                          </arguments>
+                          List&lt;
+                          <type>string</type>
+                          &gt;
                         </type>
                         ()
                       </new>
@@ -54,14 +48,11 @@
                 <returns>
                   <type>
                     <generic/>
-                    Dictionary
-                    <arguments>
-                      &lt;
-                      <type>string</type>
-                      ,
-                      <type>int</type>
-                      &gt;
-                    </arguments>
+                    Dictionary&lt;
+                    <type>string</type>
+                    ,
+                    <type>int</type>
+                    &gt;
                   </type>
                 </returns>
                 <name>GetCounts</name>
@@ -75,14 +66,11 @@
                         new
                         <type>
                           <generic/>
-                          Dictionary
-                          <arguments>
-                            &lt;
-                            <type>string</type>
-                            ,
-                            <type>int</type>
-                            &gt;
-                          </arguments>
+                          Dictionary&lt;
+                          <type>string</type>
+                          ,
+                          <type>int</type>
+                          &gt;
                         </type>
                         ()
                       </new>
@@ -97,22 +85,16 @@
                 <returns>
                   <type>
                     <generic/>
-                    List
-                    <arguments>
-                      &lt;
-                      <type>
-                        <generic/>
-                        Dictionary
-                        <arguments>
-                          &lt;
-                          <type>string</type>
-                          ,
-                          <type>User</type>
-                          &gt;
-                        </arguments>
-                      </type>
+                    List&lt;
+                    <type>
+                      <generic/>
+                      Dictionary&lt;
+                      <type>string</type>
+                      ,
+                      <type>User</type>
                       &gt;
-                    </arguments>
+                    </type>
+                    &gt;
                   </type>
                 </returns>
                 <name>GetUserMaps</name>
@@ -126,22 +108,16 @@
                         new
                         <type>
                           <generic/>
-                          List
-                          <arguments>
-                            &lt;
-                            <type>
-                              <generic/>
-                              Dictionary
-                              <arguments>
-                                &lt;
-                                <type>string</type>
-                                ,
-                                <type>User</type>
-                                &gt;
-                              </arguments>
-                            </type>
+                          List&lt;
+                          <type>
+                            <generic/>
+                            Dictionary&lt;
+                            <type>string</type>
+                            ,
+                            <type>User</type>
                             &gt;
-                          </arguments>
+                          </type>
+                          &gt;
                         </type>
                         ()
                       </new>

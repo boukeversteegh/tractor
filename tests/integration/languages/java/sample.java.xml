@@ -13,7 +13,7 @@
               {
               <field>
                 <private/>
-                <integral_type>int</integral_type>
+                <type>int</type>
                 <variable_declarator>
                   <name>value</name>
                 </variable_declarator>
@@ -24,7 +24,7 @@
                 <name>Sample</name>
                 (
                 <param>
-                  <integral_type>int</integral_type>
+                  <type>int</type>
                   <name>value</name>
                 </param>
                 )
@@ -53,16 +53,18 @@
               <method>
                 <static/>
                 <public/>
-                <integral_type>int</integral_type>
+                <returns>
+                  <type>int</type>
+                </returns>
                 <name>add</name>
                 (
                 <param>
-                  <integral_type>int</integral_type>
+                  <type>int</type>
                   <name>a</name>
                 </param>
                 ,
                 <param>
-                  <integral_type>int</integral_type>
+                  <type>int</type>
                   <name>b</name>
                 </param>
                 )
@@ -90,7 +92,9 @@
               </method>
               <method>
                 <protected/>
-                <void_type>void</void_type>
+                <returns>
+                  <type>void</type>
+                </returns>
                 <name>log</name>
                 (
                 <param>
@@ -118,7 +122,9 @@
               </method>
               <method>
                 <package/>
-                <void_type>void</void_type>
+                <returns>
+                  <type>void</type>
+                </returns>
                 <name>defaultAccess</name>
                 ()
                 <body>
@@ -130,7 +136,9 @@
               <method>
                 <static/>
                 <public/>
-                <void_type>void</void_type>
+                <returns>
+                  <type>void</type>
+                </returns>
                 <name>main</name>
                 (
                 <param>
@@ -144,7 +152,7 @@
                 <body>
                   {
                   <local_variable_declaration>
-                    <integral_type>int</integral_type>
+                    <type>int</type>
                     <variable_declarator>
                       <name>result</name>
                       =
@@ -204,7 +212,9 @@
               {
               <method>
                 <package/>
-                <void_type>void</void_type>
+                <returns>
+                  <type>void</type>
+                </returns>
                 <name>execute</name>
                 ();
               </method>

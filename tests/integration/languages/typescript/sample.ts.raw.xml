@@ -29,10 +29,12 @@
               </required_parameter>
               )
             </formal_parameters>
-            <type_annotation>
-              :
-              <predefined_type>number</predefined_type>
-            </type_annotation>
+            <returns>
+              <type_annotation>
+                :
+                <predefined_type>number</predefined_type>
+              </type_annotation>
+            </returns>
             <body>
               <statement_block>
                 {
@@ -59,10 +61,12 @@
               <identifier>main</identifier>
             </name>
             <formal_parameters>()</formal_parameters>
-            <type_annotation>
-              :
-              <predefined_type>void</predefined_type>
-            </type_annotation>
+            <returns>
+              <type_annotation>
+                :
+                <predefined_type>void</predefined_type>
+              </type_annotation>
+            </returns>
             <body>
               <statement_block>
                 {
@@ -203,10 +207,12 @@
               </optional_parameter>
               )
             </formal_parameters>
-            <type_annotation>
-              :
-              <predefined_type>string</predefined_type>
-            </type_annotation>
+            <returns>
+              <type_annotation>
+                :
+                <predefined_type>string</predefined_type>
+              </type_annotation>
+            </returns>
             <body>
               <statement_block>
                 {
@@ -278,10 +284,12 @@
               </optional_parameter>
               )
             </formal_parameters>
-            <type_annotation>
-              :
-              <predefined_type>void</predefined_type>
-            </type_annotation>
+            <returns>
+              <type_annotation>
+                :
+                <predefined_type>void</predefined_type>
+              </type_annotation>
+            </returns>
             <body>
               <statement_block>
                 {

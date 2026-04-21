@@ -27,7 +27,9 @@
               )
             </parameters>
             -&gt;
-            <primitive_type>i32</primitive_type>
+            <returns>
+              <primitive_type>i32</primitive_type>
+            </returns>
             <body>
               <block>
                 {
@@ -105,7 +107,9 @@
             </name>
             <parameters>()</parameters>
             -&gt;
-            <primitive_type>bool</primitive_type>
+            <returns>
+              <primitive_type>bool</primitive_type>
+            </returns>
             <body>
               <block>
                 {

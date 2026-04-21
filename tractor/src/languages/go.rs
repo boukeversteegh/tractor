@@ -21,8 +21,24 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 
         // Flat lists (Principle #12)
         "parameter_list" => {
-            distribute_field_to_children(xot, node, "parameters");
-            Ok(TransformAction::Flatten)
+            // Go reuses `parameter_list` for both formal parameters AND
+            // multi-value return specs. The builder has already wrapped
+            // the returns case in a <returns> element (via the
+            // `result`→`returns` field normalisation), so we can tell
+            // which we're in by looking at the parent.
+            let in_returns = get_parent(xot, node)
+                .and_then(|p| get_element_name(xot, p))
+                .as_deref() == Some("returns");
+            if in_returns {
+                // Each parameter_declaration here holds a return type.
+                // Collapse `<param><type>X</type></param>` to just `<type>X</type>`
+                // so the returns list reads as a sequence of types, not params.
+                collapse_return_param_list(xot, node)?;
+                Ok(TransformAction::Flatten)
+            } else {
+                distribute_field_to_children(xot, node, "parameters");
+                Ok(TransformAction::Flatten)
+            }
         }
         "argument_list" => {
             distribute_field_to_children(xot, node, "arguments");
@@ -81,6 +97,38 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
     }
+}
+
+/// Rewrite each `parameter_declaration` in a return-type list to just its
+/// inner type node, dropping the `<param>` wrapper so a returns list reads
+/// as a sequence of types:
+///
+/// `<returns><param><type>int</type></param><param><type>error</type></param></returns>`
+///   → `<returns><type>int</type><type>error</type></returns>`
+fn collapse_return_param_list(xot: &mut Xot, list: XotNode) -> Result<(), xot::Error> {
+    let children: Vec<XotNode> = xot.children(list)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    for child in children {
+        if get_kind(xot, child).as_deref() != Some("parameter_declaration") {
+            continue;
+        }
+        let type_child = xot.children(child).find(|&c| {
+            get_element_name(xot, c).as_deref() == Some("type")
+                || matches!(
+                    get_kind(xot, c).as_deref(),
+                    Some("type_identifier" | "pointer_type" | "slice_type" | "array_type"
+                        | "map_type" | "channel_type" | "interface_type" | "struct_type"
+                        | "generic_type")
+                )
+        });
+        if let Some(type_node) = type_child {
+            xot.detach(type_node)?;
+            xot.insert_before(child, type_node)?;
+            xot.detach(child)?;
+        }
+    }
+    Ok(())
 }
 
 /// Determine exported/unexported based on name child's first character
