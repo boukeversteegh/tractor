@@ -211,7 +211,7 @@
             <body>
               {
               <method>
-                <package/>
+                <public/>
                 <returns>
                   <type>void</type>
                 </returns>

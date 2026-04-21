@@ -45,8 +45,8 @@ cli_suite! {
         binary_op => tractor query "sample.cs" -x "binary[op='+']" => count 1;
         call_rename => tractor query "sample.cs" -x "call" => count 4;
         ints_exist => tractor query "sample.cs" -x "int" => count 2;
-        public_methods => tractor query "sample.cs" -x "//method[public]" => count 1;
-        private_methods => tractor query "sample.cs" -x "//method[private]" => count 2;
+        public_methods => tractor query "sample.cs" -x "//method[public]" => count 2;
+        private_methods => tractor query "sample.cs" -x "//method[private]" => count 1;
         internal_methods => tractor query "sample.cs" -x "//method[internal]" => count 1;
         protected_methods => tractor query "sample.cs" -x "//method[protected]" => count 1;
         maxlength_missing_autotruncate => tractor query "attribute-maxlength-autotruncate.cs" -x "//property[attribute[contains(., 'MaxLength')]][not(attribute[contains(., 'AutoTruncate')])]/name" => count 1;
@@ -108,8 +108,8 @@ cli_suite! {
         static_marker => tractor query "sample.java" -x "static" => count 2;
         binary_ops => tractor query "sample.java" -x "binary[op='+']" => count 2;
         calls => tractor query "sample.java" -x "call" => count 3;
-        public_methods => tractor query "sample.java" -x "//method[public]" => count 2;
-        package_private => tractor query "sample.java" -x "//method[package]" => count 2;
+        public_methods => tractor query "sample.java" -x "//method[public]" => count 3;
+        package_private => tractor query "sample.java" -x "//method[package]" => count 1;
         protected_methods => tractor query "sample.java" -x "//method[protected]" => count 1;
     }
 }

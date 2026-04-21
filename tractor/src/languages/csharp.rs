@@ -369,12 +369,16 @@ fn has_access_modifier_child(xot: &Xot, node: XotNode) -> bool {
 /// Determine the default access modifier for a C# declaration based on context.
 /// Looks through `declaration_list` wrappers (which get Flatten'd, so children are
 /// processed while still inside the wrapper).
+///
+/// Per C# spec: members of interfaces are public by default; members of classes,
+/// structs, and records are private by default; top-level types are internal.
 fn default_access_modifier(xot: &Xot, node: XotNode) -> &'static str {
     let mut current = get_parent(xot, node);
     while let Some(parent) = current {
         if let Some(parent_kind) = get_kind(xot, parent).as_deref().map(str::to_owned) {
             match parent_kind.as_str() {
-                "class_declaration" | "struct_declaration" | "interface_declaration"
+                "interface_declaration" => return "public",
+                "class_declaration" | "struct_declaration"
                 | "record_declaration" => return "private",
                 // declaration_list is a transparent wrapper — look through it
                 "declaration_list" => {}

@@ -245,7 +245,7 @@
                 <body>
                   {
                   <method>
-                    <private/>
+                    <public/>
                     <returns>
                       <type>void</type>
                     </returns>

@@ -122,7 +122,15 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         "class_declaration" | "interface_declaration" | "enum_declaration"
         | "method_declaration" | "constructor_declaration" | "field_declaration" => {
             if !has_modifiers_child(xot, node) {
-                prepend_empty_element(xot, node, "package")?;
+                // Members declared inside an interface are implicitly public
+                // (Java spec §9.4). Top-level types and class members default
+                // to package access.
+                let default = if is_inside_interface(xot, node) {
+                    "public"
+                } else {
+                    "package"
+                };
+                prepend_empty_element(xot, node, default)?;
             }
             // Java's grammar tags the method return type as field="type"
             // (the same field name used on parameters), so the builder
@@ -146,6 +154,24 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
     }
+}
+
+/// Walk up from `node` looking for an enclosing `interface_declaration`.
+/// Stops at the first class/enum/record (which would override the default).
+fn is_inside_interface(xot: &Xot, node: XotNode) -> bool {
+    let mut current = get_parent(xot, node);
+    while let Some(parent) = current {
+        if let Some(kind) = get_kind(xot, parent) {
+            match kind.as_str() {
+                "interface_declaration" => return true,
+                "class_declaration" | "enum_declaration" | "record_declaration" => return false,
+                // interface_body and class_body are transparent wrappers
+                _ => {}
+            }
+        }
+        current = get_parent(xot, parent);
+    }
+    false
 }
 
 /// Wrap a method's return type (the child with field="type") in a `<returns>`
