@@ -37,6 +37,8 @@ namespace SampleApp
 
         [Required]
         [MaxLength(100)]
+        [Display(Name = "Full Name", ShortName = "FN")]
+        [StringLength(100, MinimumLength = 2)]
         public string Email { get; set; }
 
         public const int MaxLength = 100;

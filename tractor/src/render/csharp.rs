@@ -295,8 +295,7 @@ fn render_single_attribute(node: &XmlNode) -> Result<String, RenderError> {
     if let Some(args_node) = args {
         let arg_values: Vec<String> = get_children(args_node, ARGUMENT)
             .iter()
-            .filter_map(|a| text_content(a).map(|s| s.trim().to_string()))
-            .filter(|s| !s.is_empty())
+            .filter_map(|a| render_attribute_argument(a))
             .collect();
         if !arg_values.is_empty() {
             return Ok(format!("{}({})", name, arg_values.join(", ")));
@@ -304,6 +303,30 @@ fn render_single_attribute(node: &XmlNode) -> Result<String, RenderError> {
     }
 
     Ok(name)
+}
+
+/// Render an attribute argument — either positional (`100`, `"foo"`, `Bar`) or
+/// named (`Name = "foo"`). Named args have a `<name>` child; positional args
+/// don't. Values come from typed literals or bare identifier refs.
+fn render_attribute_argument(node: &XmlNode) -> Option<String> {
+    let XmlNode::Element { children, .. } = node else {
+        return None;
+    };
+
+    let named = get_child_text(node, NAME).map(|s| s.trim().to_string());
+    let value = children.iter().find_map(|c| match c {
+        XmlNode::Element { name: n, .. } if n == NAME => None,
+        XmlNode::Element { name: n, .. } if n == REF => text_content(c).map(|s| s.trim().to_string()),
+        XmlNode::Element { .. } => render_literal(c),
+        _ => None,
+    });
+
+    match (named, value) {
+        (Some(lhs), Some(rhs)) if !lhs.is_empty() => Some(format!("{} = {}", lhs, rhs)),
+        (_, Some(rhs)) => Some(rhs),
+        (Some(lhs), None) => Some(lhs),
+        _ => None,
+    }
 }
 
 // ---------------------------------------------------------------------------
