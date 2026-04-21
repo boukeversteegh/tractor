@@ -370,6 +370,12 @@ pub fn parse_string_to_xot_with_options(
 
     // Apply semantic transforms based on tree mode
     if resolved != TreeMode::Raw {
+        // Per-language field wrapping (turns `<identifier field="name">` into
+        // `<name><identifier field="identifier"></identifier></name>` etc.)
+        let wrappings = languages::get_field_wrappings(lang);
+        crate::xot_transform::apply_field_wrappings(&mut xot, root, wrappings)
+            .map_err(|e| ParseError::Parse(e.to_string()))?;
+
         let transform_fn = languages::get_transform(lang);
         crate::xot_transform::walk_transform(&mut xot, root, transform_fn)
             .map_err(|e| ParseError::Parse(e.to_string()))?;

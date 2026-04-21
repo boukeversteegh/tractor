@@ -10,35 +10,23 @@
               <keyword_select>SELECT</keyword_select>
               <select_expression>
                 <term>
-                  <value>
-                    <field>
-                      <object_reference>
-                        <name>
-                          <identifier>u</identifier>
-                        </name>
-                      </object_reference>
-                      .
-                      <name>
-                        <identifier>Name</identifier>
-                      </name>
-                    </field>
-                  </value>
+                  <field>
+                    <object_reference>
+                      <identifier>u</identifier>
+                    </object_reference>
+                    .
+                    <identifier>Name</identifier>
+                  </field>
                 </term>
                 ,
                 <term>
-                  <value>
-                    <field>
-                      <object_reference>
-                        <name>
-                          <identifier>u</identifier>
-                        </name>
-                      </object_reference>
-                      .
-                      <name>
-                        <identifier>Age</identifier>
-                      </name>
-                    </field>
-                  </value>
+                  <field>
+                    <object_reference>
+                      <identifier>u</identifier>
+                    </object_reference>
+                    .
+                    <identifier>Age</identifier>
+                  </field>
                 </term>
               </select_expression>
             </select>
@@ -46,32 +34,22 @@
               <keyword_from>FROM</keyword_from>
               <relation>
                 <object_reference>
-                  <name>
-                    <identifier>Users</identifier>
-                  </name>
+                  <identifier>Users</identifier>
                 </object_reference>
                 <identifier>u</identifier>
               </relation>
               <where>
                 <keyword_where>WHERE</keyword_where>
                 <binary_expression>
-                  <left>
-                    <field>
-                      <object_reference>
-                        <name>
-                          <identifier>u</identifier>
-                        </name>
-                      </object_reference>
-                      .
-                      <name>
-                        <identifier>Age</identifier>
-                      </name>
-                    </field>
-                  </left>
+                  <field>
+                    <object_reference>
+                      <identifier>u</identifier>
+                    </object_reference>
+                    .
+                    <identifier>Age</identifier>
+                  </field>
                   &gt;
-                  <right>
-                    <literal>18</literal>
-                  </right>
+                  <literal>18</literal>
                 </binary_expression>
               </where>
               <order_by>
@@ -80,14 +58,10 @@
                 <order_target>
                   <field>
                     <object_reference>
-                      <name>
-                        <identifier>u</identifier>
-                      </name>
+                      <identifier>u</identifier>
                     </object_reference>
                     .
-                    <name>
-                      <identifier>Name</identifier>
-                    </name>
+                    <identifier>Name</identifier>
                   </field>
                 </order_target>
               </order_by>
@@ -99,9 +73,7 @@
               <keyword_insert>INSERT</keyword_insert>
               <keyword_into>INTO</keyword_into>
               <object_reference>
-                <name>
-                  <identifier>AuditLog</identifier>
-                </name>
+                <identifier>AuditLog</identifier>
               </object_reference>
               <list>
                 (
@@ -121,9 +93,7 @@
                 ,
                 <invocation>
                   <object_reference>
-                    <name>
-                      <identifier>GETDATE</identifier>
-                    </name>
+                    <identifier>GETDATE</identifier>
                   </object_reference>
                   ()
                 </invocation>
@@ -139,24 +109,16 @@
             <from>
               <keyword_from>FROM</keyword_from>
               <object_reference>
-                <name>
-                  <identifier>OldRecords</identifier>
-                </name>
+                <identifier>OldRecords</identifier>
               </object_reference>
               <where>
                 <keyword_where>WHERE</keyword_where>
                 <binary_expression>
-                  <left>
-                    <field>
-                      <name>
-                        <identifier>CreatedAt</identifier>
-                      </name>
-                    </field>
-                  </left>
+                  <field>
+                    <identifier>CreatedAt</identifier>
+                  </field>
                   &lt;
-                  <right>
-                    <literal>'2020-01-01'</literal>
-                  </right>
+                  <literal>'2020-01-01'</literal>
                 </binary_expression>
               </where>
             </from>
@@ -168,33 +130,23 @@
               <keyword_select>SELECT</keyword_select>
               <select_expression>
                 <term>
-                  <value>
-                    <field>
-                      <object_reference>
-                        <identifier>[dbo]</identifier>
-                        .
-                        <name>
-                          <identifier>[Users]</identifier>
-                        </name>
-                      </object_reference>
+                  <field>
+                    <object_reference>
+                      <identifier>[dbo]</identifier>
                       .
-                      <name>
-                        <identifier>[Name]</identifier>
-                      </name>
-                    </field>
-                  </value>
+                      <identifier>[Users]</identifier>
+                    </object_reference>
+                    .
+                    <identifier>[Name]</identifier>
+                  </field>
                   <keyword_as>AS</keyword_as>
                   <identifier>UserName</identifier>
                 </term>
                 ,
                 <term>
-                  <value>
-                    <field>
-                      <name>
-                        <identifier>@StartDate</identifier>
-                      </name>
-                    </field>
-                  </value>
+                  <field>
+                    <identifier>@StartDate</identifier>
+                  </field>
                 </term>
               </select_expression>
             </select>
@@ -204,21 +156,15 @@
                 <object_reference>
                   <identifier>[dbo]</identifier>
                   .
-                  <name>
-                    <identifier>[Users]</identifier>
-                  </name>
+                  <identifier>[Users]</identifier>
                 </object_reference>
               </relation>
               <where>
                 <keyword_where>WHERE</keyword_where>
                 <between_expression>
-                  <left>
-                    <field>
-                      <name>
-                        <identifier>[Age]</identifier>
-                      </name>
-                    </field>
-                  </left>
+                  <field>
+                    <identifier>[Age]</identifier>
+                  </field>
                   <keyword_between>BETWEEN</keyword_between>
                   <literal>18</literal>
                   <keyword_and>AND</keyword_and>
@@ -236,47 +182,29 @@
                 <object_reference>
                   <identifier>dbo</identifier>
                   .
-                  <name>
-                    <identifier>Config</identifier>
-                  </name>
+                  <identifier>Config</identifier>
                 </object_reference>
               </relation>
               <keyword_set>SET</keyword_set>
               <assignment>
-                <left>
-                  <field>
-                    <name>
-                      <identifier>Value</identifier>
-                    </name>
-                  </field>
-                </left>
+                <field>
+                  <identifier>Value</identifier>
+                </field>
                 =
-                <right>
-                  <field>
-                    <name>
-                      <identifier>@NewValue</identifier>
-                    </name>
-                  </field>
-                </right>
+                <field>
+                  <identifier>@NewValue</identifier>
+                </field>
               </assignment>
               <where>
                 <keyword_where>WHERE</keyword_where>
                 <binary_expression>
-                  <left>
-                    <field>
-                      <name>
-                        <identifier>[Key]</identifier>
-                      </name>
-                    </field>
-                  </left>
+                  <field>
+                    <identifier>[Key]</identifier>
+                  </field>
                   =
-                  <right>
-                    <field>
-                      <name>
-                        <identifier>@KeyName</identifier>
-                      </name>
-                    </field>
-                  </right>
+                  <field>
+                    <identifier>@KeyName</identifier>
+                  </field>
                 </binary_expression>
               </where>
             </update>
@@ -288,51 +216,33 @@
               <keyword_select>SELECT</keyword_select>
               <select_expression>
                 <term>
-                  <value>
-                    <field>
-                      <object_reference>
-                        <name>
-                          <identifier>o</identifier>
-                        </name>
-                      </object_reference>
-                      .
-                      <name>
-                        <identifier>ID</identifier>
-                      </name>
-                    </field>
-                  </value>
+                  <field>
+                    <object_reference>
+                      <identifier>o</identifier>
+                    </object_reference>
+                    .
+                    <identifier>ID</identifier>
+                  </field>
                 </term>
                 ,
                 <term>
-                  <value>
-                    <field>
-                      <object_reference>
-                        <name>
-                          <identifier>u</identifier>
-                        </name>
-                      </object_reference>
-                      .
-                      <name>
-                        <identifier>Name</identifier>
-                      </name>
-                    </field>
-                  </value>
+                  <field>
+                    <object_reference>
+                      <identifier>u</identifier>
+                    </object_reference>
+                    .
+                    <identifier>Name</identifier>
+                  </field>
                 </term>
                 ,
                 <term>
-                  <value>
-                    <field>
-                      <object_reference>
-                        <name>
-                          <identifier>a</identifier>
-                        </name>
-                      </object_reference>
-                      .
-                      <name>
-                        <identifier>City</identifier>
-                      </name>
-                    </field>
-                  </value>
+                  <field>
+                    <object_reference>
+                      <identifier>a</identifier>
+                    </object_reference>
+                    .
+                    <identifier>City</identifier>
+                  </field>
                 </term>
               </select_expression>
             </select>
@@ -340,9 +250,7 @@
               <keyword_from>FROM</keyword_from>
               <relation>
                 <object_reference>
-                  <name>
-                    <identifier>Orders</identifier>
-                  </name>
+                  <identifier>Orders</identifier>
                 </object_reference>
                 <identifier>o</identifier>
               </relation>
@@ -350,41 +258,27 @@
                 <keyword_join>JOIN</keyword_join>
                 <relation>
                   <object_reference>
-                    <name>
-                      <identifier>Users</identifier>
-                    </name>
+                    <identifier>Users</identifier>
                   </object_reference>
                   <identifier>u</identifier>
                 </relation>
                 <keyword_on>ON</keyword_on>
                 <binary_expression>
-                  <left>
-                    <field>
-                      <object_reference>
-                        <name>
-                          <identifier>o</identifier>
-                        </name>
-                      </object_reference>
-                      .
-                      <name>
-                        <identifier>UserID</identifier>
-                      </name>
-                    </field>
-                  </left>
+                  <field>
+                    <object_reference>
+                      <identifier>o</identifier>
+                    </object_reference>
+                    .
+                    <identifier>UserID</identifier>
+                  </field>
                   =
-                  <right>
-                    <field>
-                      <object_reference>
-                        <name>
-                          <identifier>u</identifier>
-                        </name>
-                      </object_reference>
-                      .
-                      <name>
-                        <identifier>ID</identifier>
-                      </name>
-                    </field>
-                  </right>
+                  <field>
+                    <object_reference>
+                      <identifier>u</identifier>
+                    </object_reference>
+                    .
+                    <identifier>ID</identifier>
+                  </field>
                 </binary_expression>
               </join>
               <join>
@@ -392,63 +286,41 @@
                 <keyword_join>JOIN</keyword_join>
                 <relation>
                   <object_reference>
-                    <name>
-                      <identifier>Addresses</identifier>
-                    </name>
+                    <identifier>Addresses</identifier>
                   </object_reference>
                   <identifier>a</identifier>
                 </relation>
                 <keyword_on>ON</keyword_on>
                 <binary_expression>
-                  <left>
-                    <field>
-                      <object_reference>
-                        <name>
-                          <identifier>u</identifier>
-                        </name>
-                      </object_reference>
-                      .
-                      <name>
-                        <identifier>ID</identifier>
-                      </name>
-                    </field>
-                  </left>
+                  <field>
+                    <object_reference>
+                      <identifier>u</identifier>
+                    </object_reference>
+                    .
+                    <identifier>ID</identifier>
+                  </field>
                   =
-                  <right>
-                    <field>
-                      <object_reference>
-                        <name>
-                          <identifier>a</identifier>
-                        </name>
-                      </object_reference>
-                      .
-                      <name>
-                        <identifier>UserID</identifier>
-                      </name>
-                    </field>
-                  </right>
+                  <field>
+                    <object_reference>
+                      <identifier>a</identifier>
+                    </object_reference>
+                    .
+                    <identifier>UserID</identifier>
+                  </field>
                 </binary_expression>
               </join>
               <where>
                 <keyword_where>WHERE</keyword_where>
                 <binary_expression>
-                  <left>
-                    <field>
-                      <object_reference>
-                        <name>
-                          <identifier>o</identifier>
-                        </name>
-                      </object_reference>
-                      .
-                      <name>
-                        <identifier>Total</identifier>
-                      </name>
-                    </field>
-                  </left>
+                  <field>
+                    <object_reference>
+                      <identifier>o</identifier>
+                    </object_reference>
+                    .
+                    <identifier>Total</identifier>
+                  </field>
                   &gt;
-                  <right>
-                    <literal>100</literal>
-                  </right>
+                  <literal>100</literal>
                 </binary_expression>
               </where>
             </from>
@@ -460,13 +332,9 @@
               <keyword_select>SELECT</keyword_select>
               <select_expression>
                 <term>
-                  <value>
-                    <field>
-                      <name>
-                        <identifier>Name</identifier>
-                      </name>
-                    </field>
-                  </value>
+                  <field>
+                    <identifier>Name</identifier>
+                  </field>
                 </term>
               </select_expression>
             </select>
@@ -474,68 +342,48 @@
               <keyword_from>FROM</keyword_from>
               <relation>
                 <object_reference>
-                  <name>
-                    <identifier>Users</identifier>
-                  </name>
+                  <identifier>Users</identifier>
                 </object_reference>
               </relation>
               <where>
                 <keyword_where>WHERE</keyword_where>
                 <binary_expression>
-                  <left>
-                    <field>
-                      <name>
-                        <identifier>ID</identifier>
-                      </name>
-                    </field>
-                  </left>
+                  <field>
+                    <identifier>ID</identifier>
+                  </field>
                   <keyword_in>IN</keyword_in>
-                  <right>
-                    <subquery>
-                      (
-                      <select>
-                        <keyword_select>SELECT</keyword_select>
-                        <select_expression>
-                          <term>
-                            <value>
-                              <field>
-                                <name>
-                                  <identifier>UserID</identifier>
-                                </name>
-                              </field>
-                            </value>
-                          </term>
-                        </select_expression>
-                      </select>
-                      <from>
-                        <keyword_from>FROM</keyword_from>
-                        <relation>
-                          <object_reference>
-                            <name>
-                              <identifier>Orders</identifier>
-                            </name>
-                          </object_reference>
-                        </relation>
-                        <where>
-                          <keyword_where>WHERE</keyword_where>
-                          <binary_expression>
-                            <left>
-                              <field>
-                                <name>
-                                  <identifier>Total</identifier>
-                                </name>
-                              </field>
-                            </left>
-                            &gt;
-                            <right>
-                              <literal>50</literal>
-                            </right>
-                          </binary_expression>
-                        </where>
-                      </from>
-                      )
-                    </subquery>
-                  </right>
+                  <subquery>
+                    (
+                    <select>
+                      <keyword_select>SELECT</keyword_select>
+                      <select_expression>
+                        <term>
+                          <field>
+                            <identifier>UserID</identifier>
+                          </field>
+                        </term>
+                      </select_expression>
+                    </select>
+                    <from>
+                      <keyword_from>FROM</keyword_from>
+                      <relation>
+                        <object_reference>
+                          <identifier>Orders</identifier>
+                        </object_reference>
+                      </relation>
+                      <where>
+                        <keyword_where>WHERE</keyword_where>
+                        <binary_expression>
+                          <field>
+                            <identifier>Total</identifier>
+                          </field>
+                          &gt;
+                          <literal>50</literal>
+                        </binary_expression>
+                      </where>
+                    </from>
+                    )
+                  </subquery>
                 </binary_expression>
               </where>
             </from>
@@ -547,19 +395,13 @@
               <keyword_select>SELECT</keyword_select>
               <select_expression>
                 <term>
-                  <value>
-                    <field>
-                      <object_reference>
-                        <name>
-                          <identifier>u</identifier>
-                        </name>
-                      </object_reference>
-                      .
-                      <name>
-                        <identifier>Name</identifier>
-                      </name>
-                    </field>
-                  </value>
+                  <field>
+                    <object_reference>
+                      <identifier>u</identifier>
+                    </object_reference>
+                    .
+                    <identifier>Name</identifier>
+                  </field>
                 </term>
               </select_expression>
             </select>
@@ -567,9 +409,7 @@
               <keyword_from>FROM</keyword_from>
               <relation>
                 <object_reference>
-                  <name>
-                    <identifier>Users</identifier>
-                  </name>
+                  <identifier>Users</identifier>
                 </object_reference>
                 <identifier>u</identifier>
               </relation>
@@ -583,9 +423,7 @@
                       <keyword_select>SELECT</keyword_select>
                       <select_expression>
                         <term>
-                          <value>
-                            <literal>1</literal>
-                          </value>
+                          <literal>1</literal>
                         </term>
                       </select_expression>
                     </select>
@@ -593,42 +431,28 @@
                       <keyword_from>FROM</keyword_from>
                       <relation>
                         <object_reference>
-                          <name>
-                            <identifier>Orders</identifier>
-                          </name>
+                          <identifier>Orders</identifier>
                         </object_reference>
                         <identifier>o</identifier>
                       </relation>
                       <where>
                         <keyword_where>WHERE</keyword_where>
                         <binary_expression>
-                          <left>
-                            <field>
-                              <object_reference>
-                                <name>
-                                  <identifier>o</identifier>
-                                </name>
-                              </object_reference>
-                              .
-                              <name>
-                                <identifier>UserID</identifier>
-                              </name>
-                            </field>
-                          </left>
+                          <field>
+                            <object_reference>
+                              <identifier>o</identifier>
+                            </object_reference>
+                            .
+                            <identifier>UserID</identifier>
+                          </field>
                           =
-                          <right>
-                            <field>
-                              <object_reference>
-                                <name>
-                                  <identifier>u</identifier>
-                                </name>
-                              </object_reference>
-                              .
-                              <name>
-                                <identifier>ID</identifier>
-                              </name>
-                            </field>
-                          </right>
+                          <field>
+                            <object_reference>
+                              <identifier>u</identifier>
+                            </object_reference>
+                            .
+                            <identifier>ID</identifier>
+                          </field>
                         </binary_expression>
                       </where>
                     </from>
@@ -645,57 +469,39 @@
               <keyword_select>SELECT</keyword_select>
               <select_expression>
                 <term>
-                  <value>
-                    <field>
-                      <name>
-                        <identifier>Department</identifier>
-                      </name>
-                    </field>
-                  </value>
+                  <field>
+                    <identifier>Department</identifier>
+                  </field>
                 </term>
                 ,
                 <term>
-                  <value>
-                    <invocation>
-                      <object_reference>
-                        <name>
-                          <identifier>COUNT</identifier>
-                        </name>
-                      </object_reference>
-                      (
-                      <term>
-                        <value>
-                          <all_fields>*</all_fields>
-                        </value>
-                      </term>
-                      )
-                    </invocation>
-                  </value>
+                  <invocation>
+                    <object_reference>
+                      <identifier>COUNT</identifier>
+                    </object_reference>
+                    (
+                    <term>
+                      <all_fields>*</all_fields>
+                    </term>
+                    )
+                  </invocation>
                   <keyword_as>AS</keyword_as>
                   <identifier>HeadCount</identifier>
                 </term>
                 ,
                 <term>
-                  <value>
-                    <invocation>
-                      <object_reference>
-                        <name>
-                          <identifier>AVG</identifier>
-                        </name>
-                      </object_reference>
-                      (
-                      <term>
-                        <value>
-                          <field>
-                            <name>
-                              <identifier>Salary</identifier>
-                            </name>
-                          </field>
-                        </value>
-                      </term>
-                      )
-                    </invocation>
-                  </value>
+                  <invocation>
+                    <object_reference>
+                      <identifier>AVG</identifier>
+                    </object_reference>
+                    (
+                    <term>
+                      <field>
+                        <identifier>Salary</identifier>
+                      </field>
+                    </term>
+                    )
+                  </invocation>
                   <keyword_as>AS</keyword_as>
                   <identifier>AvgSalary</identifier>
                 </term>
@@ -705,43 +511,31 @@
               <keyword_from>FROM</keyword_from>
               <relation>
                 <object_reference>
-                  <name>
-                    <identifier>Employees</identifier>
-                  </name>
+                  <identifier>Employees</identifier>
                 </object_reference>
               </relation>
               <group_by>
                 <keyword_group>GROUP</keyword_group>
                 <keyword_by>BY</keyword_by>
                 <field>
-                  <name>
-                    <identifier>Department</identifier>
-                  </name>
+                  <identifier>Department</identifier>
                 </field>
               </group_by>
               <having>
                 <keyword_having>HAVING</keyword_having>
                 <binary_expression>
-                  <left>
-                    <invocation>
-                      <object_reference>
-                        <name>
-                          <identifier>COUNT</identifier>
-                        </name>
-                      </object_reference>
-                      (
-                      <term>
-                        <value>
-                          <all_fields>*</all_fields>
-                        </value>
-                      </term>
-                      )
-                    </invocation>
-                  </left>
+                  <invocation>
+                    <object_reference>
+                      <identifier>COUNT</identifier>
+                    </object_reference>
+                    (
+                    <term>
+                      <all_fields>*</all_fields>
+                    </term>
+                    )
+                  </invocation>
                   &gt;
-                  <right>
-                    <literal>5</literal>
-                  </right>
+                  <literal>5</literal>
                 </binary_expression>
               </having>
             </from>
@@ -753,40 +547,28 @@
               <keyword_select>SELECT</keyword_select>
               <select_expression>
                 <term>
-                  <value>
-                    <field>
-                      <name>
-                        <identifier>Name</identifier>
-                      </name>
-                    </field>
-                  </value>
+                  <field>
+                    <identifier>Name</identifier>
+                  </field>
                 </term>
                 ,
                 <term>
-                  <value>
-                    <case>
-                      <keyword_case>CASE</keyword_case>
-                      <keyword_when>WHEN</keyword_when>
-                      <binary_expression>
-                        <left>
-                          <field>
-                            <name>
-                              <identifier>Age</identifier>
-                            </name>
-                          </field>
-                        </left>
-                        &gt;=
-                        <right>
-                          <literal>18</literal>
-                        </right>
-                      </binary_expression>
-                      <keyword_then>THEN</keyword_then>
-                      <literal>'Adult'</literal>
-                      <keyword_else>ELSE</keyword_else>
-                      <literal>'Minor'</literal>
-                      <keyword_end>END</keyword_end>
-                    </case>
-                  </value>
+                  <case>
+                    <keyword_case>CASE</keyword_case>
+                    <keyword_when>WHEN</keyword_when>
+                    <binary_expression>
+                      <field>
+                        <identifier>Age</identifier>
+                      </field>
+                      &gt;=
+                      <literal>18</literal>
+                    </binary_expression>
+                    <keyword_then>THEN</keyword_then>
+                    <literal>'Adult'</literal>
+                    <keyword_else>ELSE</keyword_else>
+                    <literal>'Minor'</literal>
+                    <keyword_end>END</keyword_end>
+                  </case>
                   <keyword_as>AS</keyword_as>
                   <identifier>Category</identifier>
                 </term>
@@ -796,9 +578,7 @@
               <keyword_from>FROM</keyword_from>
               <relation>
                 <object_reference>
-                  <name>
-                    <identifier>Users</identifier>
-                  </name>
+                  <identifier>Users</identifier>
                 </object_reference>
               </relation>
             </from>
@@ -816,23 +596,15 @@
                   <keyword_select>SELECT</keyword_select>
                   <select_expression>
                     <term>
-                      <value>
-                        <field>
-                          <name>
-                            <identifier>ID</identifier>
-                          </name>
-                        </field>
-                      </value>
+                      <field>
+                        <identifier>ID</identifier>
+                      </field>
                     </term>
                     ,
                     <term>
-                      <value>
-                        <field>
-                          <name>
-                            <identifier>Name</identifier>
-                          </name>
-                        </field>
-                      </value>
+                      <field>
+                        <identifier>Name</identifier>
+                      </field>
                     </term>
                   </select_expression>
                 </select>
@@ -840,25 +612,17 @@
                   <keyword_from>FROM</keyword_from>
                   <relation>
                     <object_reference>
-                      <name>
-                        <identifier>Users</identifier>
-                      </name>
+                      <identifier>Users</identifier>
                     </object_reference>
                   </relation>
                   <where>
                     <keyword_where>WHERE</keyword_where>
                     <binary_expression>
-                      <left>
-                        <field>
-                          <name>
-                            <identifier>Active</identifier>
-                          </name>
-                        </field>
-                      </left>
+                      <field>
+                        <identifier>Active</identifier>
+                      </field>
                       =
-                      <right>
-                        <literal>1</literal>
-                      </right>
+                      <literal>1</literal>
                     </binary_expression>
                   </where>
                 </from>
@@ -869,13 +633,9 @@
               <keyword_select>SELECT</keyword_select>
               <select_expression>
                 <term>
-                  <value>
-                    <field>
-                      <name>
-                        <identifier>Name</identifier>
-                      </name>
-                    </field>
-                  </value>
+                  <field>
+                    <identifier>Name</identifier>
+                  </field>
                 </term>
               </select_expression>
             </select>
@@ -883,9 +643,7 @@
               <keyword_from>FROM</keyword_from>
               <relation>
                 <object_reference>
-                  <name>
-                    <identifier>ActiveUsers</identifier>
-                  </name>
+                  <identifier>ActiveUsers</identifier>
                 </object_reference>
               </relation>
             </from>
@@ -898,19 +656,13 @@
                 <keyword_select>SELECT</keyword_select>
                 <select_expression>
                   <term>
-                    <value>
-                      <field>
-                        <name>
-                          <identifier>Name</identifier>
-                        </name>
-                      </field>
-                    </value>
+                    <field>
+                      <identifier>Name</identifier>
+                    </field>
                   </term>
                   ,
                   <term>
-                    <value>
-                      <literal>'User'</literal>
-                    </value>
+                    <literal>'User'</literal>
                     <keyword_as>AS</keyword_as>
                     <identifier>Source</identifier>
                   </term>
@@ -920,9 +672,7 @@
                 <keyword_from>FROM</keyword_from>
                 <relation>
                   <object_reference>
-                    <name>
-                      <identifier>Users</identifier>
-                    </name>
+                    <identifier>Users</identifier>
                   </object_reference>
                 </relation>
               </from>
@@ -932,19 +682,13 @@
                 <keyword_select>SELECT</keyword_select>
                 <select_expression>
                   <term>
-                    <value>
-                      <field>
-                        <name>
-                          <identifier>Name</identifier>
-                        </name>
-                      </field>
-                    </value>
+                    <field>
+                      <identifier>Name</identifier>
+                    </field>
                   </term>
                   ,
                   <term>
-                    <value>
-                      <literal>'Admin'</literal>
-                    </value>
+                    <literal>'Admin'</literal>
                     <keyword_as>AS</keyword_as>
                     <identifier>Source</identifier>
                   </term>
@@ -954,9 +698,7 @@
                 <keyword_from>FROM</keyword_from>
                 <relation>
                   <object_reference>
-                    <name>
-                      <identifier>Admins</identifier>
-                    </name>
+                    <identifier>Admins</identifier>
                   </object_reference>
                 </relation>
               </from>
@@ -969,56 +711,44 @@
               <keyword_select>SELECT</keyword_select>
               <select_expression>
                 <term>
-                  <value>
-                    <field>
-                      <name>
-                        <identifier>Name</identifier>
-                      </name>
-                    </field>
-                  </value>
+                  <field>
+                    <identifier>Name</identifier>
+                  </field>
                 </term>
                 ,
                 <term>
-                  <value>
-                    <window_function>
-                      <invocation>
-                        <object_reference>
-                          <name>
-                            <identifier>ROW_NUMBER</identifier>
-                          </name>
-                        </object_reference>
-                        ()
-                      </invocation>
-                      <keyword_over>OVER</keyword_over>
-                      <window_specification>
-                        (
-                        <partition_by>
-                          <keyword_partition>PARTITION</keyword_partition>
-                          <keyword_by>BY</keyword_by>
+                  <window_function>
+                    <invocation>
+                      <object_reference>
+                        <identifier>ROW_NUMBER</identifier>
+                      </object_reference>
+                      ()
+                    </invocation>
+                    <keyword_over>OVER</keyword_over>
+                    <window_specification>
+                      (
+                      <partition_by>
+                        <keyword_partition>PARTITION</keyword_partition>
+                        <keyword_by>BY</keyword_by>
+                        <field>
+                          <identifier>Department</identifier>
+                        </field>
+                      </partition_by>
+                      <order_by>
+                        <keyword_order>ORDER</keyword_order>
+                        <keyword_by>BY</keyword_by>
+                        <order_target>
                           <field>
-                            <name>
-                              <identifier>Department</identifier>
-                            </name>
+                            <identifier>Salary</identifier>
                           </field>
-                        </partition_by>
-                        <order_by>
-                          <keyword_order>ORDER</keyword_order>
-                          <keyword_by>BY</keyword_by>
-                          <order_target>
-                            <field>
-                              <name>
-                                <identifier>Salary</identifier>
-                              </name>
-                            </field>
-                            <direction>
-                              <keyword_desc>DESC</keyword_desc>
-                            </direction>
-                          </order_target>
-                        </order_by>
-                        )
-                      </window_specification>
-                    </window_function>
-                  </value>
+                          <direction>
+                            <keyword_desc>DESC</keyword_desc>
+                          </direction>
+                        </order_target>
+                      </order_by>
+                      )
+                    </window_specification>
+                  </window_function>
                   <keyword_as>AS</keyword_as>
                   <identifier>Rank</identifier>
                 </term>
@@ -1028,9 +758,7 @@
               <keyword_from>FROM</keyword_from>
               <relation>
                 <object_reference>
-                  <name>
-                    <identifier>Employees</identifier>
-                  </name>
+                  <identifier>Employees</identifier>
                 </object_reference>
               </relation>
             </from>
@@ -1042,62 +770,44 @@
               <keyword_select>SELECT</keyword_select>
               <select_expression>
                 <term>
-                  <value>
-                    <invocation>
-                      <object_reference>
-                        <name>
-                          <identifier>COALESCE</identifier>
-                        </name>
-                      </object_reference>
-                      (
-                      <term>
-                        <value>
-                          <field>
-                            <name>
-                              <identifier>Nickname</identifier>
-                            </name>
-                          </field>
-                        </value>
-                      </term>
-                      ,
-                      <term>
-                        <value>
-                          <field>
-                            <name>
-                              <identifier>Name</identifier>
-                            </name>
-                          </field>
-                        </value>
-                      </term>
-                      )
-                    </invocation>
-                  </value>
+                  <invocation>
+                    <object_reference>
+                      <identifier>COALESCE</identifier>
+                    </object_reference>
+                    (
+                    <term>
+                      <field>
+                        <identifier>Nickname</identifier>
+                      </field>
+                    </term>
+                    ,
+                    <term>
+                      <field>
+                        <identifier>Name</identifier>
+                      </field>
+                    </term>
+                    )
+                  </invocation>
                   <keyword_as>AS</keyword_as>
                   <identifier>DisplayName</identifier>
                 </term>
                 ,
                 <term>
-                  <value>
-                    <cast>
-                      <name>
-                        <keyword_cast>CAST</keyword_cast>
-                      </name>
+                  <cast>
+                    <keyword_cast>CAST</keyword_cast>
+                    (
+                    <field>
+                      <identifier>Age</identifier>
+                    </field>
+                    <keyword_as>AS</keyword_as>
+                    <varchar>
+                      <keyword_varchar>VARCHAR</keyword_varchar>
                       (
-                      <field>
-                        <name>
-                          <identifier>Age</identifier>
-                        </name>
-                      </field>
-                      <keyword_as>AS</keyword_as>
-                      <varchar>
-                        <keyword_varchar>VARCHAR</keyword_varchar>
-                        (
-                        <literal>10</literal>
-                        )
-                      </varchar>
+                      <literal>10</literal>
                       )
-                    </cast>
-                  </value>
+                    </varchar>
+                    )
+                  </cast>
                   <keyword_as>AS</keyword_as>
                   <identifier>AgeText</identifier>
                 </term>
@@ -1107,73 +817,45 @@
               <keyword_from>FROM</keyword_from>
               <relation>
                 <object_reference>
-                  <name>
-                    <identifier>Users</identifier>
-                  </name>
+                  <identifier>Users</identifier>
                 </object_reference>
               </relation>
               <where>
                 <keyword_where>WHERE</keyword_where>
                 <binary_expression>
-                  <left>
+                  <binary_expression>
                     <binary_expression>
-                      <left>
-                        <binary_expression>
-                          <left>
-                            <field>
-                              <name>
-                                <identifier>Email</identifier>
-                              </name>
-                            </field>
-                          </left>
-                          <keyword_like>LIKE</keyword_like>
-                          <right>
-                            <literal>'%@gmail.com'</literal>
-                          </right>
-                        </binary_expression>
-                      </left>
-                      <keyword_and>AND</keyword_and>
-                      <right>
-                        <binary_expression>
-                          <left>
-                            <field>
-                              <name>
-                                <identifier>DeletedAt</identifier>
-                              </name>
-                            </field>
-                          </left>
-                          <keyword_is>IS</keyword_is>
-                          <right>
-                            <literal>
-                              <keyword_null>NULL</keyword_null>
-                            </literal>
-                          </right>
-                        </binary_expression>
-                      </right>
+                      <field>
+                        <identifier>Email</identifier>
+                      </field>
+                      <keyword_like>LIKE</keyword_like>
+                      <literal>'%@gmail.com'</literal>
                     </binary_expression>
-                  </left>
+                    <keyword_and>AND</keyword_and>
+                    <binary_expression>
+                      <field>
+                        <identifier>DeletedAt</identifier>
+                      </field>
+                      <keyword_is>IS</keyword_is>
+                      <literal>
+                        <keyword_null>NULL</keyword_null>
+                      </literal>
+                    </binary_expression>
+                  </binary_expression>
                   <keyword_and>AND</keyword_and>
-                  <right>
-                    <binary_expression>
-                      <left>
-                        <field>
-                          <name>
-                            <identifier>Role</identifier>
-                          </name>
-                        </field>
-                      </left>
-                      <keyword_in>IN</keyword_in>
-                      <right>
-                        <list>
-                          (
-                          <literal>'admin'</literal>
-                          ,
-                          <literal>'moderator'</literal>
-                          )
-                        </list>
-                      </right>
-                    </binary_expression>
-                  </right>
+                  <binary_expression>
+                    <field>
+                      <identifier>Role</identifier>
+                    </field>
+                    <keyword_in>IN</keyword_in>
+                    <list>
+                      (
+                      <literal>'admin'</literal>
+                      ,
+                      <literal>'moderator'</literal>
+                      )
+                    </list>
+                  </binary_expression>
                 </binary_expression>
               </where>
             </from>
@@ -1186,13 +868,9 @@
               <keyword_distinct>DISTINCT</keyword_distinct>
               <select_expression>
                 <term>
-                  <value>
-                    <field>
-                      <name>
-                        <identifier>Department</identifier>
-                      </name>
-                    </field>
-                  </value>
+                  <field>
+                    <identifier>Department</identifier>
+                  </field>
                 </term>
               </select_expression>
             </select>
@@ -1200,9 +878,7 @@
               <keyword_from>FROM</keyword_from>
               <relation>
                 <object_reference>
-                  <name>
-                    <identifier>Employees</identifier>
-                  </name>
+                  <identifier>Employees</identifier>
                 </object_reference>
               </relation>
               <order_by>
@@ -1210,9 +886,7 @@
                 <keyword_by>BY</keyword_by>
                 <order_target>
                   <field>
-                    <name>
-                      <identifier>Department</identifier>
-                    </name>
+                    <identifier>Department</identifier>
                   </field>
                   <direction>
                     <keyword_desc>DESC</keyword_desc>
@@ -1228,16 +902,12 @@
               <keyword_create>CREATE</keyword_create>
               <keyword_table>TABLE</keyword_table>
               <object_reference>
-                <name>
-                  <identifier>Audit</identifier>
-                </name>
+                <identifier>Audit</identifier>
               </object_reference>
               <column_definitions>
                 (
                 <column_definition>
-                  <name>
-                    <identifier>ID</identifier>
-                  </name>
+                  <identifier>ID</identifier>
                   <int>
                     <keyword_int>INT</keyword_int>
                   </int>
@@ -1246,9 +916,7 @@
                 </column_definition>
                 ,
                 <column_definition>
-                  <name>
-                    <identifier>Action</identifier>
-                  </name>
+                  <identifier>Action</identifier>
                   <nvarchar>
                     <keyword_nvarchar>NVARCHAR</keyword_nvarchar>
                     (
@@ -1260,16 +928,12 @@
                 </column_definition>
                 ,
                 <column_definition>
-                  <name>
-                    <identifier>CreatedAt</identifier>
-                  </name>
+                  <identifier>CreatedAt</identifier>
                   <keyword_datetime>DATETIME</keyword_datetime>
                   <keyword_default>DEFAULT</keyword_default>
                   <invocation>
                     <object_reference>
-                      <name>
-                        <identifier>GETDATE</identifier>
-                      </name>
+                      <identifier>GETDATE</identifier>
                     </object_reference>
                     ()
                   </invocation>
@@ -1284,47 +948,31 @@
             <keyword_merge>MERGE</keyword_merge>
             <keyword_into>INTO</keyword_into>
             <object_reference>
-              <name>
-                <identifier>Target</identifier>
-              </name>
+              <identifier>Target</identifier>
             </object_reference>
             <identifier>t</identifier>
             <keyword_using>USING</keyword_using>
             <object_reference>
-              <name>
-                <identifier>Source</identifier>
-              </name>
+              <identifier>Source</identifier>
             </object_reference>
             <identifier>s</identifier>
             <keyword_on>ON</keyword_on>
             <binary_expression>
-              <left>
-                <field>
-                  <object_reference>
-                    <name>
-                      <identifier>t</identifier>
-                    </name>
-                  </object_reference>
-                  .
-                  <name>
-                    <identifier>ID</identifier>
-                  </name>
-                </field>
-              </left>
+              <field>
+                <object_reference>
+                  <identifier>t</identifier>
+                </object_reference>
+                .
+                <identifier>ID</identifier>
+              </field>
               =
-              <right>
-                <field>
-                  <object_reference>
-                    <name>
-                      <identifier>s</identifier>
-                    </name>
-                  </object_reference>
-                  .
-                  <name>
-                    <identifier>ID</identifier>
-                  </name>
-                </field>
-              </right>
+              <field>
+                <object_reference>
+                  <identifier>s</identifier>
+                </object_reference>
+                .
+                <identifier>ID</identifier>
+              </field>
             </binary_expression>
             <when_clause>
               <keyword_when>WHEN</keyword_when>
@@ -1333,33 +981,21 @@
               <keyword_update>UPDATE</keyword_update>
               <keyword_set>SET</keyword_set>
               <assignment>
-                <left>
-                  <field>
-                    <object_reference>
-                      <name>
-                        <identifier>t</identifier>
-                      </name>
-                    </object_reference>
-                    .
-                    <name>
-                      <identifier>Name</identifier>
-                    </name>
-                  </field>
-                </left>
+                <field>
+                  <object_reference>
+                    <identifier>t</identifier>
+                  </object_reference>
+                  .
+                  <identifier>Name</identifier>
+                </field>
                 =
-                <right>
-                  <field>
-                    <object_reference>
-                      <name>
-                        <identifier>s</identifier>
-                      </name>
-                    </object_reference>
-                    .
-                    <name>
-                      <identifier>Name</identifier>
-                    </name>
-                  </field>
-                </right>
+                <field>
+                  <object_reference>
+                    <identifier>s</identifier>
+                  </object_reference>
+                  .
+                  <identifier>Name</identifier>
+                </field>
               </assignment>
             </when_clause>
             <when_clause>
@@ -1384,26 +1020,18 @@
                 (
                 <field>
                   <object_reference>
-                    <name>
-                      <identifier>s</identifier>
-                    </name>
+                    <identifier>s</identifier>
                   </object_reference>
                   .
-                  <name>
-                    <identifier>ID</identifier>
-                  </name>
+                  <identifier>ID</identifier>
                 </field>
                 ,
                 <field>
                   <object_reference>
-                    <name>
-                      <identifier>s</identifier>
-                    </name>
+                    <identifier>s</identifier>
                   </object_reference>
                   .
-                  <name>
-                    <identifier>Name</identifier>
-                  </name>
+                  <identifier>Name</identifier>
                 </field>
                 )
               </list>
@@ -1416,64 +1044,44 @@
               <keyword_select>SELECT</keyword_select>
               <select_expression>
                 <term>
-                  <value>
-                    <field>
-                      <name>
-                        <identifier>Name</identifier>
-                      </name>
-                    </field>
-                  </value>
+                  <field>
+                    <identifier>Name</identifier>
+                  </field>
                 </term>
                 ,
                 <term>
-                  <value>
-                    <field>
-                      <name>
-                        <identifier>Age</identifier>
-                      </name>
-                    </field>
-                  </value>
+                  <field>
+                    <identifier>Age</identifier>
+                  </field>
                 </term>
               </select_expression>
             </select>
             <keyword_into>INTO</keyword_into>
             <select_expression>
               <term>
-                <value>
-                  <unary_expression>
-                    <op_unary_other>#</op_unary_other>
-                    <field>
-                      <name>
-                        <identifier>TempUsers</identifier>
-                      </name>
-                    </field>
-                  </unary_expression>
-                </value>
+                <unary_expression>
+                  <op_unary_other>#</op_unary_other>
+                  <field>
+                    <identifier>TempUsers</identifier>
+                  </field>
+                </unary_expression>
               </term>
             </select_expression>
             <from>
               <keyword_from>FROM</keyword_from>
               <relation>
                 <object_reference>
-                  <name>
-                    <identifier>Users</identifier>
-                  </name>
+                  <identifier>Users</identifier>
                 </object_reference>
               </relation>
               <where>
                 <keyword_where>WHERE</keyword_where>
                 <binary_expression>
-                  <left>
-                    <field>
-                      <name>
-                        <identifier>Active</identifier>
-                      </name>
-                    </field>
-                  </left>
+                  <field>
+                    <identifier>Active</identifier>
+                  </field>
                   =
-                  <right>
-                    <literal>1</literal>
-                  </right>
+                  <literal>1</literal>
                 </binary_expression>
               </where>
             </from>
@@ -1489,51 +1097,31 @@
                 <keyword_update>UPDATE</keyword_update>
                 <relation>
                   <object_reference>
-                    <name>
-                      <identifier>Accounts</identifier>
-                    </name>
+                    <identifier>Accounts</identifier>
                   </object_reference>
                 </relation>
                 <keyword_set>SET</keyword_set>
                 <assignment>
-                  <left>
-                    <field>
-                      <name>
-                        <identifier>Balance</identifier>
-                      </name>
-                    </field>
-                  </left>
+                  <field>
+                    <identifier>Balance</identifier>
+                  </field>
                   =
-                  <right>
-                    <binary_expression>
-                      <left>
-                        <field>
-                          <name>
-                            <identifier>Balance</identifier>
-                          </name>
-                        </field>
-                      </left>
-                      -
-                      <right>
-                        <literal>100</literal>
-                      </right>
-                    </binary_expression>
-                  </right>
+                  <binary_expression>
+                    <field>
+                      <identifier>Balance</identifier>
+                    </field>
+                    -
+                    <literal>100</literal>
+                  </binary_expression>
                 </assignment>
                 <where>
                   <keyword_where>WHERE</keyword_where>
                   <binary_expression>
-                    <left>
-                      <field>
-                        <name>
-                          <identifier>ID</identifier>
-                        </name>
-                      </field>
-                    </left>
+                    <field>
+                      <identifier>ID</identifier>
+                    </field>
                     =
-                    <right>
-                      <literal>1</literal>
-                    </right>
+                    <literal>1</literal>
                   </binary_expression>
                 </where>
               </update>
@@ -1544,51 +1132,31 @@
                 <keyword_update>UPDATE</keyword_update>
                 <relation>
                   <object_reference>
-                    <name>
-                      <identifier>Accounts</identifier>
-                    </name>
+                    <identifier>Accounts</identifier>
                   </object_reference>
                 </relation>
                 <keyword_set>SET</keyword_set>
                 <assignment>
-                  <left>
-                    <field>
-                      <name>
-                        <identifier>Balance</identifier>
-                      </name>
-                    </field>
-                  </left>
+                  <field>
+                    <identifier>Balance</identifier>
+                  </field>
                   =
-                  <right>
-                    <binary_expression>
-                      <left>
-                        <field>
-                          <name>
-                            <identifier>Balance</identifier>
-                          </name>
-                        </field>
-                      </left>
-                      +
-                      <right>
-                        <literal>100</literal>
-                      </right>
-                    </binary_expression>
-                  </right>
+                  <binary_expression>
+                    <field>
+                      <identifier>Balance</identifier>
+                    </field>
+                    +
+                    <literal>100</literal>
+                  </binary_expression>
                 </assignment>
                 <where>
                   <keyword_where>WHERE</keyword_where>
                   <binary_expression>
-                    <left>
-                      <field>
-                        <name>
-                          <identifier>ID</identifier>
-                        </name>
-                      </field>
-                    </left>
+                    <field>
+                      <identifier>ID</identifier>
+                    </field>
                     =
-                    <right>
-                      <literal>2</literal>
-                    </right>
+                    <literal>2</literal>
                   </binary_expression>
                 </where>
               </update>
@@ -1602,9 +1170,7 @@
             <set_statement>
               <keyword_set>SET</keyword_set>
               <object_reference>
-                <name>
-                  <identifier>@Threshold</identifier>
-                </name>
+                <identifier>@Threshold</identifier>
               </object_reference>
               =
               <literal>42</literal>
@@ -1619,9 +1185,7 @@
               <object_reference>
                 <identifier>dbo</identifier>
                 .
-                <name>
-                  <identifier>GetAge</identifier>
-                </name>
+                <identifier>GetAge</identifier>
               </object_reference>
               <function_arguments>
                 (
@@ -1641,42 +1205,28 @@
                 <keyword_return>RETURN</keyword_return>
                 <invocation>
                   <object_reference>
-                    <name>
-                      <identifier>DATEDIFF</identifier>
-                    </name>
+                    <identifier>DATEDIFF</identifier>
                   </object_reference>
                   (
                   <term>
-                    <value>
-                      <field>
-                        <name>
-                          <identifier>YEAR</identifier>
-                        </name>
-                      </field>
-                    </value>
+                    <field>
+                      <identifier>YEAR</identifier>
+                    </field>
                   </term>
                   ,
                   <term>
-                    <value>
-                      <field>
-                        <name>
-                          <identifier>@BirthDate</identifier>
-                        </name>
-                      </field>
-                    </value>
+                    <field>
+                      <identifier>@BirthDate</identifier>
+                    </field>
                   </term>
                   ,
                   <term>
-                    <value>
-                      <invocation>
-                        <object_reference>
-                          <name>
-                            <identifier>GETDATE</identifier>
-                          </name>
-                        </object_reference>
-                        ()
-                      </invocation>
-                    </value>
+                    <invocation>
+                      <object_reference>
+                        <identifier>GETDATE</identifier>
+                      </object_reference>
+                      ()
+                    </invocation>
                   </term>
                   )
                 </invocation>
@@ -1691,9 +1241,7 @@
             <execute_statement>
               <keyword_exec>EXEC</keyword_exec>
               <object_reference>
-                <name>
-                  <identifier>sp_helpdb</identifier>
-                </name>
+                <identifier>sp_helpdb</identifier>
               </object_reference>
             </execute_statement>
           </statement>

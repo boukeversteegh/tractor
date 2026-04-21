@@ -8,9 +8,7 @@
           <function_item>
             <visibility_modifier>pub</visibility_modifier>
             fn
-            <name>
-              <identifier>add</identifier>
-            </name>
+            <identifier>add</identifier>
             <parameters>
               (
               <parameter>
@@ -27,73 +25,59 @@
               )
             </parameters>
             -&gt;
-            <returns>
-              <primitive_type>i32</primitive_type>
-            </returns>
-            <body>
-              <block>
-                {
-                <binary_expression>
-                  <left>
-                    <identifier>a</identifier>
-                  </left>
-                  +
-                  <right>
-                    <identifier>b</identifier>
-                  </right>
-                </binary_expression>
-                }
-              </block>
-            </body>
+            <primitive_type>i32</primitive_type>
+            <block>
+              {
+              <binary_expression>
+                <identifier>a</identifier>
+                +
+                <identifier>b</identifier>
+              </binary_expression>
+              }
+            </block>
           </function_item>
           <function_item>
             fn
-            <name>
-              <identifier>main</identifier>
-            </name>
+            <identifier>main</identifier>
             <parameters>()</parameters>
-            <body>
-              <block>
-                {
-                <let_declaration>
-                  let
-                  <identifier>result</identifier>
-                  =
-                  <value>
-                    <call_expression>
-                      <identifier>add</identifier>
-                      <arguments>
-                        (
-                        <integer_literal>5</integer_literal>
-                        ,
-                        <integer_literal>3</integer_literal>
-                        )
-                      </arguments>
-                    </call_expression>
-                  </value>
-                  ;
-                </let_declaration>
-                <expression_statement>
-                  <macro_invocation>
-                    <identifier>println</identifier>
-                    !
-                    <token_tree>
-                      (
-                      <string_literal>
-                        &quot;
-                        <string_content>Result: {}</string_content>
-                        &quot;
-                      </string_literal>
-                      ,
-                      <identifier>result</identifier>
-                      )
-                    </token_tree>
-                  </macro_invocation>
-                  ;
-                </expression_statement>
-                }
-              </block>
-            </body>
+            <block>
+              {
+              <let_declaration>
+                let
+                <identifier>result</identifier>
+                =
+                <call_expression>
+                  <identifier>add</identifier>
+                  <arguments>
+                    (
+                    <integer_literal>5</integer_literal>
+                    ,
+                    <integer_literal>3</integer_literal>
+                    )
+                  </arguments>
+                </call_expression>
+                ;
+              </let_declaration>
+              <expression_statement>
+                <macro_invocation>
+                  <identifier>println</identifier>
+                  !
+                  <token_tree>
+                    (
+                    <string_literal>
+                      &quot;
+                      <string_content>Result: {}</string_content>
+                      &quot;
+                    </string_literal>
+                    ,
+                    <identifier>result</identifier>
+                    )
+                  </token_tree>
+                </macro_invocation>
+                ;
+              </expression_statement>
+              }
+            </block>
           </function_item>
           <function_item>
             <visibility_modifier>
@@ -102,136 +86,98 @@
               )
             </visibility_modifier>
             fn
-            <name>
-              <identifier>helper</identifier>
-            </name>
+            <identifier>helper</identifier>
             <parameters>()</parameters>
             -&gt;
-            <returns>
-              <primitive_type>bool</primitive_type>
-            </returns>
-            <body>
-              <block>
-                {
-                <boolean_literal>true</boolean_literal>
-                }
-              </block>
-            </body>
+            <primitive_type>bool</primitive_type>
+            <block>
+              {
+              <boolean_literal>true</boolean_literal>
+              }
+            </block>
           </function_item>
           <struct_item>
             <visibility_modifier>pub</visibility_modifier>
             struct
-            <name>
-              <type_identifier>Point</type_identifier>
-            </name>
-            <body>
-              <field_declaration_list>
-                {
-                <field_declaration>
-                  <visibility_modifier>pub</visibility_modifier>
-                  <name>
-                    <field_identifier>x</field_identifier>
-                  </name>
-                  :
-                  <primitive_type>i32</primitive_type>
-                </field_declaration>
-                ,
-                <field_declaration>
-                  <name>
-                    <field_identifier>y</field_identifier>
-                  </name>
-                  :
-                  <primitive_type>i32</primitive_type>
-                </field_declaration>
-                ,
+            <type_identifier>Point</type_identifier>
+            <field_declaration_list>
+              {
+              <field_declaration>
+                <visibility_modifier>pub</visibility_modifier>
+                <field_identifier>x</field_identifier>
+                :
+                <primitive_type>i32</primitive_type>
+              </field_declaration>
+              ,
+              <field_declaration>
+                <field_identifier>y</field_identifier>
+                :
+                <primitive_type>i32</primitive_type>
+              </field_declaration>
+              ,
         }
-              </field_declaration_list>
-            </body>
+            </field_declaration_list>
           </struct_item>
           <enum_item>
             enum
-            <name>
-              <type_identifier>Color</type_identifier>
-            </name>
-            <body>
-              <enum_variant_list>
-                {
-                <enum_variant>
-                  <name>
-                    <identifier>Red</identifier>
-                  </name>
-                </enum_variant>
-                ,
-                <enum_variant>
-                  <name>
-                    <identifier>Green</identifier>
-                  </name>
-                </enum_variant>
-                ,
-                <enum_variant>
-                  <name>
-                    <identifier>Blue</identifier>
-                  </name>
-                </enum_variant>
-                ,
+            <type_identifier>Color</type_identifier>
+            <enum_variant_list>
+              {
+              <enum_variant>
+                <identifier>Red</identifier>
+              </enum_variant>
+              ,
+              <enum_variant>
+                <identifier>Green</identifier>
+              </enum_variant>
+              ,
+              <enum_variant>
+                <identifier>Blue</identifier>
+              </enum_variant>
+              ,
         }
-              </enum_variant_list>
-            </body>
+            </enum_variant_list>
           </enum_item>
           <trait_item>
             <visibility_modifier>pub</visibility_modifier>
             trait
-            <name>
-              <type_identifier>Drawable</type_identifier>
-            </name>
-            <body>
-              <declaration_list>
-                {
-                <function_signature_item>
-                  fn
-                  <name>
-                    <identifier>draw</identifier>
-                  </name>
-                  <parameters>
-                    (
-                    <self_parameter>
-                      &amp;
-                      <self>self</self>
-                    </self_parameter>
-                    )
-                  </parameters>
-                  ;
-                </function_signature_item>
-                }
-              </declaration_list>
-            </body>
+            <type_identifier>Drawable</type_identifier>
+            <declaration_list>
+              {
+              <function_signature_item>
+                fn
+                <identifier>draw</identifier>
+                <parameters>
+                  (
+                  <self_parameter>
+                    &amp;
+                    <self>self</self>
+                  </self_parameter>
+                  )
+                </parameters>
+                ;
+              </function_signature_item>
+              }
+            </declaration_list>
           </trait_item>
           <mod_item>
             mod
-            <name>
-              <identifier>internal</identifier>
-            </name>
-            <body>
-              <declaration_list>
-                {
-                <function_item>
-                  <visibility_modifier>
-                    pub(
-                    <super>super</super>
-                    )
-                  </visibility_modifier>
-                  fn
-                  <name>
-                    <identifier>secret</identifier>
-                  </name>
-                  <parameters>()</parameters>
-                  <body>
-                    <block>{}</block>
-                  </body>
-                </function_item>
-                }
-              </declaration_list>
-            </body>
+            <identifier>internal</identifier>
+            <declaration_list>
+              {
+              <function_item>
+                <visibility_modifier>
+                  pub(
+                  <super>super</super>
+                  )
+                </visibility_modifier>
+                fn
+                <identifier>secret</identifier>
+                <parameters>()</parameters>
+                <block>{}</block>
+              </function_item>
+              }
+            </declaration_list>
           </mod_item>
         </source_file>
       </tree>

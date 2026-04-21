@@ -13,9 +13,7 @@
           </expression_statement>
           <function_definition>
             def
-            <name>
-              <identifier>add</identifier>
-            </name>
+            <identifier>add</identifier>
             <parameters>
               (
               <identifier>a</identifier>
@@ -24,132 +22,110 @@
               )
             </parameters>
             :
-            <body>
-              <block>
-                <expression_statement>
-                  <string>
-                    <string_start>&quot;&quot;&quot;</string_start>
-                    <string_content>Add two numbers</string_content>
-                    <string_end>&quot;&quot;&quot;</string_end>
-                  </string>
-                </expression_statement>
-                <return_statement>
-                  return
-                  <binary_operator>
-                    <left>
-                      <identifier>a</identifier>
-                    </left>
-                    +
-                    <right>
-                      <identifier>b</identifier>
-                    </right>
-                  </binary_operator>
-                </return_statement>
-              </block>
-            </body>
+            <block>
+              <expression_statement>
+                <string>
+                  <string_start>&quot;&quot;&quot;</string_start>
+                  <string_content>Add two numbers</string_content>
+                  <string_end>&quot;&quot;&quot;</string_end>
+                </string>
+              </expression_statement>
+              <return_statement>
+                return
+                <binary_operator>
+                  <identifier>a</identifier>
+                  +
+                  <identifier>b</identifier>
+                </binary_operator>
+              </return_statement>
+            </block>
           </function_definition>
           <function_definition>
             async def
-            <name>
-              <identifier>fetch_data</identifier>
-            </name>
+            <identifier>fetch_data</identifier>
             <parameters>
               (
               <identifier>url</identifier>
               )
             </parameters>
             :
-            <body>
-              <block>
-                <expression_statement>
-                  <string>
-                    <string_start>&quot;&quot;&quot;</string_start>
-                    <string_content>Async function example</string_content>
-                    <string_end>&quot;&quot;&quot;</string_end>
-                  </string>
-                </expression_statement>
-                <return_statement>
-                  return
-                  <identifier>url</identifier>
-                </return_statement>
-              </block>
-            </body>
+            <block>
+              <expression_statement>
+                <string>
+                  <string_start>&quot;&quot;&quot;</string_start>
+                  <string_content>Async function example</string_content>
+                  <string_end>&quot;&quot;&quot;</string_end>
+                </string>
+              </expression_statement>
+              <return_statement>
+                return
+                <identifier>url</identifier>
+              </return_statement>
+            </block>
           </function_definition>
           <function_definition>
             def
-            <name>
-              <identifier>main</identifier>
-            </name>
+            <identifier>main</identifier>
             <parameters>()</parameters>
             :
-            <body>
-              <block>
-                <expression_statement>
-                  <assignment>
-                    <left>
-                      <identifier>result</identifier>
-                    </left>
-                    =
-                    <right>
-                      <call>
-                        <identifier>add</identifier>
-                        <argument_list>
-                          (
-                          <integer>5</integer>
-                          ,
-                          <integer>3</integer>
-                          )
-                        </argument_list>
-                      </call>
-                    </right>
-                  </assignment>
-                </expression_statement>
-                <expression_statement>
+            <block>
+              <expression_statement>
+                <assignment>
+                  <identifier>result</identifier>
+                  =
                   <call>
-                    <identifier>print</identifier>
+                    <identifier>add</identifier>
                     <argument_list>
                       (
-                      <string>
-                        <string_start>f&quot;</string_start>
-                        <string_content>Result: </string_content>
-                        <interpolation>
-                          {
-                          <identifier>result</identifier>
-                          }
-                        </interpolation>
-                        <string_end>&quot;</string_end>
-                      </string>
+                      <integer>5</integer>
+                      ,
+                      <integer>3</integer>
                       )
                     </argument_list>
                   </call>
-                </expression_statement>
-              </block>
-            </body>
+                </assignment>
+              </expression_statement>
+              <expression_statement>
+                <call>
+                  <identifier>print</identifier>
+                  <argument_list>
+                    (
+                    <string>
+                      <string_start>f&quot;</string_start>
+                      <string_content>Result: </string_content>
+                      <interpolation>
+                        {
+                        <identifier>result</identifier>
+                        }
+                      </interpolation>
+                      <string_end>&quot;</string_end>
+                    </string>
+                    )
+                  </argument_list>
+                </call>
+              </expression_statement>
+            </block>
           </function_definition>
           <if_statement>
             if
-            <condition>
-              <comparison_operator>
-                <identifier>__name__</identifier>
-                ==
-                <string>
-                  <string_start>&quot;</string_start>
-                  <string_content>__main__</string_content>
-                  <string_end>&quot;</string_end>
-                </string>
-              </comparison_operator>
-            </condition>
+            <comparison_operator>
+              <identifier>__name__</identifier>
+              ==
+              <string>
+                <string_start>&quot;</string_start>
+                <string_content>__main__</string_content>
+                <string_end>&quot;</string_end>
+              </string>
+            </comparison_operator>
             :
-            <consequence>
-              <block>
-                <expression_statement>
-                  <call>
-                    <identifier>main</identifier>
-                    <argument_list>()</argument_list>
-                  </call>
-                </expression_statement>
-              </block>
-            </consequence>
+            <block>
+              <expression_statement>
+                <call>
+                  <identifier>main</identifier>
+                  <argument_list>()</argument_list>
+                </call>
+              </expression_statement>
+            </block>
           </if_statement>
         </module>
       </tree>

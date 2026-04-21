@@ -7,9 +7,7 @@
           <comment># Simple Ruby example</comment>
           <method>
             def
-            <name>
-              <identifier>add</identifier>
-            </name>
+            <identifier>add</identifier>
             <method_parameters>
               (
               <identifier>a</identifier>
@@ -17,63 +15,49 @@
               <identifier>b</identifier>
               )
             </method_parameters>
-            <body>
-              <body_statement>
-                <binary>
-                  <left>
-                    <identifier>a</identifier>
-                  </left>
-                  +
-                  <right>
-                    <identifier>b</identifier>
-                  </right>
-                </binary>
-              </body_statement>
-            </body>
+            <body_statement>
+              <binary>
+                <identifier>a</identifier>
+                +
+                <identifier>b</identifier>
+              </binary>
+            </body_statement>
             end
           </method>
           <method>
             def
-            <name>
-              <identifier>main</identifier>
-            </name>
-            <body>
-              <body_statement>
-                <assignment>
-                  <left>
-                    <identifier>result</identifier>
-                  </left>
-                  =
-                  <right>
-                    <call>
-                      <identifier>add</identifier>
-                      <argument_list>
-                        (
-                        <integer>5</integer>
-                        ,
-                        <integer>3</integer>
-                        )
-                      </argument_list>
-                    </call>
-                  </right>
-                </assignment>
+            <identifier>main</identifier>
+            <body_statement>
+              <assignment>
+                <identifier>result</identifier>
+                =
                 <call>
-                  <identifier>puts</identifier>
+                  <identifier>add</identifier>
                   <argument_list>
-                    <string>
-                      &quot;
-                      <string_content>Result: </string_content>
-                      <interpolation>
-                        #{
-                        <identifier>result</identifier>
-                        }
-                      </interpolation>
-                      &quot;
-                    </string>
+                    (
+                    <integer>5</integer>
+                    ,
+                    <integer>3</integer>
+                    )
                   </argument_list>
                 </call>
-              </body_statement>
-            </body>
+              </assignment>
+              <call>
+                <identifier>puts</identifier>
+                <argument_list>
+                  <string>
+                    &quot;
+                    <string_content>Result: </string_content>
+                    <interpolation>
+                      #{
+                      <identifier>result</identifier>
+                      }
+                    </interpolation>
+                    &quot;
+                  </string>
+                </argument_list>
+              </call>
+            </body_statement>
             end
           </method>
           <identifier>main</identifier>

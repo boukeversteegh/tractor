@@ -107,6 +107,79 @@ const DECLARATION_PARENTS: &[&str] = &[
     "import",
 ];
 
+/// Apply per-language field-wrapping rules to the raw builder output.
+///
+/// The builder is mechanical: every element carries a `field="X"`
+/// attribute for tree-sitter's field name (if any), and no wrapping is
+/// performed. Each language then decides which fields should be wrapped
+/// in a semantic element (for example, TS wraps `return_type` in
+/// `<returns>`). `wrappings` is a slice of `(tree_sitter_field,
+/// wrapper_element_name)` pairs; elements with `field=X` matching a
+/// pair are moved inside a new `<Y>` wrapper that inherits the element's
+/// source location and carries `field="Y"` itself. The inner element's
+/// `field` attribute is rewritten to its own local-name so the JSON
+/// serializer can reach it as a property of the wrapper.
+pub fn apply_field_wrappings(
+    xot: &mut Xot,
+    root: XotNode,
+    wrappings: &[(&str, &str)],
+) -> Result<(), xot::Error> {
+    use helpers::*;
+    if wrappings.is_empty() {
+        return Ok(());
+    }
+    let root = find_content_root(xot, root);
+
+    // Collect (element, wrapper_name) pairs first so we can mutate afterwards.
+    let mut targets: Vec<(XotNode, String)> = Vec::new();
+    collect_wrap_targets(xot, root, wrappings, &mut targets);
+
+    for (element, wrapper_name) in targets {
+        let wrapper_id = xot.add_name(&wrapper_name);
+        let wrapper = xot.new_element(wrapper_id);
+        copy_source_location(xot, element, wrapper);
+        set_attr(xot, wrapper, "field", &wrapper_name);
+
+        // Rewrite the inner element's `field` to its own local-name so the
+        // JSON serializer can treat the inner as a named property of the
+        // wrapper. Preserves the semantics the old builder produced.
+        let inner_local = xot
+            .element(element)
+            .map(|e| xot.local_name_str(e.name()).to_string());
+        if let Some(local) = inner_local {
+            set_attr(xot, element, "field", &local);
+        }
+
+        xot.insert_before(element, wrapper)?;
+        xot.detach(element)?;
+        xot.append(wrapper, element)?;
+    }
+    Ok(())
+}
+
+fn collect_wrap_targets(
+    xot: &Xot,
+    node: XotNode,
+    wrappings: &[(&str, &str)],
+    out: &mut Vec<(XotNode, String)>,
+) {
+    use helpers::*;
+    if xot.element(node).is_none() {
+        return;
+    }
+    if let Some(field) = get_attr(xot, node, "field") {
+        for (ts_field, wrapper_name) in wrappings {
+            if field == *ts_field {
+                out.push((node, (*wrapper_name).to_string()));
+                break;
+            }
+        }
+    }
+    for child in xot.children(node) {
+        collect_wrap_targets(xot, child, wrappings, out);
+    }
+}
+
 /// Walk the tree and mark every `<name>` element with either a
 /// `<bind/>` or `<use/>` child marker (Principle #13).
 ///

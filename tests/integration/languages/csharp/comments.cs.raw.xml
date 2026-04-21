@@ -13,83 +13,65 @@
           </using_directive>
           <namespace_declaration>
             namespace
-            <name>
-              <identifier>Comments</identifier>
-            </name>
-            <body>
-              <declaration_list>
-                {
-                <comment>/// &lt;summary&gt;</comment>
-                <comment>/// Sample class demonstrating comment patterns</comment>
-                <comment>/// &lt;/summary&gt;</comment>
-                <class_declaration>
-                  <modifier>public</modifier>
-                  class
-                  <name>
-                    <identifier>Demo</identifier>
-                  </name>
-                  <body>
-                    <declaration_list>
+            <identifier>Comments</identifier>
+            <declaration_list>
+              {
+              <comment>/// &lt;summary&gt;</comment>
+              <comment>/// Sample class demonstrating comment patterns</comment>
+              <comment>/// &lt;/summary&gt;</comment>
+              <class_declaration>
+                <modifier>public</modifier>
+                class
+                <identifier>Demo</identifier>
+                <declaration_list>
+                  {
+                  <field_declaration>
+                    <modifier>private</modifier>
+                    <variable_declaration>
+                      <predefined_type>int</predefined_type>
+                      <variable_declarator>
+                        <identifier>_count</identifier>
+                      </variable_declarator>
+                    </variable_declaration>
+                    ;
+                  </field_declaration>
+                  <comment>// instance counter</comment>
+                  <comment>// Configuration settings</comment>
+                  <comment>// loaded from environment</comment>
+                  <property_declaration>
+                    <modifier>public</modifier>
+                    <predefined_type>string</predefined_type>
+                    <identifier>Config</identifier>
+                    <accessor_list>
                       {
-                      <field_declaration>
-                        <modifier>private</modifier>
-                        <variable_declaration>
-                          <predefined_type>int</predefined_type>
-                          <variable_declarator>
-                            <name>
-                              <identifier>_count</identifier>
-                            </name>
-                          </variable_declarator>
-                        </variable_declaration>
-                        ;
-                      </field_declaration>
-                      <comment>// instance counter</comment>
-                      <comment>// Configuration settings</comment>
-                      <comment>// loaded from environment</comment>
-                      <property_declaration>
-                        <modifier>public</modifier>
-                        <predefined_type>string</predefined_type>
-                        <name>
-                          <identifier>Config</identifier>
-                        </name>
-                        <accessor_list>
-                          {
-                          <accessor_declaration>get;</accessor_declaration>
-                          <accessor_declaration>set;</accessor_declaration>
-                          }
-                        </accessor_list>
-                      </property_declaration>
-                      <comment>/* block comment */</comment>
-                      <method_declaration>
-                        <modifier>public</modifier>
-                        <returns>
-                          <predefined_type>void</predefined_type>
-                        </returns>
-                        <name>
-                          <identifier>Run</identifier>
-                        </name>
-                        <parameter_list>()</parameter_list>
-                        <body>
-                          <block>
-                            {
-                            <expression_statement>
-                              <postfix_unary_expression>
-                                <identifier>_count</identifier>
-                                ++
-                              </postfix_unary_expression>
-                              ;
-                            </expression_statement>
-                            }
-                          </block>
-                        </body>
-                      </method_declaration>
+                      <accessor_declaration>get;</accessor_declaration>
+                      <accessor_declaration>set;</accessor_declaration>
                       }
-                    </declaration_list>
-                  </body>
-                </class_declaration>
-                }
-              </declaration_list>
-            </body>
+                    </accessor_list>
+                  </property_declaration>
+                  <comment>/* block comment */</comment>
+                  <method_declaration>
+                    <modifier>public</modifier>
+                    <predefined_type>void</predefined_type>
+                    <identifier>Run</identifier>
+                    <parameter_list>()</parameter_list>
+                    <block>
+                      {
+                      <expression_statement>
+                        <postfix_unary_expression>
+                          <identifier>_count</identifier>
+                          ++
+                        </postfix_unary_expression>
+                        ;
+                      </expression_statement>
+                      }
+                    </block>
+                  </method_declaration>
+                  }
+                </declaration_list>
+              </class_declaration>
+              }
+            </declaration_list>
           </namespace_declaration>
         </compilation_unit>
       </tree>

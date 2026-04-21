@@ -6,31 +6,21 @@
         <compilation_unit>
           <namespace_declaration>
             namespace
-            <name>
-              <qualified_name>
-                <identifier>MyApp</identifier>
-                .
-                <name>
-                  <identifier>Services</identifier>
-                </name>
-              </qualified_name>
-            </name>
-            <body>
-              <declaration_list>
-                {
-                <class_declaration>
-                  <modifier>public</modifier>
-                  class
-                  <name>
-                    <identifier>UserService</identifier>
-                  </name>
-                  <body>
-                    <declaration_list>{ }</declaration_list>
-                  </body>
-                </class_declaration>
-                }
-              </declaration_list>
-            </body>
+            <qualified_name>
+              <identifier>MyApp</identifier>
+              .
+              <identifier>Services</identifier>
+            </qualified_name>
+            <declaration_list>
+              {
+              <class_declaration>
+                <modifier>public</modifier>
+                class
+                <identifier>UserService</identifier>
+                <declaration_list>{ }</declaration_list>
+              </class_declaration>
+              }
+            </declaration_list>
           </namespace_declaration>
         </compilation_unit>
       </tree>

@@ -84,40 +84,6 @@ impl<'a> TreeBuilder<'a> {
         Some(self.xot.new_text(&text))
     }
 
-    /// Fields that should be wrapped in semantic elements.
-    ///
-    /// Purely-grouping fields (`parameters`, `arguments`, etc.) are
-    /// intentionally absent here: per Principle #12 (Flat Lists), their
-    /// list items become direct siblings of the enclosing element and
-    /// carry a `field="<plural>"` attribute distributed by the transform.
-    const WRAPPED_FIELDS: &'static [&'static str] = &[
-        "name",        // variable/function/class name
-        "value",       // assigned/initial value
-        "left",        // binary expression left operand
-        "right",       // binary expression right operand
-        "body",        // function/class/loop body
-        "condition",   // if/while/for condition
-        "consequence", // if true branch
-        "alternative", // if else branch
-        "returns",     // return type (canonical; see canonical_field_name)
-    ];
-
-    /// Canonicalise tree-sitter field names so equivalent concepts produce
-    /// the same wrapper element across languages. For example, TS/JS/Rust
-    /// use field `return_type`, Go uses `result`, C# uses `returns` — we
-    /// want `<returns>` in all of them.
-    fn canonical_field_name(field: &str) -> &str {
-        match field {
-            "return_type" | "result" => "returns",
-            other => other,
-        }
-    }
-
-    /// Check if a field should be wrapped in a semantic element
-    fn should_wrap_field(field: &str) -> bool {
-        Self::WRAPPED_FIELDS.contains(&field)
-    }
-
     /// Recursively build xot nodes from TreeSitter node with optional depth limit
     #[cfg(feature = "native")]
     fn build_node(
@@ -224,44 +190,15 @@ impl<'a> TreeBuilder<'a> {
             }
         }
 
-        // Wrap in field element if needed, or just append directly
+        // Record tree-sitter's field name as a plain `field=` attribute.
+        // The builder does no wrapping — that's handled by the per-language
+        // post-build pass (apply_field_wrappings), keeping raw output a
+        // faithful rendering of the tree-sitter tree.
         if let Some(field) = field_name {
-            let field = Self::canonical_field_name(field);
-            if Self::should_wrap_field(field) {
-                let wrapper_name = self.get_name(field);
-                let wrapper = self.xot.new_element(wrapper_name);
-
-                // Copy location attributes from child to wrapper
-                for attr_name in &["line", "column", "end_line", "end_column"] {
-                    let attr_id = self.get_name(attr_name);
-                    if let Some(val) = self.xot.attributes(element).get(attr_id).cloned() {
-                        self.xot.attributes_mut(wrapper).insert(attr_id, val);
-                    }
-                }
-
-                // Mark wrapper as field-backed for JSON property lifting
-                let field_attr = self.get_name("field");
-                self.xot.attributes_mut(wrapper).insert(field_attr, field.to_string());
-
-                // Mark the inner element as a singleton child so the JSON
-                // serializer can lift it as a direct property on the wrapper.
-                // The wrapper guarantees exactly one semantic child.
-                let inner_name = self.xot.element(element)
-                    .map(|e| self.xot.local_name_str(e.name()).to_string());
-                if let Some(name_str) = inner_name {
-                    self.xot.attributes_mut(element).insert(field_attr, name_str);
-                }
-
-                self.xot.append(wrapper, element)?;
-                self.xot.append(parent, wrapper)?;
-            } else {
-                let field_attr = self.get_name("field");
-                self.xot.attributes_mut(element).insert(field_attr, field.to_string());
-                self.xot.append(parent, element)?;
-            }
-        } else {
-            self.xot.append(parent, element)?;
+            let field_attr = self.get_name("field");
+            self.xot.attributes_mut(element).insert(field_attr, field.to_string());
         }
+        self.xot.append(parent, element)?;
 
         Ok(())
     }
@@ -617,6 +554,12 @@ impl XeeBuilder {
                 // Single-branch syntax transform
                 let doc_node = self.documents.document_node(doc_handle)
                     .ok_or_else(|| xot::Error::Io("Failed to get document node".to_string()))?;
+                let wrappings = crate::languages::get_field_wrappings(lang);
+                crate::xot_transform::apply_field_wrappings(
+                    self.documents.xot_mut(),
+                    doc_node,
+                    wrappings,
+                )?;
                 let transform_fn = if let Some((syntax_fn, _)) = crate::languages::get_data_transforms(lang) {
                     // Data-aware language: use the syntax (ast) transform
                     syntax_fn
@@ -632,6 +575,12 @@ impl XeeBuilder {
                 // Single-branch data transform (caller already validated lang supports it)
                 let doc_node = self.documents.document_node(doc_handle)
                     .ok_or_else(|| xot::Error::Io("Failed to get document node".to_string()))?;
+                let wrappings = crate::languages::get_field_wrappings(lang);
+                crate::xot_transform::apply_field_wrappings(
+                    self.documents.xot_mut(),
+                    doc_node,
+                    wrappings,
+                )?;
                 let (_, data_fn) = crate::languages::get_data_transforms(lang)
                     .expect("Data mode requires a data-aware language");
                 crate::xot_transform::walk_transform(self.documents.xot_mut(), doc_node, data_fn)?;

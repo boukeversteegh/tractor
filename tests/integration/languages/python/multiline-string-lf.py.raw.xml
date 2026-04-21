@@ -6,19 +6,15 @@
         <module>
           <expression_statement>
             <assignment>
-              <left>
-                <identifier>msg</identifier>
-              </left>
+              <identifier>msg</identifier>
               =
-              <right>
-                <string>
-                  <string_start>&quot;&quot;&quot;</string_start>
-                  <string_content>hello
+              <string>
+                <string_start>&quot;&quot;&quot;</string_start>
+                <string_content>hello
         
         </string_content>
-                  <string_end>&quot;&quot;&quot;</string_end>
-                </string>
-              </right>
+                <string_end>&quot;&quot;&quot;</string_end>
+              </string>
             </assignment>
           </expression_statement>
         </module>

@@ -91,6 +91,84 @@ pub fn is_programming_language(lang: &str) -> bool {
     )
 }
 
+/// Default field wrappings shared by most programming-language grammars.
+/// Each language opts in (and can add language-specific entries) via
+/// `get_field_wrappings`.
+const COMMON_FIELD_WRAPPINGS: &[(&str, &str)] = &[
+    ("name", "name"),
+    ("value", "value"),
+    ("left", "left"),
+    ("right", "right"),
+    ("body", "body"),
+    ("condition", "condition"),
+    ("consequence", "consequence"),
+    ("alternative", "alternative"),
+];
+
+const TS_FIELD_WRAPPINGS: &[(&str, &str)] = &[
+    ("name", "name"),
+    ("value", "value"),
+    ("left", "left"),
+    ("right", "right"),
+    ("body", "body"),
+    ("condition", "condition"),
+    ("consequence", "consequence"),
+    ("alternative", "alternative"),
+    ("return_type", "returns"),
+];
+
+const RUST_FIELD_WRAPPINGS: &[(&str, &str)] = &[
+    ("name", "name"),
+    ("value", "value"),
+    ("left", "left"),
+    ("right", "right"),
+    ("body", "body"),
+    ("condition", "condition"),
+    ("consequence", "consequence"),
+    ("alternative", "alternative"),
+    ("return_type", "returns"),
+];
+
+const GO_FIELD_WRAPPINGS: &[(&str, &str)] = &[
+    ("name", "name"),
+    ("value", "value"),
+    ("left", "left"),
+    ("right", "right"),
+    ("body", "body"),
+    ("condition", "condition"),
+    ("consequence", "consequence"),
+    ("alternative", "alternative"),
+    ("result", "returns"),
+];
+
+const CSHARP_FIELD_WRAPPINGS: &[(&str, &str)] = &[
+    ("name", "name"),
+    ("value", "value"),
+    ("left", "left"),
+    ("right", "right"),
+    ("body", "body"),
+    ("condition", "condition"),
+    ("consequence", "consequence"),
+    ("alternative", "alternative"),
+    ("returns", "returns"),
+];
+
+/// Field wrappings for the given language — applied after the raw
+/// builder pass, before the per-language transform. Programming
+/// languages with language-specific mappings override; everything else
+/// (including data/config formats) gets the common defaults, since
+/// JSON/YAML/TOML data transforms still rely on the `<value>` wrapper
+/// for pair values.
+pub fn get_field_wrappings(lang: &str) -> &'static [(&'static str, &'static str)] {
+    match lang {
+        "typescript" | "ts" | "tsx" | "javascript" | "js" | "jsx" => TS_FIELD_WRAPPINGS,
+        "rust" | "rs" => RUST_FIELD_WRAPPINGS,
+        "go" => GO_FIELD_WRAPPINGS,
+        "csharp" | "cs" => CSHARP_FIELD_WRAPPINGS,
+        _ => COMMON_FIELD_WRAPPINGS,
+    }
+}
+
 /// Get the syntax category function for a language
 /// This maps transformed element names to syntax categories for highlighting
 pub fn get_syntax_category(lang: &str) -> SyntaxCategoryFn {

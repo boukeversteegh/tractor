@@ -21,153 +21,119 @@
           </import_declaration>
           <function_declaration>
             func
-            <name>
-              <identifier>add</identifier>
-            </name>
+            <identifier>add</identifier>
             <parameter_list>
               (
               <parameter_declaration>
-                <name>
-                  <identifier>a</identifier>
-                </name>
+                <identifier>a</identifier>
                 <type_identifier>int</type_identifier>
               </parameter_declaration>
               ,
               <parameter_declaration>
-                <name>
-                  <identifier>b</identifier>
-                </name>
+                <identifier>b</identifier>
                 <type_identifier>int</type_identifier>
               </parameter_declaration>
               )
             </parameter_list>
-            <returns>
-              <type_identifier>int</type_identifier>
-            </returns>
-            <body>
-              <block>
-                {
-                <return_statement>
-                  return
-                  <expression_list>
-                    <binary_expression>
-                      <left>
-                        <identifier>a</identifier>
-                      </left>
-                      +
-                      <right>
-                        <identifier>b</identifier>
-                      </right>
-                    </binary_expression>
-                  </expression_list>
-                </return_statement>
-                }
-              </block>
-            </body>
+            <type_identifier>int</type_identifier>
+            <block>
+              {
+              <return_statement>
+                return
+                <expression_list>
+                  <binary_expression>
+                    <identifier>a</identifier>
+                    +
+                    <identifier>b</identifier>
+                  </binary_expression>
+                </expression_list>
+              </return_statement>
+              }
+            </block>
           </function_declaration>
           <function_declaration>
             func
-            <name>
-              <identifier>main</identifier>
-            </name>
+            <identifier>main</identifier>
             <parameter_list>()</parameter_list>
-            <body>
-              <block>
-                {
-                <short_var_declaration>
-                  <left>
-                    <expression_list>
-                      <identifier>result</identifier>
-                    </expression_list>
-                  </left>
-                  :=
-                  <right>
-                    <expression_list>
-                      <call_expression>
-                        <identifier>add</identifier>
-                        <argument_list>
-                          (
-                          <int_literal>5</int_literal>
-                          ,
-                          <int_literal>3</int_literal>
-                          )
-                        </argument_list>
-                      </call_expression>
-                    </expression_list>
-                  </right>
-                </short_var_declaration>
-                <expression_statement>
+            <block>
+              {
+              <short_var_declaration>
+                <expression_list>
+                  <identifier>result</identifier>
+                </expression_list>
+                :=
+                <expression_list>
                   <call_expression>
-                    <selector_expression>
-                      <identifier>fmt</identifier>
-                      .
-                      <field_identifier>Printf</field_identifier>
-                    </selector_expression>
+                    <identifier>add</identifier>
                     <argument_list>
                       (
-                      <interpreted_string_literal>
-                        &quot;
-                        <interpreted_string_literal_content>Result: %d</interpreted_string_literal_content>
-                        <escape_sequence>\n</escape_sequence>
-                        &quot;
-                      </interpreted_string_literal>
+                      <int_literal>5</int_literal>
                       ,
-                      <identifier>result</identifier>
+                      <int_literal>3</int_literal>
                       )
                     </argument_list>
                   </call_expression>
-                </expression_statement>
-                }
-              </block>
-            </body>
+                </expression_list>
+              </short_var_declaration>
+              <expression_statement>
+                <call_expression>
+                  <selector_expression>
+                    <identifier>fmt</identifier>
+                    .
+                    <field_identifier>Printf</field_identifier>
+                  </selector_expression>
+                  <argument_list>
+                    (
+                    <interpreted_string_literal>
+                      &quot;
+                      <interpreted_string_literal_content>Result: %d</interpreted_string_literal_content>
+                      <escape_sequence>\n</escape_sequence>
+                      &quot;
+                    </interpreted_string_literal>
+                    ,
+                    <identifier>result</identifier>
+                    )
+                  </argument_list>
+                </call_expression>
+              </expression_statement>
+              }
+            </block>
           </function_declaration>
           <comment>// Exported function</comment>
           <function_declaration>
             func
-            <name>
-              <identifier>PublicHelper</identifier>
-            </name>
+            <identifier>PublicHelper</identifier>
             <parameter_list>()</parameter_list>
-            <returns>
-              <type_identifier>string</type_identifier>
-            </returns>
-            <body>
-              <block>
-                {
-                <return_statement>
-                  return
-                  <expression_list>
-                    <interpreted_string_literal>
-                      &quot;
-                      <interpreted_string_literal_content>hello</interpreted_string_literal_content>
-                      &quot;
-                    </interpreted_string_literal>
-                  </expression_list>
-                </return_statement>
-                }
-              </block>
-            </body>
+            <type_identifier>string</type_identifier>
+            <block>
+              {
+              <return_statement>
+                return
+                <expression_list>
+                  <interpreted_string_literal>
+                    &quot;
+                    <interpreted_string_literal_content>hello</interpreted_string_literal_content>
+                    &quot;
+                  </interpreted_string_literal>
+                </expression_list>
+              </return_statement>
+              }
+            </block>
           </function_declaration>
           <type_declaration>
             type
             <type_spec>
-              <name>
-                <type_identifier>Point</type_identifier>
-              </name>
+              <type_identifier>Point</type_identifier>
               <struct_type>
                 struct
                 <field_declaration_list>
                   {
                   <field_declaration>
-                    <name>
-                      <field_identifier>X</field_identifier>
-                    </name>
+                    <field_identifier>X</field_identifier>
                     <type_identifier>int</type_identifier>
                   </field_declaration>
                   <field_declaration>
-                    <name>
-                      <field_identifier>Y</field_identifier>
-                    </name>
+                    <field_identifier>Y</field_identifier>
                     <type_identifier>int</type_identifier>
                   </field_declaration>
                   }
@@ -178,19 +144,13 @@
           <type_declaration>
             type
             <type_spec>
-              <name>
-                <type_identifier>Shape</type_identifier>
-              </name>
+              <type_identifier>Shape</type_identifier>
               <interface_type>
                 interface {
                 <method_elem>
-                  <name>
-                    <field_identifier>Area</field_identifier>
-                  </name>
+                  <field_identifier>Area</field_identifier>
                   <parameter_list>()</parameter_list>
-                  <returns>
-                    <type_identifier>float64</type_identifier>
-                  </returns>
+                  <type_identifier>float64</type_identifier>
                 </method_elem>
                 }
               </interface_type>
