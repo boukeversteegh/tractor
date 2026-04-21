@@ -95,3 +95,9 @@ fn csharp_supported_fixture_round_trips() {
     let path = fixture("csharp", "supported.cs");
     assert_fixture_round_trips(&path, "csharp");
 }
+
+#[test]
+fn python_supported_fixture_round_trips() {
+    let path = fixture("python", "supported.py");
+    assert_fixture_round_trips(&path, "python");
+}

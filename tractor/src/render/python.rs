@@ -19,6 +19,8 @@ pub fn render_node(node: &XmlNode, opts: &RenderOptions) -> Result<String, Rende
             FUNCTION | METHOD => render_function(node, opts),
             FIELD => render_field(node, opts),
             IMPORT => render_import(node, opts),
+            "from" => render_from_import(node, opts),
+            "decorated" => render_decorated(node, opts),
             COMMENT => render_comment(node, opts),
             _ => Err(RenderError::UnsupportedNode(name.clone())),
         },
@@ -34,6 +36,11 @@ pub fn render_node(node: &XmlNode, opts: &RenderOptions) -> Result<String, Rende
 fn render_type(node: &XmlNode) -> Result<String, RenderError> {
     match node {
         XmlNode::Element { name, children, .. } if name == TYPE => {
+            // Parser shape: <type><generic_type><name>list</name><type_parameter>[<type>str</type>]</type_parameter></generic_type></type>
+            if let Some(g) = get_child(node, "generic_type") {
+                return render_generic_type(g);
+            }
+
             let has_optional = has_marker(node, OPTIONAL);
             let has_list = has_marker(node, LIST);
 
@@ -67,6 +74,26 @@ fn render_type(node: &XmlNode) -> Result<String, RenderError> {
             child: "text".into(),
         }),
     }
+}
+
+/// Render `<generic_type>` — parser form of `Name[T]` or `Name[K, V]` such as
+/// `list[str]`, `dict[str, int]`, `Optional[str]`. The name is read from the
+/// child `<name>` element, the arguments from the `<type_parameter>` wrapper
+/// which contains `[`, comma-separated `<type>` elements, and `]`.
+fn render_generic_type(node: &XmlNode) -> Result<String, RenderError> {
+    let name = get_child_text(node, NAME)
+        .map(|s| s.trim().to_string())
+        .unwrap_or_default();
+    let args = get_child(node, "type_parameter")
+        .map(|p| {
+            get_children(p, TYPE)
+                .iter()
+                .filter_map(|t| render_type(t).ok())
+                .collect::<Vec<_>>()
+                .join(", ")
+        })
+        .unwrap_or_default();
+    Ok(format!("{}[{}]", name, args))
 }
 
 fn render_type_slot(node: &XmlNode) -> Option<String> {
@@ -114,12 +141,14 @@ fn render_decorators(node: &XmlNode, opts: &RenderOptions) -> String {
 
 fn render_field(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderError> {
     let indent = opts.current_indent();
-    let name = get_child_text(node, NAME).ok_or_else(|| RenderError::MissingChild {
-        parent: FIELD.into(),
-        child: NAME.into(),
-    })?;
+    let name = get_child_text(node, NAME)
+        .map(|s| s.trim().to_string())
+        .ok_or_else(|| RenderError::MissingChild {
+            parent: FIELD.into(),
+            child: NAME.into(),
+        })?;
     let type_str = render_type_slot(node);
-    let default = get_child_text(node, DEFAULT);
+    let default = get_child(node, DEFAULT).and_then(render_value_slot);
 
     let line = match (type_str, default) {
         (Some(t), Some(v)) => format!("{}{}: {} = {}", indent, name, t, v),
@@ -128,6 +157,53 @@ fn render_field(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderEr
         (None, None) => format!("{}{}", indent, name),
     };
     Ok(line)
+}
+
+/// Render a value slot (`<default>`, `<value>`, etc.) by extracting its first
+/// literal-shaped child. Handles Python literals: int, float, string, bool
+/// (`<true/>`/`<false/>`), and `<none>None</none>`. Strings and booleans are
+/// returned verbatim (quotes preserved from source via `text_content`).
+fn render_value_slot(node: &XmlNode) -> Option<String> {
+    let XmlNode::Element { children, .. } = node else {
+        return None;
+    };
+    children.iter().find_map(render_python_literal)
+}
+
+fn render_python_literal(node: &XmlNode) -> Option<String> {
+    let XmlNode::Element { name, children, .. } = node else {
+        return None;
+    };
+    match name.as_str() {
+        "int" | "float" | "true" | "false" | "none" => {
+            text_content(node).map(|t| t.trim().to_string())
+        }
+        // Python strings come in as
+        //   <string><string_start>"</string_start>
+        //           <string_content>…</string_content>?
+        //           <string_end>"</string_end></string>
+        // Reassemble quote + content + quote so embedded whitespace in the
+        // content survives even though pretty-printed XML adds whitespace
+        // around the child elements.
+        "string" => {
+            let get_part = |part: &str| -> String {
+                children
+                    .iter()
+                    .find_map(|c| match c {
+                        XmlNode::Element { name: n, .. } if n == part => text_content(c),
+                        _ => None,
+                    })
+                    .unwrap_or_default()
+            };
+            let start = get_part("string_start");
+            let end = get_part("string_end");
+            let content = get_part("string_content");
+            let quote = if !start.is_empty() { start } else { "\"".to_string() };
+            let closer = if !end.is_empty() { end } else { quote.clone() };
+            Some(format!("{}{}{}", quote, content, closer))
+        }
+        _ => None,
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -297,22 +373,138 @@ fn collect_body_members<'a>(
 // Import / Comment / Module
 // ---------------------------------------------------------------------------
 
+/// Render `<import>import<name><dotted_name>…</dotted_name></name></import>` as
+/// `import os.path`. Falls back to flat text content when the parser shape
+/// isn't recognised.
 fn render_import(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderError> {
-    let text = text_content(node).unwrap_or_default();
-    let trimmed = text.trim();
-    let line = if trimmed.starts_with("import") || trimmed.starts_with("from") {
-        trimmed.to_string()
-    } else {
-        format!("import {}", trimmed)
+    let module = find_import_module(node).unwrap_or_else(|| {
+        text_content(node)
+            .unwrap_or_default()
+            .trim()
+            .strip_prefix("import")
+            .unwrap_or_default()
+            .trim()
+            .to_string()
+    });
+    Ok(format!("{}import {}", opts.current_indent(), module))
+}
+
+/// Render `<from>from<dotted_name>M</dotted_name>import<name>A</name>,<name>B</name></from>`
+/// as `from M import A, B`.
+fn render_from_import(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderError> {
+    let XmlNode::Element { children, .. } = node else {
+        return Ok(String::new());
     };
-    Ok(format!("{}{}", opts.current_indent(), line))
+
+    // The module is the FIRST <dotted_name> — it's the source of the import.
+    // Subsequent imported names live in <name> wrappers.
+    let module = children
+        .iter()
+        .find_map(|c| match c {
+            XmlNode::Element { name, .. } if name == "dotted_name" => dotted_name_text(c),
+            _ => None,
+        })
+        .unwrap_or_default();
+
+    let imports: Vec<String> = children
+        .iter()
+        .filter_map(|c| match c {
+            XmlNode::Element { name, .. } if name == NAME => {
+                // The <name> wrapper can itself contain <dotted_name> (the
+                // Python parser wraps imported names that way).
+                get_child(c, "dotted_name")
+                    .and_then(dotted_name_text)
+                    .or_else(|| text_content(c).map(|t| t.trim().to_string()))
+            }
+            _ => None,
+        })
+        .filter(|s| !s.is_empty())
+        .collect();
+
+    let imports_str = imports.join(", ");
+    Ok(format!(
+        "{}from {} import {}",
+        opts.current_indent(),
+        module,
+        imports_str
+    ))
+}
+
+fn find_import_module(node: &XmlNode) -> Option<String> {
+    let name_child = get_child(node, NAME)?;
+    get_child(name_child, "dotted_name")
+        .and_then(dotted_name_text)
+        .or_else(|| text_content(name_child).map(|t| t.trim().to_string()))
+}
+
+/// Join the `<name>` children of a `<dotted_name>` with dots —
+/// `<dotted_name><name>os</name>.<name>path</name></dotted_name>` → `os.path`.
+fn dotted_name_text(node: &XmlNode) -> Option<String> {
+    let XmlNode::Element { children, .. } = node else {
+        return None;
+    };
+    let parts: Vec<String> = children
+        .iter()
+        .filter_map(|c| match c {
+            XmlNode::Element { name, .. } if name == NAME => {
+                text_content(c).map(|t| t.trim().to_string())
+            }
+            _ => None,
+        })
+        .filter(|s| !s.is_empty())
+        .collect();
+    if parts.is_empty() {
+        None
+    } else {
+        Some(parts.join("."))
+    }
+}
+
+/// Render `<decorated><decorator>@X</decorator>...<class|function>…</class|function></decorated>`
+/// by prepending the decorator to the wrapped declaration.
+fn render_decorated(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderError> {
+    let XmlNode::Element { children, .. } = node else {
+        return Ok(String::new());
+    };
+    let indent = opts.current_indent();
+    let mut decorators = Vec::new();
+    let mut inner: Option<String> = None;
+
+    for child in children {
+        if let XmlNode::Element { name, .. } = child {
+            match name.as_str() {
+                "decorator" => {
+                    let text = text_content(child).unwrap_or_default();
+                    let body = text
+                        .trim()
+                        .strip_prefix('@')
+                        .map(|s| s.trim())
+                        .unwrap_or_else(|| text.trim());
+                    decorators.push(format!("{}@{}", indent, body));
+                }
+                CLASS | FUNCTION | METHOD => {
+                    inner = Some(render_node(child, opts)?);
+                }
+                _ => {}
+            }
+        }
+    }
+
+    let mut parts = decorators;
+    if let Some(body) = inner {
+        parts.push(body);
+    }
+    Ok(parts.join(&opts.newline))
 }
 
 fn render_comment(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderError> {
     let text = text_content(node).unwrap_or_default();
-    let trimmed = text.trim();
-    let body = trimmed.strip_prefix('#').map(|s| s.trim()).unwrap_or(trimmed);
-    Ok(format!("{}# {}", opts.current_indent(), body))
+    // Preserve the comment verbatim (indentation trimmed). A bare `#` stays a
+    // bare `#`, `# foo` stays `# foo`; we don't reflow the body because round
+    // trips need byte equality.
+    let trimmed = text.trim_start_matches([' ', '\t']).trim_end_matches(['\r', '\n']);
+    let body = if trimmed.is_empty() { "#" } else { trimmed };
+    Ok(format!("{}{}", opts.current_indent(), body))
 }
 
 fn render_module(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderError> {
@@ -324,7 +516,7 @@ fn render_module(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderE
     for child in children {
         if let XmlNode::Element { name, .. } = child {
             match name.as_str() {
-                IMPORT | CLASS | FUNCTION | COMMENT | FIELD => {
+                IMPORT | "from" | CLASS | FUNCTION | "decorated" | COMMENT | FIELD => {
                     parts.push((name.as_str(), render_node(child, opts)?));
                 }
                 _ => {}
@@ -332,15 +524,30 @@ fn render_module(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderE
         }
     }
 
-    // Two blank lines before top-level class/function (PEP 8).
+    // Separation rules:
+    //   * Consecutive items of the same lightweight kind (imports, from
+    //     imports, comments) stay tight.
+    //   * Two blank lines around top-level class/function/decorated (PEP 8).
+    //   * Any other kind transition (e.g. comment → import, import → class)
+    //     gets a single blank line.
+    let is_decl = |k: &str| matches!(k, CLASS | FUNCTION | "decorated");
+    let is_import_like = |k: &str| matches!(k, IMPORT | "from");
     let mut result = String::new();
     for (i, (kind, text)) in parts.iter().enumerate() {
         if i > 0 {
             let prev = parts[i - 1].0;
-            let blank = if matches!(*kind, CLASS | FUNCTION) || matches!(prev, CLASS | FUNCTION) {
+            // Consecutive imports (any mix of `import X` / `from X import Y`)
+            // and consecutive comment lines stay tight.
+            let tight = (is_import_like(kind) && is_import_like(prev))
+                || (prev == *kind && *kind == COMMENT);
+            let blank = if tight {
+                String::new()
+            } else if is_decl(kind) || is_decl(prev) {
                 format!("{}{}", opts.newline, opts.newline)
             } else {
-                String::new()
+                // Different kind-on-kind transition (e.g. comment → import,
+                // import → from, from → import) gets one blank line.
+                opts.newline.clone()
             };
             result.push_str(&opts.newline);
             result.push_str(&blank);
