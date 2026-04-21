@@ -8,15 +8,15 @@
           <function>
             function
             <name>add</name>
-            <parameters>
-              <params>
-                (
-                <name>a</name>
-                ,
-                <name>b</name>
-                )
-              </params>
-            </parameters>
+            (
+            <param>
+              <name>a</name>
+            </param>
+            ,
+            <param>
+              <name>b</name>
+            </param>
+            )
             <body>
               <block>
                 {
@@ -44,9 +44,7 @@
           <function>
             function
             <name>main</name>
-            <parameters>
-              <params>()</params>
-            </parameters>
+            ()
             <body>
               <block>
                 {
@@ -61,15 +59,11 @@
                         <ref/>
                         add
                       </function>
-                      <arguments>
-                        <arguments>
-                          (
-                          <number>5</number>
-                          ,
-                          <number>3</number>
-                          )
-                        </arguments>
-                      </arguments>
+                      (
+                      <number>5</number>
+                      ,
+                      <number>3</number>
+                      )
                     </call>
                   </value>
                   ;
@@ -88,22 +82,18 @@
                       </property>
                     </member>
                   </function>
-                  <arguments>
-                    <arguments>
-                      (
-                      <template_string>
-                        `
-                        <string_fragment>Result: </string_fragment>
-                        <template_substitution>
-                          ${
-                          <name>result</name>
-                          }
-                        </template_substitution>
-                        `
-                      </template_string>
-                      )
-                    </arguments>
-                  </arguments>
+                  (
+                  <template_string>
+                    `
+                    <string_fragment>Result: </string_fragment>
+                    <template_substitution>
+                      ${
+                      <name>result</name>
+                      }
+                    </template_substitution>
+                    `
+                  </template_string>
+                  )
                 </call>
                 ;
         }
@@ -115,9 +105,7 @@
               <ref/>
               main
             </function>
-            <arguments>
-              <arguments>()</arguments>
-            </arguments>
+            ()
           </call>
           ;
         </program>

@@ -24,7 +24,7 @@
                   </type>
                 </returns>
                 <name>GetAll</name>
-                <parameters>()</parameters>
+                ()
                 <body>
                   <block>
                     {
@@ -44,9 +44,7 @@
                             <ref>ToList</ref>
                           </name>
                         </member>
-                        <arguments>
-                          <arguments>()</arguments>
-                        </arguments>
+                        ()
                       </call>
                       ;
                     </return>
@@ -72,7 +70,7 @@
                   </type>
                 </returns>
                 <name>GetAllOrdered</name>
-                <parameters>()</parameters>
+                ()
                 <body>
                   <block>
                     {
@@ -94,36 +92,30 @@
                                 <ref>OrderBy</ref>
                               </name>
                             </member>
-                            <arguments>
-                              <arguments>
-                                (
-                                <argument>
-                                  <lambda>
-                                    <implicit_parameter>u</implicit_parameter>
-                                    =&gt;
-                                    <body>
-                                      <member>
-                                        <ref>u</ref>
-                                        .
-                                        <name>
-                                          <ref>Name</ref>
-                                        </name>
-                                      </member>
-                                    </body>
-                                  </lambda>
-                                </argument>
-                                )
-                              </arguments>
-                            </arguments>
+                            (
+                            <argument>
+                              <lambda>
+                                <implicit_parameter>u</implicit_parameter>
+                                =&gt;
+                                <body>
+                                  <member>
+                                    <ref>u</ref>
+                                    .
+                                    <name>
+                                      <ref>Name</ref>
+                                    </name>
+                                  </member>
+                                </body>
+                              </lambda>
+                            </argument>
+                            )
                           </call>
                           .
                           <name>
                             <ref>ToList</ref>
                           </name>
                         </member>
-                        <arguments>
-                          <arguments>()</arguments>
-                        </arguments>
+                        ()
                       </call>
                       ;
                     </return>
@@ -158,7 +150,7 @@
                   </type>
                 </returns>
                 <name>GetAll</name>
-                <parameters>()</parameters>
+                ()
                 <body>
                   <block>
                     {
@@ -172,9 +164,7 @@
                             <ref>ToList</ref>
                           </name>
                         </member>
-                        <arguments>
-                          <arguments>()</arguments>
-                        </arguments>
+                        ()
                       </call>
                       ;
                     </return>

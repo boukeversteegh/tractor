@@ -3,7 +3,7 @@ class[public]/
   ├─ "class"
   ├─ name = "Foo"
   └─ body/
-      └─ ... (15 children)
+      └─ ... (13 children)
 
 tests/integration/formats/sample.cs:7
 class[public]/

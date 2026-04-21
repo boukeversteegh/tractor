@@ -66,25 +66,23 @@
             <name>
               <identifier>Greeting</identifier>
             </name>
-            <parameters>
-              <formal_parameters>
-                (
-                <required_parameter>
-                  <object_pattern>
-                    {
-                    <shorthand_property_identifier_pattern>name</shorthand_property_identifier_pattern>
-                    ,
-                    <shorthand_property_identifier_pattern>age</shorthand_property_identifier_pattern>
-                    }
-                  </object_pattern>
-                  <type_annotation>
-                    :
-                    <type_identifier>Props</type_identifier>
-                  </type_annotation>
-                </required_parameter>
-                )
-              </formal_parameters>
-            </parameters>
+            <formal_parameters>
+              (
+              <required_parameter>
+                <object_pattern>
+                  {
+                  <shorthand_property_identifier_pattern>name</shorthand_property_identifier_pattern>
+                  ,
+                  <shorthand_property_identifier_pattern>age</shorthand_property_identifier_pattern>
+                  }
+                </object_pattern>
+                <type_annotation>
+                  :
+                  <type_identifier>Props</type_identifier>
+                </type_annotation>
+              </required_parameter>
+              )
+            </formal_parameters>
             <body>
               <statement_block>
                 {
@@ -105,11 +103,9 @@
                       <call_expression>
                         <identifier>useState</identifier>
                         <arguments>
-                          <arguments>
-                            (
-                            <number>0</number>
-                            )
-                          </arguments>
+                          (
+                          <number>0</number>
+                          )
                         </arguments>
                       </call_expression>
                     </value>
@@ -206,27 +202,23 @@
                             <jsx_expression>
                               {
                               <arrow_function>
-                                <parameters>
-                                  <formal_parameters>()</formal_parameters>
-                                </parameters>
+                                <formal_parameters>()</formal_parameters>
                                 =&gt;
                                 <body>
                                   <call_expression>
                                     <identifier>setCount</identifier>
                                     <arguments>
-                                      <arguments>
-                                        (
-                                        <binary_expression>
-                                          <left>
-                                            <identifier>count</identifier>
-                                          </left>
-                                          +
-                                          <right>
-                                            <number>1</number>
-                                          </right>
-                                        </binary_expression>
-                                        )
-                                      </arguments>
+                                      (
+                                      <binary_expression>
+                                        <left>
+                                          <identifier>count</identifier>
+                                        </left>
+                                        +
+                                        <right>
+                                          <number>1</number>
+                                        </right>
+                                      </binary_expression>
+                                      )
                                     </arguments>
                                   </call_expression>
                                 </body>

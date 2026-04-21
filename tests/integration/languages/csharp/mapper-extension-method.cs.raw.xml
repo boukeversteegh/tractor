@@ -23,18 +23,16 @@
                   <name>
                     <identifier>Map</identifier>
                   </name>
-                  <parameters>
-                    <parameter_list>
-                      (
-                      <parameter>
-                        <identifier>User</identifier>
-                        <name>
-                          <identifier>user</identifier>
-                        </name>
-                      </parameter>
-                      )
-                    </parameter_list>
-                  </parameters>
+                  <parameter_list>
+                    (
+                    <parameter>
+                      <identifier>User</identifier>
+                      <name>
+                        <identifier>user</identifier>
+                      </name>
+                    </parameter>
+                    )
+                  </parameter_list>
                   <body>
                     <block>
                       {
@@ -43,9 +41,7 @@
                         <object_creation_expression>
                           new
                           <identifier>UserDto</identifier>
-                          <arguments>
-                            <argument_list>()</argument_list>
-                          </arguments>
+                          <argument_list>()</argument_list>
                         </object_creation_expression>
                         ;
                       </return_statement>
@@ -63,19 +59,17 @@
                   <name>
                     <identifier>MapExt</identifier>
                   </name>
-                  <parameters>
-                    <parameter_list>
-                      (
-                      <parameter>
-                        <modifier>this</modifier>
-                        <identifier>User</identifier>
-                        <name>
-                          <identifier>user</identifier>
-                        </name>
-                      </parameter>
-                      )
-                    </parameter_list>
-                  </parameters>
+                  <parameter_list>
+                    (
+                    <parameter>
+                      <modifier>this</modifier>
+                      <identifier>User</identifier>
+                      <name>
+                        <identifier>user</identifier>
+                      </name>
+                    </parameter>
+                    )
+                  </parameter_list>
                   <body>
                     <block>
                       {
@@ -84,9 +78,7 @@
                         <object_creation_expression>
                           new
                           <identifier>UserDto</identifier>
-                          <arguments>
-                            <argument_list>()</argument_list>
-                          </arguments>
+                          <argument_list>()</argument_list>
                         </object_creation_expression>
                         ;
                       </return_statement>
@@ -104,25 +96,23 @@
                   <name>
                     <identifier>MapTwo</identifier>
                   </name>
-                  <parameters>
-                    <parameter_list>
-                      (
-                      <parameter>
-                        <identifier>User</identifier>
-                        <name>
-                          <identifier>a</identifier>
-                        </name>
-                      </parameter>
-                      ,
-                      <parameter>
-                        <identifier>User</identifier>
-                        <name>
-                          <identifier>b</identifier>
-                        </name>
-                      </parameter>
-                      )
-                    </parameter_list>
-                  </parameters>
+                  <parameter_list>
+                    (
+                    <parameter>
+                      <identifier>User</identifier>
+                      <name>
+                        <identifier>a</identifier>
+                      </name>
+                    </parameter>
+                    ,
+                    <parameter>
+                      <identifier>User</identifier>
+                      <name>
+                        <identifier>b</identifier>
+                      </name>
+                    </parameter>
+                    )
+                  </parameter_list>
                   <body>
                     <block>
                       {
@@ -131,9 +121,7 @@
                         <object_creation_expression>
                           new
                           <identifier>UserDto</identifier>
-                          <arguments>
-                            <argument_list>()</argument_list>
-                          </arguments>
+                          <argument_list>()</argument_list>
                         </object_creation_expression>
                         ;
                       </return_statement>

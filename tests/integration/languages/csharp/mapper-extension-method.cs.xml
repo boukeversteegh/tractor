@@ -18,14 +18,12 @@
                   <ref>UserDto</ref>
                 </returns>
                 <name>Map</name>
-                <parameters>
-                  (
-                  <parameter>
-                    <type>User</type>
-                    <name>user</name>
-                  </parameter>
-                  )
-                </parameters>
+                (
+                <parameter>
+                  <type>User</type>
+                  <name>user</name>
+                </parameter>
+                )
                 <body>
                   <block>
                     {
@@ -34,9 +32,7 @@
                       <new>
                         new
                         <type>UserDto</type>
-                        <arguments>
-                          <arguments>()</arguments>
-                        </arguments>
+                        ()
                       </new>
                       ;
                     </return>
@@ -55,15 +51,13 @@
                   <ref>UserDto</ref>
                 </returns>
                 <name>MapExt</name>
-                <parameters>
-                  (
-                  <parameter>
-                    <this/>
-                    <type>User</type>
-                    <name>user</name>
-                  </parameter>
-                  )
-                </parameters>
+                (
+                <parameter>
+                  <this/>
+                  <type>User</type>
+                  <name>user</name>
+                </parameter>
+                )
                 <body>
                   <block>
                     {
@@ -72,9 +66,7 @@
                       <new>
                         new
                         <type>UserDto</type>
-                        <arguments>
-                          <arguments>()</arguments>
-                        </arguments>
+                        ()
                       </new>
                       ;
                     </return>
@@ -93,19 +85,17 @@
                   <ref>UserDto</ref>
                 </returns>
                 <name>MapTwo</name>
-                <parameters>
-                  (
-                  <parameter>
-                    <type>User</type>
-                    <name>a</name>
-                  </parameter>
-                  ,
-                  <parameter>
-                    <type>User</type>
-                    <name>b</name>
-                  </parameter>
-                  )
-                </parameters>
+                (
+                <parameter>
+                  <type>User</type>
+                  <name>a</name>
+                </parameter>
+                ,
+                <parameter>
+                  <type>User</type>
+                  <name>b</name>
+                </parameter>
+                )
                 <body>
                   <block>
                     {
@@ -114,9 +104,7 @@
                       <new>
                         new
                         <type>UserDto</type>
-                        <arguments>
-                          <arguments>()</arguments>
-                        </arguments>
+                        ()
                       </new>
                       ;
                     </return>

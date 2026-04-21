@@ -24,25 +24,23 @@
             <name>
               <identifier>add</identifier>
             </name>
-            <parameters>
-              <parameter_list>
-                (
-                <parameter_declaration>
-                  <name>
-                    <identifier>a</identifier>
-                  </name>
-                  <type_identifier>int</type_identifier>
-                </parameter_declaration>
-                ,
-                <parameter_declaration>
-                  <name>
-                    <identifier>b</identifier>
-                  </name>
-                  <type_identifier>int</type_identifier>
-                </parameter_declaration>
-                )
-              </parameter_list>
-            </parameters>
+            <parameter_list>
+              (
+              <parameter_declaration>
+                <name>
+                  <identifier>a</identifier>
+                </name>
+                <type_identifier>int</type_identifier>
+              </parameter_declaration>
+              ,
+              <parameter_declaration>
+                <name>
+                  <identifier>b</identifier>
+                </name>
+                <type_identifier>int</type_identifier>
+              </parameter_declaration>
+              )
+            </parameter_list>
             <type_identifier>int</type_identifier>
             <body>
               <block>
@@ -70,9 +68,7 @@
             <name>
               <identifier>main</identifier>
             </name>
-            <parameters>
-              <parameter_list>()</parameter_list>
-            </parameters>
+            <parameter_list>()</parameter_list>
             <body>
               <block>
                 {
@@ -87,15 +83,13 @@
                     <expression_list>
                       <call_expression>
                         <identifier>add</identifier>
-                        <arguments>
-                          <argument_list>
-                            (
-                            <int_literal>5</int_literal>
-                            ,
-                            <int_literal>3</int_literal>
-                            )
-                          </argument_list>
-                        </arguments>
+                        <argument_list>
+                          (
+                          <int_literal>5</int_literal>
+                          ,
+                          <int_literal>3</int_literal>
+                          )
+                        </argument_list>
                       </call_expression>
                     </expression_list>
                   </right>
@@ -107,20 +101,18 @@
                       .
                       <field_identifier>Printf</field_identifier>
                     </selector_expression>
-                    <arguments>
-                      <argument_list>
-                        (
-                        <interpreted_string_literal>
-                          &quot;
-                          <interpreted_string_literal_content>Result: %d</interpreted_string_literal_content>
-                          <escape_sequence>\n</escape_sequence>
-                          &quot;
-                        </interpreted_string_literal>
-                        ,
-                        <identifier>result</identifier>
-                        )
-                      </argument_list>
-                    </arguments>
+                    <argument_list>
+                      (
+                      <interpreted_string_literal>
+                        &quot;
+                        <interpreted_string_literal_content>Result: %d</interpreted_string_literal_content>
+                        <escape_sequence>\n</escape_sequence>
+                        &quot;
+                      </interpreted_string_literal>
+                      ,
+                      <identifier>result</identifier>
+                      )
+                    </argument_list>
                   </call_expression>
                 </expression_statement>
                 }
@@ -133,9 +125,7 @@
             <name>
               <identifier>PublicHelper</identifier>
             </name>
-            <parameters>
-              <parameter_list>()</parameter_list>
-            </parameters>
+            <parameter_list>()</parameter_list>
             <type_identifier>string</type_identifier>
             <body>
               <block>
@@ -193,9 +183,7 @@
                   <name>
                     <field_identifier>Area</field_identifier>
                   </name>
-                  <parameters>
-                    <parameter_list>()</parameter_list>
-                  </parameters>
+                  <parameter_list>()</parameter_list>
                   <type_identifier>float64</type_identifier>
                 </method_elem>
                 }

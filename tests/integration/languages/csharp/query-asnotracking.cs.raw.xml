@@ -22,18 +22,16 @@
                   <name>
                     <identifier>GetUser</identifier>
                   </name>
-                  <parameters>
-                    <parameter_list>
-                      (
-                      <parameter>
-                        <predefined_type>int</predefined_type>
-                        <name>
-                          <identifier>id</identifier>
-                        </name>
-                      </parameter>
-                      )
-                    </parameter_list>
-                  </parameters>
+                  <parameter_list>
+                    (
+                    <parameter>
+                      <predefined_type>int</predefined_type>
+                      <name>
+                        <identifier>id</identifier>
+                      </name>
+                    </parameter>
+                    )
+                  </parameter_list>
                   <body>
                     <block>
                       {
@@ -59,37 +57,33 @@
                                   <identifier>First</identifier>
                                 </name>
                               </member_access_expression>
-                              <arguments>
-                                <argument_list>
-                                  (
-                                  <argument>
-                                    <lambda_expression>
-                                      <parameters>
-                                        <implicit_parameter>u</implicit_parameter>
-                                      </parameters>
-                                      =&gt;
-                                      <body>
-                                        <binary_expression>
-                                          <left>
-                                            <member_access_expression>
-                                              <identifier>u</identifier>
-                                              .
-                                              <name>
-                                                <identifier>Id</identifier>
-                                              </name>
-                                            </member_access_expression>
-                                          </left>
-                                          ==
-                                          <right>
-                                            <identifier>id</identifier>
-                                          </right>
-                                        </binary_expression>
-                                      </body>
-                                    </lambda_expression>
-                                  </argument>
-                                  )
-                                </argument_list>
-                              </arguments>
+                              <argument_list>
+                                (
+                                <argument>
+                                  <lambda_expression>
+                                    <implicit_parameter>u</implicit_parameter>
+                                    =&gt;
+                                    <body>
+                                      <binary_expression>
+                                        <left>
+                                          <member_access_expression>
+                                            <identifier>u</identifier>
+                                            .
+                                            <name>
+                                              <identifier>Id</identifier>
+                                            </name>
+                                          </member_access_expression>
+                                        </left>
+                                        ==
+                                        <right>
+                                          <identifier>id</identifier>
+                                        </right>
+                                      </binary_expression>
+                                    </body>
+                                  </lambda_expression>
+                                </argument>
+                                )
+                              </argument_list>
                             </invocation_expression>
                           </variable_declarator>
                         </variable_declaration>
@@ -99,15 +93,13 @@
                         return
                         <invocation_expression>
                           <identifier>Map</identifier>
-                          <arguments>
-                            <argument_list>
-                              (
-                              <argument>
-                                <identifier>user</identifier>
-                              </argument>
-                              )
-                            </argument_list>
-                          </arguments>
+                          <argument_list>
+                            (
+                            <argument>
+                              <identifier>user</identifier>
+                            </argument>
+                            )
+                          </argument_list>
                         </invocation_expression>
                         ;
                       </return_statement>
@@ -124,18 +116,16 @@
                   <name>
                     <identifier>GetUserTracked</identifier>
                   </name>
-                  <parameters>
-                    <parameter_list>
-                      (
-                      <parameter>
-                        <predefined_type>int</predefined_type>
-                        <name>
-                          <identifier>id</identifier>
-                        </name>
-                      </parameter>
-                      )
-                    </parameter_list>
-                  </parameters>
+                  <parameter_list>
+                    (
+                    <parameter>
+                      <predefined_type>int</predefined_type>
+                      <name>
+                        <identifier>id</identifier>
+                      </name>
+                    </parameter>
+                    )
+                  </parameter_list>
                   <body>
                     <block>
                       {
@@ -163,46 +153,40 @@
                                       <identifier>AsNoTracking</identifier>
                                     </name>
                                   </member_access_expression>
-                                  <arguments>
-                                    <argument_list>()</argument_list>
-                                  </arguments>
+                                  <argument_list>()</argument_list>
                                 </invocation_expression>
                                 .
                                 <name>
                                   <identifier>First</identifier>
                                 </name>
                               </member_access_expression>
-                              <arguments>
-                                <argument_list>
-                                  (
-                                  <argument>
-                                    <lambda_expression>
-                                      <parameters>
-                                        <implicit_parameter>u</implicit_parameter>
-                                      </parameters>
-                                      =&gt;
-                                      <body>
-                                        <binary_expression>
-                                          <left>
-                                            <member_access_expression>
-                                              <identifier>u</identifier>
-                                              .
-                                              <name>
-                                                <identifier>Id</identifier>
-                                              </name>
-                                            </member_access_expression>
-                                          </left>
-                                          ==
-                                          <right>
-                                            <identifier>id</identifier>
-                                          </right>
-                                        </binary_expression>
-                                      </body>
-                                    </lambda_expression>
-                                  </argument>
-                                  )
-                                </argument_list>
-                              </arguments>
+                              <argument_list>
+                                (
+                                <argument>
+                                  <lambda_expression>
+                                    <implicit_parameter>u</implicit_parameter>
+                                    =&gt;
+                                    <body>
+                                      <binary_expression>
+                                        <left>
+                                          <member_access_expression>
+                                            <identifier>u</identifier>
+                                            .
+                                            <name>
+                                              <identifier>Id</identifier>
+                                            </name>
+                                          </member_access_expression>
+                                        </left>
+                                        ==
+                                        <right>
+                                          <identifier>id</identifier>
+                                        </right>
+                                      </binary_expression>
+                                    </body>
+                                  </lambda_expression>
+                                </argument>
+                                )
+                              </argument_list>
                             </invocation_expression>
                           </variable_declarator>
                         </variable_declaration>
@@ -212,15 +196,13 @@
                         return
                         <invocation_expression>
                           <identifier>Map</identifier>
-                          <arguments>
-                            <argument_list>
-                              (
-                              <argument>
-                                <identifier>user</identifier>
-                              </argument>
-                              )
-                            </argument_list>
-                          </arguments>
+                          <argument_list>
+                            (
+                            <argument>
+                              <identifier>user</identifier>
+                            </argument>
+                            )
+                          </argument_list>
                         </invocation_expression>
                         ;
                       </return_statement>

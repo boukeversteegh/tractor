@@ -72,6 +72,26 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         // ---------------------------------------------------------------------
+        // Flat lists (Principle #12): drop the list wrapper; children become
+        // direct siblings of the enclosing element and carry field="<plural>"
+        // so non-XML serializers can group them back into an array.
+        //
+        // tree-sitter-javascript emits bare `identifier` for untyped params
+        // (tree-sitter-typescript wraps them in required_parameter). Promote
+        // those to `<param>` here so the semantic tree is consistent across
+        // JS and TS — every parameter is a <param>.
+        // ---------------------------------------------------------------------
+        "formal_parameters" => {
+            wrap_bare_identifier_params(xot, node)?;
+            distribute_field_to_children(xot, node, "parameters");
+            Ok(TransformAction::Flatten)
+        }
+        "arguments" if has_kind(xot, node) => {
+            distribute_field_to_children(xot, node, "arguments");
+            Ok(TransformAction::Flatten)
+        }
+
+        // ---------------------------------------------------------------------
         // Variable declarations - extract let/const/var modifier
         // ---------------------------------------------------------------------
         "lexical_declaration" | "variable_declaration" => {
@@ -138,8 +158,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "enum_declaration" => Some("enum"),
         "lexical_declaration" | "variable_declaration" => Some("variable"),
 
-        // Parameters
-        "formal_parameters" => Some("params"),
+        // Parameters — formal_parameters is flattened; individual params below
         "required_parameter" | "optional_parameter" => Some("param"),
 
         // Blocks
@@ -219,6 +238,29 @@ fn extract_keyword_modifiers(xot: &mut Xot, node: XotNode) -> Result<(), xot::Er
         prepend_empty_element(xot, node, modifier)?;
     }
 
+    Ok(())
+}
+
+/// Wrap each bare `identifier` child of a parameter list in a `<param>`
+/// element. Harmonises JS (grammar: `formal_parameters → identifier`)
+/// with TS (grammar: `formal_parameters → required_parameter → identifier`)
+/// so the semantic tree shape is the same.
+fn wrap_bare_identifier_params(xot: &mut Xot, list: XotNode) -> Result<(), xot::Error> {
+    let children: Vec<XotNode> = xot.children(list)
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    for child in children {
+        let kind = get_element_name(xot, child);
+        if kind.as_deref() != Some("identifier") {
+            continue;
+        }
+        let param_name = xot.add_name("param");
+        let param = xot.new_element(param_name);
+        copy_source_location(xot, child, param);
+        xot.insert_before(child, param)?;
+        xot.detach(child)?;
+        xot.append(param, child)?;
+    }
     Ok(())
 }
 

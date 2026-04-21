@@ -12,15 +12,13 @@ results:
         type: int
         name: Bar
         accessors:
-          children:
-          - accessor: get;
-          - accessor: set;
+        - get;
+        - set;
       - $type: method
         public: true
         returns:
           type: void
         name: Baz
-        parameters: ()
         body:
           block: '{ }'
 - file: tests/integration/formats/sample.cs

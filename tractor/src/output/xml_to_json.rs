@@ -108,13 +108,28 @@ fn xml_node_to_json_inner(node: &XmlNode, max_depth: Option<usize>, depth: usize
                 obj.insert(flag, Value::Bool(true));
             }
 
+            // Group entries with the same field name into an array
+            // (Principle #12 Flat Lists): sibling `<parameter field="parameters">`
+            // elements become a `"parameters": [...]` array, while a singleton
+            // `<name field="name">` stays a scalar property.
             let mut array_children: Vec<Value> = Vec::new();
             for entry in content_children {
                 if is_anon_text_entry(&entry) {
                     continue;
                 }
                 if let Some(field_name) = entry.field {
-                    obj.insert(field_name, entry.value);
+                    match obj.remove(&field_name) {
+                        Some(Value::Array(mut arr)) => {
+                            arr.push(entry.value);
+                            obj.insert(field_name, Value::Array(arr));
+                        }
+                        Some(existing) => {
+                            obj.insert(field_name, Value::Array(vec![existing, entry.value]));
+                        }
+                        None => {
+                            obj.insert(field_name, entry.value);
+                        }
+                    }
                 } else {
                     array_children.push(entry.value);
                 }
@@ -370,7 +385,18 @@ mod tests {
                     continue;
                 }
                 if let Some(field_name) = entry.field {
-                    obj.insert(field_name, entry.value);
+                    match obj.remove(&field_name) {
+                        Some(Value::Array(mut arr)) => {
+                            arr.push(entry.value);
+                            obj.insert(field_name, Value::Array(arr));
+                        }
+                        Some(existing) => {
+                            obj.insert(field_name, Value::Array(vec![existing, entry.value]));
+                        }
+                        None => {
+                            obj.insert(field_name, entry.value);
+                        }
+                    }
                 } else {
                     array_children.push(entry.value);
                 }

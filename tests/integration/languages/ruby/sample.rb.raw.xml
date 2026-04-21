@@ -10,15 +10,13 @@
             <name>
               <identifier>add</identifier>
             </name>
-            <parameters>
-              <method_parameters>
-                (
-                <identifier>a</identifier>
-                ,
-                <identifier>b</identifier>
-                )
-              </method_parameters>
-            </parameters>
+            <method_parameters>
+              (
+              <identifier>a</identifier>
+              ,
+              <identifier>b</identifier>
+              )
+            </method_parameters>
             <body>
               <body_statement>
                 <binary>
@@ -49,34 +47,30 @@
                   <right>
                     <call>
                       <identifier>add</identifier>
-                      <arguments>
-                        <argument_list>
-                          (
-                          <integer>5</integer>
-                          ,
-                          <integer>3</integer>
-                          )
-                        </argument_list>
-                      </arguments>
+                      <argument_list>
+                        (
+                        <integer>5</integer>
+                        ,
+                        <integer>3</integer>
+                        )
+                      </argument_list>
                     </call>
                   </right>
                 </assignment>
                 <call>
                   <identifier>puts</identifier>
-                  <arguments>
-                    <argument_list>
-                      <string>
-                        &quot;
-                        <string_content>Result: </string_content>
-                        <interpolation>
-                          #{
-                          <identifier>result</identifier>
-                          }
-                        </interpolation>
-                        &quot;
-                      </string>
-                    </argument_list>
-                  </arguments>
+                  <argument_list>
+                    <string>
+                      &quot;
+                      <string_content>Result: </string_content>
+                      <interpolation>
+                        #{
+                        <identifier>result</identifier>
+                        }
+                      </interpolation>
+                      &quot;
+                    </string>
+                  </argument_list>
                 </call>
               </body_statement>
             </body>

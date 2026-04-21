@@ -12,20 +12,16 @@
             "type": "int"
           },
           "name": "Add",
-          "parameters": {
-            "children": [
-              {
-                "$type": "parameter",
-                "type": "int",
-                "name": "a"
-              },
-              {
-                "$type": "parameter",
-                "type": "int",
-                "name": "b"
-              }
-            ]
-          },
+          "parameters": [
+            {
+              "type": "int",
+              "name": "a"
+            },
+            {
+              "type": "int",
+              "name": "b"
+            }
+          ],
           "body": {
             "block": {
               "children": [
@@ -61,20 +57,16 @@
             "type": "int"
           },
           "name": "Subtract",
-          "parameters": {
-            "children": [
-              {
-                "$type": "parameter",
-                "type": "int",
-                "name": "a"
-              },
-              {
-                "$type": "parameter",
-                "type": "int",
-                "name": "b"
-              }
-            ]
-          },
+          "parameters": [
+            {
+              "type": "int",
+              "name": "a"
+            },
+            {
+              "type": "int",
+              "name": "b"
+            }
+          ],
           "body": {
             "block": {
               "children": [
@@ -110,20 +102,16 @@
             "type": "int"
           },
           "name": "Multiply",
-          "parameters": {
-            "children": [
-              {
-                "$type": "parameter",
-                "type": "int",
-                "name": "a"
-              },
-              {
-                "$type": "parameter",
-                "type": "int",
-                "name": "b"
-              }
-            ]
-          },
+          "parameters": [
+            {
+              "type": "int",
+              "name": "a"
+            },
+            {
+              "type": "int",
+              "name": "b"
+            }
+          ],
           "body": {
             "block": {
               "children": [
@@ -169,13 +157,8 @@
           },
           "name": "Hello",
           "parameters": {
-            "children": [
-              {
-                "$type": "parameter",
-                "type": "string",
-                "name": "name"
-              }
-            ]
+            "type": "string",
+            "name": "name"
           },
           "body": {
             "block": {
@@ -219,13 +202,8 @@
           },
           "name": "Goodbye",
           "parameters": {
-            "children": [
-              {
-                "$type": "parameter",
-                "type": "string",
-                "name": "name"
-              }
-            ]
+            "type": "string",
+            "name": "name"
           },
           "body": {
             "block": {

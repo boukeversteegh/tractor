@@ -11,62 +11,50 @@
             <body>
               {
               <property>
-                <attributes>
-                  [
-                  <attribute>
-                    <name>
-                      <ref>MaxLength</ref>
-                    </name>
-                    <arguments>
-                      (
-                      <argument>
-                        <int>1</int>
-                      </argument>
-                      )
-                    </arguments>
-                  </attribute>
-                  ]
-                </attributes>
+                [
+                <attribute>
+                  <name>
+                    <ref>MaxLength</ref>
+                  </name>
+                  (
+                  <argument>
+                    <int>1</int>
+                  </argument>
+                  )
+                </attribute>
+                ]
                 <public/>
                 <type>bool</type>
                 <name>IsActive</name>
-                <accessors>
-                  {
-                  <accessor>get;</accessor>
-                  <accessor>set;</accessor>
-                  }
-                </accessors>
+                {
+                <accessor>get;</accessor>
+                <accessor>set;</accessor>
+                }
               </property>
               <comment>
                 <trailing/>
                 // ERROR - MaxLength on bool
               </comment>
               <property>
-                <attributes>
-                  [
-                  <attribute>
-                    <name>
-                      <ref>MaxLength</ref>
-                    </name>
-                    <arguments>
-                      (
-                      <argument>
-                        <int>100</int>
-                      </argument>
-                      )
-                    </arguments>
-                  </attribute>
-                  ]
-                </attributes>
+                [
+                <attribute>
+                  <name>
+                    <ref>MaxLength</ref>
+                  </name>
+                  (
+                  <argument>
+                    <int>100</int>
+                  </argument>
+                  )
+                </attribute>
+                ]
                 <public/>
                 <type>string</type>
                 <name>Name</name>
-                <accessors>
-                  {
-                  <accessor>get;</accessor>
-                  <accessor>set;</accessor>
-                  }
-                </accessors>
+                {
+                <accessor>get;</accessor>
+                <accessor>set;</accessor>
+                }
               </property>
               <comment>
                 <trailing/>

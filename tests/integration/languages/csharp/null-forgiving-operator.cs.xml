@@ -18,7 +18,7 @@
                   <type>void</type>
                 </returns>
                 <name>TestMethod</name>
-                <parameters>()</parameters>
+                ()
                 <body>
                   <block>
                     {
@@ -33,9 +33,7 @@
                           =
                           <call>
                             <ref>GetNullable</ref>
-                            <arguments>
-                              <arguments>()</arguments>
-                            </arguments>
+                            ()
                           </call>
                         </declarator>
                       </variable>
@@ -87,9 +85,7 @@
                                   <ref>ToUpper</ref>
                                 </name>
                               </member>
-                              <arguments>
-                                <arguments>()</arguments>
-                              </arguments>
+                              ()
                             </call>
                             .
                             <name>
@@ -107,18 +103,14 @@
                     <expression_statement>
                       <call>
                         <ref>Process</ref>
-                        <arguments>
-                          <arguments>
-                            (
-                            <argument>
-                              <postfix_unary_expression>
-                                <ref>nullable</ref>
-                                !
-                              </postfix_unary_expression>
-                            </argument>
-                            )
-                          </arguments>
-                        </arguments>
+                        (
+                        <argument>
+                          <postfix_unary_expression>
+                            <ref>nullable</ref>
+                            !
+                          </postfix_unary_expression>
+                        </argument>
+                        )
                       </call>
                       ;
                     </expression_statement>
@@ -180,7 +172,7 @@
                   </type>
                 </returns>
                 <name>GetNullable</name>
-                <parameters>()</parameters>
+                ()
                 <body>
                   <arrow_expression_clause>
                     =&gt;
@@ -195,14 +187,12 @@
                   <type>void</type>
                 </returns>
                 <name>Process</name>
-                <parameters>
-                  (
-                  <parameter>
-                    <type>string</type>
-                    <name>s</name>
-                  </parameter>
-                  )
-                </parameters>
+                (
+                <parameter>
+                  <type>string</type>
+                  <name>s</name>
+                </parameter>
+                )
                 <body>
                   <block>{ }</block>
                 </body>

@@ -13,16 +13,10 @@
             "public": true,
             "type": "int",
             "name": "Bar",
-            "accessors": {
-              "children": [
-                {
-                  "accessor": "get;"
-                },
-                {
-                  "accessor": "set;"
-                }
-              ]
-            }
+            "accessors": [
+              "get;",
+              "set;"
+            ]
           },
           {
             "$type": "method",
@@ -31,7 +25,6 @@
               "type": "void"
             },
             "name": "Baz",
-            "parameters": "()",
             "body": {
               "block": "{ }"
             }

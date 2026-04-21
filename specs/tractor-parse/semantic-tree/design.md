@@ -183,6 +183,56 @@ useful queries ("find all expressions" is too broad to be practical).
 beats `//expression[binary]`), #2 (readable tree — less nesting), and
 #4 (minimal query complexity — no extra predicates needed).
 
+### 12. Flat Lists Over Wrapper Elements
+
+When a wrapper exists only to group a homogeneous list of child
+elements, drop the wrapper. The children become direct siblings of the
+enclosing element. Each child carries a `field="<plural>"` attribute so
+non-XML serializers (JSON, YAML) can reconstruct the logical group.
+
+```xml
+<!-- WRONG: double-wrapped parameter list -->
+<method>
+  <name>add</name>
+  <parameters>
+    <params>
+      <param><name>a</name></param>
+      <param><name>b</name></param>
+    </params>
+  </parameters>
+</method>
+
+<!-- RIGHT: flat siblings, grouped by field attribute -->
+<method>
+  <name>add</name>
+  <parameter field="parameters"><name>a</name></parameter>
+  <parameter field="parameters"><name>b</name></parameter>
+</method>
+```
+
+Applies to purely-grouping wrappers: `parameters`, `arguments`,
+`attributes`, `accessors`, `generics` (type parameter/argument lists).
+Does **not** apply to wrappers that carry their own meaning — `body`,
+`block`, `type` — since those represent distinct concepts, not just
+"N things of the same kind".
+
+Queries get shorter and read naturally:
+- `//method[parameter]` — "method that has any parameter"
+- `//method[not(parameter)]` — "zero-parameter method"
+- `//method/parameter[1]` — "first parameter"
+- `//call[count(argument)=3]` — "three-argument call"
+
+JSON/YAML output stays sensible: the `field="parameters"` attribute
+tells the serializer to collect same-field siblings into a `parameters`
+array, so scalar-vs-array ambiguity is resolved deterministically.
+
+**Rationale:** Supports Design Goal #1 (intuitive queries), #2
+(readable tree — one less level of nesting), and #4 (minimal query
+complexity). The wrapper element never represented a thing in the
+source code — the parens and commas of the list live as sibling text
+nodes either way — so removing it loses no renderer-relevant
+information.
+
 ---
 
 ## Decisions

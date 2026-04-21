@@ -20,14 +20,12 @@
                   <ref>UserDto</ref>
                 </returns>
                 <name>GetUser</name>
-                <parameters>
-                  (
-                  <parameter>
-                    <type>int</type>
-                    <name>id</name>
-                  </parameter>
-                  )
-                </parameters>
+                (
+                <parameter>
+                  <type>int</type>
+                  <name>id</name>
+                </parameter>
+                )
                 <body>
                   <block>
                     {
@@ -51,39 +49,35 @@
                                 <ref>First</ref>
                               </name>
                             </member>
-                            <arguments>
-                              <arguments>
-                                (
-                                <argument>
-                                  <lambda>
-                                    <implicit_parameter>u</implicit_parameter>
-                                    =&gt;
-                                    <body>
-                                      <binary>
-                                        <op>
-                                          <equals/>
-                                          ==
-                                        </op>
-                                        <left>
-                                          <member>
-                                            <ref>u</ref>
-                                            .
-                                            <name>
-                                              <ref>Id</ref>
-                                            </name>
-                                          </member>
-                                        </left>
-                                        ==
-                                        <right>
-                                          <ref>id</ref>
-                                        </right>
-                                      </binary>
-                                    </body>
-                                  </lambda>
-                                </argument>
-                                )
-                              </arguments>
-                            </arguments>
+                            (
+                            <argument>
+                              <lambda>
+                                <implicit_parameter>u</implicit_parameter>
+                                =&gt;
+                                <body>
+                                  <binary>
+                                    <op>
+                                      <equals/>
+                                      ==
+                                    </op>
+                                    <left>
+                                      <member>
+                                        <ref>u</ref>
+                                        .
+                                        <name>
+                                          <ref>Id</ref>
+                                        </name>
+                                      </member>
+                                    </left>
+                                    ==
+                                    <right>
+                                      <ref>id</ref>
+                                    </right>
+                                  </binary>
+                                </body>
+                              </lambda>
+                            </argument>
+                            )
                           </call>
                         </declarator>
                       </variable>
@@ -93,15 +87,11 @@
                       return
                       <call>
                         <ref>Map</ref>
-                        <arguments>
-                          <arguments>
-                            (
-                            <argument>
-                              <ref>user</ref>
-                            </argument>
-                            )
-                          </arguments>
-                        </arguments>
+                        (
+                        <argument>
+                          <ref>user</ref>
+                        </argument>
+                        )
                       </call>
                       ;
                     </return>
@@ -119,14 +109,12 @@
                   <ref>UserDto</ref>
                 </returns>
                 <name>GetUserTracked</name>
-                <parameters>
-                  (
-                  <parameter>
-                    <type>int</type>
-                    <name>id</name>
-                  </parameter>
-                  )
-                </parameters>
+                (
+                <parameter>
+                  <type>int</type>
+                  <name>id</name>
+                </parameter>
+                )
                 <body>
                   <block>
                     {
@@ -152,48 +140,42 @@
                                     <ref>AsNoTracking</ref>
                                   </name>
                                 </member>
-                                <arguments>
-                                  <arguments>()</arguments>
-                                </arguments>
+                                ()
                               </call>
                               .
                               <name>
                                 <ref>First</ref>
                               </name>
                             </member>
-                            <arguments>
-                              <arguments>
-                                (
-                                <argument>
-                                  <lambda>
-                                    <implicit_parameter>u</implicit_parameter>
-                                    =&gt;
-                                    <body>
-                                      <binary>
-                                        <op>
-                                          <equals/>
-                                          ==
-                                        </op>
-                                        <left>
-                                          <member>
-                                            <ref>u</ref>
-                                            .
-                                            <name>
-                                              <ref>Id</ref>
-                                            </name>
-                                          </member>
-                                        </left>
-                                        ==
-                                        <right>
-                                          <ref>id</ref>
-                                        </right>
-                                      </binary>
-                                    </body>
-                                  </lambda>
-                                </argument>
-                                )
-                              </arguments>
-                            </arguments>
+                            (
+                            <argument>
+                              <lambda>
+                                <implicit_parameter>u</implicit_parameter>
+                                =&gt;
+                                <body>
+                                  <binary>
+                                    <op>
+                                      <equals/>
+                                      ==
+                                    </op>
+                                    <left>
+                                      <member>
+                                        <ref>u</ref>
+                                        .
+                                        <name>
+                                          <ref>Id</ref>
+                                        </name>
+                                      </member>
+                                    </left>
+                                    ==
+                                    <right>
+                                      <ref>id</ref>
+                                    </right>
+                                  </binary>
+                                </body>
+                              </lambda>
+                            </argument>
+                            )
                           </call>
                         </declarator>
                       </variable>
@@ -203,15 +185,11 @@
                       return
                       <call>
                         <ref>Map</ref>
-                        <arguments>
-                          <arguments>
-                            (
-                            <argument>
-                              <ref>user</ref>
-                            </argument>
-                            )
-                          </arguments>
-                        </arguments>
+                        (
+                        <argument>
+                          <ref>user</ref>
+                        </argument>
+                        )
                       </call>
                       ;
                     </return>

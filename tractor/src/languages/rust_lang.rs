@@ -15,6 +15,16 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         "expression_statement" => Ok(TransformAction::Skip),
         "block" | "declaration_list" => Ok(TransformAction::Flatten),
 
+        // Flat lists (Principle #12)
+        "parameters" if has_kind(xot, node) => {
+            distribute_field_to_children(xot, node, "parameters");
+            Ok(TransformAction::Flatten)
+        }
+        "arguments" if has_kind(xot, node) => {
+            distribute_field_to_children(xot, node, "arguments");
+            Ok(TransformAction::Flatten)
+        }
+
         // Name wrappers created by the builder for field="name".
         // Inline the single identifier/type_identifier/field_identifier child as text:
         //   <name><identifier>foo</identifier></name> -> <name>foo</name>
@@ -107,6 +117,14 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
     }
 }
 
+/// True when the node has a `kind` attribute (i.e., it came from tree-sitter,
+/// not a builder-inserted wrapper). Used to distinguish the tree-sitter kind
+/// `parameters` (which we want to flatten) from any semantic `parameters`
+/// element we might create elsewhere.
+fn has_kind(xot: &Xot, node: XotNode) -> bool {
+    get_kind(xot, node).is_some()
+}
+
 fn map_element_name(kind: &str) -> Option<&'static str> {
     match kind {
         "source_file" => Some("file"),
@@ -120,7 +138,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "const_item" => Some("const"),
         "static_item" => Some("static"),
         "type_item" => Some("alias"),
-        "parameters" => Some("params"),
+        // parameters is flattened via Principle #12 above
         "parameter" => Some("param"),
         "self_parameter" => Some("self"),
         "reference_type" => Some("ref"),

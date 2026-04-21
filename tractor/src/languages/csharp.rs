@@ -92,6 +92,27 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         "declaration_list" | "parameters" => Ok(TransformAction::Flatten),
 
         // ---------------------------------------------------------------------
+        // Flat lists (Principle #12): drop purely-grouping wrappers;
+        // children become siblings with field="<plural>".
+        // ---------------------------------------------------------------------
+        "parameter_list" => {
+            distribute_field_to_children(xot, node, "parameters");
+            Ok(TransformAction::Flatten)
+        }
+        "argument_list" | "attribute_argument_list" => {
+            distribute_field_to_children(xot, node, "arguments");
+            Ok(TransformAction::Flatten)
+        }
+        "attribute_list" => {
+            distribute_field_to_children(xot, node, "attributes");
+            Ok(TransformAction::Flatten)
+        }
+        "accessor_list" => {
+            distribute_field_to_children(xot, node, "accessors");
+            Ok(TransformAction::Flatten)
+        }
+
+        // ---------------------------------------------------------------------
         // Name wrappers - inline identifier text directly
         // TreeSitter: <name><identifier>Foo</identifier></name>
         // We want: <name>Foo</name> (text content directly in name element)

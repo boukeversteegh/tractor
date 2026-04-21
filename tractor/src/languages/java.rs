@@ -26,6 +26,18 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         "class_body" | "interface_body" | "block" => Ok(TransformAction::Flatten),
 
         // ---------------------------------------------------------------------
+        // Flat lists (Principle #12)
+        // ---------------------------------------------------------------------
+        "formal_parameters" => {
+            distribute_field_to_children(xot, node, "parameters");
+            Ok(TransformAction::Flatten)
+        }
+        "argument_list" => {
+            distribute_field_to_children(xot, node, "arguments");
+            Ok(TransformAction::Flatten)
+        }
+
+        // ---------------------------------------------------------------------
         // Name wrappers created by the builder for field="name".
         // Inline the single identifier child as text:
         //   <name><identifier>foo</identifier></name> -> <name>foo</name>
@@ -151,9 +163,8 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "method_declaration" => Some("method"),
         "constructor_declaration" => Some("constructor"),
         "field_declaration" => Some("field"),
-        "formal_parameters" => Some("params"),
+        // formal_parameters and argument_list are flattened via Principle #12 above
         "formal_parameter" => Some("param"),
-        "argument_list" => Some("args"),
         "generic_type" => Some("generic"),
         "array_type" => Some("array"),
         "return_statement" => Some("return"),

@@ -22,16 +22,12 @@
               <constructor>
                 <public/>
                 <name>Sample</name>
-                <parameters>
-                  <params>
-                    (
-                    <param>
-                      <integral_type>int</integral_type>
-                      <name>value</name>
-                    </param>
-                    )
-                  </params>
-                </parameters>
+                (
+                <param>
+                  <integral_type>int</integral_type>
+                  <name>value</name>
+                </param>
+                )
                 <body>
                   <constructor_body>
                     {
@@ -59,21 +55,17 @@
                 <public/>
                 <integral_type>int</integral_type>
                 <name>add</name>
-                <parameters>
-                  <params>
-                    (
-                    <param>
-                      <integral_type>int</integral_type>
-                      <name>a</name>
-                    </param>
-                    ,
-                    <param>
-                      <integral_type>int</integral_type>
-                      <name>b</name>
-                    </param>
-                    )
-                  </params>
-                </parameters>
+                (
+                <param>
+                  <integral_type>int</integral_type>
+                  <name>a</name>
+                </param>
+                ,
+                <param>
+                  <integral_type>int</integral_type>
+                  <name>b</name>
+                </param>
+                )
                 <body>
                   {
                   <return>
@@ -100,16 +92,12 @@
                 <protected/>
                 <void_type>void</void_type>
                 <name>log</name>
-                <parameters>
-                  <params>
-                    (
-                    <param>
-                      <type>String</type>
-                      <name>message</name>
-                    </param>
-                    )
-                  </params>
-                </parameters>
+                (
+                <param>
+                  <type>String</type>
+                  <name>message</name>
+                </param>
+                )
                 <body>
                   {
                   <call>
@@ -120,13 +108,9 @@
                     </member>
                     .
                     <name>println</name>
-                    <arguments>
-                      <args>
-                        (
-                        <name>message</name>
-                        )
-                      </args>
-                    </arguments>
+                    (
+                    <name>message</name>
+                    )
                   </call>
                   ;
             }
@@ -136,9 +120,7 @@
                 <package/>
                 <void_type>void</void_type>
                 <name>defaultAccess</name>
-                <parameters>
-                  <params>()</params>
-                </parameters>
+                ()
                 <body>
                   {
                   <line_comment>// package-private method</line_comment>
@@ -150,19 +132,15 @@
                 <public/>
                 <void_type>void</void_type>
                 <name>main</name>
-                <parameters>
-                  <params>
-                    (
-                    <param>
-                      <array>
-                        <type>String</type>
-                        <dimensions>[]</dimensions>
-                      </array>
-                      <name>args</name>
-                    </param>
-                    )
-                  </params>
-                </parameters>
+                (
+                <param>
+                  <array>
+                    <type>String</type>
+                    <dimensions>[]</dimensions>
+                  </array>
+                  <name>args</name>
+                </param>
+                )
                 <body>
                   {
                   <local_variable_declaration>
@@ -173,15 +151,11 @@
                       <value>
                         <call>
                           <name>add</name>
-                          <arguments>
-                            <args>
-                              (
-                              <int>5</int>
-                              ,
-                              <int>3</int>
-                              )
-                            </args>
-                          </arguments>
+                          (
+                          <int>5</int>
+                          ,
+                          <int>3</int>
+                          )
                         </call>
                       </value>
                     </variable_declarator>
@@ -195,29 +169,25 @@
                     </member>
                     .
                     <name>println</name>
-                    <arguments>
-                      <args>
-                        (
-                        <binary>
-                          <op>
-                            <plus/>
-                            +
-                          </op>
-                          <left>
-                            <string>
-                              &quot;
-                              <string_fragment>Result: </string_fragment>
-                              &quot;
-                            </string>
-                          </left>
-                          +
-                          <right>
-                            <name>result</name>
-                          </right>
-                        </binary>
-                        )
-                      </args>
-                    </arguments>
+                    (
+                    <binary>
+                      <op>
+                        <plus/>
+                        +
+                      </op>
+                      <left>
+                        <string>
+                          &quot;
+                          <string_fragment>Result: </string_fragment>
+                          &quot;
+                        </string>
+                      </left>
+                      +
+                      <right>
+                        <name>result</name>
+                      </right>
+                    </binary>
+                    )
                   </call>
                   ;
             }
@@ -236,10 +206,7 @@
                 <package/>
                 <void_type>void</void_type>
                 <name>execute</name>
-                <parameters>
-                  <params>()</params>
-                </parameters>
-                ;
+                ();
               </method>
               }
             </body>

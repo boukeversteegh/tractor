@@ -9,24 +9,19 @@
             <pub/>
             fn
             <name>add</name>
-            <params>
-              <params>
-                (
-                <param>
-                  <name>a</name>
-                  :
-                  <type>i32</type>
-                </param>
-                ,
-                <param>
-                  <name>b</name>
-                  :
-                  <type>i32</type>
-                </param>
-                )
-              </params>
-            </params>
-            -&gt;
+            (
+            <param>
+              <name>a</name>
+              :
+              <type>i32</type>
+            </param>
+            ,
+            <param>
+              <name>b</name>
+              :
+              <type>i32</type>
+            </param>
+            ) -&gt;
             <type>i32</type>
             <body>
               {
@@ -50,9 +45,7 @@
             <private/>
             fn
             <name>main</name>
-            <params>
-              <params>()</params>
-            </params>
+            ()
             <body>
               {
               <let>
@@ -62,15 +55,11 @@
                 <value>
                   <call>
                     <name>add</name>
-                    <arguments>
-                      <arguments>
-                        (
-                        <int>5</int>
-                        ,
-                        <int>3</int>
-                        )
-                      </arguments>
-                    </arguments>
+                    (
+                    <int>5</int>
+                    ,
+                    <int>3</int>
+                    )
                   </call>
                 </value>
                 ;
@@ -100,10 +89,7 @@
             </pub>
             fn
             <name>helper</name>
-            <params>
-              <params>()</params>
-            </params>
-            -&gt;
+            () -&gt;
             <type>bool</type>
             <body>
               {
@@ -167,17 +153,12 @@
               <function_signature_item>
                 fn
                 <name>draw</name>
-                <params>
-                  <params>
-                    (
-                    <self>
-                      &amp;
-                      <self>self</self>
-                    </self>
-                    )
-                  </params>
-                </params>
-                ;
+                (
+                <self>
+                  &amp;
+                  <self>self</self>
+                </self>
+                );
               </function_signature_item>
               }
             </body>
@@ -194,9 +175,7 @@
                 </pub>
                 fn
                 <name>secret</name>
-                <params>
-                  <params>()</params>
-                </params>
+                ()
                 <body>{}</body>
               </function>
               }

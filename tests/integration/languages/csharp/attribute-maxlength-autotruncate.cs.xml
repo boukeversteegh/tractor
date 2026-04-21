@@ -11,71 +11,57 @@
             <body>
               {
               <property>
-                <attributes>
-                  [
-                  <attribute>
-                    <name>
-                      <ref>MaxLength</ref>
-                    </name>
-                    <arguments>
-                      (
-                      <argument>
-                        <int>100</int>
-                      </argument>
-                      )
-                    </arguments>
-                  </attribute>
-                  ]
-                </attributes>
+                [
+                <attribute>
+                  <name>
+                    <ref>MaxLength</ref>
+                  </name>
+                  (
+                  <argument>
+                    <int>100</int>
+                  </argument>
+                  )
+                </attribute>
+                ]
                 <public/>
                 <type>string</type>
                 <name>Name</name>
-                <accessors>
-                  {
-                  <accessor>get;</accessor>
-                  <accessor>set;</accessor>
-                  }
-                </accessors>
+                {
+                <accessor>get;</accessor>
+                <accessor>set;</accessor>
+                }
               </property>
               <comment>
                 <trailing/>
                 // MATCH - missing AutoTruncate
               </comment>
               <property>
-                <attributes>
-                  [
-                  <attribute>
-                    <name>
-                      <ref>MaxLength</ref>
-                    </name>
-                    <arguments>
-                      (
-                      <argument>
-                        <int>50</int>
-                      </argument>
-                      )
-                    </arguments>
-                  </attribute>
-                  ]
-                </attributes>
-                <attributes>
-                  [
-                  <attribute>
-                    <name>
-                      <ref>AutoTruncate</ref>
-                    </name>
-                  </attribute>
-                  ]
-                </attributes>
+                [
+                <attribute>
+                  <name>
+                    <ref>MaxLength</ref>
+                  </name>
+                  (
+                  <argument>
+                    <int>50</int>
+                  </argument>
+                  )
+                </attribute>
+                ]
+            [
+                <attribute>
+                  <name>
+                    <ref>AutoTruncate</ref>
+                  </name>
+                </attribute>
+                ]
                 <public/>
                 <type>string</type>
                 <name>Email</name>
-                <accessors>
-                  {
-                  <accessor>get;</accessor>
-                  <accessor>set;</accessor>
-                  }
-                </accessors>
+                {
+                <accessor>get;</accessor>
+                <accessor>set;</accessor>
+                }
               </property>
               <comment>
                 <trailing/>
@@ -85,12 +71,10 @@
                 <public/>
                 <type>string</type>
                 <name>Bio</name>
-                <accessors>
-                  {
-                  <accessor>get;</accessor>
-                  <accessor>set;</accessor>
-                  }
-                </accessors>
+                {
+                <accessor>get;</accessor>
+                <accessor>set;</accessor>
+                }
               </property>
               <comment>
                 <trailing/>

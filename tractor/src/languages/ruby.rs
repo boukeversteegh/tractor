@@ -14,6 +14,16 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
     match kind.as_str() {
         "body_statement" => Ok(TransformAction::Flatten),
 
+        // Flat lists (Principle #12)
+        "method_parameters" => {
+            distribute_field_to_children(xot, node, "parameters");
+            Ok(TransformAction::Flatten)
+        }
+        "argument_list" => {
+            distribute_field_to_children(xot, node, "arguments");
+            Ok(TransformAction::Flatten)
+        }
+
         // Name wrappers - inline identifier text directly
         "name" => {
             if let Some(parent) = get_parent(xot, node) {

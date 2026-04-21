@@ -68,9 +68,7 @@
                         <name>
                           <identifier>Run</identifier>
                         </name>
-                        <parameters>
-                          <parameter_list>()</parameter_list>
-                        </parameters>
+                        <parameter_list>()</parameter_list>
                         <body>
                           <block>
                             {

@@ -6,16 +6,15 @@ class[public]/
       ├─ method[public]/
       │   ├─ returns/type = "int"
       │   ├─ name = "Add"
-      │   ├─ parameters/
-      │   │   ├─ "("
-      │   │   ├─ parameter/
-      │   │   │   ├─ type = "int"
-      │   │   │   └─ name = "a"
-      │   │   ├─ ","
-      │   │   ├─ parameter/
-      │   │   │   ├─ type = "int"
-      │   │   │   └─ name = "b"
-      │   │   └─ ")"
+      │   ├─ "("
+      │   ├─ parameter/
+      │   │   ├─ type = "int"
+      │   │   └─ name = "a"
+      │   ├─ ","
+      │   ├─ parameter/
+      │   │   ├─ type = "int"
+      │   │   └─ name = "b"
+      │   ├─ ")"
       │   └─ body/block/
       │       ├─ "{"
       │       ├─ return/
@@ -30,16 +29,15 @@ class[public]/
       ├─ method[public]/
       │   ├─ returns/type = "int"
       │   ├─ name = "Subtract"
-      │   ├─ parameters/
-      │   │   ├─ "("
-      │   │   ├─ parameter/
-      │   │   │   ├─ type = "int"
-      │   │   │   └─ name = "a"
-      │   │   ├─ ","
-      │   │   ├─ parameter/
-      │   │   │   ├─ type = "int"
-      │   │   │   └─ name = "b"
-      │   │   └─ ")"
+      │   ├─ "("
+      │   ├─ parameter/
+      │   │   ├─ type = "int"
+      │   │   └─ name = "a"
+      │   ├─ ","
+      │   ├─ parameter/
+      │   │   ├─ type = "int"
+      │   │   └─ name = "b"
+      │   ├─ ")"
       │   └─ body/block/
       │       ├─ "{"
       │       ├─ return/
@@ -54,16 +52,15 @@ class[public]/
       ├─ method[public]/
       │   ├─ returns/type = "int"
       │   ├─ name = "Multiply"
-      │   ├─ parameters/
-      │   │   ├─ "("
-      │   │   ├─ parameter/
-      │   │   │   ├─ type = "int"
-      │   │   │   └─ name = "a"
-      │   │   ├─ ","
-      │   │   ├─ parameter/
-      │   │   │   ├─ type = "int"
-      │   │   │   └─ name = "b"
-      │   │   └─ ")"
+      │   ├─ "("
+      │   ├─ parameter/
+      │   │   ├─ type = "int"
+      │   │   └─ name = "a"
+      │   ├─ ","
+      │   ├─ parameter/
+      │   │   ├─ type = "int"
+      │   │   └─ name = "b"
+      │   ├─ ")"
       │   └─ body/block/
       │       ├─ "{"
       │       ├─ return/
@@ -84,12 +81,11 @@ class[public]/
       ├─ method[public]/
       │   ├─ returns/type = "string"
       │   ├─ name = "Hello"
-      │   ├─ parameters/
-      │   │   ├─ "("
-      │   │   ├─ parameter/
-      │   │   │   ├─ type = "string"
-      │   │   │   └─ name = "name"
-      │   │   └─ ")"
+      │   ├─ "("
+      │   ├─ parameter/
+      │   │   ├─ type = "string"
+      │   │   └─ name = "name"
+      │   ├─ ")"
       │   └─ body/block/
       │       ├─ "{"
       │       ├─ return/
@@ -107,12 +103,11 @@ class[public]/
       ├─ method[public]/
       │   ├─ returns/type = "string"
       │   ├─ name = "Goodbye"
-      │   ├─ parameters/
-      │   │   ├─ "("
-      │   │   ├─ parameter/
-      │   │   │   ├─ type = "string"
-      │   │   │   └─ name = "name"
-      │   │   └─ ")"
+      │   ├─ "("
+      │   ├─ parameter/
+      │   │   ├─ type = "string"
+      │   │   └─ name = "name"
+      │   ├─ ")"
       │   └─ body/block/
       │       ├─ "{"
       │       ├─ return/

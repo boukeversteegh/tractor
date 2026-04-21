@@ -28,9 +28,7 @@
                   <name>
                     <identifier>GetNames</identifier>
                   </name>
-                  <parameters>
-                    <parameter_list>()</parameter_list>
-                  </parameters>
+                  <parameter_list>()</parameter_list>
                   <body>
                     <block>
                       {
@@ -46,9 +44,7 @@
                               &gt;
                             </type_argument_list>
                           </generic_name>
-                          <arguments>
-                            <argument_list>()</argument_list>
-                          </arguments>
+                          <argument_list>()</argument_list>
                         </object_creation_expression>
                         ;
                       </return_statement>
@@ -73,9 +69,7 @@
                   <name>
                     <identifier>GetCounts</identifier>
                   </name>
-                  <parameters>
-                    <parameter_list>()</parameter_list>
-                  </parameters>
+                  <parameter_list>()</parameter_list>
                   <body>
                     <block>
                       {
@@ -93,9 +87,7 @@
                               &gt;
                             </type_argument_list>
                           </generic_name>
-                          <arguments>
-                            <argument_list>()</argument_list>
-                          </arguments>
+                          <argument_list>()</argument_list>
                         </object_creation_expression>
                         ;
                       </return_statement>
@@ -127,9 +119,7 @@
                   <name>
                     <identifier>GetUserMaps</identifier>
                   </name>
-                  <parameters>
-                    <parameter_list>()</parameter_list>
-                  </parameters>
+                  <parameter_list>()</parameter_list>
                   <body>
                     <block>
                       {
@@ -154,9 +144,7 @@
                               &gt;
                             </type_argument_list>
                           </generic_name>
-                          <arguments>
-                            <argument_list>()</argument_list>
-                          </arguments>
+                          <argument_list>()</argument_list>
                         </object_creation_expression>
                         ;
                       </return_statement>

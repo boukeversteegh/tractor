@@ -19,6 +19,16 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // carries the name and type directly.
         "type_declaration" => Ok(TransformAction::Flatten),
 
+        // Flat lists (Principle #12)
+        "parameter_list" => {
+            distribute_field_to_children(xot, node, "parameters");
+            Ok(TransformAction::Flatten)
+        }
+        "argument_list" => {
+            distribute_field_to_children(xot, node, "arguments");
+            Ok(TransformAction::Flatten)
+        }
+
         // Raw string literal — rename to <string> and prepend <raw/> marker
         "raw_string_literal" => {
             prepend_empty_element(xot, node, "raw")?;
@@ -125,7 +135,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "interface_type" => Some("interface"),
         "const_declaration" => Some("const"),
         "var_declaration" => Some("var"),
-        "parameter_list" => Some("params"),
+        // parameter_list is flattened via Principle #12 above
         "parameter_declaration" => Some("param"),
         "pointer_type" => Some("pointer"),
         "slice_type" => Some("slice"),

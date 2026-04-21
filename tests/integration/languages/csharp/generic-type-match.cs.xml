@@ -24,7 +24,7 @@
                   </type>
                 </returns>
                 <name>GetNames</name>
-                <parameters>()</parameters>
+                ()
                 <body>
                   <block>
                     {
@@ -41,9 +41,7 @@
                             &gt;
                           </arguments>
                         </type>
-                        <arguments>
-                          <arguments>()</arguments>
-                        </arguments>
+                        ()
                       </new>
                       ;
                     </return>
@@ -67,7 +65,7 @@
                   </type>
                 </returns>
                 <name>GetCounts</name>
-                <parameters>()</parameters>
+                ()
                 <body>
                   <block>
                     {
@@ -86,9 +84,7 @@
                             &gt;
                           </arguments>
                         </type>
-                        <arguments>
-                          <arguments>()</arguments>
-                        </arguments>
+                        ()
                       </new>
                       ;
                     </return>
@@ -120,7 +116,7 @@
                   </type>
                 </returns>
                 <name>GetUserMaps</name>
-                <parameters>()</parameters>
+                ()
                 <body>
                   <block>
                     {
@@ -147,9 +143,7 @@
                             &gt;
                           </arguments>
                         </type>
-                        <arguments>
-                          <arguments>()</arguments>
-                        </arguments>
+                        ()
                       </new>
                       ;
                     </return>

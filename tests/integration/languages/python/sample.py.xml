@@ -12,16 +12,11 @@
           <function>
             def
             <name>add</name>
-            <params>
-              <params>
-                (
-                <name>a</name>
-                ,
-                <name>b</name>
-                )
-              </params>
-            </params>
-            :
+            (
+            <name>a</name>
+            ,
+            <name>b</name>
+            ):
             <body>
               <string>
                 <string_start>&quot;&quot;&quot;</string_start>
@@ -50,14 +45,9 @@
             <async/>
             async def
             <name>fetch_data</name>
-            <params>
-              <params>
-                (
-                <name>url</name>
-                )
-              </params>
-            </params>
-            :
+            (
+            <name>url</name>
+            ):
             <body>
               <string>
                 <string_start>&quot;&quot;&quot;</string_start>
@@ -73,10 +63,7 @@
           <function>
             def
             <name>main</name>
-            <params>
-              <params>()</params>
-            </params>
-            :
+            ():
             <body>
               <assign>
                 <left>
@@ -86,36 +73,28 @@
                 <right>
                   <call>
                     <name>add</name>
-                    <arguments>
-                      <argument_list>
-                        (
-                        <int>5</int>
-                        ,
-                        <int>3</int>
-                        )
-                      </argument_list>
-                    </arguments>
+                    (
+                    <int>5</int>
+                    ,
+                    <int>3</int>
+                    )
                   </call>
                 </right>
               </assign>
               <call>
                 <name>print</name>
-                <arguments>
-                  <argument_list>
-                    (
-                    <string>
-                      <string_start>f&quot;</string_start>
-                      <string_content>Result: </string_content>
-                      <interpolation>
-                        {
-                        <name>result</name>
-                        }
-                      </interpolation>
-                      <string_end>&quot;</string_end>
-                    </string>
-                    )
-                  </argument_list>
-                </arguments>
+                (
+                <string>
+                  <string_start>f&quot;</string_start>
+                  <string_content>Result: </string_content>
+                  <interpolation>
+                    {
+                    <name>result</name>
+                    }
+                  </interpolation>
+                  <string_end>&quot;</string_end>
+                </string>
+                )
               </call>
             </body>
           </function>
@@ -140,9 +119,7 @@
             <consequence>
               <call>
                 <name>main</name>
-                <arguments>
-                  <argument_list>()</argument_list>
-                </arguments>
+                ()
               </call>
             </consequence>
           </if>

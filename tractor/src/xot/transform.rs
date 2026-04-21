@@ -655,6 +655,21 @@ pub mod helpers {
         Ok(())
     }
 
+    /// Distribute a `field=<name>` attribute to every element child of `node`.
+    ///
+    /// Used with `TransformAction::Flatten` to implement Principle #12
+    /// (Flat Lists): a purely-grouping wrapper is replaced by its children,
+    /// which inherit a `field="<plural>"` attribute so non-XML serializers
+    /// (JSON/YAML) can collect same-field siblings into an array.
+    pub fn distribute_field_to_children(xot: &mut Xot, node: XotNode, field: &str) {
+        let children: Vec<XotNode> = xot.children(node)
+            .filter(|&c| xot.element(c).is_some())
+            .collect();
+        for child in children {
+            set_attr(xot, child, "field", field);
+        }
+    }
+
     /// Remove all text children from a node
     pub fn remove_text_children(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
         let text_children: Vec<XotNode> = xot.children(node)

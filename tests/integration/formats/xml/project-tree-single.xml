@@ -11,19 +11,17 @@
         <type>int</type>
       </returns>
       <name>Add</name>
-      <parameters>
-        (
-        <parameter>
-          <type>int</type>
-          <name>a</name>
-        </parameter>
-        ,
-        <parameter>
-          <type>int</type>
-          <name>b</name>
-        </parameter>
-        )
-      </parameters>
+      (
+      <parameter>
+        <type>int</type>
+        <name>a</name>
+      </parameter>
+      ,
+      <parameter>
+        <type>int</type>
+        <name>b</name>
+      </parameter>
+      )
       <body>
         <block>
           {
@@ -54,19 +52,17 @@
         <type>int</type>
       </returns>
       <name>Subtract</name>
-      <parameters>
-        (
-        <parameter>
-          <type>int</type>
-          <name>a</name>
-        </parameter>
-        ,
-        <parameter>
-          <type>int</type>
-          <name>b</name>
-        </parameter>
-        )
-      </parameters>
+      (
+      <parameter>
+        <type>int</type>
+        <name>a</name>
+      </parameter>
+      ,
+      <parameter>
+        <type>int</type>
+        <name>b</name>
+      </parameter>
+      )
       <body>
         <block>
           {
@@ -97,19 +93,17 @@
         <type>int</type>
       </returns>
       <name>Multiply</name>
-      <parameters>
-        (
-        <parameter>
-          <type>int</type>
-          <name>a</name>
-        </parameter>
-        ,
-        <parameter>
-          <type>int</type>
-          <name>b</name>
-        </parameter>
-        )
-      </parameters>
+      (
+      <parameter>
+        <type>int</type>
+        <name>a</name>
+      </parameter>
+      ,
+      <parameter>
+        <type>int</type>
+        <name>b</name>
+      </parameter>
+      )
       <body>
         <block>
           {

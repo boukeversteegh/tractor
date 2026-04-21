@@ -84,19 +84,22 @@ impl<'a> TreeBuilder<'a> {
         Some(self.xot.new_text(&text))
     }
 
-    /// Fields that should be wrapped in semantic elements
+    /// Fields that should be wrapped in semantic elements.
+    ///
+    /// Purely-grouping fields (`parameters`, `arguments`, etc.) are
+    /// intentionally absent here: per Principle #12 (Flat Lists), their
+    /// list items become direct siblings of the enclosing element and
+    /// carry a `field="<plural>"` attribute distributed by the transform.
     const WRAPPED_FIELDS: &'static [&'static str] = &[
         "name",        // variable/function/class name
         "value",       // assigned/initial value
         "left",        // binary expression left operand
         "right",       // binary expression right operand
         "body",        // function/class/loop body
-        "parameters",  // function parameters
         "condition",   // if/while/for condition
         "consequence", // if true branch
         "alternative", // if else branch
         "returns",     // return type
-        "arguments",   // call arguments
     ];
 
     /// Check if a field should be wrapped in a semantic element

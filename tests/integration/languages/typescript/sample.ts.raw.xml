@@ -10,27 +10,25 @@
             <name>
               <identifier>add</identifier>
             </name>
-            <parameters>
-              <formal_parameters>
-                (
-                <required_parameter>
-                  <identifier>a</identifier>
-                  <type_annotation>
-                    :
-                    <predefined_type>number</predefined_type>
-                  </type_annotation>
-                </required_parameter>
-                ,
-                <required_parameter>
-                  <identifier>b</identifier>
-                  <type_annotation>
-                    :
-                    <predefined_type>number</predefined_type>
-                  </type_annotation>
-                </required_parameter>
-                )
-              </formal_parameters>
-            </parameters>
+            <formal_parameters>
+              (
+              <required_parameter>
+                <identifier>a</identifier>
+                <type_annotation>
+                  :
+                  <predefined_type>number</predefined_type>
+                </type_annotation>
+              </required_parameter>
+              ,
+              <required_parameter>
+                <identifier>b</identifier>
+                <type_annotation>
+                  :
+                  <predefined_type>number</predefined_type>
+                </type_annotation>
+              </required_parameter>
+              )
+            </formal_parameters>
             <type_annotation>
               :
               <predefined_type>number</predefined_type>
@@ -60,9 +58,7 @@
             <name>
               <identifier>main</identifier>
             </name>
-            <parameters>
-              <formal_parameters>()</formal_parameters>
-            </parameters>
+            <formal_parameters>()</formal_parameters>
             <type_annotation>
               :
               <predefined_type>void</predefined_type>
@@ -81,13 +77,11 @@
                       <call_expression>
                         <identifier>add</identifier>
                         <arguments>
-                          <arguments>
-                            (
-                            <number>5</number>
-                            ,
-                            <number>3</number>
-                            )
-                          </arguments>
+                          (
+                          <number>5</number>
+                          ,
+                          <number>3</number>
+                          )
                         </arguments>
                       </call_expression>
                     </value>
@@ -102,20 +96,18 @@
                       <property_identifier>log</property_identifier>
                     </member_expression>
                     <arguments>
-                      <arguments>
-                        (
-                        <template_string>
-                          `
-                          <string_fragment>Result: </string_fragment>
-                          <template_substitution>
-                            ${
-                            <identifier>result</identifier>
-                            }
-                          </template_substitution>
-                          `
-                        </template_string>
-                        )
-                      </arguments>
+                      (
+                      <template_string>
+                        `
+                        <string_fragment>Result: </string_fragment>
+                        <template_substitution>
+                          ${
+                          <identifier>result</identifier>
+                          }
+                        </template_substitution>
+                        `
+                      </template_string>
+                      )
                     </arguments>
                   </call_expression>
                   ;
@@ -127,9 +119,7 @@
           <expression_statement>
             <call_expression>
               <identifier>main</identifier>
-              <arguments>
-                <arguments>()</arguments>
-              </arguments>
+              <arguments>()</arguments>
             </call_expression>
             ;
           </expression_statement>
@@ -193,28 +183,26 @@
             <name>
               <identifier>greet</identifier>
             </name>
-            <parameters>
-              <formal_parameters>
-                (
-                <required_parameter>
-                  <identifier>name</identifier>
-                  <type_annotation>
-                    :
-                    <predefined_type>string</predefined_type>
-                  </type_annotation>
-                </required_parameter>
-                ,
-                <optional_parameter>
-                  <identifier>title</identifier>
-                  ?
-                  <type_annotation>
-                    :
-                    <predefined_type>string</predefined_type>
-                  </type_annotation>
-                </optional_parameter>
-                )
-              </formal_parameters>
-            </parameters>
+            <formal_parameters>
+              (
+              <required_parameter>
+                <identifier>name</identifier>
+                <type_annotation>
+                  :
+                  <predefined_type>string</predefined_type>
+                </type_annotation>
+              </required_parameter>
+              ,
+              <optional_parameter>
+                <identifier>title</identifier>
+                ?
+                <type_annotation>
+                  :
+                  <predefined_type>string</predefined_type>
+                </type_annotation>
+              </optional_parameter>
+              )
+            </formal_parameters>
             <type_annotation>
               :
               <predefined_type>string</predefined_type>
@@ -262,36 +250,34 @@
             <name>
               <identifier>configure</identifier>
             </name>
-            <parameters>
-              <formal_parameters>
-                (
-                <required_parameter>
-                  <identifier>host</identifier>
-                  <type_annotation>
-                    :
-                    <predefined_type>string</predefined_type>
-                  </type_annotation>
-                </required_parameter>
-                ,
-                <required_parameter>
-                  <identifier>port</identifier>
-                  <type_annotation>
-                    :
-                    <predefined_type>number</predefined_type>
-                  </type_annotation>
-                </required_parameter>
-                ,
-                <optional_parameter>
-                  <identifier>timeout</identifier>
-                  ?
-                  <type_annotation>
-                    :
-                    <predefined_type>number</predefined_type>
-                  </type_annotation>
-                </optional_parameter>
-                )
-              </formal_parameters>
-            </parameters>
+            <formal_parameters>
+              (
+              <required_parameter>
+                <identifier>host</identifier>
+                <type_annotation>
+                  :
+                  <predefined_type>string</predefined_type>
+                </type_annotation>
+              </required_parameter>
+              ,
+              <required_parameter>
+                <identifier>port</identifier>
+                <type_annotation>
+                  :
+                  <predefined_type>number</predefined_type>
+                </type_annotation>
+              </required_parameter>
+              ,
+              <optional_parameter>
+                <identifier>timeout</identifier>
+                ?
+                <type_annotation>
+                  :
+                  <predefined_type>number</predefined_type>
+                </type_annotation>
+              </optional_parameter>
+              )
+            </formal_parameters>
             <type_annotation>
               :
               <predefined_type>void</predefined_type>
@@ -307,15 +293,13 @@
                       <property_identifier>log</property_identifier>
                     </member_expression>
                     <arguments>
-                      <arguments>
-                        (
-                        <identifier>host</identifier>
-                        ,
-                        <identifier>port</identifier>
-                        ,
-                        <identifier>timeout</identifier>
-                        )
-                      </arguments>
+                      (
+                      <identifier>host</identifier>
+                      ,
+                      <identifier>port</identifier>
+                      ,
+                      <identifier>timeout</identifier>
+                      )
                     </arguments>
                   </call_expression>
                   ;

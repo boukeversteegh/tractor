@@ -29,18 +29,16 @@
                   <name>
                     <identifier>Sample</identifier>
                   </name>
-                  <parameters>
-                    <formal_parameters>
-                      (
-                      <formal_parameter>
-                        <integral_type>int</integral_type>
-                        <name>
-                          <identifier>value</identifier>
-                        </name>
-                      </formal_parameter>
-                      )
-                    </formal_parameters>
-                  </parameters>
+                  <formal_parameters>
+                    (
+                    <formal_parameter>
+                      <integral_type>int</integral_type>
+                      <name>
+                        <identifier>value</identifier>
+                      </name>
+                    </formal_parameter>
+                    )
+                  </formal_parameters>
                   <body>
                     <constructor_body>
                       {
@@ -70,25 +68,23 @@
                   <name>
                     <identifier>add</identifier>
                   </name>
-                  <parameters>
-                    <formal_parameters>
-                      (
-                      <formal_parameter>
-                        <integral_type>int</integral_type>
-                        <name>
-                          <identifier>a</identifier>
-                        </name>
-                      </formal_parameter>
-                      ,
-                      <formal_parameter>
-                        <integral_type>int</integral_type>
-                        <name>
-                          <identifier>b</identifier>
-                        </name>
-                      </formal_parameter>
-                      )
-                    </formal_parameters>
-                  </parameters>
+                  <formal_parameters>
+                    (
+                    <formal_parameter>
+                      <integral_type>int</integral_type>
+                      <name>
+                        <identifier>a</identifier>
+                      </name>
+                    </formal_parameter>
+                    ,
+                    <formal_parameter>
+                      <integral_type>int</integral_type>
+                      <name>
+                        <identifier>b</identifier>
+                      </name>
+                    </formal_parameter>
+                    )
+                  </formal_parameters>
                   <body>
                     <block>
                       {
@@ -115,18 +111,16 @@
                   <name>
                     <identifier>log</identifier>
                   </name>
-                  <parameters>
-                    <formal_parameters>
-                      (
-                      <formal_parameter>
-                        <type_identifier>String</type_identifier>
-                        <name>
-                          <identifier>message</identifier>
-                        </name>
-                      </formal_parameter>
-                      )
-                    </formal_parameters>
-                  </parameters>
+                  <formal_parameters>
+                    (
+                    <formal_parameter>
+                      <type_identifier>String</type_identifier>
+                      <name>
+                        <identifier>message</identifier>
+                      </name>
+                    </formal_parameter>
+                    )
+                  </formal_parameters>
                   <body>
                     <block>
                       {
@@ -141,13 +135,11 @@
                           <name>
                             <identifier>println</identifier>
                           </name>
-                          <arguments>
-                            <argument_list>
-                              (
-                              <identifier>message</identifier>
-                              )
-                            </argument_list>
-                          </arguments>
+                          <argument_list>
+                            (
+                            <identifier>message</identifier>
+                            )
+                          </argument_list>
                         </method_invocation>
                         ;
                       </expression_statement>
@@ -160,9 +152,7 @@
                   <name>
                     <identifier>defaultAccess</identifier>
                   </name>
-                  <parameters>
-                    <formal_parameters>()</formal_parameters>
-                  </parameters>
+                  <formal_parameters>()</formal_parameters>
                   <body>
                     <block>
                       {
@@ -177,21 +167,19 @@
                   <name>
                     <identifier>main</identifier>
                   </name>
-                  <parameters>
-                    <formal_parameters>
-                      (
-                      <formal_parameter>
-                        <array_type>
-                          <type_identifier>String</type_identifier>
-                          <dimensions>[]</dimensions>
-                        </array_type>
-                        <name>
-                          <identifier>args</identifier>
-                        </name>
-                      </formal_parameter>
-                      )
-                    </formal_parameters>
-                  </parameters>
+                  <formal_parameters>
+                    (
+                    <formal_parameter>
+                      <array_type>
+                        <type_identifier>String</type_identifier>
+                        <dimensions>[]</dimensions>
+                      </array_type>
+                      <name>
+                        <identifier>args</identifier>
+                      </name>
+                    </formal_parameter>
+                    )
+                  </formal_parameters>
                   <body>
                     <block>
                       {
@@ -207,15 +195,13 @@
                               <name>
                                 <identifier>add</identifier>
                               </name>
-                              <arguments>
-                                <argument_list>
-                                  (
-                                  <decimal_integer_literal>5</decimal_integer_literal>
-                                  ,
-                                  <decimal_integer_literal>3</decimal_integer_literal>
-                                  )
-                                </argument_list>
-                              </arguments>
+                              <argument_list>
+                                (
+                                <decimal_integer_literal>5</decimal_integer_literal>
+                                ,
+                                <decimal_integer_literal>3</decimal_integer_literal>
+                                )
+                              </argument_list>
                             </method_invocation>
                           </value>
                         </variable_declarator>
@@ -232,25 +218,23 @@
                           <name>
                             <identifier>println</identifier>
                           </name>
-                          <arguments>
-                            <argument_list>
-                              (
-                              <binary_expression>
-                                <left>
-                                  <string_literal>
-                                    &quot;
-                                    <string_fragment>Result: </string_fragment>
-                                    &quot;
-                                  </string_literal>
-                                </left>
-                                +
-                                <right>
-                                  <identifier>result</identifier>
-                                </right>
-                              </binary_expression>
-                              )
-                            </argument_list>
-                          </arguments>
+                          <argument_list>
+                            (
+                            <binary_expression>
+                              <left>
+                                <string_literal>
+                                  &quot;
+                                  <string_fragment>Result: </string_fragment>
+                                  &quot;
+                                </string_literal>
+                              </left>
+                              +
+                              <right>
+                                <identifier>result</identifier>
+                              </right>
+                            </binary_expression>
+                            )
+                          </argument_list>
                         </method_invocation>
                         ;
                       </expression_statement>
@@ -275,9 +259,7 @@
                   <name>
                     <identifier>execute</identifier>
                   </name>
-                  <parameters>
-                    <formal_parameters>()</formal_parameters>
-                  </parameters>
+                  <formal_parameters>()</formal_parameters>
                   ;
                 </method_declaration>
                 }

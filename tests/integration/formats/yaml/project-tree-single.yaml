@@ -9,13 +9,10 @@ body:
       type: int
     name: Add
     parameters:
-      children:
-      - $type: parameter
-        type: int
-        name: a
-      - $type: parameter
-        type: int
-        name: b
+    - type: int
+      name: a
+    - type: int
+      name: b
     body:
       block:
         children:
@@ -36,13 +33,10 @@ body:
       type: int
     name: Subtract
     parameters:
-      children:
-      - $type: parameter
-        type: int
-        name: a
-      - $type: parameter
-        type: int
-        name: b
+    - type: int
+      name: a
+    - type: int
+      name: b
     body:
       block:
         children:
@@ -63,13 +57,10 @@ body:
       type: int
     name: Multiply
     parameters:
-      children:
-      - $type: parameter
-        type: int
-        name: a
-      - $type: parameter
-        type: int
-        name: b
+    - type: int
+      name: a
+    - type: int
+      name: b
     body:
       block:
         children:

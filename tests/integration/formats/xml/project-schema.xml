@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schema>class[public] (2)/ = "class"
   ├─ body (2)/ = {…}
-  │   └─ method[public] (5)/
+  │   └─ method[public] (5)/ = "(", ",", ")"
   │       ├─ body (5)/
   │       │   └─ block (5)/ = {…}
   │       │       └─ … (12 children)
   │       ├─ name (5) = "Add", "Subtract", "Multiply", "Hello", "Goodbye"
-  │       ├─ parameters (5)/ = "(", ",", ")"
-  │       │   └─ parameter (8)/
-  │       │       └─ … (2 children)
+  │       ├─ parameter (8)/
+  │       │   ├─ name (8) = "a", "b", "name"
+  │       │   └─ type (8) = "int", "string"
   │       └─ returns (5)/
   │           └─ type (5) = "int", "string"
   └─ name (2) = "Calculator", "Greeter"

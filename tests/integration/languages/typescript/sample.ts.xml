@@ -8,29 +8,25 @@
           <function>
             function
             <name>add</name>
-            <parameters>
-              <params>
-                (
-                <param>
-                  <required/>
-                  <name>a</name>
-                  <typeof>
-                    :
-                    <predefined_type>number</predefined_type>
-                  </typeof>
-                </param>
-                ,
-                <param>
-                  <required/>
-                  <name>b</name>
-                  <typeof>
-                    :
-                    <predefined_type>number</predefined_type>
-                  </typeof>
-                </param>
-                )
-              </params>
-            </parameters>
+            (
+            <param>
+              <required/>
+              <name>a</name>
+              <typeof>
+                :
+                <predefined_type>number</predefined_type>
+              </typeof>
+            </param>
+            ,
+            <param>
+              <required/>
+              <name>b</name>
+              <typeof>
+                :
+                <predefined_type>number</predefined_type>
+              </typeof>
+            </param>
+            )
             <typeof>
               :
               <predefined_type>number</predefined_type>
@@ -62,9 +58,7 @@
           <function>
             function
             <name>main</name>
-            <parameters>
-              <params>()</params>
-            </parameters>
+            ()
             <typeof>
               :
               <predefined_type>void</predefined_type>
@@ -83,15 +77,11 @@
                         <ref/>
                         add
                       </function>
-                      <arguments>
-                        <arguments>
-                          (
-                          <number>5</number>
-                          ,
-                          <number>3</number>
-                          )
-                        </arguments>
-                      </arguments>
+                      (
+                      <number>5</number>
+                      ,
+                      <number>3</number>
+                      )
                     </call>
                   </value>
                   ;
@@ -110,22 +100,18 @@
                       </property>
                     </member>
                   </function>
-                  <arguments>
-                    <arguments>
-                      (
-                      <template_string>
-                        `
-                        <string_fragment>Result: </string_fragment>
-                        <template_substitution>
-                          ${
-                          <name>result</name>
-                          }
-                        </template_substitution>
-                        `
-                      </template_string>
-                      )
-                    </arguments>
-                  </arguments>
+                  (
+                  <template_string>
+                    `
+                    <string_fragment>Result: </string_fragment>
+                    <template_substitution>
+                      ${
+                      <name>result</name>
+                      }
+                    </template_substitution>
+                    `
+                  </template_string>
+                  )
                 </call>
                 ;
         }
@@ -137,9 +123,7 @@
               <ref/>
               main
             </function>
-            <arguments>
-              <arguments>()</arguments>
-            </arguments>
+            ()
           </call>
           ;
           <interface>
@@ -184,30 +168,26 @@
           <function>
             function
             <name>greet</name>
-            <parameters>
-              <params>
-                (
-                <param>
-                  <required/>
-                  <name>name</name>
-                  <typeof>
-                    :
-                    <predefined_type>string</predefined_type>
-                  </typeof>
-                </param>
-                ,
-                <param>
-                  <optional/>
-                  <name>title</name>
-                  ?
-                  <typeof>
-                    :
-                    <predefined_type>string</predefined_type>
-                  </typeof>
-                </param>
-                )
-              </params>
-            </parameters>
+            (
+            <param>
+              <required/>
+              <name>name</name>
+              <typeof>
+                :
+                <predefined_type>string</predefined_type>
+              </typeof>
+            </param>
+            ,
+            <param>
+              <optional/>
+              <name>title</name>
+              ?
+              <typeof>
+                :
+                <predefined_type>string</predefined_type>
+              </typeof>
+            </param>
+            )
             <typeof>
               :
               <predefined_type>string</predefined_type>
@@ -253,39 +233,35 @@
           <function>
             function
             <name>configure</name>
-            <parameters>
-              <params>
-                (
-                <param>
-                  <required/>
-                  <name>host</name>
-                  <typeof>
-                    :
-                    <predefined_type>string</predefined_type>
-                  </typeof>
-                </param>
-                ,
-                <param>
-                  <required/>
-                  <name>port</name>
-                  <typeof>
-                    :
-                    <predefined_type>number</predefined_type>
-                  </typeof>
-                </param>
-                ,
-                <param>
-                  <optional/>
-                  <name>timeout</name>
-                  ?
-                  <typeof>
-                    :
-                    <predefined_type>number</predefined_type>
-                  </typeof>
-                </param>
-                )
-              </params>
-            </parameters>
+            (
+            <param>
+              <required/>
+              <name>host</name>
+              <typeof>
+                :
+                <predefined_type>string</predefined_type>
+              </typeof>
+            </param>
+            ,
+            <param>
+              <required/>
+              <name>port</name>
+              <typeof>
+                :
+                <predefined_type>number</predefined_type>
+              </typeof>
+            </param>
+            ,
+            <param>
+              <optional/>
+              <name>timeout</name>
+              ?
+              <typeof>
+                :
+                <predefined_type>number</predefined_type>
+              </typeof>
+            </param>
+            )
             <typeof>
               :
               <predefined_type>void</predefined_type>
@@ -307,17 +283,13 @@
                       </property>
                     </member>
                   </function>
-                  <arguments>
-                    <arguments>
-                      (
-                      <name>host</name>
-                      ,
-                      <name>port</name>
-                      ,
-                      <name>timeout</name>
-                      )
-                    </arguments>
-                  </arguments>
+                  (
+                  <name>host</name>
+                  ,
+                  <name>port</name>
+                  ,
+                  <name>timeout</name>
+                  )
                 </call>
                 ;
         }

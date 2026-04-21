@@ -31,17 +31,16 @@ unit/                                                                           
           │       ├─ property[public]/                                                                          ┤    │ 
           │       │   ├─ type = "string"                                                                        ┤ 16 ├         public string Config { get; set; }
           │       │   ├─ name = "Config"                                                                        ┤    │ 
-          │       │   └─ accessors/                                                                             ┤    │ 
-          │       │       ├─ "{"                                                                                ┤    │ 
-          │       │       ├─ accessor = "get;"                                                                  ┤    │ 
-          │       │       ├─ accessor = "set;"                                                                  ┤    │ 
-          │       │       └─ "}"                                                                                ┤    │ 
+          │       │   ├─ "{"                                                                                    ┤    │ 
+          │       │   ├─ accessor = "get;"                                                                      ┤    │ 
+          │       │   ├─ accessor = "set;"                                                                      ┤    │ 
+          │       │   └─ "}"                                                                                    ┤    │ 
           │       │                                                                                             │ 17 │ 
           │       ├─ comment[leading] = "/* block comment */"                                                   ┤ 18 ├         /* block comment */
           │       ├─ method[public]/                                                                            ┤    │ 
           │       │   ├─ returns/type = "void"                                                                  ┤ 19 ├         public void Run()
           │       │   ├─ name = "Run"                                                                           ┤    │ 
-          │       │   ├─ parameters = "()"                                                                      ┤    │ 
+          │       │   ├─ "()"                                                                                   ┤    │ 
           │       │   └─ body/block/                                                                            ┤    │ 
           │       │       ├─ "{"                                                                                ┤ 20 ├         {
           │       │       ├─ expression_statement/                                                              ┤    │ 

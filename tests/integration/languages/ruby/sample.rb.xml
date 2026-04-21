@@ -8,15 +8,11 @@
           <method>
             def
             <name>add</name>
-            <parameters>
-              <method_parameters>
-                (
-                <identifier>a</identifier>
-                ,
-                <identifier>b</identifier>
-                )
-              </method_parameters>
-            </parameters>
+            (
+            <identifier>a</identifier>
+            ,
+            <identifier>b</identifier>
+            )
             <body>
               <binary>
                 <left>
@@ -42,34 +38,26 @@
                 <right>
                   <call>
                     <identifier>add</identifier>
-                    <arguments>
-                      <argument_list>
-                        (
-                        <int>5</int>
-                        ,
-                        <int>3</int>
-                        )
-                      </argument_list>
-                    </arguments>
+                    (
+                    <int>5</int>
+                    ,
+                    <int>3</int>
+                    )
                   </call>
                 </right>
               </assign>
               <call>
                 <identifier>puts</identifier>
-                <arguments>
-                  <argument_list>
-                    <string>
-                      &quot;
-                      <string_content>Result: </string_content>
-                      <interpolation>
-                        #{
-                        <identifier>result</identifier>
-                        }
-                      </interpolation>
-                      &quot;
-                    </string>
-                  </argument_list>
-                </arguments>
+                <string>
+                  &quot;
+                  <string_content>Result: </string_content>
+                  <interpolation>
+                    #{
+                    <identifier>result</identifier>
+                    }
+                  </interpolation>
+                  &quot;
+                </string>
               </call>
             </body>
             end

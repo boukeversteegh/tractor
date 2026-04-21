@@ -11,75 +11,63 @@
             <body>
               {
               <property>
-                <attributes>
-                  [
-                  <attribute>
-                    <name>
-                      <ref>Required</ref>
-                    </name>
-                  </attribute>
-                  ]
-                </attributes>
+                [
+                <attribute>
+                  <name>
+                    <ref>Required</ref>
+                  </name>
+                </attribute>
+                ]
                 <public/>
                 <type>Guid</type>
                 <name>UserId</name>
-                <accessors>
-                  {
-                  <accessor>get;</accessor>
-                  <accessor>set;</accessor>
-                  }
-                </accessors>
+                {
+                <accessor>get;</accessor>
+                <accessor>set;</accessor>
+                }
               </property>
               <comment>
                 <trailing/>
                 // ERROR - Required on non-nullable Guid
               </comment>
               <property>
-                <attributes>
-                  [
-                  <attribute>
-                    <name>
-                      <ref>Required</ref>
-                    </name>
-                  </attribute>
-                  ]
-                </attributes>
+                [
+                <attribute>
+                  <name>
+                    <ref>Required</ref>
+                  </name>
+                </attribute>
+                ]
                 <public/>
                 <type>
                   Guid
                   <nullable/>
                 </type>
                 <name>NullableId</name>
-                <accessors>
-                  {
-                  <accessor>get;</accessor>
-                  <accessor>set;</accessor>
-                  }
-                </accessors>
+                {
+                <accessor>get;</accessor>
+                <accessor>set;</accessor>
+                }
               </property>
               <comment>
                 <trailing/>
                 // OK - nullable Guid
               </comment>
               <property>
-                <attributes>
-                  [
-                  <attribute>
-                    <name>
-                      <ref>Required</ref>
-                    </name>
-                  </attribute>
-                  ]
-                </attributes>
+                [
+                <attribute>
+                  <name>
+                    <ref>Required</ref>
+                  </name>
+                </attribute>
+                ]
                 <public/>
                 <type>string</type>
                 <name>Name</name>
-                <accessors>
-                  {
-                  <accessor>get;</accessor>
-                  <accessor>set;</accessor>
-                  }
-                </accessors>
+                {
+                <accessor>get;</accessor>
+                <accessor>set;</accessor>
+                }
               </property>
               <comment>
                 <trailing/>

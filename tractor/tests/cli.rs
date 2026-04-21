@@ -49,9 +49,9 @@ cli_suite! {
         private_methods => tractor query "sample.cs" -x "//method[private]" => count 2;
         internal_methods => tractor query "sample.cs" -x "//method[internal]" => count 1;
         protected_methods => tractor query "sample.cs" -x "//method[protected]" => count 1;
-        maxlength_missing_autotruncate => tractor query "attribute-maxlength-autotruncate.cs" -x "//property[attributes[contains(., 'MaxLength')]][not(attributes[contains(., 'AutoTruncate')])]/name" => count 1;
-        maxlength_on_bool => tractor query "attribute-maxlength-boolean.cs" -x "//property[type='bool'][attributes[contains(., 'MaxLength')]]/name" => count 1;
-        mapper_extension_method => tractor query "mapper-extension-method.cs" -x "//class[static][contains(name, 'Mapper')]//method[public][static][count(parameters/parameter)=1][not(parameters/parameter/this)]/name" => count 1;
+        maxlength_missing_autotruncate => tractor query "attribute-maxlength-autotruncate.cs" -x "//property[attribute[contains(., 'MaxLength')]][not(attribute[contains(., 'AutoTruncate')])]/name" => count 1;
+        maxlength_on_bool => tractor query "attribute-maxlength-boolean.cs" -x "//property[type='bool'][attribute[contains(., 'MaxLength')]]/name" => count 1;
+        mapper_extension_method => tractor query "mapper-extension-method.cs" -x "//class[static][contains(name, 'Mapper')]//method[public][static][count(parameter)=1][not(parameter/this)]/name" => count 1;
         block_scoped_namespace => tractor query "namespaces-file-scoped.cs" -x "//namespace[body]" => count 1;
         repository_getall_missing_orderby => tractor query "repository-getall-orderby.cs" -x "//class[contains(name, 'Repository')][not(contains(name, 'Mock'))]//method[contains(name, 'GetAll')][not(contains(., 'OrderBy'))]/name" => count 1;
         query_missing_asnotracking => tractor query "query-asnotracking.cs" -x "//method[contains(name, 'Get')][contains(., '_context')][contains(., 'Map')][not(contains(., 'AsNoTracking'))]/name" => count 1;

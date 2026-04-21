@@ -56,26 +56,22 @@
           <function>
             function
             <name>Greeting</name>
-            <parameters>
-              <params>
-                (
-                <param>
-                  <required/>
-                  <object_pattern>
-                    {
-                    <shorthand_property_identifier_pattern>name</shorthand_property_identifier_pattern>
-                    ,
-                    <shorthand_property_identifier_pattern>age</shorthand_property_identifier_pattern>
-                    }
-                  </object_pattern>
-                  <typeof>
-                    :
-                    <type>Props</type>
-                  </typeof>
-                </param>
-                )
-              </params>
-            </parameters>
+            (
+            <param>
+              <required/>
+              <object_pattern>
+                {
+                <shorthand_property_identifier_pattern>name</shorthand_property_identifier_pattern>
+                ,
+                <shorthand_property_identifier_pattern>age</shorthand_property_identifier_pattern>
+                }
+              </object_pattern>
+              <typeof>
+                :
+                <type>Props</type>
+              </typeof>
+            </param>
+            )
             <body>
               <block>
                 {
@@ -98,13 +94,9 @@
                         <ref/>
                         useState
                       </function>
-                      <arguments>
-                        <arguments>
-                          (
-                          <number>0</number>
-                          )
-                        </arguments>
-                      </arguments>
+                      (
+                      <number>0</number>
+                      )
                     </call>
                   </value>
                   ;
@@ -193,35 +185,28 @@
                             <jsx_expression>
                               {
                               <lambda>
-                                <parameters>
-                                  <params>()</params>
-                                </parameters>
-                                =&gt;
+                                () =&gt;
                                 <body>
                                   <call>
                                     <function>
                                       <ref/>
                                       setCount
                                     </function>
-                                    <arguments>
-                                      <arguments>
-                                        (
-                                        <binary>
-                                          <op>
-                                            <plus/>
-                                            +
-                                          </op>
-                                          <left>
-                                            <name>count</name>
-                                          </left>
-                                          +
-                                          <right>
-                                            <number>1</number>
-                                          </right>
-                                        </binary>
-                                        )
-                                      </arguments>
-                                    </arguments>
+                                    (
+                                    <binary>
+                                      <op>
+                                        <plus/>
+                                        +
+                                      </op>
+                                      <left>
+                                        <name>count</name>
+                                      </left>
+                                      +
+                                      <right>
+                                        <number>1</number>
+                                      </right>
+                                    </binary>
+                                    )
                                   </call>
                                 </body>
                               </lambda>

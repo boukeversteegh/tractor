@@ -10,15 +10,13 @@
             <name>
               <identifier>add</identifier>
             </name>
-            <parameters>
-              <formal_parameters>
-                (
-                <identifier>a</identifier>
-                ,
-                <identifier>b</identifier>
-                )
-              </formal_parameters>
-            </parameters>
+            <formal_parameters>
+              (
+              <identifier>a</identifier>
+              ,
+              <identifier>b</identifier>
+              )
+            </formal_parameters>
             <body>
               <statement_block>
                 {
@@ -44,9 +42,7 @@
             <name>
               <identifier>main</identifier>
             </name>
-            <parameters>
-              <formal_parameters>()</formal_parameters>
-            </parameters>
+            <formal_parameters>()</formal_parameters>
             <body>
               <statement_block>
                 {
@@ -61,13 +57,11 @@
                       <call_expression>
                         <identifier>add</identifier>
                         <arguments>
-                          <arguments>
-                            (
-                            <number>5</number>
-                            ,
-                            <number>3</number>
-                            )
-                          </arguments>
+                          (
+                          <number>5</number>
+                          ,
+                          <number>3</number>
+                          )
                         </arguments>
                       </call_expression>
                     </value>
@@ -82,20 +76,18 @@
                       <property_identifier>log</property_identifier>
                     </member_expression>
                     <arguments>
-                      <arguments>
-                        (
-                        <template_string>
-                          `
-                          <string_fragment>Result: </string_fragment>
-                          <template_substitution>
-                            ${
-                            <identifier>result</identifier>
-                            }
-                          </template_substitution>
-                          `
-                        </template_string>
-                        )
-                      </arguments>
+                      (
+                      <template_string>
+                        `
+                        <string_fragment>Result: </string_fragment>
+                        <template_substitution>
+                          ${
+                          <identifier>result</identifier>
+                          }
+                        </template_substitution>
+                        `
+                      </template_string>
+                      )
                     </arguments>
                   </call_expression>
                   ;
@@ -107,9 +99,7 @@
           <expression_statement>
             <call_expression>
               <identifier>main</identifier>
-              <arguments>
-                <arguments>()</arguments>
-              </arguments>
+              <arguments>()</arguments>
             </call_expression>
             ;
           </expression_statement>

@@ -12,21 +12,19 @@
               <identifier>add</identifier>
             </name>
             <parameters>
-              <parameters>
-                (
-                <parameter>
-                  <identifier>a</identifier>
-                  :
-                  <primitive_type>i32</primitive_type>
-                </parameter>
-                ,
-                <parameter>
-                  <identifier>b</identifier>
-                  :
-                  <primitive_type>i32</primitive_type>
-                </parameter>
-                )
-              </parameters>
+              (
+              <parameter>
+                <identifier>a</identifier>
+                :
+                <primitive_type>i32</primitive_type>
+              </parameter>
+              ,
+              <parameter>
+                <identifier>b</identifier>
+                :
+                <primitive_type>i32</primitive_type>
+              </parameter>
+              )
             </parameters>
             -&gt;
             <primitive_type>i32</primitive_type>
@@ -51,9 +49,7 @@
             <name>
               <identifier>main</identifier>
             </name>
-            <parameters>
-              <parameters>()</parameters>
-            </parameters>
+            <parameters>()</parameters>
             <body>
               <block>
                 {
@@ -65,13 +61,11 @@
                     <call_expression>
                       <identifier>add</identifier>
                       <arguments>
-                        <arguments>
-                          (
-                          <integer_literal>5</integer_literal>
-                          ,
-                          <integer_literal>3</integer_literal>
-                          )
-                        </arguments>
+                        (
+                        <integer_literal>5</integer_literal>
+                        ,
+                        <integer_literal>3</integer_literal>
+                        )
                       </arguments>
                     </call_expression>
                   </value>
@@ -109,9 +103,7 @@
             <name>
               <identifier>helper</identifier>
             </name>
-            <parameters>
-              <parameters>()</parameters>
-            </parameters>
+            <parameters>()</parameters>
             -&gt;
             <primitive_type>bool</primitive_type>
             <body>
@@ -197,14 +189,12 @@
                     <identifier>draw</identifier>
                   </name>
                   <parameters>
-                    <parameters>
-                      (
-                      <self_parameter>
-                        &amp;
-                        <self>self</self>
-                      </self_parameter>
-                      )
-                    </parameters>
+                    (
+                    <self_parameter>
+                      &amp;
+                      <self>self</self>
+                    </self_parameter>
+                    )
                   </parameters>
                   ;
                 </function_signature_item>
@@ -230,9 +220,7 @@
                   <name>
                     <identifier>secret</identifier>
                   </name>
-                  <parameters>
-                    <parameters>()</parameters>
-                  </parameters>
+                  <parameters>()</parameters>
                   <body>
                     <block>{}</block>
                   </body>

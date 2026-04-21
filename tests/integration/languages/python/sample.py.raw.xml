@@ -17,13 +17,11 @@
               <identifier>add</identifier>
             </name>
             <parameters>
-              <parameters>
-                (
-                <identifier>a</identifier>
-                ,
-                <identifier>b</identifier>
-                )
-              </parameters>
+              (
+              <identifier>a</identifier>
+              ,
+              <identifier>b</identifier>
+              )
             </parameters>
             :
             <body>
@@ -56,11 +54,9 @@
               <identifier>fetch_data</identifier>
             </name>
             <parameters>
-              <parameters>
-                (
-                <identifier>url</identifier>
-                )
-              </parameters>
+              (
+              <identifier>url</identifier>
+              )
             </parameters>
             :
             <body>
@@ -84,9 +80,7 @@
             <name>
               <identifier>main</identifier>
             </name>
-            <parameters>
-              <parameters>()</parameters>
-            </parameters>
+            <parameters>()</parameters>
             :
             <body>
               <block>
@@ -99,15 +93,13 @@
                     <right>
                       <call>
                         <identifier>add</identifier>
-                        <arguments>
-                          <argument_list>
-                            (
-                            <integer>5</integer>
-                            ,
-                            <integer>3</integer>
-                            )
-                          </argument_list>
-                        </arguments>
+                        <argument_list>
+                          (
+                          <integer>5</integer>
+                          ,
+                          <integer>3</integer>
+                          )
+                        </argument_list>
                       </call>
                     </right>
                   </assignment>
@@ -115,22 +107,20 @@
                 <expression_statement>
                   <call>
                     <identifier>print</identifier>
-                    <arguments>
-                      <argument_list>
-                        (
-                        <string>
-                          <string_start>f&quot;</string_start>
-                          <string_content>Result: </string_content>
-                          <interpolation>
-                            {
-                            <identifier>result</identifier>
-                            }
-                          </interpolation>
-                          <string_end>&quot;</string_end>
-                        </string>
-                        )
-                      </argument_list>
-                    </arguments>
+                    <argument_list>
+                      (
+                      <string>
+                        <string_start>f&quot;</string_start>
+                        <string_content>Result: </string_content>
+                        <interpolation>
+                          {
+                          <identifier>result</identifier>
+                          }
+                        </interpolation>
+                        <string_end>&quot;</string_end>
+                      </string>
+                      )
+                    </argument_list>
                   </call>
                 </expression_statement>
               </block>
@@ -155,9 +145,7 @@
                 <expression_statement>
                   <call>
                     <identifier>main</identifier>
-                    <arguments>
-                      <argument_list>()</argument_list>
-                    </arguments>
+                    <argument_list>()</argument_list>
                   </call>
                 </expression_statement>
               </block>

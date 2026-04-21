@@ -15,12 +15,10 @@
                 <public/>
                 <type>int</type>
                 <name>Bar</name>
-                <accessors>
-                  {
-                  <accessor>get;</accessor>
-                  <accessor>set;</accessor>
-                  }
-                </accessors>
+                {
+                <accessor>get;</accessor>
+                <accessor>set;</accessor>
+                }
               </property>
               <method>
                 <public/>
@@ -28,7 +26,7 @@
                   <type>void</type>
                 </returns>
                 <name>Baz</name>
-                <parameters>()</parameters>
+                ()
                 <body>
                   <block>{ }</block>
                 </body>
@@ -62,12 +60,10 @@
                 <public/>
                 <type>string</type>
                 <name>Name</name>
-                <accessors>
-                  {
-                  <accessor>get;</accessor>
-                  <accessor>set;</accessor>
-                  }
-                </accessors>
+                {
+                <accessor>get;</accessor>
+                <accessor>set;</accessor>
+                }
               </property>
               }
             </body>

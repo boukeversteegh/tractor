@@ -54,12 +54,10 @@
                     <public/>
                     <type>string</type>
                     <name>Config</name>
-                    <accessors>
-                      {
-                      <accessor>get;</accessor>
-                      <accessor>set;</accessor>
-                      }
-                    </accessors>
+                    {
+                    <accessor>get;</accessor>
+                    <accessor>set;</accessor>
+                    }
                   </property>
                   <comment>
                     <leading/>
@@ -71,7 +69,7 @@
                       <type>void</type>
                     </returns>
                     <name>Run</name>
-                    <parameters>()</parameters>
+                    ()
                     <body>
                       <block>
                         {
