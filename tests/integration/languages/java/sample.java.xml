@@ -4,7 +4,7 @@
     <match file="tests/integration/languages/java/sample.java" line="1" column="1">
       <tree>
         <program>
-          <line_comment>// Simple Java example</line_comment>
+          <comment>// Simple Java example</comment>
           <class>
             <public/>
             class
@@ -13,7 +13,7 @@
               {
               <field>
                 <private/>
-                <integral_type>int</integral_type>
+                <type>int</type>
                 <variable_declarator>
                   <name>value</name>
                 </variable_declarator>
@@ -26,7 +26,7 @@
                   <params>
                     (
                     <param>
-                      <integral_type>int</integral_type>
+                      <type>int</type>
                       <name>value</name>
                     </param>
                     )
@@ -57,18 +57,18 @@
               <method>
                 <static/>
                 <public/>
-                <integral_type>int</integral_type>
+                <type>int</type>
                 <name>add</name>
                 <parameters>
                   <params>
                     (
                     <param>
-                      <integral_type>int</integral_type>
+                      <type>int</type>
                       <name>a</name>
                     </param>
                     ,
                     <param>
-                      <integral_type>int</integral_type>
+                      <type>int</type>
                       <name>b</name>
                     </param>
                     )
@@ -141,7 +141,7 @@
                 </parameters>
                 <body>
                   {
-                  <line_comment>// package-private method</line_comment>
+                  <comment>// package-private method</comment>
                   }
                 </body>
               </method>
@@ -166,7 +166,7 @@
                 <body>
                   {
                   <local_variable_declaration>
-                    <integral_type>int</integral_type>
+                    <type>int</type>
                     <variable_declarator>
                       <name>result</name>
                       =
@@ -249,17 +249,15 @@
             enum
             <name>Status</name>
             <body>
-              <enum_body>
-                {
-                <enum_constant>
-                  <name>ACTIVE</name>
-                </enum_constant>
-                ,
-                <enum_constant>
-                  <name>INACTIVE</name>
-                </enum_constant>
-                }
-              </enum_body>
+              {
+              <enum_member>
+                <name>ACTIVE</name>
+              </enum_member>
+              ,
+              <enum_member>
+                <name>INACTIVE</name>
+              </enum_member>
+              }
             </body>
           </enum>
         </program>

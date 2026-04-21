@@ -16,6 +16,7 @@
 //! rather than the current approach of serializing from the data model.
 
 pub mod csharp;
+pub mod java;
 pub mod json;
 pub mod python;
 pub mod typescript;
@@ -327,6 +328,7 @@ pub fn render(node: &XmlNode, lang: &str, tree_mode: TreeMode, opts: &RenderOpti
     }
     match lang {
         "csharp" => csharp::render_node(node, opts),
+        "java" => java::render_node(node, opts),
         "json" => json::render_node(node, opts),
         "python" => python::render_node(node, opts),
         "typescript" | "tsx" | "javascript" => typescript::render_node(node, opts),

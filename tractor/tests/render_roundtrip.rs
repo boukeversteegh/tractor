@@ -107,3 +107,9 @@ fn typescript_supported_fixture_round_trips() {
     let path = fixture("typescript", "supported.ts");
     assert_fixture_round_trips(&path, "typescript");
 }
+
+#[test]
+fn java_supported_fixture_round_trips() {
+    let path = fixture("java", "supported.java");
+    assert_fixture_round_trips(&path, "java");
+}
