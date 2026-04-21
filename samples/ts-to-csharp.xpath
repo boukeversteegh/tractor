@@ -26,8 +26,8 @@ map {
                   else "object"
                 ),
         "name": concat(
-          upper-case(substring($p/name/type/string(), 1, 1)),
-          substring($p/name/type/string(), 2)
+          upper-case(substring($p/name/string(), 1, 1)),
+          substring($p/name/string(), 2)
         ),
         "accessors": map {
           "children": array {

@@ -9,7 +9,7 @@ map {
     "children": array {
       for $p in //property_signature return map {
         "$type": "field",
-        "name": $p/name/type/string(),
+        "name": $p/name/string(),
         "type": if (exists($p/node()[. = "?"])) then map {
                   "optional": true(),
                   "children": array {
