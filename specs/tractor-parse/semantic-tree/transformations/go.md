@@ -193,15 +193,3 @@ because `<type>` *is* a specific element; it just happens to also
 be Go's spec term. Disambiguated from type *references* by having
 a `<name>` child.
 
-## Open questions / flagged follow-ups
-
-- **Struct/interface hoist (design-agreed, not implemented).**
-  `type Hello struct { … }` should render as `<struct><name>Hello</name>…</struct>`
-  — the `type` wrapper is Go-grammar bleed-through, not in the
-  developer's mental model. Pending implementation commit.
-- **Defined-type vs alias form.** `type MyInt int` vs
-  `type Color = int`. User-approved plan: `<type>` for the defined
-  form (matches Go's spec term), `<alias>` for the `=` form.
-  Pending implementation.
-- **`expression_list` asymmetry.** Go flattens; Python doesn't. One
-  of the two should change for consistency.

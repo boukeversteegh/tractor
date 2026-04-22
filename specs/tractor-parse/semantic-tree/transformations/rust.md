@@ -166,18 +166,3 @@ works because the parent (`<struct>` for declarations vs
 The constraint `T: Clone + Send` is a bound list. Plural `bounds`
 matches Java's `<bound>` (single) and reads naturally.
 
-## Open questions
-
-- **`struct_expression`** — `Point { x: 1, y: 2 }` syntax. Still
-  leaks through as `<struct_expression>`. Candidates: `<new>`
-  (but Rust doesn't have `new` as a keyword), `<init>`, `<literal>`
-  (collides with collection-literal marker). Pending user decision
-  (see `todo/compound-name-cleanup-followup.md`).
-- **`reference_type` → `<ref>`** — collides with the deprecated
-  value-reference element we removed in commit 25b5906. The name
-  is latent-conflicting (no other `<ref>` in the tree today) but
-  confusing. Candidates: keep `<ref>`, rename to `<reference>`,
-  or use the namespace-vocabulary pattern `<type><borrowed/>…</type>`
-  with a marker. Pending decision.
-- **`match_block`** — wrapper around `match_arm` siblings.
-  Candidate for flatten. Flagged during the cleanup pass.

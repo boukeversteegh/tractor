@@ -223,9 +223,3 @@ Historical inconsistency not yet unified — the rationale is that
 C#'s original design preferred full words across the board. May
 be revisited but not critical.
 
-## Open questions
-
-- `type_parameter_constraint` / `type_parameter_constraints_clause` —
-  the `where T : class` syntax. Candidates: `<where>`,
-  `<constraint>` / `<constraints>`, `<bound>` / `<bounds>`. Not yet
-  resolved. See `todo/compound-name-cleanup-followup.md`.

@@ -159,6 +159,3 @@ loss because the parent is already `<enum>`.
 adds a level of nesting that doesn't correspond to anything a
 developer thinks about.
 
-## Open questions
-
-None currently. Java transforms are in settled form.

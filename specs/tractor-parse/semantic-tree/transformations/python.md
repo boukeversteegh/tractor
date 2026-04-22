@@ -178,13 +178,3 @@ Inside a list comprehension, the `for x in xs` clause is called
 — the `in` is grammatical, not a separate concept. Using `<for>`
 matches the same element as loop-statement for (Principle #5).
 
-## Open questions
-
-- `expression_list` — Python tree-sitter has a top-level node for
-  comma-separated expressions (e.g. in `return x, y` and
-  `yield x, y`). Go flattens its `expression_list`; Python currently
-  doesn't. Minor asymmetry — probably worth flattening Python's
-  too, but flagged for explicit decision.
-- `string_start` / `string_content` / `string_end` — the f-string
-  and multi-part string structure. Currently pass through. Could
-  be flattened or unified. Low priority.

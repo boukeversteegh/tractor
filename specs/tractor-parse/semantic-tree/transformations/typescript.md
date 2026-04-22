@@ -200,12 +200,3 @@ removed; the content is now a plain `<name>` element:
 </member>
 ```
 
-## Open questions
-
-- `function_type` — the type expression `(x: T) => U`. Currently
-  passes through tree-sitter's compound name. Renaming it naturally
-  conflicts with `<function>` (declaration) and `<callee>`
-  (invocation target). Candidates: `<signature>`, `<lambdatype>`,
-  `<callable>`. Not yet resolved.
-- JSX element naming — JSX elements (`<Foo />`) are currently
-  rendered by tree-sitter's raw kinds. Not yet consolidated.

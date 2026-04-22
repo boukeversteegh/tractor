@@ -83,14 +83,3 @@ identifiers are `identifier`, currently passing through without
 a rename. Whether to add `identifier` → `<name>` for consistency
 with Principle #14 is a minor follow-up.
 
-## Open questions
-
-- Ruby's identifier classification hasn't been normalised to
-  `<name>` yet. Low-impact given Ruby's smaller user base in
-  current tractor rule-authoring, but worth doing for consistency
-  with Principle #14.
-- Ruby's method-call syntax variations (implicit vs explicit
-  receiver, chained calls, block arguments) haven't been
-  systematically unified. The `<call>` / `<member>` shape used
-  for other languages may or may not be applied — needs a design
-  pass if Ruby usage grows.
