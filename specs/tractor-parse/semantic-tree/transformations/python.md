@@ -32,7 +32,7 @@ Python's transform has three distinctive features:
 | `default_parameter`, `typed_parameter`, `typed_default_parameter` | `<param>` | All unified; distinctions are in the children (type annotation, default value). |
 | `return_statement` | `<return>` | Language keyword. |
 | `if_statement` | `<if>` | Language keyword. |
-| `elif_clause` | `<elif>` | Language keyword. |
+| `elif_clause` | `<else_if>` | Cross-cutting conditional shape — see below. |
 | `else_clause` | `<else>` | Language keyword. |
 | `for_statement`, `while_statement` | `<for>`, `<while>` | Language keywords. |
 | `for_in_clause` | `<for>` | Comprehension's `for`; same conceptual element as a loop's for — developer mental model (Goal #5). |
@@ -178,3 +178,23 @@ Inside a list comprehension, the `for x in xs` clause is called
 — the `in` is grammatical, not a separate concept. Using `<for>`
 matches the same element as loop-statement for (Principle #5).
 
+### Conditional shape (`<if>` / `<else_if>` / `<else>`)
+
+Python's tree-sitter grammar already emits `elif_clause` and
+`else_clause` as flat siblings of `if_statement` (each tagged with
+field `alternative`), so no structural collapse is needed. The
+implementation:
+
+- `PYTHON_FIELD_WRAPPINGS` (in `tractor/src/languages/mod.rs`)
+  deliberately omits the `("alternative", "else")` entry that the
+  cross-cutting convention ships with. Wrapping every `elif_clause`
+  and `else_clause` in `<else>` would bury the flat chain under a
+  redundant wrapper. The `consequence` → `<then>` rename stays,
+  because Python's grammar has no literal `then` kind.
+- `map_element_name` renames `elif_clause` → `<else_if>` and
+  `else_clause` → `<else>` as plain kind-to-name mappings.
+- No post-transform is registered for Python: after walk_transform
+  the tree already matches the target shape.
+
+See the cross-cutting "Conditional shape" convention in the index
+[`transformations.md`](../transformations.md).

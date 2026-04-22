@@ -43,7 +43,7 @@ wrappers, and applies the default modifier that Java leaves implicit
 | `integral_type`, `floating_point_type`, `boolean_type`, `void_type` | `<type>` | Namespace vocabulary (Principle #14) — these are all type references; tree-sitter's split into multiple primitive kinds adds no semantic value. |
 | `return_statement` | `<return>` | Language keyword. |
 | `if_statement` | `<if>` | Language keyword. |
-| `else_clause` | `<else>` | Language keyword. |
+| `else_clause` | `<else>` | Language keyword; chain collapsed — see below. |
 | `for_statement` | `<for>` | Language keyword. |
 | `enhanced_for_statement` | `<foreach>` | Matches C#; `enhanced_for` is a spec term not used in speech. |
 | `while_statement` | `<while>` | Language keyword. |
@@ -159,3 +159,21 @@ loss because the parent is already `<enum>`.
 adds a level of nesting that doesn't correspond to anything a
 developer thinks about.
 
+### Conditional shape (`<if>` / `<else_if>` / `<else>`)
+
+Java's `if_statement` uses the common C-like nested-`else_clause`
+shape: `if` → `consequence` (block) → `alternative` (an
+`else_clause`, which wraps another `if_statement` when the source
+says `else if`). The transform reuses the shared machinery:
+
+- `CSHARP_FIELD_WRAPPINGS`-style wrappings apply via
+  `COMMON_FIELD_WRAPPINGS`: `consequence` → `<then>`, `alternative`
+  → `<else>`.
+- The post-walk `collapse_else_if_chain` (registered in
+  `languages/mod.rs`) collapses the nested `<else><else><if>…</if>`
+  triple into an `<else_if>` sibling of the outer `<if>`, then
+  recurses on the inner `<if>`'s own else chain. A terminal
+  `<else>` with a block body is kept as-is.
+
+See the cross-cutting "Conditional shape" convention in the index
+[`transformations.md`](../transformations.md).

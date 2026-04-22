@@ -42,7 +42,7 @@ The transform:
 | `statement_block` | `<block>` | Developer mental model. |
 | `return_statement` | `<return>` | Language keyword. |
 | `if_statement` | `<if>` | Language keyword. |
-| `else_clause` | `<else>` | Language keyword. |
+| `else_clause` | `<else>` | Language keyword; chain collapsed — see below. |
 | `for_statement`, `while_statement` | `<for>`, `<while>` | Language keywords. |
 | `try_statement` | `<try>` | Language keyword. |
 | `catch_clause` | `<catch>` | Language keyword. |
