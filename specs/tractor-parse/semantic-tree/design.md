@@ -335,6 +335,78 @@ queries are served by the additive mechanisms above.
 case complexity). Every additive mechanism listed serves precision or
 abstraction needs without taxing the baseline tree.
 
+### 14. Namespace Vocabulary
+
+Most programming languages separate identifiers into a **value
+namespace** (variables, functions, parameters, method names) and a
+**type namespace** (classes, interfaces, structs, enums, type aliases,
+generic parameters). Tree-sitter grammars already track this at the
+token level — `identifier` vs `type_identifier`, `primitive_type`,
+`predefined_type`, etc. — and the semantic tree preserves that
+distinction by using two different element names:
+
+- **`<name>`** — an identifier in the *value namespace*. Whether it
+  is being declared or referenced, the element is `<name>`; role is
+  inferred from tree position (see the `<name>` decision below).
+
+- **`<type>`** — a reference to (or expression of) something in the
+  *type namespace*. Every type-reference slot — parameter type,
+  return type, base class, implemented interface, generic argument,
+  trait bound, default type, field type, variable type — carries a
+  `<type>` child. Simple types are text content
+  (`<type>int</type>`); complex types add markers and children
+  (`<type><generic/>List<type field="arguments">int</type></type>`).
+
+Type *declarations* still use specific element names
+(`<class>`, `<interface>`, `<struct>`, `<alias>`, `<enum>`, `<record>`,
+and — only where the declared thing *is literally a type* — `<type>`
+itself, as in Go's `type MyInt int`). Their identifier is a `<name>`
+child, same as every other declaration:
+
+```xml
+<class><name>Foo</name>...</class>          <!-- class declaration -->
+<struct><name>Hello</name>...</struct>      <!-- Go struct -->
+<alias><name>Color</name><type>int</type></alias>
+
+<param><name>x</name><type>int</type></param>     <!-- type reference -->
+<returns><type>int</type></returns>                <!-- type reference -->
+<base><type>Bar</type></base>                      <!-- type reference -->
+<implements><type>IBaz</type></implements>         <!-- type reference -->
+<generic><name>T</name><bound><type>Comparable</type></bound></generic>
+```
+
+Two axes, orthogonal:
+
+- **Which namespace** the identifier belongs to → element name
+  (`<name>` for values, `<type>` for types).
+- **Declaration vs reference** → tree position (inside a declaration
+  element vs inside an expression/reference wrapper).
+
+#### Why this matters for queries
+
+- `//type[.='Bar']` finds every use of `Bar` *as a type* — parameter
+  type, return type, base class, interface implementation, generic
+  argument. A uniform handle for all type references.
+- `//name[.='foo']` finds every value-namespace identifier. Doesn't
+  include type references; those are queried via `<type>`.
+- Neither query crosses the other's namespace, matching how the
+  language itself handles scoping.
+
+#### Why this matters for avoiding the old bug
+
+Earlier transforms conflated the two axes: some value-namespace
+*references* were mis-classified as `<type>` because the
+classification code didn't trust tree-sitter's kinds and tried to
+infer type-ness from position. The rule now: trust tree-sitter's
+distinction. `type_identifier`/`primitive_type`/etc. → `<type>`;
+`identifier` → `<name>`. No context-dependent reinterpretation.
+
+**Rationale:** Supports Goal #5 (developer's mental model — languages
+use two namespaces, so the tree does too), Principle #5 (unified
+concepts — one element per namespace regardless of context),
+Principle #11 (specific names — `<type>` and `<name>` are concrete
+concepts, not abstract supertypes).
+
 ---
 
 ## Decisions
