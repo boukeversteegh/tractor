@@ -295,6 +295,14 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
 
+        // Ternary expression — surgically wrap `alternative` in `<else>`.
+        // See transformations.md (conditional shape) for rationale.
+        "conditional_expression" => {
+            wrap_field_child(xot, node, "alternative", "else")?;
+            rename(xot, node, "ternary");
+            Ok(TransformAction::Continue)
+        }
+
         // ---------------------------------------------------------------------
         // Comments - detect attachment and group adjacent line comments
         //
@@ -449,7 +457,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "assignment_expression" => Some("assign"),
         "binary_expression" => Some("binary"),
         "unary_expression" => Some("unary"),
-        "conditional_expression" => Some("ternary"),
+        // conditional_expression handled above
         "lambda_expression" => Some("lambda"),
         "await_expression" => Some("await"),
         "variable_declaration" => Some(VARIABLE),

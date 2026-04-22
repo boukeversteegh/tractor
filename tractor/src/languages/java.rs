@@ -108,6 +108,14 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
 
+        // Ternary expression — surgically wrap `alternative` in `<else>`.
+        // See TS transform for rationale.
+        "ternary_expression" => {
+            wrap_field_child(xot, node, "alternative", "else")?;
+            rename(xot, node, "ternary");
+            Ok(TransformAction::Continue)
+        }
+
         // ---------------------------------------------------------------------
         // Identifiers are always names (definitions or references).
         // Tree-sitter uses `type_identifier` for type positions, so bare
@@ -274,7 +282,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "assignment_expression" => Some("assign"),
         "binary_expression" => Some("binary"),
         "unary_expression" => Some("unary"),
-        "ternary_expression" => Some("ternary"),
+        // ternary_expression handled above
         "lambda_expression" => Some("lambda"),
         "string_literal" => Some("string"),
         "decimal_integer_literal" => Some("int"),

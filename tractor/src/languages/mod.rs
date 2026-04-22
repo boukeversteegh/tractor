@@ -160,6 +160,12 @@ pub fn is_programming_language(lang: &str) -> bool {
 /// Default field wrappings shared by most programming-language grammars.
 /// Each language opts in (and can add language-specific entries) via
 /// `get_field_wrappings`.
+///
+/// `alternative` is intentionally not in this list. For `if_statement`,
+/// tree-sitter's `else_clause` child already renames to `<else>` via each
+/// language's `map_element_name`, so a global wrap would double-nest.
+/// For ternary expressions, the `<else>` wrap is done surgically in the
+/// per-language ternary handler via `wrap_field_child`.
 const COMMON_FIELD_WRAPPINGS: &[(&str, &str)] = &[
     ("name", "name"),
     ("value", "value"),
@@ -168,7 +174,6 @@ const COMMON_FIELD_WRAPPINGS: &[(&str, &str)] = &[
     ("body", "body"),
     ("condition", "condition"),
     ("consequence", "then"),
-    ("alternative", "else"),
 ];
 
 const TS_FIELD_WRAPPINGS: &[(&str, &str)] = &[
@@ -179,7 +184,6 @@ const TS_FIELD_WRAPPINGS: &[(&str, &str)] = &[
     ("body", "body"),
     ("condition", "condition"),
     ("consequence", "then"),
-    ("alternative", "else"),
     ("return_type", "returns"),
     // The callee of a call expression. Renamed from the tree-sitter
     // field `function` to avoid colliding with `<function>` used for
@@ -197,7 +201,6 @@ const RUST_FIELD_WRAPPINGS: &[(&str, &str)] = &[
     ("body", "body"),
     ("condition", "condition"),
     ("consequence", "then"),
-    ("alternative", "else"),
     ("return_type", "returns"),
 ];
 
@@ -209,7 +212,6 @@ const GO_FIELD_WRAPPINGS: &[(&str, &str)] = &[
     ("body", "body"),
     ("condition", "condition"),
     ("consequence", "then"),
-    ("alternative", "else"),
     ("result", "returns"),
 ];
 
@@ -221,29 +223,12 @@ const CSHARP_FIELD_WRAPPINGS: &[(&str, &str)] = &[
     ("body", "body"),
     ("condition", "condition"),
     ("consequence", "then"),
-    ("alternative", "else"),
     ("returns", "returns"),
-];
-
-/// Python — grammar already emits `elif_clause` / `else_clause` as
-/// flat siblings of `if_statement`. The `alternative` field wrap is
-/// skipped so those clauses render directly as `<else_if>` / `<else>`
-/// children of `<if>` (see the conditional-shape convention).
-const PYTHON_FIELD_WRAPPINGS: &[(&str, &str)] = &[
-    ("name", "name"),
-    ("value", "value"),
-    ("left", "left"),
-    ("right", "right"),
-    ("body", "body"),
-    ("condition", "condition"),
-    ("consequence", "then"),
 ];
 
 /// Ruby — grammar already uses a literal `<then>` kind for the
 /// consequence branch, so wrapping `consequence` in `<then>` would
-/// double-nest. The `alternative` chain of `elsif` / `else` is
-/// collapsed structurally in the per-language transform, so that
-/// field is left unwrapped too.
+/// double-nest. The rest comes from the common defaults.
 const RUBY_FIELD_WRAPPINGS: &[(&str, &str)] = &[
     ("name", "name"),
     ("value", "value"),
@@ -265,7 +250,6 @@ pub fn get_field_wrappings(lang: &str) -> &'static [(&'static str, &'static str)
         "rust" | "rs" => RUST_FIELD_WRAPPINGS,
         "go" => GO_FIELD_WRAPPINGS,
         "csharp" | "cs" => CSHARP_FIELD_WRAPPINGS,
-        "python" | "py" => PYTHON_FIELD_WRAPPINGS,
         "ruby" | "rb" => RUBY_FIELD_WRAPPINGS,
         _ => COMMON_FIELD_WRAPPINGS,
     }

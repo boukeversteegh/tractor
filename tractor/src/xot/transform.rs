@@ -745,6 +745,45 @@ pub mod helpers {
         }
     }
 
+    /// Wrap the child of `parent` with `field="<field>"` in a new element
+    /// named `wrapper`. Used for surgical field-wrapping that can't be a
+    /// global `FIELD_WRAPPINGS` rule — for example, wrapping a ternary
+    /// expression's `alternative` field in `<else>` while leaving the
+    /// if-statement's `alternative` unwrapped (where `else_clause`
+    /// already renames to `<else>` and a global wrap would double-nest).
+    ///
+    /// No-op if no matching child is found.
+    pub fn wrap_field_child(
+        xot: &mut Xot,
+        parent: XotNode,
+        field: &str,
+        wrapper: &str,
+    ) -> Result<(), xot::Error> {
+        let child = xot
+            .children(parent)
+            .filter(|&c| xot.element(c).is_some())
+            .find(|&c| get_attr(xot, c, "field").as_deref() == Some(field));
+        let child = match child {
+            Some(c) => c,
+            None => return Ok(()),
+        };
+        let wrapper_id = xot.add_name(wrapper);
+        let wrapper_node = xot.new_element(wrapper_id);
+        copy_source_location(xot, child, wrapper_node);
+        set_attr(xot, wrapper_node, "field", wrapper);
+        // Rewrite inner's field to its own local-name for JSON lifting.
+        let inner_local = xot
+            .element(child)
+            .map(|e| xot.local_name_str(e.name()).to_string());
+        if let Some(local) = inner_local {
+            set_attr(xot, child, "field", &local);
+        }
+        xot.insert_before(child, wrapper_node)?;
+        xot.detach(child)?;
+        xot.append(wrapper_node, child)?;
+        Ok(())
+    }
+
     /// Rewrite a tree-sitter `generic_type` node into the canonical
     /// shape shared across languages:
     ///
@@ -875,7 +914,6 @@ pub mod helpers {
         let mut current = if_node;
         let mut anchor: Option<XotNode> = None;
         loop {
-            unwrap_redundant_else_wrapper(xot, current)?;
             // Find the trailing alternative child (else / elsif / else_if)
             // on the current node.
             let alt = match find_trailing_alternative(xot, current) {
@@ -888,8 +926,7 @@ pub mod helpers {
                 "else" => {
                     // Before finishing, check whether this `<else>` holds
                     // only a single `<if>` (else if in C-like shape).
-                    // After unwrap_redundant_else_wrapper this is already
-                    // normalised, so the child is an `<if>` directly.
+                    // The `<else>` wraps an `<if>` directly (C-like else-if chain).
                     let inner_if = single_if_child(xot, alt);
                     if let Some(inner_if) = inner_if {
                         // Lift this `<if>`'s condition/then as a new
@@ -922,36 +959,6 @@ pub mod helpers {
             }
         }
 
-        Ok(())
-    }
-
-    /// If `if_node`'s `<else>` child (field="else") contains only a single
-    /// `<else>` element (the renamed `else_clause`), flatten the outer
-    /// wrapper so the inner `<else>` becomes a direct child of `if_node`.
-    /// Leaves Ruby's shape (no wrapper) untouched.
-    fn unwrap_redundant_else_wrapper(xot: &mut Xot, if_node: XotNode) -> Result<(), xot::Error> {
-        let children = get_element_children(xot, if_node);
-        for child in children {
-            if get_element_name(xot, child).as_deref() != Some("else") {
-                continue;
-            }
-            // Only act on the field-wrapper (has field="else" attr).
-            if get_attr(xot, child, "field").as_deref() != Some("else") {
-                continue;
-            }
-            let inner_children = get_element_children(xot, child);
-            if inner_children.len() != 1 {
-                continue;
-            }
-            let inner = inner_children[0];
-            if get_element_name(xot, inner).as_deref() != Some("else") {
-                continue;
-            }
-            // Flatten: move inner up, drop wrapper.
-            xot.detach(inner)?;
-            xot.insert_before(child, inner)?;
-            xot.detach(child)?;
-        }
         Ok(())
     }
 

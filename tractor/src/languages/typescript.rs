@@ -66,6 +66,16 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
 
+        // Ternary expression — surgically wrap its `alternative` child in
+        // `<else>`. Cannot be a global FIELD_WRAPPINGS rule because
+        // if_statement's `alternative` is already an `else_clause` that
+        // renames to `<else>` (a global wrap would double-nest there).
+        "ternary_expression" => {
+            wrap_field_child(xot, node, "alternative", "else")?;
+            rename(xot, node, "ternary");
+            Ok(TransformAction::Continue)
+        }
+
         // ---------------------------------------------------------------------
         // Binary/unary expressions - extract operator
         // ---------------------------------------------------------------------
@@ -225,7 +235,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "assignment_expression" => Some("assign"),
         "binary_expression" => Some("binary"),
         "unary_expression" => Some("unary"),
-        "ternary_expression" => Some("ternary"),
+        // ternary_expression handled above (wraps alternative in <else>)
         "await_expression" => Some("await"),
         "yield_expression" => Some("yield"),
         "as_expression" => Some("as"),
