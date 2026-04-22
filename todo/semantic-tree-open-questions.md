@@ -9,11 +9,17 @@ questions in the semantic tree. Each entry has:
 - **My lean** where I have one; blank where I genuinely don't.
 
 **Notation**: shapes are written as XPath-style descriptors.
-`parent[a][b]` means `<parent>` with children `<a>` and `<b>`.
-`parent[a or b]` means `<parent>` with either `<a>` or `<b>` as the
-child — used when the candidate is about choosing the child's name.
-Nesting works as you'd expect: `parent[a[x][y]]` means
-`<parent><a><x/><y/></a></parent>`.
+
+- `parent[a][b]` — `<parent>` has children `<a>` and `<b>` (presence only,
+  values unspecified).
+- `parent[a='T']` — `<parent>` has an `<a>` child whose text value is `T`.
+  Used when the value matters to the example.
+- `parent[a or b]` — `<parent>` has either an `<a>` or `<b>` child; used
+  when the candidate is about choosing the child's name.
+- Nesting: `parent[a[x]]` means `<parent><a><x/></a></parent>`.
+
+Where a full XML example illustrates the shape better than the descriptor,
+both are given.
 
 Grouped cross-language first, then per-language.
 
@@ -24,26 +30,94 @@ Grouped cross-language first, then per-language.
 
 ### #7 — Type parameter declaration inner shape
 
+**Simple case:**
+
 ```typescript
 class Box<T> { value: T }
 ```
+
+**Current** (C# and TS after recent cleanups):
+```xml
+<class>
+  <name>Box</name>
+  <generic field="generics">
+    <name>
+      <type>T</type>      <!-- spurious wrapper -->
+    </name>
+  </generic>
+  <field>
+    <name>value</name>
+    <type>T</type>
+  </field>
+</class>
+```
+
+Descriptor: `class[name='Box'][generic[name[type='T']]][field[name='value'][type='T']]`
+
+The inner `<name><type>T</type></name>` is a relic. `T` is just the
+name of the type parameter; the `<type>` wrapping inside the `<name>`
+is spurious over-classification (the identifier landed in a type-slot
+in tree-sitter, so its kind was `type_identifier`, but the role here
+is "name of a declared type parameter", not a reference).
+
+**Target:**
+
+```xml
+<class>
+  <name>Box</name>
+  <generic field="generics">
+    <name>T</name>
+  </generic>
+  <field>
+    <name>value</name>
+    <type>T</type>
+  </field>
+</class>
+```
+
+Descriptor: `class[name='Box'][generic[name='T']][field[name='value'][type='T']]`
+
+The type parameter declaration now mirrors every other declaration
+shape — a `<name>` child holds the identifier as plain text.
+
+**With a bound (Java-style):**
 
 ```java
 class Box<T extends Comparable<T>> { T value; }
 ```
 
-**Current** (C# and TS after recent cleanups):
-`class[name][generic[name[type]]]…`
+Target:
+```xml
+<class>
+  <name>Box</name>
+  <generic field="generics">
+    <name>T</name>
+    <bound>
+      <type>
+        <generic/>
+        Comparable
+        <type field="arguments">T</type>
+      </type>
+    </bound>
+  </generic>
+  <field>
+    <name>value</name>
+    <type>T</type>
+  </field>
+</class>
+```
 
-The inner `name[type]` is a relic — `T` is just the name of the type
-parameter; the `<type>` wrapping inside is spurious.
+Descriptor: `class[name='Box'][generic[name='T'][bound[type[generic][type='T']]]][field[name='value'][type='T']]`
 
-**Target**: `class[name][generic[name]]` for the simple case, or
-`class[name][generic[name][bound[type]]]` when there's a Java-style
-bound.
+**Queries under the target**:
+- `//generic[name='T']` — find the generic parameter named T.
+- `//generic[bound]` — find constrained type parameters.
+- `//generic[bound//type='Comparable']` — find generics bounded by a
+  type whose reference text is `Comparable` (matches both bare and
+  generic references).
 
 Applied uniformly to C#, TS, Java, Rust. Python's flat-list already
-does this.
+does this for its type parameter form.
 
 ---
 
