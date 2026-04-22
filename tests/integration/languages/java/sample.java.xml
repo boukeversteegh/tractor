@@ -29,25 +29,23 @@
                 </param>
                 )
                 <body>
-                  <constructor_body>
-                    {
-                    <assign>
-                      <op>=</op>
-                      <left>
-                        <member>
-                          <this>this</this>
-                          .
-                          <name>value</name>
-                        </member>
-                      </left>
-                      =
-                      <right>
+                  {
+                  <assign>
+                    <op>=</op>
+                    <left>
+                      <member>
+                        <this>this</this>
+                        .
                         <name>value</name>
-                      </right>
-                    </assign>
-                    ;
+                      </member>
+                    </left>
+                    =
+                    <right>
+                      <name>value</name>
+                    </right>
+                  </assign>
+                  ;
             }
-                  </constructor_body>
                 </body>
               </constructor>
               <method>
@@ -226,17 +224,15 @@
             enum
             <name>Status</name>
             <body>
-              <enum_body>
-                {
-                <enum_constant>
-                  <name>ACTIVE</name>
-                </enum_constant>
-                ,
-                <enum_constant>
-                  <name>INACTIVE</name>
-                </enum_constant>
-                }
-              </enum_body>
+              {
+              <constant>
+                <name>ACTIVE</name>
+              </constant>
+              ,
+              <constant>
+                <name>INACTIVE</name>
+              </constant>
+              }
             </body>
           </enum>
         </program>

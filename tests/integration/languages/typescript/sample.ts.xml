@@ -94,16 +94,15 @@
                     </member>
                   </callee>
                   (
-                  <template_string>
-                    `
-                    <string_fragment>Result: </string_fragment>
-                    <template_substitution>
+                  <template>
+                    `Result:
+                    <interpolation>
                       ${
                       <name>result</name>
                       }
-                    </template_substitution>
+                    </interpolation>
                     `
-                  </template_string>
+                  </template>
                   )
                 </call>
                 ;
@@ -186,21 +185,20 @@
                     </condition>
                     ?
                     <consequence>
-                      <template_string>
+                      <template>
                         `
-                        <template_substitution>
+                        <interpolation>
                           ${
                           <name>title</name>
                           }
-                        </template_substitution>
-                        <string_fragment> </string_fragment>
-                        <template_substitution>
+                        </interpolation>
+                        <interpolation>
                           ${
                           <name>name</name>
                           }
-                        </template_substitution>
+                        </interpolation>
                         `
-                      </template_string>
+                      </template>
                     </consequence>
                     :
                     <alternative>

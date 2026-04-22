@@ -28,6 +28,45 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // ---------------------------------------------------------------------
         "variable_declarator" => Ok(TransformAction::Flatten),
         "class_body" | "interface_body" | "enum_body" => Ok(TransformAction::Flatten),
+        // class_heritage is a purely-grouping wrapper around `extends_clause`
+        // and `implements_clause`. Drop it so those clauses become direct
+        // children of the class, under their renamed forms.
+        "class_heritage" => Ok(TransformAction::Flatten),
+        // Template string parts: inline the raw text into the enclosing
+        // `<template>` so a template literal reads as text with interpolation
+        // children, not as a soup of grammar-internal wrappers.
+        "string_fragment" | "string_start" | "string_end" => {
+            Ok(TransformAction::Flatten)
+        }
+
+        // ---------------------------------------------------------------------
+        // Private property identifiers (ECMAScript private fields: #name)
+        // Lift the `#` to a <private/> marker on the enclosing field/property
+        // and collapse the leaf to a plain <name>.
+        // ---------------------------------------------------------------------
+        "private_property_identifier" => {
+            if let Some(parent) = get_parent(xot, node) {
+                // Only add the marker if the parent hasn't already got one.
+                let already = xot.children(parent).any(|c| {
+                    get_element_name(xot, c).as_deref() == Some("private")
+                });
+                if !already {
+                    prepend_empty_element(xot, parent, "private")?;
+                }
+            }
+            // Strip the leading `#` from the text and rename to <name>.
+            if let Some(text) = get_text_content(xot, node) {
+                let stripped = text.trim_start_matches('#').to_string();
+                let children: Vec<_> = xot.children(node).collect();
+                for c in children {
+                    xot.detach(c)?;
+                }
+                let t = xot.new_text(&stripped);
+                xot.append(node, t)?;
+            }
+            rename(xot, node, "name");
+            Ok(TransformAction::Continue)
+        }
 
         // ---------------------------------------------------------------------
         // Name wrappers created by the builder for field="name".
@@ -112,6 +151,21 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         // ---------------------------------------------------------------------
+        // Functions/methods — lift `async` keyword and generator `*` prefix
+        // to empty marker children on the complex node (Principle #13).
+        // Mirrors Python's function_definition handling.
+        // ---------------------------------------------------------------------
+        "method_definition" | "function_declaration" | "function_expression"
+        | "arrow_function" | "generator_function_declaration"
+        | "generator_function" => {
+            extract_function_markers(xot, node)?;
+            if let Some(new_name) = map_element_name(&kind) {
+                rename(xot, node, new_name);
+            }
+            Ok(TransformAction::Continue)
+        }
+
+        // ---------------------------------------------------------------------
         // Identifiers are always names (definitions or references).
         // Tree-sitter uses `type_identifier` for type positions, so bare
         // identifiers never need a heuristic — they are never types.
@@ -161,7 +215,8 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         // Declarations
         "program" => Some("program"),
         "class_declaration" => Some("class"),
-        "function_declaration" => Some("function"),
+        "function_declaration" | "function_expression" => Some("function"),
+        "generator_function_declaration" | "generator_function" => Some("function"),
         "method_definition" => Some("method"),
         "arrow_function" => Some("lambda"),
         "interface_declaration" => Some("interface"),
@@ -196,6 +251,19 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "unary_expression" => Some("unary"),
         "ternary_expression" => Some("ternary"),
         "await_expression" => Some("await"),
+        "yield_expression" => Some("yield"),
+        "as_expression" => Some("as"),
+
+        // Classes / members
+        // class_heritage is flattened in the match above; the inner clauses
+        // are the semantic nodes (extends_clause → <extends>, etc.).
+        "extends_clause" => Some("extends"),
+        "implements_clause" => Some("implements"),
+        "field_definition" | "public_field_definition" => Some("field"),
+
+        // Template strings
+        "template_string" => Some("template"),
+        "template_substitution" => Some("interpolation"),
 
         // Imports/Exports
         "import_statement" => Some("import"),
@@ -231,6 +299,40 @@ fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
         prepend_op_element(xot, node, op)?;
     }
 
+    Ok(())
+}
+
+/// Lift `async` keyword and generator `*` prefix on functions/methods to
+/// empty marker children on the node. Leaves all other children intact.
+/// The source keyword/token remains as a text sibling for renderability.
+///
+/// Text children may concatenate multiple tokens (e.g. `"async function"`
+/// or `"function*"`), so we scan token-wise for the keywords.
+fn extract_function_markers(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
+    let texts = get_text_children(xot, node);
+    let mut has_async = false;
+    let mut has_star = false;
+    for t in &texts {
+        for tok in t.split_whitespace() {
+            if tok == "async" {
+                has_async = true;
+            }
+            // A generator marker may appear as a standalone "*" token or
+            // attached to "function" (e.g. "function*"). Either way, if
+            // any token contains '*' and is part of a function/method
+            // header, treat it as a generator marker.
+            if tok == "*" || tok.ends_with('*') || tok.starts_with('*') {
+                has_star = true;
+            }
+        }
+    }
+    // Prepend in reverse so final order is <async/><generator/>...
+    if has_star {
+        prepend_empty_element(xot, node, "generator")?;
+    }
+    if has_async {
+        prepend_empty_element(xot, node, "async")?;
+    }
     Ok(())
 }
 
@@ -284,6 +386,11 @@ fn has_kind(xot: &Xot, node: XotNode) -> bool {
 /// If `node` contains a single identifier child, replace the node's children
 /// with that identifier's text. Used to flatten builder-created wrappers like
 /// `<name><identifier>foo</identifier></name>` to `<name>foo</name>`.
+///
+/// For `private_property_identifier` the leading `#` is stripped and a
+/// `<private/>` marker is prepended to the enclosing field/property — the
+/// text "#foo" is purely a sigil, not part of the name, and the marker
+/// follows Principle #7 (modifiers as empty elements).
 fn inline_single_identifier(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     let children: Vec<_> = xot.children(node).collect();
     for child in children {
@@ -291,19 +398,38 @@ fn inline_single_identifier(xot: &mut Xot, node: XotNode) -> Result<(), xot::Err
             Some(n) => n,
             None => continue,
         };
-        if !matches!(child_name.as_str(), "identifier" | "property_identifier") {
+        if !matches!(
+            child_name.as_str(),
+            "identifier" | "property_identifier" | "private_property_identifier",
+        ) {
             continue;
         }
         let text = match get_text_content(xot, child) {
             Some(t) => t,
             None => continue,
         };
+        let is_private = child_name == "private_property_identifier";
+        let clean_text = if is_private {
+            text.trim_start_matches('#').to_string()
+        } else {
+            text
+        };
         let all_children: Vec<_> = xot.children(node).collect();
         for c in all_children {
             xot.detach(c)?;
         }
-        let text_node = xot.new_text(&text);
+        let text_node = xot.new_text(&clean_text);
         xot.append(node, text_node)?;
+        if is_private {
+            if let Some(parent) = get_parent(xot, node) {
+                let already = xot.children(parent).any(|c| {
+                    get_element_name(xot, c).as_deref() == Some("private")
+                });
+                if !already {
+                    prepend_empty_element(xot, parent, "private")?;
+                }
+            }
+        }
         return Ok(());
     }
     Ok(())

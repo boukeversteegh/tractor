@@ -23,7 +23,9 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // ---------------------------------------------------------------------
         // Flatten nodes - transform children, then remove wrapper
         // ---------------------------------------------------------------------
-        "class_body" | "interface_body" | "block" => Ok(TransformAction::Flatten),
+        "class_body" | "interface_body" | "block"
+        | "enum_body" | "field_declaration_list" | "type_list"
+        | "constructor_body" => Ok(TransformAction::Flatten),
 
         // ---------------------------------------------------------------------
         // Flat lists (Principle #12)
@@ -38,6 +40,11 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
         "type_arguments" => {
             distribute_field_to_children(xot, node, "arguments");
+            Ok(TransformAction::Flatten)
+        }
+        "type_parameters" => {
+            distribute_field_to_children(xot, node, "generics");
+            rename(xot, node, "generics");
             Ok(TransformAction::Flatten)
         }
 
@@ -236,11 +243,18 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "enum_declaration" => Some("enum"),
         "method_declaration" => Some("method"),
         "constructor_declaration" => Some("constructor"),
+        // constructor_body is flattened (handled above) — the `body` wrapper
+        // already comes from the field-wrapping pass.
         "field_declaration" => Some("field"),
+        "enum_constant" => Some("constant"),
         // formal_parameters and argument_list are flattened via Principle #12 above
         "formal_parameter" => Some("param"),
         "generic_type" => Some("generic"),
         "array_type" => Some("array"),
+        "scoped_identifier" | "scoped_type_identifier" => Some("path"),
+        "super_interfaces" => Some("implements"),
+        "type_bound" => Some("bound"),
+        "type_parameter" => Some("generic"),
         "return_statement" => Some("return"),
         "if_statement" => Some("if"),
         "else_clause" => Some("else"),

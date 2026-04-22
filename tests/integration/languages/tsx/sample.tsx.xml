@@ -19,11 +19,7 @@
               </named_imports>
             </import_clause>
             from
-            <string>
-              '
-              <string_fragment>react</string_fragment>
-              '
-            </string>
+            <string>'react'</string>
             ;
           </import>
           <interface>
@@ -104,11 +100,7 @@
                         <jsx_attribute>
                           <name>className</name>
                           =
-                          <string>
-                            &quot;
-                            <string_fragment>greeting</string_fragment>
-                            &quot;
-                          </string>
+                          <string>&quot;greeting&quot;</string>
                         </jsx_attribute>
                         &gt;
                       </jsx_opening_element>

@@ -80,16 +80,15 @@
                     </member>
                   </callee>
                   (
-                  <template_string>
-                    `
-                    <string_fragment>Result: </string_fragment>
-                    <template_substitution>
+                  <template>
+                    `Result:
+                    <interpolation>
                       ${
                       <name>result</name>
                       }
-                    </template_substitution>
+                    </interpolation>
                     `
-                  </template_string>
+                  </template>
                   )
                 </call>
                 ;
