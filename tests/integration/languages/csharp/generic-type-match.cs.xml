@@ -105,7 +105,9 @@
                         <name>string</name>
                       </type>
                       ,
-                      <type>User</type>
+                      <type>
+                        <name>User</name>
+                      </type>
                       &gt;
                     </type>
                     &gt;
@@ -130,7 +132,9 @@
                               <name>string</name>
                             </type>
                             ,
-                            <type>User</type>
+                            <type>
+                              <name>User</name>
+                            </type>
                             &gt;
                           </type>
                           &gt;

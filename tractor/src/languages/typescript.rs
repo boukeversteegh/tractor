@@ -32,6 +32,17 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // and `implements_clause`. Drop it so those clauses become direct
         // children of the class, under their renamed forms.
         "class_heritage" => Ok(TransformAction::Flatten),
+
+        // Extends clause: `class Foo extends Bar`. Tree-sitter tags the
+        // base-class identifier as `field="value"` (reflecting JS's
+        // class-as-value model), so the builder wraps it in `<value>`.
+        // Retag as `<type>` for the uniform namespace vocabulary —
+        // `<extends><type><name>Bar</name></type></extends>`.
+        "extends_clause" => {
+            retag_value_as_type(xot, node)?;
+            rename(xot, node, "extends");
+            Ok(TransformAction::Continue)
+        }
         // Template string parts: inline the raw text into the enclosing
         // `<template>` so a template literal reads as text with interpolation
         // children, not as a soup of grammar-internal wrappers.
@@ -249,7 +260,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         // Classes / members
         // class_heritage is flattened in the match above; the inner clauses
         // are the semantic nodes (extends_clause → <extends>, etc.).
-        "extends_clause" => Some("extends"),
+        // extends_clause handled above (retag value→type before rename)
         "implements_clause" => Some("implements"),
         "field_definition" | "public_field_definition" => Some("field"),
 
@@ -371,6 +382,22 @@ fn wrap_bare_identifier_params(xot: &mut Xot, list: XotNode) -> Result<(), xot::
 }
 
 /// Check if a node has a `kind` attribute (i.e., it's a tree-sitter node, not a wrapper)
+/// Find the `<value>` field-wrapper child (if any) and retag it as
+/// `<type>` — both the element name and the `field` attribute. Used
+/// where tree-sitter tags a type reference with `field="value"`
+/// (e.g. `extends_clause` in TS) and we want the namespace-vocabulary
+/// shape `<type>...</type>` instead.
+fn retag_value_as_type(xot: &mut Xot, parent: XotNode) -> Result<(), xot::Error> {
+    let value_child = xot.children(parent)
+        .filter(|&c| xot.element(c).is_some())
+        .find(|&c| get_element_name(xot, c).as_deref() == Some("value"));
+    if let Some(v) = value_child {
+        rename(xot, v, "type");
+        set_attr(xot, v, "field", "type");
+    }
+    Ok(())
+}
+
 fn has_kind(xot: &Xot, node: XotNode) -> bool {
     get_kind(xot, node).is_some()
 }

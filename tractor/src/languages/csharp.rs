@@ -233,6 +233,11 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         "identifier" => {
             let classification = classify_identifier(xot, node);
             rename(xot, node, classification);
+            // If classified as a type reference, wrap the text in <name>
+            // for the unified namespace vocabulary (Principle #14).
+            if classification == "type" {
+                wrap_text_in_name(xot, node)?;
+            }
             Ok(TransformAction::Continue)
         }
         "type_identifier" | "predefined_type" => {
@@ -563,6 +568,13 @@ fn classify_identifier(xot: &Xot, node: XotNode) -> &'static str {
 
         // Type annotations - use type
         "type_argument_list" | "type_parameter" => "type",
+
+        // Base list (`class Foo : Bar, IBaz`) — each entry is a type
+        // reference (base class or interface). Classifying as "type"
+        // means the identifier becomes `<type>` and gets its text
+        // wrapped in `<name>` by `wrap_text_in_name`, producing
+        // `<extends><type><name>Bar</name></type>...</extends>`.
+        "base_list" => "type",
 
         // Default: all other identifiers are <name>. The post-transform
         // pass marks each <name> as <bind/> or <use/> by context, so we

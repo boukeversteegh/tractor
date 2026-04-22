@@ -276,6 +276,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "array_type" => Some("array"),
         "scoped_identifier" | "scoped_type_identifier" => Some("path"),
         "super_interfaces" => Some("implements"),
+        "superclass" => Some("extends"),
         "type_bound" => Some("bound"),
         "type_parameter" => Some("generic"),
         "return_statement" => Some("return"),

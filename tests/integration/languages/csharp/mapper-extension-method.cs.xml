@@ -20,7 +20,9 @@
                 <name>Map</name>
                 (
                 <parameter>
-                  <type>User</type>
+                  <type>
+                    <name>User</name>
+                  </type>
                   <name>user</name>
                 </parameter>
                 )
@@ -31,7 +33,9 @@
                       return
                       <new>
                         new
-                        <type>UserDto</type>
+                        <type>
+                          <name>UserDto</name>
+                        </type>
                         ()
                       </new>
                       ;
@@ -54,7 +58,9 @@
                 (
                 <parameter>
                   <this/>
-                  <type>User</type>
+                  <type>
+                    <name>User</name>
+                  </type>
                   <name>user</name>
                 </parameter>
                 )
@@ -65,7 +71,9 @@
                       return
                       <new>
                         new
-                        <type>UserDto</type>
+                        <type>
+                          <name>UserDto</name>
+                        </type>
                         ()
                       </new>
                       ;
@@ -87,12 +95,16 @@
                 <name>MapTwo</name>
                 (
                 <parameter>
-                  <type>User</type>
+                  <type>
+                    <name>User</name>
+                  </type>
                   <name>a</name>
                 </parameter>
                 ,
                 <parameter>
-                  <type>User</type>
+                  <type>
+                    <name>User</name>
+                  </type>
                   <name>b</name>
                 </parameter>
                 )
@@ -103,7 +115,9 @@
                       return
                       <new>
                         new
-                        <type>UserDto</type>
+                        <type>
+                          <name>UserDto</name>
+                        </type>
                         ()
                       </new>
                       ;

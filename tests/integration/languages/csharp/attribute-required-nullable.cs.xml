@@ -19,7 +19,9 @@
                 </attribute>
                 ]
                 <public/>
-                <type>Guid</type>
+                <type>
+                  <name>Guid</name>
+                </type>
                 <name>UserId</name>
                 {
                 <accessor>get;</accessor>
