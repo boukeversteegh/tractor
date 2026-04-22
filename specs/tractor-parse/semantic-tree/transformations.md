@@ -122,6 +122,66 @@ Python:
 `<returns>` wrapper containing one `<type>` (single-return
 languages) or a sequence of `<type>` siblings (Go multi-return).
 
+### Conditional shape (`<if>` / `<else_if>` / `<else>`)
+
+A conditional is rendered flat: the root `<if>` holds the primary
+condition and then-branch, followed by zero or more `<else_if>`
+sibling branches, followed by an optional `<else>` default.
+
+```
+if[condition][then][else_if[condition][then]][else_if[condition][then]][else]
+```
+
+XML form for a 4-branch chain:
+
+```xml
+<if>
+  <condition>x > 0</condition>
+  <then>return "positive"</then>
+  <else_if>
+    <condition>x == 0</condition>
+    <then>return "zero"</then>
+  </else_if>
+  <else_if>
+    <condition>x < -10</condition>
+    <then>return "very negative"</then>
+  </else_if>
+  <else>return "negative"</else>
+</if>
+```
+
+Cites: Goal #5 (match the mental model — a JS dev reads `else if (…)`
+as a continued conditional branch, not "an `else` whose body happens
+to be an `if`"), Principle #12 (don't keep structural wrappers that
+add no semantic meaning — the nested `else_clause[if[…]]` chain is
+one such wrapper), Principle #1 (use language keywords — `else`).
+
+**Naming notes:**
+- `<then>` replaces the old `<consequence>` field wrapper.
+  "Consequence" is functional-language jargon; no mainstream
+  imperative developer says it.
+- `<else_if>` uses underscore because XML element names cannot
+  contain spaces and XPath parses `-` as minus (naming-conventions
+  spec). Written out in full rather than as `elif` per Principle #2
+  (full names over abbreviations).
+- `<else>` replaces the old `<alternative>` field wrapper — again,
+  the language's own keyword.
+
+**Per-language mechanics:**
+
+- **Python** — tree-sitter already emits `elif_clause` as a flat
+  sibling of `if_statement`; rename to `<else_if>`. Python's
+  `else_clause` renames to `<else>`. `consequence` field → `<then>`.
+- **Ruby** — `elsif_clause` → `<else_if>`; `else_clause` → `<else>`.
+- **JS / TS / Java / C# / Go / Rust** — tree-sitter produces a
+  nested chain: `if_statement` whose `alternative` field is an
+  `else_clause` whose sole child is another `if_statement`. The
+  transform collapses this chain in-place: the nested `if`'s
+  condition and then-branch are lifted as an `<else_if>` sibling
+  of the outer `<if>`, recursively.
+
+### Return types
+
 ## Relationship to `transform-rules/`
 
 The older `transform-rules/` folder documents generic, pattern-level

@@ -21,33 +21,6 @@ Grouped cross-language first, then per-language.
 
 ## Cross-language
 
-### #3 — `condition` / `consequence` for `if`
-
-"Consequence" is functional-language jargon; no mainstream imperative
-developer says it.
-
-```python
-if x > 0:
-    return x
-else:
-    return -x
-```
-
-**Current**: `if[condition][consequence][alternative]`
-
-**Candidates**:
-
-| Shape | Pro | Con |
-|---|---|---|
-| `if[condition][then][else]` | `then`/`else` match natural speech and the actual `else` keyword | `<else>` name may collide with standalone `else_clause` used in Python for-else / C# else-if chains |
-| `if[condition][body][else]` | `body` matches how function/class bodies are named | `body` usually implies a larger scope; a one-liner `if` doesn't really have a "body" |
-| `if[test][then][else]` | Short; matches Python AST vocabulary | Less self-explanatory for non-Pythonists |
-
-**My lean**: `if[condition][then][else]`. Accept the name collision
-with `else_clause` — query context (parent is `<if>` vs `<for>`)
-disambiguates.
-
----
 
 ### #7 — Type parameter declaration inner shape
 
