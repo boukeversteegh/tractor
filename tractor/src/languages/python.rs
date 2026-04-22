@@ -148,7 +148,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "default_parameter" | "typed_parameter" | "typed_default_parameter" => Some("param"),
         "return_statement" => Some("return"),
         "if_statement" => Some("if"),
-        "elif_clause" => Some("elif"),
+        "elif_clause" => Some("else_if"),
         "else_clause" => Some("else"),
         "for_statement" => Some("for"),
         "while_statement" => Some("while"),
@@ -245,7 +245,7 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
         "decorated" | "decorator" => SyntaxCategory::Keyword,
 
         // Keywords - control flow
-        "if" | "elif" | "else" => SyntaxCategory::Keyword,
+        "if" | "else_if" | "else" => SyntaxCategory::Keyword,
         "for" | "while" => SyntaxCategory::Keyword,
         "try" | "except" | "finally" | "raise" => SyntaxCategory::Keyword,
         "with" | "pass" => SyntaxCategory::Keyword,

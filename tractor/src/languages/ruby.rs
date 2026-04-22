@@ -67,6 +67,12 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "module" => Some("module"),
         "if" => Some("if"),
         "unless" => Some("unless"),
+        // Ruby's tree-sitter nests `elsif` chains (each `elsif`/`else`
+        // lives inside the previous `elsif`). The post-transform in
+        // `languages/mod.rs` lifts them to flat children of `<if>` per
+        // the cross-cutting conditional shape; here we just rename.
+        "elsif" => Some("else_if"),
+        "else" => Some("else"),
         "case" => Some("case"),
         "while" => Some("while"),
         "until" => Some("until"),
@@ -105,7 +111,7 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
         "class" | "module" | "method" => SyntaxCategory::Keyword,
 
         // Keywords - control flow
-        "if" | "unless" | "else" | "elsif" => SyntaxCategory::Keyword,
+        "if" | "unless" | "else" | "else_if" => SyntaxCategory::Keyword,
         "case" | "when" => SyntaxCategory::Keyword,
         "while" | "until" | "for" => SyntaxCategory::Keyword,
         "begin" | "rescue" | "ensure" | "raise" => SyntaxCategory::Keyword,
