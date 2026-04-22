@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<file>
+  <line_comment>// Visibility is exhaustive: every declaration carries either &lt;private/&gt;</line_comment>
+  <line_comment>// (implicit default) or &lt;pub/&gt; with optional restriction details.</line_comment>
+  <function>
+    <private/>
+    fn
+    <name>private_fn</name>
+    ()
+    <body>{}</body>
+  </function>
+  <line_comment>// -&gt; &lt;private/&gt;</line_comment>
+  <function>
+    <pub/>
+    fn
+    <name>public_fn</name>
+    ()
+    <body>{}</body>
+  </function>
+  <line_comment>// -&gt; &lt;pub/&gt;</line_comment>
+  <function>
+    <pub>
+      <crate>crate</crate>
+    </pub>
+    fn
+    <name>crate_fn</name>
+    ()
+    <body>{}</body>
+  </function>
+  <line_comment>// -&gt; &lt;pub&gt;&lt;crate/&gt;&lt;/pub&gt;</line_comment>
+  <function>
+    <pub>
+      <super>super</super>
+    </pub>
+    fn
+    <name>super_fn</name>
+    ()
+    <body>{}</body>
+  </function>
+  <line_comment>// -&gt; &lt;pub&gt;&lt;super/&gt;&lt;/pub&gt;</line_comment>
+  <struct>
+    <private/>
+    struct
+    <name>PrivateStruct</name>
+    ;
+  </struct>
+  <line_comment>// -&gt; &lt;private/&gt;</line_comment>
+  <struct>
+    <pub/>
+    struct
+    <name>PublicStruct</name>
+    ;
+  </struct>
+  <line_comment>// -&gt; &lt;pub/&gt;</line_comment>
+  <const>
+    <private/>
+    const
+    <name>PRIV</name>
+    :
+    <type>
+      <name>i32</name>
+    </type>
+    =
+    <value>
+      <int>1</int>
+    </value>
+    ;
+  </const>
+  <line_comment>// -&gt; &lt;private/&gt;</line_comment>
+  <const>
+    <pub/>
+    const
+    <name>PUB</name>
+    :
+    <type>
+      <name>i32</name>
+    </type>
+    =
+    <value>
+      <int>2</int>
+    </value>
+    ;
+  </const>
+  <line_comment>// -&gt; &lt;pub/&gt;</line_comment>
+</file>

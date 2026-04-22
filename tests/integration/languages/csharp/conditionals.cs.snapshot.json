@@ -1,0 +1,241 @@
+{
+  "$type": "unit",
+  "children": [
+    {
+      "comment": "// Conditional shape: flat <if>/<else_if>/<else>. Ternary keeps\n// <then>/<else> via surgical wrap."
+    },
+    {
+      "$type": "class",
+      "internal": true,
+      "name": "Conditionals",
+      "body": {
+        "children": [
+          {
+            "$type": "method",
+            "public": true,
+            "returns": {
+              "type": {
+                "name": "string"
+              }
+            },
+            "name": "Classify",
+            "parameters": {
+              "type": {
+                "name": "int"
+              },
+              "name": "n"
+            },
+            "body": {
+              "block": {
+                "children": [
+                  {
+                    "$type": "if",
+                    "condition": {
+                      "binary": {
+                        "left": {
+                          "name": "n"
+                        },
+                        "right": {
+                          "int": "0"
+                        },
+                        "children": [
+                          {
+                            "$type": "op",
+                            "children": [
+                              {
+                                "$type": "compare",
+                                "less": true
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    "then": {
+                      "block": {
+                        "children": [
+                          {
+                            "$type": "return",
+                            "children": [
+                              {
+                                "$type": "string",
+                                "children": [
+                                  {
+                                    "string_literal_content": "neg"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    "alternative": {
+                      "condition": {
+                        "binary": {
+                          "left": {
+                            "name": "n"
+                          },
+                          "right": {
+                            "int": "0"
+                          },
+                          "children": [
+                            {
+                              "$type": "op",
+                              "equals": true,
+                              "text": "=="
+                            }
+                          ]
+                        }
+                      },
+                      "then": {
+                        "block": {
+                          "children": [
+                            {
+                              "$type": "return",
+                              "children": [
+                                {
+                                  "$type": "string",
+                                  "children": [
+                                    {
+                                      "string_literal_content": "zero"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      "alternative": {
+                        "condition": {
+                          "binary": {
+                            "left": {
+                              "name": "n"
+                            },
+                            "right": {
+                              "int": "10"
+                            },
+                            "children": [
+                              {
+                                "$type": "op",
+                                "children": [
+                                  {
+                                    "$type": "compare",
+                                    "less": true
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        },
+                        "then": {
+                          "block": {
+                            "children": [
+                              {
+                                "$type": "return",
+                                "children": [
+                                  {
+                                    "$type": "string",
+                                    "children": [
+                                      {
+                                        "string_literal_content": "small"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        },
+                        "alternative": {
+                          "children": [
+                            {
+                              "$type": "return",
+                              "children": [
+                                {
+                                  "$type": "string",
+                                  "children": [
+                                    {
+                                      "string_literal_content": "big"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "$type": "method",
+            "public": true,
+            "returns": {
+              "type": {
+                "name": "string"
+              }
+            },
+            "name": "Label",
+            "parameters": {
+              "type": {
+                "name": "int"
+              },
+              "name": "n"
+            },
+            "body": {
+              "children": [
+                {
+                  "$type": "ternary",
+                  "condition": {
+                    "binary": {
+                      "left": {
+                        "name": "n"
+                      },
+                      "right": {
+                        "int": "0"
+                      },
+                      "children": [
+                        {
+                          "$type": "op",
+                          "children": [
+                            {
+                              "$type": "compare",
+                              "greater": true
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  "then": {
+                    "string": {
+                      "children": [
+                        {
+                          "string_literal_content": "positive"
+                        }
+                      ]
+                    }
+                  },
+                  "else": {
+                    "string": {
+                      "children": [
+                        {
+                          "string_literal_content": "non-positive"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

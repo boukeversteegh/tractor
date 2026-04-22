@@ -1,0 +1,127 @@
+{
+  "$type": "program",
+  "children": [
+    {
+      "comment": "// Principle #14: type references wrap their name in a <name> child."
+    },
+    {
+      "comment": "// Every <type> element should contain <name>X</name>, not bare text."
+    },
+    {
+      "comment": "// Covers: plain types, generic types, base-class/implements, function types."
+    },
+    {
+      "$type": "alias",
+      "name": "Id",
+      "type": {
+        "name": "number"
+      }
+    },
+    {
+      "$type": "alias",
+      "name": "Handler",
+      "type": {
+        "function": true,
+        "parameters": {
+          "required": true,
+          "pattern": "x",
+          "children": [
+            {
+              "$type": "type",
+              "name": "number"
+            }
+          ]
+        },
+        "returns": {
+          "type": {
+            "name": "void"
+          }
+        }
+      }
+    },
+    {
+      "$type": "alias",
+      "name": "Box",
+      "generics": {
+        "children": [
+          {
+            "$type": "generic",
+            "name": "T"
+          }
+        ]
+      },
+      "type": {
+        "generic": true,
+        "name": "Array",
+        "arguments": {
+          "name": "T"
+        }
+      }
+    },
+    {
+      "$type": "class",
+      "name": "Animal",
+      "body": "{}"
+    },
+    {
+      "$type": "interface",
+      "name": "Barker",
+      "body": {
+        "children": [
+          {
+            "$type": "method_signature",
+            "name": "bark",
+            "returns": {
+              "children": [
+                {
+                  "$type": "type",
+                  "name": "void"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "$type": "class",
+      "name": "Dog",
+      "body": {
+        "children": [
+          {
+            "$type": "method",
+            "name": "bark",
+            "returns": {
+              "children": [
+                {
+                  "$type": "type",
+                  "name": "void"
+                }
+              ]
+            },
+            "body": {
+              "block": "{}"
+            }
+          }
+        ]
+      },
+      "children": [
+        {
+          "$type": "extends",
+          "type": {
+            "name": "Animal"
+          }
+        },
+        {
+          "$type": "implements",
+          "children": [
+            {
+              "$type": "type",
+              "name": "Barker"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<program>
+  <comment>// Every &lt;param&gt; carries an exhaustive marker: &lt;required/&gt; or &lt;optional/&gt;.</comment>
+  <comment>// Covers required, optional (? suffix), defaulted, and rest parameters.</comment>
+  <function>
+    function
+    <name>call</name>
+    (
+    <param>
+      <required/>
+      <name>required</name>
+      :
+      <type>
+        <name>string</name>
+      </type>
+    </param>
+    ,
+    <param>
+      <optional/>
+      <name>optional</name>
+      ?:
+      <type>
+        <name>number</name>
+      </type>
+    </param>
+    ,
+    <param>
+      <required/>
+      <name>defaulted</name>
+      :
+      <type>
+        <name>boolean</name>
+      </type>
+      =
+      <value>
+        <bool>true</bool>
+      </value>
+    </param>
+    ,
+    <param>
+      <required/>
+      <rest_pattern>
+        ...
+        <name>rest</name>
+      </rest_pattern>
+      :
+      <array_type>
+        <type>
+          <name>string</name>
+        </type>
+        []
+      </array_type>
+    </param>
+    )
+    <returns>
+      :
+      <type>
+        <name>void</name>
+      </type>
+    </returns>
+    <body>
+      <block>{}</block>
+    </body>
+  </function>
+  <comment>// Naked JS-style identifier param (via .js grammar) should also normalize</comment>
+  <comment>// to &lt;param&gt;&lt;required/&gt;&lt;name&gt;…&lt;/name&gt;&lt;/param&gt;.</comment>
+  <function>
+    function
+    <name>noTypes</name>
+    (
+    <param>
+      <required/>
+      <name>x</name>
+    </param>
+    ,
+    <param>
+      <required/>
+      <name>y</name>
+    </param>
+    )
+    <body>
+      <block>{}</block>
+    </body>
+  </function>
+</program>

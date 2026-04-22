@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<program>
+  <line_comment>// Interface members without an explicit access modifier default to</line_comment>
+  <line_comment>// &lt;public/&gt;. This makes implicit visibility explicit — a simple</line_comment>
+  <line_comment>// //method[public] query hits every visible interface method.</line_comment>
+  <interface>
+    <package/>
+    interface
+    <name>Shape</name>
+    <body>
+      {
+      <method>
+        <public/>
+        <returns>
+          <type>
+            <name>double</name>
+          </type>
+        </returns>
+        <name>area</name>
+        ();
+      </method>
+      <line_comment>// implicitly public</line_comment>
+      <method>
+        <public/>
+        <returns>
+          <type>
+            <name>double</name>
+          </type>
+        </returns>
+        <name>perimeter</name>
+        ();
+      </method>
+      <line_comment>// implicitly public</line_comment>
+      <method>
+        <package/>
+        <returns>
+          <type>
+            <name>String</name>
+          </type>
+        </returns>
+        <name>name</name>
+        ()
+        <body>
+          {
+          <line_comment>// implicitly public</line_comment>
+          <return>
+            return
+            <string>
+              &quot;
+              <string_fragment>shape</string_fragment>
+              &quot;
+            </string>
+            ;
+          </return>
+          }
+        </body>
+      </method>
+      <method>
+        <public/>
+        <returns>
+          <type>
+            <name>void</name>
+          </type>
+        </returns>
+        <name>stroke</name>
+        ();
+      </method>
+      <line_comment>// explicit — should still be &lt;public/&gt;</line_comment>
+      }
+    </body>
+  </interface>
+</program>

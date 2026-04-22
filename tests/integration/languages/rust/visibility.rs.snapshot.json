@@ -1,0 +1,109 @@
+{
+  "$type": "file",
+  "children": [
+    {
+      "line_comment": "// Visibility is exhaustive: every declaration carries either <private/>"
+    },
+    {
+      "line_comment": "// (implicit default) or <pub/> with optional restriction details."
+    },
+    {
+      "$type": "function",
+      "private": true,
+      "name": "private_fn",
+      "body": "{}"
+    },
+    {
+      "line_comment": "// -> <private/>"
+    },
+    {
+      "$type": "function",
+      "pub": true,
+      "name": "public_fn",
+      "body": "{}"
+    },
+    {
+      "line_comment": "// -> <pub/>"
+    },
+    {
+      "$type": "function",
+      "name": "crate_fn",
+      "body": "{}",
+      "children": [
+        {
+          "$type": "pub",
+          "children": [
+            {
+              "crate": "crate"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "line_comment": "// -> <pub><crate/></pub>"
+    },
+    {
+      "$type": "function",
+      "name": "super_fn",
+      "body": "{}",
+      "children": [
+        {
+          "$type": "pub",
+          "children": [
+            {
+              "super": "super"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "line_comment": "// -> <pub><super/></pub>"
+    },
+    {
+      "$type": "struct",
+      "private": true,
+      "name": "PrivateStruct"
+    },
+    {
+      "line_comment": "// -> <private/>"
+    },
+    {
+      "$type": "struct",
+      "pub": true,
+      "name": "PublicStruct"
+    },
+    {
+      "line_comment": "// -> <pub/>"
+    },
+    {
+      "$type": "const",
+      "private": true,
+      "name": "PRIV",
+      "type": {
+        "name": "i32"
+      },
+      "value": {
+        "int": "1"
+      }
+    },
+    {
+      "line_comment": "// -> <private/>"
+    },
+    {
+      "$type": "const",
+      "pub": true,
+      "name": "PUB",
+      "type": {
+        "name": "i32"
+      },
+      "value": {
+        "int": "2"
+      }
+    },
+    {
+      "line_comment": "// -> <pub/>"
+    }
+  ]
+}

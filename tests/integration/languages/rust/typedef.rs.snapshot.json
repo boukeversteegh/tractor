@@ -1,0 +1,40 @@
+{
+  "$type": "file",
+  "children": [
+    {
+      "line_comment": "// `type_item` renders as <alias> (parallel with TS / Java / C#)."
+    },
+    {
+      "$type": "alias",
+      "private": true,
+      "name": "Id",
+      "type": {
+        "name": "u32"
+      }
+    },
+    {
+      "$type": "alias",
+      "private": true,
+      "name": "Mapping",
+      "generics": {
+        "name": "T"
+      },
+      "type": {
+        "generic": true,
+        "arguments": [
+          {
+            "name": "String"
+          },
+          {
+            "name": "T"
+          }
+        ],
+        "children": [
+          {
+            "name": "::"
+          }
+        ]
+      }
+    }
+  ]
+}

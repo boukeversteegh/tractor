@@ -1,0 +1,182 @@
+{
+  "$type": "file",
+  "children": [
+    {
+      "line_comment": "// Principle #14: type references wrap their name in a <name> child."
+    },
+    {
+      "line_comment": "// Covers: primitive types, paths, generic types, reference types,"
+    },
+    {
+      "line_comment": "// type parameter declarations with <extends> bounds."
+    },
+    {
+      "$type": "use",
+      "argument": {
+        "path": {
+          "path": "std",
+          "name": "collections"
+        },
+        "name": "HashMap"
+      }
+    },
+    {
+      "$type": "trait",
+      "private": true,
+      "name": "Barker",
+      "body": {
+        "children": [
+          {
+            "$type": "function_signature_item",
+            "name": "bark",
+            "parameters": {
+              "children": [
+                {
+                  "self": "self"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "$type": "struct",
+      "private": true,
+      "name": "Dog",
+      "generics": {
+        "name": "T",
+        "bounds": {
+          "children": [
+            {
+              "$type": "type",
+              "name": "Barker"
+            }
+          ]
+        }
+      },
+      "body": {
+        "children": [
+          {
+            "$type": "field",
+            "name": "owner",
+            "type": {
+              "name": "T"
+            }
+          },
+          {
+            "$type": "field",
+            "name": "tags",
+            "type": {
+              "generic": true,
+              "arguments": {
+                "name": "String"
+              },
+              "children": [
+                {
+                  "name": "Vec"
+                }
+              ]
+            }
+          },
+          {
+            "$type": "field",
+            "name": "scores",
+            "type": {
+              "generic": true,
+              "arguments": [
+                {
+                  "name": "String"
+                },
+                {
+                  "name": "i32"
+                }
+              ],
+              "children": [
+                {
+                  "name": "HashMap"
+                }
+              ]
+            }
+          },
+          {
+            "$type": "field",
+            "name": "parent",
+            "type": {
+              "generic": true,
+              "arguments": {
+                "generic": true,
+                "arguments": {
+                  "generic": true,
+                  "arguments": {
+                    "name": "T"
+                  },
+                  "children": [
+                    {
+                      "name": "Dog"
+                    }
+                  ]
+                },
+                "children": [
+                  {
+                    "name": "Box"
+                  }
+                ]
+              },
+              "children": [
+                {
+                  "name": "Option"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "$type": "impl",
+      "generics": {
+        "name": "T",
+        "bounds": {
+          "children": [
+            {
+              "$type": "type",
+              "name": "Barker"
+            }
+          ]
+        }
+      },
+      "trait": {
+        "name": "Barker"
+      },
+      "type": {
+        "generic": true,
+        "arguments": {
+          "name": "T"
+        },
+        "children": [
+          {
+            "name": "Dog"
+          }
+        ]
+      },
+      "body": {
+        "children": [
+          {
+            "$type": "function",
+            "private": true,
+            "name": "bark",
+            "parameters": {
+              "children": [
+                {
+                  "self": "self"
+                }
+              ]
+            },
+            "body": "{}"
+          }
+        ]
+      }
+    }
+  ]
+}

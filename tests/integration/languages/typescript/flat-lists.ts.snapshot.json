@@ -1,0 +1,101 @@
+{
+  "$type": "program",
+  "children": [
+    {
+      "comment": "// Principle #12: parameters / arguments / generics render as flat siblings,"
+    },
+    {
+      "comment": "// not nested <parameters><parameter/></parameters> wrappers. Each sibling"
+    },
+    {
+      "comment": "// carries a field=\"...\" attribute for grouping in queries."
+    },
+    {
+      "$type": "function",
+      "name": "first",
+      "generics": {
+        "children": [
+          {
+            "$type": "generic",
+            "name": "T"
+          },
+          {
+            "$type": "generic",
+            "name": "U"
+          }
+        ]
+      },
+      "parameters": [
+        {
+          "required": true,
+          "pattern": "a",
+          "children": [
+            {
+              "$type": "type",
+              "name": "T"
+            }
+          ]
+        },
+        {
+          "required": true,
+          "pattern": "b",
+          "children": [
+            {
+              "$type": "type",
+              "name": "U"
+            }
+          ]
+        },
+        {
+          "required": true,
+          "pattern": "c",
+          "children": [
+            {
+              "$type": "type",
+              "name": "number"
+            }
+          ]
+        }
+      ],
+      "returns": {
+        "children": [
+          {
+            "$type": "type",
+            "name": "T"
+          }
+        ]
+      },
+      "body": {
+        "block": {
+          "children": [
+            {
+              "$type": "return",
+              "children": [
+                {
+                  "name": "a"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "$type": "call",
+      "callee": {
+        "name": "first"
+      },
+      "arguments": [
+        {
+          "name": "string"
+        },
+        {
+          "name": "number"
+        },
+        "\"x\"",
+        "1",
+        "2"
+      ]
+    }
+  ]
+}

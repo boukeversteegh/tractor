@@ -1,0 +1,241 @@
+{
+  "$type": "file",
+  "children": [
+    {
+      "line_comment": "// Conditional shape: `else if` chain collapses to flat <else_if>"
+    },
+    {
+      "line_comment": "// siblings. Ternary via if-expression keeps <then>/<else>."
+    },
+    {
+      "$type": "function",
+      "private": true,
+      "name": "classify",
+      "parameters": {
+        "pattern": "n",
+        "type": {
+          "name": "i32"
+        }
+      },
+      "returns": {
+        "ref": {
+          "type": {
+            "name": "str"
+          },
+          "children": [
+            {
+              "$type": "lifetime",
+              "children": [
+                {
+                  "name": "static"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "body": {
+        "children": [
+          {
+            "$type": "if",
+            "condition": {
+              "binary": {
+                "left": {
+                  "name": "n"
+                },
+                "right": {
+                  "int": "0"
+                },
+                "children": [
+                  {
+                    "$type": "op",
+                    "children": [
+                      {
+                        "$type": "compare",
+                        "less": true
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            "then": {
+              "children": [
+                {
+                  "$type": "string",
+                  "children": [
+                    {
+                      "string_content": "neg"
+                    }
+                  ]
+                }
+              ]
+            },
+            "alternative": {
+              "children": [
+                {
+                  "$type": "string",
+                  "children": [
+                    {
+                      "string_content": "big"
+                    }
+                  ]
+                }
+              ]
+            },
+            "children": [
+              {
+                "$type": "else_if",
+                "condition": {
+                  "binary": {
+                    "left": {
+                      "name": "n"
+                    },
+                    "right": {
+                      "int": "0"
+                    },
+                    "children": [
+                      {
+                        "$type": "op",
+                        "equals": true,
+                        "text": "=="
+                      }
+                    ]
+                  }
+                },
+                "then": {
+                  "children": [
+                    {
+                      "$type": "string",
+                      "children": [
+                        {
+                          "string_content": "zero"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "$type": "else_if",
+                "condition": {
+                  "binary": {
+                    "left": {
+                      "name": "n"
+                    },
+                    "right": {
+                      "int": "10"
+                    },
+                    "children": [
+                      {
+                        "$type": "op",
+                        "children": [
+                          {
+                            "$type": "compare",
+                            "less": true
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "then": {
+                  "children": [
+                    {
+                      "$type": "string",
+                      "children": [
+                        {
+                          "string_content": "small"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "$type": "function",
+      "private": true,
+      "name": "label",
+      "parameters": {
+        "pattern": "n",
+        "type": {
+          "name": "i32"
+        }
+      },
+      "returns": {
+        "ref": {
+          "type": {
+            "name": "str"
+          },
+          "children": [
+            {
+              "$type": "lifetime",
+              "children": [
+                {
+                  "name": "static"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "body": {
+        "children": [
+          {
+            "$type": "if",
+            "condition": {
+              "binary": {
+                "left": {
+                  "name": "n"
+                },
+                "right": {
+                  "int": "0"
+                },
+                "children": [
+                  {
+                    "$type": "op",
+                    "children": [
+                      {
+                        "$type": "compare",
+                        "greater": true
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            "then": {
+              "children": [
+                {
+                  "$type": "string",
+                  "children": [
+                    {
+                      "string_content": "positive"
+                    }
+                  ]
+                }
+              ]
+            },
+            "alternative": {
+              "children": [
+                {
+                  "$type": "string",
+                  "children": [
+                    {
+                      "string_content": "non-positive"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

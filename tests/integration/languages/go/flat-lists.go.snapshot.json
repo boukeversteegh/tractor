@@ -1,0 +1,112 @@
+{
+  "$type": "file",
+  "children": [
+    {
+      "comment": "// Principle #12: parameter / argument / field lists flatten. Each"
+    },
+    {
+      "comment": "// parameter / argument / struct field is a direct sibling with a"
+    },
+    {
+      "comment": "// field attribute, no <parameters> / <argument_list> wrapper."
+    },
+    {
+      "$type": "package",
+      "children": [
+        {
+          "name": "main"
+        }
+      ]
+    },
+    {
+      "$type": "function",
+      "exported": true,
+      "name": "First",
+      "parameters": [
+        {
+          "name": "a",
+          "type": {
+            "name": "string"
+          }
+        },
+        {
+          "name": "b",
+          "type": {
+            "name": "int"
+          }
+        },
+        {
+          "name": "c",
+          "type": {
+            "name": "bool"
+          }
+        }
+      ],
+      "returns": {
+        "type": {
+          "name": "string"
+        }
+      },
+      "body": {
+        "children": [
+          {
+            "$type": "return",
+            "children": [
+              {
+                "name": "a"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "$type": "function",
+      "exported": true,
+      "name": "Caller",
+      "body": {
+        "children": [
+          {
+            "$type": "call",
+            "function": "First",
+            "arguments": [
+              "\"x\"",
+              "1",
+              "true"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "$type": "type",
+      "exported": true,
+      "name": "Config",
+      "type": {
+        "children": [
+          {
+            "$type": "field",
+            "name": "Host",
+            "type": {
+              "name": "string"
+            }
+          },
+          {
+            "$type": "field",
+            "name": "Port",
+            "type": {
+              "name": "int"
+            }
+          },
+          {
+            "$type": "field",
+            "name": "Tls",
+            "type": {
+              "name": "bool"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

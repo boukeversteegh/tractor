@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<file>
+  <line_comment>// `type_item` renders as &lt;alias&gt; (parallel with TS / Java / C#).</line_comment>
+  <alias>
+    <private/>
+    type
+    <name>Id</name>
+    =
+    <type>
+      <name>u32</name>
+    </type>
+    ;
+  </alias>
+  <alias>
+    <private/>
+    type
+    <name>Mapping</name>
+    &lt;
+    <generic>
+      <name>T</name>
+    </generic>
+    &gt; =
+    <type>
+      <generic/>
+      <name>::</name>
+      &lt;
+      <type>
+        <name>String</name>
+      </type>
+      ,
+      <type>
+        <name>T</name>
+      </type>
+      &gt;
+    </type>
+    ;
+  </alias>
+</file>

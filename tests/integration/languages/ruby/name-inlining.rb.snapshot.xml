@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<program>
+  <comment># When a &lt;name&gt; wrapper sits inside method / class / module and contains</comment>
+  <comment># a single &lt;identifier&gt; child, the transform inlines the identifier's</comment>
+  <comment># text directly: &lt;method&gt;&lt;name&gt;foo&lt;/name&gt; … not</comment>
+  <comment># &lt;method&gt;&lt;name&gt;&lt;identifier&gt;foo&lt;/identifier&gt;&lt;/name&gt;…</comment>
+  <class>
+    class
+    <name>
+      <constant>Calculator</constant>
+    </name>
+    <body>
+      <method>
+        def
+        <name>add</name>
+        (
+        <identifier>a</identifier>
+        ,
+        <identifier>b</identifier>
+        )
+        <body>
+          <binary>
+            <left>
+              <identifier>a</identifier>
+            </left>
+            +
+            <right>
+              <identifier>b</identifier>
+            </right>
+          </binary>
+        </body>
+        end
+      </method>
+    </body>
+    end
+  </class>
+  <module>
+    module
+    <name>
+      <constant>Utils</constant>
+    </name>
+    <body>
+      <singleton_method>
+        def
+        <self>self</self>
+        .
+        <name>
+          <identifier>greet</identifier>
+        </name>
+        (
+        <identifier>name</identifier>
+        )
+        <body>
+          <string>
+            &quot;
+            <string_content>hi, </string_content>
+            <interpolation>
+              #{
+              <identifier>name</identifier>
+              }
+            </interpolation>
+            &quot;
+          </string>
+        </body>
+        end
+      </singleton_method>
+    </body>
+    end
+  </module>
+</program>

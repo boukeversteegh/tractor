@@ -1,0 +1,87 @@
+{
+  "$type": "unit",
+  "children": [
+    {
+      "comment": "// Interface members without an explicit access modifier default to\n// <public/>. Matches Java behavior — C# semantics agree."
+    },
+    {
+      "$type": "interface",
+      "internal": true,
+      "name": "IShape",
+      "body": {
+        "children": [
+          {
+            "$type": "method",
+            "public": true,
+            "returns": {
+              "type": {
+                "name": "double"
+              }
+            },
+            "name": "Area"
+          },
+          {
+            "$type": "comment",
+            "trailing": true,
+            "text": "// implicitly public"
+          },
+          {
+            "$type": "method",
+            "public": true,
+            "returns": {
+              "type": {
+                "name": "double"
+              }
+            },
+            "name": "Perimeter"
+          },
+          {
+            "$type": "comment",
+            "trailing": true,
+            "text": "// implicitly public"
+          },
+          {
+            "$type": "property",
+            "public": true,
+            "type": {
+              "name": "string"
+            },
+            "name": "Name",
+            "value": {
+              "children": [
+                {
+                  "$type": "string",
+                  "children": [
+                    {
+                      "string_literal_content": "shape"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "$type": "comment",
+            "trailing": true,
+            "text": "// implicitly public (expression-bodied property)"
+          },
+          {
+            "$type": "method",
+            "public": true,
+            "returns": {
+              "type": {
+                "name": "void"
+              }
+            },
+            "name": "Stroke"
+          },
+          {
+            "$type": "comment",
+            "trailing": true,
+            "text": "// explicit — still <public/>"
+          }
+        ]
+      }
+    }
+  ]
+}

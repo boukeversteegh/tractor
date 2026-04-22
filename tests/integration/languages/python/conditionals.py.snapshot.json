@@ -1,0 +1,252 @@
+{
+  "$type": "module",
+  "children": [
+    {
+      "comment": "# Conditional shape: `elif` renders as <else_if> (underscore naming per"
+    },
+    {
+      "comment": "# Principle #1), collapsed as a flat sibling of <if>. Ternary expression"
+    },
+    {
+      "comment": "# keeps <then>/<else> wrappers via surgical field wrap."
+    },
+    {
+      "$type": "function",
+      "name": "classify",
+      "parameters": "n",
+      "body": {
+        "children": [
+          {
+            "$type": "if",
+            "condition": {
+              "compare": {
+                "children": [
+                  {
+                    "$type": "op",
+                    "children": [
+                      {
+                        "$type": "compare",
+                        "less": true
+                      }
+                    ]
+                  },
+                  {
+                    "name": "n"
+                  },
+                  {
+                    "int": "0"
+                  }
+                ]
+              }
+            },
+            "then": {
+              "children": [
+                {
+                  "$type": "return",
+                  "children": [
+                    {
+                      "$type": "string",
+                      "children": [
+                        {
+                          "string_start": "\""
+                        },
+                        {
+                          "string_content": "neg"
+                        },
+                        {
+                          "string_end": "\""
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "alternative": [
+              {
+                "condition": {
+                  "compare": {
+                    "children": [
+                      {
+                        "$type": "op",
+                        "equals": true,
+                        "text": "=="
+                      },
+                      {
+                        "name": "n"
+                      },
+                      {
+                        "int": "0"
+                      }
+                    ]
+                  }
+                },
+                "then": {
+                  "children": [
+                    {
+                      "$type": "return",
+                      "children": [
+                        {
+                          "$type": "string",
+                          "children": [
+                            {
+                              "string_start": "\""
+                            },
+                            {
+                              "string_content": "zero"
+                            },
+                            {
+                              "string_end": "\""
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "condition": {
+                  "compare": {
+                    "children": [
+                      {
+                        "$type": "op",
+                        "children": [
+                          {
+                            "$type": "compare",
+                            "less": true
+                          }
+                        ]
+                      },
+                      {
+                        "name": "n"
+                      },
+                      {
+                        "int": "10"
+                      }
+                    ]
+                  }
+                },
+                "then": {
+                  "children": [
+                    {
+                      "$type": "return",
+                      "children": [
+                        {
+                          "$type": "string",
+                          "children": [
+                            {
+                              "string_start": "\""
+                            },
+                            {
+                              "string_content": "small"
+                            },
+                            {
+                              "string_end": "\""
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "body": {
+                  "children": [
+                    {
+                      "$type": "return",
+                      "children": [
+                        {
+                          "$type": "string",
+                          "children": [
+                            {
+                              "string_start": "\""
+                            },
+                            {
+                              "string_content": "big"
+                            },
+                            {
+                              "string_end": "\""
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "$type": "function",
+      "name": "label",
+      "parameters": "n",
+      "body": {
+        "children": [
+          {
+            "$type": "return",
+            "children": [
+              {
+                "$type": "ternary",
+                "children": [
+                  {
+                    "$type": "string",
+                    "children": [
+                      {
+                        "string_start": "\""
+                      },
+                      {
+                        "string_content": "positive"
+                      },
+                      {
+                        "string_end": "\""
+                      }
+                    ]
+                  },
+                  {
+                    "$type": "compare",
+                    "children": [
+                      {
+                        "$type": "op",
+                        "children": [
+                          {
+                            "$type": "compare",
+                            "greater": true
+                          }
+                        ]
+                      },
+                      {
+                        "name": "n"
+                      },
+                      {
+                        "int": "0"
+                      }
+                    ]
+                  },
+                  {
+                    "$type": "string",
+                    "children": [
+                      {
+                        "string_start": "\""
+                      },
+                      {
+                        "string_content": "non-positive"
+                      },
+                      {
+                        "string_end": "\""
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "$type": "file",
+  "children": [
+    {
+      "comment": "// Go's `type_declaration` wrapper is dropped; `type_spec` renders as"
+    },
+    {
+      "comment": "// <type> directly. Parallel with struct/interface declarations so"
+    },
+    {
+      "comment": "// //type queries find everything."
+    },
+    {
+      "$type": "package",
+      "children": [
+        {
+          "name": "main"
+        }
+      ]
+    },
+    {
+      "$type": "type",
+      "exported": true,
+      "name": "ID",
+      "type": {
+        "name": "uint64"
+      }
+    },
+    {
+      "$type": "type",
+      "exported": true,
+      "name": "User",
+      "type": {
+        "children": [
+          {
+            "$type": "field",
+            "name": "Name",
+            "type": {
+              "name": "string"
+            }
+          },
+          {
+            "$type": "field",
+            "name": "Age",
+            "type": {
+              "name": "int"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "$type": "type",
+      "exported": true,
+      "name": "Greeter",
+      "type": {
+        "children": [
+          {
+            "$type": "method",
+            "name": "Greet",
+            "returns": {
+              "type": {
+                "name": "string"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

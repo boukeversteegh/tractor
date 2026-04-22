@@ -1,0 +1,144 @@
+{
+  "$type": "unit",
+  "children": [
+    {
+      "comment": "// Property accessor lists flatten: get/set are direct siblings of the\n// <property>, not nested inside an <accessor_list> wrapper."
+    },
+    {
+      "$type": "class",
+      "internal": true,
+      "name": "Accessors",
+      "body": {
+        "children": [
+          {
+            "$type": "property",
+            "public": true,
+            "type": {
+              "name": "int"
+            },
+            "name": "AutoProp",
+            "accessors": [
+              "get;",
+              "set;"
+            ]
+          },
+          {
+            "$type": "field",
+            "private": true,
+            "children": [
+              {
+                "$type": "variable",
+                "type": {
+                  "name": "int"
+                },
+                "children": [
+                  {
+                    "$type": "declarator",
+                    "name": "_backing"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "$type": "property",
+            "public": true,
+            "type": {
+              "name": "int"
+            },
+            "name": "Manual",
+            "accessors": [
+              {
+                "body": {
+                  "block": {
+                    "children": [
+                      {
+                        "$type": "return",
+                        "children": [
+                          {
+                            "name": "_backing"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "body": {
+                  "block": {
+                    "children": [
+                      {
+                        "$type": "expression_statement",
+                        "children": [
+                          {
+                            "$type": "assign",
+                            "left": {
+                              "name": "_backing"
+                            },
+                            "right": {
+                              "name": "value"
+                            },
+                            "children": [
+                              {
+                                "op": "="
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "$type": "property",
+            "public": true,
+            "type": {
+              "name": "int"
+            },
+            "name": "ReadOnly",
+            "accessors": "get;"
+          },
+          {
+            "$type": "property",
+            "public": true,
+            "type": {
+              "name": "int"
+            },
+            "name": "WriteOnly",
+            "accessors": {
+              "body": {
+                "block": {
+                  "children": [
+                    {
+                      "$type": "expression_statement",
+                      "children": [
+                        {
+                          "$type": "assign",
+                          "left": {
+                            "name": "_backing"
+                          },
+                          "right": {
+                            "name": "value"
+                          },
+                          "children": [
+                            {
+                              "op": "="
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

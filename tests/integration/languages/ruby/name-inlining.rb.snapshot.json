@@ -1,0 +1,86 @@
+{
+  "$type": "program",
+  "children": [
+    {
+      "comment": "# When a <name> wrapper sits inside method / class / module and contains"
+    },
+    {
+      "comment": "# a single <identifier> child, the transform inlines the identifier's"
+    },
+    {
+      "comment": "# text directly: <method><name>foo</name> … not"
+    },
+    {
+      "comment": "# <method><name><identifier>foo</identifier></name>…"
+    },
+    {
+      "$type": "class",
+      "name": {
+        "constant": "Calculator"
+      },
+      "body": {
+        "children": [
+          {
+            "$type": "method",
+            "name": "add",
+            "parameters": [
+              "a",
+              "b"
+            ],
+            "body": {
+              "children": [
+                {
+                  "$type": "binary",
+                  "left": {
+                    "identifier": "a"
+                  },
+                  "right": {
+                    "identifier": "b"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "$type": "module",
+      "name": {
+        "constant": "Utils"
+      },
+      "body": {
+        "children": [
+          {
+            "$type": "singleton_method",
+            "object": "self",
+            "name": {
+              "identifier": "greet"
+            },
+            "parameters": "name",
+            "body": {
+              "children": [
+                {
+                  "$type": "string",
+                  "children": [
+                    {
+                      "string_content": "hi,"
+                    },
+                    {
+                      "$type": "interpolation",
+                      "children": [
+                        {
+                          "identifier": "name"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

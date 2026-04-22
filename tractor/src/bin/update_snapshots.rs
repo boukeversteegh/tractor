@@ -4,7 +4,8 @@
 //! and runs tractor on each to produce `.xml` and `.raw.xml` snapshots.
 //!
 //! Also handles output-format combination snapshots in
-//! `tests/integration/formats/snapshots/`.
+//! `tests/integration/formats/snapshots/` and feature-invariant snapshots
+//! listed in `FEATURE_FIXTURES` (each produces `.snapshot.xml` + `.snapshot.json`).
 //!
 //! Usage:
 //!   cargo run --release --bin update-snapshots          # update snapshots
@@ -16,7 +17,66 @@ use std::path::Path;
 use std::process::{self, Command};
 
 /// File extensions to skip (not source fixtures).
-const SKIP_EXTENSIONS: &[&str] = &["xml", "sh", "md"];
+/// `json` is skipped to avoid picking up generated `.snapshot.json` outputs.
+const SKIP_EXTENSIONS: &[&str] = &["xml", "sh", "md", "json"];
+
+/// Feature fixtures: minimal source files that pin down a single transform
+/// invariant. Each entry produces `<source>.snapshot.xml` + `<source>.snapshot.json`
+/// via:
+///   tractor query <source> -p tree --single -f {xml,json}
+///
+/// The bare-tree projection (no report envelope) means these snapshots churn
+/// only when the transform itself changes — not when report plumbing, paths,
+/// or source-line formatting shifts. Add one fixture per invariant per
+/// language.
+///
+/// Paths are relative to the project root.
+const FEATURE_FIXTURES: &[&str] = &[
+    // — TypeScript —
+    "tests/integration/languages/typescript/async-generator.ts",
+    "tests/integration/languages/typescript/conditionals.ts",
+    "tests/integration/languages/typescript/flat-lists.ts",
+    "tests/integration/languages/typescript/parameter-marking.ts",
+    "tests/integration/languages/typescript/type-vocabulary.ts",
+
+    // — Java —
+    "tests/integration/languages/java/conditionals.java",
+    "tests/integration/languages/java/constructor-rename.java",
+    "tests/integration/languages/java/flat-lists.java",
+    "tests/integration/languages/java/interface-public.java",
+    "tests/integration/languages/java/modifiers.java",
+    "tests/integration/languages/java/type-vocabulary.java",
+
+    // — C# —
+    "tests/integration/languages/csharp/accessor-flattening.cs",
+    "tests/integration/languages/csharp/conditionals.cs",
+    "tests/integration/languages/csharp/flat-lists.cs",
+    "tests/integration/languages/csharp/interface-public.cs",
+    "tests/integration/languages/csharp/type-vocabulary.cs",
+
+    // — Rust —
+    "tests/integration/languages/rust/conditionals.rs",
+    "tests/integration/languages/rust/flat-lists.rs",
+    "tests/integration/languages/rust/method-call.rs",
+    "tests/integration/languages/rust/type-vocabulary.rs",
+    "tests/integration/languages/rust/typedef.rs",
+    "tests/integration/languages/rust/visibility.rs",
+
+    // — Python —
+    "tests/integration/languages/python/augmented-assign.py",
+    "tests/integration/languages/python/collection-markers.py",
+    "tests/integration/languages/python/conditionals.py",
+
+    // — Go —
+    "tests/integration/languages/go/conditionals.go",
+    "tests/integration/languages/go/flat-lists.go",
+    "tests/integration/languages/go/raw-string.go",
+    "tests/integration/languages/go/type-declaration.go",
+
+    // — Ruby —
+    "tests/integration/languages/ruby/conditionals.rb",
+    "tests/integration/languages/ruby/name-inlining.rb",
+];
 
 /// Output-format snapshot cases: (relative path under formats/, tractor args).
 /// Directory = -f value, name = command + params, extension = file format.
@@ -653,6 +713,13 @@ fn main() {
 
     let tractor_bin = find_tractor_bin();
     let skip: HashSet<&str> = SKIP_EXTENSIONS.iter().copied().collect();
+    // Feature fixtures get their own snapshot pair and must be excluded from
+    // the default language walker (which would otherwise emit redundant
+    // .xml / .raw.xml outputs for them).
+    let feature_set: HashSet<String> = FEATURE_FIXTURES
+        .iter()
+        .map(|p| p.replace('\\', "/"))
+        .collect();
 
     let mut processed = 0;
     let mut mismatches: Vec<Mismatch> = Vec::new();
@@ -693,6 +760,11 @@ fn main() {
             let lang_name = lang_dir.file_name().unwrap().to_string_lossy();
             let file_name = path.file_name().unwrap().to_string_lossy();
 
+            // Skip feature fixtures — handled in a separate pass below.
+            if feature_set.contains(&path_str) {
+                continue;
+            }
+
             // Semantic XML
             let xml_path = format!("{}.xml", path_str);
             let output = run_tractor(&tractor_bin, &path_str, &["-f", "xml"]);
@@ -724,6 +796,58 @@ fn main() {
 
             processed += 1;
         }
+    }
+
+    // --- Feature-invariant snapshots ---
+    //
+    // One minimal source per invariant per language, rendered as bare tree
+    // (no report envelope) in both XML and JSON. Churn is scoped to the
+    // transform being tested, not report plumbing.
+    for source_rel in FEATURE_FIXTURES {
+        let source_rel = source_rel.replace('\\', "/");
+        let source_path = Path::new(&source_rel);
+        if !source_path.is_file() {
+            eprintln!(
+                "error: feature fixture source not found: {} — add the source file before listing it",
+                source_rel
+            );
+            process::exit(1);
+        }
+
+        let xml_snap = format!("{}.snapshot.xml", source_rel);
+        let json_snap = format!("{}.snapshot.json", source_rel);
+
+        let xml_out = run_tractor_args(
+            &tractor_bin,
+            &["query", &source_rel, "-p", "tree", "--single", "-f", "xml"],
+        );
+        let json_out = run_tractor_args(
+            &tractor_bin,
+            &["query", &source_rel, "-p", "tree", "--single", "-f", "json"],
+        );
+
+        if check_mode {
+            match fs::read_to_string(&xml_snap) {
+                Ok(existing) if existing != xml_out => {
+                    mismatches.push(Mismatch::changed(&xml_snap, &existing, &xml_out));
+                }
+                Err(_) => mismatches.push(Mismatch::missing(&xml_snap, &xml_out)),
+                _ => {}
+            }
+            match fs::read_to_string(&json_snap) {
+                Ok(existing) if existing != json_out => {
+                    mismatches.push(Mismatch::changed(&json_snap, &existing, &json_out));
+                }
+                Err(_) => mismatches.push(Mismatch::missing(&json_snap, &json_out)),
+                _ => {}
+            }
+        } else {
+            fs::write(&xml_snap, &xml_out).expect("cannot write .snapshot.xml");
+            fs::write(&json_snap, &json_out).expect("cannot write .snapshot.json");
+            println!("  feature {} -> .snapshot.xml, .snapshot.json", source_rel);
+        }
+
+        processed += 2;
     }
 
     // --- Output-format combination snapshots ---

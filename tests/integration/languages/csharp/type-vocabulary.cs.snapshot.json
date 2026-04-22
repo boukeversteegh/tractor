@@ -1,0 +1,143 @@
+{
+  "$type": "unit",
+  "children": [
+    {
+      "comment": "// Principle #14: type references wrap their name in a <name> child.\n// Covers: plain types, generic types, base list (extends + implements),\n// type parameter declarations."
+    },
+    {
+      "$type": "import",
+      "children": [
+        {
+          "$type": "qualified_name",
+          "qualifier": {
+            "qualifier": "System",
+            "name": {
+              "name": "Collections"
+            }
+          },
+          "name": {
+            "name": "Generic"
+          }
+        }
+      ]
+    },
+    {
+      "$type": "interface",
+      "internal": true,
+      "name": "IBarker",
+      "body": {
+        "children": [
+          {
+            "$type": "method",
+            "public": true,
+            "returns": {
+              "type": {
+                "name": "void"
+              }
+            },
+            "name": "Bark"
+          }
+        ]
+      }
+    },
+    {
+      "$type": "class",
+      "internal": true,
+      "name": "Animal",
+      "body": "{}"
+    },
+    {
+      "$type": "class",
+      "internal": true,
+      "name": "Dog",
+      "generics": {
+        "name": "T"
+      },
+      "body": {
+        "children": [
+          {
+            "$type": "field",
+            "public": true,
+            "children": [
+              {
+                "$type": "variable",
+                "type": {
+                  "name": "T"
+                },
+                "children": [
+                  {
+                    "$type": "declarator",
+                    "name": "Owner"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "$type": "field",
+            "public": true,
+            "children": [
+              {
+                "$type": "variable",
+                "type": {
+                  "generic": true,
+                  "arguments": {
+                    "name": "string"
+                  }
+                },
+                "children": [
+                  {
+                    "$type": "declarator",
+                    "name": "Tags"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "$type": "method",
+            "public": true,
+            "returns": {
+              "type": {
+                "name": "void"
+              }
+            },
+            "name": "Bark",
+            "body": {
+              "block": "{}"
+            }
+          }
+        ]
+      },
+      "children": [
+        {
+          "$type": "extends",
+          "children": [
+            {
+              "$type": "type",
+              "name": "Animal"
+            },
+            {
+              "$type": "type",
+              "name": "IBarker"
+            }
+          ]
+        },
+        {
+          "$type": "type_parameter_constraints_clause",
+          "children": [
+            {
+              "name": "T"
+            },
+            {
+              "$type": "type_parameter_constraint",
+              "type": {
+                "name": "Animal"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
