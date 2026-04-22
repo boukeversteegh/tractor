@@ -80,7 +80,7 @@ Descriptor: `class[name='Box'][generic[name='T']][field[name='value'][type='T']]
 The type parameter declaration now mirrors every other declaration
 shape — a `<name>` child holds the identifier as plain text.
 
-**With a bound (Java-style):**
+**With a bound (Java / TypeScript):**
 
 ```java
 class Box<T extends Comparable<T>> { T value; }
@@ -92,13 +92,13 @@ Target:
   <name>Box</name>
   <generic field="generics">
     <name>T</name>
-    <bound>
+    <extends>
       <type>
         <generic/>
         Comparable
         <type field="arguments">T</type>
       </type>
-    </bound>
+    </extends>
   </generic>
   <field>
     <name>value</name>
@@ -107,14 +107,71 @@ Target:
 </class>
 ```
 
-Descriptor: `class[name='Box'][generic[name='T'][bound[type[generic][type='T']]]][field[name='value'][type='T']]`
+Descriptor: `class[name='Box'][generic[name='T'][extends[type[generic][type='T']]]][field[name='value'][type='T']]`
+
+`<extends>` is used rather than `<bound>` because:
+- **Principle #1 (language keywords)** — `extends` *is* the keyword
+  in Java and TS for this exact relationship.
+- **Cross-element consistency** — `<class><extends><type>Bar</type></extends></class>`
+  and `<generic><extends><type>Bar</type></extends></generic>` both
+  express "is a subtype of"; a query `//extends/type='Bar'` finds
+  every subtype-of-Bar relationship across the tree.
+
+**With C# special constraints:**
+
+```csharp
+class Repo<T>
+    where T : class, IComparable, new()
+{ }
+```
+
+Target:
+```xml
+<class>
+  <name>Repo</name>
+  <generic field="generics">
+    <name>T</name>
+    <class/>                                    <!-- where T : class -->
+    <new/>                                      <!-- where T : new() -->
+    <extends><type>IComparable</type></extends> <!-- where T : IComparable -->
+  </generic>
+</class>
+```
+
+Descriptor: `class[name='Repo'][generic[name='T'][class][new][extends[type='IComparable']]]`
+
+The shape-constraint modifiers (`<class/>`, `<struct/>`, `<new/>`,
+`<unmanaged/>`) are empty markers — they compose cleanly alongside
+the type-reference relationship carried by `<extends>`.
+
+**With multiple bounds (Rust / Java intersection):**
+
+```rust
+fn foo<T: Clone + Send>(x: T) { }
+```
+
+Target (flat — Principle #12):
+```xml
+<function>
+  <name>foo</name>
+  <generic field="generics">
+    <name>T</name>
+    <extends field="extends"><type>Clone</type></extends>
+    <extends field="extends"><type>Send</type></extends>
+  </generic>
+  <param><name>x</name><type>T</type></param>
+</function>
+```
+
+Descriptor: `function[name='foo'][generic[name='T'][extends[type='Clone']][extends[type='Send']]][param[name='x'][type='T']]`
 
 **Queries under the target**:
 - `//generic[name='T']` — find the generic parameter named T.
-- `//generic[bound]` — find constrained type parameters.
-- `//generic[bound//type='Comparable']` — find generics bounded by a
-  type whose reference text is `Comparable` (matches both bare and
-  generic references).
+- `//generic[extends]` — find constrained type parameters.
+- `//generic[extends/type='Comparable']` — find generics constrained
+  to `Comparable` (by name).
+- `//extends/type='Bar'` — every "is-a Bar" relationship (class
+  extension *and* generic bound).
 
 Applied uniformly to C#, TS, Java, Rust. Python's flat-list already
 does this for its type parameter form.
