@@ -34,6 +34,47 @@ Users should be able to find all instances of a concept (all types, all methods,
 all parameters) with simple queries. Minimize the need for disjunctions like
 `//type | //generic | //array`.
 
+### 5. Match the Developer's Mental Model
+
+The baseline shape of the tree is what an average developer thinks about
+their code when writing or reading it: *a function is a function, an
+argument is an argument, a variable is a variable*. That vocabulary is
+already in the developer's head, so it's what the tree surfaces by
+default — no translation layer between source and query.
+
+Onboarding is the primary optimisation. Common cases must be easy.
+Concrete is simpler than abstract; abstractions build on top of concrete
+things; therefore concrete is primary and abstractions are layered on.
+
+**The yardstick for "how precise":** would a developer describe this
+distinction in natural language when talking about the code?
+
+- A `function` is a function whether its body is a block or a lambda
+  expression. Developers don't routinely say "lambda-bodied function"
+  vs "block-bodied function" — same word in their head.
+- A `call` is a call whether the callee is a plain name or a member
+  expression. Same word.
+- A `variable` is a variable whether the initializer is a literal or a
+  call.
+- `Foo` in `class Foo {}` and `Foo` in `new Foo()` are the same
+  identifier in the developer's head — the role differs but the
+  vocabulary is "Foo".
+
+Both directions away from the baseline are served **additively**, never
+by taxing the baseline:
+
+- **More precise than the baseline** (distinguish sub-variants)
+  → empty-element markers on the complex node (`<function><async/>`,
+  `<function><lambda/>` if we wanted to flag lambda-bodied functions).
+  Free when the target is a complex node.
+- **More abstract than the baseline** (group across kinds)
+  → adjacent tooling: tractor-bound XPath variables (`$declaration`,
+  `$reference`), attributes dropped in default JSON output
+  (`<name ref="…">`), side-channel metadata from a resolver pass,
+  saved queries.
+
+Neither direction reshapes the tree that every consumer reads.
+
 ---
 
 ## Guiding Principles
@@ -179,9 +220,13 @@ The hierarchy is implicit from tree position — a `<binary>` inside a
 increases nesting, query verbosity, and tree noise without enabling
 useful queries ("find all expressions" is too broad to be practical).
 
-**Rationale:** Supports Design Goal #1 (intuitive queries — `//binary`
+**Rationale:** Directly serves Goal #5 (developer's mental model —
+"I'm writing a binary expression", not "I'm writing an expression of
+kind binary"). Also supports Goal #1 (intuitive queries — `//binary`
 beats `//expression[binary]`), #2 (readable tree — less nesting), and
-#4 (minimal query complexity — no extra predicates needed).
+#4 (minimal query complexity — no extra predicates needed). Broader
+queries ("all expressions") are served additively via variables or
+unions (Principle #13).
 
 ### 12. Flat Lists Over Wrapper Elements
 
@@ -226,118 +271,69 @@ JSON/YAML output stays sensible: the `field="parameters"` attribute
 tells the serializer to collect same-field siblings into a `parameters`
 array, so scalar-vs-array ambiguity is resolved deterministically.
 
-**Rationale:** Supports Design Goal #1 (intuitive queries), #2
-(readable tree — one less level of nesting), and #4 (minimal query
-complexity). The wrapper element never represented a thing in the
-source code — the parens and commas of the list live as sibling text
-nodes either way — so removing it loses no renderer-relevant
-information.
+**Rationale:** Directly serves Goal #5 (developer's mental model — a
+developer thinks "the function has parameters a and b", not "the
+function has a parameters container that has a params list"). Also
+supports Goals #1 (intuitive queries), #2 (readable tree — less
+nesting), and #4 (minimal query complexity). The wrapper element never
+represented a thing in the source code — the parens and commas of the
+list live as sibling text nodes either way — so removing it loses no
+renderer-relevant information.
 
-### 13. Identifiers are `<name>`; role is inferred from tree position
+### 13. Annotation Follows Node Shape
 
-An identifier in the tree is always `<name>` — whether it labels something
-being declared (`<class><name>Foo</name>`) or refers to something already
-in scope (`<binary><left><name>a</name>`). Likewise, a type reference or
-inline type expression is always `<type>`.
+Adding a child element to a node has very different cost depending on
+whether the node is already complex or is a text-only leaf:
 
-The declaration-vs-reference role is not encoded in the element itself;
-it's inferred from the parent (tree position). Source code works the
-same way — `Foo` after the `class` keyword is a declaration; `Foo` inside
-an expression is a reference. The tree faithfully preserves that
-contextual cue, so we don't need to encode the role twice.
+| Node shape | Cost of adding `<marker/>` child | JSON consequence |
+|---|---|---|
+| **Complex** (has existing children) — `<method>`, `<class>`, `<variable>` | Free — adds one boolean-valued property to an existing object | `{..., "public": true, ...}` |
+| **Text-only leaf** — `<name>foo</name>`, `<type>int</type>` | Changes the leaf's shape entirely | `"name": "foo"` becomes `{marker: true, text: "foo"}` |
 
-```xml
-<!-- Declaration: position says so (direct child of a declaration element) -->
-<class><name>Foo</name></class>
-<variable><let/><name>x</name></variable>
-<param><name>a</name></param>
+This is a property of the format mapping, not an opinion: any design
+choice must respect it.
 
-<!-- Reference: position says so (inside an expression wrapper) -->
-<binary>
-  <left><name>a</name></left>
-  <right><name>b</name></right>
-</binary>
-<call><function><name>print</name></function>...</call>
-```
+#### How to add semantic information
 
-#### Query ergonomics
+The menu of mechanisms, ranked by tree cost:
 
-```
-//name='foo'                           — does <name>foo</name> appear anywhere?
-//variable[name='foo']                 — variable declarations named foo
-//class[name='Foo']                    — class declarations named Foo
-//binary/left[name='x']                — binary expressions with x on the left
-//call[function/name='print']          — calls to print
-//object[name='console']/property[name='log']   — console.log access
-```
+| Mechanism | Tree cost | JSON cost | Good for |
+|---|---|---|---|
+| **Position** — role inferred from parent/ancestor | Zero | Zero | Distinctions that are always structurally determined |
+| **Empty marker on complex node** (`<method><public/>`) | One element | One boolean property | Exhaustive modifier sets on declarations (access, async, static, literal/comprehension, raw) |
+| **Element rename / split** (`<name>` vs `<ref>`) | Zero | Zero | Truly primary binary distinctions where both halves deserve separate names |
+| **Attribute** (`<name is="…">`) | One attribute | Dropped in default JSON | Advanced / cross-cutting metadata; resolver pointers |
+| **External annotation map** (side-channel from a resolver pass) | Zero | Zero | Scope-resolved info, cross-file references |
 
-Simple, matches the source shape, no role marker noise in JSON (a
-`<name>` is a text-only leaf, so JSON serialises it as a bare string
-like `"name": "console"`).
+#### Decision tree for future additions
 
-#### Why not markers / role elements?
+When a new semantic distinction is proposed, ask in order:
 
-Earlier drafts considered two alternatives:
+1. Is the distinction always determined by tree position?
+   → use **position** (no tree change).
+2. Is the target a **complex node**?
+   → use an **empty marker**, freely.
+3. Is the target a **text-only leaf**?
+   → prefer **position** where structurally determined; fall back to an
+   **attribute** or an **external annotation map** for advanced cases.
+   Avoid adding markers to leaves.
+4. Is the distinction binary and always present, with both halves
+   meaningful as standalone element names?
+   → an **element rename/split** may be justified.
 
-1. **Empty child markers** on `<name>` — `<name><bind/>Foo</name>` for
-   declarations, `<name><use/>x</name>` for references. Clean in XPath
-   but breaks the JSON text-only-leaf optimisation: every identifier
-   serialises as an object (`{bind: true, text: "Foo"}`) rather than a
-   bare string. Since `name` is among the most-consumed leaf fields,
-   this regression was unacceptable.
+#### Why no marker on `<type>` or `<name>`
 
-2. **Split into two elements** — `<name>` for declarations, `<ref>` for
-   references. Symmetric in XPath but doubles the vocabulary for a
-   distinction that the tree shape already makes, and `<ref>` became
-   ambiguous enough (see issue #73) that keeping the single `<name>`
-   element won out.
+Both are text-only leaves in their dominant uses. Adding child markers
+would change `"name": "foo"` into `{marker: true, text: "foo"}` —
+regressing the single most-consumed leaf field across every downstream
+consumer. Their roles (declaration vs reference, type-reference vs
+type-parameter-name) are inferred from tree position; cross-cutting
+queries are served by the additive mechanisms above.
 
-#### Cross-cutting "all declarations" query
-
-Because role isn't marked, "every declaration of `foo` regardless of
-kind" needs a union of declaration-parent elements:
-
-```
-((//class | //function | //variable | //method | //param
-  | //generic | //field | //property | //alias | //import)/name)[.='foo']
-```
-
-This is verbose but uncommon — rules usually target a specific kind
-(`//variable[name='foo']`). When it's needed, two mechanisms are
-available:
-
-- A tractor-bound XPath variable `$declaration` that evaluates to the
-  union above: `$declaration/name[.='foo']`.
-- Once a name-resolver pass is available, references can carry a
-  resolved attribute (`<name ref="path/to/decl">x</name>`) pointing at
-  their declaration. Attributes are dropped in JSON by default, so
-  this remains an advanced/structural signal.
-
-Both are additive — they don't change the default tree shape.
-
-#### Why `<type>` also has no marker
-
-A `<type>` is always a reference to a type. In a type alias declaration,
-the declared *name* lives in a `<name>` element inside the alias, and
-the `<type>` on the right-hand side is always a reference. Types don't
-form a mutually-exclusive declaration/reference pair, so nothing to
-encode.
-
-#### Leaf-node marker caveat
-
-In general, empty-element markers placed inside text-only leaves
-(`<name>`, `<type>`) are cheap in XML but expensive in JSON — a leaf
-with any marker child serialises as an object (`{marker: true, text:
-"…"}`) rather than the bare string (`"…"`). Identifier-carrying leaves
-are the most common fields in downstream consumption, so mark
-sparingly and prefer attributes or position-based inference instead.
-
-**Rationale:** Supports Design Goal #1 (intuitive queries —
-`//class[name='Foo']` matches the source), #2 (readable tree — one
-element per concept, no role variants), #4 (minimal query complexity),
-and keeps the JSON serialisation of the most-queried leaf as a bare
-string. Accepts verbose "all declarations" as a rare-query trade-off
-with additive escape hatches.
+**Rationale:** This principle is a direct consequence of Goal #5
+(match the developer's mental model; keep the baseline free of advanced-
+case complexity). Every additive mechanism listed serves precision or
+abstraction needs without taxing the baseline tree.
 
 ---
 
@@ -345,5 +341,46 @@ with additive escape hatches.
 
 Specific choices derived from the principles above. Each decision references
 the principle(s) that justify it.
+
+### Identifiers are a single `<name>` element
+
+A developer reads `Foo` in `class Foo {}` and `Foo` in `new Foo()` as
+the same identifier — the *role* differs (declaration vs reference)
+but they're both "Foo" at the mental-model level.
+
+The tree reflects that: `<name>Foo</name>` in both positions. Role is
+inferred from parent element; source code conveys role by position
+in exactly the same way.
+
+```xml
+<!-- Declaration: position (direct child of a declaration element) -->
+<class><name>Foo</name></class>
+<variable><let/><name>x</name></variable>
+<param><name>a</name></param>
+
+<!-- Reference: position (inside an expression wrapper) -->
+<binary>
+  <left><name>a</name></left>
+  <right><name>b</name></right>
+</binary>
+<call><callee><name>print</name></callee>...</call>
+```
+
+Cross-cutting "every declaration of foo regardless of kind" is served
+additively (Principle #13) — by `$declaration` (planned XPath variable),
+or `<name ref="…">` attributes from a future resolver pass. The default
+tree stays flat.
+
+**Cites:** Goal #5 (developer's mental model), Principle #11 (no
+`<reference>` supertype wrapper), Principle #13 (leaf-node shape —
+avoid markers on `<name>`).
+
+**Rejected alternatives:**
+
+- **Empty child markers** (`<name><bind/>Foo</name>` / `<name><use/>x</name>`):
+  regressed the JSON leaf shape. Violates Principle #13.
+- **Element split** (`<name>` for declarations, `<ref>` for references):
+  doubled the vocabulary for a distinction the tree shape already makes;
+  the short `<ref>` element was also ambiguous with other uses (issue #73).
 
 *See child specs for language-specific and feature-specific decisions.*
