@@ -4,13 +4,18 @@ All currently-undecided naming, structural, and cross-language
 questions in the semantic tree. Each entry has:
 
 - **Source code** — what the construct looks like in the wild.
-- **Current tree shape** — what tractor produces today (with the
-  element names that leak through / feel wrong).
-- **Candidate shapes** — proposals with pros/cons.
+- **Current shape** — what tractor produces today (XPath notation).
+- **Candidate shapes** — proposals in XPath notation, with pros/cons.
 - **My lean** where I have one; blank where I genuinely don't.
 
-Grouped by: cross-language first, then per-language. Cross-language
-items should be decided once and applied uniformly.
+**Notation**: shapes are written as XPath-style descriptors.
+`parent[a][b]` means `<parent>` with children `<a>` and `<b>`.
+`parent[a or b]` means `<parent>` with either `<a>` or `<b>` as the
+child — used when the candidate is about choosing the child's name.
+Nesting works as you'd expect: `parent[a[x][y]]` means
+`<parent><a><x/><y/></a></parent>`.
+
+Grouped cross-language first, then per-language.
 
 ---
 
@@ -18,43 +23,29 @@ items should be decided once and applied uniformly.
 
 ### #3 — `condition` / `consequence` for `if`
 
-"Consequence" is functional-language jargon; no mainstream
-imperative developer says it.
+"Consequence" is functional-language jargon; no mainstream imperative
+developer says it.
 
 ```python
-# Python
 if x > 0:
     return x
 else:
     return -x
 ```
 
-```typescript
-// TypeScript
-if (x > 0) { return x } else { return -x }
-```
-
-**Current tree** (all languages):
-
-```xml
-<if>
-  <condition><binary>...</binary></condition>
-  <consequence><return>...</return></consequence>
-  <alternative><return>...</return></alternative>
-</if>
-```
+**Current**: `if[condition][consequence][alternative]`
 
 **Candidates**:
 
 | Shape | Pro | Con |
 |---|---|---|
-| `<condition>` / `<then>` / `<else>` | `then`/`else` match natural speech and the actual `else` keyword | `<else>` collides with the standalone `else_clause` element used for for-else in Python / else-if chains |
-| `<condition>` / `<body>` / `<else>` | `body` matches how function/class bodies are named | `body` usually implies a larger scope; a one-liner if doesn't feel like it has a "body" |
-| `<test>` / `<then>` / `<else>` | `test` is shorter than `condition` and matches Python AST vocabulary | Less self-explanatory for non-Pythonists |
+| `if[condition][then][else]` | `then`/`else` match natural speech and the actual `else` keyword | `<else>` name may collide with standalone `else_clause` used in Python for-else / C# else-if chains |
+| `if[condition][body][else]` | `body` matches how function/class bodies are named | `body` usually implies a larger scope; a one-liner `if` doesn't really have a "body" |
+| `if[test][then][else]` | Short; matches Python AST vocabulary | Less self-explanatory for non-Pythonists |
 
-**My lean**: `<condition>` stays, rename `consequence` → `<then>`,
-keep `<alternative>` → `<else>` (accept the namespace collision with
-for/while `else_clause` — query context disambiguates).
+**My lean**: `if[condition][then][else]`. Accept the name collision
+with `else_clause` — query context (parent is `<if>` vs `<for>`)
+disambiguates.
 
 ---
 
@@ -68,44 +59,25 @@ class Box<T> { value: T }
 class Box<T extends Comparable<T>> { T value; }
 ```
 
-**Current tree** (C# and TS after recent cleanups):
+**Current** (C# and TS after recent cleanups):
+`class[name][generic[name[type]]]…`
 
-```xml
-<class>
-  <name>Box</name>
-  <generic field="generics">
-    <name><type>T</type></name>     <!-- over-classified -->
-  </generic>
-  ...
-</class>
-```
+The inner `name[type]` is a relic — `T` is just the name of the type
+parameter; the `<type>` wrapping inside is spurious.
 
-The inner `<name><type>T</type></name>` wrapping is a relic —
-`T` is the name of the type parameter, which a developer thinks of as
-just "T". The `<type>` inside is spurious.
+**Target**: `class[name][generic[name]]` for the simple case, or
+`class[name][generic[name][bound[type]]]` when there's a Java-style
+bound.
 
-**Target shape**:
-
-```xml
-<class>
-  <name>Box</name>
-  <generic field="generics">
-    <name>T</name>
-    <bound><type>Comparable</type></bound>   <!-- Java bounds -->
-  </generic>
-</class>
-```
-
-Applied uniformly to C#, TS, Java, Rust. Already how Python's
-type_parameter flat-list works.
+Applied uniformly to C#, TS, Java, Rust. Python's flat-list already
+does this.
 
 ---
 
-### Base-class / implements `<type>` wrapping
+### Base-class / implements `<type>` wrapping (Principle #14)
 
 Principle #14 says every type reference wraps in `<type>`. Today,
-some type-reference slots (notably base classes in C#/Java) carry the
-type as bare text, not wrapped.
+base-class slots carry the type as bare text.
 
 ```csharp
 public class Foo : Bar, IBaz { }
@@ -115,31 +87,13 @@ public class Foo : Bar, IBaz { }
 public class Foo extends Bar implements IBaz { }
 ```
 
-**Current tree** (after agent's compound-name cleanup):
+**Current** (C#):
+`class[name][extends="Bar"][implements="IBaz"]`
+(extends/implements have bare text, not a `<type>` child)
 
-```xml
-<!-- C# -->
-<class>
-  <name>Foo</name>
-  <extends>Bar</extends>
-  ...
-</class>
-```
+**Target**: `class[name][extends[type]][implements[type]]`
 
-Target (Principle #14):
-
-```xml
-<class>
-  <name>Foo</name>
-  <extends><type>Bar</type></extends>
-  <implements><type>IBaz</type></implements>
-</class>
-```
-
-Plus: Java `super_interfaces` → `<implements>` is done; each child
-should be wrapped in `<type>` too.
-
-**Scope**: cross-language — C#, Java, TS (`class_heritage`,
+Scope: cross-language — C#, Java, TS (`class_heritage`,
 `extends_clause`, `implements_clause`).
 
 ---
@@ -153,21 +107,20 @@ type Handler = (event: Event) => void;
 function setOn(h: (x: number) => string) { ... }
 ```
 
-**Current tree**:
+**Current**: `alias[name][function_type[param][type]]`
+(the `function_type` tree-sitter kind leaks through)
 
-```xml
-<alias>
-  <name>Handler</name>
-  <function_type>
-    (<param><name>event</name><type>Event</type></param>)
-    =>
-    <type>void</type>
-  </function_type>
-</alias>
-```
+**Candidates**:
 
-**Candidates**: `<signature>` inside `<type>`, `<callable>`,
-`<functiontype>`. `<signature>` reads cleanest in a type position.
+| Shape | Pro | Con |
+|---|---|---|
+| `alias[name][type[signature[param][returns]]]` | `<signature>` reads cleanly in a type position | New element name |
+| `alias[name][callable[param][returns]]` | Captures "this is a callable type" | More abstract |
+| `alias[name][type[function[param][returns]]]` | Reuses `<function>` inside a `<type>` | `<function>` now means two things again (decl vs type) |
+
+**My lean**: `alias[name][type[signature[param][returns]]]` — the
+outer `<type>` honours Principle #14, the inner `<signature>` names
+the function-shape semantic.
 
 ### JSX / TSX elements
 
@@ -175,18 +128,22 @@ function setOn(h: (x: number) => string) { ... }
 <Button onClick={handleClick}>Click me</Button>
 ```
 
-**Current tree**: raw tree-sitter kinds (`jsx_element`,
-`jsx_opening_element`, `jsx_attribute`, etc.). Not yet consolidated.
+**Current**: raw tree-sitter kinds leak through —
+`jsx_element[jsx_opening_element[identifier][jsx_attribute[property_identifier][expression]]][text][jsx_closing_element]`
 
-Needs a full design pass — probably `<element>` with `<name>`,
-`<attribute>` children (matching XML/HTML vocabulary), but attributes
-in JSX map to props which aren't just strings.
+Needs a full design pass. No candidate shape yet — JSX attributes
+map to component props and aren't plain strings, so the HTML-style
+`element[name][attribute]` may not fit.
 
-### `<arrow_function>` → `<lambda>` (already done, flagging for review)
+### `<arrow_function>` → `<lambda>` (applied, flagging for review)
 
 Earlier I mapped `arrow_function` → `<lambda>`. Users may prefer
-keeping `<arrow>` since it's the JS-native term. Raising here for
-explicit sign-off.
+keeping the JS-native term:
+
+- Current: `lambda[param][body]`
+- Alternative: `arrow[param][body]`
+
+Raising here for explicit sign-off.
 
 ---
 
@@ -199,20 +156,11 @@ return x, y
 yield a, b, c
 ```
 
-**Current tree**:
-
-```xml
-<return>
-  return
-  <expression_list>
-    <name>x</name>, <name>y</name>
-  </expression_list>
-</return>
-```
+**Current**: `return[expression_list[name][name]]`
 
 Go flattens its `expression_list`; Python doesn't. Asymmetry.
 
-**Proposed**: flatten Python's too. `<return><name>x</name>,<name>y</name></return>`.
+**Proposal**: flatten Python's too → `return[name][name]`.
 
 ### f-string / multi-part strings
 
@@ -220,31 +168,12 @@ Go flattens its `expression_list`; Python doesn't. Asymmetry.
 message = f"hello {name}, you are {age}"
 ```
 
-**Current tree**:
+**Current**:
+`string[string_start][string_content][interpolation[name]][string_content][interpolation[name]][string_end]`
 
-```xml
-<string>
-  <string_start>"</string_start>
-  <string_content>hello </string_content>
-  <interpolation>{<name>name</name>}</interpolation>
-  <string_content>, you are </string_content>
-  <interpolation>{<name>age</name>}</interpolation>
-  <string_end>"</string_end>
-</string>
-```
-
-Start/end/content nodes are tree-sitter machinery that could be
-flattened into plain text siblings of `<interpolation>`, giving:
-
-```xml
-<string>
-  "hello
-  <interpolation><name>name</name></interpolation>
-  , you are
-  <interpolation><name>age</name></interpolation>
-  "
-</string>
-```
+**Proposal**: flatten start/content/end into plain text —
+`string[interpolation[name]][interpolation[name]]` with surrounding
+text as text-node siblings.
 
 Lower priority; strings aren't a common query target.
 
@@ -261,48 +190,21 @@ class Repo<T, U>
 { }
 ```
 
-**Current tree**:
-
-```xml
-<class>
-  <name>Repo</name>
-  <generic field="generics"><name>T</name></generic>
-  <generic field="generics"><name>U</name></generic>
-  <type_parameter_constraints_clause>
-    where T : class, IComparable&lt;T&gt;, new()
-  </type_parameter_constraints_clause>
-  <type_parameter_constraints_clause>
-    where U : struct
-  </type_parameter_constraints_clause>
-</class>
-```
+**Current**:
+`class[name][generic][generic][type_parameter_constraints_clause][type_parameter_constraints_clause]`
+(clauses stand alone; bounds not attached to their generic)
 
 **Candidates**:
 
-| Element name | Pro | Con |
+| Shape | Pro | Con |
 |---|---|---|
-| `<where>` | Matches the keyword; short, queryable | `where` is SQL/LINQ keyword too — potential future cross-language query clash |
-| `<constraint>` / `<constraints>` | Literal translation of the C# docs term | Two-level vocabulary (clause vs individual constraint) |
-| `<bound>` / `<bounds>` | Matches Java's `type_bound` naming | Feels off for the clause wrapper — `where T : class, new()` is more than a bound, it's multiple |
+| `class[name][generic[name][bound[type]][bound[new]]]` (attach constraints to their `<generic>`) | Matches Java's design; a dev reads "T is a class and IComparable and has new()" as properties of T | Requires restructuring: resolving which constraint attaches to which generic |
+| `class[name][generic][generic][where[name[ref]][constraint][constraint]]` | Keeps the clause grouping from the source | `where` collides with SQL/LINQ vocab; clause is a syntactic, not semantic, grouping |
+| `class[name][generic][generic][constraints[constraint][constraint]]` | Preserves the clause-level wrapper without `where`-name collision | Same downside — wrapper is syntactic |
 
-Plus: inner shape. Should constraints attach to the generic they
-constrain, rather than being separate clauses? e.g.:
-
-```xml
-<generic field="generics">
-  <name>T</name>
-  <bound><type>class</type></bound>
-  <bound><generic/>IComparable<type field="arguments">T</type></bound>
-  <bound><new/></bound>
-</generic>
-```
-
-That matches Java's design (bounds attach to the generic directly).
-
-**My lean**: attach constraints to the `<generic>` element, with
-each constraint as a `<bound>` child. Lose the `where`-clause
-grouping (it's syntactic, not semantic — a developer thinks "T is
-constrained to be a class + IComparable + have a default ctor").
+**My lean**: attach constraints to the `<generic>` element, with each
+constraint as a `<bound>` child (matches Java). The `where` clause
+grouping is syntactic, not something a developer thinks about.
 
 ---
 
@@ -320,34 +222,14 @@ type Greeter interface {
 }
 ```
 
-**Current tree**:
+**Current**: `type[name][struct[field]]`
 
-```xml
-<type>
-  <name>Hello</name>
-  <struct>
-    <field><name>name</name><type>string</type></field>
-  </struct>
-</type>
-```
-
-**Target** (user-approved earlier):
-
-```xml
-<struct>
-  <name>Hello</name>
-  <field><name>name</name><type>string</type></field>
-</struct>
-
-<interface>
-  <name>Greeter</name>
-  <method>...</method>
-</interface>
-```
+**Target** (user-approved earlier): `struct[name][field]` and
+`interface[name][method]`.
 
 The `<type>` wrapper is Go-grammar bleed-through; a developer
-thinks "I'm declaring a struct named Hello", not "I'm declaring
-a type that happens to be a struct".
+thinks "I'm declaring a struct named Hello", not "I'm declaring a
+type that happens to be a struct".
 
 ### Defined-type vs alias
 
@@ -358,28 +240,14 @@ type Color = int     // alias declaration — same type, new name
 
 **Target** (user-approved earlier):
 
-```xml
-<!-- type MyInt int -->
-<type>
-  <name>MyInt</name>
-  <type>int</type>
-</type>
-
-<!-- type Color = int -->
-<alias>
-  <name>Color</name>
-  <type>int</type>
-</alias>
-```
-
-The outer `<type>` in the defined-type form matches Go's own spec
-term "type definition". Nested `<type>` is OK — the outer has a
-`<name>` child (declaration), the inner is a bare reference.
+- `type MyInt int` → `type[name][type]` (outer `<type>` is Go's own
+  spec term; inner `<type>` is the underlying-type reference)
+- `type Color = int` → `alias[name][type]`
 
 ### `expression_list` asymmetry
 
-Go flattens; Python doesn't (already noted above). Decide once:
-flatten both, or wrap both.
+Go flattens; Python doesn't (noted above). Decide once; apply
+uniformly.
 
 ---
 
@@ -391,35 +259,21 @@ flatten both, or wrap both.
 let p = Point { x: 1, y: 2 };
 ```
 
-**Current tree**:
-
-```xml
-<let>
-  <name>p</name>
-  <value>
-    <struct_expression>
-      <name>Point</name>
-      <field><name>x</name><value><int>1</int></value></field>
-      <field><name>y</name><value><int>2</int></value></field>
-    </struct_expression>
-  </value>
-</let>
-```
+**Current**: `let[name][value[struct_expression[name][field][field]]]`
 
 **Candidates**:
 
-| Element | Pro | Con |
+| Shape | Pro | Con |
 |---|---|---|
-| `<new>` | Matches JS/Java/C# `new Foo()` mental model | Rust doesn't have `new` as a keyword — idiomatic is `Point::new()` which is a `<call>` |
-| `<struct>` | Symmetric with declaration | Collides with `<struct_item>` declaration |
-| `<literal>` | "It's a struct literal" — common term | Overloaded with Python collection marker `<literal/>` |
-| `<init>` | Short, reads well, distinct | Not a Rust term |
+| `let[name][value[new[name][field][field]]]` | Matches JS/Java/C# `new Foo()` mental model | Rust doesn't have `new` as a keyword; idiomatic `Point::new()` is a `<call>` |
+| `let[name][value[literal[name][field][field]]]` | Devs call this a "struct literal" | Overloaded with Python's `<literal/>` marker (different context, though) |
+| `let[name][value[init[name][field][field]]]` | Short, distinct | Not a Rust term |
+| `let[name][value[struct[name][field][field]]]` | Symmetric with declaration | Collides with `<struct>` declaration element |
 
-**My lean**: `<literal>` as an element (not a marker) — developers
-call it a "struct literal". The collision with Python's marker is
-not actual — Python's `<literal/>` is an empty marker inside
-`<list>`/`<dict>`/`<set>`, while Rust's would be an element with a
-name and field children. Different contexts.
+**My lean**: `literal[name][field]…` — the collision with Python's
+`<literal/>` marker is not real (Python's is an empty marker *inside*
+a collection element; Rust's would be an element with children in a
+value position).
 
 ### `reference_type` → `<ref>`
 
@@ -427,37 +281,20 @@ name and field children. Different contexts.
 fn foo(s: &str) -> &mut Vec<i32> { ... }
 ```
 
-**Current tree** (after cleanup):
-
-```xml
-<function>
-  ...
-  <param>
-    <name>s</name>
-    <ref><type>str</type></ref>
-  </param>
-  <returns>
-    <ref><mut/><generic/>Vec<type field="arguments">i32</type></ref>
-  </returns>
-</function>
-```
-
-`<ref>` is evocative of Rust's `&` but collides conceptually with
-the old deprecated value-ref element name we removed earlier (#73).
+**Current**: `param[name][ref[type]]` (uses `<ref>` — collides
+conceptually with the deprecated value-ref we removed in #73)
 
 **Candidates**:
 
-| Element | Pro | Con |
+| Shape | Pro | Con |
 |---|---|---|
-| Keep `<ref>` | Shortest, matches Rust's `&` sigil | Latent collision; confuses anyone reading our history |
-| `<reference>` | Clear, unambiguous | Long, and the type is borrowing, not just referring |
-| `<type><borrowed/>...</type>` | Fits Principle #14 (single `<type>` element, marker distinguishes form) | Two-element nesting; `<borrowed/>` is uncommon term |
-| `<borrow>` | Rust-idiomatic — "borrow checker", "a borrow" | Non-standard; not a single language's spec term |
+| Keep `param[name][ref[type]]` | Shortest, matches Rust's `&` sigil | Latent name collision; confuses anyone reading history |
+| `param[name][reference[type]]` | Clear, unambiguous | Long; not Rust's own term |
+| `param[name][type[borrowed]]` | Fits Principle #14 (single `<type>`, marker distinguishes form) | Two-element nesting for a common construct |
+| `param[name][borrow[type]]` | Rust-idiomatic ("borrow checker") | Non-standard; uncommon term for the tree element name |
 
-**My lean**: `<type><borrowed/>...</type>` — matches the Principle
-#14 pattern (type-as-reference with a marker distinguishing the
-borrow form) and makes `//type` queries find all type references
-including borrows.
+**My lean**: `type[borrowed]` for Principle #14 consistency — `//type`
+queries find every type reference including borrows.
 
 ### `match_block`
 
@@ -468,20 +305,10 @@ match x {
 }
 ```
 
-**Current tree**:
+**Current**: `match[value][match_block[arm][arm]]`
 
-```xml
-<match>
-  ...
-  <match_block>
-    <arm>...</arm>
-    <arm>...</arm>
-  </match_block>
-</match>
-```
-
-**Proposal**: flatten `match_block` — it's a purely-grouping wrapper
-(Principle #12). Result: `<match><arm>...</arm><arm>...</arm></match>`.
+**Proposal**: flatten `match_block` (Principle #12) →
+`match[value][arm][arm]`.
 
 ---
 
@@ -496,28 +323,11 @@ def foo
 end
 ```
 
-**Current tree**:
+**Current**: `method[name][body[assign[left[identifier]][right[int]]][binary[left[identifier]][right[identifier]]]]`
+(Ruby's `identifier` isn't renamed to `<name>`)
 
-```xml
-<method>
-  <name>foo</name>
-  <body>
-    <assign>
-      <left><identifier>x</identifier></left>
-      <right><int>1</int></right>
-    </assign>
-    <binary>
-      <left><identifier>x</identifier></left>
-      <right><identifier>y</identifier></right>
-    </binary>
-  </body>
-</method>
-```
-
-Ruby's `identifier` isn't renamed to `<name>` like in other
-languages. Minor inconsistency with Principle #14.
-
-**Proposal**: rename Ruby `identifier` → `<name>` in the transform.
+**Proposal**: rename Ruby `identifier` → `<name>` →
+`method[name][body[assign[left[name]][right[int]]][binary[left[name]][right[name]]]]`.
 
 ### Method-call shape
 
@@ -528,17 +338,18 @@ obj.method(arg).chain
 ```
 
 Ruby has rich method-call variations (implicit receiver, blocks,
-chained calls). Currently tractor's Ruby transform renames `call`
-and `method_call` to `<call>`, but hasn't systematically applied
-the `<callee>`/`<object>`/`<property>` shape that TS/JS uses.
+chained calls). Current `call` and `method_call` both rename to
+`<call>`, but the `<callee>` / `<object>` / `<property>` shape used
+for TS/JS isn't systematically applied.
 
-Needs a design pass. Low priority until Ruby sees heavier use.
+Needs a design pass. No candidate shape yet — low priority until
+Ruby sees heavier use.
 
 ---
 
-## How to read / resolve
+## How to resolve
 
 For each item: decide the shape, update the relevant per-language
-transformation file in `specs/tractor-parse/semantic-tree/transformations/`
-to document the new decision, implement in the language's `.rs`
-file, regenerate fixtures, commit with the decision cited.
+transformation file in `specs/tractor-parse/semantic-tree/transformations/`,
+implement in the language's `.rs`, regenerate fixtures, commit with
+the decision cited.
