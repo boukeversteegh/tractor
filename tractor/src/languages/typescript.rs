@@ -43,6 +43,32 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             rename(xot, node, "extends");
             Ok(TransformAction::Continue)
         }
+
+        // Type alias declarations: `type Foo = …`. The builder wraps the
+        // aliased type in `<value>` (because tree-sitter tags it with
+        // `field="value"`). Drop that wrapper so the aliased type lives
+        // directly inside `<alias>` — the walker then gives it its own
+        // `<type>` wrapper via the normal rename path (predefined_type →
+        // <type>, function_type → <type><function/>, etc.).
+        "type_alias_declaration" => {
+            let value_child = xot.children(node)
+                .filter(|&c| xot.element(c).is_some())
+                .find(|&c| get_element_name(xot, c).as_deref() == Some("value"));
+            if let Some(v) = value_child {
+                flatten_node(xot, v)?;
+            }
+            rename(xot, node, "alias");
+            Ok(TransformAction::Continue)
+        }
+
+        // Function type: `(x: T) => U` as a *type expression*. Rename to
+        // `<type>` with a `<function/>` marker so queries and JSON
+        // treat it uniformly with other type variants.
+        "function_type" => {
+            prepend_empty_element(xot, node, "function")?;
+            rename(xot, node, "type");
+            Ok(TransformAction::Continue)
+        }
         // Template string parts: inline the raw text into the enclosing
         // `<template>` so a template literal reads as text with interpolation
         // children, not as a soup of grammar-internal wrappers.
@@ -223,7 +249,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "method_definition" => Some("method"),
         "arrow_function" => Some("lambda"),
         "interface_declaration" => Some("interface"),
-        "type_alias_declaration" => Some("alias"),
+        // type_alias_declaration handled above (flattens <value> wrapper)
         "enum_declaration" => Some("enum"),
         "lexical_declaration" | "variable_declaration" => Some("variable"),
 
