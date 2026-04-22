@@ -218,7 +218,12 @@ fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
 fn inline_single_identifier(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     let children: Vec<_> = xot.children(node).collect();
     for child in children {
-        if get_element_name(xot, child).as_deref() != Some("identifier") {
+        // Also accept `type_identifier` — same rationale as TS/Java.
+        let child_name = get_element_name(xot, child);
+        if !matches!(
+            child_name.as_deref(),
+            Some("identifier") | Some("type_identifier"),
+        ) {
             continue;
         }
         let text = match get_text_content(xot, child) {

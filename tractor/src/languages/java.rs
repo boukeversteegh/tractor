@@ -47,6 +47,17 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             rename(xot, node, "generics");
             Ok(TransformAction::Flatten)
         }
+        "type_parameter" => {
+            // Tree-sitter puts the parameter's name as a sibling
+            // `type_identifier`; bounds follow as sibling `type_bound`
+            // elements. Replace the identifier with a `<name>TEXT</name>`
+            // element so the eventual shape is
+            // `<generic><name>T</name><bound>...</bound></generic>`,
+            // not the over-wrapped `<generic><type><name>T</name></type>...`.
+            replace_identifier_with_name_child(xot, node, &["type_identifier"])?;
+            rename(xot, node, "generic");
+            Ok(TransformAction::Continue)
+        }
 
         // ---------------------------------------------------------------------
         // Generic type references: apply the C# pattern.
@@ -318,7 +329,14 @@ fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
 fn inline_single_identifier(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     let children: Vec<_> = xot.children(node).collect();
     for child in children {
-        if get_element_name(xot, child).as_deref() != Some("identifier") {
+        // Also accept `type_identifier` — tree-sitter uses it for the
+        // name of class/interface/enum/generic declarations, where the
+        // declared thing is a type but its name is still an identifier.
+        let child_name = get_element_name(xot, child);
+        if !matches!(
+            child_name.as_deref(),
+            Some("identifier") | Some("type_identifier"),
+        ) {
             continue;
         }
         let text = match get_text_content(xot, child) {

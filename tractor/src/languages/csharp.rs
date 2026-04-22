@@ -137,11 +137,13 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             if let Some(parent) = get_parent(xot, node) {
                 let parent_kind = get_kind(xot, parent).unwrap_or_default();
                 if is_named_declaration(&parent_kind) {
-                    // Find identifier child and extract its text
+                    // Find identifier-like child and extract its text.
+                    // Accept `type_identifier` too — class/struct/enum
+                    // declarations have their name tagged as one.
                     let children: Vec<_> = xot.children(node).collect();
                     for child in children {
                         if let Some(child_kind) = get_kind(xot, child) {
-                            if child_kind == "identifier" {
+                            if child_kind == "identifier" || child_kind == "type_identifier" {
                                 // Get the text from the identifier
                                 if let Some(text) = get_text_content(xot, child) {
                                     // Remove all children from <name>

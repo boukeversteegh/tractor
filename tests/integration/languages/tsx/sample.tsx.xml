@@ -24,11 +24,7 @@
           </import>
           <interface>
             interface
-            <name>
-              <type>
-                <name>Props</name>
-              </type>
-            </name>
+            <name>Props</name>
             <body>
               {
               <property_signature>

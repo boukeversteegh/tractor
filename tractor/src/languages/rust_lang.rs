@@ -35,6 +35,19 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             distribute_field_to_children(xot, node, "arguments");
             Ok(TransformAction::Flatten)
         }
+        // Type parameter list: flatten with field="generics".
+        "type_parameters" => {
+            distribute_field_to_children(xot, node, "generics");
+            rename(xot, node, "generics");
+            Ok(TransformAction::Flatten)
+        }
+        "type_parameter" => {
+            // Inline the parameter's name as a `<name>TEXT</name>` child
+            // so siblings like trait_bounds remain intact.
+            replace_identifier_with_name_child(xot, node, &["type_identifier"])?;
+            rename(xot, node, "generic");
+            Ok(TransformAction::Continue)
+        }
 
         // Generic type references: apply the C# pattern.
         //   generic_type(<type_identifier>Vec</type_identifier>, type_arguments)

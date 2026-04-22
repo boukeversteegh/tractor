@@ -127,11 +127,7 @@
           ;
           <interface>
             interface
-            <name>
-              <type>
-                <name>Person</name>
-              </type>
-            </name>
+            <name>Person</name>
             <body>
               {
               <property_signature>

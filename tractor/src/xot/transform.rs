@@ -730,6 +730,50 @@ pub mod helpers {
         Ok(())
     }
 
+    /// Replace the first child of `parent` whose tree-sitter `kind`
+    /// matches one of `kinds` with a `<name field="name">TEXT</name>`
+    /// element holding that child's text. Siblings are untouched.
+    ///
+    /// Used to normalise the declared name of a generic-parameter-like
+    /// construct (`type_parameter` in Java / TS / Rust) where the
+    /// identifier is a sibling of other children (bounds, constraints)
+    /// — the full-wrapper `inline_single_identifier` would wipe those
+    /// siblings, and leaving the identifier alone would let it get
+    /// re-wrapped to `<type><name>T</name></type>` by the per-language
+    /// type rename.
+    ///
+    /// Returns `Ok(())` whether or not a match was found.
+    pub fn replace_identifier_with_name_child(
+        xot: &mut Xot,
+        parent: XotNode,
+        kinds: &[&str],
+    ) -> Result<(), xot::Error> {
+        let target = xot.children(parent).find(|&c| {
+            xot.element(c).is_some()
+                && get_kind(xot, c).as_deref().map_or(false, |k| kinds.contains(&k))
+        });
+        let target = match target {
+            Some(t) => t,
+            None => return Ok(()),
+        };
+        let text: Option<String> = xot
+            .children(target)
+            .find_map(|c| xot.text_str(c).map(|s| s.to_string()));
+        let text = match text {
+            Some(t) => t,
+            None => return Ok(()),
+        };
+        let name_id = xot.add_name("name");
+        let name_el = xot.new_element(name_id);
+        set_attr(xot, name_el, "field", "name");
+        copy_source_location(xot, target, name_el);
+        let text_node = xot.new_text(&text);
+        xot.append(name_el, text_node)?;
+        xot.insert_before(target, name_el)?;
+        xot.detach(target)?;
+        Ok(())
+    }
+
     /// Wrap the direct text content of `node` in a `<name>` child element.
     ///
     /// `<type>Foo</type>` becomes `<type><name>Foo</name></type>`. No-op if

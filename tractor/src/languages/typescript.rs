@@ -390,9 +390,16 @@ fn inline_single_identifier(xot: &mut Xot, node: XotNode) -> Result<(), xot::Err
             Some(n) => n,
             None => continue,
         };
+        // Accept `type_identifier` here too: tree-sitter uses it for the
+        // name of class/interface/alias/generic declarations (where the
+        // declared thing happens to be a type), but in the tree that's
+        // still an identifier — the <name> wrapper's job is just to hold
+        // the declared name as text. Without this, the identifier leaks
+        // through, later gets renamed to <type>, and we end up with
+        // `<name><type><name>Foo</name></type></name>` triple-nesting.
         if !matches!(
             child_name.as_str(),
-            "identifier" | "property_identifier" | "private_property_identifier",
+            "identifier" | "property_identifier" | "private_property_identifier" | "type_identifier",
         ) {
             continue;
         }
