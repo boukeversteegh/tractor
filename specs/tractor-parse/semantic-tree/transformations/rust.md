@@ -43,7 +43,7 @@ handles a few Rust-specific constructs:
 | `scoped_identifier`, `scoped_type_identifier` | `<path>` | Rust's `std::collections::HashMap` — short, consistent. |
 | `return_expression` | `<return>` | Language keyword. |
 | `if_expression` | `<if>` | Language keyword. |
-| `else_clause` | `<else>` | Language keyword. |
+| `else_clause` | `<else>` | Language keyword; chain collapsed — see below. |
 | `for_expression`, `while_expression` | `<for>`, `<while>` | Language keywords. |
 | `loop_expression` | `<loop>` | Language keyword. |
 | `match_expression` | `<match>` | Language keyword. |
@@ -165,4 +165,26 @@ works because the parent (`<struct>` for declarations vs
 
 The constraint `T: Clone + Send` is a bound list. Plural `bounds`
 matches Java's `<bound>` (single) and reads naturally.
+
+### Conditional shape (`<if>` / `<else_if>` / `<else>`)
+
+Rust is the only one of the C-like set whose conditional is an
+expression (`if_expression`), but the shape is the same as the
+statement-form ones: a nested `else_clause` wrapping another
+`if_expression` when the source says `else if`. The transform:
+
+- `RUST_FIELD_WRAPPINGS` maps `consequence` → `<then>` and
+  `alternative` → `<else>`; the `else_clause` kind is renamed to
+  `<else>` via `map_element_name`.
+- The post-walk `collapse_else_if_chain` (registered for Rust in
+  `languages/mod.rs`) unwraps the redundant `<else><else>` and
+  lifts each inner `<if>`'s condition/then into an `<else_if>`
+  sibling of the outer `<if>`, recursively. A bare `<else>` that
+  wraps only a block (the final else arm, which in Rust is also
+  the expression's result when the chain doesn't exhaustively
+  yield a value) is kept as-is — the collapse tolerates a missing
+  `<then>` on the inner branch.
+
+See the cross-cutting "Conditional shape" convention in the index
+[`transformations.md`](../transformations.md).
 

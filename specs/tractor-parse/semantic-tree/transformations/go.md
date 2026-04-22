@@ -48,7 +48,7 @@ Go has several grammar patterns that need special handling:
 | `channel_type` | `<chan>` | Language keyword. |
 | `return_statement` | `<return>` | Language keyword. |
 | `if_statement` | `<if>` | Language keyword. |
-| `else_clause` | `<else>` | Language keyword. |
+| `else_clause` | `<else>` | Language keyword; chain collapsed — see below. |
 | `for_statement` | `<for>` | Language keyword. |
 | `range_clause` | `<range>` | Language keyword. |
 | `switch_statement` | `<switch>` | Language keyword. |
@@ -192,4 +192,20 @@ speech (`type` is the actual keyword). Principle #14's rule —
 because `<type>` *is* a specific element; it just happens to also
 be Go's spec term. Disambiguated from type *references* by having
 a `<name>` child.
+
+### Conditional shape (`<if>` / `<else_if>` / `<else>`)
+
+Go's `if_statement` grammar uses the same nested `else_clause`
+shape as the other C-like languages. The transform:
+
+- `GO_FIELD_WRAPPINGS` maps `consequence` → `<then>` and
+  `alternative` → `<else>`; the `else_clause` kind renames to
+  `<else>` via `map_element_name`.
+- The post-walk `collapse_else_if_chain` (registered for Go in
+  `languages/mod.rs`) unwraps the redundant `<else><else>` and
+  lifts each inner `<if>`'s condition/then into an `<else_if>`
+  sibling, recursively.
+
+See the cross-cutting "Conditional shape" convention in the index
+[`transformations.md`](../transformations.md).
 

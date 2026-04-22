@@ -200,3 +200,24 @@ removed; the content is now a plain `<name>` element:
 </member>
 ```
 
+### Conditional shape (`<if>` / `<else_if>` / `<else>`)
+
+TypeScript / JavaScript share the C-like nested-`else_clause` shape
+— an `if_statement`'s `alternative` field is an `else_clause` whose
+only child is another `if_statement` for `else if`. The transform:
+
+- `TS_FIELD_WRAPPINGS` maps `consequence` → `<then>` and
+  `alternative` → `<else>`; the `else_clause` kind renames to
+  `<else>` as well.
+- The post-walk `collapse_else_if_chain` (registered in
+  `languages/mod.rs`) unwraps the redundant `<else><else>` wrapper
+  that the field-wrap + rename produce, then lifts each nested
+  `<if>`'s condition/then into an `<else_if>` sibling of the outer
+  `<if>` and recurses until the chain ends in a plain block `<else>`
+  or nothing.
+- A ternary expression (`cond ? a : b`) reuses the same field
+  names: `consequence` → `<then>`, `alternative` → `<else>` inside
+  `<ternary>`.
+
+See the cross-cutting "Conditional shape" convention in the index
+[`transformations.md`](../transformations.md).

@@ -72,7 +72,7 @@ renderer share a single source of truth:
 | `block` | `<block>` | Developer mental model. |
 | `return_statement` | `<return>` | Language keyword. |
 | `if_statement` | `<if>` | Language keyword. |
-| `else_clause` | `<else>` | Language keyword. |
+| `else_clause` | `<else>` | Language keyword; chain collapsed — see below. |
 | `for_statement`, `while_statement` | `<for>`, `<while>` | Language keywords. |
 | `foreach_statement` | `<foreach>` | Language keyword (C# spec). |
 | `try_statement` | `<try>` | Language keyword. |
@@ -222,4 +222,21 @@ C# uses the full word `parameter`. Other languages use `param`.
 Historical inconsistency not yet unified — the rationale is that
 C#'s original design preferred full words across the board. May
 be revisited but not critical.
+
+### Conditional shape (`<if>` / `<else_if>` / `<else>`)
+
+C#'s tree-sitter grammar emits the common C-like nested
+`else_clause` chain for `else if`. The transform collapses it into
+the flat shape shared across all programming languages:
+
+- `CSHARP_FIELD_WRAPPINGS` maps `consequence` → `<then>` and
+  `alternative` → `<else>`; the `else_clause` kind is renamed to
+  `<else>` via `map_element_name`.
+- The post-walk `collapse_else_if_chain` (registered for C# in
+  `languages/mod.rs`) unwraps the redundant `<else><else>` and
+  lifts each inner `<if>`'s condition/then into an `<else_if>`
+  sibling of the outer `<if>`, recursively.
+
+See the cross-cutting "Conditional shape" convention in the index
+[`transformations.md`](../transformations.md).
 

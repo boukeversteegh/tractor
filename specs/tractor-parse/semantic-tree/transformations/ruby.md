@@ -33,6 +33,8 @@ The transform:
 | `class` | `<class>` | Language keyword. |
 | `module` | `<module>` | Language keyword. |
 | `if`, `unless` | `<if>`, `<unless>` | Language keywords. |
+| `elsif` | `<else_if>` | Cross-cutting conditional shape — see below. |
+| `else` | `<else>` | Language keyword. |
 | `case` | `<case>` | Language keyword. |
 | `while`, `until`, `for` | `<while>`, `<until>`, `<for>` | Language keywords. |
 | `begin` | `<begin>` | Language keyword (exception handling). |
@@ -83,3 +85,25 @@ identifiers are `identifier`, currently passing through without
 a rename. Whether to add `identifier` → `<name>` for consistency
 with Principle #14 is a minor follow-up.
 
+### Conditional shape (`<if>` / `<else_if>` / `<else>`)
+
+Ruby's tree-sitter grammar is an outlier in two ways that together
+require a Ruby-specific pair of wrappings and the post-walk
+collapse:
+
+1. The grammar already emits a literal `<then>` kind (with
+   `field="consequence"`) for the true-branch. Wrapping the
+   `consequence` field in another `<then>` would double-nest, so
+   `RUBY_FIELD_WRAPPINGS` omits the `consequence` mapping entirely.
+2. The `elsif`/`else` chain is *nested* — each `elsif` lives
+   inside the previous one rather than being a flat sibling of
+   `if`. The `alternative` field is also omitted from
+   `RUBY_FIELD_WRAPPINGS` so each clause stays a direct named
+   child; the post-walk `collapse_else_if_chain` then walks the
+   chain and lifts each `<elsif>` / `<else>` out as a flat child
+   of the outer `<if>`. `elsif` is renamed to `<else_if>` in
+   `map_element_name` (so the post-walk and the rename produce the
+   same final name).
+
+See the cross-cutting "Conditional shape" convention in the index
+[`transformations.md`](../transformations.md).
