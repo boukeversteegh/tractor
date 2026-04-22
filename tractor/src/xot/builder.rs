@@ -286,43 +286,15 @@ impl<'a> TreeBuilder<'a> {
             }
         }
 
-        // Wrap in field element if needed, or just append directly
+        // Record tree-sitter's field name as a plain `field=` attribute.
+        // The builder does no wrapping — that's handled by the per-language
+        // post-build pass (apply_field_wrappings), keeping raw output a
+        // faithful rendering of the tree-sitter tree.
         if let Some(field) = field_name {
-            if Self::should_wrap_field(field) {
-                // Create wrapper element with field name
-                let wrapper_name = self.get_name(field);
-                let wrapper = self.xot.new_element(wrapper_name);
-
-                // Copy location attributes from child to wrapper
-                for attr_name in &["line", "column", "end_line", "end_column"] {
-                    let attr_id = self.get_name(attr_name);
-                    if let Some(val) = self.xot.attributes(element).get(attr_id).cloned() {
-                        self.xot.attributes_mut(wrapper).insert(attr_id, val);
-                    }
-                }
-
-                // Mark wrapper as field-backed for JSON property lifting
-                let field_attr = self.get_name("field");
-                self.xot.attributes_mut(wrapper).insert(field_attr, field.to_string());
-
-                // Mark the inner element as a singleton child
-                let inner_name = self.xot.element(element)
-                    .map(|e| self.xot.local_name_str(e.name()).to_string());
-                if let Some(name_str) = inner_name {
-                    self.xot.attributes_mut(element).insert(field_attr, name_str);
-                }
-
-                self.xot.append(wrapper, element)?;
-                self.xot.append(parent, wrapper)?;
-            } else {
-                // Add field as attribute instead
-                let field_attr = self.get_name("field");
-                self.xot.attributes_mut(element).insert(field_attr, field.to_string());
-                self.xot.append(parent, element)?;
-            }
-        } else {
-            self.xot.append(parent, element)?;
+            let field_attr = self.get_name("field");
+            self.xot.attributes_mut(element).insert(field_attr, field.to_string());
         }
+        self.xot.append(parent, element)?;
 
         Ok(())
     }
