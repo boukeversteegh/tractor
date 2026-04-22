@@ -40,8 +40,9 @@ tree-sitter-ini = "1.4"
 tree-sitter-sequel-tsql = "0.4"
 
 # XPath 3.1
-xee = { git = "https://github.com/Paligo/xee" }
-xee-xpath = { git = "https://github.com/Paligo/xee" }
+# Fork pinned by SHA — see docs/workflow-xee-fork.md. Bump when `tractor` branch advances.
+xee = { git = "https://github.com/boukeversteegh/xee.git", rev = "369f90e279a956425ff9dc0a755abc194699aefb" }
+xee-xpath = { git = "https://github.com/boukeversteegh/xee.git", rev = "369f90e279a956425ff9dc0a755abc194699aefb" }
 xot = "0.31"
 
 # CLI and utilities

@@ -158,6 +158,10 @@ cli_suite! {
         async_function => tractor query "sample.py" -x "function[async]" => count 1;
         multiline_lf => tractor query "multiline-string-lf.py" -x "//string_content[.=\"hello\n\n\"]" => count 1;
         multiline_crlf => tractor query "multiline-string-crlf.py" -x "//string_content[.=\"hello\n\n\"]" => count 1;
+        // Regression: 3-level predicates must match same as count() workaround (issue #129)
+        deep_predicate_2level => tractor query "sample.py" -x "//function[body/return]" => count 2;
+        deep_predicate_3level => tractor query "sample.py" -x "//function[body/return/binary]" => count 1;
+        deep_predicate_3level_count_workaround => tractor query "sample.py" -x "//function[count(body/return/binary)>0]" => count 1;
     }
 }
 
