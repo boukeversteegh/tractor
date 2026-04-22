@@ -3,88 +3,85 @@
   <results>
     <match file="tests/integration/languages/markdown/sample.md" line="1" column="1">
       <tree>
-        <Files>
-          <file>tests/integration/languages/markdown/sample.md</file>
-          <document>
+        <document>
+          <section>
+            <heading>
+              <h1/>
+              <inline>Heading 1</inline>
+            </heading>
+            <paragraph>
+              <inline>A paragraph with **bold** and *italic* text.</inline>
+            </paragraph>
             <section>
               <heading>
-                <h1/>
-                <inline>Heading 1</inline>
+                <h2/>
+                <inline>Heading 2</inline>
               </heading>
-              <paragraph>
-                <inline>A paragraph with **bold** and *italic* text.</inline>
-              </paragraph>
-              <section>
-                <heading>
-                  <h2/>
-                  <inline>Heading 2</inline>
-                </heading>
-                <list>
-                  <unordered/>
-                  <item>
-                    <paragraph>
-                      <inline>Item one</inline>
-                    </paragraph>
-                  </item>
-                  <item>
-                    <paragraph>
-                      <inline>Item two</inline>
-                    </paragraph>
-                  </item>
-                  <item>
-                    <paragraph>
-                      <inline>Item three</inline>
-                    </paragraph>
-                  </item>
-                </list>
-                <list>
-                  <ordered/>
-                  <item>
-                    <paragraph>
-                      <inline>First</inline>
-                    </paragraph>
-                  </item>
-                  <item>
-                    <paragraph>
-                      <inline>Second</inline>
-                    </paragraph>
-                  </item>
-                </list>
-                <blockquote>
+              <list>
+                <unordered/>
+                <item>
                   <paragraph>
-                    <inline>A blockquote</inline>
+                    <inline>Item one</inline>
                   </paragraph>
-                </blockquote>
-                <code_block>
-                  <language>python</language>
-                  <code>def hello():
+                </item>
+                <item>
+                  <paragraph>
+                    <inline>Item two</inline>
+                  </paragraph>
+                </item>
+                <item>
+                  <paragraph>
+                    <inline>Item three</inline>
+                  </paragraph>
+                </item>
+              </list>
+              <list>
+                <ordered/>
+                <item>
+                  <paragraph>
+                    <inline>First</inline>
+                  </paragraph>
+                </item>
+                <item>
+                  <paragraph>
+                    <inline>Second</inline>
+                  </paragraph>
+                </item>
+              </list>
+              <blockquote>
+                <paragraph>
+                  <inline>A blockquote</inline>
+                </paragraph>
+              </blockquote>
+              <code_block>
+                <language>python</language>
+                <code>def hello():
             print(&quot;Hello&quot;)
         </code>
-                </code_block>
-                <code_block>
-                  <code>plain code block
+              </code_block>
+              <code_block>
+                <code>plain code block
           with indentation
             and nesting
         </code>
-                </code_block>
-                <code_block>
-                  <language>javascript</language>
-                  <code>function greet(name) {
+              </code_block>
+              <code_block>
+                <language>javascript</language>
+                <code>function greet(name) {
             if (name === &quot;world&quot;) {
                 console.log(&quot;Hello, &quot; + name + &quot;!&quot;);
             }
             return true;
         }
         </code>
-                </code_block>
-                <paragraph>
-                  <inline>[A link](https://example.com)</inline>
-                </paragraph>
-                <hr/>
-              </section>
+              </code_block>
+              <paragraph>
+                <inline>[A link](https://example.com)</inline>
+              </paragraph>
+              <hr/>
             </section>
-          </document>
-        </Files>
+          </section>
+        </document>
       </tree>
     </match>
   </results>

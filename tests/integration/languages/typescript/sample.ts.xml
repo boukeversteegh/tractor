@@ -184,7 +184,7 @@
                       <name>title</name>
                     </condition>
                     ?
-                    <consequence>
+                    <then>
                       <template>
                         `
                         <interpolation>
@@ -199,11 +199,11 @@
                         </interpolation>
                         `
                       </template>
-                    </consequence>
+                    </then>
                     :
-                    <alternative>
+                    <else>
                       <name>name</name>
-                    </alternative>
+                    </else>
                   </ternary>
                   ;
                 </return>

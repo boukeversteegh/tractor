@@ -116,12 +116,12 @@
               </compare>
             </condition>
             :
-            <consequence>
+            <then>
               <call>
                 <name>main</name>
                 ()
               </call>
-            </consequence>
+            </then>
           </if>
         </module>
       </tree>
