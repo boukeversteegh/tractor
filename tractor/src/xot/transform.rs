@@ -842,6 +842,235 @@ pub mod helpers {
         }
         Ok(())
     }
+
+    // /specs/tractor-parse/semantic-tree/transformations.md: Conditional shape
+    /// Collapse a nested `else`/`if` chain under `if_node` into the flat
+    /// conditional shape `<if>[condition][then][else_if*][else?]`.
+    ///
+    /// Applies after names have been rewritten, so children are already
+    /// `<if>` / `<else>` / `<else_if>` / `<elsif>` (the raw Ruby kind).
+    /// Handles two input shapes:
+    ///
+    /// - **C-like** (JS/TS, Java, C#, Go, Rust) — the `<else>` field
+    ///   wrapper holds a renamed `else_clause` (itself `<else>`). If the
+    ///   inner `<else>` contains a single `<if>`, that `<if>`'s
+    ///   condition and then become a new `<else_if>` sibling; the
+    ///   nested `<if>`'s own `<else>` chain continues. Final `<else>`
+    ///   with a plain block stays.
+    /// - **Ruby** — the grammar already emits `<elsif>` (nested) and
+    ///   a final `<else>`. The `<elsif>` is renamed to `<else_if>` and
+    ///   lifted out so it becomes a sibling of the outer `<if>`'s
+    ///   condition/then; the same for any nested `<else>`.
+    pub fn collapse_else_if_chain(xot: &mut Xot, if_node: XotNode) -> Result<(), xot::Error> {
+        // Walk the `<else>` / `<elsif>` chain, lifting each level out
+        // of the previous one so they become flat children of
+        // `if_node`. `current` is the node we scan for a trailing
+        // alternative (initially `if_node`; later each lifted
+        // `<else_if>`). `anchor` is the child of `if_node` that the
+        // next lifted alternative should be inserted *after* — None
+        // means "append at the end" (modulo trailing text). Before
+        // each step we normalize the C-like `<else>` wrapper around a
+        // renamed `else_clause` (also `<else>`) into a single `<else>`
+        // child.
+        let mut current = if_node;
+        let mut anchor: Option<XotNode> = None;
+        loop {
+            unwrap_redundant_else_wrapper(xot, current)?;
+            // Find the trailing alternative child (else / elsif / else_if)
+            // on the current node.
+            let alt = match find_trailing_alternative(xot, current) {
+                Some(a) => a,
+                None => break,
+            };
+            let alt_name = get_element_name(xot, alt).unwrap_or_default();
+
+            match alt_name.as_str() {
+                "else" => {
+                    // Before finishing, check whether this `<else>` holds
+                    // only a single `<if>` (else if in C-like shape).
+                    // After unwrap_redundant_else_wrapper this is already
+                    // normalised, so the child is an `<if>` directly.
+                    let inner_if = single_if_child(xot, alt);
+                    if let Some(inner_if) = inner_if {
+                        // Lift this `<if>`'s condition/then as a new
+                        // `<else_if>` child of `if_node`, inserted
+                        // immediately after `anchor` (so the chain stays
+                        // in source order, even when the outer `<if>`
+                        // has trailing text like Ruby's "end" keyword).
+                        let else_if = lift_if_as_else_if(xot, if_node, anchor, inner_if)?;
+                        xot.detach(alt)?; // drop the now-empty <else>
+                        current = else_if;
+                        anchor = Some(else_if);
+                        continue;
+                    }
+                    // Terminal <else>: move it to be a child of if_node,
+                    // positioned after `anchor` (Ruby nests else deep
+                    // inside the elsif chain).
+                    reparent_in(xot, alt, if_node, anchor)?;
+                    break;
+                }
+                "elsif" | "else_if" => {
+                    // Ruby's <elsif> (or any previously-renamed <else_if>).
+                    // Rename and lift to be a child of if_node,
+                    // positioned after `anchor`.
+                    rename(xot, alt, "else_if");
+                    reparent_in(xot, alt, if_node, anchor)?;
+                    current = alt;
+                    anchor = Some(alt);
+                }
+                _ => break,
+            }
+        }
+
+        Ok(())
+    }
+
+    /// If `if_node`'s `<else>` child (field="else") contains only a single
+    /// `<else>` element (the renamed `else_clause`), flatten the outer
+    /// wrapper so the inner `<else>` becomes a direct child of `if_node`.
+    /// Leaves Ruby's shape (no wrapper) untouched.
+    fn unwrap_redundant_else_wrapper(xot: &mut Xot, if_node: XotNode) -> Result<(), xot::Error> {
+        let children = get_element_children(xot, if_node);
+        for child in children {
+            if get_element_name(xot, child).as_deref() != Some("else") {
+                continue;
+            }
+            // Only act on the field-wrapper (has field="else" attr).
+            if get_attr(xot, child, "field").as_deref() != Some("else") {
+                continue;
+            }
+            let inner_children = get_element_children(xot, child);
+            if inner_children.len() != 1 {
+                continue;
+            }
+            let inner = inner_children[0];
+            if get_element_name(xot, inner).as_deref() != Some("else") {
+                continue;
+            }
+            // Flatten: move inner up, drop wrapper.
+            xot.detach(inner)?;
+            xot.insert_before(child, inner)?;
+            xot.detach(child)?;
+        }
+        Ok(())
+    }
+
+    /// Return the last element child of `node` whose name is `else`,
+    /// `elsif`, or `else_if` — the tail of the conditional chain.
+    fn find_trailing_alternative(xot: &Xot, node: XotNode) -> Option<XotNode> {
+        let children = get_element_children(xot, node);
+        let last = *children.last()?;
+        match get_element_name(xot, last).as_deref() {
+            Some("else") | Some("elsif") | Some("else_if") => Some(last),
+            _ => None,
+        }
+    }
+
+    /// If `else_node` has exactly one element child and that child is
+    /// `<if>`, return it. Used to detect the "else if" C-like shape.
+    fn single_if_child(xot: &Xot, else_node: XotNode) -> Option<XotNode> {
+        let children = get_element_children(xot, else_node);
+        if children.len() != 1 {
+            return None;
+        }
+        let only = children[0];
+        if get_element_name(xot, only).as_deref() == Some("if") {
+            Some(only)
+        } else {
+            None
+        }
+    }
+
+    /// Build an `<else_if>` from `inner_if`'s condition/then and place
+    /// it as a child of `outer_if`, positioned after `after` (or at
+    /// the end of `outer_if` when `after` is `None`). The inner
+    /// `<if>`'s own `<else>` / `<elsif>` chain is moved into the new
+    /// `<else_if>` so the caller can continue iterating. Returns the
+    /// new `<else_if>` node.
+    fn lift_if_as_else_if(
+        xot: &mut Xot,
+        outer_if: XotNode,
+        after: Option<XotNode>,
+        inner_if: XotNode,
+    ) -> Result<XotNode, xot::Error> {
+        let else_if_name = xot.add_name("else_if");
+        let else_if = xot.new_element(else_if_name);
+        copy_source_location(xot, inner_if, else_if);
+
+        // Insert the new `<else_if>` as a child of `outer_if`, placed
+        // right after `after` so the chain reads in source order.
+        match after {
+            Some(a) => {
+                let next = xot.next_sibling(a);
+                match next {
+                    Some(n) => xot.insert_before(n, else_if)?,
+                    None => xot.append(outer_if, else_if)?,
+                }
+            }
+            None => xot.append(outer_if, else_if)?,
+        }
+
+        // Move condition and then children from the inner <if> to the
+        // new <else_if>.
+        let inner_children = get_element_children(xot, inner_if);
+        for child in inner_children {
+            let name = get_element_name(xot, child).unwrap_or_default();
+            match name.as_str() {
+                "condition" | "then" => {
+                    xot.detach(child)?;
+                    xot.append(else_if, child)?;
+                }
+                _ => {}
+            }
+        }
+
+        // The inner <if>'s remaining alternative children (its own
+        // <else> / <elsif> chain) now belong semantically to the new
+        // <else_if>'s tail. Move them under `else_if` so the caller
+        // can continue iterating via `find_trailing_alternative`.
+        let remaining = get_element_children(xot, inner_if);
+        for child in remaining {
+            let name = get_element_name(xot, child).unwrap_or_default();
+            if matches!(name.as_str(), "else" | "elsif" | "else_if") {
+                xot.detach(child)?;
+                xot.append(else_if, child)?;
+            }
+        }
+
+        Ok(else_if)
+    }
+
+    /// Detach `node` from its current parent and place it as a child
+    /// of `parent`, positioned immediately after `after` when set, or
+    /// at the end of `parent` when `after` is `None`. No-op if `node`
+    /// is already positioned correctly.
+    fn reparent_in(
+        xot: &mut Xot,
+        node: XotNode,
+        parent: XotNode,
+        after: Option<XotNode>,
+    ) -> Result<(), xot::Error> {
+        // Already in the right position?
+        if xot.parent(node) == Some(parent) {
+            match after {
+                Some(a) if xot.next_sibling(a) == Some(node) => return Ok(()),
+                None if xot.next_sibling(node).is_none() => return Ok(()),
+                _ => {}
+            }
+        }
+        xot.detach(node)?;
+        match after {
+            Some(a) => {
+                let next = xot.next_sibling(a);
+                match next {
+                    Some(n) => xot.insert_before(n, node)?,
+                    None => xot.append(parent, node)?,
+                }
+            }
+            None => xot.append(parent, node)?,
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]

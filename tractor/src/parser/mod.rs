@@ -379,6 +379,12 @@ pub fn parse_string_to_xot_with_options(
         let transform_fn = languages::get_transform(lang);
         crate::xot_transform::walk_transform(&mut xot, root, transform_fn)
             .map_err(|e| ParseError::Parse(e.to_string()))?;
+
+        // Post-walk structural rewrites (e.g. flat conditional shape).
+        if let Some(post_fn) = languages::get_post_transform(lang) {
+            post_fn(&mut xot, root)
+                .map_err(|e| ParseError::Parse(e.to_string()))?;
+        }
     }
 
     Ok(XotParseResult {

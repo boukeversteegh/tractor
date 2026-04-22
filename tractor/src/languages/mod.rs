@@ -26,6 +26,15 @@ use crate::output::syntax_highlight::SyntaxCategory;
 /// Type alias for language transform functions
 pub type TransformFn = fn(&mut Xot, XotNode) -> Result<TransformAction, xot::Error>;
 
+/// Type alias for language post-transform functions.
+///
+/// Runs after `walk_transform`, receiving the full document root. Used
+/// for structural rewrites that need their descendants already
+/// renamed — e.g. collapsing a nested `else`/`if` chain into the flat
+/// `<if><else_if/><else/>` shape (see
+/// `specs/tractor-parse/semantic-tree/transformations.md`).
+pub type PostTransformFn = fn(&mut Xot, XotNode) -> Result<(), xot::Error>;
+
 /// Type alias for syntax category mapping functions
 /// Maps a transformed element name to a syntax category for highlighting
 pub type SyntaxCategoryFn = fn(&str) -> SyntaxCategory;
@@ -65,6 +74,63 @@ pub fn get_data_transforms(lang: &str) -> Option<(TransformFn, TransformFn)> {
         "json" => Some((json::ast_transform, json::data_transform)),
         "yaml" | "yml" => Some((yaml::ast_transform, yaml::data_transform)),
         _ => None,
+    }
+}
+
+/// Get the post-transform function for a language, if any.
+///
+/// The post-transform runs after `walk_transform` has completed. It
+/// receives the document root so it can walk the already-renamed tree
+/// and perform structural rewrites that need final names in place.
+///
+/// Currently this is where the conditional-shape collapse lives for
+/// languages whose grammars produce nested `else`/`if` chains (all
+/// seven programming languages; Python's elif is flat but the pass is
+/// a no-op for it).
+pub fn get_post_transform(lang: &str) -> Option<PostTransformFn> {
+    match lang {
+        "typescript" | "ts" | "tsx" | "javascript" | "js" | "jsx"
+        | "csharp" | "cs"
+        | "go"
+        | "rust" | "rs"
+        | "java"
+        | "ruby" | "rb" => Some(collapse_conditionals),
+        _ => None,
+    }
+}
+
+/// Post-transform pass that collapses every `<if>` in the tree into
+/// the flat conditional shape (see the cross-cutting convention in
+/// `specs/tractor-parse/semantic-tree/transformations.md`).
+fn collapse_conditionals(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    use crate::xot_transform::helpers::*;
+    // Collect all <if> nodes first (we mutate the tree as we go).
+    let mut if_nodes: Vec<XotNode> = Vec::new();
+    collect_if_nodes(xot, root, &mut if_nodes);
+    // Process outer-most `<if>` first. `collect_if_nodes` returns
+    // document order, which is parent-before-child; handling the outer
+    // one first lifts its `<else_if>` siblings correctly before we
+    // recurse into any nested ifs.
+    for node in if_nodes {
+        // Skip nodes that were detached by an earlier pass (happens when
+        // we lift an inner `<if>`'s children into an `<else_if>` — the
+        // inner `<if>` is left empty and its own recursion becomes a
+        // no-op, but we still call it to be safe).
+        if xot.parent(node).is_none() && !xot.is_document(node) {
+            continue;
+        }
+        collapse_else_if_chain(xot, node)?;
+    }
+    Ok(())
+}
+
+fn collect_if_nodes(xot: &Xot, node: XotNode, out: &mut Vec<XotNode>) {
+    use crate::xot_transform::helpers::*;
+    if xot.element(node).is_some() && get_element_name(xot, node).as_deref() == Some("if") {
+        out.push(node);
+    }
+    for child in xot.children(node) {
+        collect_if_nodes(xot, child, out);
     }
 }
 
@@ -159,6 +225,34 @@ const CSHARP_FIELD_WRAPPINGS: &[(&str, &str)] = &[
     ("returns", "returns"),
 ];
 
+/// Python — grammar already emits `elif_clause` / `else_clause` as
+/// flat siblings of `if_statement`. The `alternative` field wrap is
+/// skipped so those clauses render directly as `<else_if>` / `<else>`
+/// children of `<if>` (see the conditional-shape convention).
+const PYTHON_FIELD_WRAPPINGS: &[(&str, &str)] = &[
+    ("name", "name"),
+    ("value", "value"),
+    ("left", "left"),
+    ("right", "right"),
+    ("body", "body"),
+    ("condition", "condition"),
+    ("consequence", "then"),
+];
+
+/// Ruby — grammar already uses a literal `<then>` kind for the
+/// consequence branch, so wrapping `consequence` in `<then>` would
+/// double-nest. The `alternative` chain of `elsif` / `else` is
+/// collapsed structurally in the per-language transform, so that
+/// field is left unwrapped too.
+const RUBY_FIELD_WRAPPINGS: &[(&str, &str)] = &[
+    ("name", "name"),
+    ("value", "value"),
+    ("left", "left"),
+    ("right", "right"),
+    ("body", "body"),
+    ("condition", "condition"),
+];
+
 /// Field wrappings for the given language — applied after the raw
 /// builder pass, before the per-language transform. Programming
 /// languages with language-specific mappings override; everything else
@@ -171,6 +265,8 @@ pub fn get_field_wrappings(lang: &str) -> &'static [(&'static str, &'static str)
         "rust" | "rs" => RUST_FIELD_WRAPPINGS,
         "go" => GO_FIELD_WRAPPINGS,
         "csharp" | "cs" => CSHARP_FIELD_WRAPPINGS,
+        "python" | "py" => PYTHON_FIELD_WRAPPINGS,
+        "ruby" | "rb" => RUBY_FIELD_WRAPPINGS,
         _ => COMMON_FIELD_WRAPPINGS,
     }
 }
