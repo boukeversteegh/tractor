@@ -101,8 +101,8 @@ const COMMON_FIELD_WRAPPINGS: &[(&str, &str)] = &[
     ("right", "right"),
     ("body", "body"),
     ("condition", "condition"),
-    ("consequence", "consequence"),
-    ("alternative", "alternative"),
+    ("consequence", "then"),
+    ("alternative", "else"),
 ];
 
 const TS_FIELD_WRAPPINGS: &[(&str, &str)] = &[
@@ -112,8 +112,8 @@ const TS_FIELD_WRAPPINGS: &[(&str, &str)] = &[
     ("right", "right"),
     ("body", "body"),
     ("condition", "condition"),
-    ("consequence", "consequence"),
-    ("alternative", "alternative"),
+    ("consequence", "then"),
+    ("alternative", "else"),
     ("return_type", "returns"),
     // The callee of a call expression. Renamed from the tree-sitter
     // field `function` to avoid colliding with `<function>` used for
@@ -130,8 +130,8 @@ const RUST_FIELD_WRAPPINGS: &[(&str, &str)] = &[
     ("right", "right"),
     ("body", "body"),
     ("condition", "condition"),
-    ("consequence", "consequence"),
-    ("alternative", "alternative"),
+    ("consequence", "then"),
+    ("alternative", "else"),
     ("return_type", "returns"),
 ];
 
@@ -142,8 +142,8 @@ const GO_FIELD_WRAPPINGS: &[(&str, &str)] = &[
     ("right", "right"),
     ("body", "body"),
     ("condition", "condition"),
-    ("consequence", "consequence"),
-    ("alternative", "alternative"),
+    ("consequence", "then"),
+    ("alternative", "else"),
     ("result", "returns"),
 ];
 
@@ -154,8 +154,8 @@ const CSHARP_FIELD_WRAPPINGS: &[(&str, &str)] = &[
     ("right", "right"),
     ("body", "body"),
     ("condition", "condition"),
-    ("consequence", "consequence"),
-    ("alternative", "alternative"),
+    ("consequence", "then"),
+    ("alternative", "else"),
     ("returns", "returns"),
 ];
 

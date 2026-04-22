@@ -539,12 +539,14 @@ pub mod helpers {
         "left",         // binary left operand
         "right",        // binary right operand
         "condition",    // if/while/for condition
-        "consequence",  // if true branch
-        "alternative",  // if else branch
+        "then",         // if true branch (flat-conditional shape)
         "returns",      // return type
-        // Note: "body" excluded — after transforms inline declaration lists,
-        // body can contain multiple children. Lifting the first child would
-        // violate cardinality-independence (issue #34).
+        // Note: "body" and "else" excluded — "else" can either hold a block
+        // (single child) or, for the non-C-like languages where the grammar
+        // already produces flat alternatives, be unused. More importantly,
+        // after transforms inline declaration lists, body can contain
+        // multiple children. Lifting the first child would violate
+        // cardinality-independence (issue #34).
     ];
 
     /// Mark the first element child of singleton wrappers with `field`.
