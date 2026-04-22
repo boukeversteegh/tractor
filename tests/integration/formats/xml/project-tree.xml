@@ -10,17 +10,23 @@
         <method>
           <public/>
           <returns>
-            <type>int</type>
+            <type>
+              <name>int</name>
+            </type>
           </returns>
           <name>Add</name>
           (
           <parameter>
-            <type>int</type>
+            <type>
+              <name>int</name>
+            </type>
             <name>a</name>
           </parameter>
           ,
           <parameter>
-            <type>int</type>
+            <type>
+              <name>int</name>
+            </type>
             <name>b</name>
           </parameter>
           )
@@ -51,17 +57,23 @@
         <method>
           <public/>
           <returns>
-            <type>int</type>
+            <type>
+              <name>int</name>
+            </type>
           </returns>
           <name>Subtract</name>
           (
           <parameter>
-            <type>int</type>
+            <type>
+              <name>int</name>
+            </type>
             <name>a</name>
           </parameter>
           ,
           <parameter>
-            <type>int</type>
+            <type>
+              <name>int</name>
+            </type>
             <name>b</name>
           </parameter>
           )
@@ -92,17 +104,23 @@
         <method>
           <public/>
           <returns>
-            <type>int</type>
+            <type>
+              <name>int</name>
+            </type>
           </returns>
           <name>Multiply</name>
           (
           <parameter>
-            <type>int</type>
+            <type>
+              <name>int</name>
+            </type>
             <name>a</name>
           </parameter>
           ,
           <parameter>
-            <type>int</type>
+            <type>
+              <name>int</name>
+            </type>
             <name>b</name>
           </parameter>
           )
@@ -144,12 +162,16 @@
         <method>
           <public/>
           <returns>
-            <type>string</type>
+            <type>
+              <name>string</name>
+            </type>
           </returns>
           <name>Hello</name>
           (
           <parameter>
-            <type>string</type>
+            <type>
+              <name>string</name>
+            </type>
             <name>name</name>
           </parameter>
           )
@@ -184,12 +206,16 @@
         <method>
           <public/>
           <returns>
-            <type>string</type>
+            <type>
+              <name>string</name>
+            </type>
           </returns>
           <name>Goodbye</name>
           (
           <parameter>
-            <type>string</type>
+            <type>
+              <name>string</name>
+            </type>
             <name>name</name>
           </parameter>
           )

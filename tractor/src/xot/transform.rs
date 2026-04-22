@@ -730,6 +730,51 @@ pub mod helpers {
         Ok(())
     }
 
+    /// Wrap the direct text content of `node` in a `<name>` child element.
+    ///
+    /// `<type>Foo</type>` becomes `<type><name>Foo</name></type>`. No-op if
+    /// the node has no direct text child. Used to unify the type vocabulary:
+    /// every named `<type>` reference carries its name in a `<name>` child
+    /// so queries like `//type[name='Foo']` work uniformly and the JSON
+    /// serialisation is an object rather than a bare string (see design.md
+    /// Principle #14 / namespace vocabulary).
+    ///
+    /// Collects and joins *all* direct text children (there may be several
+    /// when the source had interleaved whitespace), and detaches them.
+    /// Leaves any element children intact at their original positions.
+    pub fn wrap_text_in_name(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
+        let mut buf = String::new();
+        let text_children: Vec<XotNode> = xot.children(node)
+            .filter(|&c| xot.text_str(c).is_some())
+            .collect();
+        if text_children.is_empty() {
+            return Ok(());
+        }
+        for child in &text_children {
+            if let Some(t) = xot.text_str(*child) {
+                buf.push_str(t);
+            }
+        }
+        let trimmed = buf.trim().to_string();
+        if trimmed.is_empty() {
+            return Ok(());
+        }
+        // Remove the old text children.
+        for child in text_children {
+            xot.detach(child)?;
+        }
+        // Create <name field="name">TEXT</name> and prepend it. The
+        // field attribute makes JSON/YAML serialisers lift it as a
+        // named property (`"name": "TEXT"`) rather than a nested child.
+        let name_id = xot.add_name("name");
+        let name_el = xot.new_element(name_id);
+        set_attr(xot, name_el, "field", "name");
+        let text_node = xot.new_text(&trimmed);
+        xot.append(name_el, text_node)?;
+        xot.prepend(node, name_el)?;
+        Ok(())
+    }
+
     /// Distribute a `field=<name>` attribute to every element child of `node`.
     ///
     /// Used with `TransformAction::Flatten` to implement Principle #12
@@ -815,8 +860,9 @@ pub mod helpers {
             };
 
             // Case 1: the name is a <name> field-wrapper created by the
-            // builder. If it wraps a single simple identifier, collapse
-            // it to text.
+            // builder. If it wraps a single simple identifier, normalise
+            // it to `<name>TEXT</name>` (collapse any inner identifier
+            // element into plain text).
             if child_name == "name" {
                 let grandchildren: Vec<XotNode> = xot.children(child).collect();
                 let is_simple = !grandchildren.is_empty()
@@ -830,9 +876,12 @@ pub mod helpers {
                     let mut buf = String::new();
                     collect_descendant_text(xot, child, &mut buf);
                     if !buf.is_empty() {
+                        // Replace any children with a single text node.
+                        for gc in grandchildren {
+                            xot.detach(gc)?;
+                        }
                         let text_node = xot.new_text(&buf);
-                        xot.insert_before(child, text_node)?;
-                        xot.detach(child)?;
+                        xot.append(child, text_node)?;
                     }
                 }
                 break;
@@ -840,15 +889,18 @@ pub mod helpers {
 
             // Case 2: the name is a bare identifier child with no field
             // wrapper (happens when the grammar doesn't tag it as a
-            // field). Collapse to text directly.
+            // field). Wrap in a `<name>` element.
             if let Some(kind) = get_kind(xot, child) {
                 if name_kinds.contains(&kind.as_str()) {
                     let text_owned: Option<String> = xot
                         .children(child)
                         .find_map(|c| xot.text_str(c).map(|s| s.to_string()));
                     if let Some(text) = text_owned {
+                        let name_id = xot.add_name("name");
+                        let name_el = xot.new_element(name_id);
                         let text_node = xot.new_text(&text);
-                        xot.insert_before(child, text_node)?;
+                        xot.append(name_el, text_node)?;
+                        xot.insert_before(child, name_el)?;
                         xot.detach(child)?;
                     }
                     break;

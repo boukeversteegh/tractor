@@ -4,15 +4,15 @@ class[public]/
   └─ body/
       ├─ "{"
       ├─ method[public]/
-      │   ├─ returns/type = "int"
+      │   ├─ returns/type/name = "int"
       │   ├─ name = "Add"
       │   ├─ "("
       │   ├─ parameter/
-      │   │   ├─ type = "int"
+      │   │   ├─ type/name = "int"
       │   │   └─ name = "a"
       │   ├─ ","
       │   ├─ parameter/
-      │   │   ├─ type = "int"
+      │   │   ├─ type/name = "int"
       │   │   └─ name = "b"
       │   ├─ ")"
       │   └─ body/block/
@@ -27,15 +27,15 @@ class[public]/
       │       │   └─ ";"
       │       └─ "}"
       ├─ method[public]/
-      │   ├─ returns/type = "int"
+      │   ├─ returns/type/name = "int"
       │   ├─ name = "Subtract"
       │   ├─ "("
       │   ├─ parameter/
-      │   │   ├─ type = "int"
+      │   │   ├─ type/name = "int"
       │   │   └─ name = "a"
       │   ├─ ","
       │   ├─ parameter/
-      │   │   ├─ type = "int"
+      │   │   ├─ type/name = "int"
       │   │   └─ name = "b"
       │   ├─ ")"
       │   └─ body/block/
@@ -50,15 +50,15 @@ class[public]/
       │       │   └─ ";"
       │       └─ "}"
       ├─ method[public]/
-      │   ├─ returns/type = "int"
+      │   ├─ returns/type/name = "int"
       │   ├─ name = "Multiply"
       │   ├─ "("
       │   ├─ parameter/
-      │   │   ├─ type = "int"
+      │   │   ├─ type/name = "int"
       │   │   └─ name = "a"
       │   ├─ ","
       │   ├─ parameter/
-      │   │   ├─ type = "int"
+      │   │   ├─ type/name = "int"
       │   │   └─ name = "b"
       │   ├─ ")"
       │   └─ body/block/

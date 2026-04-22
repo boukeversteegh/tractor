@@ -13,19 +13,25 @@
               <required/>
               <name>a</name>
               :
-              <type>number</type>
+              <type>
+                <name>number</name>
+              </type>
             </param>
             ,
             <param>
               <required/>
               <name>b</name>
               :
-              <type>number</type>
+              <type>
+                <name>number</name>
+              </type>
             </param>
             )
             <returns>
               :
-              <type>number</type>
+              <type>
+                <name>number</name>
+              </type>
             </returns>
             <body>
               <block>
@@ -57,7 +63,9 @@
             ()
             <returns>
               :
-              <type>void</type>
+              <type>
+                <name>void</name>
+              </type>
             </returns>
             <body>
               <block>
@@ -120,20 +128,26 @@
           <interface>
             interface
             <name>
-              <type>Person</type>
+              <type>
+                <name>Person</name>
+              </type>
             </name>
             <body>
               {
               <property_signature>
                 <name>name</name>
                 :
-                <type>string</type>
+                <type>
+                  <name>string</name>
+                </type>
               </property_signature>
               ;
               <property_signature>
                 <name>age</name>
                 :
-                <type>number</type>
+                <type>
+                  <name>number</name>
+                </type>
               </property_signature>
               ;
         }
@@ -160,19 +174,25 @@
               <required/>
               <name>name</name>
               :
-              <type>string</type>
+              <type>
+                <name>string</name>
+              </type>
             </param>
             ,
             <param>
               <optional/>
               <name>title</name>
               ?:
-              <type>string</type>
+              <type>
+                <name>string</name>
+              </type>
             </param>
             )
             <returns>
               :
-              <type>string</type>
+              <type>
+                <name>string</name>
+              </type>
             </returns>
             <body>
               <block>
@@ -219,26 +239,34 @@
               <required/>
               <name>host</name>
               :
-              <type>string</type>
+              <type>
+                <name>string</name>
+              </type>
             </param>
             ,
             <param>
               <required/>
               <name>port</name>
               :
-              <type>number</type>
+              <type>
+                <name>number</name>
+              </type>
             </param>
             ,
             <param>
               <optional/>
               <name>timeout</name>
               ?:
-              <type>number</type>
+              <type>
+                <name>number</name>
+              </type>
             </param>
             )
             <returns>
               :
-              <type>void</type>
+              <type>
+                <name>void</name>
+              </type>
             </returns>
             <body>
               <block>

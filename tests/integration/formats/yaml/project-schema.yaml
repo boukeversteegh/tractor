@@ -8,9 +8,11 @@
     │       ├─ name (5) = "Add", "Subtract", "Multiply", "Hello", "Goodbye"
     │       ├─ parameter (8)/
     │       │   ├─ name (8) = "a", "b", "name"
-    │       │   └─ type (8) = "int", "string"
+    │       │   └─ type (8)/
+    │       │       └─ … (1 children)
     │       └─ returns (5)/
-    │           └─ type (5) = "int", "string"
+    │           └─ type (5)/
+    │               └─ … (1 children)
     └─ name (2) = "Calculator", "Greeter"
 
   (use -d to increase depth, or -x to query specific elements)

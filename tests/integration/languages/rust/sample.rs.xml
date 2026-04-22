@@ -13,17 +13,23 @@
             <param>
               <name>a</name>
               :
-              <type>i32</type>
+              <type>
+                <name>i32</name>
+              </type>
             </param>
             ,
             <param>
               <name>b</name>
               :
-              <type>i32</type>
+              <type>
+                <name>i32</name>
+              </type>
             </param>
             ) -&gt;
             <returns>
-              <type>i32</type>
+              <type>
+                <name>i32</name>
+              </type>
             </returns>
             <body>
               {
@@ -93,7 +99,9 @@
             <name>helper</name>
             () -&gt;
             <returns>
-              <type>bool</type>
+              <type>
+                <name>bool</name>
+              </type>
             </returns>
             <body>
               {
@@ -111,13 +119,17 @@
                 <pub/>
                 <name>x</name>
                 :
-                <type>i32</type>
+                <type>
+                  <name>i32</name>
+                </type>
               </field>
               ,
               <field>
                 <name>y</name>
                 :
-                <type>i32</type>
+                <type>
+                  <name>i32</name>
+                </type>
               </field>
               ,
         }

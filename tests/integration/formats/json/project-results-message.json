@@ -11,7 +11,9 @@
           {
             "$type": "property",
             "public": true,
-            "type": "int",
+            "type": {
+              "name": "int"
+            },
             "name": "Bar",
             "accessors": [
               "get;",
@@ -22,7 +24,9 @@
             "$type": "method",
             "public": true,
             "returns": {
-              "type": "void"
+              "type": {
+                "name": "void"
+              }
             },
             "name": "Baz",
             "body": {

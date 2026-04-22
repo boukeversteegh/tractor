@@ -28,7 +28,9 @@
                     <private/>
                     <readonly/>
                     <variable>
-                      <type>int</type>
+                      <type>
+                        <name>int</name>
+                      </type>
                       <declarator>
                         <name>_value</name>
                       </declarator>
@@ -40,7 +42,9 @@
                     <name>Sample</name>
                     (
                     <parameter>
-                      <type>int</type>
+                      <type>
+                        <name>int</name>
+                      </type>
                       <name>value</name>
                     </parameter>
                     )
@@ -68,17 +72,23 @@
                     <public/>
                     <static/>
                     <returns>
-                      <type>int</type>
+                      <type>
+                        <name>int</name>
+                      </type>
                     </returns>
                     <name>Add</name>
                     (
                     <parameter>
-                      <type>int</type>
+                      <type>
+                        <name>int</name>
+                      </type>
                       <name>a</name>
                     </parameter>
                     ,
                     <parameter>
-                      <type>int</type>
+                      <type>
+                        <name>int</name>
+                      </type>
                       <name>b</name>
                     </parameter>
                     )
@@ -109,12 +119,16 @@
                   <method>
                     <internal/>
                     <returns>
-                      <type>void</type>
+                      <type>
+                        <name>void</name>
+                      </type>
                     </returns>
                     <name>Log</name>
                     (
                     <parameter>
-                      <type>string</type>
+                      <type>
+                        <name>string</name>
+                      </type>
                       <name>message</name>
                     </parameter>
                     )
@@ -146,7 +160,9 @@
                     <protected/>
                     <virtual/>
                     <returns>
-                      <type>string</type>
+                      <type>
+                        <name>string</name>
+                      </type>
                     </returns>
                     <name>Format</name>
                     ()
@@ -175,7 +191,9 @@
                     <private/>
                     <static/>
                     <returns>
-                      <type>void</type>
+                      <type>
+                        <name>void</name>
+                      </type>
                     </returns>
                     <name>Main</name>
                     ()
@@ -183,7 +201,9 @@
                       <block>
                         {
                         <variable>
-                          <type>int</type>
+                          <type>
+                            <name>int</name>
+                          </type>
                           <declarator>
                             <name>result</name>
                             =
@@ -245,7 +265,9 @@
                   <method>
                     <public/>
                     <returns>
-                      <type>void</type>
+                      <type>
+                        <name>void</name>
+                      </type>
                     </returns>
                     <name>Execute</name>
                     ();
@@ -278,7 +300,9 @@
                   <field>
                     <public/>
                     <variable>
-                      <type>int</type>
+                      <type>
+                        <name>int</name>
+                      </type>
                       <declarator>
                         <name>X</name>
                       </declarator>
@@ -288,7 +312,9 @@
                   <field>
                     <public/>
                     <variable>
-                      <type>int</type>
+                      <type>
+                        <name>int</name>
+                      </type>
                       <declarator>
                         <name>Y</name>
                       </declarator>

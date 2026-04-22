@@ -124,6 +124,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
         "type_identifier" | "primitive_type" => {
             rename(xot, node, "type");
+            wrap_text_in_name(xot, node)?;
             Ok(TransformAction::Continue)
         }
 

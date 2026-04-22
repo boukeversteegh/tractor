@@ -25,20 +25,26 @@
           <interface>
             interface
             <name>
-              <type>Props</type>
+              <type>
+                <name>Props</name>
+              </type>
             </name>
             <body>
               {
               <property_signature>
                 <name>name</name>
                 :
-                <type>string</type>
+                <type>
+                  <name>string</name>
+                </type>
               </property_signature>
               ;
               <property_signature>
                 <name>age</name>
                 ?:
-                <type>number</type>
+                <type>
+                  <name>number</name>
+                </type>
               </property_signature>
               ;
         }
@@ -58,7 +64,9 @@
                 }
               </object_pattern>
               :
-              <type>Props</type>
+              <type>
+                <name>Props</name>
+              </type>
             </param>
             )
             <body>

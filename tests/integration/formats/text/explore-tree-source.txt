@@ -21,16 +21,16 @@ unit/                                                                           
           │       ├─ "{"                                                                                        ┤ 11 ├     {
           │       ├─ field[private]/                                                                            ┤    │ 
           │       │   ├─ variable/                                                                              ┤    │ 
-          │       │   │   ├─ type = "int"                                                                       ┤ 12 ├         private int _count; // instance counter
-          │       │   │   └─ declarator/name = "_count"                                                         ┤    │ 
+          │       │   │   ├─ type/name = "int"                                                                  ┤    │ 
+          │       │   │   └─ declarator/name = "_count"                                                         ┤ 12 ├         private int _count; // instance counter
           │       │   └─ ";"                                                                                    ┤    │ 
           │       ├─ comment[trailing] = "// instance counter"                                                  ┤    │ 
           │       │                                                                                             │ 13 │ 
           │       ├─ comment[leading] = "// Configuration settings\n// loaded from environment"                 ┤ 14 ├         // Configuration settings
           │       │                                                                                             │ 15 ├         // loaded from environment
           │       ├─ property[public]/                                                                          ┤    │ 
-          │       │   ├─ type = "string"                                                                        ┤ 16 ├         public string Config { get; set; }
-          │       │   ├─ name = "Config"                                                                        ┤    │ 
+          │       │   ├─ type/name = "string"                                                                   ┤    │ 
+          │       │   ├─ name = "Config"                                                                        ┤ 16 ├         public string Config { get; set; }
           │       │   ├─ "{"                                                                                    ┤    │ 
           │       │   ├─ accessor = "get;"                                                                      ┤    │ 
           │       │   ├─ accessor = "set;"                                                                      ┤    │ 
@@ -38,8 +38,8 @@ unit/                                                                           
           │       │                                                                                             │ 17 │ 
           │       ├─ comment[leading] = "/* block comment */"                                                   ┤ 18 ├         /* block comment */
           │       ├─ method[public]/                                                                            ┤    │ 
-          │       │   ├─ returns/type = "void"                                                                  ┤ 19 ├         public void Run()
-          │       │   ├─ name = "Run"                                                                           ┤    │ 
+          │       │   ├─ returns/type/name = "void"                                                             ┤    │ 
+          │       │   ├─ name = "Run"                                                                           ┤ 19 ├         public void Run()
           │       │   ├─ "()"                                                                                   ┤    │ 
           │       │   └─ body/block/                                                                            ┤    │ 
           │       │       ├─ "{"                                                                                ┤ 20 ├         {

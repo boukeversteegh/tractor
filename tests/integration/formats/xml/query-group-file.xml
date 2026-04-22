@@ -13,7 +13,9 @@
               {
               <property>
                 <public/>
-                <type>int</type>
+                <type>
+                  <name>int</name>
+                </type>
                 <name>Bar</name>
                 {
                 <accessor>get;</accessor>
@@ -23,7 +25,9 @@
               <method>
                 <public/>
                 <returns>
-                  <type>void</type>
+                  <type>
+                    <name>void</name>
+                  </type>
                 </returns>
                 <name>Baz</name>
                 ()
@@ -58,7 +62,9 @@
               {
               <property>
                 <public/>
-                <type>string</type>
+                <type>
+                  <name>string</name>
+                </type>
                 <name>Name</name>
                 {
                 <accessor>get;</accessor>

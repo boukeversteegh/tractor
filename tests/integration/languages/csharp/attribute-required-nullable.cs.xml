@@ -62,7 +62,9 @@
                 </attribute>
                 ]
                 <public/>
-                <type>string</type>
+                <type>
+                  <name>string</name>
+                </type>
                 <name>Name</name>
                 {
                 <accessor>get;</accessor>

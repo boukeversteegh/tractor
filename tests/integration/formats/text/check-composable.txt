@@ -4,14 +4,14 @@ class[public]/
   └─ body/
       ├─ "{"
       ├─ property[public]/
-      │   ├─ type = "int"
+      │   ├─ type/name = "int"
       │   ├─ name = "Bar"
       │   ├─ "{"
       │   ├─ accessor = "get;"
       │   ├─ accessor = "set;"
       │   └─ "}"
       ├─ method[public]/
-      │   ├─ returns/type = "void"
+      │   ├─ returns/type/name = "void"
       │   ├─ name = "Baz"
       │   ├─ "()"
       │   └─ body/block = "{ }"

@@ -15,7 +15,9 @@
               <method>
                 <public/>
                 <returns>
-                  <type>void</type>
+                  <type>
+                    <name>void</name>
+                  </type>
                 </returns>
                 <name>TestMethod</name>
                 ()
@@ -174,12 +176,16 @@
               <method>
                 <private/>
                 <returns>
-                  <type>void</type>
+                  <type>
+                    <name>void</name>
+                  </type>
                 </returns>
                 <name>Process</name>
                 (
                 <parameter>
-                  <type>string</type>
+                  <type>
+                    <name>string</name>
+                  </type>
                   <name>s</name>
                 </parameter>
                 )

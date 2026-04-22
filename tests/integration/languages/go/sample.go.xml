@@ -20,16 +20,22 @@
             (
             <param>
               <name>a</name>
-              <type>int</type>
+              <type>
+                <name>int</name>
+              </type>
             </param>
             ,
             <param>
               <name>b</name>
-              <type>int</type>
+              <type>
+                <name>int</name>
+              </type>
             </param>
             )
             <returns>
-              <type>int</type>
+              <type>
+                <name>int</name>
+              </type>
             </returns>
             <body>
               {
@@ -102,7 +108,9 @@
             <name>PublicHelper</name>
             ()
             <returns>
-              <type>string</type>
+              <type>
+                <name>string</name>
+              </type>
             </returns>
             <body>
               {
@@ -121,11 +129,15 @@
               struct {
               <field>
                 <name>X</name>
-                <type>int</type>
+                <type>
+                  <name>int</name>
+                </type>
               </field>
               <field>
                 <name>Y</name>
-                <type>int</type>
+                <type>
+                  <name>int</name>
+                </type>
               </field>
               }
             </struct>
@@ -140,7 +152,9 @@
                 <name>Area</name>
                 ()
                 <returns>
-                  <type>float64</type>
+                  <type>
+                    <name>float64</name>
+                  </type>
                 </returns>
               </method>
               }

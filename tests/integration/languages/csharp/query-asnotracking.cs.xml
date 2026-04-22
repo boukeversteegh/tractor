@@ -22,7 +22,9 @@
                 <name>GetUser</name>
                 (
                 <parameter>
-                  <type>int</type>
+                  <type>
+                    <name>int</name>
+                  </type>
                   <name>id</name>
                 </parameter>
                 )
@@ -109,7 +111,9 @@
                 <name>GetUserTracked</name>
                 (
                 <parameter>
-                  <type>int</type>
+                  <type>
+                    <name>int</name>
+                  </type>
                   <name>id</name>
                 </parameter>
                 )

@@ -34,7 +34,9 @@
                   <field>
                     <private/>
                     <variable>
-                      <type>int</type>
+                      <type>
+                        <name>int</name>
+                      </type>
                       <declarator>
                         <name>_count</name>
                       </declarator>
@@ -52,7 +54,9 @@
                   </comment>
                   <property>
                     <public/>
-                    <type>string</type>
+                    <type>
+                      <name>string</name>
+                    </type>
                     <name>Config</name>
                     {
                     <accessor>get;</accessor>
@@ -66,7 +70,9 @@
                   <method>
                     <public/>
                     <returns>
-                      <type>void</type>
+                      <type>
+                        <name>void</name>
+                      </type>
                     </returns>
                     <name>Run</name>
                     ()

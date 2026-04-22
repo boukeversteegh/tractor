@@ -6,12 +6,15 @@ body:
   - $type: method
     public: true
     returns:
-      type: int
+      type:
+        name: int
     name: Add
     parameters:
-    - type: int
+    - type:
+        name: int
       name: a
-    - type: int
+    - type:
+        name: int
       name: b
     body:
       block:
@@ -30,12 +33,15 @@ body:
   - $type: method
     public: true
     returns:
-      type: int
+      type:
+        name: int
     name: Subtract
     parameters:
-    - type: int
+    - type:
+        name: int
       name: a
-    - type: int
+    - type:
+        name: int
       name: b
     body:
       block:
@@ -54,12 +60,15 @@ body:
   - $type: method
     public: true
     returns:
-      type: int
+      type:
+        name: int
     name: Multiply
     parameters:
-    - type: int
+    - type:
+        name: int
       name: a
-    - type: int
+    - type:
+        name: int
       name: b
     body:
       block:

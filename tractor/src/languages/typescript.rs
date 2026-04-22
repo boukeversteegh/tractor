@@ -162,6 +162,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
         "type_identifier" => {
             rename(xot, node, "type");
+            wrap_text_in_name(xot, node)?;
             Ok(TransformAction::Continue)
         }
 
@@ -189,6 +190,11 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         _ => {
             if let Some(new_name) = map_element_name(&kind) {
                 rename(xot, node, new_name);
+                if new_name == "type" {
+                    // Namespace vocabulary (Principle #14): every named
+                    // type reference carries its name in a <name> child.
+                    wrap_text_in_name(xot, node)?;
+                }
             }
             Ok(TransformAction::Continue)
         }

@@ -24,7 +24,9 @@
                 </attribute>
                 ]
                 <public/>
-                <type>string</type>
+                <type>
+                  <name>string</name>
+                </type>
                 <name>Name</name>
                 {
                 <accessor>get;</accessor>
@@ -56,7 +58,9 @@
                 </attribute>
                 ]
                 <public/>
-                <type>string</type>
+                <type>
+                  <name>string</name>
+                </type>
                 <name>Email</name>
                 {
                 <accessor>get;</accessor>
@@ -69,7 +73,9 @@
               </comment>
               <property>
                 <public/>
-                <type>string</type>
+                <type>
+                  <name>string</name>
+                </type>
                 <name>Bio</name>
                 {
                 <accessor>get;</accessor>

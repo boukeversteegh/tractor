@@ -5,9 +5,9 @@ class[public]/
   └─ body/
       ├─ "{"
       ├─ property[public]/
-      │   └─ ... (5 children)
-      ├─ method[public]/
       │   └─ ... (6 children)
+      ├─ method[public]/
+      │   └─ ... (7 children)
       └─ "}"
 
 tests/integration/formats/sample.cs:7

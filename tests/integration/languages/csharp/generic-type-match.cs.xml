@@ -16,7 +16,9 @@
                   <type>
                     <generic/>
                     List&lt;
-                    <type>string</type>
+                    <type>
+                      <name>string</name>
+                    </type>
                     &gt;
                   </type>
                 </returns>
@@ -32,7 +34,9 @@
                         <type>
                           <generic/>
                           List&lt;
-                          <type>string</type>
+                          <type>
+                            <name>string</name>
+                          </type>
                           &gt;
                         </type>
                         ()
@@ -49,9 +53,13 @@
                   <type>
                     <generic/>
                     Dictionary&lt;
-                    <type>string</type>
+                    <type>
+                      <name>string</name>
+                    </type>
                     ,
-                    <type>int</type>
+                    <type>
+                      <name>int</name>
+                    </type>
                     &gt;
                   </type>
                 </returns>
@@ -67,9 +75,13 @@
                         <type>
                           <generic/>
                           Dictionary&lt;
-                          <type>string</type>
+                          <type>
+                            <name>string</name>
+                          </type>
                           ,
-                          <type>int</type>
+                          <type>
+                            <name>int</name>
+                          </type>
                           &gt;
                         </type>
                         ()
@@ -89,7 +101,9 @@
                     <type>
                       <generic/>
                       Dictionary&lt;
-                      <type>string</type>
+                      <type>
+                        <name>string</name>
+                      </type>
                       ,
                       <type>User</type>
                       &gt;
@@ -112,7 +126,9 @@
                           <type>
                             <generic/>
                             Dictionary&lt;
-                            <type>string</type>
+                            <type>
+                              <name>string</name>
+                            </type>
                             ,
                             <type>User</type>
                             &gt;

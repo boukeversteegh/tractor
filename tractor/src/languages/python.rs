@@ -52,7 +52,8 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         // Type wrappers from Python's tree-sitter grammar contain a single
-        // identifier — inline it so the result is `<type>int</type>`.
+        // identifier. Inline the identifier text then wrap in <name>
+        // for the unified namespace vocabulary (`<type><name>int</name></type>`).
         // If the content is a generic_type (rewritten below into its own
         // `<type>` element) drop the outer wrapper so we don't double-nest.
         "type" => {
@@ -65,6 +66,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
                 }
             }
             inline_single_identifier(xot, node)?;
+            wrap_text_in_name(xot, node)?;
             Ok(TransformAction::Continue)
         }
 

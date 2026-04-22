@@ -128,6 +128,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         "type_identifier" | "integral_type" | "floating_point_type"
         | "boolean_type" | "void_type" => {
             rename(xot, node, "type");
+            wrap_text_in_name(xot, node)?;
             Ok(TransformAction::Continue)
         }
 
@@ -165,6 +166,9 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         _ => {
             if let Some(new_name) = map_element_name(&kind) {
                 rename(xot, node, new_name);
+                if new_name == "type" {
+                    wrap_text_in_name(xot, node)?;
+                }
             }
             Ok(TransformAction::Continue)
         }
