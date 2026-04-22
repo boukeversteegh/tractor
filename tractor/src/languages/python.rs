@@ -14,6 +14,11 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
     match kind.as_str() {
         "expression_statement" => Ok(TransformAction::Skip),
         "block" => Ok(TransformAction::Flatten),
+        // Purely-grouping wrappers (Principle #12):
+        //   as_pattern_target — the target of `with x as y` / `except E as y`.
+        //   pattern_list — `a, b = ...` unpacking; drop wrapper so the
+        //     underlying patterns are direct children of the assignment.
+        "as_pattern_target" | "pattern_list" => Ok(TransformAction::Flatten),
 
         // Flat lists (Principle #12)
         "parameters" => {
@@ -155,6 +160,10 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "pass_statement" => Some("pass"),
         "import_statement" => Some("import"),
         "import_from_statement" => Some("from"),
+        "list_splat_pattern" => Some("splat"),
+        "dictionary_splat_pattern" => Some("kwsplat"),
+        "as_pattern" => Some("as"),
+        "for_in_clause" => Some("for"),
         "call" => Some("call"),
         "attribute" => Some("member"),
         "subscript" => Some("subscript"),

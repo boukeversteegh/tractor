@@ -71,9 +71,11 @@ fn is_named_declaration(kind: &str) -> bool {
         | "method_declaration"
         | "constructor_declaration"
         | "property_declaration"
+        | "enum_member_declaration"
         // Parameters & variables
         | "parameter"
         | "variable_declarator"
+        | "type_parameter"
     )
 }
 
@@ -90,6 +92,15 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Flatten nodes - transform children, then remove wrapper
         // ---------------------------------------------------------------------
         "declaration_list" | "parameters" => Ok(TransformAction::Flatten),
+        // enum_member_declaration_list is a pure grouping wrapper around
+        // enum members (the `{ Red, Green }` list inside `enum Color`).
+        // local_declaration_statement wraps `type name = value;` inside a
+        // method body; the inner `variable_declaration` already becomes
+        // `<variable>`, so the outer wrapper adds no semantic info.
+        // arrow_expression_clause is the `=>` body of an expression-bodied
+        // method/property — flatten so its expression becomes body content.
+        "enum_member_declaration_list" | "local_declaration_statement"
+        | "arrow_expression_clause" => Ok(TransformAction::Flatten),
 
         // ---------------------------------------------------------------------
         // Flat lists (Principle #12): drop purely-grouping wrappers;
@@ -109,6 +120,10 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
         "accessor_list" => {
             distribute_field_to_children(xot, node, "accessors");
+            Ok(TransformAction::Flatten)
+        }
+        "type_parameter_list" => {
+            distribute_field_to_children(xot, node, "generics");
             Ok(TransformAction::Flatten)
         }
 
@@ -439,7 +454,11 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "await_expression" => Some("await"),
         "variable_declaration" => Some(VARIABLE),
         "variable_declarator" => Some(DECLARATOR),
-        "local_declaration_statement" => Some("local"),
+        // local_declaration_statement is flattened (handled above); the
+        // inner variable_declaration already becomes <variable>.
+        "base_list" => Some("extends"),
+        "type_parameter" => Some("generic"),
+        "enum_member_declaration" => Some("constant"),
         "string_literal" => Some("string"),
         "integer_literal" => Some("int"),
         "real_literal" => Some("float"),

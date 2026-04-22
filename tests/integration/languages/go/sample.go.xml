@@ -9,16 +9,10 @@
             package
             <name>main</name>
           </package>
-          <import_declaration>
+          <import>
             import
-            <import_spec>
-              <string>
-                &quot;
-                <interpreted_string_literal_content>fmt</interpreted_string_literal_content>
-                &quot;
-              </string>
-            </import_spec>
-          </import_declaration>
+            <string>&quot;fmt&quot;</string>
+          </import>
           <function>
             <unexported/>
             func
@@ -41,21 +35,19 @@
               {
               <return>
                 return
-                <expression_list>
-                  <binary>
-                    <op>
-                      <plus/>
-                      +
-                    </op>
-                    <left>
-                      <name>a</name>
-                    </left>
+                <binary>
+                  <op>
+                    <plus/>
                     +
-                    <right>
-                      <name>b</name>
-                    </right>
-                  </binary>
-                </expression_list>
+                  </op>
+                  <left>
+                    <name>a</name>
+                  </left>
+                  +
+                  <right>
+                    <name>b</name>
+                  </right>
+                </binary>
               </return>
               }
             </body>
@@ -67,36 +59,32 @@
             ()
             <body>
               {
-              <short_var_declaration>
+              <variable>
+                <short/>
                 <left>
-                  <expression_list>
-                    <name>result</name>
-                  </expression_list>
+                  <name>result</name>
                 </left>
                 :=
                 <right>
-                  <expression_list>
-                    <call>
-                      <name>add</name>
-                      (
-                      <int>5</int>
-                      ,
-                      <int>3</int>
-                      )
-                    </call>
-                  </expression_list>
+                  <call>
+                    <name>add</name>
+                    (
+                    <int>5</int>
+                    ,
+                    <int>3</int>
+                    )
+                  </call>
                 </right>
-              </short_var_declaration>
+              </variable>
               <call>
                 <member>
                   <name>fmt</name>
                   .
-                  <field>Printf</field>
+                  <name>Printf</name>
                 </member>
                 (
                 <string>
-                  &quot;
-                  <interpreted_string_literal_content>Result: %d</interpreted_string_literal_content>
+                  &quot;Result: %d
                   <escape_sequence>\n</escape_sequence>
                   &quot;
                 </string>
@@ -120,56 +108,41 @@
               {
               <return>
                 return
-                <expression_list>
-                  <string>
-                    &quot;
-                    <interpreted_string_literal_content>hello</interpreted_string_literal_content>
-                    &quot;
-                  </string>
-                </expression_list>
+                <string>&quot;hello&quot;</string>
               </return>
               }
             </body>
           </function>
-          type
           <type>
             <exported/>
+            type
             <name>Point</name>
             <struct>
-              struct
-              <field_declaration_list>
-                {
-                <field_declaration>
-                  <name>
-                    <field>X</field>
-                  </name>
-                  <type>int</type>
-                </field_declaration>
-                <field_declaration>
-                  <name>
-                    <field>Y</field>
-                  </name>
-                  <type>int</type>
-                </field_declaration>
-                }
-              </field_declaration_list>
+              struct {
+              <field>
+                <name>X</name>
+                <type>int</type>
+              </field>
+              <field>
+                <name>Y</name>
+                <type>int</type>
+              </field>
+              }
             </struct>
           </type>
-          type
           <type>
             <exported/>
+            type
             <name>Shape</name>
             <interface>
               interface {
-              <method_elem>
-                <name>
-                  <field>Area</field>
-                </name>
+              <method>
+                <name>Area</name>
                 ()
                 <returns>
                   <type>float64</type>
                 </returns>
-              </method_elem>
+              </method>
               }
             </interface>
           </type>

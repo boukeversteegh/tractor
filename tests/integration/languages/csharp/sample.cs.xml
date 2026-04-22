@@ -182,28 +182,26 @@
                     <body>
                       <block>
                         {
-                        <local>
-                          <variable>
-                            <type>int</type>
-                            <declarator>
-                              <name>result</name>
-                              =
-                              <call>
-                                <name>Add</name>
-                                (
-                                <argument>
-                                  <int>5</int>
-                                </argument>
-                                ,
-                                <argument>
-                                  <int>3</int>
-                                </argument>
-                                )
-                              </call>
-                            </declarator>
-                          </variable>
-                          ;
-                        </local>
+                        <variable>
+                          <type>int</type>
+                          <declarator>
+                            <name>result</name>
+                            =
+                            <call>
+                              <name>Add</name>
+                              (
+                              <argument>
+                                <int>5</int>
+                              </argument>
+                              ,
+                              <argument>
+                                <int>3</int>
+                              </argument>
+                              )
+                            </call>
+                          </declarator>
+                        </variable>
+                        ;
                         <expression_statement>
                           <call>
                             <member>
@@ -260,21 +258,15 @@
                 enum
                 <name>Status</name>
                 <body>
-                  <enum_member_declaration_list>
-                    {
-                    <enum_member_declaration>
-                      <name>
-                        <name>Active</name>
-                      </name>
-                    </enum_member_declaration>
-                    ,
-                    <enum_member_declaration>
-                      <name>
-                        <name>Inactive</name>
-                      </name>
-                    </enum_member_declaration>
-                    }
-                  </enum_member_declaration_list>
+                  {
+                  <constant>
+                    <name>Active</name>
+                  </constant>
+                  ,
+                  <constant>
+                    <name>Inactive</name>
+                  </constant>
+                  }
                 </body>
               </enum>
               <struct>

@@ -14,10 +14,28 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
     match kind.as_str() {
         "expression_statement" => Ok(TransformAction::Skip),
         "block" => Ok(TransformAction::Flatten),
+        // Struct/interface field lists and miscellaneous groupings —
+        // drop the wrappers so each field/spec is a direct child of
+        // the enclosing struct/interface/declaration (Principle #12).
+        "field_declaration_list" | "expression_list" => {
+            Ok(TransformAction::Flatten)
+        }
+        // Import declarations wrap one or more `import_spec` nodes in
+        // parens. Collapse the spec wrapper so each import path is a
+        // direct child of the <import>; rename the outer declaration
+        // to `import` below via map_element_name.
+        "import_spec" => Ok(TransformAction::Flatten),
+        // The content-inside-quotes node on "interpreted" strings —
+        // inline as raw text into the enclosing <string>.
+        "interpreted_string_literal_content" => Ok(TransformAction::Flatten),
 
-        // Type declarations: drop the outer wrapper; the type_spec child
-        // carries the name and type directly.
-        "type_declaration" => Ok(TransformAction::Flatten),
+        // Type declarations: move the leading `type` keyword into the
+        // inner `type_spec` so it renders as part of the <type> element,
+        // then flatten the outer wrapper.
+        "type_declaration" => {
+            move_type_keyword_into_spec(xot, node)?;
+            Ok(TransformAction::Flatten)
+        }
 
         // Flat lists (Principle #12)
         "parameter_list" => {
@@ -49,6 +67,14 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         "raw_string_literal" => {
             prepend_empty_element(xot, node, "raw")?;
             rename(xot, node, "string");
+            Ok(TransformAction::Continue)
+        }
+
+        // Short variable declarations (`x := 42`) — render as <variable>
+        // with a <short/> marker to distinguish from `var x = 42`.
+        "short_var_declaration" => {
+            prepend_empty_element(xot, node, "short")?;
+            rename(xot, node, "variable");
             Ok(TransformAction::Continue)
         }
 
@@ -97,6 +123,32 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
     }
+}
+
+/// Move the literal `type` keyword text from a `type_declaration` into
+/// its inner `type_spec` child so the keyword stays attached when the
+/// outer wrapper is flattened. Without this, `type Foo struct { … }`
+/// becomes a free-floating `"type"` string node sitting next to a bare
+/// `<type>` element at the file level.
+fn move_type_keyword_into_spec(xot: &mut Xot, decl: XotNode) -> Result<(), xot::Error> {
+    // Find the `"type"` text child (if any), collect its value.
+    let keyword_text: Option<XotNode> = xot.children(decl)
+        .find(|&c| xot.text_str(c).map(|t| t.trim() == "type").unwrap_or(false));
+    let keyword = match keyword_text {
+        Some(k) => k,
+        None => return Ok(()),
+    };
+    // Find the first type_spec child — this is where the keyword belongs.
+    let spec = xot.children(decl)
+        .filter(|&c| xot.element(c).is_some())
+        .find(|&c| get_kind(xot, c).as_deref() == Some("type_spec"));
+    let spec = match spec {
+        Some(s) => s,
+        None => return Ok(()),
+    };
+    xot.detach(keyword)?;
+    xot.prepend(spec, keyword)?;
+    Ok(())
 }
 
 /// Rewrite each `parameter_declaration` in a return-type list to just its
@@ -183,8 +235,11 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "interface_type" => Some("interface"),
         "const_declaration" => Some("const"),
         "var_declaration" => Some("var"),
+        "import_declaration" => Some("import"),
         // parameter_list is flattened via Principle #12 above
         "parameter_declaration" => Some("param"),
+        "method_elem" => Some("method"),
+        "field_declaration" => Some("field"),
         "pointer_type" => Some("pointer"),
         "slice_type" => Some("slice"),
         "map_type" => Some("map"),
@@ -213,7 +268,10 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "true" => Some("true"),
         "false" => Some("false"),
         "nil" => Some("nil"),
-        "field_identifier" => Some("field"),
+        // `field_identifier` is a leaf — either the name of a struct field
+        // or the method/field being accessed in a selector. Treat it as
+        // `<name>` in both contexts (role inferred from tree position).
+        "field_identifier" => Some("name"),
         "package_identifier" => Some("name"),
         _ => None,
     }
@@ -240,7 +298,10 @@ fn inline_single_identifier(xot: &mut Xot, node: XotNode) -> Result<(), xot::Err
             Some(n) => n,
             None => continue,
         };
-        if !matches!(child_name.as_str(), "identifier" | "type_identifier") {
+        if !matches!(
+            child_name.as_str(),
+            "identifier" | "type_identifier" | "field_identifier",
+        ) {
             continue;
         }
         let text = match get_text_content(xot, child) {
@@ -264,7 +325,6 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
         // Identifiers
         "name" => SyntaxCategory::Identifier,
         "type" => SyntaxCategory::Type,
-        "field" => SyntaxCategory::Identifier,
 
         // Literals
         "string" => SyntaxCategory::String,

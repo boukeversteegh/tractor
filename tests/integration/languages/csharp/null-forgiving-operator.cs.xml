@@ -22,80 +22,74 @@
                 <body>
                   <block>
                     {
-                    <local>
-                      <variable>
-                        <type>
-                          string
-                          <nullable/>
-                        </type>
-                        <declarator>
-                          <name>nullable</name>
-                          =
-                          <call>
-                            <name>GetNullable</name>
-                            ()
-                          </call>
-                        </declarator>
-                      </variable>
-                      ;
-                    </local>
+                    <variable>
+                      <type>
+                        string
+                        <nullable/>
+                      </type>
+                      <declarator>
+                        <name>nullable</name>
+                        =
+                        <call>
+                          <name>GetNullable</name>
+                          ()
+                        </call>
+                      </declarator>
+                    </variable>
+                    ;
                     <comment>
                       <leading/>
                       // Simple null-forgiving
                     </comment>
-                    <local>
-                      <variable>
-                        <implicit_type>var</implicit_type>
-                        <declarator>
-                          <name>length</name>
-                          =
-                          <member>
-                            <postfix_unary_expression>
-                              <name>nullable</name>
-                              !
-                            </postfix_unary_expression>
-                            .
-                            <name>
-                              <name>Length</name>
-                            </name>
-                          </member>
-                        </declarator>
-                      </variable>
-                      ;
-                    </local>
+                    <variable>
+                      <implicit_type>var</implicit_type>
+                      <declarator>
+                        <name>length</name>
+                        =
+                        <member>
+                          <postfix_unary_expression>
+                            <name>nullable</name>
+                            !
+                          </postfix_unary_expression>
+                          .
+                          <name>
+                            <name>Length</name>
+                          </name>
+                        </member>
+                      </declarator>
+                    </variable>
+                    ;
                     <comment>
                       <leading/>
                       // Chained member access
                     </comment>
-                    <local>
-                      <variable>
-                        <implicit_type>var</implicit_type>
-                        <declarator>
-                          <name>upper</name>
-                          =
-                          <member>
-                            <call>
-                              <member>
-                                <postfix_unary_expression>
-                                  <name>nullable</name>
-                                  !
-                                </postfix_unary_expression>
-                                .
-                                <name>
-                                  <name>ToUpper</name>
-                                </name>
-                              </member>
-                              ()
-                            </call>
-                            .
-                            <name>
-                              <name>Length</name>
-                            </name>
-                          </member>
-                        </declarator>
-                      </variable>
-                      ;
-                    </local>
+                    <variable>
+                      <implicit_type>var</implicit_type>
+                      <declarator>
+                        <name>upper</name>
+                        =
+                        <member>
+                          <call>
+                            <member>
+                              <postfix_unary_expression>
+                                <name>nullable</name>
+                                !
+                              </postfix_unary_expression>
+                              .
+                              <name>
+                                <name>ToUpper</name>
+                              </name>
+                            </member>
+                            ()
+                          </call>
+                          .
+                          <name>
+                            <name>Length</name>
+                          </name>
+                        </member>
+                      </declarator>
+                    </variable>
+                    ;
                     <comment>
                       <leading/>
                       // In method call
@@ -118,48 +112,46 @@
                       <leading/>
                       // Multiple on same line
                     </comment>
-                    <local>
-                      <variable>
-                        <implicit_type>var</implicit_type>
-                        <declarator>
-                          <name>combined</name>
-                          =
-                          <binary>
-                            <op>
-                              <plus/>
-                              +
-                            </op>
-                            <left>
-                              <member>
-                                <postfix_unary_expression>
-                                  <name>first</name>
-                                  !
-                                </postfix_unary_expression>
-                                .
-                                <name>
-                                  <name>Length</name>
-                                </name>
-                              </member>
-                            </left>
+                    <variable>
+                      <implicit_type>var</implicit_type>
+                      <declarator>
+                        <name>combined</name>
+                        =
+                        <binary>
+                          <op>
+                            <plus/>
                             +
-                            <right>
-                              <member>
-                                <postfix_unary_expression>
-                                  <name>second</name>
-                                  !
-                                </postfix_unary_expression>
-                                .
-                                <name>
-                                  <name>Length</name>
-                                </name>
-                              </member>
-                            </right>
-                          </binary>
-                        </declarator>
-                      </variable>
-                      ;
-                    </local>
-                    }
+                          </op>
+                          <left>
+                            <member>
+                              <postfix_unary_expression>
+                                <name>first</name>
+                                !
+                              </postfix_unary_expression>
+                              .
+                              <name>
+                                <name>Length</name>
+                              </name>
+                            </member>
+                          </left>
+                          +
+                          <right>
+                            <member>
+                              <postfix_unary_expression>
+                                <name>second</name>
+                                !
+                              </postfix_unary_expression>
+                              .
+                              <name>
+                                <name>Length</name>
+                              </name>
+                            </member>
+                          </right>
+                        </binary>
+                      </declarator>
+                    </variable>
+                    ;
+            }
                   </block>
                 </body>
               </method>
@@ -174,10 +166,8 @@
                 <name>GetNullable</name>
                 ()
                 <body>
-                  <arrow_expression_clause>
-                    =&gt;
-                    <null>null</null>
-                  </arrow_expression_clause>
+                  =&gt;
+                  <null>null</null>
                 </body>
                 ;
               </method>

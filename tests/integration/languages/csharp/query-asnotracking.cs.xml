@@ -29,60 +29,58 @@
                 <body>
                   <block>
                     {
-                    <local>
-                      <variable>
-                        <implicit_type>var</implicit_type>
-                        <declarator>
-                          <name>user</name>
-                          =
-                          <call>
+                    <variable>
+                      <implicit_type>var</implicit_type>
+                      <declarator>
+                        <name>user</name>
+                        =
+                        <call>
+                          <member>
                             <member>
-                              <member>
-                                <name>_context</name>
-                                .
-                                <name>
-                                  <name>Users</name>
-                                </name>
-                              </member>
+                              <name>_context</name>
                               .
                               <name>
-                                <name>First</name>
+                                <name>Users</name>
                               </name>
                             </member>
-                            (
-                            <argument>
-                              <lambda>
-                                <implicit_parameter>u</implicit_parameter>
-                                =&gt;
-                                <body>
-                                  <binary>
-                                    <op>
-                                      <equals/>
-                                      ==
-                                    </op>
-                                    <left>
-                                      <member>
-                                        <name>u</name>
-                                        .
-                                        <name>
-                                          <name>Id</name>
-                                        </name>
-                                      </member>
-                                    </left>
+                            .
+                            <name>
+                              <name>First</name>
+                            </name>
+                          </member>
+                          (
+                          <argument>
+                            <lambda>
+                              <implicit_parameter>u</implicit_parameter>
+                              =&gt;
+                              <body>
+                                <binary>
+                                  <op>
+                                    <equals/>
                                     ==
-                                    <right>
-                                      <name>id</name>
-                                    </right>
-                                  </binary>
-                                </body>
-                              </lambda>
-                            </argument>
-                            )
-                          </call>
-                        </declarator>
-                      </variable>
-                      ;
-                    </local>
+                                  </op>
+                                  <left>
+                                    <member>
+                                      <name>u</name>
+                                      .
+                                      <name>
+                                        <name>Id</name>
+                                      </name>
+                                    </member>
+                                  </left>
+                                  ==
+                                  <right>
+                                    <name>id</name>
+                                  </right>
+                                </binary>
+                              </body>
+                            </lambda>
+                          </argument>
+                          )
+                        </call>
+                      </declarator>
+                    </variable>
+                    ;
                     <return>
                       return
                       <call>
@@ -118,69 +116,67 @@
                 <body>
                   <block>
                     {
-                    <local>
-                      <variable>
-                        <implicit_type>var</implicit_type>
-                        <declarator>
-                          <name>user</name>
-                          =
-                          <call>
-                            <member>
-                              <call>
+                    <variable>
+                      <implicit_type>var</implicit_type>
+                      <declarator>
+                        <name>user</name>
+                        =
+                        <call>
+                          <member>
+                            <call>
+                              <member>
                                 <member>
-                                  <member>
-                                    <name>_context</name>
-                                    .
-                                    <name>
-                                      <name>Users</name>
-                                    </name>
-                                  </member>
+                                  <name>_context</name>
                                   .
                                   <name>
-                                    <name>AsNoTracking</name>
+                                    <name>Users</name>
                                   </name>
                                 </member>
-                                ()
-                              </call>
-                              .
-                              <name>
-                                <name>First</name>
-                              </name>
-                            </member>
-                            (
-                            <argument>
-                              <lambda>
-                                <implicit_parameter>u</implicit_parameter>
-                                =&gt;
-                                <body>
-                                  <binary>
-                                    <op>
-                                      <equals/>
-                                      ==
-                                    </op>
-                                    <left>
-                                      <member>
-                                        <name>u</name>
-                                        .
-                                        <name>
-                                          <name>Id</name>
-                                        </name>
-                                      </member>
-                                    </left>
+                                .
+                                <name>
+                                  <name>AsNoTracking</name>
+                                </name>
+                              </member>
+                              ()
+                            </call>
+                            .
+                            <name>
+                              <name>First</name>
+                            </name>
+                          </member>
+                          (
+                          <argument>
+                            <lambda>
+                              <implicit_parameter>u</implicit_parameter>
+                              =&gt;
+                              <body>
+                                <binary>
+                                  <op>
+                                    <equals/>
                                     ==
-                                    <right>
-                                      <name>id</name>
-                                    </right>
-                                  </binary>
-                                </body>
-                              </lambda>
-                            </argument>
-                            )
-                          </call>
-                        </declarator>
-                      </variable>
-                      ;
-                    </local>
+                                  </op>
+                                  <left>
+                                    <member>
+                                      <name>u</name>
+                                      .
+                                      <name>
+                                        <name>Id</name>
+                                      </name>
+                                    </member>
+                                  </left>
+                                  ==
+                                  <right>
+                                    <name>id</name>
+                                  </right>
+                                </binary>
+                              </body>
+                            </lambda>
+                          </argument>
+                          )
+                        </call>
+                      </declarator>
+                    </variable>
+                    ;
                     <return>
                       return
                       <call>

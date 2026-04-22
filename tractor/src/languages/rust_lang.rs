@@ -15,6 +15,13 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         "expression_statement" => Ok(TransformAction::Skip),
         "block" | "declaration_list" => Ok(TransformAction::Flatten),
 
+        // Pure grouping wrappers around a list of homogeneous children
+        // — drop the wrapper, the children become direct siblings of the
+        // enclosing struct/expression (Principle #12).
+        "field_declaration_list" | "field_initializer_list" => {
+            Ok(TransformAction::Flatten)
+        }
+
         // Flat lists (Principle #12)
         "parameters" if has_kind(xot, node) => {
             distribute_field_to_children(xot, node, "parameters");
@@ -155,7 +162,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "self_parameter" => Some("self"),
         "reference_type" => Some("ref"),
         "generic_type" => Some("generic"),
-        "scoped_type_identifier" => Some("path"),
+        "scoped_type_identifier" | "scoped_identifier" => Some("path"),
         "return_expression" => Some("return"),
         "if_expression" => Some("if"),
         "else_clause" => Some("else"),
@@ -164,6 +171,9 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "loop_expression" => Some("loop"),
         "match_expression" => Some("match"),
         "match_arm" => Some("arm"),
+        "field_declaration" => Some("field"),
+        "field_initializer" => Some("field"),
+        "trait_bounds" => Some("bounds"),
         "call_expression" => Some("call"),
         "method_call_expression" => Some("call"),
         "field_expression" => Some("field"),

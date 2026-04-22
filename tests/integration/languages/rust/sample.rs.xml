@@ -106,23 +106,21 @@
             struct
             <name>Point</name>
             <body>
-              <field_declaration_list>
-                {
-                <field_declaration>
-                  <pub/>
-                  <name>x</name>
-                  :
-                  <type>i32</type>
-                </field_declaration>
-                ,
-                <field_declaration>
-                  <name>y</name>
-                  :
-                  <type>i32</type>
-                </field_declaration>
-                ,
+              {
+              <field>
+                <pub/>
+                <name>x</name>
+                :
+                <type>i32</type>
+              </field>
+              ,
+              <field>
+                <name>y</name>
+                :
+                <type>i32</type>
+              </field>
+              ,
         }
-              </field_declaration_list>
             </body>
           </struct>
           <enum>

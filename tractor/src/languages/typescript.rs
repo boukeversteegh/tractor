@@ -39,34 +39,10 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Flatten)
         }
 
-        // ---------------------------------------------------------------------
-        // Private property identifiers (ECMAScript private fields: #name)
-        // Lift the `#` to a <private/> marker on the enclosing field/property
-        // and collapse the leaf to a plain <name>.
-        // ---------------------------------------------------------------------
-        "private_property_identifier" => {
-            if let Some(parent) = get_parent(xot, node) {
-                // Only add the marker if the parent hasn't already got one.
-                let already = xot.children(parent).any(|c| {
-                    get_element_name(xot, c).as_deref() == Some("private")
-                });
-                if !already {
-                    prepend_empty_element(xot, parent, "private")?;
-                }
-            }
-            // Strip the leading `#` from the text and rename to <name>.
-            if let Some(text) = get_text_content(xot, node) {
-                let stripped = text.trim_start_matches('#').to_string();
-                let children: Vec<_> = xot.children(node).collect();
-                for c in children {
-                    xot.detach(c)?;
-                }
-                let t = xot.new_text(&stripped);
-                xot.append(node, t)?;
-            }
-            rename(xot, node, "name");
-            Ok(TransformAction::Continue)
-        }
+        // private_property_identifier is handled inside `inline_single_identifier`
+        // when the enclosing <name> wrapper is processed: the leading `#` is
+        // stripped and a <private/> marker is lifted onto the enclosing
+        // field/property node.
 
         // ---------------------------------------------------------------------
         // Name wrappers created by the builder for field="name".
