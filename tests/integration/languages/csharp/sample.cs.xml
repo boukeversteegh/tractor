@@ -51,7 +51,7 @@
                     <body>
                       <block>
                         {
-                        <expression_statement>
+                        <expression>
                           <assign>
                             <op>=</op>
                             <left>
@@ -63,7 +63,7 @@
                             </right>
                           </assign>
                           ;
-                        </expression_statement>
+                        </expression>
                         }
                       </block>
                     </body>
@@ -135,7 +135,7 @@
                     <body>
                       <block>
                         {
-                        <expression_statement>
+                        <expression>
                           <call>
                             <member>
                               <name>Console</name>
@@ -151,7 +151,7 @@
                             )
                           </call>
                           ;
-                        </expression_statement>
+                        </expression>
                         }
                       </block>
                     </body>
@@ -222,7 +222,7 @@
                           </declarator>
                         </variable>
                         ;
-                        <expression_statement>
+                        <expression>
                           <call>
                             <member>
                               <name>Console</name>
@@ -248,7 +248,7 @@
                             )
                           </call>
                           ;
-                        </expression_statement>
+                        </expression>
                         }
                       </block>
                     </body>

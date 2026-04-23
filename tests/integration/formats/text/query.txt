@@ -8,8 +8,8 @@ class[public]/
       │   ├─ type/name = "int"
       │   ├─ name = "Bar"
       │   ├─ "{"
-      │   ├─ accessor = "get;"
-      │   ├─ accessor = "set;"
+      │   ├─ accessor[get]
+      │   ├─ accessor[set]
       │   └─ "}"
       ├─ method[public]/
       │   ├─ returns/type/name = "void"

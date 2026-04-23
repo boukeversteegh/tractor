@@ -96,7 +96,7 @@
                       <leading/>
                       // In method call
                     </comment>
-                    <expression_statement>
+                    <expression>
                       <call>
                         <name>Process</name>
                         (
@@ -109,7 +109,7 @@
                         )
                       </call>
                       ;
-                    </expression_statement>
+                    </expression>
                     <comment>
                       <leading/>
                       // Multiple on same line

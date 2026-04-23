@@ -41,8 +41,8 @@ unit/
           │   ├─ type/name = "int"
           │   ├─ name = "Count"
           │   ├─ "{"
-          │   ├─ accessor = "get;"
-          │   ├─ accessor = "set;"
+          │   ├─ accessor[get]
+          │   ├─ accessor[set]
           │   └─ "}"
           ├─ method[public]/
           │   ├─ returns/type/name = "void"
@@ -50,7 +50,7 @@ unit/
           │   ├─ "()"
           │   └─ body/block/
           │       ├─ "{"
-          │       ├─ expression_statement/
+          │       ├─ expression/
           │       │   ├─ call/
           │       │   │   ├─ type[generic]/
           │       │   │   │   ├─ "First<"

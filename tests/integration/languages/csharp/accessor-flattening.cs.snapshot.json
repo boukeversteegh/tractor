@@ -2,7 +2,7 @@
   "$type": "unit",
   "children": [
     {
-      "comment": "// Property accessor lists flatten: get/set are direct siblings of the\n// <property>, not nested inside an <accessor_list> wrapper."
+      "comment": "// Property accessor lists flatten: get/set are direct siblings of the\n// <property>, not nested inside an <accessor_list> wrapper. Each\n// accessor carries a <get/>/<set/>/<init/> marker so //accessor[get]\n// matches uniformly across the auto-form ({ get; set; }) and the\n// bodied form (get { … })."
     },
     {
       "$type": "class",
@@ -18,8 +18,12 @@
             },
             "name": "AutoProp",
             "accessors": [
-              "get;",
-              "set;"
+              {
+                "get": true
+              },
+              {
+                "set": true
+              }
             ]
           },
           {
@@ -49,6 +53,7 @@
             "name": "Manual",
             "accessors": [
               {
+                "get": true,
                 "body": {
                   "block": {
                     "children": [
@@ -65,11 +70,12 @@
                 }
               },
               {
+                "set": true,
                 "body": {
                   "block": {
                     "children": [
                       {
-                        "$type": "expression_statement",
+                        "$type": "expression",
                         "children": [
                           {
                             "$type": "assign",
@@ -100,7 +106,9 @@
               "name": "int"
             },
             "name": "ReadOnly",
-            "accessors": "get;"
+            "accessors": {
+              "get": true
+            }
           },
           {
             "$type": "property",
@@ -110,11 +118,12 @@
             },
             "name": "WriteOnly",
             "accessors": {
+              "set": true,
               "body": {
                 "block": {
                   "children": [
                     {
-                      "$type": "expression_statement",
+                      "$type": "expression",
                       "children": [
                         {
                           "$type": "assign",

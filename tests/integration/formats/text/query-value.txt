@@ -1,6 +1,6 @@
  class Foo
 {
-     int Bar { get; set; }
+     int Bar {   }
      void Baz() { }
 }
  class Qux { }

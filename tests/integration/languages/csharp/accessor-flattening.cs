@@ -1,5 +1,8 @@
 // Property accessor lists flatten: get/set are direct siblings of the
-// <property>, not nested inside an <accessor_list> wrapper.
+// <property>, not nested inside an <accessor_list> wrapper. Each
+// accessor carries a <get/>/<set/>/<init/> marker so //accessor[get]
+// matches uniformly across the auto-form ({ get; set; }) and the
+// bodied form (get { … }).
 
 class Accessors
 {

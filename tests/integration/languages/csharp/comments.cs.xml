@@ -59,8 +59,12 @@
                     </type>
                     <name>Config</name>
                     {
-                    <accessor>get;</accessor>
-                    <accessor>set;</accessor>
+                    <accessor>
+                      <get/>
+                    </accessor>
+                    <accessor>
+                      <set/>
+                    </accessor>
                     }
                   </property>
                   <comment>
@@ -79,13 +83,13 @@
                     <body>
                       <block>
                         {
-                        <expression_statement>
+                        <expression>
                           <postfix_unary_expression>
                             <name>_count</name>
                             ++
                           </postfix_unary_expression>
                           ;
-                        </expression_statement>
+                        </expression>
                         }
                       </block>
                     </body>

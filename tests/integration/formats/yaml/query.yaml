@@ -13,8 +13,8 @@ results:
           name: int
         name: Bar
         accessors:
-        - get;
-        - set;
+        - get: true
+        - set: true
       - $type: method
         public: true
         returns:

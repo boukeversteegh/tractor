@@ -1,0 +1,71 @@
+program/
+  ├─ comment = "// Property accessor methods (`get foo()` / `set foo(v)`) carry a"
+  ├─ comment = "// <get/> or <set/> marker on the <method>, so //method[get] picks"
+  ├─ comment = "// them out uniformly regardless of body shape. Mirrors C#'s"
+  ├─ comment = "// accessor-flattening fixture."
+  └─ class/
+      ├─ "class"
+      ├─ name = "Counter"
+      └─ body/
+          ├─ "{"
+          ├─ field/
+          │   ├─ accessibility_modifier = "private"
+          │   ├─ name = "_value"
+          │   ├─ "="
+          │   └─ value/number = "0"
+          ├─ ";"
+          ├─ method[get]/
+          │   ├─ "get"
+          │   ├─ name = "value"
+          │   ├─ "()"
+          │   ├─ returns/
+          │   │   ├─ ":"
+          │   │   └─ type/name = "number"
+          │   └─ body/block/
+          │       ├─ "{"
+          │       ├─ return/
+          │       │   ├─ "return"
+          │       │   ├─ member/
+          │       │   │   ├─ object/this = "this"
+          │       │   │   ├─ "."
+          │       │   │   └─ property/name = "_value"
+          │       │   └─ ";"
+          │       └─ "}"
+          ├─ method[set]/
+          │   ├─ "set"
+          │   ├─ name = "value"
+          │   ├─ "("
+          │   ├─ param[required]/
+          │   │   ├─ name = "v"
+          │   │   ├─ ":"
+          │   │   └─ type/name = "number"
+          │   ├─ ")"
+          │   └─ body/block/
+          │       ├─ "{"
+          │       ├─ assign/
+          │       │   ├─ op = "="
+          │       │   ├─ left/member/
+          │       │   │   ├─ object/this = "this"
+          │       │   │   ├─ "."
+          │       │   │   └─ property/name = "_value"
+          │       │   ├─ "="
+          │       │   └─ right/name = "v"
+          │       └─ ";\n    }"
+          ├─ method[get]/
+          │   ├─ "static get"
+          │   ├─ name = "singleton"
+          │   ├─ "()"
+          │   ├─ returns/
+          │   │   ├─ ":"
+          │   │   └─ type/name = "Counter"
+          │   └─ body/block/
+          │       ├─ "{"
+          │       ├─ return/
+          │       │   ├─ "return"
+          │       │   ├─ new/
+          │       │   │   ├─ "new"
+          │       │   │   ├─ name = "Counter"
+          │       │   │   └─ "()"
+          │       │   └─ ";"
+          │       └─ "}"
+          └─ "}"

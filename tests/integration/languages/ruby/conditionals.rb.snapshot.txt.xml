@@ -1,0 +1,64 @@
+NOTE: Full help includes WORKFLOW tutorial and EXAMPLES. Do not truncate.
+
+Multi-language code query tool using XPath 3.1
+
+Usage: tractor [OPTIONS] [FILES]...
+       tractor <COMMAND>
+
+Commands:
+  query   Query source code ASTs with XPath (default when no subcommand given)
+  check   Run checks and report violations (lint mode)
+  test    Test expectations against match counts
+  set     Set matched node values (modify files in-place, create missing nodes)
+  update  Update matched node values (modify files in-place, skip if not found)
+  render  [EXPERIMENTAL] Render XML AST back to source code
+  run     Execute a tractor config file (batch check/set operations)
+  init    Create a starter tractor.yml in the current directory
+  docs    Show documentation and reference information
+  help    Print this message or the help of the given subcommand(s)
+
+Arguments:
+  [FILES]...  Files to process (supports glob patterns like "src/**/*.cs")
+
+Options:
+  -l, --lang <LANG>       Language for stdin or -s/--string input (e.g., csharp, rust, python)
+  -s, --string <CONTENT>  Source code string to parse (alternative to stdin, requires --lang)
+  -h, --help              Print help (see more with '--help')
+
+Config:
+      --config <CONFIG>  Path to a tractor config file (YAML/TOML) — runs only query operations from it
+
+Extract:
+  -x, --extract <QUERY>    XPath expression to extract matching AST nodes
+  -t, --tree <TREE>        Tree mode: raw, structure, data [default: auto]
+  -W, --ignore-whitespace  Ignore whitespace in XPath string matching (strips whitespace from text nodes)
+
+View:
+  -n, --limit <LIMIT>        Limit output to first N matches
+  -p, --projection <TARGET>  Select a specific report projection (tree, summary, results, report, ...)
+      --single               Emit only the first projected item, bare with no list wrapper
+  -d, --depth <DEPTH>        Limit XML output depth (useful for large ASTs)
+      --meta                 Include metadata attributes (start/end, kind, field) in XML output
+  -g, --group <GROUP_BY>     Group output by dimension: none, file, command, rule (comma-separated)
+  -v, --view <VIEW>          Report fields to include (e.g. tree, value, source) [default: file,line,tree]
+  -m, --message <MESSAGE>    Custom message template (supports {value}, {line}, {col}, {file})
+
+Format:
+      --no-pretty        Disable pretty printing (shows XML without formatting, as used by XPath)
+      --color <COLOR>    Color output: auto (default), always, never [default: auto]
+      --no-color         Disable color output
+      --hook <HOOK>      Claude Code hook type (used with -f claude-code): post-tool-use, pre-tool-use, stop, context
+  -f, --format <FORMAT>  Output format [default: text] [default: text]
+
+Filter:
+      --diff-files <RANGE>  Only consider files changed in a git diff (e.g. "HEAD~3", "main..HEAD")
+      --diff-lines <RANGE>  Only consider matches in changed hunks of a git diff (e.g. "HEAD~3", "main..HEAD")
+
+Advanced:
+      --parse-depth <PARSE_DEPTH>  [EXPERIMENTAL] Limit tree building depth (skip parsing deeper nodes for speed)
+  -c, --concurrency <CONCURRENCY>  Number of parallel workers
+      --max-files <MAX_FILES>      Maximum number of files to process (default: 10000) [default: 10000]
+      --verbose                    Show verbose output
+      --debug                      Show full XML with matches highlighted (for debugging XPath)
+  -V, --version                    Print version information (use with --verbose for detailed output)
+

@@ -13,9 +13,7 @@
               <property>
                 [
                 <attribute>
-                  <name>
-                    <name>Required</name>
-                  </name>
+                  <name>Required</name>
                 </attribute>
                 ]
                 <public/>
@@ -24,8 +22,12 @@
                 </type>
                 <name>UserId</name>
                 {
-                <accessor>get;</accessor>
-                <accessor>set;</accessor>
+                <accessor>
+                  <get/>
+                </accessor>
+                <accessor>
+                  <set/>
+                </accessor>
                 }
               </property>
               <comment>
@@ -35,9 +37,7 @@
               <property>
                 [
                 <attribute>
-                  <name>
-                    <name>Required</name>
-                  </name>
+                  <name>Required</name>
                 </attribute>
                 ]
                 <public/>
@@ -47,8 +47,12 @@
                 </type>
                 <name>NullableId</name>
                 {
-                <accessor>get;</accessor>
-                <accessor>set;</accessor>
+                <accessor>
+                  <get/>
+                </accessor>
+                <accessor>
+                  <set/>
+                </accessor>
                 }
               </property>
               <comment>
@@ -58,9 +62,7 @@
               <property>
                 [
                 <attribute>
-                  <name>
-                    <name>Required</name>
-                  </name>
+                  <name>Required</name>
                 </attribute>
                 ]
                 <public/>
@@ -69,8 +71,12 @@
                 </type>
                 <name>Name</name>
                 {
-                <accessor>get;</accessor>
-                <accessor>set;</accessor>
+                <accessor>
+                  <get/>
+                </accessor>
+                <accessor>
+                  <set/>
+                </accessor>
                 }
               </property>
               <comment>

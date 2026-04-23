@@ -13,9 +13,7 @@
               <property>
                 [
                 <attribute>
-                  <name>
-                    <name>MaxLength</name>
-                  </name>
+                  <name>MaxLength</name>
                   (
                   <argument>
                     <int>1</int>
@@ -29,8 +27,12 @@
                 </type>
                 <name>IsActive</name>
                 {
-                <accessor>get;</accessor>
-                <accessor>set;</accessor>
+                <accessor>
+                  <get/>
+                </accessor>
+                <accessor>
+                  <set/>
+                </accessor>
                 }
               </property>
               <comment>
@@ -40,9 +42,7 @@
               <property>
                 [
                 <attribute>
-                  <name>
-                    <name>MaxLength</name>
-                  </name>
+                  <name>MaxLength</name>
                   (
                   <argument>
                     <int>100</int>
@@ -56,8 +56,12 @@
                 </type>
                 <name>Name</name>
                 {
-                <accessor>get;</accessor>
-                <accessor>set;</accessor>
+                <accessor>
+                  <get/>
+                </accessor>
+                <accessor>
+                  <set/>
+                </accessor>
                 }
               </property>
               <comment>

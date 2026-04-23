@@ -13,9 +13,7 @@
               <property>
                 [
                 <attribute>
-                  <name>
-                    <name>MaxLength</name>
-                  </name>
+                  <name>MaxLength</name>
                   (
                   <argument>
                     <int>100</int>
@@ -29,8 +27,12 @@
                 </type>
                 <name>Name</name>
                 {
-                <accessor>get;</accessor>
-                <accessor>set;</accessor>
+                <accessor>
+                  <get/>
+                </accessor>
+                <accessor>
+                  <set/>
+                </accessor>
                 }
               </property>
               <comment>
@@ -40,9 +42,7 @@
               <property>
                 [
                 <attribute>
-                  <name>
-                    <name>MaxLength</name>
-                  </name>
+                  <name>MaxLength</name>
                   (
                   <argument>
                     <int>50</int>
@@ -52,9 +52,7 @@
                 ]
             [
                 <attribute>
-                  <name>
-                    <name>AutoTruncate</name>
-                  </name>
+                  <name>AutoTruncate</name>
                 </attribute>
                 ]
                 <public/>
@@ -63,8 +61,12 @@
                 </type>
                 <name>Email</name>
                 {
-                <accessor>get;</accessor>
-                <accessor>set;</accessor>
+                <accessor>
+                  <get/>
+                </accessor>
+                <accessor>
+                  <set/>
+                </accessor>
                 }
               </property>
               <comment>
@@ -78,8 +80,12 @@
                 </type>
                 <name>Bio</name>
                 {
-                <accessor>get;</accessor>
-                <accessor>set;</accessor>
+                <accessor>
+                  <get/>
+                </accessor>
+                <accessor>
+                  <set/>
+                </accessor>
                 }
               </property>
               <comment>

@@ -341,6 +341,7 @@ fn extract_function_markers(xot: &mut Xot, node: XotNode) -> Result<(), xot::Err
     let texts = get_text_children(xot, node);
     let mut has_async = false;
     let mut has_star = false;
+    let mut accessor_kind: Option<&'static str> = None;
     for t in &texts {
         for tok in t.split_whitespace() {
             if tok == "async" {
@@ -353,9 +354,20 @@ fn extract_function_markers(xot: &mut Xot, node: XotNode) -> Result<(), xot::Err
             if tok == "*" || tok.ends_with('*') || tok.starts_with('*') {
                 has_star = true;
             }
+            // Property accessor methods: `get value() {}` / `set value(v) {}`.
+            // Lift the keyword to a `<get/>` / `<set/>` marker so queries
+            // can predicate on the accessor kind uniformly.
+            match tok {
+                "get" => accessor_kind = Some("get"),
+                "set" => accessor_kind = Some("set"),
+                _ => {}
+            }
         }
     }
-    // Prepend in reverse so final order is <async/><generator/>...
+    // Prepend in reverse so final order is <async/><generator/><get|set/>...
+    if let Some(kind) = accessor_kind {
+        prepend_empty_element(xot, node, kind)?;
+    }
     if has_star {
         prepend_empty_element(xot, node, "generator")?;
     }

@@ -27,7 +27,7 @@
                 "    public void Baz() { }",
                 "}"
               ],
-              "value": " class Foo\n{\n     int Bar { get; set; }\n     void Baz() { }\n}",
+              "value": " class Foo\n{\n     int Bar {   }\n     void Baz() { }\n}",
               "rule_id": "no-class"
             },
             {
@@ -67,7 +67,7 @@
                 "    public void Baz() { }",
                 "}"
               ],
-              "value": " class Foo\n{\n     int Bar { get; set; }\n     void Baz() { }\n}"
+              "value": " class Foo\n{\n     int Bar {   }\n     void Baz() { }\n}"
             },
             {
               "lines": [

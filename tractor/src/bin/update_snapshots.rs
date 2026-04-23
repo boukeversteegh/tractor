@@ -33,6 +33,7 @@ const SKIP_EXTENSIONS: &[&str] = &["xml", "sh", "md", "json"];
 /// Paths are relative to the project root.
 const FEATURE_FIXTURES: &[&str] = &[
     // — TypeScript —
+    "tests/integration/languages/typescript/accessors.ts",
     "tests/integration/languages/typescript/async-generator.ts",
     "tests/integration/languages/typescript/conditionals.ts",
     "tests/integration/languages/typescript/flat-lists.ts",

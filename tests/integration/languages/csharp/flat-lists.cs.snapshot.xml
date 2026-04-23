@@ -70,8 +70,12 @@
         </type>
         <name>Count</name>
         {
-        <accessor>get;</accessor>
-        <accessor>set;</accessor>
+        <accessor>
+          <get/>
+        </accessor>
+        <accessor>
+          <set/>
+        </accessor>
         }
       </property>
       <method>
@@ -86,7 +90,7 @@
         <body>
           <block>
             {
-            <expression_statement>
+            <expression>
               <call>
                 <type>
                   <generic/>
@@ -119,7 +123,7 @@
                 )
               </call>
               ;
-            </expression_statement>
+            </expression>
             }
           </block>
         </body>

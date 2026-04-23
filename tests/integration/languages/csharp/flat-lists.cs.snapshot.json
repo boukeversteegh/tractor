@@ -81,8 +81,12 @@
             },
             "name": "Count",
             "accessors": [
-              "get;",
-              "set;"
+              {
+                "get": true
+              },
+              {
+                "set": true
+              }
             ]
           },
           {
@@ -98,7 +102,7 @@
               "block": {
                 "children": [
                   {
-                    "$type": "expression_statement",
+                    "$type": "expression",
                     "children": [
                       {
                         "$type": "call",

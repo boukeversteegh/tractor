@@ -32,8 +32,8 @@ unit/                                                                           
           │       │   ├─ type/name = "string"                                                                   ┤    │ 
           │       │   ├─ name = "Config"                                                                        ┤ 16 ├         public string Config { get; set; }
           │       │   ├─ "{"                                                                                    ┤    │ 
-          │       │   ├─ accessor = "get;"                                                                      ┤    │ 
-          │       │   ├─ accessor = "set;"                                                                      ┤    │ 
+          │       │   ├─ accessor[get]                                                                          ┤    │ 
+          │       │   ├─ accessor[set]                                                                          ┤    │ 
           │       │   └─ "}"                                                                                    ┤    │ 
           │       │                                                                                             │ 17 │ 
           │       ├─ comment[leading] = "/* block comment */"                                                   ┤ 18 ├         /* block comment */
@@ -43,7 +43,7 @@ unit/                                                                           
           │       │   ├─ "()"                                                                                   ┤    │ 
           │       │   └─ body/block/                                                                            ┤    │ 
           │       │       ├─ "{"                                                                                ┤ 20 ├         {
-          │       │       ├─ expression_statement/                                                              ┤    │ 
+          │       │       ├─ expression/                                                                        ┤    │ 
           │       │       │   ├─ postfix_unary_expression/                                                      ┤    │ 
           │       │       │   │   ├─ name = "_count"                                                            ┤ 21 ├             _count++;
           │       │       │   │   └─ "++"                                                                       ┤    │ 

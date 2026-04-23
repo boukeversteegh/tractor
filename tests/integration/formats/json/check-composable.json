@@ -27,8 +27,12 @@
                   },
                   "name": "Bar",
                   "accessors": [
-                    "get;",
-                    "set;"
+                    {
+                      "get": true
+                    },
+                    {
+                      "set": true
+                    }
                   ]
                 },
                 {

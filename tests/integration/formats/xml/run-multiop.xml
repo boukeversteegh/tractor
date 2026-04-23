@@ -26,7 +26,7 @@
           </lines>
           <value> class Foo
 {
-     int Bar { get; set; }
+     int Bar {   }
      void Baz() { }
 }</value>
           <rule-id>no-class</rule-id>
@@ -64,7 +64,7 @@
           </lines>
           <value> class Foo
 {
-     int Bar { get; set; }
+     int Bar {   }
      void Baz() { }
 }</value>
         </match>

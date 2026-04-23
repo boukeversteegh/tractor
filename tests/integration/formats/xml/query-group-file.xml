@@ -18,8 +18,12 @@
                 </type>
                 <name>Bar</name>
                 {
-                <accessor>get;</accessor>
-                <accessor>set;</accessor>
+                <accessor>
+                  <get/>
+                </accessor>
+                <accessor>
+                  <set/>
+                </accessor>
                 }
               </property>
               <method>
@@ -67,8 +71,12 @@
                 </type>
                 <name>Name</name>
                 {
-                <accessor>get;</accessor>
-                <accessor>set;</accessor>
+                <accessor>
+                  <get/>
+                </accessor>
+                <accessor>
+                  <set/>
+                </accessor>
                 }
               </property>
               }

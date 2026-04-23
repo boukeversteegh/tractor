@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <unit>
   <comment>// Property accessor lists flatten: get/set are direct siblings of the
-// &lt;property&gt;, not nested inside an &lt;accessor_list&gt; wrapper.</comment>
+// &lt;property&gt;, not nested inside an &lt;accessor_list&gt; wrapper. Each
+// accessor carries a &lt;get/&gt;/&lt;set/&gt;/&lt;init/&gt; marker so //accessor[get]
+// matches uniformly across the auto-form ({ get; set; }) and the
+// bodied form (get { … }).</comment>
   <class>
     <internal/>
     class
@@ -15,8 +18,12 @@
         </type>
         <name>AutoProp</name>
         {
-        <accessor>get;</accessor>
-        <accessor>set;</accessor>
+        <accessor>
+          <get/>
+        </accessor>
+        <accessor>
+          <set/>
+        </accessor>
         }
       </property>
       <field>
@@ -39,7 +46,7 @@
         <name>Manual</name>
         {
         <accessor>
-          get
+          <get/>
           <body>
             <block>
               {
@@ -53,11 +60,11 @@
           </body>
         </accessor>
         <accessor>
-          set
+          <set/>
           <body>
             <block>
               {
-              <expression_statement>
+              <expression>
                 <assign>
                   <op>=</op>
                   <left>
@@ -69,7 +76,7 @@
                   </right>
                 </assign>
                 ;
-              </expression_statement>
+              </expression>
               }
             </block>
           </body>
@@ -83,7 +90,9 @@
         </type>
         <name>ReadOnly</name>
         {
-        <accessor>get;</accessor>
+        <accessor>
+          <get/>
+        </accessor>
         }
       </property>
       <property>
@@ -94,11 +103,11 @@
         <name>WriteOnly</name>
         {
         <accessor>
-          set
+          <set/>
           <body>
             <block>
               {
-              <expression_statement>
+              <expression>
                 <assign>
                   <op>=</op>
                   <left>
@@ -110,7 +119,7 @@
                   </right>
                 </assign>
                 ;
-              </expression_statement>
+              </expression>
               }
             </block>
           </body>

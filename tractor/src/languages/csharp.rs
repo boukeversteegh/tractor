@@ -76,6 +76,10 @@ fn is_named_declaration(kind: &str) -> bool {
         | "parameter"
         | "variable_declarator"
         | "type_parameter"
+        // Attribute applications: `[Foo(…)]` — inline the inner identifier
+        // into the `<name>` field wrapper so we get `<name>Foo</name>`
+        // not `<name><name>Foo</name></name>`.
+        | "attribute"
     )
 }
 
@@ -121,6 +125,30 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         "accessor_list" => {
             distribute_field_to_children(xot, node, "accessors");
             Ok(TransformAction::Flatten)
+        }
+        // Accessor declarations carry their kind (get / set / init / add /
+        // remove) as a text token. Lift it to an empty marker element so
+        // queries can predicate on the kind uniformly across the auto-form
+        // (`{ get; set; }`) and the bodied form (`get { … }`).
+        "accessor_declaration" => {
+            const KINDS: &[&str] = &["get", "set", "init", "add", "remove"];
+            let children: Vec<_> = xot.children(node).collect();
+            for child in children {
+                let raw = match xot.text_str(child) {
+                    Some(t) => t.to_string(),
+                    None => continue,
+                };
+                let trimmed = raw.trim().trim_end_matches(';').trim();
+                if let Some(&kind) = KINDS.iter().find(|&&k| k == trimmed) {
+                    prepend_empty_element(xot, node, kind)?;
+                    xot.detach(child)?;
+                    break;
+                }
+            }
+            if let Some(new_name) = map_element_name(&kind) {
+                rename(xot, node, new_name);
+            }
+            Ok(TransformAction::Continue)
         }
         "type_parameter_list" => {
             distribute_field_to_children(xot, node, "generics");
@@ -440,6 +468,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "property_declaration" => Some(PROPERTY),
         "field_declaration" => Some(FIELD),
         "namespace_declaration" => Some(NAMESPACE),
+        "expression_statement" => Some("expression"),
         "parameter_list" => Some(PARAMETERS),
         "parameter" => Some(PARAMETER),
         "argument_list" => Some(ARGUMENTS),
