@@ -371,23 +371,23 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
     ]),
     ("text/project-schema.txt", &[
         "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
-        "-p", "schema",
+        "-p", "schema", "--depth", "1",
     ]),
     ("text/project-schema-color.txt", &[
         "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
-        "-p", "schema", "--color", "always",
+        "-p", "schema", "--color", "always", "--depth", "1",
     ]),
     ("json/project-schema.json", &[
         "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
-        "-p", "schema", "-f", "json",
+        "-p", "schema", "-f", "json", "--depth", "1",
     ]),
     ("yaml/project-schema.yaml", &[
         "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
-        "-p", "schema", "-f", "yaml",
+        "-p", "schema", "-f", "yaml", "--depth", "1",
     ]),
     ("xml/project-schema.xml", &[
         "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
-        "-p", "schema", "-f", "xml",
+        "-p", "schema", "-f", "xml", "--depth", "1",
     ]),
     ("json/project-results-message.json", &[
         "query", "tests/integration/formats/sample.cs", "-x", "class",
