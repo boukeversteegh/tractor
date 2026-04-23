@@ -1,0 +1,158 @@
+{
+  "$type": "file",
+  "children": [
+    {
+      "line_comment": "// Principle #12: `match_block` (the `{ … }` wrapper around match arms)"
+    },
+    {
+      "line_comment": "// is a pure grouping node; drop it so arms are direct siblings of"
+    },
+    {
+      "line_comment": "// <match>. Parallel with `block` / `declaration_list`."
+    },
+    {
+      "$type": "function",
+      "private": true,
+      "name": "classify",
+      "parameters": {
+        "pattern": "n",
+        "type": {
+          "name": "i32"
+        }
+      },
+      "returns": {
+        "ref": {
+          "type": {
+            "name": "str"
+          },
+          "children": [
+            {
+              "$type": "lifetime",
+              "children": [
+                {
+                  "name": "static"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "body": {
+        "children": [
+          {
+            "$type": "match",
+            "value": {
+              "name": "n"
+            },
+            "body": {
+              "children": [
+                {
+                  "$type": "arm",
+                  "pattern": {
+                    "children": [
+                      {
+                        "int": "0"
+                      }
+                    ]
+                  },
+                  "value": {
+                    "string": {
+                      "children": [
+                        {
+                          "string_content": "zero"
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "$type": "arm",
+                  "pattern": {
+                    "children": [
+                      {
+                        "$type": "or_pattern",
+                        "children": [
+                          {
+                            "$type": "or_pattern",
+                            "children": [
+                              {
+                                "int": "1"
+                              },
+                              {
+                                "int": "2"
+                              }
+                            ]
+                          },
+                          {
+                            "int": "3"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "value": {
+                    "string": {
+                      "children": [
+                        {
+                          "string_content": "small"
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "$type": "arm",
+                  "pattern": {
+                    "condition": {
+                      "binary": {
+                        "left": {
+                          "name": "n"
+                        },
+                        "right": {
+                          "int": "0"
+                        },
+                        "children": [
+                          {
+                            "$type": "op",
+                            "children": [
+                              {
+                                "$type": "compare",
+                                "less": true
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "value": {
+                    "string": {
+                      "children": [
+                        {
+                          "string_content": "negative"
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "$type": "arm",
+                  "pattern": "_",
+                  "value": {
+                    "string": {
+                      "children": [
+                        {
+                          "string_content": "other"
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

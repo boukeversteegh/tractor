@@ -24,6 +24,15 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Flatten)
         }
 
+        // Ruby's grammar has no type_identifier — every identifier is a
+        // value reference, so the rename is unconditional. Matches Python
+        // and the rest of the languages on the value-namespace side
+        // (Principle #14).
+        "identifier" => {
+            rename(xot, node, "name");
+            Ok(TransformAction::Continue)
+        }
+
         // Name wrappers - inline identifier text directly
         "name" => {
             if let Some(parent) = get_parent(xot, node) {
@@ -32,7 +41,9 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
                     let children: Vec<_> = xot.children(node).collect();
                     for child in children {
                         if let Some(child_name) = get_element_name(xot, child) {
-                            if child_name == "identifier" {
+                            // `identifier` for methods, `constant` for classes/modules
+                            // (Ruby's grammar uses constant for capitalized identifiers).
+                            if child_name == "identifier" || child_name == "constant" {
                                 if let Some(text) = get_text_content(xot, child) {
                                     let all_children: Vec<_> = xot.children(node).collect();
                                     for c in all_children {

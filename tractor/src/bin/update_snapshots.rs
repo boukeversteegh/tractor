@@ -58,6 +58,7 @@ const FEATURE_FIXTURES: &[&str] = &[
     // — Rust —
     "tests/integration/languages/rust/conditionals.rs",
     "tests/integration/languages/rust/flat-lists.rs",
+    "tests/integration/languages/rust/match-expression.rs",
     "tests/integration/languages/rust/method-call.rs",
     "tests/integration/languages/rust/type-vocabulary.rs",
     "tests/integration/languages/rust/typedef.rs",
@@ -67,6 +68,7 @@ const FEATURE_FIXTURES: &[&str] = &[
     "tests/integration/languages/python/augmented-assign.py",
     "tests/integration/languages/python/collection-markers.py",
     "tests/integration/languages/python/conditionals.py",
+    "tests/integration/languages/python/expression-list.py",
 
     // — Go —
     "tests/integration/languages/go/conditionals.go",

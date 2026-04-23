@@ -21,7 +21,7 @@
             "condition": {
               "binary": {
                 "left": {
-                  "identifier": "n"
+                  "name": "n"
                 },
                 "right": {
                   "int": "0"
@@ -45,7 +45,7 @@
                 "condition": {
                   "binary": {
                     "left": {
-                      "identifier": "n"
+                      "name": "n"
                     },
                     "right": {
                       "int": "0"
@@ -69,7 +69,7 @@
                 "condition": {
                   "binary": {
                     "left": {
-                      "identifier": "n"
+                      "name": "n"
                     },
                     "right": {
                       "int": "10"
@@ -117,7 +117,7 @@
             "condition": {
               "binary": {
                 "left": {
-                  "identifier": "n"
+                  "name": "n"
                 },
                 "right": {
                   "int": "0"

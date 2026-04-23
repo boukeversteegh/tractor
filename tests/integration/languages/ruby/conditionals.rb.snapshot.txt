@@ -6,12 +6,12 @@ program/
   │   ├─ "def"
   │   ├─ name = "classify"
   │   ├─ "("
-  │   ├─ identifier = "n"
+  │   ├─ name = "n"
   │   ├─ ")"
   │   ├─ body/if/
   │   │   ├─ "if"
   │   │   ├─ condition/binary/
-  │   │   │   ├─ left/identifier = "n"
+  │   │   │   ├─ left/name = "n"
   │   │   │   ├─ "<"
   │   │   │   └─ right/int = "0"
   │   │   ├─ then/string/
@@ -22,7 +22,7 @@ program/
   │   │   ├─ else_if/
   │   │   │   ├─ "elsif"
   │   │   │   ├─ condition/binary/
-  │   │   │   │   ├─ left/identifier = "n"
+  │   │   │   │   ├─ left/name = "n"
   │   │   │   │   ├─ "=="
   │   │   │   │   └─ right/int = "0"
   │   │   │   └─ then/string/
@@ -32,7 +32,7 @@ program/
   │   │   ├─ else_if/
   │   │   │   ├─ "elsif"
   │   │   │   ├─ condition/binary/
-  │   │   │   │   ├─ left/identifier = "n"
+  │   │   │   │   ├─ left/name = "n"
   │   │   │   │   ├─ "<"
   │   │   │   │   └─ right/int = "10"
   │   │   │   └─ then/string/
@@ -50,11 +50,11 @@ program/
       ├─ "def"
       ├─ name = "label"
       ├─ "("
-      ├─ identifier = "n"
+      ├─ name = "n"
       ├─ ")"
       ├─ body/conditional/
       │   ├─ condition/binary/
-      │   │   ├─ left/identifier = "n"
+      │   │   ├─ left/name = "n"
       │   │   ├─ ">"
       │   │   └─ right/int = "0"
       │   ├─ "?"

@@ -18,7 +18,8 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Pure grouping wrappers around a list of homogeneous children
         // — drop the wrapper, the children become direct siblings of the
         // enclosing struct/expression (Principle #12).
-        "field_declaration_list" | "field_initializer_list" => {
+        "field_declaration_list" | "field_initializer_list"
+        | "match_block" => {
             Ok(TransformAction::Flatten)
         }
 

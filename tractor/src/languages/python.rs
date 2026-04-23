@@ -18,7 +18,10 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         //   as_pattern_target — the target of `with x as y` / `except E as y`.
         //   pattern_list — `a, b = ...` unpacking; drop wrapper so the
         //     underlying patterns are direct children of the assignment.
-        "as_pattern_target" | "pattern_list" => Ok(TransformAction::Flatten),
+        //   expression_list — tuple-like returns/yields (`return x, y`).
+        //     Drop the wrapper so expressions are direct children of the
+        //     enclosing statement; matches Go's behavior.
+        "as_pattern_target" | "pattern_list" | "expression_list" => Ok(TransformAction::Flatten),
 
         // Flat lists (Principle #12)
         "parameters" => {

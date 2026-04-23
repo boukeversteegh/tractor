@@ -2,22 +2,41 @@
   "$type": "program",
   "children": [
     {
-      "comment": "# When a <name> wrapper sits inside method / class / module and contains"
+      "comment": "# Two invariants:"
     },
     {
-      "comment": "# a single <identifier> child, the transform inlines the identifier's"
+      "comment": "#"
     },
     {
-      "comment": "# text directly: <method><name>foo</name> … not"
+      "comment": "# 1. Every Ruby `identifier` becomes <name> unconditionally (no"
     },
     {
-      "comment": "# <method><name><identifier>foo</identifier></name>…"
+      "comment": "#    type_identifier in Ruby's grammar, so identifiers are always"
+    },
+    {
+      "comment": "#    value references). Matches Python / TS / Java / Rust on the"
+    },
+    {
+      "comment": "#    value-namespace side (Principle #14)."
+    },
+    {
+      "comment": "#"
+    },
+    {
+      "comment": "# 2. When a <name> wrapper sits inside method / class / module and"
+    },
+    {
+      "comment": "#    contains a single identifier, the transform inlines its text"
+    },
+    {
+      "comment": "#    directly: <method><name>foo</name>… not"
+    },
+    {
+      "comment": "#    <method><name><identifier>foo</identifier></name>…"
     },
     {
       "$type": "class",
-      "name": {
-        "constant": "Calculator"
-      },
+      "name": "Calculator",
       "body": {
         "children": [
           {
@@ -32,10 +51,10 @@
                 {
                   "$type": "binary",
                   "left": {
-                    "identifier": "a"
+                    "name": "a"
                   },
                   "right": {
-                    "identifier": "b"
+                    "name": "b"
                   }
                 }
               ]
@@ -46,16 +65,14 @@
     },
     {
       "$type": "module",
-      "name": {
-        "constant": "Utils"
-      },
+      "name": "Utils",
       "body": {
         "children": [
           {
             "$type": "singleton_method",
             "object": "self",
             "name": {
-              "identifier": "greet"
+              "name": "greet"
             },
             "parameters": "name",
             "body": {
@@ -70,7 +87,7 @@
                       "$type": "interpolation",
                       "children": [
                         {
-                          "identifier": "name"
+                          "name": "name"
                         }
                       ]
                     }

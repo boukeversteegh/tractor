@@ -253,19 +253,6 @@ Raising here for explicit sign-off.
 
 ## Python
 
-### `expression_list`
-
-```python
-return x, y
-yield a, b, c
-```
-
-**Current**: `return[expression_list[name][name]]`
-
-Go flattens its `expression_list`; Python doesn't. Asymmetry.
-
-**Proposal**: flatten Python's too → `return[name][name]`.
-
 ### f-string / multi-part strings
 
 ```python
@@ -348,11 +335,6 @@ type Color = int     // alias declaration — same type, new name
   spec term; inner `<type>` is the underlying-type reference)
 - `type Color = int` → `alias[name][type]`
 
-### `expression_list` asymmetry
-
-Go flattens; Python doesn't (noted above). Decide once; apply
-uniformly.
-
 ---
 
 ## Rust
@@ -400,38 +382,9 @@ conceptually with the deprecated value-ref we removed in #73)
 **My lean**: `type[borrowed]` for Principle #14 consistency — `//type`
 queries find every type reference including borrows.
 
-### `match_block`
-
-```rust
-match x {
-    1 => "one",
-    _ => "other",
-}
-```
-
-**Current**: `match[value][match_block[arm][arm]]`
-
-**Proposal**: flatten `match_block` (Principle #12) →
-`match[value][arm][arm]`.
-
 ---
 
 ## Ruby
-
-### Identifier classification normalisation
-
-```ruby
-def foo
-  x = 1
-  x + y
-end
-```
-
-**Current**: `method[name][body[assign[left[identifier]][right[int]]][binary[left[identifier]][right[identifier]]]]`
-(Ruby's `identifier` isn't renamed to `<name>`)
-
-**Proposal**: rename Ruby `identifier` → `<name>` →
-`method[name][body[assign[left[name]][right[int]]][binary[left[name]][right[name]]]]`.
 
 ### Method-call shape
 

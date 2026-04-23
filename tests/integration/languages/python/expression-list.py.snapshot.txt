@@ -1,0 +1,54 @@
+module/
+  ├─ comment = "# Principle #12: `expression_list` (tuple-like return/yield expressions)"
+  ├─ comment = "# is a pure grouping node; drop it so the expressions become direct"
+  ├─ comment = "# children of the enclosing <return>/<yield>/<assign>. Parallel with Go."
+  ├─ function/
+  │   ├─ "def"
+  │   ├─ name = "pair"
+  │   ├─ "():"
+  │   └─ body/return/
+  │       ├─ "return"
+  │       ├─ int = "1"
+  │       ├─ ","
+  │       └─ int = "2"
+  ├─ function/
+  │   ├─ "def"
+  │   ├─ name = "triple"
+  │   ├─ "():"
+  │   └─ body/return/
+  │       ├─ "return"
+  │       ├─ string/
+  │       │   ├─ string_start = "\""
+  │       │   ├─ string_content = "a"
+  │       │   └─ string_end = "\""
+  │       ├─ ","
+  │       ├─ string/
+  │       │   ├─ string_start = "\""
+  │       │   ├─ string_content = "b"
+  │       │   └─ string_end = "\""
+  │       ├─ ","
+  │       └─ string/
+  │           ├─ string_start = "\""
+  │           ├─ string_content = "c"
+  │           └─ string_end = "\""
+  └─ function/
+      ├─ "def"
+      ├─ name = "unpack"
+      ├─ "():"
+      └─ body/
+          ├─ assign/
+          │   ├─ left/
+          │   │   ├─ name = "a"
+          │   │   ├─ ","
+          │   │   └─ name = "b"
+          │   ├─ "="
+          │   └─ right/call/
+          │       ├─ name = "pair"
+          │       └─ "()"
+          └─ return/
+              ├─ "return"
+              └─ binary/
+                  ├─ op[plus] = "+"
+                  ├─ left/name = "a"
+                  ├─ "+"
+                  └─ right/name = "b"

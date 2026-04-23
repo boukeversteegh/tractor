@@ -7,7 +7,7 @@
     def
     <name>classify</name>
     (
-    <identifier>n</identifier>
+    <name>n</name>
     )
     <body>
       <if>
@@ -15,7 +15,7 @@
         <condition>
           <binary>
             <left>
-              <identifier>n</identifier>
+              <name>n</name>
             </left>
             &lt;
             <right>
@@ -36,7 +36,7 @@
           <condition>
             <binary>
               <left>
-                <identifier>n</identifier>
+                <name>n</name>
               </left>
               ==
               <right>
@@ -57,7 +57,7 @@
           <condition>
             <binary>
               <left>
-                <identifier>n</identifier>
+                <name>n</name>
               </left>
               &lt;
               <right>
@@ -89,14 +89,14 @@
     def
     <name>label</name>
     (
-    <identifier>n</identifier>
+    <name>n</name>
     )
     <body>
       <conditional>
         <condition>
           <binary>
             <left>
-              <identifier>n</identifier>
+              <name>n</name>
             </left>
             &gt;
             <right>

@@ -9,18 +9,18 @@
             def
             <name>add</name>
             (
-            <identifier>a</identifier>
+            <name>a</name>
             ,
-            <identifier>b</identifier>
+            <name>b</name>
             )
             <body>
               <binary>
                 <left>
-                  <identifier>a</identifier>
+                  <name>a</name>
                 </left>
                 +
                 <right>
-                  <identifier>b</identifier>
+                  <name>b</name>
                 </right>
               </binary>
             </body>
@@ -32,12 +32,12 @@
             <body>
               <assign>
                 <left>
-                  <identifier>result</identifier>
+                  <name>result</name>
                 </left>
                 =
                 <right>
                   <call>
-                    <identifier>add</identifier>
+                    <name>add</name>
                     (
                     <int>5</int>
                     ,
@@ -47,13 +47,13 @@
                 </right>
               </assign>
               <call>
-                <identifier>puts</identifier>
+                <name>puts</name>
                 <string>
                   &quot;
                   <string_content>Result: </string_content>
                   <interpolation>
                     #{
-                    <identifier>result</identifier>
+                    <name>result</name>
                     }
                   </interpolation>
                   &quot;
@@ -62,7 +62,7 @@
             </body>
             end
           </method>
-          <identifier>main</identifier>
+          <name>main</name>
         </program>
       </tree>
     </match>
