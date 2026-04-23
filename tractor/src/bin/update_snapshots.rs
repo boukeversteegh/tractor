@@ -61,8 +61,8 @@ const FEATURE_FIXTURES: &[(&str, &str, u32)] = &[
     ("tests/integration/languages/java/conditionals.java", "//if", 3),
     ("tests/integration/languages/java/constructor-rename.java", "//constructor[1]", 0),
     ("tests/integration/languages/java/flat-lists.java", "//method[1]", 0),
-    ("tests/integration/languages/java/interface-public.java", "//interface/body/method[public][1]", 0),
-    ("tests/integration/languages/java/modifiers.java", "//field[private]", 0),
+    ("tests/integration/languages/java/interface-public.java", "//interface/body", 3),
+    ("tests/integration/languages/java/modifiers.java", "//class/body", 3),
     ("tests/integration/languages/java/type-vocabulary.java", "//class[name='Dog']", 3),
 
     // — C# —

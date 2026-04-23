@@ -22,13 +22,13 @@ class[package]/
       ├─ field[package]/
       │   ├─ type/
       │   │   └─ ... (1 children)
-      │   ├─ variable_declarator/
+      │   ├─ declarator/
       │   │   └─ ... (1 children)
       │   └─ ";"
       ├─ field[package]/
       │   ├─ type[generic]/
       │   │   └─ ... (4 children)
-      │   ├─ variable_declarator/
+      │   ├─ declarator/
       │   │   └─ ... (1 children)
       │   └─ ";"
       ├─ method[public]/

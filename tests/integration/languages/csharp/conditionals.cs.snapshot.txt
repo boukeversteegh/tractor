@@ -14,25 +14,24 @@ if/
   │   ├─ return/
   │   │   └─ ... (2 children)
   │   └─ "}"
-  ├─ "else"
   ├─ else_if/
-  │   ├─ "if ("
+  │   ├─ "else if ("
   │   ├─ condition/binary/
   │   │   └─ ... (6 children)
   │   ├─ ")"
-  │   ├─ then/block/
-  │   │   └─ ... (3 children)
-  │   └─ "else"
+  │   └─ then/block/
+  │       └─ ... (3 children)
   ├─ else_if/
-  │   ├─ "if ("
+  │   ├─ "else if ("
   │   ├─ condition/binary/
   │   │   └─ ... (7 children)
   │   ├─ ")"
-  │   ├─ then/block/
-  │   │   └─ ... (3 children)
-  │   └─ "else"
-  └─ else/block/
-      ├─ "{"
-      ├─ return/
-      │   └─ ... (2 children)
-      └─ "}"
+  │   └─ then/block/
+  │       └─ ... (3 children)
+  └─ else/
+      ├─ "else"
+      └─ block/
+          ├─ "{"
+          ├─ return/
+          │   └─ ... (2 children)
+          └─ "}"

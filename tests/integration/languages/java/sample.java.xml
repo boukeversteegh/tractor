@@ -14,11 +14,12 @@
               <field>
                 <private/>
                 <type>
-                  <name>int</name>
+                  <int/>
+                  int
                 </type>
-                <variable_declarator>
+                <declarator>
                   <name>value</name>
-                </variable_declarator>
+                </declarator>
                 ;
               </field>
               <constructor>
@@ -27,7 +28,8 @@
                 (
                 <param>
                   <type>
-                    <name>int</name>
+                    <int/>
+                    int
                   </type>
                   <name>value</name>
                 </param>
@@ -57,21 +59,24 @@
                 <public/>
                 <returns>
                   <type>
-                    <name>int</name>
+                    <int/>
+                    int
                   </type>
                 </returns>
                 <name>add</name>
                 (
                 <param>
                   <type>
-                    <name>int</name>
+                    <int/>
+                    int
                   </type>
                   <name>a</name>
                 </param>
                 ,
                 <param>
                   <type>
-                    <name>int</name>
+                    <int/>
+                    int
                   </type>
                   <name>b</name>
                 </param>
@@ -102,7 +107,8 @@
                 <protected/>
                 <returns>
                   <type>
-                    <name>void</name>
+                    <void/>
+                    void
                   </type>
                 </returns>
                 <name>log</name>
@@ -136,7 +142,8 @@
                 <package/>
                 <returns>
                   <type>
-                    <name>void</name>
+                    <void/>
+                    void
                   </type>
                 </returns>
                 <name>defaultAccess</name>
@@ -152,7 +159,8 @@
                 <public/>
                 <returns>
                   <type>
-                    <name>void</name>
+                    <void/>
+                    void
                   </type>
                 </returns>
                 <name>main</name>
@@ -169,11 +177,12 @@
                 )
                 <body>
                   {
-                  <local_variable_declaration>
+                  <variable>
                     <type>
-                      <name>int</name>
+                      <int/>
+                      int
                     </type>
-                    <variable_declarator>
+                    <declarator>
                       <name>result</name>
                       =
                       <value>
@@ -186,9 +195,9 @@
                           )
                         </call>
                       </value>
-                    </variable_declarator>
+                    </declarator>
                     ;
-                  </local_variable_declaration>
+                  </variable>
                   <call>
                     <member>
                       <name>System</name>
@@ -234,7 +243,8 @@
                 <public/>
                 <returns>
                   <type>
-                    <name>void</name>
+                    <void/>
+                    void
                   </type>
                 </returns>
                 <name>execute</name>

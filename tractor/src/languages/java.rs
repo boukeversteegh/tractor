@@ -148,10 +148,57 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             rename(xot, node, "name");
             Ok(TransformAction::Continue)
         }
-        "type_identifier" | "integral_type" | "floating_point_type"
-        | "boolean_type" | "void_type" => {
+        "type_identifier" => {
             rename(xot, node, "type");
             wrap_text_in_name(xot, node)?;
+            Ok(TransformAction::Continue)
+        }
+        // Primitive types — `int`, `double`, `boolean`, `void`, … —
+        // render as `<type>` with an empty marker carrying the keyword
+        // (`<type><int/>int</type>`). Known language keywords are
+        // exposed as markers for short predicate-style queries
+        // (`//type[int]`) rather than as `<name>` values.
+        "integral_type" | "floating_point_type" | "boolean_type" | "void_type" => {
+            if let Some(text) = get_text_content(xot, node) {
+                let text = text.trim().to_string();
+                rename(xot, node, "type");
+                if !text.is_empty() {
+                    prepend_empty_element(xot, node, &text)?;
+                }
+                return Ok(TransformAction::Done);
+            }
+            rename(xot, node, "type");
+            Ok(TransformAction::Continue)
+        }
+
+        // Parenthesized expressions are a grammar wrapper — just `"("`
+        // / the inner expression / `")"`. The parens carry no semantic,
+        // so skip the wrapper: its children become direct siblings of
+        // the enclosing node (Principle #12).
+        "parenthesized_expression" => Ok(TransformAction::Skip),
+
+        // `this(args)` / `super(args)` at the start of a constructor
+        // body. Render as `<call>` with a `<this/>` or `<super/>`
+        // marker so `//call[this]` / `//call[super]` work uniformly
+        // with other call sites.
+        "explicit_constructor_invocation" => {
+            // Find the "this" or "super" keyword child and lift it to
+            // an empty marker with the keyword as dangling sibling text.
+            let children: Vec<_> = xot.children(node).collect();
+            for child in children {
+                let child_kind = get_kind(xot, child);
+                let tag = match child_kind.as_deref() {
+                    Some("this") => "this",
+                    Some("super") => "super",
+                    _ => continue,
+                };
+                let text = get_text_content(xot, child).unwrap_or_default();
+                xot.detach(child)?;
+                let marker = prepend_empty_element(xot, node, tag)?;
+                insert_text_after(xot, marker, &text)?;
+                break;
+            }
+            rename(xot, node, "call");
             Ok(TransformAction::Continue)
         }
 
@@ -281,6 +328,8 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         // constructor_body is flattened (handled above) — the `body` wrapper
         // already comes from the field-wrapping pass.
         "field_declaration" => Some("field"),
+        "variable_declarator" => Some("declarator"),
+        "local_variable_declaration" => Some("variable"),
         "enum_constant" => Some("constant"),
         // formal_parameters and argument_list are flattened via Principle #12 above
         "formal_parameter" => Some("param"),

@@ -658,6 +658,112 @@ mod java {
             "final else is flat sibling",
         );
     }
+
+    /// Primitive types render as `<type>` with an empty marker
+    /// carrying the keyword — `<type><int/>int</type>`. User-defined
+    /// types keep `<type><name>Foo</name></type>`.
+    #[test]
+    fn primitive_types_use_markers() {
+        let mut tree = parse_src(
+            "java",
+            "class X { int a; double b; boolean c; void d() {} Foo e; }",
+        );
+        assert_count(
+            &mut tree,
+            "//type[int]",
+            1,
+            "int primitive carries <int/> marker",
+        );
+        assert_count(
+            &mut tree,
+            "//type[double]",
+            1,
+            "double primitive carries <double/> marker",
+        );
+        assert_count(
+            &mut tree,
+            "//type[boolean]",
+            1,
+            "boolean primitive carries <boolean/> marker",
+        );
+        assert_count(
+            &mut tree,
+            "//type[void]",
+            1,
+            "void carries <void/> marker",
+        );
+        assert_count(
+            &mut tree,
+            "//type[name='Foo']",
+            1,
+            "user-defined type keeps <name> for the identifier",
+        );
+    }
+
+    /// Principle #12 — parenthesized_expression is grammar bleed-through;
+    /// drop the wrapper so inner expressions sit directly under their
+    /// enclosing node. The parens remain as text children.
+    #[test]
+    fn parenthesized_expression_flattens() {
+        let mut tree = parse_src(
+            "java",
+            "class X { boolean f(int n) { return (n + 1) > 0; } }",
+        );
+        assert_count(
+            &mut tree,
+            "//parenthesized_expression",
+            0,
+            "no parenthesized_expression wrapper (Principle #12)",
+        );
+    }
+
+    /// `this(…)` / `super(…)` in constructors render as `<call>` with
+    /// a `<this/>` or `<super/>` marker — uniform with other call sites.
+    #[test]
+    fn explicit_constructor_invocation_is_call() {
+        let mut tree = parse_src(
+            "java",
+            "class X { X() { this(1); } X(int a) {} class Y extends X { Y() { super(2); } } }",
+        );
+        assert_count(
+            &mut tree,
+            "//call[this]",
+            1,
+            "this(…) renders as <call> with <this/> marker",
+        );
+        assert_count(
+            &mut tree,
+            "//call[super]",
+            1,
+            "super(…) renders as <call> with <super/> marker",
+        );
+        assert_count(
+            &mut tree,
+            "//explicit_constructor_invocation",
+            0,
+            "no raw tree-sitter kind leak",
+        );
+    }
+
+    /// Principle #2 — `variable_declarator` renames to `<declarator>`
+    /// (no underscores in the final vocabulary, short but not
+    /// abbreviated).
+    #[test]
+    fn variable_declarator_renames() {
+        let mut tree = parse_src("java", "class X { void f() { int x = 1, y = 2; } }");
+        assert_count(
+            &mut tree,
+            "//variable_declarator",
+            0,
+            "no raw kind leak",
+        );
+        assert_count(
+            &mut tree,
+            "//variable/declarator",
+            2,
+            "each declarator in a multi-variable declaration is its own <declarator>",
+        );
+    }
 }
 
 // ===========================================================================

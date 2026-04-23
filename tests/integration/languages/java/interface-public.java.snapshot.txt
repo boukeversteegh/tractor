@@ -1,4 +1,29 @@
-method[public]/
-  ├─ returns/type/name = "double"
-  ├─ name = "area"
-  └─ "();"
+body/
+  ├─ "{"
+  ├─ method[public]/
+  │   ├─ returns/type[double] = "double"
+  │   ├─ name = "area"
+  │   └─ "();"
+  ├─ line_comment = "// implicitly public"
+  ├─ method[public]/
+  │   ├─ returns/type[double] = "double"
+  │   ├─ name = "perimeter"
+  │   └─ "();"
+  ├─ line_comment = "// implicitly public"
+  ├─ method[package]/
+  │   ├─ returns/type/
+  │   │   └─ ... (1 children)
+  │   ├─ name = "name"
+  │   ├─ "()"
+  │   └─ body/
+  │       ├─ "{"
+  │       ├─ line_comment = "// implicitly public"
+  │       ├─ return/
+  │       │   └─ ... (2 children)
+  │       └─ "}"
+  ├─ method[public]/
+  │   ├─ returns/type[void] = "void"
+  │   ├─ name = "stroke"
+  │   └─ "();"
+  ├─ line_comment = "// explicit — should still be <public/>"
+  └─ "}"

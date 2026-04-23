@@ -1,7 +1,45 @@
-field[private]/
-  ├─ type/name = "int"
-  ├─ variable_declarator/
-  │   ├─ name = "priv"
-  │   ├─ "="
-  │   └─ value/int = "2"
-  └─ ";"
+body/
+  ├─ "{"
+  ├─ field[final and static and public]/
+  │   ├─ type[int] = "int"
+  │   ├─ declarator/
+  │   │   ├─ name = "PUB"
+  │   │   ├─ "="
+  │   │   └─ value/
+  │   │       └─ ... (1 children)
+  │   └─ ";"
+  ├─ field[private]/
+  │   ├─ type[int] = "int"
+  │   ├─ declarator/
+  │   │   ├─ name = "priv"
+  │   │   ├─ "="
+  │   │   └─ value/
+  │   │       └─ ... (1 children)
+  │   └─ ";"
+  ├─ field[protected]/
+  │   ├─ type[int] = "int"
+  │   ├─ declarator/
+  │   │   ├─ name = "prot"
+  │   │   ├─ "="
+  │   │   └─ value/
+  │   │       └─ ... (1 children)
+  │   └─ ";"
+  ├─ field[package]/
+  │   ├─ type[int] = "int"
+  │   ├─ declarator/
+  │   │   ├─ name = "pkg"
+  │   │   ├─ "="
+  │   │   └─ value/
+  │   │       └─ ... (1 children)
+  │   └─ ";"
+  ├─ line_comment = "// implicit package-private -> <package/>"
+  ├─ method[synchronized and public]/
+  │   ├─ returns/type[void] = "void"
+  │   ├─ name = "sync"
+  │   ├─ "()"
+  │   └─ body = "{}"
+  ├─ class[static and abstract and public]/
+  │   ├─ "class"
+  │   ├─ name = "AbsStatic"
+  │   └─ body = "{}"
+  └─ "}"

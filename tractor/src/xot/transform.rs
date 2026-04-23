@@ -1042,20 +1042,35 @@ pub mod helpers {
                     // The `<else>` wraps an `<if>` directly (C-like else-if chain).
                     let inner_if = single_if_child(xot, alt);
                     if let Some(inner_if) = inner_if {
-                        // Lift this `<if>`'s condition/then as a new
-                        // `<else_if>` child of `if_node`, inserted
-                        // immediately after `anchor` (so the chain stays
-                        // in source order, even when the outer `<if>`
-                        // has trailing text like Ruby's "end" keyword).
+                        // Grab the "else" keyword text that sits just
+                        // before the <else> wrapper on the outer if —
+                        // conceptually it's the opening of this else-if
+                        // branch, so it belongs inside the new <else_if>.
+                        // xot's automatic text consolidation merges it
+                        // with the inner if's leading "if" text so the
+                        // result reads as a single "else if (" token.
+                        let else_text = take_preceding_text_sibling(xot, alt)?;
+
                         let else_if = lift_if_as_else_if(xot, if_node, anchor, inner_if)?;
+
+                        if let Some(content) = else_text {
+                            let new_text = xot.new_text(&content);
+                            xot.prepend(else_if, new_text)?;
+                        }
+
                         xot.detach(alt)?; // drop the now-empty <else>
                         current = else_if;
                         anchor = Some(else_if);
                         continue;
                     }
-                    // Terminal <else>: move it to be a child of if_node,
-                    // positioned after `anchor` (Ruby nests else deep
-                    // inside the elsif chain).
+                    // Terminal <else>: move the preceding "else" text
+                    // into the <else> wrapper, then reparent the whole
+                    // thing to if_node (Ruby nests else deep inside the
+                    // elsif chain).
+                    if let Some(content) = take_preceding_text_sibling(xot, alt)? {
+                        let new_text = xot.new_text(&content);
+                        xot.prepend(alt, new_text)?;
+                    }
                     reparent_in(xot, alt, if_node, anchor)?;
                     break;
                 }
@@ -1063,6 +1078,10 @@ pub mod helpers {
                     // Ruby's <elsif> (or any previously-renamed <else_if>).
                     // Rename and lift to be a child of if_node,
                     // positioned after `anchor`.
+                    if let Some(content) = take_preceding_text_sibling(xot, alt)? {
+                        let new_text = xot.new_text(&content);
+                        xot.prepend(alt, new_text)?;
+                    }
                     rename(xot, alt, "else_if");
                     reparent_in(xot, alt, if_node, anchor)?;
                     current = alt;
@@ -1073,6 +1092,26 @@ pub mod helpers {
         }
 
         Ok(())
+    }
+
+    /// Detach the immediately preceding text sibling of `node` (if
+    /// any) and return its content. Used to fold the "else" keyword
+    /// that tree-sitter emits as a sibling of the alternative branch
+    /// into the branch element itself, so the chain's text reads as
+    /// a continuous source token rather than splitting across the
+    /// sibling boundary.
+    fn take_preceding_text_sibling(
+        xot: &mut Xot,
+        node: XotNode,
+    ) -> Result<Option<String>, xot::Error> {
+        let Some(prev) = xot.previous_sibling(node) else {
+            return Ok(None);
+        };
+        let Some(content) = xot.text_str(prev).map(|s| s.to_string()) else {
+            return Ok(None);
+        };
+        xot.detach(prev)?;
+        Ok(Some(content))
     }
 
     /// Return the last element child of `node` whose name is `else`,
