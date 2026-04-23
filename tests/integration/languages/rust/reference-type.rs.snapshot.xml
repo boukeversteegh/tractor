@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<file>
+  <line_comment>// Reference types (`&amp;T`, `&amp;mut T`, `&amp;'a T`) render as a single</line_comment>
+  <line_comment>// &lt;type&gt; with a &lt;borrowed/&gt; marker (Principle #14: every type</line_comment>
+  <line_comment>// reference wraps in &lt;type&gt;; Principle #13: empty markers compose).</line_comment>
+  <line_comment>// The inner referenced type is a nested &lt;type&gt; child.</line_comment>
+  <line_comment>//</line_comment>
+  <line_comment>// Queries:</line_comment>
+  <line_comment>//   //type[borrowed]         -&gt; every reference type</line_comment>
+  <line_comment>//   //type[borrowed][mut]    -&gt; every mutable borrow</line_comment>
+  <line_comment>//   //type[borrowed]/type    -&gt; the referenced type</line_comment>
+  <function>
+    <private/>
+    fn
+    <name>read</name>
+    (
+    <param>
+      <name>s</name>
+      :
+      <type>
+        <borrowed/>
+        &amp;
+        <type>
+          <name>str</name>
+        </type>
+      </type>
+    </param>
+    ) -&gt;
+    <returns>
+      <type>
+        <borrowed/>
+        &amp;
+        <type>
+          <name>str</name>
+        </type>
+      </type>
+    </returns>
+    <body>
+      {
+      <name>s</name>
+      }
+    </body>
+  </function>
+  <function>
+    <private/>
+    fn
+    <name>write</name>
+    (
+    <param>
+      <name>buf</name>
+      :
+      <type>
+        <borrowed/>
+        <mut/>
+        &amp;
+        <type>
+          <generic/>
+          <name>Vec</name>
+          &lt;
+          <type>
+            <name>u8</name>
+          </type>
+          &gt;
+        </type>
+      </type>
+    </param>
+    )
+    <body>{}</body>
+  </function>
+  <function>
+    <private/>
+    fn
+    <name>static_ref</name>
+    () -&gt;
+    <returns>
+      <type>
+        <borrowed/>
+        &amp;
+        <lifetime>
+          '
+          <name>static</name>
+        </lifetime>
+        <type>
+          <name>str</name>
+        </type>
+      </type>
+    </returns>
+    <body>
+      {
+      <string>&quot;&quot;</string>
+      }
+    </body>
+  </function>
+</file>

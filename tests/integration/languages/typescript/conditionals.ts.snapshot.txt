@@ -85,7 +85,7 @@ program/
       ├─ "const"
       ├─ name = "label"
       ├─ "="
-      ├─ value/lambda/
+      ├─ value/arrow/
       │   ├─ "("
       │   ├─ param[required]/
       │   │   ├─ name = "n"

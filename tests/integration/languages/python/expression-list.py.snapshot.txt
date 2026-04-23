@@ -17,20 +17,11 @@ module/
   │   ├─ "():"
   │   └─ body/return/
   │       ├─ "return"
-  │       ├─ string/
-  │       │   ├─ string_start = "\""
-  │       │   ├─ string_content = "a"
-  │       │   └─ string_end = "\""
+  │       ├─ string = "\"a\""
   │       ├─ ","
-  │       ├─ string/
-  │       │   ├─ string_start = "\""
-  │       │   ├─ string_content = "b"
-  │       │   └─ string_end = "\""
+  │       ├─ string = "\"b\""
   │       ├─ ","
-  │       └─ string/
-  │           ├─ string_start = "\""
-  │           ├─ string_content = "c"
-  │           └─ string_end = "\""
+  │       └─ string = "\"c\""
   └─ function/
       ├─ "def"
       ├─ name = "unpack"

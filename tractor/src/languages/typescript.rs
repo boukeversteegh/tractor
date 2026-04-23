@@ -247,7 +247,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "function_declaration" | "function_expression" => Some("function"),
         "generator_function_declaration" | "generator_function" => Some("function"),
         "method_definition" => Some("method"),
-        "arrow_function" => Some("lambda"),
+        "arrow_function" => Some("arrow"),
         "interface_declaration" => Some("interface"),
         // type_alias_declaration handled above (flattens <value> wrapper)
         "enum_declaration" => Some("enum"),
@@ -531,7 +531,7 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
 
         // Functions/calls
         "call" => SyntaxCategory::Function,
-        "lambda" => SyntaxCategory::Function,
+        "arrow" => SyntaxCategory::Function,
 
         // Operators
         "op" => SyntaxCategory::Operator,

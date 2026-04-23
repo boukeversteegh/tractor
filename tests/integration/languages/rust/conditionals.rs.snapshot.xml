@@ -16,7 +16,8 @@
     </param>
     ) -&gt;
     <returns>
-      <ref>
+      <type>
+        <borrowed/>
         &amp;
         <lifetime>
           '
@@ -25,7 +26,7 @@
         <type>
           <name>str</name>
         </type>
-      </ref>
+      </type>
     </returns>
     <body>
       {
@@ -138,7 +139,8 @@
     </param>
     ) -&gt;
     <returns>
-      <ref>
+      <type>
+        <borrowed/>
         &amp;
         <lifetime>
           '
@@ -147,7 +149,7 @@
         <type>
           <name>str</name>
         </type>
-      </ref>
+      </type>
     </returns>
     <body>
       {

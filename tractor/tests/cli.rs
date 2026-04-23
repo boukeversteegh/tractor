@@ -156,8 +156,8 @@ cli_suite! {
         binary_op => tractor query "sample.py" -x "binary[op='+']" => count 1;
         calls => tractor query "sample.py" -x "call" => count 3;
         async_function => tractor query "sample.py" -x "function[async]" => count 1;
-        multiline_lf => tractor query "multiline-string-lf.py" -x "//string_content[.=\"hello\n\n\"]" => count 1;
-        multiline_crlf => tractor query "multiline-string-crlf.py" -x "//string_content[.=\"hello\n\n\"]" => count 1;
+        multiline_lf => tractor query "multiline-string-lf.py" -x "//string[contains(., \"hello\n\n\")]" => count 1;
+        multiline_crlf => tractor query "multiline-string-crlf.py" -x "//string[contains(., \"hello\n\n\")]" => count 1;
         // Regression: 3-level predicates must match same as count() workaround (issue #129)
         deep_predicate_2level => tractor query "sample.py" -x "//function[body/return]" => count 2;
         deep_predicate_3level => tractor query "sample.py" -x "//function[body/return/binary]" => count 1;
@@ -320,7 +320,7 @@ cli_suite! {
         python_string => tractor query -s "def hello(): pass" -l "python" -x "function" => count 1;
         csharp_string => tractor query -s "public class Foo { public void Bar() {} }" -l "csharp" -x "class" => count 1;
         javascript_string => tractor query -s "function greet() { return 'hi'; }" -l "javascript" -x "function" => count 1;
-        typescript_string => tractor query -s "const greet = (): string => 'hi';" -l "typescript" -x "lambda" => count 1;
+        typescript_string => tractor query -s "const greet = (): string => 'hi';" -l "typescript" -x "arrow" => count 1;
         short_flag => tractor query -s "fn main() {}" -l "rust" -x "function" => count 1;
         expect_exact => tractor query -s "fn a() {} fn b() {}" -l "rust" -x "function" => count 2;
         expect_some => tractor query -s "fn a() {} fn b() {}" -l "rust" -x "function" => count some;

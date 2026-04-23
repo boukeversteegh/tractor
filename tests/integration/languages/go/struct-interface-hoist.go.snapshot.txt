@@ -1,0 +1,29 @@
+file/
+  ├─ comment = "// The `type Foo struct { … }` / `type Foo interface { … }` grammar"
+  ├─ comment = "// wrappers hoist: the outer element becomes <struct> or <interface>"
+  ├─ comment = "// directly instead of the Go-spec `<type>` wrapper. A developer reads"
+  ├─ comment = "// \"I'm declaring a struct named Foo\" (Goal #5 — developer mental"
+  ├─ comment = "// model), not \"I'm declaring a type that happens to be a struct.\""
+  ├─ package/
+  │   ├─ "package"
+  │   └─ name = "main"
+  ├─ struct[exported]/
+  │   ├─ "type"
+  │   ├─ name = "Config"
+  │   ├─ "struct {"
+  │   ├─ field/
+  │   │   ├─ name = "Host"
+  │   │   └─ type/name = "string"
+  │   ├─ field/
+  │   │   ├─ name = "Port"
+  │   │   └─ type/name = "int"
+  │   └─ "}"
+  └─ interface[exported]/
+      ├─ "type"
+      ├─ name = "Greeter"
+      ├─ "interface {"
+      ├─ method/
+      │   ├─ name = "Greet"
+      │   ├─ "()"
+      │   └─ returns/type/name = "string"
+      └─ "}"

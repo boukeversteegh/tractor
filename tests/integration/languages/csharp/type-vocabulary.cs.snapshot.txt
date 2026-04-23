@@ -28,18 +28,15 @@ unit/
       ├─ "class"
       ├─ name = "Dog"
       ├─ "<"
-      ├─ generic/name = "T"
+      ├─ generic/
+      │   ├─ name = "T"
+      │   └─ extends/type/name = "Animal"
       ├─ ">"
       ├─ extends/
       │   ├─ ":"
       │   ├─ type/name = "Animal"
       │   ├─ ","
       │   └─ type/name = "IBarker"
-      ├─ type_parameter_constraints_clause/
-      │   ├─ "where"
-      │   ├─ name = "T"
-      │   ├─ ":"
-      │   └─ type_parameter_constraint/type/name = "Animal"
       └─ body/
           ├─ "{"
           ├─ field[public]/
@@ -50,7 +47,8 @@ unit/
           ├─ field[public]/
           │   ├─ variable/
           │   │   ├─ type[generic]/
-          │   │   │   ├─ "List<"
+          │   │   │   ├─ name = "List"
+          │   │   │   ├─ "<"
           │   │   │   ├─ type/name = "string"
           │   │   │   └─ ">"
           │   │   └─ declarator/name = "Tags"

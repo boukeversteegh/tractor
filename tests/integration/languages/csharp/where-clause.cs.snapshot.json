@@ -1,0 +1,53 @@
+{
+  "$type": "unit",
+  "children": [
+    {
+      "comment": "// C# `where` clause constraints attach to the matching <generic>\n// element. Shape constraints (class / struct / notnull / unmanaged /\n// new) become empty markers that compose; type bounds wrap in\n// <extends><type>…</type></extends>.\n//\n// Queries:\n//   //generic[new]                 -> generics that require a default ctor\n//   //generic[class]               -> generics constrained to reference types\n//   //generic[extends/type[name='IComparable']]\n//                                  -> generics constrained to IComparable\n//   //generic[name='T'][extends]   -> T with any type bound"
+    },
+    {
+      "$type": "import",
+      "children": [
+        {
+          "name": "System"
+        }
+      ]
+    },
+    {
+      "$type": "class",
+      "internal": true,
+      "name": "Repo",
+      "generics": [
+        {
+          "class": true,
+          "new": true,
+          "name": "T",
+          "children": [
+            {
+              "$type": "extends",
+              "type": {
+                "generic": true,
+                "arguments": {
+                  "name": "T"
+                },
+                "children": [
+                  {
+                    "name": "IComparable"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "struct": true,
+          "name": "U"
+        },
+        {
+          "notnull": true,
+          "name": "V"
+        }
+      ],
+      "body": "{\n}"
+    }
+  ]
+}

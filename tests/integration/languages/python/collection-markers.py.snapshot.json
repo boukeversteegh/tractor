@@ -91,38 +91,14 @@
           "children": [
             {
               "$type": "pair",
-              "key": {
-                "children": [
-                  {
-                    "string_start": "\""
-                  },
-                  {
-                    "string_content": "a"
-                  },
-                  {
-                    "string_end": "\""
-                  }
-                ]
-              },
+              "key": "\"a\"",
               "value": {
                 "int": "1"
               }
             },
             {
               "$type": "pair",
-              "key": {
-                "children": [
-                  {
-                    "string_start": "\""
-                  },
-                  {
-                    "string_content": "b"
-                  },
-                  {
-                    "string_end": "\""
-                  }
-                ]
-              },
+              "key": "\"b\"",
               "value": {
                 "int": "2"
               }

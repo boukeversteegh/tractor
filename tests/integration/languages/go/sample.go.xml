@@ -121,45 +121,41 @@
               }
             </body>
           </function>
-          <type>
+          <struct>
             <exported/>
             type
             <name>Point</name>
-            <struct>
-              struct {
-              <field>
-                <name>X</name>
-                <type>
-                  <name>int</name>
-                </type>
-              </field>
-              <field>
-                <name>Y</name>
-                <type>
-                  <name>int</name>
-                </type>
-              </field>
-              }
-            </struct>
-          </type>
-          <type>
+            struct {
+            <field>
+              <name>X</name>
+              <type>
+                <name>int</name>
+              </type>
+            </field>
+            <field>
+              <name>Y</name>
+              <type>
+                <name>int</name>
+              </type>
+            </field>
+            }
+          </struct>
+          <interface>
             <exported/>
             type
             <name>Shape</name>
-            <interface>
-              interface {
-              <method>
-                <name>Area</name>
-                ()
-                <returns>
-                  <type>
-                    <name>float64</name>
-                  </type>
-                </returns>
-              </method>
-              }
-            </interface>
-          </type>
+            interface {
+            <method>
+              <name>Area</name>
+              ()
+              <returns>
+                <type>
+                  <name>float64</name>
+                </type>
+              </returns>
+            </method>
+            }
+          </interface>
         </file>
       </tree>
     </match>

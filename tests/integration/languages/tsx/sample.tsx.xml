@@ -172,7 +172,7 @@
                             =
                             <jsx_expression>
                               {
-                              <lambda>
+                              <arrow>
                                 () =&gt;
                                 <body>
                                   <call>
@@ -196,7 +196,7 @@
                                     )
                                   </call>
                                 </body>
-                              </lambda>
+                              </arrow>
                               }
                             </jsx_expression>
                           </jsx_attribute>

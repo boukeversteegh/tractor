@@ -38,46 +38,13 @@
             "$type": "return",
             "children": [
               {
-                "$type": "string",
-                "children": [
-                  {
-                    "string_start": "\""
-                  },
-                  {
-                    "string_content": "a"
-                  },
-                  {
-                    "string_end": "\""
-                  }
-                ]
+                "string": "\"a\""
               },
               {
-                "$type": "string",
-                "children": [
-                  {
-                    "string_start": "\""
-                  },
-                  {
-                    "string_content": "b"
-                  },
-                  {
-                    "string_end": "\""
-                  }
-                ]
+                "string": "\"b\""
               },
               {
-                "$type": "string",
-                "children": [
-                  {
-                    "string_start": "\""
-                  },
-                  {
-                    "string_content": "c"
-                  },
-                  {
-                    "string_end": "\""
-                  }
-                ]
+                "string": "\"c\""
               }
             ]
           }

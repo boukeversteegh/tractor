@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module>
+  <comment># F-strings render as &lt;string&gt; with interpolation children and bare</comment>
+  <comment># literal text in between (Principle #12: string_start / string_content /</comment>
+  <comment># string_end grammar wrappers are flattened — they carry no semantic</comment>
+  <comment># beyond their text value). Plain strings collapse to a text-only</comment>
+  <comment># &lt;string&gt; element.</comment>
+  <comment>#</comment>
+  <comment># Query: //string/interpolation/name='age' finds every interpolation of</comment>
+  <comment># the `age` variable regardless of the surrounding literal text.</comment>
+  <assign>
+    <left>
+      <name>plain</name>
+    </left>
+    =
+    <right>
+      <string>&quot;hello&quot;</string>
+    </right>
+  </assign>
+  <assign>
+    <left>
+      <name>greeting</name>
+    </left>
+    =
+    <right>
+      <string>
+        f&quot;hello
+        <interpolation>
+          {
+          <name>name</name>
+          }
+        </interpolation>
+        &quot;
+      </string>
+    </right>
+  </assign>
+  <assign>
+    <left>
+      <name>status</name>
+    </left>
+    =
+    <right>
+      <string>
+        f&quot;hello
+        <interpolation>
+          {
+          <name>name</name>
+          }
+        </interpolation>
+        , you are
+        <interpolation>
+          {
+          <name>age</name>
+          }
+        </interpolation>
+        &quot;
+      </string>
+    </right>
+  </assign>
+</module>

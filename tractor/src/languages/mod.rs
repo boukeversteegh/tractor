@@ -89,14 +89,146 @@ pub fn get_data_transforms(lang: &str) -> Option<(TransformFn, TransformFn)> {
 /// a no-op for it).
 pub fn get_post_transform(lang: &str) -> Option<PostTransformFn> {
     match lang {
+        "csharp" | "cs" => Some(csharp_post_transform),
         "typescript" | "ts" | "tsx" | "javascript" | "js" | "jsx"
-        | "csharp" | "cs"
         | "go"
         | "rust" | "rs"
         | "java"
         | "ruby" | "rb" => Some(collapse_conditionals),
         _ => None,
     }
+}
+
+/// C# combines two post-transforms: `attach_where_clause_constraints`
+/// moves `where T : …` constraints into the matching `<generic>`, then
+/// the shared conditional collapse runs.
+fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    attach_where_clause_constraints(xot, root)?;
+    collapse_conditionals(xot, root)
+}
+
+/// For each `<type_parameter_constraints_clause>` in the tree, move its
+/// constraints into the matching `<generic>` sibling and drop the
+/// clause. Empty markers (`<class/>`, `<struct/>`, `<notnull/>`,
+/// `<unmanaged/>`, `<new/>`) for shape constraints; `<extends>` wrapping
+/// a `<type>` for type bounds. See
+/// `specs/tractor-parse/semantic-tree/transformations/csharp.md`.
+fn attach_where_clause_constraints(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
+    use crate::xot_transform::helpers::*;
+
+    // Collect all clause nodes (mutate later).
+    fn collect(xot: &Xot, node: XotNode, out: &mut Vec<XotNode>) {
+        use crate::xot_transform::helpers::*;
+        if xot.element(node).is_some()
+            && get_kind(xot, node).as_deref() == Some("type_parameter_constraints_clause")
+        {
+            out.push(node);
+        }
+        for child in xot.children(node) {
+            collect(xot, child, out);
+        }
+    }
+
+    let mut clauses: Vec<XotNode> = Vec::new();
+    collect(xot, root, &mut clauses);
+
+    for clause in clauses {
+        if xot.parent(clause).is_none() && !xot.is_document(clause) {
+            continue;
+        }
+
+        // Target name: the first <name> child text of the clause.
+        let target_name: Option<String> = xot.children(clause)
+            .filter(|&c| xot.element(c).is_some())
+            .find(|&c| get_element_name(xot, c).as_deref() == Some("name"))
+            .and_then(|n| get_text_content(xot, n));
+        let target_name = match target_name {
+            Some(n) => n,
+            None => continue,
+        };
+
+        // Find the matching <generic> sibling (under the same parent).
+        let parent = match xot.parent(clause) {
+            Some(p) => p,
+            None => continue,
+        };
+        let target_generic: Option<XotNode> = xot.children(parent)
+            .filter(|&c| xot.element(c).is_some())
+            .filter(|&c| get_element_name(xot, c).as_deref() == Some("generic"))
+            .find(|&c| {
+                xot.children(c)
+                    .filter(|&gc| xot.element(gc).is_some())
+                    .find(|&gc| get_element_name(xot, gc).as_deref() == Some("name"))
+                    .and_then(|n| get_text_content(xot, n))
+                    .as_deref()
+                    == Some(target_name.as_str())
+            });
+        let generic = match target_generic {
+            Some(g) => g,
+            None => continue,
+        };
+
+        // Walk the clause's `type_parameter_constraint` children and
+        // transplant each as a marker or `<extends>` onto the generic.
+        let constraint_children: Vec<XotNode> = xot.children(clause)
+            .filter(|&c| xot.element(c).is_some())
+            .filter(|&c| get_kind(xot, c).as_deref() == Some("type_parameter_constraint"))
+            .collect();
+
+        for constraint in constraint_children {
+            append_constraint_to_generic(xot, constraint, generic)?;
+        }
+
+        // Drop the now-empty clause wrapper.
+        xot.detach(clause)?;
+    }
+    Ok(())
+}
+
+/// Move one `<type_parameter_constraint>`'s meaning onto a `<generic>`:
+/// add an empty marker (`<class/>` / `<struct/>` / `<new/>` / …) for
+/// shape constraints; wrap type references in `<extends>`.
+fn append_constraint_to_generic(
+    xot: &mut Xot,
+    constraint: XotNode,
+    generic: XotNode,
+) -> Result<(), xot::Error> {
+    use crate::xot_transform::helpers::*;
+
+    // `constructor_constraint` → <new/> (the literal text is "new()")
+    let has_ctor_ctor = xot.children(constraint)
+        .any(|c| get_kind(xot, c).as_deref() == Some("constructor_constraint"));
+    if has_ctor_ctor {
+        let marker_name = xot.add_name("new");
+        let marker = xot.new_element(marker_name);
+        xot.append(generic, marker)?;
+        return Ok(());
+    }
+
+    // A `<type>` child means this is a specific type bound → <extends>
+    let type_child = xot.children(constraint)
+        .filter(|&c| xot.element(c).is_some())
+        .find(|&c| get_element_name(xot, c).as_deref() == Some("type"));
+    if let Some(type_child) = type_child {
+        let extends_name = xot.add_name("extends");
+        let extends = xot.new_element(extends_name);
+        xot.detach(type_child)?;
+        xot.append(extends, type_child)?;
+        xot.append(generic, extends)?;
+        return Ok(());
+    }
+
+    // Otherwise the constraint is a bare keyword like "class" / "struct"
+    // / "notnull" / "unmanaged" — add as empty marker with that name.
+    if let Some(text) = get_text_content(xot, constraint) {
+        let trimmed = text.trim();
+        if matches!(trimmed, "class" | "struct" | "notnull" | "unmanaged") {
+            let marker_name = xot.add_name(trimmed);
+            let marker = xot.new_element(marker_name);
+            xot.append(generic, marker)?;
+        }
+    }
+    Ok(())
 }
 
 /// Post-transform pass that collapses every `<if>` in the tree into

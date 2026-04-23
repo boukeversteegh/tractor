@@ -15,43 +15,39 @@
       <name>uint64</name>
     </type>
   </type>
-  <type>
+  <struct>
     <exported/>
     type
     <name>User</name>
-    <struct>
-      struct {
-      <field>
-        <name>Name</name>
-        <type>
-          <name>string</name>
-        </type>
-      </field>
-      <field>
-        <name>Age</name>
-        <type>
-          <name>int</name>
-        </type>
-      </field>
-      }
-    </struct>
-  </type>
-  <type>
+    struct {
+    <field>
+      <name>Name</name>
+      <type>
+        <name>string</name>
+      </type>
+    </field>
+    <field>
+      <name>Age</name>
+      <type>
+        <name>int</name>
+      </type>
+    </field>
+    }
+  </struct>
+  <interface>
     <exported/>
     type
     <name>Greeter</name>
-    <interface>
-      interface {
-      <method>
-        <name>Greet</name>
-        ()
-        <returns>
-          <type>
-            <name>string</name>
-          </type>
-        </returns>
-      </method>
-      }
-    </interface>
-  </type>
+    interface {
+    <method>
+      <name>Greet</name>
+      ()
+      <returns>
+        <type>
+          <name>string</name>
+        </type>
+      </returns>
+    </method>
+    }
+  </interface>
 </file>

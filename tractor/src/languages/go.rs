@@ -87,12 +87,67 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         // Declarations — add <exported/> or <unexported/> based on name capitalization
-        "function_declaration" | "method_declaration" | "type_spec" => {
+        "function_declaration" | "method_declaration" => {
             let marker = get_export_marker(xot, node);
             prepend_empty_element(xot, node, marker)?;
             if let Some(new_name) = map_element_name(&kind) {
                 rename(xot, node, new_name);
             }
+            Ok(TransformAction::Continue)
+        }
+
+        // Type declarations split three ways:
+        //
+        //   type Hello struct { … }    -> <struct><name>Hello</name>…</struct>
+        //   type Greeter interface {…} -> <interface><name>Greeter</name>…</interface>
+        //   type MyInt int             -> <type><name>MyInt</name><type>int</type></type>
+        //
+        // For struct/interface, hoist the inner shape up so a dev reads
+        // "I'm declaring a struct named Hello" (Goal #5). The `<type>`
+        // wrapper in the tree-sitter grammar is Go-spec terminology, not
+        // developer mental model. For defined types over a plain type
+        // reference, keep `<type>` — Go's own spec term — with the
+        // underlying type as a nested `<type>` child.
+        "type_spec" => {
+            let marker = get_export_marker(xot, node);
+            prepend_empty_element(xot, node, marker)?;
+
+            let inner = xot.children(node)
+                .filter(|&c| xot.element(c).is_some())
+                .find(|&c| matches!(
+                    get_kind(xot, c).as_deref(),
+                    Some("struct_type") | Some("interface_type"),
+                ));
+
+            if let Some(inner) = inner {
+                let inner_kind = get_kind(xot, inner).unwrap();
+                let new_name = if inner_kind == "struct_type" {
+                    "struct"
+                } else {
+                    "interface"
+                };
+                rename(xot, node, new_name);
+                // Hoist inner's children before the inner wrapper itself,
+                // then drop the wrapper so the outer element owns them.
+                let inner_children: Vec<_> = xot.children(inner).collect();
+                for c in inner_children {
+                    xot.detach(c)?;
+                    xot.insert_before(inner, c)?;
+                }
+                xot.detach(inner)?;
+            } else {
+                rename(xot, node, "type");
+            }
+            Ok(TransformAction::Continue)
+        }
+
+        // Type alias declarations — `type Color = int`. Distinct from
+        // `type MyInt int` (defined type), which creates a new distinct
+        // type. Rename to <alias> — parallel with Rust / TS / C# / Java.
+        "type_alias" => {
+            let marker = get_export_marker(xot, node);
+            prepend_empty_element(xot, node, marker)?;
+            rename(xot, node, "alias");
             Ok(TransformAction::Continue)
         }
 
@@ -127,22 +182,23 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 }
 
 /// Move the literal `type` keyword text from a `type_declaration` into
-/// its inner `type_spec` child so the keyword stays attached when the
-/// outer wrapper is flattened. Without this, `type Foo struct { … }`
-/// becomes a free-floating `"type"` string node sitting next to a bare
-/// `<type>` element at the file level.
+/// its inner `type_spec` / `type_alias` child so the keyword stays
+/// attached when the outer wrapper is flattened. Without this,
+/// `type Foo struct { … }` becomes a free-floating `"type"` text node
+/// sitting next to the bare spec/alias element at the file level.
 fn move_type_keyword_into_spec(xot: &mut Xot, decl: XotNode) -> Result<(), xot::Error> {
-    // Find the `"type"` text child (if any), collect its value.
-    let keyword_text: Option<XotNode> = xot.children(decl)
-        .find(|&c| xot.text_str(c).map(|t| t.trim() == "type").unwrap_or(false));
-    let keyword = match keyword_text {
+    let keyword = match xot.children(decl)
+        .find(|&c| xot.text_str(c).map(|t| t.trim() == "type").unwrap_or(false))
+    {
         Some(k) => k,
         None => return Ok(()),
     };
-    // Find the first type_spec child — this is where the keyword belongs.
     let spec = xot.children(decl)
         .filter(|&c| xot.element(c).is_some())
-        .find(|&c| get_kind(xot, c).as_deref() == Some("type_spec"));
+        .find(|&c| matches!(
+            get_kind(xot, c).as_deref(),
+            Some("type_spec") | Some("type_alias"),
+        ));
     let spec = match spec {
         Some(s) => s,
         None => return Ok(()),

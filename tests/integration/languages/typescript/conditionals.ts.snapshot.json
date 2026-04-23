@@ -191,7 +191,7 @@
       "const": true,
       "name": "label",
       "value": {
-        "lambda": {
+        "arrow": {
           "parameters": {
             "required": true,
             "pattern": "n",

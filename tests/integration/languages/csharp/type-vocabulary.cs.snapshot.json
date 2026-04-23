@@ -51,7 +51,15 @@
       "internal": true,
       "name": "Dog",
       "generics": {
-        "name": "T"
+        "name": "T",
+        "children": [
+          {
+            "$type": "extends",
+            "type": {
+              "name": "Animal"
+            }
+          }
+        ]
       },
       "body": {
         "children": [
@@ -83,7 +91,12 @@
                   "generic": true,
                   "arguments": {
                     "name": "string"
-                  }
+                  },
+                  "children": [
+                    {
+                      "name": "List"
+                    }
+                  ]
                 },
                 "children": [
                   {
@@ -120,20 +133,6 @@
             {
               "$type": "type",
               "name": "IBarker"
-            }
-          ]
-        },
-        {
-          "$type": "type_parameter_constraints_clause",
-          "children": [
-            {
-              "name": "T"
-            },
-            {
-              "$type": "type_parameter_constraint",
-              "type": {
-                "name": "Animal"
-              }
             }
           ]
         }

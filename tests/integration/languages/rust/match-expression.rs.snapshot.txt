@@ -11,7 +11,7 @@ file/
       │   ├─ ":"
       │   └─ type/name = "i32"
       ├─ ") ->"
-      ├─ returns/ref/
+      ├─ returns/type[borrowed]/
       │   ├─ "&"
       │   ├─ lifetime/
       │   │   ├─ "'"

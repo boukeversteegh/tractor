@@ -21,7 +21,8 @@
         }
       },
       "returns": {
-        "ref": {
+        "type": {
+          "borrowed": true,
           "type": {
             "name": "str"
           },

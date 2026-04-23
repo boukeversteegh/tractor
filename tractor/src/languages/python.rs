@@ -23,6 +23,19 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         //     enclosing statement; matches Go's behavior.
         "as_pattern_target" | "pattern_list" | "expression_list" => Ok(TransformAction::Flatten),
 
+        // Python string internals: `string_start` / `string_content` /
+        // `string_end` are grammar tokens around a string body. They
+        // carry no semantic beyond their text (the opening quote, the
+        // literal text, the closing quote). Flatten them to bare text
+        // siblings so a `<string>` reads as text + interpolations, not
+        // as a soup of grammar wrappers.
+        //
+        // Preserves `<interpolation>` as a wrapper for f-string expressions
+        // so `//string/interpolation/name='age'` continues to work.
+        "string_start" | "string_content" | "string_end" => {
+            Ok(TransformAction::Flatten)
+        }
+
         // Flat lists (Principle #12)
         "parameters" => {
             distribute_field_to_children(xot, node, "parameters");

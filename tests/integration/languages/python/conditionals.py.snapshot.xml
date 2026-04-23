@@ -29,11 +29,7 @@
         <then>
           <return>
             return
-            <string>
-              <string_start>&quot;</string_start>
-              <string_content>neg</string_content>
-              <string_end>&quot;</string_end>
-            </string>
+            <string>&quot;neg&quot;</string>
           </return>
         </then>
         <else_if>
@@ -53,11 +49,7 @@
           <then>
             <return>
               return
-              <string>
-                <string_start>&quot;</string_start>
-                <string_content>zero</string_content>
-                <string_end>&quot;</string_end>
-              </string>
+              <string>&quot;zero&quot;</string>
             </return>
           </then>
         </else_if>
@@ -80,11 +72,7 @@
           <then>
             <return>
               return
-              <string>
-                <string_start>&quot;</string_start>
-                <string_content>small</string_content>
-                <string_end>&quot;</string_end>
-              </string>
+              <string>&quot;small&quot;</string>
             </return>
           </then>
         </else_if>
@@ -93,11 +81,7 @@
           <body>
             <return>
               return
-              <string>
-                <string_start>&quot;</string_start>
-                <string_content>big</string_content>
-                <string_end>&quot;</string_end>
-              </string>
+              <string>&quot;big&quot;</string>
             </return>
           </body>
         </else>
@@ -114,11 +98,7 @@
       <return>
         return
         <ternary>
-          <string>
-            <string_start>&quot;</string_start>
-            <string_content>positive</string_content>
-            <string_end>&quot;</string_end>
-          </string>
+          <string>&quot;positive&quot;</string>
           if
           <compare>
             <op>
@@ -132,11 +112,7 @@
             <int>0</int>
           </compare>
           else
-          <string>
-            <string_start>&quot;</string_start>
-            <string_content>non-positive</string_content>
-            <string_end>&quot;</string_end>
-          </string>
+          <string>&quot;non-positive&quot;</string>
         </ternary>
       </return>
     </body>

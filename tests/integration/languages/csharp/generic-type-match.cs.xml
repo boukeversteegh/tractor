@@ -15,7 +15,8 @@
                 <returns>
                   <type>
                     <generic/>
-                    List&lt;
+                    <name>List</name>
+                    &lt;
                     <type>
                       <name>string</name>
                     </type>
@@ -33,7 +34,8 @@
                         new
                         <type>
                           <generic/>
-                          List&lt;
+                          <name>List</name>
+                          &lt;
                           <type>
                             <name>string</name>
                           </type>
@@ -52,7 +54,8 @@
                 <returns>
                   <type>
                     <generic/>
-                    Dictionary&lt;
+                    <name>Dictionary</name>
+                    &lt;
                     <type>
                       <name>string</name>
                     </type>
@@ -74,7 +77,8 @@
                         new
                         <type>
                           <generic/>
-                          Dictionary&lt;
+                          <name>Dictionary</name>
+                          &lt;
                           <type>
                             <name>string</name>
                           </type>
@@ -97,10 +101,12 @@
                 <returns>
                   <type>
                     <generic/>
-                    List&lt;
+                    <name>List</name>
+                    &lt;
                     <type>
                       <generic/>
-                      Dictionary&lt;
+                      <name>Dictionary</name>
+                      &lt;
                       <type>
                         <name>string</name>
                       </type>
@@ -124,10 +130,12 @@
                         new
                         <type>
                           <generic/>
-                          List&lt;
+                          <name>List</name>
+                          &lt;
                           <type>
                             <generic/>
-                            Dictionary&lt;
+                            <name>Dictionary</name>
+                            &lt;
                             <type>
                               <name>string</name>
                             </type>

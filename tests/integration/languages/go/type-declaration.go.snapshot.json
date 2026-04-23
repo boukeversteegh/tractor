@@ -27,45 +27,41 @@
       }
     },
     {
-      "$type": "type",
+      "$type": "struct",
       "exported": true,
       "name": "User",
-      "type": {
-        "children": [
-          {
-            "$type": "field",
-            "name": "Name",
+      "children": [
+        {
+          "$type": "field",
+          "name": "Name",
+          "type": {
+            "name": "string"
+          }
+        },
+        {
+          "$type": "field",
+          "name": "Age",
+          "type": {
+            "name": "int"
+          }
+        }
+      ]
+    },
+    {
+      "$type": "interface",
+      "exported": true,
+      "name": "Greeter",
+      "children": [
+        {
+          "$type": "method",
+          "name": "Greet",
+          "returns": {
             "type": {
               "name": "string"
             }
-          },
-          {
-            "$type": "field",
-            "name": "Age",
-            "type": {
-              "name": "int"
-            }
           }
-        ]
-      }
-    },
-    {
-      "$type": "type",
-      "exported": true,
-      "name": "Greeter",
-      "type": {
-        "children": [
-          {
-            "$type": "method",
-            "name": "Greet",
-            "returns": {
-              "type": {
-                "name": "string"
-              }
-            }
-          }
-        ]
-      }
+        }
+      ]
     }
   ]
 }

@@ -52,6 +52,11 @@
     &lt;
     <generic>
       <name>T</name>
+      <extends>
+        <type>
+          <name>Animal</name>
+        </type>
+      </extends>
     </generic>
     &gt;
     <extends>
@@ -64,16 +69,6 @@
         <name>IBarker</name>
       </type>
     </extends>
-    <type_parameter_constraints_clause>
-      where
-      <name>T</name>
-      :
-      <type_parameter_constraint>
-        <type>
-          <name>Animal</name>
-        </type>
-      </type_parameter_constraint>
-    </type_parameter_constraints_clause>
     <body>
       {
       <field>
@@ -93,7 +88,8 @@
         <variable>
           <type>
             <generic/>
-            List&lt;
+            <name>List</name>
+            &lt;
             <type>
               <name>string</name>
             </type>

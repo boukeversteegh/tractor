@@ -1,0 +1,115 @@
+{
+  "$type": "file",
+  "children": [
+    {
+      "line_comment": "// Reference types (`&T`, `&mut T`, `&'a T`) render as a single"
+    },
+    {
+      "line_comment": "// <type> with a <borrowed/> marker (Principle #14: every type"
+    },
+    {
+      "line_comment": "// reference wraps in <type>; Principle #13: empty markers compose)."
+    },
+    {
+      "line_comment": "// The inner referenced type is a nested <type> child."
+    },
+    {
+      "line_comment": "//"
+    },
+    {
+      "line_comment": "// Queries:"
+    },
+    {
+      "line_comment": "//   //type[borrowed]         -> every reference type"
+    },
+    {
+      "line_comment": "//   //type[borrowed][mut]    -> every mutable borrow"
+    },
+    {
+      "line_comment": "//   //type[borrowed]/type    -> the referenced type"
+    },
+    {
+      "$type": "function",
+      "private": true,
+      "name": "read",
+      "parameters": {
+        "pattern": "s",
+        "type": {
+          "borrowed": true,
+          "type": {
+            "name": "str"
+          }
+        }
+      },
+      "returns": {
+        "type": {
+          "borrowed": true,
+          "type": {
+            "name": "str"
+          }
+        }
+      },
+      "body": {
+        "children": [
+          {
+            "name": "s"
+          }
+        ]
+      }
+    },
+    {
+      "$type": "function",
+      "private": true,
+      "name": "write",
+      "parameters": {
+        "pattern": "buf",
+        "type": {
+          "borrowed": true,
+          "mut": true,
+          "type": {
+            "generic": true,
+            "arguments": {
+              "name": "u8"
+            },
+            "children": [
+              {
+                "name": "Vec"
+              }
+            ]
+          }
+        }
+      },
+      "body": "{}"
+    },
+    {
+      "$type": "function",
+      "private": true,
+      "name": "static_ref",
+      "returns": {
+        "type": {
+          "borrowed": true,
+          "type": {
+            "name": "str"
+          },
+          "children": [
+            {
+              "$type": "lifetime",
+              "children": [
+                {
+                  "name": "static"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "body": {
+        "children": [
+          {
+            "string": "\"\""
+          }
+        ]
+      }
+    }
+  ]
+}

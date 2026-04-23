@@ -38,18 +38,12 @@ module/
   │   └─ right/dict[literal]/
   │       ├─ "{"
   │       ├─ pair/
-  │       │   ├─ string/
-  │       │   │   ├─ string_start = "\""
-  │       │   │   ├─ string_content = "a"
-  │       │   │   └─ string_end = "\""
+  │       │   ├─ string = "\"a\""
   │       │   ├─ ":"
   │       │   └─ value/int = "1"
   │       ├─ ","
   │       ├─ pair/
-  │       │   ├─ string/
-  │       │   │   ├─ string_start = "\""
-  │       │   │   ├─ string_content = "b"
-  │       │   │   └─ string_end = "\""
+  │       │   ├─ string = "\"b\""
   │       │   ├─ ":"
   │       │   └─ value/int = "2"
   │       └─ "}"

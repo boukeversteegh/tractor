@@ -9,25 +9,23 @@ file/
   │   ├─ "type"
   │   ├─ name = "ID"
   │   └─ type/name = "uint64"
-  ├─ type[exported]/
+  ├─ struct[exported]/
   │   ├─ "type"
   │   ├─ name = "User"
-  │   └─ struct/
-  │       ├─ "struct {"
-  │       ├─ field/
-  │       │   ├─ name = "Name"
-  │       │   └─ type/name = "string"
-  │       ├─ field/
-  │       │   ├─ name = "Age"
-  │       │   └─ type/name = "int"
-  │       └─ "}"
-  └─ type[exported]/
+  │   ├─ "struct {"
+  │   ├─ field/
+  │   │   ├─ name = "Name"
+  │   │   └─ type/name = "string"
+  │   ├─ field/
+  │   │   ├─ name = "Age"
+  │   │   └─ type/name = "int"
+  │   └─ "}"
+  └─ interface[exported]/
       ├─ "type"
       ├─ name = "Greeter"
-      └─ interface/
-          ├─ "interface {"
-          ├─ method/
-          │   ├─ name = "Greet"
-          │   ├─ "()"
-          │   └─ returns/type/name = "string"
-          └─ "}"
+      ├─ "interface {"
+      ├─ method/
+      │   ├─ name = "Greet"
+      │   ├─ "()"
+      │   └─ returns/type/name = "string"
+      └─ "}"

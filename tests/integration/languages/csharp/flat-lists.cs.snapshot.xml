@@ -18,6 +18,7 @@
         &lt;
         <generic>
           <name>T</name>
+          <class/>
         </generic>
         ,
         <generic>
@@ -45,12 +46,6 @@
           <name>c</name>
         </parameter>
         )
-        <type_parameter_constraints_clause>
-          where
-          <name>T</name>
-          :
-          <type_parameter_constraint>class</type_parameter_constraint>
-        </type_parameter_constraints_clause>
         <body>
           <block>
             {
@@ -94,7 +89,8 @@
               <call>
                 <type>
                   <generic/>
-                  First&lt;
+                  <name>First</name>
+                  &lt;
                   <type>
                     <name>string</name>
                   </type>

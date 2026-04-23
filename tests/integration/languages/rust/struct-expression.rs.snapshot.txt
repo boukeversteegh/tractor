@@ -1,0 +1,68 @@
+file/
+  ├─ line_comment = "// Struct construction: `Point { x: 1, y: 2 }` renders as <literal>"
+  ├─ line_comment = "// with a <name> child for the struct name and <field> siblings for"
+  ├─ line_comment = "// each initializer. Symmetric with JS/C# object construction:"
+  ├─ line_comment = "// //literal[name='Point'] finds every Point construction site."
+  ├─ line_comment = "//"
+  ├─ line_comment = "// The name of the struct is a <name>, not a <type>, because this is"
+  ├─ line_comment = "// a reference-by-name to the struct being instantiated — not a type"
+  ├─ line_comment = "// annotation."
+  ├─ struct[private]/
+  │   ├─ "struct"
+  │   ├─ name = "Point"
+  │   └─ body/
+  │       ├─ "{"
+  │       ├─ field/
+  │       │   ├─ name = "x"
+  │       │   ├─ ":"
+  │       │   └─ type/name = "i32"
+  │       ├─ ","
+  │       ├─ field/
+  │       │   ├─ name = "y"
+  │       │   ├─ ":"
+  │       │   └─ type/name = "i32"
+  │       └─ ",\n}"
+  └─ function[private]/
+      ├─ "fn"
+      ├─ name = "make"
+      ├─ "()"
+      └─ body/
+          ├─ "{"
+          ├─ let/
+          │   ├─ "let"
+          │   ├─ name = "p"
+          │   ├─ "="
+          │   ├─ value/literal/
+          │   │   ├─ name = "Point"
+          │   │   └─ body/
+          │   │       ├─ "{"
+          │   │       ├─ field/
+          │   │       │   ├─ name = "x"
+          │   │       │   ├─ ":"
+          │   │       │   └─ value/int = "1"
+          │   │       ├─ ","
+          │   │       ├─ field/
+          │   │       │   ├─ name = "y"
+          │   │       │   ├─ ":"
+          │   │       │   └─ value/int = "2"
+          │   │       └─ "}"
+          │   └─ ";"
+          ├─ let/
+          │   ├─ "let"
+          │   ├─ name = "q"
+          │   ├─ "="
+          │   ├─ value/literal/
+          │   │   ├─ name = "Point"
+          │   │   └─ body/
+          │   │       ├─ "{"
+          │   │       ├─ field/
+          │   │       │   ├─ name = "x"
+          │   │       │   ├─ ":"
+          │   │       │   └─ value/int = "0"
+          │   │       ├─ ","
+          │   │       ├─ base_field_initializer/
+          │   │       │   ├─ ".."
+          │   │       │   └─ name = "p"
+          │   │       └─ "}"
+          │   └─ ";"
+          └─ "}"

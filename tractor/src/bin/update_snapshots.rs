@@ -54,12 +54,15 @@ const FEATURE_FIXTURES: &[&str] = &[
     "tests/integration/languages/csharp/flat-lists.cs",
     "tests/integration/languages/csharp/interface-public.cs",
     "tests/integration/languages/csharp/type-vocabulary.cs",
+    "tests/integration/languages/csharp/where-clause.cs",
 
     // — Rust —
     "tests/integration/languages/rust/conditionals.rs",
     "tests/integration/languages/rust/flat-lists.rs",
     "tests/integration/languages/rust/match-expression.rs",
     "tests/integration/languages/rust/method-call.rs",
+    "tests/integration/languages/rust/reference-type.rs",
+    "tests/integration/languages/rust/struct-expression.rs",
     "tests/integration/languages/rust/type-vocabulary.rs",
     "tests/integration/languages/rust/typedef.rs",
     "tests/integration/languages/rust/visibility.rs",
@@ -69,11 +72,14 @@ const FEATURE_FIXTURES: &[&str] = &[
     "tests/integration/languages/python/collection-markers.py",
     "tests/integration/languages/python/conditionals.py",
     "tests/integration/languages/python/expression-list.py",
+    "tests/integration/languages/python/f-strings.py",
 
     // — Go —
     "tests/integration/languages/go/conditionals.go",
+    "tests/integration/languages/go/defined-type-vs-alias.go",
     "tests/integration/languages/go/flat-lists.go",
     "tests/integration/languages/go/raw-string.go",
+    "tests/integration/languages/go/struct-interface-hoist.go",
     "tests/integration/languages/go/type-declaration.go",
 
     // — Ruby —

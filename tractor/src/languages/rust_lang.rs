@@ -121,6 +121,46 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
 
+        // Reference types (`&T`, `&mut T`, `&'a T`) render as a single
+        // <type> with a <borrowed/> marker (Principle #14: every type
+        // reference wraps in <type>; Principle #13: empty marker for the
+        // "this is a borrow" annotation). The inner referenced type is a
+        // nested <type> child, so //type[borrowed] finds every reference
+        // and //type[borrowed][mut] finds every mutable borrow.
+        "reference_type" => {
+            // Hoist `mut` from mutable_specifier child to an empty marker
+            // and drop the original element.
+            let children: Vec<_> = xot.children(node).collect();
+            let mut has_mut = false;
+            for child in &children {
+                if get_kind(xot, *child).as_deref() == Some("mutable_specifier") {
+                    has_mut = true;
+                    xot.detach(*child)?;
+                }
+            }
+            if has_mut {
+                prepend_empty_element(xot, node, "mut")?;
+            }
+            prepend_empty_element(xot, node, "borrowed")?;
+            rename(xot, node, "type");
+            Ok(TransformAction::Continue)
+        }
+
+        // Struct construction expression: `Point { x: 1, y: 2 }`.
+        // Renders as <literal><name>Point</name><field>…</field></literal>
+        // — semantically a struct literal value (Principle #5: the name of
+        // the type being constructed is a <name>, not a <type>, because
+        // this is a reference-by-name to the struct being instantiated).
+        "struct_expression" => {
+            replace_identifier_with_name_child(
+                xot,
+                node,
+                &["type_identifier", "scoped_type_identifier"],
+            )?;
+            rename(xot, node, "literal");
+            Ok(TransformAction::Continue)
+        }
+
         // let declarations - extract mut modifier
         "let_declaration" => {
             extract_modifiers(xot, node)?;
@@ -175,7 +215,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         // parameters is flattened via Principle #12 above
         "parameter" => Some("param"),
         "self_parameter" => Some("self"),
-        "reference_type" => Some("ref"),
+        // reference_type is handled above: <type> with <borrowed/> marker
         "generic_type" => Some("generic"),
         "scoped_type_identifier" | "scoped_identifier" => Some("path"),
         "return_expression" => Some("return"),

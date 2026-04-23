@@ -79,34 +79,32 @@
       }
     },
     {
-      "$type": "type",
+      "$type": "struct",
       "exported": true,
       "name": "Config",
-      "type": {
-        "children": [
-          {
-            "$type": "field",
-            "name": "Host",
-            "type": {
-              "name": "string"
-            }
-          },
-          {
-            "$type": "field",
-            "name": "Port",
-            "type": {
-              "name": "int"
-            }
-          },
-          {
-            "$type": "field",
-            "name": "Tls",
-            "type": {
-              "name": "bool"
-            }
+      "children": [
+        {
+          "$type": "field",
+          "name": "Host",
+          "type": {
+            "name": "string"
           }
-        ]
-      }
+        },
+        {
+          "$type": "field",
+          "name": "Port",
+          "type": {
+            "name": "int"
+          }
+        },
+        {
+          "$type": "field",
+          "name": "Tls",
+          "type": {
+            "name": "bool"
+          }
+        }
+      ]
     }
   ]
 }

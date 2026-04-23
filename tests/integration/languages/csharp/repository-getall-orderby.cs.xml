@@ -15,7 +15,8 @@
                 <returns>
                   <type>
                     <generic/>
-                    List&lt;
+                    <name>List</name>
+                    &lt;
                     <type>
                       <name>User</name>
                     </type>
@@ -60,7 +61,8 @@
                 <returns>
                   <type>
                     <generic/>
-                    List&lt;
+                    <name>List</name>
+                    &lt;
                     <type>
                       <name>User</name>
                     </type>
@@ -139,7 +141,8 @@
                 <returns>
                   <type>
                     <generic/>
-                    List&lt;
+                    <name>List</name>
+                    &lt;
                     <type>
                       <name>User</name>
                     </type>

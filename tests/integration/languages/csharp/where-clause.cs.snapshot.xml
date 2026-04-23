@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<unit>
+  <comment>// C# `where` clause constraints attach to the matching &lt;generic&gt;
+// element. Shape constraints (class / struct / notnull / unmanaged /
+// new) become empty markers that compose; type bounds wrap in
+// &lt;extends&gt;&lt;type&gt;…&lt;/type&gt;&lt;/extends&gt;.
+//
+// Queries:
+//   //generic[new]                 -&gt; generics that require a default ctor
+//   //generic[class]               -&gt; generics constrained to reference types
+//   //generic[extends/type[name='IComparable']]
+//                                  -&gt; generics constrained to IComparable
+//   //generic[name='T'][extends]   -&gt; T with any type bound</comment>
+  <import>
+    using
+    <name>System</name>
+    ;
+  </import>
+  <class>
+    <internal/>
+    class
+    <name>Repo</name>
+    &lt;
+    <generic>
+      <name>T</name>
+      <class/>
+      <extends>
+        <type>
+          <generic/>
+          <name>IComparable</name>
+          &lt;
+          <type>
+            <name>T</name>
+          </type>
+          &gt;
+        </type>
+      </extends>
+      <new/>
+    </generic>
+    ,
+    <generic>
+      <name>U</name>
+      <struct/>
+    </generic>
+    ,
+    <generic>
+      <name>V</name>
+      <notnull/>
+    </generic>
+    &gt;
+    <body>{
+}</body>
+  </class>
+</unit>

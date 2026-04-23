@@ -1,392 +1,24 @@
 # Semantic tree: open questions
 
-All currently-undecided naming, structural, and cross-language
-questions in the semantic tree. Each entry has:
+Tracks design decisions for the semantic tree. Each entry has:
 
 - **Source code** — what the construct looks like in the wild.
 - **Current shape** — what tractor produces today (XPath notation).
-- **Candidate shapes** — proposals in XPath notation, with pros/cons.
-- **My lean** where I have one; blank where I genuinely don't.
+- **Decision** — the shape that's been agreed / implemented.
+- **Alternatives** — shapes we considered but didn't pick, saved for
+  later re-evaluation.
 
 **Notation**: shapes are written as XPath-style descriptors.
 
-- `parent[a][b]` — `<parent>` has children `<a>` and `<b>` (presence only,
-  values unspecified).
+- `parent[a][b]` — `<parent>` has children `<a>` and `<b>`.
 - `parent[a='T']` — `<parent>` has an `<a>` child whose text value is `T`.
-  Used when the value matters to the example.
-- `parent[a or b]` — `<parent>` has either an `<a>` or `<b>` child; used
-  when the candidate is about choosing the child's name.
 - Nesting: `parent[a[x]]` means `<parent><a><x/></a></parent>`.
 
-Where a full XML example illustrates the shape better than the descriptor,
-both are given.
-
-Grouped cross-language first, then per-language.
-
 ---
 
-## Cross-language
+## Still open
 
-
-### #7 — Type parameter declaration inner shape
-
-**Simple case:**
-
-```typescript
-class Box<T> { value: T }
-```
-
-**Current** (C# and TS after recent cleanups):
-```xml
-<class>
-  <name>Box</name>
-  <generic field="generics">
-    <name>
-      <type>T</type>      <!-- spurious wrapper -->
-    </name>
-  </generic>
-  <field>
-    <name>value</name>
-    <type>T</type>
-  </field>
-</class>
-```
-
-Descriptor: `class[name='Box'][generic[name[type='T']]][field[name='value'][type='T']]`
-
-The inner `<name><type>T</type></name>` is a relic. `T` is just the
-name of the type parameter; the `<type>` wrapping inside the `<name>`
-is spurious over-classification (the identifier landed in a type-slot
-in tree-sitter, so its kind was `type_identifier`, but the role here
-is "name of a declared type parameter", not a reference).
-
-**Target:**
-
-```xml
-<class>
-  <name>Box</name>
-  <generic field="generics">
-    <name>T</name>
-  </generic>
-  <field>
-    <name>value</name>
-    <type>T</type>
-  </field>
-</class>
-```
-
-Descriptor: `class[name='Box'][generic[name='T']][field[name='value'][type='T']]`
-
-The type parameter declaration now mirrors every other declaration
-shape — a `<name>` child holds the identifier as plain text.
-
-**With a bound (Java / TypeScript):**
-
-```java
-class Box<T extends Comparable<T>> { T value; }
-```
-
-Target:
-```xml
-<class>
-  <name>Box</name>
-  <generic field="generics">
-    <name>T</name>
-    <extends>
-      <type>
-        <generic/>
-        Comparable
-        <type field="arguments">T</type>
-      </type>
-    </extends>
-  </generic>
-  <field>
-    <name>value</name>
-    <type>T</type>
-  </field>
-</class>
-```
-
-Descriptor: `class[name='Box'][generic[name='T'][extends[type[generic][type='T']]]][field[name='value'][type='T']]`
-
-`<extends>` is used rather than `<bound>` because:
-- **Principle #1 (language keywords)** — `extends` *is* the keyword
-  in Java and TS for this exact relationship.
-- **Cross-element consistency** — `<class><extends><type>Bar</type></extends></class>`
-  and `<generic><extends><type>Bar</type></extends></generic>` both
-  express "is a subtype of"; a query `//extends/type='Bar'` finds
-  every subtype-of-Bar relationship across the tree.
-
-**With C# special constraints:**
-
-```csharp
-class Repo<T>
-    where T : class, IComparable, new()
-{ }
-```
-
-Target:
-```xml
-<class>
-  <name>Repo</name>
-  <generic field="generics">
-    <name>T</name>
-    <class/>                                    <!-- where T : class -->
-    <new/>                                      <!-- where T : new() -->
-    <extends><type>IComparable</type></extends> <!-- where T : IComparable -->
-  </generic>
-</class>
-```
-
-Descriptor: `class[name='Repo'][generic[name='T'][class][new][extends[type='IComparable']]]`
-
-The shape-constraint modifiers (`<class/>`, `<struct/>`, `<new/>`,
-`<unmanaged/>`) are empty markers — they compose cleanly alongside
-the type-reference relationship carried by `<extends>`.
-
-**With multiple bounds (Rust / Java intersection):**
-
-```rust
-fn foo<T: Clone + Send>(x: T) { }
-```
-
-Target (flat — Principle #12):
-```xml
-<function>
-  <name>foo</name>
-  <generic field="generics">
-    <name>T</name>
-    <extends field="extends"><type>Clone</type></extends>
-    <extends field="extends"><type>Send</type></extends>
-  </generic>
-  <param><name>x</name><type>T</type></param>
-</function>
-```
-
-Descriptor: `function[name='foo'][generic[name='T'][extends[type='Clone']][extends[type='Send']]][param[name='x'][type='T']]`
-
-**Queries under the target**:
-- `//generic[name='T']` — find the generic parameter named T.
-- `//generic[extends]` — find constrained type parameters.
-- `//generic[extends/type='Comparable']` — find generics constrained
-  to `Comparable` (by name).
-- `//extends/type='Bar'` — every "is-a Bar" relationship (class
-  extension *and* generic bound).
-
-Applied uniformly to C#, TS, Java, Rust. Python's flat-list already
-does this for its type parameter form.
-
----
-
-### Base-class / implements `<type>` wrapping (Principle #14)
-
-Principle #14 says every type reference wraps in `<type>`. Today,
-base-class slots carry the type as bare text.
-
-```csharp
-public class Foo : Bar, IBaz { }
-```
-
-```java
-public class Foo extends Bar implements IBaz { }
-```
-
-**Current** (C#):
-`class[name][extends="Bar"][implements="IBaz"]`
-(extends/implements have bare text, not a `<type>` child)
-
-**Target**: `class[name][extends[type]][implements[type]]`
-
-Scope: cross-language — C#, Java, TS (`class_heritage`,
-`extends_clause`, `implements_clause`).
-
----
-
-## TypeScript / JavaScript
-
-### `function_type` (arrow-function type annotations)
-
-```typescript
-type Handler = (event: Event) => void;
-function setOn(h: (x: number) => string) { ... }
-```
-
-**Current**: `alias[name][function_type[param][type]]`
-(the `function_type` tree-sitter kind leaks through)
-
-**Candidates**:
-
-| Shape | Pro | Con |
-|---|---|---|
-| `alias[name][type[signature[param][returns]]]` | `<signature>` reads cleanly in a type position | New element name |
-| `alias[name][callable[param][returns]]` | Captures "this is a callable type" | More abstract |
-| `alias[name][type[function[param][returns]]]` | Reuses `<function>` inside a `<type>` | `<function>` now means two things again (decl vs type) |
-
-**My lean**: `alias[name][type[signature[param][returns]]]` — the
-outer `<type>` honours Principle #14, the inner `<signature>` names
-the function-shape semantic.
-
-### JSX / TSX elements
-
-```tsx
-<Button onClick={handleClick}>Click me</Button>
-```
-
-**Current**: raw tree-sitter kinds leak through —
-`jsx_element[jsx_opening_element[identifier][jsx_attribute[property_identifier][expression]]][text][jsx_closing_element]`
-
-Needs a full design pass. No candidate shape yet — JSX attributes
-map to component props and aren't plain strings, so the HTML-style
-`element[name][attribute]` may not fit.
-
-### `<arrow_function>` → `<lambda>` (applied, flagging for review)
-
-Earlier I mapped `arrow_function` → `<lambda>`. Users may prefer
-keeping the JS-native term:
-
-- Current: `lambda[param][body]`
-- Alternative: `arrow[param][body]`
-
-Raising here for explicit sign-off.
-
----
-
-## Python
-
-### f-string / multi-part strings
-
-```python
-message = f"hello {name}, you are {age}"
-```
-
-**Current**:
-`string[string_start][string_content][interpolation[name]][string_content][interpolation[name]][string_end]`
-
-**Proposal**: flatten start/content/end into plain text —
-`string[interpolation[name]][interpolation[name]]` with surrounding
-text as text-node siblings.
-
-Lower priority; strings aren't a common query target.
-
----
-
-## C#
-
-### `where`-clause constraints
-
-```csharp
-class Repo<T, U>
-    where T : class, IComparable<T>, new()
-    where U : struct
-{ }
-```
-
-**Current**:
-`class[name][generic][generic][type_parameter_constraints_clause][type_parameter_constraints_clause]`
-(clauses stand alone; bounds not attached to their generic)
-
-**Candidates**:
-
-| Shape | Pro | Con |
-|---|---|---|
-| `class[name][generic[name][bound[type]][bound[new]]]` (attach constraints to their `<generic>`) | Matches Java's design; a dev reads "T is a class and IComparable and has new()" as properties of T | Requires restructuring: resolving which constraint attaches to which generic |
-| `class[name][generic][generic][where[name[ref]][constraint][constraint]]` | Keeps the clause grouping from the source | `where` collides with SQL/LINQ vocab; clause is a syntactic, not semantic, grouping |
-| `class[name][generic][generic][constraints[constraint][constraint]]` | Preserves the clause-level wrapper without `where`-name collision | Same downside — wrapper is syntactic |
-
-**My lean**: attach constraints to the `<generic>` element, with each
-constraint as a `<bound>` child (matches Java). The `where` clause
-grouping is syntactic, not something a developer thinks about.
-
----
-
-## Go
-
-### Struct / interface hoist
-
-```go
-type Hello struct {
-    name string
-}
-
-type Greeter interface {
-    Greet() string
-}
-```
-
-**Current**: `type[name][struct[field]]`
-
-**Target** (user-approved earlier): `struct[name][field]` and
-`interface[name][method]`.
-
-The `<type>` wrapper is Go-grammar bleed-through; a developer
-thinks "I'm declaring a struct named Hello", not "I'm declaring a
-type that happens to be a struct".
-
-### Defined-type vs alias
-
-```go
-type MyInt int       // defined type — creates a distinct type with methods
-type Color = int     // alias declaration — same type, new name
-```
-
-**Target** (user-approved earlier):
-
-- `type MyInt int` → `type[name][type]` (outer `<type>` is Go's own
-  spec term; inner `<type>` is the underlying-type reference)
-- `type Color = int` → `alias[name][type]`
-
----
-
-## Rust
-
-### `struct_expression`
-
-```rust
-let p = Point { x: 1, y: 2 };
-```
-
-**Current**: `let[name][value[struct_expression[name][field][field]]]`
-
-**Candidates**:
-
-| Shape | Pro | Con |
-|---|---|---|
-| `let[name][value[new[name][field][field]]]` | Matches JS/Java/C# `new Foo()` mental model | Rust doesn't have `new` as a keyword; idiomatic `Point::new()` is a `<call>` |
-| `let[name][value[literal[name][field][field]]]` | Devs call this a "struct literal" | Overloaded with Python's `<literal/>` marker (different context, though) |
-| `let[name][value[init[name][field][field]]]` | Short, distinct | Not a Rust term |
-| `let[name][value[struct[name][field][field]]]` | Symmetric with declaration | Collides with `<struct>` declaration element |
-
-**My lean**: `literal[name][field]…` — the collision with Python's
-`<literal/>` marker is not real (Python's is an empty marker *inside*
-a collection element; Rust's would be an element with children in a
-value position).
-
-### `reference_type` → `<ref>`
-
-```rust
-fn foo(s: &str) -> &mut Vec<i32> { ... }
-```
-
-**Current**: `param[name][ref[type]]` (uses `<ref>` — collides
-conceptually with the deprecated value-ref we removed in #73)
-
-**Candidates**:
-
-| Shape | Pro | Con |
-|---|---|---|
-| Keep `param[name][ref[type]]` | Shortest, matches Rust's `&` sigil | Latent name collision; confuses anyone reading history |
-| `param[name][reference[type]]` | Clear, unambiguous | Long; not Rust's own term |
-| `param[name][type[borrowed]]` | Fits Principle #14 (single `<type>`, marker distinguishes form) | Two-element nesting for a common construct |
-| `param[name][borrow[type]]` | Rust-idiomatic ("borrow checker") | Non-standard; uncommon term for the tree element name |
-
-**My lean**: `type[borrowed]` for Principle #14 consistency — `//type`
-queries find every type reference including borrows.
-
----
-
-## Ruby
-
-### Method-call shape
+### Ruby — method-call shape
 
 ```ruby
 arr.map { |x| x + 1 }
@@ -395,18 +27,96 @@ obj.method(arg).chain
 ```
 
 Ruby has rich method-call variations (implicit receiver, blocks,
-chained calls). Current `call` and `method_call` both rename to
+chained calls). Currently `call` and `method_call` both rename to
 `<call>`, but the `<callee>` / `<object>` / `<property>` shape used
 for TS/JS isn't systematically applied.
 
-Needs a design pass. No candidate shape yet — low priority until
-Ruby sees heavier use.
+Needs a full design pass. Deferred until Ruby sees heavier use.
+
+### JSX / TSX — element shape
+
+```tsx
+<Button onClick={handleClick}>Click me</Button>
+```
+
+**Current**: raw tree-sitter kinds leak through —
+`jsx_element[jsx_opening_element[identifier][jsx_attribute[property_identifier][expression]]][text][jsx_closing_element]`
+
+**Decision** (for when we implement): full shape below. JSX deferred
+for v1; TSX out of scope for v1.
+
+```
+element/
+  ├─ name = "Button"                    # tag or component name
+  ├─ prop/                              # field="props" on each
+  │   ├─ name = "onClick"
+  │   └─ value/...                      # expression or string literal
+  ├─ "Click me"                         # text child
+  └─ element/…                          # nested JSX
+```
+
+Rules:
+- `jsx_element` / `jsx_self_closing_element` → `<element>`.
+- `jsx_opening_element` / `jsx_closing_element` → flattened (grammar
+  wrappers, Principle #12).
+- `jsx_attribute` → `<prop>` with `<name>` + `<value>` children; bare
+  props (no value) render as `<prop><name>x</name></prop>`.
+- `jsx_text` → plain text nodes (no wrapper).
+- `jsx_expression` inside attribute value → children of `<value>`.
+
+Query examples:
+- `//element[name='Button']` — find Button usages.
+- `//element[prop/name='onClick']` — elements with an onClick prop.
+- `//element[name='div']//element` — nested elements inside divs.
+
+Deferred as too early: intrinsic tags (`button`) vs. components
+(`Button`) via marker; JSX namespaces (`<foo.Bar>`); fragment shorthand
+(`<></>`); typed generics on components.
+
+---
+
+## Landed, open for re-evaluation
+
+### Python — f-string / multi-part strings
+
+```python
+plain = "hello"
+greeting = f"hello {name}"
+status = f"hello {name}, you are {age}"
+```
+
+**Current shape** (after landing):
+
+```
+string/
+  ├─ "f\"hello"
+  ├─ interpolation/{ "{", name="name", "}" }
+  ├─ ", you are"
+  ├─ interpolation/{ "{", name="age", "}" }
+  └─ "\""
+```
+
+`string_start` / `string_content` / `string_end` grammar wrappers are
+flattened (Principle #12); `<interpolation>` is preserved so
+`//string/interpolation/name='age'` finds every interpolation of the
+`age` variable regardless of the surrounding literal text.
+
+Plain (non-interpolated) strings collapse to a text-only `<string>`
+element.
+
+**Alternative to revisit**: keep `<string_content>` as an element
+(but still flatten `string_start` / `string_end`). That would let you
+query for specific literal-text fragments of a string —
+`//string_content[. = "hello"]` — at the cost of a more verbose tree
+for plain strings. Dropped on first pass because strings are rarely
+a precise query target; if users do start writing such queries, we
+can restore the wrapper.
 
 ---
 
 ## How to resolve
 
 For each item: decide the shape, update the relevant per-language
-transformation file in `specs/tractor-parse/semantic-tree/transformations/`,
-implement in the language's `.rs`, regenerate fixtures, commit with
-the decision cited.
+transformation file in
+`specs/tractor-parse/semantic-tree/transformations/`, implement in the
+language's `.rs`, regenerate fixtures, commit with the decision cited.

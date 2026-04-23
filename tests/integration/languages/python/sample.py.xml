@@ -4,11 +4,7 @@
     <match file="tests/integration/languages/python/sample.py" line="1" column="1">
       <tree>
         <module>
-          <string>
-            <string_start>&quot;&quot;&quot;</string_start>
-            <string_content>Simple Python example</string_content>
-            <string_end>&quot;&quot;&quot;</string_end>
-          </string>
+          <string>&quot;&quot;&quot;Simple Python example&quot;&quot;&quot;</string>
           <function>
             def
             <name>add</name>
@@ -18,11 +14,7 @@
             <name>b</name>
             ):
             <body>
-              <string>
-                <string_start>&quot;&quot;&quot;</string_start>
-                <string_content>Add two numbers</string_content>
-                <string_end>&quot;&quot;&quot;</string_end>
-              </string>
+              <string>&quot;&quot;&quot;Add two numbers&quot;&quot;&quot;</string>
               <return>
                 return
                 <binary>
@@ -49,11 +41,7 @@
             <name>url</name>
             ):
             <body>
-              <string>
-                <string_start>&quot;&quot;&quot;</string_start>
-                <string_content>Async function example</string_content>
-                <string_end>&quot;&quot;&quot;</string_end>
-              </string>
+              <string>&quot;&quot;&quot;Async function example&quot;&quot;&quot;</string>
               <return>
                 return
                 <name>url</name>
@@ -85,14 +73,13 @@
                 <name>print</name>
                 (
                 <string>
-                  <string_start>f&quot;</string_start>
-                  <string_content>Result: </string_content>
+                  f&quot;Result:
                   <interpolation>
                     {
                     <name>result</name>
                     }
                   </interpolation>
-                  <string_end>&quot;</string_end>
+                  &quot;
                 </string>
                 )
               </call>
@@ -108,11 +95,7 @@
                 </op>
                 <name>__name__</name>
                 ==
-                <string>
-                  <string_start>&quot;</string_start>
-                  <string_content>__main__</string_content>
-                  <string_end>&quot;</string_end>
-                </string>
+                <string>&quot;__main__&quot;</string>
               </compare>
             </condition>
             :

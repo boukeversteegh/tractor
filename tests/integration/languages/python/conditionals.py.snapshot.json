@@ -45,18 +45,7 @@
                   "$type": "return",
                   "children": [
                     {
-                      "$type": "string",
-                      "children": [
-                        {
-                          "string_start": "\""
-                        },
-                        {
-                          "string_content": "neg"
-                        },
-                        {
-                          "string_end": "\""
-                        }
-                      ]
+                      "string": "\"neg\""
                     }
                   ]
                 }
@@ -87,18 +76,7 @@
                       "$type": "return",
                       "children": [
                         {
-                          "$type": "string",
-                          "children": [
-                            {
-                              "string_start": "\""
-                            },
-                            {
-                              "string_content": "zero"
-                            },
-                            {
-                              "string_end": "\""
-                            }
-                          ]
+                          "string": "\"zero\""
                         }
                       ]
                     }
@@ -133,18 +111,7 @@
                       "$type": "return",
                       "children": [
                         {
-                          "$type": "string",
-                          "children": [
-                            {
-                              "string_start": "\""
-                            },
-                            {
-                              "string_content": "small"
-                            },
-                            {
-                              "string_end": "\""
-                            }
-                          ]
+                          "string": "\"small\""
                         }
                       ]
                     }
@@ -158,18 +125,7 @@
                       "$type": "return",
                       "children": [
                         {
-                          "$type": "string",
-                          "children": [
-                            {
-                              "string_start": "\""
-                            },
-                            {
-                              "string_content": "big"
-                            },
-                            {
-                              "string_end": "\""
-                            }
-                          ]
+                          "string": "\"big\""
                         }
                       ]
                     }
@@ -194,18 +150,7 @@
                 "$type": "ternary",
                 "children": [
                   {
-                    "$type": "string",
-                    "children": [
-                      {
-                        "string_start": "\""
-                      },
-                      {
-                        "string_content": "positive"
-                      },
-                      {
-                        "string_end": "\""
-                      }
-                    ]
+                    "string": "\"positive\""
                   },
                   {
                     "$type": "compare",
@@ -228,18 +173,7 @@
                     ]
                   },
                   {
-                    "$type": "string",
-                    "children": [
-                      {
-                        "string_start": "\""
-                      },
-                      {
-                        "string_content": "non-positive"
-                      },
-                      {
-                        "string_end": "\""
-                      }
-                    ]
+                    "string": "\"non-positive\""
                   }
                 ]
               }

@@ -9,7 +9,7 @@ unit/
           │   ├─ returns/name = "T"
           │   ├─ name = "First"
           │   ├─ "<"
-          │   ├─ generic/name = "T"
+          │   ├─ generic[class]/name = "T"
           │   ├─ ","
           │   ├─ generic/name = "U"
           │   ├─ ">("
@@ -25,11 +25,6 @@ unit/
           │   │   ├─ type/name = "int"
           │   │   └─ name = "c"
           │   ├─ ")"
-          │   ├─ type_parameter_constraints_clause/
-          │   │   ├─ "where"
-          │   │   ├─ name = "T"
-          │   │   ├─ ":"
-          │   │   └─ type_parameter_constraint = "class"
           │   └─ body/block/
           │       ├─ "{"
           │       ├─ return/
@@ -53,7 +48,8 @@ unit/
           │       ├─ expression/
           │       │   ├─ call/
           │       │   │   ├─ type[generic]/
-          │       │   │   │   ├─ "First<"
+          │       │   │   │   ├─ name = "First"
+          │       │   │   │   ├─ "<"
           │       │   │   │   ├─ type/name = "string"
           │       │   │   │   ├─ ","
           │       │   │   │   ├─ type/name = "int"

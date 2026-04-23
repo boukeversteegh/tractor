@@ -304,10 +304,15 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             let generic_el = xot.new_element(generic_name);
             xot.prepend(node, generic_el)?;
 
-            // Add the type name text after the marker
+            // Wrap the type name in a <name> child (Principle #14) so
+            // `//type[name='IComparable']` matches uniformly across
+            // declaration and reference sites.
             if !type_name.is_empty() {
+                let name_id = xot.add_name("name");
+                let name_el = xot.new_element(name_id);
                 let text_node = xot.new_text(&type_name);
-                xot.insert_after(generic_el, text_node)?;
+                xot.append(name_el, text_node)?;
+                xot.insert_after(generic_el, name_el)?;
             }
 
             // Continue to process type_argument_list children

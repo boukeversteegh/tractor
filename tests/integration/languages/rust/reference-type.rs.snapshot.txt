@@ -1,0 +1,58 @@
+file/
+  ├─ line_comment = "// Reference types (`&T`, `&mut T`, `&'a T`) render as a single"
+  ├─ line_comment = "// <type> with a <borrowed/> marker (Principle #14: every type"
+  ├─ line_comment = "// reference wraps in <type>; Principle #13: empty markers compose)."
+  ├─ line_comment = "// The inner referenced type is a nested <type> child."
+  ├─ line_comment = "//"
+  ├─ line_comment = "// Queries:"
+  ├─ line_comment = "//   //type[borrowed]         -> every reference type"
+  ├─ line_comment = "//   //type[borrowed][mut]    -> every mutable borrow"
+  ├─ line_comment = "//   //type[borrowed]/type    -> the referenced type"
+  ├─ function[private]/
+  │   ├─ "fn"
+  │   ├─ name = "read"
+  │   ├─ "("
+  │   ├─ param/
+  │   │   ├─ name = "s"
+  │   │   ├─ ":"
+  │   │   └─ type[borrowed]/
+  │   │       ├─ "&"
+  │   │       └─ type/name = "str"
+  │   ├─ ") ->"
+  │   ├─ returns/type[borrowed]/
+  │   │   ├─ "&"
+  │   │   └─ type/name = "str"
+  │   └─ body/
+  │       ├─ "{"
+  │       ├─ name = "s"
+  │       └─ "}"
+  ├─ function[private]/
+  │   ├─ "fn"
+  │   ├─ name = "write"
+  │   ├─ "("
+  │   ├─ param/
+  │   │   ├─ name = "buf"
+  │   │   ├─ ":"
+  │   │   └─ type[borrowed and mut]/
+  │   │       ├─ "&"
+  │   │       └─ type[generic]/
+  │   │           ├─ name = "Vec"
+  │   │           ├─ "<"
+  │   │           ├─ type/name = "u8"
+  │   │           └─ ">"
+  │   ├─ ")"
+  │   └─ body = "{}"
+  └─ function[private]/
+      ├─ "fn"
+      ├─ name = "static_ref"
+      ├─ "() ->"
+      ├─ returns/type[borrowed]/
+      │   ├─ "&"
+      │   ├─ lifetime/
+      │   │   ├─ "'"
+      │   │   └─ name = "static"
+      │   └─ type/name = "str"
+      └─ body/
+          ├─ "{"
+          ├─ string = "\"\""
+          └─ "}"

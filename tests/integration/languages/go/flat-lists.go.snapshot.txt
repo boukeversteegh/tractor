@@ -44,18 +44,17 @@ file/
   │       │   ├─ true = "true"
   │       │   └─ ")"
   │       └─ "}"
-  └─ type[exported]/
+  └─ struct[exported]/
       ├─ "type"
       ├─ name = "Config"
-      └─ struct/
-          ├─ "struct {"
-          ├─ field/
-          │   ├─ name = "Host"
-          │   └─ type/name = "string"
-          ├─ field/
-          │   ├─ name = "Port"
-          │   └─ type/name = "int"
-          ├─ field/
-          │   ├─ name = "Tls"
-          │   └─ type/name = "bool"
-          └─ "}"
+      ├─ "struct {"
+      ├─ field/
+      │   ├─ name = "Host"
+      │   └─ type/name = "string"
+      ├─ field/
+      │   ├─ name = "Port"
+      │   └─ type/name = "int"
+      ├─ field/
+      │   ├─ name = "Tls"
+      │   └─ type/name = "bool"
+      └─ "}"

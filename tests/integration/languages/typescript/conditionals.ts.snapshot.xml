@@ -150,7 +150,7 @@
     <name>label</name>
     =
     <value>
-      <lambda>
+      <arrow>
         (
         <param>
           <required/>
@@ -190,7 +190,7 @@
             </else>
           </ternary>
         </body>
-      </lambda>
+      </arrow>
     </value>
     ;
   </variable>

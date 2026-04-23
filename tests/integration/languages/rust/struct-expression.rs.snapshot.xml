@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<file>
+  <line_comment>// Struct construction: `Point { x: 1, y: 2 }` renders as &lt;literal&gt;</line_comment>
+  <line_comment>// with a &lt;name&gt; child for the struct name and &lt;field&gt; siblings for</line_comment>
+  <line_comment>// each initializer. Symmetric with JS/C# object construction:</line_comment>
+  <line_comment>// //literal[name='Point'] finds every Point construction site.</line_comment>
+  <line_comment>//</line_comment>
+  <line_comment>// The name of the struct is a &lt;name&gt;, not a &lt;type&gt;, because this is</line_comment>
+  <line_comment>// a reference-by-name to the struct being instantiated — not a type</line_comment>
+  <line_comment>// annotation.</line_comment>
+  <struct>
+    <private/>
+    struct
+    <name>Point</name>
+    <body>
+      {
+      <field>
+        <name>x</name>
+        :
+        <type>
+          <name>i32</name>
+        </type>
+      </field>
+      ,
+      <field>
+        <name>y</name>
+        :
+        <type>
+          <name>i32</name>
+        </type>
+      </field>
+      ,
+}
+    </body>
+  </struct>
+  <function>
+    <private/>
+    fn
+    <name>make</name>
+    ()
+    <body>
+      {
+      <let>
+        let
+        <name>p</name>
+        =
+        <value>
+          <literal>
+            <name>Point</name>
+            <body>
+              {
+              <field>
+                <name>x</name>
+                :
+                <value>
+                  <int>1</int>
+                </value>
+              </field>
+              ,
+              <field>
+                <name>y</name>
+                :
+                <value>
+                  <int>2</int>
+                </value>
+              </field>
+              }
+            </body>
+          </literal>
+        </value>
+        ;
+      </let>
+      <let>
+        let
+        <name>q</name>
+        =
+        <value>
+          <literal>
+            <name>Point</name>
+            <body>
+              {
+              <field>
+                <name>x</name>
+                :
+                <value>
+                  <int>0</int>
+                </value>
+              </field>
+              ,
+              <base_field_initializer>
+                ..
+                <name>p</name>
+              </base_field_initializer>
+              }
+            </body>
+          </literal>
+        </value>
+        ;
+      </let>
+      }
+    </body>
+  </function>
+</file>

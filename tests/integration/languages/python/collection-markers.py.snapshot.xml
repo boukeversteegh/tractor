@@ -72,11 +72,7 @@
         <literal/>
         {
         <pair>
-          <string>
-            <string_start>&quot;</string_start>
-            <string_content>a</string_content>
-            <string_end>&quot;</string_end>
-          </string>
+          <string>&quot;a&quot;</string>
           :
           <value>
             <int>1</int>
@@ -84,11 +80,7 @@
         </pair>
         ,
         <pair>
-          <string>
-            <string_start>&quot;</string_start>
-            <string_content>b</string_content>
-            <string_end>&quot;</string_end>
-          </string>
+          <string>&quot;b&quot;</string>
           :
           <value>
             <int>2</int>
