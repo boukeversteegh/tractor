@@ -1,81 +1,43 @@
-program/
-  ├─ line_comment = "// Principle #14: type references wrap their name in a <name> child."
-  ├─ line_comment = "// Covers: plain types, generic types, array types, extends/implements,"
-  ├─ line_comment = "// type parameter declarations with <extends> bounds."
-  ├─ import/
-  │   ├─ "import"
-  │   ├─ path/
-  │   │   ├─ path/
-  │   │   │   ├─ name = "java"
-  │   │   │   ├─ "."
-  │   │   │   └─ name = "util"
-  │   │   ├─ "."
-  │   │   └─ name = "List"
-  │   └─ ";"
-  ├─ class[package]/
-  │   ├─ "class"
-  │   ├─ name = "Animal"
-  │   └─ body = "{}"
-  ├─ interface[package]/
-  │   ├─ "interface"
-  │   ├─ name = "Barker"
-  │   └─ body/
-  │       ├─ "{"
-  │       ├─ method[public]/
-  │       │   ├─ returns/type/name = "void"
-  │       │   ├─ name = "bark"
-  │       │   └─ "();"
-  │       └─ "}"
-  ├─ interface[package]/
-  │   ├─ "interface"
-  │   ├─ name = "Runner"
-  │   └─ body/
-  │       ├─ "{"
-  │       ├─ method[public]/
-  │       │   ├─ returns/type/name = "void"
-  │       │   ├─ name = "run"
-  │       │   └─ "();"
-  │       └─ "}"
-  └─ class[package]/
-      ├─ "class"
-      ├─ name = "Dog"
-      ├─ "<"
-      ├─ generic/
-      │   ├─ name = "T"
-      │   └─ bound/
-      │       ├─ "extends"
-      │       └─ type/name = "Animal"
-      ├─ ">"
-      ├─ extends/
-      │   ├─ "extends"
-      │   └─ type/name = "Animal"
-      ├─ implements/
-      │   ├─ "implements"
-      │   ├─ type/name = "Barker"
-      │   ├─ ","
-      │   └─ type/name = "Runner"
-      └─ body/
-          ├─ "{"
-          ├─ field[package]/
-          │   ├─ type/name = "T"
-          │   ├─ variable_declarator/name = "owner"
-          │   └─ ";"
-          ├─ field[package]/
-          │   ├─ type[generic]/
-          │   │   ├─ name = "List"
-          │   │   ├─ "<"
-          │   │   ├─ type/name = "String"
-          │   │   └─ ">"
-          │   ├─ variable_declarator/name = "tags"
-          │   └─ ";"
-          ├─ method[public]/
-          │   ├─ returns/type/name = "void"
-          │   ├─ name = "bark"
-          │   ├─ "()"
-          │   └─ body = "{}"
-          ├─ method[public]/
-          │   ├─ returns/type/name = "void"
-          │   ├─ name = "run"
-          │   ├─ "()"
-          │   └─ body = "{}"
-          └─ "}"
+class[package]/
+  ├─ "class"
+  ├─ name = "Dog"
+  ├─ "<"
+  ├─ generic/
+  │   ├─ name = "T"
+  │   └─ extends/
+  │       ├─ "extends"
+  │       └─ type/name = "Animal"
+  ├─ ">"
+  ├─ extends/
+  │   ├─ "extends"
+  │   └─ type/name = "Animal"
+  ├─ implements/
+  │   ├─ "implements"
+  │   ├─ type/name = "Barker"
+  │   ├─ ","
+  │   └─ type/name = "Runner"
+  └─ body/
+      ├─ "{"
+      ├─ field[package]/
+      │   ├─ type/name = "T"
+      │   ├─ variable_declarator/name = "owner"
+      │   └─ ";"
+      ├─ field[package]/
+      │   ├─ type[generic]/
+      │   │   ├─ name = "List"
+      │   │   ├─ "<"
+      │   │   ├─ type/name = "String"
+      │   │   └─ ">"
+      │   ├─ variable_declarator/name = "tags"
+      │   └─ ";"
+      ├─ method[public]/
+      │   ├─ returns/type/name = "void"
+      │   ├─ name = "bark"
+      │   ├─ "()"
+      │   └─ body = "{}"
+      ├─ method[public]/
+      │   ├─ returns/type/name = "void"
+      │   ├─ name = "run"
+      │   ├─ "()"
+      │   └─ body = "{}"
+      └─ "}"

@@ -1,109 +1,54 @@
-file/
-  ├─ line_comment = "// Principle #14: type references wrap their name in a <name> child."
-  ├─ line_comment = "// Covers: primitive types, paths, generic types, reference types,"
-  ├─ line_comment = "// type parameter declarations with <extends> bounds."
-  ├─ use/
-  │   ├─ "use"
-  │   ├─ path/
-  │   │   ├─ path/
-  │   │   │   ├─ name = "std"
-  │   │   │   ├─ "::"
-  │   │   │   └─ name = "collections"
-  │   │   ├─ "::"
-  │   │   └─ name = "HashMap"
-  │   └─ ";"
-  ├─ trait[private]/
-  │   ├─ "trait"
-  │   ├─ name = "Barker"
-  │   └─ body/
-  │       ├─ "{"
-  │       ├─ function_signature_item/
-  │       │   ├─ "fn"
-  │       │   ├─ name = "bark"
-  │       │   ├─ "("
-  │       │   ├─ self/
-  │       │   │   ├─ "&"
-  │       │   │   └─ self = "self"
-  │       │   └─ ");"
-  │       └─ "}"
-  ├─ struct[private]/
-  │   ├─ "struct"
-  │   ├─ name = "Dog"
-  │   ├─ "<"
-  │   ├─ generic/
-  │   │   ├─ name = "T"
-  │   │   └─ bounds/
-  │   │       ├─ ":"
-  │   │       └─ type/name = "Barker"
-  │   ├─ ">"
-  │   └─ body/
-  │       ├─ "{"
-  │       ├─ field/
-  │       │   ├─ name = "owner"
-  │       │   ├─ ":"
-  │       │   └─ type/name = "T"
-  │       ├─ ","
-  │       ├─ field/
-  │       │   ├─ name = "tags"
-  │       │   ├─ ":"
-  │       │   └─ type[generic]/
-  │       │       ├─ name = "Vec"
-  │       │       ├─ "<"
-  │       │       ├─ type/name = "String"
-  │       │       └─ ">"
-  │       ├─ ","
-  │       ├─ field/
-  │       │   ├─ name = "scores"
-  │       │   ├─ ":"
-  │       │   └─ type[generic]/
-  │       │       ├─ name = "HashMap"
-  │       │       ├─ "<"
-  │       │       ├─ type/name = "String"
-  │       │       ├─ ","
-  │       │       ├─ type/name = "i32"
-  │       │       └─ ">"
-  │       ├─ ","
-  │       ├─ field/
-  │       │   ├─ name = "parent"
-  │       │   ├─ ":"
-  │       │   └─ type[generic]/
-  │       │       ├─ name = "Option"
-  │       │       ├─ "<"
-  │       │       ├─ type[generic]/
-  │       │       │   ├─ name = "Box"
-  │       │       │   ├─ "<"
-  │       │       │   ├─ type[generic]/
-  │       │       │   │   ├─ name = "Dog"
-  │       │       │   │   ├─ "<"
-  │       │       │   │   ├─ type/name = "T"
-  │       │       │   │   └─ ">"
-  │       │       │   └─ ">"
-  │       │       └─ ">"
-  │       └─ ",\n}"
-  └─ impl/
-      ├─ "impl<"
-      ├─ generic/
-      │   ├─ name = "T"
-      │   └─ bounds/
-      │       ├─ ":"
-      │       └─ type/name = "Barker"
-      ├─ ">"
-      ├─ type/name = "Barker"
-      ├─ "for"
-      ├─ type[generic]/
-      │   ├─ name = "Dog"
-      │   ├─ "<"
-      │   ├─ type/name = "T"
-      │   └─ ">"
-      └─ body/
-          ├─ "{"
-          ├─ function[private]/
-          │   ├─ "fn"
-          │   ├─ name = "bark"
-          │   ├─ "("
-          │   ├─ self/
-          │   │   ├─ "&"
-          │   │   └─ self = "self"
-          │   ├─ ")"
-          │   └─ body = "{}"
-          └─ "}"
+struct[private]/
+  ├─ "struct"
+  ├─ name = "Dog"
+  ├─ "<"
+  ├─ generic/
+  │   ├─ name = "T"
+  │   └─ bounds/
+  │       ├─ ":"
+  │       └─ type/name = "Barker"
+  ├─ ">"
+  └─ body/
+      ├─ "{"
+      ├─ field/
+      │   ├─ name = "owner"
+      │   ├─ ":"
+      │   └─ type/name = "T"
+      ├─ ","
+      ├─ field/
+      │   ├─ name = "tags"
+      │   ├─ ":"
+      │   └─ type[generic]/
+      │       ├─ name = "Vec"
+      │       ├─ "<"
+      │       ├─ type/name = "String"
+      │       └─ ">"
+      ├─ ","
+      ├─ field/
+      │   ├─ name = "scores"
+      │   ├─ ":"
+      │   └─ type[generic]/
+      │       ├─ name = "HashMap"
+      │       ├─ "<"
+      │       ├─ type/name = "String"
+      │       ├─ ","
+      │       ├─ type/name = "i32"
+      │       └─ ">"
+      ├─ ","
+      ├─ field/
+      │   ├─ name = "parent"
+      │   ├─ ":"
+      │   └─ type[generic]/
+      │       ├─ name = "Option"
+      │       ├─ "<"
+      │       ├─ type[generic]/
+      │       │   ├─ name = "Box"
+      │       │   ├─ "<"
+      │       │   ├─ type[generic]/
+      │       │   │   ├─ name = "Dog"
+      │       │   │   ├─ "<"
+      │       │   │   ├─ type/name = "T"
+      │       │   │   └─ ">"
+      │       │   └─ ">"
+      │       └─ ">"
+      └─ ",\n}"

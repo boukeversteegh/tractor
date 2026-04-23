@@ -1,61 +1,35 @@
-unit/
-  ├─ comment = "// Principle #14: type references wrap their name in a <name> child.\n// Covers: plain types, generic types, base list (extends + implements),\n// type parameter declarations."
-  ├─ import/
-  │   ├─ "using"
-  │   ├─ qualified_name/
-  │   │   ├─ qualified_name/
-  │   │   │   ├─ name = "System"
-  │   │   │   ├─ "."
-  │   │   │   └─ name/name = "Collections"
-  │   │   ├─ "."
-  │   │   └─ name/name = "Generic"
-  │   └─ ";"
-  ├─ interface[internal]/
-  │   ├─ "interface"
-  │   ├─ name = "IBarker"
-  │   └─ body/
-  │       ├─ "{"
-  │       ├─ method[public]/
-  │       │   ├─ returns/type/name = "void"
-  │       │   ├─ name = "Bark"
-  │       │   └─ "();"
-  │       └─ "}"
-  ├─ class[internal]/
-  │   ├─ "class"
-  │   ├─ name = "Animal"
-  │   └─ body = "{}"
-  └─ class[internal]/
-      ├─ "class"
-      ├─ name = "Dog"
-      ├─ "<"
-      ├─ generic/
-      │   ├─ name = "T"
-      │   └─ extends/type/name = "Animal"
-      ├─ ">"
-      ├─ extends/
-      │   ├─ ":"
-      │   ├─ type/name = "Animal"
-      │   ├─ ","
-      │   └─ type/name = "IBarker"
-      └─ body/
-          ├─ "{"
-          ├─ field[public]/
-          │   ├─ variable/
-          │   │   ├─ type/name = "T"
-          │   │   └─ declarator/name = "Owner"
-          │   └─ ";"
-          ├─ field[public]/
-          │   ├─ variable/
-          │   │   ├─ type[generic]/
-          │   │   │   ├─ name = "List"
-          │   │   │   ├─ "<"
-          │   │   │   ├─ type/name = "string"
-          │   │   │   └─ ">"
-          │   │   └─ declarator/name = "Tags"
-          │   └─ ";"
-          ├─ method[public]/
-          │   ├─ returns/type/name = "void"
-          │   ├─ name = "Bark"
-          │   ├─ "()"
-          │   └─ body/block = "{}"
-          └─ "}"
+class[internal]/
+  ├─ "class"
+  ├─ name = "Dog"
+  ├─ "<"
+  ├─ generic/
+  │   ├─ name = "T"
+  │   └─ extends/type/name = "Animal"
+  ├─ ">"
+  ├─ extends/
+  │   ├─ ":"
+  │   ├─ type/name = "Animal"
+  │   ├─ ","
+  │   └─ type/name = "IBarker"
+  └─ body/
+      ├─ "{"
+      ├─ field[public]/
+      │   ├─ variable/
+      │   │   ├─ type/name = "T"
+      │   │   └─ declarator/name = "Owner"
+      │   └─ ";"
+      ├─ field[public]/
+      │   ├─ variable/
+      │   │   ├─ type[generic]/
+      │   │   │   ├─ name = "List"
+      │   │   │   ├─ "<"
+      │   │   │   ├─ type/name = "string"
+      │   │   │   └─ ">"
+      │   │   └─ declarator/name = "Tags"
+      │   └─ ";"
+      ├─ method[public]/
+      │   ├─ returns/type/name = "void"
+      │   ├─ name = "Bark"
+      │   ├─ "()"
+      │   └─ body/block = "{}"
+      └─ "}"

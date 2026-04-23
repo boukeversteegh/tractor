@@ -1,68 +1,36 @@
-program/
-  ├─ line_comment = "// Principle #12: flat parameters/arguments/generics. No"
-  ├─ line_comment = "// <parameters> wrapper — each parameter is a direct sibling with"
-  ├─ line_comment = "// field=\"parameters\"."
-  └─ class[package]/
-      ├─ "class"
-      ├─ name = "FlatLists"
-      └─ body/
-          ├─ "{"
-          ├─ method[package]/
-          │   ├─ "<"
-          │   ├─ generic/name = "T"
-          │   ├─ ","
-          │   ├─ generic/
-          │   │   ├─ name = "U"
-          │   │   └─ bound/
-          │   │       ├─ "extends"
-          │   │       └─ type[generic]/
-          │   │           ├─ name = "Comparable"
-          │   │           ├─ "<"
-          │   │           ├─ type/name = "U"
-          │   │           └─ ">"
-          │   ├─ ">"
-          │   ├─ returns/type/name = "T"
-          │   ├─ name = "first"
-          │   ├─ "("
-          │   ├─ param/
-          │   │   ├─ type/name = "T"
-          │   │   └─ name = "a"
-          │   ├─ ","
-          │   ├─ param/
-          │   │   ├─ type/name = "U"
-          │   │   └─ name = "b"
-          │   ├─ ","
-          │   ├─ param/
-          │   │   ├─ type/name = "int"
-          │   │   └─ name = "c"
-          │   ├─ ")"
-          │   └─ body/
-          │       ├─ "{"
-          │       ├─ return/
-          │       │   ├─ "return"
-          │       │   ├─ name = "a"
-          │       │   └─ ";"
-          │       └─ "}"
-          ├─ method[package]/
-          │   ├─ returns/type/name = "void"
-          │   ├─ name = "caller"
-          │   ├─ "()"
-          │   └─ body/
-          │       ├─ "{"
-          │       ├─ call/
-          │       │   ├─ name = "first"
-          │       │   ├─ "("
-          │       │   ├─ string/
-          │       │   │   ├─ "\""
-          │       │   │   ├─ string_fragment = "x"
-          │       │   │   └─ "\""
-          │       │   ├─ ","
-          │       │   ├─ string/
-          │       │   │   ├─ "\""
-          │       │   │   ├─ string_fragment = "y"
-          │       │   │   └─ "\""
-          │       │   ├─ ","
-          │       │   ├─ int = "1"
-          │       │   └─ ")"
-          │       └─ ";\n    }"
-          └─ "}"
+method[package]/
+  ├─ "<"
+  ├─ generic/name = "T"
+  ├─ ","
+  ├─ generic/
+  │   ├─ name = "U"
+  │   └─ extends/
+  │       ├─ "extends"
+  │       └─ type[generic]/
+  │           ├─ name = "Comparable"
+  │           ├─ "<"
+  │           ├─ type/name = "U"
+  │           └─ ">"
+  ├─ ">"
+  ├─ returns/type/name = "T"
+  ├─ name = "first"
+  ├─ "("
+  ├─ param/
+  │   ├─ type/name = "T"
+  │   └─ name = "a"
+  ├─ ","
+  ├─ param/
+  │   ├─ type/name = "U"
+  │   └─ name = "b"
+  ├─ ","
+  ├─ param/
+  │   ├─ type/name = "int"
+  │   └─ name = "c"
+  ├─ ")"
+  └─ body/
+      ├─ "{"
+      ├─ return/
+      │   ├─ "return"
+      │   ├─ name = "a"
+      │   └─ ";"
+      └─ "}"

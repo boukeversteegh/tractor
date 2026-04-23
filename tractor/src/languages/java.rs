@@ -127,6 +127,18 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
 
+        // Java's tree-sitter doesn't emit an `else_clause` wrapper: the
+        // `alternative` field of an if_statement points directly at the
+        // nested if_statement (for `else if`) or a block (for final
+        // `else {…}`). Wrap the alternative in `<else>` surgically so
+        // the shared conditional-shape post-transform can collapse the
+        // chain uniformly.
+        "if_statement" => {
+            wrap_field_child(xot, node, "alternative", "else")?;
+            rename(xot, node, "if");
+            Ok(TransformAction::Continue)
+        }
+
         // ---------------------------------------------------------------------
         // Identifiers are always names (definitions or references).
         // Tree-sitter uses `type_identifier` for type positions, so bare
@@ -277,7 +289,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "scoped_identifier" | "scoped_type_identifier" => Some("path"),
         "super_interfaces" => Some("implements"),
         "superclass" => Some("extends"),
-        "type_bound" => Some("bound"),
+        "type_bound" => Some("extends"),
         "type_parameter" => Some("generic"),
         "return_statement" => Some("return"),
         "if_statement" => Some("if"),

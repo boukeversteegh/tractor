@@ -1,72 +1,48 @@
-module/
-  ├─ comment = "# Conditional shape: `elif` renders as <else_if> (underscore naming per"
-  ├─ comment = "# Principle #1), collapsed as a flat sibling of <if>. Ternary expression"
-  ├─ comment = "# keeps <then>/<else> wrappers via surgical field wrap."
-  ├─ function/
-  │   ├─ "def"
-  │   ├─ name = "classify"
-  │   ├─ "("
-  │   ├─ name = "n"
-  │   ├─ "):"
-  │   └─ body/if/
-  │       ├─ "if"
-  │       ├─ condition/compare/
-  │       │   ├─ op/
-  │       │   │   ├─ compare[less]
-  │       │   │   └─ "<"
-  │       │   ├─ name = "n"
-  │       │   ├─ "<"
-  │       │   └─ int = "0"
-  │       ├─ ":"
-  │       ├─ then/return/
-  │       │   ├─ "return"
-  │       │   └─ string = "\"neg\""
-  │       ├─ else_if/
-  │       │   ├─ "elif"
-  │       │   ├─ condition/compare/
-  │       │   │   ├─ op[equals] = "=="
-  │       │   │   ├─ name = "n"
-  │       │   │   ├─ "=="
-  │       │   │   └─ int = "0"
-  │       │   ├─ ":"
-  │       │   └─ then/return/
-  │       │       ├─ "return"
-  │       │       └─ string = "\"zero\""
-  │       ├─ else_if/
-  │       │   ├─ "elif"
-  │       │   ├─ condition/compare/
-  │       │   │   ├─ op/
-  │       │   │   │   ├─ compare[less]
-  │       │   │   │   └─ "<"
-  │       │   │   ├─ name = "n"
-  │       │   │   ├─ "<"
-  │       │   │   └─ int = "10"
-  │       │   ├─ ":"
-  │       │   └─ then/return/
-  │       │       ├─ "return"
-  │       │       └─ string = "\"small\""
-  │       └─ else/
-  │           ├─ "else:"
-  │           └─ body/return/
-  │               ├─ "return"
-  │               └─ string = "\"big\""
-  └─ function/
-      ├─ "def"
-      ├─ name = "label"
-      ├─ "("
-      ├─ name = "n"
-      ├─ "):"
-      └─ body/return/
-          ├─ "return"
-          └─ ternary/
-              ├─ string = "\"positive\""
-              ├─ "if"
-              ├─ compare/
-              │   ├─ op/
-              │   │   ├─ compare[greater]
-              │   │   └─ ">"
-              │   ├─ name = "n"
-              │   ├─ ">"
-              │   └─ int = "0"
-              ├─ "else"
-              └─ string = "\"non-positive\""
+function/
+  ├─ "def"
+  ├─ name = "classify"
+  ├─ "("
+  ├─ name = "n"
+  ├─ "):"
+  └─ body/if/
+      ├─ "if"
+      ├─ condition/compare/
+      │   ├─ op/
+      │   │   ├─ compare[less]
+      │   │   └─ "<"
+      │   ├─ name = "n"
+      │   ├─ "<"
+      │   └─ int = "0"
+      ├─ ":"
+      ├─ then/return/
+      │   ├─ "return"
+      │   └─ string = "\"neg\""
+      ├─ else_if/
+      │   ├─ "elif"
+      │   ├─ condition/compare/
+      │   │   ├─ op[equals] = "=="
+      │   │   ├─ name = "n"
+      │   │   ├─ "=="
+      │   │   └─ int = "0"
+      │   ├─ ":"
+      │   └─ then/return/
+      │       ├─ "return"
+      │       └─ string = "\"zero\""
+      ├─ else_if/
+      │   ├─ "elif"
+      │   ├─ condition/compare/
+      │   │   ├─ op/
+      │   │   │   ├─ compare[less]
+      │   │   │   └─ "<"
+      │   │   ├─ name = "n"
+      │   │   ├─ "<"
+      │   │   └─ int = "10"
+      │   ├─ ":"
+      │   └─ then/return/
+      │       ├─ "return"
+      │       └─ string = "\"small\""
+      └─ else/
+          ├─ "else:"
+          └─ body/return/
+              ├─ "return"
+              └─ string = "\"big\""

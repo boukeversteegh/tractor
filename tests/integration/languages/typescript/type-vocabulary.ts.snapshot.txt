@@ -1,72 +1,19 @@
-program/
-  ├─ comment = "// Principle #14: type references wrap their name in a <name> child."
-  ├─ comment = "// Every <type> element should contain <name>X</name>, not bare text."
-  ├─ comment = "// Covers: plain types, generic types, base-class/implements, function types."
-  ├─ alias/
-  │   ├─ "type"
-  │   ├─ name = "Id"
-  │   ├─ "="
-  │   ├─ type/name = "number"
-  │   └─ ";"
-  ├─ alias/
-  │   ├─ "type"
-  │   ├─ name = "Handler"
-  │   ├─ "="
-  │   ├─ type[function]/
-  │   │   ├─ "("
-  │   │   ├─ param[required]/
-  │   │   │   ├─ name = "x"
-  │   │   │   ├─ ":"
-  │   │   │   └─ type/name = "number"
-  │   │   ├─ ") =>"
-  │   │   └─ returns/type/name = "void"
-  │   └─ ";"
-  ├─ alias/
-  │   ├─ "type"
-  │   ├─ name = "Box"
-  │   ├─ generics/
-  │   │   ├─ "<"
-  │   │   ├─ generic/name = "T"
-  │   │   └─ ">"
-  │   ├─ "="
-  │   ├─ type[generic]/
-  │   │   ├─ name = "Array"
-  │   │   ├─ "<"
-  │   │   ├─ type/name = "T"
-  │   │   └─ ">"
-  │   └─ ";"
-  ├─ class/
-  │   ├─ "class"
-  │   ├─ name = "Animal"
-  │   └─ body = "{}"
-  ├─ interface/
-  │   ├─ "interface"
-  │   ├─ name = "Barker"
-  │   └─ body/
-  │       ├─ "{"
-  │       ├─ method_signature/
-  │       │   ├─ name = "bark"
-  │       │   ├─ "()"
-  │       │   └─ returns/
-  │       │       ├─ ":"
-  │       │       └─ type/name = "void"
-  │       └─ "; }"
-  └─ class/
-      ├─ "class"
-      ├─ name = "Dog"
-      ├─ extends/
-      │   ├─ "extends"
-      │   └─ type/name = "Animal"
-      ├─ implements/
-      │   ├─ "implements"
-      │   └─ type/name = "Barker"
-      └─ body/
-          ├─ "{"
-          ├─ method/
-          │   ├─ name = "bark"
-          │   ├─ "()"
-          │   ├─ returns/
-          │   │   ├─ ":"
-          │   │   └─ type/name = "void"
-          │   └─ body/block = "{}"
-          └─ "}"
+class/
+  ├─ "class"
+  ├─ name = "Dog"
+  ├─ extends/
+  │   ├─ "extends"
+  │   └─ type/name = "Animal"
+  ├─ implements/
+  │   ├─ "implements"
+  │   └─ type/name = "Barker"
+  └─ body/
+      ├─ "{"
+      ├─ method/
+      │   ├─ name = "bark"
+      │   ├─ "()"
+      │   ├─ returns/
+      │   │   ├─ ":"
+      │   │   └─ type/name = "void"
+      │   └─ body/block = "{}"
+      └─ "}"

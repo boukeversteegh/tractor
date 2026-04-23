@@ -20,71 +20,70 @@ use std::process::{self, Command};
 /// `json` is skipped to avoid picking up generated `.snapshot.json` outputs.
 const SKIP_EXTENSIONS: &[&str] = &["xml", "sh", "md", "json"];
 
-/// Feature fixtures: minimal source files that pin down a single transform
-/// invariant. Each entry produces `<source>.snapshot.xml` + `<source>.snapshot.json`
-/// via:
-///   tractor query <source> -p tree --single -f {xml,json}
+/// Feature fixtures: minimal source files that demonstrate a single
+/// transform invariant. Paired with an XPath that extracts the focused
+/// subtree for visual reference. Regression protection lives in the
+/// assertion suite (`tests/semantic_tree.rs`) — these fragment snapshots
+/// are for reviewers who want to see the shape of each construct.
 ///
-/// The bare-tree projection (no report envelope) means these snapshots churn
-/// only when the transform itself changes — not when report plumbing, paths,
-/// or source-line formatting shifts. Add one fixture per invariant per
-/// language.
+/// Output: `<source>.snapshot.txt` containing just the matched subtree.
 ///
 /// Paths are relative to the project root.
-const FEATURE_FIXTURES: &[&str] = &[
+const FEATURE_FIXTURES: &[(&str, &str)] = &[
     // — TypeScript —
-    "tests/integration/languages/typescript/accessors.ts",
-    "tests/integration/languages/typescript/async-generator.ts",
-    "tests/integration/languages/typescript/conditionals.ts",
-    "tests/integration/languages/typescript/flat-lists.ts",
-    "tests/integration/languages/typescript/parameter-marking.ts",
-    "tests/integration/languages/typescript/type-vocabulary.ts",
+    // (source, xpath — --single extracts the first match)
+    ("tests/integration/languages/typescript/accessors.ts", "//class"),
+    ("tests/integration/languages/typescript/async-generator.ts", "//program"),
+    ("tests/integration/languages/typescript/conditionals.ts", "//function[name='classify']"),
+    ("tests/integration/languages/typescript/flat-lists.ts", "//function[name='first']"),
+    ("tests/integration/languages/typescript/parameter-marking.ts", "//function[name='call']"),
+    ("tests/integration/languages/typescript/type-vocabulary.ts", "//class[name='Dog']"),
 
     // — Java —
-    "tests/integration/languages/java/conditionals.java",
-    "tests/integration/languages/java/constructor-rename.java",
-    "tests/integration/languages/java/flat-lists.java",
-    "tests/integration/languages/java/interface-public.java",
-    "tests/integration/languages/java/modifiers.java",
-    "tests/integration/languages/java/type-vocabulary.java",
+    ("tests/integration/languages/java/conditionals.java", "//class"),
+    ("tests/integration/languages/java/constructor-rename.java", "//class"),
+    ("tests/integration/languages/java/flat-lists.java", "//method[1]"),
+    ("tests/integration/languages/java/interface-public.java", "//interface"),
+    ("tests/integration/languages/java/modifiers.java", "//class"),
+    ("tests/integration/languages/java/type-vocabulary.java", "//class[name='Dog']"),
 
     // — C# —
-    "tests/integration/languages/csharp/accessor-flattening.cs",
-    "tests/integration/languages/csharp/conditionals.cs",
-    "tests/integration/languages/csharp/flat-lists.cs",
-    "tests/integration/languages/csharp/interface-public.cs",
-    "tests/integration/languages/csharp/type-vocabulary.cs",
-    "tests/integration/languages/csharp/where-clause.cs",
+    ("tests/integration/languages/csharp/accessor-flattening.cs", "//class"),
+    ("tests/integration/languages/csharp/conditionals.cs", "//class"),
+    ("tests/integration/languages/csharp/flat-lists.cs", "//class"),
+    ("tests/integration/languages/csharp/interface-public.cs", "//interface"),
+    ("tests/integration/languages/csharp/type-vocabulary.cs", "//class[name='Dog']"),
+    ("tests/integration/languages/csharp/where-clause.cs", "//class"),
 
     // — Rust —
-    "tests/integration/languages/rust/conditionals.rs",
-    "tests/integration/languages/rust/flat-lists.rs",
-    "tests/integration/languages/rust/match-expression.rs",
-    "tests/integration/languages/rust/method-call.rs",
-    "tests/integration/languages/rust/reference-type.rs",
-    "tests/integration/languages/rust/struct-expression.rs",
-    "tests/integration/languages/rust/type-vocabulary.rs",
-    "tests/integration/languages/rust/typedef.rs",
-    "tests/integration/languages/rust/visibility.rs",
+    ("tests/integration/languages/rust/conditionals.rs", "//function[name='classify']"),
+    ("tests/integration/languages/rust/flat-lists.rs", "//function[name='first']"),
+    ("tests/integration/languages/rust/match-expression.rs", "//function"),
+    ("tests/integration/languages/rust/method-call.rs", "//function"),
+    ("tests/integration/languages/rust/reference-type.rs", "//file"),
+    ("tests/integration/languages/rust/struct-expression.rs", "//function[name='make']"),
+    ("tests/integration/languages/rust/type-vocabulary.rs", "//struct"),
+    ("tests/integration/languages/rust/typedef.rs", "//file"),
+    ("tests/integration/languages/rust/visibility.rs", "//file"),
 
     // — Python —
-    "tests/integration/languages/python/augmented-assign.py",
-    "tests/integration/languages/python/collection-markers.py",
-    "tests/integration/languages/python/conditionals.py",
-    "tests/integration/languages/python/expression-list.py",
-    "tests/integration/languages/python/f-strings.py",
+    ("tests/integration/languages/python/augmented-assign.py", "//function"),
+    ("tests/integration/languages/python/collection-markers.py", "//module"),
+    ("tests/integration/languages/python/conditionals.py", "//function[name='classify']"),
+    ("tests/integration/languages/python/expression-list.py", "//module"),
+    ("tests/integration/languages/python/f-strings.py", "//module"),
 
     // — Go —
-    "tests/integration/languages/go/conditionals.go",
-    "tests/integration/languages/go/defined-type-vs-alias.go",
-    "tests/integration/languages/go/flat-lists.go",
-    "tests/integration/languages/go/raw-string.go",
-    "tests/integration/languages/go/struct-interface-hoist.go",
-    "tests/integration/languages/go/type-declaration.go",
+    ("tests/integration/languages/go/conditionals.go", "//function"),
+    ("tests/integration/languages/go/defined-type-vs-alias.go", "//file"),
+    ("tests/integration/languages/go/flat-lists.go", "//file"),
+    ("tests/integration/languages/go/raw-string.go", "//file"),
+    ("tests/integration/languages/go/struct-interface-hoist.go", "//file"),
+    ("tests/integration/languages/go/type-declaration.go", "//file"),
 
     // — Ruby —
-    "tests/integration/languages/ruby/conditionals.rb",
-    "tests/integration/languages/ruby/name-inlining.rb",
+    ("tests/integration/languages/ruby/conditionals.rb", "//method"),
+    ("tests/integration/languages/ruby/name-inlining.rb", "//program"),
 ];
 
 /// Output-format snapshot cases: (relative path under formats/, tractor args).
@@ -727,7 +726,7 @@ fn main() {
     // .xml / .raw.xml outputs for them).
     let feature_set: HashSet<String> = FEATURE_FIXTURES
         .iter()
-        .map(|p| p.replace('\\', "/"))
+        .map(|(p, _)| p.replace('\\', "/"))
         .collect();
 
     let mut processed = 0;
@@ -816,13 +815,14 @@ fn main() {
         }
     }
 
-    // --- Feature-invariant snapshots ---
+    // --- Feature-invariant fragment snapshots ---
     //
-    // One minimal source per invariant per language, rendered as bare tree
-    // (no report envelope) in text, XML, and JSON. Churn is scoped to the
-    // transform being tested, not report plumbing. Text is the query-oriented
-    // read-first view; XML/JSON are kept for machine consumption.
-    for source_rel in FEATURE_FIXTURES {
+    // Each fixture extracts a focused subtree via XPath and emits a
+    // single text snapshot. The regression protection lives in the
+    // assertion suite (`tests/semantic_tree.rs`); these fragments are
+    // for reviewers who want a scannable visual reference of what
+    // each transformed construct looks like.
+    for &(source_rel, xpath) in FEATURE_FIXTURES {
         let source_rel = source_rel.replace('\\', "/");
         let source_path = Path::new(&source_rel);
         if !source_path.is_file() {
@@ -834,47 +834,25 @@ fn main() {
         }
 
         let txt_snap = format!("{}.snapshot.txt", source_rel);
-        let xml_snap = format!("{}.snapshot.xml", source_rel);
-        let json_snap = format!("{}.snapshot.json", source_rel);
-
         let txt_out = run_tractor_args(
             &tractor_bin,
-            &["query", &source_rel, "-p", "tree", "--single"],
-        );
-        let xml_out = run_tractor_args(
-            &tractor_bin,
-            &["query", &source_rel, "-p", "tree", "--single", "-f", "xml"],
-        );
-        let json_out = run_tractor_args(
-            &tractor_bin,
-            &["query", &source_rel, "-p", "tree", "--single", "-f", "json"],
+            &["query", &source_rel, "-x", xpath, "-p", "tree", "--single"],
         );
 
         if check_mode {
-            for (path, expected) in [
-                (&txt_snap, &txt_out),
-                (&xml_snap, &xml_out),
-                (&json_snap, &json_out),
-            ] {
-                match fs::read_to_string(path) {
-                    Ok(existing) if existing != *expected => {
-                        mismatches.push(Mismatch::changed(path, &existing, expected));
-                    }
-                    Err(_) => mismatches.push(Mismatch::missing(path, expected)),
-                    _ => {}
+            match fs::read_to_string(&txt_snap) {
+                Ok(existing) if existing != txt_out => {
+                    mismatches.push(Mismatch::changed(&txt_snap, &existing, &txt_out));
                 }
+                Err(_) => mismatches.push(Mismatch::missing(&txt_snap, &txt_out)),
+                _ => {}
             }
         } else {
             fs::write(&txt_snap, &txt_out).expect("cannot write .snapshot.txt");
-            fs::write(&xml_snap, &xml_out).expect("cannot write .snapshot.xml");
-            fs::write(&json_snap, &json_out).expect("cannot write .snapshot.json");
-            println!(
-                "  feature {} -> .snapshot.txt, .snapshot.xml, .snapshot.json",
-                source_rel
-            );
+            println!("  feature {} -> .snapshot.txt ({})", source_rel, xpath);
         }
 
-        processed += 3;
+        processed += 1;
     }
 
     // --- Output-format combination snapshots ---

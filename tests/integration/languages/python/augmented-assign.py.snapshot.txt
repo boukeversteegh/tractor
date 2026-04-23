@@ -1,81 +1,77 @@
-module/
-  ├─ comment = "# Goal #5 (mental model): augmented_assignment unifies with plain"
-  ├─ comment = "# assignment as <assign> plus an <op> child carrying the compound"
-  ├─ comment = "# operator. A single //assign query matches every assignment."
-  └─ function/
-      ├─ "def"
-      ├─ name = "ops"
-      ├─ "():"
-      └─ body/
-          ├─ assign/
-          │   ├─ left/name = "x"
-          │   ├─ "="
-          │   └─ right/int = "0"
-          ├─ assign/
-          │   ├─ op/
-          │   │   ├─ assign[plus]
-          │   │   └─ "+="
-          │   ├─ left/name = "x"
-          │   ├─ "+="
-          │   └─ right/int = "1"
-          ├─ assign/
-          │   ├─ op/
-          │   │   ├─ assign[minus]
-          │   │   └─ "-="
-          │   ├─ left/name = "x"
-          │   ├─ "-="
-          │   └─ right/int = "2"
-          ├─ assign/
-          │   ├─ op/
-          │   │   ├─ assign[multiply]
-          │   │   └─ "*="
-          │   ├─ left/name = "x"
-          │   ├─ "*="
-          │   └─ right/int = "3"
-          ├─ assign/
-          │   ├─ op = "//="
-          │   ├─ left/name = "x"
-          │   ├─ "//="
-          │   └─ right/int = "2"
-          ├─ assign/
-          │   ├─ op/
-          │   │   ├─ assign[power]
-          │   │   └─ "**="
-          │   ├─ left/name = "x"
-          │   ├─ "**="
-          │   └─ right/int = "2"
-          ├─ assign/
-          │   ├─ op/
-          │   │   ├─ assign/bitwise[and]
-          │   │   └─ "&="
-          │   ├─ left/name = "x"
-          │   ├─ "&="
-          │   └─ right/int = "0xFF"
-          ├─ assign/
-          │   ├─ op/
-          │   │   ├─ assign/bitwise[or]
-          │   │   └─ "|="
-          │   ├─ left/name = "x"
-          │   ├─ "|="
-          │   └─ right/int = "0x10"
-          ├─ assign/
-          │   ├─ op/
-          │   │   ├─ assign/bitwise[xor]
-          │   │   └─ "^="
-          │   ├─ left/name = "x"
-          │   ├─ "^="
-          │   └─ right/int = "0x01"
-          ├─ assign/
-          │   ├─ op/
-          │   │   ├─ assign/shift[left]
-          │   │   └─ "<<="
-          │   ├─ left/name = "x"
-          │   ├─ "<<="
-          │   └─ right/int = "1"
-          └─ assign/
-              ├─ op/
-              │   ├─ assign/shift[right]
-              │   └─ ">>="
-              ├─ left/name = "x"
-              ├─ ">>="
-              └─ right/int = "1"
+function/
+  ├─ "def"
+  ├─ name = "ops"
+  ├─ "():"
+  └─ body/
+      ├─ assign/
+      │   ├─ left/name = "x"
+      │   ├─ "="
+      │   └─ right/int = "0"
+      ├─ assign/
+      │   ├─ op/
+      │   │   ├─ assign[plus]
+      │   │   └─ "+="
+      │   ├─ left/name = "x"
+      │   ├─ "+="
+      │   └─ right/int = "1"
+      ├─ assign/
+      │   ├─ op/
+      │   │   ├─ assign[minus]
+      │   │   └─ "-="
+      │   ├─ left/name = "x"
+      │   ├─ "-="
+      │   └─ right/int = "2"
+      ├─ assign/
+      │   ├─ op/
+      │   │   ├─ assign[multiply]
+      │   │   └─ "*="
+      │   ├─ left/name = "x"
+      │   ├─ "*="
+      │   └─ right/int = "3"
+      ├─ assign/
+      │   ├─ op = "//="
+      │   ├─ left/name = "x"
+      │   ├─ "//="
+      │   └─ right/int = "2"
+      ├─ assign/
+      │   ├─ op/
+      │   │   ├─ assign[power]
+      │   │   └─ "**="
+      │   ├─ left/name = "x"
+      │   ├─ "**="
+      │   └─ right/int = "2"
+      ├─ assign/
+      │   ├─ op/
+      │   │   ├─ assign/bitwise[and]
+      │   │   └─ "&="
+      │   ├─ left/name = "x"
+      │   ├─ "&="
+      │   └─ right/int = "0xFF"
+      ├─ assign/
+      │   ├─ op/
+      │   │   ├─ assign/bitwise[or]
+      │   │   └─ "|="
+      │   ├─ left/name = "x"
+      │   ├─ "|="
+      │   └─ right/int = "0x10"
+      ├─ assign/
+      │   ├─ op/
+      │   │   ├─ assign/bitwise[xor]
+      │   │   └─ "^="
+      │   ├─ left/name = "x"
+      │   ├─ "^="
+      │   └─ right/int = "0x01"
+      ├─ assign/
+      │   ├─ op/
+      │   │   ├─ assign/shift[left]
+      │   │   └─ "<<="
+      │   ├─ left/name = "x"
+      │   ├─ "<<="
+      │   └─ right/int = "1"
+      └─ assign/
+          ├─ op/
+          │   ├─ assign/shift[right]
+          │   └─ ">>="
+          ├─ left/name = "x"
+          ├─ ">>="
+          └─ right/int = "1"

@@ -1,48 +1,34 @@
-program/
-  ├─ comment = "// Every <param> carries an exhaustive marker: <required/> or <optional/>."
-  ├─ comment = "// Covers required, optional (? suffix), defaulted, and rest parameters."
-  ├─ function/
-  │   ├─ "function"
-  │   ├─ name = "call"
-  │   ├─ "("
-  │   ├─ param[required]/
-  │   │   ├─ name = "required"
-  │   │   ├─ ":"
-  │   │   └─ type/name = "string"
-  │   ├─ ","
-  │   ├─ param[optional]/
-  │   │   ├─ name = "optional"
-  │   │   ├─ "?:"
-  │   │   └─ type/name = "number"
-  │   ├─ ","
-  │   ├─ param[required]/
-  │   │   ├─ name = "defaulted"
-  │   │   ├─ ":"
-  │   │   ├─ type/name = "boolean"
-  │   │   ├─ "="
-  │   │   └─ value/bool = "true"
-  │   ├─ ","
-  │   ├─ param[required]/
-  │   │   ├─ rest_pattern/
-  │   │   │   ├─ "..."
-  │   │   │   └─ name = "rest"
-  │   │   ├─ ":"
-  │   │   └─ array_type/
-  │   │       ├─ type/name = "string"
-  │   │       └─ "[]"
-  │   ├─ ")"
-  │   ├─ returns/
-  │   │   ├─ ":"
-  │   │   └─ type/name = "void"
-  │   └─ body/block = "{}"
-  ├─ comment = "// Naked JS-style identifier param (via .js grammar) should also normalize"
-  ├─ comment = "// to <param><required/><name>…</name></param>."
-  └─ function/
-      ├─ "function"
-      ├─ name = "noTypes"
-      ├─ "("
-      ├─ param[required]/name = "x"
-      ├─ ","
-      ├─ param[required]/name = "y"
-      ├─ ")"
-      └─ body/block = "{}"
+function/
+  ├─ "function"
+  ├─ name = "call"
+  ├─ "("
+  ├─ param[required]/
+  │   ├─ name = "required"
+  │   ├─ ":"
+  │   └─ type/name = "string"
+  ├─ ","
+  ├─ param[optional]/
+  │   ├─ name = "optional"
+  │   ├─ "?:"
+  │   └─ type/name = "number"
+  ├─ ","
+  ├─ param[required]/
+  │   ├─ name = "defaulted"
+  │   ├─ ":"
+  │   ├─ type/name = "boolean"
+  │   ├─ "="
+  │   └─ value/bool = "true"
+  ├─ ","
+  ├─ param[required]/
+  │   ├─ rest_pattern/
+  │   │   ├─ "..."
+  │   │   └─ name = "rest"
+  │   ├─ ":"
+  │   └─ array_type/
+  │       ├─ type/name = "string"
+  │       └─ "[]"
+  ├─ ")"
+  ├─ returns/
+  │   ├─ ":"
+  │   └─ type/name = "void"
+  └─ body/block = "{}"

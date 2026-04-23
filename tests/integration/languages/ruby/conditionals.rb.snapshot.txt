@@ -1,70 +1,44 @@
-program/
-  ├─ comment = "# Ruby's nested elsif / else chain collapses to flat <else_if> / <else>"
-  ├─ comment = "# siblings of <if> (post-walk collapse_else_if_chain). `elsif` is"
-  ├─ comment = "# renamed to <else_if> (underscore per Principle #1)."
-  ├─ method/
-  │   ├─ "def"
-  │   ├─ name = "classify"
-  │   ├─ "("
-  │   ├─ name = "n"
-  │   ├─ ")"
-  │   ├─ body/if/
-  │   │   ├─ "if"
+method/
+  ├─ "def"
+  ├─ name = "classify"
+  ├─ "("
+  ├─ name = "n"
+  ├─ ")"
+  ├─ body/if/
+  │   ├─ "if"
+  │   ├─ condition/binary/
+  │   │   ├─ left/name = "n"
+  │   │   ├─ "<"
+  │   │   └─ right/int = "0"
+  │   ├─ then/string/
+  │   │   ├─ "\""
+  │   │   ├─ string_content = "neg"
+  │   │   └─ "\""
+  │   ├─ "end"
+  │   ├─ else_if/
+  │   │   ├─ "elsif"
+  │   │   ├─ condition/binary/
+  │   │   │   ├─ left/name = "n"
+  │   │   │   ├─ "=="
+  │   │   │   └─ right/int = "0"
+  │   │   └─ then/string/
+  │   │       ├─ "\""
+  │   │       ├─ string_content = "zero"
+  │   │       └─ "\""
+  │   ├─ else_if/
+  │   │   ├─ "elsif"
   │   │   ├─ condition/binary/
   │   │   │   ├─ left/name = "n"
   │   │   │   ├─ "<"
-  │   │   │   └─ right/int = "0"
-  │   │   ├─ then/string/
-  │   │   │   ├─ "\""
-  │   │   │   ├─ string_content = "neg"
-  │   │   │   └─ "\""
-  │   │   ├─ "end"
-  │   │   ├─ else_if/
-  │   │   │   ├─ "elsif"
-  │   │   │   ├─ condition/binary/
-  │   │   │   │   ├─ left/name = "n"
-  │   │   │   │   ├─ "=="
-  │   │   │   │   └─ right/int = "0"
-  │   │   │   └─ then/string/
-  │   │   │       ├─ "\""
-  │   │   │       ├─ string_content = "zero"
-  │   │   │       └─ "\""
-  │   │   ├─ else_if/
-  │   │   │   ├─ "elsif"
-  │   │   │   ├─ condition/binary/
-  │   │   │   │   ├─ left/name = "n"
-  │   │   │   │   ├─ "<"
-  │   │   │   │   └─ right/int = "10"
-  │   │   │   └─ then/string/
-  │   │   │       ├─ "\""
-  │   │   │       ├─ string_content = "small"
-  │   │   │       └─ "\""
-  │   │   └─ else/
-  │   │       ├─ "else"
-  │   │       └─ string/
-  │   │           ├─ "\""
-  │   │           ├─ string_content = "big"
-  │   │           └─ "\""
-  │   └─ "end"
-  └─ method/
-      ├─ "def"
-      ├─ name = "label"
-      ├─ "("
-      ├─ name = "n"
-      ├─ ")"
-      ├─ body/conditional/
-      │   ├─ condition/binary/
-      │   │   ├─ left/name = "n"
-      │   │   ├─ ">"
-      │   │   └─ right/int = "0"
-      │   ├─ "?"
-      │   ├─ string/
-      │   │   ├─ "\""
-      │   │   ├─ string_content = "positive"
-      │   │   └─ "\""
-      │   ├─ ":"
-      │   └─ string/
-      │       ├─ "\""
-      │       ├─ string_content = "non-positive"
-      │       └─ "\""
-      └─ "end"
+  │   │   │   └─ right/int = "10"
+  │   │   └─ then/string/
+  │   │       ├─ "\""
+  │   │       ├─ string_content = "small"
+  │   │       └─ "\""
+  │   └─ else/
+  │       ├─ "else"
+  │       └─ string/
+  │           ├─ "\""
+  │           ├─ string_content = "big"
+  │           └─ "\""
+  └─ "end"
