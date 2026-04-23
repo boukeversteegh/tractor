@@ -151,6 +151,18 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
 
+        // Go's tree-sitter doesn't emit an `else_clause` wrapper: the
+        // `alternative` field of an if_statement points directly at
+        // the nested if_statement (for `else if`) or a block (for
+        // final `else {…}`). Wrap the alternative in `<else>`
+        // surgically so the shared conditional-shape post-transform
+        // can collapse the chain uniformly (same fix as Java / C#).
+        "if_statement" => {
+            wrap_field_child(xot, node, "alternative", "else")?;
+            rename(xot, node, "if");
+            Ok(TransformAction::Continue)
+        }
+
         "binary_expression" | "unary_expression" => {
             extract_operator(xot, node)?;
             if let Some(new_name) = map_element_name(&kind) {

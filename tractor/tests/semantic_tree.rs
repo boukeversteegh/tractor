@@ -1099,6 +1099,37 @@ mod go {
             "params are flat function siblings",
         );
     }
+
+    /// Conditional shape: Go's tree-sitter doesn't wrap the `else`
+    /// branch in an `else_clause` element, so the transform has to
+    /// surgically wrap the `alternative` field in <else>. Without
+    /// that, the shared collapse post-transform leaves else-if as
+    /// a nested <if> sibling of the outer, producing a broken chain.
+    #[test]
+    fn conditional_shape_flat() {
+        let mut tree = parse_src(
+            "go",
+            "package main\nfunc f(n int) string {\n    if n < 0 { return \"\" } else if n == 0 { return \"\" } else { return \"\" }\n}\n",
+        );
+        assert_count(
+            &mut tree,
+            "//if/else_if",
+            1,
+            "else_if is a flat sibling of <if>",
+        );
+        assert_count(
+            &mut tree,
+            "//if/else",
+            1,
+            "final else is a flat sibling",
+        );
+        assert_count(
+            &mut tree,
+            "//else/if",
+            0,
+            "no nested <else><if>...",
+        );
+    }
 }
 
 // ===========================================================================
