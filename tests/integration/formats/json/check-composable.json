@@ -17,7 +17,9 @@
             "$type": "class",
             "public": true,
             "name": "Foo",
-            "body": {}
+            "body": {
+              "$truncated": 17
+            }
           },
           "reason": "class found",
           "severity": "error"

@@ -2,12 +2,14 @@
   "results": [
     {
       "tree": {
-        "$type": "class"
+        "$type": "class",
+        "$truncated": 20
       }
     },
     {
       "tree": {
-        "$type": "class"
+        "$type": "class",
+        "$truncated": 3
       }
     }
   ]

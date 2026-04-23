@@ -725,7 +725,7 @@ fn is_hidden_meta_attr(name: &str) -> bool {
     )
 }
 
-fn count_descendant_elements(node: &XmlNode) -> usize {
+pub fn count_descendant_elements(node: &XmlNode) -> usize {
     match node {
         XmlNode::Element { children, .. } => children
             .iter()

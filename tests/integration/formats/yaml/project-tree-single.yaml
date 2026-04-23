@@ -1,4 +1,5 @@
 $type: class
 public: true
 name: Calculator
-body: {}
+body:
+  $truncated: 72

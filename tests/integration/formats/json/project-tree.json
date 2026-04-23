@@ -3,12 +3,16 @@
     "$type": "class",
     "public": true,
     "name": "Calculator",
-    "body": {}
+    "body": {
+      "$truncated": 72
+    }
   },
   {
     "$type": "class",
     "public": true,
     "name": "Greeter",
-    "body": {}
+    "body": {
+      "$truncated": 42
+    }
   }
 ]

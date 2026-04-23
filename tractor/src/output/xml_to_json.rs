@@ -22,10 +22,16 @@
 
 use serde_json::{json, Map, Value};
 use crate::xpath::XmlNode;
+use crate::output::query_tree_renderer::count_descendant_elements;
 
 const KEY_TYPE: &str = "$type";
 const KEY_TEXT: &str = "text";
 const KEY_CHILDREN: &str = "children";
+/// When a subtree is elided at `--depth`, the parent object carries
+/// this key with the count of descendant elements that were dropped —
+/// mirroring the text renderer's `... (N children)` marker so readers
+/// know `{}` means "truncated" rather than "empty".
+const KEY_TRUNCATED: &str = "$truncated";
 
 /// Convert an XmlNode tree directly to a JSON tree value.
 ///
@@ -52,14 +58,17 @@ fn xml_node_to_json_inner(node: &XmlNode, max_depth: Option<usize>, depth: usize
             let mut flags: Vec<String> = Vec::new();
             let mut text_fragments: Vec<String> = Vec::new();
             let mut content_children: Vec<ChildEntry> = Vec::new();
-            let mut children_truncated = false;
+            let mut truncated_descendants: usize = 0;
 
             for child in children {
                 match child {
                     XmlNode::Element { name: child_name, children: child_children, attributes: child_attrs } => {
                         if skip_element_children {
-                            // At depth limit: skip all element children
-                            children_truncated = true;
+                            // At depth limit: skip all element children, but
+                            // count the dropped descendants so the marker
+                            // below reports the same number the text renderer
+                            // would show.
+                            truncated_descendants += 1 + count_descendant_elements(child);
                         } else if child_children.is_empty() {
                             // Self-closing → boolean flag
                             flags.push(child_name.clone());
@@ -87,6 +96,7 @@ fn xml_node_to_json_inner(node: &XmlNode, max_depth: Option<usize>, depth: usize
             let is_text_only = content_children.iter().all(|c| is_anon_text_entry(c));
             let has_text = !text_fragments.is_empty();
             let combined_text = if has_text { text_fragments.join(" ") } else { String::new() };
+            let children_truncated = truncated_descendants > 0;
 
             // Pure text-only leaf
             if is_text_only && flags.is_empty() && has_text && !children_truncated {
@@ -141,6 +151,10 @@ fn xml_node_to_json_inner(node: &XmlNode, max_depth: Option<usize>, depth: usize
                 obj.insert(KEY_TEXT.into(), Value::String(combined_text));
             } else if !array_children.is_empty() {
                 obj.insert(KEY_CHILDREN.into(), Value::Array(array_children));
+            }
+
+            if children_truncated {
+                obj.insert(KEY_TRUNCATED.into(), json!(truncated_descendants));
             }
 
             Value::Object(obj)
