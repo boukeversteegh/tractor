@@ -1,0 +1,53 @@
+program/
+  ├─ comment = "// Principle #12: parameters / arguments / generics render as flat siblings,"
+  ├─ comment = "// not nested <parameters><parameter/></parameters> wrappers. Each sibling"
+  ├─ comment = "// carries a field=\"...\" attribute for grouping in queries."
+  ├─ function/
+  │   ├─ "function"
+  │   ├─ name = "first"
+  │   ├─ generics/
+  │   │   ├─ "<"
+  │   │   ├─ generic/name = "T"
+  │   │   ├─ ","
+  │   │   ├─ generic/name = "U"
+  │   │   └─ ">"
+  │   ├─ "("
+  │   ├─ param[required]/
+  │   │   ├─ name = "a"
+  │   │   ├─ ":"
+  │   │   └─ type/name = "T"
+  │   ├─ ","
+  │   ├─ param[required]/
+  │   │   ├─ name = "b"
+  │   │   ├─ ":"
+  │   │   └─ type/name = "U"
+  │   ├─ ","
+  │   ├─ param[required]/
+  │   │   ├─ name = "c"
+  │   │   ├─ ":"
+  │   │   └─ type/name = "number"
+  │   ├─ ")"
+  │   ├─ returns/
+  │   │   ├─ ":"
+  │   │   └─ type/name = "T"
+  │   └─ body/block/
+  │       ├─ "{"
+  │       ├─ return/
+  │       │   ├─ "return"
+  │       │   ├─ name = "a"
+  │       │   └─ ";"
+  │       └─ "}"
+  ├─ call/
+  │   ├─ callee/name = "first"
+  │   ├─ "<"
+  │   ├─ type/name = "string"
+  │   ├─ ","
+  │   ├─ type/name = "number"
+  │   ├─ ">("
+  │   ├─ string = "\"x\""
+  │   ├─ ","
+  │   ├─ number = "1"
+  │   ├─ ","
+  │   ├─ number = "2"
+  │   └─ ")"
+  └─ ";"

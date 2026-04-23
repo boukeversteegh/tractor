@@ -1,0 +1,47 @@
+program/
+  ├─ line_comment = "// Modifiers lifted as empty markers on the declaration. Every access"
+  ├─ line_comment = "// modifier is exhaustive — private/package-private show up explicitly."
+  └─ class[package]/
+      ├─ "class"
+      ├─ name = "Modifiers"
+      └─ body/
+          ├─ "{"
+          ├─ field[final and static and public]/
+          │   ├─ type/name = "int"
+          │   ├─ variable_declarator/
+          │   │   ├─ name = "PUB"
+          │   │   ├─ "="
+          │   │   └─ value/int = "1"
+          │   └─ ";"
+          ├─ field[private]/
+          │   ├─ type/name = "int"
+          │   ├─ variable_declarator/
+          │   │   ├─ name = "priv"
+          │   │   ├─ "="
+          │   │   └─ value/int = "2"
+          │   └─ ";"
+          ├─ field[protected]/
+          │   ├─ type/name = "int"
+          │   ├─ variable_declarator/
+          │   │   ├─ name = "prot"
+          │   │   ├─ "="
+          │   │   └─ value/int = "3"
+          │   └─ ";"
+          ├─ field[package]/
+          │   ├─ type/name = "int"
+          │   ├─ variable_declarator/
+          │   │   ├─ name = "pkg"
+          │   │   ├─ "="
+          │   │   └─ value/int = "4"
+          │   └─ ";"
+          ├─ line_comment = "// implicit package-private -> <package/>"
+          ├─ method[synchronized and public]/
+          │   ├─ returns/type/name = "void"
+          │   ├─ name = "sync"
+          │   ├─ "()"
+          │   └─ body = "{}"
+          ├─ class[static and abstract and public]/
+          │   ├─ "class"
+          │   ├─ name = "AbsStatic"
+          │   └─ body = "{}"
+          └─ "}"

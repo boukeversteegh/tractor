@@ -1,0 +1,73 @@
+unit/
+  ├─ comment = "// Principle #12: parameters / arguments / generics / accessors render as\n// flat siblings with field attributes. No <parameters>/<accessor_list>\n// wrapper nesting."
+  └─ class[internal]/
+      ├─ "class"
+      ├─ name = "FlatLists"
+      └─ body/
+          ├─ "{"
+          ├─ method[public]/
+          │   ├─ returns/name = "T"
+          │   ├─ name = "First"
+          │   ├─ "<"
+          │   ├─ generic/name = "T"
+          │   ├─ ","
+          │   ├─ generic/name = "U"
+          │   ├─ ">("
+          │   ├─ parameter/
+          │   │   ├─ type/name = "T"
+          │   │   └─ name = "a"
+          │   ├─ ","
+          │   ├─ parameter/
+          │   │   ├─ type/name = "U"
+          │   │   └─ name = "b"
+          │   ├─ ","
+          │   ├─ parameter/
+          │   │   ├─ type/name = "int"
+          │   │   └─ name = "c"
+          │   ├─ ")"
+          │   ├─ type_parameter_constraints_clause/
+          │   │   ├─ "where"
+          │   │   ├─ name = "T"
+          │   │   ├─ ":"
+          │   │   └─ type_parameter_constraint = "class"
+          │   └─ body/block/
+          │       ├─ "{"
+          │       ├─ return/
+          │       │   ├─ "return"
+          │       │   ├─ name = "a"
+          │       │   └─ ";"
+          │       └─ "}"
+          ├─ property[public]/
+          │   ├─ type/name = "int"
+          │   ├─ name = "Count"
+          │   ├─ "{"
+          │   ├─ accessor = "get;"
+          │   ├─ accessor = "set;"
+          │   └─ "}"
+          ├─ method[public]/
+          │   ├─ returns/type/name = "void"
+          │   ├─ name = "Caller"
+          │   ├─ "()"
+          │   └─ body/block/
+          │       ├─ "{"
+          │       ├─ expression_statement/
+          │       │   ├─ call/
+          │       │   │   ├─ type[generic]/
+          │       │   │   │   ├─ "First<"
+          │       │   │   │   ├─ type/name = "string"
+          │       │   │   │   ├─ ","
+          │       │   │   │   ├─ type/name = "int"
+          │       │   │   │   └─ ">"
+          │       │   │   ├─ "("
+          │       │   │   ├─ argument/string/
+          │       │   │   │   ├─ "\""
+          │       │   │   │   ├─ string_literal_content = "x"
+          │       │   │   │   └─ "\""
+          │       │   │   ├─ ","
+          │       │   │   ├─ argument/int = "1"
+          │       │   │   ├─ ","
+          │       │   │   ├─ argument/int = "2"
+          │       │   │   └─ ")"
+          │       │   └─ ";"
+          │       └─ "}"
+          └─ "}"

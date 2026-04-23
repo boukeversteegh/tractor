@@ -1,0 +1,33 @@
+file/
+  ├─ comment = "// Go's `type_declaration` wrapper is dropped; `type_spec` renders as"
+  ├─ comment = "// <type> directly. Parallel with struct/interface declarations so"
+  ├─ comment = "// //type queries find everything."
+  ├─ package/
+  │   ├─ "package"
+  │   └─ name = "main"
+  ├─ type[exported]/
+  │   ├─ "type"
+  │   ├─ name = "ID"
+  │   └─ type/name = "uint64"
+  ├─ type[exported]/
+  │   ├─ "type"
+  │   ├─ name = "User"
+  │   └─ struct/
+  │       ├─ "struct {"
+  │       ├─ field/
+  │       │   ├─ name = "Name"
+  │       │   └─ type/name = "string"
+  │       ├─ field/
+  │       │   ├─ name = "Age"
+  │       │   └─ type/name = "int"
+  │       └─ "}"
+  └─ type[exported]/
+      ├─ "type"
+      ├─ name = "Greeter"
+      └─ interface/
+          ├─ "interface {"
+          ├─ method/
+          │   ├─ name = "Greet"
+          │   ├─ "()"
+          │   └─ returns/type/name = "string"
+          └─ "}"

@@ -1,0 +1,40 @@
+program/
+  ├─ line_comment = "// Interface members without an explicit access modifier default to"
+  ├─ line_comment = "// <public/>. This makes implicit visibility explicit — a simple"
+  ├─ line_comment = "// //method[public] query hits every visible interface method."
+  └─ interface[package]/
+      ├─ "interface"
+      ├─ name = "Shape"
+      └─ body/
+          ├─ "{"
+          ├─ method[public]/
+          │   ├─ returns/type/name = "double"
+          │   ├─ name = "area"
+          │   └─ "();"
+          ├─ line_comment = "// implicitly public"
+          ├─ method[public]/
+          │   ├─ returns/type/name = "double"
+          │   ├─ name = "perimeter"
+          │   └─ "();"
+          ├─ line_comment = "// implicitly public"
+          ├─ method[package]/
+          │   ├─ returns/type/name = "String"
+          │   ├─ name = "name"
+          │   ├─ "()"
+          │   └─ body/
+          │       ├─ "{"
+          │       ├─ line_comment = "// implicitly public"
+          │       ├─ return/
+          │       │   ├─ "return"
+          │       │   ├─ string/
+          │       │   │   ├─ "\""
+          │       │   │   ├─ string_fragment = "shape"
+          │       │   │   └─ "\""
+          │       │   └─ ";"
+          │       └─ "}"
+          ├─ method[public]/
+          │   ├─ returns/type/name = "void"
+          │   ├─ name = "stroke"
+          │   └─ "();"
+          ├─ line_comment = "// explicit — should still be <public/>"
+          └─ "}"

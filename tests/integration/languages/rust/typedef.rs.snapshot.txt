@@ -1,0 +1,22 @@
+file/
+  ├─ line_comment = "// `type_item` renders as <alias> (parallel with TS / Java / C#)."
+  ├─ alias[private]/
+  │   ├─ "type"
+  │   ├─ name = "Id"
+  │   ├─ "="
+  │   ├─ type/name = "u32"
+  │   └─ ";"
+  └─ alias[private]/
+      ├─ "type"
+      ├─ name = "Mapping"
+      ├─ "<"
+      ├─ generic/name = "T"
+      ├─ "> ="
+      ├─ type[generic]/
+      │   ├─ name = "::"
+      │   ├─ "<"
+      │   ├─ type/name = "String"
+      │   ├─ ","
+      │   ├─ type/name = "T"
+      │   └─ ">"
+      └─ ";"

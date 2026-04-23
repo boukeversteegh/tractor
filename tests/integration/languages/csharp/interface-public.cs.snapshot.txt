@@ -1,0 +1,34 @@
+unit/
+  ├─ comment = "// Interface members without an explicit access modifier default to\n// <public/>. Matches Java behavior — C# semantics agree."
+  └─ interface[internal]/
+      ├─ "interface"
+      ├─ name = "IShape"
+      └─ body/
+          ├─ "{"
+          ├─ method[public]/
+          │   ├─ returns/type/name = "double"
+          │   ├─ name = "Area"
+          │   └─ "();"
+          ├─ comment[trailing] = "// implicitly public"
+          ├─ method[public]/
+          │   ├─ returns/type/name = "double"
+          │   ├─ name = "Perimeter"
+          │   └─ "();"
+          ├─ comment[trailing] = "// implicitly public"
+          ├─ property[public]/
+          │   ├─ type/name = "string"
+          │   ├─ name = "Name"
+          │   ├─ value/
+          │   │   ├─ "=>"
+          │   │   └─ string/
+          │   │       ├─ "\""
+          │   │       ├─ string_literal_content = "shape"
+          │   │       └─ "\""
+          │   └─ ";"
+          ├─ comment[trailing] = "// implicitly public (expression-bodied property)"
+          ├─ method[public]/
+          │   ├─ returns/type/name = "void"
+          │   ├─ name = "Stroke"
+          │   └─ "();"
+          ├─ comment[trailing] = "// explicit — still <public/>"
+          └─ "}"

@@ -801,8 +801,9 @@ fn main() {
     // --- Feature-invariant snapshots ---
     //
     // One minimal source per invariant per language, rendered as bare tree
-    // (no report envelope) in both XML and JSON. Churn is scoped to the
-    // transform being tested, not report plumbing.
+    // (no report envelope) in text, XML, and JSON. Churn is scoped to the
+    // transform being tested, not report plumbing. Text is the query-oriented
+    // read-first view; XML/JSON are kept for machine consumption.
     for source_rel in FEATURE_FIXTURES {
         let source_rel = source_rel.replace('\\', "/");
         let source_path = Path::new(&source_rel);
@@ -814,9 +815,14 @@ fn main() {
             process::exit(1);
         }
 
+        let txt_snap = format!("{}.snapshot.txt", source_rel);
         let xml_snap = format!("{}.snapshot.xml", source_rel);
         let json_snap = format!("{}.snapshot.json", source_rel);
 
+        let txt_out = run_tractor_args(
+            &tractor_bin,
+            &["query", &source_rel, "-p", "tree", "--single"],
+        );
         let xml_out = run_tractor_args(
             &tractor_bin,
             &["query", &source_rel, "-p", "tree", "--single", "-f", "xml"],
@@ -827,27 +833,30 @@ fn main() {
         );
 
         if check_mode {
-            match fs::read_to_string(&xml_snap) {
-                Ok(existing) if existing != xml_out => {
-                    mismatches.push(Mismatch::changed(&xml_snap, &existing, &xml_out));
+            for (path, expected) in [
+                (&txt_snap, &txt_out),
+                (&xml_snap, &xml_out),
+                (&json_snap, &json_out),
+            ] {
+                match fs::read_to_string(path) {
+                    Ok(existing) if existing != *expected => {
+                        mismatches.push(Mismatch::changed(path, &existing, expected));
+                    }
+                    Err(_) => mismatches.push(Mismatch::missing(path, expected)),
+                    _ => {}
                 }
-                Err(_) => mismatches.push(Mismatch::missing(&xml_snap, &xml_out)),
-                _ => {}
-            }
-            match fs::read_to_string(&json_snap) {
-                Ok(existing) if existing != json_out => {
-                    mismatches.push(Mismatch::changed(&json_snap, &existing, &json_out));
-                }
-                Err(_) => mismatches.push(Mismatch::missing(&json_snap, &json_out)),
-                _ => {}
             }
         } else {
+            fs::write(&txt_snap, &txt_out).expect("cannot write .snapshot.txt");
             fs::write(&xml_snap, &xml_out).expect("cannot write .snapshot.xml");
             fs::write(&json_snap, &json_out).expect("cannot write .snapshot.json");
-            println!("  feature {} -> .snapshot.xml, .snapshot.json", source_rel);
+            println!(
+                "  feature {} -> .snapshot.txt, .snapshot.xml, .snapshot.json",
+                source_rel
+            );
         }
 
-        processed += 2;
+        processed += 3;
     }
 
     // --- Output-format combination snapshots ---

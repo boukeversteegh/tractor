@@ -1,0 +1,43 @@
+program/
+  ├─ comment = "# When a <name> wrapper sits inside method / class / module and contains"
+  ├─ comment = "# a single <identifier> child, the transform inlines the identifier's"
+  ├─ comment = "# text directly: <method><name>foo</name> … not"
+  ├─ comment = "# <method><name><identifier>foo</identifier></name>…"
+  ├─ class/
+  │   ├─ "class"
+  │   ├─ name/constant = "Calculator"
+  │   ├─ body/method/
+  │   │   ├─ "def"
+  │   │   ├─ name = "add"
+  │   │   ├─ "("
+  │   │   ├─ identifier = "a"
+  │   │   ├─ ","
+  │   │   ├─ identifier = "b"
+  │   │   ├─ ")"
+  │   │   ├─ body/binary/
+  │   │   │   ├─ left/identifier = "a"
+  │   │   │   ├─ "+"
+  │   │   │   └─ right/identifier = "b"
+  │   │   └─ "end"
+  │   └─ "end"
+  └─ module/
+      ├─ "module"
+      ├─ name/constant = "Utils"
+      ├─ body/singleton_method/
+      │   ├─ "def"
+      │   ├─ self = "self"
+      │   ├─ "."
+      │   ├─ name/identifier = "greet"
+      │   ├─ "("
+      │   ├─ identifier = "name"
+      │   ├─ ")"
+      │   ├─ body/string/
+      │   │   ├─ "\""
+      │   │   ├─ string_content = "hi,"
+      │   │   ├─ interpolation/
+      │   │   │   ├─ "#{"
+      │   │   │   ├─ identifier = "name"
+      │   │   │   └─ "}"
+      │   │   └─ "\""
+      │   └─ "end"
+      └─ "end"

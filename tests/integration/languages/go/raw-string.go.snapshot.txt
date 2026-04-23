@@ -1,0 +1,34 @@
+file/
+  ├─ comment = "// Go's raw string literals (backtick-quoted) render as <string> with a"
+  ├─ comment = "// <raw/> marker (Principle #13: annotation follows node shape). A bare"
+  ├─ comment = "// //string query catches both forms; //string[raw] is precise."
+  ├─ package/
+  │   ├─ "package"
+  │   └─ name = "main"
+  ├─ var/
+  │   ├─ "var"
+  │   └─ var_spec/
+  │       ├─ name = "normal"
+  │       ├─ "="
+  │       └─ value/string/
+  │           ├─ "\"hello"
+  │           ├─ escape_sequence = "\\n"
+  │           └─ "world\""
+  ├─ var/
+  │   ├─ "var"
+  │   └─ var_spec/
+  │       ├─ name = "raw"
+  │       ├─ "="
+  │       └─ value/string[raw]/
+  │           ├─ "`"
+  │           ├─ raw_string_literal_content = "hello\nworld"
+  │           └─ "`"
+  └─ var/
+      ├─ "var"
+      └─ var_spec/
+          ├─ name = "pattern"
+          ├─ "="
+          └─ value/string[raw]/
+              ├─ "`"
+              ├─ raw_string_literal_content = "^\\d+$"
+              └─ "`"

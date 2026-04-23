@@ -1,0 +1,68 @@
+file/
+  ├─ line_comment = "// Principle #12: flat parameters / arguments / generics. No wrapping"
+  ├─ line_comment = "// <parameters>/<arguments>/<type_parameters> element — children are"
+  ├─ line_comment = "// direct siblings with field attributes."
+  ├─ function[private]/
+  │   ├─ "fn"
+  │   ├─ name = "first"
+  │   ├─ "<"
+  │   ├─ generic/name = "T"
+  │   ├─ ","
+  │   ├─ generic/
+  │   │   ├─ name = "U"
+  │   │   └─ bounds/
+  │   │       ├─ ":"
+  │   │       └─ type/name = "Clone"
+  │   ├─ ">("
+  │   ├─ param/
+  │   │   ├─ name = "a"
+  │   │   ├─ ":"
+  │   │   └─ type/name = "T"
+  │   ├─ ","
+  │   ├─ param/
+  │   │   ├─ name = "b"
+  │   │   ├─ ":"
+  │   │   └─ type/name = "U"
+  │   ├─ ","
+  │   ├─ param/
+  │   │   ├─ name = "c"
+  │   │   ├─ ":"
+  │   │   └─ type/name = "i32"
+  │   ├─ ") ->"
+  │   ├─ returns/type/name = "T"
+  │   └─ body/
+  │       ├─ "{"
+  │       ├─ name = "a"
+  │       └─ "}"
+  └─ function[private]/
+      ├─ "fn"
+      ├─ name = "caller"
+      ├─ "()"
+      └─ body/
+          ├─ "{"
+          ├─ call/
+          │   ├─ generic_function/
+          │   │   ├─ name = "first"
+          │   │   ├─ "::<"
+          │   │   ├─ type/name = "String"
+          │   │   ├─ ","
+          │   │   ├─ type/name = "i32"
+          │   │   └─ ">"
+          │   ├─ "("
+          │   ├─ call/
+          │   │   ├─ path/
+          │   │   │   ├─ name = "String"
+          │   │   │   ├─ "::"
+          │   │   │   └─ name = "from"
+          │   │   ├─ "("
+          │   │   ├─ string/
+          │   │   │   ├─ "\""
+          │   │   │   ├─ string_content = "x"
+          │   │   │   └─ "\""
+          │   │   └─ ")"
+          │   ├─ ","
+          │   ├─ int = "1"
+          │   ├─ ","
+          │   ├─ int = "2"
+          │   └─ ")"
+          └─ ";\n}"
