@@ -1,91 +1,17 @@
-program/
-  ├─ comment = "// async / generator lifted to empty markers on <function> and <method>."
-  ├─ comment = "// Exhaustive (Principle #9 ish): every function element carries either"
-  ├─ comment = "// neither or the applicable markers — <async/> and/or <generator/>."
-  ├─ function[async]/
-  │   ├─ "async function"
-  │   ├─ name = "fetchOne"
-  │   ├─ "()"
-  │   ├─ returns/
-  │   │   ├─ ":"
-  │   │   └─ type[generic]/
-  │   │       ├─ name = "Promise"
-  │   │       ├─ "<"
-  │   │       ├─ type/name = "number"
-  │   │       └─ ">"
-  │   └─ body/block/
-  │       ├─ "{"
-  │       ├─ return/
-  │       │   ├─ "return"
-  │       │   ├─ number = "1"
-  │       │   └─ ";"
-  │       └─ "}"
-  ├─ function[generator]/
-  │   ├─ "function*"
-  │   ├─ name = "counter"
-  │   ├─ "()"
-  │   ├─ returns/
-  │   │   ├─ ":"
-  │   │   └─ type[generic]/
-  │   │       ├─ name = "Generator"
-  │   │       ├─ "<"
-  │   │       ├─ type/name = "number"
-  │   │       └─ ">"
-  │   └─ body/block/
-  │       ├─ "{"
-  │       ├─ yield/
-  │       │   ├─ "yield"
-  │       │   └─ number = "1"
-  │       └─ "; }"
-  ├─ function[async and generator]/
-  │   ├─ "async function*"
-  │   ├─ name = "stream"
-  │   ├─ "()"
-  │   ├─ returns/
-  │   │   ├─ ":"
-  │   │   └─ type[generic]/
-  │   │       ├─ name = "AsyncGenerator"
-  │   │       ├─ "<"
-  │   │       ├─ type/name = "number"
-  │   │       └─ ">"
-  │   └─ body/block/
-  │       ├─ "{"
-  │       ├─ yield/
-  │       │   ├─ "yield"
-  │       │   └─ number = "1"
-  │       └─ "; }"
-  └─ class/
-      ├─ "class"
-      ├─ name = "Service"
-      └─ body/
-          ├─ "{"
-          ├─ method[async]/
-          │   ├─ "async"
-          │   ├─ name = "load"
-          │   ├─ "()"
-          │   ├─ returns/
-          │   │   ├─ ":"
-          │   │   └─ type[generic]/
-          │   │       ├─ name = "Promise"
-          │   │       ├─ "<"
-          │   │       ├─ type/name = "void"
-          │   │       └─ ">"
-          │   └─ body/block = "{}"
-          ├─ method[generator]/
-          │   ├─ "*"
-          │   ├─ name = "keys"
-          │   ├─ "()"
-          │   ├─ returns/
-          │   │   ├─ ":"
-          │   │   └─ type[generic]/
-          │   │       ├─ name = "Generator"
-          │   │       ├─ "<"
-          │   │       ├─ type/name = "string"
-          │   │       └─ ">"
-          │   └─ body/block/
-          │       ├─ "{"
-          │       ├─ yield/
-          │       │   ├─ "yield"
-          │       │   └─ string = "\"a\""
-          │       └─ "; }"
-          └─ "}"
+function[async and generator]/
+  ├─ "async function*"
+  ├─ name = "stream"
+  ├─ "()"
+  ├─ returns/
+  │   ├─ ":"
+  │   └─ type[generic]/
+  │       ├─ name = "AsyncGenerator"
+  │       ├─ "<"
+  │       ├─ type/name = "number"
+  │       └─ ">"
+  └─ body/block/
+      ├─ "{"
+      ├─ yield/
+      │   ├─ "yield"
+      │   └─ number = "1"
+      └─ "; }"

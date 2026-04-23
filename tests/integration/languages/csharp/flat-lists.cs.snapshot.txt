@@ -1,1 +1,27 @@
-class
+method[public]/
+  ├─ returns/name = "T"
+  ├─ name = "First"
+  ├─ "<"
+  ├─ generic[class]/name = "T"
+  ├─ ","
+  ├─ generic/name = "U"
+  ├─ ">("
+  ├─ parameter/
+  │   ├─ type/name = "T"
+  │   └─ name = "a"
+  ├─ ","
+  ├─ parameter/
+  │   ├─ type/name = "U"
+  │   └─ name = "b"
+  ├─ ","
+  ├─ parameter/
+  │   ├─ type/name = "int"
+  │   └─ name = "c"
+  ├─ ")"
+  └─ body/block/
+      ├─ "{"
+      ├─ return/
+      │   ├─ "return"
+      │   ├─ name = "a"
+      │   └─ ";"
+      └─ "}"

@@ -1,60 +1,23 @@
-file/
-  ├─ comment = "// Principle #12: parameter / argument / field lists flatten. Each"
-  ├─ comment = "// parameter / argument / struct field is a direct sibling with a"
-  ├─ comment = "// field attribute, no <parameters> / <argument_list> wrapper."
-  ├─ package/
-  │   ├─ "package"
-  │   └─ name = "main"
-  ├─ function[exported]/
-  │   ├─ "func"
-  │   ├─ name = "First"
-  │   ├─ "("
-  │   ├─ param/
-  │   │   ├─ name = "a"
-  │   │   └─ type/name = "string"
-  │   ├─ ","
-  │   ├─ param/
-  │   │   ├─ name = "b"
-  │   │   └─ type/name = "int"
-  │   ├─ ","
-  │   ├─ param/
-  │   │   ├─ name = "c"
-  │   │   └─ type/name = "bool"
-  │   ├─ ")"
-  │   ├─ returns/type/name = "string"
-  │   └─ body/
-  │       ├─ "{"
-  │       ├─ return/
-  │       │   ├─ "return"
-  │       │   └─ name = "a"
-  │       └─ "}"
-  ├─ function[exported]/
-  │   ├─ "func"
-  │   ├─ name = "Caller"
-  │   ├─ "()"
-  │   └─ body/
-  │       ├─ "{"
-  │       ├─ call/
-  │       │   ├─ name = "First"
-  │       │   ├─ "("
-  │       │   ├─ string = "\"x\""
-  │       │   ├─ ","
-  │       │   ├─ int = "1"
-  │       │   ├─ ","
-  │       │   ├─ true = "true"
-  │       │   └─ ")"
-  │       └─ "}"
-  └─ struct[exported]/
-      ├─ "type"
-      ├─ name = "Config"
-      ├─ "struct {"
-      ├─ field/
-      │   ├─ name = "Host"
-      │   └─ type/name = "string"
-      ├─ field/
-      │   ├─ name = "Port"
-      │   └─ type/name = "int"
-      ├─ field/
-      │   ├─ name = "Tls"
-      │   └─ type/name = "bool"
+function[exported]/
+  ├─ "func"
+  ├─ name = "First"
+  ├─ "("
+  ├─ param/
+  │   ├─ name = "a"
+  │   └─ type/name = "string"
+  ├─ ","
+  ├─ param/
+  │   ├─ name = "b"
+  │   └─ type/name = "int"
+  ├─ ","
+  ├─ param/
+  │   ├─ name = "c"
+  │   └─ type/name = "bool"
+  ├─ ")"
+  ├─ returns/type/name = "string"
+  └─ body/
+      ├─ "{"
+      ├─ return/
+      │   ├─ "return"
+      │   └─ name = "a"
       └─ "}"

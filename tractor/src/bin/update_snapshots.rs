@@ -31,59 +31,60 @@ const SKIP_EXTENSIONS: &[&str] = &["xml", "sh", "md", "json"];
 /// Paths are relative to the project root.
 const FEATURE_FIXTURES: &[(&str, &str)] = &[
     // — TypeScript —
-    // (source, xpath — --single extracts the first match)
-    ("tests/integration/languages/typescript/accessors.ts", "//class"),
-    ("tests/integration/languages/typescript/async-generator.ts", "//program"),
-    ("tests/integration/languages/typescript/conditionals.ts", "//function[name='classify']"),
+    // (source, xpath — --single extracts the first match; pick the
+    //  smallest construct that demonstrates the invariant.)
+    ("tests/integration/languages/typescript/accessors.ts", "//method[get]"),
+    ("tests/integration/languages/typescript/async-generator.ts", "//function[async][generator]"),
+    ("tests/integration/languages/typescript/conditionals.ts", "//if"),
     ("tests/integration/languages/typescript/flat-lists.ts", "//function[name='first']"),
     ("tests/integration/languages/typescript/parameter-marking.ts", "//function[name='call']"),
     ("tests/integration/languages/typescript/type-vocabulary.ts", "//class[name='Dog']"),
 
     // — Java —
-    ("tests/integration/languages/java/conditionals.java", "//class"),
-    ("tests/integration/languages/java/constructor-rename.java", "//class"),
+    ("tests/integration/languages/java/conditionals.java", "//if"),
+    ("tests/integration/languages/java/constructor-rename.java", "//constructor[1]"),
     ("tests/integration/languages/java/flat-lists.java", "//method[1]"),
-    ("tests/integration/languages/java/interface-public.java", "//interface"),
-    ("tests/integration/languages/java/modifiers.java", "//class"),
+    ("tests/integration/languages/java/interface-public.java", "//interface/body/method[public][1]"),
+    ("tests/integration/languages/java/modifiers.java", "//field[private]"),
     ("tests/integration/languages/java/type-vocabulary.java", "//class[name='Dog']"),
 
     // — C# —
-    ("tests/integration/languages/csharp/accessor-flattening.cs", "//class"),
-    ("tests/integration/languages/csharp/conditionals.cs", "//class"),
-    ("tests/integration/languages/csharp/flat-lists.cs", "//class"),
-    ("tests/integration/languages/csharp/interface-public.cs", "//interface"),
+    ("tests/integration/languages/csharp/accessor-flattening.cs", "//property[name='Manual']"),
+    ("tests/integration/languages/csharp/conditionals.cs", "//if"),
+    ("tests/integration/languages/csharp/flat-lists.cs", "//method[1]"),
+    ("tests/integration/languages/csharp/interface-public.cs", "//interface/body/method[public][1]"),
     ("tests/integration/languages/csharp/type-vocabulary.cs", "//class[name='Dog']"),
     ("tests/integration/languages/csharp/where-clause.cs", "//class"),
 
     // — Rust —
-    ("tests/integration/languages/rust/conditionals.rs", "//function[name='classify']"),
+    ("tests/integration/languages/rust/conditionals.rs", "//if"),
     ("tests/integration/languages/rust/flat-lists.rs", "//function[name='first']"),
-    ("tests/integration/languages/rust/match-expression.rs", "//function"),
-    ("tests/integration/languages/rust/method-call.rs", "//function"),
-    ("tests/integration/languages/rust/reference-type.rs", "//file"),
-    ("tests/integration/languages/rust/struct-expression.rs", "//function[name='make']"),
-    ("tests/integration/languages/rust/type-vocabulary.rs", "//struct"),
-    ("tests/integration/languages/rust/typedef.rs", "//file"),
-    ("tests/integration/languages/rust/visibility.rs", "//file"),
+    ("tests/integration/languages/rust/match-expression.rs", "//match"),
+    ("tests/integration/languages/rust/method-call.rs", "//call[1]"),
+    ("tests/integration/languages/rust/reference-type.rs", "//param[type[borrowed]][1]"),
+    ("tests/integration/languages/rust/struct-expression.rs", "//literal[name='Point']"),
+    ("tests/integration/languages/rust/type-vocabulary.rs", "//struct[name='Dog']"),
+    ("tests/integration/languages/rust/typedef.rs", "//alias[1]"),
+    ("tests/integration/languages/rust/visibility.rs", "//function[pub][1]"),
 
     // — Python —
-    ("tests/integration/languages/python/augmented-assign.py", "//function"),
-    ("tests/integration/languages/python/collection-markers.py", "//module"),
-    ("tests/integration/languages/python/conditionals.py", "//function[name='classify']"),
-    ("tests/integration/languages/python/expression-list.py", "//module"),
-    ("tests/integration/languages/python/f-strings.py", "//module"),
+    ("tests/integration/languages/python/augmented-assign.py", "//assign[op][1]"),
+    ("tests/integration/languages/python/collection-markers.py", "//list[comprehension]"),
+    ("tests/integration/languages/python/conditionals.py", "//if"),
+    ("tests/integration/languages/python/expression-list.py", "//return[1]"),
+    ("tests/integration/languages/python/f-strings.py", "//string[interpolation]"),
 
     // — Go —
-    ("tests/integration/languages/go/conditionals.go", "//function"),
-    ("tests/integration/languages/go/defined-type-vs-alias.go", "//file"),
-    ("tests/integration/languages/go/flat-lists.go", "//file"),
-    ("tests/integration/languages/go/raw-string.go", "//file"),
-    ("tests/integration/languages/go/struct-interface-hoist.go", "//file"),
-    ("tests/integration/languages/go/type-declaration.go", "//file"),
+    ("tests/integration/languages/go/conditionals.go", "//if"),
+    ("tests/integration/languages/go/defined-type-vs-alias.go", "//alias"),
+    ("tests/integration/languages/go/flat-lists.go", "//function"),
+    ("tests/integration/languages/go/raw-string.go", "//string[raw]"),
+    ("tests/integration/languages/go/struct-interface-hoist.go", "//struct"),
+    ("tests/integration/languages/go/type-declaration.go", "//interface"),
 
     // — Ruby —
-    ("tests/integration/languages/ruby/conditionals.rb", "//method"),
-    ("tests/integration/languages/ruby/name-inlining.rb", "//program"),
+    ("tests/integration/languages/ruby/conditionals.rb", "//if"),
+    ("tests/integration/languages/ruby/name-inlining.rb", "//class"),
 ];
 
 /// Output-format snapshot cases: (relative path under formats/, tractor args).

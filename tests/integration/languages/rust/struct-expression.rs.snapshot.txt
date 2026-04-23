@@ -1,44 +1,14 @@
-function[private]/
-  ├─ "fn"
-  ├─ name = "make"
-  ├─ "()"
+literal/
+  ├─ name = "Point"
   └─ body/
       ├─ "{"
-      ├─ let/
-      │   ├─ "let"
-      │   ├─ name = "p"
-      │   ├─ "="
-      │   ├─ value/literal/
-      │   │   ├─ name = "Point"
-      │   │   └─ body/
-      │   │       ├─ "{"
-      │   │       ├─ field/
-      │   │       │   ├─ name = "x"
-      │   │       │   ├─ ":"
-      │   │       │   └─ value/int = "1"
-      │   │       ├─ ","
-      │   │       ├─ field/
-      │   │       │   ├─ name = "y"
-      │   │       │   ├─ ":"
-      │   │       │   └─ value/int = "2"
-      │   │       └─ "}"
-      │   └─ ";"
-      ├─ let/
-      │   ├─ "let"
-      │   ├─ name = "q"
-      │   ├─ "="
-      │   ├─ value/literal/
-      │   │   ├─ name = "Point"
-      │   │   └─ body/
-      │   │       ├─ "{"
-      │   │       ├─ field/
-      │   │       │   ├─ name = "x"
-      │   │       │   ├─ ":"
-      │   │       │   └─ value/int = "0"
-      │   │       ├─ ","
-      │   │       ├─ base_field_initializer/
-      │   │       │   ├─ ".."
-      │   │       │   └─ name = "p"
-      │   │       └─ "}"
-      │   └─ ";"
+      ├─ field/
+      │   ├─ name = "x"
+      │   ├─ ":"
+      │   └─ value/int = "1"
+      ├─ ","
+      ├─ field/
+      │   ├─ name = "y"
+      │   ├─ ":"
+      │   └─ value/int = "2"
       └─ "}"

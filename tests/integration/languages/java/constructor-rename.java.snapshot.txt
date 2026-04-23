@@ -1,56 +1,13 @@
-class[package]/
-  ├─ "class"
+constructor[package]/
   ├─ name = "Point"
+  ├─ "()"
   └─ body/
       ├─ "{"
-      ├─ field[package]/
-      │   ├─ type/name = "int"
-      │   ├─ variable_declarator/name = "x"
-      │   ├─ ","
-      │   ├─ variable_declarator/name = "y"
-      │   └─ ";"
-      ├─ constructor[package]/
-      │   ├─ name = "Point"
-      │   ├─ "()"
-      │   └─ body/
-      │       ├─ "{"
-      │       ├─ explicit_constructor_invocation/
-      │       │   ├─ this = "this"
-      │       │   ├─ "("
-      │       │   ├─ int = "0"
-      │       │   ├─ ","
-      │       │   ├─ int = "0"
-      │       │   └─ ");"
-      │       └─ "}"
-      ├─ constructor[package]/
-      │   ├─ name = "Point"
+      ├─ explicit_constructor_invocation/
+      │   ├─ this = "this"
       │   ├─ "("
-      │   ├─ param/
-      │   │   ├─ type/name = "int"
-      │   │   └─ name = "x"
+      │   ├─ int = "0"
       │   ├─ ","
-      │   ├─ param/
-      │   │   ├─ type/name = "int"
-      │   │   └─ name = "y"
-      │   ├─ ")"
-      │   └─ body/
-      │       ├─ "{"
-      │       ├─ assign/
-      │       │   ├─ op = "="
-      │       │   ├─ left/member/
-      │       │   │   ├─ this = "this"
-      │       │   │   ├─ "."
-      │       │   │   └─ name = "x"
-      │       │   ├─ "="
-      │       │   └─ right/name = "x"
-      │       ├─ ";"
-      │       ├─ assign/
-      │       │   ├─ op = "="
-      │       │   ├─ left/member/
-      │       │   │   ├─ this = "this"
-      │       │   │   ├─ "."
-      │       │   │   └─ name = "y"
-      │       │   ├─ "="
-      │       │   └─ right/name = "y"
-      │       └─ ";\n    }"
+      │   ├─ int = "0"
+      │   └─ ");"
       └─ "}"

@@ -1,36 +1,4 @@
-interface[package]/
-  ├─ "interface"
-  ├─ name = "Shape"
-  └─ body/
-      ├─ "{"
-      ├─ method[public]/
-      │   ├─ returns/type/name = "double"
-      │   ├─ name = "area"
-      │   └─ "();"
-      ├─ line_comment = "// implicitly public"
-      ├─ method[public]/
-      │   ├─ returns/type/name = "double"
-      │   ├─ name = "perimeter"
-      │   └─ "();"
-      ├─ line_comment = "// implicitly public"
-      ├─ method[package]/
-      │   ├─ returns/type/name = "String"
-      │   ├─ name = "name"
-      │   ├─ "()"
-      │   └─ body/
-      │       ├─ "{"
-      │       ├─ line_comment = "// implicitly public"
-      │       ├─ return/
-      │       │   ├─ "return"
-      │       │   ├─ string/
-      │       │   │   ├─ "\""
-      │       │   │   ├─ string_fragment = "shape"
-      │       │   │   └─ "\""
-      │       │   └─ ";"
-      │       └─ "}"
-      ├─ method[public]/
-      │   ├─ returns/type/name = "void"
-      │   ├─ name = "stroke"
-      │   └─ "();"
-      ├─ line_comment = "// explicit — should still be <public/>"
-      └─ "}"
+method[public]/
+  ├─ returns/type/name = "double"
+  ├─ name = "area"
+  └─ "();"

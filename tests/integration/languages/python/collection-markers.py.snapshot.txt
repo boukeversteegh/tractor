@@ -1,116 +1,13 @@
-module/
-  ├─ comment = "# Python collection literals unify by produced type. <list>, <dict>, <set>"
-  ├─ comment = "# carry exhaustive <literal/> or <comprehension/> markers so queries can"
-  ├─ comment = "# distinguish `[x for x in xs]` from `[1, 2, 3]` without kind-specific"
-  ├─ comment = "# element names like list_comprehension vs list."
-  ├─ assign/
-  │   ├─ left/name = "nums"
-  │   ├─ "="
-  │   └─ right/list[literal]/
-  │       ├─ "["
-  │       ├─ int = "1"
-  │       ├─ ","
-  │       ├─ int = "2"
-  │       ├─ ","
-  │       ├─ int = "3"
-  │       └─ "]"
-  ├─ comment = "# list + <literal/>"
-  ├─ assign/
-  │   ├─ left/name = "squares"
-  │   ├─ "="
-  │   └─ right/list[comprehension]/
-  │       ├─ "["
-  │       ├─ body/binary/
-  │       │   ├─ op[multiply] = "*"
-  │       │   ├─ left/name = "x"
-  │       │   ├─ "*"
-  │       │   └─ right/name = "x"
-  │       ├─ for/
-  │       │   ├─ "for"
-  │       │   ├─ left/name = "x"
-  │       │   ├─ "in"
-  │       │   └─ right/name = "nums"
-  │       └─ "]"
-  ├─ comment = "# list + <comprehension/>"
-  ├─ assign/
-  │   ├─ left/name = "pairs"
-  │   ├─ "="
-  │   └─ right/dict[literal]/
-  │       ├─ "{"
-  │       ├─ pair/
-  │       │   ├─ string = "\"a\""
-  │       │   ├─ ":"
-  │       │   └─ value/int = "1"
-  │       ├─ ","
-  │       ├─ pair/
-  │       │   ├─ string = "\"b\""
-  │       │   ├─ ":"
-  │       │   └─ value/int = "2"
-  │       └─ "}"
-  ├─ comment = "# dict + <literal/>"
-  ├─ assign/
-  │   ├─ left/name = "inverted"
-  │   ├─ "="
-  │   └─ right/dict[comprehension]/
-  │       ├─ "{"
-  │       ├─ body/pair/
-  │       │   ├─ name = "v"
-  │       │   ├─ ":"
-  │       │   └─ value/name = "k"
-  │       ├─ for/
-  │       │   ├─ "for"
-  │       │   ├─ left/
-  │       │   │   ├─ name = "k"
-  │       │   │   ├─ ","
-  │       │   │   └─ name = "v"
-  │       │   ├─ "in"
-  │       │   └─ right/call/
-  │       │       ├─ member/
-  │       │       │   ├─ name = "pairs"
-  │       │       │   ├─ "."
-  │       │       │   └─ name = "items"
-  │       │       └─ "()"
-  │       └─ "}"
-  ├─ comment = "# dict + <comprehension/>"
-  ├─ assign/
-  │   ├─ left/name = "unique"
-  │   ├─ "="
-  │   └─ right/set[literal]/
-  │       ├─ "{"
-  │       ├─ int = "1"
-  │       ├─ ","
-  │       ├─ int = "2"
-  │       ├─ ","
-  │       ├─ int = "3"
-  │       └─ "}"
-  ├─ comment = "# set + <literal/>"
-  ├─ assign/
-  │   ├─ left/name = "uniq_sq"
-  │   ├─ "="
-  │   └─ right/set[comprehension]/
-  │       ├─ "{"
-  │       ├─ body/binary/
-  │       │   ├─ op[multiply] = "*"
-  │       │   ├─ left/name = "x"
-  │       │   ├─ "*"
-  │       │   └─ right/name = "x"
-  │       ├─ for/
-  │       │   ├─ "for"
-  │       │   ├─ left/name = "x"
-  │       │   ├─ "in"
-  │       │   └─ right/name = "nums"
-  │       └─ "}"
-  ├─ comment = "# set + <comprehension/>"
-  ├─ assign/
-  │   ├─ left/name = "gen"
-  │   ├─ "="
-  │   └─ right/generator/
-  │       ├─ "("
-  │       ├─ body/name = "x"
-  │       ├─ for/
-  │       │   ├─ "for"
-  │       │   ├─ left/name = "x"
-  │       │   ├─ "in"
-  │       │   └─ right/name = "nums"
-  │       └─ ")"
-  └─ comment = "# generator + <comprehension/>"
+list[comprehension]/
+  ├─ "["
+  ├─ body/binary/
+  │   ├─ op[multiply] = "*"
+  │   ├─ left/name = "x"
+  │   ├─ "*"
+  │   └─ right/name = "x"
+  ├─ for/
+  │   ├─ "for"
+  │   ├─ left/name = "x"
+  │   ├─ "in"
+  │   └─ right/name = "nums"
+  └─ "]"

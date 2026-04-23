@@ -1,38 +1,7 @@
-module/
-  ├─ comment = "# F-strings render as <string> with interpolation children and bare"
-  ├─ comment = "# literal text in between (Principle #12: string_start / string_content /"
-  ├─ comment = "# string_end grammar wrappers are flattened — they carry no semantic"
-  ├─ comment = "# beyond their text value). Plain strings collapse to a text-only"
-  ├─ comment = "# <string> element."
-  ├─ comment = "#"
-  ├─ comment = "# Query: //string/interpolation/name='age' finds every interpolation of"
-  ├─ comment = "# the `age` variable regardless of the surrounding literal text."
-  ├─ assign/
-  │   ├─ left/name = "plain"
-  │   ├─ "="
-  │   └─ right/string = "\"hello\""
-  ├─ assign/
-  │   ├─ left/name = "greeting"
-  │   ├─ "="
-  │   └─ right/string/
-  │       ├─ "f\"hello"
-  │       ├─ interpolation/
-  │       │   ├─ "{"
-  │       │   ├─ name = "name"
-  │       │   └─ "}"
-  │       └─ "\""
-  └─ assign/
-      ├─ left/name = "status"
-      ├─ "="
-      └─ right/string/
-          ├─ "f\"hello"
-          ├─ interpolation/
-          │   ├─ "{"
-          │   ├─ name = "name"
-          │   └─ "}"
-          ├─ ", you are"
-          ├─ interpolation/
-          │   ├─ "{"
-          │   ├─ name = "age"
-          │   └─ "}"
-          └─ "\""
+string/
+  ├─ "f\"hello"
+  ├─ interpolation/
+  │   ├─ "{"
+  │   ├─ name = "name"
+  │   └─ "}"
+  └─ "\""

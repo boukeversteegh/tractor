@@ -1,44 +1,37 @@
-method/
-  ├─ "def"
-  ├─ name = "classify"
-  ├─ "("
-  ├─ name = "n"
-  ├─ ")"
-  ├─ body/if/
-  │   ├─ "if"
+if/
+  ├─ "if"
+  ├─ condition/binary/
+  │   ├─ left/name = "n"
+  │   ├─ "<"
+  │   └─ right/int = "0"
+  ├─ then/string/
+  │   ├─ "\""
+  │   ├─ string_content = "neg"
+  │   └─ "\""
+  ├─ "end"
+  ├─ else_if/
+  │   ├─ "elsif"
+  │   ├─ condition/binary/
+  │   │   ├─ left/name = "n"
+  │   │   ├─ "=="
+  │   │   └─ right/int = "0"
+  │   └─ then/string/
+  │       ├─ "\""
+  │       ├─ string_content = "zero"
+  │       └─ "\""
+  ├─ else_if/
+  │   ├─ "elsif"
   │   ├─ condition/binary/
   │   │   ├─ left/name = "n"
   │   │   ├─ "<"
-  │   │   └─ right/int = "0"
-  │   ├─ then/string/
-  │   │   ├─ "\""
-  │   │   ├─ string_content = "neg"
-  │   │   └─ "\""
-  │   ├─ "end"
-  │   ├─ else_if/
-  │   │   ├─ "elsif"
-  │   │   ├─ condition/binary/
-  │   │   │   ├─ left/name = "n"
-  │   │   │   ├─ "=="
-  │   │   │   └─ right/int = "0"
-  │   │   └─ then/string/
-  │   │       ├─ "\""
-  │   │       ├─ string_content = "zero"
-  │   │       └─ "\""
-  │   ├─ else_if/
-  │   │   ├─ "elsif"
-  │   │   ├─ condition/binary/
-  │   │   │   ├─ left/name = "n"
-  │   │   │   ├─ "<"
-  │   │   │   └─ right/int = "10"
-  │   │   └─ then/string/
-  │   │       ├─ "\""
-  │   │       ├─ string_content = "small"
-  │   │       └─ "\""
-  │   └─ else/
-  │       ├─ "else"
-  │       └─ string/
-  │           ├─ "\""
-  │           ├─ string_content = "big"
-  │           └─ "\""
-  └─ "end"
+  │   │   └─ right/int = "10"
+  │   └─ then/string/
+  │       ├─ "\""
+  │       ├─ string_content = "small"
+  │       └─ "\""
+  └─ else/
+      ├─ "else"
+      └─ string/
+          ├─ "\""
+          ├─ string_content = "big"
+          └─ "\""
