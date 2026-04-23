@@ -1,0 +1,31 @@
+class[public]/
+  ├─ "public class"
+  ├─ name = "Demo"
+  └─ body/
+      ├─ "{"
+      ├─ field[private]/
+      │   ├─ "private"
+      │   ├─ variable/
+      │   │   └─ ... (4 children)
+      │   └─ ";"
+      ├─ comment[trailing] = "// instance counter"
+      ├─ comment[leading] = "// Configuration settings\n// loaded from environment"
+      ├─ property[public]/
+      │   ├─ "public"
+      │   ├─ type/
+      │   │   └─ ... (1 children)
+      │   ├─ name = "Config"
+      │   ├─ "{"
+      │   ├─ accessor[get] = "get;"
+      │   ├─ accessor[set] = "set;"
+      │   └─ "}"
+      ├─ comment[leading] = "/* block comment */"
+      ├─ method[public]/
+      │   ├─ "public"
+      │   ├─ returns/
+      │   │   └─ ... (2 children)
+      │   ├─ name = "Run"
+      │   ├─ "()"
+      │   └─ body/
+      │       └─ ... (4 children)
+      └─ "}"

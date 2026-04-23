@@ -67,6 +67,7 @@ const FEATURE_FIXTURES: &[(&str, &str, u32)] = &[
 
     // — C# —
     ("tests/integration/languages/csharp/accessor-flattening.cs", "//property[name='Manual']", 0),
+    ("tests/integration/languages/csharp/comments.cs", "//class[name='Demo']", 3),
     ("tests/integration/languages/csharp/conditionals.cs", "//if", 3),
     ("tests/integration/languages/csharp/flat-lists.cs", "//method[1]", 0),
     ("tests/integration/languages/csharp/interface-public.cs", "//interface/body/method[public][1]", 0),
@@ -797,6 +798,17 @@ fn main() {
 
             // Skip feature fixtures — handled in a separate pass below.
             if feature_set.contains(&path_str) {
+                continue;
+            }
+
+            // Only the per-language `sample.<ext>` blueprint gets full-file
+            // `.xml` + `.raw.xml` snapshots. Every other fixture is either
+            // a feature source (handled below) or a query fixture kept for
+            // CLI tests — no full-file snapshot, since those churn on every
+            // transform change and don't prove anything the assertion suite
+            // and feature fragments don't already cover.
+            let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+            if stem != "sample" {
                 continue;
             }
 
