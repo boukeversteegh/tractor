@@ -9,13 +9,13 @@
             function
             <name>add</name>
             (
-            <param>
+            <parameter>
               <name>a</name>
-            </param>
+            </parameter>
             ,
-            <param>
+            <parameter>
               <name>b</name>
-            </param>
+            </parameter>
             )
             <body>
               <block>

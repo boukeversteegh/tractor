@@ -24,7 +24,13 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // parens. Collapse the spec wrapper so each import path is a
         // direct child of the <import>; rename the outer declaration
         // to `import` below via map_element_name.
-        "import_spec" => Ok(TransformAction::Flatten),
+        //
+        // `const_spec` / `var_spec` are the same pattern — a grammar
+        // wrapper around `name = value`. Flatten so the declaration
+        // reads as `<const>const<name>x</name>=<value>1</value></const>`
+        // rather than nesting the assignment inside an opaque spec
+        // element.
+        "import_spec" | "const_spec" | "var_spec" => Ok(TransformAction::Flatten),
         // The content-inside-quotes node on "interpreted" strings —
         // inline as raw text into the enclosing <string>.
         "interpreted_string_literal_content" => Ok(TransformAction::Flatten),

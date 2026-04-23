@@ -8,28 +8,25 @@ file/
   │   └─ name = "main"
   ├─ const/
   │   ├─ "const"
-  │   └─ const_spec/
-  │       ├─ name = "normal"
-  │       ├─ "="
-  │       └─ value/string/
-  │           ├─ "\"hello"
-  │           ├─ escape_sequence = "\\n"
-  │           └─ "world\""
+  │   ├─ name = "normal"
+  │   ├─ "="
+  │   └─ value/string/
+  │       ├─ "\"hello"
+  │       ├─ escape_sequence = "\\n"
+  │       └─ "world\""
   ├─ const/
   │   ├─ "const"
-  │   └─ const_spec/
-  │       ├─ name = "raw"
-  │       ├─ "="
-  │       └─ value/string[raw]/
-  │           ├─ "`"
-  │           ├─ raw_string_literal_content = "hello world"
-  │           └─ "`"
+  │   ├─ name = "raw"
+  │   ├─ "="
+  │   └─ value/string[raw]/
+  │       ├─ "`"
+  │       ├─ raw_string_literal_content = "hello world"
+  │       └─ "`"
   └─ const/
       ├─ "const"
-      └─ const_spec/
-          ├─ name = "pattern"
-          ├─ "="
-          └─ value/string[raw]/
-              ├─ "`"
-              ├─ raw_string_literal_content = "^\\d+$"
-              └─ "`"
+      ├─ name = "pattern"
+      ├─ "="
+      └─ value/string[raw]/
+          ├─ "`"
+          ├─ raw_string_literal_content = "^\\d+$"
+          └─ "`"

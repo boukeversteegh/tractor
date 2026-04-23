@@ -10,21 +10,21 @@
             pub fn
             <name>add</name>
             (
-            <param>
+            <parameter>
               <name>a</name>
               :
               <type>
                 <name>i32</name>
               </type>
-            </param>
+            </parameter>
             ,
-            <param>
+            <parameter>
               <name>b</name>
               :
               <type>
                 <name>i32</name>
               </type>
-            </param>
+            </parameter>
             ) -&gt;
             <returns>
               <type>

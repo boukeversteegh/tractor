@@ -10,17 +10,17 @@ function[private]/
   │       ├─ ":"
   │       └─ type/name = "Clone"
   ├─ ">("
-  ├─ param/
+  ├─ parameter/
   │   ├─ name = "a"
   │   ├─ ":"
   │   └─ type/name = "T"
   ├─ ","
-  ├─ param/
+  ├─ parameter/
   │   ├─ name = "b"
   │   ├─ ":"
   │   └─ type/name = "U"
   ├─ ","
-  ├─ param/
+  ├─ parameter/
   │   ├─ name = "c"
   │   ├─ ":"
   │   └─ type/name = "i32"

@@ -26,13 +26,13 @@
                 <public/>
                 <name>Sample</name>
                 (
-                <param>
+                <parameter>
                   <type>
                     <int/>
                     int
                   </type>
                   <name>value</name>
-                </param>
+                </parameter>
                 )
                 <body>
                   {
@@ -65,21 +65,21 @@
                 </returns>
                 <name>add</name>
                 (
-                <param>
+                <parameter>
                   <type>
                     <int/>
                     int
                   </type>
                   <name>a</name>
-                </param>
+                </parameter>
                 ,
-                <param>
+                <parameter>
                   <type>
                     <int/>
                     int
                   </type>
                   <name>b</name>
-                </param>
+                </parameter>
                 )
                 <body>
                   {
@@ -113,12 +113,12 @@
                 </returns>
                 <name>log</name>
                 (
-                <param>
+                <parameter>
                   <type>
                     <name>String</name>
                   </type>
                   <name>message</name>
-                </param>
+                </parameter>
                 )
                 <body>
                   {
@@ -165,7 +165,7 @@
                 </returns>
                 <name>main</name>
                 (
-                <param>
+                <parameter>
                   <array>
                     <type>
                       <name>String</name>
@@ -173,7 +173,7 @@
                     <dimensions>[]</dimensions>
                   </array>
                   <name>args</name>
-                </param>
+                </parameter>
                 )
                 <body>
                   {

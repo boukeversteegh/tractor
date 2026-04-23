@@ -9,23 +9,23 @@
             function
             <name>add</name>
             (
-            <param>
+            <parameter>
               <required/>
               <name>a</name>
               :
               <type>
                 <name>number</name>
               </type>
-            </param>
+            </parameter>
             ,
-            <param>
+            <parameter>
               <required/>
               <name>b</name>
               :
               <type>
                 <name>number</name>
               </type>
-            </param>
+            </parameter>
             )
             <returns>
               :
@@ -166,23 +166,23 @@
             function
             <name>greet</name>
             (
-            <param>
+            <parameter>
               <required/>
               <name>name</name>
               :
               <type>
                 <name>string</name>
               </type>
-            </param>
+            </parameter>
             ,
-            <param>
+            <parameter>
               <optional/>
               <name>title</name>
               ?:
               <type>
                 <name>string</name>
               </type>
-            </param>
+            </parameter>
             )
             <returns>
               :
@@ -231,32 +231,32 @@
             function
             <name>configure</name>
             (
-            <param>
+            <parameter>
               <required/>
               <name>host</name>
               :
               <type>
                 <name>string</name>
               </type>
-            </param>
+            </parameter>
             ,
-            <param>
+            <parameter>
               <required/>
               <name>port</name>
               :
               <type>
                 <name>number</name>
               </type>
-            </param>
+            </parameter>
             ,
-            <param>
+            <parameter>
               <optional/>
               <name>timeout</name>
               ?:
               <type>
                 <name>number</name>
               </type>
-            </param>
+            </parameter>
             )
             <returns>
               :

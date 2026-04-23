@@ -171,7 +171,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "decorated_definition" => Some("decorated"),
         "decorator" => Some("decorator"),
         // parameters is flattened via Principle #12 above
-        "default_parameter" | "typed_parameter" | "typed_default_parameter" => Some("param"),
+        "default_parameter" | "typed_parameter" | "typed_default_parameter" => Some("parameter"),
         "return_statement" => Some("return"),
         "if_statement" => Some("if"),
         "elif_clause" => Some("else_if"),
@@ -271,7 +271,7 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
 
         // Keywords - declarations
         "class" | "function" | "module" => SyntaxCategory::Keyword,
-        "param" | "params" => SyntaxCategory::Keyword,
+        "parameter" | "parameters" => SyntaxCategory::Keyword,
         "import" | "from" => SyntaxCategory::Keyword,
         "decorated" | "decorator" => SyntaxCategory::Keyword,
 

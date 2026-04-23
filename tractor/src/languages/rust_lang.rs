@@ -220,7 +220,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "static_item" => Some("static"),
         "type_item" => Some("alias"),
         // parameters is flattened via Principle #12 above
-        "parameter" => Some("param"),
+        "parameter" => Some("parameter"),
         "self_parameter" => Some("self"),
         // reference_type is handled above: <type> with <borrowed/> marker
         "generic_type" => Some("generic"),
@@ -327,7 +327,7 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
         "struct" | "enum" | "trait" => SyntaxCategory::Keyword,
         "mod" | "use" => SyntaxCategory::Keyword,
         "const" | "static" | "alias" => SyntaxCategory::Keyword,
-        "let" | "param" | "params" | "self" => SyntaxCategory::Keyword,
+        "let" | "parameter" | "parameters" | "self" => SyntaxCategory::Keyword,
 
         // Keywords - control flow
         "if" | "else" => SyntaxCategory::Keyword,

@@ -208,7 +208,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // ---------------------------------------------------------------------
         "optional_parameter" => {
             prepend_empty_element(xot, node, "optional")?;
-            rename(xot, node, "param");
+            rename(xot, node, "parameter");
             Ok(TransformAction::Continue)
         }
 
@@ -217,7 +217,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // ---------------------------------------------------------------------
         "required_parameter" => {
             prepend_empty_element(xot, node, "required")?;
-            rename(xot, node, "param");
+            rename(xot, node, "parameter");
             Ok(TransformAction::Continue)
         }
 
@@ -254,7 +254,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "lexical_declaration" | "variable_declaration" => Some("variable"),
 
         // Parameters — formal_parameters is flattened; individual params below
-        "required_parameter" | "optional_parameter" => Some("param"),
+        "required_parameter" | "optional_parameter" => Some("parameter"),
 
         // Blocks
         "statement_block" => Some("block"),
@@ -409,7 +409,7 @@ fn wrap_bare_identifier_params(xot: &mut Xot, list: XotNode) -> Result<(), xot::
         if kind.as_deref() != Some("identifier") {
             continue;
         }
-        let param_name = xot.add_name("param");
+        let param_name = xot.add_name("parameter");
         let param = xot.new_element(param_name);
         copy_source_location(xot, child, param);
         xot.insert_before(child, param)?;
@@ -515,7 +515,7 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
         // Keywords - declarations
         "class" | "interface" | "enum" | "alias" => SyntaxCategory::Keyword,
         "function" | "method" => SyntaxCategory::Keyword,
-        "variable" | "param" | "params" | "optional" | "required" => SyntaxCategory::Keyword,
+        "variable" | "parameter" | "parameters" | "optional" | "required" => SyntaxCategory::Keyword,
         "import" | "export" => SyntaxCategory::Keyword,
 
         // Keywords - control flow
@@ -576,9 +576,9 @@ mod tests {
         let options = RenderOptions::default();
         let xml = render_document(&result.xot, result.root, &options);
 
-        // Count occurrences of <param> (not <params> or <parameters>) - should have 2
-        let param_count = xml.matches("<param>").count() + xml.matches("<param ").count();
-        assert_eq!(param_count, 2, "should have 2 params, got: {xml}");
+        // Count occurrences of <parameter> - should have 2
+        let param_count = xml.matches("<parameter>").count() + xml.matches("<parameter ").count();
+        assert_eq!(param_count, 2, "should have 2 parameters, got: {xml}");
 
         // Only the optional parameter should have <optional/>
         assert!(xml.contains("<optional/>"), "optional parameter should have <optional/> marker, got: {xml}");

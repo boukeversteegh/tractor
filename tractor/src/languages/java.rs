@@ -154,10 +154,9 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
         // Primitive types — `int`, `double`, `boolean`, `void`, … —
-        // render as `<type>` with an empty marker carrying the keyword
-        // (`<type><int/>int</type>`). Known language keywords are
-        // exposed as markers for short predicate-style queries
-        // (`//type[int]`) rather than as `<name>` values.
+        // currently render as `<type>` with an empty marker carrying the
+        // keyword (`<type><int/>int</type>`). Under discussion — see
+        // open-questions thread on closed-value-set markers vs name wrap.
         "integral_type" | "floating_point_type" | "boolean_type" | "void_type" => {
             if let Some(text) = get_text_content(xot, node) {
                 let text = text.trim().to_string();
@@ -332,7 +331,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "local_variable_declaration" => Some("variable"),
         "enum_constant" => Some("constant"),
         // formal_parameters and argument_list are flattened via Principle #12 above
-        "formal_parameter" => Some("param"),
+        "formal_parameter" => Some("parameter"),
         "generic_type" => Some("generic"),
         "array_type" => Some("array"),
         "scoped_identifier" | "scoped_type_identifier" => Some("path"),
@@ -431,7 +430,7 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
         // Keywords - declarations
         "class" | "interface" | "enum" => SyntaxCategory::Keyword,
         "method" | "constructor" | "field" => SyntaxCategory::Keyword,
-        "param" | "params" => SyntaxCategory::Keyword,
+        "parameter" | "parameters" => SyntaxCategory::Keyword,
         "import" | "package" => SyntaxCategory::Keyword,
 
         // Keywords - control flow

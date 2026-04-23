@@ -15,15 +15,15 @@ method[package]/
   ├─ returns/type/name = "T"
   ├─ name = "first"
   ├─ "("
-  ├─ param/
+  ├─ parameter/
   │   ├─ type/name = "T"
   │   └─ name = "a"
   ├─ ","
-  ├─ param/
+  ├─ parameter/
   │   ├─ type/name = "U"
   │   └─ name = "b"
   ├─ ","
-  ├─ param/
+  ├─ parameter/
   │   ├─ type[int] = "int"
   │   └─ name = "c"
   ├─ ")"

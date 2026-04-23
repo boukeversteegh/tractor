@@ -8,17 +8,17 @@ function/
   │   ├─ generic/name = "U"
   │   └─ ">"
   ├─ "("
-  ├─ param[required]/
+  ├─ parameter[required]/
   │   ├─ name = "a"
   │   ├─ ":"
   │   └─ type/name = "T"
   ├─ ","
-  ├─ param[required]/
+  ├─ parameter[required]/
   │   ├─ name = "b"
   │   ├─ ":"
   │   └─ type/name = "U"
   ├─ ","
-  ├─ param[required]/
+  ├─ parameter[required]/
   │   ├─ name = "c"
   │   ├─ ":"
   │   └─ type/name = "number"

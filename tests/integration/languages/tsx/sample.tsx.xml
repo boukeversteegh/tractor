@@ -50,7 +50,7 @@
             function
             <name>Greeting</name>
             (
-            <param>
+            <parameter>
               <required/>
               <object_pattern>
                 {
@@ -63,7 +63,7 @@
               <type>
                 <name>Props</name>
               </type>
-            </param>
+            </parameter>
             )
             <body>
               <block>

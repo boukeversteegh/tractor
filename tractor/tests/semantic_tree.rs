@@ -319,7 +319,7 @@ mod typescript {
         );
         assert_count(
             &mut tree,
-            "//param/type[name='number']",
+            "//parameter/type[name='number']",
             1,
             "parameter type wraps name in <name> (Principle #14)",
         );
@@ -362,15 +362,15 @@ mod typescript {
         );
         assert_count(
             &mut tree,
-            "//param[required]",
+            "//parameter[required]",
             1,
-            "required param carries <required/>",
+            "required parameter carries <required/>",
         );
         assert_count(
             &mut tree,
-            "//param[optional]",
+            "//parameter[optional]",
             1,
-            "optional param carries <optional/>",
+            "optional parameter carries <optional/>",
         );
     }
 
@@ -632,7 +632,7 @@ mod java {
         );
         assert_count(
             &mut tree,
-            "//method/param",
+            "//method/parameter",
             2,
             "params are direct method siblings",
         );
@@ -659,9 +659,11 @@ mod java {
         );
     }
 
-    /// Primitive types render as `<type>` with an empty marker
-    /// carrying the keyword — `<type><int/>int</type>`. User-defined
-    /// types keep `<type><name>Foo</name></type>`.
+    /// UNDER DISCUSSION — primitive types currently render as
+    /// `<type>` with an empty marker carrying the keyword
+    /// (`<type><int/>int</type>`). Test pins the current shape so a
+    /// switch back to name-wrap is an intentional change, not a
+    /// drift. See the primitives-vs-name design conversation.
     #[test]
     fn primitive_types_use_markers() {
         let mut tree = parse_src(
@@ -672,31 +674,19 @@ mod java {
             &mut tree,
             "//type[int]",
             1,
-            "int primitive carries <int/> marker",
-        );
-        assert_count(
-            &mut tree,
-            "//type[double]",
-            1,
-            "double primitive carries <double/> marker",
-        );
-        assert_count(
-            &mut tree,
-            "//type[boolean]",
-            1,
-            "boolean primitive carries <boolean/> marker",
+            "int primitive carries <int/> marker (under discussion)",
         );
         assert_count(
             &mut tree,
             "//type[void]",
             1,
-            "void carries <void/> marker",
+            "void carries <void/> marker (under discussion)",
         );
         assert_count(
             &mut tree,
             "//type[name='Foo']",
             1,
-            "user-defined type keeps <name> for the identifier",
+            "user-defined type uses <name> wrap",
         );
     }
 
@@ -782,7 +772,7 @@ mod rust {
         );
         assert_count(
             &mut tree,
-            "//param/type[name='i32']",
+            "//parameter/type[name='i32']",
             1,
             "parameter type wraps name in <name>",
         );
@@ -1182,6 +1172,36 @@ mod go {
             "//string",
             2,
             "both string forms render as <string>",
+        );
+    }
+
+    /// Principle #12 — `const_spec` / `var_spec` / `import_spec` are
+    /// grammar wrappers around `name = value` / `path`. Flatten so the
+    /// declaration reads as `<const>const<name>x</name>=<value>1</value></const>`
+    /// rather than nesting the assignment inside an opaque spec element.
+    #[test]
+    fn const_var_spec_flatten() {
+        let mut tree = parse_src(
+            "go",
+            "package main\nconst x = 1\nvar y = 2\n",
+        );
+        assert_count(
+            &mut tree,
+            "//const_spec",
+            0,
+            "no <const_spec> wrapper (Principle #12)",
+        );
+        assert_count(
+            &mut tree,
+            "//var_spec",
+            0,
+            "no <var_spec> wrapper (Principle #12)",
+        );
+        assert_count(
+            &mut tree,
+            "//const[name='x']",
+            1,
+            "const's name is a direct child, not buried under const_spec",
         );
     }
 

@@ -1,6 +1,0 @@
-param/
-  ├─ name = "s"
-  ├─ ":"
-  └─ type[borrowed]/
-      ├─ "&"
-      └─ type/name = "str"

@@ -2,24 +2,24 @@ function/
   ├─ "function"
   ├─ name = "call"
   ├─ "("
-  ├─ param[required]/
+  ├─ parameter[required]/
   │   ├─ name = "required"
   │   ├─ ":"
   │   └─ type/name = "string"
   ├─ ","
-  ├─ param[optional]/
+  ├─ parameter[optional]/
   │   ├─ name = "optional"
   │   ├─ "?:"
   │   └─ type/name = "number"
   ├─ ","
-  ├─ param[required]/
+  ├─ parameter[required]/
   │   ├─ name = "defaulted"
   │   ├─ ":"
   │   ├─ type/name = "boolean"
   │   ├─ "="
   │   └─ value/bool = "true"
   ├─ ","
-  ├─ param[required]/
+  ├─ parameter[required]/
   │   ├─ rest_pattern/
   │   │   ├─ "..."
   │   │   └─ name = "rest"

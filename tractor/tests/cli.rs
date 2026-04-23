@@ -267,8 +267,8 @@ cli_suite! {
         variable => tractor query "sample.ts" -x "variable" => count 1;
         binary_op => tractor query "sample.ts" -x "binary[op='+']" => count 1;
         calls => tractor query "sample.ts" -x "call" => count 4;
-        optional_params => tractor query "sample.ts" -x "//param[optional]" => count 2;
-        required_params => tractor query "sample.ts" -x "//param[required]" => count 5;
+        optional_params => tractor query "sample.ts" -x "//parameter[optional]" => count 2;
+        required_params => tractor query "sample.ts" -x "//parameter[required]" => count 5;
     }
 }
 
