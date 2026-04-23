@@ -86,6 +86,13 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
                         }
                     }
                 }
+                // Keep the original source keyword as a dangling
+                // sibling so the enclosing function / struct / ...'s
+                // XPath string-value still contains `pub` /
+                // `pub(crate)` / `pub(in path::to::mod)` when
+                // queried with `-v value`. The marker itself stays
+                // empty (Principle #7).
+                insert_text_after(xot, node, &text)?;
                 return Ok(TransformAction::Done);
             }
             Ok(TransformAction::Continue)

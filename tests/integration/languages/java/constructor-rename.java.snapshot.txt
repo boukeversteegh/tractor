@@ -3,7 +3,8 @@ constructor[package]/
   ├─ "()"
   └─ body/
       ├─ "{"
-      ├─ explicit_constructor_invocation[this]/
+      ├─ explicit_constructor_invocation/
+      │   ├─ this = "this"
       │   ├─ "("
       │   ├─ int = "0"
       │   ├─ ","

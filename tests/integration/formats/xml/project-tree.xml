@@ -2,8 +2,8 @@
 <results>
   <tree>
     <class>
-      <public>public</public>
-      class
+      <public/>
+      public class
       <name>Calculator</name>
       <body>
         {
@@ -22,8 +22,8 @@
   </tree>
   <tree>
     <class>
-      <public>public</public>
-      class
+      <public/>
+      public class
       <name>Greeter</name>
       <body>
         {

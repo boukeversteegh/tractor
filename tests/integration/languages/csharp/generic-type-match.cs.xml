@@ -5,13 +5,14 @@
       <tree>
         <unit>
           <class>
-            <public>public</public>
-            class
+            <public/>
+            public class
             <name>DataService</name>
             <body>
               {
               <method>
-                <public>public</public>
+                <public/>
+                public
                 <returns>
                   <type>
                     <generic/>
@@ -50,7 +51,8 @@
                 </body>
               </method>
               <method>
-                <public>public</public>
+                <public/>
+                public
                 <returns>
                   <type>
                     <generic/>
@@ -97,7 +99,8 @@
                 </body>
               </method>
               <method>
-                <public>public</public>
+                <public/>
+                public
                 <returns>
                   <type>
                     <generic/>

@@ -1,6 +1,6 @@
-class (2)/ = "class"
+class[public] (2)/ = "public class"
   ├─ body (2)/ = {…}
-  │   └─ method (5)/ = "(", ",", ")"
+  │   └─ method[public] (5)/ = "public", "(", ",", ")"
   │       ├─ body (5)/
   │       │   └─ block (5)/ = {…}
   │       │       └─ … (12 children)
@@ -9,11 +9,9 @@ class (2)/ = "class"
   │       │   ├─ name (8) = "a", "b", "name"
   │       │   └─ type (8)/
   │       │       └─ … (1 children)
-  │       ├─ public (5) = "public"
   │       └─ returns (5)/
   │           └─ type (5)/
   │               └─ … (1 children)
-  ├─ name (2) = "Calculator", "Greeter"
-  └─ public (2) = "public"
+  └─ name (2) = "Calculator", "Greeter"
 
 (use -d to increase depth, or -x to query specific elements)

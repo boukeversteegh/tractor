@@ -1,6 +1,6 @@
 tests/integration/formats/sample.cs:1
 class[public]/
-  ├─ "class"
+  ├─ "public class"
   ├─ name = "Foo"
   └─ body/
       ├─ "{"
@@ -12,6 +12,6 @@ class[public]/
 
 tests/integration/formats/sample.cs:7
 class[public]/
-  ├─ "class"
+  ├─ "public class"
   ├─ name = "Qux"
   └─ body = "{ }"

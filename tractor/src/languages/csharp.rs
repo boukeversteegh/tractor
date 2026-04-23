@@ -138,24 +138,14 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
                     Some(t) => t.to_string(),
                     None => continue,
                 };
-                let trimmed = raw.trim();
-                let stripped = trimmed.trim_end_matches(';').trim();
+                let stripped = raw.trim().trim_end_matches(';').trim();
                 if let Some(&kind) = KINDS.iter().find(|&&k| k == stripped) {
-                    // Prepend a *source-backed* marker — its text content
-                    // is the keyword itself so the accessor's XPath
-                    // string-value preserves "get" / "set" / etc. when
-                    // the enclosing node is queried with `-v value`.
-                    prepend_element_with_text(xot, node, kind, kind)?;
-                    // The original text token is either exactly the
-                    // keyword (bodied form) or keyword + ";" (auto form).
-                    // Detach either way and, if a trailing ";" is present,
-                    // reinsert it as a sibling so the source punctuation
-                    // still shows up in the value.
-                    xot.detach(child)?;
-                    if trimmed.ends_with(';') {
-                        let semi = xot.new_text(";");
-                        xot.append(node, semi)?;
-                    }
+                    // Prepend an empty marker so `//accessor[get]`
+                    // matches uniformly across auto-form and bodied
+                    // form. The original `get;` / `set;` / `get`
+                    // text token is left untouched on the accessor,
+                    // so its XPath string-value is source-accurate.
+                    prepend_empty_element(xot, node, kind)?;
                     break;
                 }
             }
@@ -215,6 +205,11 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
                 let text = text.trim().to_string();
                 if is_known_modifier(&text) {
                     rename_to_marker(xot, node, &text)?;
+                    // Keep the source keyword as a dangling sibling so
+                    // the enclosing declaration's XPath string-value
+                    // still contains `public` / `static` / `this` / ...
+                    // The marker element itself stays empty (Principle #7).
+                    insert_text_after(xot, node, &text)?;
                     return Ok(TransformAction::Done);
                 }
             }
@@ -1008,11 +1003,13 @@ public static class Mapper {
         let options = RenderOptions::default();
         let xml = render_document(&result.xot, result.root, &options);
 
-        // Source-backed marker: element renamed with the keyword kept
-        // as text so `-v value` queries still see the source keyword.
+        // Empty marker with the source keyword kept as a dangling
+        // sibling text node so `-v value` preserves "this" in the
+        // enclosing declaration's XPath string-value. The marker
+        // itself stays empty (Principle #7).
         assert!(
-            xml.contains("<this>this</this>"),
-            "this modifier should be converted to <this> marker, got: {}",
+            xml.contains("<this/>this"),
+            "this modifier should be converted to <this/> marker with source keyword as sibling, got: {}",
             xml
         );
         assert!(!xml.contains("<modifier>this</modifier>"), "this should not remain as <modifier>this</modifier>");

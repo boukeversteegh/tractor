@@ -14,11 +14,13 @@ class[internal]/
   └─ body/
       ├─ "{"
       ├─ field[public]/
+      │   ├─ "public"
       │   ├─ variable/
       │   │   ├─ type/name = "T"
       │   │   └─ declarator/name = "Owner"
       │   └─ ";"
       ├─ field[public]/
+      │   ├─ "public"
       │   ├─ variable/
       │   │   ├─ type[generic]/
       │   │   │   ├─ name = "List"
@@ -28,6 +30,7 @@ class[internal]/
       │   │   └─ declarator/name = "Tags"
       │   └─ ";"
       ├─ method[public]/
+      │   ├─ "public"
       │   ├─ returns/type/name = "void"
       │   ├─ name = "Bark"
       │   ├─ "()"

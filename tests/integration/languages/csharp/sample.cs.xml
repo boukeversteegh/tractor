@@ -19,14 +19,16 @@
             <body>
               {
               <class>
-                <public>public</public>
-                class
+                <public/>
+                public class
                 <name>Sample</name>
                 <body>
                   {
                   <field>
-                    <private>private</private>
-                    <readonly>readonly</readonly>
+                    <private/>
+                    private
+                    <readonly/>
+                    readonly
                     <variable>
                       <type>
                         <name>int</name>
@@ -38,7 +40,8 @@
                     ;
                   </field>
                   <constructor>
-                    <public>public</public>
+                    <public/>
+                    public
                     <name>Sample</name>
                     (
                     <parameter>
@@ -69,8 +72,10 @@
                     </body>
                   </constructor>
                   <method>
-                    <public>public</public>
-                    <static>static</static>
+                    <public/>
+                    public
+                    <static/>
+                    static
                     <returns>
                       <type>
                         <name>int</name>
@@ -117,7 +122,8 @@
                     </body>
                   </method>
                   <method>
-                    <internal>internal</internal>
+                    <internal/>
+                    internal
                     <returns>
                       <type>
                         <name>void</name>
@@ -157,8 +163,10 @@
                     </body>
                   </method>
                   <method>
-                    <protected>protected</protected>
-                    <virtual>virtual</virtual>
+                    <protected/>
+                    protected
+                    <virtual/>
+                    virtual
                     <returns>
                       <type>
                         <name>string</name>
@@ -189,7 +197,8 @@
                   </method>
                   <method>
                     <private/>
-                    <static>static</static>
+                    <static/>
+                    static
                     <returns>
                       <type>
                         <name>void</name>
@@ -298,7 +307,8 @@
                 <body>
                   {
                   <field>
-                    <public>public</public>
+                    <public/>
+                    public
                     <variable>
                       <type>
                         <name>int</name>
@@ -310,7 +320,8 @@
                     ;
                   </field>
                   <field>
-                    <public>public</public>
+                    <public/>
+                    public
                     <variable>
                       <type>
                         <name>int</name>

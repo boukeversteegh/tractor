@@ -69,13 +69,8 @@ fn xml_node_to_json_inner(node: &XmlNode, max_depth: Option<usize>, depth: usize
                             // below reports the same number the text renderer
                             // would show.
                             truncated_descendants += 1 + count_descendant_elements(child);
-                        } else if is_marker_shaped(child_name, child_children) {
-                            // Self-closing OR source-backed marker
-                            // (`<public>public</public>`) → boolean flag.
-                            // Keeping the keyword text inside the marker
-                            // lets XPath `-v value` preserve the source
-                            // keyword; in JSON we still collapse to a
-                            // boolean so consumers see `"public": true`.
+                        } else if child_children.is_empty() {
+                            // Self-closing → boolean flag.
                             flags.push(child_name.clone());
                         } else {
                             let child_field = child_attrs.iter()
@@ -200,31 +195,6 @@ fn is_anon_text_entry(entry: &ChildEntry) -> bool {
     entry.field.is_none() && entry.value.as_object().map_or(false, |o| {
         o.len() == 1 && o.contains_key(KEY_TEXT)
     })
-}
-
-/// Marker-shaped: no element children, and either fully empty or a
-/// single text child whose trimmed value equals the element's name.
-/// Mirrors the text renderer's `is_marker_element` so both views
-/// agree on what counts as a source-backed flag.
-fn is_marker_shaped(name: &str, children: &[XmlNode]) -> bool {
-    let mut saw_match = false;
-    for child in children {
-        match child {
-            XmlNode::Text(t) => {
-                let trimmed = t.trim();
-                if trimmed.is_empty() {
-                    continue;
-                }
-                if trimmed == name && !saw_match {
-                    saw_match = true;
-                } else {
-                    return false;
-                }
-            }
-            _ => return false,
-        }
-    }
-    true
 }
 
 #[cfg(test)]

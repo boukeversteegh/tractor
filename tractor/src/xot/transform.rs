@@ -724,18 +724,26 @@ pub mod helpers {
 
     /// Rename an element to a marker: renames, removes text children.
     /// Preserves `start`/`end` and `kind` attributes (source location for keyword-based markers).
-    /// Rename `node` to `name` and leave its text content in place. Used
-    /// for *source-backed* markers where the source keyword matches the
-    /// new element name (e.g. `<modifier>public</modifier>` →
-    /// `<public>public</public>`). The tree renderer special-cases
-    /// elements whose only text child equals their own name so the
-    /// compact `[public]` predicate-style still renders, while the
-    /// XPath string-value of the enclosing node keeps the source
-    /// keyword intact — otherwise `-v value` on a class silently loses
-    /// every keyword that got lifted into a marker (`public`, `get`,
-    /// `async`, …).
+    /// Rename `node` to `name` and strip its text children so the
+    /// element is a true marker (`<public/>` not `<public>public</public>`).
+    /// The source keyword, if any, should be re-inserted as a sibling
+    /// by the caller via `insert_text_after` — this keeps markers
+    /// genuinely empty (Principle #7) while the enclosing node's
+    /// XPath string-value still includes the keyword for `-v value`.
     pub fn rename_to_marker(xot: &mut Xot, node: XotNode, name: &str) -> Result<(), xot::Error> {
         rename(xot, node, name);
+        remove_text_children(xot, node)?;
+        Ok(())
+    }
+
+    /// Insert a text node immediately after `node` in its parent.
+    /// Used after `rename_to_marker` to preserve the source keyword
+    /// as a dangling sibling, so a class / function / ... whose XPath
+    /// string-value is queried with `-v value` still contains the
+    /// original `public` / `pub` / `async` token.
+    pub fn insert_text_after(xot: &mut Xot, node: XotNode, text: &str) -> Result<(), xot::Error> {
+        let text_node = xot.new_text(text);
+        xot.insert_after(node, text_node)?;
         Ok(())
     }
 

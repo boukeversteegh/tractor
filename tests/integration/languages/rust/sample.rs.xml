@@ -6,8 +6,8 @@
         <file>
           <line_comment>// Simple Rust example</line_comment>
           <function>
-            <pub>pub</pub>
-            fn
+            <pub/>
+            pub fn
             <name>add</name>
             (
             <param>
@@ -93,11 +93,9 @@
           </function>
           <function>
             <pub>
-              pub(
               <crate>crate</crate>
-              )
             </pub>
-            fn
+            pub() fn
             <name>helper</name>
             () -&gt;
             <returns>
@@ -112,13 +110,14 @@
             </body>
           </function>
           <struct>
-            <pub>pub</pub>
-            struct
+            <pub/>
+            pub struct
             <name>Point</name>
             <body>
               {
               <field>
-                <pub>pub</pub>
+                <pub/>
+                pub
                 <name>x</name>
                 :
                 <type>
@@ -161,8 +160,8 @@
             </body>
           </enum>
           <trait>
-            <pub>pub</pub>
-            trait
+            <pub/>
+            pub trait
             <name>Drawable</name>
             <body>
               {
@@ -187,11 +186,9 @@
               {
               <function>
                 <pub>
-                  pub(
                   <super>super</super>
-                  )
                 </pub>
-                fn
+                pub() fn
                 <name>secret</name>
                 ()
                 <body>{}</body>

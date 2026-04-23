@@ -1,5 +1,5 @@
 class[public]/
-  ├─ "class"
+  ├─ "public class"
   ├─ name = "Calculator"
   └─ body/
       ├─ "{"
@@ -11,7 +11,7 @@ class[public]/
       │   └─ ... (23 children)
       └─ "}"
 class[public]/
-  ├─ "class"
+  ├─ "public class"
   ├─ name = "Greeter"
   └─ body/
       ├─ "{"

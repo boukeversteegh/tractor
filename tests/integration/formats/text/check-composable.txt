@@ -1,5 +1,5 @@
 class[public]/
-  ├─ "class"
+  ├─ "public class"
   ├─ name = "Foo"
   └─ body/
       ├─ "{"
@@ -11,7 +11,7 @@ class[public]/
 error: class found
 
 class[public]/
-  ├─ "class"
+  ├─ "public class"
   ├─ name = "Qux"
   └─ body = "{ }"
 error: class found

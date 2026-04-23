@@ -5,8 +5,8 @@
       <tree>
         <unit>
           <class>
-            <public>public</public>
-            class
+            <public/>
+            public class
             <name>UserService</name>
             <body>
               {
@@ -15,7 +15,8 @@
                 // GetUser: missing AsNoTracking - should be flagged
               </comment>
               <method>
-                <public>public</public>
+                <public/>
+                public
                 <returns>
                   <name>UserDto</name>
                 </returns>
@@ -104,7 +105,8 @@
                 // GetUserTracked: has AsNoTracking - OK
               </comment>
               <method>
-                <public>public</public>
+                <public/>
+                public
                 <returns>
                   <name>UserDto</name>
                 </returns>

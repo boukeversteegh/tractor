@@ -1,5 +1,5 @@
 function[pub]/
-  ├─ "fn"
+  ├─ "pub fn"
   ├─ name = "public_fn"
   ├─ "()"
   └─ body = "{}"

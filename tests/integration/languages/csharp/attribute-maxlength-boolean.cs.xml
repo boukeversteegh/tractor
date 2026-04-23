@@ -5,8 +5,8 @@
       <tree>
         <unit>
           <class>
-            <public>public</public>
-            class
+            <public/>
+            public class
             <name>UserRecord</name>
             <body>
               {
@@ -21,19 +21,20 @@
                   )
                 </attribute>
                 ]
-                <public>public</public>
+                <public/>
+                public
                 <type>
                   <name>bool</name>
                 </type>
                 <name>IsActive</name>
                 {
                 <accessor>
-                  <get>get</get>
-                  ;
+                  <get/>
+                  get;
                 </accessor>
                 <accessor>
-                  <set>set</set>
-                  ;
+                  <set/>
+                  set;
                 </accessor>
                 }
               </property>
@@ -52,19 +53,20 @@
                   )
                 </attribute>
                 ]
-                <public>public</public>
+                <public/>
+                public
                 <type>
                   <name>string</name>
                 </type>
                 <name>Name</name>
                 {
                 <accessor>
-                  <get>get</get>
-                  ;
+                  <get/>
+                  get;
                 </accessor>
                 <accessor>
-                  <set>set</set>
-                  ;
+                  <set/>
+                  set;
                 </accessor>
                 }
               </property>

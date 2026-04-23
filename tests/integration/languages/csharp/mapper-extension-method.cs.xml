@@ -5,15 +5,18 @@
       <tree>
         <unit>
           <class>
-            <public>public</public>
-            <static>static</static>
-            class
+            <public/>
+            public
+            <static/>
+            static class
             <name>UserMapper</name>
             <body>
               {
               <method>
-                <public>public</public>
-                <static>static</static>
+                <public/>
+                public
+                <static/>
+                static
                 <returns>
                   <name>UserDto</name>
                 </returns>
@@ -49,15 +52,18 @@
                 // MATCH - missing 'this'
               </comment>
               <method>
-                <public>public</public>
-                <static>static</static>
+                <public/>
+                public
+                <static/>
+                static
                 <returns>
                   <name>UserDto</name>
                 </returns>
                 <name>MapExt</name>
                 (
                 <parameter>
-                  <this>this</this>
+                  <this/>
+                  this
                   <type>
                     <name>User</name>
                   </type>
@@ -87,8 +93,10 @@
                 // OK - is extension
               </comment>
               <method>
-                <public>public</public>
-                <static>static</static>
+                <public/>
+                public
+                <static/>
+                static
                 <returns>
                   <name>UserDto</name>
                 </returns>

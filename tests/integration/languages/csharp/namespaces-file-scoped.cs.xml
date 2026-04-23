@@ -18,8 +18,8 @@
             <body>
               {
               <class>
-                <public>public</public>
-                class
+                <public/>
+                public class
                 <name>UserService</name>
                 <body>{ }</body>
               </class>

@@ -1,4 +1,5 @@
 method[public]/
+  ├─ "public"
   ├─ returns/name = "T"
   ├─ name = "First"
   ├─ "<"

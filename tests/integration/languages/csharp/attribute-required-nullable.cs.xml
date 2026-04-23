@@ -5,8 +5,8 @@
       <tree>
         <unit>
           <class>
-            <public>public</public>
-            class
+            <public/>
+            public class
             <name>UserRecord</name>
             <body>
               {
@@ -16,19 +16,20 @@
                   <name>Required</name>
                 </attribute>
                 ]
-                <public>public</public>
+                <public/>
+                public
                 <type>
                   <name>Guid</name>
                 </type>
                 <name>UserId</name>
                 {
                 <accessor>
-                  <get>get</get>
-                  ;
+                  <get/>
+                  get;
                 </accessor>
                 <accessor>
-                  <set>set</set>
-                  ;
+                  <set/>
+                  set;
                 </accessor>
                 }
               </property>
@@ -42,7 +43,8 @@
                   <name>Required</name>
                 </attribute>
                 ]
-                <public>public</public>
+                <public/>
+                public
                 <type>
                   Guid
                   <nullable/>
@@ -50,12 +52,12 @@
                 <name>NullableId</name>
                 {
                 <accessor>
-                  <get>get</get>
-                  ;
+                  <get/>
+                  get;
                 </accessor>
                 <accessor>
-                  <set>set</set>
-                  ;
+                  <set/>
+                  set;
                 </accessor>
                 }
               </property>
@@ -69,19 +71,20 @@
                   <name>Required</name>
                 </attribute>
                 ]
-                <public>public</public>
+                <public/>
+                public
                 <type>
                   <name>string</name>
                 </type>
                 <name>Name</name>
                 {
                 <accessor>
-                  <get>get</get>
-                  ;
+                  <get/>
+                  get;
                 </accessor>
                 <accessor>
-                  <set>set</set>
-                  ;
+                  <set/>
+                  set;
                 </accessor>
                 }
               </property>

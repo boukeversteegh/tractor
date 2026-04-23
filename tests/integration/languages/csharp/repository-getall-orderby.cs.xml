@@ -5,13 +5,14 @@
       <tree>
         <unit>
           <class>
-            <public>public</public>
-            class
+            <public/>
+            public class
             <name>UserRepository</name>
             <body>
               {
               <method>
-                <public>public</public>
+                <public/>
+                public
                 <returns>
                   <type>
                     <generic/>
@@ -57,7 +58,8 @@
                 // MATCH - missing OrderBy
               </comment>
               <method>
-                <public>public</public>
+                <public/>
+                public
                 <returns>
                   <type>
                     <generic/>
@@ -131,13 +133,14 @@
             </body>
           </class>
           <class>
-            <public>public</public>
-            class
+            <public/>
+            public class
             <name>MockUserRepository</name>
             <body>
               {
               <method>
-                <public>public</public>
+                <public/>
+                public
                 <returns>
                   <type>
                     <generic/>

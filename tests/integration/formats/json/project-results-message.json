@@ -18,11 +18,11 @@
             "accessors": [
               {
                 "get": true,
-                "text": ";"
+                "text": "get;"
               },
               {
                 "set": true,
-                "text": ";"
+                "text": "set;"
               }
             ]
           },

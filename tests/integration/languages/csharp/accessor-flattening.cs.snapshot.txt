@@ -1,22 +1,27 @@
 property[public]/
+  ├─ "public"
   ├─ type/name = "int"
   ├─ name = "Manual"
   ├─ "{"
-  ├─ accessor[get]/body/block/
-  │   ├─ "{"
-  │   ├─ return/
-  │   │   ├─ "return"
-  │   │   ├─ name = "_backing"
-  │   │   └─ ";"
-  │   └─ "}"
-  ├─ accessor[set]/body/block/
-  │   ├─ "{"
-  │   ├─ expression/
-  │   │   ├─ assign/
-  │   │   │   ├─ op = "="
-  │   │   │   ├─ left/name = "_backing"
-  │   │   │   ├─ "="
-  │   │   │   └─ right/name = "value"
-  │   │   └─ ";"
-  │   └─ "}"
+  ├─ accessor[get]/
+  │   ├─ "get"
+  │   └─ body/block/
+  │       ├─ "{"
+  │       ├─ return/
+  │       │   ├─ "return"
+  │       │   ├─ name = "_backing"
+  │       │   └─ ";"
+  │       └─ "}"
+  ├─ accessor[set]/
+  │   ├─ "set"
+  │   └─ body/block/
+  │       ├─ "{"
+  │       ├─ expression/
+  │       │   ├─ assign/
+  │       │   │   ├─ op = "="
+  │       │   │   ├─ left/name = "_backing"
+  │       │   │   ├─ "="
+  │       │   │   └─ right/name = "value"
+  │       │   └─ ";"
+  │       └─ "}"
   └─ "}"
