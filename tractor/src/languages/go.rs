@@ -306,7 +306,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "var_declaration" => Some("var"),
         "import_declaration" => Some("import"),
         // parameter_list is flattened via Principle #12 above
-        "parameter_declaration" => Some("param"),
+        "parameter_declaration" => Some("parameter"),
         "method_elem" => Some("method"),
         "field_declaration" => Some("field"),
         "pointer_type" => Some("pointer"),
@@ -405,7 +405,7 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
         "struct" | "interface" => SyntaxCategory::Keyword,
         "const" | "var" => SyntaxCategory::Keyword,
         "package" => SyntaxCategory::Keyword,
-        "param" | "params" => SyntaxCategory::Keyword,
+        "parameter" | "parameters" => SyntaxCategory::Keyword,
 
         // Keywords - control flow
         "if" | "else" => SyntaxCategory::Keyword,

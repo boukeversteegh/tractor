@@ -2,15 +2,15 @@ function[exported]/
   ├─ "func"
   ├─ name = "First"
   ├─ "("
-  ├─ param/
+  ├─ parameter/
   │   ├─ name = "a"
   │   └─ type/name = "string"
   ├─ ","
-  ├─ param/
+  ├─ parameter/
   │   ├─ name = "b"
   │   └─ type/name = "int"
   ├─ ","
-  ├─ param/
+  ├─ parameter/
   │   ├─ name = "c"
   │   └─ type/name = "bool"
   ├─ ")"

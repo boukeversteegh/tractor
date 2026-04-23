@@ -1,0 +1,35 @@
+file/
+  ├─ comment = "// Go strings: interpreted (double-quoted, escapes) and raw"
+  ├─ comment = "// (backtick, no escapes). Both render as <string>; raw strings"
+  ├─ comment = "// carry a <raw/> marker (Principle #13). A bare //string query"
+  ├─ comment = "// catches both forms; //string[raw] is precise."
+  ├─ package/
+  │   ├─ "package"
+  │   └─ name = "main"
+  ├─ const/
+  │   ├─ "const"
+  │   └─ const_spec/
+  │       ├─ name = "normal"
+  │       ├─ "="
+  │       └─ value/string/
+  │           ├─ "\"hello"
+  │           ├─ escape_sequence = "\\n"
+  │           └─ "world\""
+  ├─ const/
+  │   ├─ "const"
+  │   └─ const_spec/
+  │       ├─ name = "raw"
+  │       ├─ "="
+  │       └─ value/string[raw]/
+  │           ├─ "`"
+  │           ├─ raw_string_literal_content = "hello world"
+  │           └─ "`"
+  └─ const/
+      ├─ "const"
+      └─ const_spec/
+          ├─ name = "pattern"
+          ├─ "="
+          └─ value/string[raw]/
+              ├─ "`"
+              ├─ raw_string_literal_content = "^\\d+$"
+              └─ "`"

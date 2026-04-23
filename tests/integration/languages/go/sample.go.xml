@@ -18,19 +18,19 @@
             func
             <name>add</name>
             (
-            <param>
+            <parameter>
               <name>a</name>
               <type>
                 <name>int</name>
               </type>
-            </param>
+            </parameter>
             ,
-            <param>
+            <parameter>
               <name>b</name>
               <type>
                 <name>int</name>
               </type>
-            </param>
+            </parameter>
             )
             <returns>
               <type>

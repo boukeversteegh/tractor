@@ -96,7 +96,7 @@ const FEATURE_FIXTURES: &[(&str, &str, u32)] = &[
     ("tests/integration/languages/go/conditionals.go", "//if", 3),
     ("tests/integration/languages/go/defined-type-vs-alias.go", "//alias", 0),
     ("tests/integration/languages/go/flat-lists.go", "//function", 0),
-    ("tests/integration/languages/go/raw-string.go", "//string[raw]", 0),
+    ("tests/integration/languages/go/strings.go", "//file", 5),
     ("tests/integration/languages/go/struct-interface-hoist.go", "//struct", 0),
     ("tests/integration/languages/go/type-declaration.go", "//interface", 0),
 

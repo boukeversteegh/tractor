@@ -1130,10 +1130,17 @@ pub mod helpers {
             None => xot.append(outer_if, else_if)?,
         }
 
-        // Move condition and then children from the inner <if> to the
-        // new <else_if>.
-        let inner_children = get_element_children(xot, inner_if);
+        // Move condition / then element children AND all text children
+        // (source keywords like "if") from the inner <if> to the new
+        // <else_if> so its XPath string-value stays source-accurate
+        // (`"if (n==0) { ... }"` rather than just the condition + body).
+        let inner_children: Vec<_> = xot.children(inner_if).collect();
         for child in inner_children {
+            if xot.text_str(child).is_some() {
+                xot.detach(child)?;
+                xot.append(else_if, child)?;
+                continue;
+            }
             let name = get_element_name(xot, child).unwrap_or_default();
             match name.as_str() {
                 "condition" | "then" => {

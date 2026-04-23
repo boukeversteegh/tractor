@@ -1,4 +1,0 @@
-string[raw]/
-  ├─ "`"
-  ├─ raw_string_literal_content = "hello\nworld"
-  └─ "`"

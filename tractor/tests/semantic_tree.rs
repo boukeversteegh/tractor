@@ -1079,6 +1079,48 @@ mod go {
         );
     }
 
+    /// Principle #9 — every declaration carries an exhaustive
+    /// <exported/> or <unexported/> marker, inferred from the name's
+    /// first character. No declaration is "unmarked" / silently-default.
+    #[test]
+    fn exported_unexported_markers_exhaustive() {
+        let mut tree = parse_src(
+            "go",
+            "package main\nfunc Public() {}\nfunc private() {}\ntype Exported int\ntype unexported int\n",
+        );
+        assert_count(
+            &mut tree,
+            "//function[exported]",
+            1,
+            "exported function carries <exported/>",
+        );
+        assert_count(
+            &mut tree,
+            "//function[unexported]",
+            1,
+            "unexported function carries <unexported/>",
+        );
+        assert_count(
+            &mut tree,
+            "//type[exported]",
+            1,
+            "exported type carries <exported/>",
+        );
+        assert_count(
+            &mut tree,
+            "//type[unexported]",
+            1,
+            "unexported type carries <unexported/>",
+        );
+        // No declaration is silently unmarked.
+        assert_count(
+            &mut tree,
+            "//function[not(exported) and not(unexported)]",
+            0,
+            "every function carries one of the two markers",
+        );
+    }
+
     /// Principle #12 — parameters flatten.
     #[test]
     fn parameters_flatten() {
@@ -1094,9 +1136,9 @@ mod go {
         );
         assert_count(
             &mut tree,
-            "//function/param",
+            "//function/parameter",
             2,
-            "params are flat function siblings",
+            "parameters are flat function siblings (Principle #2 — full name, not `param`)",
         );
     }
 
