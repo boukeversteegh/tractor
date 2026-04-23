@@ -659,34 +659,101 @@ mod java {
         );
     }
 
-    /// UNDER DISCUSSION — primitive types currently render as
-    /// `<type>` with an empty marker carrying the keyword
-    /// (`<type><int/>int</type>`). Test pins the current shape so a
-    /// switch back to name-wrap is an intentional change, not a
-    /// drift. See the primitives-vs-name design conversation.
+    /// Identifiers — user-defined AND built-in type names — are
+    /// NEVER promoted to element nodes. Nodes are always lowercase,
+    /// but identifiers can have distinguishing capitalization
+    /// (`List` vs `list`, `Dictionary` vs `dict`), so mapping them to
+    /// node names would either lose the case distinction or break
+    /// the all-lowercase rule. This applies uniformly to primitives
+    /// (`int`, `double`) and user types (`Foo`): they all carry their
+    /// identifier as a `<name>` value.
     #[test]
-    fn primitive_types_use_markers() {
+    fn type_names_are_name_child_not_node() {
         let mut tree = parse_src(
             "java",
-            "class X { int a; double b; boolean c; void d() {} Foo e; }",
+            "class X { int a; double b; boolean c; Foo e; List l; }",
         );
+        for (name, what) in &[
+            ("int", "primitive"),
+            ("double", "primitive"),
+            ("boolean", "primitive"),
+            ("Foo", "user-defined type"),
+            ("List", "built-in capitalized type"),
+        ] {
+            assert_count(
+                &mut tree,
+                &format!("//type[name='{}']", name),
+                1,
+                &format!("{} {} uses <type><name>{}</name></type>", what, name, name),
+            );
+        }
+    }
+
+    /// `void` is the one primitive special enough to warrant a
+    /// shortcut marker — it's return-only and "no value", not a
+    /// regular data type. The marker is *additional*, not a
+    /// replacement for `<name>`: the name is still there for data
+    /// consumers, the marker is a query shortcut.
+    #[test]
+    fn void_carries_additional_marker() {
+        let mut tree = parse_src("java", "class X { void f() {} int g() { return 0; } }");
         assert_count(
             &mut tree,
-            "//type[int]",
+            "//type[void][name='void']",
             1,
-            "int primitive carries <int/> marker (under discussion)",
+            "void type has both <void/> marker AND <name>void</name>",
         );
         assert_count(
             &mut tree,
             "//type[void]",
             1,
-            "void carries <void/> marker (under discussion)",
+            "exactly one void type in the source",
         );
         assert_count(
             &mut tree,
-            "//type[name='Foo']",
+            "//type[not(void)]",
             1,
-            "user-defined type uses <name> wrap",
+            "non-void types have no <void/> marker",
+        );
+    }
+
+    /// Markers appear in source order (source-reversibility goal):
+    /// `public abstract static class X` renders with markers in
+    /// source sequence, and the source keywords survive as text so
+    /// the enclosing node's string-value still reads like the
+    /// source.
+    #[test]
+    fn modifier_source_order_and_text_preserved() {
+        let mut tree = parse_src("java", "public abstract static class X {}");
+        // The first three element children of <class> are the
+        // modifiers in source order. Predicate-chained position
+        // assertions let us pin this without a fragile full-tree
+        // assertion.
+        assert_count(
+            &mut tree,
+            "//class/*[1][self::public]",
+            1,
+            "first marker on class is <public/> (source order)",
+        );
+        assert_count(
+            &mut tree,
+            "//class/*[2][self::abstract]",
+            1,
+            "second marker on class is <abstract/>",
+        );
+        assert_count(
+            &mut tree,
+            "//class/*[3][self::static]",
+            1,
+            "third marker on class is <static/>",
+        );
+        // Source text survives as a text sibling so //class's
+        // string-value still contains "public abstract static".
+        assert_count(
+            &mut tree,
+            "//class[contains(., 'public abstract static')]",
+            1,
+            "source keywords preserved as dangling text (source-reversibility)",
         );
     }
 

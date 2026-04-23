@@ -7,15 +7,15 @@
           <line_comment>// Simple Java example</line_comment>
           <class>
             <public/>
-            class
+            public class
             <name>Sample</name>
             <body>
               {
               <field>
                 <private/>
+                private
                 <type>
-                  <int/>
-                  int
+                  <name>int</name>
                 </type>
                 <declarator>
                   <name>value</name>
@@ -24,12 +24,12 @@
               </field>
               <constructor>
                 <public/>
+                public
                 <name>Sample</name>
                 (
                 <parameter>
                   <type>
-                    <int/>
-                    int
+                    <name>int</name>
                   </type>
                   <name>value</name>
                 </parameter>
@@ -55,28 +55,26 @@
                 </body>
               </constructor>
               <method>
-                <static/>
                 <public/>
+                <static/>
+                public static
                 <returns>
                   <type>
-                    <int/>
-                    int
+                    <name>int</name>
                   </type>
                 </returns>
                 <name>add</name>
                 (
                 <parameter>
                   <type>
-                    <int/>
-                    int
+                    <name>int</name>
                   </type>
                   <name>a</name>
                 </parameter>
                 ,
                 <parameter>
                   <type>
-                    <int/>
-                    int
+                    <name>int</name>
                   </type>
                   <name>b</name>
                 </parameter>
@@ -105,10 +103,11 @@
               </method>
               <method>
                 <protected/>
+                protected
                 <returns>
                   <type>
                     <void/>
-                    void
+                    <name>void</name>
                   </type>
                 </returns>
                 <name>log</name>
@@ -143,7 +142,7 @@
                 <returns>
                   <type>
                     <void/>
-                    void
+                    <name>void</name>
                   </type>
                 </returns>
                 <name>defaultAccess</name>
@@ -155,12 +154,13 @@
                 </body>
               </method>
               <method>
-                <static/>
                 <public/>
+                <static/>
+                public static
                 <returns>
                   <type>
                     <void/>
-                    void
+                    <name>void</name>
                   </type>
                 </returns>
                 <name>main</name>
@@ -179,8 +179,7 @@
                   {
                   <variable>
                     <type>
-                      <int/>
-                      int
+                      <name>int</name>
                     </type>
                     <declarator>
                       <name>result</name>
@@ -244,7 +243,7 @@
                 <returns>
                   <type>
                     <void/>
-                    void
+                    <name>void</name>
                   </type>
                 </returns>
                 <name>execute</name>

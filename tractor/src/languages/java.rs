@@ -80,32 +80,42 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         // ---------------------------------------------------------------------
-        // Modifier wrappers - Java wraps modifiers in "modifiers" element
-        // Convert <modifiers>public static</modifiers> to <public/><static/>
-        // Also inserts <package/> if no access modifier found (Principle #9)
-        // ---------------------------------------------------------------------
+        // Modifier wrappers - Java wraps modifiers in a "modifiers"
+        // element containing space-separated keyword tokens. Lift each
+        // keyword to an empty marker in source order, then flatten the
+        // wrapper so the literal `public abstract static` text survives
+        // as dangling siblings — the enclosing declaration's XPath
+        // string-value then contains the actual source keywords.
+        // Also inserts <package/> if no access modifier was found
+        // (Principle #9 — mutually-exclusive access is exhaustive).
         "modifiers" => {
-            let mut has_access = false;
-            if let Some(text) = get_text_content(xot, node) {
-                let words: Vec<&str> = text.split_whitespace().collect();
-                for word in &words {
-                    if is_access_modifier(word) {
-                        has_access = true;
-                    }
-                }
-                // Insert known modifiers as empty elements before this node
-                for modifier in words.iter().rev() {
-                    if is_known_modifier(modifier) {
-                        insert_empty_before(xot, node, modifier)?;
-                    }
-                }
-            }
+            let words: Vec<String> = match get_text_content(xot, node) {
+                Some(text) => text.split_whitespace().map(String::from).collect(),
+                None => Vec::new(),
+            };
+            let has_access = words.iter().any(|w| is_access_modifier(w));
+
+            // Build final marker list in source order. The implicit
+            // <package/> (when no access keyword was written) lives at
+            // the head — conventionally access modifiers come first.
+            let mut markers: Vec<&str> = Vec::new();
             if !has_access {
-                insert_empty_before(xot, node, "package")?;
+                markers.push("package");
             }
-            // Remove the wrapper node entirely
-            detach(xot, node)?;
-            Ok(TransformAction::Done)
+            for word in &words {
+                if is_known_modifier(word) {
+                    markers.push(word.as_str());
+                }
+            }
+
+            for marker in &markers {
+                insert_empty_before(xot, node, marker)?;
+            }
+
+            // Flatten <modifiers> so its text content lifts to the
+            // parent, preserving the source keywords next to the
+            // markers we just inserted.
+            Ok(TransformAction::Flatten)
         }
 
         // ---------------------------------------------------------------------
@@ -148,25 +158,24 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             rename(xot, node, "name");
             Ok(TransformAction::Continue)
         }
-        "type_identifier" => {
+        "type_identifier" | "integral_type" | "floating_point_type"
+        | "boolean_type" => {
             rename(xot, node, "type");
             wrap_text_in_name(xot, node)?;
             Ok(TransformAction::Continue)
         }
-        // Primitive types — `int`, `double`, `boolean`, `void`, … —
-        // currently render as `<type>` with an empty marker carrying the
-        // keyword (`<type><int/>int</type>`). Under discussion — see
-        // open-questions thread on closed-value-set markers vs name wrap.
-        "integral_type" | "floating_point_type" | "boolean_type" | "void_type" => {
-            if let Some(text) = get_text_content(xot, node) {
-                let text = text.trim().to_string();
-                rename(xot, node, "type");
-                if !text.is_empty() {
-                    prepend_empty_element(xot, node, &text)?;
-                }
-                return Ok(TransformAction::Done);
-            }
+        // `void_type` gets the same `<type><name>void</name></type>`
+        // shape as any other type PLUS a `<void/>` marker — void is
+        // the one primitive that's special enough to warrant a
+        // shortcut predicate (`//type[void]`) because it's
+        // return-only and conceptually "no value", not a regular
+        // data type. The marker is *additional*, not a replacement
+        // for `<name>`: JSON keeps `"name": "void"` for data
+        // consumers and adds `"void": true` as the shortcut flag.
+        "void_type" => {
             rename(xot, node, "type");
+            wrap_text_in_name(xot, node)?;
+            prepend_empty_element(xot, node, "void")?;
             Ok(TransformAction::Continue)
         }
 

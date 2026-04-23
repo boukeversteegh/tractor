@@ -24,7 +24,7 @@ method[package]/
   │   └─ name = "b"
   ├─ ","
   ├─ parameter/
-  │   ├─ type[int] = "int"
+  │   ├─ type/name = "int"
   │   └─ name = "c"
   ├─ ")"
   └─ body/

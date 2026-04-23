@@ -32,14 +32,16 @@ class[package]/
       │   │   └─ ... (1 children)
       │   └─ ";"
       ├─ method[public]/
+      │   ├─ "public"
       │   ├─ returns/
-      │   │   └─ ... (2 children)
+      │   │   └─ ... (3 children)
       │   ├─ name = "bark"
       │   ├─ "()"
       │   └─ body = "{}"
       ├─ method[public]/
+      │   ├─ "public"
       │   ├─ returns/
-      │   │   └─ ... (2 children)
+      │   │   └─ ... (3 children)
       │   ├─ name = "run"
       │   ├─ "()"
       │   └─ body = "{}"

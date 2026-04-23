@@ -1,7 +1,8 @@
 body/
   ├─ "{"
-  ├─ field[final and static and public]/
-  │   ├─ type[int] = "int"
+  ├─ field[public and static and final]/
+  │   ├─ "public static final"
+  │   ├─ type/name = "int"
   │   ├─ declarator/
   │   │   ├─ name = "PUB"
   │   │   ├─ "="
@@ -9,7 +10,8 @@ body/
   │   │       └─ ... (1 children)
   │   └─ ";"
   ├─ field[private]/
-  │   ├─ type[int] = "int"
+  │   ├─ "private"
+  │   ├─ type/name = "int"
   │   ├─ declarator/
   │   │   ├─ name = "priv"
   │   │   ├─ "="
@@ -17,7 +19,8 @@ body/
   │   │       └─ ... (1 children)
   │   └─ ";"
   ├─ field[protected]/
-  │   ├─ type[int] = "int"
+  │   ├─ "protected"
+  │   ├─ type/name = "int"
   │   ├─ declarator/
   │   │   ├─ name = "prot"
   │   │   ├─ "="
@@ -25,7 +28,7 @@ body/
   │   │       └─ ... (1 children)
   │   └─ ";"
   ├─ field[package]/
-  │   ├─ type[int] = "int"
+  │   ├─ type/name = "int"
   │   ├─ declarator/
   │   │   ├─ name = "pkg"
   │   │   ├─ "="
@@ -33,13 +36,15 @@ body/
   │   │       └─ ... (1 children)
   │   └─ ";"
   ├─ line_comment = "// implicit package-private -> <package/>"
-  ├─ method[synchronized and public]/
-  │   ├─ returns/type[void] = "void"
+  ├─ method[public and synchronized]/
+  │   ├─ "public synchronized"
+  │   ├─ returns/type[void]/
+  │   │   └─ ... (2 children)
   │   ├─ name = "sync"
   │   ├─ "()"
   │   └─ body = "{}"
-  ├─ class[static and abstract and public]/
-  │   ├─ "class"
+  ├─ class[public and abstract and static]/
+  │   ├─ "public abstract static class"
   │   ├─ name = "AbsStatic"
   │   └─ body = "{}"
   └─ "}"

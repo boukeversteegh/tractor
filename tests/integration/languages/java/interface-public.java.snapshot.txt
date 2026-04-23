@@ -1,16 +1,19 @@
 body/
   ├─ "{"
   ├─ method[public]/
-  │   ├─ returns/type[double] = "double"
+  │   ├─ returns/type/
+  │   │   └─ ... (1 children)
   │   ├─ name = "area"
   │   └─ "();"
   ├─ line_comment = "// implicitly public"
   ├─ method[public]/
-  │   ├─ returns/type[double] = "double"
+  │   ├─ returns/type/
+  │   │   └─ ... (1 children)
   │   ├─ name = "perimeter"
   │   └─ "();"
   ├─ line_comment = "// implicitly public"
   ├─ method[package]/
+  │   ├─ "default"
   │   ├─ returns/type/
   │   │   └─ ... (1 children)
   │   ├─ name = "name"
@@ -22,7 +25,9 @@ body/
   │       │   └─ ... (2 children)
   │       └─ "}"
   ├─ method[public]/
-  │   ├─ returns/type[void] = "void"
+  │   ├─ "public"
+  │   ├─ returns/type[void]/
+  │   │   └─ ... (2 children)
   │   ├─ name = "stroke"
   │   └─ "();"
   ├─ line_comment = "// explicit — should still be <public/>"

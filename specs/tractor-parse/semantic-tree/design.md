@@ -455,4 +455,66 @@ avoid markers on `<name>`).
   doubled the vocabulary for a distinction the tree shape already makes;
   the short `<ref>` element was also ambiguous with other uses (issue #73).
 
+### Identifiers are never element names
+
+Nodes are always lowercase (Principle #3). Identifiers — user-defined
+OR language-built-in — carry distinguishing capitalization (`List` vs
+`list`, `Dictionary` vs `dict`), so promoting an identifier to a node
+name would either lose the case distinction or break the
+all-lowercase rule.
+
+This applies uniformly: `int`, `double`, `List`, `HashMap`, `Foo` are
+all values inside a `<name>` element, never `<int/>` or `<List/>`
+markers. Users don't need to remember which types are "well-known
+enough" to be promoted — the rule is simple and cross-language
+consistent. Queries use `//type[name='int']` / `//type[name='List']`
+uniformly.
+
+**Exception — additive markers for very unique built-ins.** A small
+set of built-ins that represent a language *concept* (not a data
+type) may carry an additional marker *alongside* the name, never
+replacing it. The canonical case is `void`:
+
+```xml
+<type><void/><name>void</name></type>
+```
+
+JSON sees `{ "name": "void", "void": true }` — the name stays for
+data consumers, the marker is a query shortcut (`//type[void]`).
+Reserved for constructs that are return-only or otherwise
+structurally special (Kotlin's `unit`, Rust's `!` never-type would
+qualify); not a backdoor for adding markers to every popular
+built-in.
+
+**Cites:** Principle #3 (Always Lowercase), Principle #7 (Modifiers
+as Empty Elements — markers must stay empty, which is why we can't
+put the keyword text inside the marker).
+
+### Source-reversibility goal
+
+The semantic tree's text, when concatenated in document order and
+the element tags stripped, should reproduce the original source.
+This is a goal — not always achievable, because:
+
+- Whitespace between tokens is often dropped during parsing.
+- Modifiers, keywords, and punctuation that got lifted into markers
+  have to survive as dangling text siblings to satisfy the goal.
+
+Practical consequences:
+
+- Markers that replace a source keyword (e.g. `<public/>`,
+  `<static/>`, `<get/>`) keep the keyword text as a sibling in the
+  parent. The parent's XPath string-value then contains the original
+  token.
+- Marker order follows source order. `public abstract static class`
+  renders as `class[public and abstract and static]/ "public abstract static class" …`
+  — a reader comparing tree to source shouldn't see shuffled
+  keywords.
+- Wrappers we flatten (e.g. `<modifiers>`, `parenthesized_expression`)
+  preserve their text content by lifting it into the parent, not
+  dropping it.
+
+**Cites:** Principle #8 (Renderability), Goal #5 (developer's mental
+model — a dev expects the tree to mirror what they wrote).
+
 *See child specs for language-specific and feature-specific decisions.*

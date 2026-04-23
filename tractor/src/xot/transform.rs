@@ -1042,14 +1042,18 @@ pub mod helpers {
                     // The `<else>` wraps an `<if>` directly (C-like else-if chain).
                     let inner_if = single_if_child(xot, alt);
                     if let Some(inner_if) = inner_if {
-                        // Grab the "else" keyword text that sits just
-                        // before the <else> wrapper on the outer if —
-                        // conceptually it's the opening of this else-if
-                        // branch, so it belongs inside the new <else_if>.
-                        // xot's automatic text consolidation merges it
-                        // with the inner if's leading "if" text so the
-                        // result reads as a single "else if (" token.
-                        let else_text = take_preceding_text_sibling(xot, alt)?;
+                        // Grab the "else" keyword text so it survives
+                        // inside the new <else_if>. Tree-sitter grammars
+                        // put it in one of two places:
+                        //   Rust-style: text child of the <else> wrapper
+                        //     itself (tree-sitter emits else_clause →
+                        //     <else> containing "else" + inner if).
+                        //   Java/C#/Go-style: preceding text sibling of
+                        //     the <else> wrapper we added via
+                        //     wrap_field_child (the original source has
+                        //     no else_clause node; the keyword is a text
+                        //     child of the outer if).
+                        let else_text = collect_else_keyword_text(xot, alt)?;
 
                         let else_if = lift_if_as_else_if(xot, if_node, anchor, inner_if)?;
 
@@ -1063,10 +1067,11 @@ pub mod helpers {
                         anchor = Some(else_if);
                         continue;
                     }
-                    // Terminal <else>: move the preceding "else" text
-                    // into the <else> wrapper, then reparent the whole
-                    // thing to if_node (Ruby nests else deep inside the
-                    // elsif chain).
+                    // Terminal <else>: if the "else" keyword lives as a
+                    // preceding text sibling on the outer if (Java/C#/Go
+                    // shape), move it inside the wrapper before
+                    // reparenting — Rust's shape already has the text
+                    // inside the wrapper.
                     if let Some(content) = take_preceding_text_sibling(xot, alt)? {
                         let new_text = xot.new_text(&content);
                         xot.prepend(alt, new_text)?;
@@ -1075,9 +1080,8 @@ pub mod helpers {
                     break;
                 }
                 "elsif" | "else_if" => {
-                    // Ruby's <elsif> (or any previously-renamed <else_if>).
-                    // Rename and lift to be a child of if_node,
-                    // positioned after `anchor`.
+                    // Ruby's <elsif> (or any previously-renamed
+                    // <else_if>). Same preceding-text fold as above.
                     if let Some(content) = take_preceding_text_sibling(xot, alt)? {
                         let new_text = xot.new_text(&content);
                         xot.prepend(alt, new_text)?;
@@ -1112,6 +1116,42 @@ pub mod helpers {
         };
         xot.detach(prev)?;
         Ok(Some(content))
+    }
+
+    /// Collect the "else" keyword text that belongs to an `<else>`
+    /// wrapper, handling both tree-sitter shapes:
+    ///
+    /// - **Rust-style** (else_clause → <else>): the keyword is a
+    ///   text child of the wrapper itself. Detach and return it.
+    /// - **Java/C#/Go-style** (our wrap_field_child wrapped the
+    ///   alternative): the keyword sits as a text sibling BEFORE
+    ///   the wrapper on the outer if.
+    ///
+    /// Returns the concatenated text content so the caller can
+    /// prepend it into the new <else_if> / <else>, which then
+    /// consolidates with adjacent "if (" text for a single
+    /// "else if (" source token.
+    fn collect_else_keyword_text(
+        xot: &mut Xot,
+        else_wrapper: XotNode,
+    ) -> Result<Option<String>, xot::Error> {
+        // Case 1: text children of the wrapper itself (Rust shape).
+        let inner_texts: Vec<XotNode> = xot
+            .children(else_wrapper)
+            .filter(|&c| xot.text_str(c).is_some())
+            .collect();
+        if !inner_texts.is_empty() {
+            let mut parts: Vec<String> = Vec::new();
+            for t in inner_texts {
+                if let Some(s) = xot.text_str(t) {
+                    parts.push(s.to_string());
+                }
+                xot.detach(t)?;
+            }
+            return Ok(Some(parts.join("")));
+        }
+        // Case 2: preceding text sibling of the wrapper (Java / C# / Go).
+        take_preceding_text_sibling(xot, else_wrapper)
     }
 
     /// Return the last element child of `node` whose name is `else`,
