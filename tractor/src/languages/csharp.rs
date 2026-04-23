@@ -50,6 +50,18 @@ pub mod semantic {
     // Type markers
     pub const NULLABLE: &str = "nullable";
     pub const GENERIC: &str = "generic";
+    pub const ARRAY: &str = "array";
+
+    // Base list (inheritance) — list of base types/interfaces following `:`
+    pub const BASES: &str = "bases";
+    pub const REF: &str = "ref";
+
+    // Method-specific children
+    pub const RETURNS: &str = "returns";
+
+    // Enum members
+    pub const ENUM_MEMBER: &str = "enum_member";
+    pub const VALUE: &str = "value";
 
     // Comment markers
     pub const TRAILING: &str = "trailing";
@@ -89,7 +101,9 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // ---------------------------------------------------------------------
         // Flatten nodes - transform children, then remove wrapper
         // ---------------------------------------------------------------------
-        "declaration_list" | "parameters" => Ok(TransformAction::Flatten),
+        "declaration_list" | "parameters" | "enum_member_declaration_list" => {
+            Ok(TransformAction::Flatten)
+        }
 
         // ---------------------------------------------------------------------
         // Name wrappers - inline identifier text directly
@@ -346,15 +360,22 @@ fn has_access_modifier_child(xot: &Xot, node: XotNode) -> bool {
 }
 
 /// Determine the default access modifier for a C# declaration based on context.
-/// Looks through `declaration_list` wrappers (which get Flatten'd, so children are
-/// processed while still inside the wrapper).
+/// Tractor always injects an explicit access modifier when the source omits
+/// one, so queries never need to branch between implicit and explicit values
+/// (e.g. `[public]` matches both an explicitly-written `public` and the
+/// implicit default for interface members). Canonical source form — what the
+/// renderer emits and what the fixture round-trip tests assert — therefore
+/// always spells the modifier out.
+/// Looks through `declaration_list` wrappers (which get Flatten'd, so children
+/// are processed while still inside the wrapper).
 fn default_access_modifier(xot: &Xot, node: XotNode) -> &'static str {
     let mut current = get_parent(xot, node);
     while let Some(parent) = current {
         if let Some(parent_kind) = get_kind(xot, parent).as_deref().map(str::to_owned) {
             match parent_kind.as_str() {
-                "class_declaration" | "struct_declaration" | "interface_declaration"
-                | "record_declaration" => return "private",
+                // Interface and record members are implicitly public in C#.
+                "interface_declaration" | "record_declaration" => return "public",
+                "class_declaration" | "struct_declaration" => return "private",
                 // declaration_list is a transparent wrapper — look through it
                 "declaration_list" => {}
                 _ => break,
@@ -415,6 +436,8 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "variable_declaration" => Some(VARIABLE),
         "variable_declarator" => Some(DECLARATOR),
         "local_declaration_statement" => Some("local"),
+        "base_list" => Some(BASES),
+        "enum_member_declaration" => Some(ENUM_MEMBER),
         "string_literal" => Some("string"),
         "integer_literal" => Some("int"),
         "real_literal" => Some("float"),

@@ -14,27 +14,21 @@
                 <param>
                   <required/>
                   <name>a</name>
-                  <typeof>
-                    :
-                    <predefined_type>number</predefined_type>
-                  </typeof>
+                  :
+                  <type>number</type>
                 </param>
                 ,
                 <param>
                   <required/>
                   <name>b</name>
-                  <typeof>
-                    :
-                    <predefined_type>number</predefined_type>
-                  </typeof>
+                  :
+                  <type>number</type>
                 </param>
                 )
               </params>
             </parameters>
-            <typeof>
-              :
-              <predefined_type>number</predefined_type>
-            </typeof>
+            :
+            <type>number</type>
             <body>
               <block>
                 {
@@ -65,10 +59,8 @@
             <parameters>
               <params>()</params>
             </parameters>
-            <typeof>
-              :
-              <predefined_type>void</predefined_type>
-            </typeof>
+            :
+            <type>void</type>
             <body>
               <block>
                 {
@@ -149,21 +141,19 @@
             </name>
             <body>
               {
-              <property_signature>
+              <field>
+                <required/>
                 <name>name</name>
-                <typeof>
-                  :
-                  <predefined_type>string</predefined_type>
-                </typeof>
-              </property_signature>
+                :
+                <type>string</type>
+              </field>
               ;
-              <property_signature>
+              <field>
+                <required/>
                 <name>age</name>
-                <typeof>
-                  :
-                  <predefined_type>number</predefined_type>
-                </typeof>
-              </property_signature>
+                :
+                <type>number</type>
+              </field>
               ;
         }
             </body>
@@ -190,28 +180,21 @@
                 <param>
                   <required/>
                   <name>name</name>
-                  <typeof>
-                    :
-                    <predefined_type>string</predefined_type>
-                  </typeof>
+                  :
+                  <type>string</type>
                 </param>
                 ,
                 <param>
                   <optional/>
                   <name>title</name>
-                  ?
-                  <typeof>
-                    :
-                    <predefined_type>string</predefined_type>
-                  </typeof>
+                  ?:
+                  <type>string</type>
                 </param>
                 )
               </params>
             </parameters>
-            <typeof>
-              :
-              <predefined_type>string</predefined_type>
-            </typeof>
+            :
+            <type>string</type>
             <body>
               <block>
                 {
@@ -259,37 +242,28 @@
                 <param>
                   <required/>
                   <name>host</name>
-                  <typeof>
-                    :
-                    <predefined_type>string</predefined_type>
-                  </typeof>
+                  :
+                  <type>string</type>
                 </param>
                 ,
                 <param>
                   <required/>
                   <name>port</name>
-                  <typeof>
-                    :
-                    <predefined_type>number</predefined_type>
-                  </typeof>
+                  :
+                  <type>number</type>
                 </param>
                 ,
                 <param>
                   <optional/>
                   <name>timeout</name>
-                  ?
-                  <typeof>
-                    :
-                    <predefined_type>number</predefined_type>
-                  </typeof>
+                  ?:
+                  <type>number</type>
                 </param>
                 )
               </params>
             </parameters>
-            <typeof>
-              :
-              <predefined_type>void</predefined_type>
-            </typeof>
+            :
+            <type>void</type>
             <body>
               <block>
                 {

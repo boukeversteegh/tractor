@@ -45,8 +45,8 @@ cli_suite! {
         binary_op => tractor query "sample.cs" -x "binary[op='+']" => count 1;
         call_rename => tractor query "sample.cs" -x "call" => count 4;
         ints_exist => tractor query "sample.cs" -x "int" => count 2;
-        public_methods => tractor query "sample.cs" -x "//method[public]" => count 1;
-        private_methods => tractor query "sample.cs" -x "//method[private]" => count 2;
+        public_methods => tractor query "sample.cs" -x "//method[public]" => count 2;
+        private_methods => tractor query "sample.cs" -x "//method[private]" => count 1;
         internal_methods => tractor query "sample.cs" -x "//method[internal]" => count 1;
         protected_methods => tractor query "sample.cs" -x "//method[protected]" => count 1;
         maxlength_missing_autotruncate => tractor query "attribute-maxlength-autotruncate.cs" -x "//property[attributes[contains(., 'MaxLength')]][not(attributes[contains(., 'AutoTruncate')])]/name" => count 1;

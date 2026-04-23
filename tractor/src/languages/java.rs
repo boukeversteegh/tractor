@@ -23,7 +23,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // ---------------------------------------------------------------------
         // Flatten nodes - transform children, then remove wrapper
         // ---------------------------------------------------------------------
-        "class_body" | "interface_body" | "block" => Ok(TransformAction::Flatten),
+        "class_body" | "interface_body" | "enum_body" | "block" => Ok(TransformAction::Flatten),
 
         // ---------------------------------------------------------------------
         // Name wrappers created by the builder for field="name".
@@ -115,6 +115,23 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
     }
 }
 
+/// Java access modifiers in canonical declaration order. `package-private` is
+/// the exhaustive default marker for declarations that carry no explicit
+/// access keyword.
+pub const ACCESS_MODIFIERS: &[&str] = &["public", "private", "protected", "package-private"];
+
+/// Java non-access modifiers in canonical declaration order.
+pub const OTHER_MODIFIERS: &[&str] = &[
+    "static",
+    "final",
+    "abstract",
+    "synchronized",
+    "volatile",
+    "transient",
+    "native",
+    "strictfp",
+];
+
 /// Check if text is an access modifier keyword
 fn is_access_modifier(text: &str) -> bool {
     matches!(text, "public" | "private" | "protected")
@@ -151,6 +168,13 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "method_declaration" => Some("method"),
         "constructor_declaration" => Some("ctor"),
         "field_declaration" => Some("field"),
+        "record_declaration" => Some("record"),
+        "enum_constant" => Some("enum_member"),
+        "line_comment" | "block_comment" => Some("comment"),
+        // Primitive types get a uniform <type> wrapper so queries can filter by
+        // `//field/type` regardless of whether the declared type is `int`,
+        // `double`, `boolean`, etc.
+        "integral_type" | "floating_point_type" | "boolean_type" => Some("type"),
         "formal_parameters" => Some("params"),
         "formal_parameter" => Some("param"),
         "argument_list" => Some("args"),

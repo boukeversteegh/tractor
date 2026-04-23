@@ -1,0 +1,41 @@
+(: Map a TypeScript interface into the shape Tractor's C# renderer expects. :)
+(: Pipe usage: :)
+(:   tractor samples/user.ts -x "$(cat samples/ts-to-csharp.xpath)" \ :)
+(:     -f json -p tree --single | tractor render -l csharp :)
+map {
+  "$type": "class",
+  "public": true(),
+  "name": //interface/name/type/string(),
+  "body": map {
+    "children": array {
+      for $p in //property_signature return map {
+        "$type": "property",
+        "public": true(),
+        "type": if (exists($p/node()[. = "?"])) then map {
+                  "nullable": true(),
+                  "children": array {
+                    if ($p//predefined_type = "string") then "string"
+                    else if ($p//predefined_type = "number") then "int"
+                    else if ($p//predefined_type = "boolean") then "bool"
+                    else "object"
+                  }
+                } else (
+                  if ($p//predefined_type = "string") then "string"
+                  else if ($p//predefined_type = "number") then "int"
+                  else if ($p//predefined_type = "boolean") then "bool"
+                  else "object"
+                ),
+        "name": concat(
+          upper-case(substring($p/name/string(), 1, 1)),
+          substring($p/name/string(), 2)
+        ),
+        "accessors": map {
+          "children": array {
+            map {"accessor": "get;"},
+            map {"accessor": "set;"}
+          }
+        }
+      }
+    }
+  }
+}

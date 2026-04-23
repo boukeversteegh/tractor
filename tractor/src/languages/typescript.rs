@@ -113,6 +113,32 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         // ---------------------------------------------------------------------
+        // Interface and type-literal property signatures — promote to <field>
+        // so queries and the renderer share the data-structure vocabulary
+        // with C# and Python. Exhaustive markers: `?` gets `<optional/>`,
+        // absence gets `<required/>`.
+        // ---------------------------------------------------------------------
+        "property_signature" => {
+            let optional = get_text_children(xot, node)
+                .iter()
+                .any(|t| t.trim() == "?");
+            prepend_empty_element(xot, node, if optional { "optional" } else { "required" })?;
+            rename(xot, node, "field");
+            Ok(TransformAction::Continue)
+        }
+
+        // ---------------------------------------------------------------------
+        // `type_annotation` (named `typeof` after rename) wraps the actual
+        // type with a `:` token. For data-structure-shaped parents like
+        // fields and parameters, drop the wrapper so the <type> sits directly
+        // on the parent and queries stay shallow.
+        // ---------------------------------------------------------------------
+        "type_annotation" => {
+            rename(xot, node, "typeof");
+            Ok(TransformAction::Flatten)
+        }
+
+        // ---------------------------------------------------------------------
         // Other nodes - just rename if needed
         // ---------------------------------------------------------------------
         _ => {
@@ -181,6 +207,8 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "type_annotation" => Some("typeof"),
         "type_parameters" => Some("typeparams"),
         "type_parameter" => Some("typeparam"),
+        "predefined_type" => Some("type"),
+        "array_type" => Some("array"),
 
         // Default - no mapping
         _ => None,
