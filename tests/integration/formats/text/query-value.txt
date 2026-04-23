@@ -1,6 +1,6 @@
- class Foo
+public class Foo
 {
-     int Bar {   }
-     void Baz() { }
+    public int Bar { get; set; }
+    public void Baz() { }
 }
- class Qux { }
+public class Qux { }

@@ -1,10 +1,10 @@
 {
   "results": [
     {
-      "value": " class Foo\n{\n     int Bar {   }\n     void Baz() { }\n}"
+      "value": "public class Foo\n{\n    public int Bar { get; set; }\n    public void Baz() { }\n}"
     },
     {
-      "value": " class Qux { }"
+      "value": "public class Qux { }"
     }
   ]
 }

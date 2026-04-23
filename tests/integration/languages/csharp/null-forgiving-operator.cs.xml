@@ -7,13 +7,13 @@
           <comment>// Test: C# null-forgiving operator (!) should parse as postfix_unary_expression
         // This was historically misidentified as broken due to shell escaping issues (! -&gt; \!)</comment>
           <class>
-            <public/>
+            <public>public</public>
             class
             <name>NullForgivingTest</name>
             <body>
               {
               <method>
-                <public/>
+                <public>public</public>
                 <returns>
                   <type>
                     <name>void</name>
@@ -158,7 +158,7 @@
                 </body>
               </method>
               <method>
-                <private/>
+                <private>private</private>
                 <returns>
                   <type>
                     string
@@ -174,7 +174,7 @@
                 ;
               </method>
               <method>
-                <private/>
+                <private>private</private>
                 <returns>
                   <type>
                     <name>void</name>
@@ -194,7 +194,7 @@
                 </body>
               </method>
               <field>
-                <private/>
+                <private>private</private>
                 <variable>
                   <type>
                     string
@@ -207,7 +207,7 @@
                 ;
               </field>
               <field>
-                <private/>
+                <private>private</private>
                 <variable>
                   <type>
                     string

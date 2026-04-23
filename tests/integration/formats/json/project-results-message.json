@@ -4,29 +4,39 @@
     "line": 1,
     "tree": {
       "$type": "class",
-      "public": true,
       "name": "Foo",
       "body": {
         "children": [
           {
             "$type": "property",
-            "public": true,
             "type": {
               "name": "int"
             },
             "name": "Bar",
             "accessors": [
               {
-                "get": true
+                "children": [
+                  {
+                    "get": "get"
+                  }
+                ]
               },
               {
-                "set": true
+                "children": [
+                  {
+                    "set": "set"
+                  }
+                ]
+              }
+            ],
+            "children": [
+              {
+                "public": "public"
               }
             ]
           },
           {
             "$type": "method",
-            "public": true,
             "returns": {
               "type": {
                 "name": "void"
@@ -35,10 +45,20 @@
             "name": "Baz",
             "body": {
               "block": "{ }"
-            }
+            },
+            "children": [
+              {
+                "public": "public"
+              }
+            ]
           }
         ]
-      }
+      },
+      "children": [
+        {
+          "public": "public"
+        }
+      ]
     },
     "message": "hit"
   },
@@ -47,9 +67,13 @@
     "line": 7,
     "tree": {
       "$type": "class",
-      "public": true,
       "name": "Qux",
-      "body": "{ }"
+      "body": "{ }",
+      "children": [
+        {
+          "public": "public"
+        }
+      ]
     },
     "message": "hit"
   }

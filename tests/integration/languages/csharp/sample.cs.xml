@@ -19,14 +19,14 @@
             <body>
               {
               <class>
-                <public/>
+                <public>public</public>
                 class
                 <name>Sample</name>
                 <body>
                   {
                   <field>
-                    <private/>
-                    <readonly/>
+                    <private>private</private>
+                    <readonly>readonly</readonly>
                     <variable>
                       <type>
                         <name>int</name>
@@ -38,7 +38,7 @@
                     ;
                   </field>
                   <constructor>
-                    <public/>
+                    <public>public</public>
                     <name>Sample</name>
                     (
                     <parameter>
@@ -69,8 +69,8 @@
                     </body>
                   </constructor>
                   <method>
-                    <public/>
-                    <static/>
+                    <public>public</public>
+                    <static>static</static>
                     <returns>
                       <type>
                         <name>int</name>
@@ -117,7 +117,7 @@
                     </body>
                   </method>
                   <method>
-                    <internal/>
+                    <internal>internal</internal>
                     <returns>
                       <type>
                         <name>void</name>
@@ -157,8 +157,8 @@
                     </body>
                   </method>
                   <method>
-                    <protected/>
-                    <virtual/>
+                    <protected>protected</protected>
+                    <virtual>virtual</virtual>
                     <returns>
                       <type>
                         <name>string</name>
@@ -189,7 +189,7 @@
                   </method>
                   <method>
                     <private/>
-                    <static/>
+                    <static>static</static>
                     <returns>
                       <type>
                         <name>void</name>
@@ -298,7 +298,7 @@
                 <body>
                   {
                   <field>
-                    <public/>
+                    <public>public</public>
                     <variable>
                       <type>
                         <name>int</name>
@@ -310,7 +310,7 @@
                     ;
                   </field>
                   <field>
-                    <public/>
+                    <public>public</public>
                     <variable>
                       <type>
                         <name>int</name>

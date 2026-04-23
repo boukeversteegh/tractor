@@ -6,7 +6,7 @@
         <file>
           <line_comment>// Simple Rust example</line_comment>
           <function>
-            <pub/>
+            <pub>pub</pub>
             fn
             <name>add</name>
             (
@@ -93,7 +93,9 @@
           </function>
           <function>
             <pub>
+              pub(
               <crate>crate</crate>
+              )
             </pub>
             fn
             <name>helper</name>
@@ -110,13 +112,13 @@
             </body>
           </function>
           <struct>
-            <pub/>
+            <pub>pub</pub>
             struct
             <name>Point</name>
             <body>
               {
               <field>
-                <pub/>
+                <pub>pub</pub>
                 <name>x</name>
                 :
                 <type>
@@ -159,7 +161,7 @@
             </body>
           </enum>
           <trait>
-            <pub/>
+            <pub>pub</pub>
             trait
             <name>Drawable</name>
             <body>
@@ -185,7 +187,9 @@
               {
               <function>
                 <pub>
+                  pub(
                   <super>super</super>
+                  )
                 </pub>
                 fn
                 <name>secret</name>

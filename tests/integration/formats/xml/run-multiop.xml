@@ -24,10 +24,10 @@
             <line>    public void Baz() { }</line>
             <line>}</line>
           </lines>
-          <value> class Foo
+          <value>public class Foo
 {
-     int Bar {   }
-     void Baz() { }
+    public int Bar { get; set; }
+    public void Baz() { }
 }</value>
           <rule-id>no-class</rule-id>
         </match>
@@ -37,7 +37,7 @@
           <lines>
             <line>    public void Baz() { }</line>
           </lines>
-          <value> void Baz() { }</value>
+          <value>public void Baz() { }</value>
           <rule-id>no-void-method</rule-id>
         </match>
         <match line="7" column="1" end_line="7" end_column="21">
@@ -46,7 +46,7 @@
           <lines>
             <line>public class Qux { }</line>
           </lines>
-          <value> class Qux { }</value>
+          <value>public class Qux { }</value>
           <rule-id>no-class</rule-id>
         </match>
       </group>
@@ -62,17 +62,17 @@
             <line>    public void Baz() { }</line>
             <line>}</line>
           </lines>
-          <value> class Foo
+          <value>public class Foo
 {
-     int Bar {   }
-     void Baz() { }
+    public int Bar { get; set; }
+    public void Baz() { }
 }</value>
         </match>
         <match line="7" column="1" end_line="7" end_column="21">
           <lines>
             <line>public class Qux { }</line>
           </lines>
-          <value> class Qux { }</value>
+          <value>public class Qux { }</value>
         </match>
       </group>
     </group>

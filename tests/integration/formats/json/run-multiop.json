@@ -27,7 +27,7 @@
                 "    public void Baz() { }",
                 "}"
               ],
-              "value": " class Foo\n{\n     int Bar {   }\n     void Baz() { }\n}",
+              "value": "public class Foo\n{\n    public int Bar { get; set; }\n    public void Baz() { }\n}",
               "rule_id": "no-class"
             },
             {
@@ -36,7 +36,7 @@
               "lines": [
                 "    public void Baz() { }"
               ],
-              "value": " void Baz() { }",
+              "value": "public void Baz() { }",
               "rule_id": "no-void-method"
             },
             {
@@ -45,7 +45,7 @@
               "lines": [
                 "public class Qux { }"
               ],
-              "value": " class Qux { }",
+              "value": "public class Qux { }",
               "rule_id": "no-class"
             }
           ]
@@ -67,13 +67,13 @@
                 "    public void Baz() { }",
                 "}"
               ],
-              "value": " class Foo\n{\n     int Bar {   }\n     void Baz() { }\n}"
+              "value": "public class Foo\n{\n    public int Bar { get; set; }\n    public void Baz() { }\n}"
             },
             {
               "lines": [
                 "public class Qux { }"
               ],
-              "value": " class Qux { }"
+              "value": "public class Qux { }"
             }
           ]
         }

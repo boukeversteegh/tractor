@@ -5,7 +5,7 @@
       <tree>
         <unit>
           <class>
-            <public/>
+            <public>public</public>
             class
             <name>UserRecord</name>
             <body>
@@ -21,17 +21,19 @@
                   )
                 </attribute>
                 ]
-                <public/>
+                <public>public</public>
                 <type>
                   <name>string</name>
                 </type>
                 <name>Name</name>
                 {
                 <accessor>
-                  <get/>
+                  <get>get</get>
+                  ;
                 </accessor>
                 <accessor>
-                  <set/>
+                  <set>set</set>
+                  ;
                 </accessor>
                 }
               </property>
@@ -55,17 +57,19 @@
                   <name>AutoTruncate</name>
                 </attribute>
                 ]
-                <public/>
+                <public>public</public>
                 <type>
                   <name>string</name>
                 </type>
                 <name>Email</name>
                 {
                 <accessor>
-                  <get/>
+                  <get>get</get>
+                  ;
                 </accessor>
                 <accessor>
-                  <set/>
+                  <set>set</set>
+                  ;
                 </accessor>
                 }
               </property>
@@ -74,17 +78,19 @@
                 // OK - has AutoTruncate
               </comment>
               <property>
-                <public/>
+                <public>public</public>
                 <type>
                   <name>string</name>
                 </type>
                 <name>Bio</name>
                 {
                 <accessor>
-                  <get/>
+                  <get>get</get>
+                  ;
                 </accessor>
                 <accessor>
-                  <set/>
+                  <set>set</set>
+                  ;
                 </accessor>
                 }
               </property>

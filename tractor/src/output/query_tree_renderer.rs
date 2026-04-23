@@ -697,6 +697,7 @@ fn direct_leaf_value<'a>(info: &'a ElementInfo<'a>) -> Option<&'a str> {
 fn is_marker_element(node: &XmlNode, options: &RenderOptions) -> bool {
     match node {
         XmlNode::Element {
+            name,
             attributes,
             children,
             ..
@@ -709,10 +710,30 @@ fn is_marker_element(node: &XmlNode, options: &RenderOptions) -> bool {
                 return false;
             }
 
-            children.iter().all(|child| match child {
-                XmlNode::Text(text) => text.trim().is_empty(),
-                _ => false,
-            })
+            // A marker is either fully empty, or holds a single text
+            // child whose trimmed content equals the element's own
+            // name — e.g. `<public>public</public>` for a
+            // source-backed marker where the original keyword is kept
+            // so the enclosing node's XPath string-value stays source-
+            // accurate.
+            let mut saw_matching_text = false;
+            for child in children {
+                match child {
+                    XmlNode::Text(t) => {
+                        let tt = t.trim();
+                        if tt.is_empty() {
+                            continue;
+                        }
+                        if tt == name && !saw_matching_text {
+                            saw_matching_text = true;
+                        } else {
+                            return false;
+                        }
+                    }
+                    _ => return false,
+                }
+            }
+            true
         }
         _ => false,
     }

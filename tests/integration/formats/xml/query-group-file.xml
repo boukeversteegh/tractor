@@ -6,7 +6,7 @@
       <match line="1" column="1" end_line="5" end_column="2">
         <tree>
           <class>
-            <public/>
+            <public>public</public>
             class
             <name>Foo</name>
             <body>
@@ -25,7 +25,7 @@
       <match line="7" column="1" end_line="7" end_column="21">
         <tree>
           <class>
-            <public/>
+            <public>public</public>
             class
             <name>Qux</name>
             <body>{ }</body>
@@ -37,7 +37,7 @@
       <match line="1" column="1" end_line="4" end_column="2">
         <tree>
           <class>
-            <public/>
+            <public>public</public>
             class
             <name>Alpha</name>
             <body>

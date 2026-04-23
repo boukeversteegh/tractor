@@ -1,18 +1,26 @@
 [
   {
     "$type": "class",
-    "public": true,
     "name": "Calculator",
     "body": {
       "$truncated": 72
-    }
+    },
+    "children": [
+      {
+        "public": "public"
+      }
+    ]
   },
   {
     "$type": "class",
-    "public": true,
     "name": "Greeter",
     "body": {
       "$truncated": 42
-    }
+    },
+    "children": [
+      {
+        "public": "public"
+      }
+    ]
   }
 ]

@@ -2,7 +2,7 @@
 <results>
   <tree>
     <class>
-      <public/>
+      <public>public</public>
       class
       <name>Calculator</name>
       <body>
@@ -22,7 +22,7 @@
   </tree>
   <tree>
     <class>
-      <public/>
+      <public>public</public>
       class
       <name>Greeter</name>
       <body>

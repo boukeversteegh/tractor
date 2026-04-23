@@ -1,7 +1,6 @@
 string/
   ├─ "f\"hello"
-  ├─ interpolation/
+  ├─ interpolation[name]/
   │   ├─ "{"
-  │   ├─ name = "name"
   │   └─ "}"
   └─ "\""

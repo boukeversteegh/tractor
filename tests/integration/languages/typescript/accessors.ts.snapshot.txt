@@ -10,7 +10,7 @@ method[get]/
       ├─ return/
       │   ├─ "return"
       │   ├─ member/
-      │   │   ├─ object/this = "this"
+      │   │   ├─ object[this]
       │   │   ├─ "."
       │   │   └─ property/name = "_value"
       │   └─ ";"

@@ -724,9 +724,18 @@ pub mod helpers {
 
     /// Rename an element to a marker: renames, removes text children.
     /// Preserves `start`/`end` and `kind` attributes (source location for keyword-based markers).
+    /// Rename `node` to `name` and leave its text content in place. Used
+    /// for *source-backed* markers where the source keyword matches the
+    /// new element name (e.g. `<modifier>public</modifier>` →
+    /// `<public>public</public>`). The tree renderer special-cases
+    /// elements whose only text child equals their own name so the
+    /// compact `[public]` predicate-style still renders, while the
+    /// XPath string-value of the enclosing node keeps the source
+    /// keyword intact — otherwise `-v value` on a class silently loses
+    /// every keyword that got lifted into a marker (`public`, `get`,
+    /// `async`, …).
     pub fn rename_to_marker(xot: &mut Xot, node: XotNode, name: &str) -> Result<(), xot::Error> {
         rename(xot, node, name);
-        remove_text_children(xot, node)?;
         Ok(())
     }
 

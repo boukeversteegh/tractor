@@ -26,13 +26,13 @@
         /// &lt;/summary&gt;
               </comment>
               <class>
-                <public/>
+                <public>public</public>
                 class
                 <name>Demo</name>
                 <body>
                   {
                   <field>
-                    <private/>
+                    <private>private</private>
                     <variable>
                       <type>
                         <name>int</name>
@@ -53,17 +53,19 @@
         // loaded from environment
                   </comment>
                   <property>
-                    <public/>
+                    <public>public</public>
                     <type>
                       <name>string</name>
                     </type>
                     <name>Config</name>
                     {
                     <accessor>
-                      <get/>
+                      <get>get</get>
+                      ;
                     </accessor>
                     <accessor>
-                      <set/>
+                      <set>set</set>
+                      ;
                     </accessor>
                     }
                   </property>
@@ -72,7 +74,7 @@
                     /* block comment */
                   </comment>
                   <method>
-                    <public/>
+                    <public>public</public>
                     <returns>
                       <type>
                         <name>void</name>

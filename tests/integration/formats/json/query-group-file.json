@@ -8,20 +8,28 @@
           "line": 1,
           "tree": {
             "$type": "class",
-            "public": true,
             "name": "Foo",
             "body": {
               "$truncated": 17
-            }
+            },
+            "children": [
+              {
+                "public": "public"
+              }
+            ]
           }
         },
         {
           "line": 7,
           "tree": {
             "$type": "class",
-            "public": true,
             "name": "Qux",
-            "body": "{ }"
+            "body": "{ }",
+            "children": [
+              {
+                "public": "public"
+              }
+            ]
           }
         }
       ]
@@ -33,11 +41,15 @@
           "line": 1,
           "tree": {
             "$type": "class",
-            "public": true,
             "name": "Alpha",
             "body": {
               "$truncated": 9
-            }
+            },
+            "children": [
+              {
+                "public": "public"
+              }
+            ]
           }
         }
       ]
