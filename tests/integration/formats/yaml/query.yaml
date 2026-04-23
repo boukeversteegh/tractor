@@ -3,16 +3,14 @@ results:
   line: 1
   tree:
     $type: class
+    public: true
     name: Foo
     body:
       $truncated: 17
-    children:
-    - public: public
 - file: tests/integration/formats/sample.cs
   line: 7
   tree:
     $type: class
+    public: true
     name: Qux
     body: '{ }'
-    children:
-    - public: public

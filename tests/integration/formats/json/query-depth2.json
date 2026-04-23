@@ -3,27 +3,19 @@
     {
       "tree": {
         "$type": "class",
+        "public": true,
         "name": "Foo",
         "body": {
           "$truncated": 17
-        },
-        "children": [
-          {
-            "public": "public"
-          }
-        ]
+        }
       }
     },
     {
       "tree": {
         "$type": "class",
+        "public": true,
         "name": "Qux",
-        "body": "{ }",
-        "children": [
-          {
-            "public": "public"
-          }
-        ]
+        "body": "{ }"
       }
     }
   ]
