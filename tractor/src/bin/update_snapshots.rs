@@ -109,7 +109,7 @@ const FEATURE_FIXTURES: &[(&str, &str, u32)] = &[
 const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
     // -f text
     ("text/query.txt", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class",
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "--depth", "2",
     ]),
     ("text/query-value.txt", &[
         "query", "tests/integration/formats/sample.cs", "-x", "class", "-v", "value",
@@ -123,11 +123,11 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
     ]),
     ("text/check.txt", &[
         "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "-f", "text",
+        "--reason", "class found", "-f", "text", "--depth", "2",
     ]),
     ("text/check-composable.txt", &[
         "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "-v", "tree,reason,severity", "-f", "text",
+        "--reason", "class found", "-v", "tree,reason,severity", "-f", "text", "--depth", "2",
     ]),
     ("text/query-summary.txt", &[
         "query", "tests/integration/formats/sample.cs", "-x", "class",
@@ -146,11 +146,11 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
         "--meta", "--depth", "1",
     ]),
     ("text/explore-tree-source.txt", &[
-        "tests/integration/languages/csharp/comments.cs", "-v", "tree,source",
+        "tests/integration/languages/csharp/comments.cs", "-v", "tree,source", "--depth", "2",
     ]),
     ("text/explore-tree-source-color.txt", &[
         "tests/integration/languages/csharp/comments.cs", "-v", "tree,source",
-        "--color", "always",
+        "--color", "always", "--depth", "2",
     ]),
     // -f gcc
     ("gcc/check.txt", &[
@@ -163,7 +163,7 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
     ]),
     // -f json
     ("json/query.json", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class", "-f", "json",
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-f", "json", "--depth", "2",
     ]),
     ("json/query-value.json", &[
         "query", "tests/integration/formats/sample.cs", "-x", "class",
@@ -171,15 +171,15 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
     ]),
     ("json/query-message.json", &[
         "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "-m", "{file}:{line}", "-f", "json",
+        "-m", "{file}:{line}", "-f", "json", "--depth", "2",
     ]),
     ("json/check.json", &[
         "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "-f", "json",
+        "--reason", "class found", "-f", "json", "--depth", "2",
     ]),
     ("json/check-composable.json", &[
         "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "-v", "tree,reason,severity", "-f", "json",
+        "--reason", "class found", "-v", "tree,reason,severity", "-f", "json", "--depth", "2",
     ]),
     ("json/query-summary.json", &[
         "query", "tests/integration/formats/sample.cs", "-x", "class",
@@ -191,11 +191,11 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
     ]),
     // -f xml
     ("xml/query.xml", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class", "-f", "xml",
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-f", "xml", "--depth", "2",
     ]),
     ("xml/check.xml", &[
         "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "-f", "xml",
+        "--reason", "class found", "-f", "xml", "--depth", "2",
     ]),
     ("xml/query-summary.xml", &[
         "query", "tests/integration/formats/sample.cs", "-x", "class",
@@ -207,11 +207,11 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
     ]),
     // -f yaml
     ("yaml/query.yaml", &[
-        "query", "tests/integration/formats/sample.cs", "-x", "class", "-f", "yaml",
+        "query", "tests/integration/formats/sample.cs", "-x", "class", "-f", "yaml", "--depth", "2",
     ]),
     ("yaml/check.yaml", &[
         "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "-f", "yaml",
+        "--reason", "class found", "-f", "yaml", "--depth", "2",
     ]),
     ("yaml/query-summary.yaml", &[
         "query", "tests/integration/formats/sample.cs", "-x", "class",
@@ -243,35 +243,35 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
     // Projection snapshots
     ("text/project-tree.txt", &[
         "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
-        "-p", "tree",
+        "-p", "tree", "--depth", "2",
     ]),
     ("json/project-tree.json", &[
         "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
-        "-p", "tree", "-f", "json",
+        "-p", "tree", "-f", "json", "--depth", "2",
     ]),
     ("yaml/project-tree.yaml", &[
         "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
-        "-p", "tree", "-f", "yaml",
+        "-p", "tree", "-f", "yaml", "--depth", "2",
     ]),
     ("xml/project-tree.xml", &[
         "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
-        "-p", "tree", "-f", "xml",
+        "-p", "tree", "-f", "xml", "--depth", "2",
     ]),
     ("json/project-tree-single.json", &[
         "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
-        "-p", "tree", "--single", "-f", "json",
+        "-p", "tree", "--single", "-f", "json", "--depth", "2",
     ]),
     ("yaml/project-tree-single.yaml", &[
         "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
-        "-p", "tree", "--single", "-f", "yaml",
+        "-p", "tree", "--single", "-f", "yaml", "--depth", "2",
     ]),
     ("xml/project-tree-single.xml", &[
         "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
-        "-p", "tree", "--single", "-f", "xml",
+        "-p", "tree", "--single", "-f", "xml", "--depth", "2",
     ]),
     ("text/project-tree-single.txt", &[
         "query", "tests/integration/formats/sample-classes.cs", "-x", "class",
-        "-p", "tree", "--single",
+        "-p", "tree", "--single", "--depth", "2",
     ]),
     ("text/project-value.txt", &[
         "query", "tests/integration/formats/sample-classes.cs", "-x", "class/name",
@@ -542,29 +542,29 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
     // -g file (group-by) snapshots: query mode with multi-file grouping
     ("json/query-group-file.json", &[
         "query", "tests/integration/formats/sample.cs", "tests/integration/formats/sample2.cs",
-        "-x", "class", "-g", "file", "-f", "json",
+        "-x", "class", "-g", "file", "-f", "json", "--depth", "2",
     ]),
     ("xml/query-group-file.xml", &[
         "query", "tests/integration/formats/sample.cs", "tests/integration/formats/sample2.cs",
-        "-x", "class", "-g", "file", "-f", "xml",
+        "-x", "class", "-g", "file", "-f", "xml", "--depth", "2",
     ]),
     ("json/check-no-group.json", &[
         "check", "tests/integration/formats/sample.cs", "tests/integration/formats/sample2.cs",
-        "-x", "class", "--reason", "class found", "-g", "none", "-f", "json",
+        "-x", "class", "--reason", "class found", "-g", "none", "-f", "json", "--depth", "2",
     ]),
     // Color snapshots: ANSI codes rendered as \e so they are visible in text editors.
     // These document what colored output looks like for each format.
     ("text/query-color.txt", &[
         "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "--color", "always",
+        "--color", "always", "--depth", "2",
     ]),
     ("xml/query-color.xml", &[
         "query", "tests/integration/formats/sample.cs", "-x", "class",
-        "-f", "xml", "--color", "always",
+        "-f", "xml", "--color", "always", "--depth", "2",
     ]),
     ("xml/check-color.xml", &[
         "check", "tests/integration/formats/sample.cs", "-x", "class",
-        "--reason", "class found", "-f", "xml", "--color", "always",
+        "--reason", "class found", "-f", "xml", "--color", "always", "--depth", "2",
     ]),
     ("gcc/check-color.txt", &[
         "check", "tests/integration/formats/sample.cs", "-x", "class",
@@ -573,11 +573,11 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
     // Multi-rule check via --config flag
     ("xml/check-multirule.xml", &[
         "check",
-        "--config", "tests/integration/formats/multirule.yaml", "-f", "xml",
+        "--config", "tests/integration/formats/multirule.yaml", "-f", "xml", "--depth", "2",
     ]),
     ("json/check-multirule.json", &[
         "check",
-        "--config", "tests/integration/formats/multirule.yaml", "-f", "json",
+        "--config", "tests/integration/formats/multirule.yaml", "-f", "json", "--depth", "2",
     ]),
     ("gcc/check-multirule.txt", &[
         "check",
@@ -585,10 +585,10 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
     ]),
     // Multi-op run report (check + test in one config)
     ("xml/run-multiop.xml", &[
-        "run", "--config", "tests/integration/formats/multiop.yaml", "-f", "xml",
+        "run", "--config", "tests/integration/formats/multiop.yaml", "-f", "xml", "--depth", "2",
     ]),
     ("json/run-multiop.json", &[
-        "run", "--config", "tests/integration/formats/multiop.yaml", "-f", "json",
+        "run", "--config", "tests/integration/formats/multiop.yaml", "-f", "json", "--depth", "2",
     ]),
     // --help snapshots: track changes to CLI help text per subcommand
     ("help/query.txt", &["query", "--help"]),

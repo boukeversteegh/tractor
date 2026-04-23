@@ -10,39 +10,7 @@
             "$type": "class",
             "public": true,
             "name": "Foo",
-            "body": {
-              "children": [
-                {
-                  "$type": "property",
-                  "public": true,
-                  "type": {
-                    "name": "int"
-                  },
-                  "name": "Bar",
-                  "accessors": [
-                    {
-                      "get": true
-                    },
-                    {
-                      "set": true
-                    }
-                  ]
-                },
-                {
-                  "$type": "method",
-                  "public": true,
-                  "returns": {
-                    "type": {
-                      "name": "void"
-                    }
-                  },
-                  "name": "Baz",
-                  "body": {
-                    "block": "{ }"
-                  }
-                }
-              ]
-            }
+            "body": {}
           }
         },
         {
@@ -65,26 +33,7 @@
             "$type": "class",
             "public": true,
             "name": "Alpha",
-            "body": {
-              "children": [
-                {
-                  "$type": "property",
-                  "public": true,
-                  "type": {
-                    "name": "string"
-                  },
-                  "name": "Name",
-                  "accessors": [
-                    {
-                      "get": true
-                    },
-                    {
-                      "set": true
-                    }
-                  ]
-                }
-              ]
-            }
+            "body": {}
           }
         }
       ]

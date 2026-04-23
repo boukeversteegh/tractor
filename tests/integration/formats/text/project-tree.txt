@@ -4,74 +4,11 @@ class[public]/
   └─ body/
       ├─ "{"
       ├─ method[public]/
-      │   ├─ returns/type/name = "int"
-      │   ├─ name = "Add"
-      │   ├─ "("
-      │   ├─ parameter/
-      │   │   ├─ type/name = "int"
-      │   │   └─ name = "a"
-      │   ├─ ","
-      │   ├─ parameter/
-      │   │   ├─ type/name = "int"
-      │   │   └─ name = "b"
-      │   ├─ ")"
-      │   └─ body/block/
-      │       ├─ "{"
-      │       ├─ return/
-      │       │   ├─ "return"
-      │       │   ├─ binary/
-      │       │   │   ├─ op[plus] = "+"
-      │       │   │   ├─ left/name = "a"
-      │       │   │   ├─ "+"
-      │       │   │   └─ right/name = "b"
-      │       │   └─ ";"
-      │       └─ "}"
+      │   └─ ... (23 children)
       ├─ method[public]/
-      │   ├─ returns/type/name = "int"
-      │   ├─ name = "Subtract"
-      │   ├─ "("
-      │   ├─ parameter/
-      │   │   ├─ type/name = "int"
-      │   │   └─ name = "a"
-      │   ├─ ","
-      │   ├─ parameter/
-      │   │   ├─ type/name = "int"
-      │   │   └─ name = "b"
-      │   ├─ ")"
-      │   └─ body/block/
-      │       ├─ "{"
-      │       ├─ return/
-      │       │   ├─ "return"
-      │       │   ├─ binary/
-      │       │   │   ├─ op[minus] = "-"
-      │       │   │   ├─ left/name = "a"
-      │       │   │   ├─ "-"
-      │       │   │   └─ right/name = "b"
-      │       │   └─ ";"
-      │       └─ "}"
+      │   └─ ... (23 children)
       ├─ method[public]/
-      │   ├─ returns/type/name = "int"
-      │   ├─ name = "Multiply"
-      │   ├─ "("
-      │   ├─ parameter/
-      │   │   ├─ type/name = "int"
-      │   │   └─ name = "a"
-      │   ├─ ","
-      │   ├─ parameter/
-      │   │   ├─ type/name = "int"
-      │   │   └─ name = "b"
-      │   ├─ ")"
-      │   └─ body/block/
-      │       ├─ "{"
-      │       ├─ return/
-      │       │   ├─ "return"
-      │       │   ├─ binary/
-      │       │   │   ├─ op[multiply] = "*"
-      │       │   │   ├─ left/name = "a"
-      │       │   │   ├─ "*"
-      │       │   │   └─ right/name = "b"
-      │       │   └─ ";"
-      │       └─ "}"
+      │   └─ ... (23 children)
       └─ "}"
 class[public]/
   ├─ "class"
@@ -79,47 +16,7 @@ class[public]/
   └─ body/
       ├─ "{"
       ├─ method[public]/
-      │   ├─ returns/type/name = "string"
-      │   ├─ name = "Hello"
-      │   ├─ "("
-      │   ├─ parameter/
-      │   │   ├─ type/name = "string"
-      │   │   └─ name = "name"
-      │   ├─ ")"
-      │   └─ body/block/
-      │       ├─ "{"
-      │       ├─ return/
-      │       │   ├─ "return"
-      │       │   ├─ binary/
-      │       │   │   ├─ op[plus] = "+"
-      │       │   │   ├─ left/string/
-      │       │   │   │   ├─ "\""
-      │       │   │   │   ├─ string_literal_content = "Hello,"
-      │       │   │   │   └─ "\""
-      │       │   │   ├─ "+"
-      │       │   │   └─ right/name = "name"
-      │       │   └─ ";"
-      │       └─ "}"
+      │   └─ ... (20 children)
       ├─ method[public]/
-      │   ├─ returns/type/name = "string"
-      │   ├─ name = "Goodbye"
-      │   ├─ "("
-      │   ├─ parameter/
-      │   │   ├─ type/name = "string"
-      │   │   └─ name = "name"
-      │   ├─ ")"
-      │   └─ body/block/
-      │       ├─ "{"
-      │       ├─ return/
-      │       │   ├─ "return"
-      │       │   ├─ binary/
-      │       │   │   ├─ op[plus] = "+"
-      │       │   │   ├─ left/string/
-      │       │   │   │   ├─ "\""
-      │       │   │   │   ├─ string_literal_content = "Goodbye,"
-      │       │   │   │   └─ "\""
-      │       │   │   ├─ "+"
-      │       │   │   └─ right/name = "name"
-      │       │   └─ ";"
-      │       └─ "}"
+      │   └─ ... (20 children)
       └─ "}"

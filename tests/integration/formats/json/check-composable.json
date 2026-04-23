@@ -17,39 +17,7 @@
             "$type": "class",
             "public": true,
             "name": "Foo",
-            "body": {
-              "children": [
-                {
-                  "$type": "property",
-                  "public": true,
-                  "type": {
-                    "name": "int"
-                  },
-                  "name": "Bar",
-                  "accessors": [
-                    {
-                      "get": true
-                    },
-                    {
-                      "set": true
-                    }
-                  ]
-                },
-                {
-                  "$type": "method",
-                  "public": true,
-                  "returns": {
-                    "type": {
-                      "name": "void"
-                    }
-                  },
-                  "name": "Baz",
-                  "body": {
-                    "block": "{ }"
-                  }
-                }
-              ]
-            }
+            "body": {}
           },
           "reason": "class found",
           "severity": "error"

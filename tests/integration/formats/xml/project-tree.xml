@@ -8,145 +8,13 @@
       <body>
         {
         <method>
-          <public/>
-          <returns>
-            <type>
-              <name>int</name>
-            </type>
-          </returns>
-          <name>Add</name>
-          (
-          <parameter>
-            <type>
-              <name>int</name>
-            </type>
-            <name>a</name>
-          </parameter>
-          ,
-          <parameter>
-            <type>
-              <name>int</name>
-            </type>
-            <name>b</name>
-          </parameter>
-          )
-          <body>
-            <block>
-              {
-              <return>
-                return
-                <binary>
-                  <op>
-                    <plus/>
-                    +
-                  </op>
-                  <left>
-                    <name>a</name>
-                  </left>
-                  +
-                  <right>
-                    <name>b</name>
-                  </right>
-                </binary>
-                ;
-              </return>
-              }
-            </block>
-          </body>
+          <!-- ... (23 children) -->
         </method>
         <method>
-          <public/>
-          <returns>
-            <type>
-              <name>int</name>
-            </type>
-          </returns>
-          <name>Subtract</name>
-          (
-          <parameter>
-            <type>
-              <name>int</name>
-            </type>
-            <name>a</name>
-          </parameter>
-          ,
-          <parameter>
-            <type>
-              <name>int</name>
-            </type>
-            <name>b</name>
-          </parameter>
-          )
-          <body>
-            <block>
-              {
-              <return>
-                return
-                <binary>
-                  <op>
-                    <minus/>
-                    -
-                  </op>
-                  <left>
-                    <name>a</name>
-                  </left>
-                  -
-                  <right>
-                    <name>b</name>
-                  </right>
-                </binary>
-                ;
-              </return>
-              }
-            </block>
-          </body>
+          <!-- ... (23 children) -->
         </method>
         <method>
-          <public/>
-          <returns>
-            <type>
-              <name>int</name>
-            </type>
-          </returns>
-          <name>Multiply</name>
-          (
-          <parameter>
-            <type>
-              <name>int</name>
-            </type>
-            <name>a</name>
-          </parameter>
-          ,
-          <parameter>
-            <type>
-              <name>int</name>
-            </type>
-            <name>b</name>
-          </parameter>
-          )
-          <body>
-            <block>
-              {
-              <return>
-                return
-                <binary>
-                  <op>
-                    <multiply/>
-                    *
-                  </op>
-                  <left>
-                    <name>a</name>
-                  </left>
-                  *
-                  <right>
-                    <name>b</name>
-                  </right>
-                </binary>
-                ;
-              </return>
-              }
-            </block>
-          </body>
+          <!-- ... (23 children) -->
         </method>
         }
       </body>
@@ -160,92 +28,10 @@
       <body>
         {
         <method>
-          <public/>
-          <returns>
-            <type>
-              <name>string</name>
-            </type>
-          </returns>
-          <name>Hello</name>
-          (
-          <parameter>
-            <type>
-              <name>string</name>
-            </type>
-            <name>name</name>
-          </parameter>
-          )
-          <body>
-            <block>
-              {
-              <return>
-                return
-                <binary>
-                  <op>
-                    <plus/>
-                    +
-                  </op>
-                  <left>
-                    <string>
-                      &quot;
-                      <string_literal_content>Hello, </string_literal_content>
-                      &quot;
-                    </string>
-                  </left>
-                  +
-                  <right>
-                    <name>name</name>
-                  </right>
-                </binary>
-                ;
-              </return>
-              }
-            </block>
-          </body>
+          <!-- ... (20 children) -->
         </method>
         <method>
-          <public/>
-          <returns>
-            <type>
-              <name>string</name>
-            </type>
-          </returns>
-          <name>Goodbye</name>
-          (
-          <parameter>
-            <type>
-              <name>string</name>
-            </type>
-            <name>name</name>
-          </parameter>
-          )
-          <body>
-            <block>
-              {
-              <return>
-                return
-                <binary>
-                  <op>
-                    <plus/>
-                    +
-                  </op>
-                  <left>
-                    <string>
-                      &quot;
-                      <string_literal_content>Goodbye, </string_literal_content>
-                      &quot;
-                    </string>
-                  </left>
-                  +
-                  <right>
-                    <name>name</name>
-                  </right>
-                </binary>
-                ;
-              </return>
-              }
-            </block>
-          </body>
+          <!-- ... (20 children) -->
         </method>
         }
       </body>

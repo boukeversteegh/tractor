@@ -10,32 +10,10 @@
           <body>
             {
             <property>
-              <public/>
-              <type>
-                <name>int</name>
-              </type>
-              <name>Bar</name>
-              {
-              <accessor>
-                <get/>
-              </accessor>
-              <accessor>
-                <set/>
-              </accessor>
-              }
+              <!-- ... (8 children) -->
             </property>
             <method>
-              <public/>
-              <returns>
-                <type>
-                  <name>void</name>
-                </type>
-              </returns>
-              <name>Baz</name>
-              ()
-              <body>
-                <block>{ }</block>
-              </body>
+              <!-- ... (7 children) -->
             </method>
             }
           </body>

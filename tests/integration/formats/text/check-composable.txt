@@ -4,17 +4,9 @@ class[public]/
   └─ body/
       ├─ "{"
       ├─ property[public]/
-      │   ├─ type/name = "int"
-      │   ├─ name = "Bar"
-      │   ├─ "{"
-      │   ├─ accessor[get]
-      │   ├─ accessor[set]
-      │   └─ "}"
+      │   └─ ... (8 children)
       ├─ method[public]/
-      │   ├─ returns/type/name = "void"
-      │   ├─ name = "Baz"
-      │   ├─ "()"
-      │   └─ body/block = "{ }"
+      │   └─ ... (7 children)
       └─ "}"
 error: class found
 
