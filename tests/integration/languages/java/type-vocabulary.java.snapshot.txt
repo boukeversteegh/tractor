@@ -6,7 +6,8 @@ class[package]/
   │   ├─ name = "T"
   │   └─ extends/
   │       ├─ "extends"
-  │       └─ type/name = "Animal"
+  │       └─ type/
+  │           └─ ... (1 children)
   ├─ ">"
   ├─ extends/
   │   ├─ "extends"
@@ -19,24 +20,26 @@ class[package]/
   └─ body/
       ├─ "{"
       ├─ field[package]/
-      │   ├─ type/name = "T"
-      │   ├─ variable_declarator/name = "owner"
+      │   ├─ type/
+      │   │   └─ ... (1 children)
+      │   ├─ variable_declarator/
+      │   │   └─ ... (1 children)
       │   └─ ";"
       ├─ field[package]/
       │   ├─ type[generic]/
-      │   │   ├─ name = "List"
-      │   │   ├─ "<"
-      │   │   ├─ type/name = "String"
-      │   │   └─ ">"
-      │   ├─ variable_declarator/name = "tags"
+      │   │   └─ ... (4 children)
+      │   ├─ variable_declarator/
+      │   │   └─ ... (1 children)
       │   └─ ";"
       ├─ method[public]/
-      │   ├─ returns/type/name = "void"
+      │   ├─ returns/
+      │   │   └─ ... (2 children)
       │   ├─ name = "bark"
       │   ├─ "()"
       │   └─ body = "{}"
       ├─ method[public]/
-      │   ├─ returns/type/name = "void"
+      │   ├─ returns/
+      │   │   └─ ... (2 children)
       │   ├─ name = "run"
       │   ├─ "()"
       │   └─ body = "{}"

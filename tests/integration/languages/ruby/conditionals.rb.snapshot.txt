@@ -1,9 +1,11 @@
 if/
   ├─ "if"
   ├─ condition/binary/
-  │   ├─ left/name = "n"
+  │   ├─ left/
+  │   │   └─ ... (1 children)
   │   ├─ "<"
-  │   └─ right/int = "0"
+  │   └─ right/
+  │       └─ ... (1 children)
   ├─ then/string/
   │   ├─ "\""
   │   ├─ string_content = "neg"
@@ -12,23 +14,15 @@ if/
   ├─ else_if/
   │   ├─ "elsif"
   │   ├─ condition/binary/
-  │   │   ├─ left/name = "n"
-  │   │   ├─ "=="
-  │   │   └─ right/int = "0"
+  │   │   └─ ... (4 children)
   │   └─ then/string/
-  │       ├─ "\""
-  │       ├─ string_content = "zero"
-  │       └─ "\""
+  │       └─ ... (1 children)
   ├─ else_if/
   │   ├─ "elsif"
   │   ├─ condition/binary/
-  │   │   ├─ left/name = "n"
-  │   │   ├─ "<"
-  │   │   └─ right/int = "10"
+  │   │   └─ ... (4 children)
   │   └─ then/string/
-  │       ├─ "\""
-  │       ├─ string_content = "small"
-  │       └─ "\""
+  │       └─ ... (1 children)
   └─ else/
       ├─ "else"
       └─ string/

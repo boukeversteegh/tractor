@@ -29,62 +29,79 @@ const SKIP_EXTENSIONS: &[&str] = &["xml", "sh", "md", "json"];
 /// Output: `<source>.snapshot.txt` containing just the matched subtree.
 ///
 /// Paths are relative to the project root.
-const FEATURE_FIXTURES: &[(&str, &str)] = &[
+/// Feature fixtures: minimal source files that demonstrate a single
+/// transform invariant. Paired with an XPath that extracts the focused
+/// subtree for visual reference, and an optional depth cap that hides
+/// deep internals when the important information is the shape of the
+/// direct children (useful for conditionals, where the else-if chain
+/// is the point but the binary expressions inside each condition are
+/// noise).
+///
+/// A depth of 0 means "no limit".
+///
+/// Regression protection lives in the assertion suite
+/// (`tests/semantic_tree.rs`) — these fragment snapshots are for
+/// reviewers who want to see the shape of each construct.
+///
+/// Output: `<source>.snapshot.txt` containing just the matched subtree.
+///
+/// Paths are relative to the project root.
+const FEATURE_FIXTURES: &[(&str, &str, u32)] = &[
     // — TypeScript —
-    // (source, xpath — --single extracts the first match; pick the
-    //  smallest construct that demonstrates the invariant.)
-    ("tests/integration/languages/typescript/accessors.ts", "//method[get]"),
-    ("tests/integration/languages/typescript/async-generator.ts", "//function[async][generator]"),
-    ("tests/integration/languages/typescript/conditionals.ts", "//if"),
-    ("tests/integration/languages/typescript/flat-lists.ts", "//function[name='first']"),
-    ("tests/integration/languages/typescript/parameter-marking.ts", "//function[name='call']"),
-    ("tests/integration/languages/typescript/type-vocabulary.ts", "//class[name='Dog']"),
+    // (source, xpath, depth cap — 0 = no limit; pick the smallest
+    //  construct that demonstrates the invariant.)
+    ("tests/integration/languages/typescript/accessors.ts", "//method[get]", 0),
+    ("tests/integration/languages/typescript/async-generator.ts", "//function[async][generator]", 0),
+    ("tests/integration/languages/typescript/conditionals.ts", "//if", 3),
+    ("tests/integration/languages/typescript/flat-lists.ts", "//function[name='first']", 0),
+    ("tests/integration/languages/typescript/parameter-marking.ts", "//function[name='call']", 0),
+    ("tests/integration/languages/typescript/type-vocabulary.ts", "//class[name='Dog']", 0),
 
     // — Java —
-    ("tests/integration/languages/java/conditionals.java", "//if"),
-    ("tests/integration/languages/java/constructor-rename.java", "//constructor[1]"),
-    ("tests/integration/languages/java/flat-lists.java", "//method[1]"),
-    ("tests/integration/languages/java/interface-public.java", "//interface/body/method[public][1]"),
-    ("tests/integration/languages/java/modifiers.java", "//field[private]"),
-    ("tests/integration/languages/java/type-vocabulary.java", "//class[name='Dog']"),
+    ("tests/integration/languages/java/conditionals.java", "//if", 3),
+    ("tests/integration/languages/java/constructor-rename.java", "//constructor[1]", 0),
+    ("tests/integration/languages/java/flat-lists.java", "//method[1]", 0),
+    ("tests/integration/languages/java/interface-public.java", "//interface/body/method[public][1]", 0),
+    ("tests/integration/languages/java/modifiers.java", "//field[private]", 0),
+    ("tests/integration/languages/java/type-vocabulary.java", "//class[name='Dog']", 3),
 
     // — C# —
-    ("tests/integration/languages/csharp/accessor-flattening.cs", "//property[name='Manual']"),
-    ("tests/integration/languages/csharp/conditionals.cs", "//if"),
-    ("tests/integration/languages/csharp/flat-lists.cs", "//method[1]"),
-    ("tests/integration/languages/csharp/interface-public.cs", "//interface/body/method[public][1]"),
-    ("tests/integration/languages/csharp/type-vocabulary.cs", "//class[name='Dog']"),
-    ("tests/integration/languages/csharp/where-clause.cs", "//class"),
+    ("tests/integration/languages/csharp/accessor-flattening.cs", "//property[name='Manual']", 0),
+    ("tests/integration/languages/csharp/conditionals.cs", "//if", 3),
+    ("tests/integration/languages/csharp/flat-lists.cs", "//method[1]", 0),
+    ("tests/integration/languages/csharp/interface-public.cs", "//interface/body/method[public][1]", 0),
+    ("tests/integration/languages/csharp/type-vocabulary.cs", "//class[name='Dog']", 0),
+    ("tests/integration/languages/csharp/where-clause.cs", "//class", 4),
 
     // — Rust —
-    ("tests/integration/languages/rust/conditionals.rs", "//if"),
-    ("tests/integration/languages/rust/flat-lists.rs", "//function[name='first']"),
-    ("tests/integration/languages/rust/match-expression.rs", "//match"),
-    ("tests/integration/languages/rust/method-call.rs", "//call[1]"),
-    ("tests/integration/languages/rust/reference-type.rs", "//param[type[borrowed]][1]"),
-    ("tests/integration/languages/rust/struct-expression.rs", "//literal[name='Point']"),
-    ("tests/integration/languages/rust/type-vocabulary.rs", "//struct[name='Dog']"),
-    ("tests/integration/languages/rust/typedef.rs", "//alias[1]"),
-    ("tests/integration/languages/rust/visibility.rs", "//function[pub][1]"),
+    ("tests/integration/languages/rust/conditionals.rs", "//if", 3),
+    ("tests/integration/languages/rust/flat-lists.rs", "//function[name='first']", 0),
+    ("tests/integration/languages/rust/match-expression.rs", "//match", 3),
+    ("tests/integration/languages/rust/method-call.rs", "//call[1]", 0),
+    ("tests/integration/languages/rust/reference-type.rs", "//param[type[borrowed]][1]", 0),
+    ("tests/integration/languages/rust/struct-expression.rs", "//literal[name='Point']", 0),
+    ("tests/integration/languages/rust/type-vocabulary.rs", "//struct[name='Dog']", 3),
+    ("tests/integration/languages/rust/typedef.rs", "//alias[1]", 0),
+    ("tests/integration/languages/rust/visibility.rs", "//function[pub][1]", 0),
 
     // — Python —
-    ("tests/integration/languages/python/augmented-assign.py", "//assign[op][1]"),
-    ("tests/integration/languages/python/collection-markers.py", "//list[comprehension]"),
-    ("tests/integration/languages/python/conditionals.py", "//if"),
-    ("tests/integration/languages/python/expression-list.py", "//return[1]"),
-    ("tests/integration/languages/python/f-strings.py", "//string[interpolation]"),
+    ("tests/integration/languages/python/augmented-assign.py", "//assign[op][1]", 0),
+    ("tests/integration/languages/python/collection-markers.py", "//list[comprehension]", 0),
+    ("tests/integration/languages/python/conditionals.py", "//if", 3),
+    ("tests/integration/languages/python/expression-list.py", "//return[1]", 0),
+    ("tests/integration/languages/python/f-strings.py", "//string[interpolation]", 0),
 
     // — Go —
-    ("tests/integration/languages/go/conditionals.go", "//if"),
-    ("tests/integration/languages/go/defined-type-vs-alias.go", "//alias"),
-    ("tests/integration/languages/go/flat-lists.go", "//function"),
-    ("tests/integration/languages/go/raw-string.go", "//string[raw]"),
-    ("tests/integration/languages/go/struct-interface-hoist.go", "//struct"),
-    ("tests/integration/languages/go/type-declaration.go", "//interface"),
+    ("tests/integration/languages/go/conditionals.go", "//if", 3),
+    ("tests/integration/languages/go/defined-type-vs-alias.go", "//alias", 0),
+    ("tests/integration/languages/go/flat-lists.go", "//function", 0),
+    ("tests/integration/languages/go/raw-string.go", "//string[raw]", 0),
+    ("tests/integration/languages/go/struct-interface-hoist.go", "//struct", 0),
+    ("tests/integration/languages/go/type-declaration.go", "//interface", 0),
 
     // — Ruby —
-    ("tests/integration/languages/ruby/conditionals.rb", "//if"),
-    ("tests/integration/languages/ruby/name-inlining.rb", "//class"),
+    ("tests/integration/languages/ruby/conditionals.rb", "//if", 3),
+    ("tests/integration/languages/ruby/name-inlining.rb", "//class", 0),
 ];
 
 /// Output-format snapshot cases: (relative path under formats/, tractor args).
@@ -727,7 +744,7 @@ fn main() {
     // .xml / .raw.xml outputs for them).
     let feature_set: HashSet<String> = FEATURE_FIXTURES
         .iter()
-        .map(|(p, _)| p.replace('\\', "/"))
+        .map(|(p, _, _)| p.replace('\\', "/"))
         .collect();
 
     let mut processed = 0;
@@ -823,7 +840,7 @@ fn main() {
     // assertion suite (`tests/semantic_tree.rs`); these fragments are
     // for reviewers who want a scannable visual reference of what
     // each transformed construct looks like.
-    for &(source_rel, xpath) in FEATURE_FIXTURES {
+    for &(source_rel, xpath, depth) in FEATURE_FIXTURES {
         let source_rel = source_rel.replace('\\', "/");
         let source_path = Path::new(&source_rel);
         if !source_path.is_file() {
@@ -835,10 +852,15 @@ fn main() {
         }
 
         let txt_snap = format!("{}.snapshot.txt", source_rel);
-        let txt_out = run_tractor_args(
-            &tractor_bin,
-            &["query", &source_rel, "-x", xpath, "-p", "tree", "--single"],
-        );
+        let depth_str = depth.to_string();
+        let mut args: Vec<&str> = vec![
+            "query", &source_rel, "-x", xpath, "-p", "tree", "--single",
+        ];
+        if depth > 0 {
+            args.push("--depth");
+            args.push(&depth_str);
+        }
+        let txt_out = run_tractor_args(&tractor_bin, &args);
 
         if check_mode {
             match fs::read_to_string(&txt_snap) {

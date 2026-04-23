@@ -6,49 +6,32 @@ struct[private]/
   │   ├─ name = "T"
   │   └─ bounds/
   │       ├─ ":"
-  │       └─ type/name = "Barker"
+  │       └─ type/
+  │           └─ ... (1 children)
   ├─ ">"
   └─ body/
       ├─ "{"
       ├─ field/
       │   ├─ name = "owner"
       │   ├─ ":"
-      │   └─ type/name = "T"
+      │   └─ type/
+      │       └─ ... (1 children)
       ├─ ","
       ├─ field/
       │   ├─ name = "tags"
       │   ├─ ":"
       │   └─ type[generic]/
-      │       ├─ name = "Vec"
-      │       ├─ "<"
-      │       ├─ type/name = "String"
-      │       └─ ">"
+      │       └─ ... (4 children)
       ├─ ","
       ├─ field/
       │   ├─ name = "scores"
       │   ├─ ":"
       │   └─ type[generic]/
-      │       ├─ name = "HashMap"
-      │       ├─ "<"
-      │       ├─ type/name = "String"
-      │       ├─ ","
-      │       ├─ type/name = "i32"
-      │       └─ ">"
+      │       └─ ... (6 children)
       ├─ ","
       ├─ field/
       │   ├─ name = "parent"
       │   ├─ ":"
       │   └─ type[generic]/
-      │       ├─ name = "Option"
-      │       ├─ "<"
-      │       ├─ type[generic]/
-      │       │   ├─ name = "Box"
-      │       │   ├─ "<"
-      │       │   ├─ type[generic]/
-      │       │   │   ├─ name = "Dog"
-      │       │   │   ├─ "<"
-      │       │   │   ├─ type/name = "T"
-      │       │   │   └─ ">"
-      │       │   └─ ">"
-      │       └─ ">"
+      │       └─ ... (10 children)
       └─ ",\n}"
