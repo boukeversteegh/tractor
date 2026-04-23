@@ -747,6 +747,16 @@ fn main() {
 
         for file_entry in files {
             let path = file_entry.path();
+            let file_name = path.file_name().unwrap().to_string_lossy().to_string();
+
+            // Skip generated snapshot outputs — these are products of this
+            // tool, not source fixtures. Without this guard, the walker
+            // would treat e.g. `foo.snapshot.txt` as an input and emit
+            // `foo.snapshot.txt.xml` etc.
+            if file_name.contains(".snapshot.") {
+                continue;
+            }
+
             let ext = match path.extension().and_then(|e| e.to_str()) {
                 Some(e) => e,
                 None => continue,
@@ -759,7 +769,6 @@ fn main() {
             // Normalize to forward slashes for consistent cross-platform output
             let path_str = path.to_string_lossy().replace('\\', "/");
             let lang_name = lang_dir.file_name().unwrap().to_string_lossy();
-            let file_name = path.file_name().unwrap().to_string_lossy();
 
             // Skip feature fixtures — handled in a separate pass below.
             if feature_set.contains(&path_str) {
