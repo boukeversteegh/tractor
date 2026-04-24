@@ -114,6 +114,7 @@ pub mod semantic {
     pub const SCHEMA: &str = "schema";
     pub const VAR: &str = "var";
     pub const TEMP: &str = "temp";
+    pub const COMMENT: &str = "comment";
 
     // Operator child (from prepend_op_element).
     pub const OP: &str = "op";
@@ -147,7 +148,7 @@ pub mod semantic {
         CREATE_INDEX, INDEX_FIELDS,
         INT, VARCHAR, NVARCHAR, DATETIME,
         COMPARE, BETWEEN, ASSIGN,
-        NAME, ALIAS, SCHEMA, VAR, TEMP,
+        NAME, ALIAS, SCHEMA, VAR, TEMP, COMMENT,
         OP,
     ];
 }
