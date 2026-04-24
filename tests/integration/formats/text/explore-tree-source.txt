@@ -10,7 +10,7 @@ unit/                                                                           
       ├─ "namespace"                                                                  ┤  5 ├ namespace Comments
       ├─ name = "Comments"                                                            ┤    │ 
       └─ body/                                                                        ┤    │ 
-          └─ ... (39 children)                                                        ┤    │ 
+          └─ ... (41 children)                                                        ┤    │ 
                                                                                       │  6 ├ {
                                                                                       │  7 ├     /// <summary>
                                                                                       │  8 ├     /// Sample class demonstrating comment patterns

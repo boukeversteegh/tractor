@@ -61,9 +61,9 @@ cli_suite! {
         nested_generic_match => tractor query "generic-type-match.cs" -x "//type[.='List<Dictionary<string, User>>']" => count 2;
         generic_string_args => tractor query "generic-type-match.cs" -x "//type[generic]/type[.='string']" => count 6;
         ignore_whitespace => tractor query "generic-type-match.cs" -x "//type[.='Dictionary<string,int>']" -W => count 2;
-        null_forgiving_postfix => tractor query "null-forgiving-operator.cs" -x "//postfix_unary_expression" => count 5;
+        null_forgiving_postfix => tractor query "null-forgiving-operator.cs" -x "//unary" => count 5;
         null_forgiving_no_errors => tractor query "null-forgiving-operator.cs" -x "//ERROR" => count 0;
-        null_forgiving_member_access => tractor query "null-forgiving-operator.cs" -x "//member[postfix_unary_expression]" => count 4;
+        null_forgiving_member_access => tractor query "null-forgiving-operator.cs" -x "//member[unary]" => count 4;
     }
 }
 

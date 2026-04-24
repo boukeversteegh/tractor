@@ -7,4 +7,4 @@
   public: true
   name: Greeter
   body:
-    $truncated: 42
+    $truncated: 40

@@ -234,17 +234,13 @@
                             </member>
                             (
                             <argument>
-                              <interpolated_string_expression>
-                                <interpolation_start>$</interpolation_start>
-                                &quot;
-                                <string_content>Result: </string_content>
-                                <interpolation>
-                                  <interpolation_brace>{</interpolation_brace>
-                                  <name>result</name>
-                                  <interpolation_brace>}</interpolation_brace>
-                                </interpolation>
-                                &quot;
-                              </interpolated_string_expression>
+                              $&quot;Result:
+                              <interpolation>
+                                {
+                                <name>result</name>
+                                }
+                              </interpolation>
+                              &quot;
                             </argument>
                             )
                           </call>

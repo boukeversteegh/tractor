@@ -6,26 +6,18 @@ if/
   │   ├─ "<"
   │   └─ right/
   │       └─ ... (1 children)
-  ├─ then/string/
-  │   ├─ "\""
-  │   ├─ string_content = "neg"
-  │   └─ "\""
+  ├─ then/string = "\"neg\""
   ├─ "end"
   ├─ else_if/
   │   ├─ "elsif"
   │   ├─ condition/binary/
   │   │   └─ ... (4 children)
-  │   └─ then/string/
-  │       └─ ... (1 children)
+  │   └─ then/string = "\"zero\""
   ├─ else_if/
   │   ├─ "elsif"
   │   ├─ condition/binary/
   │   │   └─ ... (4 children)
-  │   └─ then/string/
-  │       └─ ... (1 children)
+  │   └─ then/string = "\"small\""
   └─ else/
       ├─ "else"
-      └─ string/
-          ├─ "\""
-          ├─ string_content = "big"
-          └─ "\""
+      └─ string = "\"big\""

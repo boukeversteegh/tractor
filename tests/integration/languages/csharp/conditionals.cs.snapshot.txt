@@ -11,7 +11,7 @@ if/
   ├─ then/block/
   │   ├─ "{"
   │   ├─ return/
-  │   │   └─ ... (2 children)
+  │   │   └─ ... (1 children)
   │   └─ "}"
   ├─ else_if/
   │   ├─ "else if ("
@@ -19,18 +19,18 @@ if/
   │   │   └─ ... (6 children)
   │   ├─ ")"
   │   └─ then/block/
-  │       └─ ... (3 children)
+  │       └─ ... (2 children)
   ├─ else_if/
   │   ├─ "else if ("
   │   ├─ condition/binary/
   │   │   └─ ... (7 children)
   │   ├─ ")"
   │   └─ then/block/
-  │       └─ ... (3 children)
+  │       └─ ... (2 children)
   └─ else/
       ├─ "else"
       └─ block/
           ├─ "{"
           ├─ return/
-          │   └─ ... (2 children)
+          │   └─ ... (1 children)
           └─ "}"

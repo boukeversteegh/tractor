@@ -346,10 +346,7 @@ unit/
   │       │   ├─ attribute/
   │       │   │   ├─ name = "Obsolete"
   │       │   │   ├─ "("
-  │       │   │   ├─ argument/string/
-  │       │   │   │   ├─ "\""
-  │       │   │   │   ├─ string_literal_content = "use V2"
-  │       │   │   │   └─ "\""
+  │       │   │   ├─ argument/string = "\"use V2\""
   │       │   │   ├─ ","
   │       │   │   ├─ argument/bool = "false"
   │       │   │   └─ ")"
@@ -611,23 +608,21 @@ unit/
   │       │       │   ├─ name = "Describe"
   │       │       │   ├─ "()"
   │       │       │   ├─ body/
-  │       │       │   │   ├─ "=>"
-  │       │       │   │   └─ interpolated_string_expression/
-  │       │       │   │       ├─ interpolation_start = "$"
-  │       │       │   │       ├─ "\""
-  │       │       │   │       ├─ string_content = "Widget#"
-  │       │       │   │       ├─ interpolation/
-  │       │       │   │       │   ├─ interpolation_brace = "{"
-  │       │       │   │       │   ├─ name = "Id"
-  │       │       │   │       │   └─ interpolation_brace = "}"
-  │       │       │   │       ├─ string_content = ":"
-  │       │       │   │       ├─ interpolation/
-  │       │       │   │       │   ├─ interpolation_brace = "{"
-  │       │       │   │       │   ├─ postfix_unary_expression/
-  │       │       │   │       │   │   ├─ name = "Name"
-  │       │       │   │       │   │   └─ "!"
-  │       │       │   │       │   └─ interpolation_brace = "}"
-  │       │       │   │       └─ "\""
+  │       │       │   │   ├─ "=> $\"Widget#"
+  │       │       │   │   ├─ interpolation/
+  │       │       │   │   │   ├─ "{"
+  │       │       │   │   │   ├─ name = "Id"
+  │       │       │   │   │   └─ "}"
+  │       │       │   │   ├─ ":"
+  │       │       │   │   ├─ interpolation/
+  │       │       │   │   │   ├─ "{"
+  │       │       │   │   │   ├─ unary/
+  │       │       │   │   │   │   ├─ name = "Name"
+  │       │       │   │   │   │   └─ op/
+  │       │       │   │   │   │       ├─ logical[not]
+  │       │       │   │   │   │       └─ "!"
+  │       │       │   │   │   └─ "}"
+  │       │       │   │   └─ "\""
   │       │       │   └─ ";"
   │       │       ├─ method[public]/
   │       │       │   ├─ "public"
@@ -747,10 +742,7 @@ unit/
   │       │       │   │       │   │   └─ name = "ToUpperInvariant"
   │       │       │   │       │   └─ "()"
   │       │       │   │       ├─ op[plus] = "+"
-  │       │       │   │       └─ right/string/
-  │       │       │   │           ├─ "\""
-  │       │       │   │           ├─ string_literal_content = "!"
-  │       │       │   │           └─ "\""
+  │       │       │   │       └─ right/string = "\"!\""
   │       │       │   └─ ";"
   │       │       └─ "}"
   │       ├─ class[internal and static]/
@@ -798,10 +790,7 @@ unit/
   │       │       │       │               ├─ "("
   │       │       │       │               ├─ argument/int = "1"
   │       │       │       │               ├─ ","
-  │       │       │       │               ├─ argument/string/
-  │       │       │       │               │   ├─ "\""
-  │       │       │       │               │   ├─ string_literal_content = "alpha"
-  │       │       │       │               │   └─ "\""
+  │       │       │       │               ├─ argument/string = "\"alpha\""
   │       │       │       │               └─ ")"
   │       │       │       ├─ ";"
   │       │       │       ├─ variable/
@@ -819,10 +808,7 @@ unit/
   │       │       │       │           │   │       └─ name = "Shout"
   │       │       │       │           │   └─ "()"
   │       │       │       │           ├─ op[nullish-coalescing] = "??"
-  │       │       │       │           └─ right/string/
-  │       │       │       │               ├─ "\""
-  │       │       │       │               ├─ string_literal_content = "n/a"
-  │       │       │       │               └─ "\""
+  │       │       │       │           └─ right/string = "\"n/a\""
   │       │       │       ├─ ";"
   │       │       │       ├─ variable/
   │       │       │       │   ├─ implicit_type = "var"
@@ -846,15 +832,9 @@ unit/
   │       │       │       │           │       │       └─ int = "0"
   │       │       │       │           │       └─ "}"
   │       │       │       │           ├─ "?"
-  │       │       │       │           ├─ then/string/
-  │       │       │       │           │   ├─ "\""
-  │       │       │       │           │   ├─ string_literal_content = "named"
-  │       │       │       │           │   └─ "\""
+  │       │       │       │           ├─ then/string = "\"named\""
   │       │       │       │           ├─ ":"
-  │       │       │       │           └─ else/string/
-  │       │       │       │               ├─ "\""
-  │       │       │       │               ├─ string_literal_content = "blank"
-  │       │       │       │               └─ "\""
+  │       │       │       │           └─ else/string = "\"blank\""
   │       │       │       ├─ ";"
   │       │       │       ├─ comment[leading] = "// switch expression + pattern matching"
   │       │       │       ├─ variable/
@@ -877,10 +857,7 @@ unit/
   │       │       │       │           │   │   │       └─ name = "High"
   │       │       │       │           │   │   └─ "}"
   │       │       │       │           │   ├─ "=>"
-  │       │       │       │           │   └─ string/
-  │       │       │       │           │       ├─ "\""
-  │       │       │       │           │       ├─ string_literal_content = "hot"
-  │       │       │       │           │       └─ "\""
+  │       │       │       │           │   └─ string = "\"hot\""
   │       │       │       │           ├─ ","
   │       │       │       │           ├─ switch_expression_arm/
   │       │       │       │           │   ├─ declaration_pattern/
@@ -898,18 +875,12 @@ unit/
   │       │       │       │           │   │       │   └─ ">"
   │       │       │       │           │   │       └─ right/int = "100"
   │       │       │       │           │   ├─ "=>"
-  │       │       │       │           │   └─ string/
-  │       │       │       │           │       ├─ "\""
-  │       │       │       │           │       ├─ string_literal_content = "big"
-  │       │       │       │           │       └─ "\""
+  │       │       │       │           │   └─ string = "\"big\""
   │       │       │       │           ├─ ","
   │       │       │       │           ├─ switch_expression_arm/
   │       │       │       │           │   ├─ discard = "_"
   │       │       │       │           │   ├─ "=>"
-  │       │       │       │           │   └─ string/
-  │       │       │       │           │       ├─ "\""
-  │       │       │       │           │       ├─ string_literal_content = "plain"
-  │       │       │       │           │       └─ "\""
+  │       │       │       │           │   └─ string = "\"plain\""
   │       │       │       │           └─ ",\n            }"
   │       │       │       ├─ ";"
   │       │       │       ├─ comment[leading] = "// switch statement + is-type-pattern"
@@ -918,9 +889,11 @@ unit/
   │       │       │       │   └─ declarator/
   │       │       │       │       ├─ name = "token"
   │       │       │       │       ├─ "="
-  │       │       │       │       └─ postfix_unary_expression/
+  │       │       │       │       └─ unary/
   │       │       │       │           ├─ name = "widget"
-  │       │       │       │           └─ "!"
+  │       │       │       │           └─ op/
+  │       │       │       │               ├─ logical[not]
+  │       │       │       │               └─ "!"
   │       │       │       ├─ ";"
   │       │       │       ├─ switch_statement/
   │       │       │       │   ├─ "switch ("
@@ -1122,37 +1095,35 @@ unit/
   │       │       │       │   ├─ call/
   │       │       │       │   │   ├─ name = "log"
   │       │       │       │   │   ├─ "("
-  │       │       │       │   │   ├─ argument/interpolated_string_expression/
-  │       │       │       │   │   │   ├─ interpolation_start = "$"
-  │       │       │       │   │   │   ├─ "\""
-  │       │       │       │   │   │   ├─ string_content = "sum="
+  │       │       │       │   │   ├─ argument/
+  │       │       │       │   │   │   ├─ "$\"sum="
   │       │       │       │   │   │   ├─ interpolation/
-  │       │       │       │   │   │   │   ├─ interpolation_brace = "{"
+  │       │       │       │   │   │   │   ├─ "{"
   │       │       │       │   │   │   │   ├─ call/
   │       │       │       │   │   │   │   │   ├─ member/
   │       │       │       │   │   │   │   │   │   ├─ name = "evens"
   │       │       │       │   │   │   │   │   │   ├─ "."
   │       │       │       │   │   │   │   │   │   └─ name = "Sum"
   │       │       │       │   │   │   │   │   └─ "()"
-  │       │       │       │   │   │   │   └─ interpolation_brace = "}"
-  │       │       │       │   │   │   ├─ string_content = "cube="
+  │       │       │       │   │   │   │   └─ "}"
+  │       │       │       │   │   │   ├─ "cube="
   │       │       │       │   │   │   ├─ interpolation/
-  │       │       │       │   │   │   │   ├─ interpolation_brace = "{"
+  │       │       │       │   │   │   │   ├─ "{"
   │       │       │       │   │   │   │   ├─ call/
   │       │       │       │   │   │   │   │   ├─ name = "cube"
   │       │       │       │   │   │   │   │   ├─ "("
   │       │       │       │   │   │   │   │   ├─ argument/int = "3"
   │       │       │       │   │   │   │   │   └─ ")"
-  │       │       │       │   │   │   │   └─ interpolation_brace = "}"
-  │       │       │       │   │   │   ├─ string_content = "sq="
+  │       │       │       │   │   │   │   └─ "}"
+  │       │       │       │   │   │   ├─ "sq="
   │       │       │       │   │   │   ├─ interpolation/
-  │       │       │       │   │   │   │   ├─ interpolation_brace = "{"
+  │       │       │       │   │   │   │   ├─ "{"
   │       │       │       │   │   │   │   ├─ call/
   │       │       │       │   │   │   │   │   ├─ name = "Square"
   │       │       │       │   │   │   │   │   ├─ "("
   │       │       │       │   │   │   │   │   ├─ argument/int = "4"
   │       │       │       │   │   │   │   │   └─ ")"
-  │       │       │       │   │   │   │   └─ interpolation_brace = "}"
+  │       │       │       │   │   │   │   └─ "}"
   │       │       │       │   │   │   └─ "\""
   │       │       │       │   │   └─ ")"
   │       │       │       │   └─ ";"
@@ -1173,9 +1144,9 @@ unit/
   │       │       │       │   │   │   └─ "<"
   │       │       │       │   │   └─ right/int = "2"
   │       │       │       │   ├─ ";"
-  │       │       │       │   ├─ postfix_unary_expression/
+  │       │       │       │   ├─ unary/
   │       │       │       │   │   ├─ name = "i"
-  │       │       │       │   │   └─ "++"
+  │       │       │       │   │   └─ op[increment] = "++"
   │       │       │       │   ├─ ")"
   │       │       │       │   └─ body/block/
   │       │       │       │       ├─ "{"
@@ -1191,9 +1162,9 @@ unit/
   │       │       │       ├─ while/
   │       │       │       │   ├─ "while ("
   │       │       │       │   ├─ condition/binary/
-  │       │       │       │   │   ├─ left/postfix_unary_expression/
+  │       │       │       │   │   ├─ left/unary/
   │       │       │       │   │   │   ├─ name = "j"
-  │       │       │       │   │   │   └─ "++"
+  │       │       │       │   │   │   └─ op[increment] = "++"
   │       │       │       │   │   ├─ op/
   │       │       │       │   │   │   ├─ compare[less]
   │       │       │       │   │   │   └─ "<"
@@ -1212,9 +1183,9 @@ unit/
   │       │       │       │   ├─ body/block/
   │       │       │       │   │   ├─ "{"
   │       │       │       │   │   ├─ expression/
-  │       │       │       │   │   │   ├─ postfix_unary_expression/
+  │       │       │       │   │   │   ├─ unary/
   │       │       │       │   │   │   │   ├─ name = "k"
-  │       │       │       │   │   │   │   └─ "++"
+  │       │       │       │   │   │   │   └─ op[increment] = "++"
   │       │       │       │   │   │   └─ ";"
   │       │       │       │   │   └─ "}"
   │       │       │       │   ├─ "while ("
@@ -1303,10 +1274,7 @@ unit/
   │       │       │       │   │   │   │   ├─ "new"
   │       │       │       │   │   │   │   ├─ type/name = "InvalidOperationException"
   │       │       │       │   │   │   │   ├─ "("
-  │       │       │       │   │   │   │   ├─ argument/string/
-  │       │       │       │   │   │   │   │   ├─ "\""
-  │       │       │       │   │   │   │   │   ├─ string_literal_content = "boom"
-  │       │       │       │   │   │   │   │   └─ "\""
+  │       │       │       │   │   │   │   ├─ argument/string = "\"boom\""
   │       │       │       │   │   │   │   └─ ")"
   │       │       │       │   │   │   └─ ";"
   │       │       │       │   │   └─ "}"
@@ -1390,10 +1358,7 @@ unit/
   │       │       │       │           │   ├─ "."
   │       │       │       │           │   └─ name = "Count"
   │       │       │       │           ├─ ","
-  │       │       │       │           ├─ argument/string/
-  │       │       │       │           │   ├─ "\""
-  │       │       │       │           │   ├─ string_literal_content = "odd"
-  │       │       │       │           │   └─ "\""
+  │       │       │       │           ├─ argument/string = "\"odd\""
   │       │       │       │           └─ ")"
   │       │       │       ├─ ";"
   │       │       │       ├─ variable/
@@ -1448,10 +1413,7 @@ unit/
   │       │       │       │               ├─ assign/
   │       │       │       │               │   ├─ left/element_binding_expression/
   │       │       │       │               │   │   ├─ "["
-  │       │       │       │               │   │   ├─ argument/string/
-  │       │       │       │               │   │   │   ├─ "\""
-  │       │       │       │               │   │   │   ├─ string_literal_content = "a"
-  │       │       │       │               │   │   │   └─ "\""
+  │       │       │       │               │   │   ├─ argument/string = "\"a\""
   │       │       │       │               │   │   └─ "]"
   │       │       │       │               │   ├─ op = "="
   │       │       │       │               │   └─ right/int = "1"
@@ -1459,10 +1421,7 @@ unit/
   │       │       │       │               ├─ assign/
   │       │       │       │               │   ├─ left/element_binding_expression/
   │       │       │       │               │   │   ├─ "["
-  │       │       │       │               │   │   ├─ argument/string/
-  │       │       │       │               │   │   │   ├─ "\""
-  │       │       │       │               │   │   │   ├─ string_literal_content = "b"
-  │       │       │       │               │   │   │   └─ "\""
+  │       │       │       │               │   │   ├─ argument/string = "\"b\""
   │       │       │       │               │   │   └─ "]"
   │       │       │       │               │   ├─ op = "="
   │       │       │       │               │   └─ right/int = "2"
@@ -1474,10 +1433,7 @@ unit/
   │       │       │       │   └─ declarator/
   │       │       │       │       ├─ name = "plain"
   │       │       │       │       ├─ "="
-  │       │       │       │       └─ string/
-  │       │       │       │           ├─ "\""
-  │       │       │       │           ├─ string_literal_content = "hello"
-  │       │       │       │           └─ "\""
+  │       │       │       │       └─ string = "\"hello\""
   │       │       │       ├─ ";"
   │       │       │       ├─ variable/
   │       │       │       │   ├─ implicit_type = "var"
@@ -1490,21 +1446,17 @@ unit/
   │       │       │       │   ├─ implicit_type = "var"
   │       │       │       │   └─ declarator/
   │       │       │       │       ├─ name = "interp"
-  │       │       │       │       ├─ "="
-  │       │       │       │       └─ interpolated_string_expression/
-  │       │       │       │           ├─ interpolation_start = "$"
-  │       │       │       │           ├─ "\""
-  │       │       │       │           ├─ string_content = "cnt="
-  │       │       │       │           ├─ interpolation/
-  │       │       │       │           │   ├─ interpolation_brace = "{"
-  │       │       │       │           │   ├─ name = "cnt"
-  │       │       │       │           │   └─ interpolation_brace = "}"
-  │       │       │       │           ├─ string_content = "tag="
-  │       │       │       │           ├─ interpolation/
-  │       │       │       │           │   ├─ interpolation_brace = "{"
-  │       │       │       │           │   ├─ name = "tg"
-  │       │       │       │           │   └─ interpolation_brace = "}"
-  │       │       │       │           └─ "\""
+  │       │       │       │       ├─ "= $\"cnt="
+  │       │       │       │       ├─ interpolation/
+  │       │       │       │       │   ├─ "{"
+  │       │       │       │       │   ├─ name = "cnt"
+  │       │       │       │       │   └─ "}"
+  │       │       │       │       ├─ "tag="
+  │       │       │       │       ├─ interpolation/
+  │       │       │       │       │   ├─ "{"
+  │       │       │       │       │   ├─ name = "tg"
+  │       │       │       │       │   └─ "}"
+  │       │       │       │       └─ "\""
   │       │       │       ├─ ";"
   │       │       │       ├─ variable/
   │       │       │       │   ├─ implicit_type = "var"

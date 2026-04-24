@@ -96,6 +96,27 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Flatten nodes - transform children, then remove wrapper
         // ---------------------------------------------------------------------
         "declaration_list" | "parameters" => Ok(TransformAction::Flatten),
+
+        // String internals — grammar wrappers with no semantic
+        // beyond their text value. Flatten so `<string>` reads as
+        // text with `<interpolation>` children where relevant
+        // (Principle #12).
+        "string_content"
+        | "string_literal_content"
+        | "verbatim_string_literal_content"
+        | "raw_string_literal_content"
+        | "interpolation_brace"
+        | "interpolation_start"
+        | "escape_sequence"
+        | "interpolated_string_expression" => Ok(TransformAction::Flatten),
+
+        // Postfix unary (`x!`, `x++`) is still a unary expression —
+        // map to the shared `<unary>` element.
+        "postfix_unary_expression" => {
+            extract_operator(xot, node)?;
+            rename(xot, node, "unary");
+            Ok(TransformAction::Continue)
+        }
         // enum_member_declaration_list is a pure grouping wrapper around
         // enum members (the `{ Red, Green }` list inside `enum Color`).
         // local_declaration_statement wraps `type name = value;` inside a

@@ -14,6 +14,15 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
     match kind.as_str() {
         "body_statement" => Ok(TransformAction::Flatten),
 
+        // String internals — grammar wrappers around the literal
+        // text. Flatten so `<string>` reads as text + interpolations
+        // (Principle #12).
+        "string_content"
+        | "escape_sequence"
+        | "simple_symbol"
+        | "bare_string"
+        | "bare_symbol" => Ok(TransformAction::Flatten),
+
         // Flat lists (Principle #12)
         "method_parameters" => {
             distribute_field_to_children(xot, node, "parameters");

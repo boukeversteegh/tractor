@@ -49,8 +49,7 @@
               <call>
                 <name>puts</name>
                 <string>
-                  &quot;
-                  <string_content>Result: </string_content>
+                  &quot;Result:
                   <interpolation>
                     #{
                     <name>result</name>

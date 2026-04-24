@@ -22,6 +22,10 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Skip nodes - remove entirely, promote children
         // ---------------------------------------------------------------------
         "expression_statement" => Ok(TransformAction::Skip),
+        // parenthesized_expression: would ideally skip (Principle
+        // #12), but it trips xot's walker (freed-node access) when
+        // combined with ternaries / typescript-specific wrappers.
+        // TODO: revisit once the walker handles Skip+consolidation.
 
         // ---------------------------------------------------------------------
         // Flatten nodes - transform children, then remove wrapper

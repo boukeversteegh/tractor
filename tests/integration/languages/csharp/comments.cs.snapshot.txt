@@ -27,5 +27,5 @@ class[public]/
       │   ├─ name = "Run"
       │   ├─ "()"
       │   └─ body/
-      │       └─ ... (4 children)
+      │       └─ ... (6 children)
       └─ "}"

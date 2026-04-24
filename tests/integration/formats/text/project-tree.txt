@@ -16,7 +16,7 @@ class[public]/
   └─ body/
       ├─ "{"
       ├─ method[public]/
-      │   └─ ... (20 children)
+      │   └─ ... (19 children)
       ├─ method[public]/
-      │   └─ ... (20 children)
+      │   └─ ... (19 children)
       └─ "}"

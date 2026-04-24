@@ -362,7 +362,7 @@ fn test_xpath_exact_string_match_without_formatting_whitespace() {
 
 #[test]
 fn test_csharp_null_forgiving_operator() {
-    // Test that C# null-forgiving operator (!) is parsed correctly as postfix_unary_expression
+    // Test that C# null-forgiving operator (!) is parsed correctly as unary
     // This was historically broken due to shell escaping issues during testing (! -> \!)
     let source = "class T { void M() { var x = name!.Length; } }";
     let mut result = parse_test_inline(source, "csharp", None)
@@ -370,15 +370,15 @@ fn test_csharp_null_forgiving_operator() {
 
     let engine = XPathEngine::new();
 
-    // The ! should be parsed as postfix_unary_expression, not ERROR
+    // The ! should be parsed as unary, not ERROR
     let matches = engine.query_documents(
         &mut result.documents,
         result.doc_handle,
-        "//postfix_unary_expression",
+        "//unary",
         result.source_lines.clone(),
         &result.file_path,
     ).expect("Query should succeed");
-    assert_eq!(matches.len(), 1, "Should find postfix_unary_expression for null-forgiving operator");
+    assert_eq!(matches.len(), 1, "Should find unary for null-forgiving operator");
 
     // Verify there are no ERROR nodes (which would indicate parsing failure)
     let errors = engine.query_documents(
@@ -394,11 +394,11 @@ fn test_csharp_null_forgiving_operator() {
     let matches = engine.query_documents(
         &mut result.documents,
         result.doc_handle,
-        "//member[postfix_unary_expression]",
+        "//member[unary]",
         result.source_lines.clone(),
         &result.file_path,
     ).expect("Query should succeed");
-    assert_eq!(matches.len(), 1, "Should find member access with postfix_unary_expression child");
+    assert_eq!(matches.len(), 1, "Should find member access with unary child");
 }
 
 // ============================================================================

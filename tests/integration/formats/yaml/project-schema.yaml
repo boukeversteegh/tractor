@@ -1,7 +1,7 @@
 |
   class[public] (2)/ = "public class"
     ├─ body (2)/ = {…}
-    │   └─ … (24 children)
+    │   └─ … (23 children)
     └─ name (2) = "Calculator", "Greeter"
 
   (use -d to increase depth, or -x to query specific elements)
