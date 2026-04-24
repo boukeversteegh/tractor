@@ -303,6 +303,13 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         // Import wrappers.
         "import_specifier" => Some("spec"),
         "import_clause" => Some("clause"),
+        "spread_element" => Some("spread"),
+        "object_type" => Some("type"),
+        "non_null_expression" => Some("unary"),
+        "for_in_statement" => Some("for"),
+        "enum_assignment" => Some("constant"),
+        "update_expression" => Some("unary"),
+        "named_imports" => Some("imports"),
         "arrow_function" => Some("arrow"),
         "interface_declaration" => Some("interface"),
         // type_alias_declaration handled above (flattens <value> wrapper)

@@ -12,7 +12,31 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
     };
 
     match kind.as_str() {
-        "body_statement" | "parenthesized_statements" | "block_body" => Ok(TransformAction::Flatten),
+        "body_statement"
+        | "parenthesized_statements"
+        | "block_body"
+        | "heredoc_content"
+        | "hash_key_symbol"
+        | "block_parameters" => Ok(TransformAction::Flatten),
+
+        // Trailing `if` / `unless` modifier — still a conditional,
+        // same vocabulary as the full form.
+        "if_modifier" => {
+            rename(xot, node, "if");
+            Ok(TransformAction::Continue)
+        }
+        "unless_modifier" => {
+            rename(xot, node, "unless");
+            Ok(TransformAction::Continue)
+        }
+        "while_modifier" => {
+            rename(xot, node, "while");
+            Ok(TransformAction::Continue)
+        }
+        "until_modifier" => {
+            rename(xot, node, "until");
+            Ok(TransformAction::Continue)
+        }
 
         // Ruby instance / class / global variables (`@x`, `@@y`, `$z`)
         // are distinct node kinds in the grammar but they're all

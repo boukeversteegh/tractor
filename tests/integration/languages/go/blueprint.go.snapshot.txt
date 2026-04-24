@@ -883,7 +883,7 @@ file/
           │           ├─ "{"
           │           ├─ select/
           │           │   ├─ "select {"
-          │           │   ├─ communication_case/
+          │           │   ├─ case/
           │           │   │   ├─ "case"
           │           │   │   ├─ receive_statement/
           │           │   │   │   ├─ left/
@@ -908,13 +908,13 @@ file/
           │           │   │   │       │   ├─ "break"
           │           │   │   │       │   └─ label = "Outer"
           │           │   │   │       └─ "}"
-          │           │   │   └─ send_statement/
+          │           │   │   └─ send/
           │           │   │       ├─ name = "out"
           │           │   │       ├─ "<-"
           │           │   │       └─ value/name = "v"
-          │           │   ├─ communication_case/
+          │           │   ├─ case/
           │           │   │   ├─ "case"
-          │           │   │   ├─ send_statement/
+          │           │   │   ├─ send/
           │           │   │   │   ├─ name = "out"
           │           │   │   │   ├─ "<-"
           │           │   │   │   └─ value/int = "42"
@@ -922,7 +922,7 @@ file/
           │           │   │   └─ continue_statement/
           │           │   │       ├─ "continue"
           │           │   │       └─ label = "Outer"
-          │           │   ├─ communication_case/
+          │           │   ├─ case/
           │           │   │   ├─ "case"
           │           │   │   ├─ receive_statement/right/unary/
           │           │   │   │   ├─ op = "<-"
@@ -953,7 +953,7 @@ file/
           │           ├─ ","
           │           ├─ int = "4"
           │           └─ ")"
-          ├─ send_statement/
+          ├─ send/
           │   ├─ name = "buffered"
           │   ├─ "<-"
           │   └─ value/int = "1"

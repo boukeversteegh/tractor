@@ -10,13 +10,13 @@
             <clause>
               <name>React</name>
               ,
-              <named_imports>
+              <imports>
                 {
                 <spec>
                   <name>useState</name>
                 </spec>
                 }
-              </named_imports>
+              </imports>
             </clause>
             from
             <string>'react'</string>

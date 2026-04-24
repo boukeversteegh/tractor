@@ -50,7 +50,15 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             rename(xot, node, "arm");
             Ok(TransformAction::Continue)
         }
-        "with_item" => Ok(TransformAction::Flatten),
+        "with_item" | "with_clause" => Ok(TransformAction::Flatten),
+
+        // List/dict spread / unpack (`*args`, `**kwargs`) — same
+        // concept, different syntax, one name.
+        "list_splat" | "dictionary_splat" | "list_splat_pattern"
+        | "dictionary_splat_pattern" => {
+            rename(xot, node, "spread");
+            Ok(TransformAction::Continue)
+        }
 
         // Tree-sitter python emits `escape_sequence` inside strings
         // — flatten into the string body text.

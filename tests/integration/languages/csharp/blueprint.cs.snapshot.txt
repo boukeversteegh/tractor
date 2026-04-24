@@ -124,7 +124,7 @@ unit/
   │       │       │   │   └─ ">"
   │       │       │   ├─ name = "AllAsync"
   │       │       │   └─ "();"
-  │       │       ├─ event_field_declaration/
+  │       │       ├─ event/
   │       │       │   ├─ "event"
   │       │       │   ├─ variable/
   │       │       │   │   ├─ type/
@@ -170,7 +170,7 @@ unit/
   │       │       │   ├─ "} ="
   │       │       │   ├─ value/name = "y"
   │       │       │   └─ ";"
-  │       │       ├─ operator_declaration[public and static]/
+  │       │       ├─ operator[public and static]/
   │       │       │   ├─ "public"
   │       │       │   ├─ "static"
   │       │       │   ├─ type/name = "Point"
@@ -185,7 +185,7 @@ unit/
   │       │       │   ├─ ")"
   │       │       │   ├─ body/
   │       │       │   │   ├─ "=>"
-  │       │       │   │   └─ implicit_object_creation_expression/
+  │       │       │   │   └─ new/
   │       │       │   │       ├─ "new("
   │       │       │   │       ├─ argument/binary/
   │       │       │   │       │   ├─ left/member/
@@ -210,7 +210,7 @@ unit/
   │       │       │   │       │       └─ name = "Y"
   │       │       │   │       └─ ")"
   │       │       │   └─ ";"
-  │       │       ├─ operator_declaration[public and static]/
+  │       │       ├─ operator[public and static]/
   │       │       │   ├─ "public"
   │       │       │   ├─ "static"
   │       │       │   ├─ type/name = "bool"
@@ -250,7 +250,7 @@ unit/
   │       │       │   │               ├─ "."
   │       │       │   │               └─ name = "Y"
   │       │       │   └─ ";"
-  │       │       ├─ operator_declaration[public and static]/
+  │       │       ├─ operator[public and static]/
   │       │       │   ├─ "public"
   │       │       │   ├─ "static"
   │       │       │   ├─ type/name = "bool"
@@ -286,7 +286,7 @@ unit/
   │       │       │   ├─ body/
   │       │       │   │   ├─ "=>"
   │       │       │   │   └─ binary/
-  │       │       │   │       ├─ left/is_pattern_expression/
+  │       │       │   │       ├─ left/is/
   │       │       │   │       │   ├─ name = "o"
   │       │       │   │       │   ├─ "is"
   │       │       │   │       │   └─ pattern/
@@ -369,7 +369,7 @@ unit/
   │       │       │   │   └─ declarator/
   │       │       │   │       ├─ name = "Epoch"
   │       │       │   │       ├─ "="
-  │       │       │   │       └─ implicit_object_creation_expression/
+  │       │       │   │       └─ new/
   │       │       │   │           ├─ "new("
   │       │       │   │           ├─ argument/int = "1970"
   │       │       │   │           ├─ ","
@@ -433,7 +433,7 @@ unit/
   │       │       │   │       ├─ "."
   │       │       │   │       └─ name = "Length"
   │       │       │   └─ ";"
-  │       │       ├─ event_field_declaration[public]/
+  │       │       ├─ event[public]/
   │       │       │   ├─ "public event"
   │       │       │   ├─ variable/
   │       │       │   │   ├─ type/
@@ -449,7 +449,7 @@ unit/
   │       │       │   ├─ "protected"
   │       │       │   ├─ name = "EntityBase"
   │       │       │   ├─ "()"
-  │       │       │   ├─ constructor_initializer/
+  │       │       │   ├─ chain/
   │       │       │   │   ├─ ": this("
   │       │       │   │   ├─ argument/int = "0"
   │       │       │   │   └─ ")"
@@ -521,7 +521,7 @@ unit/
   │       │   │       └─ ">"
   │       │   └─ body/
   │       │       ├─ "{"
-  │       │       ├─ event_field_declaration[public]/
+  │       │       ├─ event[public]/
   │       │       │   ├─ "public event"
   │       │       │   ├─ variable/
   │       │       │   │   ├─ type/
@@ -537,7 +537,7 @@ unit/
   │       │       │   ├─ "public"
   │       │       │   ├─ name = "Widget"
   │       │       │   ├─ "()"
-  │       │       │   ├─ constructor_initializer/
+  │       │       │   ├─ chain/
   │       │       │   │   ├─ ": base("
   │       │       │   │   ├─ argument/int = "0"
   │       │       │   │   └─ ")"
@@ -554,7 +554,7 @@ unit/
   │       │       │   │   ├─ type/name = "string"
   │       │       │   │   └─ name = "name"
   │       │       │   ├─ ")"
-  │       │       │   ├─ constructor_initializer/
+  │       │       │   ├─ chain/
   │       │       │   │   ├─ ": base("
   │       │       │   │   ├─ argument/name = "id"
   │       │       │   │   └─ ")"
@@ -808,7 +808,7 @@ unit/
   │       │       │       │       ├─ name = "label"
   │       │       │       │       ├─ "="
   │       │       │       │       └─ ternary/
-  │       │       │       │           ├─ condition/is_pattern_expression/
+  │       │       │       │           ├─ condition/is/
   │       │       │       │           │   ├─ name = "widget"
   │       │       │       │           │   ├─ "is"
   │       │       │       │           │   └─ recursive_pattern/property_pattern_clause/
@@ -837,7 +837,7 @@ unit/
   │       │       │       │       └─ switch_expression/
   │       │       │       │           ├─ name = "widget"
   │       │       │       │           ├─ "switch\n            {"
-  │       │       │       │           ├─ switch_expression_arm/
+  │       │       │       │           ├─ arm/
   │       │       │       │           │   ├─ recursive_pattern/property_pattern_clause/
   │       │       │       │           │   │   ├─ "{"
   │       │       │       │           │   │   ├─ subpattern/
@@ -851,7 +851,7 @@ unit/
   │       │       │       │           │   ├─ "=>"
   │       │       │       │           │   └─ string = "\"hot\""
   │       │       │       │           ├─ ","
-  │       │       │       │           ├─ switch_expression_arm/
+  │       │       │       │           ├─ arm/
   │       │       │       │           │   ├─ pattern/
   │       │       │       │           │   │   ├─ type/name = "Widget"
   │       │       │       │           │   │   └─ name = "w"
@@ -869,7 +869,7 @@ unit/
   │       │       │       │           │   ├─ "=>"
   │       │       │       │           │   └─ string = "\"big\""
   │       │       │       │           ├─ ","
-  │       │       │       │           ├─ switch_expression_arm/
+  │       │       │       │           ├─ arm/
   │       │       │       │           │   ├─ discard = "_"
   │       │       │       │           │   ├─ "=>"
   │       │       │       │           │   └─ string = "\"plain\""
@@ -932,7 +932,7 @@ unit/
   │       │       │       │       └─ "}"
   │       │       │       ├─ if/
   │       │       │       │   ├─ "if ("
-  │       │       │       │   ├─ condition/is_pattern_expression/
+  │       │       │       │   ├─ condition/is/
   │       │       │       │   │   ├─ name = "token"
   │       │       │       │   │   ├─ "is"
   │       │       │       │   │   └─ pattern/
@@ -1394,7 +1394,7 @@ unit/
   │       │       │       │   └─ declarator/
   │       │       │       │       ├─ name = "map"
   │       │       │       │       ├─ "="
-  │       │       │       │       └─ implicit_object_creation_expression/
+  │       │       │       │       └─ new/
   │       │       │       │           ├─ "new()"
   │       │       │       │           └─ initializer_expression/
   │       │       │       │               ├─ "{"

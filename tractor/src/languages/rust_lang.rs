@@ -226,6 +226,8 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         | "use_as_clause"
         | "scoped_use_list"
         | "ordered_field_declaration_list"
+        | "closure_parameters"
+        | "type_binding"
         | "spread_element"
         | "outer_doc_comment_marker"
         | "inner_doc_comment_marker" => Ok(TransformAction::Flatten),
@@ -309,6 +311,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "send_statement" => Some("send"),
         "shorthand_field_initializer" => Some("field"),
         "where_clause" => Some("where"),
+        "where_predicate" => Some("bound"),
         "match_arm" => Some("arm"),
         "field_declaration" => Some("field"),
         "field_initializer" => Some("field"),

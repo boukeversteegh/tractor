@@ -383,7 +383,9 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         // ternary_expression handled above
         "lambda_expression" => Some("lambda"),
         "string_literal" => Some("string"),
-        "decimal_integer_literal" => Some("int"),
+        "decimal_integer_literal" | "hex_integer_literal"
+        | "octal_integer_literal" | "binary_integer_literal" => Some("int"),
+        "type_pattern" => Some("pattern"),
         "decimal_floating_point_literal" => Some("float"),
         "true" => Some("true"),
         "false" => Some("false"),
