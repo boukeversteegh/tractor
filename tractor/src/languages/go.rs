@@ -82,9 +82,20 @@ pub mod semantic {
 
     // Identifiers
     pub const NAME: &str = "name";
+    pub const COMMENT: &str = "comment";
 
     // Operator child (from prepend_op_element).
     pub const OP: &str = "op";
+
+    // `iota` — Go's built-in auto-incrementing constant. Emerges as a
+    // bare identifier within `<const>`. Declared as a container (holds
+    // the identifier text).
+    pub const IOTA: &str = "iota";
+
+    // `else_if` — synthesised by the shared if/elsif normaliser in
+    // xot::transform. Container: wraps the condition/body of an
+    // `else if` arm.
+    pub const ELSE_IF: &str = "else_if";
 
     // Markers — always empty when emitted.
     pub const RAW: &str = "raw";
@@ -116,11 +127,11 @@ pub mod semantic {
         FUNCTION, METHOD, TYPE, STRUCT, INTERFACE, CONST, VAR, ALIAS, VARIABLE,
         FIELD, PARAMETER, ARGUMENTS,
         POINTER, SLICE, MAP, CHAN,
-        RETURN, IF, ELSE, FOR, RANGE, SWITCH, CASE, DEFAULT, DEFER, GO, SELECT,
+        RETURN, IF, ELSE_IF, ELSE, FOR, RANGE, SWITCH, CASE, DEFAULT, DEFER, GO, SELECT,
         BREAK, CONTINUE, GOTO, LABELED, LABEL, SEND, RECEIVE, ASSIGN,
         CALL, MEMBER, INDEX, BINARY, UNARY, ASSERT, CLOSURE, LITERAL,
-        STRING, INT, FLOAT, CHAR, TRUE, FALSE, NIL,
-        NAME, OP,
+        STRING, INT, FLOAT, CHAR, TRUE, FALSE, NIL, IOTA,
+        NAME, COMMENT, OP,
         RAW, SHORT, EXPORTED, UNEXPORTED, NEGATED, GENERIC,
     ];
 }
