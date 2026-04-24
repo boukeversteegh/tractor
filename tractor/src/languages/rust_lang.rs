@@ -480,105 +480,105 @@ fn has_kind(xot: &Xot, node: XotNode) -> bool {
 /// shape so queries like `//type[function]` remain expressible.
 fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> {
     match kind {
-        "source_file" => Some(("file", None)),
-        "function_item" => Some(("function", None)),
-        "impl_item" => Some(("impl", None)),
-        "struct_item" => Some(("struct", None)),
-        "enum_item" => Some(("enum", None)),
-        "trait_item" => Some(("trait", None)),
-        "mod_item" => Some(("mod", None)),
-        "use_declaration" => Some(("use", None)),
-        "const_item" => Some(("const", None)),
-        "static_item" => Some(("static", None)),
-        "type_item" => Some(("alias", None)),
+        "source_file" => Some((FILE, None)),
+        "function_item" => Some((FUNCTION, None)),
+        "impl_item" => Some((IMPL, None)),
+        "struct_item" => Some((STRUCT, None)),
+        "enum_item" => Some((ENUM, None)),
+        "trait_item" => Some((TRAIT, None)),
+        "mod_item" => Some((MOD, None)),
+        "use_declaration" => Some((USE, None)),
+        "const_item" => Some((CONST, None)),
+        "static_item" => Some((STATIC, None)),
+        "type_item" => Some((ALIAS, None)),
         // parameters is flattened via Principle #12 above
-        "parameter" => Some(("parameter", None)),
-        "self_parameter" => Some(("self", None)),
+        "parameter" => Some((PARAMETER, None)),
+        "self_parameter" => Some((SELF, None)),
         // reference_type is handled above: <type> with <borrowed/> marker
-        "generic_type" => Some(("generic", None)),
-        "scoped_type_identifier" | "scoped_identifier" => Some(("path", None)),
-        "return_expression" => Some(("return", None)),
-        "if_expression" => Some(("if", None)),
-        "else_clause" => Some(("else", None)),
-        "for_expression" => Some(("for", None)),
-        "while_expression" => Some(("while", None)),
-        "loop_expression" => Some(("loop", None)),
-        "match_expression" => Some(("match", None)),
-        "enum_variant" => Some(("variant", None)),
-        "lifetime_parameter" | "lifetime" => Some(("lifetime", None)),
-        "function_signature_item" => Some(("signature", None)),
-        "type_cast_expression" => Some(("cast", None)),
-        "function_modifiers" => Some(("modifiers", None)),
-        "break_expression" | "break_statement" => Some(("break", None)),
-        "continue_expression" | "continue_statement" => Some(("continue", None)),
-        "range_expression" => Some(("range", None)),
-        "send_statement" => Some(("send", None)),
-        "shorthand_field_initializer" => Some(("field", None)),
-        "where_clause" => Some(("where", None)),
-        "where_predicate" => Some(("bound", None)),
-        "reference_expression" => Some(("ref", None)),
-        "range_pattern" => Some(("range", None)),
+        "generic_type" => Some((GENERIC, None)),
+        "scoped_type_identifier" | "scoped_identifier" => Some((PATH, None)),
+        "return_expression" => Some((RETURN, None)),
+        "if_expression" => Some((IF, None)),
+        "else_clause" => Some((ELSE, None)),
+        "for_expression" => Some((FOR, None)),
+        "while_expression" => Some((WHILE, None)),
+        "loop_expression" => Some((LOOP, None)),
+        "match_expression" => Some((MATCH, None)),
+        "enum_variant" => Some((VARIANT, None)),
+        "lifetime_parameter" | "lifetime" => Some((LIFETIME, None)),
+        "function_signature_item" => Some((SIGNATURE, None)),
+        "type_cast_expression" => Some((CAST, None)),
+        "function_modifiers" => Some((MODIFIERS, None)),
+        "break_expression" | "break_statement" => Some((BREAK, None)),
+        "continue_expression" | "continue_statement" => Some((CONTINUE, None)),
+        "range_expression" => Some((RANGE, None)),
+        "send_statement" => Some((SEND, None)),
+        "shorthand_field_initializer" => Some((FIELD, None)),
+        "where_clause" => Some((WHERE, None)),
+        "where_predicate" => Some((BOUND, None)),
+        "reference_expression" => Some((REF, None)),
+        "range_pattern" => Some((RANGE, None)),
         // Types — shape markers distinguish each flavor.
-        "pointer_type" => Some(("type", Some("pointer"))),
-        "function_type" => Some(("type", Some("function"))),
-        "tuple_type" => Some(("type", Some("tuple"))),
-        "never_type" => Some(("type", Some("never"))),
-        "unit_type" => Some(("type", Some("unit"))),
-        "dynamic_type" => Some(("type", Some("dynamic"))),
-        "trait_type" => Some(("type", Some("trait"))),
-        "abstract_type" => Some(("type", Some("abstract"))),
-        "associated_type" => Some(("type", Some("associated"))),
-        "bounded_type" => Some(("type", Some("bounded"))),
-        "array_type" => Some(("type", Some("array"))),
-        "slice_type" => Some(("type", Some("slice"))),
+        "pointer_type" => Some((TYPE, Some(POINTER))),
+        "function_type" => Some((TYPE, Some(FUNCTION))),
+        "tuple_type" => Some((TYPE, Some(TUPLE))),
+        "never_type" => Some((TYPE, Some(NEVER))),
+        "unit_type" => Some((TYPE, Some(UNIT))),
+        "dynamic_type" => Some((TYPE, Some(DYNAMIC))),
+        "trait_type" => Some((TYPE, Some(TRAIT))),
+        "abstract_type" => Some((TYPE, Some(ABSTRACT))),
+        "associated_type" => Some((TYPE, Some(ASSOCIATED))),
+        "bounded_type" => Some((TYPE, Some(BOUNDED))),
+        "array_type" => Some((TYPE, Some(ARRAY))),
+        "slice_type" => Some((TYPE, Some(SLICE))),
         // Patterns — shape markers distinguish or/field/struct/tuple.
-        "or_pattern" => Some(("pattern", Some("or"))),
-        "field_pattern" => Some(("pattern", Some("field"))),
-        "struct_pattern" => Some(("pattern", Some("struct"))),
-        "attribute_item" | "inner_attribute_item" => Some(("attribute", None)),
-        "compound_assignment_expr" => Some(("assign", None)),
-        "tuple_expression" => Some(("tuple", None)),
-        "unsafe_block" => Some(("unsafe", None)),
-        "match_arm" => Some(("arm", None)),
-        "field_declaration" => Some(("field", None)),
-        "field_initializer" => Some(("field", None)),
-        "trait_bounds" => Some(("bounds", None)),
+        "or_pattern" => Some((PATTERN, Some(OR))),
+        "field_pattern" => Some((PATTERN, Some(FIELD))),
+        "struct_pattern" => Some((PATTERN, Some(STRUCT))),
+        "attribute_item" | "inner_attribute_item" => Some((ATTRIBUTE, None)),
+        "compound_assignment_expr" => Some((ASSIGN, None)),
+        "tuple_expression" => Some((TUPLE, None)),
+        "unsafe_block" => Some((UNSAFE, None)),
+        "match_arm" => Some((ARM, None)),
+        "field_declaration" => Some((FIELD, None)),
+        "field_initializer" => Some((FIELD, None)),
+        "trait_bounds" => Some((BOUNDS, None)),
         // Tree-sitter-rust emits `call_expression` for every call; method
         // calls like `obj.m()` appear with a `field_expression` as the
         // function child, so `//call/field` finds them without needing
         // a marker. `method_call_expression` is kept for forward-compat.
-        "call_expression" => Some(("call", None)),
-        "method_call_expression" => Some(("call", Some("method"))),
-        "field_expression" => Some(("field", None)),
-        "index_expression" => Some(("index", None)),
-        "binary_expression" => Some(("binary", None)),
-        "unary_expression" => Some(("unary", None)),
-        "closure_expression" => Some(("closure", None)),
-        "await_expression" => Some(("await", None)),
-        "try_expression" => Some(("try", None)),
-        "macro_invocation" => Some(("macro", None)),
-        "string_literal" => Some(("string", None)),
+        "call_expression" => Some((CALL, None)),
+        "method_call_expression" => Some((CALL, Some(METHOD))),
+        "field_expression" => Some((FIELD, None)),
+        "index_expression" => Some((INDEX, None)),
+        "binary_expression" => Some((BINARY, None)),
+        "unary_expression" => Some((UNARY, None)),
+        "closure_expression" => Some((CLOSURE, None)),
+        "await_expression" => Some((AWAIT, None)),
+        "try_expression" => Some((TRY, None)),
+        "macro_invocation" => Some((MACRO, None)),
+        "string_literal" => Some((STRING, None)),
         // raw_string_literal is handled in the match above (rename + prepend <raw/>)
-        "integer_literal" => Some(("int", None)),
-        "float_literal" => Some(("float", None)),
-        "boolean_literal" => Some(("bool", None)),
+        "integer_literal" => Some((INT, None)),
+        "float_literal" => Some((FLOAT, None)),
+        "boolean_literal" => Some((BOOL, None)),
         // Char literal — collapse to <char>.
-        "char_literal" => Some(("char", None)),
+        "char_literal" => Some((CHAR, None)),
         // `async { … }` — collapse to <block> with <async/> marker so
         // `//block[async]` finds all async blocks.
-        "async_block" => Some(("block", Some("async"))),
+        "async_block" => Some((BLOCK, Some(ASYNC))),
         // `try { … }` — same pattern.
-        "try_block" => Some(("block", Some("try"))),
+        "try_block" => Some((BLOCK, Some(TRY))),
         // `const { … }` — const context block (Rust edition).
-        "const_block" => Some(("block", Some("const"))),
+        "const_block" => Some((BLOCK, Some(CONST))),
         // `..base` in struct literals — shape marker lets queries find it.
-        "base_field_initializer" => Some(("field", Some("base"))),
+        "base_field_initializer" => Some((FIELD, Some(BASE))),
         // `foo::<T>` — turbofish-style generic call. Collapse to <call>
         // with a <generic/> marker so it joins the existing call shape.
-        "generic_function" => Some(("call", Some("generic"))),
+        "generic_function" => Some((CALL, Some(GENERIC))),
         // `ref x` / `ref mut x` pattern — shape marker on <pattern>.
-        "ref_pattern" => Some(("pattern", Some("ref"))),
-        "mut_pattern" => Some(("pattern", Some("mut"))),
+        "ref_pattern" => Some((PATTERN, Some(REF))),
+        "mut_pattern" => Some((PATTERN, Some(MUT))),
         _ => None,
     }
 }
@@ -702,5 +702,29 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
 
         // Structural elements - no color
         _ => SyntaxCategory::Default,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::semantic::*;
+
+    #[test]
+    fn marker_only_names_are_in_all_names() {
+        for m in MARKER_ONLY {
+            assert!(
+                ALL_NAMES.contains(m),
+                "MARKER_ONLY entry {:?} missing from ALL_NAMES",
+                m,
+            );
+        }
+    }
+
+    #[test]
+    fn all_names_has_no_duplicates() {
+        let mut seen = std::collections::HashSet::new();
+        for name in ALL_NAMES {
+            assert!(seen.insert(*name), "duplicate name in ALL_NAMES: {:?}", name);
+        }
     }
 }
