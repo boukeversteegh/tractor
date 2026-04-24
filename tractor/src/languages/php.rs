@@ -26,9 +26,36 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Purely-grouping wrappers — Principle #12. Drop the
         // container so children become direct siblings of the
         // enclosing class / method / …
-        "declaration_list" | "compound_statement" | "property_element" => {
-            Ok(TransformAction::Flatten)
-        }
+        "declaration_list"
+        | "compound_statement"
+        | "property_element"
+        | "match_block"
+        | "match_condition_list"
+        | "namespace_name"
+        | "namespace_use_clause"
+        | "string_content"
+        | "escape_sequence"
+        | "array_element_initializer"
+        => Ok(TransformAction::Flatten),
+
+        // Expression statement is a grammar wrapper with no
+        // semantic payload. Children become direct siblings of the
+        // parent (Principle #12).
+        //
+        // NOTE: parenthesized_expression is deliberately NOT skipped
+        // here — in PHP it interacts with nested ternaries in a
+        // way that trips the xot walker (freed-node access). Left
+        // intact for now; todo to revisit once the walker is
+        // strengthened for Skip + consolidation interactions.
+        "expression_statement" => Ok(TransformAction::Skip),
+
+        // Qualified names (`App\Hello\Greeter`) collapse to a single
+        // text leaf inside their enclosing <name> — same design as
+        // C# qualified_name. The outer <name> field wrapper handles
+        // the collapse; here we just flatten the inner wrapper so
+        // its segments become siblings of the enclosing <name>,
+        // which then consolidates.
+        "qualified_name" => Ok(TransformAction::Flatten),
 
         // Comments — normalise tree-sitter's distinction between
         // line and block into the shared `<comment>` name.
@@ -171,6 +198,16 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "catch_clause" => Some("catch"),
         "finally_clause" => Some("finally"),
         "throw_expression" => Some("throw"),
+        "echo_statement" => Some("echo"),
+        "continue_statement" => Some("continue"),
+        "break_statement" => Some("break"),
+        "match_expression" => Some("match"),
+        "match_conditional_expression" => Some("arm"),
+        "match_default_expression" => Some("arm"),
+        "class_constant_access_expression" => Some("member"),
+        "subscript_expression" => Some("index"),
+        "yield_expression" => Some("yield"),
+        "require_expression" | "require_once_expression" | "include_expression" | "include_once_expression" => Some("require"),
         "function_call_expression" => Some("call"),
         "member_call_expression" => Some("call"),
         "scoped_call_expression" => Some("call"),
