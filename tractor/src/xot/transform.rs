@@ -657,6 +657,28 @@ pub mod helpers {
         OPERATOR_MARKERS.iter().find(|spec| spec.text == op_text)
     }
 
+    /// Every element name that can appear as a direct or nested child of
+    /// `<op>` when the canonical `OPERATOR_MARKERS` table drives marker
+    /// emission — plus `"op"` itself. Used by the `all_names_declared_in_semantic_module`
+    /// invariant to treat cross-cutting operator markers as universally
+    /// allowed (they're shared by every language, so declaring them in
+    /// each language's `ALL_NAMES` would duplicate the source of truth).
+    pub const OPERATOR_MARKER_NAMES: &[&str] = &[
+        "op",
+        // Primaries
+        "equals", "not-equals", "compare",
+        "plus", "minus", "multiply", "divide", "modulo", "power",
+        "logical", "nullish-coalescing",
+        "bitwise", "shift",
+        "assign",
+        "contains", "identity",
+        "increment", "decrement",
+        // Child flags (deduplicated)
+        "strict", "less", "greater", "or-equal",
+        "and", "or", "not", "xor",
+        "left", "right", "unsigned",
+    ];
+
     /// Add semantic marker children inside an `<op>` element based on
     /// operator text — drives off the declarative `OPERATOR_MARKERS`
     /// table. Unknown operators get no markers (graceful degradation).

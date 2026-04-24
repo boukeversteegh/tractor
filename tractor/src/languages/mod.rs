@@ -391,6 +391,25 @@ pub fn get_field_wrappings(lang: &str) -> &'static [(&'static str, &'static str)
     }
 }
 
+/// Every element name introduced by the builder's `apply_field_wrappings`
+/// pass for the given language (i.e. the right-hand side of each
+/// `(tree_sitter_field, wrapper_element_name)` pair). These names are
+/// wrapper elements created outside of the per-language transform, so
+/// they don't (and shouldn't) live in each language's `semantic::ALL_NAMES`.
+/// The `all_names_declared_in_semantic_module` invariant consults this
+/// helper to treat them as universally allowed.
+pub fn field_wrapper_names(_lang: &str) -> &'static [&'static str] {
+    // Union of every wrapper name used anywhere. Keeping a single static
+    // list (rather than per-language) is safe because the invariant only
+    // asks "is this name a recognised field wrapper?" — not "was this
+    // wrapper name configured for *this* language?". Any language-
+    // specific drift is caught by the transform's own tests.
+    &[
+        "name", "value", "left", "right", "body", "condition", "then",
+        "returns", "callee", "object", "property",
+    ]
+}
+
 /// Get the syntax category function for a language
 /// This maps transformed element names to syntax categories for highlighting
 pub fn get_syntax_category(lang: &str) -> SyntaxCategoryFn {
