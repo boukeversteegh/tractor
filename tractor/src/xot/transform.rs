@@ -548,66 +548,130 @@ pub mod helpers {
         Ok(op_element)
     }
 
-    /// Add semantic marker children inside an `<op>` element based on operator text
+    /// Declarative spec for one operator's marker structure.
+    ///
+    /// `text`:   the exact operator string (e.g. `"+"`, `"+="`, `"not in"`).
+    /// `primary`: the top-level marker child of `<op>`. `None` means "no
+    ///           marker — graceful degradation" (e.g. bare `=` alone).
+    /// `children`: empty-element children appended *inside* the primary
+    ///             marker. Each is a distinct flag (e.g. `<less/><or-equal/>`
+    ///             inside a `<compare>`).
+    /// `nested`: for compound assignments only — a second marker nested
+    ///           inside `<assign>` with its own children
+    ///           (e.g. `&&=` → `<assign><logical><and/></logical></assign>`).
+    pub struct OperatorSpec {
+        pub text: &'static str,
+        pub primary: Option<&'static str>,
+        pub children: &'static [&'static str],
+        pub nested: Option<(&'static str, &'static [&'static str])>,
+    }
+
+    /// Canonical cross-language operator table. Every entry pins down
+    /// the EXACT marker shape that a transform MUST emit when an `<op>`
+    /// has the corresponding text content.
+    ///
+    /// Invariants (enforced by `tests/tree_invariants.rs::op_marker_matches_text`):
+    ///   1. For every `<op>` whose trimmed text equals an entry's `text`,
+    ///      if `primary` is `Some`, the `<op>` has that marker as a
+    ///      direct element child.
+    ///   2. `<op>` whose text is NOT in the table is accepted without
+    ///      requirements (language-specific operator — graceful
+    ///      degradation).
+    ///   3. The `children` / `nested` fields describe the sub-structure
+    ///      the current `add_operator_markers` produces; the invariant
+    ///      only checks the primary layer for now.
+    ///
+    /// Languages share this table by construction — there is exactly
+    /// one source of truth, and every language's `extract_operator`
+    /// routes through `prepend_op_element` which consults it.
+    pub const OPERATOR_MARKERS: &[OperatorSpec] = &[
+        // Equality
+        OperatorSpec { text: "==",  primary: Some("equals"),     children: &[],         nested: None },
+        OperatorSpec { text: "===", primary: Some("equals"),     children: &["strict"], nested: None },
+        OperatorSpec { text: "!=",  primary: Some("not-equals"), children: &[],         nested: None },
+        OperatorSpec { text: "!==", primary: Some("not-equals"), children: &["strict"], nested: None },
+        // Comparison
+        OperatorSpec { text: "<",   primary: Some("compare"),    children: &["less"],                 nested: None },
+        OperatorSpec { text: ">",   primary: Some("compare"),    children: &["greater"],              nested: None },
+        OperatorSpec { text: "<=",  primary: Some("compare"),    children: &["less", "or-equal"],     nested: None },
+        OperatorSpec { text: ">=",  primary: Some("compare"),    children: &["greater", "or-equal"],  nested: None },
+        // Arithmetic
+        OperatorSpec { text: "+",   primary: Some("plus"),     children: &[], nested: None },
+        OperatorSpec { text: "-",   primary: Some("minus"),    children: &[], nested: None },
+        OperatorSpec { text: "*",   primary: Some("multiply"), children: &[], nested: None },
+        OperatorSpec { text: "/",   primary: Some("divide"),   children: &[], nested: None },
+        OperatorSpec { text: "%",   primary: Some("modulo"),   children: &[], nested: None },
+        OperatorSpec { text: "**",  primary: Some("power"),    children: &[], nested: None },
+        // Logical
+        OperatorSpec { text: "&&",  primary: Some("logical"), children: &["and"], nested: None },
+        OperatorSpec { text: "and", primary: Some("logical"), children: &["and"], nested: None },
+        OperatorSpec { text: "||",  primary: Some("logical"), children: &["or"],  nested: None },
+        OperatorSpec { text: "or",  primary: Some("logical"), children: &["or"],  nested: None },
+        OperatorSpec { text: "!",   primary: Some("logical"), children: &["not"], nested: None },
+        OperatorSpec { text: "not", primary: Some("logical"), children: &["not"], nested: None },
+        OperatorSpec { text: "??",  primary: Some("nullish-coalescing"), children: &[], nested: None },
+        // Bitwise
+        OperatorSpec { text: "&",   primary: Some("bitwise"), children: &["and"], nested: None },
+        OperatorSpec { text: "|",   primary: Some("bitwise"), children: &["or"],  nested: None },
+        OperatorSpec { text: "^",   primary: Some("bitwise"), children: &["xor"], nested: None },
+        OperatorSpec { text: "~",   primary: Some("bitwise"), children: &["not"], nested: None },
+        // Shift
+        OperatorSpec { text: "<<",  primary: Some("shift"), children: &["left"],                 nested: None },
+        OperatorSpec { text: ">>",  primary: Some("shift"), children: &["right"],                nested: None },
+        OperatorSpec { text: ">>>", primary: Some("shift"), children: &["right", "unsigned"],    nested: None },
+        // Compound assignment (arithmetic)
+        OperatorSpec { text: "+=",  primary: Some("assign"), children: &["plus"],     nested: None },
+        OperatorSpec { text: "-=",  primary: Some("assign"), children: &["minus"],    nested: None },
+        OperatorSpec { text: "*=",  primary: Some("assign"), children: &["multiply"], nested: None },
+        OperatorSpec { text: "/=",  primary: Some("assign"), children: &["divide"],   nested: None },
+        OperatorSpec { text: "%=",  primary: Some("assign"), children: &["modulo"],   nested: None },
+        OperatorSpec { text: "**=", primary: Some("assign"), children: &["power"],    nested: None },
+        // Compound assignment (logical / bitwise / shift) — nested form.
+        OperatorSpec { text: "&&=", primary: Some("assign"), children: &[], nested: Some(("logical", &["and"])) },
+        OperatorSpec { text: "||=", primary: Some("assign"), children: &[], nested: Some(("logical", &["or"]))  },
+        OperatorSpec { text: "??=", primary: Some("assign"), children: &[], nested: Some(("nullish-coalescing", &[])) },
+        OperatorSpec { text: "<<=", primary: Some("assign"), children: &[], nested: Some(("shift", &["left"]))  },
+        OperatorSpec { text: ">>=", primary: Some("assign"), children: &[], nested: Some(("shift", &["right"])) },
+        OperatorSpec { text: "&=",  primary: Some("assign"), children: &[], nested: Some(("bitwise", &["and"])) },
+        OperatorSpec { text: "|=",  primary: Some("assign"), children: &[], nested: Some(("bitwise", &["or"]))  },
+        OperatorSpec { text: "^=",  primary: Some("assign"), children: &[], nested: Some(("bitwise", &["xor"])) },
+        // Python-specific
+        OperatorSpec { text: "in",     primary: Some("contains"), children: &[],      nested: None },
+        OperatorSpec { text: "not in", primary: Some("contains"), children: &["not"], nested: None },
+        OperatorSpec { text: "is",     primary: Some("identity"), children: &[],      nested: None },
+        OperatorSpec { text: "is not", primary: Some("identity"), children: &["not"], nested: None },
+        // Unary prefix / postfix
+        OperatorSpec { text: "++", primary: Some("increment"), children: &[], nested: None },
+        OperatorSpec { text: "--", primary: Some("decrement"), children: &[], nested: None },
+        // Bare `=` — no marker by design (the parent element's name is
+        // already `<assign>`). Recording here with `primary: None` so
+        // the invariant knows `=` is a known operator that intentionally
+        // has no marker.
+        OperatorSpec { text: "=", primary: None, children: &[], nested: None },
+    ];
+
+    /// Look up the declarative spec for `op_text` in `OPERATOR_MARKERS`.
+    /// Returns `None` for operators not in the canonical table (language-
+    /// specific operators that get no marker).
+    pub fn lookup_operator_spec(op_text: &str) -> Option<&'static OperatorSpec> {
+        OPERATOR_MARKERS.iter().find(|spec| spec.text == op_text)
+    }
+
+    /// Add semantic marker children inside an `<op>` element based on
+    /// operator text — drives off the declarative `OPERATOR_MARKERS`
+    /// table. Unknown operators get no markers (graceful degradation).
     fn add_operator_markers(xot: &mut Xot, op: XotNode, text: &str) -> Result<(), xot::Error> {
-        match text {
-            // Equality
-            "==" => { append_marker(xot, op, "equals", &[])?; }
-            "===" => { append_marker(xot, op, "equals", &["strict"])?; }
-            "!=" => { append_marker(xot, op, "not-equals", &[])?; }
-            "!==" => { append_marker(xot, op, "not-equals", &["strict"])?; }
-            // Comparison
-            "<" => { append_marker(xot, op, "compare", &["less"])?; }
-            ">" => { append_marker(xot, op, "compare", &["greater"])?; }
-            "<=" => { append_marker(xot, op, "compare", &["less", "or-equal"])?; }
-            ">=" => { append_marker(xot, op, "compare", &["greater", "or-equal"])?; }
-            // Arithmetic
-            "+" => { append_marker(xot, op, "plus", &[])?; }
-            "-" => { append_marker(xot, op, "minus", &[])?; }
-            "*" => { append_marker(xot, op, "multiply", &[])?; }
-            "/" => { append_marker(xot, op, "divide", &[])?; }
-            "%" => { append_marker(xot, op, "modulo", &[])?; }
-            "**" => { append_marker(xot, op, "power", &[])?; }
-            // Logical
-            "&&" | "and" => { append_marker(xot, op, "logical", &["and"])?; }
-            "||" | "or" => { append_marker(xot, op, "logical", &["or"])?; }
-            "!" | "not" => { append_marker(xot, op, "logical", &["not"])?; }
-            "??" => { append_marker(xot, op, "nullish-coalescing", &[])?; }
-            // Bitwise
-            "&" => { append_marker(xot, op, "bitwise", &["and"])?; }
-            "|" => { append_marker(xot, op, "bitwise", &["or"])?; }
-            "^" => { append_marker(xot, op, "bitwise", &["xor"])?; }
-            "~" => { append_marker(xot, op, "bitwise", &["not"])?; }
-            "<<" => { append_marker(xot, op, "shift", &["left"])?; }
-            ">>" => { append_marker(xot, op, "shift", &["right"])?; }
-            ">>>" => { append_marker(xot, op, "shift", &["right", "unsigned"])?; }
-            // Assignment (bare = gets no marker — parent element disambiguates)
-            // Compound assignment (arithmetic)
-            "+=" => { append_marker(xot, op, "assign", &["plus"])?; }
-            "-=" => { append_marker(xot, op, "assign", &["minus"])?; }
-            "*=" => { append_marker(xot, op, "assign", &["multiply"])?; }
-            "/=" => { append_marker(xot, op, "assign", &["divide"])?; }
-            "%=" => { append_marker(xot, op, "assign", &["modulo"])?; }
-            "**=" => { append_marker(xot, op, "assign", &["power"])?; }
-            // Compound assignment (logical/bitwise/shift)
-            "&&=" => { let a = append_marker(xot, op, "assign", &[])?; append_marker(xot, a, "logical", &["and"])?; }
-            "||=" => { let a = append_marker(xot, op, "assign", &[])?; append_marker(xot, a, "logical", &["or"])?; }
-            "??=" => { let a = append_marker(xot, op, "assign", &[])?; append_marker(xot, a, "nullish-coalescing", &[])?; }
-            "<<=" => { let a = append_marker(xot, op, "assign", &[])?; append_marker(xot, a, "shift", &["left"])?; }
-            ">>=" => { let a = append_marker(xot, op, "assign", &[])?; append_marker(xot, a, "shift", &["right"])?; }
-            "&=" => { let a = append_marker(xot, op, "assign", &[])?; append_marker(xot, a, "bitwise", &["and"])?; }
-            "|=" => { let a = append_marker(xot, op, "assign", &[])?; append_marker(xot, a, "bitwise", &["or"])?; }
-            "^=" => { let a = append_marker(xot, op, "assign", &[])?; append_marker(xot, a, "bitwise", &["xor"])?; }
-            // Python-specific
-            "in" => { append_marker(xot, op, "contains", &[])?; }
-            "not in" => { append_marker(xot, op, "contains", &["not"])?; }
-            "is" => { append_marker(xot, op, "identity", &[])?; }
-            "is not" => { append_marker(xot, op, "identity", &["not"])?; }
-            // Unary prefix/postfix
-            "++" => { append_marker(xot, op, "increment", &[])?; }
-            "--" => { append_marker(xot, op, "decrement", &[])?; }
-            // No marker — graceful degradation
-            _ => {}
+        let spec = match lookup_operator_spec(text) {
+            Some(s) => s,
+            None => return Ok(()),
+        };
+        let primary = match spec.primary {
+            Some(p) => p,
+            None => return Ok(()),
+        };
+        let primary_el = append_marker(xot, op, primary, spec.children)?;
+        if let Some((nested_name, nested_children)) = spec.nested {
+            append_marker(xot, primary_el, nested_name, nested_children)?;
         }
         Ok(())
     }
