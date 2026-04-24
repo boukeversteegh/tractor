@@ -164,12 +164,13 @@
                 <name>main</name>
                 (
                 <parameter>
-                  <array>
+                  <type>
+                    <array/>
                     <type>
                       <name>String</name>
                     </type>
                     <dimensions>[]</dimensions>
-                  </array>
+                  </type>
                   <name>args</name>
                 </parameter>
                 )

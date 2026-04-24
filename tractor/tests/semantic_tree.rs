@@ -279,6 +279,58 @@ mod csharp {
             "parameters are direct method siblings",
         );
     }
+
+    /// C# type flavors — array/tuple/nullable — all collapse to
+    /// `<type>` with a shape marker. `nullable_type` gets its
+    /// `<nullable/>` marker via a direct rewrite (not the map) but
+    /// the end shape is the same.
+    #[test]
+    fn type_shape_markers() {
+        let mut tree = parse_src(
+            "csharp",
+            "class X {\
+                int[] a;\
+                (int, string) t;\
+                int? n;\
+            }",
+        );
+        assert_count(&mut tree, "//type[array]", 1, "array type carries <array/>");
+        assert_count(&mut tree, "//type[tuple]", 1, "tuple type carries <tuple/>");
+        // nullable_type produces <type>…<nullable/></type>
+        assert_count(
+            &mut tree,
+            "//type[nullable]",
+            1,
+            "nullable type carries <nullable/>",
+        );
+    }
+
+    /// C# pattern flavors all collapse to `<pattern>` but carry a
+    /// shape marker (declaration / recursive / constant / tuple).
+    #[test]
+    fn pattern_shape_markers() {
+        let mut tree = parse_src(
+            "csharp",
+            "class X {\
+                void F(object o) {\
+                    if (o is Point p) {}\
+                    if (o is null) {}\
+                }\
+            }",
+        );
+        assert_count(
+            &mut tree,
+            "//pattern[declaration]",
+            1,
+            "`o is T name` — declaration pattern carries <declaration/>",
+        );
+        assert_count(
+            &mut tree,
+            "//pattern[constant]",
+            1,
+            "`o is null` — constant pattern carries <constant/>",
+        );
+    }
 }
 
 // ===========================================================================
@@ -510,6 +562,61 @@ mod typescript {
             "//generic/name/type",
             0,
             "no spurious <type> wrapper inside the <name>",
+        );
+    }
+
+    /// Type flavors all collapse to `<type>` but carry a shape marker
+    /// (Principle #9) so `//type[union]`, `//type[tuple]`, etc. work
+    /// uniformly without matching on text.
+    #[test]
+    fn type_shape_markers() {
+        let mut tree = parse_src(
+            "typescript",
+            "type A = string | number;\n\
+             type B = string & object;\n\
+             type C = [string, number];\n\
+             type D = string[];\n\
+             type E = 'idle';\n\
+             type F = (x: number) => number;\n\
+             type G = { x: number };\n\
+             type H = readonly number[];",
+        );
+        assert_count(&mut tree, "//type[union]", 1, "union type carries <union/>");
+        assert_count(
+            &mut tree,
+            "//type[intersection]",
+            1,
+            "intersection type carries <intersection/>",
+        );
+        assert_count(&mut tree, "//type[tuple]", 1, "tuple type carries <tuple/>");
+        // `number[]` is array_type; `readonly number[]` wraps in readonly_type.
+        assert_count(&mut tree, "//type[array]", 2, "array types carry <array/>");
+        assert_count(&mut tree, "//type[literal]", 1, "literal type carries <literal/>");
+        assert_count(&mut tree, "//type[function]", 1, "function type carries <function/>");
+        assert_count(&mut tree, "//type[object]", 1, "object type carries <object/>");
+        assert_count(&mut tree, "//type[readonly]", 1, "readonly type carries <readonly/>");
+    }
+
+    /// Destructuring patterns collapse to `<pattern>` but carry an
+    /// `<array/>` / `<object/>` marker that distinguishes the shape
+    /// without requiring string matching on `[` vs `{`.
+    #[test]
+    fn destructuring_pattern_markers() {
+        let mut tree = parse_src(
+            "typescript",
+            "const [a, b] = xs;\nconst { x, y } = pt;\n",
+        );
+        assert_count(
+            &mut tree,
+            "//pattern[array]",
+            1,
+            "array destructuring pattern carries <array/>",
+        );
+        assert_count(
+            &mut tree,
+            "//pattern[object]",
+            1,
+            "object destructuring pattern carries <object/>",
         );
     }
 }
@@ -1015,6 +1122,81 @@ mod rust {
             "both raw and normal strings use <string>",
         );
     }
+
+    /// Rust type flavors all collapse to `<type>` with a shape marker
+    /// — function, tuple, array, pointer, never, unit, dyn. (The `[T]`
+    /// inside `&[T]` is treated as `array_type` by tree-sitter-rust,
+    /// so `slice` markers only appear for explicit slice forms — which
+    /// the cross-file blueprint snapshot covers separately.)
+    #[test]
+    fn type_shape_markers() {
+        let mut tree = parse_src(
+            "rust",
+            "fn f(cb: fn(i32) -> i32, t: (i32, i32), a: [u8; 4], p: *const u8) -> ! { loop {} }\n\
+             fn g() -> () {}\n\
+             fn h(d: &dyn Drawable) {}\n",
+        );
+        assert_count(&mut tree, "//type[function]", 1, "fn type carries <function/>");
+        assert_count(&mut tree, "//type[tuple]", 1, "tuple type carries <tuple/>");
+        assert_count(&mut tree, "//type[array]", 1, "array type carries <array/>");
+        assert_count(&mut tree, "//type[pointer]", 1, "pointer type carries <pointer/>");
+        assert_count(&mut tree, "//type[never]", 1, "never type carries <never/>");
+        assert_count(&mut tree, "//type[unit]", 1, "unit type carries <unit/>");
+        assert_count(&mut tree, "//type[dynamic]", 1, "dyn trait object carries <dynamic/>");
+    }
+
+    /// Pattern flavors in match arms collapse to `<pattern>` but carry
+    /// `<or/>`, `<struct/>`, or `<field/>` markers so queries can
+    /// pick out the specific shape.
+    #[test]
+    fn pattern_shape_markers() {
+        let mut tree = parse_src(
+            "rust",
+            "fn f(x: Shape) {\n    match x {\n        Shape::Square(_) | Shape::Circle(_) => {},\n        Shape::Rect { w, h } => {},\n        _ => {},\n    }\n}\n",
+        );
+        assert_count(
+            &mut tree,
+            "//pattern[or]",
+            1,
+            "alternative pattern (`A | B`) carries <or/>",
+        );
+        assert_count(
+            &mut tree,
+            "//pattern[struct]",
+            1,
+            "struct destructure pattern carries <struct/>",
+        );
+        assert_count(
+            &mut tree,
+            "//pattern[field]",
+            2,
+            "each struct field in pattern carries <field/>",
+        );
+    }
+
+    /// Both bare function calls and method calls collapse to `<call>`.
+    /// Tree-sitter-rust doesn't emit a distinct `method_call_expression`
+    /// (it uses `call_expression` with a `field_expression` function
+    /// child), so `//call/field` finds every `obj.m(args)` site.
+    #[test]
+    fn method_call_via_field_child() {
+        let mut tree = parse_src(
+            "rust",
+            "fn f() { let y = foo(1); let z = bar.baz(2); }\n",
+        );
+        assert_count(
+            &mut tree,
+            "//call/field",
+            1,
+            "method call has a <field> child function (`obj.m`)",
+        );
+        assert_count(
+            &mut tree,
+            "//call",
+            2,
+            "both function and method calls collapse to <call>",
+        );
+    }
 }
 
 // ===========================================================================
@@ -1152,6 +1334,52 @@ mod python {
             "//string/interpolation/name[.='name']",
             1,
             "<interpolation> preserved as wrapper around the expression",
+        );
+    }
+
+    /// `*args` and `**kwargs` collapse to `<spread>` but carry a
+    /// `<list/>` / `<dict/>` marker that survives argument, pattern,
+    /// and literal contexts so shape queries work without string
+    /// matching on `*` / `**` operator text.
+    #[test]
+    fn spread_shape_markers() {
+        let mut tree = parse_src(
+            "python",
+            "def f(*args, **kwargs): pass\ng(*xs, **kw)\n[*a, *b]\n{**a, **b}\n",
+        );
+        assert_count(
+            &mut tree,
+            "//spread[list]",
+            4,
+            "`*args`, `g(*xs)`, `[*a]`, `[*b]` all carry <list/> marker",
+        );
+        assert_count(
+            &mut tree,
+            "//spread[dict]",
+            4,
+            "`**kwargs`, `g(**kw)`, `{**a}`, `{**b}` all carry <dict/> marker",
+        );
+    }
+
+    /// `list_splat` pattern in a match arm carries the same `<list/>` marker
+    /// as a positional `*args` — uniform across contexts.
+    #[test]
+    fn splat_pattern_carries_marker() {
+        let mut tree = parse_src(
+            "python",
+            "match seq:\n    case [1, *rest]: pass\n    case 'yes' | 'y': pass\n",
+        );
+        assert_count(
+            &mut tree,
+            "//pattern[splat]",
+            1,
+            "`*rest` destructure pattern carries <splat/> marker",
+        );
+        assert_count(
+            &mut tree,
+            "//pattern[union]",
+            1,
+            "`'yes' | 'y'` union pattern carries <union/> marker",
         );
     }
 }
@@ -1365,6 +1593,29 @@ mod go {
             "no nested <else><if>...",
         );
     }
+
+    /// `switch x.(type) { … }` and a regular `switch x { … }` both
+    /// collapse to `<switch>`. The type switch carries a `<type/>`
+    /// marker so `//switch[type]` picks out every type switch.
+    #[test]
+    fn type_switch_carries_marker() {
+        let mut tree = parse_src(
+            "go",
+            "package main\nfunc f(x interface{}) {\n    switch x.(type) { case int: }\n    switch x { case 1: }\n}\n",
+        );
+        assert_count(
+            &mut tree,
+            "//switch[type]",
+            1,
+            "type switch carries <type/> marker",
+        );
+        assert_count(
+            &mut tree,
+            "//switch",
+            2,
+            "both regular and type switch collapse to <switch>",
+        );
+    }
 }
 
 // ===========================================================================
@@ -1447,6 +1698,39 @@ mod ruby {
             "//elsif",
             0,
             "no raw <elsif> leaks",
+        );
+    }
+
+    /// Ruby percent-literal arrays collapse to `<array>` with a
+    /// `<string/>` / `<symbol/>` marker so the element name matches
+    /// a normal array while the flavor stays queryable.
+    #[test]
+    fn percent_array_shape_markers() {
+        let mut tree = parse_src(
+            "ruby",
+            "A = %w[one two]\nB = %i[alpha beta]\nC = [1, 2]\n",
+        );
+        assert_count(&mut tree, "//array[string]", 1, "%w[…] carries <string/>");
+        assert_count(&mut tree, "//array[symbol]", 1, "%i[…] carries <symbol/>");
+        assert_count(&mut tree, "//array", 3, "all three forms collapse to <array>");
+    }
+
+    /// Ruby splat parameters distinguish iterable `*args` (list) from
+    /// mapping `**kwargs` (dict); keyword parameters (`key:`) carry a
+    /// `<keyword/>` marker distinguishing them from positional ones.
+    #[test]
+    fn parameter_shape_markers() {
+        let mut tree = parse_src(
+            "ruby",
+            "def f(a, *xs, key: 1, **kw)\nend\n",
+        );
+        assert_count(&mut tree, "//spread[list]", 1, "`*xs` carries <list/>");
+        assert_count(&mut tree, "//spread[dict]", 1, "`**kw` carries <dict/>");
+        assert_count(
+            &mut tree,
+            "//parameter[keyword]",
+            1,
+            "`key:` keyword parameter carries <keyword/>",
         );
     }
 }

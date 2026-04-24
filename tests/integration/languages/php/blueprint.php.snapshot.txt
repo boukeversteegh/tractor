@@ -48,7 +48,7 @@ program/
   │   │   ├─ attribute/
   │   │   │   ├─ name = "Attribute"
   │   │   │   ├─ "("
-  │   │   │   ├─ argument/member/
+  │   │   │   ├─ argument/member[constant]/
   │   │   │   │   ├─ name = "Attribute"
   │   │   │   │   ├─ "::"
   │   │   │   │   └─ name = "TARGET_CLASS"
@@ -86,7 +86,7 @@ program/
   │       │   └─ ";"
   │       ├─ field[private]/
   │       │   ├─ "private"
-  │       │   ├─ type = "string"
+  │       │   ├─ type[primitive] = "string"
   │       │   ├─ name/variable/
   │       │   │   ├─ "$"
   │       │   │   └─ name = "name"
@@ -94,16 +94,16 @@ program/
   │       ├─ field[public and readonly]/
   │       │   ├─ "public"
   │       │   ├─ "readonly"
-  │       │   ├─ type = "int"
+  │       │   ├─ type[primitive] = "int"
   │       │   ├─ name/variable/
   │       │   │   ├─ "$"
   │       │   │   └─ name = "count"
   │       │   └─ ";"
   │       ├─ field[protected]/
   │       │   ├─ "protected"
-  │       │   ├─ type/
+  │       │   ├─ type[optional]/
   │       │   │   ├─ "?"
-  │       │   │   └─ type = "string"
+  │       │   │   └─ type[primitive] = "string"
   │       │   ├─ name/variable/
   │       │   │   ├─ "$"
   │       │   │   └─ name = "label"
@@ -113,7 +113,7 @@ program/
   │       ├─ field[public and static]/
   │       │   ├─ "public"
   │       │   ├─ "static"
-  │       │   ├─ type = "int"
+  │       │   ├─ type[primitive] = "int"
   │       │   ├─ name/variable/
   │       │   │   ├─ "$"
   │       │   │   └─ name = "registry"
@@ -125,13 +125,13 @@ program/
   │       │   ├─ name = "__construct"
   │       │   ├─ "("
   │       │   ├─ parameter/
-  │       │   │   ├─ type = "string"
+  │       │   │   ├─ type[primitive] = "string"
   │       │   │   └─ name/variable/
   │       │   │       ├─ "$"
   │       │   │       └─ name = "name"
   │       │   ├─ ","
   │       │   ├─ parameter/
-  │       │   │   ├─ type = "int"
+  │       │   │   ├─ type[primitive] = "int"
   │       │   │   ├─ name/variable/
   │       │   │   │   ├─ "$"
   │       │   │   │   └─ name = "count"
@@ -141,7 +141,7 @@ program/
   │       │   └─ body/
   │       │       ├─ "{"
   │       │       ├─ assign/
-  │       │       │   ├─ left/member/
+  │       │       │   ├─ left/member[instance]/
   │       │       │   │   ├─ variable/
   │       │       │   │   │   ├─ "$"
   │       │       │   │   │   └─ name = "this"
@@ -153,7 +153,7 @@ program/
   │       │       │       └─ name = "name"
   │       │       ├─ ";"
   │       │       ├─ assign/
-  │       │       │   ├─ left/member/
+  │       │       │   ├─ left/member[instance]/
   │       │       │   │   ├─ variable/
   │       │       │   │   │   ├─ "$"
   │       │       │   │   │   └─ name = "this"
@@ -169,7 +169,7 @@ program/
   │       │   ├─ "public function"
   │       │   ├─ name = "render"
   │       │   ├─ "():"
-  │       │   ├─ type = "string"
+  │       │   ├─ type[primitive] = "string"
   │       │   └─ ";"
   │       ├─ method[final and public and static]/
   │       │   ├─ "final"
@@ -178,7 +178,7 @@ program/
   │       │   ├─ name = "create"
   │       │   ├─ "("
   │       │   ├─ parameter/
-  │       │   │   ├─ type = "string"
+  │       │   │   ├─ type[primitive] = "string"
   │       │   │   └─ name/variable/
   │       │   │       ├─ "$"
   │       │   │       └─ name = "name"
@@ -203,23 +203,23 @@ program/
   │       │   ├─ name = "greet"
   │       │   ├─ "("
   │       │   ├─ parameter/
-  │       │   │   ├─ type/
+  │       │   │   ├─ type[optional]/
   │       │   │   │   ├─ "?"
-  │       │   │   │   └─ type = "string"
+  │       │   │   │   └─ type[primitive] = "string"
   │       │   │   ├─ name/variable/
   │       │   │   │   ├─ "$"
   │       │   │   │   └─ name = "who"
   │       │   │   ├─ "="
   │       │   │   └─ null = "null"
   │       │   ├─ ","
-  │       │   ├─ parameter/
-  │       │   │   ├─ type = "string"
+  │       │   ├─ parameter[variadic]/
+  │       │   │   ├─ type[primitive] = "string"
   │       │   │   ├─ "..."
   │       │   │   └─ name/variable/
   │       │   │       ├─ "$"
   │       │   │       └─ name = "extras"
   │       │   ├─ "):"
-  │       │   ├─ type = "string"
+  │       │   ├─ type[primitive] = "string"
   │       │   └─ body/
   │       │       ├─ "{"
   │       │       ├─ assign/
@@ -232,7 +232,7 @@ program/
   │       │       │       │   ├─ "$"
   │       │       │       │   └─ name = "who"
   │       │       │       ├─ op[nullish-coalescing] = "??"
-  │       │       │       └─ right/member/
+  │       │       │       └─ right/member[instance]/
   │       │       │           ├─ variable/
   │       │       │           │   ├─ "$"
   │       │       │           │   └─ name = "this"
@@ -244,7 +244,7 @@ program/
   │       │       │   ├─ condition/
   │       │       │   │   ├─ "("
   │       │       │   │   ├─ binary/
-  │       │       │   │   │   ├─ left/member/
+  │       │       │   │   │   ├─ left/member[instance]/
   │       │       │   │   │   │   ├─ variable/
   │       │       │   │   │   │   │   ├─ "$"
   │       │       │   │   │   │   │   └─ name = "this"
@@ -272,7 +272,7 @@ program/
   │       │       │   │   ├─ condition/
   │       │       │   │   │   ├─ "("
   │       │       │   │   │   ├─ binary/
-  │       │       │   │   │   │   ├─ left/member/
+  │       │       │   │   │   │   ├─ left/member[instance]/
   │       │       │   │   │   │   │   ├─ variable/
   │       │       │   │   │   │   │   │   ├─ "$"
   │       │       │   │   │   │   │   │   └─ name = "this"
@@ -315,12 +315,12 @@ program/
   │       │   ├─ name = "describe"
   │       │   ├─ "("
   │       │   ├─ parameter/
-  │       │   │   ├─ type = "int"
+  │       │   │   ├─ type[primitive] = "int"
   │       │   │   └─ name/variable/
   │       │   │       ├─ "$"
   │       │   │       └─ name = "n"
   │       │   ├─ "):"
-  │       │   ├─ type = "string"
+  │       │   ├─ type[primitive] = "string"
   │       │   └─ body/
   │       │       ├─ "{"
   │       │       ├─ return/
@@ -358,12 +358,12 @@ program/
   │       │   ├─ name = "categorize"
   │       │   ├─ "("
   │       │   ├─ parameter/
-  │       │   │   ├─ type = "mixed"
+  │       │   │   ├─ type[primitive] = "mixed"
   │       │   │   └─ name/variable/
   │       │   │       ├─ "$"
   │       │   │       └─ name = "value"
   │       │   ├─ "):"
-  │       │   ├─ type = "string"
+  │       │   ├─ type[primitive] = "string"
   │       │   └─ body/
   │       │       ├─ "{"
   │       │       ├─ return/
@@ -425,7 +425,7 @@ program/
   │       │       │   │       │   ├─ "=>"
   │       │       │   │       │   └─ string = "\"array\""
   │       │       │   │       ├─ ","
-  │       │       │   │       ├─ arm/
+  │       │       │   │       ├─ arm[default]/
   │       │       │   │       │   ├─ "default =>"
   │       │       │   │       │   └─ string = "\"other\""
   │       │       │   │       └─ ",\n        }"
@@ -436,12 +436,12 @@ program/
   │       │   ├─ name = "process"
   │       │   ├─ "("
   │       │   ├─ parameter/
-  │       │   │   ├─ type = "iterable"
+  │       │   │   ├─ type[primitive] = "iterable"
   │       │   │   └─ name/variable/
   │       │   │       ├─ "$"
   │       │   │       └─ name = "items"
   │       │   ├─ "):"
-  │       │   ├─ type = "array"
+  │       │   ├─ type[primitive] = "array"
   │       │   └─ body/
   │       │       ├─ "{"
   │       │       ├─ assign/
@@ -500,7 +500,7 @@ program/
   │       │       │       │   │   │   │   │   └─ name = "key"
   │       │       │       │   │   │   │   └─ "]"
   │       │       │       │   │   │   ├─ op = "="
-  │       │       │       │   │   │   └─ right/call/
+  │       │       │       │   │   │   └─ right/call[instance]/
   │       │       │       │   │   │       ├─ variable/
   │       │       │       │   │   │       │   ├─ "$"
   │       │       │       │   │   │       │   └─ name = "this"
@@ -538,12 +538,12 @@ program/
   │       │   ├─ name = "transform"
   │       │   ├─ "("
   │       │   ├─ parameter/
-  │       │   │   ├─ type = "mixed"
+  │       │   │   ├─ type[primitive] = "mixed"
   │       │   │   └─ name/variable/
   │       │   │       ├─ "$"
   │       │   │       └─ name = "item"
   │       │   ├─ "):"
-  │       │   ├─ type = "mixed"
+  │       │   ├─ type[primitive] = "mixed"
   │       │   └─ body/
   │       │       ├─ "{"
   │       │       ├─ return/
@@ -564,14 +564,14 @@ program/
   │       │   ├─ name = "greet"
   │       │   ├─ "("
   │       │   ├─ parameter/
-  │       │   │   ├─ type/
+  │       │   │   ├─ type[optional]/
   │       │   │   │   ├─ "?"
-  │       │   │   │   └─ type = "string"
+  │       │   │   │   └─ type[primitive] = "string"
   │       │   │   └─ name/variable/
   │       │   │       ├─ "$"
   │       │   │       └─ name = "who"
   │       │   ├─ "):"
-  │       │   ├─ type = "string"
+  │       │   ├─ type[primitive] = "string"
   │       │   └─ ";"
   │       └─ "}"
   ├─ interface/
@@ -583,7 +583,7 @@ program/
   │       │   ├─ "public function"
   │       │   ├─ name = "count"
   │       │   ├─ "():"
-  │       │   ├─ type = "int"
+  │       │   ├─ type[primitive] = "int"
   │       │   └─ ";"
   │       └─ "}"
   ├─ trait/
@@ -596,12 +596,12 @@ program/
   │       │   ├─ name = "log"
   │       │   ├─ "("
   │       │   ├─ parameter/
-  │       │   │   ├─ type = "string"
+  │       │   │   ├─ type[primitive] = "string"
   │       │   │   └─ name/variable/
   │       │   │       ├─ "$"
   │       │   │       └─ name = "msg"
   │       │   ├─ "):"
-  │       │   ├─ type = "void"
+  │       │   ├─ type[primitive] = "void"
   │       │   └─ body/
   │       │       ├─ "{"
   │       │       ├─ echo/
@@ -619,7 +619,7 @@ program/
   │   ├─ "enum"
   │   ├─ name = "Status"
   │   ├─ ":"
-  │   ├─ type = "string"
+  │   ├─ type[primitive] = "string"
   │   └─ body/enum_declaration_list/
   │       ├─ "{"
   │       ├─ constant/
@@ -644,7 +644,7 @@ program/
   │       │   ├─ "public function"
   │       │   ├─ name = "label"
   │       │   ├─ "():"
-  │       │   ├─ type = "string"
+  │       │   ├─ type[primitive] = "string"
   │       │   └─ body/
   │       │       ├─ "{"
   │       │       ├─ return/
@@ -660,7 +660,7 @@ program/
   │       │       │   │   └─ body/
   │       │       │   │       ├─ "{"
   │       │       │   │       ├─ arm/
-  │       │       │   │       │   ├─ member/
+  │       │       │   │       │   ├─ member[constant]/
   │       │       │   │       │   │   ├─ name = "Status"
   │       │       │   │       │   │   ├─ "::"
   │       │       │   │       │   │   └─ name = "Active"
@@ -668,7 +668,7 @@ program/
   │       │       │   │       │   └─ string = "\"✓\""
   │       │       │   │       ├─ ","
   │       │       │   │       ├─ arm/
-  │       │       │   │       │   ├─ member/
+  │       │       │   │       │   ├─ member[constant]/
   │       │       │   │       │   │   ├─ name = "Status"
   │       │       │   │       │   │   ├─ "::"
   │       │       │   │       │   │   └─ name = "Inactive"
@@ -676,7 +676,7 @@ program/
   │       │       │   │       │   └─ string = "\"×\""
   │       │       │   │       ├─ ","
   │       │       │   │       ├─ arm/
-  │       │       │   │       │   ├─ member/
+  │       │       │   │       │   ├─ member[constant]/
   │       │       │   │       │   │   ├─ name = "Status"
   │       │       │   │       │   │   ├─ "::"
   │       │       │   │       │   │   └─ name = "Pending"
@@ -691,19 +691,19 @@ program/
   │   ├─ name = "factory"
   │   ├─ "("
   │   ├─ parameter/
-  │   │   ├─ type = "callable"
+  │   │   ├─ type[primitive] = "callable"
   │   │   └─ name/variable/
   │   │       ├─ "$"
   │   │       └─ name = "fn"
   │   ├─ ","
-  │   ├─ parameter/
-  │   │   ├─ type = "mixed"
+  │   ├─ parameter[variadic]/
+  │   │   ├─ type[primitive] = "mixed"
   │   │   ├─ "..."
   │   │   └─ name/variable/
   │   │       ├─ "$"
   │   │       └─ name = "args"
   │   ├─ "):"
-  │   ├─ type = "mixed"
+  │   ├─ type[primitive] = "mixed"
   │   └─ body/
   │       ├─ "{"
   │       ├─ return/
@@ -729,12 +729,12 @@ program/
   │   └─ right/arrow_function/
   │       ├─ "fn("
   │       ├─ parameter/
-  │       │   ├─ type = "int"
+  │       │   ├─ type[primitive] = "int"
   │       │   └─ name/variable/
   │       │       ├─ "$"
   │       │       └─ name = "x"
   │       ├─ "):"
-  │       ├─ type = "int"
+  │       ├─ type[primitive] = "int"
   │       ├─ "=>"
   │       └─ body/binary/
   │           ├─ left/variable/
@@ -773,7 +773,7 @@ program/
   │   └─ right/anonymous_function/
   │       ├─ "function ("
   │       ├─ parameter/
-  │       │   ├─ type = "int"
+  │       │   ├─ type[primitive] = "int"
   │       │   └─ name/variable/
   │       │       ├─ "$"
   │       │       └─ name = "x"
@@ -785,7 +785,7 @@ program/
   │       │   │   └─ name = "pipeline"
   │       │   └─ ")"
   │       ├─ ":"
-  │       ├─ type = "int"
+  │       ├─ type[primitive] = "int"
   │       └─ body/
   │           ├─ "{"
   │           ├─ return/

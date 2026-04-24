@@ -65,11 +65,11 @@ file/
   │   ├─ "type"
   │   ├─ name = "Number"
   │   ├─ "interface{"
-  │   ├─ type/
+  │   ├─ type[negated]/
   │   │   ├─ "~"
   │   │   └─ type/name = "int"
   │   ├─ "|"
-  │   ├─ type/
+  │   ├─ type[negated]/
   │   │   ├─ "~"
   │   │   └─ type/name = "float64"
   │   └─ "}"
@@ -109,7 +109,7 @@ file/
   ├─ type[exported]/
   │   ├─ "type"
   │   ├─ name = "Handler"
-  │   └─ type/
+  │   └─ type[function]/
   │       ├─ "func("
   │       ├─ parameter/
   │       │   ├─ name = "ctx"
@@ -372,7 +372,7 @@ file/
   │   ├─ ","
   │   ├─ parameter/
   │   │   ├─ name = "f"
-  │   │   └─ type/
+  │   │   └─ type[function]/
   │   │       ├─ "func("
   │   │       ├─ parameter/type/name = "T"
   │   │       ├─ ")"
@@ -628,7 +628,7 @@ file/
   │   ├─ returns/type/name = "string"
   │   └─ body/
   │       ├─ "{"
-  │       ├─ switch/
+  │       ├─ switch[type]/
   │       │   ├─ "switch"
   │       │   ├─ name = "v"
   │       │   ├─ ":="

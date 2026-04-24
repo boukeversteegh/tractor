@@ -109,9 +109,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         "function_declaration" | "method_declaration" => {
             let marker = get_export_marker(xot, node);
             prepend_empty_element(xot, node, marker)?;
-            if let Some(new_name) = map_element_name(&kind) {
-                rename(xot, node, new_name);
-            }
+            apply_rename(xot, node, &kind)?;
             Ok(TransformAction::Continue)
         }
 
@@ -184,9 +182,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 
         "binary_expression" | "unary_expression" => {
             extract_operator(xot, node)?;
-            if let Some(new_name) = map_element_name(&kind) {
-                rename(xot, node, new_name);
-            }
+            apply_rename(xot, node, &kind)?;
             Ok(TransformAction::Continue)
         }
 
@@ -204,12 +200,21 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         _ => {
-            if let Some(new_name) = map_element_name(&kind) {
-                rename(xot, node, new_name);
-            }
+            apply_rename(xot, node, &kind)?;
             Ok(TransformAction::Continue)
         }
     }
+}
+
+/// Apply `map_element_name` to a node: rename + prepend marker (if any).
+fn apply_rename(xot: &mut Xot, node: XotNode, kind: &str) -> Result<(), xot::Error> {
+    if let Some((new_name, marker)) = map_element_name(kind) {
+        rename(xot, node, new_name);
+        if let Some(m) = marker {
+            prepend_empty_element(xot, node, m)?;
+        }
+    }
+    Ok(())
 }
 
 /// Move the literal `type` keyword text from a `type_declaration` into
@@ -311,72 +316,87 @@ fn get_export_marker(xot: &Xot, node: XotNode) -> &'static str {
     "unexported" // default
 }
 
-fn map_element_name(kind: &str) -> Option<&'static str> {
+/// Map tree-sitter node kinds to semantic element names.
+///
+/// The second tuple element is an optional disambiguation marker
+/// for kinds that otherwise collapse (e.g. `type_switch_statement`
+/// and `switch_statement` both → `<switch>`, distinguished by the
+/// `<type/>` marker child on the former).
+fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> {
     match kind {
-        "source_file" => Some("file"),
-        "package_clause" => Some("package"),
-        "function_declaration" => Some("function"),
-        "method_declaration" => Some("method"),
+        "source_file" => Some(("file", None)),
+        "package_clause" => Some(("package", None)),
+        "function_declaration" => Some(("function", None)),
+        "method_declaration" => Some(("method", None)),
         // type_declaration is flattened in the match above.
-        "type_spec" => Some("type"),
-        "struct_type" => Some("struct"),
-        "interface_type" => Some("interface"),
-        "const_declaration" => Some("const"),
-        "var_declaration" => Some("var"),
-        "import_declaration" => Some("import"),
+        "type_spec" => Some(("type", None)),
+        "struct_type" => Some(("struct", None)),
+        "interface_type" => Some(("interface", None)),
+        "const_declaration" => Some(("const", None)),
+        "var_declaration" => Some(("var", None)),
+        "import_declaration" => Some(("import", None)),
         // parameter_list is flattened via Principle #12 above
-        "parameter_declaration" => Some("parameter"),
-        "method_elem" => Some("method"),
-        "field_declaration" => Some("field"),
-        "pointer_type" => Some("pointer"),
-        "slice_type" => Some("slice"),
-        "map_type" => Some("map"),
-        "channel_type" => Some("chan"),
-        "return_statement" => Some("return"),
-        "if_statement" => Some("if"),
-        "else_clause" => Some("else"),
-        "for_statement" => Some("for"),
-        "range_clause" => Some("range"),
-        "switch_statement" => Some("switch"),
-        "case_clause" => Some("case"),
-        "default_case" => Some("default"),
-        "defer_statement" => Some("defer"),
-        "go_statement" => Some("go"),
-        "select_statement" => Some("select"),
-        "call_expression" => Some("call"),
-        "selector_expression" => Some("member"),
-        "index_expression" => Some("index"),
-        "composite_literal" => Some("literal"),
-        "binary_expression" => Some("binary"),
-        "unary_expression" => Some("unary"),
-        "interpreted_string_literal" => Some("string"),
+        "parameter_declaration" => Some(("parameter", None)),
+        "method_elem" => Some(("method", None)),
+        "field_declaration" => Some(("field", None)),
+        "pointer_type" => Some(("pointer", None)),
+        "slice_type" => Some(("slice", None)),
+        "map_type" => Some(("map", None)),
+        "channel_type" => Some(("chan", None)),
+        "return_statement" => Some(("return", None)),
+        "if_statement" => Some(("if", None)),
+        "else_clause" => Some(("else", None)),
+        "for_statement" => Some(("for", None)),
+        "range_clause" => Some(("range", None)),
+        // Tree-sitter-go emits `expression_switch_statement` for a
+        // plain switch; `switch_statement` appears in older grammars.
+        "switch_statement" => Some(("switch", None)),
+        "expression_switch_statement" => Some(("switch", None)),
+        "case_clause" => Some(("case", None)),
+        "default_case" => Some(("default", None)),
+        "defer_statement" => Some(("defer", None)),
+        "go_statement" => Some(("go", None)),
+        "select_statement" => Some(("select", None)),
+        "call_expression" => Some(("call", None)),
+        "selector_expression" => Some(("member", None)),
+        "index_expression" => Some(("index", None)),
+        "composite_literal" => Some(("literal", None)),
+        "binary_expression" => Some(("binary", None)),
+        "unary_expression" => Some(("unary", None)),
+        "interpreted_string_literal" => Some(("string", None)),
         // raw_string_literal is handled in the match above (rename + prepend <raw/>)
-        "int_literal" => Some("int"),
-        "float_literal" => Some("float"),
-        "assignment_statement" => Some("assign"),
-        "inc_statement" => Some("unary"),
-        "dec_statement" => Some("unary"),
-        "labeled_statement" => Some("labeled"),
-        "label_name" => Some("label"),
-        "send_statement" => Some("send"),
-        "communication_case" => Some("case"),
-        "receive_statement" => Some("receive"),
-        "negated_type" | "function_type" => Some("type"),
-        "func_literal" => Some("closure"),
-        "continue_statement" => Some("continue"),
-        "variadic_parameter_declaration" => Some("parameter"),
-        "type_switch_statement" => Some("switch"),
-        "type_assertion_expression" => Some("assert"),
-        "type_arguments" => Some("arguments"),
-        "break_statement" => Some("break"),
-        "true" => Some("true"),
-        "false" => Some("false"),
-        "nil" => Some("nil"),
+        "int_literal" => Some(("int", None)),
+        "float_literal" => Some(("float", None)),
+        "assignment_statement" => Some(("assign", None)),
+        "inc_statement" => Some(("unary", None)),
+        "dec_statement" => Some(("unary", None)),
+        "labeled_statement" => Some(("labeled", None)),
+        "label_name" => Some(("label", None)),
+        "send_statement" => Some(("send", None)),
+        "communication_case" => Some(("case", None)),
+        "receive_statement" => Some(("receive", None)),
+        // Function types get a <function/> marker, negated types get
+        // <negated/> (interface constraints: `~int`). Keeps the tree
+        // reads as a single <type> with the shape annotated via marker.
+        "function_type" => Some(("type", Some("function"))),
+        "negated_type" => Some(("type", Some("negated"))),
+        "func_literal" => Some(("closure", None)),
+        "continue_statement" => Some(("continue", None)),
+        "variadic_parameter_declaration" => Some(("parameter", None)),
+        // `switch x.(type) { … }` — distinguished from a regular switch
+        // by a <type/> marker so `//switch[type]` finds every type switch.
+        "type_switch_statement" => Some(("switch", Some("type"))),
+        "type_assertion_expression" => Some(("assert", None)),
+        "type_arguments" => Some(("arguments", None)),
+        "break_statement" => Some(("break", None)),
+        "true" => Some(("true", None)),
+        "false" => Some(("false", None)),
+        "nil" => Some(("nil", None)),
         // `field_identifier` is a leaf — either the name of a struct field
         // or the method/field being accessed in a selector. Treat it as
         // `<name>` in both contexts (role inferred from tree position).
-        "field_identifier" => Some("name"),
-        "package_identifier" => Some("name"),
+        "field_identifier" => Some(("name", None)),
+        "package_identifier" => Some(("name", None)),
         _ => None,
     }
 }

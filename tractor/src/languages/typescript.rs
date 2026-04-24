@@ -82,14 +82,8 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
 
-        // Function type: `(x: T) => U` as a *type expression*. Rename to
-        // `<type>` with a `<function/>` marker so queries and JSON
-        // treat it uniformly with other type variants.
-        "function_type" => {
-            prepend_empty_element(xot, node, "function")?;
-            rename(xot, node, "type");
-            Ok(TransformAction::Continue)
-        }
+        // function_type now handled uniformly via map_element_name
+        // — the rename map declares the marker (Some("function")).
         // Template string parts: inline the raw text into the enclosing
         // `<template>` so a template literal reads as text with interpolation
         // children, not as a soup of grammar-internal wrappers.
@@ -118,9 +112,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // per TS_FIELD_WRAPPINGS, so we just rename the outer node here.
         // ---------------------------------------------------------------------
         "call_expression" | "member_expression" => {
-            if let Some(new_name) = map_element_name(&kind) {
-                rename(xot, node, new_name);
-            }
+            apply_rename(xot, node, &kind)?;
             Ok(TransformAction::Continue)
         }
 
@@ -140,9 +132,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         "binary_expression" | "unary_expression" | "assignment_expression"
         | "augmented_assignment_expression" | "update_expression" => {
             extract_operator(xot, node)?;
-            if let Some(new_name) = map_element_name(&kind) {
-                rename(xot, node, new_name);
-            }
+            apply_rename(xot, node, &kind)?;
             Ok(TransformAction::Continue)
         }
 
@@ -203,9 +193,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         | "arrow_function" | "generator_function_declaration"
         | "generator_function" => {
             extract_function_markers(xot, node)?;
-            if let Some(new_name) = map_element_name(&kind) {
-                rename(xot, node, new_name);
-            }
+            apply_rename(xot, node, &kind)?;
             Ok(TransformAction::Continue)
         }
 
@@ -246,11 +234,16 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Other nodes - just rename if needed
         // ---------------------------------------------------------------------
         _ => {
-            if let Some(new_name) = map_element_name(&kind) {
+            if let Some((new_name, marker)) = map_element_name(&kind) {
                 rename(xot, node, new_name);
-                if new_name == "type" {
+                if let Some(m) = marker {
+                    prepend_empty_element(xot, node, m)?;
+                }
+                if new_name == "type" && marker.is_none() {
                     // Namespace vocabulary (Principle #14): every named
                     // type reference carries its name in a <name> child.
+                    // Shape-marked type variants (union/tuple/…) contain
+                    // structure, not a bare name, so we skip wrapping there.
                     wrap_text_in_name(xot, node)?;
                 }
             }
@@ -259,137 +252,155 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
     }
 }
 
-/// Map tree-sitter node kinds to semantic element names
-fn map_element_name(kind: &str) -> Option<&'static str> {
+/// Map tree-sitter node kinds to semantic element names.
+///
+/// The second tuple element is an optional disambiguation marker:
+/// when two distinct tree-sitter kinds collapse to the same semantic
+/// element (e.g. all `*_type` → `<type>`), the marker child preserves
+/// the original shape so queries like `//type[union]` remain
+/// expressible without resorting to text matching.
+fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> {
     match kind {
         // Declarations
-        "program" => Some("program"),
-        "class_declaration" => Some("class"),
-        "function_declaration" | "function_expression" => Some("function"),
-        "generator_function_declaration" | "generator_function" => Some("function"),
-        "method_definition" => Some("method"),
+        "program" => Some(("program", None)),
+        "class_declaration" => Some(("class", None)),
+        "function_declaration" | "function_expression" => Some(("function", None)),
+        "generator_function_declaration" | "generator_function" => Some(("function", None)),
+        "method_definition" => Some(("method", None)),
         // Interface members — the shapes that appear inside
         // `interface X { … }`. Rename to the user-facing vocabulary
         // so the invariant tree is shared with class members.
-        "method_signature" => Some("method"),
-        "property_signature" => Some("property"),
-        "construct_signature" => Some("constructor"),
-        "index_signature" => Some("indexer"),
-        // Type-position constructs that are still a `<type>` just
-        // with a different flavor — mark via the element name until
-        // a structural-marker design lands.
-        "union_type" => Some("type"),
-        "intersection_type" => Some("type"),
-        "array_type" => Some("type"),
-        "literal_type" => Some("type"),
-        "tuple_type" => Some("type"),
-        "readonly_type" => Some("type"),
-        "parenthesized_type" => Some("type"),
-        "subscript_expression" => Some("index"),
-        "shorthand_property_identifier" => Some("name"),
-        "shorthand_property_identifier_pattern" => Some("name"),
+        "method_signature" => Some(("method", None)),
+        "property_signature" => Some(("property", None)),
+        "construct_signature" => Some(("constructor", None)),
+        "index_signature" => Some(("indexer", None)),
+        // Type-position constructs all collapse to `<type>` for a uniform
+        // namespace vocabulary. The shape marker child (//type[union],
+        // //type[function], //type[array], …) keeps them queryable.
+        "union_type" => Some(("type", Some("union"))),
+        "intersection_type" => Some(("type", Some("intersection"))),
+        "array_type" => Some(("type", Some("array"))),
+        "literal_type" => Some(("type", Some("literal"))),
+        "tuple_type" => Some(("type", Some("tuple"))),
+        "readonly_type" => Some(("type", Some("readonly"))),
+        "parenthesized_type" => Some(("type", Some("parenthesized"))),
+        "function_type" => Some(("type", Some("function"))),
+        "object_type" => Some(("type", Some("object"))),
+        "template_type" => Some(("type", Some("template"))),
+        "template_literal_type" => Some(("type", Some("template"))),
+        "default_type" => Some(("type", Some("default"))),
+        "subscript_expression" => Some(("index", None)),
+        "shorthand_property_identifier" => Some(("name", None)),
+        "shorthand_property_identifier_pattern" => Some(("name", None)),
         // JSX — full design still deferred, but rename the obvious
         // tree-sitter kinds so the invariants stop tripping. A
         // proper shape design lives in the open-questions doc.
-        "jsx_element" | "jsx_self_closing_element" => Some("element"),
-        "jsx_opening_element" => Some("opening"),
-        "jsx_closing_element" => Some("closing"),
-        "jsx_attribute" => Some("prop"),
-        "jsx_expression" => Some("value"),
-        "jsx_text" => Some("text"),
-        "function_type" => Some("type"),
-        // Patterns in destructuring — rename to <pattern>.
-        "rest_pattern" => Some("rest"),
+        "jsx_element" | "jsx_self_closing_element" => Some(("element", None)),
+        "jsx_opening_element" => Some(("opening", None)),
+        "jsx_closing_element" => Some(("closing", None)),
+        "jsx_attribute" => Some(("prop", None)),
+        "jsx_expression" => Some(("value", None)),
+        "jsx_text" => Some(("text", None)),
+        // Patterns in destructuring — shape markers distinguish array vs object.
+        "rest_pattern" => Some(("rest", None)),
+        "array_pattern" => Some(("pattern", Some("array"))),
+        "object_pattern" => Some(("pattern", Some("object"))),
         // Import wrappers.
-        "import_specifier" => Some("spec"),
-        "import_clause" => Some("clause"),
-        "spread_element" => Some("spread"),
-        "object_type" => Some("type"),
-        "non_null_expression" => Some("unary"),
-        "for_in_statement" => Some("for"),
-        "enum_assignment" => Some("constant"),
-        "update_expression" => Some("unary"),
-        "named_imports" => Some("imports"),
-        "switch_case" => Some("case"),
-        "switch_default" => Some("default"),
-        "default_type" => Some("type"),
-        "break_statement" => Some("break"),
-        "continue_statement" => Some("continue"),
-        "array_pattern" | "object_pattern" => Some("pattern"),
-        "switch_statement" => Some("switch"),
-        "switch_body" => Some("body"),
-        "template_type" => Some("type"),
-        "template_literal_type" => Some("type"),
-        "type_predicate" | "type_predicate_annotation" => Some("predicate"),
-        "arrow_function" => Some("arrow"),
-        "interface_declaration" => Some("interface"),
+        "import_specifier" => Some(("spec", None)),
+        "import_clause" => Some(("clause", None)),
+        "spread_element" => Some(("spread", None)),
+        "non_null_expression" => Some(("unary", None)),
+        "for_in_statement" => Some(("for", None)),
+        "enum_assignment" => Some(("constant", None)),
+        "update_expression" => Some(("unary", None)),
+        "named_imports" => Some(("imports", None)),
+        "switch_case" => Some(("case", None)),
+        "switch_default" => Some(("default", None)),
+        "break_statement" => Some(("break", None)),
+        "continue_statement" => Some(("continue", None)),
+        "switch_statement" => Some(("switch", None)),
+        "switch_body" => Some(("body", None)),
+        "type_predicate" | "type_predicate_annotation" => Some(("predicate", None)),
+        "arrow_function" => Some(("arrow", None)),
+        "interface_declaration" => Some(("interface", None)),
         // type_alias_declaration handled above (flattens <value> wrapper)
-        "enum_declaration" => Some("enum"),
-        "lexical_declaration" | "variable_declaration" => Some("variable"),
+        "enum_declaration" => Some(("enum", None)),
+        "lexical_declaration" | "variable_declaration" => Some(("variable", None)),
 
         // Parameters — formal_parameters is flattened; individual params below
-        "required_parameter" | "optional_parameter" => Some("parameter"),
+        "required_parameter" | "optional_parameter" => Some(("parameter", None)),
         // accessibility_modifier / override_modifier /
         // readonly_modifier — handled in the main match block as
         // source-backed marker keywords.
 
         // Blocks
-        "statement_block" => Some("block"),
+        "statement_block" => Some(("block", None)),
 
         // Statements
-        "return_statement" => Some("return"),
-        "if_statement" => Some("if"),
-        "else_clause" => Some("else"),
-        "for_statement" => Some("for"),
-        "while_statement" => Some("while"),
-        "try_statement" => Some("try"),
-        "catch_clause" => Some("catch"),
-        "throw_statement" => Some("throw"),
+        "return_statement" => Some(("return", None)),
+        "if_statement" => Some(("if", None)),
+        "else_clause" => Some(("else", None)),
+        "for_statement" => Some(("for", None)),
+        "while_statement" => Some(("while", None)),
+        "try_statement" => Some(("try", None)),
+        "catch_clause" => Some(("catch", None)),
+        "throw_statement" => Some(("throw", None)),
 
         // Expressions
-        "call_expression" => Some("call"),
-        "new_expression" => Some("new"),
-        "member_expression" => Some("member"),
+        "call_expression" => Some(("call", None)),
+        "new_expression" => Some(("new", None)),
+        "member_expression" => Some(("member", None)),
         // Note: call_expression and member_expression are also handled explicitly
         // in the transform match for field promotion, then renamed via map_element_name.
-        "assignment_expression" => Some("assign"),
-        "binary_expression" => Some("binary"),
-        "unary_expression" => Some("unary"),
+        "assignment_expression" => Some(("assign", None)),
+        "binary_expression" => Some(("binary", None)),
+        "unary_expression" => Some(("unary", None)),
         // ternary_expression handled above (wraps alternative in <else>)
-        "await_expression" => Some("await"),
-        "yield_expression" => Some("yield"),
-        "as_expression" => Some("as"),
+        "await_expression" => Some(("await", None)),
+        "yield_expression" => Some(("yield", None)),
+        "as_expression" => Some(("as", None)),
 
         // Classes / members
         // class_heritage is flattened in the match above; the inner clauses
         // are the semantic nodes (extends_clause → <extends>, etc.).
         // extends_clause handled above (retag value→type before rename)
-        "implements_clause" => Some("implements"),
-        "field_definition" | "public_field_definition" => Some("field"),
+        "implements_clause" => Some(("implements", None)),
+        "field_definition" | "public_field_definition" => Some(("field", None)),
 
         // Template strings
-        "template_string" => Some("template"),
-        "template_substitution" => Some("interpolation"),
+        "template_string" => Some(("template", None)),
+        "template_substitution" => Some(("interpolation", None)),
 
         // Imports/Exports
-        "import_statement" => Some("import"),
-        "export_statement" => Some("export"),
+        "import_statement" => Some(("import", None)),
+        "export_statement" => Some(("export", None)),
 
         // Literals
-        "string" => Some("string"),
-        "number" => Some("number"),
-        "true" | "false" => Some("bool"),
-        "null" => Some("null"),
+        "string" => Some(("string", None)),
+        "number" => Some(("number", None)),
+        "true" | "false" => Some(("bool", None)),
+        "null" => Some(("null", None)),
 
         // Types
         // type_annotation is flattened in the match above.
-        "predefined_type" => Some("type"),
-        "type_parameters" => Some("generics"),
-        "type_parameter" => Some("generic"),
+        "predefined_type" => Some(("type", None)),
+        "type_parameters" => Some(("generics", None)),
+        "type_parameter" => Some(("generic", None)),
 
         // Default - no mapping
         _ => None,
     }
+}
+
+/// Apply `map_element_name` to a node: rename + prepend marker (if any).
+fn apply_rename(xot: &mut Xot, node: XotNode, kind: &str) -> Result<(), xot::Error> {
+    if let Some((new_name, marker)) = map_element_name(kind) {
+        rename(xot, node, new_name);
+        if let Some(m) = marker {
+            prepend_empty_element(xot, node, m)?;
+        }
+    }
+    Ok(())
 }
 
 /// Extract operator from text children and add as `<op>` child element

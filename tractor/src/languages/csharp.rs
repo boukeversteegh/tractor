@@ -182,9 +182,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
                     break;
                 }
             }
-            if let Some(new_name) = map_element_name(&kind) {
-                rename(xot, node, new_name);
-            }
+            apply_rename(xot, node, &kind)?;
             Ok(TransformAction::Continue)
         }
         "type_parameter_list" => {
@@ -312,9 +310,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // ---------------------------------------------------------------------
         "binary_expression" | "unary_expression" | "assignment_expression" => {
             extract_operator(xot, node)?;
-            if let Some(new_name) = map_element_name(&kind) {
-                rename(xot, node, new_name);
-            }
+            apply_rename(xot, node, &kind)?;
             Ok(TransformAction::Continue)
         }
 
@@ -393,9 +389,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
                 let default = default_access_modifier(xot, node);
                 prepend_empty_element(xot, node, default)?;
             }
-            if let Some(new_name) = map_element_name(&kind) {
-                rename(xot, node, new_name);
-            }
+            apply_rename(xot, node, &kind)?;
             Ok(TransformAction::Continue)
         }
 
@@ -462,12 +456,21 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Other nodes - just rename if needed
         // ---------------------------------------------------------------------
         _ => {
-            if let Some(new_name) = map_element_name(&kind) {
-                rename(xot, node, new_name);
-            }
+            apply_rename(xot, node, &kind)?;
             Ok(TransformAction::Continue)
         }
     }
+}
+
+/// Apply `map_element_name` to a node: rename + prepend marker (if any).
+fn apply_rename(xot: &mut Xot, node: XotNode, kind: &str) -> Result<(), xot::Error> {
+    if let Some((new_name, marker)) = map_element_name(kind) {
+        rename(xot, node, new_name);
+        if let Some(m) = marker {
+            prepend_empty_element(xot, node, m)?;
+        }
+    }
+    Ok(())
 }
 
 /// C# access modifiers in canonical declaration order
@@ -534,105 +537,117 @@ fn is_known_modifier(text: &str) -> bool {
     ACCESS_MODIFIERS.contains(&text) || OTHER_MODIFIERS.contains(&text) || text == "this"
 }
 
-/// Map tree-sitter node kinds to semantic element names
-fn map_element_name(kind: &str) -> Option<&'static str> {
+/// Map tree-sitter node kinds to semantic element names.
+///
+/// Second tuple element is an optional disambiguation marker.
+/// When multiple tree-sitter kinds collapse to the same semantic
+/// element (e.g. all `*_type` → `<type>`, several pattern kinds
+/// → `<pattern>`), the empty marker child preserves the original
+/// shape so shape queries work without text matching.
+fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> {
     match kind {
-        "compilation_unit" => Some(UNIT),
-        "class_declaration" => Some(CLASS),
-        "struct_declaration" => Some(STRUCT),
-        "interface_declaration" => Some(INTERFACE),
-        "enum_declaration" => Some(ENUM),
-        "record_declaration" => Some(RECORD),
-        "method_declaration" => Some(METHOD),
-        "constructor_declaration" => Some(CONSTRUCTOR),
-        "property_declaration" => Some(PROPERTY),
-        "field_declaration" => Some(FIELD),
-        "namespace_declaration" => Some(NAMESPACE),
-        "expression_statement" => Some("expression"),
-        "parameter_list" => Some(PARAMETERS),
-        "parameter" => Some(PARAMETER),
-        "argument_list" => Some(ARGUMENTS),
-        "argument" => Some(ARGUMENT),
+        "compilation_unit" => Some((UNIT, None)),
+        "class_declaration" => Some((CLASS, None)),
+        "struct_declaration" => Some((STRUCT, None)),
+        "interface_declaration" => Some((INTERFACE, None)),
+        "enum_declaration" => Some((ENUM, None)),
+        "record_declaration" => Some((RECORD, None)),
+        "method_declaration" => Some((METHOD, None)),
+        "constructor_declaration" => Some((CONSTRUCTOR, None)),
+        "property_declaration" => Some((PROPERTY, None)),
+        "field_declaration" => Some((FIELD, None)),
+        "namespace_declaration" => Some((NAMESPACE, None)),
+        "expression_statement" => Some(("expression", None)),
+        "parameter_list" => Some((PARAMETERS, None)),
+        "parameter" => Some((PARAMETER, None)),
+        "argument_list" => Some((ARGUMENTS, None)),
+        "argument" => Some((ARGUMENT, None)),
         // generic_name is handled specially - becomes <type><generic/>Name<arguments>...</arguments></type>
-        "type_argument_list" => Some(ARGUMENTS),
-        // nullable_type is handled specially - becomes <type>X<nullable/></type>
-        "array_type" => Some("array"),
-        "block" => Some("block"),
-        "return_statement" => Some("return"),
-        "if_statement" => Some("if"),
-        "else_clause" => Some("else"),
-        "for_statement" => Some("for"),
-        "foreach_statement" => Some("foreach"),
-        "while_statement" => Some("while"),
-        "try_statement" => Some("try"),
-        "catch_clause" => Some("catch"),
-        "throw_statement" => Some("throw"),
-        "using_statement" => Some("using"),
-        "invocation_expression" => Some("call"),
-        "member_access_expression" => Some("member"),
-        "object_creation_expression" => Some("new"),
-        "assignment_expression" => Some("assign"),
-        "binary_expression" => Some("binary"),
-        "unary_expression" => Some("unary"),
+        "type_argument_list" => Some((ARGUMENTS, None)),
+        // nullable_type is handled specially above (direct rewrite)
+        "block" => Some(("block", None)),
+        "return_statement" => Some(("return", None)),
+        "if_statement" => Some(("if", None)),
+        "else_clause" => Some(("else", None)),
+        "for_statement" => Some(("for", None)),
+        "foreach_statement" => Some(("foreach", None)),
+        "while_statement" => Some(("while", None)),
+        "try_statement" => Some(("try", None)),
+        "catch_clause" => Some(("catch", None)),
+        "throw_statement" => Some(("throw", None)),
+        "using_statement" => Some(("using", None)),
+        "invocation_expression" => Some(("call", None)),
+        // `obj.Prop` / `Class.Const` — plain member access with the
+        // `.` operator. Marker `instance` distinguishes it from the
+        // other member/indexing shapes below.
+        "member_access_expression" => Some(("member", Some("instance"))),
+        "object_creation_expression" => Some(("new", None)),
+        "assignment_expression" => Some(("assign", None)),
+        "binary_expression" => Some(("binary", None)),
+        "unary_expression" => Some(("unary", None)),
         // conditional_expression handled above
-        "lambda_expression" => Some("lambda"),
-        "await_expression" => Some("await"),
-        "variable_declaration" => Some(VARIABLE),
-        "variable_declarator" => Some(DECLARATOR),
+        "lambda_expression" => Some(("lambda", None)),
+        "await_expression" => Some(("await", None)),
+        "variable_declaration" => Some((VARIABLE, None)),
+        "variable_declarator" => Some((DECLARATOR, None)),
         // local_declaration_statement is flattened (handled above); the
         // inner variable_declaration already becomes <variable>.
-        "base_list" => Some("extends"),
-        "type_parameter" => Some("generic"),
-        "enum_member_declaration" => Some("constant"),
-        "string_literal" => Some("string"),
-        "integer_literal" => Some("int"),
-        "real_literal" => Some("float"),
-        "boolean_literal" => Some("bool"),
-        "null_literal" => Some("null"),
-        "attribute_list" => Some(ATTRIBUTES),
-        "attribute" => Some(ATTRIBUTE),
-        "attribute_argument_list" => Some(ARGUMENTS),
-        "attribute_argument" => Some(ARGUMENT),
-        "accessor_list" => Some(ACCESSORS),
-        "accessor_declaration" => Some(ACCESSOR),
-        "using_directive" => Some(IMPORT),
+        "base_list" => Some(("extends", None)),
+        "type_parameter" => Some(("generic", None)),
+        "enum_member_declaration" => Some(("constant", None)),
+        "string_literal" => Some(("string", None)),
+        "integer_literal" => Some(("int", None)),
+        "real_literal" => Some(("float", None)),
+        "boolean_literal" => Some(("bool", None)),
+        "null_literal" => Some(("null", None)),
+        "attribute_list" => Some((ATTRIBUTES, None)),
+        "attribute" => Some((ATTRIBUTE, None)),
+        "attribute_argument_list" => Some((ARGUMENTS, None)),
+        "attribute_argument" => Some((ARGUMENT, None)),
+        "accessor_list" => Some((ACCESSORS, None)),
+        "accessor_declaration" => Some((ACCESSOR, None)),
+        "using_directive" => Some((IMPORT, None)),
         // C# 8+ switch expression rules/labels — normalise to the
         // shared vocabulary (`<case>` like other languages).
-        "switch_rule" => Some("arm"),
-        "switch_label" => Some("label"),
-        "switch_section" => Some("section"),
-        "element_binding_expression" => Some("index"),
-        "declaration_pattern" => Some("pattern"),
-        "switch_expression_arm" => Some("arm"),
-        "operator_declaration" => Some("operator"),
-        "is_pattern_expression" => Some("is"),
-        "implicit_object_creation_expression" => Some("new"),
-        "event_field_declaration" => Some("event"),
-        "constructor_initializer" => Some("chain"),
-        "tuple_element" => Some("element"),
-        "recursive_pattern" => Some("pattern"),
-        "property_pattern_clause" => Some("properties"),
-        "member_binding_expression" => Some("member"),
-        "constant_pattern" => Some("pattern"),
-        "conditional_access_expression" => Some("member"),
-        "catch_declaration" => Some("declaration"),
-        "when_clause" => Some("when"),
-        "where_clause" => Some("where"),
-        "verbatim_string_literal" => Some("string"),
-        "tuple_type" => Some("type"),
-        "tuple_pattern" => Some("pattern"),
-        "tuple_expression" => Some("tuple"),
-        "switch_statement" => Some("switch"),
-        "switch_expression" => Some("switch"),
-        "switch_body" => Some("body"),
-        "nullable_type" => Some("type"),
-        "pointer_type" => Some("type"),
-        "function_pointer_type" => Some("type"),
-        "ref_type" => Some("type"),
-        "generic_name" => Some("type"),
-        "implicit_parameter" => Some("parameter"),
-        "break_statement" => Some("break"),
-        "continue_statement" => Some("continue"),
+        "switch_rule" => Some(("arm", None)),
+        "switch_label" => Some(("label", None)),
+        "switch_section" => Some(("section", None)),
+        "element_binding_expression" => Some(("index", None)),
+        "switch_expression_arm" => Some(("arm", None)),
+        "operator_declaration" => Some(("operator", None)),
+        "is_pattern_expression" => Some(("is", None)),
+        "implicit_object_creation_expression" => Some(("new", None)),
+        "event_field_declaration" => Some(("event", None)),
+        "constructor_initializer" => Some(("chain", None)),
+        "tuple_element" => Some(("element", None)),
+        "property_pattern_clause" => Some(("properties", None)),
+        // `?.Prop` (null-conditional) — member access that skips if receiver is null.
+        "member_binding_expression" => Some(("member", Some("conditional"))),
+        "conditional_access_expression" => Some(("member", Some("conditional"))),
+        "catch_declaration" => Some(("declaration", None)),
+        "when_clause" => Some(("when", None)),
+        "where_clause" => Some(("where", None)),
+        "verbatim_string_literal" => Some(("string", None)),
+        // Patterns — shape markers distinguish declaration / recursive /
+        // constant / tuple forms.
+        "declaration_pattern" => Some(("pattern", Some("declaration"))),
+        "recursive_pattern" => Some(("pattern", Some("recursive"))),
+        "constant_pattern" => Some(("pattern", Some("constant"))),
+        "tuple_pattern" => Some(("pattern", Some("tuple"))),
+        // Type flavors — all collapse to `<type>` with a shape marker.
+        "array_type" => Some(("type", Some("array"))),
+        "tuple_type" => Some(("type", Some("tuple"))),
+        "pointer_type" => Some(("type", Some("pointer"))),
+        "function_pointer_type" => Some(("type", Some("function"))),
+        "ref_type" => Some(("type", Some("ref"))),
+        "generic_name" => Some(("type", None)),
+        "tuple_expression" => Some(("tuple", None)),
+        "switch_statement" => Some(("switch", None)),
+        "switch_expression" => Some(("switch", None)),
+        "switch_body" => Some(("body", None)),
+        "implicit_parameter" => Some(("parameter", None)),
+        "break_statement" => Some(("break", None)),
+        "continue_statement" => Some(("continue", None)),
         _ => None,
     }
 }

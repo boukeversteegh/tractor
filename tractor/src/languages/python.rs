@@ -52,13 +52,11 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
         "with_item" | "with_clause" => Ok(TransformAction::Flatten),
 
-        // List/dict spread / unpack (`*args`, `**kwargs`) — same
-        // concept, different syntax, one name.
-        "list_splat" | "dictionary_splat" | "list_splat_pattern"
-        | "dictionary_splat_pattern" => {
-            rename(xot, node, "spread");
-            Ok(TransformAction::Continue)
-        }
+        // list_splat / dictionary_splat now handled via the rename map
+        // with marker — see map_element_name. The marker child
+        // distinguishes sequence-style (`*`) from mapping-style (`**`)
+        // unpacks so `//spread[dict]` finds every `**kwargs` regardless
+        // of argument vs pattern vs literal context.
 
         "keyword_argument" => {
             rename(xot, node, "argument");
@@ -76,14 +74,9 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             rename(xot, node, "cast");
             Ok(TransformAction::Continue)
         }
-        "union_type" => {
-            rename(xot, node, "type");
-            Ok(TransformAction::Continue)
-        }
-        "union_pattern" | "splat_pattern" => {
-            rename(xot, node, "pattern");
-            Ok(TransformAction::Continue)
-        }
+        // union_type / union_pattern / splat_pattern are now handled
+        // via map_element_name with marker children so the collapsed
+        // element names remain queryable by shape.
 
         // Tree-sitter python emits `escape_sequence` inside strings
         // — flatten into the string body text.
@@ -156,9 +149,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         "binary_operator" | "comparison_operator" | "boolean_operator"
         | "unary_operator" | "augmented_assignment" => {
             extract_operator(xot, node)?;
-            if let Some(new_name) = map_element_name(&kind) {
-                rename(xot, node, new_name);
-            }
+            apply_rename(xot, node, &kind)?;
             Ok(TransformAction::Continue)
         }
 
@@ -179,7 +170,12 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Same for dict/set. Generator expressions have no literal
         // form in Python (parens make a tuple), so <generator> is
         // left bare — only one variant, no marker needed.
-        "list" | "set" => {
+        // `has_kind` guard — the walker also visits empty marker children
+        // named "list" / "set" (e.g. the `<list/>` marker we prepend on
+        // `spread`). Only tree-sitter list/set nodes carry a kind attr,
+        // so gating on that prevents applying the <literal/> marker to
+        // our own markers.
+        "list" | "set" if get_kind(xot, node).is_some() => {
             prepend_empty_element(xot, node, "literal")?;
             Ok(TransformAction::Continue)
         }
@@ -221,66 +217,88 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         _ => {
-            if let Some(new_name) = map_element_name(&kind) {
-                rename(xot, node, new_name);
-            }
+            apply_rename(xot, node, &kind)?;
             Ok(TransformAction::Continue)
         }
     }
 }
 
-fn map_element_name(kind: &str) -> Option<&'static str> {
+/// Map tree-sitter node kinds to semantic element names.
+///
+/// Second tuple element is an optional disambiguation marker —
+/// lets the map declare "rename to `<spread>` with `<dict/>` child"
+/// in one entry.
+fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> {
     match kind {
-        "module" => Some("module"),
-        "class_definition" => Some("class"),
-        "function_definition" => Some("function"),
-        "decorated_definition" => Some("decorated"),
-        "decorator" => Some("decorator"),
+        "module" => Some(("module", None)),
+        "class_definition" => Some(("class", None)),
+        "function_definition" => Some(("function", None)),
+        "decorated_definition" => Some(("decorated", None)),
+        "decorator" => Some(("decorator", None)),
         // parameters is flattened via Principle #12 above
-        "default_parameter" | "typed_parameter" | "typed_default_parameter" => Some("parameter"),
-        "return_statement" => Some("return"),
-        "if_statement" => Some("if"),
-        "elif_clause" => Some("else_if"),
-        "else_clause" => Some("else"),
-        "for_statement" => Some("for"),
-        "while_statement" => Some("while"),
-        "try_statement" => Some("try"),
-        "except_clause" => Some("except"),
-        "finally_clause" => Some("finally"),
-        "with_statement" => Some("with"),
-        "raise_statement" => Some("raise"),
-        "pass_statement" => Some("pass"),
-        "import_statement" => Some("import"),
-        "import_from_statement" => Some("from"),
-        "list_splat_pattern" => Some("splat"),
-        "dictionary_splat_pattern" => Some("kwsplat"),
-        "as_pattern" => Some("as"),
-        "for_in_clause" => Some("for"),
-        "call" => Some("call"),
-        "attribute" => Some("member"),
-        "subscript" => Some("subscript"),
-        "assignment" => Some("assign"),
+        "default_parameter" | "typed_parameter" | "typed_default_parameter" => Some(("parameter", None)),
+        "return_statement" => Some(("return", None)),
+        "if_statement" => Some(("if", None)),
+        "elif_clause" => Some(("else_if", None)),
+        "else_clause" => Some(("else", None)),
+        "for_statement" => Some(("for", None)),
+        "while_statement" => Some(("while", None)),
+        "try_statement" => Some(("try", None)),
+        "except_clause" => Some(("except", None)),
+        "finally_clause" => Some(("finally", None)),
+        "with_statement" => Some(("with", None)),
+        "raise_statement" => Some(("raise", None)),
+        "pass_statement" => Some(("pass", None)),
+        "import_statement" => Some(("import", None)),
+        "import_from_statement" => Some(("from", None)),
+        // Spread / unpack — `*` sequence-style vs `**` mapping-style.
+        // The `<list/>` / `<dict/>` marker child survives through
+        // argument, pattern, and literal contexts so `//spread[dict]`
+        // picks up every `**kwargs`.
+        "list_splat" | "list_splat_pattern" => Some(("spread", Some("list"))),
+        "dictionary_splat" | "dictionary_splat_pattern" => Some(("spread", Some("dict"))),
+        // Type / pattern flavors — shape markers keep queries precise.
+        "union_type" => Some(("type", Some("union"))),
+        "union_pattern" => Some(("pattern", Some("union"))),
+        "splat_pattern" => Some(("pattern", Some("splat"))),
+        "as_pattern" => Some(("as", None)),
+        "for_in_clause" => Some(("for", None)),
+        "call" => Some(("call", None)),
+        "attribute" => Some(("member", None)),
+        "subscript" => Some(("subscript", None)),
+        "assignment" => Some(("assign", None)),
         // augmented_assignment collapses to <assign>; the <op> child (e.g., +=) distinguishes it.
-        "augmented_assignment" => Some("assign"),
-        "binary_operator" => Some("binary"),
-        "unary_operator" => Some("unary"),
-        "comparison_operator" => Some("compare"),
-        "boolean_operator" => Some("logical"),
+        "augmented_assignment" => Some(("assign", None)),
+        "binary_operator" => Some(("binary", None)),
+        "unary_operator" => Some(("unary", None)),
+        "comparison_operator" => Some(("compare", None)),
+        "boolean_operator" => Some(("logical", None)),
         // conditional_expression handled above
-        "lambda" => Some("lambda"),
-        "await" => Some("await"),
+        "lambda" => Some(("lambda", None)),
+        "await" => Some(("await", None)),
         // Collection literals and comprehensions are handled specially
         // above (renamed to their produced type + <literal/> or
         // <comprehension/> marker).
-        "generator_expression" => Some("generator"),
-        "string" => Some("string"),
-        "integer" => Some("int"),
-        "float" => Some("float"),
-        "true" => Some("true"),
-        "false" => Some("false"),
-        "none" => Some("none"),
+        "generator_expression" => Some(("generator", None)),
+        "string" => Some(("string", None)),
+        "integer" => Some(("int", None)),
+        "float" => Some(("float", None)),
+        "true" => Some(("true", None)),
+        "false" => Some(("false", None)),
+        "none" => Some(("none", None)),
         _ => None,
     }
+}
+
+/// Apply `map_element_name` to a node: rename + prepend marker (if any).
+fn apply_rename(xot: &mut Xot, node: XotNode, kind: &str) -> Result<(), xot::Error> {
+    if let Some((new_name, marker)) = map_element_name(kind) {
+        rename(xot, node, new_name);
+        if let Some(m) = marker {
+            prepend_empty_element(xot, node, m)?;
+        }
+    }
+    Ok(())
 }
 
 fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {

@@ -297,7 +297,7 @@ program/
   │       │   ├─ returns/type/name = "int"
   │       │   ├─ name = "sum"
   │       │   ├─ "("
-  │       │   ├─ parameter/
+  │       │   ├─ parameter[variadic]/
   │       │   │   ├─ type/name = "int"
   │       │   │   ├─ "..."
   │       │   │   └─ declarator/name = "xs"
@@ -384,7 +384,7 @@ program/
   │       │       │   │       ├─ arm/
   │       │       │   │       │   ├─ label/
   │       │       │   │       │   │   ├─ "case"
-  │       │       │   │       │   │   └─ pattern/pattern/
+  │       │       │   │       │   │   └─ pattern/pattern[type]/
   │       │       │   │       │   │       ├─ type/name = "Integer"
   │       │       │   │       │   │       └─ name = "i"
   │       │       │   │       │   ├─ "->"
@@ -396,7 +396,7 @@ program/
   │       │       │   │       ├─ arm/
   │       │       │   │       │   ├─ label/
   │       │       │   │       │   │   ├─ "case"
-  │       │       │   │       │   │   ├─ pattern/pattern/
+  │       │       │   │       │   │   ├─ pattern/pattern[type]/
   │       │       │   │       │   │   │   ├─ type/name = "String"
   │       │       │   │       │   │   │   └─ name = "s"
   │       │       │   │       │   │   └─ guard/

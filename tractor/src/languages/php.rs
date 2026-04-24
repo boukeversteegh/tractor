@@ -132,19 +132,26 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Binary / assignment / unary expressions — lift the operator.
         "binary_expression" | "assignment_expression" | "unary_op_expression" => {
             extract_operator(xot, node)?;
-            if let Some(new_name) = map_element_name(&kind) {
-                rename(xot, node, new_name);
-            }
+            apply_rename(xot, node, &kind)?;
             Ok(TransformAction::Continue)
         }
 
         _ => {
-            if let Some(new_name) = map_element_name(&kind) {
-                rename(xot, node, new_name);
-            }
+            apply_rename(xot, node, &kind)?;
             Ok(TransformAction::Continue)
         }
     }
+}
+
+/// Apply `map_element_name` to a node: rename + prepend marker (if any).
+fn apply_rename(xot: &mut Xot, node: XotNode, kind: &str) -> Result<(), xot::Error> {
+    if let Some((new_name, marker)) = map_element_name(kind) {
+        rename(xot, node, new_name);
+        if let Some(m) = marker {
+            prepend_empty_element(xot, node, m)?;
+        }
+    }
+    Ok(())
 }
 
 fn has_kind(xot: &Xot, node: XotNode) -> bool {
@@ -162,75 +169,94 @@ fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     Ok(())
 }
 
-fn map_element_name(kind: &str) -> Option<&'static str> {
+/// Map tree-sitter node kinds to semantic element names.
+///
+/// Second tuple element is an optional disambiguation marker —
+/// lets entries like `union_type → <type><union/>` declare the
+/// marker inline so shape queries work across collapsed variants.
+fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> {
     match kind {
-        "program" => Some("program"),
-        "namespace_definition" => Some("namespace"),
-        "namespace_use_declaration" => Some("use"),
-        "class_declaration" => Some("class"),
-        "interface_declaration" => Some("interface"),
-        "trait_declaration" => Some("trait"),
-        "enum_declaration" => Some("enum"),
-        "method_declaration" => Some("method"),
-        "function_definition" => Some("function"),
-        "property_declaration" => Some("field"),
-        "const_declaration" => Some("const"),
-        "enum_case" => Some("constant"),
-        "formal_parameter" | "simple_parameter" | "variadic_parameter" => Some("parameter"),
+        "program" => Some(("program", None)),
+        "namespace_definition" => Some(("namespace", None)),
+        "namespace_use_declaration" => Some(("use", None)),
+        "class_declaration" => Some(("class", None)),
+        "interface_declaration" => Some(("interface", None)),
+        "trait_declaration" => Some(("trait", None)),
+        "enum_declaration" => Some(("enum", None)),
+        "method_declaration" => Some(("method", None)),
+        "function_definition" => Some(("function", None)),
+        "property_declaration" => Some(("field", None)),
+        "const_declaration" => Some(("const", None)),
+        "enum_case" => Some(("constant", None)),
+        "formal_parameter" | "simple_parameter" => Some(("parameter", None)),
+        "variadic_parameter" => Some(("parameter", Some("variadic"))),
         // property_element / formal_parameters flattened above
-        "argument" => Some("argument"),
+        "argument" => Some(("argument", None)),
         // arguments flattened above when has kind
-        "return_statement" => Some("return"),
-        "if_statement" => Some("if"),
-        "else_clause" => Some("else"),
-        "else_if_clause" | "elseif_clause" => Some("else_if"),
-        "for_statement" => Some("for"),
-        "foreach_statement" => Some("foreach"),
-        "while_statement" => Some("while"),
-        "do_statement" => Some("do"),
-        "switch_statement" => Some("switch"),
-        "case_statement" => Some("case"),
-        "default_statement" => Some("default"),
-        "try_statement" => Some("try"),
-        "catch_clause" => Some("catch"),
-        "finally_clause" => Some("finally"),
-        "throw_expression" => Some("throw"),
-        "echo_statement" => Some("echo"),
-        "continue_statement" => Some("continue"),
-        "break_statement" => Some("break"),
-        "match_expression" => Some("match"),
-        "match_conditional_expression" => Some("arm"),
-        "match_default_expression" => Some("arm"),
-        "class_constant_access_expression" => Some("member"),
-        "subscript_expression" => Some("index"),
-        "yield_expression" => Some("yield"),
-        "require_expression" | "require_once_expression" | "include_expression" | "include_once_expression" => Some("require"),
-        "type_cast_expression" => Some("cast"),
-        "print_intrinsic" => Some("print"),
-        "exit_intrinsic" | "exit_statement" => Some("exit"),
-        "use_declaration" => Some("use"),
-        "variadic_unpacking" => Some("spread"),
-        "const_element" => Some("constant"),
-        "type_list" => Some("types"),
-        "function_call_expression" => Some("call"),
-        "member_call_expression" => Some("call"),
-        "scoped_call_expression" => Some("call"),
-        "member_access_expression" => Some("member"),
-        "scoped_property_access_expression" => Some("member"),
-        "object_creation_expression" => Some("new"),
-        "cast_expression" => Some("cast"),
-        "assignment_expression" => Some("assign"),
-        "binary_expression" => Some("binary"),
-        "unary_op_expression" => Some("unary"),
-        "conditional_expression" => Some("ternary"),
-        "array_creation_expression" => Some("array"),
-        "string" | "encapsed_string" => Some("string"),
-        "integer" => Some("int"),
-        "float" => Some("float"),
-        "boolean" => Some("bool"),
-        "null" => Some("null"),
-        "variable_name" => Some("variable"),
-        "primitive_type" | "named_type" | "union_type" | "optional_type" => Some("type"),
+        "return_statement" => Some(("return", None)),
+        "if_statement" => Some(("if", None)),
+        "else_clause" => Some(("else", None)),
+        "else_if_clause" | "elseif_clause" => Some(("else_if", None)),
+        "for_statement" => Some(("for", None)),
+        "foreach_statement" => Some(("foreach", None)),
+        "while_statement" => Some(("while", None)),
+        "do_statement" => Some(("do", None)),
+        "switch_statement" => Some(("switch", None)),
+        "case_statement" => Some(("case", None)),
+        "default_statement" => Some(("default", None)),
+        "try_statement" => Some(("try", None)),
+        "catch_clause" => Some(("catch", None)),
+        "finally_clause" => Some(("finally", None)),
+        "throw_expression" => Some(("throw", None)),
+        "echo_statement" => Some(("echo", None)),
+        "continue_statement" => Some(("continue", None)),
+        "break_statement" => Some(("break", None)),
+        "match_expression" => Some(("match", None)),
+        "match_conditional_expression" => Some(("arm", None)),
+        "match_default_expression" => Some(("arm", Some("default"))),
+        "class_constant_access_expression" => Some(("member", Some("constant"))),
+        "subscript_expression" => Some(("index", None)),
+        "yield_expression" => Some(("yield", None)),
+        "require_expression" | "require_once_expression" | "include_expression" | "include_once_expression" => Some(("require", None)),
+        "type_cast_expression" => Some(("cast", None)),
+        "print_intrinsic" => Some(("print", None)),
+        "exit_intrinsic" | "exit_statement" => Some(("exit", None)),
+        "use_declaration" => Some(("use", None)),
+        "variadic_unpacking" => Some(("spread", None)),
+        "const_element" => Some(("constant", None)),
+        "type_list" => Some(("types", None)),
+        // Call flavors — `foo()` is a bare function call, `$obj->m()`
+        // is an instance method, `Class::m()` is a static method. All
+        // three collapse to `<call>` with a shape marker so
+        // `//call[static]` finds every scoped call regardless of the
+        // textual operator.
+        "function_call_expression" => Some(("call", None)),
+        "member_call_expression" => Some(("call", Some("instance"))),
+        "scoped_call_expression" => Some(("call", Some("static"))),
+        // Access flavors — `$obj->prop` vs `Class::$prop` (static
+        // property) vs `Class::CONST`. Marker preserves the scoped /
+        // static / constant distinction.
+        "member_access_expression" => Some(("member", Some("instance"))),
+        "scoped_property_access_expression" => Some(("member", Some("static"))),
+        "object_creation_expression" => Some(("new", None)),
+        "cast_expression" => Some(("cast", None)),
+        "assignment_expression" => Some(("assign", None)),
+        "binary_expression" => Some(("binary", None)),
+        "unary_op_expression" => Some(("unary", None)),
+        "conditional_expression" => Some(("ternary", None)),
+        "array_creation_expression" => Some(("array", None)),
+        "string" | "encapsed_string" => Some(("string", None)),
+        "integer" => Some(("int", None)),
+        "float" => Some(("float", None)),
+        "boolean" => Some(("bool", None)),
+        "null" => Some(("null", None)),
+        "variable_name" => Some(("variable", None)),
+        // Type flavors — shape marker keeps them queryable after the
+        // collapse to `<type>`.
+        "primitive_type" => Some(("type", Some("primitive"))),
+        "named_type" => Some(("type", None)),
+        "union_type" => Some(("type", Some("union"))),
+        "optional_type" => Some(("type", Some("optional"))),
         _ => None,
     }
 }

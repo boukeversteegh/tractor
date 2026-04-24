@@ -119,17 +119,13 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             if !has_vis {
                 prepend_empty_element(xot, node, "private")?;
             }
-            if let Some(new_name) = map_element_name(&kind) {
-                rename(xot, node, new_name);
-            }
+            apply_rename(xot, node, &kind)?;
             Ok(TransformAction::Continue)
         }
 
         "binary_expression" | "unary_expression" => {
             extract_operator(xot, node)?;
-            if let Some(new_name) = map_element_name(&kind) {
-                rename(xot, node, new_name);
-            }
+            apply_rename(xot, node, &kind)?;
             Ok(TransformAction::Continue)
         }
 
@@ -261,9 +257,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         _ => {
-            if let Some(new_name) = map_element_name(&kind) {
-                rename(xot, node, new_name);
-            }
+            apply_rename(xot, node, &kind)?;
             Ok(TransformAction::Continue)
         }
     }
@@ -277,85 +271,110 @@ fn has_kind(xot: &Xot, node: XotNode) -> bool {
     get_kind(xot, node).is_some()
 }
 
-fn map_element_name(kind: &str) -> Option<&'static str> {
+/// Map tree-sitter node kinds to semantic element names.
+///
+/// The second tuple element is an optional disambiguation marker:
+/// when multiple tree-sitter kinds collapse to the same semantic
+/// element (e.g. all `*_type` → `<type>`, `or_pattern`/`struct_pattern`
+/// → `<pattern>`), the empty marker child preserves the original
+/// shape so queries like `//type[function]` remain expressible.
+fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> {
     match kind {
-        "source_file" => Some("file"),
-        "function_item" => Some("function"),
-        "impl_item" => Some("impl"),
-        "struct_item" => Some("struct"),
-        "enum_item" => Some("enum"),
-        "trait_item" => Some("trait"),
-        "mod_item" => Some("mod"),
-        "use_declaration" => Some("use"),
-        "const_item" => Some("const"),
-        "static_item" => Some("static"),
-        "type_item" => Some("alias"),
+        "source_file" => Some(("file", None)),
+        "function_item" => Some(("function", None)),
+        "impl_item" => Some(("impl", None)),
+        "struct_item" => Some(("struct", None)),
+        "enum_item" => Some(("enum", None)),
+        "trait_item" => Some(("trait", None)),
+        "mod_item" => Some(("mod", None)),
+        "use_declaration" => Some(("use", None)),
+        "const_item" => Some(("const", None)),
+        "static_item" => Some(("static", None)),
+        "type_item" => Some(("alias", None)),
         // parameters is flattened via Principle #12 above
-        "parameter" => Some("parameter"),
-        "self_parameter" => Some("self"),
+        "parameter" => Some(("parameter", None)),
+        "self_parameter" => Some(("self", None)),
         // reference_type is handled above: <type> with <borrowed/> marker
-        "generic_type" => Some("generic"),
-        "scoped_type_identifier" | "scoped_identifier" => Some("path"),
-        "return_expression" => Some("return"),
-        "if_expression" => Some("if"),
-        "else_clause" => Some("else"),
-        "for_expression" => Some("for"),
-        "while_expression" => Some("while"),
-        "loop_expression" => Some("loop"),
-        "match_expression" => Some("match"),
-        "enum_variant" => Some("variant"),
-        "lifetime_parameter" | "lifetime" => Some("lifetime"),
-        "function_signature_item" => Some("signature"),
-        "type_cast_expression" => Some("cast"),
-        "function_modifiers" => Some("modifiers"),
-        "break_expression" | "break_statement" => Some("break"),
-        "continue_expression" | "continue_statement" => Some("continue"),
-        "range_expression" => Some("range"),
-        "send_statement" => Some("send"),
-        "shorthand_field_initializer" => Some("field"),
-        "where_clause" => Some("where"),
-        "where_predicate" => Some("bound"),
-        "reference_expression" => Some("ref"),
-        "range_pattern" => Some("range"),
-        "pointer_type" => Some("pointer"),
-        "or_pattern" => Some("pattern"),
-        "function_type" => Some("type"),
-        "tuple_type" => Some("type"),
-        "never_type" => Some("type"),
-        "unit_type" => Some("type"),
-        "dynamic_type" => Some("type"),
-        "trait_type" => Some("type"),
-        "abstract_type" => Some("type"),
-        "associated_type" => Some("type"),
-        "bounded_type" => Some("type"),
-        "array_type" => Some("type"),
-        "slice_type" => Some("type"),
-        "field_pattern" | "struct_pattern" => Some("pattern"),
-        "attribute_item" | "inner_attribute_item" => Some("attribute"),
-        "compound_assignment_expr" => Some("assign"),
-        "tuple_expression" => Some("tuple"),
-        "unsafe_block" => Some("unsafe"),
-        "match_arm" => Some("arm"),
-        "field_declaration" => Some("field"),
-        "field_initializer" => Some("field"),
-        "trait_bounds" => Some("bounds"),
-        "call_expression" => Some("call"),
-        "method_call_expression" => Some("call"),
-        "field_expression" => Some("field"),
-        "index_expression" => Some("index"),
-        "binary_expression" => Some("binary"),
-        "unary_expression" => Some("unary"),
-        "closure_expression" => Some("closure"),
-        "await_expression" => Some("await"),
-        "try_expression" => Some("try"),
-        "macro_invocation" => Some("macro"),
-        "string_literal" => Some("string"),
+        "generic_type" => Some(("generic", None)),
+        "scoped_type_identifier" | "scoped_identifier" => Some(("path", None)),
+        "return_expression" => Some(("return", None)),
+        "if_expression" => Some(("if", None)),
+        "else_clause" => Some(("else", None)),
+        "for_expression" => Some(("for", None)),
+        "while_expression" => Some(("while", None)),
+        "loop_expression" => Some(("loop", None)),
+        "match_expression" => Some(("match", None)),
+        "enum_variant" => Some(("variant", None)),
+        "lifetime_parameter" | "lifetime" => Some(("lifetime", None)),
+        "function_signature_item" => Some(("signature", None)),
+        "type_cast_expression" => Some(("cast", None)),
+        "function_modifiers" => Some(("modifiers", None)),
+        "break_expression" | "break_statement" => Some(("break", None)),
+        "continue_expression" | "continue_statement" => Some(("continue", None)),
+        "range_expression" => Some(("range", None)),
+        "send_statement" => Some(("send", None)),
+        "shorthand_field_initializer" => Some(("field", None)),
+        "where_clause" => Some(("where", None)),
+        "where_predicate" => Some(("bound", None)),
+        "reference_expression" => Some(("ref", None)),
+        "range_pattern" => Some(("range", None)),
+        // Types — shape markers distinguish each flavor.
+        "pointer_type" => Some(("type", Some("pointer"))),
+        "function_type" => Some(("type", Some("function"))),
+        "tuple_type" => Some(("type", Some("tuple"))),
+        "never_type" => Some(("type", Some("never"))),
+        "unit_type" => Some(("type", Some("unit"))),
+        "dynamic_type" => Some(("type", Some("dynamic"))),
+        "trait_type" => Some(("type", Some("trait"))),
+        "abstract_type" => Some(("type", Some("abstract"))),
+        "associated_type" => Some(("type", Some("associated"))),
+        "bounded_type" => Some(("type", Some("bounded"))),
+        "array_type" => Some(("type", Some("array"))),
+        "slice_type" => Some(("type", Some("slice"))),
+        // Patterns — shape markers distinguish or/field/struct/tuple.
+        "or_pattern" => Some(("pattern", Some("or"))),
+        "field_pattern" => Some(("pattern", Some("field"))),
+        "struct_pattern" => Some(("pattern", Some("struct"))),
+        "attribute_item" | "inner_attribute_item" => Some(("attribute", None)),
+        "compound_assignment_expr" => Some(("assign", None)),
+        "tuple_expression" => Some(("tuple", None)),
+        "unsafe_block" => Some(("unsafe", None)),
+        "match_arm" => Some(("arm", None)),
+        "field_declaration" => Some(("field", None)),
+        "field_initializer" => Some(("field", None)),
+        "trait_bounds" => Some(("bounds", None)),
+        // Tree-sitter-rust emits `call_expression` for every call; method
+        // calls like `obj.m()` appear with a `field_expression` as the
+        // function child, so `//call/field` finds them without needing
+        // a marker. `method_call_expression` is kept for forward-compat.
+        "call_expression" => Some(("call", None)),
+        "method_call_expression" => Some(("call", Some("method"))),
+        "field_expression" => Some(("field", None)),
+        "index_expression" => Some(("index", None)),
+        "binary_expression" => Some(("binary", None)),
+        "unary_expression" => Some(("unary", None)),
+        "closure_expression" => Some(("closure", None)),
+        "await_expression" => Some(("await", None)),
+        "try_expression" => Some(("try", None)),
+        "macro_invocation" => Some(("macro", None)),
+        "string_literal" => Some(("string", None)),
         // raw_string_literal is handled in the match above (rename + prepend <raw/>)
-        "integer_literal" => Some("int"),
-        "float_literal" => Some("float"),
-        "boolean_literal" => Some("bool"),
+        "integer_literal" => Some(("int", None)),
+        "float_literal" => Some(("float", None)),
+        "boolean_literal" => Some(("bool", None)),
         _ => None,
     }
+}
+
+/// Apply `map_element_name` to a node: rename + prepend marker (if any).
+fn apply_rename(xot: &mut Xot, node: XotNode, kind: &str) -> Result<(), xot::Error> {
+    if let Some((new_name, marker)) = map_element_name(kind) {
+        rename(xot, node, new_name);
+        if let Some(m) = marker {
+            prepend_empty_element(xot, node, m)?;
+        }
+    }
+    Ok(())
 }
 
 fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {

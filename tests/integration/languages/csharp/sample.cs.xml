@@ -142,6 +142,7 @@
                         <expression>
                           <call>
                             <member>
+                              <instance/>
                               <name>Console</name>
                               .
                               <name>WriteLine</name>
@@ -177,6 +178,7 @@
                           return
                           <call>
                             <member>
+                              <instance/>
                               <name>_value</name>
                               .
                               <name>ToString</name>
@@ -228,6 +230,7 @@
                         <expression>
                           <call>
                             <member>
+                              <instance/>
                               <name>Console</name>
                               .
                               <name>WriteLine</name>

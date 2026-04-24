@@ -123,9 +123,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // ---------------------------------------------------------------------
         "binary_expression" | "unary_expression" | "assignment_expression" => {
             extract_operator(xot, node)?;
-            if let Some(new_name) = map_element_name(&kind) {
-                rename(xot, node, new_name);
-            }
+            apply_rename(xot, node, &kind)?;
             Ok(TransformAction::Continue)
         }
 
@@ -243,9 +241,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             if kind == "method_declaration" {
                 wrap_method_return_type(xot, node)?;
             }
-            if let Some(new_name) = map_element_name(&kind) {
-                rename(xot, node, new_name);
-            }
+            apply_rename(xot, node, &kind)?;
             Ok(TransformAction::Continue)
         }
 
@@ -253,15 +249,29 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Other nodes - just rename if needed
         // ---------------------------------------------------------------------
         _ => {
-            if let Some(new_name) = map_element_name(&kind) {
+            if let Some((new_name, marker)) = map_element_name(&kind) {
                 rename(xot, node, new_name);
-                if new_name == "type" {
+                if let Some(m) = marker {
+                    prepend_empty_element(xot, node, m)?;
+                }
+                if new_name == "type" && marker.is_none() {
                     wrap_text_in_name(xot, node)?;
                 }
             }
             Ok(TransformAction::Continue)
         }
     }
+}
+
+/// Apply `map_element_name` to a node: rename + prepend marker (if any).
+fn apply_rename(xot: &mut Xot, node: XotNode, kind: &str) -> Result<(), xot::Error> {
+    if let Some((new_name, marker)) = map_element_name(kind) {
+        rename(xot, node, new_name);
+        if let Some(m) = marker {
+            prepend_empty_element(xot, node, m)?;
+        }
+    }
+    Ok(())
 }
 
 /// Walk up from `node` looking for an enclosing `interface_declaration`.
@@ -335,65 +345,74 @@ fn is_known_modifier(text: &str) -> bool {
     )
 }
 
-/// Map tree-sitter node kinds to semantic element names
-fn map_element_name(kind: &str) -> Option<&'static str> {
+/// Map tree-sitter node kinds to semantic element names.
+///
+/// Second tuple element is an optional disambiguation marker.
+fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> {
     match kind {
-        "program" => Some("program"),
-        "class_declaration" => Some("class"),
-        "interface_declaration" => Some("interface"),
-        "enum_declaration" => Some("enum"),
-        "method_declaration" => Some("method"),
-        "constructor_declaration" => Some("constructor"),
+        "program" => Some(("program", None)),
+        "class_declaration" => Some(("class", None)),
+        "interface_declaration" => Some(("interface", None)),
+        "enum_declaration" => Some(("enum", None)),
+        "method_declaration" => Some(("method", None)),
+        "constructor_declaration" => Some(("constructor", None)),
         // constructor_body is flattened (handled above) — the `body` wrapper
         // already comes from the field-wrapping pass.
-        "field_declaration" => Some("field"),
-        "variable_declarator" => Some("declarator"),
-        "local_variable_declaration" => Some("variable"),
-        "enum_constant" => Some("constant"),
+        "field_declaration" => Some(("field", None)),
+        "variable_declarator" => Some(("declarator", None)),
+        "local_variable_declaration" => Some(("variable", None)),
+        "enum_constant" => Some(("constant", None)),
         // formal_parameters and argument_list are flattened via Principle #12 above
-        "formal_parameter" => Some("parameter"),
-        "generic_type" => Some("generic"),
-        "array_type" => Some("array"),
-        "scoped_identifier" | "scoped_type_identifier" => Some("path"),
-        "super_interfaces" => Some("implements"),
-        "superclass" => Some("extends"),
-        "type_bound" => Some("extends"),
-        "type_parameter" => Some("generic"),
-        "return_statement" => Some("return"),
-        "if_statement" => Some("if"),
-        "else_clause" => Some("else"),
-        "for_statement" => Some("for"),
-        "enhanced_for_statement" => Some("foreach"),
-        "while_statement" => Some("while"),
-        "try_statement" => Some("try"),
-        "catch_clause" => Some("catch"),
-        "finally_clause" => Some("finally"),
-        "throw_statement" => Some("throw"),
-        "switch_expression" => Some("switch"),
-        "switch_rule" => Some("arm"),
-        "switch_label" => Some("label"),
-        "switch_block_statement_group" => Some("case"),
-        "method_invocation" => Some("call"),
-        "object_creation_expression" => Some("new"),
-        "field_access" => Some("member"),
-        "array_access" => Some("index"),
-        "assignment_expression" => Some("assign"),
-        "binary_expression" => Some("binary"),
-        "unary_expression" => Some("unary"),
+        "formal_parameter" => Some(("parameter", None)),
+        "generic_type" => Some(("generic", None)),
+        // array_type collapses to <type><array/> so it joins the
+        // uniform namespace of `<type>` references.
+        "array_type" => Some(("type", Some("array"))),
+        "scoped_identifier" | "scoped_type_identifier" => Some(("path", None)),
+        "super_interfaces" => Some(("implements", None)),
+        "superclass" => Some(("extends", None)),
+        "type_bound" => Some(("extends", None)),
+        "type_parameter" => Some(("generic", None)),
+        "return_statement" => Some(("return", None)),
+        "if_statement" => Some(("if", None)),
+        "else_clause" => Some(("else", None)),
+        "for_statement" => Some(("for", None)),
+        "enhanced_for_statement" => Some(("foreach", None)),
+        "while_statement" => Some(("while", None)),
+        "try_statement" => Some(("try", None)),
+        "catch_clause" => Some(("catch", None)),
+        "finally_clause" => Some(("finally", None)),
+        "throw_statement" => Some(("throw", None)),
+        "switch_expression" => Some(("switch", None)),
+        "switch_rule" => Some(("arm", None)),
+        "switch_label" => Some(("label", None)),
+        "switch_block_statement_group" => Some(("case", None)),
+        "method_invocation" => Some(("call", None)),
+        "object_creation_expression" => Some(("new", None)),
+        "field_access" => Some(("member", None)),
+        "array_access" => Some(("index", None)),
+        "assignment_expression" => Some(("assign", None)),
+        "binary_expression" => Some(("binary", None)),
+        "unary_expression" => Some(("unary", None)),
         // ternary_expression handled above
-        "lambda_expression" => Some("lambda"),
-        "string_literal" => Some("string"),
+        "lambda_expression" => Some(("lambda", None)),
+        "string_literal" => Some(("string", None)),
         "decimal_integer_literal" | "hex_integer_literal"
-        | "octal_integer_literal" | "binary_integer_literal" => Some("int"),
-        "type_pattern" => Some("pattern"),
-        "switch_block" => Some("body"),
-        "spread_parameter" => Some("parameter"),
-        "decimal_floating_point_literal" => Some("float"),
-        "true" => Some("true"),
-        "false" => Some("false"),
-        "null_literal" => Some("null"),
-        "import_declaration" => Some("import"),
-        "package_declaration" => Some("package"),
+        | "octal_integer_literal" | "binary_integer_literal" => Some(("int", None)),
+        // Patterns — `instanceof T x` and record patterns both collapse
+        // to `<pattern>` with a shape marker so the flavor is queryable.
+        "type_pattern" => Some(("pattern", Some("type"))),
+        "record_pattern" => Some(("pattern", Some("record"))),
+        "switch_block" => Some(("body", None)),
+        // varargs `T... name` — flag with <variadic/> so queries can
+        // distinguish from a regular parameter.
+        "spread_parameter" => Some(("parameter", Some("variadic"))),
+        "decimal_floating_point_literal" => Some(("float", None)),
+        "true" => Some(("true", None)),
+        "false" => Some(("false", None)),
+        "null_literal" => Some(("null", None)),
+        "import_declaration" => Some(("import", None)),
+        "package_declaration" => Some(("package", None)),
         _ => None,
     }
 }

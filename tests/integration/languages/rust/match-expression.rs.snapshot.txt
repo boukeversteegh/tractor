@@ -12,7 +12,7 @@ match/
       │   └─ ","
       ├─ arm/
       │   ├─ pattern/
-      │   │   └─ ... (5 children)
+      │   │   └─ ... (7 children)
       │   ├─ "=>"
       │   ├─ value/
       │   │   └─ ... (1 children)

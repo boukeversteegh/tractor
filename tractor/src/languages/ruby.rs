@@ -22,15 +22,8 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         | "hash_key_symbol"
         | "block_parameters" => Ok(TransformAction::Flatten),
 
-        // Hash/keyword parameter syntax (`**kwargs` / `key:` params).
-        "hash_splat_parameter" => {
-            rename(xot, node, "spread");
-            Ok(TransformAction::Continue)
-        }
-        "keyword_parameter" => {
-            rename(xot, node, "parameter");
-            Ok(TransformAction::Continue)
-        }
+        // Hash/keyword parameter syntax handled via map_element_name
+        // with markers — `**kwargs` → `<spread><dict/>`, `key:` → parameter+keyword.
 
         // Trailing `if` / `unless` modifier — still a conditional,
         // same vocabulary as the full form.
@@ -126,52 +119,77 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         _ => {
-            if let Some(new_name) = map_element_name(&kind) {
-                rename(xot, node, new_name);
-            }
+            apply_rename(xot, node, &kind)?;
             Ok(TransformAction::Continue)
         }
     }
 }
 
-fn map_element_name(kind: &str) -> Option<&'static str> {
+/// Map tree-sitter node kinds to semantic element names.
+///
+/// Second tuple element is an optional disambiguation marker — lets
+/// the map declare inline that e.g. `string_array` renames to
+/// `<array>` with a `<string/>` marker child so `//array[string]`
+/// finds every `%w[…]` literal.
+fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> {
     match kind {
-        "program" => Some("program"),
-        "method" => Some("method"),
-        "class" => Some("class"),
-        "module" => Some("module"),
-        "if" => Some("if"),
-        "unless" => Some("unless"),
+        "program" => Some(("program", None)),
+        "method" => Some(("method", None)),
+        "class" => Some(("class", None)),
+        "module" => Some(("module", None)),
+        "if" => Some(("if", None)),
+        "unless" => Some(("unless", None)),
         // Ruby's tree-sitter nests `elsif` chains (each `elsif`/`else`
         // lives inside the previous `elsif`). The post-transform in
         // `languages/mod.rs` lifts them to flat children of `<if>` per
         // the cross-cutting conditional shape; here we just rename.
-        "elsif" => Some("else_if"),
-        "else" => Some("else"),
-        "case" => Some("case"),
-        "while" => Some("while"),
-        "until" => Some("until"),
-        "for" => Some("for"),
-        "begin" => Some("begin"),
-        "rescue" => Some("rescue"),
-        "ensure" => Some("ensure"),
-        "call" => Some("call"),
-        "method_call" => Some("call"),
-        "assignment" => Some("assign"),
-        "binary" => Some("binary"),
-        "string" => Some("string"),
-        "integer" => Some("int"),
-        "float" => Some("float"),
-        "symbol" => Some("symbol"),
-        "array" => Some("array"),
-        "hash" => Some("hash"),
-        "operator_assignment" => Some("assign"),
-        "break_statement" => Some("break"),
-        "continue_statement" | "next_statement" => Some("continue"),
-        "string_array" | "symbol_array" => Some("array"),
-        "splat_parameter" => Some("spread"),
+        "elsif" => Some(("else_if", None)),
+        "else" => Some(("else", None)),
+        "case" => Some(("case", None)),
+        "while" => Some(("while", None)),
+        "until" => Some(("until", None)),
+        "for" => Some(("for", None)),
+        "begin" => Some(("begin", None)),
+        "rescue" => Some(("rescue", None)),
+        "ensure" => Some(("ensure", None)),
+        "call" => Some(("call", None)),
+        "method_call" => Some(("call", None)),
+        "assignment" => Some(("assign", None)),
+        "binary" => Some(("binary", None)),
+        "string" => Some(("string", None)),
+        "integer" => Some(("int", None)),
+        "float" => Some(("float", None)),
+        "symbol" => Some(("symbol", None)),
+        "array" => Some(("array", None)),
+        "hash" => Some(("hash", None)),
+        "operator_assignment" => Some(("assign", None)),
+        "break_statement" => Some(("break", None)),
+        "continue_statement" | "next_statement" => Some(("continue", None)),
+        // Percent-literal arrays — %w[…] gives a string_array, %i[…]
+        // gives a symbol_array. Both collapse to <array> with a shape
+        // marker so the element kind is uniform but queryable.
+        "string_array" => Some(("array", Some("string"))),
+        "symbol_array" => Some(("array", Some("symbol"))),
+        // Splat parameters — `*args` vs `**kwargs` distinguished by
+        // list/dict marker, matching Python's shape.
+        "splat_parameter" => Some(("spread", Some("list"))),
+        "hash_splat_parameter" => Some(("spread", Some("dict"))),
+        // `key:` keyword parameter — a parameter variant; the marker
+        // lets us find every keyword parameter without matching on text.
+        "keyword_parameter" => Some(("parameter", Some("keyword"))),
         _ => None,
     }
+}
+
+/// Apply `map_element_name` to a node: rename + prepend marker (if any).
+fn apply_rename(xot: &mut Xot, node: XotNode, kind: &str) -> Result<(), xot::Error> {
+    if let Some((new_name, marker)) = map_element_name(kind) {
+        rename(xot, node, new_name);
+        if let Some(m) = marker {
+            prepend_empty_element(xot, node, m)?;
+        }
+    }
+    Ok(())
 }
 
 /// Map a transformed element name to a syntax category for highlighting
