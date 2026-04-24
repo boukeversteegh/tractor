@@ -62,12 +62,24 @@ pub mod semantic {
     pub const COMPARE: &str = "compare";
     pub const LOGICAL: &str = "logical";
     pub const AWAIT: &str = "await";
+    pub const YIELD: &str = "yield";
     pub const GENERATOR: &str = "generator";
     pub const TERNARY: &str = "ternary";
     pub const CAST: &str = "cast";
     pub const AS: &str = "as";
     pub const SPREAD: &str = "spread";
     pub const FORMAT: &str = "format";
+    // `(a, b)` / `a, b, c` — container for tuple expressions.
+    pub const TUPLE: &str = "tuple";
+    // `List[int]` — generic type application; container around the
+    // base type and its `<arguments>`.
+    pub const GENERIC: &str = "generic";
+    // `{k: v}` dict entry / dict comprehension body — container
+    // wrapping the key/value expressions.
+    pub const PAIR: &str = "pair";
+    // `f"{n}"` — f-string interpolation segment. Container around the
+    // embedded expression and its braces.
+    pub const INTERPOLATION: &str = "interpolation";
 
     // Function-signature separators.
     pub const KEYWORD: &str = "keyword";
@@ -130,7 +142,8 @@ pub mod semantic {
         WITH, RAISE, PASS, BREAK, CONTINUE, MATCH, ARM, PATTERN,
         IMPORT, FROM, ASSERT, DELETE, GLOBAL, NONLOCAL,
         CALL, MEMBER, SUBSCRIPT, ASSIGN, BINARY, UNARY, COMPARE, LOGICAL,
-        AWAIT, GENERATOR, TERNARY, CAST, AS, SPREAD, FORMAT,
+        AWAIT, YIELD, GENERATOR, TERNARY, CAST, AS, SPREAD, FORMAT,
+        TUPLE, GENERIC, PAIR, INTERPOLATION,
         KEYWORD, POSITIONAL,
         LIST, DICT, SET,
         STRING, INT, FLOAT, TRUE, FALSE, NONE,
