@@ -4,6 +4,154 @@ use xot::{Xot, Node as XotNode};
 use crate::xot_transform::{TransformAction, helpers::*};
 use crate::output::syntax_highlight::SyntaxCategory;
 
+use semantic::*;
+
+/// Semantic element names — tractor's T-SQL XML vocabulary after transform.
+/// Tree-sitter kind strings (left side of `match` arms) stay as bare
+/// literals — they are external vocabulary.
+pub mod semantic {
+    // Structural — containers.
+
+    // Top-level
+    pub const FILE: &str = "file";
+    pub const STATEMENT: &str = "statement";
+
+    // DML statements
+    pub const SELECT: &str = "select";
+    pub const INSERT: &str = "insert";
+    pub const DELETE: &str = "delete";
+    pub const UPDATE: &str = "update";
+
+    // Clauses
+    pub const FROM: &str = "from";
+    pub const WHERE: &str = "where";
+    pub const ORDER: &str = "order";
+    pub const TARGET: &str = "target";
+    pub const GROUP: &str = "group";
+    pub const HAVING: &str = "having";
+    pub const JOIN: &str = "join";
+    pub const DIRECTION: &str = "direction";
+
+    // References and columns
+    pub const RELATION: &str = "relation";
+    pub const REF: &str = "ref";
+    pub const COLUMN: &str = "column";
+    pub const COL: &str = "col";
+    pub const STAR: &str = "star";
+
+    // Literals and values
+    pub const LITERAL: &str = "literal";
+    pub const LIST: &str = "list";
+
+    // Functions / calls
+    pub const CALL: &str = "call";
+    pub const BODY: &str = "body";
+    pub const ARG: &str = "arg";
+
+    // Subqueries, CTEs, set operations
+    pub const SUBQUERY: &str = "subquery";
+    pub const CTE: &str = "cte";
+    pub const UNION: &str = "union";
+    pub const EXISTS: &str = "exists";
+
+    // Window functions
+    pub const WINDOW: &str = "window";
+    pub const OVER: &str = "over";
+    pub const PARTITION: &str = "partition";
+
+    // CASE expression
+    pub const CASE: &str = "case";
+    pub const WHEN: &str = "when";
+
+    // CAST
+    pub const CAST: &str = "cast";
+
+    // DDL
+    pub const CREATE: &str = "create";
+    pub const COLUMNS: &str = "columns";
+    pub const DEFINITION: &str = "definition";
+
+    // MERGE
+    pub const MERGE: &str = "merge";
+
+    // Transactions
+    pub const TRANSACTION: &str = "transaction";
+
+    // SET variable
+    pub const SET: &str = "set";
+
+    // CREATE FUNCTION — function variant.
+    pub const FUNCTION: &str = "function";
+
+    // GO batch separator
+    pub const GO: &str = "go";
+
+    // EXEC
+    pub const EXEC: &str = "exec";
+
+    // ALTER TABLE
+    pub const ALTER_TABLE: &str = "alter_table";
+    pub const ADD_COLUMN: &str = "add_column";
+
+    // CREATE INDEX
+    pub const CREATE_INDEX: &str = "create_index";
+    pub const INDEX_FIELDS: &str = "index_fields";
+
+    // Data types
+    pub const INT: &str = "int";
+    pub const VARCHAR: &str = "varchar";
+    pub const NVARCHAR: &str = "nvarchar";
+    pub const DATETIME: &str = "datetime";
+
+    // Expressions
+    pub const COMPARE: &str = "compare";
+    pub const BETWEEN: &str = "between";
+    pub const ASSIGN: &str = "assign";
+
+    // Identifiers and their variants
+    pub const NAME: &str = "name";
+    pub const ALIAS: &str = "alias";
+    pub const SCHEMA: &str = "schema";
+    pub const VAR: &str = "var";
+    pub const TEMP: &str = "temp";
+
+    // Operator child (from prepend_op_element).
+    pub const OP: &str = "op";
+
+    // Markers — always empty when emitted.
+    //
+    // T-SQL's transform currently emits NO disambiguation markers —
+    // every `map_element_name` entry is a bare rename (no tuple with a
+    // marker child). The invariant still benefits from a `MARKER_ONLY`
+    // slice so the central registry has a uniform shape.
+
+    /// Names that, when emitted, are always empty elements (no text,
+    /// no element children). Used by the markers-stay-empty invariant.
+    pub const MARKER_ONLY: &[&str] = &[];
+
+    /// Every semantic name this language's transform can emit.
+    pub const ALL_NAMES: &[&str] = &[
+        FILE, STATEMENT,
+        SELECT, INSERT, DELETE, UPDATE,
+        FROM, WHERE, ORDER, TARGET, GROUP, HAVING, JOIN, DIRECTION,
+        RELATION, REF, COLUMN, COL, STAR,
+        LITERAL, LIST,
+        CALL, BODY, ARG,
+        SUBQUERY, CTE, UNION, EXISTS,
+        WINDOW, OVER, PARTITION,
+        CASE, WHEN,
+        CAST,
+        CREATE, COLUMNS, DEFINITION,
+        MERGE, TRANSACTION, SET, FUNCTION, GO, EXEC,
+        ALTER_TABLE, ADD_COLUMN,
+        CREATE_INDEX, INDEX_FIELDS,
+        INT, VARCHAR, NVARCHAR, DATETIME,
+        COMPARE, BETWEEN, ASSIGN,
+        NAME, ALIAS, SCHEMA, VAR, TEMP,
+        OP,
+    ];
+}
+
 /// Transform a T-SQL AST node
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let kind = match get_element_name(xot, node) {
@@ -53,7 +201,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
                                 // @variable → <var>variable</var>
                                 let text_node = xot.new_text(&text[1..]);
                                 xot.append(node, text_node)?;
-                                rename(xot, node, "var");
+                                rename(xot, node, VAR);
                             } else {
                                 let clean = strip_brackets(&text);
                                 let text_node = xot.new_text(&clean);
@@ -70,20 +218,20 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Binary expressions - extract operator
         "binary_expression" => {
             extract_operator(xot, node)?;
-            rename(xot, node, "compare");
+            rename(xot, node, COMPARE);
             Ok(TransformAction::Continue)
         }
 
         // BETWEEN expression - rename and clean up
         "between_expression" => {
-            rename(xot, node, "between");
+            rename(xot, node, BETWEEN);
             Ok(TransformAction::Continue)
         }
 
         // Assignment (UPDATE SET Name = value) - extract operator
         "assignment" => {
             extract_operator(xot, node)?;
-            rename(xot, node, "assign");
+            rename(xot, node, ASSIGN);
             Ok(TransformAction::Continue)
         }
 
@@ -117,7 +265,7 @@ fn transform_identifier(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> 
     let text = match get_text_content(xot, node) {
         Some(t) => t,
         None => {
-            rename(xot, node, "name");
+            rename(xot, node, NAME);
             return Ok(());
         }
     };
@@ -128,13 +276,13 @@ fn transform_identifier(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> 
             "alias" => {
                 let clean = strip_brackets(&text);
                 replace_text(xot, node, &clean);
-                rename(xot, node, "alias");
+                rename(xot, node, ALIAS);
                 return Ok(());
             }
             "schema" => {
                 let clean = strip_brackets(&text);
                 replace_text(xot, node, &clean);
-                rename(xot, node, "schema");
+                rename(xot, node, SCHEMA);
                 return Ok(());
             }
             _ => {}
@@ -146,12 +294,12 @@ fn transform_identifier(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> 
         // @variable → <var>variable</var>
         let var_name = &text[1..];
         replace_text(xot, node, var_name);
-        rename(xot, node, "var");
+        rename(xot, node, VAR);
     } else {
         // Regular identifier - strip brackets and rename to "name"
         let clean = strip_brackets(&text);
         replace_text(xot, node, &clean);
-        rename(xot, node, "name");
+        rename(xot, node, NAME);
     }
 
     Ok(())
@@ -201,7 +349,7 @@ fn transform_unary(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
                         }
                         let text_node = xot.new_text(&format!("#{}", inner_text));
                         xot.append(node, text_node)?;
-                        rename(xot, node, "temp");
+                        rename(xot, node, TEMP);
                         return Ok(());
                     }
                 }
@@ -234,98 +382,98 @@ fn get_deep_identifier_text(xot: &Xot, node: XotNode) -> Option<String> {
 fn map_element_name(kind: &str) -> Option<&'static str> {
     match kind {
         // Top-level
-        "program" => Some("file"),
-        "statement" => Some("statement"),
+        "program" => Some(FILE),
+        "statement" => Some(STATEMENT),
 
         // DML statements
-        "select" => Some("select"),
-        "insert" => Some("insert"),
-        "delete" => Some("delete"),
-        "update" => Some("update"),
+        "select" => Some(SELECT),
+        "insert" => Some(INSERT),
+        "delete" => Some(DELETE),
+        "update" => Some(UPDATE),
 
         // Clauses
-        "from" => Some("from"),
-        "where" => Some("where"),
-        "order_by" => Some("order"),
-        "order_target" => Some("target"),
-        "group_by" => Some("group"),
-        "having" => Some("having"),
-        "join" => Some("join"),
-        "direction" => Some("direction"),
+        "from" => Some(FROM),
+        "where" => Some(WHERE),
+        "order_by" => Some(ORDER),
+        "order_target" => Some(TARGET),
+        "group_by" => Some(GROUP),
+        "having" => Some(HAVING),
+        "join" => Some(JOIN),
+        "direction" => Some(DIRECTION),
 
         // References and columns
-        "relation" => Some("relation"),
-        "object_reference" => Some("ref"),
-        "field" => Some("column"),
-        "column" => Some("col"),
-        "all_fields" => Some("star"),
+        "relation" => Some(RELATION),
+        "object_reference" => Some(REF),
+        "field" => Some(COLUMN),
+        "column" => Some(COL),
+        "all_fields" => Some(STAR),
 
         // Literals and values
-        "literal" => Some("literal"),
-        "list" => Some("list"),
+        "literal" => Some(LITERAL),
+        "list" => Some(LIST),
 
         // Functions/calls
-        "invocation" => Some("call"),
-        "function_body" => Some("body"),
-        "function_arguments" | "function_argument" => Some("arg"),
+        "invocation" => Some(CALL),
+        "function_body" => Some(BODY),
+        "function_arguments" | "function_argument" => Some(ARG),
 
         // Subqueries, CTEs, set operations
-        "subquery" => Some("subquery"),
-        "cte" => Some("cte"),
-        "set_operation" => Some("union"),
-        "exists" => Some("exists"),
+        "subquery" => Some(SUBQUERY),
+        "cte" => Some(CTE),
+        "set_operation" => Some(UNION),
+        "exists" => Some(EXISTS),
 
         // Window functions
-        "window_function" => Some("window"),
-        "window_specification" => Some("over"),
-        "partition_by" => Some("partition"),
+        "window_function" => Some(WINDOW),
+        "window_specification" => Some(OVER),
+        "partition_by" => Some(PARTITION),
 
         // CASE expression
-        "case" => Some("case"),
-        "when_clause" => Some("when"),
+        "case" => Some(CASE),
+        "when_clause" => Some(WHEN),
 
         // CAST
-        "cast" => Some("cast"),
+        "cast" => Some(CAST),
 
         // DDL
-        "create_table" => Some("create"),
-        "column_definitions" => Some("columns"),
-        "column_definition" => Some("definition"),
+        "create_table" => Some(CREATE),
+        "column_definitions" => Some(COLUMNS),
+        "column_definition" => Some(DEFINITION),
 
         // MERGE
-        "merge" => Some("merge"),
+        "merge" => Some(MERGE),
 
         // Transactions
-        "transaction" => Some("transaction"),
+        "transaction" => Some(TRANSACTION),
 
         // SET variable
-        "set_statement" => Some("set"),
+        "set_statement" => Some(SET),
 
         // CREATE FUNCTION — function variant.
-        "create_function" => Some("function"),
+        "create_function" => Some(FUNCTION),
 
         // GO batch separator
-        "go_statement" => Some("go"),
+        "go_statement" => Some(GO),
 
         // EXEC
-        "execute_statement" => Some("exec"),
+        "execute_statement" => Some(EXEC),
 
         // ALTER TABLE
-        "alter_table" => Some("alter_table"),
-        "add_column" => Some("add_column"),
+        "alter_table" => Some(ALTER_TABLE),
+        "add_column" => Some(ADD_COLUMN),
 
         // CREATE INDEX
-        "create_index" => Some("create_index"),
-        "index_fields" => Some("index_fields"),
+        "create_index" => Some(CREATE_INDEX),
+        "index_fields" => Some(INDEX_FIELDS),
 
         // Data types
-        "int" => Some("int"),
-        "varchar" => Some("varchar"),
-        "nvarchar" => Some("nvarchar"),
-        "datetime" => Some("datetime"),
+        "int" => Some(INT),
+        "varchar" => Some(VARCHAR),
+        "nvarchar" => Some(NVARCHAR),
+        "datetime" => Some(DATETIME),
 
         // Assignment
-        "assignment" => Some("assign"),
+        "assignment" => Some(ASSIGN),
 
         _ => None,
     }
