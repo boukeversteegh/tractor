@@ -4,30 +4,30 @@ match/
   └─ body/
       ├─ "{"
       ├─ arm/
-      │   ├─ match_pattern/
+      │   ├─ pattern/
       │   │   └─ ... (1 children)
       │   ├─ "=>"
       │   ├─ value/
-      │   │   └─ ... (2 children)
+      │   │   └─ ... (1 children)
       │   └─ ","
       ├─ arm/
-      │   ├─ match_pattern/
+      │   ├─ pattern/
       │   │   └─ ... (5 children)
       │   ├─ "=>"
       │   ├─ value/
-      │   │   └─ ... (2 children)
+      │   │   └─ ... (1 children)
       │   └─ ","
       ├─ arm/
-      │   ├─ match_pattern/
+      │   ├─ pattern/
       │   │   └─ ... (9 children)
       │   ├─ "=>"
       │   ├─ value/
-      │   │   └─ ... (2 children)
+      │   │   └─ ... (1 children)
       │   └─ ","
       ├─ arm/
-      │   ├─ match_pattern = "_"
+      │   ├─ pattern = "_"
       │   ├─ "=>"
       │   ├─ value/
-      │   │   └─ ... (2 children)
+      │   │   └─ ... (1 children)
       │   └─ ","
       └─ "}"

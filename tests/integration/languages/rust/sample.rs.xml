@@ -73,18 +73,11 @@
               </let>
               <macro>
                 <name>println</name>
-                !
-                <token_tree>
-                  (
-                  <string>
-                    &quot;
-                    <string_content>Result: {}</string_content>
-                    &quot;
-                  </string>
-                  ,
-                  <name>result</name>
-                  )
-                </token_tree>
+                !(
+                <string>&quot;Result: {}&quot;</string>
+                ,
+                <name>result</name>
+                )
               </macro>
               ;
         }

@@ -108,7 +108,17 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         | "interpolation_brace"
         | "interpolation_start"
         | "escape_sequence"
-        | "interpolated_string_expression" => Ok(TransformAction::Flatten),
+        | "interpolated_string_expression"
+        | "qualified_name" => Ok(TransformAction::Flatten),
+
+        // `implicit_type` is C#'s `var` keyword in a type position.
+        // Render as `<type><name>var</name></type>` for uniform
+        // querying — users already learn type[name='int'] etc.
+        "implicit_type" => {
+            rename(xot, node, "type");
+            wrap_text_in_name(xot, node)?;
+            Ok(TransformAction::Continue)
+        }
 
         // Postfix unary (`x!`, `x++`) is still a unary expression —
         // map to the shared `<unary>` element.

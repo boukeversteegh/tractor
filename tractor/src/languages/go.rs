@@ -340,6 +340,10 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         // raw_string_literal is handled in the match above (rename + prepend <raw/>)
         "int_literal" => Some("int"),
         "float_literal" => Some("float"),
+        "assignment_statement" => Some("assign"),
+        "inc_statement" => Some("unary"),
+        "dec_statement" => Some("unary"),
+        "labeled_statement" => Some("labeled"),
         "true" => Some("true"),
         "false" => Some("false"),
         "nil" => Some("nil"),

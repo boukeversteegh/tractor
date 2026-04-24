@@ -202,6 +202,26 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             rename(xot, node, "comment");
             Ok(TransformAction::Continue)
         }
+
+        // String internals — grammar wrappers with no semantic
+        // beyond their text value (Principle #12).
+        "string_content" | "escape_sequence" => Ok(TransformAction::Flatten),
+
+        // Token trees are the opaque body of a macro invocation.
+        // Flatten so the macro call reads as a continuous run of
+        // tokens; a dedicated structural model of macro args is
+        // deferred.
+        "token_tree" => Ok(TransformAction::Flatten),
+
+        // Pattern kinds in match arms — normalise to `<pattern>`
+        // so `//match/arm/pattern` is the uniform shape. The
+        // specific pattern form (identifier / literal / tuple /
+        // struct / `_`) is exposed via child structure rather
+        // than element name.
+        "match_pattern" => {
+            rename(xot, node, "pattern");
+            Ok(TransformAction::Continue)
+        }
         "identifier" | "field_identifier" | "shorthand_field_identifier" => {
             rename(xot, node, "name");
             Ok(TransformAction::Continue)
