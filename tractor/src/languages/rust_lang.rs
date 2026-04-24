@@ -4,6 +4,180 @@ use xot::{Xot, Node as XotNode};
 use crate::xot_transform::{TransformAction, helpers::*};
 use crate::output::syntax_highlight::SyntaxCategory;
 
+use semantic::*;
+
+/// Semantic element names — tractor's Rust XML vocabulary after transform.
+/// Tree-sitter kind strings (left side of `match` arms) stay as bare
+/// literals — they are external vocabulary.
+pub mod semantic {
+    // Structural — containers
+
+    // Top-level / declarations
+    pub const FILE: &str = "file";
+    pub const FUNCTION: &str = "function";
+    pub const IMPL: &str = "impl";
+    pub const STRUCT: &str = "struct";
+    pub const ENUM: &str = "enum";
+    pub const TRAIT: &str = "trait";
+    pub const MOD: &str = "mod";
+    pub const USE: &str = "use";
+    pub const CONST: &str = "const";
+    pub const STATIC: &str = "static";
+    pub const ALIAS: &str = "alias";
+    pub const SIGNATURE: &str = "signature";
+    pub const MODIFIERS: &str = "modifiers";
+
+    // Members
+    pub const PARAMETER: &str = "parameter";
+    pub const SELF: &str = "self";
+    pub const FIELD: &str = "field";
+    pub const VARIANT: &str = "variant";
+    pub const LIFETIME: &str = "lifetime";
+    pub const ATTRIBUTE: &str = "attribute";
+
+    // Types / generics
+    pub const TYPE: &str = "type";
+    pub const GENERIC: &str = "generic";
+    pub const GENERICS: &str = "generics";
+    pub const PATH: &str = "path";
+    pub const BOUNDS: &str = "bounds";
+    pub const BOUND: &str = "bound";
+    pub const WHERE: &str = "where";
+
+    // Statements / control flow
+    pub const LET: &str = "let";
+    pub const RETURN: &str = "return";
+    pub const IF: &str = "if";
+    pub const ELSE: &str = "else";
+    pub const FOR: &str = "for";
+    pub const WHILE: &str = "while";
+    pub const LOOP: &str = "loop";
+    pub const MATCH: &str = "match";
+    pub const ARM: &str = "arm";
+    pub const PATTERN: &str = "pattern";
+    pub const BREAK: &str = "break";
+    pub const CONTINUE: &str = "continue";
+    pub const RANGE: &str = "range";
+    pub const SEND: &str = "send";
+
+    // Expressions
+    pub const CALL: &str = "call";
+    pub const INDEX: &str = "index";
+    pub const BINARY: &str = "binary";
+    pub const UNARY: &str = "unary";
+    pub const ASSIGN: &str = "assign";
+    pub const CLOSURE: &str = "closure";
+    pub const AWAIT: &str = "await";
+    pub const TRY: &str = "try";
+    pub const MACRO: &str = "macro";
+    pub const CAST: &str = "cast";
+    pub const REF: &str = "ref";
+    pub const TUPLE: &str = "tuple";
+    pub const UNSAFE: &str = "unsafe";
+    pub const LITERAL: &str = "literal";
+    pub const BLOCK: &str = "block";
+
+    // Visibility
+    pub const PUB: &str = "pub";
+    pub const IN: &str = "in";
+
+    // Literals / atoms
+    pub const STRING: &str = "string";
+    pub const INT: &str = "int";
+    pub const FLOAT: &str = "float";
+    pub const BOOL: &str = "bool";
+    pub const CHAR: &str = "char";
+
+    // Identifiers
+    pub const NAME: &str = "name";
+
+    // Comments
+    pub const COMMENT: &str = "comment";
+
+    // Operator child
+    pub const OP: &str = "op";
+
+    // Markers — always-empty when emitted. These names MUST NOT also
+    // be emitted as structural containers elsewhere in this file.
+    pub const RAW: &str = "raw";
+    pub const BORROWED: &str = "borrowed";
+    pub const PRIVATE: &str = "private";
+    pub const CRATE: &str = "crate";
+    pub const SUPER: &str = "super";
+    pub const MUT: &str = "mut";
+    pub const ASYNC: &str = "async";
+    pub const POINTER: &str = "pointer";
+    pub const NEVER: &str = "never";
+    pub const UNIT: &str = "unit";
+    pub const DYNAMIC: &str = "dynamic";
+    pub const ABSTRACT: &str = "abstract";
+    pub const ASSOCIATED: &str = "associated";
+    pub const BOUNDED: &str = "bounded";
+    pub const ARRAY: &str = "array";
+    pub const OR: &str = "or";
+    pub const METHOD: &str = "method";
+    pub const BASE: &str = "base";
+
+    // These names double as marker AND structural container. Kept as
+    // constants so the transform code is still type-safe, but NOT in
+    // MARKER_ONLY — the invariant can't distinguish the two contexts.
+    //   - FUNCTION: function_item (container) vs function_type (marker)
+    //   - TUPLE: tuple_expression (container) vs tuple_type (marker)
+    //   - TRAIT: trait_item (container) vs trait_type (marker)
+    //   - SLICE: slice_type (marker only in emitted code, but kept
+    //     as a distinct constant for syntax category alignment)
+    //   - REF: reference_expression (container) vs ref_pattern (marker)
+    //   - FIELD: field_expression / field_declaration (container) vs
+    //     field_pattern / base_field_initializer (markers)
+    //   - STRUCT: struct_item (container) vs struct_pattern (marker)
+    //   - GENERIC: generic_type (container) vs generic_function (marker)
+    //   - CONST: const_item (container) vs const_block (marker)
+    //   - TRY: try_expression (container) vs try_block (marker)
+    pub const SLICE: &str = "slice";
+
+    /// Names that, when emitted, are always empty. Excludes ambiguous
+    /// names that also appear as structural containers.
+    pub const MARKER_ONLY: &[&str] = &[
+        RAW,
+        BORROWED,
+        PRIVATE,
+        CRATE,
+        SUPER,
+        MUT,
+        ASYNC,
+        POINTER,
+        NEVER,
+        UNIT,
+        DYNAMIC,
+        ABSTRACT,
+        ASSOCIATED,
+        BOUNDED,
+        ARRAY,
+        OR,
+        METHOD,
+        BASE,
+    ];
+
+    /// Every semantic name this language's transform can emit.
+    pub const ALL_NAMES: &[&str] = &[
+        FILE,
+        FUNCTION, IMPL, STRUCT, ENUM, TRAIT, MOD, USE, CONST, STATIC, ALIAS,
+        SIGNATURE, MODIFIERS,
+        PARAMETER, SELF, FIELD, VARIANT, LIFETIME, ATTRIBUTE,
+        TYPE, GENERIC, GENERICS, PATH, BOUNDS, BOUND, WHERE,
+        LET, RETURN, IF, ELSE, FOR, WHILE, LOOP, MATCH, ARM, PATTERN,
+        BREAK, CONTINUE, RANGE, SEND,
+        CALL, INDEX, BINARY, UNARY, ASSIGN, CLOSURE, AWAIT, TRY, MACRO, CAST,
+        REF, TUPLE, UNSAFE, LITERAL, BLOCK,
+        PUB, IN,
+        STRING, INT, FLOAT, BOOL, CHAR,
+        NAME, COMMENT, OP,
+        RAW, BORROWED, PRIVATE, CRATE, SUPER, MUT, ASYNC,
+        POINTER, NEVER, UNIT, DYNAMIC, ABSTRACT, ASSOCIATED, BOUNDED, ARRAY,
+        OR, METHOD, BASE, SLICE,
+    ];
+}
+
 /// Transform a Rust AST node
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let kind = match get_element_name(xot, node) {
@@ -40,14 +214,14 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Type parameter list: flatten with field="generics".
         "type_parameters" => {
             distribute_field_to_children(xot, node, "generics");
-            rename(xot, node, "generics");
+            rename(xot, node, GENERICS);
             Ok(TransformAction::Flatten)
         }
         "type_parameter" => {
             // Inline the parameter's name as a `<name>TEXT</name>` child
             // so siblings like trait_bounds remain intact.
             replace_identifier_with_name_child(xot, node, &["type_identifier"])?;
-            rename(xot, node, "generic");
+            rename(xot, node, GENERIC);
             Ok(TransformAction::Continue)
         }
 
@@ -113,16 +287,16 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
                 xot.detach(child)?;
             }
 
-            rename(xot, node, "pub");
+            rename(xot, node, PUB);
 
             if let (Some(lp), Some(rp)) = (trimmed.find('('), trimmed.find(')')) {
                 let inner = trimmed[lp + 1..rp].trim();
                 match inner {
-                    "crate" => { prepend_empty_element(xot, node, "crate")?; }
-                    "super" => { prepend_empty_element(xot, node, "super")?; }
+                    "crate" => { prepend_empty_element(xot, node, CRATE)?; }
+                    "super" => { prepend_empty_element(xot, node, SUPER)?; }
                     _ if inner.starts_with("in ") => {
                         let path = inner[3..].trim();
-                        prepend_element_with_text(xot, node, "in", path)?;
+                        prepend_element_with_text(xot, node, IN, path)?;
                     }
                     _ => {}
                 }
@@ -143,7 +317,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
                 get_element_name(xot, child).as_deref() == Some("visibility_modifier")
             });
             if !has_vis {
-                prepend_empty_element(xot, node, "private")?;
+                prepend_empty_element(xot, node, PRIVATE)?;
             }
             apply_rename(xot, node, &kind)?;
             Ok(TransformAction::Continue)
@@ -157,8 +331,8 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 
         // Raw string literal — rename to <string> and prepend <raw/> marker
         "raw_string_literal" => {
-            prepend_empty_element(xot, node, "raw")?;
-            rename(xot, node, "string");
+            prepend_empty_element(xot, node, RAW)?;
+            rename(xot, node, STRING);
             Ok(TransformAction::Continue)
         }
 
@@ -186,10 +360,10 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
                 }
             }
             if has_mut {
-                prepend_empty_element(xot, node, "mut")?;
+                prepend_empty_element(xot, node, MUT)?;
             }
-            prepend_empty_element(xot, node, "borrowed")?;
-            rename(xot, node, "type");
+            prepend_empty_element(xot, node, BORROWED)?;
+            rename(xot, node, TYPE);
             Ok(TransformAction::Continue)
         }
 
@@ -204,14 +378,14 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
                 node,
                 &["type_identifier", "scoped_type_identifier"],
             )?;
-            rename(xot, node, "literal");
+            rename(xot, node, LITERAL);
             Ok(TransformAction::Continue)
         }
 
         // let declarations - extract mut modifier
         "let_declaration" => {
             extract_modifiers(xot, node)?;
-            rename(xot, node, "let");
+            rename(xot, node, LET);
             Ok(TransformAction::Continue)
         }
 
@@ -222,7 +396,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Tree-sitter Rust emits `line_comment` and `block_comment`;
         // normalise to the shared `<comment>` vocabulary.
         "line_comment" | "block_comment" => {
-            rename(xot, node, "comment");
+            rename(xot, node, COMMENT);
             Ok(TransformAction::Continue)
         }
 
@@ -235,7 +409,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // `doc_comment` is tree-sitter rust's `///` / `//!` kind —
         // semantically still a comment.
         "doc_comment" => {
-            rename(xot, node, "comment");
+            rename(xot, node, COMMENT);
             Ok(TransformAction::Continue)
         }
 
@@ -269,15 +443,15 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // struct / `_`) is exposed via child structure rather
         // than element name.
         "match_pattern" => {
-            rename(xot, node, "pattern");
+            rename(xot, node, PATTERN);
             Ok(TransformAction::Continue)
         }
         "identifier" | "field_identifier" | "shorthand_field_identifier" => {
-            rename(xot, node, "name");
+            rename(xot, node, NAME);
             Ok(TransformAction::Continue)
         }
         "type_identifier" | "primitive_type" => {
-            rename(xot, node, "type");
+            rename(xot, node, TYPE);
             wrap_text_in_name(xot, node)?;
             Ok(TransformAction::Continue)
         }
@@ -433,10 +607,17 @@ fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
 
 fn extract_modifiers(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     let texts = get_text_children(xot, node);
-    const MODIFIERS: &[&str] = &["mut", "async", "unsafe", "const"];
+    // Each entry pairs a source-text keyword with the semantic marker
+    // name to emit (so typos can't drift between the two).
+    const MODIFIERS: &[(&str, &str)] = &[
+        ("mut", MUT),
+        ("async", ASYNC),
+        ("unsafe", UNSAFE),
+        ("const", CONST),
+    ];
 
     let found: Vec<&str> = texts.iter()
-        .filter_map(|t| MODIFIERS.iter().find(|&&m| m == t).copied())
+        .filter_map(|t| MODIFIERS.iter().find(|(src, _)| *src == t).map(|(_, marker)| *marker))
         .collect();
 
     for modifier in found.into_iter().rev() {
