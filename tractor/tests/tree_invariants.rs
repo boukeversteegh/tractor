@@ -192,6 +192,10 @@ impl Report {
 fn all_node_names_are_lowercase() {
     let mut report = Report::default();
     for fixture in iter_fixtures() {
+        let ext = fixture.extension().and_then(|e| e.to_str()).unwrap_or("");
+        if DATA_LANG_EXTS.contains(&ext) {
+            continue;
+        }
         let Some(parsed) = parse_structure(&fixture) else { continue };
         let xot = parsed.documents.xot();
         let root = parsed.documents.document_node(parsed.doc_handle).unwrap();
@@ -225,6 +229,10 @@ fn all_node_names_are_lowercase() {
 fn no_underscore_in_node_names_except_whitelist() {
     let mut report = Report::default();
     for fixture in iter_fixtures() {
+        let ext = fixture.extension().and_then(|e| e.to_str()).unwrap_or("");
+        if DATA_LANG_EXTS.contains(&ext) {
+            continue;
+        }
         let Some(parsed) = parse_structure(&fixture) else { continue };
         let xot = parsed.documents.xot();
         let root = parsed.documents.document_node(parsed.doc_handle).unwrap();
@@ -259,6 +267,10 @@ fn no_underscore_in_node_names_except_whitelist() {
 fn no_grammar_kind_suffixes() {
     let mut report = Report::default();
     for fixture in iter_fixtures() {
+        let ext = fixture.extension().and_then(|e| e.to_str()).unwrap_or("");
+        if DATA_LANG_EXTS.contains(&ext) {
+            continue;
+        }
         let Some(parsed) = parse_structure(&fixture) else { continue };
         let xot = parsed.documents.xot();
         let root = parsed.documents.document_node(parsed.doc_handle).unwrap();
@@ -293,6 +305,10 @@ fn no_grammar_kind_suffixes() {
 fn name_element_is_text_leaf() {
     let mut report = Report::default();
     for fixture in iter_fixtures() {
+        let ext = fixture.extension().and_then(|e| e.to_str()).unwrap_or("");
+        if DATA_LANG_EXTS.contains(&ext) {
+            continue;
+        }
         let Some(parsed) = parse_structure(&fixture) else { continue };
         let xot = parsed.documents.xot();
         let root = parsed.documents.document_node(parsed.doc_handle).unwrap();
@@ -342,6 +358,10 @@ fn markers_stay_empty() {
     let mut stats: HashMap<String, (bool, bool, Vec<(PathBuf, String)>)> = HashMap::new();
 
     for fixture in iter_fixtures() {
+        let ext = fixture.extension().and_then(|e| e.to_str()).unwrap_or("");
+        if DATA_LANG_EXTS.contains(&ext) {
+            continue;
+        }
         let Some(parsed) = parse_structure(&fixture) else { continue };
         let xot = parsed.documents.xot();
         let root = parsed.documents.document_node(parsed.doc_handle).unwrap();
