@@ -46,6 +46,7 @@ pub mod semantic {
     pub const RETURN: &str = "return";
     pub const IF: &str = "if";
     pub const ELSE: &str = "else";
+    pub const ELSE_IF: &str = "else_if";
     pub const FOR: &str = "for";
     pub const WHILE: &str = "while";
     pub const TRY: &str = "try";
@@ -98,11 +99,26 @@ pub mod semantic {
     // Enum members (enum_assignment → <constant>)
     pub const CONSTANT: &str = "constant";
 
+    // Object-literal / destructuring entry: `{ a: 1 }` pair emitted as
+    // a container around the key and value.
+    pub const PAIR: &str = "pair";
+
     // Literals
     pub const STRING: &str = "string";
     pub const NUMBER: &str = "number";
     pub const BOOL: &str = "bool";
     pub const NULL: &str = "null";
+    // `undefined` literal — tree-sitter leaf kind that carries its text.
+    pub const UNDEFINED: &str = "undefined";
+
+    // Keyword expressions — distinct tree-sitter leaf kinds carrying
+    // their keyword text (e.g. `this.x`, `super(...)`).
+    pub const THIS: &str = "this";
+    pub const SUPER: &str = "super";
+
+    // Generic-parameter constraint: `<T extends Shape>` — container
+    // wrapping the constraint type.
+    pub const CONSTRAINT: &str = "constraint";
 
     // Identifiers / comments
     pub const NAME: &str = "name";
@@ -182,15 +198,16 @@ pub mod semantic {
         PROPERTY, CONSTRUCTOR, INDEXER, ALIAS, VARIABLE, ARROW,
         FIELD, PARAMETER, EXTENDS, IMPLEMENTS,
         TYPE, GENERIC, GENERICS, PREDICATE, ANNOTATION,
-        BLOCK, RETURN, IF, ELSE, FOR, WHILE, TRY, CATCH, THROW, FINALLY,
+        BLOCK, RETURN, IF, ELSE, ELSE_IF, FOR, WHILE, TRY, CATCH, THROW, FINALLY,
         SWITCH, CASE, BREAK, CONTINUE, BODY,
         CALL, NEW, MEMBER, ASSIGN, BINARY, UNARY, TERNARY, AWAIT, YIELD,
         AS, SATISFIES, INDEX, PATTERN, SPREAD, REST,
         IMPORT, EXPORT, IMPORTS, SPEC, CLAUSE, NAMESPACE,
         TEMPLATE, INTERPOLATION,
         ELEMENT, OPENING, CLOSING, PROP, VALUE, TEXT,
-        CONSTANT,
-        STRING, NUMBER, BOOL, NULL,
+        CONSTANT, PAIR,
+        STRING, NUMBER, BOOL, NULL, UNDEFINED,
+        THIS, SUPER, CONSTRAINT,
         NAME, COMMENT, DEFAULT, OP,
         PUBLIC, PRIVATE, PROTECTED, OVERRIDE, READONLY,
         ABSTRACT, OPTIONAL, REQUIRED,
