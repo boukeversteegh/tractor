@@ -288,8 +288,16 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         | "interpolation_brace"
         | "interpolation_start"
         | "escape_sequence"
-        | "interpolated_string_expression"
         | "qualified_name" => Ok(TransformAction::Flatten),
+
+        // `$"hi {name}!"` — interpolated string. Rename to the shared
+        // `<string>` so the cross-language shape holds: interpolation
+        // children sit inside a `<string>` wrapper matching Python
+        // f-strings, TS templates, Ruby double-quotes, and PHP.
+        "interpolated_string_expression" => {
+            rename(xot, node, STRING);
+            Ok(TransformAction::Continue)
+        }
 
         // `bracketed_parameter_list` — indexer declaration's `[T index]`;
         // purely a grouping wrapper, flatten so the parameters become

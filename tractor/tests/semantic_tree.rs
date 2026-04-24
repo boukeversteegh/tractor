@@ -2015,3 +2015,100 @@ mod decorator_topology {
         );
     }
 }
+
+// ===========================================================================
+// Cross-language: interpolated string shape
+//
+// Every language that supports string interpolation wraps the
+// interpolated expression in an `<interpolation>` element inside
+// `<string>` (or `<template>` in TS). The element name is shared;
+// the delimiter tokens (`${` / `#{` / `{` / `$`) live as text inside
+// the `<string>` (or, for some languages, inside the `<interpolation>`)
+// but the queryable shape `//string/interpolation/<expr>` works
+// uniformly across languages.
+// ===========================================================================
+
+mod interpolation_shape {
+    use super::*;
+
+    #[test]
+    fn python_fstring() {
+        let mut tree = parse_src("python", "x = f\"hi {name}!\"\n");
+        assert_count(
+            &mut tree,
+            "//string/interpolation/name[.='name']",
+            1,
+            "Python f-string interpolation wraps the expression",
+        );
+    }
+
+    #[test]
+    fn typescript_template() {
+        let mut tree = parse_src(
+            "typescript",
+            "const s = `hello ${name}!`;\n",
+        );
+        assert_count(
+            &mut tree,
+            "//template/interpolation/name[.='name']",
+            1,
+            "TypeScript template interpolation wraps the expression",
+        );
+    }
+
+    #[test]
+    fn ruby_double_quote() {
+        let mut tree = parse_src(
+            "ruby",
+            "s = \"hi #{name}!\"\n",
+        );
+        assert_count(
+            &mut tree,
+            "//string/interpolation/name[.='name']",
+            1,
+            "Ruby double-quote interpolation wraps the expression",
+        );
+    }
+
+    #[test]
+    fn csharp_interpolated_string() {
+        let mut tree = parse_src(
+            "csharp",
+            "class X { string s = $\"hi {Name}!\"; }",
+        );
+        assert_count(
+            &mut tree,
+            "//string/interpolation/name[.='Name']",
+            1,
+            "C# interpolated string wraps the expression",
+        );
+    }
+
+    #[test]
+    fn php_variable_interpolation() {
+        let mut tree = parse_src(
+            "php",
+            "<?php $s = \"hi $name!\";\n",
+        );
+        assert_count(
+            &mut tree,
+            "//string/interpolation/variable/name[.='name']",
+            1,
+            "PHP variable interpolation wraps the expression",
+        );
+    }
+
+    #[test]
+    fn php_complex_interpolation() {
+        let mut tree = parse_src(
+            "php",
+            "<?php $s = \"x {$obj->method()}\";\n",
+        );
+        assert_count(
+            &mut tree,
+            "//string/interpolation/call",
+            1,
+            "PHP complex interpolation wraps the expression",
+        );
+    }
+}

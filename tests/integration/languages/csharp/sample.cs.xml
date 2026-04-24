@@ -237,13 +237,15 @@
                             </member>
                             (
                             <argument>
-                              $&quot;Result:
-                              <interpolation>
-                                {
-                                <name>result</name>
-                                }
-                              </interpolation>
-                              &quot;
+                              <string>
+                                $&quot;Result:
+                                <interpolation>
+                                  {
+                                  <name>result</name>
+                                  }
+                                </interpolation>
+                                &quot;
+                              </string>
                             </argument>
                             )
                           </call>

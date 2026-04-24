@@ -235,6 +235,52 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         "expression_statement" => Ok(TransformAction::Skip),
         "parenthesized_expression" => Ok(TransformAction::Flatten),
 
+        // PHP interpolated string — `"hello $name"` or `"x {$obj->y}"`.
+        // Tree-sitter nests the interpolated expressions (variable_name /
+        // member_access_expression / …) directly inside the string; every
+        // other language we support wraps these in an `<interpolation>`
+        // element so the shape is uniform. Match that shape here:
+        // wrap every element child of the string in `<interpolation>`
+        // so `//string/interpolation/name` works cross-language.
+        //
+        // Complex interpolation (`{$expr}`) keeps `{` / `}` in the
+        // surrounding string text — absorbing them into the
+        // interpolation element would require scanning adjacent text
+        // tokens and is deferred. The existing delimiters still yield
+        // a correct round-trip via `text_preservation`.
+        "encapsed_string" => {
+            // Tree-sitter PHP nests interpolated expressions (variable_name /
+            // member_access_expression / …) directly inside the string,
+            // alongside `string_content` / `escape_sequence` text-fragment
+            // wrappers. To match the uniform cross-language shape
+            // (`<string>…<interpolation>EXPR</interpolation>…</string>`),
+            // wrap each real expression in an `<interpolation>`. Skip the
+            // text-fragment kinds; those are just literal string text and
+            // get flattened in their own handler.
+            let children: Vec<_> = xot.children(node)
+                .filter(|&c| xot.element(c).is_some())
+                .collect();
+            for child in children {
+                let ts_kind = get_kind(xot, child);
+                // Skip text fragments and already-renamed interpolation wrappers.
+                if matches!(
+                    ts_kind.as_deref(),
+                    Some("string_content") | Some("string_value") | Some("escape_sequence")
+                        | Some("text_interpolation") | None,
+                ) {
+                    continue;
+                }
+                let interp_name = xot.add_name("interpolation");
+                let interp = xot.new_element(interp_name);
+                copy_source_location(xot, child, interp);
+                xot.insert_before(child, interp)?;
+                xot.detach(child)?;
+                xot.append(interp, child)?;
+            }
+            rename(xot, node, STRING);
+            Ok(TransformAction::Continue)
+        }
+
         // Qualified names (`App\Hello\Greeter`) collapse to a single
         // text leaf inside their enclosing <name> — same design as
         // C# qualified_name. The outer <name> field wrapper handles
