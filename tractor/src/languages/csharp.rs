@@ -594,6 +594,13 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "accessor_list" => Some(ACCESSORS),
         "accessor_declaration" => Some(ACCESSOR),
         "using_directive" => Some(IMPORT),
+        // C# 8+ switch expression rules/labels — normalise to the
+        // shared vocabulary (`<case>` like other languages).
+        "switch_rule" => Some("arm"),
+        "switch_label" => Some("case_label"),
+        "implicit_parameter" => Some("parameter"),
+        "break_statement" => Some("break"),
+        "continue_statement" => Some("continue"),
         _ => None,
     }
 }

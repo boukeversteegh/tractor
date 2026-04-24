@@ -2,11 +2,11 @@ file/
   ├─ comment/
   │   ├─ "//"
   │   ├─ inner_doc_comment_marker = "!"
-  │   └─ doc_comment = "Rust kitchen-sink fixture: exhaustive blueprint of language constructs used"
+  │   └─ comment = "Rust kitchen-sink fixture: exhaustive blueprint of language constructs used"
   ├─ comment/
   │   ├─ "//"
   │   ├─ inner_doc_comment_marker = "!"
-  │   └─ doc_comment = "by tractor's snapshot tests to catch design-principle regressions."
+  │   └─ comment = "by tractor's snapshot tests to catch design-principle regressions."
   ├─ inner_attribute_item/
   │   ├─ "#!["
   │   ├─ attribute/
@@ -147,7 +147,7 @@ file/
   ├─ comment/
   │   ├─ "//"
   │   ├─ outer_doc_comment_marker = "/"
-  │   └─ doc_comment = "A named-field struct with generics, lifetimes, and a where clause."
+  │   └─ comment = "A named-field struct with generics, lifetimes, and a where clause."
   ├─ attribute_item/
   │   ├─ "#["
   │   ├─ attribute/
@@ -210,7 +210,7 @@ file/
   ├─ comment/
   │   ├─ "//"
   │   ├─ outer_doc_comment_marker = "/"
-  │   └─ doc_comment = "A tuple struct."
+  │   └─ comment = "A tuple struct."
   ├─ struct[pub]/
   │   ├─ "pub struct"
   │   ├─ name = "Pair"
@@ -228,7 +228,7 @@ file/
   ├─ comment/
   │   ├─ "//"
   │   ├─ outer_doc_comment_marker = "/"
-  │   └─ doc_comment = "A unit struct."
+  │   └─ comment = "A unit struct."
   ├─ struct[pub]/
   │   ├─ "pub struct"
   │   ├─ name = "Marker"
@@ -236,7 +236,7 @@ file/
   ├─ comment/
   │   ├─ "//"
   │   ├─ outer_doc_comment_marker = "/"
-  │   └─ doc_comment = "An enum with every variant flavor and explicit discriminants."
+  │   └─ comment = "An enum with every variant flavor and explicit discriminants."
   ├─ attribute_item/
   │   ├─ "#["
   │   ├─ attribute/

@@ -128,6 +128,9 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "symbol" => Some("symbol"),
         "array" => Some("array"),
         "hash" => Some("hash"),
+        "operator_assignment" => Some("assign"),
+        "break_statement" => Some("break"),
+        "continue_statement" | "next_statement" => Some("continue"),
         _ => None,
     }
 }

@@ -35,6 +35,13 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
 
+        // `if_clause` / `for_in_clause` inside a comprehension —
+        // grammar wrappers, flatten so the comprehension reads as
+        // body + for + if siblings rather than nested clauses.
+        "if_clause" | "for_in_clause" | "async_if_clause" => {
+            Ok(TransformAction::Flatten)
+        }
+
         // Python string internals: `string_start` / `string_content` /
         // `string_end` are grammar tokens around a string body. They
         // carry no semantic beyond their text (the opening quote, the

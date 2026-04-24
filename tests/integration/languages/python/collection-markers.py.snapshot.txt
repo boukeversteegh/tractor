@@ -4,9 +4,8 @@ list[comprehension]/
   │   ├─ left/name = "x"
   │   ├─ op[multiply] = "*"
   │   └─ right/name = "x"
-  ├─ for/
-  │   ├─ "for"
-  │   ├─ left/name = "x"
-  │   ├─ "in"
-  │   └─ right/name = "nums"
+  ├─ "for"
+  ├─ left/name = "x"
+  ├─ "in"
+  ├─ right/name = "nums"
   └─ "]"

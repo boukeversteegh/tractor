@@ -205,7 +205,16 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 
         // String internals — grammar wrappers with no semantic
         // beyond their text value (Principle #12).
-        "string_content" | "escape_sequence" => Ok(TransformAction::Flatten),
+        "string_content" | "escape_sequence" | "raw_string_literal_content" => {
+            Ok(TransformAction::Flatten)
+        }
+
+        // `doc_comment` is tree-sitter rust's `///` / `//!` kind —
+        // semantically still a comment.
+        "doc_comment" => {
+            rename(xot, node, "comment");
+            Ok(TransformAction::Continue)
+        }
 
         // Qualified types, enum variants, tuple_struct patterns — all
         // grammar wrappers with no semantic beyond their subtree.
