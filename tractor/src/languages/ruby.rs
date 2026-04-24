@@ -4,6 +4,128 @@ use xot::{Xot, Node as XotNode};
 use crate::xot_transform::{TransformAction, helpers::*};
 use crate::output::syntax_highlight::SyntaxCategory;
 
+use semantic::*;
+
+/// Semantic element names — tractor's Ruby XML vocabulary after transform.
+/// Tree-sitter kind strings (left side of `match` arms) stay as bare
+/// literals — they are external vocabulary.
+pub mod semantic {
+    // Structural — containers.
+
+    // Top-level / declarations
+    pub const PROGRAM: &str = "program";
+    pub const MODULE: &str = "module";
+    pub const CLASS: &str = "class";
+    pub const METHOD: &str = "method";
+
+    // Statements / control flow
+    pub const IF: &str = "if";
+    pub const UNLESS: &str = "unless";
+    pub const ELSE: &str = "else";
+    pub const ELSE_IF: &str = "else_if";
+    pub const CASE: &str = "case";
+    pub const WHILE: &str = "while";
+    pub const UNTIL: &str = "until";
+    pub const FOR: &str = "for";
+    pub const BEGIN: &str = "begin";
+    pub const RESCUE: &str = "rescue";
+    pub const ENSURE: &str = "ensure";
+    pub const BREAK: &str = "break";
+    pub const CONTINUE: &str = "continue";
+
+    // Members / parameters
+    pub const PARAMETER: &str = "parameter";
+    pub const VARIABLE: &str = "variable";
+
+    // Expressions
+    pub const CALL: &str = "call";
+    pub const ASSIGN: &str = "assign";
+    pub const BINARY: &str = "binary";
+    pub const SPREAD: &str = "spread";
+    pub const LEFT: &str = "left";
+
+    // Collections / atoms
+    pub const ARRAY: &str = "array";
+    pub const HASH: &str = "hash";
+    pub const STRING: &str = "string";
+    pub const SYMBOL: &str = "symbol";
+    pub const INT: &str = "int";
+    pub const FLOAT: &str = "float";
+
+    // Identifiers
+    pub const NAME: &str = "name";
+
+    // Markers — always empty when emitted.
+
+    // Array-shape markers (for %w[…] / %i[…] percent-literals).
+    //   - STRING also doubles as a structural container.
+    //   - SYMBOL also doubles as a structural container.
+    // Both stay as constants but are OMITTED from MARKER_ONLY.
+
+    // Spread-shape markers (`*args` vs `**kwargs`).
+    pub const LIST: &str = "list";
+    pub const DICT: &str = "dict";
+
+    // Parameter-shape markers.
+    pub const KEYWORD: &str = "keyword";
+    //   - BLOCK doubles as `<parameter><block/>` marker AND `<block>` container
+    //     (do/begin blocks). Kept as a constant but NOT in MARKER_ONLY.
+    //   - DEFAULT (optional parameter) doesn't collide with a container here
+    //     but stays consistent with other languages: keep it a marker.
+    pub const DEFAULT: &str = "default";
+
+    // Block-shape markers (do … end vs begin … end).
+    //   - DO is marker-only.
+    //   - BEGIN doubles as `<begin>` structural container AND `<block><begin/>`
+    //     marker. Kept as constant but OMITTED from MARKER_ONLY.
+    pub const DO: &str = "do";
+
+    // Symbol-shape marker (`:"dyn#{foo}"` → `<symbol><delimited/>`).
+    pub const DELIMITED: &str = "delimited";
+
+    // Class / method singleton markers (`class << self`, `def self.foo`).
+    pub const SINGLETON: &str = "singleton";
+
+    // Block parameter marker (`&block`).
+    pub const BLOCK: &str = "block";
+
+    // Ambiguous names — emitted as BOTH structural container AND marker
+    // in different contexts. Kept as constants for type-safety but NOT in
+    // MARKER_ONLY:
+    //   - STRING: `<string>` literal AND `<array><string/>` shape marker.
+    //   - SYMBOL: `<symbol>` literal AND `<array><symbol/>` shape marker.
+    //   - BLOCK: `<block>` container (do_block/begin_block) AND
+    //     `<parameter><block/>` shape marker.
+    //   - BEGIN: `<begin>` container AND `<block><begin/>` marker.
+
+    /// Names that, when emitted, are always empty elements (no text,
+    /// no element children). Used by the markers-stay-empty invariant.
+    pub const MARKER_ONLY: &[&str] = &[
+        LIST, DICT,
+        KEYWORD, DEFAULT,
+        DO,
+        DELIMITED,
+        SINGLETON,
+    ];
+
+    /// Every semantic name this language's transform can emit.
+    pub const ALL_NAMES: &[&str] = &[
+        PROGRAM, MODULE, CLASS, METHOD,
+        IF, UNLESS, ELSE, ELSE_IF, CASE, WHILE, UNTIL, FOR,
+        BEGIN, RESCUE, ENSURE, BREAK, CONTINUE,
+        PARAMETER, VARIABLE,
+        CALL, ASSIGN, BINARY, SPREAD, LEFT,
+        ARRAY, HASH, STRING, SYMBOL, INT, FLOAT,
+        NAME,
+        LIST, DICT,
+        KEYWORD, DEFAULT,
+        DO,
+        DELIMITED,
+        SINGLETON,
+        BLOCK,
+    ];
+}
+
 /// Transform a Ruby AST node
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let kind = match get_element_name(xot, node) {
@@ -31,19 +153,19 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Trailing `if` / `unless` modifier — still a conditional,
         // same vocabulary as the full form.
         "if_modifier" => {
-            rename(xot, node, "if");
+            rename(xot, node, IF);
             Ok(TransformAction::Continue)
         }
         "unless_modifier" => {
-            rename(xot, node, "unless");
+            rename(xot, node, UNLESS);
             Ok(TransformAction::Continue)
         }
         "while_modifier" => {
-            rename(xot, node, "while");
+            rename(xot, node, WHILE);
             Ok(TransformAction::Continue)
         }
         "until_modifier" => {
-            rename(xot, node, "until");
+            rename(xot, node, UNTIL);
             Ok(TransformAction::Continue)
         }
 
@@ -54,7 +176,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // source is preserved. A future refinement could add a
         // `<instance/>` / `<class/>` / `<global/>` marker child.
         "instance_variable" | "class_variable" | "global_variable" => {
-            rename(xot, node, "name");
+            rename(xot, node, NAME);
             Ok(TransformAction::Continue)
         }
 
@@ -82,7 +204,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // and the rest of the languages on the value-namespace side
         // (Principle #14).
         "identifier" => {
-            rename(xot, node, "name");
+            rename(xot, node, NAME);
             Ok(TransformAction::Continue)
         }
 
@@ -139,78 +261,78 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 /// finds every `%w[…]` literal.
 fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> {
     match kind {
-        "program" => Some(("program", None)),
-        "method" => Some(("method", None)),
-        "class" => Some(("class", None)),
-        "module" => Some(("module", None)),
-        "if" => Some(("if", None)),
-        "unless" => Some(("unless", None)),
+        "program" => Some((PROGRAM, None)),
+        "method" => Some((METHOD, None)),
+        "class" => Some((CLASS, None)),
+        "module" => Some((MODULE, None)),
+        "if" => Some((IF, None)),
+        "unless" => Some((UNLESS, None)),
         // Ruby's tree-sitter nests `elsif` chains (each `elsif`/`else`
         // lives inside the previous `elsif`). The post-transform in
         // `languages/mod.rs` lifts them to flat children of `<if>` per
         // the cross-cutting conditional shape; here we just rename.
-        "elsif" => Some(("else_if", None)),
-        "else" => Some(("else", None)),
-        "case" => Some(("case", None)),
-        "while" => Some(("while", None)),
-        "until" => Some(("until", None)),
-        "for" => Some(("for", None)),
-        "begin" => Some(("begin", None)),
-        "rescue" => Some(("rescue", None)),
-        "ensure" => Some(("ensure", None)),
-        "call" => Some(("call", None)),
-        "method_call" => Some(("call", None)),
-        "assignment" => Some(("assign", None)),
-        "binary" => Some(("binary", None)),
-        "string" => Some(("string", None)),
-        "integer" => Some(("int", None)),
-        "float" => Some(("float", None)),
-        "symbol" => Some(("symbol", None)),
-        "array" => Some(("array", None)),
-        "hash" => Some(("hash", None)),
-        "operator_assignment" => Some(("assign", None)),
-        "break_statement" => Some(("break", None)),
-        "continue_statement" | "next_statement" => Some(("continue", None)),
+        "elsif" => Some((ELSE_IF, None)),
+        "else" => Some((ELSE, None)),
+        "case" => Some((CASE, None)),
+        "while" => Some((WHILE, None)),
+        "until" => Some((UNTIL, None)),
+        "for" => Some((FOR, None)),
+        "begin" => Some((BEGIN, None)),
+        "rescue" => Some((RESCUE, None)),
+        "ensure" => Some((ENSURE, None)),
+        "call" => Some((CALL, None)),
+        "method_call" => Some((CALL, None)),
+        "assignment" => Some((ASSIGN, None)),
+        "binary" => Some((BINARY, None)),
+        "string" => Some((STRING, None)),
+        "integer" => Some((INT, None)),
+        "float" => Some((FLOAT, None)),
+        "symbol" => Some((SYMBOL, None)),
+        "array" => Some((ARRAY, None)),
+        "hash" => Some((HASH, None)),
+        "operator_assignment" => Some((ASSIGN, None)),
+        "break_statement" => Some((BREAK, None)),
+        "continue_statement" | "next_statement" => Some((CONTINUE, None)),
         // Percent-literal arrays — %w[…] gives a string_array, %i[…]
         // gives a symbol_array. Both collapse to <array> with a shape
         // marker so the element kind is uniform but queryable.
-        "string_array" => Some(("array", Some("string"))),
-        "symbol_array" => Some(("array", Some("symbol"))),
+        "string_array" => Some((ARRAY, Some(STRING))),
+        "symbol_array" => Some((ARRAY, Some(SYMBOL))),
         // Splat parameters — `*args` vs `**kwargs` distinguished by
         // list/dict marker, matching Python's shape.
-        "splat_parameter" => Some(("spread", Some("list"))),
-        "hash_splat_parameter" => Some(("spread", Some("dict"))),
+        "splat_parameter" => Some((SPREAD, Some(LIST))),
+        "hash_splat_parameter" => Some((SPREAD, Some(DICT))),
         // `key:` keyword parameter — a parameter variant; the marker
         // lets us find every keyword parameter without matching on text.
-        "keyword_parameter" => Some(("parameter", Some("keyword"))),
+        "keyword_parameter" => Some((PARAMETER, Some(KEYWORD))),
         // `&block` capture — identifies the block parameter as a
         // <parameter> with <block/> marker.
-        "block_parameter" => Some(("parameter", Some("block"))),
+        "block_parameter" => Some((PARAMETER, Some(BLOCK))),
         // `arg = default` — optional parameter shape.
-        "optional_parameter" => Some(("parameter", Some("default"))),
+        "optional_parameter" => Some((PARAMETER, Some(DEFAULT))),
         // `do … end` block — collapse to <block> with a <do/> marker
         // so `//block[do]` finds the do-style, `//block[brace]` the
         // `{ … }` style (once we add it).
-        "do_block" => Some(("block", Some("do"))),
+        "do_block" => Some((BLOCK, Some(DO))),
         // `begin … end` — explicit Ruby block.
-        "begin_block" => Some(("block", Some("begin"))),
+        "begin_block" => Some((BLOCK, Some(BEGIN))),
         // Splat call-site args — `*args` / `**kwargs` distinguished by
         // list/dict marker, matching the parameter shape above.
-        "splat_argument" => Some(("spread", Some("list"))),
-        "hash_splat_argument" => Some(("spread", Some("dict"))),
+        "splat_argument" => Some((SPREAD, Some(LIST))),
+        "hash_splat_argument" => Some((SPREAD, Some(DICT))),
         // `:"dyn#{foo}"` delimited symbol — shape-marker the collapse
         // so `//symbol[delimited]` finds them.
-        "delimited_symbol" => Some(("symbol", Some("delimited"))),
+        "delimited_symbol" => Some((SYMBOL, Some(DELIMITED))),
         // `rescue => e` — the `=> e` binding the exception.
-        "exception_variable" => Some(("variable", None)),
+        "exception_variable" => Some((VARIABLE, None)),
         // `class << self` — singleton class body.
-        "singleton_class" => Some(("class", Some("singleton"))),
+        "singleton_class" => Some((CLASS, Some(SINGLETON))),
         // `def self.foo` — singleton method.
-        "singleton_method" => Some(("method", Some("singleton"))),
+        "singleton_method" => Some((METHOD, Some(SINGLETON))),
         // `a, b, c = …` — LHS of a multi-assignment.
-        "left_assignment_list" => Some(("left", None)),
+        "left_assignment_list" => Some((LEFT, None)),
         // `*rest = …` — the splat position on the LHS.
-        "rest_assignment" => Some(("spread", None)),
+        "rest_assignment" => Some((SPREAD, None)),
         // `->(...) { ... }` — Ruby lambdas; flatten the parameter list.
         _ => None,
     }
