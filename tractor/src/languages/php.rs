@@ -38,16 +38,13 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         | "array_element_initializer"
         => Ok(TransformAction::Flatten),
 
-        // Expression statement is a grammar wrapper with no
-        // semantic payload. Children become direct siblings of the
-        // parent (Principle #12).
-        //
-        // NOTE: parenthesized_expression is deliberately NOT skipped
-        // here — in PHP it interacts with nested ternaries in a
-        // way that trips the xot walker (freed-node access). Left
-        // intact for now; todo to revisit once the walker is
-        // strengthened for Skip + consolidation interactions.
+        // Expression statement / parenthesized expression —
+        // grammar wrappers, flatten so children become siblings of
+        // the enclosing node (Principle #12). Flatten is safer than
+        // Skip for parenthesized expressions (the walker's Skip
+        // path trips xot's text consolidation on nested ternaries).
         "expression_statement" => Ok(TransformAction::Skip),
+        "parenthesized_expression" => Ok(TransformAction::Flatten),
 
         // Qualified names (`App\Hello\Greeter`) collapse to a single
         // text leaf inside their enclosing <name> — same design as

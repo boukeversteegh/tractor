@@ -88,11 +88,7 @@
                   <name>Printf</name>
                 </member>
                 (
-                <string>
-                  &quot;Result: %d
-                  <escape_sequence>\n</escape_sequence>
-                  &quot;
-                </string>
+                <string>&quot;Result: %d\n&quot;</string>
                 ,
                 <name>result</name>
                 )

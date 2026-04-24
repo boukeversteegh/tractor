@@ -597,7 +597,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         // C# 8+ switch expression rules/labels — normalise to the
         // shared vocabulary (`<case>` like other languages).
         "switch_rule" => Some("arm"),
-        "switch_label" => Some("case_label"),
+        "switch_label" => Some("label"),
         "switch_section" => Some("section"),
         "element_binding_expression" => Some("index"),
         "declaration_pattern" => Some("pattern"),

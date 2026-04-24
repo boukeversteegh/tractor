@@ -39,10 +39,10 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             }
             Ok(TransformAction::Continue)
         }
-        // parenthesized_expression: would ideally skip (Principle
-        // #12), but it trips xot's walker (freed-node access) when
-        // combined with ternaries / typescript-specific wrappers.
-        // TODO: revisit once the walker handles Skip+consolidation.
+        // parenthesized_expression — grammar wrapper, flatten so
+        // children become direct siblings of the enclosing node
+        // (Principle #12).
+        "parenthesized_expression" => Ok(TransformAction::Flatten),
 
         // ---------------------------------------------------------------------
         // Flatten nodes - transform children, then remove wrapper

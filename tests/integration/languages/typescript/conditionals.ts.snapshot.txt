@@ -1,9 +1,14 @@
 if/
   ├─ "if"
-  ├─ condition/parenthesized_expression/
+  ├─ condition/
   │   ├─ "("
   │   ├─ binary/
-  │   │   └─ ... (7 children)
+  │   │   ├─ left/
+  │   │   │   └─ ... (1 children)
+  │   │   ├─ op/
+  │   │   │   └─ ... (2 children)
+  │   │   └─ right/
+  │   │       └─ ... (1 children)
   │   └─ ")"
   ├─ then/block/
   │   ├─ "{"
@@ -12,14 +17,20 @@ if/
   │   └─ "}"
   ├─ else_if/
   │   ├─ "else if"
-  │   ├─ condition/parenthesized_expression/
-  │   │   └─ ... (8 children)
+  │   ├─ condition/
+  │   │   ├─ "("
+  │   │   ├─ binary/
+  │   │   │   └─ ... (7 children)
+  │   │   └─ ")"
   │   └─ then/block/
   │       └─ ... (2 children)
   ├─ else_if/
   │   ├─ "else if"
-  │   ├─ condition/parenthesized_expression/
-  │   │   └─ ... (8 children)
+  │   ├─ condition/
+  │   │   ├─ "("
+  │   │   ├─ binary/
+  │   │   │   └─ ... (7 children)
+  │   │   └─ ")"
   │   └─ then/block/
   │       └─ ... (2 children)
   └─ else/

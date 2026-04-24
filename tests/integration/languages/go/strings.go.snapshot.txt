@@ -10,23 +10,14 @@ file/
   │   ├─ "const"
   │   ├─ name = "normal"
   │   ├─ "="
-  │   └─ value/string/
-  │       ├─ "\"hello"
-  │       ├─ escape_sequence = "\\n"
-  │       └─ "world\""
+  │   └─ value/string = "\"hello\\nworld\""
   ├─ const/
   │   ├─ "const"
   │   ├─ name = "raw"
   │   ├─ "="
-  │   └─ value/string[raw]/
-  │       ├─ "`"
-  │       ├─ raw_string_literal_content = "hello world"
-  │       └─ "`"
+  │   └─ value/string[raw] = "`hello world`"
   └─ const/
       ├─ "const"
       ├─ name = "pattern"
       ├─ "="
-      └─ value/string[raw]/
-          ├─ "`"
-          ├─ raw_string_literal_content = "^\\d+$"
-          └─ "`"
+      └─ value/string[raw] = "`^\\d+$`"

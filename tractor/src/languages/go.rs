@@ -45,7 +45,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         | "type_case" => Ok(TransformAction::Flatten),
         // The content-inside-quotes node on "interpreted" strings —
         // inline as raw text into the enclosing <string>.
-        "interpreted_string_literal_content" => Ok(TransformAction::Flatten),
+        "interpreted_string_literal_content" | "raw_string_literal_content" | "escape_sequence" => Ok(TransformAction::Flatten),
 
         // Type declarations: move the leading `type` keyword into the
         // inner `type_spec` so it renders as part of the <type> element,

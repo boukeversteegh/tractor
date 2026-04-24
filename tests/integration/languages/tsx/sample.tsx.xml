@@ -94,136 +94,132 @@
                   ;
                 </variable>
                 <return>
-                  return
-                  <parenthesized_expression>
-                    (
+                  return (
+                  <jsx_element>
+                    <jsx_opening_element>
+                      &lt;
+                      <name>div</name>
+                      <jsx_attribute>
+                        <name>className</name>
+                        =
+                        <string>&quot;greeting&quot;</string>
+                      </jsx_attribute>
+                      &gt;
+                    </jsx_opening_element>
                     <jsx_element>
                       <jsx_opening_element>
                         &lt;
-                        <name>div</name>
-                        <jsx_attribute>
-                          <name>className</name>
-                          =
-                          <string>&quot;greeting&quot;</string>
-                        </jsx_attribute>
+                        <name>h1</name>
                         &gt;
                       </jsx_opening_element>
-                      <jsx_element>
-                        <jsx_opening_element>
-                          &lt;
-                          <name>h1</name>
-                          &gt;
-                        </jsx_opening_element>
-                        <jsx_text>Hello, </jsx_text>
-                        <jsx_expression>
-                          {
-                          <name>name</name>
-                          }
-                        </jsx_expression>
-                        <jsx_text>!</jsx_text>
-                        <jsx_closing_element>
-                          &lt;/
-                          <name>h1</name>
-                          &gt;
-                        </jsx_closing_element>
-                      </jsx_element>
+                      <jsx_text>Hello, </jsx_text>
                       <jsx_expression>
                         {
-                        <binary>
-                          <left>
-                            <name>age</name>
-                          </left>
-                          <op>
-                            <logical>
-                              <and/>
-                            </logical>
-                            &amp;&amp;
-                          </op>
-                          <right>
-                            <jsx_element>
-                              <jsx_opening_element>
-                                &lt;
-                                <name>span</name>
-                                &gt;
-                              </jsx_opening_element>
-                              <jsx_text>Age: </jsx_text>
-                              <jsx_expression>
-                                {
-                                <name>age</name>
-                                }
-                              </jsx_expression>
-                              <jsx_closing_element>
-                                &lt;/
-                                <name>span</name>
-                                &gt;
-                              </jsx_closing_element>
-                            </jsx_element>
-                          </right>
-                        </binary>
+                        <name>name</name>
                         }
                       </jsx_expression>
-                      <jsx_element>
-                        <jsx_opening_element>
-                          &lt;
-                          <name>button</name>
-                          <jsx_attribute>
-                            <name>onClick</name>
-                            =
-                            <jsx_expression>
-                              {
-                              <arrow>
-                                () =&gt;
-                                <body>
-                                  <call>
-                                    <callee>
-                                      <name>setCount</name>
-                                    </callee>
-                                    (
-                                    <binary>
-                                      <left>
-                                        <name>count</name>
-                                      </left>
-                                      <op>
-                                        <plus/>
-                                        +
-                                      </op>
-                                      <right>
-                                        <number>1</number>
-                                      </right>
-                                    </binary>
-                                    )
-                                  </call>
-                                </body>
-                              </arrow>
-                              }
-                            </jsx_expression>
-                          </jsx_attribute>
-                          &gt;
-                        </jsx_opening_element>
-                        <jsx_text>
-                        Clicked </jsx_text>
-                        <jsx_expression>
-                          {
-                          <name>count</name>
-                          }
-                        </jsx_expression>
-                        <jsx_text> times
-                    </jsx_text>
-                        <jsx_closing_element>
-                          &lt;/
-                          <name>button</name>
-                          &gt;
-                        </jsx_closing_element>
-                      </jsx_element>
+                      <jsx_text>!</jsx_text>
                       <jsx_closing_element>
                         &lt;/
-                        <name>div</name>
+                        <name>h1</name>
                         &gt;
                       </jsx_closing_element>
                     </jsx_element>
-                    )
-                  </parenthesized_expression>
-                  ;
+                    <jsx_expression>
+                      {
+                      <binary>
+                        <left>
+                          <name>age</name>
+                        </left>
+                        <op>
+                          <logical>
+                            <and/>
+                          </logical>
+                          &amp;&amp;
+                        </op>
+                        <right>
+                          <jsx_element>
+                            <jsx_opening_element>
+                              &lt;
+                              <name>span</name>
+                              &gt;
+                            </jsx_opening_element>
+                            <jsx_text>Age: </jsx_text>
+                            <jsx_expression>
+                              {
+                              <name>age</name>
+                              }
+                            </jsx_expression>
+                            <jsx_closing_element>
+                              &lt;/
+                              <name>span</name>
+                              &gt;
+                            </jsx_closing_element>
+                          </jsx_element>
+                        </right>
+                      </binary>
+                      }
+                    </jsx_expression>
+                    <jsx_element>
+                      <jsx_opening_element>
+                        &lt;
+                        <name>button</name>
+                        <jsx_attribute>
+                          <name>onClick</name>
+                          =
+                          <jsx_expression>
+                            {
+                            <arrow>
+                              () =&gt;
+                              <body>
+                                <call>
+                                  <callee>
+                                    <name>setCount</name>
+                                  </callee>
+                                  (
+                                  <binary>
+                                    <left>
+                                      <name>count</name>
+                                    </left>
+                                    <op>
+                                      <plus/>
+                                      +
+                                    </op>
+                                    <right>
+                                      <number>1</number>
+                                    </right>
+                                  </binary>
+                                  )
+                                </call>
+                              </body>
+                            </arrow>
+                            }
+                          </jsx_expression>
+                        </jsx_attribute>
+                        &gt;
+                      </jsx_opening_element>
+                      <jsx_text>
+                        Clicked </jsx_text>
+                      <jsx_expression>
+                        {
+                        <name>count</name>
+                        }
+                      </jsx_expression>
+                      <jsx_text> times
+                    </jsx_text>
+                      <jsx_closing_element>
+                        &lt;/
+                        <name>button</name>
+                        &gt;
+                      </jsx_closing_element>
+                    </jsx_element>
+                    <jsx_closing_element>
+                      &lt;/
+                      <name>div</name>
+                      &gt;
+                    </jsx_closing_element>
+                  </jsx_element>
+                  );
                 </return>
                 }
               </block>

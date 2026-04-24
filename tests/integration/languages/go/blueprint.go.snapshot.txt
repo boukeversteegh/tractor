@@ -154,17 +154,11 @@ file/
   │   │   ├─ ","
   │   │   ├─ name = "Y"
   │   │   ├─ type/name = "int"
-  │   │   └─ string[raw]/
-  │   │       ├─ "`"
-  │   │       ├─ raw_string_literal_content = "json:\"x,omitempty\""
-  │   │       └─ "`"
+  │   │   └─ string[raw] = "`json:\"x,omitempty\"`"
   │   ├─ field/
   │   │   ├─ name = "Name"
   │   │   ├─ type/name = "string"
-  │   │   └─ string[raw]/
-  │   │       ├─ "`"
-  │   │       ├─ raw_string_literal_content = "json:\"name\""
-  │   │       └─ "`"
+  │   │   └─ string[raw] = "`json:\"name\"`"
   │   └─ "}"
   ├─ struct[exported]/
   │   ├─ "type"
@@ -725,10 +719,7 @@ file/
           │   │   └─ name = "ch"
           │   ├─ ":="
           │   └─ right/
-          │       ├─ string[raw]/
-          │       │   ├─ "`"
-          │       │   ├─ raw_string_literal_content = "no \"escapes\" here"
-          │       │   └─ "`"
+          │       ├─ string[raw] = "`no \"escapes\" here`"
           │       ├─ ","
           │       └─ rune_literal = "'A'"
           ├─ if/
