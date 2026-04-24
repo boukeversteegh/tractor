@@ -66,6 +66,7 @@ pub mod semantic {
     pub const RETURN: &str = "return";
     pub const IF: &str = "if";
     pub const ELSE: &str = "else";
+    pub const ELSE_IF: &str = "else_if";
     pub const FOR: &str = "for";
     pub const FOREACH: &str = "foreach";
     pub const WHILE: &str = "while";
@@ -121,10 +122,24 @@ pub mod semantic {
 
     // Literals / atoms
     pub const STRING: &str = "string";
+    pub const INTERPOLATION: &str = "interpolation";
     pub const INT: &str = "int";
     pub const FLOAT: &str = "float";
     pub const BOOL: &str = "bool";
     pub const NULL: &str = "null";
+
+    // Patterns — `subpattern` is a property-pattern clause `{ Name: X }`
+    // emitted as a container around its member/value pair.
+    pub const SUBPATTERN: &str = "subpattern";
+
+    // `_` — discard pattern in switch arms / deconstructions. Leaf
+    // container that carries its underscore text.
+    pub const DISCARD: &str = "discard";
+
+    // Unknown modifier passthrough — when the grammar wraps a keyword
+    // we don't recognise in `<modifier>…</modifier>` the wrapper
+    // survives as a container (e.g. `file` on `file sealed class`).
+    pub const MODIFIER: &str = "modifier";
 
     // Operator child
     pub const OP: &str = "op";
@@ -213,14 +228,14 @@ pub mod semantic {
         ARGUMENTS, ARGUMENT, PARAMETERS, PARAMETER, VARIABLE, DECLARATOR,
         EXTENDS, PROPERTIES, ELEMENT, SECTION, ARM, LABEL, CHAIN, FILTER,
         WHEN, WHERE,
-        RETURN, IF, ELSE, FOR, FOREACH, WHILE, DO, TRY, CATCH, FINALLY,
+        RETURN, IF, ELSE, ELSE_IF, FOR, FOREACH, WHILE, DO, TRY, CATCH, FINALLY,
         THROW, USING, BREAK, CONTINUE, SWITCH, BLOCK, EXPRESSION, RANGE,
         CALL, MEMBER, NEW, ASSIGN, BINARY, UNARY, LAMBDA, AWAIT, TERNARY,
-        INDEX, IS, TUPLE, LITERAL, PATTERN,
+        INDEX, IS, TUPLE, LITERAL, PATTERN, SUBPATTERN, DISCARD, MODIFIER,
         GENERIC,
         QUERY, FROM, SELECT, ORDER, GROUP, LET, JOIN, ORDERING,
         CONSTANT, DECLARATION,
-        STRING, INT, FLOAT, BOOL, NULL,
+        STRING, INTERPOLATION, INT, FLOAT, BOOL, NULL,
         OP,
         NULLABLE, TRAILING, LEADING,
         INSTANCE, CONDITIONAL, ARRAY, POINTER, FUNCTION, REF,
