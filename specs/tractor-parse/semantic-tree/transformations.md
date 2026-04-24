@@ -254,6 +254,77 @@ implemented. C#'s `is_inline_node` / `is_leading_comment` helpers
 already compute the classification; the adoption step is
 additional.
 
+### Multi-line comment grouping — prefix-stripped `<line>` children (proposed)
+
+C#'s current grouping pass merges consecutive `//` line comments
+on adjacent lines into one `<comment>` element, with the joined
+text as a single string (prefixes included):
+
+```
+<comment>// first line
+// second line
+// third line</comment>
+```
+
+That preserves source text but the consumer has to strip the
+`//` prefixes themselves and split on newlines to recover the
+comment body as structured data. JSON serialisation produces a
+single blob string rather than an array of lines.
+
+**Proposed**: keep the `//` / `#` / `--` prefixes as dangling text
+between `<line>` element children. Each `<line>` holds the
+prefix-stripped text for one line.
+
+```
+<comment>
+  "// "
+  <line field="lines">first line</line>
+  "// "
+  <line field="lines">second line</line>
+  "// "
+  <line field="lines">third line</line>
+</comment>
+```
+
+- Source reconstruction: concatenating all descendant text still
+  yields `// first line\n// second line\n// third line` — the
+  prefix text stays in place, the `<line>` element's string value
+  is its inner text, no characters lost.
+- Query: `//comment/line` returns the clean line bodies directly,
+  no per-language prefix knowledge required. `//comment[line[.='TODO']]`
+  finds every block with a line equal to `TODO`.
+- JSON: `field="lines"` on each `<line>` promotes to an array
+  under the comment: `{"comment": {"lines": ["first line", "second line", ...]}}`.
+- Single-line comments: one `<line>` child (consistent shape —
+  readers don't need to special-case one-versus-many).
+
+Cross-language coverage:
+
+- `//` — JavaScript, TypeScript, Rust, Go, Java, C#, PHP, Swift.
+- `#` — Python, Ruby, PHP (rare), shell.
+- `--` — SQL (including T-SQL), Lua.
+
+Each language's prefix is known; the grouping pass strips it
+uniformly. Block comments (`/* ... */`, `"""…"""`) don't get
+split into lines — they stay as one text leaf or one `<line>`
+since the reader already sees them as a unit.
+
+Open questions:
+
+- **Docstring-flavoured block comments** (Rust `///`, Java `/**`)
+  carry structure (parameter tags, return tags) inside. Keeping
+  them as one `<line>` leaves that structure hidden. Defer —
+  treat as a separate "doc-comment shape" cycle.
+- **Interaction with trailing-comment adoption** — a multi-line
+  trailing comment adopted into its predecessor still has the
+  `<line>` children; nothing special. A single-line trailing
+  comment (most common) is `<comment trailing><line>…</line></comment>`.
+- **Grouping window** — current C# pass only merges when lines
+  are strictly adjacent (no blank line between). Keep that rule.
+
+Cross-cutting, post-dates the trailing-comment adoption work so
+the adopted form inherits the `<line>` substructure automatically.
+
 ## Relationship to `transform-rules/`
 
 The older `transform-rules/` folder documents generic, pattern-level
