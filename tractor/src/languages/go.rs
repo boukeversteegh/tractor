@@ -422,9 +422,17 @@ fn inline_single_identifier(xot: &mut Xot, node: XotNode) -> Result<(), xot::Err
             Some(n) => n,
             None => continue,
         };
+        // Also accept:
+        //   - `name` — walk order may have already renamed an inner
+        //     identifier (package_identifier / field_identifier), so
+        //     the outer field wrapper sees `<name><name>…</name></name>`
+        //   - `dot` — Go's `import . "pkg"` uses a `.` token; tree-sitter
+        //     tags it as `dot`. It's the "name" for import purposes.
+        //   - `blank_identifier` — Go's `_` discard; still fills a name slot.
         if !matches!(
             child_name.as_str(),
-            "identifier" | "type_identifier" | "field_identifier",
+            "identifier" | "type_identifier" | "field_identifier"
+                | "name" | "dot" | "blank_identifier",
         ) {
             continue;
         }

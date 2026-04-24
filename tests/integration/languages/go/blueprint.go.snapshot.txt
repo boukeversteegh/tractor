@@ -18,9 +18,9 @@ file/
   │       ├─ string = "\"io\""
   │       ├─ name/name = "myio"
   │       ├─ string = "\"io\""
-  │       ├─ name/dot = "."
+  │       ├─ name = "."
   │       ├─ string = "\"strings\""
-  │       ├─ name/blank_identifier = "_"
+  │       ├─ name = "_"
   │       ├─ string = "\"net/http/pprof\""
   │       └─ ")"
   ├─ const/

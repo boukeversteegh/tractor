@@ -104,8 +104,12 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 
         // PHP emits `name` directly on identifiers — our field
         // wrappings already produce <name>foo</name>, so nothing to
-        // rewrite here except collapsing the occasional <name><name>…</name></name>
-        // that field+identifier double-wrapping creates.
+        // rewrite here except collapsing wrappers that sit inside a
+        // <name> field wrapper: `<name><name>foo</name></name>` (from
+        // field+identifier double-wrapping) and `<name><variable>$foo</variable></name>`
+        // (from field-on-variable_name — tree-sitter tags `$foo` as a
+        // `variable_name` kind, but in any field slot it's still just
+        // the bound name, so the outer <name> should be the text leaf).
         "name" => {
             let children: Vec<_> = xot.children(node).collect();
             let element_children: Vec<_> = children
@@ -115,12 +119,26 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
                 .collect();
             if element_children.len() == 1 {
                 let child = element_children[0];
-                if get_element_name(xot, child).as_deref() == Some("name") {
-                    if let Some(text) = get_text_content(xot, child) {
+                // Match on the original tree-sitter kind (stable across
+                // the walk order) and on post-rename element names for
+                // the `<name><name>…</name></name>` case.
+                let ts_kind = get_kind(xot, child);
+                let el_name = get_element_name(xot, child);
+                let inlineable = matches!(
+                    ts_kind.as_deref(),
+                    Some("name") | Some("variable_name"),
+                ) || matches!(
+                    el_name.as_deref(),
+                    Some("name") | Some("variable"),
+                );
+                if inlineable {
+                    let text = descendant_text(xot, child);
+                    let trimmed = text.trim().to_string();
+                    if !trimmed.is_empty() {
                         for c in children {
                             xot.detach(c)?;
                         }
-                        let text_node = xot.new_text(&text);
+                        let text_node = xot.new_text(&trimmed);
                         xot.append(node, text_node)?;
                         return Ok(TransformAction::Done);
                     }

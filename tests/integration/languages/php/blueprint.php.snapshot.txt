@@ -87,26 +87,20 @@ program/
   │       ├─ field[private]/
   │       │   ├─ "private"
   │       │   ├─ type[primitive] = "string"
-  │       │   ├─ name/variable/
-  │       │   │   ├─ "$"
-  │       │   │   └─ name = "name"
+  │       │   ├─ name = "$name"
   │       │   └─ ";"
   │       ├─ field[public and readonly]/
   │       │   ├─ "public"
   │       │   ├─ "readonly"
   │       │   ├─ type[primitive] = "int"
-  │       │   ├─ name/variable/
-  │       │   │   ├─ "$"
-  │       │   │   └─ name = "count"
+  │       │   ├─ name = "$count"
   │       │   └─ ";"
   │       ├─ field[protected]/
   │       │   ├─ "protected"
   │       │   ├─ type[optional]/
   │       │   │   ├─ "?"
   │       │   │   └─ type[primitive] = "string"
-  │       │   ├─ name/variable/
-  │       │   │   ├─ "$"
-  │       │   │   └─ name = "label"
+  │       │   ├─ name = "$label"
   │       │   ├─ "="
   │       │   ├─ null = "null"
   │       │   └─ ";"
@@ -114,9 +108,7 @@ program/
   │       │   ├─ "public"
   │       │   ├─ "static"
   │       │   ├─ type[primitive] = "int"
-  │       │   ├─ name/variable/
-  │       │   │   ├─ "$"
-  │       │   │   └─ name = "registry"
+  │       │   ├─ name = "$registry"
   │       │   ├─ "="
   │       │   ├─ int = "0"
   │       │   └─ ";"
@@ -126,15 +118,11 @@ program/
   │       │   ├─ "("
   │       │   ├─ parameter/
   │       │   │   ├─ type[primitive] = "string"
-  │       │   │   └─ name/variable/
-  │       │   │       ├─ "$"
-  │       │   │       └─ name = "name"
+  │       │   │   └─ name = "$name"
   │       │   ├─ ","
   │       │   ├─ parameter/
   │       │   │   ├─ type[primitive] = "int"
-  │       │   │   ├─ name/variable/
-  │       │   │   │   ├─ "$"
-  │       │   │   │   └─ name = "count"
+  │       │   │   ├─ name = "$count"
   │       │   │   ├─ "="
   │       │   │   └─ int = "0"
   │       │   ├─ ")"
@@ -179,9 +167,7 @@ program/
   │       │   ├─ "("
   │       │   ├─ parameter/
   │       │   │   ├─ type[primitive] = "string"
-  │       │   │   └─ name/variable/
-  │       │   │       ├─ "$"
-  │       │   │       └─ name = "name"
+  │       │   │   └─ name = "$name"
   │       │   ├─ "):"
   │       │   ├─ type/name = "static"
   │       │   └─ body/
@@ -206,18 +192,14 @@ program/
   │       │   │   ├─ type[optional]/
   │       │   │   │   ├─ "?"
   │       │   │   │   └─ type[primitive] = "string"
-  │       │   │   ├─ name/variable/
-  │       │   │   │   ├─ "$"
-  │       │   │   │   └─ name = "who"
+  │       │   │   ├─ name = "$who"
   │       │   │   ├─ "="
   │       │   │   └─ null = "null"
   │       │   ├─ ","
   │       │   ├─ parameter[variadic]/
   │       │   │   ├─ type[primitive] = "string"
   │       │   │   ├─ "..."
-  │       │   │   └─ name/variable/
-  │       │   │       ├─ "$"
-  │       │   │       └─ name = "extras"
+  │       │   │   └─ name = "$extras"
   │       │   ├─ "):"
   │       │   ├─ type[primitive] = "string"
   │       │   └─ body/
@@ -316,9 +298,7 @@ program/
   │       │   ├─ "("
   │       │   ├─ parameter/
   │       │   │   ├─ type[primitive] = "int"
-  │       │   │   └─ name/variable/
-  │       │   │       ├─ "$"
-  │       │   │       └─ name = "n"
+  │       │   │   └─ name = "$n"
   │       │   ├─ "):"
   │       │   ├─ type[primitive] = "string"
   │       │   └─ body/
@@ -359,9 +339,7 @@ program/
   │       │   ├─ "("
   │       │   ├─ parameter/
   │       │   │   ├─ type[primitive] = "mixed"
-  │       │   │   └─ name/variable/
-  │       │   │       ├─ "$"
-  │       │   │       └─ name = "value"
+  │       │   │   └─ name = "$value"
   │       │   ├─ "):"
   │       │   ├─ type[primitive] = "string"
   │       │   └─ body/
@@ -437,9 +415,7 @@ program/
   │       │   ├─ "("
   │       │   ├─ parameter/
   │       │   │   ├─ type[primitive] = "iterable"
-  │       │   │   └─ name/variable/
-  │       │   │       ├─ "$"
-  │       │   │       └─ name = "items"
+  │       │   │   └─ name = "$items"
   │       │   ├─ "):"
   │       │   ├─ type[primitive] = "array"
   │       │   └─ body/
@@ -517,9 +493,7 @@ program/
   │       │       │       │       ├─ types/type/
   │       │       │       │       │   ├─ "\\"
   │       │       │       │       │   └─ name = "Throwable"
-  │       │       │       │       ├─ name/variable/
-  │       │       │       │       │   ├─ "$"
-  │       │       │       │       │   └─ name = "e"
+  │       │       │       │       ├─ name = "$e"
   │       │       │       │       ├─ ")"
   │       │       │       │       └─ body/
   │       │       │       │           ├─ "{"
@@ -539,9 +513,7 @@ program/
   │       │   ├─ "("
   │       │   ├─ parameter/
   │       │   │   ├─ type[primitive] = "mixed"
-  │       │   │   └─ name/variable/
-  │       │   │       ├─ "$"
-  │       │   │       └─ name = "item"
+  │       │   │   └─ name = "$item"
   │       │   ├─ "):"
   │       │   ├─ type[primitive] = "mixed"
   │       │   └─ body/
@@ -567,9 +539,7 @@ program/
   │       │   │   ├─ type[optional]/
   │       │   │   │   ├─ "?"
   │       │   │   │   └─ type[primitive] = "string"
-  │       │   │   └─ name/variable/
-  │       │   │       ├─ "$"
-  │       │   │       └─ name = "who"
+  │       │   │   └─ name = "$who"
   │       │   ├─ "):"
   │       │   ├─ type[primitive] = "string"
   │       │   └─ ";"
@@ -597,9 +567,7 @@ program/
   │       │   ├─ "("
   │       │   ├─ parameter/
   │       │   │   ├─ type[primitive] = "string"
-  │       │   │   └─ name/variable/
-  │       │   │       ├─ "$"
-  │       │   │       └─ name = "msg"
+  │       │   │   └─ name = "$msg"
   │       │   ├─ "):"
   │       │   ├─ type[primitive] = "void"
   │       │   └─ body/
@@ -692,16 +660,12 @@ program/
   │   ├─ "("
   │   ├─ parameter/
   │   │   ├─ type[primitive] = "callable"
-  │   │   └─ name/variable/
-  │   │       ├─ "$"
-  │   │       └─ name = "fn"
+  │   │   └─ name = "$fn"
   │   ├─ ","
   │   ├─ parameter[variadic]/
   │   │   ├─ type[primitive] = "mixed"
   │   │   ├─ "..."
-  │   │   └─ name/variable/
-  │   │       ├─ "$"
-  │   │       └─ name = "args"
+  │   │   └─ name = "$args"
   │   ├─ "):"
   │   ├─ type[primitive] = "mixed"
   │   └─ body/
@@ -730,9 +694,7 @@ program/
   │       ├─ "fn("
   │       ├─ parameter/
   │       │   ├─ type[primitive] = "int"
-  │       │   └─ name/variable/
-  │       │       ├─ "$"
-  │       │       └─ name = "x"
+  │       │   └─ name = "$x"
   │       ├─ "):"
   │       ├─ type[primitive] = "int"
   │       ├─ "=>"
@@ -774,9 +736,7 @@ program/
   │       ├─ "function ("
   │       ├─ parameter/
   │       │   ├─ type[primitive] = "int"
-  │       │   └─ name/variable/
-  │       │       ├─ "$"
-  │       │       └─ name = "x"
+  │       │   └─ name = "$x"
   │       ├─ ")"
   │       ├─ anonymous_function_use_clause/
   │       │   ├─ "use ("
