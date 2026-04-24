@@ -330,3 +330,51 @@ specific name without relying on sibling indexing).
 3. If we stay with flattening, at minimum emit a `<continuation/>`
    marker on specs that inherit the previous expression, so the
    implicit-iota case is queryable.
+
+### Var blocks with tuple assignment
+
+Same flattening problem, extra pathology — Go's `var` blocks can
+mix four different shapes:
+
+```go
+var (
+    ErrNotFound = errors.New("not found")  // name = value
+    globalCount int                         // name type (no value)
+    name, age   = "alice", 30               // names , = values ,
+)
+```
+
+Currently renders as a flat soup of `<name>`, `<type>`, and value
+children under `<var>` with commas and `=` as text siblings — the
+multi-assignment form loses the name↔value positional pairing
+entirely.
+
+The `<spec>` grouping proposed above handles the first two forms
+cleanly. The tuple-assignment form needs either:
+
+- **Option A — one spec per declared name**: split
+  `name, age = "alice", 30` into two `<spec>`s, re-pairing each
+  name with its corresponding value. The source text stays intact
+  as dangling siblings of the `<var>` so text-preservation holds,
+  but the XML shape shows the intent:
+
+  ```
+  <spec><name>name</name><value><string>"alice"</string></value></spec>
+  <spec><name>age</name><value><int>30</int></value></spec>
+  ```
+
+- **Option B — one spec with multi-name + multi-value**: keep the
+  source shape verbatim, with the spec containing lists:
+
+  ```
+  <spec>
+    <name>name</name>, <name>age</name> =
+    <value><string>"alice"</string></value>,
+    <value><int>30</int></value>
+  </spec>
+  ```
+
+Option A is more queryable (every value has exactly one name
+sibling) but loses the syntactic grouping. Option B preserves the
+Go source shape but requires sibling-position indexing to recover
+the pairing. Pick when the redesign lands.
