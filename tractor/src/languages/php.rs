@@ -102,6 +102,11 @@ pub mod semantic {
 
     // Identifiers
     pub const NAME: &str = "name";
+    pub const COMMENT: &str = "comment";
+
+    // `[k => v, …]` — associative array entry. Container around key
+    // and value.
+    pub const PAIR: &str = "pair";
 
     // Operator child (from prepend_op_element).
     pub const OP: &str = "op";
@@ -175,7 +180,7 @@ pub mod semantic {
         ARRAY, SPREAD,
         TYPE, STRING, INT, FLOAT, BOOL, NULL, VARIABLE,
         TAG, INTERPOLATION, ATTRIBUTE,
-        NAME, OP,
+        NAME, COMMENT, PAIR, OP,
         PUBLIC, PRIVATE, PROTECTED,
         FINAL, ABSTRACT, READONLY,
         INSTANCE,
