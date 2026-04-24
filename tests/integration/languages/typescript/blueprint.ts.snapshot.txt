@@ -82,8 +82,8 @@ program/
   │       │   ├─ "<"
   │       │   ├─ generic/
   │       │   │   ├─ name = "T"
-  │       │   │   └─ value/default_type/
-  │       │   │       ├─ "="
+  │       │   │   └─ value/type/
+  │       │   │       ├─ name = "="
   │       │   │       └─ type/name = "number"
   │       │   └─ ">"
   │       └─ body/
@@ -414,8 +414,8 @@ program/
   │       │   │   ├─ constraint/
   │       │   │   │   ├─ "extends"
   │       │   │   │   └─ type/name = "Shape"
-  │       │   │   └─ value/default_type/
-  │       │   │       ├─ "="
+  │       │   │   └─ value/type/
+  │       │   │       ├─ name = "="
   │       │   │       └─ type[generic]/
   │       │   │           ├─ name = "Shape"
   │       │   │           ├─ "<"
@@ -796,7 +796,7 @@ program/
   │   │   └─ type/name = "T"
   │   ├─ ","
   │   ├─ parameter[required]/
-  │   │   ├─ object_pattern/
+  │   │   ├─ pattern/
   │   │   │   ├─ "{"
   │   │   │   ├─ object_assignment_pattern/
   │   │   │   │   ├─ left/name = "scale"
@@ -830,7 +830,7 @@ program/
   │       ├─ "{"
   │       ├─ variable[const]/
   │       │   ├─ "const"
-  │       │   ├─ name/array_pattern/
+  │       │   ├─ name/pattern/
   │       │   │   ├─ "["
   │       │   │   ├─ name = "head"
   │       │   │   ├─ ","
@@ -1004,7 +1004,7 @@ program/
   │           │       │   ├─ "case"
   │           │       │   ├─ value/string = "\"ready\""
   │           │       │   ├─ ":"
-  │           │       │   └─ body/break_statement = "break;"
+  │           │       │   └─ body/break = "break;"
   │           │       ├─ case/
   │           │       │   ├─ "case"
   │           │       │   ├─ value/string = "\"error\""
@@ -1021,7 +1021,7 @@ program/
   │           │       ├─ default/
   │           │       │   ├─ "default:"
   │           │       │   ├─ comment = "/* fallthrough */"
-  │           │       │   └─ body/break_statement = "break;"
+  │           │       │   └─ body/break = "break;"
   │           │       └─ "}"
   │           ├─ variable[const]/
   │           │   ├─ "const"
@@ -1071,7 +1071,7 @@ program/
   │           │       └─ "; }"
   │           ├─ for/
   │           │   ├─ "for (const"
-  │           │   ├─ left/array_pattern/
+  │           │   ├─ left/pattern/
   │           │   │   ├─ "[,"
   │           │   │   ├─ name = "v"
   │           │   │   └─ "]"

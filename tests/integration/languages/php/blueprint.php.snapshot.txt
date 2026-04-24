@@ -66,20 +66,20 @@ program/
   │   │   └─ name = "Countable"
   │   └─ body/
   │       ├─ "{"
-  │       ├─ use_declaration/
+  │       ├─ use/
   │       │   ├─ "use"
   │       │   ├─ name = "Loggable"
   │       │   └─ ";"
   │       ├─ const[public]/
   │       │   ├─ "public const"
-  │       │   ├─ const_element/
+  │       │   ├─ constant/
   │       │   │   ├─ name = "MAX"
   │       │   │   ├─ "="
   │       │   │   └─ int = "100"
   │       │   └─ ";"
   │       ├─ const[private]/
   │       │   ├─ "private const"
-  │       │   ├─ const_element/
+  │       │   ├─ constant/
   │       │   │   ├─ name = "DEFAULT_NAME"
   │       │   │   ├─ "="
   │       │   │   └─ string = "\"anonymous\""
@@ -713,7 +713,7 @@ program/
   │       │   │   │   ├─ "$"
   │       │   │   │   └─ name = "fn"
   │       │   │   ├─ "("
-  │       │   │   ├─ argument/variadic_unpacking/
+  │       │   │   ├─ argument/spread/
   │       │   │   │   ├─ "..."
   │       │   │   │   └─ variable/
   │       │   │   │       ├─ "$"

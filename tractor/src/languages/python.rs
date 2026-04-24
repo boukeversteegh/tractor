@@ -68,6 +68,10 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             rename(xot, node, "pattern");
             Ok(TransformAction::Continue)
         }
+        "aliased_import" => {
+            rename(xot, node, "import");
+            Ok(TransformAction::Continue)
+        }
 
         // Tree-sitter python emits `escape_sequence` inside strings
         // — flatten into the string body text.

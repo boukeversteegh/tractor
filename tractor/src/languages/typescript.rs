@@ -312,6 +312,10 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "named_imports" => Some("imports"),
         "switch_case" => Some("case"),
         "switch_default" => Some("default"),
+        "default_type" => Some("type"),
+        "break_statement" => Some("break"),
+        "continue_statement" => Some("continue"),
+        "array_pattern" | "object_pattern" => Some("pattern"),
         "arrow_function" => Some("arrow"),
         "interface_declaration" => Some("interface"),
         // type_alias_declaration handled above (flattens <value> wrapper)

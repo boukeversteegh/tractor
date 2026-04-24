@@ -5,7 +5,7 @@ file/
   ├─ comment/
   │   ├─ "//!"
   │   └─ comment = "by tractor's snapshot tests to catch design-principle regressions."
-  ├─ inner_attribute_item/
+  ├─ attribute/
   │   ├─ "#!["
   │   ├─ attribute/
   │   │   ├─ name = "allow"
@@ -92,13 +92,11 @@ file/
   │   └─ "};"
   ├─ use/
   │   ├─ "use"
-  │   ├─ use_wildcard/
-  │   │   ├─ path/
-  │   │   │   ├─ name = "std"
-  │   │   │   ├─ "::"
-  │   │   │   └─ name = "vec"
-  │   │   └─ "::*"
-  │   └─ ";"
+  │   ├─ path/
+  │   │   ├─ name = "std"
+  │   │   ├─ "::"
+  │   │   └─ name = "vec"
+  │   └─ "::*;"
   ├─ mod[pub]/
   │   ├─ "pub mod"
   │   ├─ name = "outer"
@@ -130,7 +128,7 @@ file/
   ├─ comment/
   │   ├─ "///"
   │   └─ comment = "A named-field struct with generics, lifetimes, and a where clause."
-  ├─ attribute_item/
+  ├─ attribute/
   │   ├─ "#["
   │   ├─ attribute/
   │   │   ├─ name = "derive"
@@ -216,7 +214,7 @@ file/
   ├─ comment/
   │   ├─ "///"
   │   └─ comment = "An enum with every variant flavor and explicit discriminants."
-  ├─ attribute_item/
+  ├─ attribute/
   │   ├─ "#["
   │   ├─ attribute/
   │   │   ├─ name = "derive"
@@ -1009,15 +1007,15 @@ file/
   │       │   │       │   └─ ","
   │       │   │       ├─ arm/
   │       │   │       │   ├─ pattern/
-  │       │   │       │   │   ├─ struct_pattern/
+  │       │   │       │   │   ├─ pattern/
   │       │   │       │   │   │   ├─ path/
   │       │   │       │   │   │   │   ├─ name = "Shape"
   │       │   │       │   │   │   │   ├─ "::"
   │       │   │       │   │   │   │   └─ name = "Rect"
   │       │   │       │   │   │   ├─ "{"
-  │       │   │       │   │   │   ├─ field_pattern/name = "w"
+  │       │   │       │   │   │   ├─ pattern/name = "w"
   │       │   │       │   │   │   ├─ ","
-  │       │   │       │   │   │   ├─ field_pattern/name = "h"
+  │       │   │       │   │   │   ├─ pattern/name = "h"
   │       │   │       │   │   │   └─ "}"
   │       │   │       │   │   ├─ "if"
   │       │   │       │   │   └─ condition/binary/
@@ -1241,7 +1239,7 @@ file/
   │       │   │   └─ right/int = "3"
   │       │   └─ body/
   │       │       ├─ "{"
-  │       │       ├─ compound_assignment_expr/
+  │       │       ├─ assign/
   │       │       │   ├─ left/name = "n"
   │       │       │   ├─ "+="
   │       │       │   └─ right/int = "1"
@@ -1434,7 +1432,7 @@ file/
   │       │   │   │   ├─ op[multiply] = "*"
   │       │   │   │   └─ name = "r"
   │       │   │   └─ ";"
-  │       │   ├─ compound_assignment_expr/
+  │       │   ├─ assign/
   │       │   │   ├─ left/name = "COUNTER"
   │       │   │   ├─ "+="
   │       │   │   └─ right/int = "1"

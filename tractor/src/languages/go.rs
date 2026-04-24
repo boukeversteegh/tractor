@@ -37,7 +37,8 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // around individual list/map values. Flatten so they become
         // direct siblings inside the enclosing `<literal>`
         // (Principle #12).
-        "literal_element" | "keyed_element" | "literal_value" => Ok(TransformAction::Flatten),
+        "literal_element" | "keyed_element" | "literal_value"
+        | "var_spec_list" => Ok(TransformAction::Flatten),
 
         // More Go generic / constraint wrappers — all grammar-only.
         "type_parameter_list" | "type_parameter_declaration"
@@ -360,7 +361,11 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "send_statement" => Some("send"),
         "communication_case" => Some("case"),
         "receive_statement" => Some("receive"),
-        "negated_type" => Some("type"),
+        "negated_type" | "function_type" => Some("type"),
+        "func_literal" => Some("closure"),
+        "continue_statement" => Some("continue"),
+        "variadic_parameter_declaration" => Some("parameter"),
+        "break_statement" => Some("break"),
         "true" => Some("true"),
         "false" => Some("false"),
         "nil" => Some("nil"),

@@ -52,13 +52,13 @@
             (
             <parameter>
               <required/>
-              <object_pattern>
+              <pattern>
                 {
                 <name>name</name>
                 ,
                 <name>age</name>
                 }
-              </object_pattern>
+              </pattern>
               :
               <type>
                 <name>Props</name>
@@ -72,13 +72,13 @@
                   <const/>
                   const
                   <name>
-                    <array_pattern>
+                    <pattern>
                       [
                       <name>count</name>
                       ,
                       <name>setCount</name>
                       ]
-                    </array_pattern>
+                    </pattern>
                   </name>
                   =
                   <value>

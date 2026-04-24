@@ -5,7 +5,7 @@ module/
   │   └─ name/name = "os"
   ├─ import/
   │   ├─ "import"
-  │   └─ name/aliased_import/
+  │   └─ name/import/
   │       ├─ name/name = "sys"
   │       ├─ "as"
   │       └─ name = "system"
@@ -35,7 +35,7 @@ module/
   │   ├─ "from ."
   │   ├─ name = "utils"
   │   ├─ "import"
-  │   └─ name/aliased_import/
+  │   └─ name/import/
   │       ├─ name/name = "helper"
   │       ├─ "as"
   │       └─ name = "h"
