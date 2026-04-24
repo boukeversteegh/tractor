@@ -469,27 +469,30 @@ fn is_inside_class_body(xot: &Xot, node: XotNode) -> bool {
 ///   `_x`           → protected
 ///   `x`            → public
 fn python_visibility_from_def(xot: &Xot, node: XotNode) -> Option<&'static str> {
-    // The identifier child (field="name" on the def) carries the name.
-    for child in xot.children(node) {
-        if xot.element(child).is_none() { continue; }
-        let kind = get_kind(xot, child);
-        if kind.as_deref() != Some("identifier") { continue; }
-        let text = get_text_content(xot, child)?;
-        let name = text.trim();
-        // Dunder methods (`__init__`, `__str__`, etc.) are part of the
-        // public protocol — they're conventional interface hooks.
-        if name.starts_with("__") && name.ends_with("__") && name.len() > 4 {
-            return Some("public");
-        }
-        if name.starts_with("__") {
-            return Some("private");
-        }
-        if name.starts_with('_') {
-            return Some("protected");
-        }
+    // The name field of function_definition is wrapped by the field-wrap
+    // pass into `<name>` (no tree-sitter kind), containing the actual
+    // `<identifier>…</identifier>` child. Walk down through the wrapper
+    // to find the identifier's text.
+    let name_wrapper = xot.children(node).find(|&c| {
+        xot.element(c).is_some()
+            && get_element_name(xot, c).as_deref() == Some("name")
+            && get_kind(xot, c).is_none() // field-wrap wrappers have no kind
+    })?;
+    let ident_text = descendant_text(xot, name_wrapper);
+    let name = ident_text.trim();
+    if name.is_empty() { return None; }
+    // Dunder methods (`__init__`, `__str__`, etc.) are part of the
+    // public protocol — they're conventional interface hooks.
+    if name.starts_with("__") && name.ends_with("__") && name.len() > 4 {
         return Some("public");
     }
-    None
+    if name.starts_with("__") {
+        return Some("private");
+    }
+    if name.starts_with('_') {
+        return Some("protected");
+    }
+    return Some("public");
 }
 
 /// Returns true if `node` has exactly one element descendant and it's an

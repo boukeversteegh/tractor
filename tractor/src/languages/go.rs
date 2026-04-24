@@ -120,6 +120,15 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
 
+        // Struct field — Go export rule is name-capitalization, same as
+        // functions/methods/types. Emit <exported/>/<unexported/> markers.
+        "field_declaration" => {
+            let marker = get_export_marker(xot, node);
+            prepend_empty_element(xot, node, marker)?;
+            apply_rename(xot, node, &kind)?;
+            Ok(TransformAction::Continue)
+        }
+
         // Type declarations split three ways:
         //
         //   type Hello struct { … }    -> <struct><name>Hello</name>…</struct>

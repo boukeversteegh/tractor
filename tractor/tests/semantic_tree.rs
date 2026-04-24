@@ -340,6 +340,58 @@ mod csharp {
 mod typescript {
     use super::*;
 
+    /// Principle #9 — class members carry an exhaustive visibility
+    /// marker: explicit `public/private/protected` keywords lift to
+    /// markers, and members without a keyword get an implicit
+    /// `<public/>` (the default in TypeScript).
+    #[test]
+    fn visibility_markers_exhaustive() {
+        let mut tree = parse_src(
+            "typescript",
+            "class X { foo() {} private bar() {} protected baz() {} public qux() {} }",
+        );
+        assert_count(
+            &mut tree,
+            "//method[public]",
+            2,
+            "implicit default and explicit public both carry <public/>",
+        );
+        assert_count(
+            &mut tree,
+            "//method[private]",
+            1,
+            "explicit private carries <private/>",
+        );
+        assert_count(
+            &mut tree,
+            "//method[protected]",
+            1,
+            "explicit protected carries <protected/>",
+        );
+    }
+
+    /// Principle #9 — class fields follow the same visibility
+    /// defaults as methods.
+    #[test]
+    fn field_visibility_defaults_public() {
+        let mut tree = parse_src(
+            "typescript",
+            "class X { x = 1; private y = 2; }",
+        );
+        assert_count(
+            &mut tree,
+            "//field[public]",
+            1,
+            "unmarked field defaults to <public/>",
+        );
+        assert_count(
+            &mut tree,
+            "//field[private]",
+            1,
+            "explicit private field carries <private/>",
+        );
+    }
+
     /// Principle #5 — arrow_function renames to `<arrow>` (JS-native
     /// vocabulary; distinct from `<function>` declarations).
     #[test]
@@ -1206,6 +1258,58 @@ mod rust {
 mod python {
     use super::*;
 
+    /// Principle #9 — class methods carry a visibility marker driven
+    /// by Python's naming convention: bare → public, `_x` → protected,
+    /// `__x` → private. Dunders (`__init__`) are conventional protocol
+    /// hooks and count as public.
+    #[test]
+    fn visibility_markers_from_underscore_convention() {
+        let mut tree = parse_src(
+            "python",
+            "class X:\n    def foo(self): pass\n    def _bar(self): pass\n    def __baz(self): pass\n    def __init__(self): pass\n",
+        );
+        assert_count(
+            &mut tree,
+            "//function[public]",
+            2,
+            "bare name and dunder both count as public",
+        );
+        assert_count(
+            &mut tree,
+            "//function[protected]",
+            1,
+            "single-underscore prefix means protected",
+        );
+        assert_count(
+            &mut tree,
+            "//function[private]",
+            1,
+            "double-underscore prefix means private",
+        );
+    }
+
+    /// Module-level functions don't get visibility markers — the
+    /// convention only applies to class members.
+    #[test]
+    fn module_level_functions_no_visibility() {
+        let mut tree = parse_src(
+            "python",
+            "def foo(): pass\ndef _bar(): pass\n",
+        );
+        assert_count(
+            &mut tree,
+            "//function[public]",
+            0,
+            "module-level functions skip the visibility injection",
+        );
+        assert_count(
+            &mut tree,
+            "//function[protected]",
+            0,
+            "module-level functions skip the visibility injection",
+        );
+    }
+
     /// `elif` renames to `<else_if>` and flattens under the outer `<if>`.
     #[test]
     fn conditional_shape_flat() {
@@ -1390,6 +1494,29 @@ mod python {
 
 mod go {
     use super::*;
+
+    /// Principle #9 — struct fields carry an exhaustive
+    /// `<exported/>`/`<unexported/>` marker based on Go's
+    /// name-capitalization export rule.
+    #[test]
+    fn field_export_markers_exhaustive() {
+        let mut tree = parse_src(
+            "go",
+            "package p\ntype T struct {\n    Public string\n    private string\n}\n",
+        );
+        assert_count(
+            &mut tree,
+            "//field[exported]",
+            1,
+            "capitalised field carries <exported/>",
+        );
+        assert_count(
+            &mut tree,
+            "//field[unexported]",
+            1,
+            "lower-case field carries <unexported/>",
+        );
+    }
 
     /// `type Foo struct { … }` hoists: outer element is `<struct>`,
     /// not `<type>`.
@@ -1731,6 +1858,65 @@ mod ruby {
             "//parameter[keyword]",
             1,
             "`key:` keyword parameter carries <keyword/>",
+        );
+    }
+}
+
+// ===========================================================================
+// PHP
+// ===========================================================================
+
+mod php {
+    use super::*;
+
+    /// Principle #9 — class members carry an exhaustive visibility
+    /// marker. Explicit `public/private/protected` keywords lift to
+    /// markers, and members without a keyword get implicit `<public/>`
+    /// (PHP's default).
+    #[test]
+    fn visibility_markers_exhaustive() {
+        let mut tree = parse_src(
+            "php",
+            "<?php class X { function foo() {} private function bar() {} protected function baz() {} public function qux() {} }",
+        );
+        assert_count(
+            &mut tree,
+            "//method[public]",
+            2,
+            "implicit default and explicit public both carry <public/>",
+        );
+        assert_count(
+            &mut tree,
+            "//method[private]",
+            1,
+            "explicit private carries <private/>",
+        );
+        assert_count(
+            &mut tree,
+            "//method[protected]",
+            1,
+            "explicit protected carries <protected/>",
+        );
+    }
+
+    /// Class properties follow the same defaults as methods.
+    #[test]
+    fn property_visibility_defaults_public() {
+        let mut tree = parse_src(
+            "php",
+            "<?php class X { public $a; $b; private $c; }",
+        );
+        assert_count(
+            &mut tree,
+            "//field[public]",
+            2,
+            "explicit and implicit public both carry <public/>",
+        );
+        assert_count(
+            &mut tree,
+            "//field[private]",
+            1,
+            "explicit private field carries <private/>",
         );
     }
 }

@@ -2,10 +2,10 @@ struct[exported]/
   ├─ "type"
   ├─ name = "Config"
   ├─ "struct {"
-  ├─ field/
+  ├─ field[exported]/
   │   ├─ name = "Host"
   │   └─ type/name = "string"
-  ├─ field/
+  ├─ field[exported]/
   │   ├─ name = "Port"
   │   └─ type/name = "int"
   └─ "}"

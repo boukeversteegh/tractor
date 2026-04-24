@@ -122,12 +122,14 @@
             <name>Point</name>
             struct {
             <field>
+              <exported/>
               <name>X</name>
               <type>
                 <name>int</name>
               </type>
             </field>
             <field>
+              <exported/>
               <name>Y</name>
               <type>
                 <name>int</name>

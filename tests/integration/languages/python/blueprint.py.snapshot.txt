@@ -460,7 +460,7 @@ module/
   │       │       ├─ left/name = "CONST"
   │       │       ├─ "="
   │       │       └─ right/int = "42"
-  │       ├─ function/
+  │       ├─ function[public]/
   │       │   ├─ "def"
   │       │   ├─ name = "__init__"
   │       │   ├─ "("
@@ -478,7 +478,7 @@ module/
   │       │       │   └─ name = "name"
   │       │       ├─ "="
   │       │       └─ right/name = "name"
-  │       └─ function/
+  │       └─ function[public]/
   │           ├─ "def"
   │           ├─ name = "__eq__"
   │           ├─ "("

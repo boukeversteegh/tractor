@@ -127,7 +127,7 @@ file/
   │   ├─ name = "T"
   │   ├─ type/name = "any"
   │   ├─ "] struct{"
-  │   ├─ field/
+  │   ├─ field[unexported]/
   │   │   ├─ name = "items"
   │   │   └─ slice/
   │   │       ├─ "[]"
@@ -137,7 +137,7 @@ file/
   │   ├─ "type"
   │   ├─ name = "MyErr"
   │   ├─ "struct{"
-  │   ├─ field/
+  │   ├─ field[unexported]/
   │   │   ├─ name = "msg"
   │   │   └─ type/name = "string"
   │   └─ "}"
@@ -145,13 +145,13 @@ file/
   │   ├─ "type"
   │   ├─ name = "Point"
   │   ├─ "struct {"
-  │   ├─ field/
+  │   ├─ field[exported]/
   │   │   ├─ name = "X"
   │   │   ├─ ","
   │   │   ├─ name = "Y"
   │   │   ├─ type/name = "int"
   │   │   └─ string[raw] = "`json:\"x,omitempty\"`"
-  │   ├─ field/
+  │   ├─ field[exported]/
   │   │   ├─ name = "Name"
   │   │   ├─ type/name = "string"
   │   │   └─ string[raw] = "`json:\"name\"`"
@@ -160,18 +160,18 @@ file/
   │   ├─ "type"
   │   ├─ name = "Labeled"
   │   ├─ "struct {"
-  │   ├─ field/type/name = "Point"
-  │   ├─ field/
+  │   ├─ field[unexported]/type/name = "Point"
+  │   ├─ field[exported]/
   │   │   ├─ name = "Tag"
   │   │   └─ type/name = "string"
-  │   ├─ field/
+  │   ├─ field[unexported]/
   │   │   ├─ name = "_"
   │   │   └─ struct = "struct{}"
-  │   ├─ field/
+  │   ├─ field[exported]/
   │   │   ├─ name = "Meta"
   │   │   └─ struct/
   │   │       ├─ "struct{"
-  │   │       ├─ field/
+  │   │       ├─ field[exported]/
   │   │       │   ├─ name = "Created"
   │   │       │   └─ type/name = "int64"
   │   │       └─ "}"
