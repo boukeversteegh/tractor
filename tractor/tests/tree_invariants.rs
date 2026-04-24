@@ -15,7 +15,23 @@ use std::path::{Path, PathBuf};
 use tractor::{parse, ParseInput, ParseOptions, TreeMode};
 use xot::{Node, Xot};
 
-const ASSERT_INVARIANTS: bool = false;
+// Global kill-switch: if false, no individual gate fires even if
+// true. Individual per-invariant gates below are the real controls
+// once each invariant is genuinely at zero for the languages it
+// applies to.
+const ASSERT_INVARIANTS: bool = true;
+
+// Per-invariant gates. Flip to `true` once a given invariant is
+// at zero across all non-data fixtures.
+const ASSERT_LOWERCASE: bool = true;
+const ASSERT_NO_UNDERSCORE: bool = true;
+const ASSERT_NO_GRAMMAR_SUFFIXES: bool = true;
+const ASSERT_NAME_IS_TEXT_LEAF: bool = true;
+// `markers_stay_empty` is an advisory heuristic with many expected
+// hits (elements used as both markers and containers — `struct`,
+// `type`, `ref`, etc). Leave it advisory for now.
+const ASSERT_MARKERS_STAY_EMPTY: bool = false;
+
 const MAX_SHOWN_PER_KIND: usize = 10;
 
 const DATA_LANG_EXTS: &[&str] = &["json", "yaml", "yml", "toml", "ini", "env"];
@@ -208,7 +224,7 @@ fn all_node_names_are_lowercase() {
     }
     if !report.is_empty() {
         report.print("Principle #3 — node names must be lowercase");
-        if ASSERT_INVARIANTS {
+        if ASSERT_INVARIANTS && ASSERT_LOWERCASE {
             panic!("node names with uppercase chars");
         }
     }
@@ -249,7 +265,7 @@ fn no_underscore_in_node_names_except_whitelist() {
     }
     if !report.is_empty() {
         report.print("Principle #1/#2 — no tree-sitter kind leaks (underscored names)");
-        if ASSERT_INVARIANTS {
+        if ASSERT_INVARIANTS && ASSERT_NO_UNDERSCORE {
             panic!("underscored node names");
         }
     }
@@ -286,7 +302,7 @@ fn no_grammar_kind_suffixes() {
     }
     if !report.is_empty() {
         report.print("No grammar-kind suffixes in element names");
-        if ASSERT_INVARIANTS {
+        if ASSERT_INVARIANTS && ASSERT_NO_GRAMMAR_SUFFIXES {
             panic!("grammar-suffixed node names");
         }
     }
@@ -331,7 +347,7 @@ fn name_element_is_text_leaf() {
     }
     if !report.is_empty() {
         report.print("<name> must be a text leaf (identifiers are a single <name> element)");
-        if ASSERT_INVARIANTS {
+        if ASSERT_INVARIANTS && ASSERT_NAME_IS_TEXT_LEAF {
             panic!("<name> with element children");
         }
     }
@@ -400,7 +416,7 @@ fn markers_stay_empty() {
         report.print(
             "Principle #7 — elements used as markers elsewhere are non-empty here (review candidates)",
         );
-        if ASSERT_INVARIANTS {
+        if ASSERT_INVARIANTS && ASSERT_MARKERS_STAY_EMPTY {
             panic!("mixed-empty elements");
         }
     }
