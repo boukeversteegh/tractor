@@ -4,6 +4,127 @@ use xot::{Xot, Node as XotNode};
 use crate::xot_transform::{TransformAction, helpers::*};
 use crate::output::syntax_highlight::SyntaxCategory;
 
+use semantic::*;
+
+/// Semantic element names — tractor's Go XML vocabulary after transform.
+/// These are the names that appear in tractor's output. The tree-sitter
+/// kind strings (left side of `match` arms, arguments to `get_kind`)
+/// are external vocabulary and stay as bare strings.
+pub mod semantic {
+    // Structural — containers that can hold text or children.
+
+    // Top-level / structural
+    pub const FILE: &str = "file";
+    pub const PACKAGE: &str = "package";
+    pub const IMPORT: &str = "import";
+
+    // Declarations
+    pub const FUNCTION: &str = "function";
+    pub const METHOD: &str = "method";
+    pub const TYPE: &str = "type";
+    pub const STRUCT: &str = "struct";
+    pub const INTERFACE: &str = "interface";
+    pub const CONST: &str = "const";
+    pub const VAR: &str = "var";
+    pub const ALIAS: &str = "alias";
+    pub const VARIABLE: &str = "variable";
+
+    // Members / parameters
+    pub const FIELD: &str = "field";
+    pub const PARAMETER: &str = "parameter";
+    pub const ARGUMENTS: &str = "arguments";
+
+    // Types
+    pub const POINTER: &str = "pointer";
+    pub const SLICE: &str = "slice";
+    pub const MAP: &str = "map";
+    pub const CHAN: &str = "chan";
+
+    // Statements / control flow
+    pub const RETURN: &str = "return";
+    pub const IF: &str = "if";
+    pub const ELSE: &str = "else";
+    pub const FOR: &str = "for";
+    pub const RANGE: &str = "range";
+    pub const SWITCH: &str = "switch";
+    pub const CASE: &str = "case";
+    pub const DEFAULT: &str = "default";
+    pub const DEFER: &str = "defer";
+    pub const GO: &str = "go";
+    pub const SELECT: &str = "select";
+    pub const BREAK: &str = "break";
+    pub const CONTINUE: &str = "continue";
+    pub const GOTO: &str = "goto";
+    pub const LABELED: &str = "labeled";
+    pub const LABEL: &str = "label";
+    pub const SEND: &str = "send";
+    pub const RECEIVE: &str = "receive";
+    pub const ASSIGN: &str = "assign";
+
+    // Expressions
+    pub const CALL: &str = "call";
+    pub const MEMBER: &str = "member";
+    pub const INDEX: &str = "index";
+    pub const BINARY: &str = "binary";
+    pub const UNARY: &str = "unary";
+    pub const ASSERT: &str = "assert";
+    pub const CLOSURE: &str = "closure";
+    pub const LITERAL: &str = "literal";
+
+    // Literals / atoms
+    pub const STRING: &str = "string";
+    pub const INT: &str = "int";
+    pub const FLOAT: &str = "float";
+    pub const CHAR: &str = "char";
+    pub const TRUE: &str = "true";
+    pub const FALSE: &str = "false";
+    pub const NIL: &str = "nil";
+
+    // Identifiers
+    pub const NAME: &str = "name";
+
+    // Operator child (from prepend_op_element).
+    pub const OP: &str = "op";
+
+    // Markers — always empty when emitted.
+    pub const RAW: &str = "raw";
+    pub const SHORT: &str = "short";
+    pub const EXPORTED: &str = "exported";
+    pub const UNEXPORTED: &str = "unexported";
+    pub const NEGATED: &str = "negated";
+    pub const GENERIC: &str = "generic";
+
+    // `FUNCTION` and `TYPE` double as marker names in some contexts
+    // (`function_type` → `<type><function/>`, `type_switch_statement`
+    // → `<switch><type/>`). They are intentionally NOT in MARKER_ONLY
+    // because the same string is also a structural container.
+
+    /// Names that, when emitted, are always empty elements (no text,
+    /// no element children). Used by the markers-stay-empty invariant.
+    pub const MARKER_ONLY: &[&str] = &[
+        RAW,
+        SHORT,
+        EXPORTED,
+        UNEXPORTED,
+        NEGATED,
+        GENERIC,
+    ];
+
+    /// Every semantic name this language's transform can emit.
+    pub const ALL_NAMES: &[&str] = &[
+        FILE, PACKAGE, IMPORT,
+        FUNCTION, METHOD, TYPE, STRUCT, INTERFACE, CONST, VAR, ALIAS, VARIABLE,
+        FIELD, PARAMETER, ARGUMENTS,
+        POINTER, SLICE, MAP, CHAN,
+        RETURN, IF, ELSE, FOR, RANGE, SWITCH, CASE, DEFAULT, DEFER, GO, SELECT,
+        BREAK, CONTINUE, GOTO, LABELED, LABEL, SEND, RECEIVE, ASSIGN,
+        CALL, MEMBER, INDEX, BINARY, UNARY, ASSERT, CLOSURE, LITERAL,
+        STRING, INT, FLOAT, CHAR, TRUE, FALSE, NIL,
+        NAME, OP,
+        RAW, SHORT, EXPORTED, UNEXPORTED, NEGATED, GENERIC,
+    ];
+}
+
 /// Transform a Go AST node
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let kind = match get_element_name(xot, node) {
@@ -91,16 +212,16 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 
         // Raw string literal — rename to <string> and prepend <raw/> marker
         "raw_string_literal" => {
-            prepend_empty_element(xot, node, "raw")?;
-            rename(xot, node, "string");
+            prepend_empty_element(xot, node, RAW)?;
+            rename(xot, node, STRING);
             Ok(TransformAction::Continue)
         }
 
         // Short variable declarations (`x := 42`) — render as <variable>
         // with a <short/> marker to distinguish from `var x = 42`.
         "short_var_declaration" => {
-            prepend_empty_element(xot, node, "short")?;
-            rename(xot, node, "variable");
+            prepend_empty_element(xot, node, SHORT)?;
+            rename(xot, node, VARIABLE);
             Ok(TransformAction::Continue)
         }
 
@@ -155,9 +276,9 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             if let Some(inner) = inner {
                 let inner_kind = get_kind(xot, inner).unwrap();
                 let new_name = if inner_kind == "struct_type" {
-                    "struct"
+                    STRUCT
                 } else {
-                    "interface"
+                    INTERFACE
                 };
                 rename(xot, node, new_name);
                 // Hoist inner's children before the inner wrapper itself,
@@ -169,7 +290,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
                 }
                 xot.detach(inner)?;
             } else {
-                rename(xot, node, "type");
+                rename(xot, node, TYPE);
             }
             Ok(TransformAction::Continue)
         }
@@ -180,7 +301,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         "type_alias" => {
             let marker = get_export_marker(xot, node);
             prepend_empty_element(xot, node, marker)?;
-            rename(xot, node, "alias");
+            rename(xot, node, ALIAS);
             Ok(TransformAction::Continue)
         }
 
@@ -191,8 +312,8 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // surgically so the shared conditional-shape post-transform
         // can collapse the chain uniformly (same fix as Java / C#).
         "if_statement" => {
-            wrap_field_child(xot, node, "alternative", "else")?;
-            rename(xot, node, "if");
+            wrap_field_child(xot, node, "alternative", ELSE)?;
+            rename(xot, node, IF);
             Ok(TransformAction::Continue)
         }
 
@@ -206,11 +327,11 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Tree-sitter uses `type_identifier` for type positions, so bare
         // identifiers never need a heuristic — they are never types.
         "identifier" => {
-            rename(xot, node, "name");
+            rename(xot, node, NAME);
             Ok(TransformAction::Continue)
         }
         "type_identifier" => {
-            rename(xot, node, "type");
+            rename(xot, node, TYPE);
             wrap_text_in_name(xot, node)?;
             Ok(TransformAction::Continue)
         }
@@ -296,22 +417,22 @@ fn collapse_return_param_list(xot: &mut Xot, list: XotNode) -> Result<(), xot::E
 fn get_export_marker(xot: &Xot, node: XotNode) -> &'static str {
     for child in xot.children(node) {
         if let Some(name) = get_element_name(xot, child) {
-            if name == "name" {
+            if name == NAME {
                 // Look for identifier text inside the name wrapper
                 for grandchild in xot.children(child) {
                     if let Some(text) = get_text_content(xot, grandchild) {
                         if text.starts_with(|c: char| c.is_uppercase()) {
-                            return "exported";
+                            return EXPORTED;
                         }
-                        return "unexported";
+                        return UNEXPORTED;
                     }
                 }
                 // Name wrapper might have text directly
                 if let Some(text) = get_text_content(xot, child) {
                     if text.starts_with(|c: char| c.is_uppercase()) {
-                        return "exported";
+                        return EXPORTED;
                     }
-                    return "unexported";
+                    return UNEXPORTED;
                 }
             }
             // Also check identifier/type_identifier directly (before name wrapping)
@@ -320,16 +441,16 @@ fn get_export_marker(xot: &Xot, node: XotNode) -> &'static str {
                     if field == "name" {
                         if let Some(text) = get_text_content(xot, child) {
                             if text.starts_with(|c: char| c.is_uppercase()) {
-                                return "exported";
+                                return EXPORTED;
                             }
-                            return "unexported";
+                            return UNEXPORTED;
                         }
                     }
                 }
             }
         }
     }
-    "unexported" // default
+    UNEXPORTED // default
 }
 
 /// Map tree-sitter node kinds to semantic element names.
@@ -340,88 +461,88 @@ fn get_export_marker(xot: &Xot, node: XotNode) -> &'static str {
 /// `<type/>` marker child on the former).
 fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> {
     match kind {
-        "source_file" => Some(("file", None)),
-        "package_clause" => Some(("package", None)),
-        "function_declaration" => Some(("function", None)),
-        "method_declaration" => Some(("method", None)),
+        "source_file" => Some((FILE, None)),
+        "package_clause" => Some((PACKAGE, None)),
+        "function_declaration" => Some((FUNCTION, None)),
+        "method_declaration" => Some((METHOD, None)),
         // type_declaration is flattened in the match above.
-        "type_spec" => Some(("type", None)),
-        "struct_type" => Some(("struct", None)),
-        "interface_type" => Some(("interface", None)),
-        "const_declaration" => Some(("const", None)),
-        "var_declaration" => Some(("var", None)),
-        "import_declaration" => Some(("import", None)),
+        "type_spec" => Some((TYPE, None)),
+        "struct_type" => Some((STRUCT, None)),
+        "interface_type" => Some((INTERFACE, None)),
+        "const_declaration" => Some((CONST, None)),
+        "var_declaration" => Some((VAR, None)),
+        "import_declaration" => Some((IMPORT, None)),
         // parameter_list is flattened via Principle #12 above
-        "parameter_declaration" => Some(("parameter", None)),
-        "method_elem" => Some(("method", None)),
-        "field_declaration" => Some(("field", None)),
-        "pointer_type" => Some(("pointer", None)),
-        "slice_type" => Some(("slice", None)),
-        "map_type" => Some(("map", None)),
-        "channel_type" => Some(("chan", None)),
-        "return_statement" => Some(("return", None)),
-        "if_statement" => Some(("if", None)),
-        "else_clause" => Some(("else", None)),
-        "for_statement" => Some(("for", None)),
-        "range_clause" => Some(("range", None)),
+        "parameter_declaration" => Some((PARAMETER, None)),
+        "method_elem" => Some((METHOD, None)),
+        "field_declaration" => Some((FIELD, None)),
+        "pointer_type" => Some((POINTER, None)),
+        "slice_type" => Some((SLICE, None)),
+        "map_type" => Some((MAP, None)),
+        "channel_type" => Some((CHAN, None)),
+        "return_statement" => Some((RETURN, None)),
+        "if_statement" => Some((IF, None)),
+        "else_clause" => Some((ELSE, None)),
+        "for_statement" => Some((FOR, None)),
+        "range_clause" => Some((RANGE, None)),
         // Tree-sitter-go emits `expression_switch_statement` for a
         // plain switch; `switch_statement` appears in older grammars.
-        "switch_statement" => Some(("switch", None)),
-        "expression_switch_statement" => Some(("switch", None)),
-        "case_clause" => Some(("case", None)),
-        "default_case" => Some(("default", None)),
-        "defer_statement" => Some(("defer", None)),
-        "go_statement" => Some(("go", None)),
-        "select_statement" => Some(("select", None)),
-        "call_expression" => Some(("call", None)),
-        "selector_expression" => Some(("member", None)),
-        "index_expression" => Some(("index", None)),
-        "composite_literal" => Some(("literal", None)),
-        "binary_expression" => Some(("binary", None)),
-        "unary_expression" => Some(("unary", None)),
-        "interpreted_string_literal" => Some(("string", None)),
+        "switch_statement" => Some((SWITCH, None)),
+        "expression_switch_statement" => Some((SWITCH, None)),
+        "case_clause" => Some((CASE, None)),
+        "default_case" => Some((DEFAULT, None)),
+        "defer_statement" => Some((DEFER, None)),
+        "go_statement" => Some((GO, None)),
+        "select_statement" => Some((SELECT, None)),
+        "call_expression" => Some((CALL, None)),
+        "selector_expression" => Some((MEMBER, None)),
+        "index_expression" => Some((INDEX, None)),
+        "composite_literal" => Some((LITERAL, None)),
+        "binary_expression" => Some((BINARY, None)),
+        "unary_expression" => Some((UNARY, None)),
+        "interpreted_string_literal" => Some((STRING, None)),
         // raw_string_literal is handled in the match above (rename + prepend <raw/>)
-        "int_literal" => Some(("int", None)),
-        "float_literal" => Some(("float", None)),
-        "assignment_statement" => Some(("assign", None)),
-        "inc_statement" => Some(("unary", None)),
-        "dec_statement" => Some(("unary", None)),
-        "labeled_statement" => Some(("labeled", None)),
-        "label_name" => Some(("label", None)),
-        "send_statement" => Some(("send", None)),
-        "communication_case" => Some(("case", None)),
-        "receive_statement" => Some(("receive", None)),
+        "int_literal" => Some((INT, None)),
+        "float_literal" => Some((FLOAT, None)),
+        "assignment_statement" => Some((ASSIGN, None)),
+        "inc_statement" => Some((UNARY, None)),
+        "dec_statement" => Some((UNARY, None)),
+        "labeled_statement" => Some((LABELED, None)),
+        "label_name" => Some((LABEL, None)),
+        "send_statement" => Some((SEND, None)),
+        "communication_case" => Some((CASE, None)),
+        "receive_statement" => Some((RECEIVE, None)),
         // Function types get a <function/> marker, negated types get
         // <negated/> (interface constraints: `~int`). Keeps the tree
         // reads as a single <type> with the shape annotated via marker.
-        "function_type" => Some(("type", Some("function"))),
-        "negated_type" => Some(("type", Some("negated"))),
-        "func_literal" => Some(("closure", None)),
-        "continue_statement" => Some(("continue", None)),
-        "variadic_parameter_declaration" => Some(("parameter", None)),
+        "function_type" => Some((TYPE, Some(FUNCTION))),
+        "negated_type" => Some((TYPE, Some(NEGATED))),
+        "func_literal" => Some((CLOSURE, None)),
+        "continue_statement" => Some((CONTINUE, None)),
+        "variadic_parameter_declaration" => Some((PARAMETER, None)),
         // `switch x.(type) { … }` — distinguished from a regular switch
         // by a <type/> marker so `//switch[type]` finds every type switch.
-        "type_switch_statement" => Some(("switch", Some("type"))),
-        "type_assertion_expression" => Some(("assert", None)),
-        "type_arguments" => Some(("arguments", None)),
-        "break_statement" => Some(("break", None)),
-        "true" => Some(("true", None)),
-        "false" => Some(("false", None)),
-        "nil" => Some(("nil", None)),
+        "type_switch_statement" => Some((SWITCH, Some(TYPE))),
+        "type_assertion_expression" => Some((ASSERT, None)),
+        "type_arguments" => Some((ARGUMENTS, None)),
+        "break_statement" => Some((BREAK, None)),
+        "true" => Some((TRUE, None)),
+        "false" => Some((FALSE, None)),
+        "nil" => Some((NIL, None)),
         // `field_identifier` is a leaf — either the name of a struct field
         // or the method/field being accessed in a selector. Treat it as
         // `<name>` in both contexts (role inferred from tree position).
-        "field_identifier" => Some(("name", None)),
-        "package_identifier" => Some(("name", None)),
+        "field_identifier" => Some((NAME, None)),
+        "package_identifier" => Some((NAME, None)),
         // `_` — Go's discard identifier. Still a name slot semantically.
-        "blank_identifier" => Some(("name", None)),
+        "blank_identifier" => Some((NAME, None)),
         // `'a'` — Go rune literal; collapse to <char> (uniform with Rust).
-        "rune_literal" => Some(("char", None)),
+        "rune_literal" => Some((CHAR, None)),
         // `goto LABEL` — rename.
-        "goto_statement" => Some(("goto", None)),
+        "goto_statement" => Some((GOTO, None)),
         // `generic_type` — `Foo[int]` generic type reference. Rename to
         // <type><generic/> so it joins the collapsed type vocabulary.
-        "generic_type" => Some(("type", Some("generic"))),
+        "generic_type" => Some((TYPE, Some(GENERIC))),
         _ => None,
     }
 }
@@ -523,5 +644,29 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
 
         // Structural elements - no color
         _ => SyntaxCategory::Default,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::semantic::*;
+
+    #[test]
+    fn marker_only_names_are_in_all_names() {
+        for m in MARKER_ONLY {
+            assert!(
+                ALL_NAMES.contains(m),
+                "MARKER_ONLY entry {:?} missing from ALL_NAMES",
+                m,
+            );
+        }
+    }
+
+    #[test]
+    fn all_names_has_no_duplicates() {
+        let mut seen = std::collections::HashSet::new();
+        for name in ALL_NAMES {
+            assert!(seen.insert(*name), "duplicate name in ALL_NAMES: {:?}", name);
+        }
     }
 }
