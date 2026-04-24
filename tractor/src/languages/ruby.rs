@@ -16,8 +16,21 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         | "parenthesized_statements"
         | "block_body"
         | "heredoc_content"
+        | "heredoc_beginning"
+        | "heredoc_body"
+        | "heredoc_end"
         | "hash_key_symbol"
         | "block_parameters" => Ok(TransformAction::Flatten),
+
+        // Hash/keyword parameter syntax (`**kwargs` / `key:` params).
+        "hash_splat_parameter" => {
+            rename(xot, node, "spread");
+            Ok(TransformAction::Continue)
+        }
+        "keyword_parameter" => {
+            rename(xot, node, "parameter");
+            Ok(TransformAction::Continue)
+        }
 
         // Trailing `if` / `unless` modifier — still a conditional,
         // same vocabulary as the full form.

@@ -1000,12 +1000,12 @@ program/
   │           │   │   └─ ")"
   │           │   └─ body/switch_body/
   │           │       ├─ "{"
-  │           │       ├─ switch_case/
+  │           │       ├─ case/
   │           │       │   ├─ "case"
   │           │       │   ├─ value/string = "\"ready\""
   │           │       │   ├─ ":"
   │           │       │   └─ body/break_statement = "break;"
-  │           │       ├─ switch_case/
+  │           │       ├─ case/
   │           │       │   ├─ "case"
   │           │       │   ├─ value/string = "\"error\""
   │           │       │   ├─ ":"
@@ -1018,7 +1018,7 @@ program/
   │           │       │       │   ├─ string = "\"bad\""
   │           │       │       │   └─ ")"
   │           │       │       └─ ";"
-  │           │       ├─ switch_default/
+  │           │       ├─ default/
   │           │       │   ├─ "default:"
   │           │       │   ├─ comment = "/* fallthrough */"
   │           │       │   └─ body/break_statement = "break;"

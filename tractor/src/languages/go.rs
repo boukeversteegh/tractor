@@ -359,6 +359,8 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "label_name" => Some("label"),
         "send_statement" => Some("send"),
         "communication_case" => Some("case"),
+        "receive_statement" => Some("receive"),
+        "negated_type" => Some("type"),
         "true" => Some("true"),
         "false" => Some("false"),
         "nil" => Some("nil"),

@@ -497,7 +497,7 @@ unit/
   │       │       │   │       ├─ conditional_access_expression/
   │       │       │   │       │   ├─ condition/name = "Changed"
   │       │       │   │       │   ├─ "?"
-  │       │       │   │       │   └─ member_binding_expression/
+  │       │       │   │       │   └─ member/
   │       │       │   │       │       ├─ "."
   │       │       │   │       │       └─ name = "Invoke"
   │       │       │   │       ├─ "("
@@ -795,7 +795,7 @@ unit/
   │       │       │       │           │   ├─ conditional_access_expression/
   │       │       │       │           │   │   ├─ condition/name = "widget"
   │       │       │       │           │   │   ├─ "?"
-  │       │       │       │           │   │   └─ member_binding_expression/
+  │       │       │       │           │   │   └─ member/
   │       │       │       │           │   │       ├─ "."
   │       │       │       │           │   │       └─ name = "Shout"
   │       │       │       │           │   └─ "()"
@@ -811,7 +811,7 @@ unit/
   │       │       │       │           ├─ condition/is/
   │       │       │       │           │   ├─ name = "widget"
   │       │       │       │           │   ├─ "is"
-  │       │       │       │           │   └─ recursive_pattern/property_pattern_clause/
+  │       │       │       │           │   └─ pattern/properties/
   │       │       │       │           │       ├─ "{"
   │       │       │       │           │       ├─ subpattern/
   │       │       │       │           │       │   ├─ member/
@@ -838,7 +838,7 @@ unit/
   │       │       │       │           ├─ name = "widget"
   │       │       │       │           ├─ "switch\n            {"
   │       │       │       │           ├─ arm/
-  │       │       │       │           │   ├─ recursive_pattern/property_pattern_clause/
+  │       │       │       │           │   ├─ pattern/properties/
   │       │       │       │           │   │   ├─ "{"
   │       │       │       │           │   │   ├─ subpattern/
   │       │       │       │           │   │   │   ├─ name = "Priority"
@@ -1328,11 +1328,11 @@ unit/
   │       │       │       ├─ variable/
   │       │       │       │   ├─ tuple_type/
   │       │       │       │   │   ├─ "("
-  │       │       │       │   │   ├─ tuple_element/
+  │       │       │       │   │   ├─ element/
   │       │       │       │   │   │   ├─ type/name = "int"
   │       │       │       │   │   │   └─ name = "count"
   │       │       │       │   │   ├─ ","
-  │       │       │       │   │   ├─ tuple_element/
+  │       │       │       │   │   ├─ element/
   │       │       │       │   │   │   ├─ type/name = "string"
   │       │       │       │   │   │   └─ name = "tag"
   │       │       │       │   │   └─ ")"

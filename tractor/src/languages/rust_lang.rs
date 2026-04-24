@@ -228,6 +228,8 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         | "ordered_field_declaration_list"
         | "closure_parameters"
         | "type_binding"
+        | "mutable_specifier"
+        | "let_condition"
         | "spread_element"
         | "outer_doc_comment_marker"
         | "inner_doc_comment_marker" => Ok(TransformAction::Flatten),
@@ -312,6 +314,21 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "shorthand_field_initializer" => Some("field"),
         "where_clause" => Some("where"),
         "where_predicate" => Some("bound"),
+        "reference_expression" => Some("ref"),
+        "range_pattern" => Some("range"),
+        "pointer_type" => Some("pointer"),
+        "or_pattern" => Some("pattern"),
+        "function_type" => Some("type"),
+        "tuple_type" => Some("type"),
+        "never_type" => Some("type"),
+        "unit_type" => Some("type"),
+        "dynamic_type" => Some("type"),
+        "trait_type" => Some("type"),
+        "abstract_type" => Some("type"),
+        "associated_type" => Some("type"),
+        "bounded_type" => Some("type"),
+        "array_type" => Some("type"),
+        "slice_type" => Some("type"),
         "match_arm" => Some("arm"),
         "field_declaration" => Some("field"),
         "field_initializer" => Some("field"),

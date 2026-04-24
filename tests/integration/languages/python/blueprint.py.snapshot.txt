@@ -422,7 +422,7 @@ module/
   │               └─ right/call/
   │                   ├─ name = "field"
   │                   ├─ "("
-  │                   ├─ keyword_argument/
+  │                   ├─ argument/
   │                   │   ├─ name = "default_factory"
   │                   │   ├─ "="
   │                   │   └─ value/name = "list"
@@ -445,7 +445,7 @@ module/
   │   ├─ "("
   │   ├─ name = "Base"
   │   ├─ ","
-  │   ├─ keyword_argument/
+  │   ├─ argument/
   │   │   ├─ name = "metaclass"
   │   │   ├─ "="
   │   │   └─ value/name = "Meta"
@@ -724,12 +724,12 @@ module/
   │           │   ├─ pattern/class_pattern/
   │           │   │   ├─ name = "Point"
   │           │   │   ├─ "("
-  │           │   │   ├─ pattern/keyword_pattern/
+  │           │   │   ├─ pattern/pattern/
   │           │   │   │   ├─ name = "x"
   │           │   │   │   ├─ "="
   │           │   │   │   └─ int = "0"
   │           │   │   ├─ ","
-  │           │   │   ├─ pattern/keyword_pattern/
+  │           │   │   ├─ pattern/pattern/
   │           │   │   │   ├─ name = "y"
   │           │   │   │   ├─ "="
   │           │   │   │   └─ name = "y"

@@ -60,6 +60,15 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
 
+        "keyword_argument" => {
+            rename(xot, node, "argument");
+            Ok(TransformAction::Continue)
+        }
+        "keyword_pattern" => {
+            rename(xot, node, "pattern");
+            Ok(TransformAction::Continue)
+        }
+
         // Tree-sitter python emits `escape_sequence` inside strings
         // — flatten into the string body text.
         "escape_sequence" => Ok(TransformAction::Flatten),
