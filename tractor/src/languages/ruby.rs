@@ -41,19 +41,55 @@ pub mod semantic {
     pub const CALL: &str = "call";
     pub const ASSIGN: &str = "assign";
     pub const BINARY: &str = "binary";
+    pub const UNARY: &str = "unary";
+    pub const CONDITIONAL: &str = "conditional";
+    pub const RANGE: &str = "range";
+    pub const LAMBDA: &str = "lambda";
+    pub const YIELD: &str = "yield";
     pub const SPREAD: &str = "spread";
     pub const LEFT: &str = "left";
+
+    // Pattern-matching (case/in).
+    pub const WHEN: &str = "when";
+    pub const IN: &str = "in";
+    pub const PATTERN: &str = "pattern";
+
+    // Control-flow keyword leaves (tree-sitter emits them as distinct
+    // kinds that carry their keyword as text). Containers with text.
+    pub const NEXT: &str = "next";
+    pub const REDO: &str = "redo";
+    pub const RETRY: &str = "retry";
+
+    // Rescue metadata — `rescue ExceptionType => e` breaks out the
+    // exception type list as a child of `<rescue>`.
+    pub const EXCEPTIONS: &str = "exceptions";
+
+    // Class header — `class User < Base` renders the superclass part
+    // as `<superclass>` wrapping the parent constant.
+    pub const SUPERCLASS: &str = "superclass";
 
     // Collections / atoms
     pub const ARRAY: &str = "array";
     pub const HASH: &str = "hash";
+    pub const PAIR: &str = "pair";
     pub const STRING: &str = "string";
+    pub const INTERPOLATION: &str = "interpolation";
     pub const SYMBOL: &str = "symbol";
     pub const INT: &str = "int";
     pub const FLOAT: &str = "float";
+    pub const REGEX: &str = "regex";
+
+    // Literal atoms that carry their source text (e.g. `true`/`false`/
+    // `nil`/`self` — each a dedicated tree-sitter leaf kind).
+    pub const TRUE: &str = "true";
+    pub const FALSE: &str = "false";
+    pub const NIL: &str = "nil";
+    pub const SELF: &str = "self";
 
     // Identifiers
     pub const NAME: &str = "name";
+    pub const CONSTANT: &str = "constant";
+    pub const COMMENT: &str = "comment";
 
     // Markers — always empty when emitted.
 
@@ -116,9 +152,14 @@ pub mod semantic {
         IF, UNLESS, ELSE, ELSE_IF, CASE, WHILE, UNTIL, FOR,
         BEGIN, RESCUE, ENSURE, BREAK, CONTINUE,
         PARAMETER, VARIABLE,
-        CALL, ASSIGN, BINARY, SPREAD, LEFT,
-        ARRAY, HASH, STRING, SYMBOL, INT, FLOAT,
-        NAME,
+        CALL, ASSIGN, BINARY, UNARY, CONDITIONAL, RANGE, LAMBDA, YIELD,
+        SPREAD, LEFT,
+        WHEN, IN, PATTERN,
+        NEXT, REDO, RETRY,
+        EXCEPTIONS, SUPERCLASS,
+        ARRAY, HASH, PAIR, STRING, INTERPOLATION, SYMBOL, INT, FLOAT, REGEX,
+        TRUE, FALSE, NIL, SELF,
+        NAME, CONSTANT, COMMENT,
         LIST, DICT,
         KEYWORD, DEFAULT,
         DO,
