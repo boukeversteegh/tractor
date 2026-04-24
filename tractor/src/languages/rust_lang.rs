@@ -424,11 +424,14 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             return Ok(TransformAction::Done);
         }
 
-        // Declarations — prepend <private/> if no visibility_modifier child
+        // Declarations — prepend <private/> if no visibility_modifier child.
+        // Dispatch on the stable tree-sitter `kind` attribute so we
+        // detect the modifier even if a previous pass has already
+        // renamed the child's element.
         "function_item" | "struct_item" | "enum_item" | "trait_item"
         | "const_item" | "static_item" | "type_item" | "mod_item" => {
             let has_vis = xot.children(node).any(|child| {
-                get_element_name(xot, child).as_deref() == Some("visibility_modifier")
+                get_kind(xot, child).as_deref() == Some("visibility_modifier")
             });
             if !has_vis {
                 prepend_empty_element(xot, node, PRIVATE)?;

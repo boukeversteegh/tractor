@@ -912,13 +912,18 @@ fn extract_keyword_modifiers(xot: &mut Xot, node: XotNode) -> Result<(), xot::Er
 /// element. Harmonises JS (grammar: `formal_parameters → identifier`)
 /// with TS (grammar: `formal_parameters → required_parameter → identifier`)
 /// so the semantic tree shape is the same.
+///
+/// Dispatch on the stable tree-sitter `kind` attribute rather than the
+/// element name: even though this runs top-down (so child names would
+/// still equal their kinds in practice), matching on `kind` is
+/// explicit about "this is a raw grammar-kind check" and survives any
+/// future walk-order reshuffling.
 fn wrap_bare_identifier_params(xot: &mut Xot, list: XotNode) -> Result<(), xot::Error> {
     let children: Vec<XotNode> = xot.children(list)
         .filter(|&c| xot.element(c).is_some())
         .collect();
     for child in children {
-        let kind = get_element_name(xot, child);
-        if kind.as_deref() != Some("identifier") {
+        if get_kind(xot, child).as_deref() != Some("identifier") {
             continue;
         }
         let param_name = xot.add_name(PARAMETER);
