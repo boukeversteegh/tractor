@@ -97,13 +97,15 @@ pub mod semantic {
     //   - BLOCK: `<block>` container (do_block/begin_block) AND
     //     `<parameter><block/>` shape marker.
     //   - BEGIN: `<begin>` container AND `<block><begin/>` marker.
+    //   - DO: marker on `<block><do/>` AND structural container — the
+    //     Ruby grammar has a `do` kind used as the body of `while` /
+    //     `until` / `for` loops.
 
     /// Names that, when emitted, are always empty elements (no text,
     /// no element children). Used by the markers-stay-empty invariant.
     pub const MARKER_ONLY: &[&str] = &[
         LIST, DICT,
         KEYWORD, DEFAULT,
-        DO,
         DELIMITED,
         SINGLETON,
     ];

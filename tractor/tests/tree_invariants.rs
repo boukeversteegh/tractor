@@ -27,14 +27,32 @@ const ASSERT_LOWERCASE: bool = true;
 const ASSERT_NO_UNDERSCORE: bool = true;
 const ASSERT_NO_GRAMMAR_SUFFIXES: bool = true;
 const ASSERT_NAME_IS_TEXT_LEAF: bool = true;
-// `markers_stay_empty` is an advisory heuristic with many expected
-// hits (elements used as both markers and containers — `struct`,
-// `type`, `ref`, etc). Leave it advisory for now.
-const ASSERT_MARKERS_STAY_EMPTY: bool = false;
+// `markers_stay_empty` now checks the per-language MARKER_ONLY
+// declaration in each language's `semantic` module — any name listed
+// there must be empty (no text, no element children) everywhere it
+// appears. Precise, no heuristic.
+const ASSERT_MARKERS_STAY_EMPTY: bool = true;
 
 const MAX_SHOWN_PER_KIND: usize = 10;
 
 const DATA_LANG_EXTS: &[&str] = &["json", "yaml", "yml", "toml", "ini", "env"];
+
+/// Map a file extension to the canonical language id used by the
+/// per-language registry in `tractor::languages`.
+fn lang_from_ext(ext: &str) -> Option<&'static str> {
+    match ext {
+        "cs" => Some("csharp"),
+        "ts" | "tsx" | "js" | "jsx" => Some("typescript"),
+        "py" => Some("python"),
+        "rs" => Some("rust"),
+        "go" => Some("go"),
+        "java" => Some("java"),
+        "php" => Some("php"),
+        "rb" => Some("ruby"),
+        "sql" => Some("tsql"),
+        _ => None,
+    }
+}
 
 /// Node names allowed to contain an underscore. Everything else
 /// with an underscore is almost certainly a tree-sitter grammar
@@ -356,26 +374,31 @@ fn name_element_is_text_leaf() {
 // ---------------------------------------------------------------------------
 // Invariant 5: Markers stay empty.
 //
-// Principle #7 + the modifiers-as-empty-elements decision: any
-// node we treat as a marker (queryable flag) must have no children
-// except possibly whitespace text. We encode this by checking that
-// any element which IS empty in some fixture is ALWAYS empty
-// everywhere — symptom of markers-that-became-non-empty.
+// Principle #7 + the modifiers-as-empty-elements decision: any name
+// declared in a language's `semantic::MARKER_ONLY` slice must, when
+// emitted, be empty (no text, no element children). The per-language
+// declaration is the source of truth — this test is just a mechanical
+// assertion.
 //
-// Simpler version for now: just collect element names that have
-// mixed empty/non-empty instances. Flags candidates for review.
+// Names that double as structural containers in some contexts (e.g.
+// `struct`, `type`, `function`) are intentionally OMITTED from each
+// language's MARKER_ONLY slice, so they're never flagged here.
 // ---------------------------------------------------------------------------
 
 #[test]
 fn markers_stay_empty() {
-    use std::collections::HashMap;
-
-    // Per element-name, (seen_empty, seen_non_empty).
-    let mut stats: HashMap<String, (bool, bool, Vec<(PathBuf, String)>)> = HashMap::new();
+    let mut report = Report::default();
 
     for fixture in iter_fixtures() {
         let ext = fixture.extension().and_then(|e| e.to_str()).unwrap_or("");
         if DATA_LANG_EXTS.contains(&ext) {
+            continue;
+        }
+        let Some(lang) = lang_from_ext(ext) else { continue };
+        let Some(marker_only) = tractor::languages::marker_only_names(lang) else {
+            continue;
+        };
+        if marker_only.is_empty() {
             continue;
         }
         let Some(parsed) = parse_structure(&fixture) else { continue };
@@ -383,41 +406,47 @@ fn markers_stay_empty() {
         let root = parsed.documents.document_node(parsed.doc_handle).unwrap();
         walk_elements(xot, root, &mut |xot, node| {
             let Some(name) = element_name(xot, node) else { return };
-            let has_content = xot.children(node).any(|c| {
-                xot.element(c).is_some()
-                    || xot.text_str(c).map(|s| !s.trim().is_empty()).unwrap_or(false)
-            });
-            let entry = stats
-                .entry(name.clone())
-                .or_insert((false, false, Vec::new()));
-            if has_content {
-                entry.1 = true;
-                if entry.0 {
-                    entry.2.push((fixture.clone(), "non-empty instance".into()));
-                }
-            } else {
-                entry.0 = true;
+            if !marker_only.contains(&name.as_str()) {
+                return;
+            }
+            // Marker element must have no element children and no
+            // non-whitespace text children.
+            let element_child = xot.children(node).find(|&c| xot.element(c).is_some());
+            let text_child = xot
+                .children(node)
+                .find(|&c| xot.text_str(c).map(|s| !s.trim().is_empty()).unwrap_or(false));
+            if let Some(child) = element_child {
+                let child_name = element_name(xot, child).unwrap_or_default();
+                report.record(
+                    &name,
+                    &fixture,
+                    format!("has element child <{}>", child_name),
+                );
+            } else if let Some(child) = text_child {
+                let text = xot
+                    .text_str(child)
+                    .map(|s| s.trim().to_string())
+                    .unwrap_or_default();
+                let shown = if text.len() > 40 {
+                    format!("{}…", &text[..40])
+                } else {
+                    text
+                };
+                report.record(
+                    &name,
+                    &fixture,
+                    format!("has text {:?}", shown),
+                );
             }
         });
     }
 
-    // Only names that are BOTH empty somewhere AND non-empty
-    // somewhere are suspicious — they might be markers in some
-    // contexts and structural elements in others.
-    let mut report = Report::default();
-    for (name, (saw_empty, saw_nonempty, hits)) in &stats {
-        if *saw_empty && *saw_nonempty {
-            for (fixture, ctx) in hits.iter().take(MAX_SHOWN_PER_KIND) {
-                report.record(name, fixture, ctx.clone());
-            }
-        }
-    }
     if !report.is_empty() {
         report.print(
-            "Principle #7 — elements used as markers elsewhere are non-empty here (review candidates)",
+            "Principle #7 — MARKER_ONLY names must be empty (no text, no element children)",
         );
         if ASSERT_INVARIANTS && ASSERT_MARKERS_STAY_EMPTY {
-            panic!("mixed-empty elements");
+            panic!("marker elements with content");
         }
     }
 }

@@ -185,13 +185,15 @@ pub mod semantic {
 
     /// Names that, when emitted, are ALWAYS empty. Excludes names that
     /// are also used as structural containers (NEW, TUPLE, CONSTANT,
-    /// DECLARATION, GENERIC, CONST).
+    /// DECLARATION, GENERIC, CONST, LOGICAL — the operator-classification
+    /// scheme in `xot/transform.rs` emits `<op><logical><and/></logical>…>`
+    /// so `<logical>` carries a marker child in that context).
     pub const MARKER_ONLY: &[&str] = &[
         NULLABLE,
         TRAILING, LEADING,
         INSTANCE, CONDITIONAL,
         ARRAY, POINTER, FUNCTION, REF,
-        RECURSIVE, RELATIONAL, LOGICAL,
+        RECURSIVE, RELATIONAL,
         PREFIX, LOOKUP,
         PUBLIC, PRIVATE, PROTECTED, INTERNAL,
         STATIC, ABSTRACT, VIRTUAL, OVERRIDE, SEALED,

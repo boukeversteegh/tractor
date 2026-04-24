@@ -161,6 +161,10 @@ pub mod semantic {
     //     (function_type).
     //   - TEMPLATE: structural (template_string) + marker on type
     //     (template_type / template_literal_type).
+    //   - ARRAY: marker on `<type>` / `<pattern>` AND structural element
+    //     from the tree-sitter `array` kind (array literals).
+    //   - OBJECT: marker on `<type>` / `<pattern>` AND structural element
+    //     from the tree-sitter `object` kind (object literals).
 
     /// Names that, when emitted, are always empty elements.
     pub const MARKER_ONLY: &[&str] = &[
@@ -168,8 +172,8 @@ pub mod semantic {
         ABSTRACT, OPTIONAL, REQUIRED,
         ASYNC, GENERATOR, GET, SET,
         LET, CONST, VAR,
-        UNION, INTERSECTION, ARRAY, LITERAL, TUPLE, PARENTHESIZED,
-        OBJECT, CONDITIONAL, INFER, LOOKUP, KEYOF,
+        UNION, INTERSECTION, LITERAL, TUPLE, PARENTHESIZED,
+        CONDITIONAL, INFER, LOOKUP, KEYOF,
     ];
 
     /// Every semantic name this language's transform can emit.

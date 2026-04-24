@@ -119,13 +119,15 @@ pub mod semantic {
     //     access when no access modifier is present).
     //   - RECORD: structural (record_declaration) + marker (record_pattern).
     //   - TYPE: structural (type references) + marker (type_pattern).
+    //   - THIS: marker on `<call[this]>` AND structural element from the
+    //     tree-sitter `this` kind (bare `this` expression).
 
     /// Names that, when emitted, are always empty elements.
     pub const MARKER_ONLY: &[&str] = &[
         PUBLIC, PRIVATE, PROTECTED,
         STATIC, FINAL, ABSTRACT, SYNCHRONIZED,
         VOLATILE, TRANSIENT, NATIVE, STRICTFP,
-        VOID, THIS, SUPER, ARRAY, VARIADIC, COMPACT,
+        VOID, SUPER, ARRAY, VARIADIC, COMPACT,
     ];
 
     /// Every semantic name this language's transform can emit.
