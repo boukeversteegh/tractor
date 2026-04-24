@@ -88,23 +88,23 @@ program/
   │       │   └─ ">"
   │       └─ body/
   │           ├─ "{"
-  │           ├─ property_signature/
+  │           ├─ property/
   │           │   ├─ "readonly"
   │           │   ├─ name = "id"
   │           │   ├─ ":"
   │           │   └─ type/name = "string"
   │           ├─ ";"
-  │           ├─ property_signature/
+  │           ├─ property/
   │           │   ├─ name = "label"
   │           │   ├─ "?:"
   │           │   └─ type/name = "string"
   │           ├─ ";"
-  │           ├─ property_signature/
+  │           ├─ property/
   │           │   ├─ name = "value"
   │           │   ├─ ":"
   │           │   └─ type/name = "T"
   │           ├─ ";"
-  │           ├─ method_signature/
+  │           ├─ method/
   │           │   ├─ name = "describe"
   │           │   ├─ "("
   │           │   ├─ parameter[required]/
@@ -124,12 +124,12 @@ program/
   │       ├─ "="
   │       ├─ object_type/
   │       │   ├─ "{"
-  │       │   ├─ property_signature/
+  │       │   ├─ property/
   │       │   │   ├─ name = "x"
   │       │   │   ├─ ":"
   │       │   │   └─ type/name = "number"
   │       │   ├─ ";"
-  │       │   ├─ property_signature/
+  │       │   ├─ property/
   │       │   │   ├─ name = "y"
   │       │   │   ├─ ":"
   │       │   │   └─ type/name = "number"
@@ -196,7 +196,7 @@ program/
   │       ├─ "="
   │       ├─ object_type/
   │       │   ├─ "{"
-  │       │   ├─ index_signature/
+  │       │   ├─ indexer/
   │       │   │   ├─ "["
   │       │   │   ├─ mapped_type_clause/
   │       │   │   │   ├─ name = "K"
@@ -818,12 +818,12 @@ program/
   │   │   ├─ ":"
   │   │   ├─ object_type/
   │   │   │   ├─ "{"
-  │   │   │   ├─ property_signature/
+  │   │   │   ├─ property/
   │   │   │   │   ├─ name = "scale"
   │   │   │   │   ├─ "?:"
   │   │   │   │   └─ type/name = "number"
   │   │   │   ├─ ";"
-  │   │   │   ├─ property_signature/
+  │   │   │   ├─ property/
   │   │   │   │   ├─ name = "label"
   │   │   │   │   ├─ "?:"
   │   │   │   │   └─ type/name = "string"

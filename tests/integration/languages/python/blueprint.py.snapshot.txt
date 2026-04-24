@@ -2,45 +2,41 @@ module/
   ├─ string = "\"\"\"Kitchen-sink Python blueprint for tractor snapshot tests.\n\nThis fixture is rendered by `tractor query <file> -p tree --single` with\nNO depth limit, so any design-principle transform change produces a visible\nsnapshot diff. It is intentionally syntactically valid but not runnable.\n\"\"\""
   ├─ import/
   │   ├─ "import"
-  │   └─ name/dotted_name/name = "os"
+  │   └─ name/name = "os"
   ├─ import/
   │   ├─ "import"
   │   └─ name/aliased_import/
-  │       ├─ name/dotted_name/name = "sys"
+  │       ├─ name/name = "sys"
   │       ├─ "as"
   │       └─ name = "system"
   ├─ from/
   │   ├─ "from"
-  │   ├─ dotted_name/name = "collections"
+  │   ├─ name = "collections"
   │   ├─ "import"
-  │   └─ name/dotted_name/name = "OrderedDict"
+  │   └─ name/name = "OrderedDict"
   ├─ from/
   │   ├─ "from"
-  │   ├─ dotted_name/name = "typing"
+  │   ├─ name = "typing"
   │   ├─ "import"
-  │   ├─ name/dotted_name/name = "Optional"
+  │   ├─ name/name = "Optional"
   │   ├─ ","
-  │   └─ name/dotted_name/name = "Union"
+  │   └─ name/name = "Union"
   ├─ from/
   │   ├─ "from"
-  │   ├─ dotted_name/name = "dataclasses"
+  │   ├─ name = "dataclasses"
   │   ├─ "import"
-  │   ├─ name/dotted_name/name = "dataclass"
+  │   ├─ name/name = "dataclass"
   │   ├─ ","
-  │   └─ name/dotted_name/name = "field"
+  │   └─ name/name = "field"
   ├─ from/
-  │   ├─ "from"
-  │   ├─ relative_import/import_prefix = "."
-  │   ├─ "import"
-  │   └─ name/dotted_name/name = "sibling"
+  │   ├─ "from . import"
+  │   └─ name/name = "sibling"
   ├─ from/
-  │   ├─ "from"
-  │   ├─ relative_import/
-  │   │   ├─ import_prefix = "."
-  │   │   └─ dotted_name/name = "utils"
+  │   ├─ "from ."
+  │   ├─ name = "utils"
   │   ├─ "import"
   │   └─ name/aliased_import/
-  │       ├─ name/dotted_name/name = "helper"
+  │       ├─ name/name = "helper"
   │       ├─ "as"
   │       └─ name = "h"
   ├─ assign/
@@ -695,15 +691,15 @@ module/
   │       └─ body/
   │           ├─ case_clause/
   │           │   ├─ "case"
-  │           │   ├─ case_pattern/dict_pattern/
+  │           │   ├─ pattern/dict_pattern/
   │           │   │   ├─ "{"
   │           │   │   ├─ string = "\"type\""
   │           │   │   ├─ ":"
-  │           │   │   ├─ value/case_pattern/string = "\"ping\""
+  │           │   │   ├─ value/pattern/string = "\"ping\""
   │           │   │   ├─ ","
   │           │   │   ├─ string = "\"id\""
   │           │   │   ├─ ":"
-  │           │   │   ├─ value/case_pattern/dotted_name/name = "pid"
+  │           │   │   ├─ value/pattern/name = "pid"
   │           │   │   └─ "}"
   │           │   ├─ if_clause/
   │           │   │   ├─ "if"
@@ -719,13 +715,13 @@ module/
   │           │       └─ name = "pid"
   │           ├─ case_clause/
   │           │   ├─ "case"
-  │           │   ├─ case_pattern/list_pattern/
+  │           │   ├─ pattern/list_pattern/
   │           │   │   ├─ "["
-  │           │   │   ├─ case_pattern/int = "1"
+  │           │   │   ├─ pattern/int = "1"
   │           │   │   ├─ ","
-  │           │   │   ├─ case_pattern/int = "2"
+  │           │   │   ├─ pattern/int = "2"
   │           │   │   ├─ ","
-  │           │   │   ├─ case_pattern/splat_pattern/
+  │           │   │   ├─ pattern/splat_pattern/
   │           │   │   │   ├─ "*"
   │           │   │   │   └─ name = "rest"
   │           │   │   └─ "]"
@@ -735,18 +731,18 @@ module/
   │           │       └─ name = "rest"
   │           ├─ case_clause/
   │           │   ├─ "case"
-  │           │   ├─ case_pattern/class_pattern/
-  │           │   │   ├─ dotted_name/name = "Point"
+  │           │   ├─ pattern/class_pattern/
+  │           │   │   ├─ name = "Point"
   │           │   │   ├─ "("
-  │           │   │   ├─ case_pattern/keyword_pattern/
+  │           │   │   ├─ pattern/keyword_pattern/
   │           │   │   │   ├─ name = "x"
   │           │   │   │   ├─ "="
   │           │   │   │   └─ int = "0"
   │           │   │   ├─ ","
-  │           │   │   ├─ case_pattern/keyword_pattern/
+  │           │   │   ├─ pattern/keyword_pattern/
   │           │   │   │   ├─ name = "y"
   │           │   │   │   ├─ "="
-  │           │   │   │   └─ dotted_name/name = "y"
+  │           │   │   │   └─ name = "y"
   │           │   │   └─ ")"
   │           │   ├─ ":"
   │           │   └─ then/return/
@@ -754,7 +750,7 @@ module/
   │           │       └─ name = "y"
   │           ├─ case_clause/
   │           │   ├─ "case"
-  │           │   ├─ case_pattern/union_pattern/
+  │           │   ├─ pattern/union_pattern/
   │           │   │   ├─ string = "\"yes\""
   │           │   │   ├─ "|"
   │           │   │   ├─ string = "\"y\""
@@ -766,7 +762,7 @@ module/
   │           │       └─ true = "True"
   │           └─ case_clause/
   │               ├─ "case"
-  │               ├─ case_pattern = "_"
+  │               ├─ pattern = "_"
   │               ├─ ":"
   │               └─ then/return/
   │                   ├─ "return"

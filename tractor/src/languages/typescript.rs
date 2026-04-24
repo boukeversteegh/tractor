@@ -251,6 +251,13 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "function_declaration" | "function_expression" => Some("function"),
         "generator_function_declaration" | "generator_function" => Some("function"),
         "method_definition" => Some("method"),
+        // Interface members — the shapes that appear inside
+        // `interface X { … }`. Rename to the user-facing vocabulary
+        // so the invariant tree is shared with class members.
+        "method_signature" => Some("method"),
+        "property_signature" => Some("property"),
+        "construct_signature" => Some("constructor"),
+        "index_signature" => Some("indexer"),
         "arrow_function" => Some("arrow"),
         "interface_declaration" => Some("interface"),
         // type_alias_declaration handled above (flattens <value> wrapper)

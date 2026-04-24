@@ -23,6 +23,18 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         //     enclosing statement; matches Go's behavior.
         "as_pattern_target" | "pattern_list" | "expression_list" => Ok(TransformAction::Flatten),
 
+        // Import paths (`from a.b.c import d`). Flatten so the
+        // dotted-path segments become siblings of the enclosing
+        // `<import>` — matches how we handle scoped identifiers in
+        // C#/Rust (Principle #12).
+        "dotted_name" | "relative_import" | "import_prefix" => Ok(TransformAction::Flatten),
+
+        // Pattern kinds in `match` arms — normalise to `<pattern>`.
+        "case_pattern" => {
+            rename(xot, node, "pattern");
+            Ok(TransformAction::Continue)
+        }
+
         // Python string internals: `string_start` / `string_content` /
         // `string_end` are grammar tokens around a string body. They
         // carry no semantic beyond their text (the opening quote, the

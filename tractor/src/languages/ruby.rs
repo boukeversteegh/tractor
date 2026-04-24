@@ -14,6 +14,17 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
     match kind.as_str() {
         "body_statement" => Ok(TransformAction::Flatten),
 
+        // Ruby instance / class / global variables (`@x`, `@@y`, `$z`)
+        // are distinct node kinds in the grammar but they're all
+        // "variable references" at the semantic layer. Render as
+        // `<name>` — the leading sigil survives as text so the
+        // source is preserved. A future refinement could add a
+        // `<instance/>` / `<class/>` / `<global/>` marker child.
+        "instance_variable" | "class_variable" | "global_variable" => {
+            rename(xot, node, "name");
+            Ok(TransformAction::Continue)
+        }
+
         // String internals — grammar wrappers around the literal
         // text. Flatten so `<string>` reads as text + interpolations
         // (Principle #12).

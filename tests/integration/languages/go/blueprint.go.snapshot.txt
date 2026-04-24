@@ -522,7 +522,7 @@ file/
   │       │       │   ├─ type/name = "T"
   │       │       │   ├─ "]"
   │       │       │   └─ value/struct = "struct{}"
-  │       │       └─ body/literal_value = "{}"
+  │       │       └─ body = "{}"
   │       ├─ for/
   │       │   ├─ "for"
   │       │   ├─ range/
@@ -564,7 +564,7 @@ file/
   │       │       │       │   ├─ "="
   │       │       │       │   └─ right/literal/
   │       │       │       │       ├─ struct = "struct{}"
-  │       │       │       │       └─ body/literal_value = "{}"
+  │       │       │       │       └─ body = "{}"
   │       │       │       ├─ assign/
   │       │       │       │   ├─ left/name = "out"
   │       │       │       │   ├─ "="
@@ -847,17 +847,15 @@ file/
           │   │       │   ├─ type/name = "string"
           │   │       │   ├─ "]"
           │   │       │   └─ value/type/name = "int"
-          │   │       └─ body/literal_value/
+          │   │       └─ body/
           │   │           ├─ "{"
-          │   │           ├─ keyed_element/
-          │   │           │   ├─ literal_element/string = "\"a\""
-          │   │           │   ├─ ":"
-          │   │           │   └─ value/literal_element/int = "1"
+          │   │           ├─ string = "\"a\""
+          │   │           ├─ ":"
+          │   │           ├─ value/int = "1"
           │   │           ├─ ","
-          │   │           ├─ keyed_element/
-          │   │           │   ├─ literal_element/string = "\"b\""
-          │   │           │   ├─ ":"
-          │   │           │   └─ value/literal_element/int = "2"
+          │   │           ├─ string = "\"b\""
+          │   │           ├─ ":"
+          │   │           ├─ value/int = "2"
           │   │           └─ "}"
           │   └─ body/
           │       ├─ "{"
@@ -1008,46 +1006,35 @@ file/
           │       │   │   └─ "&"
           │       │   └─ literal/
           │       │       ├─ type/name = "Point"
-          │       │       └─ body/literal_value/
+          │       │       └─ body/
           │       │           ├─ "{"
-          │       │           ├─ keyed_element/
-          │       │           │   ├─ literal_element/name = "X"
-          │       │           │   ├─ ":"
-          │       │           │   └─ value/literal_element/int = "1"
+          │       │           ├─ name = "X"
+          │       │           ├─ ":"
+          │       │           ├─ value/int = "1"
           │       │           ├─ ","
-          │       │           ├─ keyed_element/
-          │       │           │   ├─ literal_element/name = "Y"
-          │       │           │   ├─ ":"
-          │       │           │   └─ value/literal_element/int = "2"
+          │       │           ├─ name = "Y"
+          │       │           ├─ ":"
+          │       │           ├─ value/int = "2"
           │       │           └─ "}"
           │       ├─ ","
           │       └─ literal/
           │           ├─ slice/
           │           │   ├─ "[]"
           │           │   └─ type/name = "Point"
-          │           └─ body/literal_value/
-          │               ├─ "{"
-          │               ├─ literal_element/literal_value/
-          │               │   ├─ "{"
-          │               │   ├─ keyed_element/
-          │               │   │   ├─ literal_element/name = "X"
-          │               │   │   ├─ ":"
-          │               │   │   └─ value/literal_element/int = "0"
-          │               │   └─ "}"
+          │           └─ body/
+          │               ├─ "{{"
+          │               ├─ name = "X"
+          │               ├─ ":"
+          │               ├─ value/int = "0"
+          │               ├─ "}, {"
+          │               ├─ name = "X"
+          │               ├─ ":"
+          │               ├─ value/int = "1"
           │               ├─ ","
-          │               ├─ literal_element/literal_value/
-          │               │   ├─ "{"
-          │               │   ├─ keyed_element/
-          │               │   │   ├─ literal_element/name = "X"
-          │               │   │   ├─ ":"
-          │               │   │   └─ value/literal_element/int = "1"
-          │               │   ├─ ","
-          │               │   ├─ keyed_element/
-          │               │   │   ├─ literal_element/name = "Y"
-          │               │   │   ├─ ":"
-          │               │   │   └─ value/literal_element/int = "1"
-          │               │   └─ "}"
-          │               └─ "}"
+          │               ├─ name = "Y"
+          │               ├─ ":"
+          │               ├─ value/int = "1"
+          │               └─ "}}"
           ├─ variable[short]/
           │   ├─ left/name = "m"
           │   ├─ ":="
@@ -1057,18 +1044,16 @@ file/
           │       │   ├─ type/name = "string"
           │       │   ├─ "]"
           │       │   └─ value/type/name = "Point"
-          │       └─ body/literal_value/
+          │       └─ body/
           │           ├─ "{"
-          │           ├─ keyed_element/
-          │           │   ├─ literal_element/string = "\"a\""
+          │           ├─ string = "\"a\""
+          │           ├─ ":"
+          │           ├─ value/
+          │           │   ├─ "{"
+          │           │   ├─ name = "X"
           │           │   ├─ ":"
-          │           │   └─ value/literal_element/literal_value/
-          │           │       ├─ "{"
-          │           │       ├─ keyed_element/
-          │           │       │   ├─ literal_element/name = "X"
-          │           │       │   ├─ ":"
-          │           │       │   └─ value/literal_element/int = "1"
-          │           │       └─ "}"
+          │           │   ├─ value/int = "1"
+          │           │   └─ "}"
           │           └─ "}"
           ├─ var/
           │   ├─ "var"

@@ -27,21 +27,21 @@
             <name>Props</name>
             <body>
               {
-              <property_signature>
+              <property>
                 <name>name</name>
                 :
                 <type>
                   <name>string</name>
                 </type>
-              </property_signature>
+              </property>
               ;
-              <property_signature>
+              <property>
                 <name>age</name>
                 ?:
                 <type>
                   <name>number</name>
                 </type>
-              </property_signature>
+              </property>
               ;
         }
             </body>

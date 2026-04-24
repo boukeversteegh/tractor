@@ -31,6 +31,13 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // rather than nesting the assignment inside an opaque spec
         // element.
         "import_spec" | "const_spec" | "var_spec" => Ok(TransformAction::Flatten),
+
+        // Composite literal elements — `literal_element` /
+        // `keyed_element` / `literal_value` are grammar wrappers
+        // around individual list/map values. Flatten so they become
+        // direct siblings inside the enclosing `<literal>`
+        // (Principle #12).
+        "literal_element" | "keyed_element" | "literal_value" => Ok(TransformAction::Flatten),
         // The content-inside-quotes node on "interpreted" strings —
         // inline as raw text into the enclosing <string>.
         "interpreted_string_literal_content" => Ok(TransformAction::Flatten),
