@@ -48,8 +48,12 @@ const SKIP_EXTENSIONS: &[&str] = &["xml", "sh", "md", "json"];
 /// Paths are relative to the project root.
 const FEATURE_FIXTURES: &[(&str, &str, u32)] = &[
     // — TypeScript —
-    // (source, xpath, depth cap — 0 = no limit; pick the smallest
-    //  construct that demonstrates the invariant.)
+    // Blueprint: kitchen-sink fixture rendered at full depth so
+    // every transform change shows up as a visible snapshot diff.
+    ("tests/integration/languages/typescript/blueprint.ts", "//program", 0),
+    // Feature fixtures: minimal construct that demonstrates the
+    // invariant. Depth cap hides deep internals where noise doesn't
+    // help — the blueprint covers the deep view.
     ("tests/integration/languages/typescript/accessors.ts", "//method[get]", 0),
     ("tests/integration/languages/typescript/async-generator.ts", "//function[async][generator]", 0),
     ("tests/integration/languages/typescript/conditionals.ts", "//if", 3),
@@ -58,6 +62,9 @@ const FEATURE_FIXTURES: &[(&str, &str, u32)] = &[
     ("tests/integration/languages/typescript/type-vocabulary.ts", "//class[name='Dog']", 0),
 
     // — Java —
+    // Blueprint: kitchen-sink fixture rendered at full depth so
+    // every transform change shows up as a visible snapshot diff.
+    ("tests/integration/languages/java/blueprint.java", "//program", 0),
     ("tests/integration/languages/java/conditionals.java", "//if", 3),
     ("tests/integration/languages/java/constructor-rename.java", "//constructor[1]", 0),
     ("tests/integration/languages/java/flat-lists.java", "//method[1]", 0),
@@ -66,6 +73,7 @@ const FEATURE_FIXTURES: &[(&str, &str, u32)] = &[
     ("tests/integration/languages/java/type-vocabulary.java", "//class[name='Dog']", 3),
 
     // — C# —
+    ("tests/integration/languages/csharp/blueprint.cs", "//unit", 0),
     ("tests/integration/languages/csharp/accessor-flattening.cs", "//property[name='Manual']", 0),
     ("tests/integration/languages/csharp/comments.cs", "//class[name='Demo']", 3),
     ("tests/integration/languages/csharp/conditionals.cs", "//if", 3),
@@ -75,6 +83,7 @@ const FEATURE_FIXTURES: &[(&str, &str, u32)] = &[
     ("tests/integration/languages/csharp/where-clause.cs", "//class", 4),
 
     // — Rust —
+    ("tests/integration/languages/rust/blueprint.rs", "//file", 0),
     ("tests/integration/languages/rust/conditionals.rs", "//if", 3),
     ("tests/integration/languages/rust/flat-lists.rs", "//function[name='first']", 0),
     ("tests/integration/languages/rust/match-expression.rs", "//match", 3),
@@ -86,6 +95,7 @@ const FEATURE_FIXTURES: &[(&str, &str, u32)] = &[
     ("tests/integration/languages/rust/visibility.rs", "//function[pub][1]", 0),
 
     // — Python —
+    ("tests/integration/languages/python/blueprint.py", "//module", 0),
     ("tests/integration/languages/python/augmented-assign.py", "//assign[op][1]", 0),
     ("tests/integration/languages/python/collection-markers.py", "//list[comprehension]", 0),
     ("tests/integration/languages/python/conditionals.py", "//if", 3),
@@ -93,6 +103,7 @@ const FEATURE_FIXTURES: &[(&str, &str, u32)] = &[
     ("tests/integration/languages/python/f-strings.py", "//string[interpolation]", 0),
 
     // — Go —
+    ("tests/integration/languages/go/blueprint.go", "//file", 0),
     ("tests/integration/languages/go/conditionals.go", "//if", 3),
     ("tests/integration/languages/go/defined-type-vs-alias.go", "//alias", 0),
     ("tests/integration/languages/go/flat-lists.go", "//function", 0),
@@ -100,8 +111,13 @@ const FEATURE_FIXTURES: &[(&str, &str, u32)] = &[
     ("tests/integration/languages/go/struct-interface-hoist.go", "//struct", 0),
     ("tests/integration/languages/go/type-declaration.go", "//interface", 0),
 
+    // — PHP —
+    ("tests/integration/languages/php/blueprint.php", "//program", 0),
+
     // — Ruby —
+    ("tests/integration/languages/ruby/blueprint.rb", "//program", 0),
     ("tests/integration/languages/ruby/conditionals.rb", "//if", 3),
+
     ("tests/integration/languages/ruby/name-inlining.rb", "//class", 0),
 ];
 

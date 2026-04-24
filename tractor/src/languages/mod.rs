@@ -11,6 +11,7 @@ pub mod go;
 pub mod rust_lang;
 pub mod java;
 pub mod ruby;
+pub mod php;
 pub mod json;
 pub mod yaml;
 pub mod toml;
@@ -52,6 +53,7 @@ pub fn get_transform(lang: &str) -> TransformFn {
         "rust" | "rs" => rust_lang::transform,
         "java" => java::transform,
         "ruby" | "rb" => ruby::transform,
+        "php" => php::transform,
         "json" => json::data_transform,
         "yaml" | "yml" => yaml::data_transform,
         "toml" => toml::transform,
@@ -94,7 +96,8 @@ pub fn get_post_transform(lang: &str) -> Option<PostTransformFn> {
         | "go"
         | "rust" | "rs"
         | "java"
-        | "ruby" | "rb" => Some(collapse_conditionals),
+        | "ruby" | "rb"
+        | "php" => Some(collapse_conditionals),
         _ => None,
     }
 }
@@ -285,6 +288,7 @@ pub fn is_programming_language(lang: &str) -> bool {
             | "rust" | "rs"
             | "java"
             | "ruby" | "rb"
+            | "php"
             | "tsql" | "mssql"
     )
 }
@@ -398,6 +402,7 @@ pub fn get_syntax_category(lang: &str) -> SyntaxCategoryFn {
         "rust" | "rs" => rust_lang::syntax_category,
         "java" => java::syntax_category,
         "ruby" | "rb" => ruby::syntax_category,
+        "php" => php::syntax_category,
         "json" => json::syntax_category,
         "yaml" | "yml" => yaml::syntax_category,
         "toml" => toml::syntax_category,
