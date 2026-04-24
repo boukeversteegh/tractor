@@ -37,11 +37,14 @@ pub mod semantic {
     pub const TYPE: &str = "type";
     pub const PATH: &str = "path";
     pub const RETURNS: &str = "returns";
+    // `String[] args` — array dimensions leaf. Carries the bracket text.
+    pub const DIMENSIONS: &str = "dimensions";
 
     // Control flow
     pub const RETURN: &str = "return";
     pub const IF: &str = "if";
     pub const ELSE: &str = "else";
+    pub const ELSE_IF: &str = "else_if";
     pub const FOR: &str = "for";
     pub const FOREACH: &str = "foreach";
     pub const WHILE: &str = "while";
@@ -49,11 +52,17 @@ pub mod semantic {
     pub const CATCH: &str = "catch";
     pub const FINALLY: &str = "finally";
     pub const THROW: &str = "throw";
+    // `method() throws IOException` — the throws list emitted as a
+    // container wrapping exception types.
+    pub const THROWS: &str = "throws";
     pub const SWITCH: &str = "switch";
     pub const ARM: &str = "arm";
     pub const LABEL: &str = "label";
     pub const CASE: &str = "case";
     pub const PATTERN: &str = "pattern";
+    // `case Foo f when cond` — the `when` guard clause emitted as a
+    // container on a pattern arm.
+    pub const GUARD: &str = "guard";
     pub const BODY: &str = "body";
 
     // Expressions
@@ -135,9 +144,9 @@ pub mod semantic {
         PROGRAM, CLASS, INTERFACE, ENUM, RECORD,
         METHOD, CONSTRUCTOR, FIELD, VARIABLE, DECLARATOR, CONSTANT,
         PARAMETER, GENERIC, GENERICS, EXTENDS, IMPLEMENTS,
-        TYPE, PATH, RETURNS,
-        RETURN, IF, ELSE, FOR, FOREACH, WHILE, TRY, CATCH, FINALLY, THROW,
-        SWITCH, ARM, LABEL, CASE, PATTERN, BODY,
+        TYPE, PATH, RETURNS, DIMENSIONS,
+        RETURN, IF, ELSE, ELSE_IF, FOR, FOREACH, WHILE, TRY, CATCH, FINALLY, THROW, THROWS,
+        SWITCH, ARM, LABEL, CASE, PATTERN, GUARD, BODY,
         CALL, NEW, MEMBER, INDEX, ASSIGN, BINARY, UNARY, LAMBDA, TERNARY, ANNOTATION,
         IMPORT, PACKAGE,
         STRING, INT, FLOAT, TRUE, FALSE, NULL,
