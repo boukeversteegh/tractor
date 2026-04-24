@@ -4,6 +4,144 @@ use xot::{Xot, Node as XotNode};
 use crate::xot_transform::{TransformAction, helpers::*};
 use crate::output::syntax_highlight::SyntaxCategory;
 
+use semantic::*;
+
+/// Semantic element names — tractor's Python XML vocabulary after transform.
+pub mod semantic {
+    // Structural — containers.
+
+    // Top-level / declarations
+    pub const MODULE: &str = "module";
+    pub const CLASS: &str = "class";
+    pub const FUNCTION: &str = "function";
+    pub const DECORATED: &str = "decorated";
+    pub const DECORATOR: &str = "decorator";
+    pub const LAMBDA: &str = "lambda";
+
+    // Members
+    pub const PARAMETER: &str = "parameter";
+    pub const ARGUMENT: &str = "argument";
+
+    // Type vocabulary
+    pub const TYPE: &str = "type";
+
+    // Control flow
+    pub const RETURN: &str = "return";
+    pub const IF: &str = "if";
+    pub const ELSE_IF: &str = "else_if";
+    pub const ELSE: &str = "else";
+    pub const FOR: &str = "for";
+    pub const WHILE: &str = "while";
+    pub const TRY: &str = "try";
+    pub const EXCEPT: &str = "except";
+    pub const FINALLY: &str = "finally";
+    pub const WITH: &str = "with";
+    pub const RAISE: &str = "raise";
+    pub const PASS: &str = "pass";
+    pub const BREAK: &str = "break";
+    pub const CONTINUE: &str = "continue";
+    pub const MATCH: &str = "match";
+    pub const ARM: &str = "arm";
+    pub const PATTERN: &str = "pattern";
+
+    // Imports / names
+    pub const IMPORT: &str = "import";
+    pub const FROM: &str = "from";
+    pub const ASSERT: &str = "assert";
+    pub const DELETE: &str = "delete";
+    pub const GLOBAL: &str = "global";
+    pub const NONLOCAL: &str = "nonlocal";
+
+    // Expressions
+    pub const CALL: &str = "call";
+    pub const MEMBER: &str = "member";
+    pub const SUBSCRIPT: &str = "subscript";
+    pub const ASSIGN: &str = "assign";
+    pub const BINARY: &str = "binary";
+    pub const UNARY: &str = "unary";
+    pub const COMPARE: &str = "compare";
+    pub const LOGICAL: &str = "logical";
+    pub const AWAIT: &str = "await";
+    pub const GENERATOR: &str = "generator";
+    pub const TERNARY: &str = "ternary";
+    pub const CAST: &str = "cast";
+    pub const AS: &str = "as";
+    pub const SPREAD: &str = "spread";
+    pub const FORMAT: &str = "format";
+
+    // Function-signature separators.
+    pub const KEYWORD: &str = "keyword";
+    pub const POSITIONAL: &str = "positional";
+
+    // Collection containers (structural). ALSO appear as pattern/spread
+    // markers — ambiguous and out of MARKER_ONLY.
+    pub const LIST: &str = "list";
+    pub const DICT: &str = "dict";
+    pub const SET: &str = "set";
+
+    // Literals
+    pub const STRING: &str = "string";
+    pub const INT: &str = "int";
+    pub const FLOAT: &str = "float";
+    pub const TRUE: &str = "true";
+    pub const FALSE: &str = "false";
+    pub const NONE: &str = "none";
+
+    // Identifiers / comments
+    pub const NAME: &str = "name";
+    pub const COMMENT: &str = "comment";
+
+    // Operator child
+    pub const OP: &str = "op";
+
+    // Markers — always empty.
+
+    // Visibility (lifted from name convention).
+    pub const PUBLIC: &str = "public";
+    pub const PRIVATE: &str = "private";
+    pub const PROTECTED: &str = "protected";
+
+    // Function flags.
+    pub const ASYNC: &str = "async";
+
+    // Collection-construction markers (only on <list>/<dict>/<set>).
+    pub const LITERAL: &str = "literal";
+    pub const COMPREHENSION: &str = "comprehension";
+
+    // Pattern / type shape markers that don't conflict with structural.
+    pub const UNION: &str = "union";
+    pub const SPLAT: &str = "splat";
+
+    /// Names that, when emitted, are always empty. Excludes names that
+    /// double as structural containers (LIST, DICT, SET, CLASS).
+    pub const MARKER_ONLY: &[&str] = &[
+        PUBLIC, PRIVATE, PROTECTED,
+        ASYNC,
+        LITERAL, COMPREHENSION,
+        UNION, SPLAT,
+    ];
+
+    /// Every semantic name this language's transform can emit.
+    pub const ALL_NAMES: &[&str] = &[
+        MODULE, CLASS, FUNCTION, DECORATED, DECORATOR, LAMBDA,
+        PARAMETER, ARGUMENT,
+        TYPE,
+        RETURN, IF, ELSE_IF, ELSE, FOR, WHILE, TRY, EXCEPT, FINALLY,
+        WITH, RAISE, PASS, BREAK, CONTINUE, MATCH, ARM, PATTERN,
+        IMPORT, FROM, ASSERT, DELETE, GLOBAL, NONLOCAL,
+        CALL, MEMBER, SUBSCRIPT, ASSIGN, BINARY, UNARY, COMPARE, LOGICAL,
+        AWAIT, GENERATOR, TERNARY, CAST, AS, SPREAD, FORMAT,
+        KEYWORD, POSITIONAL,
+        LIST, DICT, SET,
+        STRING, INT, FLOAT, TRUE, FALSE, NONE,
+        NAME, COMMENT, OP,
+        PUBLIC, PRIVATE, PROTECTED,
+        ASYNC,
+        LITERAL, COMPREHENSION,
+        UNION, SPLAT,
+    ];
+}
+
 /// Transform a Python AST node
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let kind = match get_element_name(xot, node) {
@@ -33,11 +171,11 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // markers for `*` and `/` in function signatures. Rename to
         // the short marker-style names.
         "keyword_separator" => {
-            rename(xot, node, "keyword");
+            rename(xot, node, KEYWORD);
             Ok(TransformAction::Continue)
         }
         "positional_separator" => {
-            rename(xot, node, "positional");
+            rename(xot, node, POSITIONAL);
             Ok(TransformAction::Continue)
         }
 
@@ -49,7 +187,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 
         // Pattern kinds in `match` arms — normalise to `<pattern>`.
         "case_pattern" => {
-            rename(xot, node, "pattern");
+            rename(xot, node, PATTERN);
             Ok(TransformAction::Continue)
         }
 
@@ -64,7 +202,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // wrappers. `case_clause` renames to `<arm>` for uniformity
         // with Rust/C#/Java match vocabulary; `with_item` flattens.
         "case_clause" => {
-            rename(xot, node, "arm");
+            rename(xot, node, ARM);
             Ok(TransformAction::Continue)
         }
         "with_item" | "with_clause" => Ok(TransformAction::Flatten),
@@ -76,19 +214,19 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // of argument vs pattern vs literal context.
 
         "keyword_argument" => {
-            rename(xot, node, "argument");
+            rename(xot, node, ARGUMENT);
             Ok(TransformAction::Continue)
         }
         "keyword_pattern" => {
-            rename(xot, node, "pattern");
+            rename(xot, node, PATTERN);
             Ok(TransformAction::Continue)
         }
         "aliased_import" => {
-            rename(xot, node, "import");
+            rename(xot, node, IMPORT);
             Ok(TransformAction::Continue)
         }
         "type_conversion" => {
-            rename(xot, node, "cast");
+            rename(xot, node, CAST);
             Ok(TransformAction::Continue)
         }
         // union_type / union_pattern / splat_pattern are now handled
@@ -204,14 +342,14 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         "function_definition" => {
             let texts = get_text_children(xot, node);
             if texts.iter().any(|t| t.contains("async")) {
-                prepend_empty_element(xot, node, "async")?;
+                prepend_empty_element(xot, node, ASYNC)?;
             }
             if is_inside_class_body(xot, node) {
                 if let Some(vis) = python_visibility_from_def(xot, node) {
                     prepend_empty_element(xot, node, vis)?;
                 }
             }
-            rename(xot, node, "function");
+            rename(xot, node, FUNCTION);
             Ok(TransformAction::Continue)
         }
 
@@ -228,35 +366,35 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // so gating on that prevents applying the <literal/> marker to
         // our own markers.
         "list" | "set" if get_kind(xot, node).is_some() => {
-            prepend_empty_element(xot, node, "literal")?;
+            prepend_empty_element(xot, node, LITERAL)?;
             Ok(TransformAction::Continue)
         }
         "dictionary" => {
-            prepend_empty_element(xot, node, "literal")?;
-            rename(xot, node, "dict");
+            prepend_empty_element(xot, node, LITERAL)?;
+            rename(xot, node, DICT);
             Ok(TransformAction::Continue)
         }
         "list_comprehension" => {
-            prepend_empty_element(xot, node, "comprehension")?;
-            rename(xot, node, "list");
+            prepend_empty_element(xot, node, COMPREHENSION)?;
+            rename(xot, node, LIST);
             Ok(TransformAction::Continue)
         }
         "dictionary_comprehension" => {
-            prepend_empty_element(xot, node, "comprehension")?;
-            rename(xot, node, "dict");
+            prepend_empty_element(xot, node, COMPREHENSION)?;
+            rename(xot, node, DICT);
             Ok(TransformAction::Continue)
         }
         "set_comprehension" => {
-            prepend_empty_element(xot, node, "comprehension")?;
-            rename(xot, node, "set");
+            prepend_empty_element(xot, node, COMPREHENSION)?;
+            rename(xot, node, SET);
             Ok(TransformAction::Continue)
         }
 
         // Ternary (conditional_expression) — surgically wrap
         // `alternative` in `<else>`. See transformations.md.
         "conditional_expression" => {
-            wrap_field_child(xot, node, "alternative", "else")?;
-            rename(xot, node, "ternary");
+            wrap_field_child(xot, node, "alternative", ELSE)?;
+            rename(xot, node, TERNARY);
             Ok(TransformAction::Continue)
         }
 
@@ -264,7 +402,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Tree-sitter uses a separate `type` node for type annotations, so
         // bare identifiers never need a heuristic — they are never types.
         "identifier" => {
-            rename(xot, node, "name");
+            rename(xot, node, NAME);
             Ok(TransformAction::Continue)
         }
 
@@ -282,44 +420,44 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 /// in one entry.
 fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> {
     match kind {
-        "module" => Some(("module", None)),
-        "class_definition" => Some(("class", None)),
-        "function_definition" => Some(("function", None)),
-        "decorated_definition" => Some(("decorated", None)),
-        "decorator" => Some(("decorator", None)),
+        "module" => Some((MODULE, None)),
+        "class_definition" => Some((CLASS, None)),
+        "function_definition" => Some((FUNCTION, None)),
+        "decorated_definition" => Some((DECORATED, None)),
+        "decorator" => Some((DECORATOR, None)),
         // parameters is flattened via Principle #12 above
-        "default_parameter" | "typed_parameter" | "typed_default_parameter" => Some(("parameter", None)),
-        "return_statement" => Some(("return", None)),
-        "if_statement" => Some(("if", None)),
-        "elif_clause" => Some(("else_if", None)),
-        "else_clause" => Some(("else", None)),
-        "for_statement" => Some(("for", None)),
-        "while_statement" => Some(("while", None)),
-        "try_statement" => Some(("try", None)),
-        "except_clause" => Some(("except", None)),
-        "finally_clause" => Some(("finally", None)),
-        "with_statement" => Some(("with", None)),
-        "raise_statement" => Some(("raise", None)),
-        "pass_statement" => Some(("pass", None)),
-        "import_statement" => Some(("import", None)),
-        "import_from_statement" => Some(("from", None)),
-        "assert_statement" => Some(("assert", None)),
-        "delete_statement" => Some(("delete", None)),
-        "global_statement" => Some(("global", None)),
-        "nonlocal_statement" => Some(("nonlocal", None)),
-        "break_statement" => Some(("break", None)),
-        "continue_statement" => Some(("continue", None)),
-        "match_statement" => Some(("match", None)),
+        "default_parameter" | "typed_parameter" | "typed_default_parameter" => Some((PARAMETER, None)),
+        "return_statement" => Some((RETURN, None)),
+        "if_statement" => Some((IF, None)),
+        "elif_clause" => Some((ELSE_IF, None)),
+        "else_clause" => Some((ELSE, None)),
+        "for_statement" => Some((FOR, None)),
+        "while_statement" => Some((WHILE, None)),
+        "try_statement" => Some((TRY, None)),
+        "except_clause" => Some((EXCEPT, None)),
+        "finally_clause" => Some((FINALLY, None)),
+        "with_statement" => Some((WITH, None)),
+        "raise_statement" => Some((RAISE, None)),
+        "pass_statement" => Some((PASS, None)),
+        "import_statement" => Some((IMPORT, None)),
+        "import_from_statement" => Some((FROM, None)),
+        "assert_statement" => Some((ASSERT, None)),
+        "delete_statement" => Some((DELETE, None)),
+        "global_statement" => Some((GLOBAL, None)),
+        "nonlocal_statement" => Some((NONLOCAL, None)),
+        "break_statement" => Some((BREAK, None)),
+        "continue_statement" => Some((CONTINUE, None)),
+        "match_statement" => Some((MATCH, None)),
         // Pattern kinds in `match` arms — normalise to `<pattern>`
         // with shape markers for querying by structure.
-        "class_pattern" => Some(("pattern", Some("class"))),
-        "list_pattern" => Some(("pattern", Some("list"))),
-        "dict_pattern" => Some(("pattern", Some("dict"))),
+        "class_pattern" => Some((PATTERN, Some(CLASS))),
+        "list_pattern" => Some((PATTERN, Some(LIST))),
+        "dict_pattern" => Some((PATTERN, Some(DICT))),
         // Walrus operator — Python's `:=`. Collapses to <assign>;
         // the `<op>` child (`:=`) or the enclosing context marks it.
-        "named_expression" => Some(("assign", None)),
+        "named_expression" => Some((ASSIGN, None)),
         // f-string internals — `format_specifier` is the `:>10` bit.
-        "format_specifier" => Some(("format", None)),
+        "format_specifier" => Some((FORMAT, None)),
         // `lambda_parameters` is a wrapper; flatten handled in match arm above.
         // `keyword_separator` / `positional_separator` are grammar markers
         // for `*` and `/` separators in function signatures — empty markers.
@@ -327,37 +465,37 @@ fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> 
         // The `<list/>` / `<dict/>` marker child survives through
         // argument, pattern, and literal contexts so `//spread[dict]`
         // picks up every `**kwargs`.
-        "list_splat" | "list_splat_pattern" => Some(("spread", Some("list"))),
-        "dictionary_splat" | "dictionary_splat_pattern" => Some(("spread", Some("dict"))),
+        "list_splat" | "list_splat_pattern" => Some((SPREAD, Some(LIST))),
+        "dictionary_splat" | "dictionary_splat_pattern" => Some((SPREAD, Some(DICT))),
         // Type / pattern flavors — shape markers keep queries precise.
-        "union_type" => Some(("type", Some("union"))),
-        "union_pattern" => Some(("pattern", Some("union"))),
-        "splat_pattern" => Some(("pattern", Some("splat"))),
-        "as_pattern" => Some(("as", None)),
-        "for_in_clause" => Some(("for", None)),
-        "call" => Some(("call", None)),
-        "attribute" => Some(("member", None)),
-        "subscript" => Some(("subscript", None)),
-        "assignment" => Some(("assign", None)),
+        "union_type" => Some((TYPE, Some(UNION))),
+        "union_pattern" => Some((PATTERN, Some(UNION))),
+        "splat_pattern" => Some((PATTERN, Some(SPLAT))),
+        "as_pattern" => Some((AS, None)),
+        "for_in_clause" => Some((FOR, None)),
+        "call" => Some((CALL, None)),
+        "attribute" => Some((MEMBER, None)),
+        "subscript" => Some((SUBSCRIPT, None)),
+        "assignment" => Some((ASSIGN, None)),
         // augmented_assignment collapses to <assign>; the <op> child (e.g., +=) distinguishes it.
-        "augmented_assignment" => Some(("assign", None)),
-        "binary_operator" => Some(("binary", None)),
-        "unary_operator" => Some(("unary", None)),
-        "comparison_operator" => Some(("compare", None)),
-        "boolean_operator" => Some(("logical", None)),
+        "augmented_assignment" => Some((ASSIGN, None)),
+        "binary_operator" => Some((BINARY, None)),
+        "unary_operator" => Some((UNARY, None)),
+        "comparison_operator" => Some((COMPARE, None)),
+        "boolean_operator" => Some((LOGICAL, None)),
         // conditional_expression handled above
-        "lambda" => Some(("lambda", None)),
-        "await" => Some(("await", None)),
+        "lambda" => Some((LAMBDA, None)),
+        "await" => Some((AWAIT, None)),
         // Collection literals and comprehensions are handled specially
         // above (renamed to their produced type + <literal/> or
         // <comprehension/> marker).
-        "generator_expression" => Some(("generator", None)),
-        "string" => Some(("string", None)),
-        "integer" => Some(("int", None)),
-        "float" => Some(("float", None)),
-        "true" => Some(("true", None)),
-        "false" => Some(("false", None)),
-        "none" => Some(("none", None)),
+        "generator_expression" => Some((GENERATOR, None)),
+        "string" => Some((STRING, None)),
+        "integer" => Some((INT, None)),
+        "float" => Some((FLOAT, None)),
+        "true" => Some((TRUE, None)),
+        "false" => Some((FALSE, None)),
+        "none" => Some((NONE, None)),
         _ => None,
     }
 }
@@ -484,15 +622,15 @@ fn python_visibility_from_def(xot: &Xot, node: XotNode) -> Option<&'static str> 
     // Dunder methods (`__init__`, `__str__`, etc.) are part of the
     // public protocol — they're conventional interface hooks.
     if name.starts_with("__") && name.ends_with("__") && name.len() > 4 {
-        return Some("public");
+        return Some(PUBLIC);
     }
     if name.starts_with("__") {
-        return Some("private");
+        return Some(PRIVATE);
     }
     if name.starts_with('_') {
-        return Some("protected");
+        return Some(PROTECTED);
     }
-    return Some("public");
+    return Some(PUBLIC);
 }
 
 /// Returns true if `node` has exactly one element descendant and it's an
@@ -566,5 +704,29 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
 
         // Structural elements - no color
         _ => SyntaxCategory::Default,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::semantic::*;
+
+    #[test]
+    fn marker_only_names_are_in_all_names() {
+        for m in MARKER_ONLY {
+            assert!(
+                ALL_NAMES.contains(m),
+                "MARKER_ONLY entry {:?} missing from ALL_NAMES",
+                m,
+            );
+        }
+    }
+
+    #[test]
+    fn all_names_has_no_duplicates() {
+        let mut seen = std::collections::HashSet::new();
+        for name in ALL_NAMES {
+            assert!(seen.insert(*name), "duplicate name in ALL_NAMES: {:?}", name);
+        }
     }
 }
