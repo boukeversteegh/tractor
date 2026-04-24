@@ -49,6 +49,7 @@ pub mod semantic {
     pub const RETURN: &str = "return";
     pub const IF: &str = "if";
     pub const ELSE: &str = "else";
+    pub const ELSE_IF: &str = "else_if";
     pub const FOR: &str = "for";
     pub const WHILE: &str = "while";
     pub const LOOP: &str = "loop";
@@ -59,6 +60,9 @@ pub mod semantic {
     pub const CONTINUE: &str = "continue";
     pub const RANGE: &str = "range";
     pub const SEND: &str = "send";
+    // `'outer:` — loop labels emitted as a container wrapping the
+    // `<name>`. Also appears on `break 'outer` / `continue 'outer`.
+    pub const LABEL: &str = "label";
 
     // Expressions
     pub const CALL: &str = "call";
@@ -167,8 +171,8 @@ pub mod semantic {
         SIGNATURE, MODIFIERS,
         PARAMETER, SELF, FIELD, VARIANT, LIFETIME, ATTRIBUTE,
         TYPE, GENERIC, GENERICS, PATH, BOUNDS, BOUND, WHERE,
-        LET, RETURN, IF, ELSE, FOR, WHILE, LOOP, MATCH, ARM, PATTERN,
-        BREAK, CONTINUE, RANGE, SEND,
+        LET, RETURN, IF, ELSE, ELSE_IF, FOR, WHILE, LOOP, MATCH, ARM, PATTERN,
+        BREAK, CONTINUE, RANGE, SEND, LABEL,
         CALL, INDEX, BINARY, UNARY, ASSIGN, CLOSURE, AWAIT, TRY, MACRO, CAST,
         REF, TUPLE, UNSAFE, LITERAL, BLOCK,
         PUB, IN,
