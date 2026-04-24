@@ -20,7 +20,7 @@ function/
   │   └─ value/bool = "true"
   ├─ ","
   ├─ parameter[required]/
-  │   ├─ rest_pattern/
+  │   ├─ rest/
   │   │   ├─ "..."
   │   │   └─ name = "rest"
   │   ├─ ":"

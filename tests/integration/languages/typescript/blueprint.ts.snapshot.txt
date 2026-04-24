@@ -6,14 +6,14 @@ program/
   ├─ comment = "// unions, conditional/mapped types, async/generators, decorators of syntax."
   ├─ import/
   │   ├─ "import"
-  │   ├─ import_clause/
+  │   ├─ clause/
   │   │   ├─ name = "defaultExport"
   │   │   ├─ ","
   │   │   └─ named_imports/
   │   │       ├─ "{"
-  │   │       ├─ import_specifier/name = "namedA"
+  │   │       ├─ spec/name = "namedA"
   │   │       ├─ ","
-  │   │       ├─ import_specifier/
+  │   │       ├─ spec/
   │   │       │   ├─ name = "namedB"
   │   │       │   ├─ "as"
   │   │       │   └─ name = "aliasedB"
@@ -23,7 +23,7 @@ program/
   │   └─ ";"
   ├─ import/
   │   ├─ "import"
-  │   ├─ import_clause/namespace_import/
+  │   ├─ clause/namespace_import/
   │   │   ├─ "* as"
   │   │   └─ name = "ns"
   │   ├─ "from"
@@ -31,9 +31,9 @@ program/
   │   └─ ";"
   ├─ import/
   │   ├─ "import type"
-  │   ├─ import_clause/named_imports/
+  │   ├─ clause/named_imports/
   │   │   ├─ "{"
-  │   │   ├─ import_specifier/name = "OnlyAtCompileTime"
+  │   │   ├─ spec/name = "OnlyAtCompileTime"
   │   │   └─ "}"
   │   ├─ "from"
   │   ├─ string = "\"./types\""
@@ -584,7 +584,7 @@ program/
   │           │   │       └─ type/name = "string"
   │           │   ├─ ","
   │           │   ├─ parameter[required]/
-  │           │   │   ├─ rest_pattern/
+  │           │   │   ├─ rest/
   │           │   │   │   ├─ "..."
   │           │   │   │   └─ name = "extra"
   │           │   │   ├─ ":"
@@ -733,7 +733,7 @@ program/
   │   │   │   └─ type/name = "TemplateStringsArray"
   │   │   ├─ ","
   │   │   ├─ parameter[required]/
-  │   │   │   ├─ rest_pattern/
+  │   │   │   ├─ rest/
   │   │   │   │   ├─ "..."
   │   │   │   │   └─ name = "vals"
   │   │   │   ├─ ":"
@@ -802,11 +802,11 @@ program/
   │   │   ├─ object_pattern/
   │   │   │   ├─ "{"
   │   │   │   ├─ object_assignment_pattern/
-  │   │   │   │   ├─ left/shorthand_property_identifier_pattern = "scale"
+  │   │   │   │   ├─ left/name = "scale"
   │   │   │   │   ├─ "="
   │   │   │   │   └─ right/number = "1"
   │   │   │   ├─ ","
-  │   │   │   ├─ shorthand_property_identifier_pattern = "label"
+  │   │   │   ├─ name = "label"
   │   │   │   └─ "}"
   │   │   ├─ ":"
   │   │   ├─ object_type/
@@ -839,7 +839,7 @@ program/
   │       │   │   ├─ "["
   │       │   │   ├─ name = "head"
   │       │   │   ├─ ","
-  │       │   │   ├─ rest_pattern/
+  │       │   │   ├─ rest/
   │       │   │   │   ├─ "..."
   │       │   │   │   └─ name = "rest"
   │       │   │   └─ "]"

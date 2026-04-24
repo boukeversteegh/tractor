@@ -13,6 +13,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 
     match kind.as_str() {
         "expression_statement" => Ok(TransformAction::Skip),
+        "parenthesized_expression" => Ok(TransformAction::Flatten),
         "block" | "declaration_list" => Ok(TransformAction::Flatten),
 
         // Pure grouping wrappers around a list of homogeneous children
@@ -223,6 +224,9 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         | "enum_variant_list"
         | "use_list"
         | "use_as_clause"
+        | "scoped_use_list"
+        | "ordered_field_declaration_list"
+        | "spread_element"
         | "outer_doc_comment_marker"
         | "inner_doc_comment_marker" => Ok(TransformAction::Flatten),
 
@@ -299,6 +303,12 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "function_signature_item" => Some("signature"),
         "type_cast_expression" => Some("cast"),
         "function_modifiers" => Some("modifiers"),
+        "break_expression" | "break_statement" => Some("break"),
+        "continue_expression" | "continue_statement" => Some("continue"),
+        "range_expression" => Some("range"),
+        "send_statement" => Some("send"),
+        "shorthand_field_initializer" => Some("field"),
+        "where_clause" => Some("where"),
         "match_arm" => Some("arm"),
         "field_declaration" => Some("field"),
         "field_initializer" => Some("field"),

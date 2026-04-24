@@ -287,6 +287,22 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "parenthesized_type" => Some("type"),
         "subscript_expression" => Some("index"),
         "shorthand_property_identifier" => Some("name"),
+        "shorthand_property_identifier_pattern" => Some("name"),
+        // JSX — full design still deferred, but rename the obvious
+        // tree-sitter kinds so the invariants stop tripping. A
+        // proper shape design lives in the open-questions doc.
+        "jsx_element" | "jsx_self_closing_element" => Some("element"),
+        "jsx_opening_element" => Some("opening"),
+        "jsx_closing_element" => Some("closing"),
+        "jsx_attribute" => Some("prop"),
+        "jsx_expression" => Some("value"),
+        "jsx_text" => Some("text"),
+        "function_type" => Some("type"),
+        // Patterns in destructuring — rename to <pattern>.
+        "rest_pattern" => Some("rest"),
+        // Import wrappers.
+        "import_specifier" => Some("spec"),
+        "import_clause" => Some("clause"),
         "arrow_function" => Some("arrow"),
         "interface_declaration" => Some("interface"),
         // type_alias_declaration handled above (flattens <value> wrapper)

@@ -7,17 +7,17 @@
           <comment>// Simple TSX example</comment>
           <import>
             import
-            <import_clause>
+            <clause>
               <name>React</name>
               ,
               <named_imports>
                 {
-                <import_specifier>
+                <spec>
                   <name>useState</name>
-                </import_specifier>
+                </spec>
                 }
               </named_imports>
-            </import_clause>
+            </clause>
             from
             <string>'react'</string>
             ;
@@ -54,9 +54,9 @@
               <required/>
               <object_pattern>
                 {
-                <shorthand_property_identifier_pattern>name</shorthand_property_identifier_pattern>
+                <name>name</name>
                 ,
-                <shorthand_property_identifier_pattern>age</shorthand_property_identifier_pattern>
+                <name>age</name>
                 }
               </object_pattern>
               :
@@ -95,37 +95,37 @@
                 </variable>
                 <return>
                   return (
-                  <jsx_element>
-                    <jsx_opening_element>
+                  <element>
+                    <opening>
                       &lt;
                       <name>div</name>
-                      <jsx_attribute>
+                      <prop>
                         <name>className</name>
                         =
                         <string>&quot;greeting&quot;</string>
-                      </jsx_attribute>
+                      </prop>
                       &gt;
-                    </jsx_opening_element>
-                    <jsx_element>
-                      <jsx_opening_element>
+                    </opening>
+                    <element>
+                      <opening>
                         &lt;
                         <name>h1</name>
                         &gt;
-                      </jsx_opening_element>
-                      <jsx_text>Hello, </jsx_text>
-                      <jsx_expression>
+                      </opening>
+                      <text>Hello, </text>
+                      <value>
                         {
                         <name>name</name>
                         }
-                      </jsx_expression>
-                      <jsx_text>!</jsx_text>
-                      <jsx_closing_element>
+                      </value>
+                      <text>!</text>
+                      <closing>
                         &lt;/
                         <name>h1</name>
                         &gt;
-                      </jsx_closing_element>
-                    </jsx_element>
-                    <jsx_expression>
+                      </closing>
+                    </element>
+                    <value>
                       {
                       <binary>
                         <left>
@@ -138,36 +138,36 @@
                           &amp;&amp;
                         </op>
                         <right>
-                          <jsx_element>
-                            <jsx_opening_element>
+                          <element>
+                            <opening>
                               &lt;
                               <name>span</name>
                               &gt;
-                            </jsx_opening_element>
-                            <jsx_text>Age: </jsx_text>
-                            <jsx_expression>
+                            </opening>
+                            <text>Age: </text>
+                            <value>
                               {
                               <name>age</name>
                               }
-                            </jsx_expression>
-                            <jsx_closing_element>
+                            </value>
+                            <closing>
                               &lt;/
                               <name>span</name>
                               &gt;
-                            </jsx_closing_element>
-                          </jsx_element>
+                            </closing>
+                          </element>
                         </right>
                       </binary>
                       }
-                    </jsx_expression>
-                    <jsx_element>
-                      <jsx_opening_element>
+                    </value>
+                    <element>
+                      <opening>
                         &lt;
                         <name>button</name>
-                        <jsx_attribute>
+                        <prop>
                           <name>onClick</name>
                           =
-                          <jsx_expression>
+                          <value>
                             {
                             <arrow>
                               () =&gt;
@@ -194,31 +194,31 @@
                               </body>
                             </arrow>
                             }
-                          </jsx_expression>
-                        </jsx_attribute>
+                          </value>
+                        </prop>
                         &gt;
-                      </jsx_opening_element>
-                      <jsx_text>
-                        Clicked </jsx_text>
-                      <jsx_expression>
+                      </opening>
+                      <text>
+                        Clicked </text>
+                      <value>
                         {
                         <name>count</name>
                         }
-                      </jsx_expression>
-                      <jsx_text> times
-                    </jsx_text>
-                      <jsx_closing_element>
+                      </value>
+                      <text> times
+                    </text>
+                      <closing>
                         &lt;/
                         <name>button</name>
                         &gt;
-                      </jsx_closing_element>
-                    </jsx_element>
-                    <jsx_closing_element>
+                      </closing>
+                    </element>
+                    <closing>
                       &lt;/
                       <name>div</name>
                       &gt;
-                    </jsx_closing_element>
-                  </jsx_element>
+                    </closing>
+                  </element>
                   );
                 </return>
                 }

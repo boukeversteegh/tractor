@@ -249,12 +249,12 @@ cli_suite! {
         component_name => tractor query "sample.tsx" -x "function[name='Greeting']" => count 1;
         interface => tractor query "sample.tsx" -x "interface" => count 1;
         variable => tractor query "sample.tsx" -x "variable" => count 1;
-        jsx_elements => tractor query "sample.tsx" -x "//jsx_element" => count 4;
-        jsx_opening => tractor query "sample.tsx" -x "//jsx_opening_element" => count 4;
-        jsx_closing => tractor query "sample.tsx" -x "//jsx_closing_element" => count 4;
-        jsx_attributes => tractor query "sample.tsx" -x "//jsx_attribute" => count 2;
-        jsx_expressions => tractor query "sample.tsx" -x "//jsx_expression" => count 5;
-        jsx_text => tractor query "sample.tsx" -x "//jsx_text" => count 5;
+        jsx_elements => tractor query "sample.tsx" -x "//element" => count 4;
+        jsx_opening => tractor query "sample.tsx" -x "//opening" => count 4;
+        jsx_closing => tractor query "sample.tsx" -x "//closing" => count 4;
+        jsx_attributes => tractor query "sample.tsx" -x "//prop" => count 2;
+        jsx_expressions => tractor query "sample.tsx" -x "//value" => count 7;
+        jsx_text => tractor query "sample.tsx" -x "//text" => count 5;
     }
 }
 

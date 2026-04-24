@@ -13,6 +13,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 
     match kind.as_str() {
         "expression_statement" => Ok(TransformAction::Skip),
+        "parenthesized_expression" => Ok(TransformAction::Flatten),
         "block" => Ok(TransformAction::Flatten),
         // Purely-grouping wrappers (Principle #12):
         //   as_pattern_target — the target of `with x as y` / `except E as y`.

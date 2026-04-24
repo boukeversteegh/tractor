@@ -114,6 +114,8 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // `implicit_type` is C#'s `var` keyword in a type position.
         // Render as `<type><name>var</name></type>` for uniform
         // querying — users already learn type[name='int'] etc.
+        "parenthesized_expression" => Ok(TransformAction::Flatten),
+
         "implicit_type" => {
             rename(xot, node, "type");
             wrap_text_in_name(xot, node)?;
