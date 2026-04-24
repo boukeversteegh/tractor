@@ -277,3 +277,56 @@ with the shape-marker convention used elsewhere.
 
 Related: the blueprint + sample fixtures and `update_snapshots`
 will surface via the snapshot diff.
+
+### Const / var blocks — same grouping problem as imports
+
+`const_spec` and `var_spec` are also currently flattened, producing
+the same shape pathology. Example from the Go blueprint:
+
+```
+<const>
+  "const ("
+  <name>StatusIdle</name>
+  "="
+  <value><iota>iota</iota></value>
+  <name>StatusRunning</name>    <!-- implicit iota continuation -->
+  <name>StatusDone</name>
+  <name>_</name>                <!-- blank identifier (discard) -->
+  <name>StatusError</name>
+  ")"
+</const>
+```
+
+Every spec in a `const (…)` or `var (…)` block is a logical
+`name [= value]` unit. In Go specifically, `const` blocks with
+`iota` have *implicit continuation*: after the first `= iota`, each
+subsequent name inherits the expression (and `iota` auto-increments).
+The current shape loses that relationship entirely — a reader /
+query can see the names and some values, but not which name gets
+which value.
+
+**Proposed shape** — the same `<spec>` grouping as imports:
+
+```
+<const>
+  <spec><name>StatusIdle</name> = <value><iota/></value></spec>
+  <spec><name>StatusRunning</name></spec>    <!-- implicit iota -->
+  <spec><name>StatusDone</name></spec>
+  <spec><name>_</name></spec>
+  <spec><name>StatusError</name></spec>
+</const>
+```
+
+Queries that benefit: `//const/spec[iota]` (every spec with an
+explicit `iota`), `//const/spec[not(value)]` (every spec relying on
+implicit continuation), `//var/spec[name='cfg']/value` (value for a
+specific name without relying on sibling indexing).
+
+**TODO (grouped with the imports redesign above):**
+1. Stop flattening `const_spec` / `var_spec`; keep as `<spec>`.
+2. Consider whether `<spec>` generalises across imports + const +
+   var (same element name, same role), or whether each family gets
+   a distinct wrapper (`<import>`/`<spec>`).
+3. If we stay with flattening, at minimum emit a `<continuation/>`
+   marker on specs that inherit the previous expression, so the
+   implicit-iota case is queryable.
