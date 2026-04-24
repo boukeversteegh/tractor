@@ -34,6 +34,7 @@ Each file follows the same shape:
 - [Go](transformations/go.md)
 - [Rust](transformations/rust.md)
 - [Ruby](transformations/ruby.md)
+- [PHP](transformations/php.md)
 
 ## Cross-cutting conventions
 
