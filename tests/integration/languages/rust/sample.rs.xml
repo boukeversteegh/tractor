@@ -4,7 +4,7 @@
     <match file="tests/integration/languages/rust/sample.rs" line="1" column="1">
       <tree>
         <file>
-          <line_comment>// Simple Rust example</line_comment>
+          <comment>// Simple Rust example</comment>
           <function>
             <pub/>
             pub fn

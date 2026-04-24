@@ -196,6 +196,12 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Tree-sitter uses distinct node kinds for type positions
         // (type_identifier, primitive_type, etc.), so bare identifiers
         // never need a heuristic — they are never types.
+        // Tree-sitter Rust emits `line_comment` and `block_comment`;
+        // normalise to the shared `<comment>` vocabulary.
+        "line_comment" | "block_comment" => {
+            rename(xot, node, "comment");
+            Ok(TransformAction::Continue)
+        }
         "identifier" | "field_identifier" | "shorthand_field_identifier" => {
             rename(xot, node, "name");
             Ok(TransformAction::Continue)

@@ -158,6 +158,17 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             rename(xot, node, "name");
             Ok(TransformAction::Continue)
         }
+        // Tree-sitter Java emits `line_comment` and `block_comment` —
+        // both are just "comment" in every semantic query. Rename to
+        // the shared `<comment>` vocabulary. Principle #1 / #2.
+        "line_comment" | "block_comment" => {
+            rename(xot, node, "comment");
+            Ok(TransformAction::Continue)
+        }
+        // `string_fragment` is tree-sitter's wrapper around the
+        // unescaped body chars of a string literal — lift the text
+        // up to the enclosing <string> (Principle #12 flat strings).
+        "string_fragment" => Ok(TransformAction::Flatten),
         "type_identifier" | "integral_type" | "floating_point_type"
         | "boolean_type" => {
             rename(xot, node, "type");

@@ -5,13 +5,13 @@ body/
   │   │   └─ ... (1 children)
   │   ├─ name = "area"
   │   └─ "();"
-  ├─ line_comment = "// implicitly public"
+  ├─ comment = "// implicitly public"
   ├─ method[public]/
   │   ├─ returns/type/
   │   │   └─ ... (1 children)
   │   ├─ name = "perimeter"
   │   └─ "();"
-  ├─ line_comment = "// implicitly public"
+  ├─ comment = "// implicitly public"
   ├─ method[package]/
   │   ├─ "default"
   │   ├─ returns/type/
@@ -20,9 +20,9 @@ body/
   │   ├─ "()"
   │   └─ body/
   │       ├─ "{"
-  │       ├─ line_comment = "// implicitly public"
+  │       ├─ comment = "// implicitly public"
   │       ├─ return/
-  │       │   └─ ... (2 children)
+  │       │   └─ ... (1 children)
   │       └─ "}"
   ├─ method[public]/
   │   ├─ "public"
@@ -30,5 +30,5 @@ body/
   │   │   └─ ... (2 children)
   │   ├─ name = "stroke"
   │   └─ "();"
-  ├─ line_comment = "// explicit — should still be <public/>"
+  ├─ comment = "// explicit — should still be <public/>"
   └─ "}"

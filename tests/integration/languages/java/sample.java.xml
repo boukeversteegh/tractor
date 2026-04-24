@@ -4,7 +4,7 @@
     <match file="tests/integration/languages/java/sample.java" line="1" column="1">
       <tree>
         <program>
-          <line_comment>// Simple Java example</line_comment>
+          <comment>// Simple Java example</comment>
           <class>
             <public/>
             public class
@@ -147,7 +147,7 @@
                 ()
                 <body>
                   {
-                  <line_comment>// package-private method</line_comment>
+                  <comment>// package-private method</comment>
                   }
                 </body>
               </method>
@@ -206,11 +206,7 @@
                     (
                     <binary>
                       <left>
-                        <string>
-                          &quot;
-                          <string_fragment>Result: </string_fragment>
-                          &quot;
-                        </string>
+                        <string>&quot;Result: &quot;</string>
                       </left>
                       <op>
                         <plus/>

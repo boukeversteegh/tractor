@@ -35,7 +35,7 @@ body/
   │   │   └─ value/
   │   │       └─ ... (1 children)
   │   └─ ";"
-  ├─ line_comment = "// implicit package-private -> <package/>"
+  ├─ comment = "// implicit package-private -> <package/>"
   ├─ method[public and synchronized]/
   │   ├─ "public synchronized"
   │   ├─ returns/type[void]/
