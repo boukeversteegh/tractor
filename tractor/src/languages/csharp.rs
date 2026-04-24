@@ -32,6 +32,11 @@ pub mod semantic {
     pub const PROPERTY: &str = "property";
     pub const FIELD: &str = "field";
     pub const COMMENT: &str = "comment";
+    pub const EVENT: &str = "event";
+    pub const DELEGATE: &str = "delegate";
+    pub const DESTRUCTOR: &str = "destructor";
+    pub const INDEXER: &str = "indexer";
+    pub const OPERATOR: &str = "operator";
 
     // Shared children
     pub const NAME: &str = "name";
@@ -46,14 +51,184 @@ pub mod semantic {
     pub const PARAMETER: &str = "parameter";
     pub const VARIABLE: &str = "variable";
     pub const DECLARATOR: &str = "declarator";
+    pub const EXTENDS: &str = "extends";
+    pub const PROPERTIES: &str = "properties";
+    pub const ELEMENT: &str = "element";
+    pub const SECTION: &str = "section";
+    pub const ARM: &str = "arm";
+    pub const LABEL: &str = "label";
+    pub const CHAIN: &str = "chain";
+    pub const FILTER: &str = "filter";
+    pub const WHEN: &str = "when";
+    pub const WHERE: &str = "where";
+
+    // Statements / control flow
+    pub const RETURN: &str = "return";
+    pub const IF: &str = "if";
+    pub const ELSE: &str = "else";
+    pub const FOR: &str = "for";
+    pub const FOREACH: &str = "foreach";
+    pub const WHILE: &str = "while";
+    pub const DO: &str = "do";
+    pub const TRY: &str = "try";
+    pub const CATCH: &str = "catch";
+    pub const FINALLY: &str = "finally";
+    pub const THROW: &str = "throw";
+    pub const USING: &str = "using";
+    pub const BREAK: &str = "break";
+    pub const CONTINUE: &str = "continue";
+    pub const SWITCH: &str = "switch";
+    pub const BLOCK: &str = "block";
+    pub const EXPRESSION: &str = "expression";
+    pub const RANGE: &str = "range";
+
+    // Expressions
+    pub const CALL: &str = "call";
+    pub const MEMBER: &str = "member";
+    pub const NEW: &str = "new";
+    pub const ASSIGN: &str = "assign";
+    pub const BINARY: &str = "binary";
+    pub const UNARY: &str = "unary";
+    pub const LAMBDA: &str = "lambda";
+    pub const AWAIT: &str = "await";
+    pub const TERNARY: &str = "ternary";
+    pub const INDEX: &str = "index";
+    pub const IS: &str = "is";
+    pub const TUPLE: &str = "tuple";
+    pub const LITERAL: &str = "literal";
+    pub const PATTERN: &str = "pattern";
+
+    // Generics
+    pub const GENERIC: &str = "generic";
+
+    // LINQ
+    pub const QUERY: &str = "query";
+    pub const FROM: &str = "from";
+    pub const SELECT: &str = "select";
+    pub const ORDER: &str = "order";
+    pub const GROUP: &str = "group";
+    pub const LET: &str = "let";
+    pub const JOIN: &str = "join";
+    pub const ORDERING: &str = "ordering";
+
+    // Enum members — `enum_member_declaration` → `<constant>`. This name
+    // also appears as a pattern marker (`constant_pattern`), so it is
+    // NOT in MARKER_ONLY.
+    pub const CONSTANT: &str = "constant";
+    // `catch_declaration` → `<declaration>`. Also used as a pattern
+    // marker — ambiguous, kept out of MARKER_ONLY.
+    pub const DECLARATION: &str = "declaration";
+
+    // Literals / atoms
+    pub const STRING: &str = "string";
+    pub const INT: &str = "int";
+    pub const FLOAT: &str = "float";
+    pub const BOOL: &str = "bool";
+    pub const NULL: &str = "null";
+
+    // Operator child
+    pub const OP: &str = "op";
 
     // Type markers
     pub const NULLABLE: &str = "nullable";
-    pub const GENERIC: &str = "generic";
 
     // Comment markers
     pub const TRAILING: &str = "trailing";
     pub const LEADING: &str = "leading";
+
+    // Member-access / pattern / type shape markers (all marker-only)
+    pub const INSTANCE: &str = "instance";
+    pub const CONDITIONAL: &str = "conditional";
+    pub const ARRAY: &str = "array";
+    pub const POINTER: &str = "pointer";
+    pub const FUNCTION: &str = "function";
+    pub const REF: &str = "ref";
+    pub const RECURSIVE: &str = "recursive";
+    pub const RELATIONAL: &str = "relational";
+    pub const LOGICAL: &str = "logical";
+    pub const PREFIX: &str = "prefix";
+    pub const LOOKUP: &str = "lookup";
+
+    // Access modifiers — markers only.
+    pub const PUBLIC: &str = "public";
+    pub const PRIVATE: &str = "private";
+    pub const PROTECTED: &str = "protected";
+    pub const INTERNAL: &str = "internal";
+
+    // Other modifiers — markers only.
+    pub const STATIC: &str = "static";
+    pub const ABSTRACT: &str = "abstract";
+    pub const VIRTUAL: &str = "virtual";
+    pub const OVERRIDE: &str = "override";
+    pub const SEALED: &str = "sealed";
+    pub const READONLY: &str = "readonly";
+    pub const CONST: &str = "const";
+    pub const PARTIAL: &str = "partial";
+    pub const ASYNC: &str = "async";
+    pub const EXTERN: &str = "extern";
+    pub const UNSAFE: &str = "unsafe";
+    // `NEW` above doubles as a structural container (`object_creation_expression`)
+    // and a modifier marker (`new`). Out of MARKER_ONLY — ambiguous.
+    pub const THIS: &str = "this";
+
+    // Accessor kind markers.
+    pub const GET: &str = "get";
+    pub const SET: &str = "set";
+    pub const INIT: &str = "init";
+    pub const ADD: &str = "add";
+    pub const REMOVE: &str = "remove";
+
+    // Generic-constraint markers — emitted by `attach_where_clause_constraints`
+    // in `languages/mod.rs`.
+    pub const NOTNULL: &str = "notnull";
+    pub const UNMANAGED: &str = "unmanaged";
+
+    /// Names that, when emitted, are ALWAYS empty. Excludes names that
+    /// are also used as structural containers (NEW, TUPLE, CONSTANT,
+    /// DECLARATION, GENERIC, CONST).
+    pub const MARKER_ONLY: &[&str] = &[
+        NULLABLE,
+        TRAILING, LEADING,
+        INSTANCE, CONDITIONAL,
+        ARRAY, POINTER, FUNCTION, REF,
+        RECURSIVE, RELATIONAL, LOGICAL,
+        PREFIX, LOOKUP,
+        PUBLIC, PRIVATE, PROTECTED, INTERNAL,
+        STATIC, ABSTRACT, VIRTUAL, OVERRIDE, SEALED,
+        READONLY, PARTIAL, ASYNC, EXTERN, UNSAFE,
+        THIS,
+        GET, SET, INIT, ADD, REMOVE,
+        NOTNULL, UNMANAGED,
+    ];
+
+    /// Every semantic name this language's transform can emit.
+    pub const ALL_NAMES: &[&str] = &[
+        UNIT, NAMESPACE, IMPORT, BODY,
+        CLASS, STRUCT, INTERFACE, ENUM, RECORD,
+        METHOD, CONSTRUCTOR, PROPERTY, FIELD, COMMENT, EVENT, DELEGATE,
+        DESTRUCTOR, INDEXER, OPERATOR,
+        NAME, TYPE, ACCESSORS, ACCESSOR, ATTRIBUTES, ATTRIBUTE,
+        ARGUMENTS, ARGUMENT, PARAMETERS, PARAMETER, VARIABLE, DECLARATOR,
+        EXTENDS, PROPERTIES, ELEMENT, SECTION, ARM, LABEL, CHAIN, FILTER,
+        WHEN, WHERE,
+        RETURN, IF, ELSE, FOR, FOREACH, WHILE, DO, TRY, CATCH, FINALLY,
+        THROW, USING, BREAK, CONTINUE, SWITCH, BLOCK, EXPRESSION, RANGE,
+        CALL, MEMBER, NEW, ASSIGN, BINARY, UNARY, LAMBDA, AWAIT, TERNARY,
+        INDEX, IS, TUPLE, LITERAL, PATTERN,
+        GENERIC,
+        QUERY, FROM, SELECT, ORDER, GROUP, LET, JOIN, ORDERING,
+        CONSTANT, DECLARATION,
+        STRING, INT, FLOAT, BOOL, NULL,
+        OP,
+        NULLABLE, TRAILING, LEADING,
+        INSTANCE, CONDITIONAL, ARRAY, POINTER, FUNCTION, REF,
+        RECURSIVE, RELATIONAL, LOGICAL, PREFIX, LOOKUP,
+        PUBLIC, PRIVATE, PROTECTED, INTERNAL,
+        STATIC, ABSTRACT, VIRTUAL, OVERRIDE, SEALED,
+        READONLY, CONST, PARTIAL, ASYNC, EXTERN, UNSAFE, THIS,
+        GET, SET, INIT, ADD, REMOVE,
+        NOTNULL, UNMANAGED,
+    ];
 }
 
 /// Check if kind is a declaration that has a name child
@@ -128,7 +303,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         "parenthesized_expression" => Ok(TransformAction::Flatten),
 
         "implicit_type" => {
-            rename(xot, node, "type");
+            rename(xot, node, TYPE);
             wrap_text_in_name(xot, node)?;
             Ok(TransformAction::Continue)
         }
@@ -137,7 +312,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // map to the shared `<unary>` element.
         "postfix_unary_expression" => {
             extract_operator(xot, node)?;
-            rename(xot, node, "unary");
+            rename(xot, node, UNARY);
             Ok(TransformAction::Continue)
         }
         // enum_member_declaration_list is a pure grouping wrapper around
@@ -297,12 +472,12 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
                                 xot.detach(c)?;
                             }
                             // Rename to "type" (kind="nullable_type" is preserved)
-                            rename(xot, node, "type");
+                            rename(xot, node, TYPE);
                             // Add the type text
                             let text_node = xot.new_text(&type_text);
                             xot.append(node, text_node)?;
                             // Add <nullable/> element
-                            let nullable_name = xot.add_name("nullable");
+                            let nullable_name = xot.add_name(NULLABLE);
                             let nullable_el = xot.new_element(nullable_name);
                             xot.append(node, nullable_el)?;
                             return Ok(TransformAction::Done);
@@ -312,7 +487,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             }
             // No recognized inner type - continue with children processing
             // kind="nullable_type" will be preserved for debugging
-            rename(xot, node, "type");
+            rename(xot, node, TYPE);
             Ok(TransformAction::Continue)
         }
 
@@ -333,13 +508,13 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             rename(xot, node, classification);
             // If classified as a type reference, wrap the text in <name>
             // for the unified namespace vocabulary (Principle #14).
-            if classification == "type" {
+            if classification == TYPE {
                 wrap_text_in_name(xot, node)?;
             }
             Ok(TransformAction::Continue)
         }
         "type_identifier" | "predefined_type" => {
-            rename(xot, node, "type");
+            rename(xot, node, TYPE);
             wrap_text_in_name(xot, node)?;
             Ok(TransformAction::Continue)
         }
@@ -367,10 +542,10 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             }
 
             // Rename to "type"
-            rename(xot, node, "type");
+            rename(xot, node, TYPE);
 
             // Add <generic/> marker as first child
-            let generic_name = xot.add_name("generic");
+            let generic_name = xot.add_name(GENERIC);
             let generic_el = xot.new_element(generic_name);
             xot.prepend(node, generic_el)?;
 
@@ -378,7 +553,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             // `//type[name='IComparable']` matches uniformly across
             // declaration and reference sites.
             if !type_name.is_empty() {
-                let name_id = xot.add_name("name");
+                let name_id = xot.add_name(NAME);
                 let name_el = xot.new_element(name_id);
                 let text_node = xot.new_text(&type_name);
                 xot.append(name_el, text_node)?;
@@ -407,8 +582,8 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Ternary expression — surgically wrap `alternative` in `<else>`.
         // See transformations.md (conditional shape) for rationale.
         "conditional_expression" => {
-            wrap_field_child(xot, node, "alternative", "else")?;
-            rename(xot, node, "ternary");
+            wrap_field_child(xot, node, "alternative", ELSE)?;
+            rename(xot, node, TERNARY);
             Ok(TransformAction::Continue)
         }
 
@@ -419,8 +594,8 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // surgically so the shared conditional-shape post-transform
         // can collapse the chain uniformly.
         "if_statement" => {
-            wrap_field_child(xot, node, "alternative", "else")?;
-            rename(xot, node, "if");
+            wrap_field_child(xot, node, "alternative", ELSE)?;
+            rename(xot, node, IF);
             Ok(TransformAction::Continue)
         }
 
@@ -443,7 +618,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 
             // Trailing comments are attached to the previous sibling — no grouping
             if is_inline_node(xot, node) {
-                prepend_empty_element(xot, node, "trailing")?;
+                prepend_empty_element(xot, node, TRAILING)?;
                 return Ok(TransformAction::Done);
             }
 
@@ -452,7 +627,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 
             // Classify the (possibly merged) comment
             if is_leading_comment(xot, node) {
-                prepend_empty_element(xot, node, "leading")?;
+                prepend_empty_element(xot, node, LEADING)?;
             }
 
             // Detach consumed siblings (they've been merged into this node)
@@ -485,12 +660,12 @@ fn apply_rename(xot: &mut Xot, node: XotNode, kind: &str) -> Result<(), xot::Err
 }
 
 /// C# access modifiers in canonical declaration order
-pub const ACCESS_MODIFIERS: &[&str] = &["public", "private", "protected", "internal"];
+pub const ACCESS_MODIFIERS: &[&str] = &[PUBLIC, PRIVATE, PROTECTED, INTERNAL];
 
 /// C# non-access modifiers in canonical declaration order
 pub const OTHER_MODIFIERS: &[&str] = &[
-    "static", "abstract", "virtual", "override", "sealed",
-    "readonly", "const", "partial", "async", "extern", "unsafe", "new",
+    STATIC, ABSTRACT, VIRTUAL, OVERRIDE, SEALED,
+    READONLY, CONST, PARTIAL, ASYNC, EXTERN, UNSAFE, NEW,
 ];
 
 fn is_access_modifier(text: &str) -> bool {
@@ -530,9 +705,9 @@ fn default_access_modifier(xot: &Xot, node: XotNode) -> &'static str {
     while let Some(parent) = current {
         if let Some(parent_kind) = get_kind(xot, parent).as_deref().map(str::to_owned) {
             match parent_kind.as_str() {
-                "interface_declaration" => return "public",
+                "interface_declaration" => return PUBLIC,
                 "class_declaration" | "struct_declaration"
-                | "record_declaration" => return "private",
+                | "record_declaration" => return PRIVATE,
                 // declaration_list is a transparent wrapper — look through it
                 "declaration_list" => {}
                 _ => break,
@@ -540,12 +715,12 @@ fn default_access_modifier(xot: &Xot, node: XotNode) -> &'static str {
         }
         current = get_parent(xot, parent);
     }
-    "internal"
+    INTERNAL
 }
 
 /// Known C# modifiers (access + other + "this" for extension methods)
 fn is_known_modifier(text: &str) -> bool {
-    ACCESS_MODIFIERS.contains(&text) || OTHER_MODIFIERS.contains(&text) || text == "this"
+    ACCESS_MODIFIERS.contains(&text) || OTHER_MODIFIERS.contains(&text) || text == THIS
 }
 
 /// Map tree-sitter node kinds to semantic element names.
@@ -568,7 +743,7 @@ fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> 
         "property_declaration" => Some((PROPERTY, None)),
         "field_declaration" => Some((FIELD, None)),
         "namespace_declaration" => Some((NAMESPACE, None)),
-        "expression_statement" => Some(("expression", None)),
+        "expression_statement" => Some((EXPRESSION, None)),
         "parameter_list" => Some((PARAMETERS, None)),
         "parameter" => Some((PARAMETER, None)),
         "argument_list" => Some((ARGUMENTS, None)),
@@ -576,41 +751,41 @@ fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> 
         // generic_name is handled specially - becomes <type><generic/>Name<arguments>...</arguments></type>
         "type_argument_list" => Some((ARGUMENTS, None)),
         // nullable_type is handled specially above (direct rewrite)
-        "block" => Some(("block", None)),
-        "return_statement" => Some(("return", None)),
-        "if_statement" => Some(("if", None)),
-        "else_clause" => Some(("else", None)),
-        "for_statement" => Some(("for", None)),
-        "foreach_statement" => Some(("foreach", None)),
-        "while_statement" => Some(("while", None)),
-        "try_statement" => Some(("try", None)),
-        "catch_clause" => Some(("catch", None)),
-        "throw_statement" => Some(("throw", None)),
-        "using_statement" => Some(("using", None)),
-        "invocation_expression" => Some(("call", None)),
+        "block" => Some((BLOCK, None)),
+        "return_statement" => Some((RETURN, None)),
+        "if_statement" => Some((IF, None)),
+        "else_clause" => Some((ELSE, None)),
+        "for_statement" => Some((FOR, None)),
+        "foreach_statement" => Some((FOREACH, None)),
+        "while_statement" => Some((WHILE, None)),
+        "try_statement" => Some((TRY, None)),
+        "catch_clause" => Some((CATCH, None)),
+        "throw_statement" => Some((THROW, None)),
+        "using_statement" => Some((USING, None)),
+        "invocation_expression" => Some((CALL, None)),
         // `obj.Prop` / `Class.Const` — plain member access with the
         // `.` operator. Marker `instance` distinguishes it from the
         // other member/indexing shapes below.
-        "member_access_expression" => Some(("member", Some("instance"))),
-        "object_creation_expression" => Some(("new", None)),
-        "assignment_expression" => Some(("assign", None)),
-        "binary_expression" => Some(("binary", None)),
-        "unary_expression" => Some(("unary", None)),
+        "member_access_expression" => Some((MEMBER, Some(INSTANCE))),
+        "object_creation_expression" => Some((NEW, None)),
+        "assignment_expression" => Some((ASSIGN, None)),
+        "binary_expression" => Some((BINARY, None)),
+        "unary_expression" => Some((UNARY, None)),
         // conditional_expression handled above
-        "lambda_expression" => Some(("lambda", None)),
-        "await_expression" => Some(("await", None)),
+        "lambda_expression" => Some((LAMBDA, None)),
+        "await_expression" => Some((AWAIT, None)),
         "variable_declaration" => Some((VARIABLE, None)),
         "variable_declarator" => Some((DECLARATOR, None)),
         // local_declaration_statement is flattened (handled above); the
         // inner variable_declaration already becomes <variable>.
-        "base_list" => Some(("extends", None)),
-        "type_parameter" => Some(("generic", None)),
-        "enum_member_declaration" => Some(("constant", None)),
-        "string_literal" => Some(("string", None)),
-        "integer_literal" => Some(("int", None)),
-        "real_literal" => Some(("float", None)),
-        "boolean_literal" => Some(("bool", None)),
-        "null_literal" => Some(("null", None)),
+        "base_list" => Some((EXTENDS, None)),
+        "type_parameter" => Some((GENERIC, None)),
+        "enum_member_declaration" => Some((CONSTANT, None)),
+        "string_literal" => Some((STRING, None)),
+        "integer_literal" => Some((INT, None)),
+        "real_literal" => Some((FLOAT, None)),
+        "boolean_literal" => Some((BOOL, None)),
+        "null_literal" => Some((NULL, None)),
         "attribute_list" => Some((ATTRIBUTES, None)),
         "attribute" => Some((ATTRIBUTE, None)),
         "attribute_argument_list" => Some((ARGUMENTS, None)),
@@ -620,50 +795,50 @@ fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> 
         "using_directive" => Some((IMPORT, None)),
         // C# 8+ switch expression rules/labels — normalise to the
         // shared vocabulary (`<case>` like other languages).
-        "switch_rule" => Some(("arm", None)),
-        "switch_label" => Some(("label", None)),
-        "switch_section" => Some(("section", None)),
-        "element_binding_expression" => Some(("index", None)),
-        "switch_expression_arm" => Some(("arm", None)),
-        "operator_declaration" => Some(("operator", None)),
-        "is_pattern_expression" => Some(("is", None)),
-        "implicit_object_creation_expression" => Some(("new", None)),
-        "event_field_declaration" => Some(("event", None)),
-        "constructor_initializer" => Some(("chain", None)),
-        "tuple_element" => Some(("element", None)),
-        "property_pattern_clause" => Some(("properties", None)),
+        "switch_rule" => Some((ARM, None)),
+        "switch_label" => Some((LABEL, None)),
+        "switch_section" => Some((SECTION, None)),
+        "element_binding_expression" => Some((INDEX, None)),
+        "switch_expression_arm" => Some((ARM, None)),
+        "operator_declaration" => Some((OPERATOR, None)),
+        "is_pattern_expression" => Some((IS, None)),
+        "implicit_object_creation_expression" => Some((NEW, None)),
+        "event_field_declaration" => Some((EVENT, None)),
+        "constructor_initializer" => Some((CHAIN, None)),
+        "tuple_element" => Some((ELEMENT, None)),
+        "property_pattern_clause" => Some((PROPERTIES, None)),
         // `?.Prop` (null-conditional) — member access that skips if receiver is null.
-        "member_binding_expression" => Some(("member", Some("conditional"))),
-        "conditional_access_expression" => Some(("member", Some("conditional"))),
-        "catch_declaration" => Some(("declaration", None)),
-        "when_clause" => Some(("when", None)),
-        "where_clause" => Some(("where", None)),
-        "verbatim_string_literal" => Some(("string", None)),
+        "member_binding_expression" => Some((MEMBER, Some(CONDITIONAL))),
+        "conditional_access_expression" => Some((MEMBER, Some(CONDITIONAL))),
+        "catch_declaration" => Some((DECLARATION, None)),
+        "when_clause" => Some((WHEN, None)),
+        "where_clause" => Some((WHERE, None)),
+        "verbatim_string_literal" => Some((STRING, None)),
         // Patterns — shape markers distinguish declaration / recursive /
         // constant / tuple forms.
-        "declaration_pattern" => Some(("pattern", Some("declaration"))),
-        "recursive_pattern" => Some(("pattern", Some("recursive"))),
-        "constant_pattern" => Some(("pattern", Some("constant"))),
-        "tuple_pattern" => Some(("pattern", Some("tuple"))),
+        "declaration_pattern" => Some((PATTERN, Some(DECLARATION))),
+        "recursive_pattern" => Some((PATTERN, Some(RECURSIVE))),
+        "constant_pattern" => Some((PATTERN, Some(CONSTANT))),
+        "tuple_pattern" => Some((PATTERN, Some(TUPLE))),
         // Type flavors — all collapse to `<type>` with a shape marker.
-        "array_type" => Some(("type", Some("array"))),
-        "tuple_type" => Some(("type", Some("tuple"))),
-        "pointer_type" => Some(("type", Some("pointer"))),
-        "function_pointer_type" => Some(("type", Some("function"))),
-        "ref_type" => Some(("type", Some("ref"))),
-        "generic_name" => Some(("type", None)),
-        "tuple_expression" => Some(("tuple", None)),
-        "switch_statement" => Some(("switch", None)),
-        "switch_expression" => Some(("switch", None)),
-        "switch_body" => Some(("body", None)),
-        "implicit_parameter" => Some(("parameter", None)),
-        "break_statement" => Some(("break", None)),
-        "continue_statement" => Some(("continue", None)),
-        "do_statement" => Some(("do", None)),
-        "finally_clause" => Some(("finally", None)),
-        "delegate_declaration" => Some(("delegate", None)),
-        "destructor_declaration" => Some(("destructor", None)),
-        "indexer_declaration" => Some(("indexer", None)),
+        "array_type" => Some((TYPE, Some(ARRAY))),
+        "tuple_type" => Some((TYPE, Some(TUPLE))),
+        "pointer_type" => Some((TYPE, Some(POINTER))),
+        "function_pointer_type" => Some((TYPE, Some(FUNCTION))),
+        "ref_type" => Some((TYPE, Some(REF))),
+        "generic_name" => Some((TYPE, None)),
+        "tuple_expression" => Some((TUPLE, None)),
+        "switch_statement" => Some((SWITCH, None)),
+        "switch_expression" => Some((SWITCH, None)),
+        "switch_body" => Some((BODY, None)),
+        "implicit_parameter" => Some((PARAMETER, None)),
+        "break_statement" => Some((BREAK, None)),
+        "continue_statement" => Some((CONTINUE, None)),
+        "do_statement" => Some((DO, None)),
+        "finally_clause" => Some((FINALLY, None)),
+        "delegate_declaration" => Some((DELEGATE, None)),
+        "destructor_declaration" => Some((DESTRUCTOR, None)),
+        "indexer_declaration" => Some((INDEXER, None)),
         // File-scoped namespace (C# 10+) — `namespace X;` form.
         "file_scoped_namespace_declaration" => Some((NAMESPACE, None)),
         // local_function_statement — method-like nested function.
@@ -671,30 +846,30 @@ fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> 
         // compact_constructor — record constructor without parameter list.
         "compact_constructor_declaration" => Some((CONSTRUCTOR, None)),
         // LINQ query — shape marker lets `//query` find it.
-        "query_expression" => Some(("query", None)),
-        "from_clause" => Some(("from", None)),
-        "select_clause" => Some(("select", None)),
-        "order_by_clause" => Some(("order", None)),
-        "group_clause" => Some(("group", None)),
-        "let_clause" => Some(("let", None)),
-        "join_clause" => Some(("join", None)),
-        "ordering" => Some(("ordering", None)),
-        "query_body" => Some(("body", None)),
+        "query_expression" => Some((QUERY, None)),
+        "from_clause" => Some((FROM, None)),
+        "select_clause" => Some((SELECT, None)),
+        "order_by_clause" => Some((ORDER, None)),
+        "group_clause" => Some((GROUP, None)),
+        "let_clause" => Some((LET, None)),
+        "join_clause" => Some((JOIN, None)),
+        "ordering" => Some((ORDERING, None)),
+        "query_body" => Some((BODY, None)),
         // Pattern matching — relational/logical patterns.
-        "relational_pattern" => Some(("pattern", Some("relational"))),
-        "logical_pattern" => Some(("pattern", Some("logical"))),
+        "relational_pattern" => Some((PATTERN, Some(RELATIONAL))),
+        "logical_pattern" => Some((PATTERN, Some(LOGICAL))),
         // lookup_type — C# `T::U` syntax; a type shape.
-        "lookup_type" => Some(("type", Some("lookup"))),
+        "lookup_type" => Some((TYPE, Some(LOOKUP))),
         // catch_filter_clause — the `when` filter on a catch.
-        "catch_filter_clause" => Some(("filter", None)),
+        "catch_filter_clause" => Some((FILTER, None)),
         // Unary prefix `++x` / `--x` etc. — collapse to <unary>.
-        "prefix_unary_expression" => Some(("unary", Some("prefix"))),
+        "prefix_unary_expression" => Some((UNARY, Some(PREFIX))),
         // Collection initializer literal `{ 1, 2, 3 }`.
-        "initializer_expression" => Some(("literal", None)),
+        "initializer_expression" => Some((LITERAL, None)),
         // Range `1..5` — collapse to <range>.
-        "range_expression" => Some(("range", None)),
+        "range_expression" => Some((RANGE, None)),
         // Raw strings (C# 11+) — all roll up to <string>.
-        "raw_string_literal" => Some(("string", None)),
+        "raw_string_literal" => Some((STRING, None)),
         _ => None,
     }
 }
@@ -720,13 +895,13 @@ fn classify_identifier(xot: &Xot, node: XotNode) -> &'static str {
     // Check if this identifier has field="type" attribute (e.g., parameter type)
     if let Some(field) = get_attr(xot, node, "field") {
         if field == "type" {
-            return "type";
+            return TYPE;
         }
     }
 
     let parent = match get_parent(xot, node) {
         Some(p) => p,
-        None => return "type",  // Default for C#
+        None => return TYPE,  // Default for C#
     };
 
     let parent_kind = get_kind(xot, parent).unwrap_or_default();
@@ -738,7 +913,7 @@ fn classify_identifier(xot: &Xot, node: XotNode) -> &'static str {
             let grandparent_kind = get_kind(xot, grandparent).unwrap_or_default();
             // If grandparent is a declaration, this identifier IS the name
             if is_named_declaration(&grandparent_kind) {
-                return "name";
+                return NAME;
             }
         }
     }
@@ -746,7 +921,7 @@ fn classify_identifier(xot: &Xot, node: XotNode) -> &'static str {
     // Check if in namespace declaration path
     let in_namespace = is_in_namespace_context(xot, node);
     if parent_kind == "qualified_name" && in_namespace {
-        return "name";
+        return NAME;
     }
 
     // Check if followed by parameter list (method/ctor name)
@@ -759,36 +934,36 @@ fn classify_identifier(xot: &Xot, node: XotNode) -> &'static str {
 
     match parent_kind.as_str() {
         // Method/constructor names followed by params
-        "method_declaration" | "constructor_declaration" if has_param_sibling => "name",
+        "method_declaration" | "constructor_declaration" if has_param_sibling => NAME,
 
         // Type declarations - the identifier IS the name
         "class_declaration" | "struct_declaration" | "interface_declaration"
-        | "enum_declaration" | "record_declaration" | "namespace_declaration" => "name",
+        | "enum_declaration" | "record_declaration" | "namespace_declaration" => NAME,
 
         // Variable declarator - the identifier is the name
-        "variable_declarator" => "name",
+        "variable_declarator" => NAME,
 
         // Parameter - the identifier is the parameter name
-        "parameter" => "name",
+        "parameter" => NAME,
 
         // Generic name - the identifier is the generic type name
-        "generic_name" => "type",
+        "generic_name" => TYPE,
 
         // Type annotations - use type
-        "type_argument_list" | "type_parameter" => "type",
+        "type_argument_list" | "type_parameter" => TYPE,
 
         // Base list (`class Foo : Bar, IBaz`) — each entry is a type
         // reference (base class or interface). Classifying as "type"
         // means the identifier becomes `<type>` and gets its text
         // wrapped in `<name>` by `wrap_text_in_name`, producing
         // `<extends><type><name>Bar</name></type>...</extends>`.
-        "base_list" => "type",
+        "base_list" => TYPE,
 
         // Default: all other identifiers are <name>. The post-transform
         // pass marks each <name> as <bind/> or <use/> by context, so we
         // no longer need a separate <ref> element for value references.
         // See Principle #13.
-        _ => "name",
+        _ => NAME,
     }
 }
 
@@ -1006,6 +1181,26 @@ mod tests {
     use crate::parser::{parse_string_to_xee, parse_string_to_xot};
     use crate::output::{render_document, RenderOptions};
     use crate::XPathEngine;
+    use super::semantic;
+
+    #[test]
+    fn marker_only_names_are_in_all_names() {
+        for m in semantic::MARKER_ONLY {
+            assert!(
+                semantic::ALL_NAMES.contains(m),
+                "MARKER_ONLY entry {:?} missing from ALL_NAMES",
+                m,
+            );
+        }
+    }
+
+    #[test]
+    fn all_names_has_no_duplicates() {
+        let mut seen = std::collections::HashSet::new();
+        for name in semantic::ALL_NAMES {
+            assert!(seen.insert(*name), "duplicate name in ALL_NAMES: {:?}", name);
+        }
+    }
 
     #[test]
     fn test_csharp_transform() {
