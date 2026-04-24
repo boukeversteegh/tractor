@@ -387,6 +387,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         | "octal_integer_literal" | "binary_integer_literal" => Some("int"),
         "type_pattern" => Some("pattern"),
         "switch_block" => Some("body"),
+        "spread_parameter" => Some("parameter"),
         "decimal_floating_point_literal" => Some("float"),
         "true" => Some("true"),
         "false" => Some("false"),

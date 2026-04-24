@@ -215,13 +215,12 @@ program/
   │       ├─ "type"
   │       ├─ name = "Greeting"
   │       ├─ "="
-  │       ├─ template_literal_type/
-  │       │   ├─ "`hello,"
-  │       │   ├─ template_type/
-  │       │   │   ├─ "${"
-  │       │   │   ├─ type/name = "string"
-  │       │   │   └─ "}"
-  │       │   └─ "`"
+  │       ├─ type/
+  │       │   ├─ name = "``"
+  │       │   ├─ "hello,"
+  │       │   └─ type/
+  │       │       ├─ name = "${}"
+  │       │       └─ type/name = "string"
   │       └─ ";"
   ├─ export/
   │   ├─ "export"
@@ -680,9 +679,9 @@ program/
   │   │   ├─ ":"
   │   │   └─ type/name = "unknown"
   │   ├─ ")"
-  │   ├─ returns/type_predicate_annotation/
+  │   ├─ returns/predicate/
   │   │   ├─ ":"
-  │   │   └─ type_predicate/
+  │   │   └─ predicate/
   │   │       ├─ name = "v"
   │   │       ├─ "is"
   │   │       └─ type/name = "Shape"
@@ -992,13 +991,13 @@ program/
   │           │       │   ├─ op = "="
   │           │       │   └─ right/string = "\"ready\""
   │           │       └─ ";"
-  │           ├─ switch_statement/
+  │           ├─ switch/
   │           │   ├─ "switch"
   │           │   ├─ value/
   │           │   │   ├─ "("
   │           │   │   ├─ name = "status"
   │           │   │   └─ ")"
-  │           │   └─ body/switch_body/
+  │           │   └─ body/body/
   │           │       ├─ "{"
   │           │       ├─ case/
   │           │       │   ├─ "case"

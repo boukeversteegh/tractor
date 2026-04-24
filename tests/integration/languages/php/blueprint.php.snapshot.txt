@@ -514,7 +514,7 @@ program/
   │       │       │       │   │   └─ ";\n            }"
   │       │       │       │   └─ catch/
   │       │       │       │       ├─ "catch ("
-  │       │       │       │       ├─ type_list/type/
+  │       │       │       │       ├─ types/type/
   │       │       │       │       │   ├─ "\\"
   │       │       │       │       │   └─ name = "Throwable"
   │       │       │       │       ├─ name/variable/

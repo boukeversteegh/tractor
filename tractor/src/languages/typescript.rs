@@ -316,6 +316,11 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "break_statement" => Some("break"),
         "continue_statement" => Some("continue"),
         "array_pattern" | "object_pattern" => Some("pattern"),
+        "switch_statement" => Some("switch"),
+        "switch_body" => Some("body"),
+        "template_type" => Some("type"),
+        "template_literal_type" => Some("type"),
+        "type_predicate" | "type_predicate_annotation" => Some("predicate"),
         "arrow_function" => Some("arrow"),
         "interface_declaration" => Some("interface"),
         // type_alias_declaration handled above (flattens <value> wrapper)

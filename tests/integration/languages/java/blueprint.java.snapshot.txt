@@ -297,7 +297,7 @@ program/
   │       │   ├─ returns/type/name = "int"
   │       │   ├─ name = "sum"
   │       │   ├─ "("
-  │       │   ├─ spread_parameter/
+  │       │   ├─ parameter/
   │       │   │   ├─ type/name = "int"
   │       │   │   ├─ "..."
   │       │   │   └─ declarator/name = "xs"

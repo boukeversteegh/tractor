@@ -333,6 +333,8 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "field_pattern" | "struct_pattern" => Some("pattern"),
         "attribute_item" | "inner_attribute_item" => Some("attribute"),
         "compound_assignment_expr" => Some("assign"),
+        "tuple_expression" => Some("tuple"),
+        "unsafe_block" => Some("unsafe"),
         "match_arm" => Some("arm"),
         "field_declaration" => Some("field"),
         "field_initializer" => Some("field"),

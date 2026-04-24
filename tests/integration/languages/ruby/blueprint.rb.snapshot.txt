@@ -10,11 +10,11 @@ program/
   ├─ assign/
   │   ├─ left/constant = "GREETINGS"
   │   ├─ "="
-  │   └─ right/string_array = "%w[hi hello hey]"
+  │   └─ right/array = "%w[hi hello hey]"
   ├─ assign/
   │   ├─ left/constant = "SYMBOLS"
   │   ├─ "="
-  │   └─ right/symbol_array = "%i[one two three]"
+  │   └─ right/array = "%i[one two three]"
   ├─ module/
   │   ├─ "module"
   │   ├─ name = "Greeter"
@@ -313,7 +313,7 @@ program/
   │   │       │   │   ├─ "def"
   │   │       │   │   ├─ name = "collect"
   │   │       │   │   ├─ "("
-  │   │       │   │   ├─ splat_parameter/
+  │   │       │   │   ├─ spread/
   │   │       │   │   │   ├─ "*"
   │   │       │   │   │   └─ name = "items"
   │   │       │   │   ├─ ","

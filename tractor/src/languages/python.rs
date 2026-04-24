@@ -72,6 +72,18 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             rename(xot, node, "import");
             Ok(TransformAction::Continue)
         }
+        "type_conversion" => {
+            rename(xot, node, "cast");
+            Ok(TransformAction::Continue)
+        }
+        "union_type" => {
+            rename(xot, node, "type");
+            Ok(TransformAction::Continue)
+        }
+        "union_pattern" | "splat_pattern" => {
+            rename(xot, node, "pattern");
+            Ok(TransformAction::Continue)
+        }
 
         // Tree-sitter python emits `escape_sequence` inside strings
         // — flatten into the string body text.

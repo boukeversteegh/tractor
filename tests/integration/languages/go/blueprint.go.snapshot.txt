@@ -186,7 +186,7 @@ file/
   │   │       ├─ "*"
   │   │       └─ generic_type/
   │   │           ├─ type/name = "Container"
-  │   │           └─ type_arguments/
+  │   │           └─ arguments/
   │   │               ├─ "["
   │   │               ├─ type/name = "T"
   │   │               └─ "]"
@@ -628,7 +628,7 @@ file/
   │   ├─ returns/type/name = "string"
   │   └─ body/
   │       ├─ "{"
-  │       ├─ type_switch_statement/
+  │       ├─ switch/
   │       │   ├─ "switch"
   │       │   ├─ name = "v"
   │       │   ├─ ":="
@@ -1044,7 +1044,7 @@ file/
           │   │   │   ├─ ","
           │   │   │   └─ name = "ok"
           │   │   ├─ ":="
-          │   │   └─ right/type_assertion_expression/
+          │   │   └─ right/assert/
           │   │       ├─ name = "r"
           │   │       ├─ ".("
           │   │       ├─ type/name = "Stringer"

@@ -211,6 +211,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "use_declaration" => Some("use"),
         "variadic_unpacking" => Some("spread"),
         "const_element" => Some("constant"),
+        "type_list" => Some("types"),
         "function_call_expression" => Some("call"),
         "member_call_expression" => Some("call"),
         "scoped_call_expression" => Some("call"),
