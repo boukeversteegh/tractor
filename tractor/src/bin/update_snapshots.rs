@@ -99,7 +99,13 @@ const FEATURE_FIXTURES: &[(&str, &str, u32)] = &[
 
     // — Python —
     ("tests/integration/languages/python/blueprint.py", "//module", 0),
-    ("tests/integration/languages/python/augmented-assign.py", "//assign[op][1]", 0),
+    // Match the enclosing <function> so the snapshot shows every
+    // augmented-assignment variant as siblings in the body — the
+    // fixture's purpose is to demonstrate that every compound
+    // operator produces the same <assign><op>…</op> shape. Matching
+    // a single <assign> with --single would only surface the first
+    // case (`+=`).
+    ("tests/integration/languages/python/augmented-assign.py", "//function[name='ops']", 0),
     ("tests/integration/languages/python/collection-markers.py", "//list[comprehension]", 0),
     ("tests/integration/languages/python/conditionals.py", "//if", 3),
     ("tests/integration/languages/python/expression-list.py", "//return[1]", 0),

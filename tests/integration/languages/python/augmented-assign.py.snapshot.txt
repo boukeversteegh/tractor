@@ -1,6 +1,67 @@
-assign/
-  ├─ left/name = "x"
-  ├─ op/
-  │   ├─ assign[plus]
-  │   └─ "+="
-  └─ right/int = "1"
+function/
+  ├─ "def"
+  ├─ name = "ops"
+  ├─ "():"
+  └─ body/
+      ├─ assign/
+      │   ├─ left/name = "x"
+      │   ├─ "="
+      │   └─ right/int = "0"
+      ├─ assign/
+      │   ├─ left/name = "x"
+      │   ├─ op/
+      │   │   ├─ assign[plus]
+      │   │   └─ "+="
+      │   └─ right/int = "1"
+      ├─ assign/
+      │   ├─ left/name = "x"
+      │   ├─ op/
+      │   │   ├─ assign[minus]
+      │   │   └─ "-="
+      │   └─ right/int = "2"
+      ├─ assign/
+      │   ├─ left/name = "x"
+      │   ├─ op/
+      │   │   ├─ assign[multiply]
+      │   │   └─ "*="
+      │   └─ right/int = "3"
+      ├─ assign/
+      │   ├─ left/name = "x"
+      │   ├─ op = "//="
+      │   └─ right/int = "2"
+      ├─ assign/
+      │   ├─ left/name = "x"
+      │   ├─ op/
+      │   │   ├─ assign[power]
+      │   │   └─ "**="
+      │   └─ right/int = "2"
+      ├─ assign/
+      │   ├─ left/name = "x"
+      │   ├─ op/
+      │   │   ├─ assign/bitwise[and]
+      │   │   └─ "&="
+      │   └─ right/int = "0xFF"
+      ├─ assign/
+      │   ├─ left/name = "x"
+      │   ├─ op/
+      │   │   ├─ assign/bitwise[or]
+      │   │   └─ "|="
+      │   └─ right/int = "0x10"
+      ├─ assign/
+      │   ├─ left/name = "x"
+      │   ├─ op/
+      │   │   ├─ assign/bitwise[xor]
+      │   │   └─ "^="
+      │   └─ right/int = "0x01"
+      ├─ assign/
+      │   ├─ left/name = "x"
+      │   ├─ op/
+      │   │   ├─ assign/shift[left]
+      │   │   └─ "<<="
+      │   └─ right/int = "1"
+      └─ assign/
+          ├─ left/name = "x"
+          ├─ op/
+          │   ├─ assign/shift[right]
+          │   └─ ">>="
+          └─ right/int = "1"
