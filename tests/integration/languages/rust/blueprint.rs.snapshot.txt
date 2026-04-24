@@ -1,11 +1,9 @@
 file/
   ├─ comment/
-  │   ├─ "//"
-  │   ├─ inner_doc_comment_marker = "!"
+  │   ├─ "//!"
   │   └─ comment = "Rust kitchen-sink fixture: exhaustive blueprint of language constructs used"
   ├─ comment/
-  │   ├─ "//"
-  │   ├─ inner_doc_comment_marker = "!"
+  │   ├─ "//!"
   │   └─ comment = "by tractor's snapshot tests to catch design-principle regressions."
   ├─ inner_attribute_item/
   │   ├─ "#!["
@@ -28,16 +26,13 @@ file/
   │   │   │   ├─ name = "std"
   │   │   │   ├─ "::"
   │   │   │   └─ name = "collections"
-  │   │   ├─ "::"
-  │   │   └─ use_list/
-  │   │       ├─ "{"
-  │   │       ├─ name = "HashMap"
-  │   │       ├─ ","
-  │   │       ├─ use_as_clause/
-  │   │       │   ├─ name = "HashSet"
-  │   │       │   ├─ "as"
-  │   │       │   └─ name = "Set"
-  │   │       └─ "}"
+  │   │   ├─ "::{"
+  │   │   ├─ name = "HashMap"
+  │   │   ├─ ","
+  │   │   ├─ name = "HashSet"
+  │   │   ├─ "as"
+  │   │   ├─ name = "Set"
+  │   │   └─ "}"
   │   └─ ";"
   ├─ use/
   │   ├─ "use"
@@ -46,15 +41,13 @@ file/
   │   │   │   ├─ name = "std"
   │   │   │   ├─ "::"
   │   │   │   └─ name = "fmt"
-  │   │   ├─ "::"
-  │   │   └─ use_list/
-  │   │       ├─ "{"
-  │   │       ├─ self = "self"
-  │   │       ├─ ","
-  │   │       ├─ name = "Debug"
-  │   │       ├─ ","
-  │   │       ├─ name = "Display"
-  │   │       └─ "}"
+  │   │   ├─ "::{"
+  │   │   ├─ self = "self"
+  │   │   ├─ ","
+  │   │   ├─ name = "Debug"
+  │   │   ├─ ","
+  │   │   ├─ name = "Display"
+  │   │   └─ "}"
   │   └─ ";"
   ├─ use/
   │   ├─ "use"
@@ -93,19 +86,15 @@ file/
   │   │   │   ├─ name = "std"
   │   │   │   ├─ "::"
   │   │   │   └─ name = "io"
-  │   │   ├─ "::"
-  │   │   └─ use_list/
-  │   │       ├─ "{"
-  │   │       ├─ use_as_clause/
-  │   │       │   ├─ name = "Read"
-  │   │       │   ├─ "as"
-  │   │       │   └─ name = "IoRead"
-  │   │       ├─ ","
-  │   │       ├─ use_as_clause/
-  │   │       │   ├─ name = "Write"
-  │   │       │   ├─ "as"
-  │   │       │   └─ name = "IoWrite"
-  │   │       └─ "}"
+  │   │   ├─ "::{"
+  │   │   ├─ name = "Read"
+  │   │   ├─ "as"
+  │   │   ├─ name = "IoRead"
+  │   │   ├─ ","
+  │   │   ├─ name = "Write"
+  │   │   ├─ "as"
+  │   │   ├─ name = "IoWrite"
+  │   │   └─ "}"
   │   └─ ";"
   ├─ use/
   │   ├─ "use"
@@ -145,8 +134,7 @@ file/
   │       │       └─ "}"
   │       └─ "}"
   ├─ comment/
-  │   ├─ "//"
-  │   ├─ outer_doc_comment_marker = "/"
+  │   ├─ "///"
   │   └─ comment = "A named-field struct with generics, lifetimes, and a where clause."
   ├─ attribute_item/
   │   ├─ "#["
@@ -208,8 +196,7 @@ file/
   │       │       └─ type/name = "str"
   │       └─ ",\n}"
   ├─ comment/
-  │   ├─ "//"
-  │   ├─ outer_doc_comment_marker = "/"
+  │   ├─ "///"
   │   └─ comment = "A tuple struct."
   ├─ struct[pub]/
   │   ├─ "pub struct"
@@ -226,16 +213,14 @@ file/
   │   │   └─ ")"
   │   └─ ";"
   ├─ comment/
-  │   ├─ "//"
-  │   ├─ outer_doc_comment_marker = "/"
+  │   ├─ "///"
   │   └─ comment = "A unit struct."
   ├─ struct[pub]/
   │   ├─ "pub struct"
   │   ├─ name = "Marker"
   │   └─ ";"
   ├─ comment/
-  │   ├─ "//"
-  │   ├─ outer_doc_comment_marker = "/"
+  │   ├─ "///"
   │   └─ comment = "An enum with every variant flavor and explicit discriminants."
   ├─ attribute_item/
   │   ├─ "#["
@@ -436,7 +421,7 @@ file/
   │       │       └─ "}"
   │       ├─ function[pub]/
   │       │   ├─ "pub"
-  │       │   ├─ function_modifiers = "async"
+  │       │   ├─ modifiers = "async"
   │       │   ├─ "fn"
   │       │   ├─ name = "async_clone"
   │       │   ├─ "("
@@ -456,7 +441,7 @@ file/
   │       │       └─ "}"
   │       ├─ function[pub]/
   │       │   ├─ "pub"
-  │       │   ├─ function_modifiers = "const"
+  │       │   ├─ modifiers = "const"
   │       │   ├─ "fn"
   │       │   ├─ name = "const_fn"
   │       │   ├─ "() ->"
@@ -467,7 +452,7 @@ file/
   │       │       └─ "}"
   │       ├─ function[pub]/
   │       │   ├─ "pub"
-  │       │   ├─ function_modifiers = "unsafe"
+  │       │   ├─ modifiers = "unsafe"
   │       │   ├─ "fn"
   │       │   ├─ name = "unsafe_read"
   │       │   ├─ "("
@@ -1055,7 +1040,7 @@ file/
   │       │   │       │   │       │   └─ ">"
   │       │   │       │   │       └─ right/int = "0"
   │       │   │       │   ├─ "=>"
-  │       │   │       │   ├─ value/type_cast_expression/
+  │       │   │       │   ├─ value/cast/
   │       │   │       │   │   ├─ value/parenthesized_expression/
   │       │   │       │   │   │   ├─ "("
   │       │   │       │   │   │   ├─ binary/
@@ -1078,7 +1063,7 @@ file/
   │       │   │       │   │   │   └─ name = "name"
   │       │   │       │   │   └─ ")"
   │       │   │       │   ├─ "=>"
-  │       │   │       │   ├─ value/type_cast_expression/
+  │       │   │       │   ├─ value/cast/
   │       │   │       │   │   ├─ value/call/
   │       │   │       │   │   │   ├─ field/
   │       │   │       │   │   │   │   ├─ value/name = "name"
@@ -1195,7 +1180,7 @@ file/
   │       │       │   ├─ "let"
   │       │       │   ├─ name = "_shadow"
   │       │       │   ├─ "="
-  │       │       │   ├─ value/type_cast_expression/
+  │       │       │   ├─ value/cast/
   │       │       │   │   ├─ value/name = "x"
   │       │       │   │   ├─ "as"
   │       │       │   │   └─ type/name = "f64"
@@ -1329,8 +1314,8 @@ file/
   │       │   ├─ "let"
   │       │   ├─ name = "casted"
   │       │   ├─ "="
-  │       │   ├─ value/type_cast_expression/
-  │       │   │   ├─ value/type_cast_expression/
+  │       │   ├─ value/cast/
+  │       │   │   ├─ value/cast/
   │       │   │   │   ├─ value/name = "parsed"
   │       │   │   │   ├─ "as"
   │       │   │   │   └─ type/name = "u8"
@@ -1409,7 +1394,7 @@ file/
   │       └─ ";\n}"
   ├─ function[pub]/
   │   ├─ "pub"
-  │   ├─ function_modifiers = "async"
+  │   ├─ modifiers = "async"
   │   ├─ "fn"
   │   ├─ name = "async_demo"
   │   ├─ "() ->"
@@ -1448,7 +1433,7 @@ file/
   │       │   ├─ "let"
   │       │   ├─ name = "r"
   │       │   ├─ "="
-  │       │   ├─ value/type_cast_expression/
+  │       │   ├─ value/cast/
   │       │   │   ├─ value/reference_expression/
   │       │   │   │   ├─ "&"
   │       │   │   │   └─ value/name = "x"

@@ -370,6 +370,8 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "finally_clause" => Some("finally"),
         "throw_statement" => Some("throw"),
         "switch_expression" => Some("switch"),
+        "switch_rule" => Some("arm"),
+        "switch_label" => Some("case_label"),
         "switch_block_statement_group" => Some("case"),
         "method_invocation" => Some("call"),
         "object_creation_expression" => Some("new"),

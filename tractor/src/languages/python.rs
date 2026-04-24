@@ -42,6 +42,19 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Flatten)
         }
 
+        // `case_clause` (match pattern clause), `with_item` — grammar
+        // wrappers. `case_clause` renames to `<arm>` for uniformity
+        // with Rust/C#/Java match vocabulary; `with_item` flattens.
+        "case_clause" => {
+            rename(xot, node, "arm");
+            Ok(TransformAction::Continue)
+        }
+        "with_item" => Ok(TransformAction::Flatten),
+
+        // Tree-sitter python emits `escape_sequence` inside strings
+        // — flatten into the string body text.
+        "escape_sequence" => Ok(TransformAction::Flatten),
+
         // Python string internals: `string_start` / `string_content` /
         // `string_end` are grammar tokens around a string body. They
         // carry no semantic beyond their text (the opening quote, the

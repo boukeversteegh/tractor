@@ -487,7 +487,7 @@ program/
   │           │       │   ├─ "="
   │           │       │   ├─ value/binary/
   │           │       │   │   ├─ left/member/
-  │           │       │   │   │   ├─ object/subscript_expression/
+  │           │       │   │   │   ├─ object/index/
   │           │       │   │   │   │   ├─ object/member/
   │           │       │   │   │   │   │   ├─ object/this = "this"
   │           │       │   │   │   │   │   ├─ "."
@@ -561,7 +561,7 @@ program/
   │           │       │       │       ├─ "["
   │           │       │       │       ├─ name = "i"
   │           │       │       │       ├─ ","
-  │           │       │       │       ├─ subscript_expression/
+  │           │       │       │       ├─ index/
   │           │       │       │       │   ├─ object/member/
   │           │       │       │       │   │   ├─ object/this = "this"
   │           │       │       │       │   │   ├─ "."
@@ -766,7 +766,7 @@ program/
   │   │       │       └─ right/parenthesized_expression/
   │   │       │           ├─ "("
   │   │       │           ├─ binary/
-  │   │       │           │   ├─ left/subscript_expression/
+  │   │       │           │   ├─ left/index/
   │   │       │           │   │   ├─ object/name = "vals"
   │   │       │           │   │   ├─ "["
   │   │       │           │   │   ├─ name = "i"
@@ -868,14 +868,14 @@ program/
   │       │   │   │   ├─ "..."
   │       │   │   │   └─ object/
   │       │   │   │       ├─ "{"
-  │       │   │   │       ├─ shorthand_property_identifier = "scale"
+  │       │   │   │       ├─ name = "scale"
   │       │   │   │       └─ "}"
   │       │   │   ├─ ","
-  │       │   │   ├─ shorthand_property_identifier = "label"
+  │       │   │   ├─ name = "label"
   │       │   │   ├─ ","
-  │       │   │   ├─ shorthand_property_identifier = "head"
+  │       │   │   ├─ name = "head"
   │       │   │   ├─ ","
-  │       │   │   ├─ shorthand_property_identifier = "rest"
+  │       │   │   ├─ name = "rest"
   │       │   │   └─ "}"
   │       │   └─ ";"
   │       ├─ variable[const]/
@@ -1063,7 +1063,7 @@ program/
   │           │       ├─ "{"
   │           │       ├─ augmented_assignment_expression/
   │           │       │   ├─ left/non_null_expression/
-  │           │       │   │   ├─ subscript_expression/
+  │           │       │   │   ├─ index/
   │           │       │   │   │   ├─ object/name = "obj"
   │           │       │   │   │   ├─ "["
   │           │       │   │   │   ├─ name = "k"
@@ -1145,7 +1145,7 @@ program/
   │   │   │       ├─ type/name = "U"
   │   │   │       └─ type/undefined = "undefined"
   │   │   ├─ "=>"
-  │   │   └─ body/subscript_expression/
+  │   │   └─ body/index/
   │   │       ├─ object/name = "xs"
   │   │       ├─ "["
   │   │       ├─ number = "0"

@@ -67,14 +67,13 @@ file/
   │   ├─ "type"
   │   ├─ name = "Number"
   │   ├─ "interface{"
-  │   ├─ type_elem/
-  │   │   ├─ negated_type/
-  │   │   │   ├─ "~"
-  │   │   │   └─ type/name = "int"
-  │   │   ├─ "|"
-  │   │   └─ negated_type/
-  │   │       ├─ "~"
-  │   │       └─ type/name = "float64"
+  │   ├─ negated_type/
+  │   │   ├─ "~"
+  │   │   └─ type/name = "int"
+  │   ├─ "|"
+  │   ├─ negated_type/
+  │   │   ├─ "~"
+  │   │   └─ type/name = "float64"
   │   └─ "}"
   ├─ interface[exported]/
   │   ├─ "type"
@@ -89,11 +88,10 @@ file/
   │   ├─ "type"
   │   ├─ name = "ReadStringer"
   │   ├─ "interface {"
-  │   ├─ type_elem/qualified_type/
-  │   │   ├─ name = "io"
-  │   │   ├─ "."
-  │   │   └─ name = "Reader"
-  │   ├─ type_elem/type/name = "Stringer"
+  │   ├─ name = "io"
+  │   ├─ "."
+  │   ├─ name = "Reader"
+  │   ├─ type/name = "Stringer"
   │   ├─ method/
   │   │   ├─ name = "Close"
   │   │   ├─ "()"
@@ -103,10 +101,9 @@ file/
   │   ├─ "type"
   │   ├─ name = "Alias"
   │   ├─ "="
-  │   └─ qualified_type/
-  │       ├─ name = "context"
-  │       ├─ "."
-  │       └─ name = "Context"
+  │   ├─ name = "context"
+  │   ├─ "."
+  │   └─ name = "Context"
   ├─ type[exported]/
   │   ├─ "type"
   │   ├─ name = "UserID"
@@ -118,10 +115,9 @@ file/
   │       ├─ "func("
   │       ├─ parameter/
   │       │   ├─ name = "ctx"
-  │       │   └─ qualified_type/
-  │       │       ├─ name = "context"
-  │       │       ├─ "."
-  │       │       └─ name = "Context"
+  │       │   ├─ name = "context"
+  │       │   ├─ "."
+  │       │   └─ name = "Context"
   │       ├─ ","
   │       ├─ parameter/
   │       │   ├─ name = "id"
@@ -131,13 +127,10 @@ file/
   ├─ struct[exported]/
   │   ├─ "type"
   │   ├─ name = "Container"
-  │   ├─ type_parameter_list/
-  │   │   ├─ "["
-  │   │   ├─ type_parameter_declaration/
-  │   │   │   ├─ name = "T"
-  │   │   │   └─ type_constraint/type/name = "any"
-  │   │   └─ "]"
-  │   ├─ "struct{"
+  │   ├─ "["
+  │   ├─ name = "T"
+  │   ├─ type/name = "any"
+  │   ├─ "] struct{"
   │   ├─ field/
   │   │   ├─ name = "items"
   │   │   └─ slice/
@@ -203,7 +196,7 @@ file/
   │   │           ├─ type/name = "Container"
   │   │           └─ type_arguments/
   │   │               ├─ "["
-  │   │               ├─ type_elem/type/name = "T"
+  │   │               ├─ type/name = "T"
   │   │               └─ "]"
   │   ├─ ")"
   │   ├─ name = "Push"
@@ -373,15 +366,12 @@ file/
   ├─ function[exported]/
   │   ├─ "func"
   │   ├─ name = "Map"
-  │   ├─ type_parameter_list/
-  │   │   ├─ "["
-  │   │   ├─ type_parameter_declaration/
-  │   │   │   ├─ name = "T"
-  │   │   │   ├─ ","
-  │   │   │   ├─ name = "U"
-  │   │   │   └─ type_constraint/type/name = "any"
-  │   │   └─ "]"
-  │   ├─ "("
+  │   ├─ "["
+  │   ├─ name = "T"
+  │   ├─ ","
+  │   ├─ name = "U"
+  │   ├─ type/name = "any"
+  │   ├─ "]("
   │   ├─ parameter/
   │   │   ├─ name = "xs"
   │   │   └─ slice/
@@ -452,13 +442,10 @@ file/
   ├─ function[exported]/
   │   ├─ "func"
   │   ├─ name = "Sum"
-  │   ├─ type_parameter_list/
-  │   │   ├─ "["
-  │   │   ├─ type_parameter_declaration/
-  │   │   │   ├─ name = "T"
-  │   │   │   └─ type_constraint/type/name = "Number"
-  │   │   └─ "]"
-  │   ├─ "("
+  │   ├─ "["
+  │   ├─ name = "T"
+  │   ├─ type/name = "Number"
+  │   ├─ "]("
   │   ├─ parameter/
   │   │   ├─ name = "xs"
   │   │   └─ slice/
@@ -492,13 +479,10 @@ file/
   ├─ function[exported]/
   │   ├─ "func"
   │   ├─ name = "Uniq"
-  │   ├─ type_parameter_list/
-  │   │   ├─ "["
-  │   │   ├─ type_parameter_declaration/
-  │   │   │   ├─ name = "T"
-  │   │   │   └─ type_constraint/type/name = "comparable"
-  │   │   └─ "]"
-  │   ├─ "("
+  │   ├─ "["
+  │   ├─ name = "T"
+  │   ├─ type/name = "comparable"
+  │   ├─ "]("
   │   ├─ parameter/
   │   │   ├─ name = "xs"
   │   │   └─ slice/
@@ -657,47 +641,42 @@ file/
   │       │   ├─ name = "v"
   │       │   ├─ ":="
   │       │   ├─ value/name = "x"
-  │       │   ├─ ".(type) {"
-  │       │   ├─ type_case/
-  │       │   │   ├─ "case"
-  │       │   │   ├─ type/name = "nil"
-  │       │   │   ├─ ":"
-  │       │   │   └─ return/
-  │       │   │       ├─ "return"
-  │       │   │       └─ string = "\"nil\""
-  │       │   ├─ type_case/
-  │       │   │   ├─ "case"
-  │       │   │   ├─ type/name = "int"
-  │       │   │   ├─ ","
-  │       │   │   ├─ type/name = "int32"
-  │       │   │   ├─ ","
-  │       │   │   ├─ type/name = "int64"
-  │       │   │   ├─ ":"
-  │       │   │   └─ return/
-  │       │   │       ├─ "return"
-  │       │   │       └─ string = "\"int-ish\""
-  │       │   ├─ type_case/
-  │       │   │   ├─ "case"
-  │       │   │   ├─ type/name = "string"
-  │       │   │   ├─ ":"
-  │       │   │   └─ return/
-  │       │   │       ├─ "return"
-  │       │   │       └─ binary/
-  │       │   │           ├─ left/string = "\"string:\""
-  │       │   │           ├─ op[plus] = "+"
-  │       │   │           └─ right/name = "v"
-  │       │   ├─ type_case/
-  │       │   │   ├─ "case"
-  │       │   │   ├─ type/name = "Stringer"
-  │       │   │   ├─ ":"
-  │       │   │   └─ return/
-  │       │   │       ├─ "return"
-  │       │   │       └─ call/
-  │       │   │           ├─ member/
-  │       │   │           │   ├─ name = "v"
-  │       │   │           │   ├─ "."
-  │       │   │           │   └─ name = "String"
-  │       │   │           └─ "()"
+  │       │   ├─ ".(type) {\n\tcase"
+  │       │   ├─ type/name = "nil"
+  │       │   ├─ ":"
+  │       │   ├─ return/
+  │       │   │   ├─ "return"
+  │       │   │   └─ string = "\"nil\""
+  │       │   ├─ "case"
+  │       │   ├─ type/name = "int"
+  │       │   ├─ ","
+  │       │   ├─ type/name = "int32"
+  │       │   ├─ ","
+  │       │   ├─ type/name = "int64"
+  │       │   ├─ ":"
+  │       │   ├─ return/
+  │       │   │   ├─ "return"
+  │       │   │   └─ string = "\"int-ish\""
+  │       │   ├─ "case"
+  │       │   ├─ type/name = "string"
+  │       │   ├─ ":"
+  │       │   ├─ return/
+  │       │   │   ├─ "return"
+  │       │   │   └─ binary/
+  │       │   │       ├─ left/string = "\"string:\""
+  │       │   │       ├─ op[plus] = "+"
+  │       │   │       └─ right/name = "v"
+  │       │   ├─ "case"
+  │       │   ├─ type/name = "Stringer"
+  │       │   ├─ ":"
+  │       │   ├─ return/
+  │       │   │   ├─ "return"
+  │       │   │   └─ call/
+  │       │   │       ├─ member/
+  │       │   │       │   ├─ name = "v"
+  │       │   │       │   ├─ "."
+  │       │   │       │   └─ name = "String"
+  │       │   │       └─ "()"
   │       │   ├─ default/
   │       │   │   ├─ "default:"
   │       │   │   └─ return/
@@ -720,10 +699,9 @@ file/
       ├─ "("
       ├─ parameter/
       │   ├─ name = "ctx"
-      │   └─ qualified_type/
-      │       ├─ name = "context"
-      │       ├─ "."
-      │       └─ name = "Context"
+      │   ├─ name = "context"
+      │   ├─ "."
+      │   └─ name = "Context"
       ├─ ","
       ├─ parameter/
       │   ├─ name = "in"
@@ -906,7 +884,7 @@ file/
           │       │       └─ "}"
           │       └─ "()"
           ├─ labeled/
-          │   ├─ label_name = "Outer"
+          │   ├─ label = "Outer"
           │   ├─ ":"
           │   └─ for/
           │       ├─ "for"
@@ -937,7 +915,7 @@ file/
           │           │   │   │       ├─ "{"
           │           │   │   │       ├─ break_statement/
           │           │   │   │       │   ├─ "break"
-          │           │   │   │       │   └─ label_name = "Outer"
+          │           │   │   │       │   └─ label = "Outer"
           │           │   │   │       └─ "}"
           │           │   │   └─ send_statement/
           │           │   │       ├─ name = "out"
@@ -952,7 +930,7 @@ file/
           │           │   │   ├─ ":"
           │           │   │   └─ continue_statement/
           │           │   │       ├─ "continue"
-          │           │   │       └─ label_name = "Outer"
+          │           │   │       └─ label = "Outer"
           │           │   ├─ communication_case/
           │           │   │   ├─ "case"
           │           │   │   ├─ receive_statement/right/unary/
@@ -966,11 +944,11 @@ file/
           │           │   │   ├─ ":"
           │           │   │   └─ goto_statement/
           │           │   │       ├─ "goto"
-          │           │   │       └─ label_name = "cleanup"
+          │           │   │       └─ label = "cleanup"
           │           │   └─ "}"
           │           └─ "}"
           ├─ labeled/
-          │   ├─ label_name = "cleanup"
+          │   ├─ label = "cleanup"
           │   ├─ ":"
           │   └─ variable[short]/
           │       ├─ left/name = "buffered"
@@ -1058,18 +1036,16 @@ file/
           ├─ var/
           │   ├─ "var"
           │   ├─ name = "r"
-          │   ├─ qualified_type/
-          │   │   ├─ name = "io"
-          │   │   ├─ "."
-          │   │   └─ name = "Reader"
+          │   ├─ name = "io"
+          │   ├─ "."
+          │   ├─ name = "Reader"
           │   ├─ "="
           │   └─ value/call/
           │       ├─ name = "new"
           │       ├─ "("
-          │       ├─ qualified_type/
-          │       │   ├─ name = "myio"
-          │       │   ├─ "."
-          │       │   └─ name = "PipeReader"
+          │       ├─ name = "myio"
+          │       ├─ "."
+          │       ├─ name = "PipeReader"
           │       └─ ")"
           ├─ if/
           │   ├─ "if"

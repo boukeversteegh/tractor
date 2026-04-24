@@ -12,7 +12,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
     };
 
     match kind.as_str() {
-        "body_statement" => Ok(TransformAction::Flatten),
+        "body_statement" | "parenthesized_statements" | "block_body" => Ok(TransformAction::Flatten),
 
         // Ruby instance / class / global variables (`@x`, `@@y`, `$z`)
         // are distinct node kinds in the grammar but they're all

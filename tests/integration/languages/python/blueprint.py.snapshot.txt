@@ -60,19 +60,11 @@ module/
   │   └─ right/
   │       ├─ string = "r\"C:\\Users\\foo\\bar\""
   │       ├─ ","
-  │       └─ string/
-  │           ├─ "b\""
-  │           ├─ escape_sequence = "\\x00"
-  │           ├─ escape_sequence = "\\x01"
-  │           ├─ escape_sequence = "\\x02"
-  │           └─ "\""
+  │       └─ string = "b\"\\x00\\x01\\x02\""
   ├─ assign/
   │   ├─ left/name = "TRIPLE"
   │   ├─ "="
-  │   └─ right/string/
-  │       ├─ "\"\"\"line one"
-  │       ├─ escape_sequence = "\\n"
-  │       └─ "line two\"\"\""
+  │   └─ right/string = "\"\"\"line one\\nline two\"\"\""
   ├─ function/
   │   ├─ "def"
   │   ├─ name = "simple"
@@ -262,7 +254,7 @@ module/
   │   ├─ ":"
   │   └─ body/with/
   │       ├─ "async with"
-  │       ├─ with_clause/with_item/value/as/
+  │       ├─ with_clause/value/as/
   │       │   ├─ call/
   │       │   │   ├─ name = "open_conn"
   │       │   │   ├─ "("
@@ -644,7 +636,7 @@ module/
   │       ├─ with/
   │       │   ├─ "with"
   │       │   ├─ with_clause/
-  │       │   │   ├─ with_item/value/as/
+  │       │   │   ├─ value/as/
   │       │   │   │   ├─ call/
   │       │   │   │   │   ├─ name = "open"
   │       │   │   │   │   ├─ "("
@@ -653,7 +645,7 @@ module/
   │       │   │   │   ├─ "as"
   │       │   │   │   └─ name = "fa"
   │       │   │   ├─ ","
-  │       │   │   └─ with_item/value/as/
+  │       │   │   └─ value/as/
   │       │   │       ├─ call/
   │       │   │       │   ├─ name = "open"
   │       │   │       │   ├─ "("
@@ -689,7 +681,7 @@ module/
   │       ├─ name = "msg"
   │       ├─ ":"
   │       └─ body/
-  │           ├─ case_clause/
+  │           ├─ arm/
   │           │   ├─ "case"
   │           │   ├─ pattern/dict_pattern/
   │           │   │   ├─ "{"
@@ -712,7 +704,7 @@ module/
   │           │   └─ then/return/
   │           │       ├─ "return"
   │           │       └─ name = "pid"
-  │           ├─ case_clause/
+  │           ├─ arm/
   │           │   ├─ "case"
   │           │   ├─ pattern/list_pattern/
   │           │   │   ├─ "["
@@ -728,7 +720,7 @@ module/
   │           │   └─ then/return/
   │           │       ├─ "return"
   │           │       └─ name = "rest"
-  │           ├─ case_clause/
+  │           ├─ arm/
   │           │   ├─ "case"
   │           │   ├─ pattern/class_pattern/
   │           │   │   ├─ name = "Point"
@@ -747,7 +739,7 @@ module/
   │           │   └─ then/return/
   │           │       ├─ "return"
   │           │       └─ name = "y"
-  │           ├─ case_clause/
+  │           ├─ arm/
   │           │   ├─ "case"
   │           │   ├─ pattern/union_pattern/
   │           │   │   ├─ string = "\"yes\""
@@ -759,7 +751,7 @@ module/
   │           │   └─ then/return/
   │           │       ├─ "return"
   │           │       └─ true = "True"
-  │           └─ case_clause/
+  │           └─ arm/
   │               ├─ "case"
   │               ├─ pattern = "_"
   │               ├─ ":"

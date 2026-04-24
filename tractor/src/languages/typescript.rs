@@ -285,6 +285,8 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "tuple_type" => Some("type"),
         "readonly_type" => Some("type"),
         "parenthesized_type" => Some("type"),
+        "subscript_expression" => Some("index"),
+        "shorthand_property_identifier" => Some("name"),
         "arrow_function" => Some("arrow"),
         "interface_declaration" => Some("interface"),
         // type_alias_declaration handled above (flattens <value> wrapper)

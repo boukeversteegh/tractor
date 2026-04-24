@@ -38,6 +38,11 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // direct siblings inside the enclosing `<literal>`
         // (Principle #12).
         "literal_element" | "keyed_element" | "literal_value" => Ok(TransformAction::Flatten),
+
+        // More Go generic / constraint wrappers — all grammar-only.
+        "type_parameter_list" | "type_parameter_declaration"
+        | "type_elem" | "type_constraint" | "qualified_type"
+        | "type_case" => Ok(TransformAction::Flatten),
         // The content-inside-quotes node on "interpreted" strings —
         // inline as raw text into the enclosing <string>.
         "interpreted_string_literal_content" => Ok(TransformAction::Flatten),
@@ -351,6 +356,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "inc_statement" => Some("unary"),
         "dec_statement" => Some("unary"),
         "labeled_statement" => Some("labeled"),
+        "label_name" => Some("label"),
         "true" => Some("true"),
         "false" => Some("false"),
         "nil" => Some("nil"),

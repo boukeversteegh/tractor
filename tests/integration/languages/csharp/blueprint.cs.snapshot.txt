@@ -291,7 +291,7 @@ unit/
   │       │       │   │       ├─ left/is_pattern_expression/
   │       │       │   │       │   ├─ name = "o"
   │       │       │   │       │   ├─ "is"
-  │       │       │   │       │   └─ declaration_pattern/
+  │       │       │   │       │   └─ pattern/
   │       │       │   │       │       ├─ type/name = "Point"
   │       │       │   │       │       └─ name = "p"
   │       │       │   │       ├─ op/
@@ -667,7 +667,7 @@ unit/
   │       │       │       │   └─ ";"
   │       │       │       ├─ return/
   │       │       │       │   ├─ "return"
-  │       │       │       │   ├─ element_binding_expression/
+  │       │       │       │   ├─ index/
   │       │       │       │   │   ├─ "["
   │       │       │       │   │   ├─ argument = "this"
   │       │       │       │   │   └─ "]"
@@ -854,7 +854,7 @@ unit/
   │       │       │       │           │   └─ string = "\"hot\""
   │       │       │       │           ├─ ","
   │       │       │       │           ├─ switch_expression_arm/
-  │       │       │       │           │   ├─ declaration_pattern/
+  │       │       │       │           │   ├─ pattern/
   │       │       │       │           │   │   ├─ type/name = "Widget"
   │       │       │       │           │   │   └─ name = "w"
   │       │       │       │           │   ├─ when_clause/
@@ -895,9 +895,9 @@ unit/
   │       │       │       │   ├─ ")"
   │       │       │       │   └─ body/switch_body/
   │       │       │       │       ├─ "{"
-  │       │       │       │       ├─ switch_section/
+  │       │       │       │       ├─ section/
   │       │       │       │       │   ├─ "case"
-  │       │       │       │       │   ├─ declaration_pattern/
+  │       │       │       │       │   ├─ pattern/
   │       │       │       │       │   │   ├─ type/name = "Widget"
   │       │       │       │       │   │   └─ name = "w"
   │       │       │       │       │   ├─ ":"
@@ -917,7 +917,7 @@ unit/
   │       │       │       │       │   │   │   └─ ")"
   │       │       │       │       │   │   └─ ";"
   │       │       │       │       │   └─ break = "break;"
-  │       │       │       │       ├─ switch_section/
+  │       │       │       │       ├─ section/
   │       │       │       │       │   ├─ "case"
   │       │       │       │       │   ├─ constant_pattern/null = "null"
   │       │       │       │       │   ├─ ":"
@@ -928,7 +928,7 @@ unit/
   │       │       │       │       │       │   ├─ type/name = "InvalidOperationException"
   │       │       │       │       │       │   └─ "()"
   │       │       │       │       │       └─ ";"
-  │       │       │       │       ├─ switch_section/
+  │       │       │       │       ├─ section/
   │       │       │       │       │   ├─ "default:"
   │       │       │       │       │   └─ break = "break;"
   │       │       │       │       └─ "}"
@@ -937,7 +937,7 @@ unit/
   │       │       │       │   ├─ condition/is_pattern_expression/
   │       │       │       │   │   ├─ name = "token"
   │       │       │       │   │   ├─ "is"
-  │       │       │       │   │   └─ declaration_pattern/
+  │       │       │       │   │   └─ pattern/
   │       │       │       │   │       ├─ type/name = "Widget"
   │       │       │       │   │       └─ name = "probe"
   │       │       │       │   ├─ ")"
@@ -1372,7 +1372,7 @@ unit/
   │       │       │       │   └─ declarator/
   │       │       │       │       ├─ name = "list"
   │       │       │       │       ├─ "="
-  │       │       │       │       └─ element_binding_expression/
+  │       │       │       │       └─ index/
   │       │       │       │           ├─ "["
   │       │       │       │           ├─ argument/int = "1"
   │       │       │       │           ├─ ","
@@ -1401,7 +1401,7 @@ unit/
   │       │       │       │           └─ initializer_expression/
   │       │       │       │               ├─ "{"
   │       │       │       │               ├─ assign/
-  │       │       │       │               │   ├─ left/element_binding_expression/
+  │       │       │       │               │   ├─ left/index/
   │       │       │       │               │   │   ├─ "["
   │       │       │       │               │   │   ├─ argument/string = "\"a\""
   │       │       │       │               │   │   └─ "]"
@@ -1409,7 +1409,7 @@ unit/
   │       │       │       │               │   └─ right/int = "1"
   │       │       │       │               ├─ ","
   │       │       │       │               ├─ assign/
-  │       │       │       │               │   ├─ left/element_binding_expression/
+  │       │       │       │               │   ├─ left/index/
   │       │       │       │               │   │   ├─ "["
   │       │       │       │               │   │   ├─ argument/string = "\"b\""
   │       │       │       │               │   │   └─ "]"
