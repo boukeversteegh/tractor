@@ -556,7 +556,7 @@ fn op_marker_matches_text() {
 // test surfaces exactly which names are missing from each module.
 // ---------------------------------------------------------------------------
 
-const ASSERT_ALL_NAMES_MEMBERSHIP: bool = false;
+const ASSERT_ALL_NAMES_MEMBERSHIP: bool = true;
 
 #[test]
 fn all_names_declared_in_semantic_module() {
