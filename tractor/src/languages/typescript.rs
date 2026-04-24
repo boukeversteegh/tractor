@@ -91,6 +91,15 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Flatten)
         }
 
+        // `export_clause` is `{ a, b }` inside `export { a, b }` —
+        // a pure grouping wrapper, flatten so the specs become direct
+        // children of the enclosing `<export>`.
+        // `mapped_type_clause` is the key-type portion of a mapped type
+        // `{ [K in keyof T]: … }` — flatten so the bindings bubble up.
+        "export_clause" | "mapped_type_clause" => {
+            Ok(TransformAction::Flatten)
+        }
+
         // private_property_identifier is handled inside `inline_single_identifier`
         // when the enclosing <name> wrapper is processed: the leading `#` is
         // stripped and a <private/> marker is lifted onto the enclosing
@@ -405,6 +414,39 @@ fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> 
         "predefined_type" => Some(("type", None)),
         "type_parameters" => Some(("generics", None)),
         "type_parameter" => Some(("generic", None)),
+
+        // Abstract forms — collapse to the concrete shape with an
+        // `<abstract/>` marker for querying.
+        "abstract_class_declaration" => Some(("class", Some("abstract"))),
+        "abstract_method_signature" => Some(("method", Some("abstract"))),
+        // augmented_assignment_expression collapses to <assign>; the
+        // <op> child (e.g., +=) distinguishes it.
+        "augmented_assignment_expression" => Some(("assign", None)),
+        // Type-position flavors missed earlier — roll up to <type>.
+        "conditional_type" => Some(("type", Some("conditional"))),
+        "infer_type" => Some(("type", Some("infer"))),
+        "lookup_type" => Some(("type", Some("lookup"))),
+        "index_type_query" => Some(("type", Some("keyof"))),
+        "opting_type_annotation" => Some(("annotation", None)),
+        // satisfies — TS 4.9 `expr satisfies T` operator.
+        "satisfies_expression" => Some(("satisfies", None)),
+        // Optional chain `?.` — collapse to <member> with the `<optional/>`
+        // marker like the other member shapes.
+        "optional_chain" => Some(("member", Some("optional"))),
+        // Finally-clause leak.
+        "finally_clause" => Some(("finally", None)),
+        // Export bits — export_clause is the `{ a, b }` wrapper;
+        // export_specifier is one entry. Flatten the clause handled below.
+        "export_specifier" => Some(("spec", None)),
+        // Namespace import `* as ns` — collapse to <namespace> marker.
+        "namespace_import" => Some(("namespace", None)),
+        // Object destructuring assignment `{ a = 1 } = obj` —
+        // collapses to <pattern>[object] with an assign inside.
+        "object_assignment_pattern" => Some(("pattern", Some("default"))),
+        // `#counter` — class private field access; rename to <name>.
+        // The leading `#` stays as part of the name text, which already
+        // signals "private" at parse time.
+        "private_property_identifier" => Some(("name", None)),
 
         // Default - no mapping
         _ => None,

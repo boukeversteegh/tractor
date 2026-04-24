@@ -108,13 +108,13 @@ module/
   │   ├─ ","
   │   ├─ name = "b"
   │   ├─ ","
-  │   ├─ positional_separator = "/"
+  │   ├─ positional = "/"
   │   ├─ ","
   │   ├─ name = "c"
   │   ├─ ","
   │   ├─ name = "d"
   │   ├─ ","
-  │   ├─ keyword_separator = "*"
+  │   ├─ keyword = "*"
   │   ├─ ","
   │   ├─ name = "e"
   │   ├─ ","
@@ -184,7 +184,7 @@ module/
   │   │   └─ "]"
   │   ├─ ":"
   │   └─ body/
-  │       ├─ assert_statement/
+  │       ├─ assert/
   │       │   ├─ "assert"
   │       │   ├─ compare/
   │       │   │   ├─ name = "x"
@@ -542,7 +542,7 @@ module/
   │       │   │   │   │   └─ "<"
   │       │   │   │   └─ int = "0"
   │       │   │   ├─ ":"
-  │       │   │   ├─ then/continue_statement = "continue"
+  │       │   │   ├─ then/continue = "continue"
   │       │   │   ├─ else_if/
   │       │   │   │   ├─ "elif"
   │       │   │   │   ├─ condition/compare/
@@ -550,7 +550,7 @@ module/
   │       │   │   │   │   ├─ op[equals] = "=="
   │       │   │   │   │   └─ int = "0"
   │       │   │   │   ├─ ":"
-  │       │   │   │   └─ then/break_statement = "break"
+  │       │   │   │   └─ then/break = "break"
   │       │   │   └─ else/
   │       │   │       ├─ "else:"
   │       │   │       └─ body/assign/
@@ -675,14 +675,14 @@ module/
   │   ├─ "("
   │   ├─ name = "msg"
   │   ├─ "):"
-  │   └─ body/match_statement/
+  │   └─ body/match/
   │       ├─ "match"
   │       ├─ name = "msg"
   │       ├─ ":"
   │       └─ body/
   │           ├─ arm/
   │           │   ├─ "case"
-  │           │   ├─ pattern/dict_pattern/
+  │           │   ├─ pattern/pattern[dict]/
   │           │   │   ├─ "{"
   │           │   │   ├─ string = "\"type\""
   │           │   │   ├─ ":"
@@ -705,7 +705,7 @@ module/
   │           │       └─ name = "pid"
   │           ├─ arm/
   │           │   ├─ "case"
-  │           │   ├─ pattern/list_pattern/
+  │           │   ├─ pattern/pattern[list]/
   │           │   │   ├─ "["
   │           │   │   ├─ pattern/int = "1"
   │           │   │   ├─ ","
@@ -721,7 +721,7 @@ module/
   │           │       └─ name = "rest"
   │           ├─ arm/
   │           │   ├─ "case"
-  │           │   ├─ pattern/class_pattern/
+  │           │   ├─ pattern/pattern[class]/
   │           │   │   ├─ name = "Point"
   │           │   │   ├─ "("
   │           │   │   ├─ pattern/pattern/
@@ -909,7 +909,7 @@ module/
   │       │   ├─ "if"
   │       │   ├─ condition/compare/
   │       │   │   ├─ "("
-  │       │   │   ├─ named_expression/
+  │       │   │   ├─ assign/
   │       │   │   │   ├─ name = "n"
   │       │   │   │   ├─ ":="
   │       │   │   │   └─ value/call/
@@ -952,7 +952,7 @@ module/
   │       │       ├─ interpolation/
   │       │       │   ├─ "{"
   │       │       │   ├─ name = "n"
-  │       │       │   ├─ format_specifier = ":>05d"
+  │       │       │   ├─ format = ":>05d"
   │       │       │   └─ "}"
   │       │       ├─ "nested="
   │       │       ├─ interpolation/
@@ -977,7 +977,7 @@ module/
   │       │       │   ├─ "("
   │       │       │   ├─ lambda/
   │       │       │   │   ├─ "lambda"
-  │       │       │   │   ├─ lambda_parameters/name = "v"
+  │       │       │   │   ├─ name = "v"
   │       │       │   │   ├─ ":"
   │       │       │   │   └─ body/binary/
   │       │       │   │       ├─ left/name = "v"
@@ -1036,7 +1036,7 @@ module/
   │       │       │   ├─ "*"
   │       │       │   └─ name = "items"
   │       │       └─ "]"
-  │       ├─ global_statement/
+  │       ├─ global/
   │       │   ├─ "global"
   │       │   └─ name = "GLOBAL_FLAG"
   │       ├─ assign/
@@ -1074,7 +1074,7 @@ module/
           │   ├─ name = "inc"
           │   ├─ "():"
           │   └─ body/
-          │       ├─ nonlocal_statement/
+          │       ├─ nonlocal/
           │       │   ├─ "nonlocal"
           │       │   └─ name = "counter"
           │       ├─ assign/
@@ -1086,7 +1086,7 @@ module/
           │       └─ return/
           │           ├─ "return"
           │           └─ name = "counter"
-          ├─ delete_statement/
+          ├─ delete/
           │   ├─ "del"
           │   └─ name = "counter"
           └─ return/

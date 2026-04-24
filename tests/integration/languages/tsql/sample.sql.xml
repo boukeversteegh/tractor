@@ -48,8 +48,8 @@
                   <literal>18</literal>
                 </compare>
               </where>
-              <order_by>
-                <order_target>
+              <order>
+                <target>
                   <column>
                     <ref>
                       <name>u</name>
@@ -57,8 +57,8 @@
                     .
                     <name>Name</name>
                   </column>
-                </order_target>
-              </order_by>
+                </target>
+              </order>
             </from>
           </statement>
           ;
@@ -439,11 +439,11 @@
                   <name>Employees</name>
                 </ref>
               </relation>
-              <group_by>
+              <group>
                 <column>
                   <name>Department</name>
                 </column>
-              </group_by>
+              </group>
               <having>
                 <compare>
                   <call>
@@ -601,19 +601,19 @@
                 </call>
                 <over>
                   (
-                  <partition_by>
+                  <partition>
                     <column>
                       <name>Department</name>
                     </column>
-                  </partition_by>
-                  <order_by>
-                    <order_target>
+                  </partition>
+                  <order>
+                    <target>
                       <column>
                         <name>Salary</name>
                       </column>
                       <direction/>
-                    </order_target>
-                  </order_by>
+                    </target>
+                  </order>
                   )
                 </over>
               </window>
@@ -714,40 +714,40 @@
                   <name>Employees</name>
                 </ref>
               </relation>
-              <order_by>
-                <order_target>
+              <order>
+                <target>
                   <column>
                     <name>Department</name>
                   </column>
                   <direction/>
-                </order_target>
-              </order_by>
+                </target>
+              </order>
             </from>
           </statement>
           ;
           <comment>-- CREATE TABLE</comment>
           <statement>
-            <create_table>
+            <create>
               <ref>
                 <name>Audit</name>
               </ref>
               <columns>
                 (
-                <col_def>
+                <definition>
                   <name>ID</name>
                   <int/>
-                </col_def>
+                </definition>
                 ,
-                <col_def>
+                <definition>
                   <name>Action</name>
                   <nvarchar>
                     (
                     <literal>100</literal>
                     )
                   </nvarchar>
-                </col_def>
+                </definition>
                 ,
-                <col_def>
+                <definition>
                   <name>CreatedAt</name>
                   <call>
                     <ref>
@@ -755,10 +755,10 @@
                     </ref>
                     ()
                   </call>
-                </col_def>
+                </definition>
                 )
               </columns>
-            </create_table>
+            </create>
           </statement>
           ;
           <comment>-- MERGE statement</comment>
@@ -852,7 +852,7 @@
                 <name>Age</name>
               </column>
             </select>
-            <temp_ref>#TempUsers</temp_ref>
+            <temp>#TempUsers</temp>
             <from>
               <relation>
                 <ref>
@@ -959,7 +959,7 @@
           ;
           <comment>-- Scalar function</comment>
           <statement>
-            <create_function>
+            <function>
               <ref>
                 <schema>dbo</schema>
                 .
@@ -996,7 +996,7 @@
                   )
                 </call>
               </body>
-            </create_function>
+            </function>
           </statement>
           ;
           <go>GO</go>

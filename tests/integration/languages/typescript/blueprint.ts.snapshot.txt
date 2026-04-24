@@ -23,7 +23,7 @@ program/
   │   └─ ";"
   ├─ import/
   │   ├─ "import"
-  │   ├─ clause/namespace_import/
+  │   ├─ clause/namespace/
   │   │   ├─ "* as"
   │   │   └─ name = "ns"
   │   ├─ "from"
@@ -39,12 +39,9 @@ program/
   │   ├─ string = "\"./types\""
   │   └─ ";"
   ├─ export/
-  │   ├─ "export"
-  │   ├─ export_clause/
-  │   │   ├─ "{"
-  │   │   ├─ export_specifier/name = "namedA"
-  │   │   └─ "}"
-  │   ├─ "from"
+  │   ├─ "export {"
+  │   ├─ spec/name = "namedA"
+  │   ├─ "} from"
   │   ├─ string = "\"./barrel\""
   │   └─ ";"
   ├─ export/
@@ -57,13 +54,13 @@ program/
   │       │   ├─ generic/name = "T"
   │       │   └─ ">"
   │       ├─ "="
-  │       ├─ conditional_type/
+  │       ├─ type[conditional]/
   │       │   ├─ left/type/name = "T"
   │       │   ├─ "extends"
   │       │   ├─ right/type[generic]/
   │       │   │   ├─ name = "Array"
   │       │   │   ├─ "<"
-  │       │   │   ├─ infer_type/
+  │       │   │   ├─ type[infer]/
   │       │   │   │   ├─ "infer"
   │       │   │   │   └─ type/name = "U"
   │       │   │   └─ ">"
@@ -198,16 +195,15 @@ program/
   │       │   ├─ "{"
   │       │   ├─ indexer/
   │       │   │   ├─ "["
-  │       │   │   ├─ mapped_type_clause/
-  │       │   │   │   ├─ name = "K"
-  │       │   │   │   ├─ "in"
-  │       │   │   │   └─ index_type_query/
-  │       │   │   │       ├─ "keyof"
-  │       │   │   │       └─ type/name = "T"
+  │       │   │   ├─ name = "K"
+  │       │   │   ├─ "in"
+  │       │   │   ├─ type[keyof]/
+  │       │   │   │   ├─ "keyof"
+  │       │   │   │   └─ type/name = "T"
   │       │   │   ├─ "]"
-  │       │   │   └─ opting_type_annotation/
+  │       │   │   └─ annotation/
   │       │   │       ├─ "?:"
-  │       │   │       └─ lookup_type/
+  │       │   │       └─ type[lookup]/
   │       │   │           ├─ type/name = "T"
   │       │   │           ├─ "["
   │       │   │           ├─ type/name = "K"
@@ -253,7 +249,7 @@ program/
   ├─ comment = "/** Abstract base using visibility + readonly + static. */"
   ├─ export/
   │   ├─ "export"
-  │   └─ abstract_class_declaration/
+  │   └─ class[abstract]/
   │       ├─ "abstract class"
   │       ├─ name = "Base"
   │       ├─ generics/
@@ -320,7 +316,7 @@ program/
   │           │   │   └─ type/name = "number"
   │           │   ├─ ")"
   │           │   └─ body/block = "{}"
-  │           ├─ abstract_method_signature/
+  │           ├─ method[abstract]/
   │           │   ├─ "abstract"
   │           │   ├─ name = "render"
   │           │   ├─ "()"
@@ -471,7 +467,7 @@ program/
   │           │       │   ├─ member/
   │           │       │   │   ├─ object/name = "Widget"
   │           │       │   │   ├─ "."
-  │           │       │   │   └─ property/private_property_identifier = "#counter"
+  │           │       │   │   └─ property/name = "#counter"
   │           │       │   └─ op[increment] = "++"
   │           │       └─ ";\n    }"
   │           ├─ method[override]/
@@ -497,7 +493,7 @@ program/
   │           │       │   │   │   │   ├─ "["
   │           │       │   │   │   │   ├─ number = "0"
   │           │       │   │   │   │   └─ "]"
-  │           │       │   │   │   ├─ optional_chain = "?."
+  │           │       │   │   │   ├─ member[optional] = "?."
   │           │       │   │   │   └─ property/name = "label"
   │           │       │   │   ├─ op[nullish-coalescing] = "??"
   │           │       │   │   └─ right/string = "\"unnamed\""
@@ -664,7 +660,7 @@ program/
   │           │       │   │       │   │   └─ type/name = "Error"
   │           │       │   │       │   └─ ";"
   │           │       │   │       └─ "}"
-  │           │       │   └─ finally_clause/
+  │           │       │   └─ finally/
   │           │       │       ├─ "finally"
   │           │       │       └─ body/block/
   │           │       │           ├─ "{"
@@ -805,7 +801,7 @@ program/
   │   ├─ parameter[required]/
   │   │   ├─ pattern[object]/
   │   │   │   ├─ "{"
-  │   │   │   ├─ object_assignment_pattern/
+  │   │   │   ├─ pattern[default]/
   │   │   │   │   ├─ left/name = "scale"
   │   │   │   │   ├─ "="
   │   │   │   │   └─ right/number = "1"
@@ -912,7 +908,7 @@ program/
   │       │   └─ ";"
   │       ├─ return/
   │       │   ├─ "return"
-  │       │   ├─ satisfies_expression/
+  │       │   ├─ satisfies/
   │       │   │   ├─ name = "msg"
   │       │   │   ├─ "satisfies"
   │       │   │   └─ type/name = "Greeting"
@@ -1065,7 +1061,7 @@ program/
   │           │   ├─ ")"
   │           │   └─ body/block/
   │           │       ├─ "{"
-  │           │       ├─ augmented_assignment_expression/
+  │           │       ├─ assign/
   │           │       │   ├─ left/unary/
   │           │       │   │   ├─ index/
   │           │       │   │   │   ├─ object/name = "obj"

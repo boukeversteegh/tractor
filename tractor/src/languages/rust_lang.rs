@@ -388,6 +388,23 @@ fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> 
         "integer_literal" => Some(("int", None)),
         "float_literal" => Some(("float", None)),
         "boolean_literal" => Some(("bool", None)),
+        // Char literal — collapse to <char>.
+        "char_literal" => Some(("char", None)),
+        // `async { … }` — collapse to <block> with <async/> marker so
+        // `//block[async]` finds all async blocks.
+        "async_block" => Some(("block", Some("async"))),
+        // `try { … }` — same pattern.
+        "try_block" => Some(("block", Some("try"))),
+        // `const { … }` — const context block (Rust edition).
+        "const_block" => Some(("block", Some("const"))),
+        // `..base` in struct literals — shape marker lets queries find it.
+        "base_field_initializer" => Some(("field", Some("base"))),
+        // `foo::<T>` — turbofish-style generic call. Collapse to <call>
+        // with a <generic/> marker so it joins the existing call shape.
+        "generic_function" => Some(("call", Some("generic"))),
+        // `ref x` / `ref mut x` pattern — shape marker on <pattern>.
+        "ref_pattern" => Some(("pattern", Some("ref"))),
+        "mut_pattern" => Some(("pattern", Some("mut"))),
         _ => None,
     }
 }

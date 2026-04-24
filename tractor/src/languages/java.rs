@@ -25,7 +25,14 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // ---------------------------------------------------------------------
         "class_body" | "interface_body" | "block"
         | "enum_body" | "field_declaration_list" | "type_list"
-        | "constructor_body" => Ok(TransformAction::Flatten),
+        | "constructor_body"
+        // `@Foo(key = value)` — `annotation_argument_list` is the
+        // parenthesised wrapper around the arguments. Flatten so
+        // arguments become direct siblings of the `<annotation>`.
+        | "annotation_argument_list"
+        // `enum E { A, B; void foo() {} }` puts the field/method list
+        // after the `;` into `enum_body_declarations` — grouping only.
+        | "enum_body_declarations" => Ok(TransformAction::Flatten),
 
         // ---------------------------------------------------------------------
         // Flat lists (Principle #12)
@@ -408,6 +415,14 @@ fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> 
         // distinguish from a regular parameter.
         "spread_parameter" => Some(("parameter", Some("variadic"))),
         "decimal_floating_point_literal" => Some(("float", None)),
+        // `record R(...)` — Java 14+ records. Same slot as <class>/etc.
+        "record_declaration" => Some(("record", None)),
+        // `record R(...) { R { … } }` — compact constructor syntax
+        // without an explicit parameter list.
+        "compact_constructor_declaration" => Some(("constructor", Some("compact"))),
+        // `@Override` bare marker annotation — collapse to <annotation>.
+        "marker_annotation" => Some(("annotation", None)),
+        "annotation" => Some(("annotation", None)),
         "true" => Some(("true", None)),
         "false" => Some(("false", None)),
         "null_literal" => Some(("null", None)),

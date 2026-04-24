@@ -1,13 +1,11 @@
 program/
-  ├─ php_tag = "<?php"
+  ├─ tag[open] = "<?php"
   ├─ comment = "// Blueprint fixture — exercises every major PHP construct so any"
   ├─ comment = "// transform change shows up as a visible snapshot diff. Adjust"
   ├─ comment = "// freely when real language features need to be represented."
-  ├─ declare_statement/
-  │   ├─ "declare("
-  │   ├─ declare_directive/
-  │   │   ├─ "strict_types="
-  │   │   └─ int = "1"
+  ├─ declare/
+  │   ├─ "declare(strict_types="
+  │   ├─ int = "1"
   │   └─ ");"
   ├─ namespace/
   │   ├─ "namespace"
@@ -33,7 +31,7 @@ program/
   │   ├─ "use"
   │   ├─ name = "App"
   │   ├─ "\\"
-  │   ├─ body/namespace_use_group/
+  │   ├─ body/
   │   │   ├─ "{"
   │   │   ├─ name = "First"
   │   │   ├─ ","
@@ -42,17 +40,16 @@ program/
   │   └─ ";"
   ├─ comment = "/**\n * Demo class with various PHP features.\n */"
   ├─ class[abstract]/
-  │   ├─ attribute_list/attribute_group/
-  │   │   ├─ "#["
-  │   │   ├─ attribute/
+  │   ├─ "#["
+  │   ├─ attribute/
+  │   │   ├─ name = "Attribute"
+  │   │   ├─ "("
+  │   │   ├─ argument/member[constant]/
   │   │   │   ├─ name = "Attribute"
-  │   │   │   ├─ "("
-  │   │   │   ├─ argument/member[constant]/
-  │   │   │   │   ├─ name = "Attribute"
-  │   │   │   │   ├─ "::"
-  │   │   │   │   └─ name = "TARGET_CLASS"
-  │   │   │   └─ ")"
-  │   │   └─ "]"
+  │   │   │   ├─ "::"
+  │   │   │   └─ name = "TARGET_CLASS"
+  │   │   └─ ")"
+  │   ├─ "]"
   │   ├─ "abstract class"
   │   ├─ name = "Demo"
   │   ├─ extends/
@@ -587,7 +584,7 @@ program/
   │   ├─ name = "Status"
   │   ├─ ":"
   │   ├─ type[primitive] = "string"
-  │   └─ body/enum_declaration_list/
+  │   └─ body/
   │       ├─ "{"
   │       ├─ constant/
   │       │   ├─ "case"
@@ -689,7 +686,7 @@ program/
   │   │   ├─ "$"
   │   │   └─ name = "pipeline"
   │   ├─ op = "="
-  │   └─ right/arrow_function/
+  │   └─ right/function[arrow]/
   │       ├─ "fn("
   │       ├─ parameter/
   │       │   ├─ type[primitive] = "int"
@@ -731,19 +728,16 @@ program/
   │   │   ├─ "$"
   │   │   └─ name = "closure"
   │   ├─ op = "="
-  │   └─ right/anonymous_function/
+  │   └─ right/function[anonymous]/
   │       ├─ "function ("
   │       ├─ parameter/
   │       │   ├─ type[primitive] = "int"
   │       │   └─ name = "$x"
-  │       ├─ ")"
-  │       ├─ anonymous_function_use_clause/
-  │       │   ├─ "use ("
-  │       │   ├─ variable/
-  │       │   │   ├─ "$"
-  │       │   │   └─ name = "pipeline"
-  │       │   └─ ")"
-  │       ├─ ":"
+  │       ├─ ") use ("
+  │       ├─ variable/
+  │       │   ├─ "$"
+  │       │   └─ name = "pipeline"
+  │       ├─ "):"
   │       ├─ type[primitive] = "int"
   │       └─ body/
   │           ├─ "{"

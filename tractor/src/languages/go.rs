@@ -38,7 +38,14 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // direct siblings inside the enclosing `<literal>`
         // (Principle #12).
         "literal_element" | "keyed_element" | "literal_value"
-        | "var_spec_list" => Ok(TransformAction::Flatten),
+        | "var_spec_list"
+        // `import (…)` wraps its `import_spec`s in an `import_spec_list`
+        // — grouping wrapper, flatten so imports become siblings.
+        | "import_spec_list"
+        // `for init; cond; post { … }` puts init/cond/post inside a
+        // `for_clause` wrapper — grouping only, flatten so the three
+        // pieces become direct children of the `<for>`.
+        | "for_clause" => Ok(TransformAction::Flatten),
 
         // More Go generic / constraint wrappers — all grammar-only.
         "type_parameter_list" | "type_parameter_declaration"
@@ -397,6 +404,15 @@ fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> 
         // `<name>` in both contexts (role inferred from tree position).
         "field_identifier" => Some(("name", None)),
         "package_identifier" => Some(("name", None)),
+        // `_` — Go's discard identifier. Still a name slot semantically.
+        "blank_identifier" => Some(("name", None)),
+        // `'a'` — Go rune literal; collapse to <char> (uniform with Rust).
+        "rune_literal" => Some(("char", None)),
+        // `goto LABEL` — rename.
+        "goto_statement" => Some(("goto", None)),
+        // `generic_type` — `Foo[int]` generic type reference. Rename to
+        // <type><generic/> so it joins the collapsed type vocabulary.
+        "generic_type" => Some(("type", Some("generic"))),
         _ => None,
     }
 }

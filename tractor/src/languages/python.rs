@@ -24,6 +24,23 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         //     enclosing statement; matches Go's behavior.
         "as_pattern_target" | "pattern_list" | "expression_list" => Ok(TransformAction::Flatten),
 
+        // `lambda_parameters` is a pure grouping wrapper around
+        // the parameter list of a `lambda`; flatten so the
+        // parameters become direct siblings of the `<lambda>`.
+        "lambda_parameters" => Ok(TransformAction::Flatten),
+
+        // `keyword_separator` / `positional_separator` are grammar
+        // markers for `*` and `/` in function signatures. Rename to
+        // the short marker-style names.
+        "keyword_separator" => {
+            rename(xot, node, "keyword");
+            Ok(TransformAction::Continue)
+        }
+        "positional_separator" => {
+            rename(xot, node, "positional");
+            Ok(TransformAction::Continue)
+        }
+
         // Import paths (`from a.b.c import d`). Flatten so the
         // dotted-path segments become siblings of the enclosing
         // `<import>` — matches how we handle scoped identifiers in
@@ -278,6 +295,26 @@ fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> 
         "pass_statement" => Some(("pass", None)),
         "import_statement" => Some(("import", None)),
         "import_from_statement" => Some(("from", None)),
+        "assert_statement" => Some(("assert", None)),
+        "delete_statement" => Some(("delete", None)),
+        "global_statement" => Some(("global", None)),
+        "nonlocal_statement" => Some(("nonlocal", None)),
+        "break_statement" => Some(("break", None)),
+        "continue_statement" => Some(("continue", None)),
+        "match_statement" => Some(("match", None)),
+        // Pattern kinds in `match` arms — normalise to `<pattern>`
+        // with shape markers for querying by structure.
+        "class_pattern" => Some(("pattern", Some("class"))),
+        "list_pattern" => Some(("pattern", Some("list"))),
+        "dict_pattern" => Some(("pattern", Some("dict"))),
+        // Walrus operator — Python's `:=`. Collapses to <assign>;
+        // the `<op>` child (`:=`) or the enclosing context marks it.
+        "named_expression" => Some(("assign", None)),
+        // f-string internals — `format_specifier` is the `:>10` bit.
+        "format_specifier" => Some(("format", None)),
+        // `lambda_parameters` is a wrapper; flatten handled in match arm above.
+        // `keyword_separator` / `positional_separator` are grammar markers
+        // for `*` and `/` separators in function signatures — empty markers.
         // Spread / unpack — `*` sequence-style vs `**` mapping-style.
         // The `<list/>` / `<dict/>` marker child survives through
         // argument, pattern, and literal contexts so `//spread[dict]`

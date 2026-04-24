@@ -33,9 +33,26 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         | "match_condition_list"
         | "namespace_name"
         | "namespace_use_clause"
+        | "namespace_use_group"
         | "string_content"
         | "escape_sequence"
         | "array_element_initializer"
+        // `attribute_group` = `#[Attr1, Attr2]` wrapper; `attribute_list` =
+        // the list of attribute_group for a declaration. Both are pure
+        // grouping wrappers — flatten so individual attributes surface as
+        // direct siblings.
+        | "attribute_group"
+        | "attribute_list"
+        // `anonymous_function_use_clause` = `use ($x, $y)` on a closure —
+        // grouping wrapper for captured variables; flatten so the captured
+        // names become direct siblings with their field role intact.
+        | "anonymous_function_use_clause"
+        // `declare_directive` = the `strict_types=1` bit inside
+        // `declare(strict_types=1);` — wrapper around the assignment.
+        | "declare_directive"
+        // `enum_declaration_list` = the `{ … }` body of `enum E { … }` —
+        // grouping wrapper, flatten so `case` entries surface as siblings.
+        | "enum_declaration_list"
         => Ok(TransformAction::Flatten),
 
         // Expression statement / parenthesized expression —
@@ -297,6 +314,23 @@ fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> 
         "named_type" => Some(("type", None)),
         "union_type" => Some(("type", Some("union"))),
         "optional_type" => Some(("type", Some("optional"))),
+        // Anonymous function / arrow function — collapse to <function>
+        // with a shape marker so `//function[anonymous]` finds them.
+        "anonymous_function_creation_expression" | "anonymous_function" => {
+            Some(("function", Some("anonymous")))
+        }
+        "arrow_function" => Some(("function", Some("arrow"))),
+        // declare_statement — `declare(strict_types=1);`. The
+        // `declare_directive` wrapper flattens (handled in match arm).
+        "declare_statement" => Some(("declare", None)),
+        // `goto LABEL;` — rare, but rename for completeness.
+        "goto_statement" => Some(("goto", None)),
+        // PHP opening/closing tags.
+        "php_tag" => Some(("tag", Some("open"))),
+        "text_interpolation" => Some(("interpolation", None)),
+        // `attribute` (PHP 8+ attributes) — `#[Foo(1)]`. The grouping
+        // wrappers around it flatten; here just rename.
+        "attribute" => Some(("attribute", None)),
         _ => None,
     }
 }

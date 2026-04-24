@@ -105,11 +105,22 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         | "string_literal_content"
         | "verbatim_string_literal_content"
         | "raw_string_literal_content"
+        | "raw_string_content"
+        | "raw_string_start"
+        | "raw_string_end"
         | "interpolation_brace"
         | "interpolation_start"
         | "escape_sequence"
         | "interpolated_string_expression"
         | "qualified_name" => Ok(TransformAction::Flatten),
+
+        // `bracketed_parameter_list` — indexer declaration's `[T index]`;
+        // purely a grouping wrapper, flatten so the parameters become
+        // direct siblings with field="parameters".
+        "bracketed_parameter_list" => {
+            distribute_field_to_children(xot, node, "parameters");
+            Ok(TransformAction::Flatten)
+        }
 
         // `implicit_type` is C#'s `var` keyword in a type position.
         // Render as `<type><name>var</name></type>` for uniform
@@ -648,6 +659,42 @@ fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> 
         "implicit_parameter" => Some(("parameter", None)),
         "break_statement" => Some(("break", None)),
         "continue_statement" => Some(("continue", None)),
+        "do_statement" => Some(("do", None)),
+        "finally_clause" => Some(("finally", None)),
+        "delegate_declaration" => Some(("delegate", None)),
+        "destructor_declaration" => Some(("destructor", None)),
+        "indexer_declaration" => Some(("indexer", None)),
+        // File-scoped namespace (C# 10+) — `namespace X;` form.
+        "file_scoped_namespace_declaration" => Some((NAMESPACE, None)),
+        // local_function_statement — method-like nested function.
+        "local_function_statement" => Some((METHOD, None)),
+        // compact_constructor — record constructor without parameter list.
+        "compact_constructor_declaration" => Some((CONSTRUCTOR, None)),
+        // LINQ query — shape marker lets `//query` find it.
+        "query_expression" => Some(("query", None)),
+        "from_clause" => Some(("from", None)),
+        "select_clause" => Some(("select", None)),
+        "order_by_clause" => Some(("order", None)),
+        "group_clause" => Some(("group", None)),
+        "let_clause" => Some(("let", None)),
+        "join_clause" => Some(("join", None)),
+        "ordering" => Some(("ordering", None)),
+        "query_body" => Some(("body", None)),
+        // Pattern matching — relational/logical patterns.
+        "relational_pattern" => Some(("pattern", Some("relational"))),
+        "logical_pattern" => Some(("pattern", Some("logical"))),
+        // lookup_type — C# `T::U` syntax; a type shape.
+        "lookup_type" => Some(("type", Some("lookup"))),
+        // catch_filter_clause — the `when` filter on a catch.
+        "catch_filter_clause" => Some(("filter", None)),
+        // Unary prefix `++x` / `--x` etc. — collapse to <unary>.
+        "prefix_unary_expression" => Some(("unary", Some("prefix"))),
+        // Collection initializer literal `{ 1, 2, 3 }`.
+        "initializer_expression" => Some(("literal", None)),
+        // Range `1..5` — collapse to <range>.
+        "range_expression" => Some(("range", None)),
+        // Raw strings (C# 11+) — all roll up to <string>.
+        "raw_string_literal" => Some(("string", None)),
         _ => None,
     }
 }

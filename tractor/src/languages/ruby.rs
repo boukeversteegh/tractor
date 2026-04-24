@@ -20,7 +20,10 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         | "heredoc_body"
         | "heredoc_end"
         | "hash_key_symbol"
-        | "block_parameters" => Ok(TransformAction::Flatten),
+        | "block_parameters"
+        // `->(...)` lambda parameter list — grouping wrapper; flatten
+        // so the parameters bubble up to the `<lambda>`.
+        | "lambda_parameters" => Ok(TransformAction::Flatten),
 
         // Hash/keyword parameter syntax handled via map_element_name
         // with markers — `**kwargs` → `<spread><dict/>`, `key:` → parameter+keyword.
@@ -180,6 +183,35 @@ fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> 
         // `key:` keyword parameter — a parameter variant; the marker
         // lets us find every keyword parameter without matching on text.
         "keyword_parameter" => Some(("parameter", Some("keyword"))),
+        // `&block` capture — identifies the block parameter as a
+        // <parameter> with <block/> marker.
+        "block_parameter" => Some(("parameter", Some("block"))),
+        // `arg = default` — optional parameter shape.
+        "optional_parameter" => Some(("parameter", Some("default"))),
+        // `do … end` block — collapse to <block> with a <do/> marker
+        // so `//block[do]` finds the do-style, `//block[brace]` the
+        // `{ … }` style (once we add it).
+        "do_block" => Some(("block", Some("do"))),
+        // `begin … end` — explicit Ruby block.
+        "begin_block" => Some(("block", Some("begin"))),
+        // Splat call-site args — `*args` / `**kwargs` distinguished by
+        // list/dict marker, matching the parameter shape above.
+        "splat_argument" => Some(("spread", Some("list"))),
+        "hash_splat_argument" => Some(("spread", Some("dict"))),
+        // `:"dyn#{foo}"` delimited symbol — shape-marker the collapse
+        // so `//symbol[delimited]` finds them.
+        "delimited_symbol" => Some(("symbol", Some("delimited"))),
+        // `rescue => e` — the `=> e` binding the exception.
+        "exception_variable" => Some(("variable", None)),
+        // `class << self` — singleton class body.
+        "singleton_class" => Some(("class", Some("singleton"))),
+        // `def self.foo` — singleton method.
+        "singleton_method" => Some(("method", Some("singleton"))),
+        // `a, b, c = …` — LHS of a multi-assignment.
+        "left_assignment_list" => Some(("left", None)),
+        // `*rest = …` — the splat position on the LHS.
+        "rest_assignment" => Some(("spread", None)),
+        // `->(...) { ... }` — Ruby lambdas; flatten the parameter list.
         _ => None,
     }
 }

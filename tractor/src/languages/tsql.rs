@@ -201,7 +201,7 @@ fn transform_unary(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
                         }
                         let text_node = xot.new_text(&format!("#{}", inner_text));
                         xot.append(node, text_node)?;
-                        rename(xot, node, "temp_ref");
+                        rename(xot, node, "temp");
                         return Ok(());
                     }
                 }
@@ -246,9 +246,9 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         // Clauses
         "from" => Some("from"),
         "where" => Some("where"),
-        "order_by" => Some("order_by"),
-        "order_target" => Some("order_target"),
-        "group_by" => Some("group_by"),
+        "order_by" => Some("order"),
+        "order_target" => Some("target"),
+        "group_by" => Some("group"),
         "having" => Some("having"),
         "join" => Some("join"),
         "direction" => Some("direction"),
@@ -278,7 +278,7 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         // Window functions
         "window_function" => Some("window"),
         "window_specification" => Some("over"),
-        "partition_by" => Some("partition_by"),
+        "partition_by" => Some("partition"),
 
         // CASE expression
         "case" => Some("case"),
@@ -288,9 +288,9 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "cast" => Some("cast"),
 
         // DDL
-        "create_table" => Some("create_table"),
+        "create_table" => Some("create"),
         "column_definitions" => Some("columns"),
-        "column_definition" => Some("col_def"),
+        "column_definition" => Some("definition"),
 
         // MERGE
         "merge" => Some("merge"),
@@ -301,8 +301,8 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         // SET variable
         "set_statement" => Some("set"),
 
-        // CREATE FUNCTION
-        "create_function" => Some("create_function"),
+        // CREATE FUNCTION — function variant.
+        "create_function" => Some("function"),
 
         // GO batch separator
         "go_statement" => Some("go"),
@@ -348,7 +348,7 @@ fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
 pub fn syntax_category(element: &str) -> SyntaxCategory {
     match element {
         // Identifiers
-        "name" | "alias" | "schema" | "var" | "temp_ref" | "column" => SyntaxCategory::Identifier,
+        "name" | "alias" | "schema" | "var" | "temp" | "column" => SyntaxCategory::Identifier,
 
         // Literals
         "literal" => SyntaxCategory::String,
