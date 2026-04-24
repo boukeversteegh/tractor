@@ -839,7 +839,7 @@ program/
   │       ├─ "{"
   │       ├─ variable[const]/
   │       │   ├─ "const"
-  │       │   ├─ name/pattern[array]/
+  │       │   ├─ pattern[array]/
   │       │   │   ├─ "["
   │       │   │   ├─ name = "head"
   │       │   │   ├─ ","

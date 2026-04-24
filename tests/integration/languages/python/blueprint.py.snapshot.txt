@@ -2,41 +2,41 @@ module/
   ├─ string = "\"\"\"Kitchen-sink Python blueprint for tractor snapshot tests.\n\nThis fixture is rendered by `tractor query <file> -p tree --single` with\nNO depth limit, so any design-principle transform change produces a visible\nsnapshot diff. It is intentionally syntactically valid but not runnable.\n\"\"\""
   ├─ import/
   │   ├─ "import"
-  │   └─ name/name = "os"
+  │   └─ name = "os"
   ├─ import/
   │   ├─ "import"
-  │   └─ name/import/
-  │       ├─ name/name = "sys"
+  │   └─ import/
+  │       ├─ name = "sys"
   │       ├─ "as"
   │       └─ name = "system"
   ├─ from/
   │   ├─ "from"
   │   ├─ name = "collections"
   │   ├─ "import"
-  │   └─ name/name = "OrderedDict"
+  │   └─ name = "OrderedDict"
   ├─ from/
   │   ├─ "from"
   │   ├─ name = "typing"
   │   ├─ "import"
-  │   ├─ name/name = "Optional"
+  │   ├─ name = "Optional"
   │   ├─ ","
-  │   └─ name/name = "Union"
+  │   └─ name = "Union"
   ├─ from/
   │   ├─ "from"
   │   ├─ name = "dataclasses"
   │   ├─ "import"
-  │   ├─ name/name = "dataclass"
+  │   ├─ name = "dataclass"
   │   ├─ ","
-  │   └─ name/name = "field"
+  │   └─ name = "field"
   ├─ from/
   │   ├─ "from . import"
-  │   └─ name/name = "sibling"
+  │   └─ name = "sibling"
   ├─ from/
   │   ├─ "from ."
   │   ├─ name = "utils"
   │   ├─ "import"
-  │   └─ name/import/
-  │       ├─ name/name = "helper"
+  │   └─ import/
+  │       ├─ name = "helper"
   │       ├─ "as"
   │       └─ name = "h"
   ├─ assign/

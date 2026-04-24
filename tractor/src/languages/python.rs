@@ -121,7 +121,34 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Name wrappers created by the builder for field="name".
         // Inline the single identifier child as text:
         //   <name><identifier>foo</identifier></name> -> <name>foo</name>
+        //
+        // Also:
+        //   - Flatten when the single element child is an `aliased_import`
+        //     (or post-rename `<import>`). Walking top-down, the outer
+        //     `<name>` wraps an aliased_import like `import x as y`, which
+        //     is NOT a single name — it's a compound. Drop the wrapper so
+        //     the `<import>` becomes a direct child of `<import_statement>`.
+        //   - Flatten when the child is a renamed `from` (import_from_statement)
+        //     — same reason: it's a compound, not a name.
         "name" => {
+            let element_children: Vec<_> = xot
+                .children(node)
+                .filter(|&c| xot.element(c).is_some())
+                .collect();
+            if element_children.len() == 1 {
+                let child = element_children[0];
+                let ts_kind = get_kind(xot, child);
+                let el_name = get_element_name(xot, child);
+                if matches!(
+                    ts_kind.as_deref(),
+                    Some("aliased_import") | Some("import_from_statement"),
+                ) || matches!(
+                    el_name.as_deref(),
+                    Some("import") | Some("from"),
+                ) {
+                    return Ok(TransformAction::Flatten);
+                }
+            }
             inline_single_identifier(xot, node)?;
             Ok(TransformAction::Continue)
         }
@@ -315,21 +342,52 @@ fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
 /// If `node` contains a single identifier child, replace the node's children
 /// with that identifier's text. Used to flatten builder-created wrappers like
 /// `<name><identifier>foo</identifier></name>` to `<name>foo</name>`.
+///
+/// Matches on tree-sitter kind first (walk-order safe — the inner identifier
+/// may already have been renamed to `<name>` by the time this fires on the
+/// outer wrapper). Also accepts post-rename element names so double-wrapped
+/// `<name><name>foo</name></name>` collapses cleanly.
+///
+/// For `dotted_name` / `relative_import` wrappers containing a single
+/// identifier descendant, inline that descendant too — Python's tree-sitter
+/// grammar always routes `name` field values through `dotted_name` even
+/// for a plain `import os`.
 fn inline_single_identifier(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     let children: Vec<_> = xot.children(node).collect();
     for child in children {
-        // Also accept `type_identifier` — same rationale as TS/Java.
-        let child_name = get_element_name(xot, child);
-        if !matches!(
-            child_name.as_deref(),
+        let ts_kind = get_kind(xot, child);
+        let el_name = get_element_name(xot, child);
+        let matches_kind = matches!(
+            ts_kind.as_deref(),
             Some("identifier") | Some("type_identifier"),
-        ) {
+        );
+        // Post-rename names — safe because we only enter the "name" arm
+        // when the current wrapper IS the field=name wrapper.
+        let matches_el = matches!(
+            el_name.as_deref(),
+            Some("name"),
+        );
+        // dotted_name/relative_import: Python's grammar routes bare import
+        // names through these wrappers. If the wrapper contains a single
+        // identifier descendant, inline it.
+        let matches_dotted = matches!(
+            ts_kind.as_deref(),
+            Some("dotted_name") | Some("relative_import"),
+        ) && single_identifier_descendant(xot, child);
+        if !(matches_kind || matches_el || matches_dotted) {
             continue;
         }
-        let text = match get_text_content(xot, child) {
-            Some(t) => t,
-            None => continue,
+        let text = if matches_dotted {
+            descendant_text(xot, child).trim().to_string()
+        } else {
+            match get_text_content(xot, child) {
+                Some(t) => t,
+                None => continue,
+            }
         };
+        if text.is_empty() {
+            continue;
+        }
         let all_children: Vec<_> = xot.children(node).collect();
         for c in all_children {
             xot.detach(c)?;
@@ -339,6 +397,31 @@ fn inline_single_identifier(xot: &mut Xot, node: XotNode) -> Result<(), xot::Err
         return Ok(());
     }
     Ok(())
+}
+
+/// Returns true if `node` has exactly one element descendant and it's an
+/// identifier — the "wrapper contains a single name" case.
+fn single_identifier_descendant(xot: &Xot, node: XotNode) -> bool {
+    let mut count = 0usize;
+    let mut is_ident = false;
+    let mut stack = vec![node];
+    while let Some(n) = stack.pop() {
+        for c in xot.children(n) {
+            if xot.element(c).is_some() {
+                count += 1;
+                if count > 1 {
+                    return false;
+                }
+                let kind = get_kind(xot, c);
+                is_ident = matches!(
+                    kind.as_deref(),
+                    Some("identifier") | Some("type_identifier"),
+                );
+                stack.push(c);
+            }
+        }
+    }
+    count == 1 && is_ident
 }
 
 /// Map a transformed element name to a syntax category for highlighting

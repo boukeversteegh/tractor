@@ -423,6 +423,8 @@ fn inline_single_identifier(xot: &mut Xot, node: XotNode) -> Result<(), xot::Err
             None => continue,
         };
         // Also accept:
+        //   - `package_identifier` — Go's import alias name (`myio "io"`);
+        //     raw tree-sitter kind, pre-rename.
         //   - `name` — walk order may have already renamed an inner
         //     identifier (package_identifier / field_identifier), so
         //     the outer field wrapper sees `<name><name>…</name></name>`
@@ -432,6 +434,7 @@ fn inline_single_identifier(xot: &mut Xot, node: XotNode) -> Result<(), xot::Err
         if !matches!(
             child_name.as_str(),
             "identifier" | "type_identifier" | "field_identifier"
+                | "package_identifier"
                 | "name" | "dot" | "blank_identifier",
         ) {
             continue;

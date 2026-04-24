@@ -16,7 +16,7 @@ file/
   │       ├─ string = "\"context\""
   │       ├─ string = "\"errors\""
   │       ├─ string = "\"io\""
-  │       ├─ name/name = "myio"
+  │       ├─ name = "myio"
   │       ├─ string = "\"io\""
   │       ├─ name = "."
   │       ├─ string = "\"strings\""

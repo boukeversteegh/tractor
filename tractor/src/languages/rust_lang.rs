@@ -62,7 +62,33 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Name wrappers created by the builder for field="name".
         // Inline the single identifier/type_identifier/field_identifier child as text:
         //   <name><identifier>foo</identifier></name> -> <name>foo</name>
+        //
+        // If the single child is a `lifetime` (tree-sitter kind), inline the
+        // lifetime's descendant text so `<name><lifetime>'a</lifetime></name>`
+        // becomes `<name>'a</name>` — preserves the text-leaf invariant and
+        // avoids the `<lifetime><name><lifetime>…` triple-wrap that happens
+        // when lifetime_parameter also renames to `<lifetime>`.
         "name" => {
+            let element_children: Vec<_> = xot
+                .children(node)
+                .filter(|&c| xot.element(c).is_some())
+                .collect();
+            if element_children.len() == 1 {
+                let child = element_children[0];
+                if get_kind(xot, child).as_deref() == Some("lifetime") {
+                    let text = descendant_text(xot, child);
+                    let trimmed = text.trim().to_string();
+                    if !trimmed.is_empty() {
+                        let all_children: Vec<_> = xot.children(node).collect();
+                        for c in all_children {
+                            xot.detach(c)?;
+                        }
+                        let text_node = xot.new_text(&trimmed);
+                        xot.append(node, text_node)?;
+                        return Ok(TransformAction::Done);
+                    }
+                }
+            }
             inline_single_identifier(xot, node)?;
             Ok(TransformAction::Continue)
         }

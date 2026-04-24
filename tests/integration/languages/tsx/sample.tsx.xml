@@ -72,16 +72,14 @@
                 <variable>
                   <const/>
                   const
-                  <name>
-                    <pattern>
-                      <array/>
-                      [
-                      <name>count</name>
-                      ,
-                      <name>setCount</name>
-                      ]
-                    </pattern>
-                  </name>
+                  <pattern>
+                    <array/>
+                    [
+                    <name>count</name>
+                    ,
+                    <name>setCount</name>
+                    ]
+                  </pattern>
                   =
                   <value>
                     <call>

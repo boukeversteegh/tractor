@@ -142,9 +142,7 @@ file/
   │   ├─ "pub struct"
   │   ├─ name = "Point"
   │   ├─ "<"
-  │   ├─ lifetime/name/lifetime/
-  │   │   ├─ "'"
-  │   │   └─ name = "a"
+  │   ├─ lifetime/name = "'a"
   │   ├─ ","
   │   ├─ generic/name = "T"
   │   ├─ ">"
@@ -226,9 +224,7 @@ file/
   │   ├─ "pub enum"
   │   ├─ name = "Shape"
   │   ├─ "<"
-  │   ├─ lifetime/name/lifetime/
-  │   │   ├─ "'"
-  │   │   └─ name = "a"
+  │   ├─ lifetime/name = "'a"
   │   ├─ ">"
   │   └─ body/
   │       ├─ "{"
@@ -333,9 +329,7 @@ file/
   │       └─ "}"
   ├─ impl/
   │   ├─ "impl<"
-  │   ├─ lifetime/name/lifetime/
-  │   │   ├─ "'"
-  │   │   └─ name = "a"
+  │   ├─ lifetime/name = "'a"
   │   ├─ ","
   │   ├─ generic/
   │   │   ├─ name = "T"
@@ -473,9 +467,7 @@ file/
   │       └─ "}"
   ├─ impl/
   │   ├─ "impl<"
-  │   ├─ lifetime/name/lifetime/
-  │   │   ├─ "'"
-  │   │   └─ name = "a"
+  │   ├─ lifetime/name = "'a"
   │   ├─ ","
   │   ├─ generic/name = "T"
   │   ├─ ">"
@@ -542,9 +534,7 @@ file/
   │   ├─ "pub type"
   │   ├─ name = "BoxedDraw"
   │   ├─ "<"
-  │   ├─ lifetime/name/lifetime/
-  │   │   ├─ "'"
-  │   │   └─ name = "a"
+  │   ├─ lifetime/name = "'a"
   │   ├─ "> ="
   │   ├─ type[generic]/
   │   │   ├─ name = "Box"
@@ -1315,9 +1305,7 @@ file/
   │   ├─ "pub fn"
   │   ├─ name = "trait_object_and_impl"
   │   ├─ "<"
-  │   ├─ lifetime/name/lifetime/
-  │   │   ├─ "'"
-  │   │   └─ name = "a"
+  │   ├─ lifetime/name = "'a"
   │   ├─ ">("
   │   ├─ parameter/
   │   │   ├─ name = "d"

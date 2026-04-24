@@ -100,8 +100,27 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Name wrappers created by the builder for field="name".
         // Inline the single identifier/property_identifier child as text:
         //   <name><identifier>foo</identifier></name> -> <name>foo</name>
+        //
+        // Destructuring patterns (`const [a, b] = ...`, `const {x, y} = ...`)
+        // appear in the grammar as `name: array_pattern | object_pattern`.
+        // A pattern is not a single name — flatten the wrapper so the
+        // pattern becomes a direct child of the declarator.
         // ---------------------------------------------------------------------
         "name" => {
+            let element_children: Vec<_> = xot
+                .children(node)
+                .filter(|&c| xot.element(c).is_some())
+                .collect();
+            if element_children.len() == 1 {
+                let child = element_children[0];
+                let ts_kind = get_kind(xot, child);
+                if matches!(
+                    ts_kind.as_deref(),
+                    Some("array_pattern") | Some("object_pattern"),
+                ) {
+                    return Ok(TransformAction::Flatten);
+                }
+            }
             inline_single_identifier(xot, node)?;
             Ok(TransformAction::Continue)
         }

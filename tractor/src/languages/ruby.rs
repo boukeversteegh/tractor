@@ -102,9 +102,12 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
                 let child_name = get_element_name(xot, child).unwrap_or_default();
                 // `identifier` for methods, `constant` for classes/
                 // modules (Ruby uses constant for capitalized
-                // identifiers); also accept already-renamed <name>
-                // when walk order leaves one around.
-                if matches!(child_name.as_str(), "identifier" | "constant" | "name") {
+                // identifiers); `operator` for `def ==(other)` and
+                // friends — Ruby's tree-sitter grammar tags the
+                // operator token as an element inside `<name>`.
+                // Also accept already-renamed <name> when walk order
+                // leaves one around.
+                if matches!(child_name.as_str(), "identifier" | "constant" | "name" | "operator") {
                     if let Some(text) = get_text_content(xot, child) {
                         for c in children {
                             xot.detach(c)?;

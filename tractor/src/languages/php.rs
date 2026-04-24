@@ -110,6 +110,11 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // (from field-on-variable_name — tree-sitter tags `$foo` as a
         // `variable_name` kind, but in any field slot it's still just
         // the bound name, so the outer <name> should be the text leaf).
+        //
+        // Multi-segment qualified names (`App\Blueprint`) are flattened
+        // — each segment becomes a direct sibling of the enclosing
+        // namespace / use / etc. (Principle #12). This matches C#'s
+        // qualified_name handling.
         "name" => {
             let children: Vec<_> = xot.children(node).collect();
             let element_children: Vec<_> = children
@@ -124,6 +129,17 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
                 // the `<name><name>…</name></name>` case.
                 let ts_kind = get_kind(xot, child);
                 let el_name = get_element_name(xot, child);
+                // If the single child is a `namespace_name` / `qualified_name`,
+                // that child will flatten into multiple segments + "\"
+                // separators. Flattening the outer wrapper now hoists the
+                // segments to the enclosing namespace/use so each becomes a
+                // direct `<name>` sibling.
+                if matches!(
+                    ts_kind.as_deref(),
+                    Some("namespace_name") | Some("qualified_name"),
+                ) {
+                    return Ok(TransformAction::Flatten);
+                }
                 let inlineable = matches!(
                     ts_kind.as_deref(),
                     Some("name") | Some("variable_name"),
@@ -143,6 +159,12 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
                         return Ok(TransformAction::Done);
                     }
                 }
+            } else if element_children.len() > 1 {
+                // Multiple element children — this is a qualified name
+                // that flattened into segments + separators. Flatten
+                // the outer <name> wrapper so each segment becomes a
+                // direct child of the enclosing node.
+                return Ok(TransformAction::Flatten);
             }
             Ok(TransformAction::Continue)
         }
