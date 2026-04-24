@@ -207,6 +207,36 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
         "with_item" | "with_clause" => Ok(TransformAction::Flatten),
 
+        // Decorated definition — tree-sitter wraps `@foo\ndef bar(): …`
+        // as `decorated_definition(decorator, …decorators…, class|function)`.
+        // Other languages (Java, C#, Rust, PHP) attach their equivalent
+        // annotations/attributes as direct children of the decorated
+        // declaration; matching that topology makes `//class/decorator`
+        // work uniformly.
+        //
+        // Move every `decorator` child INTO the inner class/function, then
+        // flatten the outer wrapper so the declaration surfaces directly.
+        "decorated_definition" => {
+            let children: Vec<_> = xot.children(node).collect();
+            let decl = children.iter().copied().find(|&c| matches!(
+                get_kind(xot, c).as_deref(),
+                Some("class_definition") | Some("function_definition")
+                    | Some("async_function_definition"),
+            ));
+            if let Some(decl) = decl {
+                // Collect decorators in source order, then prepend each
+                // into the declaration (reverse so final order matches).
+                let decorators: Vec<_> = xot.children(node)
+                    .filter(|&c| get_kind(xot, c).as_deref() == Some("decorator"))
+                    .collect();
+                for dec in decorators.into_iter().rev() {
+                    xot.detach(dec)?;
+                    xot.prepend(decl, dec)?;
+                }
+            }
+            Ok(TransformAction::Flatten)
+        }
+
         // list_splat / dictionary_splat now handled via the rename map
         // with marker — see map_element_name. The marker child
         // distinguishes sequence-style (`*`) from mapping-style (`**`)

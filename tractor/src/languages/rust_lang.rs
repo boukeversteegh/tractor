@@ -100,6 +100,7 @@ pub mod semantic {
     // Markers — always-empty when emitted. These names MUST NOT also
     // be emitted as structural containers elsewhere in this file.
     pub const RAW: &str = "raw";
+    pub const INNER: &str = "inner";
     pub const BORROWED: &str = "borrowed";
     pub const PRIVATE: &str = "private";
     pub const CRATE: &str = "crate";
@@ -139,6 +140,7 @@ pub mod semantic {
     /// names that also appear as structural containers.
     pub const MARKER_ONLY: &[&str] = &[
         RAW,
+        INNER,
         BORROWED,
         PRIVATE,
         CRATE,
@@ -172,7 +174,7 @@ pub mod semantic {
         PUB, IN,
         STRING, INT, FLOAT, BOOL, CHAR,
         NAME, COMMENT, OP,
-        RAW, BORROWED, PRIVATE, CRATE, SUPER, MUT, ASYNC,
+        RAW, INNER, BORROWED, PRIVATE, CRATE, SUPER, MUT, ASYNC,
         POINTER, NEVER, UNIT, DYNAMIC, ABSTRACT, ASSOCIATED, BOUNDED, ARRAY,
         OR, METHOD, BASE, SLICE,
     ];
@@ -232,6 +234,34 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             rewrite_generic_type(xot, node, &["type_identifier", "scoped_type_identifier"])?;
             Ok(TransformAction::Continue)
         }
+
+        // Attribute items — `#[derive(…)]` and `#![allow(…)]`.
+        //
+        // Tree-sitter's shape is:
+        //     attribute_item(#[ attribute(name,…) ])
+        // — an outer `_item` wrapper containing `#[` / `]` tokens and the
+        // real `<attribute>` meta-item inside. Rendering both as
+        // `<attribute>` produced nested `<attribute><attribute>…</attribute></attribute>`,
+        // which diverges from Java/Python/C#/PHP's flat shape.
+        //
+        // Fix: flatten the outer `_item` wrapper so the inner `<attribute>`
+        // becomes a direct child of the enclosing declaration. The bracket
+        // tokens (`#[` / `]`) survive as text siblings.
+        //
+        // For `inner_attribute_item` (`#![…]`), prepend an `<inner/>`
+        // marker on the inner attribute BEFORE flattening so queries can
+        // distinguish inner (scope-level) from outer (item-level) attrs.
+        "inner_attribute_item" => {
+            let children: Vec<_> = xot.children(node).collect();
+            for child in children {
+                if get_kind(xot, child).as_deref() == Some("attribute") {
+                    prepend_empty_element(xot, child, INNER)?;
+                    break;
+                }
+            }
+            Ok(TransformAction::Flatten)
+        }
+        "attribute_item" => Ok(TransformAction::Flatten),
 
         // Name wrappers created by the builder for field="name".
         // Inline the single identifier/type_identifier/field_identifier child as text:
@@ -535,7 +565,8 @@ fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> 
         "or_pattern" => Some((PATTERN, Some(OR))),
         "field_pattern" => Some((PATTERN, Some(FIELD))),
         "struct_pattern" => Some((PATTERN, Some(STRUCT))),
-        "attribute_item" | "inner_attribute_item" => Some((ATTRIBUTE, None)),
+        // attribute_item / inner_attribute_item are handled above
+        // (flattened; inner form gets an <inner/> marker).
         "compound_assignment_expr" => Some((ASSIGN, None)),
         "tuple_expression" => Some((TUPLE, None)),
         "unsafe_block" => Some((UNSAFE, None)),

@@ -5,20 +5,19 @@ file/
   ├─ comment/
   │   ├─ "//!"
   │   └─ comment = "by tractor's snapshot tests to catch design-principle regressions."
-  ├─ attribute/
-  │   ├─ "#!["
-  │   ├─ attribute/
-  │   │   ├─ name = "allow"
-  │   │   ├─ "("
-  │   │   ├─ name = "dead_code"
-  │   │   ├─ ","
-  │   │   ├─ name = "unused_variables"
-  │   │   ├─ ","
-  │   │   ├─ name = "unused_imports"
-  │   │   ├─ ","
-  │   │   ├─ name = "unused_mut"
-  │   │   └─ ")"
-  │   └─ "]"
+  ├─ "#!["
+  ├─ attribute[inner]/
+  │   ├─ name = "allow"
+  │   ├─ "("
+  │   ├─ name = "dead_code"
+  │   ├─ ","
+  │   ├─ name = "unused_variables"
+  │   ├─ ","
+  │   ├─ name = "unused_imports"
+  │   ├─ ","
+  │   ├─ name = "unused_mut"
+  │   └─ ")"
+  ├─ "]"
   ├─ use/
   │   ├─ "use"
   │   ├─ path/
@@ -128,16 +127,15 @@ file/
   ├─ comment/
   │   ├─ "///"
   │   └─ comment = "A named-field struct with generics, lifetimes, and a where clause."
+  ├─ "#["
   ├─ attribute/
-  │   ├─ "#["
-  │   ├─ attribute/
-  │   │   ├─ name = "derive"
-  │   │   ├─ "("
-  │   │   ├─ name = "Debug"
-  │   │   ├─ ","
-  │   │   ├─ name = "Clone"
-  │   │   └─ ")"
-  │   └─ "]"
+  │   ├─ name = "derive"
+  │   ├─ "("
+  │   ├─ name = "Debug"
+  │   ├─ ","
+  │   ├─ name = "Clone"
+  │   └─ ")"
+  ├─ "]"
   ├─ struct[pub]/
   │   ├─ "pub struct"
   │   ├─ name = "Point"
@@ -212,14 +210,13 @@ file/
   ├─ comment/
   │   ├─ "///"
   │   └─ comment = "An enum with every variant flavor and explicit discriminants."
+  ├─ "#["
   ├─ attribute/
-  │   ├─ "#["
-  │   ├─ attribute/
-  │   │   ├─ name = "derive"
-  │   │   ├─ "("
-  │   │   ├─ name = "Debug"
-  │   │   └─ ")"
-  │   └─ "]"
+  │   ├─ name = "derive"
+  │   ├─ "("
+  │   ├─ name = "Debug"
+  │   └─ ")"
+  ├─ "]"
   ├─ enum[pub]/
   │   ├─ "pub enum"
   │   ├─ name = "Shape"

@@ -372,7 +372,7 @@ module/
   │       └─ return/
   │           ├─ "return"
   │           └─ name = "decorator"
-  ├─ decorated/
+  ├─ function/
   │   ├─ decorator/
   │   │   ├─ "@"
   │   │   └─ name = "staticmethod"
@@ -383,50 +383,48 @@ module/
   │   │       ├─ "("
   │   │       ├─ int = "3"
   │   │       └─ ")"
-  │   └─ function/
-  │       ├─ "def"
-  │       ├─ name = "stacked"
-  │       ├─ "():"
-  │       └─ body/pass = "pass"
-  ├─ decorated/
+  │   ├─ "def"
+  │   ├─ name = "stacked"
+  │   ├─ "():"
+  │   └─ body/pass = "pass"
+  ├─ class/
   │   ├─ decorator/
   │   │   ├─ "@"
   │   │   └─ name = "dataclass"
-  │   └─ class/
-  │       ├─ "class"
-  │       ├─ name = "Point"
-  │       ├─ ":"
-  │       └─ body/
-  │           ├─ string = "\"\"\"A dataclass with default factory.\"\"\""
-  │           ├─ assign/
-  │           │   ├─ left/name = "x"
-  │           │   ├─ ":"
-  │           │   ├─ type/name = "int"
-  │           │   ├─ "="
-  │           │   └─ right/int = "0"
-  │           ├─ assign/
-  │           │   ├─ left/name = "y"
-  │           │   ├─ ":"
-  │           │   ├─ type/name = "int"
-  │           │   ├─ "="
-  │           │   └─ right/int = "0"
-  │           └─ assign/
-  │               ├─ left/name = "tags"
-  │               ├─ ":"
-  │               ├─ type[generic]/
-  │               │   ├─ name = "list"
-  │               │   ├─ "["
-  │               │   ├─ type/name = "str"
-  │               │   └─ "]"
-  │               ├─ "="
-  │               └─ right/call/
-  │                   ├─ name = "field"
-  │                   ├─ "("
-  │                   ├─ argument/
-  │                   │   ├─ name = "default_factory"
-  │                   │   ├─ "="
-  │                   │   └─ value/name = "list"
-  │                   └─ ")"
+  │   ├─ "class"
+  │   ├─ name = "Point"
+  │   ├─ ":"
+  │   └─ body/
+  │       ├─ string = "\"\"\"A dataclass with default factory.\"\"\""
+  │       ├─ assign/
+  │       │   ├─ left/name = "x"
+  │       │   ├─ ":"
+  │       │   ├─ type/name = "int"
+  │       │   ├─ "="
+  │       │   └─ right/int = "0"
+  │       ├─ assign/
+  │       │   ├─ left/name = "y"
+  │       │   ├─ ":"
+  │       │   ├─ type/name = "int"
+  │       │   ├─ "="
+  │       │   └─ right/int = "0"
+  │       └─ assign/
+  │           ├─ left/name = "tags"
+  │           ├─ ":"
+  │           ├─ type[generic]/
+  │           │   ├─ name = "list"
+  │           │   ├─ "["
+  │           │   ├─ type/name = "str"
+  │           │   └─ "]"
+  │           ├─ "="
+  │           └─ right/call/
+  │               ├─ name = "field"
+  │               ├─ "("
+  │               ├─ argument/
+  │               │   ├─ name = "default_factory"
+  │               │   ├─ "="
+  │               │   └─ value/name = "list"
+  │               └─ ")"
   ├─ class/
   │   ├─ "class"
   │   ├─ name = "Base"
