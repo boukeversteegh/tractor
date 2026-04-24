@@ -7,7 +7,7 @@
 
 use std::path::PathBuf;
 use tractor::{
-    load_xml_string_to_documents, load_xml_file_to_documents,
+    load_xml_string_to_documents,
     parse, ParseInput, ParseOptions,
     XPathEngine, XeeParseResult, SchemaCollector,
     output::{render_node, RenderOptions},
@@ -109,95 +109,38 @@ fn test_query_xml_passthrough() {
     assert_eq!(matches.len(), 2, "Should find 2 functions");
 }
 
+/// Integration proof that tractor can re-consume its own XML
+/// output. Parses a source, renders to XML, reloads the rendered
+/// XML via the parser's XML-input path, and runs an XPath query
+/// against the reloaded document. Generating on the fly avoids
+/// committing a golden `sample.rs.xml` snapshot — those duplicate
+/// the blueprint / feature-fixture coverage and churn noisily.
 #[test]
-fn test_load_snapshot_and_query() {
-    // Test loading a snapshot file and querying it
-    let snapshots_dir = get_test_snapshots_dir();
-    let snapshot_path = snapshots_dir.join("sample.rs.xml");
-
-    if !snapshot_path.exists() {
-        eprintln!("Snapshot not found, skipping test: {:?}", snapshot_path);
-        return;
-    }
-
-    let mut result = load_xml_file_to_documents(&snapshot_path)
-        .expect("Should load snapshot");
-
-    let engine = XPathEngine::new();
-    let matches = engine.query_documents(
-        &mut result.documents,
-        result.doc_handle,
-        "//function",
-        result.source_lines.clone(),
-        &result.file_path,
-    ).expect("Query should succeed");
-
-    assert!(matches.len() >= 2, "Should find at least 2 functions in sample.rs");
-}
-
-#[test]
-fn test_snapshot_matches_current_output() {
-    // Test that current output matches snapshot
+fn test_tractor_can_load_its_own_xml_output() {
     let fixtures_dir = get_test_fixtures_dir();
-    let snapshots_dir = get_test_snapshots_dir();
-
     let fixture_path = fixtures_dir.join("sample.rs");
-    let snapshot_path = snapshots_dir.join("sample.rs.xml");
-
-    if !fixture_path.exists() || !snapshot_path.exists() {
-        eprintln!("Fixture or snapshot not found, skipping test");
+    if !fixture_path.exists() {
+        eprintln!("Fixture not found, skipping: {:?}", fixture_path);
         return;
     }
 
-    // Parse the fixture using unified pipeline
     let parsed = parse_test_disk(&fixture_path)
         .expect("Should parse fixture");
-    let current_xml = render_to_xml(&parsed);
+    let xml = render_to_xml(&parsed);
 
-    // Load the snapshot
-    let snapshot = std::fs::read_to_string(&snapshot_path)
-        .expect("Should read snapshot");
+    let mut reloaded = load_xml_string_to_documents(&xml, "<inline>".to_string())
+        .expect("Should load tractor-emitted XML");
+    let engine = XPathEngine::new();
+    let matches = engine.query_documents(
+        &mut reloaded.documents,
+        reloaded.doc_handle,
+        "//function",
+        reloaded.source_lines.clone(),
+        &reloaded.file_path,
+    ).expect("Query should succeed");
 
-    // Normalize before comparing
-    let normalize = |s: &str| {
-        use regex::Regex;
-        let mut normalized = s.to_string();
-
-        // Remove XML declaration
-        let xml_decl_re = Regex::new(r#"<\?xml[^?]*\?>\s*"#).unwrap();
-        normalized = xml_decl_re.replace_all(&normalized, "").to_string();
-
-        // Remove path attributes
-        let path_re = Regex::new(r#"\s*path="[^"]*""#).unwrap();
-        normalized = path_re.replace_all(&normalized, "").to_string();
-
-        // Remove location attributes
-        let loc_re = Regex::new(r#"\s*(start|end)="[^"]*""#).unwrap();
-        normalized = loc_re.replace_all(&normalized, "").to_string();
-
-        normalized
-    };
-
-    let normalized_current = normalize(&current_xml);
-    let normalized_snapshot = normalize(&snapshot);
-
-    if normalized_current != normalized_snapshot {
-        eprintln!("Current (first 500 chars):\n{}", &normalized_current.chars().take(500).collect::<String>());
-        eprintln!("\nSnapshot (first 500 chars):\n{}", &normalized_snapshot.chars().take(500).collect::<String>());
-
-        for (i, (c1, c2)) in normalized_current.chars().zip(normalized_snapshot.chars()).enumerate() {
-            if c1 != c2 {
-                eprintln!("\nFirst difference at position {}: '{}' vs '{}'", i, c1, c2);
-                eprintln!("Context: ...{}...", &normalized_current.chars().skip(i.saturating_sub(20)).take(40).collect::<String>());
-                break;
-            }
-        }
-    }
-
-    assert_eq!(
-        normalized_current, normalized_snapshot,
-        "Current output should match snapshot (paths and locations normalized)"
-    );
+    assert!(matches.len() >= 2,
+        "Reloaded tractor-XML should still contain at least 2 <function> elements");
 }
 
 #[test]
@@ -258,46 +201,45 @@ fn test_xpath_structure_assertions() {
 }
 
 #[test]
-fn test_multi_language_snapshots() {
-    // Test that we can load and query snapshots from multiple languages
-    let snapshots_dir = get_test_snapshots_dir();
-
-    let languages = vec![
-        ("sample.rs.xml", "//function", 2),
-        ("sample.py.xml", "//function", 2),
-        ("sample.js.xml", "//function", 2),
-        ("sample.ts.xml", "//function", 2),
-        ("sample.go.xml", "//function", 2),
-        ("sample.java.xml", "//method", 2),
-        ("sample.cs.xml", "//method", 2),
-        ("sample.rb.xml", "//method", 2),
+/// Sanity check: each language's `sample.<ext>` fixture contains
+/// at least 2 function-like declarations under the canonical query
+/// (`//function` / `//method`). Parses each source directly rather
+/// than loading a golden XML snapshot — the snapshots added ~5k
+/// lines of review noise and were fully subsumed by the per-
+/// language blueprint + feature fixtures.
+#[test]
+fn test_multi_language_sample_function_counts() {
+    let fixtures_dir = get_test_fixtures_dir();
+    let cases = [
+        ("sample.rs",   "//function", 2),
+        ("sample.py",   "//function", 2),
+        ("sample.js",   "//function", 2),
+        ("sample.ts",   "//function", 2),
+        ("sample.go",   "//function", 2),
+        ("sample.java", "//method",   2),
+        ("sample.cs",   "//method",   2),
+        ("sample.rb",   "//method",   2),
     ];
-
     let engine = XPathEngine::new();
-
-    for (snapshot_name, xpath, expected_count) in languages {
-        let snapshot_path = snapshots_dir.join(snapshot_name);
-
-        if !snapshot_path.exists() {
-            eprintln!("Snapshot not found, skipping: {:?}", snapshot_path);
+    for (name, xpath, expected) in cases {
+        let path = fixtures_dir.join(name);
+        if !path.exists() {
+            eprintln!("Fixture not found, skipping: {:?}", path);
             continue;
         }
-
-        let mut result = load_xml_file_to_documents(&snapshot_path)
-            .expect(&format!("Should load {}", snapshot_name));
-
+        let mut parsed = parse_test_disk(&path)
+            .unwrap_or_else(|e| panic!("Should parse {}: {:?}", name, e));
         let matches = engine.query_documents(
-            &mut result.documents,
-            result.doc_handle,
+            &mut parsed.documents,
+            parsed.doc_handle,
             xpath,
-            result.source_lines.clone(),
-            &result.file_path,
-        ).expect(&format!("Query should succeed for {}", snapshot_name));
-
+            parsed.source_lines.clone(),
+            &parsed.file_path,
+        ).unwrap_or_else(|e| panic!("Query on {} should succeed: {:?}", name, e));
         assert_eq!(
-            matches.len(), expected_count,
-            "{}: Expected {} matches for '{}', got {}",
-            snapshot_name, expected_count, xpath, matches.len()
+            matches.len(), expected,
+            "{}: expected {} matches for `{}`, got {}",
+            name, expected, xpath, matches.len()
         );
     }
 }

@@ -11,14 +11,14 @@
 //!   cargo run --release --bin update-snapshots          # update snapshots
 //!   cargo run --release --bin update-snapshots -- --check  # check only (no writes)
 
-use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 use std::process::{self, Command};
 
 /// File extensions to skip (not source fixtures).
 /// `json` is skipped to avoid picking up generated `.snapshot.json` outputs.
-const SKIP_EXTENSIONS: &[&str] = &["xml", "sh", "md", "json"];
+// (SKIP_EXTENSIONS list was used by the removed per-language
+// sample.xml generator. Feature fixtures drive their own walker now.)
 
 /// Feature fixtures: minimal source files that demonstrate a single
 /// transform invariant. Paired with an XPath that extracts the focused
@@ -764,111 +764,18 @@ fn main() {
     }
 
     let tractor_bin = find_tractor_bin();
-    let skip: HashSet<&str> = SKIP_EXTENSIONS.iter().copied().collect();
-    // Feature fixtures get their own snapshot pair and must be excluded from
-    // the default language walker (which would otherwise emit redundant
-    // .xml / .raw.xml outputs for them).
-    let feature_set: HashSet<String> = FEATURE_FIXTURES
-        .iter()
-        .map(|(p, _, _)| p.replace('\\', "/"))
-        .collect();
 
     let mut processed = 0;
     let mut mismatches: Vec<Mismatch> = Vec::new();
 
-    // --- Language parse-tree snapshots ---
-
-    let languages_dir = tests_dir.join("languages");
-    let mut dirs: Vec<_> = fs::read_dir(&languages_dir)
-        .expect("cannot read tests/integration/languages")
-        .filter_map(|e| e.ok())
-        .filter(|e| e.file_type().map(|t| t.is_dir()).unwrap_or(false))
-        .collect();
-    dirs.sort_by_key(|e| e.file_name());
-
-    for entry in dirs {
-        let lang_dir = entry.path();
-
-        let mut files: Vec<_> = fs::read_dir(&lang_dir)
-            .expect("cannot read language dir")
-            .filter_map(|e| e.ok())
-            .filter(|e| e.file_type().map(|t| t.is_file()).unwrap_or(false))
-            .collect();
-        files.sort_by_key(|e| e.file_name());
-
-        for file_entry in files {
-            let path = file_entry.path();
-            let file_name = path.file_name().unwrap().to_string_lossy().to_string();
-
-            // Skip generated snapshot outputs — these are products of this
-            // tool, not source fixtures. Without this guard, the walker
-            // would treat e.g. `foo.snapshot.txt` as an input and emit
-            // `foo.snapshot.txt.xml` etc.
-            if file_name.contains(".snapshot.") {
-                continue;
-            }
-
-            let ext = match path.extension().and_then(|e| e.to_str()) {
-                Some(e) => e,
-                None => continue,
-            };
-
-            if skip.contains(ext) {
-                continue;
-            }
-
-            // Normalize to forward slashes for consistent cross-platform output
-            let path_str = path.to_string_lossy().replace('\\', "/");
-            let lang_name = lang_dir.file_name().unwrap().to_string_lossy();
-
-            // Skip feature fixtures — handled in a separate pass below.
-            if feature_set.contains(&path_str) {
-                continue;
-            }
-
-            // Only the per-language `sample.<ext>` blueprint gets full-file
-            // `.xml` + `.raw.xml` snapshots. Every other fixture is either
-            // a feature source (handled below) or a query fixture kept for
-            // CLI tests — no full-file snapshot, since those churn on every
-            // transform change and don't prove anything the assertion suite
-            // and feature fragments don't already cover.
-            let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
-            if stem != "sample" {
-                continue;
-            }
-
-            // Semantic XML
-            let xml_path = format!("{}.xml", path_str);
-            let output = run_tractor(&tractor_bin, &path_str, &["-f", "xml"]);
-
-            // Raw TreeSitter XML
-            let raw_xml_path = format!("{}.raw.xml", path_str);
-            let raw_output = run_tractor(&tractor_bin, &path_str, &["-t", "raw", "-f", "xml"]);
-
-            if check_mode {
-                match fs::read_to_string(&xml_path) {
-                    Ok(existing) if existing != output => {
-                        mismatches.push(Mismatch::changed(&xml_path, &existing, &output));
-                    }
-                    Err(_) => mismatches.push(Mismatch::missing(&xml_path, &output)),
-                    _ => {}
-                }
-                match fs::read_to_string(&raw_xml_path) {
-                    Ok(existing) if existing != raw_output => {
-                        mismatches.push(Mismatch::changed(&raw_xml_path, &existing, &raw_output));
-                    }
-                    Err(_) => mismatches.push(Mismatch::missing(&raw_xml_path, &raw_output)),
-                    _ => {}
-                }
-            } else {
-                fs::write(&xml_path, &output).expect("cannot write .xml snapshot");
-                fs::write(&raw_xml_path, &raw_output).expect("cannot write .raw.xml snapshot");
-                println!("  {}/{} -> .xml, .raw.xml", lang_name, file_name);
-            }
-
-            processed += 1;
-        }
-    }
+    // Full-file `sample.<ext>.xml` + `sample.<ext>.raw.xml` snapshots
+    // used to be generated here. They duplicated coverage already
+    // provided by the per-language blueprint snapshots + feature
+    // fixtures + the cross-cutting invariant tests, and the raw-xml
+    // outputs churned on every tree-sitter grammar version bump.
+    // Removed. The `sample.<ext>` source files are kept for the
+    // per-language integration tests (`core_integration_tests.rs`)
+    // that parse them directly.
 
     // --- Feature-invariant fragment snapshots ---
     //
@@ -1095,26 +1002,6 @@ fn find_tractor_bin() -> String {
     found[0].0.clone()
 }
 
-fn run_tractor(bin: &str, fixture: &str, extra_args: &[&str]) -> String {
-    let output = Command::new(bin)
-        .arg(fixture)
-        .args(extra_args)
-        .output()
-        .unwrap_or_else(|e| {
-            eprintln!("error: failed to run {}: {}", bin, e);
-            process::exit(1);
-        });
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        eprintln!(
-            "warning: tractor failed on {} {:?}: {}",
-            fixture, extra_args, stderr
-        );
-    }
-
-    String::from_utf8(output.stdout).expect("non-UTF8 tractor output")
-}
 
 /// Run tractor with an arbitrary list of args (for output-format cases).
 /// Stdout is captured as-is. Stderr lines are prefixed with ❌.
