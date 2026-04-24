@@ -560,8 +560,8 @@ const ASSERT_ALL_NAMES_MEMBERSHIP: bool = true;
 
 #[test]
 fn all_names_declared_in_semantic_module() {
-    use tractor::languages::{all_semantic_names, field_wrapper_names};
-    use tractor::xot::transform::helpers::OPERATOR_MARKER_NAMES;
+    use tractor::languages::{all_semantic_names, is_field_wrapper_name};
+    use tractor::xot::transform::helpers::is_operator_marker_name;
 
     let mut report = Report::default();
     for fixture in iter_fixtures() {
@@ -571,7 +571,6 @@ fn all_names_declared_in_semantic_module() {
         }
         let Some(lang) = lang_from_ext(ext) else { continue };
         let Some(declared) = all_semantic_names(lang) else { continue };
-        let field_wrappers = field_wrapper_names(lang);
         let Some(parsed) = parse_structure(&fixture) else { continue };
         let xot = parsed.documents.xot();
         let root = parsed.documents.document_node(parsed.doc_handle).unwrap();
@@ -582,13 +581,14 @@ fn all_names_declared_in_semantic_module() {
                 return;
             }
             // (2) Cross-cutting operator markers emitted by the shared
-            //     `OPERATOR_MARKERS` table.
-            if OPERATOR_MARKER_NAMES.iter().any(|n| *n == name) {
+            //     `OPERATOR_MARKERS` table — universally allowed.
+            if is_operator_marker_name(&name) {
                 return;
             }
             // (3) Field wrappers introduced by the builder's
-            //     `apply_field_wrappings` pass — shared list per language.
-            if field_wrappers.iter().any(|n| *n == name) {
+            //     `apply_field_wrappings` pass — derived per-language
+            //     from that language's `*_FIELD_WRAPPINGS` table.
+            if is_field_wrapper_name(lang, &name) {
                 return;
             }
             report.record(

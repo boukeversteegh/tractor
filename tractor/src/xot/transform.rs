@@ -657,27 +657,32 @@ pub mod helpers {
         OPERATOR_MARKERS.iter().find(|spec| spec.text == op_text)
     }
 
-    /// Every element name that can appear as a direct or nested child of
-    /// `<op>` when the canonical `OPERATOR_MARKERS` table drives marker
-    /// emission — plus `"op"` itself. Used by the `all_names_declared_in_semantic_module`
-    /// invariant to treat cross-cutting operator markers as universally
+    /// Return true if `name` is an element name emitted by the shared
+    /// operator marker machinery — either `"op"` itself or any primary /
+    /// child / nested marker declared in `OPERATOR_MARKERS`.
+    ///
+    /// Derived from `OPERATOR_MARKERS` so there is exactly one source of
+    /// truth: adding an operator to the table automatically extends this
+    /// allowlist. The `all_names_declared_in_semantic_module` invariant
+    /// uses this to treat cross-cutting operator markers as universally
     /// allowed (they're shared by every language, so declaring them in
     /// each language's `ALL_NAMES` would duplicate the source of truth).
-    pub const OPERATOR_MARKER_NAMES: &[&str] = &[
-        "op",
-        // Primaries
-        "equals", "not-equals", "compare",
-        "plus", "minus", "multiply", "divide", "modulo", "power",
-        "logical", "nullish-coalescing",
-        "bitwise", "shift",
-        "assign",
-        "contains", "identity",
-        "increment", "decrement",
-        // Child flags (deduplicated)
-        "strict", "less", "greater", "or-equal",
-        "and", "or", "not", "xor",
-        "left", "right", "unsigned",
-    ];
+    pub fn is_operator_marker_name(name: &str) -> bool {
+        if name == "op" {
+            return true;
+        }
+        OPERATOR_MARKERS.iter().any(|spec| {
+            spec.primary == Some(name)
+                || spec.children.iter().any(|c| *c == name)
+                || match spec.nested {
+                    Some((nested_name, nested_children)) => {
+                        nested_name == name
+                            || nested_children.iter().any(|c| *c == name)
+                    }
+                    None => false,
+                }
+        })
+    }
 
     /// Add semantic marker children inside an `<op>` element based on
     /// operator text — drives off the declarative `OPERATOR_MARKERS`

@@ -24,6 +24,12 @@ pub mod semantic {
     pub const ELSE: &str = "else";
     pub const ELSE_IF: &str = "else_if";
     pub const CASE: &str = "case";
+    // `then` — Ruby's grammar emits this as a distinct leaf kind for the
+    // body branch of `if/elsif/unless`. Other languages synthesise it via
+    // the `consequence → then` field-wrapping pass; Ruby omits that pair
+    // from its wrappings because the grammar already produces the node.
+    // Keep it here so the ALL_NAMES invariant recognises it.
+    pub const THEN: &str = "then";
     pub const WHILE: &str = "while";
     pub const UNTIL: &str = "until";
     pub const FOR: &str = "for";
@@ -149,7 +155,7 @@ pub mod semantic {
     /// Every semantic name this language's transform can emit.
     pub const ALL_NAMES: &[&str] = &[
         PROGRAM, MODULE, CLASS, METHOD,
-        IF, UNLESS, ELSE, ELSE_IF, CASE, WHILE, UNTIL, FOR,
+        IF, UNLESS, ELSE, ELSE_IF, THEN, CASE, WHILE, UNTIL, FOR,
         BEGIN, RESCUE, ENSURE, BREAK, CONTINUE,
         PARAMETER, VARIABLE,
         CALL, ASSIGN, BINARY, UNARY, CONDITIONAL, RANGE, LAMBDA, YIELD,
