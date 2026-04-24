@@ -430,6 +430,42 @@ pub fn get_singleton_wrappers(lang: &str) -> &'static [&'static str] {
     }
 }
 
+/// Return the MARKER_ONLY slice for a language ID, if any.
+/// Used by the `markers_stay_empty` invariant to assert that names
+/// declared as marker-only never carry text or element children.
+pub fn marker_only_names(lang: &str) -> Option<&'static [&'static str]> {
+    match lang {
+        "csharp" | "cs" => Some(csharp::semantic::MARKER_ONLY),
+        "typescript" | "ts" | "tsx" | "javascript" | "js" | "jsx" => Some(typescript::semantic::MARKER_ONLY),
+        "python" | "py" => Some(python::semantic::MARKER_ONLY),
+        "rust" | "rs" => Some(rust_lang::semantic::MARKER_ONLY),
+        "go" => Some(go::semantic::MARKER_ONLY),
+        "java" => Some(java::semantic::MARKER_ONLY),
+        "php" => Some(php::semantic::MARKER_ONLY),
+        "ruby" | "rb" => Some(ruby::semantic::MARKER_ONLY),
+        "tsql" | "mssql" | "sql" => Some(tsql::semantic::MARKER_ONLY),
+        _ => None,
+    }
+}
+
+/// Return the ALL_NAMES slice for a language ID, if any.
+/// Covers every semantic element name a language's transform can emit
+/// — structural containers AND marker-only names.
+pub fn all_semantic_names(lang: &str) -> Option<&'static [&'static str]> {
+    match lang {
+        "csharp" | "cs" => Some(csharp::semantic::ALL_NAMES),
+        "typescript" | "ts" | "tsx" | "javascript" | "js" | "jsx" => Some(typescript::semantic::ALL_NAMES),
+        "python" | "py" => Some(python::semantic::ALL_NAMES),
+        "rust" | "rs" => Some(rust_lang::semantic::ALL_NAMES),
+        "go" => Some(go::semantic::ALL_NAMES),
+        "java" => Some(java::semantic::ALL_NAMES),
+        "php" => Some(php::semantic::ALL_NAMES),
+        "ruby" | "rb" => Some(ruby::semantic::ALL_NAMES),
+        "tsql" | "mssql" | "sql" => Some(tsql::semantic::ALL_NAMES),
+        _ => None,
+    }
+}
+
 /// Default passthrough transform - just continues without changes
 fn passthrough_transform(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xot::Error> {
     Ok(TransformAction::Continue)
