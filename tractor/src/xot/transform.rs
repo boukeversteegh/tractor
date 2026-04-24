@@ -361,12 +361,25 @@ pub mod helpers {
         xot.children(node).any(|child| xot.element(child).is_some())
     }
 
-    /// Get text content of a node (concatenated text children)
+    /// Get text content of a node (concatenated **direct** text
+    /// children). Does NOT descend into element children — for the
+    /// full source text of a subtree, use `descendant_text`.
     pub fn get_text_content(xot: &Xot, node: XotNode) -> Option<String> {
         let text: String = xot.children(node)
             .filter_map(|child| xot.text_str(child))
             .collect();
         if text.is_empty() { None } else { Some(text) }
+    }
+
+    /// Concatenate every text descendant of `node` in document order
+    /// — the XPath string-value, basically. Use when a handler needs
+    /// the full source text of a tree-sitter node (e.g. a
+    /// `visibility_modifier` whose text "pub(crate)" is split across
+    /// sibling tokens and a nested `<crate>` element).
+    pub fn descendant_text(xot: &Xot, node: XotNode) -> String {
+        let mut out = String::new();
+        collect_descendant_text(xot, node, &mut out);
+        out
     }
 
     /// Extract a numeric value from a position attribute.
@@ -446,13 +459,92 @@ pub mod helpers {
     }
 
     /// Prepend an `<op>` element with semantic markers and raw text
+    /// Wrap the operator text child of `parent` in an `<op>` element
+    /// (with semantic marker children) at its original position in
+    /// the source. The literal operator token moves *into* the new
+    /// `<op>` element rather than being duplicated alongside it —
+    /// preserves the source-text-preservation invariant (the tree's
+    /// concatenated text equals what tree-sitter saw).
+    ///
+    /// Falls back to synthesizing a text node if no matching
+    /// operator text is found in the parent's children (rare; happens
+    /// when the operator was already consumed or the grammar gave
+    /// us something unexpected).
     pub fn prepend_op_element(xot: &mut Xot, parent: XotNode, op_text: &str) -> Result<XotNode, xot::Error> {
         let op_name = xot.add_name("op");
         let op_element = xot.new_element(op_name);
         add_operator_markers(xot, op_element, op_text)?;
-        let text_node = xot.new_text(op_text);
-        xot.append(op_element, text_node)?;
-        xot.prepend(parent, op_element)?;
+
+        // Find the source text node whose trimmed content equals the
+        // operator — typically `" + "` with surrounding whitespace
+        // for binary expressions.
+        let source_text: Option<(XotNode, String)> = xot
+            .children(parent)
+            .find_map(|c| {
+                let s = xot.text_str(c)?.to_string();
+                if s.trim() == op_text {
+                    Some((c, s))
+                } else {
+                    None
+                }
+            });
+
+        match source_text {
+            Some((text_node, content)) => {
+                // Goal: `<op>` contains exactly `op_text` (so
+                // `//binary[op='+']` works) while the surrounding
+                // whitespace survives as sibling text (so the source
+                // text-preservation invariant holds).
+                //
+                // Approach: detach the original text FIRST, then
+                // insert the three pieces at its former position.
+                // Detaching first avoids xot's automatic text
+                // consolidation from merging newly-inserted whitespace
+                // with the still-present original text.
+                let op_pos = content.find(op_text).unwrap_or(0);
+                let before = content[..op_pos].to_string();
+                let after = content[op_pos + op_text.len()..].to_string();
+
+                // Put the operator char inside the op element.
+                let op_inner = xot.new_text(op_text);
+                xot.append(op_element, op_inner)?;
+
+                // Create the replacement nodes *before* detaching so
+                // xot has no live adjacency to consolidate against.
+                let before_node = if before.is_empty() {
+                    None
+                } else {
+                    Some(xot.new_text(&before))
+                };
+                let after_node = if after.is_empty() {
+                    None
+                } else {
+                    Some(xot.new_text(&after))
+                };
+
+                // Remember anchor (the next sibling after the text)
+                // so we can insert the replacement sequence at the
+                // original position. Anchor = None means "append to
+                // parent" (i.e., text was the last child).
+                let anchor = xot.next_sibling(text_node);
+                xot.detach(text_node)?;
+
+                for node in [before_node, Some(op_element), after_node].into_iter().flatten() {
+                    match anchor {
+                        Some(a) => xot.insert_before(a, node)?,
+                        None => xot.append(parent, node)?,
+                    }
+                }
+            }
+            None => {
+                // Fallback — synthesize a text node and prepend.
+                // Violates source-text-preservation, but the
+                // invariant test surfaces this.
+                let synth = xot.new_text(op_text);
+                xot.append(op_element, synth)?;
+                xot.prepend(parent, op_element)?;
+            }
+        }
         Ok(op_element)
     }
 
@@ -951,12 +1043,16 @@ pub mod helpers {
             // Case 2: the name is a bare identifier child with no field
             // wrapper (happens when the grammar doesn't tag it as a
             // field). Wrap in a `<name>` element.
+            //
+            // Use descendant_text rather than direct-child text so
+            // that scoped paths like `std::collections::HashMap`
+            // (whose segments live inside nested `scoped_identifier`
+            // elements) carry the full qualified name, not just the
+            // first top-level separator.
             if let Some(kind) = get_kind(xot, child) {
                 if name_kinds.contains(&kind.as_str()) {
-                    let text_owned: Option<String> = xot
-                        .children(child)
-                        .find_map(|c| xot.text_str(c).map(|s| s.to_string()));
-                    if let Some(text) = text_owned {
+                    let text = descendant_text(xot, child);
+                    if !text.is_empty() {
                         let name_id = xot.add_name("name");
                         let name_el = xot.new_element(name_id);
                         let text_node = xot.new_text(&text);

@@ -23,14 +23,13 @@
                 <return>
                   return
                   <binary>
+                    <left>
+                      <name>a</name>
+                    </left>
                     <op>
                       <plus/>
                       +
                     </op>
-                    <left>
-                      <name>a</name>
-                    </left>
-                    +
                     <right>
                       <name>b</name>
                     </right>

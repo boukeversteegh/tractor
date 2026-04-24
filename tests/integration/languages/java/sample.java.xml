@@ -37,7 +37,6 @@
                 <body>
                   {
                   <assign>
-                    <op>=</op>
                     <left>
                       <member>
                         <this>this</this>
@@ -45,7 +44,7 @@
                         <name>value</name>
                       </member>
                     </left>
-                    =
+                    <op>=</op>
                     <right>
                       <name>value</name>
                     </right>
@@ -84,14 +83,13 @@
                   <return>
                     return
                     <binary>
+                      <left>
+                        <name>a</name>
+                      </left>
                       <op>
                         <plus/>
                         +
                       </op>
-                      <left>
-                        <name>a</name>
-                      </left>
-                      +
                       <right>
                         <name>b</name>
                       </right>
@@ -207,10 +205,6 @@
                     <name>println</name>
                     (
                     <binary>
-                      <op>
-                        <plus/>
-                        +
-                      </op>
                       <left>
                         <string>
                           &quot;
@@ -218,7 +212,10 @@
                           &quot;
                         </string>
                       </left>
-                      +
+                      <op>
+                        <plus/>
+                        +
+                      </op>
                       <right>
                         <name>result</name>
                       </right>

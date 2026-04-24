@@ -564,7 +564,13 @@ mod tests {
 
         // Check transforms applied
         assert!(xml.contains("<binary"), "binary_expression should be renamed");
-        assert!(xml.contains("<op><plus/>+</op>"), "operator should be extracted with semantic marker");
+        // Operator wraps the source text in place — marker child
+        // plus the original `+` text.
+        let normalized = xml.split_whitespace().collect::<Vec<_>>().join("");
+        assert!(
+            normalized.contains("<op><plus/>+</op>"),
+            "operator should be extracted with semantic marker; got:\n{xml}"
+        );
         assert!(xml.contains("<let"), "let should be extracted as modifier");
     }
 

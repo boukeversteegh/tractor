@@ -67,35 +67,46 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         // Visibility modifier (pub, pub(crate), etc.)
+        //
+        // Tree-sitter gives us a mix of text tokens and nested
+        // elements (e.g. `pub(<crate>crate</crate>)`); we collapse
+        // the whole subtree into a single empty `<pub/>` marker
+        // with the restriction as a child marker, and dangle the
+        // source text in the parent so string-value is preserved
+        // character-for-character.
         "visibility_modifier" => {
-            if let Some(text) = get_text_content(xot, node) {
-                let text = text.trim().to_string();
-                rename_to_marker(xot, node, "pub")?;
-                // Add restriction detail as child element
-                if let Some(start) = text.find('(') {
-                    if let Some(end) = text.find(')') {
-                        let inner = text[start+1..end].trim();
-                        match inner {
-                            "crate" => { prepend_empty_element(xot, node, "crate")?; }
-                            "super" => { prepend_empty_element(xot, node, "super")?; }
-                            _ if inner.starts_with("in ") => {
-                                let path = inner[3..].trim();
-                                prepend_element_with_text(xot, node, "in", path)?;
-                            }
-                            _ => {}
-                        }
-                    }
-                }
-                // Keep the original source keyword as a dangling
-                // sibling so the enclosing function / struct / ...'s
-                // XPath string-value still contains `pub` /
-                // `pub(crate)` / `pub(in path::to::mod)` when
-                // queried with `-v value`. The marker itself stays
-                // empty (Principle #7).
-                insert_text_after(xot, node, &text)?;
-                return Ok(TransformAction::Done);
+            let source = descendant_text(xot, node);
+            let trimmed = source.trim().to_string();
+
+            // Drop all existing children (text tokens + tree-sitter's
+            // `<crate>` / `<super>` nested elements) so we can rebuild
+            // cleanly without duplicating the restriction marker.
+            let existing: Vec<_> = xot.children(node).collect();
+            for child in existing {
+                xot.detach(child)?;
             }
-            Ok(TransformAction::Continue)
+
+            rename(xot, node, "pub");
+
+            if let (Some(lp), Some(rp)) = (trimmed.find('('), trimmed.find(')')) {
+                let inner = trimmed[lp + 1..rp].trim();
+                match inner {
+                    "crate" => { prepend_empty_element(xot, node, "crate")?; }
+                    "super" => { prepend_empty_element(xot, node, "super")?; }
+                    _ if inner.starts_with("in ") => {
+                        let path = inner[3..].trim();
+                        prepend_element_with_text(xot, node, "in", path)?;
+                    }
+                    _ => {}
+                }
+            }
+
+            // Dangle the original source token (`pub` /
+            // `pub(crate)` / `pub(in path)` / …) as a sibling so
+            // the enclosing declaration's string-value stays
+            // source-accurate.
+            insert_text_after(xot, node, &trimmed)?;
+            return Ok(TransformAction::Done);
         }
 
         // Declarations — prepend <private/> if no visibility_modifier child
@@ -135,13 +146,19 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // nested <type> child, so //type[borrowed] finds every reference
         // and //type[borrowed][mut] finds every mutable borrow.
         "reference_type" => {
-            // Hoist `mut` from mutable_specifier child to an empty marker
-            // and drop the original element.
+            // Hoist `mut` from mutable_specifier to an empty marker.
+            // The source "mut" text stays where it was — we replace
+            // the `<mutable_specifier>mut</mutable_specifier>` wrapper
+            // with a text node containing its own text, so the
+            // enclosing string-value still sees "& mut T".
             let children: Vec<_> = xot.children(node).collect();
             let mut has_mut = false;
             for child in &children {
                 if get_kind(xot, *child).as_deref() == Some("mutable_specifier") {
                     has_mut = true;
+                    let text = get_text_content(xot, *child).unwrap_or_default();
+                    let text_node = xot.new_text(&text);
+                    xot.insert_before(*child, text_node)?;
                     xot.detach(*child)?;
                 }
             }

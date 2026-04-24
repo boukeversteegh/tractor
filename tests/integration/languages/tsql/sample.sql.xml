@@ -32,12 +32,6 @@
               </relation>
               <where>
                 <compare>
-                  <op>
-                    <compare>
-                      <greater/>
-                    </compare>
-                    &gt;
-                  </op>
                   <column>
                     <ref>
                       <name>u</name>
@@ -45,7 +39,12 @@
                     .
                     <name>Age</name>
                   </column>
-                  &gt;
+                  <op>
+                    <compare>
+                      <greater/>
+                    </compare>
+                    &gt;
+                  </op>
                   <literal>18</literal>
                 </compare>
               </where>
@@ -102,16 +101,15 @@
               </ref>
               <where>
                 <compare>
+                  <column>
+                    <name>CreatedAt</name>
+                  </column>
                   <op>
                     <compare>
                       <less/>
                     </compare>
                     &lt;
                   </op>
-                  <column>
-                    <name>CreatedAt</name>
-                  </column>
-                  &lt;
                   <literal>'2020-01-01'</literal>
                 </compare>
               </where>
@@ -167,22 +165,20 @@
                 </ref>
               </relation>
               <assign>
-                <op>=</op>
                 <column>
                   <name>Value</name>
                 </column>
-                =
+                <op>=</op>
                 <column>
                   <var>NewValue</var>
                 </column>
               </assign>
               <where>
                 <compare>
-                  <op>=</op>
                   <column>
                     <name>Key</name>
                   </column>
-                  =
+                  <op>=</op>
                   <column>
                     <var>KeyName</var>
                   </column>
@@ -233,7 +229,6 @@
                   <alias>u</alias>
                 </relation>
                 <compare>
-                  <op>=</op>
                   <column>
                     <ref>
                       <name>o</name>
@@ -241,7 +236,7 @@
                     .
                     <name>UserID</name>
                   </column>
-                  =
+                  <op>=</op>
                   <column>
                     <ref>
                       <name>u</name>
@@ -259,7 +254,6 @@
                   <alias>a</alias>
                 </relation>
                 <compare>
-                  <op>=</op>
                   <column>
                     <ref>
                       <name>u</name>
@@ -267,7 +261,7 @@
                     .
                     <name>ID</name>
                   </column>
-                  =
+                  <op>=</op>
                   <column>
                     <ref>
                       <name>a</name>
@@ -279,12 +273,6 @@
               </join>
               <where>
                 <compare>
-                  <op>
-                    <compare>
-                      <greater/>
-                    </compare>
-                    &gt;
-                  </op>
                   <column>
                     <ref>
                       <name>o</name>
@@ -292,7 +280,12 @@
                     .
                     <name>Total</name>
                   </column>
-                  &gt;
+                  <op>
+                    <compare>
+                      <greater/>
+                    </compare>
+                    &gt;
+                  </op>
                   <literal>100</literal>
                 </compare>
               </where>
@@ -332,16 +325,15 @@
                       </relation>
                       <where>
                         <compare>
+                          <column>
+                            <name>Total</name>
+                          </column>
                           <op>
                             <compare>
                               <greater/>
                             </compare>
                             &gt;
                           </op>
-                          <column>
-                            <name>Total</name>
-                          </column>
-                          &gt;
                           <literal>50</literal>
                         </compare>
                       </where>
@@ -387,7 +379,6 @@
                       </relation>
                       <where>
                         <compare>
-                          <op>=</op>
                           <column>
                             <ref>
                               <name>o</name>
@@ -395,7 +386,7 @@
                             .
                             <name>UserID</name>
                           </column>
-                          =
+                          <op>=</op>
                           <column>
                             <ref>
                               <name>u</name>
@@ -455,12 +446,6 @@
               </group_by>
               <having>
                 <compare>
-                  <op>
-                    <compare>
-                      <greater/>
-                    </compare>
-                    &gt;
-                  </op>
                   <call>
                     <ref>
                       <name>COUNT</name>
@@ -469,7 +454,12 @@
                     <star>*</star>
                     )
                   </call>
-                  &gt;
+                  <op>
+                    <compare>
+                      <greater/>
+                    </compare>
+                    &gt;
+                  </op>
                   <literal>5</literal>
                 </compare>
               </having>
@@ -485,6 +475,9 @@
               ,
               <case>
                 <compare>
+                  <column>
+                    <name>Age</name>
+                  </column>
                   <op>
                     <compare>
                       <greater/>
@@ -492,10 +485,6 @@
                     </compare>
                     &gt;=
                   </op>
-                  <column>
-                    <name>Age</name>
-                  </column>
-                  &gt;=
                   <literal>18</literal>
                 </compare>
                 <literal>'Adult'</literal>
@@ -535,11 +524,10 @@
                   </relation>
                   <where>
                     <compare>
-                      <op>=</op>
                       <column>
                         <name>Active</name>
                       </column>
-                      =
+                      <op>=</op>
                       <literal>1</literal>
                     </compare>
                   </where>
@@ -784,7 +772,6 @@
             </ref>
             <alias>s</alias>
             <compare>
-              <op>=</op>
               <column>
                 <ref>
                   <name>t</name>
@@ -792,7 +779,7 @@
                 .
                 <name>ID</name>
               </column>
-              =
+              <op>=</op>
               <column>
                 <ref>
                   <name>s</name>
@@ -803,7 +790,6 @@
             </compare>
             <when>
               <assign>
-                <op>=</op>
                 <column>
                   <ref>
                     <name>t</name>
@@ -811,7 +797,7 @@
                   .
                   <name>Name</name>
                 </column>
-                =
+                <op>=</op>
                 <column>
                   <ref>
                     <name>s</name>
@@ -875,11 +861,10 @@
               </relation>
               <where>
                 <compare>
-                  <op>=</op>
                   <column>
                     <name>Active</name>
                   </column>
-                  =
+                  <op>=</op>
                   <literal>1</literal>
                 </compare>
               </where>
@@ -897,30 +882,27 @@
                   </ref>
                 </relation>
                 <assign>
-                  <op>=</op>
                   <column>
                     <name>Balance</name>
                   </column>
-                  =
+                  <op>=</op>
                   <compare>
+                    <column>
+                      <name>Balance</name>
+                    </column>
                     <op>
                       <minus/>
                       -
                     </op>
-                    <column>
-                      <name>Balance</name>
-                    </column>
-                    -
                     <literal>100</literal>
                   </compare>
                 </assign>
                 <where>
                   <compare>
-                    <op>=</op>
                     <column>
                       <name>ID</name>
                     </column>
-                    =
+                    <op>=</op>
                     <literal>1</literal>
                   </compare>
                 </where>
@@ -935,30 +917,27 @@
                   </ref>
                 </relation>
                 <assign>
-                  <op>=</op>
                   <column>
                     <name>Balance</name>
                   </column>
-                  =
+                  <op>=</op>
                   <compare>
+                    <column>
+                      <name>Balance</name>
+                    </column>
                     <op>
                       <plus/>
                       +
                     </op>
-                    <column>
-                      <name>Balance</name>
-                    </column>
-                    +
                     <literal>100</literal>
                   </compare>
                 </assign>
                 <where>
                   <compare>
-                    <op>=</op>
                     <column>
                       <name>ID</name>
                     </column>
-                    =
+                    <op>=</op>
                     <literal>2</literal>
                   </compare>
                 </where>

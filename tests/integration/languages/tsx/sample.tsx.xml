@@ -130,16 +130,15 @@
                       <jsx_expression>
                         {
                         <binary>
+                          <left>
+                            <name>age</name>
+                          </left>
                           <op>
                             <logical>
                               <and/>
                             </logical>
                             &amp;&amp;
                           </op>
-                          <left>
-                            <name>age</name>
-                          </left>
-                          &amp;&amp;
                           <right>
                             <jsx_element>
                               <jsx_opening_element>
@@ -181,14 +180,13 @@
                                     </callee>
                                     (
                                     <binary>
+                                      <left>
+                                        <name>count</name>
+                                      </left>
                                       <op>
                                         <plus/>
                                         +
                                       </op>
-                                      <left>
-                                        <name>count</name>
-                                      </left>
-                                      +
                                       <right>
                                         <number>1</number>
                                       </right>

@@ -1,9 +1,8 @@
 list[comprehension]/
   ├─ "["
   ├─ body/binary/
-  │   ├─ op[multiply] = "*"
   │   ├─ left/name = "x"
-  │   ├─ "*"
+  │   ├─ op[multiply] = "*"
   │   └─ right/name = "x"
   ├─ for/
   │   ├─ "for"

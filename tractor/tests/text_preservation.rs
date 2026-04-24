@@ -26,6 +26,14 @@ use xot::{Xot, Node};
 /// enforce the invariant.
 const ASSERT_INVARIANT: bool = false;
 
+/// Data-language extensions: the default tree mode for these
+/// languages is `Data`, which is an intentional shape projection
+/// (keys → elements, scalars → text). The invariant would fail
+/// trivially. We compare `Structure` ↔ `Raw` for these, which
+/// today is a near-identity pass but puts the harness in place
+/// for when data-language structure transforms land.
+const DATA_LANG_EXTS: &[&str] = &["json", "yaml", "yml", "toml", "ini", "env"];
+
 /// Max number of violations to print per run; full list is summarised.
 const MAX_SHOWN: usize = 30;
 
@@ -112,6 +120,13 @@ fn transform_preserves_source_text() {
     let mut skipped_parse = 0usize;
 
     for path in &fixtures {
+        let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
+        let is_data = DATA_LANG_EXTS.contains(&ext);
+        // For data languages the default tree mode is Data (a
+        // projection), so force Structure for both sides to compare
+        // semantic transform against raw — see DATA_LANG_EXTS doc.
+        let xfm_mode = if is_data { Some(TreeMode::Structure) } else { None };
+
         let raw = match parse(
             ParseInput::Disk { path },
             ParseOptions {
@@ -127,7 +142,10 @@ fn transform_preserves_source_text() {
         };
         let xfm = match parse(
             ParseInput::Disk { path },
-            ParseOptions::default(),
+            ParseOptions {
+                tree_mode: xfm_mode,
+                ..ParseOptions::default()
+            },
         ) {
             Ok(r) => r,
             Err(_) => {

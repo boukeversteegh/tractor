@@ -56,11 +56,10 @@
                         {
                         <expression>
                           <assign>
-                            <op>=</op>
                             <left>
                               <name>_value</name>
                             </left>
-                            =
+                            <op>=</op>
                             <right>
                               <name>value</name>
                             </right>
@@ -103,14 +102,13 @@
                         <return>
                           return
                           <binary>
+                            <left>
+                              <name>a</name>
+                            </left>
                             <op>
                               <plus/>
                               +
                             </op>
-                            <left>
-                              <name>a</name>
-                            </left>
-                            +
                             <right>
                               <name>b</name>
                             </right>

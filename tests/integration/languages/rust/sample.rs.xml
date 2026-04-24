@@ -34,14 +34,13 @@
             <body>
               {
               <binary>
+                <left>
+                  <name>a</name>
+                </left>
                 <op>
                   <plus/>
                   +
                 </op>
-                <left>
-                  <name>a</name>
-                </left>
-                +
                 <right>
                   <name>b</name>
                 </right>
@@ -93,9 +92,9 @@
           </function>
           <function>
             <pub>
-              <crate>crate</crate>
+              <crate/>
             </pub>
-            pub() fn
+            pub(crate) fn
             <name>helper</name>
             () -&gt;
             <returns>
@@ -186,9 +185,9 @@
               {
               <function>
                 <pub>
-                  <super>super</super>
+                  <super/>
                 </pub>
-                pub() fn
+                pub(super) fn
                 <name>secret</name>
                 ()
                 <body>{}</body>

@@ -1,7 +1,6 @@
 assign/
+  ├─ left/name = "x"
   ├─ op/
   │   ├─ assign[plus]
   │   └─ "+="
-  ├─ left/name = "x"
-  ├─ "+="
   └─ right/int = "1"
