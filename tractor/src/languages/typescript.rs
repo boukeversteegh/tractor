@@ -12,7 +12,12 @@ use semantic::*;
 /// Semantic element names — tractor's TypeScript/JavaScript XML
 /// vocabulary after transform.
 pub mod semantic {
-    // Structural — containers.
+    use crate::languages::NodeSpec;
+    use crate::output::syntax_highlight::SyntaxCategory;
+
+    // Named constants retained for use by the transform code. The NODES
+    // table below is the source of truth for marker/container role and
+    // syntax category.
 
     // Top-level / declarations
     pub const PROGRAM: &str = "program";
@@ -108,29 +113,24 @@ pub mod semantic {
     pub const NUMBER: &str = "number";
     pub const BOOL: &str = "bool";
     pub const NULL: &str = "null";
-    // `undefined` literal — tree-sitter leaf kind that carries its text.
     pub const UNDEFINED: &str = "undefined";
 
-    // Keyword expressions — distinct tree-sitter leaf kinds carrying
-    // their keyword text (e.g. `this.x`, `super(...)`).
+    // Keyword expressions — distinct tree-sitter leaf kinds.
     pub const THIS: &str = "this";
     pub const SUPER: &str = "super";
 
-    // Generic-parameter constraint: `<T extends Shape>` — container
-    // wrapping the constraint type.
+    // Generic-parameter constraint: `<T extends Shape>`.
     pub const CONSTRAINT: &str = "constraint";
 
     // Identifiers / comments
     pub const NAME: &str = "name";
     pub const COMMENT: &str = "comment";
 
-    // Switch default (handled in map — NOT a marker here)
+    // Switch default — dual-use; see NODES below.
     pub const DEFAULT: &str = "default";
 
     // Operator child
     pub const OP: &str = "op";
-
-    // Markers — always-empty when emitted.
 
     // Accessibility / modifier markers
     pub const PUBLIC: &str = "public";
@@ -153,8 +153,7 @@ pub mod semantic {
     pub const CONST: &str = "const";
     pub const VAR: &str = "var";
 
-    // Type-shape markers (all marker-only in TS — there is no
-    // standalone `<union>`/`<intersection>`/etc. element emitted)
+    // Type-shape markers
     pub const UNION: &str = "union";
     pub const INTERSECTION: &str = "intersection";
     pub const ARRAY: &str = "array";
@@ -167,55 +166,181 @@ pub mod semantic {
     pub const LOOKUP: &str = "lookup";
     pub const KEYOF: &str = "keyof";
 
-    // Names emitted as BOTH marker AND structural container — kept as
-    // constants for type-safety but NOT in MARKER_ONLY.
-    //   - EXPORT: marker via extract_keyword_modifiers + structural from
-    //     export_statement.
-    //   - DEFAULT: marker via extract_keyword_modifiers + structural from
-    //     switch_default.
-    //   - FUNCTION: structural (function_declaration) + marker on type
-    //     (function_type).
-    //   - TEMPLATE: structural (template_string) + marker on type
-    //     (template_type / template_literal_type).
-    //   - ARRAY: marker on `<type>` / `<pattern>` AND structural element
-    //     from the tree-sitter `array` kind (array literals).
-    //   - OBJECT: marker on `<type>` / `<pattern>` AND structural element
-    //     from the tree-sitter `object` kind (object literals).
+    use SyntaxCategory::*;
 
-    /// Names that, when emitted, are always empty elements.
-    pub const MARKER_ONLY: &[&str] = &[
-        PUBLIC, PRIVATE, PROTECTED, OVERRIDE, READONLY,
-        ABSTRACT, OPTIONAL, REQUIRED,
-        ASYNC, GENERATOR, GET, SET,
-        LET, CONST, VAR,
-        UNION, INTERSECTION, LITERAL, TUPLE, PARENTHESIZED,
-        CONDITIONAL, INFER, LOOKUP, KEYOF,
+    /// Per-name metadata — single source of truth for every element
+    /// name this language's transform can emit.
+    ///
+    /// Dual-use names set BOTH `marker: true` and `container: true`:
+    ///   - EXPORT   — marker via extract_keyword_modifiers + structural
+    ///                container from `export_statement`.
+    ///   - DEFAULT  — marker via extract_keyword_modifiers + structural
+    ///                container from `switch_default`.
+    ///   - FUNCTION — structural container (`function_declaration`) +
+    ///                marker on type (`function_type`).
+    ///   - TEMPLATE — structural container (`template_string`) + marker
+    ///                on type (`template_type` / `template_literal_type`).
+    ///   - ARRAY    — marker on `<type>` / `<pattern>` + structural
+    ///                container for the tree-sitter `array` literal kind.
+    ///   - OBJECT   — marker on `<type>` / `<pattern>` + structural
+    ///                container for the tree-sitter `object` literal kind.
+    pub const NODES: &[NodeSpec] = &[
+        // Top-level / declarations
+        NodeSpec { name: PROGRAM,     marker: false, container: true, syntax: Default },
+        NodeSpec { name: CLASS,       marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: INTERFACE,   marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: ENUM,        marker: false, container: true, syntax: Keyword },
+        // FUNCTION is dual-use.
+        NodeSpec { name: FUNCTION,    marker: true,  container: true, syntax: Keyword },
+        NodeSpec { name: METHOD,      marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: PROPERTY,    marker: false, container: true, syntax: Default },
+        NodeSpec { name: CONSTRUCTOR, marker: false, container: true, syntax: Default },
+        NodeSpec { name: INDEXER,     marker: false, container: true, syntax: Default },
+        NodeSpec { name: ALIAS,       marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: VARIABLE,    marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: ARROW,       marker: false, container: true, syntax: Function },
+
+        // Members
+        NodeSpec { name: FIELD,      marker: false, container: true, syntax: Default },
+        NodeSpec { name: PARAMETER,  marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: EXTENDS,    marker: false, container: true, syntax: Default },
+        NodeSpec { name: IMPLEMENTS, marker: false, container: true, syntax: Default },
+
+        // Type vocabulary
+        NodeSpec { name: TYPE,       marker: false, container: true, syntax: Type },
+        NodeSpec { name: GENERIC,    marker: false, container: true, syntax: Type },
+        NodeSpec { name: GENERICS,   marker: false, container: true, syntax: Type },
+        NodeSpec { name: PREDICATE,  marker: false, container: true, syntax: Default },
+        NodeSpec { name: ANNOTATION, marker: false, container: true, syntax: Default },
+
+        // Control flow
+        NodeSpec { name: BLOCK,    marker: false, container: true, syntax: Default },
+        NodeSpec { name: RETURN,   marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: IF,       marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: ELSE,     marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: ELSE_IF,  marker: false, container: true, syntax: Default },
+        NodeSpec { name: FOR,      marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: WHILE,    marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: TRY,      marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: CATCH,    marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: THROW,    marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: FINALLY,  marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: SWITCH,   marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: CASE,     marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: BREAK,    marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: CONTINUE, marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: BODY,     marker: false, container: true, syntax: Default },
+
+        // Expressions
+        NodeSpec { name: CALL,      marker: false, container: true, syntax: Function },
+        NodeSpec { name: NEW,       marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: MEMBER,    marker: false, container: true, syntax: Default },
+        NodeSpec { name: ASSIGN,    marker: false, container: true, syntax: Operator },
+        NodeSpec { name: BINARY,    marker: false, container: true, syntax: Operator },
+        NodeSpec { name: UNARY,     marker: false, container: true, syntax: Operator },
+        NodeSpec { name: TERNARY,   marker: false, container: true, syntax: Operator },
+        NodeSpec { name: AWAIT,     marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: YIELD,     marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: AS,        marker: false, container: true, syntax: Default },
+        NodeSpec { name: SATISFIES, marker: false, container: true, syntax: Default },
+        NodeSpec { name: INDEX,     marker: false, container: true, syntax: Default },
+        NodeSpec { name: PATTERN,   marker: false, container: true, syntax: Default },
+        NodeSpec { name: SPREAD,    marker: false, container: true, syntax: Default },
+        NodeSpec { name: REST,      marker: false, container: true, syntax: Default },
+
+        // Imports / exports (EXPORT is dual-use)
+        NodeSpec { name: IMPORT,    marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: EXPORT,    marker: true,  container: true, syntax: Keyword },
+        NodeSpec { name: IMPORTS,   marker: false, container: true, syntax: Default },
+        NodeSpec { name: SPEC,      marker: false, container: true, syntax: Default },
+        NodeSpec { name: CLAUSE,    marker: false, container: true, syntax: Default },
+        NodeSpec { name: NAMESPACE, marker: false, container: true, syntax: Default },
+
+        // Templates (TEMPLATE is dual-use)
+        NodeSpec { name: TEMPLATE,      marker: true,  container: true, syntax: Default },
+        NodeSpec { name: INTERPOLATION, marker: false, container: true, syntax: Default },
+
+        // JSX
+        NodeSpec { name: ELEMENT, marker: false, container: true, syntax: Default },
+        NodeSpec { name: OPENING, marker: false, container: true, syntax: Default },
+        NodeSpec { name: CLOSING, marker: false, container: true, syntax: Default },
+        NodeSpec { name: PROP,    marker: false, container: true, syntax: Default },
+        NodeSpec { name: VALUE,   marker: false, container: true, syntax: Default },
+        NodeSpec { name: TEXT,    marker: false, container: true, syntax: Default },
+
+        // Enum members
+        NodeSpec { name: CONSTANT, marker: false, container: true, syntax: Default },
+        NodeSpec { name: PAIR,     marker: false, container: true, syntax: Default },
+
+        // Literals
+        NodeSpec { name: STRING,    marker: false, container: true, syntax: String },
+        NodeSpec { name: NUMBER,    marker: false, container: true, syntax: Number },
+        NodeSpec { name: BOOL,      marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: NULL,      marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: UNDEFINED, marker: false, container: true, syntax: Keyword },
+
+        // Keyword expressions
+        NodeSpec { name: THIS,       marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: SUPER,      marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: CONSTRAINT, marker: false, container: true, syntax: Default },
+
+        // Identifiers / comments / op
+        NodeSpec { name: NAME,    marker: false, container: true, syntax: Identifier },
+        NodeSpec { name: COMMENT, marker: false, container: true, syntax: Comment },
+        // DEFAULT — dual-use (marker modifier AND switch_default container).
+        NodeSpec { name: DEFAULT, marker: true,  container: true, syntax: Keyword },
+        NodeSpec { name: OP,      marker: false, container: true, syntax: Operator },
+
+        // Accessibility / modifier markers
+        NodeSpec { name: PUBLIC,    marker: true, container: false, syntax: Keyword },
+        NodeSpec { name: PRIVATE,   marker: true, container: false, syntax: Keyword },
+        NodeSpec { name: PROTECTED, marker: true, container: false, syntax: Keyword },
+        NodeSpec { name: OVERRIDE,  marker: true, container: false, syntax: Keyword },
+        NodeSpec { name: READONLY,  marker: true, container: false, syntax: Keyword },
+        NodeSpec { name: ABSTRACT,  marker: true, container: false, syntax: Keyword },
+        NodeSpec { name: OPTIONAL,  marker: true, container: false, syntax: Keyword },
+        NodeSpec { name: REQUIRED,  marker: true, container: false, syntax: Keyword },
+
+        // Function markers
+        NodeSpec { name: ASYNC,     marker: true, container: false, syntax: Keyword },
+        NodeSpec { name: GENERATOR, marker: true, container: false, syntax: Default },
+        NodeSpec { name: GET,       marker: true, container: false, syntax: Default },
+        NodeSpec { name: SET,       marker: true, container: false, syntax: Default },
+
+        // Variable-keyword markers
+        NodeSpec { name: LET,   marker: true, container: false, syntax: Keyword },
+        NodeSpec { name: CONST, marker: true, container: false, syntax: Keyword },
+        NodeSpec { name: VAR,   marker: true, container: false, syntax: Keyword },
+
+        // Type-shape markers (ARRAY/OBJECT are dual-use)
+        NodeSpec { name: UNION,         marker: true, container: false, syntax: Default },
+        NodeSpec { name: INTERSECTION,  marker: true, container: false, syntax: Default },
+        NodeSpec { name: ARRAY,         marker: true, container: true,  syntax: Default },
+        NodeSpec { name: LITERAL,       marker: true, container: false, syntax: Default },
+        NodeSpec { name: TUPLE,         marker: true, container: false, syntax: Default },
+        NodeSpec { name: PARENTHESIZED, marker: true, container: false, syntax: Default },
+        NodeSpec { name: OBJECT,        marker: true, container: true,  syntax: Default },
+        NodeSpec { name: CONDITIONAL,   marker: true, container: false, syntax: Default },
+        NodeSpec { name: INFER,         marker: true, container: false, syntax: Default },
+        NodeSpec { name: LOOKUP,        marker: true, container: false, syntax: Default },
+        NodeSpec { name: KEYOF,         marker: true, container: false, syntax: Default },
     ];
 
-    /// Every semantic name this language's transform can emit.
-    pub const ALL_NAMES: &[&str] = &[
-        PROGRAM, CLASS, INTERFACE, ENUM, FUNCTION, METHOD,
-        PROPERTY, CONSTRUCTOR, INDEXER, ALIAS, VARIABLE, ARROW,
-        FIELD, PARAMETER, EXTENDS, IMPLEMENTS,
-        TYPE, GENERIC, GENERICS, PREDICATE, ANNOTATION,
-        BLOCK, RETURN, IF, ELSE, ELSE_IF, FOR, WHILE, TRY, CATCH, THROW, FINALLY,
-        SWITCH, CASE, BREAK, CONTINUE, BODY,
-        CALL, NEW, MEMBER, ASSIGN, BINARY, UNARY, TERNARY, AWAIT, YIELD,
-        AS, SATISFIES, INDEX, PATTERN, SPREAD, REST,
-        IMPORT, EXPORT, IMPORTS, SPEC, CLAUSE, NAMESPACE,
-        TEMPLATE, INTERPOLATION,
-        ELEMENT, OPENING, CLOSING, PROP, VALUE, TEXT,
-        CONSTANT, PAIR,
-        STRING, NUMBER, BOOL, NULL, UNDEFINED,
-        THIS, SUPER, CONSTRAINT,
-        NAME, COMMENT, DEFAULT, OP,
-        PUBLIC, PRIVATE, PROTECTED, OVERRIDE, READONLY,
-        ABSTRACT, OPTIONAL, REQUIRED,
-        ASYNC, GENERATOR, GET, SET,
-        LET, CONST, VAR,
-        UNION, INTERSECTION, ARRAY, LITERAL, TUPLE, PARENTHESIZED,
-        OBJECT, CONDITIONAL, INFER, LOOKUP, KEYOF,
-    ];
+    pub fn spec(name: &str) -> Option<&'static NodeSpec> {
+        NODES.iter().find(|n| n.name == name)
+    }
+
+    pub fn all_names() -> impl Iterator<Item = &'static str> {
+        NODES.iter().map(|n| n.name)
+    }
+
+    pub fn is_marker_only(name: &str) -> bool {
+        spec(name).map_or(false, |s| s.marker && !s.container)
+    }
+
+    pub fn is_declared(name: &str) -> bool {
+        spec(name).is_some()
+    }
 }
 
 /// Transform a TypeScript AST node
@@ -908,52 +1033,22 @@ fn inline_single_identifier(xot: &mut Xot, node: XotNode) -> Result<(), xot::Err
     Ok(())
 }
 
-/// Map a transformed element name to a syntax category for highlighting
+/// Map a transformed element name to a syntax category for highlighting.
+///
+/// Consults the per-name NODES table first (one source of truth);
+/// falls back to cross-cutting rules for names not in NODES.
 pub fn syntax_category(element: &str) -> SyntaxCategory {
+    if let Some(spec) = semantic::spec(element) {
+        return spec.syntax;
+    }
     match element {
-        // Identifiers
-        "name" => SyntaxCategory::Identifier,
-        "type" => SyntaxCategory::Type,
+        // Raw tree-sitter kinds / builder wrappers not in NODES:
+        "parameters" => SyntaxCategory::Keyword,
         "ref" => SyntaxCategory::Identifier,
-
-        // Literals
-        "string" => SyntaxCategory::String,
-        "number" => SyntaxCategory::Number,
-        "true" | "false" | "null" => SyntaxCategory::Keyword,
-
-        // Keywords - declarations
-        "class" | "interface" | "enum" | "alias" => SyntaxCategory::Keyword,
-        "function" | "method" => SyntaxCategory::Keyword,
-        "variable" | "parameter" | "parameters" | "optional" | "required" => SyntaxCategory::Keyword,
-        "import" | "export" => SyntaxCategory::Keyword,
-
-        // Keywords - control flow
-        "if" | "else" | "for" | "while" | "do" => SyntaxCategory::Keyword,
-        "switch" | "case" | "default" => SyntaxCategory::Keyword,
-        "try" | "catch" | "finally" | "throw" => SyntaxCategory::Keyword,
-        "return" | "break" | "continue" | "yield" => SyntaxCategory::Keyword,
-
-        // Keywords - modifiers
-        "let" | "const" | "var" => SyntaxCategory::Keyword,
-        "async" | "await" => SyntaxCategory::Keyword,
-        "new" | "this" | "super" => SyntaxCategory::Keyword,
-
-        // Functions/calls
-        "call" => SyntaxCategory::Function,
-        "arrow" => SyntaxCategory::Function,
-
-        // Operators
-        "op" => SyntaxCategory::Operator,
+        "true" | "false" => SyntaxCategory::Keyword,
+        "do" => SyntaxCategory::Keyword,
+        "typeof" => SyntaxCategory::Type,
         _ if is_operator_marker(element) => SyntaxCategory::Operator,
-        "binary" | "unary" | "assign" | "ternary" => SyntaxCategory::Operator,
-
-        // Comments
-        "comment" => SyntaxCategory::Comment,
-
-        // Types
-        "typeof" | "generics" | "generic" => SyntaxCategory::Type,
-
-        // Structural elements - no color
         _ => SyntaxCategory::Default,
     }
 }
@@ -962,24 +1057,25 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
 mod tests {
     use crate::parser::parse_string_to_xot;
     use crate::output::{render_document, RenderOptions};
-    use super::semantic;
+    use super::semantic::NODES;
 
     #[test]
-    fn marker_only_names_are_in_all_names() {
-        for m in semantic::MARKER_ONLY {
-            assert!(
-                semantic::ALL_NAMES.contains(m),
-                "MARKER_ONLY entry {:?} missing from ALL_NAMES",
-                m,
-            );
-        }
+    fn no_duplicate_node_names() {
+        let mut names: Vec<&str> = NODES.iter().map(|n| n.name).collect();
+        names.sort();
+        let total = names.len();
+        names.dedup();
+        assert_eq!(names.len(), total, "duplicate NODES entry");
     }
 
     #[test]
-    fn all_names_has_no_duplicates() {
-        let mut seen = std::collections::HashSet::new();
-        for name in semantic::ALL_NAMES {
-            assert!(seen.insert(*name), "duplicate name in ALL_NAMES: {:?}", name);
+    fn no_unused_role() {
+        for n in NODES {
+            assert!(
+                n.marker || n.container,
+                "<{}> is neither marker nor container — dead entry?",
+                n.name,
+            );
         }
     }
 

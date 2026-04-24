@@ -10,7 +10,13 @@ use semantic::*;
 /// Tree-sitter kind strings (left side of `match` arms) stay as bare
 /// literals — they are external vocabulary.
 pub mod semantic {
-    // Structural — containers.
+    use crate::languages::NodeSpec;
+    use crate::output::syntax_highlight::SyntaxCategory;
+
+    // Named constants retained for use by the transform code. The NODES
+    // table below is the source of truth for marker/container role and
+    // syntax category. T-SQL's transform currently emits NO marker-only
+    // elements — every NODES entry is container-only.
 
     // Top-level
     pub const FILE: &str = "file";
@@ -119,38 +125,125 @@ pub mod semantic {
     // Operator child (from prepend_op_element).
     pub const OP: &str = "op";
 
-    // Markers — always empty when emitted.
-    //
-    // T-SQL's transform currently emits NO disambiguation markers —
-    // every `map_element_name` entry is a bare rename (no tuple with a
-    // marker child). The invariant still benefits from a `MARKER_ONLY`
-    // slice so the central registry has a uniform shape.
+    use SyntaxCategory::*;
 
-    /// Names that, when emitted, are always empty elements (no text,
-    /// no element children). Used by the markers-stay-empty invariant.
-    pub const MARKER_ONLY: &[&str] = &[];
+    /// Per-name metadata — single source of truth for every element
+    /// name this language's transform can emit. T-SQL has no dual-use
+    /// entries (no marker-only names are currently emitted).
+    pub const NODES: &[NodeSpec] = &[
+        // Top-level
+        NodeSpec { name: FILE,      marker: false, container: true, syntax: Default },
+        NodeSpec { name: STATEMENT, marker: false, container: true, syntax: Keyword },
 
-    /// Every semantic name this language's transform can emit.
-    pub const ALL_NAMES: &[&str] = &[
-        FILE, STATEMENT,
-        SELECT, INSERT, DELETE, UPDATE,
-        FROM, WHERE, ORDER, TARGET, GROUP, HAVING, JOIN, DIRECTION,
-        RELATION, REF, COLUMN, COL, STAR,
-        LITERAL, LIST,
-        CALL, BODY, ARG,
-        SUBQUERY, CTE, UNION, EXISTS,
-        WINDOW, OVER, PARTITION,
-        CASE, WHEN,
-        CAST,
-        CREATE, COLUMNS, DEFINITION,
-        MERGE, TRANSACTION, SET, FUNCTION, GO, EXEC,
-        ALTER_TABLE, ADD_COLUMN,
-        CREATE_INDEX, INDEX_FIELDS,
-        INT, VARCHAR, NVARCHAR, DATETIME,
-        COMPARE, BETWEEN, ASSIGN,
-        NAME, ALIAS, SCHEMA, VAR, TEMP, COMMENT,
-        OP,
+        // DML
+        NodeSpec { name: SELECT, marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: INSERT, marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: DELETE, marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: UPDATE, marker: false, container: true, syntax: Keyword },
+
+        // Clauses
+        NodeSpec { name: FROM,      marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: WHERE,     marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: ORDER,     marker: false, container: true, syntax: Default },
+        NodeSpec { name: TARGET,    marker: false, container: true, syntax: Default },
+        NodeSpec { name: GROUP,     marker: false, container: true, syntax: Default },
+        NodeSpec { name: HAVING,    marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: JOIN,      marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: DIRECTION, marker: false, container: true, syntax: Keyword },
+
+        // References and columns
+        NodeSpec { name: RELATION, marker: false, container: true, syntax: Default },
+        NodeSpec { name: REF,      marker: false, container: true, syntax: Type },
+        NodeSpec { name: COLUMN,   marker: false, container: true, syntax: Identifier },
+        NodeSpec { name: COL,      marker: false, container: true, syntax: Default },
+        NodeSpec { name: STAR,     marker: false, container: true, syntax: Keyword },
+
+        // Literals and values
+        NodeSpec { name: LITERAL, marker: false, container: true, syntax: String },
+        NodeSpec { name: LIST,    marker: false, container: true, syntax: Default },
+
+        // Functions / calls
+        NodeSpec { name: CALL, marker: false, container: true, syntax: Function },
+        NodeSpec { name: BODY, marker: false, container: true, syntax: Default },
+        NodeSpec { name: ARG,  marker: false, container: true, syntax: Default },
+
+        // Subqueries / CTEs / set operations
+        NodeSpec { name: SUBQUERY, marker: false, container: true, syntax: Default },
+        NodeSpec { name: CTE,      marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: UNION,    marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: EXISTS,   marker: false, container: true, syntax: Keyword },
+
+        // Window functions
+        NodeSpec { name: WINDOW,    marker: false, container: true, syntax: Function },
+        NodeSpec { name: OVER,      marker: false, container: true, syntax: Default },
+        NodeSpec { name: PARTITION, marker: false, container: true, syntax: Default },
+
+        // CASE
+        NodeSpec { name: CASE, marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: WHEN, marker: false, container: true, syntax: Keyword },
+
+        // CAST
+        NodeSpec { name: CAST, marker: false, container: true, syntax: Function },
+
+        // DDL
+        NodeSpec { name: CREATE,     marker: false, container: true, syntax: Default },
+        NodeSpec { name: COLUMNS,    marker: false, container: true, syntax: Default },
+        NodeSpec { name: DEFINITION, marker: false, container: true, syntax: Default },
+
+        // MERGE
+        NodeSpec { name: MERGE, marker: false, container: true, syntax: Keyword },
+
+        // Transactions / SET / GO / EXEC / FUNCTION
+        NodeSpec { name: TRANSACTION, marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: SET,         marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: FUNCTION,    marker: false, container: true, syntax: Default },
+        NodeSpec { name: GO,          marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: EXEC,        marker: false, container: true, syntax: Keyword },
+
+        // ALTER TABLE / CREATE INDEX
+        NodeSpec { name: ALTER_TABLE,  marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: ADD_COLUMN,   marker: false, container: true, syntax: Default },
+        NodeSpec { name: CREATE_INDEX, marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: INDEX_FIELDS, marker: false, container: true, syntax: Default },
+
+        // Data types
+        NodeSpec { name: INT,      marker: false, container: true, syntax: Type },
+        NodeSpec { name: VARCHAR,  marker: false, container: true, syntax: Type },
+        NodeSpec { name: NVARCHAR, marker: false, container: true, syntax: Type },
+        NodeSpec { name: DATETIME, marker: false, container: true, syntax: Type },
+
+        // Expressions
+        NodeSpec { name: COMPARE, marker: false, container: true, syntax: Operator },
+        NodeSpec { name: BETWEEN, marker: false, container: true, syntax: Operator },
+        NodeSpec { name: ASSIGN,  marker: false, container: true, syntax: Operator },
+
+        // Identifiers and their variants
+        NodeSpec { name: NAME,    marker: false, container: true, syntax: Identifier },
+        NodeSpec { name: ALIAS,   marker: false, container: true, syntax: Identifier },
+        NodeSpec { name: SCHEMA,  marker: false, container: true, syntax: Identifier },
+        NodeSpec { name: VAR,     marker: false, container: true, syntax: Identifier },
+        NodeSpec { name: TEMP,    marker: false, container: true, syntax: Identifier },
+        NodeSpec { name: COMMENT, marker: false, container: true, syntax: Comment },
+
+        // Operator child
+        NodeSpec { name: OP, marker: false, container: true, syntax: Operator },
     ];
+
+    pub fn spec(name: &str) -> Option<&'static NodeSpec> {
+        NODES.iter().find(|n| n.name == name)
+    }
+
+    pub fn all_names() -> impl Iterator<Item = &'static str> {
+        NODES.iter().map(|n| n.name)
+    }
+
+    pub fn is_marker_only(name: &str) -> bool {
+        spec(name).map_or(false, |s| s.marker && !s.container)
+    }
+
+    pub fn is_declared(name: &str) -> bool {
+        spec(name).is_some()
+    }
 }
 
 /// Transform a T-SQL AST node
@@ -493,39 +586,44 @@ fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     Ok(())
 }
 
-/// Map a transformed element name to a syntax category for highlighting
+/// Map a transformed element name to a syntax category for highlighting.
+///
+/// Consults the per-name NODES table first (one source of truth);
+/// falls back to cross-cutting rules for names not in NODES.
 pub fn syntax_category(element: &str) -> SyntaxCategory {
+    if let Some(spec) = semantic::spec(element) {
+        return spec.syntax;
+    }
     match element {
-        // Identifiers
-        "name" | "alias" | "schema" | "var" | "temp" | "column" => SyntaxCategory::Identifier,
-
-        // Literals
-        "literal" => SyntaxCategory::String,
-
-        // Keywords - statements and clauses
-        "select" | "insert" | "update" | "delete" => SyntaxCategory::Keyword,
-        "from" | "where" | "order_by" | "group_by" | "having" => SyntaxCategory::Keyword,
-        "join" | "union" | "exists" | "merge" => SyntaxCategory::Keyword,
-        "statement" | "create_table" | "alter_table" | "create_index" | "cte" => SyntaxCategory::Keyword,
-        "create_function" | "exec" | "set" | "transaction" | "go" => SyntaxCategory::Keyword,
-        "case" | "when" | "direction" => SyntaxCategory::Keyword,
-        "star" => SyntaxCategory::Keyword,
-
-        // Types
-        "int" | "varchar" | "nvarchar" | "datetime" | "ref" => SyntaxCategory::Type,
-
-        // Functions/calls
-        "call" | "cast" | "window" => SyntaxCategory::Function,
-
-        // Operators
-        "op" => SyntaxCategory::Operator,
+        // Raw tree-sitter kinds / builder wrappers not in NODES:
+        "order_by" | "group_by" => SyntaxCategory::Keyword,
+        "create_table" | "create_function" => SyntaxCategory::Keyword,
         _ if is_operator_marker(element) => SyntaxCategory::Operator,
-        "compare" | "between" | "assign" => SyntaxCategory::Operator,
-
-        // Comments
-        "comment" => SyntaxCategory::Comment,
-
-        // Structural elements - no color
         _ => SyntaxCategory::Default,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::semantic::NODES;
+
+    #[test]
+    fn no_duplicate_node_names() {
+        let mut names: Vec<&str> = NODES.iter().map(|n| n.name).collect();
+        names.sort();
+        let total = names.len();
+        names.dedup();
+        assert_eq!(names.len(), total, "duplicate NODES entry");
+    }
+
+    #[test]
+    fn no_unused_role() {
+        for n in NODES {
+            assert!(
+                n.marker || n.container,
+                "<{}> is neither marker nor container — dead entry?",
+                n.name,
+            );
+        }
     }
 }

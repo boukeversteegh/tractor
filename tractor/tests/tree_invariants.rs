@@ -399,10 +399,7 @@ fn markers_stay_empty() {
             continue;
         }
         let Some(lang) = lang_from_ext(ext) else { continue };
-        let Some(marker_only) = tractor::languages::marker_only_names(lang) else {
-            continue;
-        };
-        if marker_only.is_empty() {
+        if !tractor::languages::has_semantic_vocabulary(lang) {
             continue;
         }
         let Some(parsed) = parse_structure(&fixture) else { continue };
@@ -410,7 +407,7 @@ fn markers_stay_empty() {
         let root = parsed.documents.document_node(parsed.doc_handle).unwrap();
         walk_elements(xot, root, &mut |xot, node| {
             let Some(name) = element_name(xot, node) else { return };
-            if !marker_only.contains(&name.as_str()) {
+            if !tractor::languages::is_marker_only_name(lang, &name) {
                 return;
             }
             // Marker element must have no element children and no
@@ -560,7 +557,7 @@ const ASSERT_ALL_NAMES_MEMBERSHIP: bool = true;
 
 #[test]
 fn all_names_declared_in_semantic_module() {
-    use tractor::languages::{all_semantic_names, is_field_wrapper_name};
+    use tractor::languages::{has_semantic_vocabulary, is_declared_name, is_field_wrapper_name};
     use tractor::xot::transform::helpers::is_operator_marker_name;
 
     let mut report = Report::default();
@@ -570,14 +567,16 @@ fn all_names_declared_in_semantic_module() {
             continue;
         }
         let Some(lang) = lang_from_ext(ext) else { continue };
-        let Some(declared) = all_semantic_names(lang) else { continue };
+        if !has_semantic_vocabulary(lang) {
+            continue;
+        }
         let Some(parsed) = parse_structure(&fixture) else { continue };
         let xot = parsed.documents.xot();
         let root = parsed.documents.document_node(parsed.doc_handle).unwrap();
         walk_elements(xot, root, &mut |xot, node| {
             let Some(name) = element_name(xot, node) else { return };
-            // (1) Per-language ALL_NAMES — the main source of truth.
-            if declared.iter().any(|d| *d == name) {
+            // (1) Per-language NODES — the main source of truth.
+            if is_declared_name(lang, &name) {
                 return;
             }
             // (2) Cross-cutting operator markers emitted by the shared
@@ -594,7 +593,7 @@ fn all_names_declared_in_semantic_module() {
             report.record(
                 &name,
                 &fixture,
-                format!("<{}> is not in {}::semantic::ALL_NAMES", name, lang),
+                format!("<{}> is not in {}::semantic::NODES", name, lang),
             );
         });
     }

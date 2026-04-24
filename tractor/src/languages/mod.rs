@@ -24,6 +24,26 @@ use xot::{Xot, Node as XotNode};
 use crate::xot_transform::TransformAction;
 use crate::output::syntax_highlight::SyntaxCategory;
 
+/// Per-name metadata for a language's semantic vocabulary.
+///
+/// Single source of truth for every element name the transform can
+/// emit, tagged with whether it's ever used as an empty marker, ever
+/// used as a structural container, and its syntax-highlighting
+/// category.
+///
+/// `marker` and `container` are NOT mutually exclusive — a dual-use
+/// name (e.g. Python's `static`, `list`, `dict`, `set`; C#'s `class`)
+/// sets both true. The typed booleans replace the "marker_only"
+/// vs "ALL_NAMES" duplication and the comment-documented dual-use
+/// notes.
+#[derive(Debug, Clone, Copy)]
+pub struct NodeSpec {
+    pub name: &'static str,
+    pub marker: bool,
+    pub container: bool,
+    pub syntax: SyntaxCategory,
+}
+
 /// Type alias for language transform functions
 pub type TransformFn = fn(&mut Xot, XotNode) -> Result<TransformAction, xot::Error>;
 
@@ -448,39 +468,65 @@ pub fn get_singleton_wrappers(lang: &str) -> &'static [&'static str] {
     }
 }
 
-/// Return the MARKER_ONLY slice for a language ID, if any.
+/// True iff `name` is a pure marker (never a container) in the given
+/// language's semantic vocabulary. Returns `false` for unknown
+/// languages, unknown names, and dual-use names (which set both
+/// `marker: true` and `container: true` in the NODES table).
+///
 /// Used by the `markers_stay_empty` invariant to assert that names
 /// declared as marker-only never carry text or element children.
-pub fn marker_only_names(lang: &str) -> Option<&'static [&'static str]> {
+pub fn is_marker_only_name(lang: &str, name: &str) -> bool {
     match lang {
-        "csharp" | "cs" => Some(csharp::semantic::MARKER_ONLY),
-        "typescript" | "ts" | "tsx" | "javascript" | "js" | "jsx" => Some(typescript::semantic::MARKER_ONLY),
-        "python" | "py" => Some(python::semantic::MARKER_ONLY),
-        "rust" | "rs" => Some(rust_lang::semantic::MARKER_ONLY),
-        "go" => Some(go::semantic::MARKER_ONLY),
-        "java" => Some(java::semantic::MARKER_ONLY),
-        "php" => Some(php::semantic::MARKER_ONLY),
-        "ruby" | "rb" => Some(ruby::semantic::MARKER_ONLY),
-        "tsql" | "mssql" | "sql" => Some(tsql::semantic::MARKER_ONLY),
-        _ => None,
+        "csharp" | "cs" => csharp::semantic::is_marker_only(name),
+        "typescript" | "ts" | "tsx" | "javascript" | "js" | "jsx" => typescript::semantic::is_marker_only(name),
+        "python" | "py" => python::semantic::is_marker_only(name),
+        "rust" | "rs" => rust_lang::semantic::is_marker_only(name),
+        "go" => go::semantic::is_marker_only(name),
+        "java" => java::semantic::is_marker_only(name),
+        "php" => php::semantic::is_marker_only(name),
+        "ruby" | "rb" => ruby::semantic::is_marker_only(name),
+        "tsql" | "mssql" | "sql" => tsql::semantic::is_marker_only(name),
+        _ => false,
     }
 }
 
-/// Return the ALL_NAMES slice for a language ID, if any.
-/// Covers every semantic element name a language's transform can emit
-/// — structural containers AND marker-only names.
-pub fn all_semantic_names(lang: &str) -> Option<&'static [&'static str]> {
+/// True iff the given language has a declared semantic vocabulary
+/// (i.e. a populated NODES table). Used to gate the per-language
+/// ALL_NAMES invariant — languages that haven't yet defined a spec
+/// (data / config formats) are simply skipped.
+pub fn has_semantic_vocabulary(lang: &str) -> bool {
+    matches!(
+        lang,
+        "csharp" | "cs"
+            | "typescript" | "ts" | "tsx" | "javascript" | "js" | "jsx"
+            | "python" | "py"
+            | "rust" | "rs"
+            | "go"
+            | "java"
+            | "php"
+            | "ruby" | "rb"
+            | "tsql" | "mssql" | "sql"
+    )
+}
+
+/// True iff `name` is declared in the given language's NODES table —
+/// i.e. it's a semantic element the language's transform can emit.
+///
+/// Returns `false` for unknown languages AND for languages without a
+/// declared vocabulary; use `has_semantic_vocabulary` to distinguish
+/// "undeclared name" from "language doesn't declare anything yet".
+pub fn is_declared_name(lang: &str, name: &str) -> bool {
     match lang {
-        "csharp" | "cs" => Some(csharp::semantic::ALL_NAMES),
-        "typescript" | "ts" | "tsx" | "javascript" | "js" | "jsx" => Some(typescript::semantic::ALL_NAMES),
-        "python" | "py" => Some(python::semantic::ALL_NAMES),
-        "rust" | "rs" => Some(rust_lang::semantic::ALL_NAMES),
-        "go" => Some(go::semantic::ALL_NAMES),
-        "java" => Some(java::semantic::ALL_NAMES),
-        "php" => Some(php::semantic::ALL_NAMES),
-        "ruby" | "rb" => Some(ruby::semantic::ALL_NAMES),
-        "tsql" | "mssql" | "sql" => Some(tsql::semantic::ALL_NAMES),
-        _ => None,
+        "csharp" | "cs" => csharp::semantic::is_declared(name),
+        "typescript" | "ts" | "tsx" | "javascript" | "js" | "jsx" => typescript::semantic::is_declared(name),
+        "python" | "py" => python::semantic::is_declared(name),
+        "rust" | "rs" => rust_lang::semantic::is_declared(name),
+        "go" => go::semantic::is_declared(name),
+        "java" => java::semantic::is_declared(name),
+        "php" => php::semantic::is_declared(name),
+        "ruby" | "rb" => ruby::semantic::is_declared(name),
+        "tsql" | "mssql" | "sql" => tsql::semantic::is_declared(name),
+        _ => false,
     }
 }
 

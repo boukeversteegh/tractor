@@ -10,7 +10,12 @@ use semantic::*;
 /// Tree-sitter kind strings (left side of `match` arms) stay as bare
 /// literals — they are external vocabulary.
 pub mod semantic {
-    // Structural — containers.
+    use crate::languages::NodeSpec;
+    use crate::output::syntax_highlight::SyntaxCategory;
+
+    // Named constants retained for use by the transform code. The NODES
+    // table below is the source of truth for marker/container role and
+    // syntax category.
 
     // Top-level / declarations
     pub const PROGRAM: &str = "program";
@@ -24,11 +29,6 @@ pub mod semantic {
     pub const ELSE: &str = "else";
     pub const ELSE_IF: &str = "else_if";
     pub const CASE: &str = "case";
-    // `then` — Ruby's grammar emits this as a distinct leaf kind for the
-    // body branch of `if/elsif/unless`. Other languages synthesise it via
-    // the `consequence → then` field-wrapping pass; Ruby omits that pair
-    // from its wrappings because the grammar already produces the node.
-    // Keep it here so the ALL_NAMES invariant recognises it.
     pub const THEN: &str = "then";
     pub const WHILE: &str = "while";
     pub const UNTIL: &str = "until";
@@ -60,18 +60,13 @@ pub mod semantic {
     pub const IN: &str = "in";
     pub const PATTERN: &str = "pattern";
 
-    // Control-flow keyword leaves (tree-sitter emits them as distinct
-    // kinds that carry their keyword as text). Containers with text.
+    // Control-flow keyword leaves.
     pub const NEXT: &str = "next";
     pub const REDO: &str = "redo";
     pub const RETRY: &str = "retry";
 
-    // Rescue metadata — `rescue ExceptionType => e` breaks out the
-    // exception type list as a child of `<rescue>`.
+    // Rescue / class header metadata.
     pub const EXCEPTIONS: &str = "exceptions";
-
-    // Class header — `class User < Base` renders the superclass part
-    // as `<superclass>` wrapping the parent constant.
     pub const SUPERCLASS: &str = "superclass";
 
     // Collections / atoms
@@ -85,8 +80,7 @@ pub mod semantic {
     pub const FLOAT: &str = "float";
     pub const REGEX: &str = "regex";
 
-    // Literal atoms that carry their source text (e.g. `true`/`false`/
-    // `nil`/`self` — each a dedicated tree-sitter leaf kind).
+    // Literal atoms.
     pub const TRUE: &str = "true";
     pub const FALSE: &str = "false";
     pub const NIL: &str = "nil";
@@ -97,82 +91,151 @@ pub mod semantic {
     pub const CONSTANT: &str = "constant";
     pub const COMMENT: &str = "comment";
 
-    // Markers — always empty when emitted.
-
-    // Array-shape markers (for %w[…] / %i[…] percent-literals).
-    //   - STRING also doubles as a structural container.
-    //   - SYMBOL also doubles as a structural container.
-    // Both stay as constants but are OMITTED from MARKER_ONLY.
-
-    // Spread-shape markers (`*args` vs `**kwargs`).
+    // Spread-shape markers.
     pub const LIST: &str = "list";
     pub const DICT: &str = "dict";
 
     // Parameter-shape markers.
     pub const KEYWORD: &str = "keyword";
-    //   - BLOCK doubles as `<parameter><block/>` marker AND `<block>` container
-    //     (do/begin blocks). Kept as a constant but NOT in MARKER_ONLY.
-    //   - DEFAULT (optional parameter) doesn't collide with a container here
-    //     but stays consistent with other languages: keep it a marker.
     pub const DEFAULT: &str = "default";
 
-    // Block-shape markers (do … end vs begin … end).
-    //   - DO is marker-only.
-    //   - BEGIN doubles as `<begin>` structural container AND `<block><begin/>`
-    //     marker. Kept as constant but OMITTED from MARKER_ONLY.
+    // Block-shape / dual-use markers.
     pub const DO: &str = "do";
 
-    // Symbol-shape marker (`:"dyn#{foo}"` → `<symbol><delimited/>`).
+    // Symbol-shape marker.
     pub const DELIMITED: &str = "delimited";
 
-    // Class / method singleton markers (`class << self`, `def self.foo`).
+    // Class / method singleton markers.
     pub const SINGLETON: &str = "singleton";
 
-    // Block parameter marker (`&block`).
+    // Dual-use (block container + `<parameter><block/>` marker).
     pub const BLOCK: &str = "block";
 
-    // Ambiguous names — emitted as BOTH structural container AND marker
-    // in different contexts. Kept as constants for type-safety but NOT in
-    // MARKER_ONLY:
-    //   - STRING: `<string>` literal AND `<array><string/>` shape marker.
-    //   - SYMBOL: `<symbol>` literal AND `<array><symbol/>` shape marker.
-    //   - BLOCK: `<block>` container (do_block/begin_block) AND
-    //     `<parameter><block/>` shape marker.
-    //   - BEGIN: `<begin>` container AND `<block><begin/>` marker.
-    //   - DO: marker on `<block><do/>` AND structural container — the
-    //     Ruby grammar has a `do` kind used as the body of `while` /
-    //     `until` / `for` loops.
+    use SyntaxCategory::*;
 
-    /// Names that, when emitted, are always empty elements (no text,
-    /// no element children). Used by the markers-stay-empty invariant.
-    pub const MARKER_ONLY: &[&str] = &[
-        LIST, DICT,
-        KEYWORD, DEFAULT,
-        DELIMITED,
-        SINGLETON,
+    /// Per-name metadata — single source of truth for every element
+    /// name this language's transform can emit.
+    ///
+    /// Dual-use names set BOTH `marker: true` and `container: true`:
+    ///   - STRING — `<string>` literal container + `<array><string/>` shape marker.
+    ///   - SYMBOL — `<symbol>` literal container + `<array><symbol/>` shape marker.
+    ///   - BLOCK  — `<block>` container (do/begin blocks) +
+    ///              `<parameter><block/>` shape marker.
+    ///   - BEGIN  — `<begin>` container + `<block><begin/>` marker.
+    ///   - DO     — `<block><do/>` marker + structural `do` container
+    ///              (body of while/until/for loops).
+    pub const NODES: &[NodeSpec] = &[
+        // Top-level / declarations
+        NodeSpec { name: PROGRAM, marker: false, container: true, syntax: Default },
+        NodeSpec { name: MODULE,  marker: false, container: true, syntax: Default },
+        NodeSpec { name: CLASS,   marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: METHOD,  marker: false, container: true, syntax: Keyword },
+
+        // Statements / control flow (BEGIN dual-use)
+        NodeSpec { name: IF,       marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: UNLESS,   marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: ELSE,     marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: ELSE_IF,  marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: CASE,     marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: THEN,     marker: false, container: true, syntax: Default },
+        NodeSpec { name: WHILE,    marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: UNTIL,    marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: FOR,      marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: BEGIN,    marker: true,  container: true, syntax: Keyword },
+        NodeSpec { name: RESCUE,   marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: ENSURE,   marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: BREAK,    marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: CONTINUE, marker: false, container: true, syntax: Default },
+
+        // Members / parameters
+        NodeSpec { name: PARAMETER, marker: false, container: true, syntax: Default },
+        NodeSpec { name: VARIABLE,  marker: false, container: true, syntax: Default },
+
+        // Expressions
+        NodeSpec { name: CALL,        marker: false, container: true, syntax: Function },
+        NodeSpec { name: ASSIGN,      marker: false, container: true, syntax: Operator },
+        NodeSpec { name: BINARY,      marker: false, container: true, syntax: Operator },
+        NodeSpec { name: UNARY,       marker: false, container: true, syntax: Operator },
+        NodeSpec { name: CONDITIONAL, marker: false, container: true, syntax: Default },
+        NodeSpec { name: RANGE,       marker: false, container: true, syntax: Default },
+        NodeSpec { name: LAMBDA,      marker: false, container: true, syntax: Function },
+        NodeSpec { name: YIELD,       marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: SPREAD,      marker: false, container: true, syntax: Default },
+        NodeSpec { name: LEFT,        marker: false, container: true, syntax: Default },
+
+        // Pattern-matching
+        NodeSpec { name: WHEN,    marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: IN,      marker: false, container: true, syntax: Default },
+        NodeSpec { name: PATTERN, marker: false, container: true, syntax: Default },
+
+        // Control-flow keyword leaves
+        NodeSpec { name: NEXT,  marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: REDO,  marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: RETRY, marker: false, container: true, syntax: Keyword },
+
+        // Rescue / class header metadata
+        NodeSpec { name: EXCEPTIONS, marker: false, container: true, syntax: Default },
+        NodeSpec { name: SUPERCLASS, marker: false, container: true, syntax: Default },
+
+        // Collections / atoms (STRING, SYMBOL dual-use)
+        NodeSpec { name: ARRAY,         marker: false, container: true, syntax: Type },
+        NodeSpec { name: HASH,          marker: false, container: true, syntax: Type },
+        NodeSpec { name: PAIR,          marker: false, container: true, syntax: Default },
+        NodeSpec { name: STRING,        marker: true,  container: true, syntax: String },
+        NodeSpec { name: INTERPOLATION, marker: false, container: true, syntax: Default },
+        NodeSpec { name: SYMBOL,        marker: true,  container: true, syntax: String },
+        NodeSpec { name: INT,           marker: false, container: true, syntax: Number },
+        NodeSpec { name: FLOAT,         marker: false, container: true, syntax: Number },
+        NodeSpec { name: REGEX,         marker: false, container: true, syntax: Default },
+
+        // Literal atoms
+        NodeSpec { name: TRUE,  marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: FALSE, marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: NIL,   marker: false, container: true, syntax: Keyword },
+        NodeSpec { name: SELF,  marker: false, container: true, syntax: Keyword },
+
+        // Identifiers
+        NodeSpec { name: NAME,     marker: false, container: true, syntax: Identifier },
+        NodeSpec { name: CONSTANT, marker: false, container: true, syntax: Default },
+        NodeSpec { name: COMMENT,  marker: false, container: true, syntax: Comment },
+
+        // Spread-shape markers
+        NodeSpec { name: LIST, marker: true, container: false, syntax: Default },
+        NodeSpec { name: DICT, marker: true, container: false, syntax: Default },
+
+        // Parameter-shape markers
+        NodeSpec { name: KEYWORD, marker: true, container: false, syntax: Default },
+        NodeSpec { name: DEFAULT, marker: true, container: false, syntax: Default },
+
+        // Block-shape / dual-use: DO is both marker (on block) and
+        // container (loop body).
+        NodeSpec { name: DO, marker: true, container: true, syntax: Keyword },
+
+        // Symbol-shape marker
+        NodeSpec { name: DELIMITED, marker: true, container: false, syntax: Default },
+
+        // Class / method singleton markers
+        NodeSpec { name: SINGLETON, marker: true, container: false, syntax: Default },
+
+        // Dual-use: block container + `<parameter><block/>` marker.
+        NodeSpec { name: BLOCK, marker: true, container: true, syntax: Default },
     ];
 
-    /// Every semantic name this language's transform can emit.
-    pub const ALL_NAMES: &[&str] = &[
-        PROGRAM, MODULE, CLASS, METHOD,
-        IF, UNLESS, ELSE, ELSE_IF, THEN, CASE, WHILE, UNTIL, FOR,
-        BEGIN, RESCUE, ENSURE, BREAK, CONTINUE,
-        PARAMETER, VARIABLE,
-        CALL, ASSIGN, BINARY, UNARY, CONDITIONAL, RANGE, LAMBDA, YIELD,
-        SPREAD, LEFT,
-        WHEN, IN, PATTERN,
-        NEXT, REDO, RETRY,
-        EXCEPTIONS, SUPERCLASS,
-        ARRAY, HASH, PAIR, STRING, INTERPOLATION, SYMBOL, INT, FLOAT, REGEX,
-        TRUE, FALSE, NIL, SELF,
-        NAME, CONSTANT, COMMENT,
-        LIST, DICT,
-        KEYWORD, DEFAULT,
-        DO,
-        DELIMITED,
-        SINGLETON,
-        BLOCK,
-    ];
+    pub fn spec(name: &str) -> Option<&'static NodeSpec> {
+        NODES.iter().find(|n| n.name == name)
+    }
+
+    pub fn all_names() -> impl Iterator<Item = &'static str> {
+        NODES.iter().map(|n| n.name)
+    }
+
+    pub fn is_marker_only(name: &str) -> bool {
+        spec(name).map_or(false, |s| s.marker && !s.container)
+    }
+
+    pub fn is_declared(name: &str) -> bool {
+        spec(name).is_some()
+    }
 }
 
 /// Transform a Ruby AST node
@@ -398,48 +461,44 @@ fn apply_rename(xot: &mut Xot, node: XotNode, kind: &str) -> Result<(), xot::Err
     Ok(())
 }
 
-/// Map a transformed element name to a syntax category for highlighting
+/// Map a transformed element name to a syntax category for highlighting.
+///
+/// Consults the per-name NODES table first (one source of truth);
+/// falls back to cross-cutting rules for names not in NODES.
 pub fn syntax_category(element: &str) -> SyntaxCategory {
+    if let Some(spec) = semantic::spec(element) {
+        return spec.syntax;
+    }
     match element {
-        // Identifiers
-        "name" => SyntaxCategory::Identifier,
+        // Raw tree-sitter kinds / builder wrappers not in NODES:
         "type" => SyntaxCategory::Type,
-
-        // Literals
-        "string" => SyntaxCategory::String,
-        "int" | "float" => SyntaxCategory::Number,
-        "symbol" => SyntaxCategory::String,
-        "true" | "false" | "nil" => SyntaxCategory::Keyword,
-
-        // Keywords - declarations
-        "class" | "module" | "method" => SyntaxCategory::Keyword,
-
-        // Keywords - control flow
-        "if" | "unless" | "else" | "else_if" => SyntaxCategory::Keyword,
-        "case" | "when" => SyntaxCategory::Keyword,
-        "while" | "until" | "for" => SyntaxCategory::Keyword,
-        "begin" | "rescue" | "ensure" | "raise" => SyntaxCategory::Keyword,
-        "return" | "break" | "next" | "redo" | "retry" => SyntaxCategory::Keyword,
-        "yield" => SyntaxCategory::Keyword,
-
-        // Keywords - other
-        "def" | "end" | "do" => SyntaxCategory::Keyword,
-        "self" | "super" => SyntaxCategory::Keyword,
-
-        // Collections
-        "array" | "hash" => SyntaxCategory::Type,
-
-        // Functions/calls
-        "call" => SyntaxCategory::Function,
-
-        // Operators
-        "op" => SyntaxCategory::Operator,
-        "binary" | "unary" | "assign" => SyntaxCategory::Operator,
-
-        // Comments
-        "comment" => SyntaxCategory::Comment,
-
-        // Structural elements - no color
+        "raise" | "return" => SyntaxCategory::Keyword,
+        "def" | "end" | "super" => SyntaxCategory::Keyword,
         _ => SyntaxCategory::Default,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::semantic::NODES;
+
+    #[test]
+    fn no_duplicate_node_names() {
+        let mut names: Vec<&str> = NODES.iter().map(|n| n.name).collect();
+        names.sort();
+        let total = names.len();
+        names.dedup();
+        assert_eq!(names.len(), total, "duplicate NODES entry");
+    }
+
+    #[test]
+    fn no_unused_role() {
+        for n in NODES {
+            assert!(
+                n.marker || n.container,
+                "<{}> is neither marker nor container — dead entry?",
+                n.name,
+            );
+        }
     }
 }
