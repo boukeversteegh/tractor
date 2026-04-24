@@ -197,11 +197,19 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
 
-        // Function definitions — extract async modifier if present
+        // Function definitions — extract async modifier if present;
+        // inject a visibility marker when the function lives directly
+        // inside a `class_definition` body (Principle #9). Python's
+        // convention: `__x` → private, `_x` → protected, bare → public.
         "function_definition" => {
             let texts = get_text_children(xot, node);
             if texts.iter().any(|t| t.contains("async")) {
                 prepend_empty_element(xot, node, "async")?;
+            }
+            if is_inside_class_body(xot, node) {
+                if let Some(vis) = python_visibility_from_def(xot, node) {
+                    prepend_empty_element(xot, node, vis)?;
+                }
             }
             rename(xot, node, "function");
             Ok(TransformAction::Continue)
@@ -434,6 +442,54 @@ fn inline_single_identifier(xot: &mut Xot, node: XotNode) -> Result<(), xot::Err
         return Ok(());
     }
     Ok(())
+}
+
+/// Returns true if `node` is directly inside a `class_definition`'s body.
+/// Walks up parents looking for a `class_definition` tree-sitter kind,
+/// stopping at the first `function_definition` (nested defs don't inherit).
+fn is_inside_class_body(xot: &Xot, node: XotNode) -> bool {
+    let mut current = get_parent(xot, node);
+    while let Some(parent) = current {
+        if let Some(kind) = get_kind(xot, parent) {
+            match kind.as_str() {
+                "class_definition" => return true,
+                "function_definition" => return false,
+                _ => {}
+            }
+        }
+        current = get_parent(xot, parent);
+    }
+    false
+}
+
+/// Extract the Python visibility marker name from a function_definition's
+/// identifier. Returns None if the identifier can't be found.
+///   `__x` / `__x__` → public (dunder methods like `__init__` are special)
+///   `__x`          → private
+///   `_x`           → protected
+///   `x`            → public
+fn python_visibility_from_def(xot: &Xot, node: XotNode) -> Option<&'static str> {
+    // The identifier child (field="name" on the def) carries the name.
+    for child in xot.children(node) {
+        if xot.element(child).is_none() { continue; }
+        let kind = get_kind(xot, child);
+        if kind.as_deref() != Some("identifier") { continue; }
+        let text = get_text_content(xot, child)?;
+        let name = text.trim();
+        // Dunder methods (`__init__`, `__str__`, etc.) are part of the
+        // public protocol — they're conventional interface hooks.
+        if name.starts_with("__") && name.ends_with("__") && name.len() > 4 {
+            return Some("public");
+        }
+        if name.starts_with("__") {
+            return Some("private");
+        }
+        if name.starts_with('_') {
+            return Some("protected");
+        }
+        return Some("public");
+    }
+    None
 }
 
 /// Returns true if `node` has exactly one element descendant and it's an

@@ -300,7 +300,7 @@ program/
   │           │       ├─ name = "Map"
   │           │       └─ "()"
   │           ├─ ";"
-  │           ├─ method/
+  │           ├─ method[public]/
   │           │   ├─ name = "constructor"
   │           │   ├─ "("
   │           │   ├─ parameter[required and public]/
@@ -316,7 +316,7 @@ program/
   │           │   │   └─ type/name = "number"
   │           │   ├─ ")"
   │           │   └─ body/block = "{}"
-  │           ├─ method[abstract]/
+  │           ├─ method[abstract and public]/
   │           │   ├─ "abstract"
   │           │   ├─ name = "render"
   │           │   ├─ "()"
@@ -324,7 +324,7 @@ program/
   │           │       ├─ ":"
   │           │       └─ type/name = "string"
   │           ├─ ";"
-  │           ├─ method[get]/
+  │           ├─ method[public and get]/
   │           │   ├─ "get"
   │           │   ├─ name = "cacheSize"
   │           │   ├─ "()"
@@ -344,7 +344,7 @@ program/
   │           │       │   │   └─ property/name = "size"
   │           │       │   └─ ";"
   │           │       └─ "}"
-  │           ├─ method[set]/
+  │           ├─ method[public and set]/
   │           │   ├─ "set"
   │           │   ├─ name = "primary"
   │           │   ├─ "("
@@ -431,13 +431,13 @@ program/
   │       │   └─ ">"
   │       └─ body/
   │           ├─ "{"
-  │           ├─ field[private]/
+  │           ├─ field[private and public]/
   │           │   ├─ "static"
   │           │   ├─ name = "counter"
   │           │   ├─ "="
   │           │   └─ value/number = "0"
   │           ├─ ";"
-  │           ├─ method/
+  │           ├─ method[public]/
   │           │   ├─ name = "constructor"
   │           │   ├─ "("
   │           │   ├─ parameter[required]/
@@ -470,7 +470,7 @@ program/
   │           │       │   │   └─ property/name = "#counter"
   │           │       │   └─ op[increment] = "++"
   │           │       └─ ";\n    }"
-  │           ├─ method[override]/
+  │           ├─ method[public and override]/
   │           │   ├─ "override"
   │           │   ├─ name = "render"
   │           │   ├─ "()"
@@ -511,7 +511,7 @@ program/
   │           │       │   │   └─ ">`"
   │           │       │   └─ ";"
   │           │       └─ "}"
-  │           ├─ method[generator]/
+  │           ├─ method[public and generator]/
   │           │   ├─ "*"
   │           │   ├─ name = "entries"
   │           │   ├─ "()"
@@ -572,7 +572,7 @@ program/
   │           │       │       │       └─ "]"
   │           │       │       └─ ";"
   │           │       └─ "}"
-  │           ├─ method[async]/
+  │           ├─ method[public and async]/
   │           │   ├─ "async"
   │           │   ├─ name = "loadAll"
   │           │   ├─ "("

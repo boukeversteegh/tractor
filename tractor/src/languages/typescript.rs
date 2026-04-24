@@ -219,8 +219,27 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // ---------------------------------------------------------------------
         "method_definition" | "function_declaration" | "function_expression"
         | "arrow_function" | "generator_function_declaration"
-        | "generator_function" => {
+        | "generator_function"
+        | "abstract_method_signature" => {
             extract_function_markers(xot, node)?;
+            // Class methods default to public (no keyword in source).
+            // Inject `<public/>` so the invariant "every class member has
+            // an access marker" holds exhaustively (Principle #9).
+            if matches!(kind.as_str(), "method_definition" | "abstract_method_signature")
+                && !has_visibility_marker(xot, node)
+            {
+                prepend_empty_element(xot, node, "public")?;
+            }
+            apply_rename(xot, node, &kind)?;
+            Ok(TransformAction::Continue)
+        }
+
+        // Class field (`foo = 1;` / `readonly x: T`) — same default
+        // visibility rule as methods.
+        "field_definition" | "public_field_definition" => {
+            if !has_visibility_marker(xot, node) {
+                prepend_empty_element(xot, node, "public")?;
+            }
             apply_rename(xot, node, &kind)?;
             Ok(TransformAction::Continue)
         }
@@ -587,6 +606,28 @@ fn retag_value_as_type(xot: &mut Xot, parent: XotNode) -> Result<(), xot::Error>
 
 fn has_kind(xot: &Xot, node: XotNode) -> bool {
     get_kind(xot, node).is_some()
+}
+
+/// Returns true if `node` has a visibility-related modifier child.
+/// Matches both the raw tree-sitter kind (`accessibility_modifier`)
+/// AND post-transform marker element names (`public`/`private`/`protected`).
+/// Walk-order safe: the accessibility_modifier transform fires before the
+/// enclosing method/field sees its children in Continue mode, so either
+/// form may be present by the time we look.
+fn has_visibility_marker(xot: &Xot, node: XotNode) -> bool {
+    for child in xot.children(node) {
+        if xot.element(child).is_none() { continue; }
+        let ts_kind = get_kind(xot, child);
+        if ts_kind.as_deref() == Some("accessibility_modifier") {
+            return true;
+        }
+        if let Some(name) = get_element_name(xot, child) {
+            if matches!(name.as_str(), "public" | "private" | "protected") {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 /// If `node` contains a single identifier child, replace the node's children

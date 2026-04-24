@@ -193,11 +193,43 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
 
+        // Class members default to public when no visibility modifier
+        // is written (PHP spec). Inject `<public/>` so the invariant
+        // "every class member has an access marker" holds exhaustively
+        // (Principle #9).
+        "method_declaration" | "property_declaration" => {
+            if !has_visibility_marker(xot, node) {
+                prepend_empty_element(xot, node, "public")?;
+            }
+            apply_rename(xot, node, &kind)?;
+            Ok(TransformAction::Continue)
+        }
+
         _ => {
             apply_rename(xot, node, &kind)?;
             Ok(TransformAction::Continue)
         }
     }
+}
+
+/// Returns true if `node` has a PHP visibility modifier child.
+/// Walk order: when we enter method/property_declaration, the
+/// visibility_modifier child may still be raw (pre-rename) or already
+/// transformed to a marker element — check both.
+fn has_visibility_marker(xot: &Xot, node: XotNode) -> bool {
+    for child in xot.children(node) {
+        if xot.element(child).is_none() { continue; }
+        let ts_kind = get_kind(xot, child);
+        if ts_kind.as_deref() == Some("visibility_modifier") {
+            return true;
+        }
+        if let Some(name) = get_element_name(xot, child) {
+            if matches!(name.as_str(), "public" | "private" | "protected") {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 /// Apply `map_element_name` to a node: rename + prepend marker (if any).

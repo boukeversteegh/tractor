@@ -1,4 +1,4 @@
-method[get]/
+method[public and get]/
   ├─ "get"
   ├─ name = "value"
   ├─ "()"

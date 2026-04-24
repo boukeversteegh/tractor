@@ -9,7 +9,7 @@ class/
   │   └─ type/name = "Barker"
   └─ body/
       ├─ "{"
-      ├─ method/
+      ├─ method[public]/
       │   ├─ name = "bark"
       │   ├─ "()"
       │   ├─ returns/
