@@ -160,36 +160,57 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         // ---------------------------------------------------------------------
-        // Name wrappers - inline identifier text directly
-        // TreeSitter: <name><identifier>Foo</identifier></name>
-        // We want: <name>Foo</name> (text content directly in name element)
-        // ---------------------------------------------------------------------
+        // Name wrappers - inline the single identifier child as text.
+        //   <name><identifier>Foo</identifier></name>    →  <name>Foo</name>
+        //   <name><type_identifier>Foo</type_identifier> →  <name>Foo</name>
+        //   <name><name>Foo</name></name>                →  <name>Foo</name>
+        //
+        // Applies uniformly — declaration context and reference
+        // context both want the same flat "identifier as a single
+        // <name> text leaf" shape per the design doc.
         "name" => {
-            // Check if this name wrapper is in a declaration context
-            if let Some(parent) = get_parent(xot, node) {
-                let parent_kind = get_kind(xot, parent).unwrap_or_default();
-                if is_named_declaration(&parent_kind) {
-                    // Find identifier-like child and extract its text.
-                    // Accept `type_identifier` too — class/struct/enum
-                    // declarations have their name tagged as one.
-                    let children: Vec<_> = xot.children(node).collect();
-                    for child in children {
-                        if let Some(child_kind) = get_kind(xot, child) {
-                            if child_kind == "identifier" || child_kind == "type_identifier" {
-                                // Get the text from the identifier
-                                if let Some(text) = get_text_content(xot, child) {
-                                    // Remove all children from <name>
-                                    let all_children: Vec<_> = xot.children(node).collect();
-                                    for c in all_children {
-                                        xot.detach(c)?;
-                                    }
-                                    // Add text directly to <name>
-                                    let text_node = xot.new_text(&text);
-                                    xot.append(node, text_node)?;
-                                    return Ok(TransformAction::Done);
-                                }
-                            }
+            let children: Vec<_> = xot.children(node).collect();
+            let element_children: Vec<_> = children
+                .iter()
+                .copied()
+                .filter(|&c| xot.element(c).is_some())
+                .collect();
+            if element_children.len() == 1 {
+                let child = element_children[0];
+                let child_kind = get_kind(xot, child);
+                let is_identifier = matches!(
+                    child_kind.as_deref(),
+                    Some("identifier") | Some("type_identifier") | Some("property_identifier")
+                );
+                let is_inlined_name =
+                    get_element_name(xot, child).as_deref() == Some("name");
+                // For qualified / scoped names (`System.Text`,
+                // `MyApp.Services.Logger`) concat the descendant
+                // text so the outer <name> holds the full dotted
+                // path as a single text leaf — Principle #14's
+                // uniform `<name>X</name>` shape.
+                let is_qualified = matches!(
+                    child_kind.as_deref(),
+                    Some("qualified_name") | Some("generic_name") | Some("alias_qualified_name")
+                );
+                if is_identifier || is_inlined_name {
+                    if let Some(text) = get_text_content(xot, child) {
+                        for c in children {
+                            xot.detach(c)?;
                         }
+                        let text_node = xot.new_text(&text);
+                        xot.append(node, text_node)?;
+                        return Ok(TransformAction::Done);
+                    }
+                } else if is_qualified {
+                    let text = descendant_text(xot, child);
+                    if !text.is_empty() {
+                        for c in children {
+                            xot.detach(c)?;
+                        }
+                        let text_node = xot.new_text(&text);
+                        xot.append(node, text_node)?;
+                        return Ok(TransformAction::Done);
                     }
                 }
             }

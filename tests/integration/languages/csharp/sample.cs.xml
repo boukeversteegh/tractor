@@ -144,9 +144,7 @@
                             <member>
                               <name>Console</name>
                               .
-                              <name>
-                                <name>WriteLine</name>
-                              </name>
+                              <name>WriteLine</name>
                             </member>
                             (
                             <argument>
@@ -181,9 +179,7 @@
                             <member>
                               <name>_value</name>
                               .
-                              <name>
-                                <name>ToString</name>
-                              </name>
+                              <name>ToString</name>
                             </member>
                             ()
                           </call>
@@ -234,9 +230,7 @@
                             <member>
                               <name>Console</name>
                               .
-                              <name>
-                                <name>WriteLine</name>
-                              </name>
+                              <name>WriteLine</name>
                             </member>
                             (
                             <argument>

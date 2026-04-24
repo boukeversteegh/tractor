@@ -34,27 +34,34 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         // Name wrappers - inline identifier text directly
+        // Inline the single identifier/constant child into plain
+        // text. Applies everywhere a `<name>` field wrapper wraps a
+        // single renamable child — declarations (method/class/module)
+        // AND references (singleton method, call receiver, etc.) —
+        // so the design-doc "identifiers are a single <name> text
+        // leaf" rule holds uniformly.
         "name" => {
-            if let Some(parent) = get_parent(xot, node) {
-                let parent_kind = get_element_name(xot, parent).unwrap_or_default();
-                if matches!(parent_kind.as_str(), "method" | "class" | "module") {
-                    let children: Vec<_> = xot.children(node).collect();
-                    for child in children {
-                        if let Some(child_name) = get_element_name(xot, child) {
-                            // `identifier` for methods, `constant` for classes/modules
-                            // (Ruby's grammar uses constant for capitalized identifiers).
-                            if child_name == "identifier" || child_name == "constant" {
-                                if let Some(text) = get_text_content(xot, child) {
-                                    let all_children: Vec<_> = xot.children(node).collect();
-                                    for c in all_children {
-                                        xot.detach(c)?;
-                                    }
-                                    let text_node = xot.new_text(&text);
-                                    xot.append(node, text_node)?;
-                                    return Ok(TransformAction::Done);
-                                }
-                            }
+            let children: Vec<_> = xot.children(node).collect();
+            let element_children: Vec<_> = children
+                .iter()
+                .copied()
+                .filter(|&c| xot.element(c).is_some())
+                .collect();
+            if element_children.len() == 1 {
+                let child = element_children[0];
+                let child_name = get_element_name(xot, child).unwrap_or_default();
+                // `identifier` for methods, `constant` for classes/
+                // modules (Ruby uses constant for capitalized
+                // identifiers); also accept already-renamed <name>
+                // when walk order leaves one around.
+                if matches!(child_name.as_str(), "identifier" | "constant" | "name") {
+                    if let Some(text) = get_text_content(xot, child) {
+                        for c in children {
+                            xot.detach(c)?;
                         }
+                        let text_node = xot.new_text(&text);
+                        xot.append(node, text_node)?;
+                        return Ok(TransformAction::Done);
                     }
                 }
             }
