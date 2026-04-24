@@ -533,3 +533,64 @@ fn op_marker_matches_text() {
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Invariant 7: Every emitted element name is declared in the language's
+// ALL_NAMES.
+//
+// Each `tractor/src/languages/<lang>.rs` publishes a `semantic` module
+// with `ALL_NAMES: &[&str]` — every node name the transform can emit.
+// The registry in `tractor::languages::all_semantic_names(lang)` makes
+// that set available here.
+//
+// Invariant: for every fixture, every transformed element name must
+// appear in its language's ALL_NAMES set. Unknowns are either:
+//   - a raw tree-sitter kind leaking through (transform missed it)
+//   - a newly-introduced name that the module author forgot to add
+// Either way it's a drift signal worth gating on once at zero.
+//
+// Kept advisory until the ALL_NAMES sets are complete — the current
+// implementation is "advisory by design" (ASSERT_ALL_NAMES_MEMBERSHIP
+// is false by default) because several languages still emit names
+// that slipped through during the initial catalogue drafting; this
+// test surfaces exactly which names are missing from each module.
+// ---------------------------------------------------------------------------
+
+const ASSERT_ALL_NAMES_MEMBERSHIP: bool = false;
+
+#[test]
+fn all_names_declared_in_semantic_module() {
+    use tractor::languages::all_semantic_names;
+
+    let mut report = Report::default();
+    for fixture in iter_fixtures() {
+        let ext = fixture.extension().and_then(|e| e.to_str()).unwrap_or("");
+        if DATA_LANG_EXTS.contains(&ext) {
+            continue;
+        }
+        let Some(lang) = lang_from_ext(ext) else { continue };
+        let Some(declared) = all_semantic_names(lang) else { continue };
+        let Some(parsed) = parse_structure(&fixture) else { continue };
+        let xot = parsed.documents.xot();
+        let root = parsed.documents.document_node(parsed.doc_handle).unwrap();
+        walk_elements(xot, root, &mut |xot, node| {
+            let Some(name) = element_name(xot, node) else { return };
+            if declared.iter().any(|d| *d == name) {
+                return;
+            }
+            report.record(
+                &name,
+                &fixture,
+                format!("<{}> is not in {}::semantic::ALL_NAMES", name, lang),
+            );
+        });
+    }
+    if !report.is_empty() {
+        report.print(
+            "Every emitted element name must be declared in the language's ALL_NAMES",
+        );
+        if ASSERT_INVARIANTS && ASSERT_ALL_NAMES_MEMBERSHIP {
+            panic!("undeclared element names");
+        }
+    }
+}
