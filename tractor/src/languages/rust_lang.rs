@@ -207,6 +207,12 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // beyond their text value (Principle #12).
         "string_content" | "escape_sequence" => Ok(TransformAction::Flatten),
 
+        // Qualified types, enum variants, tuple_struct patterns — all
+        // grammar wrappers with no semantic beyond their subtree.
+        "qualified_type" | "tuple_struct_pattern" | "enum_variant_list" => {
+            Ok(TransformAction::Flatten)
+        }
+
         // Token trees are the opaque body of a macro invocation.
         // Flatten so the macro call reads as a continuous run of
         // tokens; a dedicated structural model of macro args is
@@ -275,6 +281,9 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "while_expression" => Some("while"),
         "loop_expression" => Some("loop"),
         "match_expression" => Some("match"),
+        "enum_variant" => Some("variant"),
+        "lifetime_parameter" | "lifetime" => Some("lifetime"),
+        "function_signature_item" => Some("signature"),
         "match_arm" => Some("arm"),
         "field_declaration" => Some("field"),
         "field_initializer" => Some("field"),

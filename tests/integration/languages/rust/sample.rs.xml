@@ -133,22 +133,20 @@
             enum
             <name>Color</name>
             <body>
-              <enum_variant_list>
-                {
-                <enum_variant>
-                  <name>Red</name>
-                </enum_variant>
-                ,
-                <enum_variant>
-                  <name>Green</name>
-                </enum_variant>
-                ,
-                <enum_variant>
-                  <name>Blue</name>
-                </enum_variant>
-                ,
+              {
+              <variant>
+                <name>Red</name>
+              </variant>
+              ,
+              <variant>
+                <name>Green</name>
+              </variant>
+              ,
+              <variant>
+                <name>Blue</name>
+              </variant>
+              ,
         }
-              </enum_variant_list>
             </body>
           </enum>
           <trait>
@@ -157,7 +155,7 @@
             <name>Drawable</name>
             <body>
               {
-              <function_signature_item>
+              <signature>
                 fn
                 <name>draw</name>
                 (
@@ -166,7 +164,7 @@
                   <self>self</self>
                 </self>
                 );
-              </function_signature_item>
+              </signature>
               }
             </body>
           </trait>

@@ -141,12 +141,10 @@ program/
   │       ├─ "type"
   │       ├─ name = "Pair"
   │       ├─ "="
-  │       ├─ tuple_type/
-  │       │   ├─ "["
+  │       ├─ type/
+  │       │   ├─ name = "[, ]"
   │       │   ├─ type/name = "string"
-  │       │   ├─ ","
-  │       │   ├─ type/name = "number"
-  │       │   └─ "]"
+  │       │   └─ type/name = "number"
   │       └─ ";"
   ├─ export/
   │   ├─ "export"
@@ -154,16 +152,16 @@ program/
   │       ├─ "type"
   │       ├─ name = "Status"
   │       ├─ "="
-  │       ├─ union_type/
-  │       │   ├─ union_type/
-  │       │   │   ├─ union_type/
-  │       │   │   │   ├─ literal_type/string = "\"idle\""
-  │       │   │   │   ├─ "|"
-  │       │   │   │   └─ literal_type/string = "\"loading\""
-  │       │   │   ├─ "|"
-  │       │   │   └─ literal_type/string = "\"ready\""
-  │       │   ├─ "|"
-  │       │   └─ literal_type/string = "\"error\""
+  │       ├─ type/
+  │       │   ├─ name = "|"
+  │       │   ├─ type/
+  │       │   │   ├─ name = "|"
+  │       │   │   ├─ type/
+  │       │   │   │   ├─ name = "|"
+  │       │   │   │   ├─ type/string = "\"idle\""
+  │       │   │   │   └─ type/string = "\"loading\""
+  │       │   │   └─ type/string = "\"ready\""
+  │       │   └─ type/string = "\"error\""
   │       └─ ";"
   ├─ export/
   │   ├─ "export"
@@ -266,18 +264,16 @@ program/
   │       │   └─ ">"
   │       └─ body/
   │           ├─ "{"
-  │           ├─ field/
-  │           │   ├─ accessibility_modifier = "public"
-  │           │   ├─ "static"
+  │           ├─ field[public]/
+  │           │   ├─ "public static"
   │           │   ├─ name = "kind"
   │           │   ├─ ":"
   │           │   ├─ type/name = "string"
   │           │   ├─ "="
   │           │   └─ value/string = "\"base\""
   │           ├─ ";"
-  │           ├─ field/
-  │           │   ├─ accessibility_modifier = "protected"
-  │           │   ├─ "readonly"
+  │           ├─ field[protected]/
+  │           │   ├─ "protected readonly"
   │           │   ├─ name = "createdAt"
   │           │   ├─ ":"
   │           │   ├─ type/name = "number"
@@ -289,8 +285,8 @@ program/
   │           │       │   └─ property/name = "now"
   │           │       └─ "()"
   │           ├─ ";"
-  │           ├─ field/
-  │           │   ├─ accessibility_modifier = "private"
+  │           ├─ field[private]/
+  │           │   ├─ "private"
   │           │   ├─ name = "_cache"
   │           │   ├─ ":"
   │           │   ├─ type[generic]/
@@ -309,15 +305,14 @@ program/
   │           ├─ method/
   │           │   ├─ name = "constructor"
   │           │   ├─ "("
-  │           │   ├─ parameter[required]/
-  │           │   │   ├─ accessibility_modifier = "public"
+  │           │   ├─ parameter[required and public]/
+  │           │   │   ├─ "public"
   │           │   │   ├─ name = "name"
   │           │   │   ├─ ":"
   │           │   │   └─ type/name = "string"
   │           │   ├─ ","
-  │           │   ├─ parameter[optional]/
-  │           │   │   ├─ accessibility_modifier = "private"
-  │           │   │   ├─ "readonly"
+  │           │   ├─ parameter[optional and private]/
+  │           │   │   ├─ "private readonly"
   │           │   │   ├─ name = "seed"
   │           │   │   ├─ "?:"
   │           │   │   └─ type/name = "number"
@@ -376,8 +371,8 @@ program/
   │           │       │   ├─ name = "value"
   │           │       │   └─ ")"
   │           │       └─ "; }"
-  │           ├─ method/
-  │           │   ├─ accessibility_modifier = "public"
+  │           ├─ method[public]/
+  │           │   ├─ "public"
   │           │   ├─ name = "store"
   │           │   ├─ "("
   │           │   ├─ parameter[required]/
@@ -452,13 +447,13 @@ program/
   │           │   │   ├─ ":"
   │           │   │   └─ type/name = "string"
   │           │   ├─ ","
-  │           │   ├─ parameter[required]/
-  │           │   │   ├─ accessibility_modifier = "private"
+  │           │   ├─ parameter[required and private]/
+  │           │   │   ├─ "private"
   │           │   │   ├─ name = "items"
   │           │   │   ├─ ":"
-  │           │   │   ├─ array_type/
-  │           │   │   │   ├─ type/name = "T"
-  │           │   │   │   └─ "[]"
+  │           │   │   ├─ type/
+  │           │   │   │   ├─ name = "[]"
+  │           │   │   │   └─ type/name = "T"
   │           │   │   ├─ "="
   │           │   │   └─ value/array = "[]"
   │           │   ├─ ")"
@@ -477,8 +472,8 @@ program/
   │           │       │   │   └─ property/private_property_identifier = "#counter"
   │           │       │   └─ op[increment] = "++"
   │           │       └─ ";\n    }"
-  │           ├─ method/
-  │           │   ├─ override_modifier = "override"
+  │           ├─ method[override]/
+  │           │   ├─ "override"
   │           │   ├─ name = "render"
   │           │   ├─ "()"
   │           │   ├─ returns/
@@ -527,12 +522,10 @@ program/
   │           │   │   └─ type[generic]/
   │           │   │       ├─ name = "Generator"
   │           │   │       ├─ "<"
-  │           │   │       ├─ tuple_type/
-  │           │   │       │   ├─ "["
+  │           │   │       ├─ type/
+  │           │   │       │   ├─ name = "[, ]"
   │           │   │       │   ├─ type/name = "number"
-  │           │   │       │   ├─ ","
-  │           │   │       │   ├─ type/name = "T"
-  │           │   │       │   └─ "]"
+  │           │   │       │   └─ type/name = "T"
   │           │   │       └─ ">"
   │           │   └─ body/block/
   │           │       ├─ "{"
@@ -586,27 +579,27 @@ program/
   │           │   ├─ parameter[required]/
   │           │   │   ├─ name = "urls"
   │           │   │   ├─ ":"
-  │           │   │   └─ array_type/
-  │           │   │       ├─ type/name = "string"
-  │           │   │       └─ "[]"
+  │           │   │   └─ type/
+  │           │   │       ├─ name = "[]"
+  │           │   │       └─ type/name = "string"
   │           │   ├─ ","
   │           │   ├─ parameter[required]/
   │           │   │   ├─ rest_pattern/
   │           │   │   │   ├─ "..."
   │           │   │   │   └─ name = "extra"
   │           │   │   ├─ ":"
-  │           │   │   └─ array_type/
-  │           │   │       ├─ type/name = "string"
-  │           │   │       └─ "[]"
+  │           │   │   └─ type/
+  │           │   │       ├─ name = "[]"
+  │           │   │       └─ type/name = "string"
   │           │   ├─ ")"
   │           │   ├─ returns/
   │           │   │   ├─ ":"
   │           │   │   └─ type[generic]/
   │           │   │       ├─ name = "Promise"
   │           │   │       ├─ "<"
-  │           │   │       ├─ array_type/
-  │           │   │       │   ├─ type/name = "T"
-  │           │   │       │   └─ "[]"
+  │           │   │       ├─ type/
+  │           │   │       │   ├─ name = "[]"
+  │           │   │       │   └─ type/name = "T"
   │           │   │       └─ ">"
   │           │   └─ body/block/
   │           │       ├─ "{"
@@ -744,9 +737,9 @@ program/
   │   │   │   │   ├─ "..."
   │   │   │   │   └─ name = "vals"
   │   │   │   ├─ ":"
-  │   │   │   └─ array_type/
-  │   │   │       ├─ type/name = "unknown"
-  │   │   │       └─ "[]"
+  │   │   │   └─ type/
+  │   │   │       ├─ name = "[]"
+  │   │   │       └─ type/name = "unknown"
   │   │   ├─ ") =>"
   │   │   └─ body/call/
   │   │       ├─ callee/member/
@@ -794,9 +787,9 @@ program/
   │   │   │   ├─ name = "T"
   │   │   │   └─ constraint/
   │   │   │       ├─ "extends"
-  │   │   │       └─ union_type/
+  │   │   │       └─ type/
+  │   │   │           ├─ name = "|"
   │   │   │           ├─ type/name = "number"
-  │   │   │           ├─ "|"
   │   │   │           └─ type/name = "string"
   │   │   └─ ">"
   │   ├─ "("
@@ -1141,16 +1134,16 @@ program/
   │   │   ├─ parameter[required]/
   │   │   │   ├─ name = "xs"
   │   │   │   ├─ ":"
-  │   │   │   └─ array_type/
-  │   │   │       ├─ type/name = "U"
-  │   │   │       └─ "[]"
+  │   │   │   └─ type/
+  │   │   │       ├─ name = "[]"
+  │   │   │       └─ type/name = "U"
   │   │   ├─ ")"
   │   │   ├─ returns/
   │   │   │   ├─ ":"
-  │   │   │   └─ union_type/
+  │   │   │   └─ type/
+  │   │   │       ├─ name = "|"
   │   │   │       ├─ type/name = "U"
-  │   │   │       ├─ "|"
-  │   │   │       └─ literal_type/undefined = "undefined"
+  │   │   │       └─ type/undefined = "undefined"
   │   │   ├─ "=>"
   │   │   └─ body/subscript_expression/
   │   │       ├─ object/name = "xs"
@@ -1162,9 +1155,9 @@ program/
   │   ├─ "const"
   │   ├─ name = "doubled"
   │   ├─ ":"
-  │   ├─ array_type/
-  │   │   ├─ type/name = "number"
-  │   │   └─ "[]"
+  │   ├─ type/
+  │   │   ├─ name = "[]"
+  │   │   └─ type/name = "number"
   │   ├─ "="
   │   ├─ value/call/
   │   │   ├─ callee/member/
@@ -1197,10 +1190,10 @@ program/
   │   ├─ "const"
   │   ├─ name = "maybe"
   │   ├─ ":"
-  │   ├─ union_type/
+  │   ├─ type/
+  │   │   ├─ name = "|"
   │   │   ├─ type/name = "string"
-  │   │   ├─ "|"
-  │   │   └─ literal_type/null = "null"
+  │   │   └─ type/null = "null"
   │   ├─ "="
   │   ├─ value/null = "null"
   │   └─ ";"
@@ -1223,10 +1216,10 @@ program/
   │   │   │   ├─ as/
   │   │   │   │   ├─ name = "maybe"
   │   │   │   │   ├─ "as"
-  │   │   │   │   └─ union_type/
+  │   │   │   │   └─ type/
+  │   │   │   │       ├─ name = "|"
   │   │   │   │       ├─ type/name = "string"
-  │   │   │   │       ├─ "|"
-  │   │   │   │       └─ literal_type/null = "null"
+  │   │   │   │       └─ type/null = "null"
   │   │   │   └─ ")"
   │   │   └─ "!"
   │   └─ ";"

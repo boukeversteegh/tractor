@@ -22,6 +22,23 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Skip nodes - remove entirely, promote children
         // ---------------------------------------------------------------------
         "expression_statement" => Ok(TransformAction::Skip),
+
+        // TypeScript's `accessibility_modifier` wraps a text token
+        // like "public" / "private" / "protected" in a constructor
+        // parameter (also `readonly_modifier` / `override_modifier`
+        // follow the same pattern). Lift the keyword to an empty
+        // marker, preserve the source text as a dangling sibling.
+        "accessibility_modifier" | "override_modifier" | "readonly_modifier" => {
+            if let Some(text) = get_text_content(xot, node) {
+                let text = text.trim().to_string();
+                if !text.is_empty() {
+                    rename_to_marker(xot, node, &text)?;
+                    insert_text_after(xot, node, &text)?;
+                    return Ok(TransformAction::Done);
+                }
+            }
+            Ok(TransformAction::Continue)
+        }
         // parenthesized_expression: would ideally skip (Principle
         // #12), but it trips xot's walker (freed-node access) when
         // combined with ternaries / typescript-specific wrappers.
@@ -258,6 +275,16 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
         "property_signature" => Some("property"),
         "construct_signature" => Some("constructor"),
         "index_signature" => Some("indexer"),
+        // Type-position constructs that are still a `<type>` just
+        // with a different flavor — mark via the element name until
+        // a structural-marker design lands.
+        "union_type" => Some("type"),
+        "intersection_type" => Some("type"),
+        "array_type" => Some("type"),
+        "literal_type" => Some("type"),
+        "tuple_type" => Some("type"),
+        "readonly_type" => Some("type"),
+        "parenthesized_type" => Some("type"),
         "arrow_function" => Some("arrow"),
         "interface_declaration" => Some("interface"),
         // type_alias_declaration handled above (flattens <value> wrapper)
@@ -266,6 +293,9 @@ fn map_element_name(kind: &str) -> Option<&'static str> {
 
         // Parameters — formal_parameters is flattened; individual params below
         "required_parameter" | "optional_parameter" => Some("parameter"),
+        // accessibility_modifier / override_modifier /
+        // readonly_modifier — handled in the main match block as
+        // source-backed marker keywords.
 
         // Blocks
         "statement_block" => Some("block"),
