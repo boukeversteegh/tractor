@@ -209,3 +209,71 @@ shape as the other C-like languages. The transform:
 See the cross-cutting "Conditional shape" convention in the index
 [`transformations.md`](../transformations.md).
 
+
+## Open questions / flagged items
+
+### Imports — grouping per spec (needs redesign)
+
+Currently `import_spec_list` AND `import_spec` both Flatten, producing:
+
+```
+<import>
+  "import ("
+  <string>"context"</string>
+  <string>"errors"</string>
+  <string>"io"</string>
+  <name>myio</name>
+  <string>"io"</string>       <!-- which path goes with "myio"? -->
+  <name>.</name>
+  <string>"strings"</string>  <!-- which path goes with "."? -->
+  <name>_</name>
+  <string>"net/http/pprof"</string>
+  ")"
+</import>
+```
+
+Every alias / dot / blank import is a logical pair `(name, path)`
+but the names and paths are adjacent siblings of `<import>`, with
+no structural grouping. `//import/string` returns every path
+without indicating which alias applies, so queries like "find
+every blank import" or "find all dot imports for package X"
+require relying on document order rather than structure.
+
+**Proposed shape — make each spec a queryable unit:**
+
+```
+<import>
+  <spec><string>"context"</string></spec>
+  <spec><string>"errors"</string></spec>
+  <spec><name>myio</name><string>"io"</string></spec>
+  <spec><name>.</name><string>"strings"</string></spec>
+  <spec><name>_</name><string>"net/http/pprof"</string></spec>
+</import>
+```
+
+Or (alternative), keep the name-is-path-wrapper by inverting:
+
+```
+<import>
+  <string>"context"</string>
+  <import alias="myio"><string>"io"</string></import>
+  <import dot><string>"strings"</string></import>
+  <import blank><string>"net/http/pprof"</string></import>
+</import>
+```
+
+The `<spec>` form is more consistent with other languages'
+import-spec handling. The alternative form uses markers
+(`<dot/>` / `<blank/>`) and attributes; markers compose better
+with the shape-marker convention used elsewhere.
+
+**TODO:** decide between the two forms, then:
+1. Stop flattening `import_spec` for Go — keep as `<spec>` (or
+   inner `<import>` wrapper).
+2. Add `<dot/>` / `<blank/>` / `<alias/>` markers for the three
+   non-plain forms (queries like `//import[blank]/string`).
+3. Handle the single-import case `import "context"` consistently
+   (no spec wrapper, or always wrapped — pick one).
+
+Related: the blueprint + sample fixtures and `update_snapshots`
+will surface via the snapshot diff.
