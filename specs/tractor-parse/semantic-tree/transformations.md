@@ -182,6 +182,78 @@ one such wrapper), Principle #1 (use language keywords — `else`).
 
 ### Return types
 
+### Trailing comments — adopt into predecessor (proposed)
+
+Tree-sitter emits every comment as a top-level sibling of its
+enclosing block. For free-floating / leading comments this is
+correct — the comment precedes the thing it annotates and a
+sibling is the right structural position.
+
+**Trailing** comments (those on the same line as the end of the
+preceding statement / declaration) are different: they annotate
+the statement that comes *before*, and the reader thinks of them
+as "attached" to that statement. The current structural shape
+leaves them as a sibling, which forces queries that care about
+the attached comment to rely on sibling-position scans.
+
+**Current shape**:
+
+```
+<method public>
+  <returns><type>…</type></returns>
+  <name>perimeter</name>
+  "();"
+</method>
+<comment>// implicitly public</comment>
+```
+
+**Proposed**: classify a comment as `<trailing/>` (same-line-as-
+predecessor, which C# already does) AND *adopt it into the
+predecessor element as a final child*:
+
+```
+<method public>
+  <returns><type>…</type></returns>
+  <name>perimeter</name>
+  "();"
+  <comment trailing>// implicitly public</comment>
+</method>
+```
+
+Benefits:
+
+- `//method[@public]/comment` reliably finds every trailing
+  comment on a public method, with no sibling-index gymnastics.
+- A statement's XPath string-value round-trips the trailing
+  comment as part of the statement's own text.
+- Aligns visual code layout with structural layout — readers
+  think of the comment as part of the statement, so the tree
+  mirrors that mental model.
+
+Open questions for implementation:
+
+- **Leading block comments** that precede a declaration — stay as
+  a preceding sibling (current C# behaviour) or adopt into the
+  declaration as the first child? The two forms are distinguishable
+  via `<leading/>` markers, but the structural home of the comment
+  is another decision.
+- **Floating comments** (separator comments, no adjacent code):
+  stay as siblings under the enclosing block. Nowhere else
+  sensible to put them.
+- **Multi-line trailing**: a line comment followed by more line
+  comments on the next lines — the C# grouping pass already merges
+  adjacent `//` comments; the adopted trailing form inherits that
+  merging.
+- **Grouping scope**: "predecessor" means immediately-preceding
+  element sibling under the same parent. If the preceding sibling
+  is a text token (e.g. `;`), adoption happens into the element
+  that owns that text.
+
+Cross-cutting — applies to every programming language once
+implemented. C#'s `is_inline_node` / `is_leading_comment` helpers
+already compute the classification; the adoption step is
+additional.
+
 ## Relationship to `transform-rules/`
 
 The older `transform-rules/` folder documents generic, pattern-level
