@@ -1,1 +1,18 @@
-class
+class[internal]/
+  ├─ "class"
+  ├─ name = "Repo"
+  ├─ "<"
+  ├─ generic[class and new]/
+  │   ├─ name = "T"
+  │   └─ extends/type[generic]/
+  │       ├─ name = "IComparable"
+  │       ├─ "<"
+  │       ├─ type/
+  │       │   └─ ... (1 children)
+  │       └─ ">"
+  ├─ ","
+  ├─ generic[struct]/name = "U"
+  ├─ ","
+  ├─ generic[notnull]/name = "V"
+  ├─ ">"
+  └─ body = "{\n}"
