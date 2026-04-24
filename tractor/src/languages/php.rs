@@ -15,6 +15,178 @@ use xot::{Xot, Node as XotNode};
 use crate::xot_transform::{TransformAction, helpers::*};
 use crate::output::syntax_highlight::SyntaxCategory;
 
+use semantic::*;
+
+/// Semantic element names — tractor's PHP XML vocabulary after transform.
+/// Tree-sitter kind strings (left side of `match` arms) stay as bare
+/// literals — they are external vocabulary.
+pub mod semantic {
+    // Structural — containers.
+
+    // Top-level / declarations
+    pub const PROGRAM: &str = "program";
+    pub const NAMESPACE: &str = "namespace";
+    pub const USE: &str = "use";
+    pub const CLASS: &str = "class";
+    pub const INTERFACE: &str = "interface";
+    pub const TRAIT: &str = "trait";
+    pub const ENUM: &str = "enum";
+    pub const METHOD: &str = "method";
+    pub const FUNCTION: &str = "function";
+    pub const FIELD: &str = "field";
+    pub const CONST: &str = "const";
+    pub const CONSTANT: &str = "constant";
+
+    // Members / parameters
+    pub const PARAMETER: &str = "parameter";
+    pub const ARGUMENT: &str = "argument";
+
+    // Inheritance
+    pub const EXTENDS: &str = "extends";
+    pub const IMPLEMENTS: &str = "implements";
+    pub const TYPES: &str = "types";
+
+    // Statements / control flow
+    pub const RETURN: &str = "return";
+    pub const IF: &str = "if";
+    pub const ELSE: &str = "else";
+    pub const ELSE_IF: &str = "else_if";
+    pub const FOR: &str = "for";
+    pub const FOREACH: &str = "foreach";
+    pub const WHILE: &str = "while";
+    pub const DO: &str = "do";
+    pub const SWITCH: &str = "switch";
+    pub const CASE: &str = "case";
+    pub const TRY: &str = "try";
+    pub const CATCH: &str = "catch";
+    pub const FINALLY: &str = "finally";
+    pub const THROW: &str = "throw";
+    pub const ECHO: &str = "echo";
+    pub const CONTINUE: &str = "continue";
+    pub const BREAK: &str = "break";
+    pub const MATCH: &str = "match";
+    pub const ARM: &str = "arm";
+    pub const YIELD: &str = "yield";
+    pub const REQUIRE: &str = "require";
+    pub const PRINT: &str = "print";
+    pub const EXIT: &str = "exit";
+    pub const DECLARE: &str = "declare";
+    pub const GOTO: &str = "goto";
+
+    // Expressions
+    pub const CALL: &str = "call";
+    pub const MEMBER: &str = "member";
+    pub const INDEX: &str = "index";
+    pub const NEW: &str = "new";
+    pub const CAST: &str = "cast";
+    pub const ASSIGN: &str = "assign";
+    pub const BINARY: &str = "binary";
+    pub const UNARY: &str = "unary";
+    pub const TERNARY: &str = "ternary";
+    pub const ARRAY: &str = "array";
+    pub const SPREAD: &str = "spread";
+
+    // Types / atoms
+    pub const TYPE: &str = "type";
+    pub const STRING: &str = "string";
+    pub const INT: &str = "int";
+    pub const FLOAT: &str = "float";
+    pub const BOOL: &str = "bool";
+    pub const NULL: &str = "null";
+    pub const VARIABLE: &str = "variable";
+
+    // Misc structural
+    pub const TAG: &str = "tag";
+    pub const INTERPOLATION: &str = "interpolation";
+    pub const ATTRIBUTE: &str = "attribute";
+
+    // Identifiers
+    pub const NAME: &str = "name";
+
+    // Operator child (from prepend_op_element).
+    pub const OP: &str = "op";
+
+    // Markers — always empty when emitted.
+
+    // Visibility / access modifiers (marker-only).
+    pub const PUBLIC: &str = "public";
+    pub const PRIVATE: &str = "private";
+    pub const PROTECTED: &str = "protected";
+
+    // Other modifiers (marker-only).
+    pub const FINAL: &str = "final";
+    pub const ABSTRACT: &str = "abstract";
+    pub const READONLY: &str = "readonly";
+
+    // Call / member flavor markers.
+    pub const INSTANCE: &str = "instance";
+
+    // Type-shape markers.
+    pub const PRIMITIVE: &str = "primitive";
+    pub const UNION: &str = "union";
+    pub const OPTIONAL: &str = "optional";
+
+    // Parameter-shape markers.
+    pub const VARIADIC: &str = "variadic";
+
+    // Anonymous / arrow function shape markers.
+    pub const ANONYMOUS: &str = "anonymous";
+    pub const ARROW: &str = "arrow";
+
+    // php_tag marker.
+    pub const OPEN: &str = "open";
+
+    // Ambiguous names — emitted as BOTH structural container AND marker
+    // in different contexts. Kept as constants for type-safety but NOT in
+    // MARKER_ONLY:
+    //   - STATIC: `static_modifier` keyword marker AND `scoped_call_expression`
+    //     shape marker. Also doubles with static property-access shape.
+    //   - CONSTANT: `enum_case` / `const_element` (structural) AND
+    //     `class_constant_access_expression` member-shape marker.
+    //   - DEFAULT: `default_statement` (structural `<default>` clause) AND
+    //     `match_default_expression` arm-shape marker (`<arm><default/>`).
+    //   - FUNCTION: function_definition (container) AND anonymous/arrow
+    //     function shape markers.
+    pub const STATIC: &str = "static";
+    pub const DEFAULT: &str = "default";
+
+    /// Names that, when emitted, are always empty elements (no text,
+    /// no element children). Used by the markers-stay-empty invariant.
+    pub const MARKER_ONLY: &[&str] = &[
+        PUBLIC, PRIVATE, PROTECTED,
+        FINAL, ABSTRACT, READONLY,
+        INSTANCE,
+        PRIMITIVE, UNION, OPTIONAL,
+        VARIADIC,
+        ANONYMOUS, ARROW,
+        OPEN,
+    ];
+
+    /// Every semantic name this language's transform can emit.
+    pub const ALL_NAMES: &[&str] = &[
+        PROGRAM, NAMESPACE, USE, CLASS, INTERFACE, TRAIT, ENUM,
+        METHOD, FUNCTION, FIELD, CONST, CONSTANT,
+        PARAMETER, ARGUMENT,
+        EXTENDS, IMPLEMENTS, TYPES,
+        RETURN, IF, ELSE, ELSE_IF, FOR, FOREACH, WHILE, DO,
+        SWITCH, CASE, TRY, CATCH, FINALLY, THROW, ECHO, CONTINUE, BREAK,
+        MATCH, ARM, YIELD, REQUIRE, PRINT, EXIT, DECLARE, GOTO,
+        CALL, MEMBER, INDEX, NEW, CAST, ASSIGN, BINARY, UNARY, TERNARY,
+        ARRAY, SPREAD,
+        TYPE, STRING, INT, FLOAT, BOOL, NULL, VARIABLE,
+        TAG, INTERPOLATION, ATTRIBUTE,
+        NAME, OP,
+        PUBLIC, PRIVATE, PROTECTED,
+        FINAL, ABSTRACT, READONLY,
+        INSTANCE,
+        PRIMITIVE, UNION, OPTIONAL,
+        VARIADIC,
+        ANONYMOUS, ARROW,
+        OPEN,
+        STATIC, DEFAULT,
+    ];
+}
+
 /// Transform a PHP AST node
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let kind = match get_element_name(xot, node) {
@@ -111,11 +283,11 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Base class / implements — wrap the type reference in <type>
         // (Principle #14).
         "base_clause" => {
-            rename(xot, node, "extends");
+            rename(xot, node, EXTENDS);
             Ok(TransformAction::Continue)
         }
         "class_interface_clause" => {
-            rename(xot, node, "implements");
+            rename(xot, node, IMPLEMENTS);
             Ok(TransformAction::Continue)
         }
 
@@ -199,7 +371,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // (Principle #9).
         "method_declaration" | "property_declaration" => {
             if !has_visibility_marker(xot, node) {
-                prepend_empty_element(xot, node, "public")?;
+                prepend_empty_element(xot, node, PUBLIC)?;
             }
             apply_rename(xot, node, &kind)?;
             Ok(TransformAction::Continue)
