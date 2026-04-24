@@ -7,6 +7,146 @@ use xot::{Xot, Node as XotNode};
 use crate::xot_transform::{TransformAction, helpers::*};
 use crate::output::syntax_highlight::SyntaxCategory;
 
+use semantic::*;
+
+/// Semantic element names — tractor's Java XML vocabulary after transform.
+pub mod semantic {
+    // Structural — containers.
+
+    // Top-level / declarations
+    pub const PROGRAM: &str = "program";
+    pub const CLASS: &str = "class";
+    pub const INTERFACE: &str = "interface";
+    pub const ENUM: &str = "enum";
+    pub const RECORD: &str = "record";
+    pub const METHOD: &str = "method";
+    pub const CONSTRUCTOR: &str = "constructor";
+    pub const FIELD: &str = "field";
+    pub const VARIABLE: &str = "variable";
+    pub const DECLARATOR: &str = "declarator";
+    pub const CONSTANT: &str = "constant";
+
+    // Members
+    pub const PARAMETER: &str = "parameter";
+    pub const GENERIC: &str = "generic";
+    pub const GENERICS: &str = "generics";
+    pub const EXTENDS: &str = "extends";
+    pub const IMPLEMENTS: &str = "implements";
+
+    // Type vocabulary
+    pub const TYPE: &str = "type";
+    pub const PATH: &str = "path";
+    pub const RETURNS: &str = "returns";
+
+    // Control flow
+    pub const RETURN: &str = "return";
+    pub const IF: &str = "if";
+    pub const ELSE: &str = "else";
+    pub const FOR: &str = "for";
+    pub const FOREACH: &str = "foreach";
+    pub const WHILE: &str = "while";
+    pub const TRY: &str = "try";
+    pub const CATCH: &str = "catch";
+    pub const FINALLY: &str = "finally";
+    pub const THROW: &str = "throw";
+    pub const SWITCH: &str = "switch";
+    pub const ARM: &str = "arm";
+    pub const LABEL: &str = "label";
+    pub const CASE: &str = "case";
+    pub const PATTERN: &str = "pattern";
+    pub const BODY: &str = "body";
+
+    // Expressions
+    pub const CALL: &str = "call";
+    pub const NEW: &str = "new";
+    pub const MEMBER: &str = "member";
+    pub const INDEX: &str = "index";
+    pub const ASSIGN: &str = "assign";
+    pub const BINARY: &str = "binary";
+    pub const UNARY: &str = "unary";
+    pub const LAMBDA: &str = "lambda";
+    pub const TERNARY: &str = "ternary";
+    pub const ANNOTATION: &str = "annotation";
+
+    // Imports
+    pub const IMPORT: &str = "import";
+    pub const PACKAGE: &str = "package";
+
+    // Literals
+    pub const STRING: &str = "string";
+    pub const INT: &str = "int";
+    pub const FLOAT: &str = "float";
+    pub const TRUE: &str = "true";
+    pub const FALSE: &str = "false";
+    pub const NULL: &str = "null";
+
+    // Identifiers / comments
+    pub const NAME: &str = "name";
+    pub const COMMENT: &str = "comment";
+
+    // Operator child
+    pub const OP: &str = "op";
+
+    // Markers — always empty when emitted.
+
+    // Access modifiers (marker-only).
+    pub const PUBLIC: &str = "public";
+    pub const PRIVATE: &str = "private";
+    pub const PROTECTED: &str = "protected";
+
+    // Other modifiers (marker-only).
+    pub const STATIC: &str = "static";
+    pub const FINAL: &str = "final";
+    pub const ABSTRACT: &str = "abstract";
+    pub const SYNCHRONIZED: &str = "synchronized";
+    pub const VOLATILE: &str = "volatile";
+    pub const TRANSIENT: &str = "transient";
+    pub const NATIVE: &str = "native";
+    pub const STRICTFP: &str = "strictfp";
+
+    // Special markers.
+    pub const VOID: &str = "void";
+    pub const THIS: &str = "this";
+    pub const SUPER: &str = "super";
+    pub const ARRAY: &str = "array";
+    pub const VARIADIC: &str = "variadic";
+    pub const COMPACT: &str = "compact";
+
+    // Ambiguous names — emitted as BOTH structural container AND marker
+    // in some contexts. Kept as constants for type-safety but NOT in
+    // MARKER_ONLY:
+    //   - PACKAGE: structural (package_declaration) + marker (implicit
+    //     access when no access modifier is present).
+    //   - RECORD: structural (record_declaration) + marker (record_pattern).
+    //   - TYPE: structural (type references) + marker (type_pattern).
+
+    /// Names that, when emitted, are always empty elements.
+    pub const MARKER_ONLY: &[&str] = &[
+        PUBLIC, PRIVATE, PROTECTED,
+        STATIC, FINAL, ABSTRACT, SYNCHRONIZED,
+        VOLATILE, TRANSIENT, NATIVE, STRICTFP,
+        VOID, THIS, SUPER, ARRAY, VARIADIC, COMPACT,
+    ];
+
+    /// Every semantic name this language's transform can emit.
+    pub const ALL_NAMES: &[&str] = &[
+        PROGRAM, CLASS, INTERFACE, ENUM, RECORD,
+        METHOD, CONSTRUCTOR, FIELD, VARIABLE, DECLARATOR, CONSTANT,
+        PARAMETER, GENERIC, GENERICS, EXTENDS, IMPLEMENTS,
+        TYPE, PATH, RETURNS,
+        RETURN, IF, ELSE, FOR, FOREACH, WHILE, TRY, CATCH, FINALLY, THROW,
+        SWITCH, ARM, LABEL, CASE, PATTERN, BODY,
+        CALL, NEW, MEMBER, INDEX, ASSIGN, BINARY, UNARY, LAMBDA, TERNARY, ANNOTATION,
+        IMPORT, PACKAGE,
+        STRING, INT, FLOAT, TRUE, FALSE, NULL,
+        NAME, COMMENT, OP,
+        PUBLIC, PRIVATE, PROTECTED,
+        STATIC, FINAL, ABSTRACT, SYNCHRONIZED,
+        VOLATILE, TRANSIENT, NATIVE, STRICTFP,
+        VOID, THIS, SUPER, ARRAY, VARIADIC, COMPACT,
+    ];
+}
+
 /// Transform a Java AST node
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     let kind = match get_element_name(xot, node) {
@@ -51,7 +191,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
         "type_parameters" => {
             distribute_field_to_children(xot, node, "generics");
-            rename(xot, node, "generics");
+            rename(xot, node, GENERICS);
             Ok(TransformAction::Flatten)
         }
         "type_parameter" => {
@@ -62,7 +202,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             // `<generic><name>T</name><bound>...</bound></generic>`,
             // not the over-wrapped `<generic><type><name>T</name></type>...`.
             replace_identifier_with_name_child(xot, node, &["type_identifier"])?;
-            rename(xot, node, "generic");
+            rename(xot, node, GENERIC);
             Ok(TransformAction::Continue)
         }
 
@@ -107,7 +247,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             // the head — conventionally access modifiers come first.
             let mut markers: Vec<&str> = Vec::new();
             if !has_access {
-                markers.push("package");
+                markers.push(PACKAGE);
             }
             for word in &words {
                 if is_known_modifier(word) {
@@ -137,8 +277,8 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Ternary expression — surgically wrap `alternative` in `<else>`.
         // See TS transform for rationale.
         "ternary_expression" => {
-            wrap_field_child(xot, node, "alternative", "else")?;
-            rename(xot, node, "ternary");
+            wrap_field_child(xot, node, "alternative", ELSE)?;
+            rename(xot, node, TERNARY);
             Ok(TransformAction::Continue)
         }
 
@@ -149,8 +289,8 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // the shared conditional-shape post-transform can collapse the
         // chain uniformly.
         "if_statement" => {
-            wrap_field_child(xot, node, "alternative", "else")?;
-            rename(xot, node, "if");
+            wrap_field_child(xot, node, "alternative", ELSE)?;
+            rename(xot, node, IF);
             Ok(TransformAction::Continue)
         }
 
@@ -160,14 +300,14 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // identifiers never need a heuristic — they are never types.
         // ---------------------------------------------------------------------
         "identifier" => {
-            rename(xot, node, "name");
+            rename(xot, node, NAME);
             Ok(TransformAction::Continue)
         }
         // Tree-sitter Java emits `line_comment` and `block_comment` —
         // both are just "comment" in every semantic query. Rename to
         // the shared `<comment>` vocabulary. Principle #1 / #2.
         "line_comment" | "block_comment" => {
-            rename(xot, node, "comment");
+            rename(xot, node, COMMENT);
             Ok(TransformAction::Continue)
         }
         // `string_fragment` is tree-sitter's wrapper around the
@@ -176,7 +316,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         "string_fragment" => Ok(TransformAction::Flatten),
         "type_identifier" | "integral_type" | "floating_point_type"
         | "boolean_type" => {
-            rename(xot, node, "type");
+            rename(xot, node, TYPE);
             wrap_text_in_name(xot, node)?;
             Ok(TransformAction::Continue)
         }
@@ -189,9 +329,9 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // for `<name>`: JSON keeps `"name": "void"` for data
         // consumers and adds `"void": true` as the shortcut flag.
         "void_type" => {
-            rename(xot, node, "type");
+            rename(xot, node, TYPE);
             wrap_text_in_name(xot, node)?;
-            prepend_empty_element(xot, node, "void")?;
+            prepend_empty_element(xot, node, VOID)?;
             Ok(TransformAction::Continue)
         }
 
@@ -212,8 +352,8 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             for child in children {
                 let child_kind = get_kind(xot, child);
                 let tag = match child_kind.as_deref() {
-                    Some("this") => "this",
-                    Some("super") => "super",
+                    Some("this") => THIS,
+                    Some("super") => SUPER,
                     _ => continue,
                 };
                 let text = get_text_content(xot, child).unwrap_or_default();
@@ -222,7 +362,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
                 insert_text_after(xot, marker, &text)?;
                 break;
             }
-            rename(xot, node, "call");
+            rename(xot, node, CALL);
             Ok(TransformAction::Continue)
         }
 
@@ -236,9 +376,9 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
                 // (Java spec §9.4). Top-level types and class members default
                 // to package access.
                 let default = if is_inside_interface(xot, node) {
-                    "public"
+                    PUBLIC
                 } else {
-                    "package"
+                    PACKAGE
                 };
                 prepend_empty_element(xot, node, default)?;
             }
@@ -261,7 +401,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
                 if let Some(m) = marker {
                     prepend_empty_element(xot, node, m)?;
                 }
-                if new_name == "type" && marker.is_none() {
+                if new_name == TYPE && marker.is_none() {
                     wrap_text_in_name(xot, node)?;
                 }
             }
@@ -312,7 +452,7 @@ fn wrap_method_return_type(xot: &mut Xot, method: XotNode) -> Result<(), xot::Er
         if get_attr(xot, child, "field").as_deref() != Some("type") {
             continue;
         }
-        let returns_name = xot.add_name("returns");
+        let returns_name = xot.add_name(RETURNS);
         let wrapper = xot.new_element(returns_name);
         copy_source_location(xot, child, wrapper);
         set_attr(xot, wrapper, "field", "returns");
@@ -328,7 +468,7 @@ fn wrap_method_return_type(xot: &mut Xot, method: XotNode) -> Result<(), xot::Er
 
 /// Check if text is an access modifier keyword
 fn is_access_modifier(text: &str) -> bool {
-    matches!(text, "public" | "private" | "protected")
+    matches!(text, PUBLIC | PRIVATE | PROTECTED)
 }
 
 /// Check if a declaration node has a `modifiers` child element
@@ -346,9 +486,9 @@ fn has_modifiers_child(xot: &Xot, node: XotNode) -> bool {
 /// Known Java modifiers
 fn is_known_modifier(text: &str) -> bool {
     matches!(text,
-        "public" | "private" | "protected" |
-        "static" | "final" | "abstract" | "synchronized" |
-        "volatile" | "transient" | "native" | "strictfp"
+        PUBLIC | PRIVATE | PROTECTED |
+        STATIC | FINAL | ABSTRACT | SYNCHRONIZED |
+        VOLATILE | TRANSIENT | NATIVE | STRICTFP
     )
 }
 
@@ -357,77 +497,77 @@ fn is_known_modifier(text: &str) -> bool {
 /// Second tuple element is an optional disambiguation marker.
 fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> {
     match kind {
-        "program" => Some(("program", None)),
-        "class_declaration" => Some(("class", None)),
-        "interface_declaration" => Some(("interface", None)),
-        "enum_declaration" => Some(("enum", None)),
-        "method_declaration" => Some(("method", None)),
-        "constructor_declaration" => Some(("constructor", None)),
+        "program" => Some((PROGRAM, None)),
+        "class_declaration" => Some((CLASS, None)),
+        "interface_declaration" => Some((INTERFACE, None)),
+        "enum_declaration" => Some((ENUM, None)),
+        "method_declaration" => Some((METHOD, None)),
+        "constructor_declaration" => Some((CONSTRUCTOR, None)),
         // constructor_body is flattened (handled above) — the `body` wrapper
         // already comes from the field-wrapping pass.
-        "field_declaration" => Some(("field", None)),
-        "variable_declarator" => Some(("declarator", None)),
-        "local_variable_declaration" => Some(("variable", None)),
-        "enum_constant" => Some(("constant", None)),
+        "field_declaration" => Some((FIELD, None)),
+        "variable_declarator" => Some((DECLARATOR, None)),
+        "local_variable_declaration" => Some((VARIABLE, None)),
+        "enum_constant" => Some((CONSTANT, None)),
         // formal_parameters and argument_list are flattened via Principle #12 above
-        "formal_parameter" => Some(("parameter", None)),
-        "generic_type" => Some(("generic", None)),
+        "formal_parameter" => Some((PARAMETER, None)),
+        "generic_type" => Some((GENERIC, None)),
         // array_type collapses to <type><array/> so it joins the
         // uniform namespace of `<type>` references.
-        "array_type" => Some(("type", Some("array"))),
-        "scoped_identifier" | "scoped_type_identifier" => Some(("path", None)),
-        "super_interfaces" => Some(("implements", None)),
-        "superclass" => Some(("extends", None)),
-        "type_bound" => Some(("extends", None)),
-        "type_parameter" => Some(("generic", None)),
-        "return_statement" => Some(("return", None)),
-        "if_statement" => Some(("if", None)),
-        "else_clause" => Some(("else", None)),
-        "for_statement" => Some(("for", None)),
-        "enhanced_for_statement" => Some(("foreach", None)),
-        "while_statement" => Some(("while", None)),
-        "try_statement" => Some(("try", None)),
-        "catch_clause" => Some(("catch", None)),
-        "finally_clause" => Some(("finally", None)),
-        "throw_statement" => Some(("throw", None)),
-        "switch_expression" => Some(("switch", None)),
-        "switch_rule" => Some(("arm", None)),
-        "switch_label" => Some(("label", None)),
-        "switch_block_statement_group" => Some(("case", None)),
-        "method_invocation" => Some(("call", None)),
-        "object_creation_expression" => Some(("new", None)),
-        "field_access" => Some(("member", None)),
-        "array_access" => Some(("index", None)),
-        "assignment_expression" => Some(("assign", None)),
-        "binary_expression" => Some(("binary", None)),
-        "unary_expression" => Some(("unary", None)),
+        "array_type" => Some((TYPE, Some(ARRAY))),
+        "scoped_identifier" | "scoped_type_identifier" => Some((PATH, None)),
+        "super_interfaces" => Some((IMPLEMENTS, None)),
+        "superclass" => Some((EXTENDS, None)),
+        "type_bound" => Some((EXTENDS, None)),
+        "type_parameter" => Some((GENERIC, None)),
+        "return_statement" => Some((RETURN, None)),
+        "if_statement" => Some((IF, None)),
+        "else_clause" => Some((ELSE, None)),
+        "for_statement" => Some((FOR, None)),
+        "enhanced_for_statement" => Some((FOREACH, None)),
+        "while_statement" => Some((WHILE, None)),
+        "try_statement" => Some((TRY, None)),
+        "catch_clause" => Some((CATCH, None)),
+        "finally_clause" => Some((FINALLY, None)),
+        "throw_statement" => Some((THROW, None)),
+        "switch_expression" => Some((SWITCH, None)),
+        "switch_rule" => Some((ARM, None)),
+        "switch_label" => Some((LABEL, None)),
+        "switch_block_statement_group" => Some((CASE, None)),
+        "method_invocation" => Some((CALL, None)),
+        "object_creation_expression" => Some((NEW, None)),
+        "field_access" => Some((MEMBER, None)),
+        "array_access" => Some((INDEX, None)),
+        "assignment_expression" => Some((ASSIGN, None)),
+        "binary_expression" => Some((BINARY, None)),
+        "unary_expression" => Some((UNARY, None)),
         // ternary_expression handled above
-        "lambda_expression" => Some(("lambda", None)),
-        "string_literal" => Some(("string", None)),
+        "lambda_expression" => Some((LAMBDA, None)),
+        "string_literal" => Some((STRING, None)),
         "decimal_integer_literal" | "hex_integer_literal"
-        | "octal_integer_literal" | "binary_integer_literal" => Some(("int", None)),
+        | "octal_integer_literal" | "binary_integer_literal" => Some((INT, None)),
         // Patterns — `instanceof T x` and record patterns both collapse
         // to `<pattern>` with a shape marker so the flavor is queryable.
-        "type_pattern" => Some(("pattern", Some("type"))),
-        "record_pattern" => Some(("pattern", Some("record"))),
-        "switch_block" => Some(("body", None)),
+        "type_pattern" => Some((PATTERN, Some(TYPE))),
+        "record_pattern" => Some((PATTERN, Some(RECORD))),
+        "switch_block" => Some((BODY, None)),
         // varargs `T... name` — flag with <variadic/> so queries can
         // distinguish from a regular parameter.
-        "spread_parameter" => Some(("parameter", Some("variadic"))),
-        "decimal_floating_point_literal" => Some(("float", None)),
+        "spread_parameter" => Some((PARAMETER, Some(VARIADIC))),
+        "decimal_floating_point_literal" => Some((FLOAT, None)),
         // `record R(...)` — Java 14+ records. Same slot as <class>/etc.
-        "record_declaration" => Some(("record", None)),
+        "record_declaration" => Some((RECORD, None)),
         // `record R(...) { R { … } }` — compact constructor syntax
         // without an explicit parameter list.
-        "compact_constructor_declaration" => Some(("constructor", Some("compact"))),
+        "compact_constructor_declaration" => Some((CONSTRUCTOR, Some(COMPACT))),
         // `@Override` bare marker annotation — collapse to <annotation>.
-        "marker_annotation" => Some(("annotation", None)),
-        "annotation" => Some(("annotation", None)),
-        "true" => Some(("true", None)),
-        "false" => Some(("false", None)),
-        "null_literal" => Some(("null", None)),
-        "import_declaration" => Some(("import", None)),
-        "package_declaration" => Some(("package", None)),
+        "marker_annotation" => Some((ANNOTATION, None)),
+        "annotation" => Some((ANNOTATION, None)),
+        "true" => Some((TRUE, None)),
+        "false" => Some((FALSE, None)),
+        "null_literal" => Some((NULL, None)),
+        "import_declaration" => Some((IMPORT, None)),
+        "package_declaration" => Some((PACKAGE, None)),
         _ => None,
     }
 }
@@ -523,5 +663,29 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
 
         // Structural elements - no color
         _ => SyntaxCategory::Default,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::semantic::*;
+
+    #[test]
+    fn marker_only_names_are_in_all_names() {
+        for m in MARKER_ONLY {
+            assert!(
+                ALL_NAMES.contains(m),
+                "MARKER_ONLY entry {:?} missing from ALL_NAMES",
+                m,
+            );
+        }
+    }
+
+    #[test]
+    fn all_names_has_no_duplicates() {
+        let mut seen = std::collections::HashSet::new();
+        for name in ALL_NAMES {
+            assert!(seen.insert(*name), "duplicate name in ALL_NAMES: {:?}", name);
+        }
     }
 }
