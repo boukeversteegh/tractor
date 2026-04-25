@@ -2551,3 +2551,170 @@ gen = (x for x in nums)
             &mut tree, "//*[literal and comprehension]", 0);
     }
 }
+
+mod constructor_rename {
+    use super::*;
+
+    /// `ctor` -> `<constructor>` (Principle #2: full names over
+    /// abbreviations).
+    #[test]
+    fn java() {
+        let mut tree = parse_src("java", r#"
+            class Point {
+                int x, y;
+                Point() { this(0, 0); }
+                Point(int x, int y) { this.x = x; this.y = y; }
+            }
+        "#);
+
+        claim("two constructors render as <constructor>",
+            &mut tree, "//constructor", 2);
+
+        claim("no abbreviated `ctor` element leaks",
+            &mut tree, "//ctor", 0);
+
+        claim("constructor name matches class name",
+            &mut tree, "//constructor[name='Point']", 2);
+
+        claim("zero-arg constructor's `this(...)` body is a <call>",
+            &mut tree, "//constructor[not(parameter)]/body//call[this]", 1);
+    }
+}
+
+mod defined_type_vs_alias {
+    use super::*;
+
+    /// Go distinguishes defined types (`type MyInt int`) from type
+    /// aliases (`type Color = int`). Defined type -> <type>; alias
+    /// -> <alias> (parallel with Rust / TS / C# / Java).
+    #[test]
+    fn go() {
+        let mut tree = parse_src("go", r#"
+            package main
+
+            type MyInt int
+            type Color = int
+        "#);
+
+        claim("defined type renders as <type>",
+            &mut tree, "//type[name='MyInt']", 1);
+
+        claim("alias renders as <alias>",
+            &mut tree, "//alias[name='Color']", 1);
+
+        claim("alias inner refers to underlying <type>",
+            &mut tree, "//alias[name='Color']/type[name='int']", 1);
+
+        claim("alias does NOT also render as <type> at the top level",
+            &mut tree, "//file/type[name='Color']", 0);
+    }
+}
+
+mod expression_list {
+    use super::*;
+
+    /// Principle #12: `expression_list` (tuple-like return/yield
+    /// expressions) is a pure grouping node; drop it so the
+    /// expressions become direct children of the enclosing
+    /// <return>/<yield>/<assign>.
+    #[test]
+    fn python() {
+        let mut tree = parse_src("python", r#"
+def pair():
+    return 1, 2
+
+def triple():
+    return "a", "b", "c"
+
+def unpack():
+    a, b = pair()
+    return a + b
+"#);
+
+        claim("no <expression_list> wrapper leaks anywhere",
+            &mut tree, "//expression_list", 0);
+
+        claim("`return 1, 2` puts both ints as direct children of <return>",
+            &mut tree, "//return[int='1' and int='2']", 1);
+
+        claim("`return \"a\", \"b\", \"c\"` flattens 3 strings under <return>",
+            &mut tree, "//return[count(string)=3]", 1);
+
+        claim("tuple unpack `a, b = pair()` exposes both names directly under <assign>/left",
+            &mut tree, "//assign/left[name='a' and name='b']", 1);
+    }
+}
+
+mod f_strings {
+    use super::*;
+
+    /// F-strings render as <string> with <interpolation> children
+    /// and bare literal text in between (Principle #12: grammar
+    /// wrappers like string_start / string_content / string_end are
+    /// flattened). Plain strings collapse to a text-only <string>.
+    #[test]
+    fn python() {
+        let mut tree = parse_src("python", r#"
+plain = "hello"
+greeting = f"hello {name}"
+status = f"hello {name}, you are {age}"
+"#);
+
+        claim("3 strings total",
+            &mut tree, "//string", 3);
+
+        claim("plain string has no <interpolation> child",
+            &mut tree, "//string[not(interpolation)]", 1);
+
+        claim("two f-strings carry interpolations",
+            &mut tree, "//string[interpolation]", 2);
+
+        claim("interpolation wraps a <name>",
+            &mut tree, "//string/interpolation/name='name'", 1);
+
+        claim("`status` f-string has 2 interpolations",
+            &mut tree, "//string[count(interpolation)=2]", 1);
+
+        claim("interpolation can match by interpolated name",
+            &mut tree, "//string/interpolation[name='age']", 1);
+    }
+}
+
+mod match_expression {
+    use super::*;
+
+    /// Principle #12: `match_block` (the `{ ... }` wrapper around
+    /// match arms) is a pure grouping node; drop it so arms are
+    /// direct siblings of <match> via <body>.
+    #[test]
+    fn rust() {
+        let mut tree = parse_src("rust", r#"
+            fn classify(n: i32) -> &'static str {
+                match n {
+                    0 => "zero",
+                    1 | 2 | 3 => "small",
+                    _ if n < 0 => "negative",
+                    _ => "other",
+                }
+            }
+        "#);
+
+        claim("no `match_block` grammar leaf leaks",
+            &mut tree, "//match_block", 0);
+
+        claim("4 arms as siblings under <match>/<body>",
+            &mut tree, "//match/body/arm", 4);
+
+        claim("arm with literal pattern `0`",
+            &mut tree, "//arm[pattern/int='0']", 1);
+
+        claim("guard arm carries a <condition> child inside <pattern>",
+            &mut tree, "//arm/pattern/condition", 1);
+
+        claim("or-pattern uses pattern[or] markers (left-associative nesting)",
+            &mut tree, "//arm/pattern/pattern[or]", 1);
+
+        claim("each arm has a <pattern> and a <value>",
+            &mut tree, "//arm[pattern and value]", 4);
+    }
+}

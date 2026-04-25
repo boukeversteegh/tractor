@@ -1,5 +1,0 @@
-alias[exported]/
-  ├─ "type"
-  ├─ name = "Color"
-  ├─ "="
-  └─ type/name = "int"
