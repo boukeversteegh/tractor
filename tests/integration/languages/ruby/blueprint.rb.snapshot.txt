@@ -1,8 +1,5 @@
 program/
   ├─ comment
-  ├─ comment
-  ├─ comment
-  ├─ comment
   ├─ assign/
   │   ├─ left/constant
   │   └─ right/int

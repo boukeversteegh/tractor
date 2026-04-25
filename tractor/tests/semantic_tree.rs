@@ -577,6 +577,50 @@ class X:
             &mut tree, "//comment[trailing and leading]", 0);
     }
 
+    /// Ruby uses `#` line comments. Same trailing / leading /
+    /// floating classification + adjacent-line grouping. (Block
+    /// `=begin`/`=end` comments are rare and out of scope.)
+    #[test]
+    fn ruby() {
+        let mut tree = parse_src(
+            "ruby",
+            r#"
+# floating one
+
+# leading one
+# leading two
+class Demo
+  attr_reader :name # trailing single
+end
+
+# leading on bare
+x = 1
+"#,
+        );
+
+        claim("`#` line comment becomes <comment>",
+            &mut tree, "//comment[.='# floating one']", 1);
+
+        claim("inline `#` after code is trailing",
+            &mut tree, "//comment[trailing][.='# trailing single']", 1);
+
+        claim("two adjacent `#` comments merge into one <comment>",
+            &mut tree, &multi_xpath("
+                //comment[leading]
+                    [contains(., 'leading one')]
+                    [contains(., 'leading two')]
+            "), 1);
+
+        claim("`# leading on bare` is leading on the assignment",
+            &mut tree, "//comment[leading][.='# leading on bare']", 1);
+
+        claim("blank-line break: floating comment has no marker",
+            &mut tree, "//comment[.='# floating one'][not(leading) and not(trailing)]", 1);
+
+        claim("trailing and leading are mutually exclusive",
+            &mut tree, "//comment[trailing and leading]", 0);
+    }
+
     /// Java mirrors C# (both `//` and `/* */`). Same trailing /
     /// leading / floating classification + line-comment grouping.
     #[test]

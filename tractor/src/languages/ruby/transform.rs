@@ -93,6 +93,16 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
                 Ok(TransformAction::Continue)
             }
 
+            // Comments — Ruby uses `#` for line comments. Multiline
+            // begin/end style comments are out of scope for now (rare
+            // in modern Ruby and not part of this classifier).
+            "comment" => {
+                rename(xot, node, COMMENT);
+                static CLASSIFIER: crate::languages::comments::CommentClassifier =
+                    crate::languages::comments::CommentClassifier { line_prefixes: &["#"] };
+                CLASSIFIER.classify_and_group(xot, node, TRAILING, LEADING)
+            }
+
             _ => {
                 apply_rename(xot, node, &kind)?;
                 Ok(TransformAction::Continue)

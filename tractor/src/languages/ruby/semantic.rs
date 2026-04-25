@@ -82,6 +82,10 @@ pub const NAME: &str = "name";
 pub const CONSTANT: &str = "constant";
 pub const COMMENT: &str = "comment";
 
+// Comment markers — emitted by the shared CommentClassifier.
+pub const TRAILING: &str = "trailing";
+pub const LEADING: &str = "leading";
+
 // Spread-shape markers.
 pub const LIST: &str = "list";
 pub const DICT: &str = "dict";
@@ -189,6 +193,10 @@ pub const NODES: &[NodeSpec] = &[
     NodeSpec { name: NAME,     marker: false, container: true, syntax: Identifier },
     NodeSpec { name: CONSTANT, marker: false, container: true, syntax: Default },
     NodeSpec { name: COMMENT,  marker: false, container: true, syntax: Comment },
+
+    // Comment markers
+    NodeSpec { name: TRAILING, marker: true, container: false, syntax: Default },
+    NodeSpec { name: LEADING,  marker: true, container: false, syntax: Default },
 
     // Spread-shape markers
     NodeSpec { name: LIST, marker: true, container: false, syntax: Default },
