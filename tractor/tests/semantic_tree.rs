@@ -94,260 +94,6 @@ fn assert_value(tree: &mut XeeParseResult, xpath: &str, expected: &str, invarian
 #[allow(dead_code)]
 fn _arc_sentinel(_: Arc<Vec<String>>) {}
 
-// ===========================================================================
-// C#
-// ===========================================================================
-
-mod csharp {
-    use super::*;
-
-    /// Principle #14 — every type reference wraps in `<type>` with a
-    /// `<name>` text leaf. Regression guard: attribute names used to
-    /// double-wrap as `<attribute><name><name>Foo</name></name>`.
-    #[test]
-    fn attribute_name_is_text_leaf() {
-        let mut tree = parse_src(
-            "csharp",
-            "class X { [MaxLength(50)] public string Name; }",
-        );
-        assert_count(
-            &mut tree,
-            "//attribute/name",
-            1,
-            "attribute must have exactly one <name> child (Principle #14)",
-        );
-        assert_value(
-            &mut tree,
-            "//attribute/name",
-            "MaxLength",
-            "attribute <name> holds the identifier as text",
-        );
-        assert_count(
-            &mut tree,
-            "//attribute/name/*",
-            0,
-            "attribute <name> is a text leaf — no element children (Principle #14)",
-        );
-    }
-
-    /// Principle #12 — accessor lists flatten: get/set are direct
-    /// siblings of the property, no `<accessor_list>` wrapper.
-    #[test]
-    fn accessor_list_flattens() {
-        let mut tree = parse_src("csharp", "class X { int P { get; set; } }");
-        assert_count(
-            &mut tree,
-            "//property/accessor_list",
-            0,
-            "no <accessor_list> wrapper (Principle #12)",
-        );
-        assert_count(
-            &mut tree,
-            "//property/accessor",
-            2,
-            "accessors are direct property siblings",
-        );
-    }
-
-    /// Principle #13 — accessor kind is an empty marker (`<get/>`,
-    /// `<set/>`, `<init/>`). Uniform across auto-form and bodied-form.
-    #[test]
-    fn accessor_kind_is_queryable_marker() {
-        let mut auto = parse_src("csharp", "class X { int P { get; set; } }");
-        let mut bodied = parse_src(
-            "csharp",
-            "class X { int P { get { return 1; } set { } } }",
-        );
-        assert_count(
-            &mut auto,
-            "//accessor[get]",
-            1,
-            "auto-form get accessor carries <get/> marker (Principle #13)",
-        );
-        assert_count(
-            &mut auto,
-            "//accessor[set]",
-            1,
-            "auto-form set accessor carries <set/> marker (Principle #13)",
-        );
-        assert_count(
-            &mut bodied,
-            "//accessor[get]",
-            1,
-            "bodied get accessor carries <get/> marker — uniform with auto-form",
-        );
-        assert_count(
-            &mut bodied,
-            "//accessor[set]",
-            1,
-            "bodied set accessor carries <set/> marker — uniform with auto-form",
-        );
-    }
-
-    /// Interface members are implicitly public; tractor surfaces this
-    /// with a `<public/>` marker on every interface member (Principle
-    /// #9 exhaustive markers).
-    #[test]
-    fn interface_members_default_public() {
-        let mut tree = parse_src(
-            "csharp",
-            "interface IX { double Area(); double Perimeter(); }",
-        );
-        assert_count(
-            &mut tree,
-            "//interface/body/method[public]",
-            2,
-            "interface methods carry <public/> even when not written",
-        );
-    }
-
-    /// Principle #14 on base lists: `class Foo : Bar` wraps `Bar` in
-    /// `<type><name>Bar</name></type>`, not bare text.
-    #[test]
-    fn base_class_is_typed() {
-        let mut tree = parse_src("csharp", "class Dog : Animal {}");
-        assert_count(
-            &mut tree,
-            "//class/extends/type[name='Animal']",
-            1,
-            "base class wraps in <type><name/></type> (Principle #14)",
-        );
-    }
-
-    /// `where`-clause constraints attach to the matching `<generic>`.
-    /// Shape constraints become empty markers; type bounds wrap in
-    /// `<extends><type>…</type></extends>`.
-    #[test]
-    fn where_clause_attaches_to_generic() {
-        let mut tree = parse_src(
-            "csharp",
-            "class Repo<T, U> where T : class, IComparable<T>, new() where U : struct {}",
-        );
-        assert_count(
-            &mut tree,
-            "//type_parameter_constraints_clause",
-            0,
-            "where clauses dissolve into their generics",
-        );
-        assert_count(
-            &mut tree,
-            "//generic[name='T'][class]",
-            1,
-            "T has <class/> shape-constraint marker",
-        );
-        assert_count(
-            &mut tree,
-            "//generic[name='T'][new]",
-            1,
-            "T has <new/> constructor-constraint marker",
-        );
-        assert_count(
-            &mut tree,
-            "//generic[name='T']/extends/type[name='IComparable']",
-            1,
-            "IComparable bound attaches as <extends><type>…</type></extends>",
-        );
-        assert_count(
-            &mut tree,
-            "//generic[name='U'][struct]",
-            1,
-            "U has <struct/> marker",
-        );
-    }
-
-    /// Principle #5 — expression_statement renames to `<expression>`
-    /// (not the raw tree-sitter kind).
-    #[test]
-    fn expression_statement_renames() {
-        let mut tree = parse_src(
-            "csharp",
-            "class X { void F() { int y = 0; y = 1; } }",
-        );
-        assert_count(
-            &mut tree,
-            "//expression_statement",
-            0,
-            "no raw tree-sitter kind leak",
-        );
-        assert_count(
-            &mut tree,
-            "//expression",
-            1,
-            "y = 1 renders as <expression>",
-        );
-    }
-
-    /// Principle #12 — parameters flatten: no `<parameter_list>` wrapper.
-    #[test]
-    fn parameters_flatten() {
-        let mut tree = parse_src("csharp", "class X { void F(int a, string b) {} }");
-        assert_count(
-            &mut tree,
-            "//method/parameter_list",
-            0,
-            "no <parameter_list> wrapper (Principle #12)",
-        );
-        assert_count(
-            &mut tree,
-            "//method/parameter",
-            2,
-            "parameters are direct method siblings",
-        );
-    }
-
-    /// C# type flavors — array/tuple/nullable — all collapse to
-    /// `<type>` with a shape marker. `nullable_type` gets its
-    /// `<nullable/>` marker via a direct rewrite (not the map) but
-    /// the end shape is the same.
-    #[test]
-    fn type_shape_markers() {
-        let mut tree = parse_src(
-            "csharp",
-            "class X {\
-                int[] a;\
-                (int, string) t;\
-                int? n;\
-            }",
-        );
-        assert_count(&mut tree, "//type[array]", 1, "array type carries <array/>");
-        assert_count(&mut tree, "//type[tuple]", 1, "tuple type carries <tuple/>");
-        // nullable_type produces <type>…<nullable/></type>
-        assert_count(
-            &mut tree,
-            "//type[nullable]",
-            1,
-            "nullable type carries <nullable/>",
-        );
-    }
-
-    /// C# pattern flavors all collapse to `<pattern>` but carry a
-    /// shape marker (declaration / recursive / constant / tuple).
-    #[test]
-    fn pattern_shape_markers() {
-        let mut tree = parse_src(
-            "csharp",
-            "class X {\
-                void F(object o) {\
-                    if (o is Point p) {}\
-                    if (o is null) {}\
-                }\
-            }",
-        );
-        assert_count(
-            &mut tree,
-            "//pattern[declaration]",
-            1,
-            "`o is T name` — declaration pattern carries <declaration/>",
-        );
-        assert_count(
-            &mut tree,
-            "//pattern[constant]",
-            1,
-            "`o is null` — constant pattern carries <constant/>",
-        );
-    }
-}
-
 
 // ===========================================================================
 // Cross-language: decorator / annotation / attribute topology
@@ -398,14 +144,17 @@ mod decorator_topology {
     fn csharp_attribute_is_direct_child() {
         let mut tree = parse_src(
             "csharp",
-            "class X { [Obsolete] public void F() {} }",
+            "class X { [Obsolete] [MaxLength(50)] public string Name; }",
         );
-        assert_count(
-            &mut tree,
-            "//method/attribute[name='Obsolete']",
-            1,
-            "C# attribute is a direct child of the attributed <method>",
-        );
+
+        claim("C# attribute is a direct child of the attributed declaration",
+            &mut tree, "//field/attribute[name='Obsolete']", 1);
+
+        claim("attribute with arguments still has exactly one <name> child",
+            &mut tree, "//attribute[name='MaxLength']/name", 1);
+
+        claim("attribute <name> holds the identifier as text (no nested <name>)",
+            &mut tree, "//attribute[name='MaxLength']/name/*", 0);
     }
 
     #[test]
@@ -1158,6 +907,30 @@ mod match_expression {
     }
 }
 
+mod expression_statement {
+    use super::*;
+
+    /// Principle #5 — `expression_statement` renames to <expression>
+    /// (not the raw tree-sitter kind).
+    #[test]
+    fn csharp() {
+        let mut tree = parse_src("csharp", r#"
+            class X {
+                void F() {
+                    int y = 0;
+                    y = 1;
+                }
+            }
+        "#);
+
+        claim("no raw `expression_statement` kind leak",
+            &mut tree, "//expression_statement", 0);
+
+        claim("`y = 1` renders as <expression>",
+            &mut tree, "//expression", 1);
+    }
+}
+
 mod parenthesized_expression {
     use super::*;
 
@@ -1580,6 +1353,26 @@ match seq:
             &mut tree, "//pattern[union]", 1);
     }
 
+    /// C# pattern flavors all collapse to <pattern> but carry a
+    /// shape marker (declaration / recursive / constant / tuple).
+    #[test]
+    fn csharp() {
+        let mut tree = parse_src("csharp", r#"
+            class X {
+                void F(object o) {
+                    if (o is Point p) {}
+                    if (o is null) {}
+                }
+            }
+        "#);
+
+        claim("`o is T name` — declaration pattern carries <declaration/>",
+            &mut tree, "//pattern[declaration]", 1);
+
+        claim("`o is null` — constant pattern carries <constant/>",
+            &mut tree, "//pattern[constant]", 1);
+    }
+
     /// TypeScript destructuring patterns collapse to <pattern> but
     /// carry an <array/> / <object/> marker that distinguishes the
     /// shape without requiring string matching on `[` vs `{`.
@@ -1659,6 +1452,30 @@ mod type_markers {
 
         claim("dyn trait object carries <dynamic/>",
             &mut tree, "//type[dynamic]", 1);
+    }
+
+    /// C# type flavors — array/tuple/nullable — all collapse to
+    /// <type> with a shape marker. `nullable_type` gets its
+    /// <nullable/> marker via a direct rewrite (not the map) but the
+    /// end shape is the same.
+    #[test]
+    fn csharp() {
+        let mut tree = parse_src("csharp", r#"
+            class X {
+                int[] a;
+                (int, string) t;
+                int? n;
+            }
+        "#);
+
+        claim("array type carries <array/>",
+            &mut tree, "//type[array]", 1);
+
+        claim("tuple type carries <tuple/>",
+            &mut tree, "//type[tuple]", 1);
+
+        claim("nullable type carries <nullable/>",
+            &mut tree, "//type[nullable]", 1);
     }
 
     /// TypeScript type flavors all collapse to <type> with a shape
