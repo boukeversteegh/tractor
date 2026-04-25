@@ -203,9 +203,18 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // which then consolidates.
         "qualified_name" => Ok(TransformAction::Flatten),
 
-        // Comments — normalise tree-sitter's distinction between
-        // line and block into the shared `<comment>` name.
-        "comment" => Ok(TransformAction::Continue),
+        // Comments — PHP supports `//` and `#` line comments and
+        // `/* */` blocks. Tree-sitter emits all of them as a single
+        // `comment` kind; the shared classifier handles trailing /
+        // leading / floating + line-comment grouping. Both `//` and
+        // `#` count as line-comment prefixes — runs of either family
+        // (or a mix on adjacent lines) merge into one <comment>.
+        "comment" => {
+            rename(xot, node, COMMENT);
+            static CLASSIFIER: crate::languages::comments::CommentClassifier =
+                crate::languages::comments::CommentClassifier { line_prefixes: &["//", "#"] };
+            CLASSIFIER.classify_and_group(xot, node, TRAILING, LEADING)
+        }
 
         // Flat lists (Principle #12) — parameters and arguments
         // become direct siblings with field="parameters" / "arguments".

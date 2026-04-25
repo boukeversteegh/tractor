@@ -1,8 +1,6 @@
 program/
   ├─ tag[open]
   ├─ comment
-  ├─ comment
-  ├─ comment
   ├─ declare/int
   ├─ namespace/
   │   ├─ name
@@ -19,7 +17,7 @@ program/
   │   └─ body/
   │       ├─ name
   │       └─ name
-  ├─ comment
+  ├─ comment[leading]
   ├─ class[abstract]/
   │   ├─ attribute/
   │   │   ├─ name

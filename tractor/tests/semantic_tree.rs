@@ -577,6 +577,65 @@ class X:
             &mut tree, "//comment[trailing and leading]", 0);
     }
 
+    /// PHP supports `//` and `#` line comments plus `/* */` blocks.
+    /// All collapse to <comment>; the shared classifier handles
+    /// trailing / leading / floating with both `//` and `#` as
+    /// line-comment prefixes for grouping.
+    #[test]
+    fn php() {
+        let mut tree = parse_src(
+            "php",
+            r#"<?php
+// floating one
+
+// before A
+// also before A
+class A {
+    public int $x = 1; // trailing single
+}
+
+# before B
+# also before B
+class B {}
+
+/* leading block */
+class C {}
+"#,
+        );
+
+        claim("`//` line comment becomes <comment>",
+            &mut tree, "//comment[.='// floating one']", 1);
+
+        claim("`/* */` block becomes <comment>",
+            &mut tree, "//comment[.='/* leading block */']", 1);
+
+        claim("inline `//` after `;` is trailing",
+            &mut tree, "//comment[trailing][.='// trailing single']", 1);
+
+        claim("two adjacent `//` comments merge into one <comment>",
+            &mut tree, &multi_xpath("
+                //comment[leading]
+                    [contains(., 'before A')]
+                    [contains(., 'also before A')]
+            "), 1);
+
+        claim("two adjacent `#` comments merge into one <comment>",
+            &mut tree, &multi_xpath("
+                //comment[leading]
+                    [contains(., 'before B')]
+                    [contains(., 'also before B')]
+            "), 1);
+
+        claim("block `/* */` immediately before a decl is leading",
+            &mut tree, "//comment[leading][.='/* leading block */']", 1);
+
+        claim("blank-line break: floating comment has no marker",
+            &mut tree, "//comment[.='// floating one'][not(leading) and not(trailing)]", 1);
+
+        claim("trailing and leading are mutually exclusive",
+            &mut tree, "//comment[trailing and leading]", 0);
+    }
+
     /// Ruby uses `#` line comments. Same trailing / leading /
     /// floating classification + adjacent-line grouping. (Block
     /// `=begin`/`=end` comments are rare and out of scope.)

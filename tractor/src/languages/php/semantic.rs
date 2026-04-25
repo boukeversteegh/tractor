@@ -91,6 +91,12 @@ pub const COMMENT: &str = "comment";
 pub const PAIR: &str = "pair";
 pub const OP: &str = "op";
 
+// Comment markers — emitted by the shared CommentClassifier. PHP
+// supports both `//` (and `#`) line comments and `/* */` block
+// comments; the classifier carries that prefix list.
+pub const TRAILING: &str = "trailing";
+pub const LEADING: &str = "leading";
+
 // Visibility / access modifiers.
 pub const PUBLIC: &str = "public";
 pub const PRIVATE: &str = "private";
@@ -220,6 +226,10 @@ pub const NODES: &[NodeSpec] = &[
     NodeSpec { name: COMMENT, marker: false, container: true, syntax: Comment },
     NodeSpec { name: PAIR,    marker: false, container: true, syntax: Default },
     NodeSpec { name: OP,      marker: false, container: true, syntax: Operator },
+
+    // Comment markers
+    NodeSpec { name: TRAILING, marker: true, container: false, syntax: Default },
+    NodeSpec { name: LEADING,  marker: true, container: false, syntax: Default },
 
     // Access modifiers — markers only.
     NodeSpec { name: PUBLIC,    marker: true, container: false, syntax: Keyword },
