@@ -2248,4 +2248,98 @@ mod comments {
         claim("no raw tree-sitter `line_comment` / `block_comment` leaks",
             &mut tree, "//line_comment | //block_comment", 0);
     }
+
+    /// TypeScript (and JS) currently emit bare `<comment>` with no
+    /// leading/trailing classification — the C# attachment classifier
+    /// hasn't been ported yet (see proposal C1). When it lands, add
+    /// the classification claims here mirroring `csharp()`.
+    #[test]
+    fn typescript() {
+        let mut tree = parse_src(
+            "typescript",
+            r#"
+                // single
+                class X {
+                    x: number; // inline
+                    /* block */
+                    y: string;
+                    /** JSDoc */
+                    method() {}
+                }
+            "#,
+        );
+
+        claim("`//` line comment becomes <comment>",
+            &mut tree, "//comment[.='// single']", 1);
+
+        claim("`/* */` block becomes <comment>",
+            &mut tree, "//comment[.='/* block */']", 1);
+
+        claim("JSDoc `/** */` becomes <comment>",
+            &mut tree, "//comment[starts-with(., '/**')][contains(., 'JSDoc')]", 1);
+
+        claim("no raw tree-sitter `line_comment` / `block_comment` leaks",
+            &mut tree, "//line_comment | //block_comment", 0);
+    }
+
+    /// Python `#` comments. Tree-sitter calls them `comment`; tractor
+    /// renames to `<comment>` uniformly.
+    #[test]
+    fn python() {
+        let mut tree = parse_src(
+            "python",
+            r#"
+# module-level
+class X:
+    """docstring stays a string, not a comment"""
+    x = 1  # inline
+    # before y
+    y = 2
+"#,
+        );
+
+        claim("`#` line comment becomes <comment>",
+            &mut tree, "//comment[.='# module-level']", 1);
+
+        claim("inline `#` after code is still <comment>",
+            &mut tree, "//comment[.='# inline']", 1);
+
+        claim("docstring is a <string>, NOT a <comment>",
+            &mut tree, "//comment[contains(., 'docstring')]", 0);
+
+        claim("docstring lives as a <string> child of <class>",
+            &mut tree, "//class//string[contains(., 'docstring')]", 1);
+    }
+
+    /// Rust has 4 comment kinds: `//`, `/* */`, doc `///`, inner doc
+    /// `//!`. All collapse to `<comment>`.
+    #[test]
+    fn rust() {
+        let mut tree = parse_src(
+            "rust",
+            r#"
+                //! crate-level inner doc
+                /// outer doc
+                fn x() {}
+                // line
+                /* block */
+                fn y() {}
+            "#,
+        );
+
+        claim("`//` line comment becomes <comment>",
+            &mut tree, "//comment[.='// line']", 1);
+
+        claim("`/* */` block becomes <comment>",
+            &mut tree, "//comment[.='/* block */']", 1);
+
+        claim("`///` outer doc becomes <comment>",
+            &mut tree, "//comment[starts-with(., '///')]", 1);
+
+        claim("`//!` inner doc becomes <comment>",
+            &mut tree, "//comment[starts-with(., '//!')]", 1);
+
+        claim("no raw tree-sitter `line_comment` / `block_comment` / `doc_comment` leaks",
+            &mut tree, "//line_comment | //block_comment | //doc_comment", 0);
+    }
 }
