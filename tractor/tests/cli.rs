@@ -457,6 +457,39 @@ fn project_tree_xml_single_stays_bare() {
 }
 
 #[test]
+fn project_shape_strips_text_but_keeps_structure() {
+    // `-p shape` keeps element names and queryable predicates but
+    // drops source-text leaves. The `<item>one</item>` payload must
+    // *not* appear; the element shape `item` *must*.
+    let shape = cli_case!({
+        tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -p "shape";
+    })
+    .run();
+    assert!(
+        !shape.stdout.contains("\"one\"") && !shape.stdout.contains("\"two\""),
+        "shape projection must strip text content, got: {}",
+        shape.stdout
+    );
+    assert!(
+        shape.stdout.contains("item"),
+        "shape projection must keep element names, got: {}",
+        shape.stdout
+    );
+
+    // Sanity: `-p tree` on the same input keeps the text values,
+    // confirming the difference is real.
+    let tree = cli_case!({
+        tractor query -s "<root><item>one</item><item>two</item></root>" -l "xml" -x "//item" -p "tree";
+    })
+    .run();
+    assert!(
+        tree.stdout.contains("\"one\"") || tree.stdout.contains("one"),
+        "tree projection should retain text content, got: {}",
+        tree.stdout
+    );
+}
+
+#[test]
 fn project_tree_single_empty_exits_with_empty_stdout() {
     cli_case!({
         tractor query -s "<root/>" -l "xml" -x "//item" -p "tree" --single -f "xml";
