@@ -1504,264 +1504,6 @@ mod python {
 }
 
 // ===========================================================================
-// Go
-// ===========================================================================
-
-mod go {
-    use super::*;
-
-    /// Principle #9 — struct fields carry an exhaustive
-    /// `<exported/>`/`<unexported/>` marker based on Go's
-    /// name-capitalization export rule.
-    #[test]
-    fn field_export_markers_exhaustive() {
-        let mut tree = parse_src(
-            "go",
-            "package p\ntype T struct {\n    Public string\n    private string\n}\n",
-        );
-        assert_count(
-            &mut tree,
-            "//field[exported]",
-            1,
-            "capitalised field carries <exported/>",
-        );
-        assert_count(
-            &mut tree,
-            "//field[unexported]",
-            1,
-            "lower-case field carries <unexported/>",
-        );
-    }
-
-    /// `type Foo struct { … }` hoists: outer element is `<struct>`,
-    /// not `<type>`.
-    #[test]
-    fn struct_hoists_out_of_type_wrapper() {
-        let mut tree = parse_src(
-            "go",
-            "package main\ntype Config struct { Host string }\n",
-        );
-        assert_count(
-            &mut tree,
-            "//struct[name='Config']",
-            1,
-            "struct declaration renders as <struct> (Goal #5)",
-        );
-        assert_count(
-            &mut tree,
-            "//struct/field[name='Host']",
-            1,
-            "struct fields are flat children",
-        );
-    }
-
-    /// `type Foo interface { … }` hoists: outer element is `<interface>`.
-    #[test]
-    fn interface_hoists_out_of_type_wrapper() {
-        let mut tree = parse_src(
-            "go",
-            "package main\ntype Greeter interface { Greet() string }\n",
-        );
-        assert_count(
-            &mut tree,
-            "//interface[name='Greeter']",
-            1,
-            "interface declaration renders as <interface>",
-        );
-    }
-
-    /// `type MyInt int` → `<type>`; `type Color = int` → `<alias>`.
-    #[test]
-    fn defined_type_vs_alias() {
-        let mut tree = parse_src(
-            "go",
-            "package main\ntype MyInt int\ntype Color = int\n",
-        );
-        assert_count(
-            &mut tree,
-            "//type[name='MyInt']",
-            1,
-            "defined type renders as <type>",
-        );
-        assert_count(
-            &mut tree,
-            "//alias[name='Color']",
-            1,
-            "type alias (with =) renders as <alias>",
-        );
-    }
-
-    /// Raw string literal carries a `<raw/>` marker.
-    #[test]
-    fn raw_string_has_marker() {
-        let mut tree = parse_src(
-            "go",
-            "package main\nvar a = `raw`\nvar b = \"normal\"\n",
-        );
-        assert_count(
-            &mut tree,
-            "//string[raw]",
-            1,
-            "raw string carries <raw/> marker",
-        );
-        assert_count(
-            &mut tree,
-            "//string",
-            2,
-            "both string forms render as <string>",
-        );
-    }
-
-    /// Principle #12 — `const_spec` / `var_spec` / `import_spec` are
-    /// grammar wrappers around `name = value` / `path`. Flatten so the
-    /// declaration reads as `<const>const<name>x</name>=<value>1</value></const>`
-    /// rather than nesting the assignment inside an opaque spec element.
-    #[test]
-    fn const_var_spec_flatten() {
-        let mut tree = parse_src(
-            "go",
-            "package main\nconst x = 1\nvar y = 2\n",
-        );
-        assert_count(
-            &mut tree,
-            "//const_spec",
-            0,
-            "no <const_spec> wrapper (Principle #12)",
-        );
-        assert_count(
-            &mut tree,
-            "//var_spec",
-            0,
-            "no <var_spec> wrapper (Principle #12)",
-        );
-        assert_count(
-            &mut tree,
-            "//const[name='x']",
-            1,
-            "const's name is a direct child, not buried under const_spec",
-        );
-    }
-
-    /// Principle #9 — every declaration carries an exhaustive
-    /// <exported/> or <unexported/> marker, inferred from the name's
-    /// first character. No declaration is "unmarked" / silently-default.
-    #[test]
-    fn exported_unexported_markers_exhaustive() {
-        let mut tree = parse_src(
-            "go",
-            "package main\nfunc Public() {}\nfunc private() {}\ntype Exported int\ntype unexported int\n",
-        );
-        assert_count(
-            &mut tree,
-            "//function[exported]",
-            1,
-            "exported function carries <exported/>",
-        );
-        assert_count(
-            &mut tree,
-            "//function[unexported]",
-            1,
-            "unexported function carries <unexported/>",
-        );
-        assert_count(
-            &mut tree,
-            "//type[exported]",
-            1,
-            "exported type carries <exported/>",
-        );
-        assert_count(
-            &mut tree,
-            "//type[unexported]",
-            1,
-            "unexported type carries <unexported/>",
-        );
-        // No declaration is silently unmarked.
-        assert_count(
-            &mut tree,
-            "//function[not(exported) and not(unexported)]",
-            0,
-            "every function carries one of the two markers",
-        );
-    }
-
-    /// Principle #12 — parameters flatten.
-    #[test]
-    fn parameters_flatten() {
-        let mut tree = parse_src(
-            "go",
-            "package main\nfunc f(a string, b int) {}\n",
-        );
-        assert_count(
-            &mut tree,
-            "//function/parameter_list",
-            0,
-            "no parameter_list wrapper",
-        );
-        assert_count(
-            &mut tree,
-            "//function/parameter",
-            2,
-            "parameters are flat function siblings (Principle #2 — full name, not `param`)",
-        );
-    }
-
-    /// Conditional shape: Go's tree-sitter doesn't wrap the `else`
-    /// branch in an `else_clause` element, so the transform has to
-    /// surgically wrap the `alternative` field in <else>. Without
-    /// that, the shared collapse post-transform leaves else-if as
-    /// a nested <if> sibling of the outer, producing a broken chain.
-    #[test]
-    fn conditional_shape_flat() {
-        let mut tree = parse_src(
-            "go",
-            "package main\nfunc f(n int) string {\n    if n < 0 { return \"\" } else if n == 0 { return \"\" } else { return \"\" }\n}\n",
-        );
-        assert_count(
-            &mut tree,
-            "//if/else_if",
-            1,
-            "else_if is a flat sibling of <if>",
-        );
-        assert_count(
-            &mut tree,
-            "//if/else",
-            1,
-            "final else is a flat sibling",
-        );
-        assert_count(
-            &mut tree,
-            "//else/if",
-            0,
-            "no nested <else><if>...",
-        );
-    }
-
-    /// `switch x.(type) { … }` and a regular `switch x { … }` both
-    /// collapse to `<switch>`. The type switch carries a `<type/>`
-    /// marker so `//switch[type]` picks out every type switch.
-    #[test]
-    fn type_switch_carries_marker() {
-        let mut tree = parse_src(
-            "go",
-            "package main\nfunc f(x interface{}) {\n    switch x.(type) { case int: }\n    switch x { case 1: }\n}\n",
-        );
-        assert_count(
-            &mut tree,
-            "//switch[type]",
-            1,
-            "type switch carries <type/> marker",
-        );
-        assert_count(
-            &mut tree,
-            "//switch",
-            2,
-            "both regular and type switch collapse to <switch>",
-        );
-    }
-}
-
-
-// ===========================================================================
 // Cross-language: decorator / annotation / attribute topology
 //
 // The element name is idiomatic per language (Python uses <decorator>,
@@ -2888,6 +2630,59 @@ mod struct_interface_hoist {
 
         claim("the `type` wrapper does NOT also surface a <type> for the struct",
             &mut tree, "//file/type[name='Config']", 0);
+    }
+}
+
+mod spec_flattening {
+    use super::*;
+
+    /// Principle #12 — Go's `const_spec` / `var_spec` / `import_spec`
+    /// are grammar wrappers around `name = value` / `path`. Flatten
+    /// so a declaration reads as `<const>const<name>x</name>=<value>1</value></const>`
+    /// rather than burying the assignment inside an opaque spec
+    /// element.
+    #[test]
+    fn go() {
+        let mut tree = parse_src("go", r#"
+            package main
+
+            const x = 1
+            var y = 2
+        "#);
+
+        claim("no <const_spec> wrapper",
+            &mut tree, "//const_spec", 0);
+
+        claim("no <var_spec> wrapper",
+            &mut tree, "//var_spec", 0);
+
+        claim("const's name is a direct child, not buried under const_spec",
+            &mut tree, "//const[name='x']", 1);
+    }
+}
+
+mod switch_markers {
+    use super::*;
+
+    /// `switch x.(type) { … }` and a regular `switch x { … }` both
+    /// collapse to <switch>. The type switch carries a <type/>
+    /// marker so `//switch[type]` picks out every type switch.
+    #[test]
+    fn go() {
+        let mut tree = parse_src("go", r#"
+            package main
+
+            func f(x interface{}) {
+                switch x.(type) { case int: }
+                switch x { case 1: }
+            }
+        "#);
+
+        claim("type switch carries <type/> marker",
+            &mut tree, "//switch[type]", 1);
+
+        claim("both regular and type switch collapse to <switch>",
+            &mut tree, "//switch", 2);
     }
 }
 
