@@ -7,11 +7,61 @@ use crate::output::syntax_highlight::SyntaxCategory;
 use super::semantic::*;
 
 
-/// Transform a Rust AST node
+/// Transform a Rust AST node.
+///
+/// Dispatch is split in two:
+///   1. If the node carries a `kind` attribute (set by the builder from
+///      the original tree-sitter kind), match on that — it never changes
+///      mid-walk, so an arm like `"identifier"` always wins.
+///   2. Otherwise the node is a builder-inserted wrapper (e.g. the
+///      `<name>` field wrapper) — match on the element name for the
+///      few wrappers we need to handle.
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    let kind = match get_element_name(xot, node) {
+    let kind = match get_kind(xot, node) {
         Some(k) => k,
-        None => return Ok(TransformAction::Continue),
+        None => {
+            // Builder-inserted wrapper (no `kind` attribute).
+            let name = get_element_name(xot, node).unwrap_or_default();
+            return match name.as_str() {
+                // Name wrappers created by the builder for field="name".
+                // Inline the single identifier/type_identifier/field_identifier
+                // child as text:
+                //   <name><identifier>foo</identifier></name> -> <name>foo</name>
+                //
+                // If the single child is a `lifetime` (tree-sitter kind),
+                // inline the lifetime's descendant text so
+                // `<name><lifetime>'a</lifetime></name>` becomes
+                // `<name>'a</name>` — preserves the text-leaf invariant
+                // and avoids the `<lifetime><name><lifetime>…` triple-wrap
+                // that happens when lifetime_parameter also renames to
+                // `<lifetime>`.
+                "name" => {
+                    let element_children: Vec<_> = xot
+                        .children(node)
+                        .filter(|&c| xot.element(c).is_some())
+                        .collect();
+                    if element_children.len() == 1 {
+                        let child = element_children[0];
+                        if get_kind(xot, child).as_deref() == Some("lifetime") {
+                            let text = descendant_text(xot, child);
+                            let trimmed = text.trim().to_string();
+                            if !trimmed.is_empty() {
+                                let all_children: Vec<_> = xot.children(node).collect();
+                                for c in all_children {
+                                    xot.detach(c)?;
+                                }
+                                let text_node = xot.new_text(&trimmed);
+                                xot.append(node, text_node)?;
+                                return Ok(TransformAction::Done);
+                            }
+                        }
+                    }
+                    inline_single_identifier(xot, node)?;
+                    Ok(TransformAction::Continue)
+                }
+                _ => Ok(TransformAction::Continue),
+            };
+        }
     };
 
     match kind.as_str() {
@@ -27,12 +77,14 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Flatten)
         }
 
-        // Flat lists (Principle #12)
-        "parameters" if has_kind(xot, node) => {
+        // Flat lists (Principle #12). The kind branch already excludes
+        // builder-inserted wrappers, so the legacy `if has_kind(...)`
+        // guards are no longer needed.
+        "parameters" => {
             distribute_field_to_children(xot, node, "parameters");
             Ok(TransformAction::Flatten)
         }
-        "arguments" if has_kind(xot, node) => {
+        "arguments" => {
             distribute_field_to_children(xot, node, "arguments");
             Ok(TransformAction::Flatten)
         }
@@ -89,40 +141,6 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Flatten)
         }
         "attribute_item" => Ok(TransformAction::Flatten),
-
-        // Name wrappers created by the builder for field="name".
-        // Inline the single identifier/type_identifier/field_identifier child as text:
-        //   <name><identifier>foo</identifier></name> -> <name>foo</name>
-        //
-        // If the single child is a `lifetime` (tree-sitter kind), inline the
-        // lifetime's descendant text so `<name><lifetime>'a</lifetime></name>`
-        // becomes `<name>'a</name>` — preserves the text-leaf invariant and
-        // avoids the `<lifetime><name><lifetime>…` triple-wrap that happens
-        // when lifetime_parameter also renames to `<lifetime>`.
-        "name" => {
-            let element_children: Vec<_> = xot
-                .children(node)
-                .filter(|&c| xot.element(c).is_some())
-                .collect();
-            if element_children.len() == 1 {
-                let child = element_children[0];
-                if get_kind(xot, child).as_deref() == Some("lifetime") {
-                    let text = descendant_text(xot, child);
-                    let trimmed = text.trim().to_string();
-                    if !trimmed.is_empty() {
-                        let all_children: Vec<_> = xot.children(node).collect();
-                        for c in all_children {
-                            xot.detach(c)?;
-                        }
-                        let text_node = xot.new_text(&trimmed);
-                        xot.append(node, text_node)?;
-                        return Ok(TransformAction::Done);
-                    }
-                }
-            }
-            inline_single_identifier(xot, node)?;
-            Ok(TransformAction::Continue)
-        }
 
         // Visibility modifier (pub, pub(crate), etc.)
         //
@@ -321,14 +339,6 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
     }
-}
-
-/// True when the node has a `kind` attribute (i.e., it came from tree-sitter,
-/// not a builder-inserted wrapper). Used to distinguish the tree-sitter kind
-/// `parameters` (which we want to flatten) from any semantic `parameters`
-/// element we might create elsewhere.
-fn has_kind(xot: &Xot, node: XotNode) -> bool {
-    get_kind(xot, node).is_some()
 }
 
 /// Map tree-sitter node kinds to semantic element names.
