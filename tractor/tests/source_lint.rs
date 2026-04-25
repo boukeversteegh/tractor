@@ -30,16 +30,19 @@ use std::process::Command;
 
 mod support;
 
-const LANGUAGE_FILES: &[&str] = &[
-    "tractor/src/languages/csharp.rs",
-    "tractor/src/languages/typescript.rs",
-    "tractor/src/languages/python.rs",
-    "tractor/src/languages/rust_lang.rs",
-    "tractor/src/languages/go.rs",
-    "tractor/src/languages/java.rs",
-    "tractor/src/languages/php.rs",
-    "tractor/src/languages/ruby.rs",
-    "tractor/src/languages/tsql.rs",
+/// Each entry lists the candidate paths in priority order — Phase B2
+/// splits each `<lang>.rs` into `<lang>/{mod,semantic,transform}.rs`,
+/// so we accept either layout while the migration is in progress.
+const LANGUAGE_FILES: &[&[&str]] = &[
+    &["tractor/src/languages/csharp/transform.rs", "tractor/src/languages/csharp.rs"],
+    &["tractor/src/languages/typescript/transform.rs", "tractor/src/languages/typescript.rs"],
+    &["tractor/src/languages/python/transform.rs", "tractor/src/languages/python.rs"],
+    &["tractor/src/languages/rust_lang/transform.rs", "tractor/src/languages/rust_lang.rs"],
+    &["tractor/src/languages/go/transform.rs", "tractor/src/languages/go.rs"],
+    &["tractor/src/languages/java/transform.rs", "tractor/src/languages/java.rs"],
+    &["tractor/src/languages/php/transform.rs", "tractor/src/languages/php.rs"],
+    &["tractor/src/languages/ruby/transform.rs", "tractor/src/languages/ruby.rs"],
+    &["tractor/src/languages/tsql/transform.rs", "tractor/src/languages/tsql.rs"],
 ];
 
 /// XPath that finds bare `string` literal arguments to `Some(...)`
@@ -174,12 +177,25 @@ fn map_element_name_uses_semantic_constants() {
     let mut all_violations: Vec<Violation> = Vec::new();
     let mut errors = Vec::new();
 
-    for rel in LANGUAGE_FILES {
-        let path = root.join(rel);
-        if !path.is_file() {
-            errors.push(format!("missing language file: {}", path.display()));
-            continue;
+    for candidates in LANGUAGE_FILES {
+        let mut found: Option<(PathBuf, &str)> = None;
+        for rel in *candidates {
+            let path = root.join(rel);
+            if path.is_file() {
+                found = Some((path, *rel));
+                break;
+            }
         }
+        let (path, rel) = match found {
+            Some(p) => p,
+            None => {
+                errors.push(format!(
+                    "missing language file: tried {}",
+                    candidates.join(", "),
+                ));
+                continue;
+            }
+        };
         match run_lint(&path) {
             Ok(violations) => {
                 for v in violations {
