@@ -2343,3 +2343,211 @@ class X:
             &mut tree, "//line_comment | //block_comment | //doc_comment", 0);
     }
 }
+
+mod accessor_flattening {
+    use super::*;
+
+    /// Property accessors are direct siblings of <property>; no
+    /// <accessor_list> wrapper. Each accessor carries an empty marker
+    /// (<get/>/<set/>/<init/>) uniformly across auto-form and bodied
+    /// form (Principles #12, #13).
+    #[test]
+    fn csharp() {
+        let mut tree = parse_src("csharp", r#"
+            class Accessors
+            {
+                public int AutoProp { get; set; }
+
+                private int _backing;
+                public int Manual
+                {
+                    get { return _backing; }
+                    set { _backing = value; }
+                }
+
+                public int ReadOnly { get; }
+                public int WriteOnly { set { _backing = value; } }
+            }
+        "#);
+
+        claim("no <accessor_list> wrapper anywhere",
+            &mut tree, "//accessor_list", 0);
+
+        claim("auto-form get + bodied get + read-only get",
+            &mut tree, "//accessor[get]", 3);
+
+        claim("auto-form set + bodied set + write-only set",
+            &mut tree, "//accessor[set]", 3);
+
+        claim("AutoProp has 2 accessors as direct siblings of <property>",
+            &mut tree, "//property[name='AutoProp']/accessor", 2);
+
+        claim("Manual property has bodied accessors with block bodies",
+            &mut tree, "//property[name='Manual']/accessor/body/block", 2);
+
+        claim("ReadOnly has only get",
+            &mut tree, "//property[name='ReadOnly']/accessor[set]", 0);
+    }
+}
+
+mod accessors {
+    use super::*;
+
+    /// TypeScript `get foo()` / `set foo(v)` carry <get/>/<set/>
+    /// markers on <method>. //method[get] picks them out uniformly
+    /// regardless of body shape.
+    #[test]
+    fn typescript() {
+        let mut tree = parse_src("typescript", r#"
+            class Counter {
+                private _value = 0;
+
+                get value(): number { return this._value; }
+                set value(v: number) { this._value = v; }
+                static get singleton(): Counter { return new Counter(); }
+            }
+        "#);
+
+        claim("two getter methods (instance + static)",
+            &mut tree, "//method[get]", 2);
+
+        claim("one setter method",
+            &mut tree, "//method[set]", 1);
+
+        claim("get/set on accessor methods imply <public/>",
+            &mut tree, "//method[(get or set) and not(public)]", 0);
+
+        claim("get and set markers are mutually exclusive on a method",
+            &mut tree, "//method[get and set]", 0);
+    }
+}
+
+mod async_generator {
+    use super::*;
+
+    /// async / generator lift to empty markers on <function> /
+    /// <method>. Every async/generator declaration carries the
+    /// applicable markers (Principle #9 exhaustive markers).
+    #[test]
+    fn typescript() {
+        let mut tree = parse_src("typescript", r#"
+            async function fetchOne(): Promise<number> { return 1; }
+            function* counter(): Generator<number> { yield 1; }
+            async function* stream(): AsyncGenerator<number> { yield 1; }
+            class Service {
+                async load(): Promise<void> {}
+                *keys(): Generator<string> { yield "a"; }
+            }
+        "#);
+
+        claim("async function fetchOne",
+            &mut tree, "//function[async and not(generator)][name='fetchOne']", 1);
+
+        claim("generator function counter",
+            &mut tree, "//function[generator and not(async)][name='counter']", 1);
+
+        claim("async generator function stream",
+            &mut tree, "//function[async and generator][name='stream']", 1);
+
+        claim("async method load",
+            &mut tree, "//method[async and not(generator)][name='load']", 1);
+
+        claim("generator method keys",
+            &mut tree, "//method[generator and not(async)][name='keys']", 1);
+    }
+}
+
+mod augmented_assign {
+    use super::*;
+
+    /// Goal #5: augmented_assignment unifies with plain assignment
+    /// as <assign> plus an <op> child carrying the compound operator.
+    /// A single //assign query matches every assignment.
+    #[test]
+    fn python() {
+        let mut tree = parse_src("python", r#"
+def ops():
+    x = 0
+    x += 1
+    x -= 2
+    x *= 3
+    x //= 2
+    x **= 2
+    x &= 0xFF
+    x |= 0x10
+    x ^= 0x01
+    x <<= 1
+    x >>= 1
+"#);
+
+        claim("11 statement-level assignments (1 plain + 10 compound)",
+            &mut tree, "//body/assign", 11);
+
+        claim("plain `=` is the only top-level assign without an <op>",
+            &mut tree, "//body/assign[not(op)]", 1);
+
+        claim("10 compound assignments carry an <op> child",
+            &mut tree, "//body/assign/op", 10);
+
+        claim("`+=` carries assign[plus] marker",
+            &mut tree, "//assign/op/assign[plus]", 1);
+
+        claim("`-=` carries assign[minus] marker",
+            &mut tree, "//assign/op/assign[minus]", 1);
+
+        claim("`**=` carries assign[power] marker",
+            &mut tree, "//assign/op/assign[power]", 1);
+
+        claim("bitwise compound ops carry assign/bitwise[*] markers",
+            &mut tree, "//assign/op/assign/bitwise[and] | //assign/op/assign/bitwise[or] | //assign/op/assign/bitwise[xor]", 3);
+
+        claim("shift compound ops carry assign/shift[*] markers",
+            &mut tree, "//assign/op/assign/shift[left] | //assign/op/assign/shift[right]", 2);
+    }
+}
+
+mod collection_markers {
+    use super::*;
+
+    /// Python collection literals unify by produced type. <list>,
+    /// <dict>, <set>, <generator> carry exhaustive <literal/> or
+    /// <comprehension/> markers so queries can distinguish
+    /// `[x for x in xs]` from `[1, 2, 3]` without kind-specific
+    /// element names.
+    #[test]
+    fn python() {
+        let mut tree = parse_src("python", r#"
+nums = [1, 2, 3]
+squares = [x * x for x in nums]
+pairs = {"a": 1, "b": 2}
+inverted = {v: k for k, v in pairs.items()}
+unique = {1, 2, 3}
+uniq_sq = {x * x for x in nums}
+gen = (x for x in nums)
+"#);
+
+        claim("list literal carries <literal/>",
+            &mut tree, "//list[literal]", 1);
+
+        claim("list comprehension carries <comprehension/>",
+            &mut tree, "//list[comprehension]", 1);
+
+        claim("dict literal carries <literal/>",
+            &mut tree, "//dict[literal]", 1);
+
+        claim("dict comprehension carries <comprehension/>",
+            &mut tree, "//dict[comprehension]", 1);
+
+        claim("set literal carries <literal/>",
+            &mut tree, "//set[literal]", 1);
+
+        claim("set comprehension carries <comprehension/>",
+            &mut tree, "//set[comprehension]", 1);
+
+        claim("generator expression renders as <generator>",
+            &mut tree, "//generator", 1);
+
+        claim("literal and comprehension are mutually exclusive on collections",
+            &mut tree, "//*[literal and comprehension]", 0);
+    }
+}

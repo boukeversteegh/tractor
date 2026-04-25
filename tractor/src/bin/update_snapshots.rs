@@ -62,8 +62,6 @@ const FEATURE_FIXTURES: &[(&str, &str, u32, bool)] = &[
     // Feature fixtures: minimal construct that demonstrates the
     // invariant. Depth cap hides deep internals where noise doesn't
     // help — the blueprint covers the deep view.
-    ("tests/integration/features/accessors/accessors.ts", "//method[get]", 4, false),
-    ("tests/integration/features/async-generator/async-generator.ts", "//function[async][generator]", 3, false),
     ("tests/integration/features/conditionals/conditionals.ts", "//if", 3, false),
     ("tests/integration/features/flat-lists/flat-lists.ts", "//function[name='first']", 4, false),
     ("tests/integration/features/parameter-marking/parameter-marking.ts", "//function[name='call']", 4, false),
@@ -86,7 +84,6 @@ const FEATURE_FIXTURES: &[(&str, &str, u32, bool)] = &[
     // by ~60% on this 1561-line snapshot. Text preservation is
     // enforced separately by `tests/text_preservation.rs`.
     ("tests/integration/languages/csharp/blueprint.cs", "//unit", 0, true),
-    ("tests/integration/features/accessor-flattening/accessor-flattening.cs", "//property[name='Manual']", 4, false),
     ("tests/integration/features/comments/comments.cs", "//class[name='Demo']", 3, false),
     ("tests/integration/features/conditionals/conditionals.cs", "//if", 3, false),
     ("tests/integration/features/flat-lists/flat-lists.cs", "//method[1]", 4, false),
@@ -114,14 +111,6 @@ const FEATURE_FIXTURES: &[(&str, &str, u32, bool)] = &[
 
     // — Python —
     ("tests/integration/languages/python/blueprint.py", "//module", 0, true),
-    // Match the enclosing <function> so the snapshot shows every
-    // augmented-assignment variant as siblings in the body — the
-    // fixture's purpose is to demonstrate that every compound
-    // operator produces the same <assign><op>…</op> shape. Matching
-    // a single <assign> with --single would only surface the first
-    // case (`+=`).
-    ("tests/integration/features/augmented-assign/augmented-assign.py", "//function[name='ops']", 5, false),
-    ("tests/integration/features/collection-markers/collection-markers.py", "//list[comprehension]", 4, false),
     ("tests/integration/features/conditionals/conditionals.py", "//if", 3, false),
     ("tests/integration/features/expression-list/expression-list.py", "//return[1]", 3, false),
     ("tests/integration/features/f-strings/f-strings.py", "//string[interpolation]", 3, false),
