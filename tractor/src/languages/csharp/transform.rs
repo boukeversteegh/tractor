@@ -38,13 +38,82 @@ fn is_named_declaration(kind: &str) -> bool {
     )
 }
 
-/// Transform a C# AST node
+/// Transform a C# AST node.
+///
+/// Dispatch is split in two:
+///   1. If the node carries a `kind` attribute (set by the builder from
+///      the original tree-sitter kind), match on that — it never changes
+///      mid-walk, so an arm like `"identifier"` always wins.
+///   2. Otherwise the node is a builder-inserted wrapper (e.g. the
+///      `<name>` field wrapper) — match on the element name for the
+///      few wrappers we need to handle.
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    // Use get_kind() for robust detection - original TreeSitter kind doesn't change after renames
-    // Fall back to element name for field wrappers (like <name>, <body>) which don't have kind attr
-    let kind = get_kind(xot, node)
-        .or_else(|| get_element_name(xot, node))
-        .unwrap_or_default();
+    let kind = match get_kind(xot, node) {
+        Some(k) => k,
+        None => {
+            // Builder-inserted wrapper (no `kind` attribute).
+            let name = get_element_name(xot, node).unwrap_or_default();
+            return match name.as_str() {
+                // Name wrappers — inline the single identifier child as text.
+                //   <name><identifier>Foo</identifier></name>    →  <name>Foo</name>
+                //   <name><type_identifier>Foo</type_identifier> →  <name>Foo</name>
+                //   <name><name>Foo</name></name>                →  <name>Foo</name>
+                //
+                // Applies uniformly — declaration context and reference
+                // context both want the same flat "identifier as a single
+                // <name> text leaf" shape per the design doc.
+                "name" => {
+                    let children: Vec<_> = xot.children(node).collect();
+                    let element_children: Vec<_> = children
+                        .iter()
+                        .copied()
+                        .filter(|&c| xot.element(c).is_some())
+                        .collect();
+                    if element_children.len() == 1 {
+                        let child = element_children[0];
+                        let child_kind = get_kind(xot, child);
+                        let is_identifier = matches!(
+                            child_kind.as_deref(),
+                            Some("identifier") | Some("type_identifier") | Some("property_identifier")
+                        );
+                        let is_inlined_name =
+                            get_element_name(xot, child).as_deref() == Some("name");
+                        // For qualified / scoped names (`System.Text`,
+                        // `MyApp.Services.Logger`) concat the descendant
+                        // text so the outer <name> holds the full dotted
+                        // path as a single text leaf — Principle #14's
+                        // uniform `<name>X</name>` shape.
+                        let is_qualified = matches!(
+                            child_kind.as_deref(),
+                            Some("qualified_name") | Some("generic_name") | Some("alias_qualified_name")
+                        );
+                        if is_identifier || is_inlined_name {
+                            if let Some(text) = get_text_content(xot, child) {
+                                for c in children {
+                                    xot.detach(c)?;
+                                }
+                                let text_node = xot.new_text(&text);
+                                xot.append(node, text_node)?;
+                                return Ok(TransformAction::Done);
+                            }
+                        } else if is_qualified {
+                            let text = descendant_text(xot, child);
+                            if !text.is_empty() {
+                                for c in children {
+                                    xot.detach(c)?;
+                                }
+                                let text_node = xot.new_text(&text);
+                                xot.append(node, text_node)?;
+                                return Ok(TransformAction::Done);
+                            }
+                        }
+                    }
+                    Ok(TransformAction::Continue)
+                }
+                _ => Ok(TransformAction::Continue),
+            };
+        }
+    };
 
     match kind.as_str() {
         // ---------------------------------------------------------------------
@@ -162,64 +231,6 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         "type_parameter_list" => {
             distribute_field_to_children(xot, node, "generics");
             Ok(TransformAction::Flatten)
-        }
-
-        // ---------------------------------------------------------------------
-        // Name wrappers - inline the single identifier child as text.
-        //   <name><identifier>Foo</identifier></name>    →  <name>Foo</name>
-        //   <name><type_identifier>Foo</type_identifier> →  <name>Foo</name>
-        //   <name><name>Foo</name></name>                →  <name>Foo</name>
-        //
-        // Applies uniformly — declaration context and reference
-        // context both want the same flat "identifier as a single
-        // <name> text leaf" shape per the design doc.
-        "name" => {
-            let children: Vec<_> = xot.children(node).collect();
-            let element_children: Vec<_> = children
-                .iter()
-                .copied()
-                .filter(|&c| xot.element(c).is_some())
-                .collect();
-            if element_children.len() == 1 {
-                let child = element_children[0];
-                let child_kind = get_kind(xot, child);
-                let is_identifier = matches!(
-                    child_kind.as_deref(),
-                    Some("identifier") | Some("type_identifier") | Some("property_identifier")
-                );
-                let is_inlined_name =
-                    get_element_name(xot, child).as_deref() == Some("name");
-                // For qualified / scoped names (`System.Text`,
-                // `MyApp.Services.Logger`) concat the descendant
-                // text so the outer <name> holds the full dotted
-                // path as a single text leaf — Principle #14's
-                // uniform `<name>X</name>` shape.
-                let is_qualified = matches!(
-                    child_kind.as_deref(),
-                    Some("qualified_name") | Some("generic_name") | Some("alias_qualified_name")
-                );
-                if is_identifier || is_inlined_name {
-                    if let Some(text) = get_text_content(xot, child) {
-                        for c in children {
-                            xot.detach(c)?;
-                        }
-                        let text_node = xot.new_text(&text);
-                        xot.append(node, text_node)?;
-                        return Ok(TransformAction::Done);
-                    }
-                } else if is_qualified {
-                    let text = descendant_text(xot, child);
-                    if !text.is_empty() {
-                        for c in children {
-                            xot.detach(c)?;
-                        }
-                        let text_node = xot.new_text(&text);
-                        xot.append(node, text_node)?;
-                        return Ok(TransformAction::Done);
-                    }
-                }
-            }
-            Ok(TransformAction::Continue)
         }
 
         // ---------------------------------------------------------------------
