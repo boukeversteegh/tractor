@@ -335,89 +335,10 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 
 /// Map tree-sitter node kinds to semantic element names.
 ///
-/// Second tuple element is an optional disambiguation marker —
-/// lets the map declare "rename to `<spread>` with `<dict/>` child"
-/// in one entry.
+/// Derived from `semantic::KINDS` — the catalogue is the single source
+/// of truth, this is just the rename projection.
 fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> {
-    match kind {
-        "module" => Some((MODULE, None)),
-        "class_definition" => Some((CLASS, None)),
-        "function_definition" => Some((FUNCTION, None)),
-        "decorated_definition" => Some((DECORATED, None)),
-        "decorator" => Some((DECORATOR, None)),
-        // parameters is flattened via Principle #12 above
-        "default_parameter" | "typed_parameter" | "typed_default_parameter" => Some((PARAMETER, None)),
-        "return_statement" => Some((RETURN, None)),
-        "if_statement" => Some((IF, None)),
-        "elif_clause" => Some((ELSE_IF, None)),
-        "else_clause" => Some((ELSE, None)),
-        "for_statement" => Some((FOR, None)),
-        "while_statement" => Some((WHILE, None)),
-        "try_statement" => Some((TRY, None)),
-        "except_clause" => Some((EXCEPT, None)),
-        "finally_clause" => Some((FINALLY, None)),
-        "with_statement" => Some((WITH, None)),
-        "raise_statement" => Some((RAISE, None)),
-        "pass_statement" => Some((PASS, None)),
-        "import_statement" => Some((IMPORT, None)),
-        "import_from_statement" => Some((FROM, None)),
-        "assert_statement" => Some((ASSERT, None)),
-        "delete_statement" => Some((DELETE, None)),
-        "global_statement" => Some((GLOBAL, None)),
-        "nonlocal_statement" => Some((NONLOCAL, None)),
-        "break_statement" => Some((BREAK, None)),
-        "continue_statement" => Some((CONTINUE, None)),
-        "match_statement" => Some((MATCH, None)),
-        // Pattern kinds in `match` arms — normalise to `<pattern>`
-        // with shape markers for querying by structure.
-        "class_pattern" => Some((PATTERN, Some(CLASS))),
-        "list_pattern" => Some((PATTERN, Some(LIST))),
-        "dict_pattern" => Some((PATTERN, Some(DICT))),
-        // Walrus operator — Python's `:=`. Collapses to <assign>;
-        // the `<op>` child (`:=`) or the enclosing context marks it.
-        "named_expression" => Some((ASSIGN, None)),
-        // f-string internals — `format_specifier` is the `:>10` bit.
-        "format_specifier" => Some((FORMAT, None)),
-        // `lambda_parameters` is a wrapper; flatten handled in match arm above.
-        // `keyword_separator` / `positional_separator` are grammar markers
-        // for `*` and `/` separators in function signatures — empty markers.
-        // Spread / unpack — `*` sequence-style vs `**` mapping-style.
-        // The `<list/>` / `<dict/>` marker child survives through
-        // argument, pattern, and literal contexts so `//spread[dict]`
-        // picks up every `**kwargs`.
-        "list_splat" | "list_splat_pattern" => Some((SPREAD, Some(LIST))),
-        "dictionary_splat" | "dictionary_splat_pattern" => Some((SPREAD, Some(DICT))),
-        // Type / pattern flavors — shape markers keep queries precise.
-        "union_type" => Some((TYPE, Some(UNION))),
-        "union_pattern" => Some((PATTERN, Some(UNION))),
-        "splat_pattern" => Some((PATTERN, Some(SPLAT))),
-        "as_pattern" => Some((AS, None)),
-        "for_in_clause" => Some((FOR, None)),
-        "call" => Some((CALL, None)),
-        "attribute" => Some((MEMBER, None)),
-        "subscript" => Some((SUBSCRIPT, None)),
-        "assignment" => Some((ASSIGN, None)),
-        // augmented_assignment collapses to <assign>; the <op> child (e.g., +=) distinguishes it.
-        "augmented_assignment" => Some((ASSIGN, None)),
-        "binary_operator" => Some((BINARY, None)),
-        "unary_operator" => Some((UNARY, None)),
-        "comparison_operator" => Some((COMPARE, None)),
-        "boolean_operator" => Some((LOGICAL, None)),
-        // conditional_expression handled above
-        "lambda" => Some((LAMBDA, None)),
-        "await" => Some((AWAIT, None)),
-        // Collection literals and comprehensions are handled specially
-        // above (renamed to their produced type + <literal/> or
-        // <comprehension/> marker).
-        "generator_expression" => Some((GENERATOR, None)),
-        "string" => Some((STRING, None)),
-        "integer" => Some((INT, None)),
-        "float" => Some((FLOAT, None)),
-        "true" => Some((TRUE, None)),
-        "false" => Some((FALSE, None)),
-        "none" => Some((NONE, None)),
-        _ => None,
-    }
+    super::semantic::rename_target(kind)
 }
 
 /// Apply `map_element_name` to a node: rename + prepend marker (if any).
