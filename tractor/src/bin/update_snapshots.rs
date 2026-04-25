@@ -784,6 +784,14 @@ fn main() {
     // assertion suite (`tests/semantic_tree.rs`); these fragments are
     // for reviewers who want a scannable visual reference of what
     // each transformed construct looks like.
+    // Feature fixtures with depth=0 (no per-fixture override) get a
+    // sensible default depth cap. Blueprints under
+    // `tests/integration/languages/<lang>/blueprint.<ext>` keep depth=0
+    // = unlimited because they are kitchen-sink fixtures by design.
+    // Cap is conservative enough that the focused construct (the
+    // matched subtree) renders fully but deep arithmetic / nested
+    // expression internals stay collapsed.
+    const FEATURE_DEFAULT_DEPTH: u32 = 5;
     for &(source_rel, xpath, depth) in FEATURE_FIXTURES {
         let source_rel = source_rel.replace('\\', "/");
         let source_path = Path::new(&source_rel);
@@ -795,12 +803,19 @@ fn main() {
             process::exit(1);
         }
 
+        let is_blueprint = source_rel.contains("/blueprint.");
+        let effective_depth = if depth == 0 && !is_blueprint {
+            FEATURE_DEFAULT_DEPTH
+        } else {
+            depth
+        };
+
         let txt_snap = format!("{}.snapshot.txt", source_rel);
-        let depth_str = depth.to_string();
+        let depth_str = effective_depth.to_string();
         let mut args: Vec<&str> = vec![
             "query", &source_rel, "-x", xpath, "-p", "tree", "--single",
         ];
-        if depth > 0 {
+        if effective_depth > 0 {
             args.push("--depth");
             args.push(&depth_str);
         }

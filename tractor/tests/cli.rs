@@ -537,7 +537,7 @@ fn projection_invalid_is_rejected_with_valid_values() {
         expect => {
             exit 1;
             combined_contains "invalid projection 'INVALID'";
-            combined_contains "tree, value, source, lines, schema, count, summary, totals, results, report";
+            combined_contains "tree, shape, value, source, lines, schema, count, summary, totals, results, report";
         }
     })
     .run();

@@ -51,6 +51,10 @@ pub fn render_text_output(
         Projection::Tree | Projection::Value | Projection::Source | Projection::Lines => {
             render_text_field_projection(report, projection, render_opts, single)
         }
+        Projection::Shape => {
+            let shape_opts = render_opts.clone().with_shape_only(true);
+            render_text_field_projection(report, Projection::Tree, &shape_opts, single)
+        }
     }
 }
 

@@ -407,6 +407,16 @@ fn build_element_entry(node: &XmlNode, options: &RenderOptions, depth: usize) ->
     let info = analyze_element(current, options);
 
     if let Some(value) = direct_leaf_value(&info) {
+        // Shape mode: drop the text-value tail. Render as a bare path
+        // (`name/`) so the structure stays visible without quoting source.
+        if options.shape_only {
+            return RenderEntry {
+                line: RenderLine::Path(path),
+                source_line: source_start_line(current),
+                source_end_line: source_end_line(current),
+                children: Vec::new(),
+            };
+        }
         return RenderEntry {
             line: RenderLine::PathValue {
                 path,
@@ -636,17 +646,21 @@ fn analyze_element<'a>(node: &'a XmlNode, options: &RenderOptions) -> ElementInf
                 non_marker_elements.push(child);
                 visible_items.push(VisibleChild::Element(child));
             }
-            XmlNode::Text(text) if !text.trim().is_empty() => {
+            // Shape mode strips source text content — only structural
+            // elements (and their predicates) are rendered.
+            XmlNode::Text(text) if !text.trim().is_empty() && !options.shape_only => {
                 visible_items.push(VisibleChild::Text {
                     text: text.trim(),
                     line_hint: None,
                 });
             }
-            XmlNode::Comment(text) => visible_items.push(VisibleChild::Comment {
-                text,
-                line_hint: None,
-            }),
-            XmlNode::ProcessingInstruction { target, data } => {
+            XmlNode::Comment(text) if !options.shape_only => {
+                visible_items.push(VisibleChild::Comment {
+                    text,
+                    line_hint: None,
+                });
+            }
+            XmlNode::ProcessingInstruction { target, data } if !options.shape_only => {
                 visible_items.push(VisibleChild::ProcessingInstruction {
                     target,
                     data: data.as_deref(),
@@ -986,6 +1000,56 @@ mod tests {
                 "  └─ body = \"{ }\"\n"
             )
         );
+    }
+
+    #[test]
+    fn shape_only_strips_text_and_value_tail() {
+        // class[internal]/                    ← shape strips:
+        //   ├─ "class"                          - bare text literals
+        //   ├─ name = "Repo"                    - text-value tail (= "Repo")
+        //   ├─ generic[class and new]/          - markers/predicates stay
+        //   │   └─ name = "T"
+        //   └─ body = "{}"
+        let node = elem(
+            "class",
+            vec![
+                elem("internal", vec![]),
+                text("class"),
+                elem("name", vec![text("Repo")]),
+                text("<"),
+                elem(
+                    "generic",
+                    vec![
+                        elem("class", vec![]),
+                        elem("new", vec![]),
+                        elem("name", vec![text("T")]),
+                    ],
+                ),
+                text(">"),
+                elem("body", vec![text("{}")]),
+            ],
+        );
+
+        let shape = render_query_tree_node(&node, &RenderOptions::new().with_shape_only(true));
+
+        // Shape mode strips text content but keeps the linear-chain
+        // collapse: `generic[…]/name` renders on one line because the
+        // generic element has only one non-marker child.
+        assert_eq!(
+            shape,
+            concat!(
+                "class[internal]/\n",
+                "  ├─ name\n",
+                "  ├─ generic[class and new]/name\n",
+                "  └─ body\n",
+            )
+        );
+
+        // Sanity: regular tree mode keeps text values for the same input.
+        let tree = render_query_tree_node(&node, &RenderOptions::new());
+        assert!(tree.contains("\"Repo\""));
+        assert!(tree.contains("\"class\""));
+        assert!(tree.contains("\"{}\""));
     }
 
     #[test]

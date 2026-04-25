@@ -48,6 +48,10 @@ pub fn render_xml_output(
         Projection::Tree | Projection::Value | Projection::Source | Projection::Lines => {
             render_xml_field_projection(report, &tree_opts, projection, single)?
         }
+        Projection::Shape => {
+            let shape_opts = tree_opts.clone().with_shape_only(true);
+            render_xml_field_projection(report, &shape_opts, Projection::Tree, single)?
+        }
     };
 
     Ok(finish_xml_output(body, render_opts))

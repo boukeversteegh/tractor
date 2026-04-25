@@ -25,7 +25,8 @@ class[internal]/
       │   │   ├─ type[generic]/
       │   │   │   ├─ name = "List"
       │   │   │   ├─ "<"
-      │   │   │   ├─ type/name = "string"
+      │   │   │   ├─ type/
+      │   │   │   │   └─ ... (1 children)
       │   │   │   └─ ">"
       │   │   └─ declarator/name = "Tags"
       │   └─ ";"

@@ -68,6 +68,7 @@ View:
   -p, --projection <TARGET>
           Choose which report element is emitted [default: report]
             tree     Project matched trees
+            shape    Project matched tree shape (no text)
             value    Project matched values
             source   Project matched source snippets
             lines    Project matched source lines

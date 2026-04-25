@@ -18,9 +18,7 @@ property[public]/
   │       ├─ "{"
   │       ├─ expression/
   │       │   ├─ assign/
-  │       │   │   ├─ left/name = "_backing"
-  │       │   │   ├─ op = "="
-  │       │   │   └─ right/name = "value"
+  │       │   │   └─ ... (5 children)
   │       │   └─ ";"
   │       └─ "}"
   └─ "}"

@@ -59,6 +59,19 @@ pub(crate) fn project_json_value(
                 Ok(Value::Array(projected))
             }
         }
+        Projection::Shape => {
+            let shape_opts = render_opts.clone().with_shape_only(true);
+            let projected: Vec<Value> = report
+                .all_matches()
+                .into_iter()
+                .filter_map(|rm| project_match_field_to_json(rm, Projection::Tree, &shape_opts))
+                .collect();
+            if single {
+                Ok(first_or_empty(projected.into_iter())?)
+            } else {
+                Ok(Value::Array(projected))
+            }
+        }
     }
 }
 
