@@ -57,11 +57,10 @@ const LINT_XPATH: &str =
 /// are skipped by the lint.
 const ALLOW_MARKER: &str = "tractor-lint:allow";
 
-/// Hard gate: when true, violations cause test failure. Flip this on
-/// once the count is zero. Currently soft to let the audit pass
-/// initially; subsequent commits drive violations to zero, then this
-/// flips to `true`.
-const LINT_GATE_HARD: bool = false;
+/// Hard gate: when true, violations cause test failure. Flipped on
+/// after the initial audit pass drove the count to zero across all
+/// nine language files.
+const LINT_GATE_HARD: bool = true;
 
 #[derive(Debug)]
 struct Violation {
