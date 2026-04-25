@@ -46,88 +46,96 @@ use std::process::{self, Command};
 /// Output: `<source>.snapshot.txt` containing just the matched subtree.
 ///
 /// Paths are relative to the project root.
-const FEATURE_FIXTURES: &[(&str, &str, u32)] = &[
+/// Per-fixture tuple: (path, xpath, depth, shape_only).
+/// - `depth = 0` means "no per-fixture override". Blueprints get unlimited
+///   depth; feature fixtures get FEATURE_DEFAULT_DEPTH.
+/// - `shape_only = true` switches the snapshot to `-p shape` rendering,
+///   which strips source text content but keeps element names + queryable
+///   markers/attributes. Use this for blueprints whose review surface is
+///   dominated by quoted text that doesn't affect tree shape.
+///   (Text preservation is enforced separately by `tests/text_preservation.rs`.)
+const FEATURE_FIXTURES: &[(&str, &str, u32, bool)] = &[
     // — TypeScript —
     // Blueprint: kitchen-sink fixture rendered at full depth so
     // every transform change shows up as a visible snapshot diff.
-    ("tests/integration/languages/typescript/blueprint.ts", "//program", 0),
+    ("tests/integration/languages/typescript/blueprint.ts", "//program", 0, false),
     // Feature fixtures: minimal construct that demonstrates the
     // invariant. Depth cap hides deep internals where noise doesn't
     // help — the blueprint covers the deep view.
-    ("tests/integration/features/accessors/accessors.ts", "//method[get]", 4),
-    ("tests/integration/features/async-generator/async-generator.ts", "//function[async][generator]", 3),
-    ("tests/integration/features/conditionals/conditionals.ts", "//if", 3),
-    ("tests/integration/features/flat-lists/flat-lists.ts", "//function[name='first']", 4),
-    ("tests/integration/features/parameter-marking/parameter-marking.ts", "//function[name='call']", 4),
-    ("tests/integration/features/type-vocabulary/type-vocabulary.ts", "//class[name='Dog']", 4),
+    ("tests/integration/features/accessors/accessors.ts", "//method[get]", 4, false),
+    ("tests/integration/features/async-generator/async-generator.ts", "//function[async][generator]", 3, false),
+    ("tests/integration/features/conditionals/conditionals.ts", "//if", 3, false),
+    ("tests/integration/features/flat-lists/flat-lists.ts", "//function[name='first']", 4, false),
+    ("tests/integration/features/parameter-marking/parameter-marking.ts", "//function[name='call']", 4, false),
+    ("tests/integration/features/type-vocabulary/type-vocabulary.ts", "//class[name='Dog']", 4, false),
 
     // — Java —
     // Blueprint: kitchen-sink fixture rendered at full depth so
     // every transform change shows up as a visible snapshot diff.
-    ("tests/integration/languages/java/blueprint.java", "//program", 0),
-    ("tests/integration/features/conditionals/conditionals.java", "//if", 3),
-    ("tests/integration/features/constructor-rename/constructor-rename.java", "//constructor[1]", 3),
-    ("tests/integration/features/flat-lists/flat-lists.java", "//method[1]", 4),
-    ("tests/integration/features/interface-public/interface-public.java", "//interface/body", 3),
-    ("tests/integration/features/modifiers/modifiers.java", "//class/body", 3),
-    ("tests/integration/features/type-vocabulary/type-vocabulary.java", "//class[name='Dog']", 3),
+    ("tests/integration/languages/java/blueprint.java", "//program", 0, false),
+    ("tests/integration/features/conditionals/conditionals.java", "//if", 3, false),
+    ("tests/integration/features/constructor-rename/constructor-rename.java", "//constructor[1]", 3, false),
+    ("tests/integration/features/flat-lists/flat-lists.java", "//method[1]", 4, false),
+    ("tests/integration/features/interface-public/interface-public.java", "//interface/body", 3, false),
+    ("tests/integration/features/modifiers/modifiers.java", "//class/body", 3, false),
+    ("tests/integration/features/type-vocabulary/type-vocabulary.java", "//class[name='Dog']", 3, false),
 
     // — C# —
-    ("tests/integration/languages/csharp/blueprint.cs", "//unit", 0),
-    ("tests/integration/features/accessor-flattening/accessor-flattening.cs", "//property[name='Manual']", 4),
-    ("tests/integration/features/comments/comments.cs", "//class[name='Demo']", 3),
-    ("tests/integration/features/conditionals/conditionals.cs", "//if", 3),
-    ("tests/integration/features/flat-lists/flat-lists.cs", "//method[1]", 4),
-    ("tests/integration/features/interface-public/interface-public.cs", "//interface/body/method[public][1]", 3),
-    ("tests/integration/features/type-vocabulary/type-vocabulary.cs", "//class[name='Dog']", 4),
+    ("tests/integration/languages/csharp/blueprint.cs", "//unit", 0, false),
+    ("tests/integration/features/accessor-flattening/accessor-flattening.cs", "//property[name='Manual']", 4, false),
+    ("tests/integration/features/comments/comments.cs", "//class[name='Demo']", 3, false),
+    ("tests/integration/features/conditionals/conditionals.cs", "//if", 3, false),
+    ("tests/integration/features/flat-lists/flat-lists.cs", "//method[1]", 4, false),
+    ("tests/integration/features/interface-public/interface-public.cs", "//interface/body/method[public][1]", 3, false),
+    ("tests/integration/features/type-vocabulary/type-vocabulary.cs", "//class[name='Dog']", 4, false),
     // Use name-qualified query; bare `//class` trips a tree-rendering
     // bug in `-p tree --single` that truncates to just the element
     // header. TODO: fix the renderer, then revert to `//class`.
-    ("tests/integration/features/where-clause/where-clause.cs", "//class[name='Repo']", 4),
+    ("tests/integration/features/where-clause/where-clause.cs", "//class[name='Repo']", 4, false),
 
     // — Rust —
-    ("tests/integration/languages/rust/blueprint.rs", "//file", 0),
-    ("tests/integration/features/conditionals/conditionals.rs", "//if", 3),
-    ("tests/integration/features/flat-lists/flat-lists.rs", "//function[name='first']", 4),
-    ("tests/integration/features/match-expression/match-expression.rs", "//match", 3),
-    ("tests/integration/features/method-call/method-call.rs", "//call[1]", 3),
-    ("tests/integration/features/reference-type/reference-type.rs", "//param[type[borrowed]][1]", 4),
-    ("tests/integration/features/struct-expression/struct-expression.rs", "//literal[name='Point']", 4),
-    ("tests/integration/features/type-vocabulary/type-vocabulary.rs", "//struct[name='Dog']", 3),
-    ("tests/integration/features/typedef/typedef.rs", "//alias[1]", 3),
-    ("tests/integration/features/visibility/visibility.rs", "//function[pub][1]", 3),
+    ("tests/integration/languages/rust/blueprint.rs", "//file", 0, false),
+    ("tests/integration/features/conditionals/conditionals.rs", "//if", 3, false),
+    ("tests/integration/features/flat-lists/flat-lists.rs", "//function[name='first']", 4, false),
+    ("tests/integration/features/match-expression/match-expression.rs", "//match", 3, false),
+    ("tests/integration/features/method-call/method-call.rs", "//call[1]", 3, false),
+    ("tests/integration/features/reference-type/reference-type.rs", "//param[type[borrowed]][1]", 4, false),
+    ("tests/integration/features/struct-expression/struct-expression.rs", "//literal[name='Point']", 4, false),
+    ("tests/integration/features/type-vocabulary/type-vocabulary.rs", "//struct[name='Dog']", 3, false),
+    ("tests/integration/features/typedef/typedef.rs", "//alias[1]", 3, false),
+    ("tests/integration/features/visibility/visibility.rs", "//function[pub][1]", 3, false),
 
     // — Python —
-    ("tests/integration/languages/python/blueprint.py", "//module", 0),
+    ("tests/integration/languages/python/blueprint.py", "//module", 0, false),
     // Match the enclosing <function> so the snapshot shows every
     // augmented-assignment variant as siblings in the body — the
     // fixture's purpose is to demonstrate that every compound
     // operator produces the same <assign><op>…</op> shape. Matching
     // a single <assign> with --single would only surface the first
     // case (`+=`).
-    ("tests/integration/features/augmented-assign/augmented-assign.py", "//function[name='ops']", 5),
-    ("tests/integration/features/collection-markers/collection-markers.py", "//list[comprehension]", 4),
-    ("tests/integration/features/conditionals/conditionals.py", "//if", 3),
-    ("tests/integration/features/expression-list/expression-list.py", "//return[1]", 3),
-    ("tests/integration/features/f-strings/f-strings.py", "//string[interpolation]", 3),
+    ("tests/integration/features/augmented-assign/augmented-assign.py", "//function[name='ops']", 5, false),
+    ("tests/integration/features/collection-markers/collection-markers.py", "//list[comprehension]", 4, false),
+    ("tests/integration/features/conditionals/conditionals.py", "//if", 3, false),
+    ("tests/integration/features/expression-list/expression-list.py", "//return[1]", 3, false),
+    ("tests/integration/features/f-strings/f-strings.py", "//string[interpolation]", 3, false),
 
     // — Go —
-    ("tests/integration/languages/go/blueprint.go", "//file", 0),
-    ("tests/integration/features/conditionals/conditionals.go", "//if", 3),
-    ("tests/integration/features/defined-type-vs-alias/defined-type-vs-alias.go", "//alias", 3),
-    ("tests/integration/features/flat-lists/flat-lists.go", "//function", 4),
-    ("tests/integration/features/strings/strings.go", "//file", 5),
-    ("tests/integration/features/struct-interface-hoist/struct-interface-hoist.go", "//struct", 3),
-    ("tests/integration/features/type-declaration/type-declaration.go", "//interface", 4),
+    ("tests/integration/languages/go/blueprint.go", "//file", 0, false),
+    ("tests/integration/features/conditionals/conditionals.go", "//if", 3, false),
+    ("tests/integration/features/defined-type-vs-alias/defined-type-vs-alias.go", "//alias", 3, false),
+    ("tests/integration/features/flat-lists/flat-lists.go", "//function", 4, false),
+    ("tests/integration/features/strings/strings.go", "//file", 5, false),
+    ("tests/integration/features/struct-interface-hoist/struct-interface-hoist.go", "//struct", 3, false),
+    ("tests/integration/features/type-declaration/type-declaration.go", "//interface", 4, false),
 
     // — PHP —
-    ("tests/integration/languages/php/blueprint.php", "//program", 0),
+    ("tests/integration/languages/php/blueprint.php", "//program", 0, false),
 
     // — Ruby —
-    ("tests/integration/languages/ruby/blueprint.rb", "//program", 0),
-    ("tests/integration/features/conditionals/conditionals.rb", "//if", 3),
+    ("tests/integration/languages/ruby/blueprint.rb", "//program", 0, false),
+    ("tests/integration/features/conditionals/conditionals.rb", "//if", 3, false),
 
-    ("tests/integration/features/name-inlining/name-inlining.rb", "//class", 4),
+    ("tests/integration/features/name-inlining/name-inlining.rb", "//class", 4, false),
 ];
 
 /// Output-format snapshot cases: (relative path under formats/, tractor args).
@@ -792,7 +800,7 @@ fn main() {
     // matched subtree) renders fully but deep arithmetic / nested
     // expression internals stay collapsed.
     const FEATURE_DEFAULT_DEPTH: u32 = 5;
-    for &(source_rel, xpath, depth) in FEATURE_FIXTURES {
+    for &(source_rel, xpath, depth, shape_only) in FEATURE_FIXTURES {
         let source_rel = source_rel.replace('\\', "/");
         let source_path = Path::new(&source_rel);
         if !source_path.is_file() {
@@ -812,8 +820,9 @@ fn main() {
 
         let txt_snap = format!("{}.snapshot.txt", source_rel);
         let depth_str = effective_depth.to_string();
+        let projection = if shape_only { "shape" } else { "tree" };
         let mut args: Vec<&str> = vec![
-            "query", &source_rel, "-x", xpath, "-p", "tree", "--single",
+            "query", &source_rel, "-x", xpath, "-p", projection, "--single",
         ];
         if effective_depth > 0 {
             args.push("--depth");
