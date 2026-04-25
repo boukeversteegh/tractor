@@ -9,7 +9,8 @@ method[package]/
   │       └─ type[generic]/
   │           ├─ name = "Comparable"
   │           ├─ "<"
-  │           ├─ type/name = "U"
+  │           ├─ type/
+  │           │   └─ ... (1 children)
   │           └─ ">"
   ├─ ">"
   ├─ returns/type/name = "T"

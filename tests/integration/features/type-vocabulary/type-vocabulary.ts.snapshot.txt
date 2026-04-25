@@ -14,6 +14,7 @@ class/
       │   ├─ "()"
       │   ├─ returns/
       │   │   ├─ ":"
-      │   │   └─ type/name = "void"
+      │   │   └─ type/
+      │   │       └─ ... (1 children)
       │   └─ body/block = "{}"
       └─ "}"

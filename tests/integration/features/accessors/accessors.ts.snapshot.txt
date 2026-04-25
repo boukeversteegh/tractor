@@ -10,10 +10,6 @@ method[public and get]/
       ├─ return/
       │   ├─ "return"
       │   ├─ member/
-      │   │   ├─ object/
-      │   │   │   └─ ... (1 children)
-      │   │   ├─ "."
-      │   │   └─ property/
-      │   │       └─ ... (1 children)
+      │   │   └─ ... (4 children)
       │   └─ ";"
       └─ "}"

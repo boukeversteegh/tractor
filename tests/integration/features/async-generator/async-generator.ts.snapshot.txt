@@ -7,11 +7,11 @@ function[async and generator]/
   │   └─ type[generic]/
   │       ├─ name = "AsyncGenerator"
   │       ├─ "<"
-  │       ├─ type/name = "number"
+  │       ├─ type/
+  │       │   └─ ... (1 children)
   │       └─ ">"
   └─ body/block/
       ├─ "{"
       ├─ yield/
-      │   ├─ "yield"
-      │   └─ number = "1"
+      │   └─ ... (1 children)
       └─ "; }"

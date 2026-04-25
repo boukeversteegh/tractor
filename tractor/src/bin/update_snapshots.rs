@@ -54,32 +54,32 @@ const FEATURE_FIXTURES: &[(&str, &str, u32)] = &[
     // Feature fixtures: minimal construct that demonstrates the
     // invariant. Depth cap hides deep internals where noise doesn't
     // help — the blueprint covers the deep view.
-    ("tests/integration/features/accessors/accessors.ts", "//method[get]", 0),
-    ("tests/integration/features/async-generator/async-generator.ts", "//function[async][generator]", 0),
+    ("tests/integration/features/accessors/accessors.ts", "//method[get]", 4),
+    ("tests/integration/features/async-generator/async-generator.ts", "//function[async][generator]", 3),
     ("tests/integration/features/conditionals/conditionals.ts", "//if", 3),
-    ("tests/integration/features/flat-lists/flat-lists.ts", "//function[name='first']", 0),
-    ("tests/integration/features/parameter-marking/parameter-marking.ts", "//function[name='call']", 0),
-    ("tests/integration/features/type-vocabulary/type-vocabulary.ts", "//class[name='Dog']", 0),
+    ("tests/integration/features/flat-lists/flat-lists.ts", "//function[name='first']", 4),
+    ("tests/integration/features/parameter-marking/parameter-marking.ts", "//function[name='call']", 4),
+    ("tests/integration/features/type-vocabulary/type-vocabulary.ts", "//class[name='Dog']", 4),
 
     // — Java —
     // Blueprint: kitchen-sink fixture rendered at full depth so
     // every transform change shows up as a visible snapshot diff.
     ("tests/integration/languages/java/blueprint.java", "//program", 0),
     ("tests/integration/features/conditionals/conditionals.java", "//if", 3),
-    ("tests/integration/features/constructor-rename/constructor-rename.java", "//constructor[1]", 0),
-    ("tests/integration/features/flat-lists/flat-lists.java", "//method[1]", 0),
+    ("tests/integration/features/constructor-rename/constructor-rename.java", "//constructor[1]", 3),
+    ("tests/integration/features/flat-lists/flat-lists.java", "//method[1]", 4),
     ("tests/integration/features/interface-public/interface-public.java", "//interface/body", 3),
     ("tests/integration/features/modifiers/modifiers.java", "//class/body", 3),
     ("tests/integration/features/type-vocabulary/type-vocabulary.java", "//class[name='Dog']", 3),
 
     // — C# —
     ("tests/integration/languages/csharp/blueprint.cs", "//unit", 0),
-    ("tests/integration/features/accessor-flattening/accessor-flattening.cs", "//property[name='Manual']", 0),
+    ("tests/integration/features/accessor-flattening/accessor-flattening.cs", "//property[name='Manual']", 4),
     ("tests/integration/features/comments/comments.cs", "//class[name='Demo']", 3),
     ("tests/integration/features/conditionals/conditionals.cs", "//if", 3),
-    ("tests/integration/features/flat-lists/flat-lists.cs", "//method[1]", 0),
-    ("tests/integration/features/interface-public/interface-public.cs", "//interface/body/method[public][1]", 0),
-    ("tests/integration/features/type-vocabulary/type-vocabulary.cs", "//class[name='Dog']", 0),
+    ("tests/integration/features/flat-lists/flat-lists.cs", "//method[1]", 4),
+    ("tests/integration/features/interface-public/interface-public.cs", "//interface/body/method[public][1]", 3),
+    ("tests/integration/features/type-vocabulary/type-vocabulary.cs", "//class[name='Dog']", 4),
     // Use name-qualified query; bare `//class` trips a tree-rendering
     // bug in `-p tree --single` that truncates to just the element
     // header. TODO: fix the renderer, then revert to `//class`.
@@ -88,14 +88,14 @@ const FEATURE_FIXTURES: &[(&str, &str, u32)] = &[
     // — Rust —
     ("tests/integration/languages/rust/blueprint.rs", "//file", 0),
     ("tests/integration/features/conditionals/conditionals.rs", "//if", 3),
-    ("tests/integration/features/flat-lists/flat-lists.rs", "//function[name='first']", 0),
+    ("tests/integration/features/flat-lists/flat-lists.rs", "//function[name='first']", 4),
     ("tests/integration/features/match-expression/match-expression.rs", "//match", 3),
-    ("tests/integration/features/method-call/method-call.rs", "//call[1]", 0),
-    ("tests/integration/features/reference-type/reference-type.rs", "//param[type[borrowed]][1]", 0),
-    ("tests/integration/features/struct-expression/struct-expression.rs", "//literal[name='Point']", 0),
+    ("tests/integration/features/method-call/method-call.rs", "//call[1]", 3),
+    ("tests/integration/features/reference-type/reference-type.rs", "//param[type[borrowed]][1]", 4),
+    ("tests/integration/features/struct-expression/struct-expression.rs", "//literal[name='Point']", 4),
     ("tests/integration/features/type-vocabulary/type-vocabulary.rs", "//struct[name='Dog']", 3),
-    ("tests/integration/features/typedef/typedef.rs", "//alias[1]", 0),
-    ("tests/integration/features/visibility/visibility.rs", "//function[pub][1]", 0),
+    ("tests/integration/features/typedef/typedef.rs", "//alias[1]", 3),
+    ("tests/integration/features/visibility/visibility.rs", "//function[pub][1]", 3),
 
     // — Python —
     ("tests/integration/languages/python/blueprint.py", "//module", 0),
@@ -105,20 +105,20 @@ const FEATURE_FIXTURES: &[(&str, &str, u32)] = &[
     // operator produces the same <assign><op>…</op> shape. Matching
     // a single <assign> with --single would only surface the first
     // case (`+=`).
-    ("tests/integration/features/augmented-assign/augmented-assign.py", "//function[name='ops']", 0),
-    ("tests/integration/features/collection-markers/collection-markers.py", "//list[comprehension]", 0),
+    ("tests/integration/features/augmented-assign/augmented-assign.py", "//function[name='ops']", 5),
+    ("tests/integration/features/collection-markers/collection-markers.py", "//list[comprehension]", 4),
     ("tests/integration/features/conditionals/conditionals.py", "//if", 3),
-    ("tests/integration/features/expression-list/expression-list.py", "//return[1]", 0),
-    ("tests/integration/features/f-strings/f-strings.py", "//string[interpolation]", 0),
+    ("tests/integration/features/expression-list/expression-list.py", "//return[1]", 3),
+    ("tests/integration/features/f-strings/f-strings.py", "//string[interpolation]", 3),
 
     // — Go —
     ("tests/integration/languages/go/blueprint.go", "//file", 0),
     ("tests/integration/features/conditionals/conditionals.go", "//if", 3),
-    ("tests/integration/features/defined-type-vs-alias/defined-type-vs-alias.go", "//alias", 0),
-    ("tests/integration/features/flat-lists/flat-lists.go", "//function", 0),
+    ("tests/integration/features/defined-type-vs-alias/defined-type-vs-alias.go", "//alias", 3),
+    ("tests/integration/features/flat-lists/flat-lists.go", "//function", 4),
     ("tests/integration/features/strings/strings.go", "//file", 5),
-    ("tests/integration/features/struct-interface-hoist/struct-interface-hoist.go", "//struct", 0),
-    ("tests/integration/features/type-declaration/type-declaration.go", "//interface", 0),
+    ("tests/integration/features/struct-interface-hoist/struct-interface-hoist.go", "//struct", 3),
+    ("tests/integration/features/type-declaration/type-declaration.go", "//interface", 4),
 
     // — PHP —
     ("tests/integration/languages/php/blueprint.php", "//program", 0),
@@ -127,7 +127,7 @@ const FEATURE_FIXTURES: &[(&str, &str, u32)] = &[
     ("tests/integration/languages/ruby/blueprint.rb", "//program", 0),
     ("tests/integration/features/conditionals/conditionals.rb", "//if", 3),
 
-    ("tests/integration/features/name-inlining/name-inlining.rb", "//class", 0),
+    ("tests/integration/features/name-inlining/name-inlining.rb", "//class", 4),
 ];
 
 /// Output-format snapshot cases: (relative path under formats/, tractor args).
