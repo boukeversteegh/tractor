@@ -1,6 +1,0 @@
-alias[private]/
-  ├─ "type"
-  ├─ name = "Id"
-  ├─ "="
-  ├─ type/name = "u32"
-  └─ ";"

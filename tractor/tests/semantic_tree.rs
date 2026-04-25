@@ -2908,3 +2908,255 @@ mod reference_type {
             &mut tree, "//type[borrowed and mut]/type[generic][name='Vec']", 1);
     }
 }
+
+mod strings {
+    use super::*;
+
+    /// Go strings: interpreted (double-quoted, escapes) and raw
+    /// (backtick, no escapes). Both render as <string>; raw strings
+    /// carry a <raw/> marker (Principle #13).
+    #[test]
+    fn go() {
+        let mut tree = parse_src("go", r#"
+            package main
+
+            const normal = "hello\nworld"
+            const raw = `hello world`
+            const pattern = `^\d+$`
+        "#);
+
+        claim("3 strings total — bare //string catches both forms",
+            &mut tree, "//string", 3);
+
+        claim("interpreted string has no <raw/> marker",
+            &mut tree, "//string[not(raw)]", 1);
+
+        claim("two backtick strings carry <raw/>",
+            &mut tree, "//string[raw]", 2);
+
+        claim("raw and not-raw partition the strings",
+            &mut tree, "//string[raw and not(raw)]", 0);
+    }
+}
+
+mod struct_expression {
+    use super::*;
+
+    /// Struct construction `Point { x: 1, y: 2 }` renders as
+    /// <literal> with a <name> child for the struct name and
+    /// <field> siblings for each initializer. Symmetric with JS/C#
+    /// object construction: //literal[name='Point'] finds every
+    /// Point construction site.
+    #[test]
+    fn rust() {
+        let mut tree = parse_src("rust", r#"
+            struct Point { x: i32, y: i32 }
+
+            fn make() {
+                let p = Point { x: 1, y: 2 };
+                let q = Point { x: 0, ..p };
+            }
+        "#);
+
+        claim("two Point construction sites",
+            &mut tree, "//literal[name='Point']", 2);
+
+        claim("struct name lives as <name> on <literal> (NOT a <type>)",
+            &mut tree, "//literal/type", 0);
+
+        claim("first construction has 2 plain fields, no [base]",
+            &mut tree, "//literal[name='Point'][not(body/field[base])]/body/field", 2);
+
+        claim("second construction has a [base] field for `..p`",
+            &mut tree, "//literal/body/field[base][name='p']", 1);
+
+        claim("field initializers carry <value> children",
+            &mut tree, "//literal/body/field[name='x']/value/int", 2);
+    }
+}
+
+mod struct_interface_hoist {
+    use super::*;
+
+    /// Goal #5 mental model — `type Foo struct { … }` and
+    /// `type Foo interface { … }` hoist: the outer element becomes
+    /// <struct> or <interface> directly instead of the Go-spec
+    /// `<type>` wrapper.
+    #[test]
+    fn go() {
+        let mut tree = parse_src("go", r#"
+            package main
+
+            type Config struct {
+                Host string
+                Port int
+            }
+
+            type Greeter interface {
+                Greet() string
+            }
+        "#);
+
+        claim("struct hoists to top level (no enclosing <type>)",
+            &mut tree, "//file/struct[name='Config']", 1);
+
+        claim("interface hoists to top level (no enclosing <type>)",
+            &mut tree, "//file/interface[name='Greeter']", 1);
+
+        claim("uppercase struct name carries <exported/>",
+            &mut tree, "//struct[exported][name='Config']", 1);
+
+        claim("uppercase interface name carries <exported/>",
+            &mut tree, "//interface[exported][name='Greeter']", 1);
+
+        claim("the `type` wrapper does NOT also surface a <type> for the struct",
+            &mut tree, "//file/type[name='Config']", 0);
+    }
+}
+
+mod type_declaration {
+    use super::*;
+
+    /// Go's `type_declaration` wrapper is dropped; `type_spec`
+    /// renders as <type> directly. Parallel with struct/interface
+    /// declarations so //type queries find every declared type.
+    #[test]
+    fn go() {
+        let mut tree = parse_src("go", r#"
+            package main
+
+            type ID uint64
+
+            type User struct {
+                Name string
+                Age  int
+            }
+
+            type Greeter interface {
+                Greet() string
+            }
+        "#);
+
+        claim("plain `type ID uint64` renders as <type>",
+            &mut tree, "//file/type[name='ID']", 1);
+
+        claim("struct/interface forms do NOT also produce a <type> wrapper",
+            &mut tree, "//file/type[name='User'] | //file/type[name='Greeter']", 0);
+
+        claim("no `type_declaration` grammar wrapper leaks",
+            &mut tree, "//type_declaration", 0);
+
+        claim("inner referenced type of `type ID uint64`",
+            &mut tree, "//type[name='ID']/type[name='uint64']", 1);
+    }
+}
+
+mod typedef {
+    use super::*;
+
+    /// Rust `type_item` renders as <alias> (parallel with
+    /// TS / Java / C#).
+    #[test]
+    fn rust() {
+        let mut tree = parse_src("rust", r#"
+            type Id = u32;
+            type Mapping<T> = std::collections::HashMap<String, T>;
+        "#);
+
+        claim("two aliases declared",
+            &mut tree, "//alias", 2);
+
+        claim("no raw `type_item` grammar leaf leaks",
+            &mut tree, "//type_item", 0);
+
+        claim("aliases default to <private/>",
+            &mut tree, "//alias[private]", 2);
+
+        claim("simple alias resolves to <type>",
+            &mut tree, "//alias[name='Id']/type[name='u32']", 1);
+
+        claim("generic alias declares a <generic> parameter",
+            &mut tree, "//alias[name='Mapping']/generic[name='T']", 1);
+    }
+}
+
+mod visibility {
+    use super::*;
+
+    /// Visibility is exhaustive: every declaration carries either
+    /// <private/> (implicit default) or <pub/> with optional
+    /// restriction details.
+    #[test]
+    fn rust() {
+        let mut tree = parse_src("rust", r#"
+            fn private_fn() {}
+            pub fn public_fn() {}
+            pub(crate) fn crate_fn() {}
+            pub(super) fn super_fn() {}
+
+            struct PrivateStruct;
+            pub struct PublicStruct;
+
+            const PRIV: i32 = 1;
+            pub const PUB: i32 = 2;
+        "#);
+
+        claim("4 functions total, every one has visibility info",
+            &mut tree, "//function[private or pub]", 4);
+
+        claim("plain `pub` produces a <pub/> marker (no restriction)",
+            &mut tree, "//function[pub][name='public_fn']", 1);
+
+        claim("`pub(crate)` exposes <pub><crate/></pub>",
+            &mut tree, "//function/pub[crate]", 1);
+
+        claim("`pub(super)` exposes <pub><super/></pub>",
+            &mut tree, "//function/pub[super]", 1);
+
+        claim("private struct carries <private/>",
+            &mut tree, "//struct[private][name='PrivateStruct']", 1);
+
+        claim("private const carries <private/>",
+            &mut tree, "//const[private][name='PRIV']", 1);
+    }
+}
+
+mod where_clause {
+    use super::*;
+
+    /// C# `where` clause constraints attach to the matching
+    /// <generic> element. Shape constraints (class / struct /
+    /// notnull / unmanaged / new) become empty markers that
+    /// compose; type bounds wrap in <extends><type>…</type></extends>.
+    #[test]
+    fn csharp() {
+        let mut tree = parse_src("csharp", r#"
+            using System;
+
+            class Repo<T, U, V>
+                where T : class, IComparable<T>, new()
+                where U : struct
+                where V : notnull
+            {
+            }
+        "#);
+
+        claim("3 generics declared on Repo (T, U, V)",
+            &mut tree, "//class[name='Repo']/generic", 3);
+
+        claim("T composes class + new shape markers",
+            &mut tree, "//generic[class and new][name='T']", 1);
+
+        claim("U has the struct constraint",
+            &mut tree, "//generic[struct][name='U']", 1);
+
+        claim("V has the notnull constraint",
+            &mut tree, "//generic[notnull][name='V']", 1);
+
+        claim("T's IComparable<T> bound wraps in <extends><type>...",
+            &mut tree, "//generic[name='T']/extends/type[name='IComparable']", 1);
+
+        claim("U has no <extends> bound",
+            &mut tree, "//generic[name='U']/extends", 0);
+    }
+}

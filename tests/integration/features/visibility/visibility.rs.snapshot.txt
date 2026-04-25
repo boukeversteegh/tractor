@@ -1,5 +1,0 @@
-function[pub]/
-  ├─ "pub fn"
-  ├─ name = "public_fn"
-  ├─ "()"
-  └─ body = "{}"

@@ -86,10 +86,6 @@ const FEATURE_FIXTURES: &[(&str, &str, u32, bool)] = &[
     ("tests/integration/features/flat-lists/flat-lists.cs", "//method[1]", 4, false),
     ("tests/integration/features/interface-public/interface-public.cs", "//interface/body/method[public][1]", 3, false),
     ("tests/integration/features/type-vocabulary/type-vocabulary.cs", "//class[name='Dog']", 4, false),
-    // Use name-qualified query; bare `//class` trips a tree-rendering
-    // bug in `-p tree --single` that truncates to just the element
-    // header. TODO: fix the renderer, then revert to `//class`.
-    ("tests/integration/features/where-clause/where-clause.cs", "//class[name='Repo']", 4, false),
 
     // — Rust —
     // Blueprint snapshot uses shape projection: tree structure +
@@ -98,10 +94,7 @@ const FEATURE_FIXTURES: &[(&str, &str, u32, bool)] = &[
     ("tests/integration/languages/rust/blueprint.rs", "//file", 0, true),
     ("tests/integration/features/conditionals/conditionals.rs", "//if", 3, false),
     ("tests/integration/features/flat-lists/flat-lists.rs", "//function[name='first']", 4, false),
-    ("tests/integration/features/struct-expression/struct-expression.rs", "//literal[name='Point']", 4, false),
     ("tests/integration/features/type-vocabulary/type-vocabulary.rs", "//struct[name='Dog']", 3, false),
-    ("tests/integration/features/typedef/typedef.rs", "//alias[1]", 3, false),
-    ("tests/integration/features/visibility/visibility.rs", "//function[pub][1]", 3, false),
 
     // — Python —
     ("tests/integration/languages/python/blueprint.py", "//module", 0, true),
@@ -111,9 +104,6 @@ const FEATURE_FIXTURES: &[(&str, &str, u32, bool)] = &[
     ("tests/integration/languages/go/blueprint.go", "//file", 0, true),
     ("tests/integration/features/conditionals/conditionals.go", "//if", 3, false),
     ("tests/integration/features/flat-lists/flat-lists.go", "//function", 4, false),
-    ("tests/integration/features/strings/strings.go", "//file", 5, false),
-    ("tests/integration/features/struct-interface-hoist/struct-interface-hoist.go", "//struct", 3, false),
-    ("tests/integration/features/type-declaration/type-declaration.go", "//interface", 4, false),
 
     // — PHP —
     ("tests/integration/languages/php/blueprint.php", "//program", 0, true),

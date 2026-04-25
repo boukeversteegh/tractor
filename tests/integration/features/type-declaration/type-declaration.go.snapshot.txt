@@ -1,9 +1,0 @@
-interface[exported]/
-  ├─ "type"
-  ├─ name = "Greeter"
-  ├─ "interface {"
-  ├─ method/
-  │   ├─ name = "Greet"
-  │   ├─ "()"
-  │   └─ returns/type/name = "string"
-  └─ "}"
