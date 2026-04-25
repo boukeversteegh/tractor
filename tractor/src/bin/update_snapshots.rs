@@ -64,7 +64,6 @@ const FEATURE_FIXTURES: &[(&str, &str, u32, bool)] = &[
     // help — the blueprint covers the deep view.
     ("tests/integration/features/conditionals/conditionals.ts", "//if", 3, false),
     ("tests/integration/features/flat-lists/flat-lists.ts", "//function[name='first']", 4, false),
-    ("tests/integration/features/parameter-marking/parameter-marking.ts", "//function[name='call']", 4, false),
     ("tests/integration/features/type-vocabulary/type-vocabulary.ts", "//class[name='Dog']", 4, false),
 
     // — Java —
@@ -74,7 +73,6 @@ const FEATURE_FIXTURES: &[(&str, &str, u32, bool)] = &[
     ("tests/integration/features/conditionals/conditionals.java", "//if", 3, false),
     ("tests/integration/features/flat-lists/flat-lists.java", "//method[1]", 4, false),
     ("tests/integration/features/interface-public/interface-public.java", "//interface/body", 3, false),
-    ("tests/integration/features/modifiers/modifiers.java", "//class/body", 3, false),
     ("tests/integration/features/type-vocabulary/type-vocabulary.java", "//class[name='Dog']", 3, false),
 
     // — C# —
@@ -100,8 +98,6 @@ const FEATURE_FIXTURES: &[(&str, &str, u32, bool)] = &[
     ("tests/integration/languages/rust/blueprint.rs", "//file", 0, true),
     ("tests/integration/features/conditionals/conditionals.rs", "//if", 3, false),
     ("tests/integration/features/flat-lists/flat-lists.rs", "//function[name='first']", 4, false),
-    ("tests/integration/features/method-call/method-call.rs", "//call[1]", 3, false),
-    ("tests/integration/features/reference-type/reference-type.rs", "//param[type[borrowed]][1]", 4, false),
     ("tests/integration/features/struct-expression/struct-expression.rs", "//literal[name='Point']", 4, false),
     ("tests/integration/features/type-vocabulary/type-vocabulary.rs", "//struct[name='Dog']", 3, false),
     ("tests/integration/features/typedef/typedef.rs", "//alias[1]", 3, false),
@@ -125,8 +121,6 @@ const FEATURE_FIXTURES: &[(&str, &str, u32, bool)] = &[
     // — Ruby —
     ("tests/integration/languages/ruby/blueprint.rb", "//program", 0, true),
     ("tests/integration/features/conditionals/conditionals.rb", "//if", 3, false),
-
-    ("tests/integration/features/name-inlining/name-inlining.rb", "//class", 4, false),
 ];
 
 /// Output-format snapshot cases: (relative path under formats/, tractor args).

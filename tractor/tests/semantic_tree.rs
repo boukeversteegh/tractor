@@ -2718,3 +2718,193 @@ mod match_expression {
             &mut tree, "//arm[pattern and value]", 4);
     }
 }
+
+mod method_call {
+    use super::*;
+
+    /// Both function calls and method calls render as <call>. Method
+    /// calls are distinguished by a <field> child that names the
+    /// receiver and method (Rust uses field-call syntax).
+    #[test]
+    fn rust() {
+        let mut tree = parse_src("rust", r#"
+            fn use_calls() {
+                let v: Vec<i32> = Vec::new();
+                let n = v.len();
+                let s = "hi".to_string();
+                s.to_uppercase();
+            }
+        "#);
+
+        claim("4 unified <call> nodes (1 path-call + 3 method-calls)",
+            &mut tree, "//call", 4);
+
+        claim("path-call `Vec::new()` has a <path> child",
+            &mut tree, "//call[path[name='Vec' and name='new']]", 1);
+
+        claim("3 method calls expose a <field> child for receiver.method",
+            &mut tree, "//call/field", 3);
+
+        claim("method `len` on receiver `v`",
+            &mut tree, "//call/field[value/name='v' and name='len']", 1);
+
+        claim("method `to_string` on a string-literal receiver",
+            &mut tree, "//call/field[value/string and name='to_string']", 1);
+    }
+}
+
+mod modifiers {
+    use super::*;
+
+    /// Modifiers lift as empty markers on the declaration. Every
+    /// access modifier is exhaustive — package-private gets an
+    /// explicit <package/> marker.
+    #[test]
+    fn java() {
+        let mut tree = parse_src("java", r#"
+            class Modifiers {
+                public static final int PUB = 1;
+                private int priv = 2;
+                protected int prot = 3;
+                int pkg = 4;
+                public synchronized void sync() {}
+                public abstract static class AbsStatic {}
+            }
+        "#);
+
+        claim("public static final field marks all 3 modifiers",
+            &mut tree, "//field[public and static and final][declarator/name='PUB']", 1);
+
+        claim("private field carries <private/>",
+            &mut tree, "//field[private]", 1);
+
+        claim("protected field carries <protected/>",
+            &mut tree, "//field[protected]", 1);
+
+        claim("implicit package-private surfaces as <package/>",
+            &mut tree, "//field[package]", 1);
+
+        claim("synchronized method also marks public",
+            &mut tree, "//method[public and synchronized][name='sync']", 1);
+
+        claim("nested class composes public + abstract + static markers",
+            &mut tree, "//class[public and abstract and static][name='AbsStatic']", 1);
+    }
+}
+
+mod name_inlining {
+    use super::*;
+
+    /// (1) Every Ruby `identifier` becomes <name> unconditionally.
+    /// (2) When a <name> wrapper sits inside method/class/module and
+    /// contains a single identifier, the transform inlines its text
+    /// directly, so <method><name>foo</name>… not
+    /// <method><name><identifier>foo</identifier></name>….
+    #[test]
+    fn ruby() {
+        let mut tree = parse_src("ruby", r#"
+            class Calculator
+              def add(a, b)
+                a + b
+              end
+            end
+
+            module Utils
+              def self.greet(name)
+                "hi, #{name}"
+              end
+            end
+        "#);
+
+        claim("class name is inlined text on <name>",
+            &mut tree, "//class/name='Calculator'", 1);
+
+        claim("class <name> has no <identifier> child",
+            &mut tree, "//class/name/identifier", 0);
+
+        claim("module name is inlined text on <name>",
+            &mut tree, "//module/name='Utils'", 1);
+
+        claim("method name `add` is inlined text on <name>",
+            &mut tree, "//method/name='add'", 1);
+
+        claim("singleton method `self.greet` carries [singleton] marker",
+            &mut tree, "//method[singleton][name='greet']", 1);
+
+        claim("method parameters are <name> elements (identifier renamed)",
+            &mut tree, "//method[name='add']/name[. ='a' or .='b']", 2);
+
+        claim("no raw <identifier> nodes leak from Ruby grammar",
+            &mut tree, "//identifier", 0);
+    }
+}
+
+mod parameter_marking {
+    use super::*;
+
+    /// Every <param> carries an exhaustive marker: <required/> or
+    /// <optional/>. Covers required, optional (?), defaulted, and
+    /// rest parameters; also the JS-style untyped param shape.
+    #[test]
+    fn typescript() {
+        let mut tree = parse_src("typescript", r#"
+            function call(
+                required: string,
+                optional?: number,
+                defaulted: boolean = true,
+                ...rest: string[]
+            ): void {}
+
+            function noTypes(x, y) {}
+        "#);
+
+        claim("every parameter is either required or optional",
+            &mut tree, "//parameter[not(required) and not(optional)]", 0);
+
+        claim("required and optional are mutually exclusive",
+            &mut tree, "//parameter[required and optional]", 0);
+
+        claim("required: 1 (required) + defaulted + rest + 2 untyped = 5",
+            &mut tree, "//parameter[required]", 5);
+
+        claim("optional `?` is the only <parameter[optional]>",
+            &mut tree, "//parameter[optional]", 1);
+
+        claim("rest parameter exposes a <rest> child",
+            &mut tree, "//parameter[rest]", 1);
+
+        claim("defaulted parameter has a <value> child",
+            &mut tree, "//parameter[name='defaulted'][value]", 1);
+    }
+}
+
+mod reference_type {
+    use super::*;
+
+    /// Reference types `&T` / `&mut T` / `&'a T` render as a single
+    /// <type> with a <borrowed/> marker (Principles #14 + #13). The
+    /// inner referenced type is a nested <type> child.
+    #[test]
+    fn rust() {
+        let mut tree = parse_src("rust", r#"
+            fn read(s: &str) -> &str { s }
+            fn write(buf: &mut Vec<u8>) {}
+            fn static_ref() -> &'static str { "" }
+        "#);
+
+        claim("4 reference types: 2x &str (param + return) + &mut Vec<u8> + &'static str",
+            &mut tree, "//type[borrowed]", 4);
+
+        claim("only the &mut Vec<u8> carries the mut marker",
+            &mut tree, "//type[borrowed and mut]", 1);
+
+        claim("borrowed type wraps the referenced type as a nested <type>",
+            &mut tree, "//type[borrowed]/type", 4);
+
+        claim("`&'static` exposes a <lifetime> child",
+            &mut tree, "//type[borrowed]/lifetime[name='static']", 1);
+
+        claim("inner type of &mut is the generic Vec<u8>",
+            &mut tree, "//type[borrowed and mut]/type[generic][name='Vec']", 1);
+    }
+}
