@@ -89,6 +89,7 @@ pub use parser::{
     XeeParseResult,
     get_language_abi_versions, LanguageAbiInfo,
     print_parse_timing_stats,
+    raw_kinds,
 };
 pub use xpath::{XPathEngine, Match, XmlNode, print_timing_stats, Documents, DocumentHandle};
 pub use output::{render_tree_match, render_source_match, render_lines_match, render_source_precomputed, render_lines, format_message, normalize_path, render_node, render_document, render_xml_string, render_xml_node, render_query_tree_node, render_query_tree_with_source, xml_node_to_string, RenderOptions, format_schema, format_schema_tree, SchemaCollector, xml_node_to_json, extract_syntax_spans_from_xml_node};

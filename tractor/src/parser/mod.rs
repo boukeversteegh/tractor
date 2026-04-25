@@ -584,6 +584,46 @@ pub fn load_xml_file_to_documents(path: &Path) -> Result<XeeParseResult, ParseEr
     load_xml_string_to_documents(&xml, path.to_string_lossy().to_string())
 }
 
+/// Parse `source` with the tree-sitter grammar for `lang` and return
+/// the set of distinct named-node kinds present in the raw parse tree
+/// (BEFORE any tractor transform). Used by the kind-catalogue lint
+/// test to detect tree-sitter kinds the language's transform doesn't
+/// know about.
+///
+/// Returns kinds in deterministic insertion order (sorted on the way
+/// out is the caller's job).
+pub fn raw_kinds(lang: &str, source: &str) -> Result<Vec<String>, ParseError> {
+    let language = get_tree_sitter_language(lang)?;
+    let mut parser = tree_sitter::Parser::new();
+    parser.set_language(&language)
+        .map_err(|e| ParseError::TreeSitter(e.to_string()))?;
+    let tree = parser.parse(source, None)
+        .ok_or_else(|| ParseError::Parse("Failed to parse source".to_string()))?;
+
+    let mut seen: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
+    let mut cursor = tree.root_node().walk();
+    fn walk(
+        cursor: &mut tree_sitter::TreeCursor<'_>,
+        seen: &mut std::collections::BTreeSet<String>,
+    ) {
+        let node = cursor.node();
+        if node.is_named() {
+            seen.insert(node.kind().to_string());
+        }
+        if cursor.goto_first_child() {
+            loop {
+                walk(cursor, seen);
+                if !cursor.goto_next_sibling() {
+                    break;
+                }
+            }
+            cursor.goto_parent();
+        }
+    }
+    walk(&mut cursor, &mut seen);
+    Ok(seen.into_iter().collect())
+}
+
 /// Where the bytes to parse come from.
 ///
 /// The input kind is an explicit parameter of [`parse`] rather than being
