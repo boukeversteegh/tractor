@@ -1267,243 +1267,6 @@ mod rust {
 }
 
 // ===========================================================================
-// Python
-// ===========================================================================
-
-mod python {
-    use super::*;
-
-    /// Principle #9 — class methods carry a visibility marker driven
-    /// by Python's naming convention: bare → public, `_x` → protected,
-    /// `__x` → private. Dunders (`__init__`) are conventional protocol
-    /// hooks and count as public.
-    #[test]
-    fn visibility_markers_from_underscore_convention() {
-        let mut tree = parse_src(
-            "python",
-            "class X:\n    def foo(self): pass\n    def _bar(self): pass\n    def __baz(self): pass\n    def __init__(self): pass\n",
-        );
-        assert_count(
-            &mut tree,
-            "//function[public]",
-            2,
-            "bare name and dunder both count as public",
-        );
-        assert_count(
-            &mut tree,
-            "//function[protected]",
-            1,
-            "single-underscore prefix means protected",
-        );
-        assert_count(
-            &mut tree,
-            "//function[private]",
-            1,
-            "double-underscore prefix means private",
-        );
-    }
-
-    /// Module-level functions don't get visibility markers — the
-    /// convention only applies to class members.
-    #[test]
-    fn module_level_functions_no_visibility() {
-        let mut tree = parse_src(
-            "python",
-            "def foo(): pass\ndef _bar(): pass\n",
-        );
-        assert_count(
-            &mut tree,
-            "//function[public]",
-            0,
-            "module-level functions skip the visibility injection",
-        );
-        assert_count(
-            &mut tree,
-            "//function[protected]",
-            0,
-            "module-level functions skip the visibility injection",
-        );
-    }
-
-    /// `elif` renames to `<else_if>` and flattens under the outer `<if>`.
-    #[test]
-    fn conditional_shape_flat() {
-        let mut tree = parse_src(
-            "python",
-            "def f(n):\n    if n < 0:\n        return 1\n    elif n == 0:\n        return 2\n    else:\n        return 3\n",
-        );
-        assert_count(
-            &mut tree,
-            "//if/else_if",
-            1,
-            "elif renames to <else_if> and is a flat sibling",
-        );
-        assert_count(
-            &mut tree,
-            "//if/else",
-            1,
-            "else is a flat sibling",
-        );
-        assert_count(
-            &mut tree,
-            "//elif_clause",
-            0,
-            "no raw elif_clause leak",
-        );
-    }
-
-    /// Collections carry exhaustive literal/comprehension markers.
-    #[test]
-    fn collection_markers_exhaustive() {
-        let mut tree = parse_src(
-            "python",
-            "a = [1, 2]\nb = [x for x in a]\nc = {1: 2}\nd = {k: v for k, v in c.items()}\n",
-        );
-        assert_count(
-            &mut tree,
-            "//list[literal]",
-            1,
-            "list literal carries <literal/>",
-        );
-        assert_count(
-            &mut tree,
-            "//list[comprehension]",
-            1,
-            "list comprehension carries <comprehension/>",
-        );
-        assert_count(
-            &mut tree,
-            "//dict[literal]",
-            1,
-            "dict literal carries <literal/>",
-        );
-        assert_count(
-            &mut tree,
-            "//dict[comprehension]",
-            1,
-            "dict comprehension carries <comprehension/>",
-        );
-    }
-
-    /// Goal #5 — augmented_assignment unifies with assignment as
-    /// `<assign>` plus an `<op>` child. Uses `left` child to
-    /// discriminate statement `<assign>` from any `<assign>` marker
-    /// that may appear inside `<op>`.
-    #[test]
-    fn augmented_assignment_unifies() {
-        let mut tree = parse_src("python", "x = 0\nx += 1\nx *= 2\n");
-        assert_count(
-            &mut tree,
-            "//assign[left]",
-            3,
-            "plain and augmented assignments both render as <assign> (with <left> child)",
-        );
-        assert_count(
-            &mut tree,
-            "//assign[left]/op",
-            2,
-            "augmented assignments carry an <op> child",
-        );
-        assert_count(
-            &mut tree,
-            "//augmented_assignment",
-            0,
-            "no raw kind leak",
-        );
-    }
-
-    /// Principle #12 — expression_list flattens: tuple returns render
-    /// as `<return>` with expressions as direct children.
-    #[test]
-    fn expression_list_flattens() {
-        let mut tree = parse_src("python", "def f():\n    return 1, 2\n");
-        assert_count(
-            &mut tree,
-            "//return/expression_list",
-            0,
-            "no <expression_list> wrapper (Principle #12)",
-        );
-        assert_count(
-            &mut tree,
-            "//return/int",
-            2,
-            "expressions are direct return children",
-        );
-    }
-
-    /// f-string internals flatten: string_start / string_content /
-    /// string_end become bare text. Interpolation preserved.
-    #[test]
-    fn fstring_flattens() {
-        let mut tree = parse_src("python", "m = f\"hi {name}\"\n");
-        assert_count(
-            &mut tree,
-            "//string_content",
-            0,
-            "string_content flattens to text (Principle #12)",
-        );
-        assert_count(
-            &mut tree,
-            "//string_start",
-            0,
-            "string_start flattens",
-        );
-        assert_count(
-            &mut tree,
-            "//string/interpolation/name[.='name']",
-            1,
-            "<interpolation> preserved as wrapper around the expression",
-        );
-    }
-
-    /// `*args` and `**kwargs` collapse to `<spread>` but carry a
-    /// `<list/>` / `<dict/>` marker that survives argument, pattern,
-    /// and literal contexts so shape queries work without string
-    /// matching on `*` / `**` operator text.
-    #[test]
-    fn spread_shape_markers() {
-        let mut tree = parse_src(
-            "python",
-            "def f(*args, **kwargs): pass\ng(*xs, **kw)\n[*a, *b]\n{**a, **b}\n",
-        );
-        assert_count(
-            &mut tree,
-            "//spread[list]",
-            4,
-            "`*args`, `g(*xs)`, `[*a]`, `[*b]` all carry <list/> marker",
-        );
-        assert_count(
-            &mut tree,
-            "//spread[dict]",
-            4,
-            "`**kwargs`, `g(**kw)`, `{**a}`, `{**b}` all carry <dict/> marker",
-        );
-    }
-
-    /// `list_splat` pattern in a match arm carries the same `<list/>` marker
-    /// as a positional `*args` — uniform across contexts.
-    #[test]
-    fn splat_pattern_carries_marker() {
-        let mut tree = parse_src(
-            "python",
-            "match seq:\n    case [1, *rest]: pass\n    case 'yes' | 'y': pass\n",
-        );
-        assert_count(
-            &mut tree,
-            "//pattern[splat]",
-            1,
-            "`*rest` destructure pattern carries <splat/> marker",
-        );
-        assert_count(
-            &mut tree,
-            "//pattern[union]",
-            1,
-            "`'yes' | 'y'` union pattern carries <union/> marker",
-        );
-    }
-}
-
-// ===========================================================================
 // Cross-language: decorator / annotation / attribute topology
 //
 // The element name is idiomatic per language (Python uses <decorator>,
@@ -2245,6 +2008,12 @@ status = f"hello {name}, you are {age}"
 
         claim("interpolation can match by interpolated name",
             &mut tree, "//string/interpolation[name='age']", 1);
+
+        claim("string_content grammar wrapper flattens to text",
+            &mut tree, "//string_content", 0);
+
+        claim("string_start grammar wrapper flattens to text",
+            &mut tree, "//string_start", 0);
     }
 }
 
@@ -2555,6 +2324,51 @@ mod array_literals {
 
         claim("all three forms collapse to <array>",
             &mut tree, "//array", 3);
+    }
+}
+
+mod spread {
+    use super::*;
+
+    /// `*args` and `**kwargs` collapse to <spread> but carry a
+    /// <list/> / <dict/> marker that survives argument, pattern, and
+    /// literal contexts so shape queries work without string matching
+    /// on `*` / `**` operator text.
+    #[test]
+    fn python() {
+        let mut tree = parse_src("python", r#"
+def f(*args, **kwargs): pass
+g(*xs, **kw)
+[*a, *b]
+{**a, **b}
+"#);
+
+        claim("`*args`, `g(*xs)`, `[*a]`, `[*b]` all carry spread[list]",
+            &mut tree, "//spread[list]", 4);
+
+        claim("`**kwargs`, `g(**kw)`, `{**a}`, `{**b}` all carry spread[dict]",
+            &mut tree, "//spread[dict]", 4);
+    }
+}
+
+mod pattern_markers {
+    use super::*;
+
+    /// Python `match` patterns carry shape markers: `*rest` (splat /
+    /// list-tail destructure) and `'a' | 'b'` (union / alternation).
+    #[test]
+    fn python() {
+        let mut tree = parse_src("python", r#"
+match seq:
+    case [1, *rest]: pass
+    case 'yes' | 'y': pass
+"#);
+
+        claim("`*rest` destructure pattern carries <splat/>",
+            &mut tree, "//pattern[splat]", 1);
+
+        claim("`'yes' | 'y'` union pattern carries <union/>",
+            &mut tree, "//pattern[union]", 1);
     }
 }
 
