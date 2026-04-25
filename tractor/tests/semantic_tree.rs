@@ -3369,3 +3369,139 @@ mod interface_public {
             &mut tree, "//interface/body/method[name='name'][public]", 0);
     }
 }
+
+mod type_vocabulary {
+    use super::*;
+
+    /// Principle #14: every type reference wraps its name in a
+    /// <name> child. No bare-text <type> nodes; type parameters use
+    /// <generic>; bounds wrap in <extends>; collection-of-T uses
+    /// <type[generic]> with nested <type> children.
+
+    #[test]
+    fn csharp() {
+        let mut tree = parse_src("csharp", r#"
+            using System.Collections.Generic;
+
+            interface IBarker { void Bark(); }
+            class Animal {}
+
+            class Dog<T> : Animal, IBarker where T : Animal
+            {
+                public T Owner;
+                public List<string> Tags;
+                public void Bark() {}
+            }
+        "#);
+
+        claim("every <type> has a <name> child (no bare-text types)",
+            &mut tree, "//type[not(name)]", 0);
+
+        claim("Dog declares one <generic> type parameter",
+            &mut tree, "//class[name='Dog']/generic[name='T']", 1);
+
+        claim("generic T with where-clause `: Animal` exposes <extends><type>",
+            &mut tree, "//class[name='Dog']/generic[name='T']/extends/type[name='Animal']", 1);
+
+        claim("class extends list combines base + interface as siblings",
+            &mut tree, "//class[name='Dog']/extends/type[name='Animal' or name='IBarker']", 2);
+
+        claim("List<string> field uses generic type with inner <type>",
+            &mut tree, "//field//type[generic][name='List']/type[name='string']", 1);
+    }
+
+    #[test]
+    fn java() {
+        let mut tree = parse_src("java", r#"
+            import java.util.List;
+
+            class Animal {}
+            interface Barker { void bark(); }
+            interface Runner { void run(); }
+
+            class Dog<T extends Animal> extends Animal implements Barker, Runner {
+                T owner;
+                List<String> tags;
+
+                public void bark() {}
+                public void run() {}
+            }
+        "#);
+
+        claim("every <type> has a <name> child",
+            &mut tree, "//type[not(name)]", 0);
+
+        claim("type parameter T has an <extends> bound on Animal",
+            &mut tree, "//class[name='Dog']/generic[name='T']/extends/type[name='Animal']", 1);
+
+        claim("extends list points to <type[name='Animal']>",
+            &mut tree, "//class[name='Dog']/extends/type[name='Animal']", 1);
+
+        claim("implements list has 2 <type> entries",
+            &mut tree, "//class[name='Dog']/implements/type", 2);
+
+        claim("List<String> field uses generic type with inner <type>",
+            &mut tree, "//field//type[generic][name='List']/type[name='String']", 1);
+    }
+
+    #[test]
+    fn rust() {
+        let mut tree = parse_src("rust", r#"
+            use std::collections::HashMap;
+
+            trait Barker { fn bark(&self); }
+
+            struct Dog<T: Barker> {
+                owner: T,
+                tags: Vec<String>,
+                scores: HashMap<String, i32>,
+                parent: Option<Box<Dog<T>>>,
+            }
+        "#);
+
+        claim("every <type> has a <name> child",
+            &mut tree, "//type[not(name)]", 0);
+
+        claim("Dog declares <generic> with a `: Barker` bound",
+            &mut tree, "//struct[name='Dog']/generic[name='T']/bounds/type[name='Barker']", 1);
+
+        claim("Vec<String>: generic with inner <type>",
+            &mut tree, "//field[name='tags']/type[generic][name='Vec']/type[name='String']", 1);
+
+        claim("HashMap<String, i32>: generic with two inner <type> children",
+            &mut tree, "//field[name='scores']/type[generic][name='HashMap']/type", 2);
+
+        claim("Option<Box<Dog<T>>> nests 3 levels of <type[generic]>",
+            &mut tree, "//field[name='parent']/type[generic]/type[generic]/type[generic]", 1);
+    }
+
+    #[test]
+    fn typescript() {
+        let mut tree = parse_src("typescript", r#"
+            type Id = number;
+            type Handler = (x: number) => void;
+            type Box<T> = Array<T>;
+
+            class Animal {}
+            interface Barker { bark(): void; }
+            class Dog extends Animal implements Barker {
+                bark(): void {}
+            }
+        "#);
+
+        claim("only <type[function]> may lack a <name> (it's defined by signature)",
+            &mut tree, "//type[not(name) and not(function)]", 0);
+
+        claim("plain alias points at a single <type>",
+            &mut tree, "//alias[name='Id']/type[name='number']", 1);
+
+        claim("function-type alias carries <type[function]>",
+            &mut tree, "//alias[name='Handler']/type[function]", 1);
+
+        claim("generic alias carries a <generic> child via <generics> wrapper",
+            &mut tree, "//alias[name='Box']/generics/generic[name='T']", 1);
+
+        claim("Dog extends and implements both wrap base types",
+            &mut tree, "//class[name='Dog']/extends/type[name='Animal'] | //class[name='Dog']/implements/type[name='Barker']", 2);
+    }
+}

@@ -63,14 +63,12 @@ const FEATURE_FIXTURES: &[(&str, &str, u32, bool)] = &[
     // invariant. Depth cap hides deep internals where noise doesn't
     // help — the blueprint covers the deep view.
     ("tests/integration/features/conditionals/conditionals.ts", "//if", 3, false),
-    ("tests/integration/features/type-vocabulary/type-vocabulary.ts", "//class[name='Dog']", 4, false),
 
     // — Java —
     // Blueprint: kitchen-sink fixture rendered at full depth so
     // every transform change shows up as a visible snapshot diff.
     ("tests/integration/languages/java/blueprint.java", "//program", 0, true),
     ("tests/integration/features/conditionals/conditionals.java", "//if", 3, false),
-    ("tests/integration/features/type-vocabulary/type-vocabulary.java", "//class[name='Dog']", 3, false),
 
     // — C# —
     // Blueprint snapshot uses shape projection: tree structure +
@@ -80,7 +78,6 @@ const FEATURE_FIXTURES: &[(&str, &str, u32, bool)] = &[
     ("tests/integration/languages/csharp/blueprint.cs", "//unit", 0, true),
     ("tests/integration/features/comments/comments.cs", "//class[name='Demo']", 3, false),
     ("tests/integration/features/conditionals/conditionals.cs", "//if", 3, false),
-    ("tests/integration/features/type-vocabulary/type-vocabulary.cs", "//class[name='Dog']", 4, false),
 
     // — Rust —
     // Blueprint snapshot uses shape projection: tree structure +
@@ -88,7 +85,6 @@ const FEATURE_FIXTURES: &[(&str, &str, u32, bool)] = &[
     // by `tests/text_preservation.rs`.
     ("tests/integration/languages/rust/blueprint.rs", "//file", 0, true),
     ("tests/integration/features/conditionals/conditionals.rs", "//if", 3, false),
-    ("tests/integration/features/type-vocabulary/type-vocabulary.rs", "//struct[name='Dog']", 3, false),
 
     // — Python —
     ("tests/integration/languages/python/blueprint.py", "//module", 0, true),
