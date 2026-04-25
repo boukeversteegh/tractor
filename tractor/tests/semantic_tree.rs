@@ -1760,122 +1760,6 @@ mod go {
     }
 }
 
-// ===========================================================================
-// Ruby
-// ===========================================================================
-
-mod ruby {
-    use super::*;
-
-    /// Principle #14 — Ruby identifiers unconditionally rename to
-    /// `<name>` (Ruby has no type_identifier, every identifier is a
-    /// value reference).
-    #[test]
-    fn identifier_renames_to_name() {
-        let mut tree = parse_src("ruby", "def f(a, b)\n  a + b\nend\n");
-        assert_count(
-            &mut tree,
-            "//identifier",
-            0,
-            "no raw identifier leak",
-        );
-        assert_count(
-            &mut tree,
-            "//binary/left/name[.='a']",
-            1,
-            "identifiers render as <name>",
-        );
-    }
-
-    /// Class and module names inline the `<constant>` child (Ruby
-    /// uses `constant` for capitalized identifiers).
-    #[test]
-    fn class_and_module_name_inline() {
-        let mut tree = parse_src(
-            "ruby",
-            "class Calculator\nend\nmodule Utils\nend\n",
-        );
-        assert_count(
-            &mut tree,
-            "//class/name[.='Calculator']",
-            1,
-            "class name inlines as text",
-        );
-        assert_count(
-            &mut tree,
-            "//class/name/constant",
-            0,
-            "no nested <constant> inside <name>",
-        );
-        assert_count(
-            &mut tree,
-            "//module/name[.='Utils']",
-            1,
-            "module name inlines as text",
-        );
-    }
-
-    /// Ruby elsif chain flattens: `<else_if>` is a direct sibling of
-    /// `<if>` (tree-sitter nests elsif inside the previous elsif/else).
-    #[test]
-    fn conditional_shape_flat() {
-        let mut tree = parse_src(
-            "ruby",
-            "def f(n)\n  if n < 0\n    1\n  elsif n == 0\n    2\n  else\n    3\n  end\nend\n",
-        );
-        assert_count(
-            &mut tree,
-            "//if/else_if",
-            1,
-            "elsif renames to <else_if> and lifts to flat sibling",
-        );
-        assert_count(
-            &mut tree,
-            "//if/else",
-            1,
-            "else is a flat sibling",
-        );
-        assert_count(
-            &mut tree,
-            "//elsif",
-            0,
-            "no raw <elsif> leaks",
-        );
-    }
-
-    /// Ruby percent-literal arrays collapse to `<array>` with a
-    /// `<string/>` / `<symbol/>` marker so the element name matches
-    /// a normal array while the flavor stays queryable.
-    #[test]
-    fn percent_array_shape_markers() {
-        let mut tree = parse_src(
-            "ruby",
-            "A = %w[one two]\nB = %i[alpha beta]\nC = [1, 2]\n",
-        );
-        assert_count(&mut tree, "//array[string]", 1, "%w[…] carries <string/>");
-        assert_count(&mut tree, "//array[symbol]", 1, "%i[…] carries <symbol/>");
-        assert_count(&mut tree, "//array", 3, "all three forms collapse to <array>");
-    }
-
-    /// Ruby splat parameters distinguish iterable `*args` (list) from
-    /// mapping `**kwargs` (dict); keyword parameters (`key:`) carry a
-    /// `<keyword/>` marker distinguishing them from positional ones.
-    #[test]
-    fn parameter_shape_markers() {
-        let mut tree = parse_src(
-            "ruby",
-            "def f(a, *xs, key: 1, **kw)\nend\n",
-        );
-        assert_count(&mut tree, "//spread[list]", 1, "`*xs` carries <list/>");
-        assert_count(&mut tree, "//spread[dict]", 1, "`**kw` carries <dict/>");
-        assert_count(
-            &mut tree,
-            "//parameter[keyword]",
-            1,
-            "`key:` keyword parameter carries <keyword/>",
-        );
-    }
-}
 
 // ===========================================================================
 // Cross-language: decorator / annotation / attribute topology
@@ -2764,6 +2648,9 @@ mod name_inlining {
         claim("class <name> has no <identifier> child",
             &mut tree, "//class/name/identifier", 0);
 
+        claim("class <name> has no nested <constant> child",
+            &mut tree, "//class/name/constant", 0);
+
         claim("module name is inlined text on <name>",
             &mut tree, "//module/name='Utils'", 1);
 
@@ -2775,6 +2662,9 @@ mod name_inlining {
 
         claim("method parameters are <name> elements (identifier renamed)",
             &mut tree, "//method[name='add']/name[. ='a' or .='b']", 2);
+
+        claim("identifiers in expressions render as <name>",
+            &mut tree, "//binary/left/name[.='a']", 1);
 
         claim("no raw <identifier> nodes leak from Ruby grammar",
             &mut tree, "//identifier", 0);
@@ -2817,6 +2707,26 @@ mod parameter_marking {
 
         claim("defaulted parameter has a <value> child",
             &mut tree, "//parameter[name='defaulted'][value]", 1);
+    }
+
+    /// Ruby splat parameters distinguish iterable `*args` (list) from
+    /// mapping `**kwargs` (dict); keyword parameters (`key:`) carry a
+    /// <keyword/> marker distinguishing them from positional ones.
+    #[test]
+    fn ruby() {
+        let mut tree = parse_src("ruby", r#"
+            def f(a, *xs, key: 1, **kw)
+            end
+        "#);
+
+        claim("`*xs` carries spread[list]",
+            &mut tree, "//spread[list]", 1);
+
+        claim("`**kw` carries spread[dict]",
+            &mut tree, "//spread[dict]", 1);
+
+        claim("`key:` keyword parameter carries <keyword/>",
+            &mut tree, "//parameter[keyword]", 1);
     }
 }
 
@@ -2878,6 +2788,31 @@ mod strings {
 
         claim("raw and not-raw partition the strings",
             &mut tree, "//string[raw and not(raw)]", 0);
+    }
+}
+
+mod array_literals {
+    use super::*;
+
+    /// Ruby percent-literal arrays collapse to <array> with a
+    /// <string/> / <symbol/> marker so the element name matches a
+    /// normal array while the flavor stays queryable.
+    #[test]
+    fn ruby() {
+        let mut tree = parse_src("ruby", r#"
+            A = %w[one two]
+            B = %i[alpha beta]
+            C = [1, 2]
+        "#);
+
+        claim("%w[…] carries <string/>",
+            &mut tree, "//array[string]", 1);
+
+        claim("%i[…] carries <symbol/>",
+            &mut tree, "//array[symbol]", 1);
+
+        claim("all three forms collapse to <array>",
+            &mut tree, "//array", 3);
     }
 }
 
