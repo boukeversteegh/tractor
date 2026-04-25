@@ -998,275 +998,6 @@ mod java {
 }
 
 // ===========================================================================
-// Rust
-// ===========================================================================
-
-mod rust {
-    use super::*;
-
-    /// Principle #14: every type reference wraps in `<type><name>…</name></type>`.
-    #[test]
-    fn type_reference_is_wrapped() {
-        let mut tree = parse_src(
-            "rust",
-            "fn f(x: i32) -> String { String::new() }",
-        );
-        assert_count(
-            &mut tree,
-            "//parameter/type[name='i32']",
-            1,
-            "parameter type wraps name in <name>",
-        );
-        assert_count(
-            &mut tree,
-            "//returns/type[name='String']",
-            1,
-            "return type wraps name in <name>",
-        );
-    }
-
-    /// Reference types render as `<type><borrowed/>…<type>T</type></type>`.
-    #[test]
-    fn reference_type_uses_borrowed_marker() {
-        let mut tree = parse_src(
-            "rust",
-            "fn read(s: &str) -> &str { s } fn write(b: &mut Vec<u8>) {}",
-        );
-        assert_count(
-            &mut tree,
-            "//type[borrowed]",
-            3,
-            "every reference type carries <borrowed/> (Principle #14 + #13)",
-        );
-        assert_count(
-            &mut tree,
-            "//type[borrowed][mut]",
-            1,
-            "mutable borrow carries both markers — they compose",
-        );
-        assert_count(
-            &mut tree,
-            "//ref",
-            0,
-            "no legacy <ref> element",
-        );
-    }
-
-    /// struct_expression renders as `<literal><name>Point</name>…</literal>`.
-    #[test]
-    fn struct_expression_is_literal() {
-        let mut tree = parse_src(
-            "rust",
-            "struct Point { x: i32 } fn make() { let p = Point { x: 1 }; }",
-        );
-        assert_count(
-            &mut tree,
-            "//literal[name='Point']",
-            1,
-            "struct construction renders as <literal><name>Point</name>…",
-        );
-        assert_count(
-            &mut tree,
-            "//literal/body/field",
-            1,
-            "initializers are <field> children inside the body",
-        );
-        assert_count(
-            &mut tree,
-            "//struct_expression",
-            0,
-            "no raw tree-sitter kind leak",
-        );
-    }
-
-    /// Principle #12: match_block flattens; arms live under match's body.
-    #[test]
-    fn match_block_flattens() {
-        let mut tree = parse_src(
-            "rust",
-            "fn f(n: i32) { match n { 0 => {}, _ => {} } }",
-        );
-        assert_count(
-            &mut tree,
-            "//match/match_block",
-            0,
-            "no <match_block> wrapper (Principle #12)",
-        );
-        assert_count(
-            &mut tree,
-            "//match/body/arm",
-            2,
-            "arms live directly under match's body — no extra wrapper",
-        );
-    }
-
-    /// Principle #5: method_call_expression and call_expression both
-    /// render as `<call>` (unified; member access child distinguishes).
-    #[test]
-    fn method_call_unifies_with_call() {
-        let mut tree = parse_src(
-            "rust",
-            "fn f() { let s = String::new(); s.len(); }",
-        );
-        assert_count(
-            &mut tree,
-            "//call",
-            2,
-            "both free call and method call render as <call>",
-        );
-        assert_count(
-            &mut tree,
-            "//methodcall",
-            0,
-            "no legacy <methodcall>",
-        );
-    }
-
-    /// Principle #2: type_item renders as `<alias>` (parallel with
-    /// TS / Java / C#).
-    #[test]
-    fn type_item_is_alias() {
-        let mut tree = parse_src("rust", "type Id = u32;");
-        assert_count(
-            &mut tree,
-            "//alias[name='Id']",
-            1,
-            "type_item renames to <alias>",
-        );
-        assert_count(
-            &mut tree,
-            "//typedef",
-            0,
-            "no legacy <typedef>",
-        );
-    }
-
-    /// Visibility is exhaustive: every declaration carries `<private/>`
-    /// (implicit) or `<pub/>` (explicit).
-    #[test]
-    fn visibility_is_exhaustive() {
-        let mut tree = parse_src(
-            "rust",
-            "fn priv_fn() {} pub fn pub_fn() {} pub(crate) fn crate_fn() {}",
-        );
-        assert_count(
-            &mut tree,
-            "//function[private]",
-            1,
-            "implicit-private function carries <private/>",
-        );
-        assert_count(
-            &mut tree,
-            "//function[pub]",
-            2,
-            "pub and pub(crate) both carry <pub/>",
-        );
-        assert_count(
-            &mut tree,
-            "//function/pub/crate",
-            1,
-            "pub(crate) carries <crate/> restriction child",
-        );
-    }
-
-    /// Raw string literal renders as `<string><raw/>…</string>`.
-    #[test]
-    fn raw_string_has_marker() {
-        let mut tree = parse_src(
-            "rust",
-            "fn f() { let _ = r\"raw\"; let _ = \"normal\"; }",
-        );
-        assert_count(
-            &mut tree,
-            "//string[raw]",
-            1,
-            "raw string carries <raw/> marker",
-        );
-        assert_count(
-            &mut tree,
-            "//string",
-            2,
-            "both raw and normal strings use <string>",
-        );
-    }
-
-    /// Rust type flavors all collapse to `<type>` with a shape marker
-    /// — function, tuple, array, pointer, never, unit, dyn. (The `[T]`
-    /// inside `&[T]` is treated as `array_type` by tree-sitter-rust,
-    /// so `slice` markers only appear for explicit slice forms — which
-    /// the cross-file blueprint snapshot covers separately.)
-    #[test]
-    fn type_shape_markers() {
-        let mut tree = parse_src(
-            "rust",
-            "fn f(cb: fn(i32) -> i32, t: (i32, i32), a: [u8; 4], p: *const u8) -> ! { loop {} }\n\
-             fn g() -> () {}\n\
-             fn h(d: &dyn Drawable) {}\n",
-        );
-        assert_count(&mut tree, "//type[function]", 1, "fn type carries <function/>");
-        assert_count(&mut tree, "//type[tuple]", 1, "tuple type carries <tuple/>");
-        assert_count(&mut tree, "//type[array]", 1, "array type carries <array/>");
-        assert_count(&mut tree, "//type[pointer]", 1, "pointer type carries <pointer/>");
-        assert_count(&mut tree, "//type[never]", 1, "never type carries <never/>");
-        assert_count(&mut tree, "//type[unit]", 1, "unit type carries <unit/>");
-        assert_count(&mut tree, "//type[dynamic]", 1, "dyn trait object carries <dynamic/>");
-    }
-
-    /// Pattern flavors in match arms collapse to `<pattern>` but carry
-    /// `<or/>`, `<struct/>`, or `<field/>` markers so queries can
-    /// pick out the specific shape.
-    #[test]
-    fn pattern_shape_markers() {
-        let mut tree = parse_src(
-            "rust",
-            "fn f(x: Shape) {\n    match x {\n        Shape::Square(_) | Shape::Circle(_) => {},\n        Shape::Rect { w, h } => {},\n        _ => {},\n    }\n}\n",
-        );
-        assert_count(
-            &mut tree,
-            "//pattern[or]",
-            1,
-            "alternative pattern (`A | B`) carries <or/>",
-        );
-        assert_count(
-            &mut tree,
-            "//pattern[struct]",
-            1,
-            "struct destructure pattern carries <struct/>",
-        );
-        assert_count(
-            &mut tree,
-            "//pattern[field]",
-            2,
-            "each struct field in pattern carries <field/>",
-        );
-    }
-
-    /// Both bare function calls and method calls collapse to `<call>`.
-    /// Tree-sitter-rust doesn't emit a distinct `method_call_expression`
-    /// (it uses `call_expression` with a `field_expression` function
-    /// child), so `//call/field` finds every `obj.m(args)` site.
-    #[test]
-    fn method_call_via_field_child() {
-        let mut tree = parse_src(
-            "rust",
-            "fn f() { let y = foo(1); let z = bar.baz(2); }\n",
-        );
-        assert_count(
-            &mut tree,
-            "//call/field",
-            1,
-            "method call has a <field> child function (`obj.m`)",
-        );
-        assert_count(
-            &mut tree,
-            "//call",
-            2,
-            "both function and method calls collapse to <call>",
-        );
-    }
-}
-
-// ===========================================================================
 // Cross-language: decorator / annotation / attribute topology
 //
 // The element name is idiomatic per language (Python uses <decorator>,
@@ -2087,6 +1818,9 @@ mod method_call {
 
         claim("method `to_string` on a string-literal receiver",
             &mut tree, "//call/field[value/string and name='to_string']", 1);
+
+        claim("no legacy <methodcall> element",
+            &mut tree, "//methodcall", 0);
     }
 }
 
@@ -2269,6 +2003,9 @@ mod reference_type {
 
         claim("inner type of &mut is the generic Vec<u8>",
             &mut tree, "//type[borrowed and mut]/type[generic][name='Vec']", 1);
+
+        claim("no legacy <ref> element",
+            &mut tree, "//ref", 0);
     }
 }
 
@@ -2299,6 +2036,24 @@ mod strings {
 
         claim("raw and not-raw partition the strings",
             &mut tree, "//string[raw and not(raw)]", 0);
+    }
+
+    /// Rust strings: regular `"..."` and raw `r"..."`. Both render as
+    /// <string>; raw forms carry a <raw/> marker.
+    #[test]
+    fn rust() {
+        let mut tree = parse_src("rust", r#"
+            fn f() {
+                let _ = r"raw";
+                let _ = "normal";
+            }
+        "#);
+
+        claim("raw string carries <raw/> marker",
+            &mut tree, "//string[raw]", 1);
+
+        claim("both raw and normal strings use <string>",
+            &mut tree, "//string", 2);
     }
 }
 
@@ -2369,6 +2124,70 @@ match seq:
 
         claim("`'yes' | 'y'` union pattern carries <union/>",
             &mut tree, "//pattern[union]", 1);
+    }
+
+    /// Rust match arm patterns collapse to <pattern> but carry
+    /// <or/>, <struct/>, or <field/> markers so queries can pick out
+    /// the specific shape.
+    #[test]
+    fn rust() {
+        let mut tree = parse_src("rust", r#"
+            fn f(x: Shape) {
+                match x {
+                    Shape::Square(_) | Shape::Circle(_) => {},
+                    Shape::Rect { w, h } => {},
+                    _ => {},
+                }
+            }
+        "#);
+
+        claim("alternative pattern (`A | B`) carries <or/>",
+            &mut tree, "//pattern[or]", 1);
+
+        claim("struct destructure pattern carries <struct/>",
+            &mut tree, "//pattern[struct]", 1);
+
+        claim("each struct field in pattern carries <field/>",
+            &mut tree, "//pattern[field]", 2);
+    }
+}
+
+mod type_markers {
+    use super::*;
+
+    /// Rust type flavors all collapse to <type> with a shape marker —
+    /// function, tuple, array, pointer, never, unit, dyn. (The `[T]`
+    /// inside `&[T]` is treated as `array_type` by tree-sitter-rust,
+    /// so `slice` markers only appear for explicit slice forms — which
+    /// the cross-file blueprint snapshot covers separately.)
+    #[test]
+    fn rust() {
+        let mut tree = parse_src("rust", r#"
+            fn f(cb: fn(i32) -> i32, t: (i32, i32), a: [u8; 4], p: *const u8) -> ! { loop {} }
+            fn g() -> () {}
+            fn h(d: &dyn Drawable) {}
+        "#);
+
+        claim("fn type carries <function/>",
+            &mut tree, "//type[function]", 1);
+
+        claim("tuple type carries <tuple/>",
+            &mut tree, "//type[tuple]", 1);
+
+        claim("array type carries <array/>",
+            &mut tree, "//type[array]", 1);
+
+        claim("pointer type carries <pointer/>",
+            &mut tree, "//type[pointer]", 1);
+
+        claim("never type carries <never/>",
+            &mut tree, "//type[never]", 1);
+
+        claim("unit type carries <unit/>",
+            &mut tree, "//type[unit]", 1);
+
+        claim("dyn trait object carries <dynamic/>",
+            &mut tree, "//type[dynamic]", 1);
     }
 }
 
@@ -2563,6 +2382,9 @@ mod typedef {
 
         claim("generic alias declares a <generic> parameter",
             &mut tree, "//alias[name='Mapping']/generic[name='T']", 1);
+
+        claim("no legacy <typedef> element",
+            &mut tree, "//typedef", 0);
     }
 }
 
@@ -3091,6 +2913,8 @@ mod type_vocabulary {
                 scores: HashMap<String, i32>,
                 parent: Option<Box<Dog<T>>>,
             }
+
+            fn make(x: i32) -> String { String::new() }
         "#);
 
         claim("every <type> has a <name> child",
@@ -3107,6 +2931,12 @@ mod type_vocabulary {
 
         claim("Option<Box<Dog<T>>> nests 3 levels of <type[generic]>",
             &mut tree, "//field[name='parent']/type[generic]/type[generic]/type[generic]", 1);
+
+        claim("parameter type wraps name in <name>",
+            &mut tree, "//parameter/type[name='i32']", 1);
+
+        claim("return type wraps name in <name>",
+            &mut tree, "//returns/type[name='String']", 1);
     }
 
     #[test]
