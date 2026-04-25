@@ -2112,3 +2112,139 @@ mod interpolation_shape {
         );
     }
 }
+
+// ===========================================================================
+// Feature-grouped shape tests
+//
+// Reconsidered approach: instead of (or in addition to) per-language
+// fixture files in `tests/integration/features/<feature>/`, assert the
+// shape claim DIRECTLY in code, grouped by feature.
+//
+// Each `mod <feature>` collects every language's shape assertions for
+// that feature, with multi-line indented XPath strings for legibility.
+// XPath is whitespace-insensitive between path steps, so the
+// indentation is purely a readability aid.
+//
+// Convention:
+//   - Source code uses raw strings, indented to fit the test.
+//   - XPath strings span multiple lines under `multi_xpath()` (drops
+//     whitespace OUTSIDE string literals; quote-aware so spaces inside
+//     `[.='…']` predicates are preserved).
+//   - Assertions are claims about the post-transform tree's shape.
+// ===========================================================================
+
+/// Pretty-print helper for multi-line XPath. Drops whitespace
+/// OUTSIDE of `'…'` and `"…"` string literals so queries can be
+/// written with indentation in source. Whitespace inside literals
+/// (e.g. `[.='// instance counter']`) is preserved verbatim.
+fn multi_xpath(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    let mut in_quote: Option<char> = None;
+    for c in s.chars() {
+        match in_quote {
+            Some(q) => {
+                out.push(c);
+                if c == q { in_quote = None; }
+            }
+            None if c == '\'' || c == '"' => {
+                out.push(c);
+                in_quote = Some(c);
+            }
+            None if c.is_whitespace() => {}
+            None => out.push(c),
+        }
+    }
+    out
+}
+
+mod comments {
+    use super::*;
+
+    #[test]
+    fn csharp_classifies_attachment() {
+        let mut tree = parse_src(
+            "csharp",
+            r#"
+                class Demo {
+                    private int _count; // instance counter
+
+                    // Configuration settings
+                    // loaded from environment
+                    public string Config { get; set; }
+
+                    /* block comment */
+                    public void Run() {}
+                }
+            "#,
+        );
+
+        // Trailing single-line: same line as predecessor's end token.
+        assert_count(
+            &mut tree,
+            &multi_xpath("
+                //class
+                  /body
+                  /comment[trailing]
+                  [.='// instance counter']
+            "),
+            1,
+            "single-line comment after `;` on the same line is <trailing/>",
+        );
+
+        // Adjacent line-comments merge into one <comment>; the merged
+        // comment is the <leading/> on the property below it.
+        assert_count(
+            &mut tree,
+            &multi_xpath("
+                //class
+                  /body
+                  /comment[leading]
+                  [contains(., 'Configuration settings')]
+                  [contains(., 'loaded from environment')]
+            "),
+            1,
+            "adjacent // line comments merge; the merged block is <leading/>",
+        );
+
+        // Block comment immediately before a declaration is <leading/>.
+        assert_count(
+            &mut tree,
+            &multi_xpath("
+                //class
+                  /body
+                  /comment[leading]
+                  [.='/* block comment */']
+            "),
+            1,
+            "block comment immediately preceding a declaration is <leading/>",
+        );
+    }
+
+    #[test]
+    fn csharp_unattached_comment_has_no_marker() {
+        let mut tree = parse_src(
+            "csharp",
+            r#"
+                class X {
+                    // standalone with blank line after
+
+                    public int X() => 0;
+                }
+            "#,
+        );
+        // A floating comment (blank line breaks the leading-attachment
+        // window) carries neither <leading/> nor <trailing/>.
+        assert_count(
+            &mut tree,
+            &multi_xpath("
+                //class
+                  /body
+                  /comment
+                  [not(leading)]
+                  [not(trailing)]
+            "),
+            1,
+            "floating comments have no attachment marker",
+        );
+    }
+}
