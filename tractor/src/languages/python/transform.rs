@@ -7,11 +7,60 @@ use crate::output::syntax_highlight::SyntaxCategory;
 use super::semantic::*;
 
 
-/// Transform a Python AST node
+/// Transform a Python AST node.
+///
+/// Dispatch is split in two:
+///   1. If the node carries a `kind` attribute (set by the builder from
+///      the original tree-sitter kind), match on that — it never changes
+///      mid-walk, so an arm like `"identifier"` always wins.
+///   2. Otherwise the node is a builder-inserted wrapper (e.g. the
+///      `<name>` / `<type>` field wrappers) — match on the element name
+///      for the few wrappers we need to handle.
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    let kind = match get_element_name(xot, node) {
+    let kind = match get_kind(xot, node) {
         Some(k) => k,
-        None => return Ok(TransformAction::Continue),
+        None => {
+            // Builder-inserted wrapper (no `kind` attribute).
+            let name = get_element_name(xot, node).unwrap_or_default();
+            return match name.as_str() {
+                // Name wrappers created by the builder for field="name".
+                // Inline the single identifier child as text:
+                //   <name><identifier>foo</identifier></name> -> <name>foo</name>
+                //
+                // Also:
+                //   - Flatten when the single element child is an `aliased_import`
+                //     (or post-rename `<import>`). Walking top-down, the outer
+                //     `<name>` wraps an aliased_import like `import x as y`, which
+                //     is NOT a single name — it's a compound. Drop the wrapper so
+                //     the `<import>` becomes a direct child of `<import_statement>`.
+                //   - Flatten when the child is a renamed `from`
+                //     (import_from_statement) — same reason: it's a
+                //     compound, not a name.
+                "name" => {
+                    let element_children: Vec<_> = xot
+                        .children(node)
+                        .filter(|&c| xot.element(c).is_some())
+                        .collect();
+                    if element_children.len() == 1 {
+                        let child = element_children[0];
+                        let ts_kind = get_kind(xot, child);
+                        let el_name = get_element_name(xot, child);
+                        if matches!(
+                            ts_kind.as_deref(),
+                            Some("aliased_import") | Some("import_from_statement"),
+                        ) || matches!(
+                            el_name.as_deref(),
+                            Some("import") | Some("from"),
+                        ) {
+                            return Ok(TransformAction::Flatten);
+                        }
+                    }
+                    inline_single_identifier(xot, node)?;
+                    Ok(TransformAction::Continue)
+                }
+                _ => Ok(TransformAction::Continue),
+            };
+        }
     };
 
     match kind.as_str() {
@@ -168,41 +217,6 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
 
-        // Name wrappers created by the builder for field="name".
-        // Inline the single identifier child as text:
-        //   <name><identifier>foo</identifier></name> -> <name>foo</name>
-        //
-        // Also:
-        //   - Flatten when the single element child is an `aliased_import`
-        //     (or post-rename `<import>`). Walking top-down, the outer
-        //     `<name>` wraps an aliased_import like `import x as y`, which
-        //     is NOT a single name — it's a compound. Drop the wrapper so
-        //     the `<import>` becomes a direct child of `<import_statement>`.
-        //   - Flatten when the child is a renamed `from` (import_from_statement)
-        //     — same reason: it's a compound, not a name.
-        "name" => {
-            let element_children: Vec<_> = xot
-                .children(node)
-                .filter(|&c| xot.element(c).is_some())
-                .collect();
-            if element_children.len() == 1 {
-                let child = element_children[0];
-                let ts_kind = get_kind(xot, child);
-                let el_name = get_element_name(xot, child);
-                if matches!(
-                    ts_kind.as_deref(),
-                    Some("aliased_import") | Some("import_from_statement"),
-                ) || matches!(
-                    el_name.as_deref(),
-                    Some("import") | Some("from"),
-                ) {
-                    return Ok(TransformAction::Flatten);
-                }
-            }
-            inline_single_identifier(xot, node)?;
-            Ok(TransformAction::Continue)
-        }
-
         // Type wrappers from Python's tree-sitter grammar contain a single
         // identifier. Inline the identifier text then wrap in <name>
         // for the unified namespace vocabulary (`<type><name>int</name></type>`).
@@ -255,12 +269,12 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Same for dict/set. Generator expressions have no literal
         // form in Python (parens make a tuple), so <generator> is
         // left bare — only one variant, no marker needed.
-        // `has_kind` guard — the walker also visits empty marker children
-        // named "list" / "set" (e.g. the `<list/>` marker we prepend on
-        // `spread`). Only tree-sitter list/set nodes carry a kind attr,
-        // so gating on that prevents applying the <literal/> marker to
-        // our own markers.
-        "list" | "set" if get_kind(xot, node).is_some() => {
+        //
+        // (Previously this arm had a `has_kind` guard to avoid matching
+        // the `<list/>` / `<set/>` empty markers we prepend on `spread`.
+        // The kind-based dispatch above makes that distinction
+        // structurally — only tree-sitter list/set nodes reach this arm.)
+        "list" | "set" => {
             prepend_empty_element(xot, node, LITERAL)?;
             Ok(TransformAction::Continue)
         }
