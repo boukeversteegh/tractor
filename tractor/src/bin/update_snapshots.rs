@@ -70,7 +70,6 @@ const FEATURE_FIXTURES: &[(&str, &str, u32, bool)] = &[
     // every transform change shows up as a visible snapshot diff.
     ("tests/integration/languages/java/blueprint.java", "//program", 0, true),
     ("tests/integration/features/conditionals/conditionals.java", "//if", 3, false),
-    ("tests/integration/features/interface-public/interface-public.java", "//interface/body", 3, false),
     ("tests/integration/features/type-vocabulary/type-vocabulary.java", "//class[name='Dog']", 3, false),
 
     // — C# —
@@ -81,7 +80,6 @@ const FEATURE_FIXTURES: &[(&str, &str, u32, bool)] = &[
     ("tests/integration/languages/csharp/blueprint.cs", "//unit", 0, true),
     ("tests/integration/features/comments/comments.cs", "//class[name='Demo']", 3, false),
     ("tests/integration/features/conditionals/conditionals.cs", "//if", 3, false),
-    ("tests/integration/features/interface-public/interface-public.cs", "//interface/body/method[public][1]", 3, false),
     ("tests/integration/features/type-vocabulary/type-vocabulary.cs", "//class[name='Dog']", 4, false),
 
     // — Rust —

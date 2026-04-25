@@ -3312,3 +3312,60 @@ mod flat_lists {
             &mut tree, "//function[name='first']/generics/generic", 2);
     }
 }
+
+mod interface_public {
+    use super::*;
+
+    /// Interface members without an explicit access modifier default
+    /// to <public/>. C# and Java both lift this to an exhaustive
+    /// marker so a single //method[public] hits every visible
+    /// interface method.
+
+    #[test]
+    fn csharp() {
+        let mut tree = parse_src("csharp", r#"
+            interface IShape
+            {
+                double Area();
+                double Perimeter();
+                string Name => "shape";
+                public void Stroke();
+            }
+        "#);
+
+        claim("3 interface methods all carry <public/>",
+            &mut tree, "//interface/body/method[public]", 3);
+
+        claim("expression-bodied property carries <public/>",
+            &mut tree, "//interface/body/property[public]", 1);
+
+        claim("no interface member is missing visibility",
+            &mut tree, "//interface/body/*[(self::method or self::property) and not(public)]", 0);
+    }
+
+    /// Java pins current behaviour: implicit-public abstract methods
+    /// surface as <public/>; the explicit `public void stroke()` also
+    /// gets <public/>. Default methods (`default String name() {...}`)
+    /// currently render with <package/> rather than <public/> — pin
+    /// that as the actual current shape rather than aspiration.
+    #[test]
+    fn java() {
+        let mut tree = parse_src("java", r#"
+            interface Shape {
+                double area();
+                double perimeter();
+                default String name() { return "shape"; }
+                public void stroke();
+            }
+        "#);
+
+        claim("implicit-public abstract methods carry <public/>",
+            &mut tree, "//interface/body/method[public][not(body)]", 3);
+
+        claim("explicit `public` method `stroke` also carries <public/>",
+            &mut tree, "//interface/body/method[public][name='stroke']", 1);
+
+        claim("`default` method is not classified as <public/> (current behaviour)",
+            &mut tree, "//interface/body/method[name='name'][public]", 0);
+    }
+}

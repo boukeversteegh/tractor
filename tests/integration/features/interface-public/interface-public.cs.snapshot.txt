@@ -1,4 +1,0 @@
-method[public]/
-  ├─ returns/type/name = "double"
-  ├─ name = "Area"
-  └─ "();"
