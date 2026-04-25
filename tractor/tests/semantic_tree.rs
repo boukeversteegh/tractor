@@ -348,346 +348,6 @@ mod csharp {
     }
 }
 
-// ===========================================================================
-// TypeScript / JavaScript
-// ===========================================================================
-
-mod typescript {
-    use super::*;
-
-    /// Principle #9 — class members carry an exhaustive visibility
-    /// marker: explicit `public/private/protected` keywords lift to
-    /// markers, and members without a keyword get an implicit
-    /// `<public/>` (the default in TypeScript).
-    #[test]
-    fn visibility_markers_exhaustive() {
-        let mut tree = parse_src(
-            "typescript",
-            "class X { foo() {} private bar() {} protected baz() {} public qux() {} }",
-        );
-        assert_count(
-            &mut tree,
-            "//method[public]",
-            2,
-            "implicit default and explicit public both carry <public/>",
-        );
-        assert_count(
-            &mut tree,
-            "//method[private]",
-            1,
-            "explicit private carries <private/>",
-        );
-        assert_count(
-            &mut tree,
-            "//method[protected]",
-            1,
-            "explicit protected carries <protected/>",
-        );
-    }
-
-    /// Principle #9 — class fields follow the same visibility
-    /// defaults as methods.
-    #[test]
-    fn field_visibility_defaults_public() {
-        let mut tree = parse_src(
-            "typescript",
-            "class X { x = 1; private y = 2; }",
-        );
-        assert_count(
-            &mut tree,
-            "//field[public]",
-            1,
-            "unmarked field defaults to <public/>",
-        );
-        assert_count(
-            &mut tree,
-            "//field[private]",
-            1,
-            "explicit private field carries <private/>",
-        );
-    }
-
-    /// Principle #5 — arrow_function renames to `<arrow>` (JS-native
-    /// vocabulary; distinct from `<function>` declarations).
-    #[test]
-    fn arrow_function_renames() {
-        let mut tree = parse_src(
-            "typescript",
-            "const f = (x: number) => x + 1;",
-        );
-        assert_count(
-            &mut tree,
-            "//arrow",
-            1,
-            "arrow_function renames to <arrow>",
-        );
-        assert_count(
-            &mut tree,
-            "//arrow_function",
-            0,
-            "no raw tree-sitter kind leak",
-        );
-    }
-
-    /// Principle #14 — type references wrap in `<type><name>…</name></type>`.
-    #[test]
-    fn type_reference_is_wrapped() {
-        let mut tree = parse_src(
-            "typescript",
-            "function f(x: number): string { return \"\"; }",
-        );
-        assert_count(
-            &mut tree,
-            "//parameter/type[name='number']",
-            1,
-            "parameter type wraps name in <name> (Principle #14)",
-        );
-        assert_count(
-            &mut tree,
-            "//returns/type[name='string']",
-            1,
-            "return type wraps name in <name> (Principle #14)",
-        );
-    }
-
-    /// Principle #13 — `<function/>` marker distinguishes function types.
-    /// `(x: T) => U` as a type renders as `<type><function/>…`.
-    #[test]
-    fn function_type_carries_marker() {
-        let mut tree = parse_src(
-            "typescript",
-            "type Handler = (x: number) => void;",
-        );
-        assert_count(
-            &mut tree,
-            "//alias/type[function]",
-            1,
-            "function type carries <function/> marker (Principle #13)",
-        );
-        assert_count(
-            &mut tree,
-            "//function_type",
-            0,
-            "no raw function_type leak",
-        );
-    }
-
-    /// Principle #9 — parameters carry exhaustive required/optional markers.
-    #[test]
-    fn parameters_marked_required_or_optional() {
-        let mut tree = parse_src(
-            "typescript",
-            "function f(a: string, b?: number) {}",
-        );
-        assert_count(
-            &mut tree,
-            "//parameter[required]",
-            1,
-            "required parameter carries <required/>",
-        );
-        assert_count(
-            &mut tree,
-            "//parameter[optional]",
-            1,
-            "optional parameter carries <optional/>",
-        );
-    }
-
-    /// Principle #13 — async and generator become empty markers.
-    #[test]
-    fn async_generator_markers() {
-        let mut tree = parse_src(
-            "typescript",
-            "async function a() {} function* b() {} async function* c() {}",
-        );
-        assert_count(
-            &mut tree,
-            "//function[async]",
-            2,
-            "two async functions",
-        );
-        assert_count(
-            &mut tree,
-            "//function[generator]",
-            2,
-            "two generator functions",
-        );
-        assert_count(
-            &mut tree,
-            "//function[async][generator]",
-            1,
-            "one async-generator function — markers compose",
-        );
-    }
-
-    /// Principle #13 — get/set on class methods become markers.
-    #[test]
-    fn accessor_methods_marked() {
-        let mut tree = parse_src(
-            "typescript",
-            "class X { get a(): number { return 1; } set a(v: number) {} }",
-        );
-        assert_count(
-            &mut tree,
-            "//method[get]",
-            1,
-            "get accessor carries <get/> marker",
-        );
-        assert_count(
-            &mut tree,
-            "//method[set]",
-            1,
-            "set accessor carries <set/> marker",
-        );
-    }
-
-    /// Conditional shape: else-if chain flattens; ternary keeps
-    /// `<then>`/`<else>` via surgical field wrap.
-    #[test]
-    fn conditional_shape_flat() {
-        let mut tree = parse_src(
-            "typescript",
-            "function f(n: number) { if (n < 0) {} else if (n == 0) {} else if (n < 10) {} else {} }",
-        );
-        assert_count(
-            &mut tree,
-            "//if/else_if",
-            2,
-            "else_if siblings are flat children of outer <if>",
-        );
-        assert_count(
-            &mut tree,
-            "//if/else",
-            1,
-            "final <else> is also a flat sibling",
-        );
-        assert_count(
-            &mut tree,
-            "//else/if",
-            0,
-            "no nested <else><if>…",
-        );
-    }
-
-    /// Ternary keeps `<then>`/`<else>` children.
-    #[test]
-    fn ternary_has_then_and_else() {
-        let mut tree = parse_src(
-            "typescript",
-            "const x = cond ? 1 : 2;",
-        );
-        assert_count(
-            &mut tree,
-            "//ternary/then",
-            1,
-            "ternary keeps <then>",
-        );
-        assert_count(
-            &mut tree,
-            "//ternary/else",
-            1,
-            "ternary keeps <else>",
-        );
-    }
-
-    /// Principle #14: `extends`/`implements` wrap in `<type><name/></type>`.
-    #[test]
-    fn extends_implements_typed() {
-        let mut tree = parse_src(
-            "typescript",
-            "class Dog extends Animal implements Barker {}",
-        );
-        assert_count(
-            &mut tree,
-            "//class/extends/type[name='Animal']",
-            1,
-            "extends target is typed",
-        );
-        assert_count(
-            &mut tree,
-            "//class/implements/type[name='Barker']",
-            1,
-            "implements target is typed",
-        );
-    }
-
-    /// Type parameter declaration: `<generic><name>T</name></generic>`.
-    #[test]
-    fn type_parameter_inner_shape() {
-        let mut tree = parse_src(
-            "typescript",
-            "class Box<T> { value: T; }",
-        );
-        assert_count(
-            &mut tree,
-            "//generic[name='T']",
-            1,
-            "type parameter has <name> child holding T (not nested type)",
-        );
-        assert_count(
-            &mut tree,
-            "//generic/name/type",
-            0,
-            "no spurious <type> wrapper inside the <name>",
-        );
-    }
-
-    /// Type flavors all collapse to `<type>` but carry a shape marker
-    /// (Principle #9) so `//type[union]`, `//type[tuple]`, etc. work
-    /// uniformly without matching on text.
-    #[test]
-    fn type_shape_markers() {
-        let mut tree = parse_src(
-            "typescript",
-            "type A = string | number;\n\
-             type B = string & object;\n\
-             type C = [string, number];\n\
-             type D = string[];\n\
-             type E = 'idle';\n\
-             type F = (x: number) => number;\n\
-             type G = { x: number };\n\
-             type H = readonly number[];",
-        );
-        assert_count(&mut tree, "//type[union]", 1, "union type carries <union/>");
-        assert_count(
-            &mut tree,
-            "//type[intersection]",
-            1,
-            "intersection type carries <intersection/>",
-        );
-        assert_count(&mut tree, "//type[tuple]", 1, "tuple type carries <tuple/>");
-        // `number[]` is array_type; `readonly number[]` wraps in readonly_type.
-        assert_count(&mut tree, "//type[array]", 2, "array types carry <array/>");
-        assert_count(&mut tree, "//type[literal]", 1, "literal type carries <literal/>");
-        assert_count(&mut tree, "//type[function]", 1, "function type carries <function/>");
-        assert_count(&mut tree, "//type[object]", 1, "object type carries <object/>");
-        assert_count(&mut tree, "//type[readonly]", 1, "readonly type carries <readonly/>");
-    }
-
-    /// Destructuring patterns collapse to `<pattern>` but carry an
-    /// `<array/>` / `<object/>` marker that distinguishes the shape
-    /// without requiring string matching on `[` vs `{`.
-    #[test]
-    fn destructuring_pattern_markers() {
-        let mut tree = parse_src(
-            "typescript",
-            "const [a, b] = xs;\nconst { x, y } = pt;\n",
-        );
-        assert_count(
-            &mut tree,
-            "//pattern[array]",
-            1,
-            "array destructuring pattern carries <array/>",
-        );
-        assert_count(
-            &mut tree,
-            "//pattern[object]",
-            1,
-            "object destructuring pattern carries <object/>",
-        );
-    }
-}
-
 
 // ===========================================================================
 // Cross-language: decorator / annotation / attribute topology
@@ -1173,6 +833,25 @@ mod accessors {
 
         claim("get and set markers are mutually exclusive on a method",
             &mut tree, "//method[get and set]", 0);
+    }
+}
+
+mod arrow_function {
+    use super::*;
+
+    /// Principle #5 — `arrow_function` renames to <arrow> (JS-native
+    /// vocabulary; distinct from <function> declarations).
+    #[test]
+    fn typescript() {
+        let mut tree = parse_src("typescript", r#"
+            const f = (x: number) => x + 1;
+        "#);
+
+        claim("arrow_function renames to <arrow>",
+            &mut tree, "//arrow", 1);
+
+        claim("no raw `arrow_function` kind leak",
+            &mut tree, "//arrow_function", 0);
     }
 }
 
@@ -1901,6 +1580,23 @@ match seq:
             &mut tree, "//pattern[union]", 1);
     }
 
+    /// TypeScript destructuring patterns collapse to <pattern> but
+    /// carry an <array/> / <object/> marker that distinguishes the
+    /// shape without requiring string matching on `[` vs `{`.
+    #[test]
+    fn typescript() {
+        let mut tree = parse_src("typescript", r#"
+            const [a, b] = xs;
+            const { x, y } = pt;
+        "#);
+
+        claim("array destructuring pattern carries <array/>",
+            &mut tree, "//pattern[array]", 1);
+
+        claim("object destructuring pattern carries <object/>",
+            &mut tree, "//pattern[object]", 1);
+    }
+
     /// Rust match arm patterns collapse to <pattern> but carry
     /// <or/>, <struct/>, or <field/> markers so queries can pick out
     /// the specific shape.
@@ -1963,6 +1659,48 @@ mod type_markers {
 
         claim("dyn trait object carries <dynamic/>",
             &mut tree, "//type[dynamic]", 1);
+    }
+
+    /// TypeScript type flavors all collapse to <type> with a shape
+    /// marker (Principle #9) so `//type[union]`, `//type[tuple]`,
+    /// etc. work uniformly without matching on text.
+    #[test]
+    fn typescript() {
+        let mut tree = parse_src("typescript", r#"
+            type A = string | number;
+            type B = string & object;
+            type C = [string, number];
+            type D = string[];
+            type E = 'idle';
+            type F = (x: number) => number;
+            type G = { x: number };
+            type H = readonly number[];
+        "#);
+
+        claim("union type carries <union/>",
+            &mut tree, "//type[union]", 1);
+
+        claim("intersection type carries <intersection/>",
+            &mut tree, "//type[intersection]", 1);
+
+        claim("tuple type carries <tuple/>",
+            &mut tree, "//type[tuple]", 1);
+
+        // `number[]` is array_type; `readonly number[]` wraps in readonly_type.
+        claim("array types carry <array/> (number[] + readonly number[])",
+            &mut tree, "//type[array]", 2);
+
+        claim("literal type carries <literal/>",
+            &mut tree, "//type[literal]", 1);
+
+        claim("function type carries <function/>",
+            &mut tree, "//type[function]", 1);
+
+        claim("object type carries <object/>",
+            &mut tree, "//type[object]", 1);
+
+        claim("readonly type carries <readonly/>",
+            &mut tree, "//type[readonly]", 1);
     }
 
     /// Java `void` carries an additional <void/> marker on top of the
@@ -2769,6 +2507,8 @@ mod type_vocabulary {
             class Dog extends Animal implements Barker {
                 bark(): void {}
             }
+
+            function f(x: number): string { return ""; }
         "#);
 
         claim("only <type[function]> may lack a <name> (it's defined by signature)",
@@ -2785,6 +2525,21 @@ mod type_vocabulary {
 
         claim("Dog extends and implements both wrap base types",
             &mut tree, "//class[name='Dog']/extends/type[name='Animal'] | //class[name='Dog']/implements/type[name='Barker']", 2);
+
+        claim("function declaration's parameter type wraps name in <name>",
+            &mut tree, "//function[name='f']/parameter/type[name='number']", 1);
+
+        claim("function declaration's return type wraps name in <name>",
+            &mut tree, "//function[name='f']/returns/type[name='string']", 1);
+
+        claim("generic-alias type parameter has <name> child holding T (not nested type)",
+            &mut tree, "//generic[name='T']", 1);
+
+        claim("no spurious <type> wrapper inside the <name> of a generic",
+            &mut tree, "//generic/name/type", 0);
+
+        claim("no raw `function_type` kind leak (renamed to <type[function]>)",
+            &mut tree, "//function_type", 0);
     }
 }
 
