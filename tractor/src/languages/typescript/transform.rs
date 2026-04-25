@@ -10,14 +10,55 @@ use crate::output::syntax_highlight::SyntaxCategory;
 use super::semantic::*;
 
 
-/// Transform a TypeScript AST node
+/// Transform a TypeScript AST node.
 ///
-/// This is the main entry point - receives each node during tree walk
+/// This is the main entry point — receives each node during tree walk
 /// and decides what transformations to apply.
+///
+/// Dispatch is split in two:
+///   1. If the node carries a `kind` attribute (set by the builder from
+///      the original tree-sitter kind), match on that — it never changes
+///      mid-walk, so an arm like `"identifier"` always wins.
+///   2. Otherwise the node is a builder-inserted wrapper (e.g. the
+///      `<name>` field wrapper) — match on the element name for the
+///      few wrappers we need to handle.
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    let kind = match get_element_name(xot, node) {
+    let kind = match get_kind(xot, node) {
         Some(k) => k,
-        None => return Ok(TransformAction::Continue),
+        None => {
+            // Builder-inserted wrapper (no `kind` attribute).
+            let name = get_element_name(xot, node).unwrap_or_default();
+            return match name.as_str() {
+                // Name wrappers created by the builder for field="name".
+                // Inline the single identifier/property_identifier child as text:
+                //   <name><identifier>foo</identifier></name> -> <name>foo</name>
+                //
+                // Destructuring patterns (`const [a, b] = ...`,
+                // `const {x, y} = ...`) appear in the grammar as
+                // `name: array_pattern | object_pattern`. A pattern is
+                // not a single name — flatten the wrapper so the pattern
+                // becomes a direct child of the declarator.
+                "name" => {
+                    let element_children: Vec<_> = xot
+                        .children(node)
+                        .filter(|&c| xot.element(c).is_some())
+                        .collect();
+                    if element_children.len() == 1 {
+                        let child = element_children[0];
+                        let ts_kind = get_kind(xot, child);
+                        if matches!(
+                            ts_kind.as_deref(),
+                            Some("array_pattern") | Some("object_pattern"),
+                        ) {
+                            return Ok(TransformAction::Flatten);
+                        }
+                    }
+                    inline_single_identifier(xot, node)?;
+                    Ok(TransformAction::Continue)
+                }
+                _ => Ok(TransformAction::Continue),
+            };
+        }
     };
 
     match kind.as_str() {
@@ -109,35 +150,6 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // field/property node.
 
         // ---------------------------------------------------------------------
-        // Name wrappers created by the builder for field="name".
-        // Inline the single identifier/property_identifier child as text:
-        //   <name><identifier>foo</identifier></name> -> <name>foo</name>
-        //
-        // Destructuring patterns (`const [a, b] = ...`, `const {x, y} = ...`)
-        // appear in the grammar as `name: array_pattern | object_pattern`.
-        // A pattern is not a single name — flatten the wrapper so the
-        // pattern becomes a direct child of the declarator.
-        // ---------------------------------------------------------------------
-        "name" => {
-            let element_children: Vec<_> = xot
-                .children(node)
-                .filter(|&c| xot.element(c).is_some())
-                .collect();
-            if element_children.len() == 1 {
-                let child = element_children[0];
-                let ts_kind = get_kind(xot, child);
-                if matches!(
-                    ts_kind.as_deref(),
-                    Some("array_pattern") | Some("object_pattern"),
-                ) {
-                    return Ok(TransformAction::Flatten);
-                }
-            }
-            inline_single_identifier(xot, node)?;
-            Ok(TransformAction::Continue)
-        }
-
-        // ---------------------------------------------------------------------
         // Call/member expressions — field wrapping (function→callee,
         // object→object, property→property) is handled by apply_field_wrappings
         // per TS_FIELD_WRAPPINGS, so we just rename the outer node here.
@@ -182,7 +194,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             distribute_field_to_children(xot, node, "parameters");
             Ok(TransformAction::Flatten)
         }
-        "arguments" if has_kind(xot, node) => {
+        "arguments" => {
             distribute_field_to_children(xot, node, "arguments");
             Ok(TransformAction::Flatten)
         }
@@ -618,10 +630,6 @@ fn retag_value_as_type(xot: &mut Xot, parent: XotNode) -> Result<(), xot::Error>
         set_attr(xot, v, "field", "type");
     }
     Ok(())
-}
-
-fn has_kind(xot: &Xot, node: XotNode) -> bool {
-    get_kind(xot, node).is_some()
 }
 
 /// Returns true if `node` has a visibility-related modifier child.
