@@ -157,87 +157,10 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 
 /// Map tree-sitter node kinds to semantic element names.
 ///
-/// Second tuple element is an optional disambiguation marker — lets
-/// the map declare inline that e.g. `string_array` renames to
-/// `<array>` with a `<string/>` marker child so `//array[string]`
-/// finds every `%w[…]` literal.
+/// Derived from `semantic::KINDS` — the catalogue is the single source
+/// of truth, this is just the rename projection.
 fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> {
-    match kind {
-        "program" => Some((PROGRAM, None)),
-        "method" => Some((METHOD, None)),
-        "class" => Some((CLASS, None)),
-        "module" => Some((MODULE, None)),
-        "if" => Some((IF, None)),
-        "unless" => Some((UNLESS, None)),
-        // Ruby's tree-sitter nests `elsif` chains (each `elsif`/`else`
-        // lives inside the previous `elsif`). The post-transform in
-        // `languages/mod.rs` lifts them to flat children of `<if>` per
-        // the cross-cutting conditional shape; here we just rename.
-        "elsif" => Some((ELSE_IF, None)),
-        "else" => Some((ELSE, None)),
-        "case" => Some((CASE, None)),
-        "while" => Some((WHILE, None)),
-        "until" => Some((UNTIL, None)),
-        "for" => Some((FOR, None)),
-        "begin" => Some((BEGIN, None)),
-        "rescue" => Some((RESCUE, None)),
-        "ensure" => Some((ENSURE, None)),
-        "call" => Some((CALL, None)),
-        "method_call" => Some((CALL, None)),
-        "assignment" => Some((ASSIGN, None)),
-        "binary" => Some((BINARY, None)),
-        "string" => Some((STRING, None)),
-        "integer" => Some((INT, None)),
-        "float" => Some((FLOAT, None)),
-        "symbol" => Some((SYMBOL, None)),
-        "array" => Some((ARRAY, None)),
-        "hash" => Some((HASH, None)),
-        "operator_assignment" => Some((ASSIGN, None)),
-        "break_statement" => Some((BREAK, None)),
-        "continue_statement" | "next_statement" => Some((CONTINUE, None)),
-        // Percent-literal arrays — %w[…] gives a string_array, %i[…]
-        // gives a symbol_array. Both collapse to <array> with a shape
-        // marker so the element kind is uniform but queryable.
-        "string_array" => Some((ARRAY, Some(STRING))),
-        "symbol_array" => Some((ARRAY, Some(SYMBOL))),
-        // Splat parameters — `*args` vs `**kwargs` distinguished by
-        // list/dict marker, matching Python's shape.
-        "splat_parameter" => Some((SPREAD, Some(LIST))),
-        "hash_splat_parameter" => Some((SPREAD, Some(DICT))),
-        // `key:` keyword parameter — a parameter variant; the marker
-        // lets us find every keyword parameter without matching on text.
-        "keyword_parameter" => Some((PARAMETER, Some(KEYWORD))),
-        // `&block` capture — identifies the block parameter as a
-        // <parameter> with <block/> marker.
-        "block_parameter" => Some((PARAMETER, Some(BLOCK))),
-        // `arg = default` — optional parameter shape.
-        "optional_parameter" => Some((PARAMETER, Some(DEFAULT))),
-        // `do … end` block — collapse to <block> with a <do/> marker
-        // so `//block[do]` finds the do-style, `//block[brace]` the
-        // `{ … }` style (once we add it).
-        "do_block" => Some((BLOCK, Some(DO))),
-        // `begin … end` — explicit Ruby block.
-        "begin_block" => Some((BLOCK, Some(BEGIN))),
-        // Splat call-site args — `*args` / `**kwargs` distinguished by
-        // list/dict marker, matching the parameter shape above.
-        "splat_argument" => Some((SPREAD, Some(LIST))),
-        "hash_splat_argument" => Some((SPREAD, Some(DICT))),
-        // `:"dyn#{foo}"` delimited symbol — shape-marker the collapse
-        // so `//symbol[delimited]` finds them.
-        "delimited_symbol" => Some((SYMBOL, Some(DELIMITED))),
-        // `rescue => e` — the `=> e` binding the exception.
-        "exception_variable" => Some((VARIABLE, None)),
-        // `class << self` — singleton class body.
-        "singleton_class" => Some((CLASS, Some(SINGLETON))),
-        // `def self.foo` — singleton method.
-        "singleton_method" => Some((METHOD, Some(SINGLETON))),
-        // `a, b, c = …` — LHS of a multi-assignment.
-        "left_assignment_list" => Some((LEFT, None)),
-        // `*rest = …` — the splat position on the LHS.
-        "rest_assignment" => Some((SPREAD, None)),
-        // `->(...) { ... }` — Ruby lambdas; flatten the parameter list.
-        _ => None,
-    }
+    super::semantic::rename_target(kind)
 }
 
 /// Apply `map_element_name` to a node: rename + prepend marker (if any).
