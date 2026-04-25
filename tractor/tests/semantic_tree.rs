@@ -688,314 +688,6 @@ mod typescript {
     }
 }
 
-// ===========================================================================
-// Java
-// ===========================================================================
-
-mod java {
-    use super::*;
-
-    /// Principle #2 — constructor_declaration renames to `<constructor>`,
-    /// not the abbreviation `<ctor>`.
-    #[test]
-    fn constructor_is_full_word() {
-        let mut tree = parse_src(
-            "java",
-            "class Point { Point(int x, int y) {} }",
-        );
-        assert_count(
-            &mut tree,
-            "//constructor",
-            1,
-            "constructor_declaration renames to <constructor> (Principle #2)",
-        );
-        assert_count(
-            &mut tree,
-            "//ctor",
-            0,
-            "no abbreviated <ctor>",
-        );
-    }
-
-    /// Principle #14: extends/implements wrap in `<type>`.
-    #[test]
-    fn extends_implements_typed() {
-        let mut tree = parse_src(
-            "java",
-            "class Dog extends Animal implements Barker {}",
-        );
-        assert_count(
-            &mut tree,
-            "//class/extends/type[name='Animal']",
-            1,
-            "extends target typed",
-        );
-        assert_count(
-            &mut tree,
-            "//class/implements/type[name='Barker']",
-            1,
-            "implements target typed",
-        );
-    }
-
-    /// Interface members default to `<public/>`.
-    #[test]
-    fn interface_members_default_public() {
-        let mut tree = parse_src(
-            "java",
-            "interface Shape { double area(); double perimeter(); }",
-        );
-        assert_count(
-            &mut tree,
-            "//interface/body/method[public]",
-            2,
-            "interface methods are implicitly public",
-        );
-    }
-
-    /// Principle #1 — package-private access renders as `<package/>`
-    /// (matches Java's own term; earlier spelling `<package-private/>`
-    /// broke XPath predicate syntax).
-    #[test]
-    fn package_private_marker() {
-        let mut tree = parse_src(
-            "java",
-            "class X { int pkg; private int priv; }",
-        );
-        assert_count(
-            &mut tree,
-            "//field[package]",
-            1,
-            "package-private field carries <package/> marker",
-        );
-        assert_count(
-            &mut tree,
-            "//field[private]",
-            1,
-            "private field carries <private/> marker",
-        );
-    }
-
-    /// Type parameter with bound: `<generic><name>T</name><extends>…</extends></generic>`.
-    #[test]
-    fn type_parameter_with_bound() {
-        let mut tree = parse_src(
-            "java",
-            "class Box<T extends Comparable<T>> {}",
-        );
-        assert_count(
-            &mut tree,
-            "//generic[name='T']/extends/type[name='Comparable']",
-            1,
-            "bound attaches as <extends><type>…</type></extends>",
-        );
-    }
-
-    /// Principle #12 — parameters flatten.
-    #[test]
-    fn parameters_flatten() {
-        let mut tree = parse_src(
-            "java",
-            "class X { void f(int a, String b) {} }",
-        );
-        assert_count(
-            &mut tree,
-            "//method/parameter_list",
-            0,
-            "no parameter_list wrapper (Principle #12)",
-        );
-        assert_count(
-            &mut tree,
-            "//method/parameter",
-            2,
-            "params are direct method siblings",
-        );
-    }
-
-    /// Conditional shape: flat else-if chain.
-    #[test]
-    fn conditional_shape_flat() {
-        let mut tree = parse_src(
-            "java",
-            "class X { String f(int n) { if (n<0) return \"\"; else if (n==0) return \"\"; else return \"\"; } }",
-        );
-        assert_count(
-            &mut tree,
-            "//if/else_if",
-            1,
-            "else_if is flat sibling of <if>",
-        );
-        assert_count(
-            &mut tree,
-            "//if/else",
-            1,
-            "final else is flat sibling",
-        );
-    }
-
-    /// Identifiers — user-defined AND built-in type names — are
-    /// NEVER promoted to element nodes. Nodes are always lowercase,
-    /// but identifiers can have distinguishing capitalization
-    /// (`List` vs `list`, `Dictionary` vs `dict`), so mapping them to
-    /// node names would either lose the case distinction or break
-    /// the all-lowercase rule. This applies uniformly to primitives
-    /// (`int`, `double`) and user types (`Foo`): they all carry their
-    /// identifier as a `<name>` value.
-    #[test]
-    fn type_names_are_name_child_not_node() {
-        let mut tree = parse_src(
-            "java",
-            "class X { int a; double b; boolean c; Foo e; List l; }",
-        );
-        for (name, what) in &[
-            ("int", "primitive"),
-            ("double", "primitive"),
-            ("boolean", "primitive"),
-            ("Foo", "user-defined type"),
-            ("List", "built-in capitalized type"),
-        ] {
-            assert_count(
-                &mut tree,
-                &format!("//type[name='{}']", name),
-                1,
-                &format!("{} {} uses <type><name>{}</name></type>", what, name, name),
-            );
-        }
-    }
-
-    /// `void` is the one primitive special enough to warrant a
-    /// shortcut marker — it's return-only and "no value", not a
-    /// regular data type. The marker is *additional*, not a
-    /// replacement for `<name>`: the name is still there for data
-    /// consumers, the marker is a query shortcut.
-    #[test]
-    fn void_carries_additional_marker() {
-        let mut tree = parse_src("java", "class X { void f() {} int g() { return 0; } }");
-        assert_count(
-            &mut tree,
-            "//type[void][name='void']",
-            1,
-            "void type has both <void/> marker AND <name>void</name>",
-        );
-        assert_count(
-            &mut tree,
-            "//type[void]",
-            1,
-            "exactly one void type in the source",
-        );
-        assert_count(
-            &mut tree,
-            "//type[not(void)]",
-            1,
-            "non-void types have no <void/> marker",
-        );
-    }
-
-    /// Markers appear in source order (source-reversibility goal):
-    /// `public abstract static class X` renders with markers in
-    /// source sequence, and the source keywords survive as text so
-    /// the enclosing node's string-value still reads like the
-    /// source.
-    #[test]
-    fn modifier_source_order_and_text_preserved() {
-        let mut tree = parse_src("java", "public abstract static class X {}");
-        // The first three element children of <class> are the
-        // modifiers in source order. Predicate-chained position
-        // assertions let us pin this without a fragile full-tree
-        // assertion.
-        assert_count(
-            &mut tree,
-            "//class/*[1][self::public]",
-            1,
-            "first marker on class is <public/> (source order)",
-        );
-        assert_count(
-            &mut tree,
-            "//class/*[2][self::abstract]",
-            1,
-            "second marker on class is <abstract/>",
-        );
-        assert_count(
-            &mut tree,
-            "//class/*[3][self::static]",
-            1,
-            "third marker on class is <static/>",
-        );
-        // Source text survives as a text sibling so //class's
-        // string-value still contains "public abstract static".
-        assert_count(
-            &mut tree,
-            "//class[contains(., 'public abstract static')]",
-            1,
-            "source keywords preserved as dangling text (source-reversibility)",
-        );
-    }
-
-    /// Principle #12 — parenthesized_expression is grammar bleed-through;
-    /// drop the wrapper so inner expressions sit directly under their
-    /// enclosing node. The parens remain as text children.
-    #[test]
-    fn parenthesized_expression_flattens() {
-        let mut tree = parse_src(
-            "java",
-            "class X { boolean f(int n) { return (n + 1) > 0; } }",
-        );
-        assert_count(
-            &mut tree,
-            "//parenthesized_expression",
-            0,
-            "no parenthesized_expression wrapper (Principle #12)",
-        );
-    }
-
-    /// `this(…)` / `super(…)` in constructors render as `<call>` with
-    /// a `<this/>` or `<super/>` marker — uniform with other call sites.
-    #[test]
-    fn explicit_constructor_invocation_is_call() {
-        let mut tree = parse_src(
-            "java",
-            "class X { X() { this(1); } X(int a) {} class Y extends X { Y() { super(2); } } }",
-        );
-        assert_count(
-            &mut tree,
-            "//call[this]",
-            1,
-            "this(…) renders as <call> with <this/> marker",
-        );
-        assert_count(
-            &mut tree,
-            "//call[super]",
-            1,
-            "super(…) renders as <call> with <super/> marker",
-        );
-        assert_count(
-            &mut tree,
-            "//explicit_constructor_invocation",
-            0,
-            "no raw tree-sitter kind leak",
-        );
-    }
-
-    /// Principle #2 — `variable_declarator` renames to `<declarator>`
-    /// (no underscores in the final vocabulary, short but not
-    /// abbreviated).
-    #[test]
-    fn variable_declarator_renames() {
-        let mut tree = parse_src("java", "class X { void f() { int x = 1, y = 2; } }");
-        assert_count(
-            &mut tree,
-            "//variable_declarator",
-            0,
-            "no raw kind leak",
-        );
-        assert_count(
-            &mut tree,
-            "//variable/declarator",
-            2,
-            "each declarator in a multi-variable declaration is its own <declarator>",
-        );
-    }
-}
 
 // ===========================================================================
 // Cross-language: decorator / annotation / attribute topology
@@ -1787,6 +1479,49 @@ mod match_expression {
     }
 }
 
+mod parenthesized_expression {
+    use super::*;
+
+    /// Principle #12 — `parenthesized_expression` is grammar
+    /// bleed-through; drop the wrapper so inner expressions sit
+    /// directly under their enclosing node. The parens remain as
+    /// text children.
+    #[test]
+    fn java() {
+        let mut tree = parse_src("java", r#"
+            class X {
+                boolean f(int n) { return (n + 1) > 0; }
+            }
+        "#);
+
+        claim("no <parenthesized_expression> wrapper",
+            &mut tree, "//parenthesized_expression", 0);
+    }
+}
+
+mod variable_declarator {
+    use super::*;
+
+    /// Principle #2 — `variable_declarator` renames to <declarator>
+    /// (no underscores in the final vocabulary, short but not
+    /// abbreviated). Each declarator in a multi-variable declaration
+    /// is its own <declarator>.
+    #[test]
+    fn java() {
+        let mut tree = parse_src("java", r#"
+            class X {
+                void f() { int x = 1, y = 2; }
+            }
+        "#);
+
+        claim("no raw `variable_declarator` kind leak",
+            &mut tree, "//variable_declarator", 0);
+
+        claim("each declarator in a multi-variable declaration is its own <declarator>",
+            &mut tree, "//variable/declarator", 2);
+    }
+}
+
 mod method_call {
     use super::*;
 
@@ -1822,6 +1557,31 @@ mod method_call {
         claim("no legacy <methodcall> element",
             &mut tree, "//methodcall", 0);
     }
+
+    /// Java `this(…)` / `super(…)` in constructors render as <call>
+    /// with a <this/> or <super/> marker — uniform with other call
+    /// sites; no `explicit_constructor_invocation` raw kind leaks.
+    #[test]
+    fn java() {
+        let mut tree = parse_src("java", r#"
+            class X {
+                X() { this(1); }
+                X(int a) {}
+                class Y extends X {
+                    Y() { super(2); }
+                }
+            }
+        "#);
+
+        claim("`this(…)` renders as <call> with <this/> marker",
+            &mut tree, "//call[this]", 1);
+
+        claim("`super(…)` renders as <call> with <super/> marker",
+            &mut tree, "//call[super]", 1);
+
+        claim("no raw `explicit_constructor_invocation` kind leak",
+            &mut tree, "//explicit_constructor_invocation", 0);
+    }
 }
 
 mod modifiers {
@@ -1829,11 +1589,14 @@ mod modifiers {
 
     /// Modifiers lift as empty markers on the declaration. Every
     /// access modifier is exhaustive — package-private gets an
-    /// explicit <package/> marker.
+    /// explicit <package/> marker. Markers appear in source order
+    /// (source-reversibility), and the source keywords also survive
+    /// as text so the enclosing node's string-value still reads like
+    /// the source.
     #[test]
     fn java() {
         let mut tree = parse_src("java", r#"
-            class Modifiers {
+            public abstract static class Modifiers {
                 public static final int PUB = 1;
                 private int priv = 2;
                 protected int prot = 3;
@@ -1860,6 +1623,18 @@ mod modifiers {
 
         claim("nested class composes public + abstract + static markers",
             &mut tree, "//class[public and abstract and static][name='AbsStatic']", 1);
+
+        claim("first marker on outer class is <public/> (source order)",
+            &mut tree, "//class[name='Modifiers']/*[1][self::public]", 1);
+
+        claim("second marker on outer class is <abstract/> (source order)",
+            &mut tree, "//class[name='Modifiers']/*[2][self::abstract]", 1);
+
+        claim("third marker on outer class is <static/> (source order)",
+            &mut tree, "//class[name='Modifiers']/*[3][self::static]", 1);
+
+        claim("source keywords preserved as dangling text (source-reversibility)",
+            &mut tree, "//class[name='Modifiers'][contains(., 'public abstract static')]", 1);
     }
 }
 
@@ -2188,6 +1963,29 @@ mod type_markers {
 
         claim("dyn trait object carries <dynamic/>",
             &mut tree, "//type[dynamic]", 1);
+    }
+
+    /// Java `void` carries an additional <void/> marker on top of the
+    /// `<name>void</name>` text leaf — the marker is a query
+    /// shortcut, not a replacement. Other primitives keep just the
+    /// name child.
+    #[test]
+    fn java() {
+        let mut tree = parse_src("java", r#"
+            class X {
+                void f() {}
+                int g() { return 0; }
+            }
+        "#);
+
+        claim("void type has both <void/> marker AND <name>void</name>",
+            &mut tree, "//type[void][name='void']", 1);
+
+        claim("exactly one void type in the source",
+            &mut tree, "//type[void]", 1);
+
+        claim("non-void types have no <void/> marker",
+            &mut tree, "//type[not(void)]", 1);
     }
 }
 
@@ -2876,6 +2674,11 @@ mod type_vocabulary {
             interface Runner { void run(); }
 
             class Dog<T extends Animal> extends Animal implements Barker, Runner {
+                int a;
+                double b;
+                boolean c;
+                Foo e;
+                List l;
                 T owner;
                 List<String> tags;
 
@@ -2898,6 +2701,21 @@ mod type_vocabulary {
 
         claim("List<String> field uses generic type with inner <type>",
             &mut tree, "//field//type[generic][name='List']/type[name='String']", 1);
+
+        claim("primitive `int` carries name as text",
+            &mut tree, "//type[name='int']", 1);
+
+        claim("primitive `double` carries name as text",
+            &mut tree, "//type[name='double']", 1);
+
+        claim("primitive `boolean` carries name as text",
+            &mut tree, "//type[name='boolean']", 1);
+
+        claim("user-defined type `Foo` carries name as text",
+            &mut tree, "//type[name='Foo']", 1);
+
+        claim("built-in capitalized type `List` carries name as text (bare + generic forms)",
+            &mut tree, "//type[name='List']", 2);
     }
 
     #[test]
