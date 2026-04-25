@@ -410,31 +410,9 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // into a single <comment> with multiline text content.
         // ---------------------------------------------------------------------
         "comment" => {
-            // Skip if already consumed by a preceding comment's grouping
-            if xot.parent(node).is_none() {
-                return Ok(TransformAction::Done);
-            }
-
-            // Trailing comments are attached to the previous sibling — no grouping
-            if is_inline_node(xot, node) {
-                prepend_empty_element(xot, node, TRAILING)?;
-                return Ok(TransformAction::Done);
-            }
-
-            // Group consecutive line comments into this node
-            let consumed = group_line_comments(xot, node)?;
-
-            // Classify the (possibly merged) comment
-            if is_leading_comment(xot, node) {
-                prepend_empty_element(xot, node, LEADING)?;
-            }
-
-            // Detach consumed siblings (they've been merged into this node)
-            for sibling in consumed {
-                xot.detach(sibling)?;
-            }
-
-            Ok(TransformAction::Done)
+            static CLASSIFIER: crate::languages::comments::CommentClassifier =
+                crate::languages::comments::CommentClassifier { line_prefixes: &["//"] };
+            CLASSIFIER.classify_and_group(xot, node, TRAILING, LEADING)
         }
 
         // ---------------------------------------------------------------------
@@ -782,132 +760,6 @@ fn is_in_namespace_context(xot: &Xot, node: XotNode) -> bool {
         current = get_parent(xot, parent);
     }
     false
-}
-
-// =============================================================================
-// Comment attachment helpers
-// =============================================================================
-
-/// Check if a comment (or comment block) immediately precedes a non-comment sibling.
-/// "Immediately" means the next non-comment element sibling starts on the line
-/// right after this comment ends, with no blank-line gap.
-fn is_leading_comment(xot: &Xot, node: XotNode) -> bool {
-    let comment_end_line = match get_line(xot, node, "end_line") {
-        Some(l) => l,
-        None => return false,
-    };
-
-    // Find next element sibling that is NOT a comment (skip self — following_siblings includes node)
-    let next = xot.following_siblings(node)
-        .filter(|&s| s != node)
-        .find(|&s| {
-            xot.element(s).is_some()
-                && get_kind(xot, s).as_deref() != Some("comment")
-        });
-
-    match next {
-        Some(next) => {
-            let next_start_line = get_line(xot, next, "line").unwrap_or(0);
-            // Next declaration starts on the very next line (no blank line gap)
-            next_start_line == comment_end_line + 1
-        }
-        None => false,
-    }
-}
-
-/// Group consecutive `//` line comments on adjacent lines into a single comment node.
-///
-/// Merges the text content of following comment siblings into `node` and returns
-/// the consumed sibling nodes (caller should detach them after classification).
-///
-/// Only groups `//` style comments (not `/* */` block comments).
-fn group_line_comments(xot: &mut Xot, node: XotNode) -> Result<Vec<XotNode>, xot::Error> {
-    let text = match get_text_content(xot, node) {
-        Some(t) => t,
-        None => return Ok(Vec::new()),
-    };
-
-    // Only group line comments (start with //)
-    let trimmed = text.trim();
-    if !trimmed.starts_with("//") {
-        return Ok(Vec::new());
-    }
-
-    let mut end_line = match get_line(xot, node, "end_line") {
-        Some(l) => l,
-        None => return Ok(Vec::new()),
-    };
-    let mut end_column = get_attr(xot, node, "end_column")
-        .unwrap_or_else(|| "1".to_string());
-
-    let mut consumed: Vec<XotNode> = Vec::new();
-    let mut merged_text = text.clone();
-
-    // Walk following siblings looking for adjacent // comments (skip self)
-    let following: Vec<XotNode> = xot.following_siblings(node)
-        .filter(|&s| s != node && xot.element(s).is_some())
-        .collect();
-
-    for sibling in following {
-        let sibling_kind = match get_kind(xot, sibling) {
-            Some(k) => k,
-            None => break,
-        };
-        if sibling_kind != "comment" {
-            break;
-        }
-
-        let sibling_text = match get_text_content(xot, sibling) {
-            Some(t) => t,
-            None => break,
-        };
-
-        // Must also be a // comment
-        if !sibling_text.trim().starts_with("//") {
-            break;
-        }
-
-        let sibling_start_line = match get_line(xot, sibling, "line") {
-            Some(l) => l,
-            None => break,
-        };
-
-        // Must be on the very next line (adjacent)
-        if sibling_start_line != end_line + 1 {
-            break;
-        }
-
-        // Merge: append text with newline
-        merged_text.push('\n');
-        merged_text.push_str(&sibling_text);
-
-        // Update end line to the consumed sibling's end
-        end_line = get_line(xot, sibling, "end_line").unwrap_or(end_line + 1);
-        end_column = get_attr(xot, sibling, "end_column")
-            .unwrap_or_else(|| end_column.clone());
-
-        consumed.push(sibling);
-    }
-
-    if !consumed.is_empty() {
-        // Replace text content of node with merged text
-        // Remove existing text children
-        let text_children: Vec<XotNode> = xot.children(node)
-            .filter(|&c| xot.text_str(c).is_some())
-            .collect();
-        for child in text_children {
-            xot.detach(child)?;
-        }
-        // Add merged text
-        let new_text = xot.new_text(&merged_text);
-        xot.append(node, new_text)?;
-
-        // Update end attribute to reflect the last consumed comment
-        set_attr(xot, node, "end_line", &end_line.to_string());
-        set_attr(xot, node, "end_column", &end_column);
-    }
-
-    Ok(consumed)
 }
 
 /// Map a transformed element name to a syntax category for highlighting

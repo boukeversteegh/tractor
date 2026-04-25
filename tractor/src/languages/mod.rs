@@ -4,6 +4,7 @@
 //! The shared infrastructure (xot_transform) provides only the walker and helpers.
 
 pub mod info;
+pub mod comments;
 pub mod typescript;
 pub mod csharp;
 pub mod python;
