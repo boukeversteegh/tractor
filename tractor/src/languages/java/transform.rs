@@ -372,82 +372,10 @@ fn is_known_modifier(text: &str) -> bool {
 
 /// Map tree-sitter node kinds to semantic element names.
 ///
-/// Second tuple element is an optional disambiguation marker.
+/// Derived from `semantic::KINDS` — the catalogue is the single source
+/// of truth, this is just the rename projection.
 fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> {
-    match kind {
-        "program" => Some((PROGRAM, None)),
-        "class_declaration" => Some((CLASS, None)),
-        "interface_declaration" => Some((INTERFACE, None)),
-        "enum_declaration" => Some((ENUM, None)),
-        "method_declaration" => Some((METHOD, None)),
-        "constructor_declaration" => Some((CONSTRUCTOR, None)),
-        // constructor_body is flattened (handled above) — the `body` wrapper
-        // already comes from the field-wrapping pass.
-        "field_declaration" => Some((FIELD, None)),
-        "variable_declarator" => Some((DECLARATOR, None)),
-        "local_variable_declaration" => Some((VARIABLE, None)),
-        "enum_constant" => Some((CONSTANT, None)),
-        // formal_parameters and argument_list are flattened via Principle #12 above
-        "formal_parameter" => Some((PARAMETER, None)),
-        "generic_type" => Some((GENERIC, None)),
-        // array_type collapses to <type><array/> so it joins the
-        // uniform namespace of `<type>` references.
-        "array_type" => Some((TYPE, Some(ARRAY))),
-        "scoped_identifier" | "scoped_type_identifier" => Some((PATH, None)),
-        "super_interfaces" => Some((IMPLEMENTS, None)),
-        "superclass" => Some((EXTENDS, None)),
-        "type_bound" => Some((EXTENDS, None)),
-        "type_parameter" => Some((GENERIC, None)),
-        "return_statement" => Some((RETURN, None)),
-        "if_statement" => Some((IF, None)),
-        "else_clause" => Some((ELSE, None)),
-        "for_statement" => Some((FOR, None)),
-        "enhanced_for_statement" => Some((FOREACH, None)),
-        "while_statement" => Some((WHILE, None)),
-        "try_statement" => Some((TRY, None)),
-        "catch_clause" => Some((CATCH, None)),
-        "finally_clause" => Some((FINALLY, None)),
-        "throw_statement" => Some((THROW, None)),
-        "switch_expression" => Some((SWITCH, None)),
-        "switch_rule" => Some((ARM, None)),
-        "switch_label" => Some((LABEL, None)),
-        "switch_block_statement_group" => Some((CASE, None)),
-        "method_invocation" => Some((CALL, None)),
-        "object_creation_expression" => Some((NEW, None)),
-        "field_access" => Some((MEMBER, None)),
-        "array_access" => Some((INDEX, None)),
-        "assignment_expression" => Some((ASSIGN, None)),
-        "binary_expression" => Some((BINARY, None)),
-        "unary_expression" => Some((UNARY, None)),
-        // ternary_expression handled above
-        "lambda_expression" => Some((LAMBDA, None)),
-        "string_literal" => Some((STRING, None)),
-        "decimal_integer_literal" | "hex_integer_literal"
-        | "octal_integer_literal" | "binary_integer_literal" => Some((INT, None)),
-        // Patterns — `instanceof T x` and record patterns both collapse
-        // to `<pattern>` with a shape marker so the flavor is queryable.
-        "type_pattern" => Some((PATTERN, Some(TYPE))),
-        "record_pattern" => Some((PATTERN, Some(RECORD))),
-        "switch_block" => Some((BODY, None)),
-        // varargs `T... name` — flag with <variadic/> so queries can
-        // distinguish from a regular parameter.
-        "spread_parameter" => Some((PARAMETER, Some(VARIADIC))),
-        "decimal_floating_point_literal" => Some((FLOAT, None)),
-        // `record R(...)` — Java 14+ records. Same slot as <class>/etc.
-        "record_declaration" => Some((RECORD, None)),
-        // `record R(...) { R { … } }` — compact constructor syntax
-        // without an explicit parameter list.
-        "compact_constructor_declaration" => Some((CONSTRUCTOR, Some(COMPACT))),
-        // `@Override` bare marker annotation — collapse to <annotation>.
-        "marker_annotation" => Some((ANNOTATION, None)),
-        "annotation" => Some((ANNOTATION, None)),
-        "true" => Some((TRUE, None)),
-        "false" => Some((FALSE, None)),
-        "null_literal" => Some((NULL, None)),
-        "import_declaration" => Some((IMPORT, None)),
-        "package_declaration" => Some((PACKAGE, None)),
-        _ => None,
-    }
+    super::semantic::rename_target(kind)
 }
 
 /// Extract operator from text children and add as `<op>` child element
