@@ -293,6 +293,20 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
 
         // ---------------------------------------------------------------------
+        // Comments — tree-sitter typescript / javascript emits a single
+        // `comment` kind for both `//` and `/* */`. The map_element_name
+        // table renames it to <comment>; here we layer the shared
+        // trailing / leading / floating classifier on top so the shape
+        // matches C# / Rust / Java.
+        // ---------------------------------------------------------------------
+        "comment" => {
+            rename(xot, node, COMMENT);
+            static CLASSIFIER: crate::languages::comments::CommentClassifier =
+                crate::languages::comments::CommentClassifier { line_prefixes: &["//"] };
+            CLASSIFIER.classify_and_group(xot, node, TRAILING, LEADING)
+        }
+
+        // ---------------------------------------------------------------------
         // Other nodes - just rename if needed
         // ---------------------------------------------------------------------
         _ => {

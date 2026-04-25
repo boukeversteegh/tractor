@@ -412,20 +412,23 @@ mod comments {
             &mut tree, "//line_comment | //block_comment", 0);
     }
 
-    /// TypeScript (and JS) currently emit bare `<comment>` with no
-    /// leading/trailing classification — the C# attachment classifier
-    /// hasn't been ported yet (see proposal C1). When it lands, add
-    /// the classification claims here mirroring `csharp()`.
+    /// TypeScript (and JS) share C#'s trailing / leading / floating
+    /// classifier — `//` and `/* */` are both tree-sitter `comment`
+    /// nodes; the shared classifier handles them uniformly.
     #[test]
     fn typescript() {
         let mut tree = parse_src(
             "typescript",
             r#"
-                // single
+                // floating one
+
                 class X {
                     x: number; // inline
-                    /* block */
+                    // before y
+                    // also before y
                     y: string;
+                    /* block */
+                    z: boolean;
                     /** JSDoc */
                     method() {}
                 }
@@ -433,7 +436,7 @@ mod comments {
         );
 
         claim("`//` line comment becomes <comment>",
-            &mut tree, "//comment[.='// single']", 1);
+            &mut tree, "//comment[.='// floating one']", 1);
 
         claim("`/* */` block becomes <comment>",
             &mut tree, "//comment[.='/* block */']", 1);
@@ -443,6 +446,28 @@ mod comments {
 
         claim("no raw tree-sitter `line_comment` / `block_comment` leaks",
             &mut tree, "//line_comment | //block_comment", 0);
+
+        claim("inline `//` after `;` is trailing",
+            &mut tree, "//comment[trailing][.='// inline']", 1);
+
+        claim("two adjacent `//` comments before `y` merge into one <comment>",
+            &mut tree, &multi_xpath("
+                //comment[leading]
+                    [contains(., 'before y')]
+                    [contains(., 'also before y')]
+            "), 1);
+
+        claim("block comment `/* block */` is leading on `z`",
+            &mut tree, "//comment[leading][.='/* block */']", 1);
+
+        claim("JSDoc is leading on the method",
+            &mut tree, "//comment[leading][starts-with(., '/**')]", 1);
+
+        claim("blank-line break: `// floating one` carries no marker",
+            &mut tree, "//comment[.='// floating one'][not(leading) and not(trailing)]", 1);
+
+        claim("trailing and leading are mutually exclusive",
+            &mut tree, "//comment[trailing and leading]", 0);
     }
 
     /// Python `#` comments. Tree-sitter calls them `comment`; tractor

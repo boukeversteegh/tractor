@@ -1,9 +1,5 @@
 program/
   ├─ comment
-  ├─ comment
-  ├─ comment
-  ├─ comment
-  ├─ comment
   ├─ import/
   │   ├─ clause/
   │   │   ├─ name
@@ -32,7 +28,7 @@ program/
   │       │   └─ type[infer]/type/name
   │       ├─ then/type/name
   │       └─ type/name
-  ├─ comment
+  ├─ comment[leading]
   ├─ export/interface/
   │   ├─ name
   │   ├─ generics/generic/
@@ -109,7 +105,7 @@ program/
   │       └─ constant/
   │           ├─ name
   │           └─ value/string
-  ├─ comment
+  ├─ comment[leading]
   ├─ export/class[abstract]/
   │   ├─ name
   │   ├─ generics/generic/
@@ -396,7 +392,7 @@ program/
   │       │       │   │   └─ name
   │       │       │   └─ property/name
   │       │       └─ string
-  │       ├─ comment
+  │       ├─ comment[trailing]
   │       ├─ variable[const]/
   │       │   ├─ name
   │       │   └─ value/object/
@@ -421,7 +417,7 @@ program/
   │       └─ return/satisfies/
   │           ├─ name
   │           └─ type/name
-  ├─ comment
+  ├─ comment[leading]
   ├─ export/function/
   │   ├─ name
   │   ├─ parameter[required]/

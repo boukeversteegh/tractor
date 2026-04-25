@@ -114,6 +114,10 @@ pub const CONSTRAINT: &str = "constraint";
 pub const NAME: &str = "name";
 pub const COMMENT: &str = "comment";
 
+// Comment markers — emitted by the shared CommentClassifier.
+pub const TRAILING: &str = "trailing";
+pub const LEADING: &str = "leading";
+
 // Switch default — dual-use; see NODES below.
 pub const DEFAULT: &str = "default";
 
@@ -278,6 +282,10 @@ pub const NODES: &[NodeSpec] = &[
     // DEFAULT — dual-use (marker modifier AND switch_default container).
     NodeSpec { name: DEFAULT, marker: true,  container: true, syntax: Keyword },
     NodeSpec { name: OP,      marker: false, container: true, syntax: Operator },
+
+    // Comment markers
+    NodeSpec { name: TRAILING, marker: true, container: false, syntax: Default },
+    NodeSpec { name: LEADING,  marker: true, container: false, syntax: Default },
 
     // Accessibility / modifier markers
     NodeSpec { name: PUBLIC,    marker: true, container: false, syntax: Keyword },
