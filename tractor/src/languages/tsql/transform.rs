@@ -7,16 +7,61 @@ use crate::output::syntax_highlight::SyntaxCategory;
 use super::semantic::*;
 
 
-/// Transform a T-SQL AST node
+/// Transform a T-SQL AST node.
+///
+/// Dispatch is split in two:
+///   1. If the node carries a `kind` attribute (set by the builder from
+///      the original tree-sitter kind), match on that — it never changes
+///      mid-walk, so an arm like `"identifier"` always wins.
+///   2. Otherwise the node is a builder-inserted field wrapper
+///      (`<name>`, `<value>`, `<left>`, `<right>`, `<then>`, …). Match
+///      on the element name for the few wrappers we need to handle.
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    let kind = match get_element_name(xot, node) {
+    let kind = match get_kind(xot, node) {
         Some(k) => k,
-        None => return Ok(TransformAction::Continue),
+        None => {
+            // Builder-inserted wrapper (no `kind` attribute).
+            let name = get_element_name(xot, node).unwrap_or_default();
+            return match name.as_str() {
+                // Field wrappers tsql doesn't need around expressions —
+                // flatten so the inner expression bubbles up.
+                "value" | "left" | "right" => Ok(TransformAction::Skip),
+
+                // <name> wrapper — inline identifier text (with bracket
+                // stripping and @var detection).
+                "name" => {
+                    let children: Vec<_> = xot.children(node).collect();
+                    for child in children {
+                        if let Some(child_name) = get_element_name(xot, child) {
+                            if child_name == "identifier" {
+                                if let Some(text) = get_text_content(xot, child) {
+                                    let all_children: Vec<_> = xot.children(node).collect();
+                                    for c in all_children {
+                                        xot.detach(c)?;
+                                    }
+                                    if text.starts_with('@') {
+                                        // @variable → <var>variable</var>
+                                        let text_node = xot.new_text(&text[1..]);
+                                        xot.append(node, text_node)?;
+                                        rename(xot, node, VAR);
+                                    } else {
+                                        let clean = strip_brackets(&text);
+                                        let text_node = xot.new_text(&clean);
+                                        xot.append(node, text_node)?;
+                                    }
+                                    return Ok(TransformAction::Done);
+                                }
+                            }
+                        }
+                    }
+                    Ok(TransformAction::Continue)
+                }
+                _ => Ok(TransformAction::Continue),
+            };
+        }
     };
 
     match kind.as_str() {
-        // Skip expression wrappers - flatten children up
-        "value" | "left" | "right" => Ok(TransformAction::Skip),
         // Use Flatten for term instead of Skip to avoid freed-node issue
         "term" => Ok(TransformAction::Flatten),
 
@@ -38,35 +83,6 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Unary expressions - handle #temp_table references
         "unary_expression" => {
             transform_unary(xot, node)?;
-            Ok(TransformAction::Continue)
-        }
-
-        // Name wrappers - inline identifier text (with bracket stripping and @var detection)
-        "name" => {
-            let children: Vec<_> = xot.children(node).collect();
-            for child in children {
-                if let Some(child_name) = get_element_name(xot, child) {
-                    if child_name == "identifier" {
-                        if let Some(text) = get_text_content(xot, child) {
-                            let all_children: Vec<_> = xot.children(node).collect();
-                            for c in all_children {
-                                xot.detach(c)?;
-                            }
-                            if text.starts_with('@') {
-                                // @variable → <var>variable</var>
-                                let text_node = xot.new_text(&text[1..]);
-                                xot.append(node, text_node)?;
-                                rename(xot, node, VAR);
-                            } else {
-                                let clean = strip_brackets(&text);
-                                let text_node = xot.new_text(&clean);
-                                xot.append(node, text_node)?;
-                            }
-                            return Ok(TransformAction::Done);
-                        }
-                    }
-                }
-            }
             Ok(TransformAction::Continue)
         }
 
