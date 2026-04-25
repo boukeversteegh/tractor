@@ -71,7 +71,6 @@ const FEATURE_FIXTURES: &[(&str, &str, u32, bool)] = &[
     // by ~60% on this 1561-line snapshot. Text preservation is
     // enforced separately by `tests/text_preservation.rs`.
     ("tests/integration/languages/csharp/blueprint.cs", "//unit", 0, true),
-    ("tests/integration/features/comments/comments.cs", "//class[name='Demo']", 3, false),
 
     // — Rust —
     // Blueprint snapshot uses shape projection: tree structure +
