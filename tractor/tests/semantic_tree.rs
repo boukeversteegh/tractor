@@ -2127,37 +2127,35 @@ mod interpolation_shape {
 //
 // Convention:
 //   - Source code uses raw strings, indented to fit the test.
-//   - XPath strings span multiple lines under `multi_xpath()` (drops
-//     whitespace OUTSIDE string literals; quote-aware so spaces inside
-//     `[.='…']` predicates are preserved).
-//   - **Indent so the path mirrors the tree.** Two styles work — pick
-//     whichever reads better for a given assertion:
+//   - **Be compact.** A shape claim should fit on one line whenever
+//     the path is short and the predicates fit. Only break across
+//     lines when the path is genuinely deep, or when several sibling
+//     structural conditions need their own line for clarity.
 //
-//     **a) Path style** (counts the leaf node):
+//   - When breaking, indent so the path mirrors the tree. Two
+//     equivalent styles — pick whichever reads better:
+//
+//     **Path** — counts the leaf:
 //     ```
 //     //class
 //         /body
-//             /comment[trailing]
-//                 [.='// instance counter']
+//             /method[public][returns/type[name='int']]
 //     ```
 //
-//     **b) Bracket-predicate style** (counts the root; nesting is the
-//     `[…]` predicate, which carries the hierarchy without separate
-//     indentation columns):
+//     **Bracket-predicate** — counts the root; nesting via `[…]`:
 //     ```
 //     //class[
-//         body[
-//             comment[trailing]
-//                 [.='// instance counter']
-//         ]
+//         body/method[public][returns/type[name='int']]
 //     ]
 //     ```
 //
-//   The two return different node sets (path returns `<comment>`,
-//   bracket returns `<class>`), so the `expected` count differs
-//   accordingly — but both prove the same shape exists.
+//   - Combine sibling predicates on the same node with `and`:
+//     `comment[not(leading) and not(trailing)]` — not separate `[…]`
+//     blocks. Bracket nesting is for HIERARCHY only.
 //
-//   - Assertions are claims about the post-transform tree's shape.
+//   - Don't mention things you don't care about. If the test is about
+//     trailing comments, write `//comment[trailing]`, not
+//     `//class/body/comment[trailing]` — unless the position matters.
 // ===========================================================================
 
 /// Pretty-print helper for multi-line XPath. Drops whitespace
@@ -2205,43 +2203,28 @@ mod comments {
             "#,
         );
 
-        // Trailing single-line: same line as predecessor's end token.
         assert_count(
             &mut tree,
-            &multi_xpath("
-                //class
-                    /body
-                        /comment[trailing]
-                            [.='// instance counter']
-            "),
+            "//comment[trailing][.='// instance counter']",
             1,
             "single-line comment after `;` on the same line is <trailing/>",
         );
 
-        // Adjacent line-comments merge into one <comment>; the merged
-        // comment is the <leading/> on the property below it.
+        // Adjacent // comments merge into one <comment>; merged block is <leading/>.
         assert_count(
             &mut tree,
             &multi_xpath("
-                //class
-                    /body
-                        /comment[leading]
-                            [contains(., 'Configuration settings')]
-                            [contains(., 'loaded from environment')]
+                //comment[leading]
+                    [contains(., 'Configuration settings')]
+                    [contains(., 'loaded from environment')]
             "),
             1,
-            "adjacent // line comments merge; the merged block is <leading/>",
+            "adjacent // line comments merge; merged block is <leading/>",
         );
 
-        // Block comment immediately before a declaration is <leading/>.
         assert_count(
             &mut tree,
-            &multi_xpath("
-                //class
-                    /body
-                        /comment[leading]
-                            [.='/* block comment */']
-            "),
+            "//comment[leading][.='/* block comment */']",
             1,
             "block comment immediately preceding a declaration is <leading/>",
         );
@@ -2259,22 +2242,11 @@ mod comments {
                 }
             "#,
         );
-        // Bracket-predicate style — counts the <class> that contains
-        // exactly one floating <comment> (blank line breaks the
-        // leading-attachment window, so neither marker should fire).
+        // Floating comment (blank line breaks the leading-attachment window):
+        // neither <leading/> nor <trailing/> marker fires.
         assert_count(
             &mut tree,
-            &multi_xpath("
-                //class[
-                    body[
-                        comment[
-                            not(leading)
-                        ][
-                            not(trailing)
-                        ]
-                    ]
-                ]
-            "),
+            "//comment[not(leading) and not(trailing)]",
             1,
             "floating comments have no attachment marker",
         );
