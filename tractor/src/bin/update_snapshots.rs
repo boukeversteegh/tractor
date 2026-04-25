@@ -81,7 +81,11 @@ const FEATURE_FIXTURES: &[(&str, &str, u32, bool)] = &[
     ("tests/integration/features/type-vocabulary/type-vocabulary.java", "//class[name='Dog']", 3, false),
 
     // — C# —
-    ("tests/integration/languages/csharp/blueprint.cs", "//unit", 0, false),
+    // Blueprint snapshot uses shape projection: tree structure +
+    // queryable markers, no source text. Reduces review-surface noise
+    // by ~60% on this 1561-line snapshot. Text preservation is
+    // enforced separately by `tests/text_preservation.rs`.
+    ("tests/integration/languages/csharp/blueprint.cs", "//unit", 0, true),
     ("tests/integration/features/accessor-flattening/accessor-flattening.cs", "//property[name='Manual']", 4, false),
     ("tests/integration/features/comments/comments.cs", "//class[name='Demo']", 3, false),
     ("tests/integration/features/conditionals/conditionals.cs", "//if", 3, false),
