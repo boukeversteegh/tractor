@@ -1878,64 +1878,6 @@ mod ruby {
 }
 
 // ===========================================================================
-// PHP
-// ===========================================================================
-
-mod php {
-    use super::*;
-
-    /// Principle #9 — class members carry an exhaustive visibility
-    /// marker. Explicit `public/private/protected` keywords lift to
-    /// markers, and members without a keyword get implicit `<public/>`
-    /// (PHP's default).
-    #[test]
-    fn visibility_markers_exhaustive() {
-        let mut tree = parse_src(
-            "php",
-            "<?php class X { function foo() {} private function bar() {} protected function baz() {} public function qux() {} }",
-        );
-        assert_count(
-            &mut tree,
-            "//method[public]",
-            2,
-            "implicit default and explicit public both carry <public/>",
-        );
-        assert_count(
-            &mut tree,
-            "//method[private]",
-            1,
-            "explicit private carries <private/>",
-        );
-        assert_count(
-            &mut tree,
-            "//method[protected]",
-            1,
-            "explicit protected carries <protected/>",
-        );
-    }
-
-    /// Class properties follow the same defaults as methods.
-    #[test]
-    fn property_visibility_defaults_public() {
-        let mut tree = parse_src(
-            "php",
-            "<?php class X { public $a; $b; private $c; }",
-        );
-        assert_count(
-            &mut tree,
-            "//field[public]",
-            2,
-            "explicit and implicit public both carry <public/>",
-        );
-        assert_count(
-            &mut tree,
-            "//field[private]",
-            1,
-            "explicit private field carries <private/>",
-        );
-    }
-}
-// ===========================================================================
 // Cross-language: decorator / annotation / attribute topology
 //
 // The element name is idiomatic per language (Python uses <decorator>,
@@ -3118,6 +3060,154 @@ mod visibility {
 
         claim("private const carries <private/>",
             &mut tree, "//const[private][name='PRIV']", 1);
+    }
+
+    /// TypeScript class members carry an exhaustive visibility marker:
+    /// explicit `public/private/protected` keywords lift to markers,
+    /// and members without a keyword get an implicit <public/> (TS
+    /// default). Fields and methods follow the same rules.
+    #[test]
+    fn typescript() {
+        let mut tree = parse_src("typescript", r#"
+            class X {
+                foo() {}
+                private bar() {}
+                protected baz() {}
+                public qux() {}
+
+                x = 1;
+                private y = 2;
+            }
+        "#);
+
+        claim("implicit default and explicit public both carry <public/> on methods",
+            &mut tree, "//method[public]", 2);
+
+        claim("explicit private method carries <private/>",
+            &mut tree, "//method[private]", 1);
+
+        claim("explicit protected method carries <protected/>",
+            &mut tree, "//method[protected]", 1);
+
+        claim("unmarked field defaults to <public/>",
+            &mut tree, "//field[public]", 1);
+
+        claim("explicit private field carries <private/>",
+            &mut tree, "//field[private]", 1);
+    }
+
+    /// PHP class members carry an exhaustive visibility marker:
+    /// explicit `public/private/protected` keywords lift to markers,
+    /// and members without a keyword get implicit <public/> (PHP
+    /// default). Methods and properties follow the same rules.
+    #[test]
+    fn php() {
+        let mut tree = parse_src("php", r#"<?php
+            class X {
+                function foo() {}
+                private function bar() {}
+                protected function baz() {}
+                public function qux() {}
+
+                public $a;
+                $b;
+                private $c;
+            }
+        "#);
+
+        claim("implicit default and explicit public both carry <public/> on methods",
+            &mut tree, "//method[public]", 2);
+
+        claim("explicit private method carries <private/>",
+            &mut tree, "//method[private]", 1);
+
+        claim("explicit protected method carries <protected/>",
+            &mut tree, "//method[protected]", 1);
+
+        claim("explicit and implicit public properties both carry <public/>",
+            &mut tree, "//field[public]", 2);
+
+        claim("explicit private property carries <private/>",
+            &mut tree, "//field[private]", 1);
+    }
+
+    /// Python visibility uses naming convention: bare → public,
+    /// `_x` → protected, `__x` → private. Dunders (`__init__`) are
+    /// conventional protocol hooks and count as public. The
+    /// convention applies ONLY to class members; module-level
+    /// functions are not classified.
+    #[test]
+    fn python() {
+        let mut class_tree = parse_src("python", r#"
+class X:
+    def foo(self): pass
+    def _bar(self): pass
+    def __baz(self): pass
+    def __init__(self): pass
+"#);
+
+        claim("bare name and dunder both count as public",
+            &mut class_tree, "//function[public]", 2);
+
+        claim("single-underscore prefix means protected",
+            &mut class_tree, "//function[protected]", 1);
+
+        claim("double-underscore prefix means private",
+            &mut class_tree, "//function[private]", 1);
+
+        let mut module_tree = parse_src("python", r#"
+def foo(): pass
+def _bar(): pass
+"#);
+
+        claim("module-level functions skip the visibility injection (no public)",
+            &mut module_tree, "//function[public]", 0);
+
+        claim("module-level functions skip the visibility injection (no protected)",
+            &mut module_tree, "//function[protected]", 0);
+    }
+
+    /// Go uses Go's name-capitalization export rule for visibility:
+    /// every declaration carries an exhaustive <exported/> or
+    /// <unexported/> marker. Applies to functions, types, and struct
+    /// fields uniformly.
+    #[test]
+    fn go() {
+        let mut tree = parse_src("go", r#"
+            package main
+
+            func Public() {}
+            func private() {}
+
+            type Exported int
+            type unexported int
+
+            type T struct {
+                Public string
+                private string
+            }
+        "#);
+
+        claim("exported function carries <exported/>",
+            &mut tree, "//function[exported]", 1);
+
+        claim("unexported function carries <unexported/>",
+            &mut tree, "//function[unexported]", 1);
+
+        claim("every function carries one of the two markers",
+            &mut tree, "//function[not(exported) and not(unexported)]", 0);
+
+        claim("exported type carries <exported/>",
+            &mut tree, "//type[exported]", 1);
+
+        claim("unexported type carries <unexported/>",
+            &mut tree, "//type[unexported]", 1);
+
+        claim("capitalised struct field carries <exported/>",
+            &mut tree, "//field[exported]", 1);
+
+        claim("lower-case struct field carries <unexported/>",
+            &mut tree, "//field[unexported]", 1);
     }
 }
 
