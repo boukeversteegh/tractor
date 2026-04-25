@@ -56,6 +56,21 @@ fn assert_count(tree: &mut XeeParseResult, xpath: &str, expected: usize, invaria
     );
 }
 
+/// Reason-first shape claim — same effect as `assert_count` but the
+/// reason reads before the technical XPath, which is much easier to
+/// scan in lists of consecutive claims about a single tree.
+///
+/// Convention: `claim("reason it should hold", tree, xpath, expected)`.
+#[track_caller]
+fn claim(reason: &str, tree: &mut XeeParseResult, xpath: &str, expected: usize) {
+    let got = query(tree, xpath).len();
+    assert_eq!(
+        got, expected,
+        "Shape claim violated — {}\n  query: `{}`\n  matched {} nodes, expected {}",
+        reason, xpath, got, expected
+    );
+}
+
 /// Assert the query returns at least one match whose text value
 /// equals `expected`.
 #[track_caller]
@@ -2185,70 +2200,52 @@ fn multi_xpath(s: &str) -> String {
 mod comments {
     use super::*;
 
+    /// One test per language. The source snippet is a deliberate
+    /// kitchen-sink for THIS feature — every comment variant the
+    /// language has appears once, and the assertions probe the
+    /// resulting shape. One parse, many claims.
     #[test]
-    fn csharp_classifies_attachment() {
+    fn csharp() {
         let mut tree = parse_src(
             "csharp",
             r#"
                 class Demo {
-                    private int _count; // instance counter
+                    private int _count; // trailing single
 
-                    // Configuration settings
-                    // loaded from environment
+                    // leading first
+                    // leading second
                     public string Config { get; set; }
 
-                    /* block comment */
+                    /* leading block */
                     public void Run() {}
+
+                    // floating
+
+                    public int Solo() => 0;
                 }
             "#,
         );
 
-        assert_count(
-            &mut tree,
-            "//comment[trailing][.='// instance counter']",
-            1,
-            "single-line comment after `;` on the same line is <trailing/>",
-        );
+        claim("single-line `//` after `;` on same line is trailing",
+            &mut tree, "//comment[trailing][.='// trailing single']", 1);
 
-        // Adjacent // comments merge into one <comment>; merged block is <leading/>.
-        assert_count(
-            &mut tree,
-            &multi_xpath("
+        claim("adjacent `//` comments merge into one <comment>",
+            &mut tree, &multi_xpath("
                 //comment[leading]
-                    [contains(., 'Configuration settings')]
-                    [contains(., 'loaded from environment')]
-            "),
-            1,
-            "adjacent // line comments merge; merged block is <leading/>",
-        );
+                    [contains(., 'leading first')]
+                    [contains(., 'leading second')]
+            "), 1);
 
-        assert_count(
-            &mut tree,
-            "//comment[leading][.='/* block comment */']",
-            1,
-            "block comment immediately preceding a declaration is <leading/>",
-        );
-    }
+        claim("block `/* */` immediately before a decl is leading",
+            &mut tree, "//comment[leading][.='/* leading block */']", 1);
 
-    #[test]
-    fn csharp_unattached_comment_has_no_marker() {
-        let mut tree = parse_src(
-            "csharp",
-            r#"
-                class X {
-                    // standalone with blank line after
+        claim("blank-line break: floating comment has no marker",
+            &mut tree, "//comment[.='// floating'][not(leading) and not(trailing)]", 1);
 
-                    public int X() => 0;
-                }
-            "#,
-        );
-        // Floating comment (blank line breaks the leading-attachment window):
-        // neither <leading/> nor <trailing/> marker fires.
-        assert_count(
-            &mut tree,
-            "//comment[not(leading) and not(trailing)]",
-            1,
-            "floating comments have no attachment marker",
-        );
+        claim("trailing and leading are mutually exclusive",
+            &mut tree, "//comment[trailing and leading]", 0);
+
+        claim("no raw tree-sitter `line_comment` / `block_comment` leaks",
+            &mut tree, "//line_comment | //block_comment", 0);
     }
 }
