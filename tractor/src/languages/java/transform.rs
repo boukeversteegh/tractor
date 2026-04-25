@@ -179,10 +179,14 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
         // Tree-sitter Java emits `line_comment` and `block_comment` —
         // both are just "comment" in every semantic query. Rename to
-        // the shared `<comment>` vocabulary. Principle #1 / #2.
+        // the shared `<comment>` vocabulary, then classify (trailing /
+        // leading / floating) and merge consecutive `//` lines via the
+        // shared classifier. Principle #1 / #2.
         "line_comment" | "block_comment" => {
             rename(xot, node, COMMENT);
-            Ok(TransformAction::Continue)
+            static CLASSIFIER: crate::languages::comments::CommentClassifier =
+                crate::languages::comments::CommentClassifier { line_prefixes: &["//"] };
+            CLASSIFIER.classify_and_group(xot, node, TRAILING, LEADING)
         }
         // `string_fragment` is tree-sitter's wrapper around the
         // unescaped body chars of a string literal — lift the text

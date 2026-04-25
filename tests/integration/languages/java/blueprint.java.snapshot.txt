@@ -1,8 +1,5 @@
 program/
   ├─ comment
-  ├─ comment
-  ├─ comment
-  ├─ comment
   ├─ package/path/
   │   ├─ path/
   │   │   ├─ name
@@ -32,7 +29,7 @@ program/
   │   │   │   └─ name
   │   │   └─ name
   │   └─ name
-  ├─ comment
+  ├─ comment[leading]
   ├─ class[public and final]/
   │   ├─ annotation/
   │   │   ├─ name
@@ -49,7 +46,7 @@ program/
   │   │   └─ type/name
   │   └─ body/
   │       ├─ comment
-  │       ├─ comment
+  │       ├─ comment[leading]
   │       ├─ field[public and static and final]/
   │       │   ├─ type/name
   │       │   └─ declarator/
@@ -69,7 +66,7 @@ program/
   │       ├─ field[package]/
   │       │   ├─ type/name
   │       │   └─ declarator/name
-  │       ├─ comment
+  │       ├─ comment[trailing]
   │       ├─ field[package and transient and volatile]/
   │       │   ├─ type/name
   │       │   └─ declarator/name

@@ -474,6 +474,53 @@ class X:
             &mut tree, "//class//string[contains(., 'docstring')]", 1);
     }
 
+    /// Java mirrors C# (both `//` and `/* */`). Same trailing /
+    /// leading / floating classification + line-comment grouping.
+    #[test]
+    fn java() {
+        let mut tree = parse_src(
+            "java",
+            r#"
+                class Demo {
+                    private int count; // trailing single
+
+                    // leading first
+                    // leading second
+                    public String name;
+
+                    /* leading block */
+                    public void run() {}
+
+                    // floating
+
+                    public int solo() { return 0; }
+                }
+            "#,
+        );
+
+        claim("single-line `//` after `;` on same line is trailing",
+            &mut tree, "//comment[trailing][.='// trailing single']", 1);
+
+        claim("adjacent `//` comments merge into one <comment>",
+            &mut tree, &multi_xpath("
+                //comment[leading]
+                    [contains(., 'leading first')]
+                    [contains(., 'leading second')]
+            "), 1);
+
+        claim("block `/* */` immediately before a decl is leading",
+            &mut tree, "//comment[leading][.='/* leading block */']", 1);
+
+        claim("blank-line break: floating comment has no marker",
+            &mut tree, "//comment[.='// floating'][not(leading) and not(trailing)]", 1);
+
+        claim("trailing and leading are mutually exclusive",
+            &mut tree, "//comment[trailing and leading]", 0);
+
+        claim("no raw tree-sitter `line_comment` / `block_comment` leaks",
+            &mut tree, "//line_comment | //block_comment", 0);
+    }
+
     /// Rust has 4 comment kinds: `//`, `/* */`, doc `///`, inner doc
     /// `//!`. All collapse to `<comment>`.
     #[test]
