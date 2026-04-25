@@ -250,104 +250,12 @@ fn get_deep_identifier_text(xot: &Xot, node: XotNode) -> Option<String> {
     None
 }
 
+/// Map tree-sitter node kinds to semantic element names.
+///
+/// Derived from `semantic::KINDS` — the catalogue is the single source
+/// of truth, this is just the rename projection.
 fn map_element_name(kind: &str) -> Option<&'static str> {
-    match kind {
-        // Top-level
-        "program" => Some(FILE),
-        "statement" => Some(STATEMENT),
-
-        // DML statements
-        "select" => Some(SELECT),
-        "insert" => Some(INSERT),
-        "delete" => Some(DELETE),
-        "update" => Some(UPDATE),
-
-        // Clauses
-        "from" => Some(FROM),
-        "where" => Some(WHERE),
-        "order_by" => Some(ORDER),
-        "order_target" => Some(TARGET),
-        "group_by" => Some(GROUP),
-        "having" => Some(HAVING),
-        "join" => Some(JOIN),
-        "direction" => Some(DIRECTION),
-
-        // References and columns
-        "relation" => Some(RELATION),
-        "object_reference" => Some(REF),
-        "field" => Some(COLUMN),
-        "column" => Some(COL),
-        "all_fields" => Some(STAR),
-
-        // Literals and values
-        "literal" => Some(LITERAL),
-        "list" => Some(LIST),
-
-        // Functions/calls
-        "invocation" => Some(CALL),
-        "function_body" => Some(BODY),
-        "function_arguments" | "function_argument" => Some(ARG),
-
-        // Subqueries, CTEs, set operations
-        "subquery" => Some(SUBQUERY),
-        "cte" => Some(CTE),
-        "set_operation" => Some(UNION),
-        "exists" => Some(EXISTS),
-
-        // Window functions
-        "window_function" => Some(WINDOW),
-        "window_specification" => Some(OVER),
-        "partition_by" => Some(PARTITION),
-
-        // CASE expression
-        "case" => Some(CASE),
-        "when_clause" => Some(WHEN),
-
-        // CAST
-        "cast" => Some(CAST),
-
-        // DDL
-        "create_table" => Some(CREATE),
-        "column_definitions" => Some(COLUMNS),
-        "column_definition" => Some(DEFINITION),
-
-        // MERGE
-        "merge" => Some(MERGE),
-
-        // Transactions
-        "transaction" => Some(TRANSACTION),
-
-        // SET variable
-        "set_statement" => Some(SET),
-
-        // CREATE FUNCTION — function variant.
-        "create_function" => Some(FUNCTION),
-
-        // GO batch separator
-        "go_statement" => Some(GO),
-
-        // EXEC
-        "execute_statement" => Some(EXEC),
-
-        // ALTER TABLE
-        "alter_table" => Some(ALTER_TABLE),
-        "add_column" => Some(ADD_COLUMN),
-
-        // CREATE INDEX
-        "create_index" => Some(CREATE_INDEX),
-        "index_fields" => Some(INDEX_FIELDS),
-
-        // Data types
-        "int" => Some(INT),
-        "varchar" => Some(VARCHAR),
-        "nvarchar" => Some(NVARCHAR),
-        "datetime" => Some(DATETIME),
-
-        // Assignment
-        "assignment" => Some(ASSIGN),
-
-        _ => None,
-    }
+    super::semantic::rename_target(kind)
 }
 
 fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
