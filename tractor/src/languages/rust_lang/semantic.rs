@@ -1,7 +1,7 @@
 /// Semantic element names — tractor's Rust XML vocabulary after transform.
 /// Tree-sitter kind strings (left side of `match` arms) stay as bare
 /// literals — they are external vocabulary.
-use crate::languages::NodeSpec;
+use crate::languages::{KindEntry, KindHandling, NodeSpec};
 use crate::output::syntax_highlight::SyntaxCategory;
 
 // Named constants retained for use by the transform code. The NODES
@@ -245,6 +245,168 @@ pub const NODES: &[NodeSpec] = &[
     NodeSpec { name: BASE,       marker: true, container: false, syntax: Default },
     NodeSpec { name: SLICE,      marker: true, container: false, syntax: Default },
 ];
+
+/// Tree-sitter kind catalogue — single source of truth for every
+/// kind the Rust transform handles. Sorted alphabetically by kind name.
+/// See `KindHandling` for variant semantics.
+pub const KINDS: &[KindEntry] = &[
+    KindEntry { kind: "abstract_type",                 handling: KindHandling::RenameWithMarker(TYPE, ABSTRACT) },
+    KindEntry { kind: "arguments",                     handling: KindHandling::Flatten },
+    KindEntry { kind: "array_type",                    handling: KindHandling::RenameWithMarker(TYPE, ARRAY) },
+    KindEntry { kind: "associated_type",               handling: KindHandling::RenameWithMarker(TYPE, ASSOCIATED) },
+    KindEntry { kind: "async_block",                   handling: KindHandling::RenameWithMarker(BLOCK, ASYNC) },
+    // `#[…]` outer attribute meta-item; matches our semantic vocabulary
+    // and passes through the dispatcher unchanged. The wrapping
+    // `attribute_item` (`#[`/`]`) is flattened.
+    KindEntry { kind: "attribute",                     handling: KindHandling::PassThrough },
+    KindEntry { kind: "attribute_item",                handling: KindHandling::Flatten },
+    KindEntry { kind: "await_expression",              handling: KindHandling::Rename(AWAIT) },
+    KindEntry { kind: "base_field_initializer",        handling: KindHandling::RenameWithMarker(FIELD, BASE) },
+    KindEntry { kind: "binary_expression",             handling: KindHandling::CustomThenRename(BINARY) },
+    KindEntry { kind: "block",                         handling: KindHandling::Flatten },
+    KindEntry { kind: "block_comment",                 handling: KindHandling::Custom },
+    KindEntry { kind: "boolean_literal",               handling: KindHandling::Rename(BOOL) },
+    KindEntry { kind: "bounded_type",                  handling: KindHandling::RenameWithMarker(TYPE, BOUNDED) },
+    KindEntry { kind: "break_expression",              handling: KindHandling::Rename(BREAK) },
+    KindEntry { kind: "break_statement",               handling: KindHandling::Rename(BREAK) },
+    KindEntry { kind: "call_expression",               handling: KindHandling::Rename(CALL) },
+    KindEntry { kind: "char_literal",                  handling: KindHandling::Rename(CHAR) },
+    KindEntry { kind: "closure_expression",            handling: KindHandling::Rename(CLOSURE) },
+    KindEntry { kind: "closure_parameters",            handling: KindHandling::Flatten },
+    KindEntry { kind: "compound_assignment_expr",      handling: KindHandling::Rename(ASSIGN) },
+    KindEntry { kind: "const_block",                   handling: KindHandling::RenameWithMarker(BLOCK, CONST) },
+    KindEntry { kind: "const_item",                    handling: KindHandling::CustomThenRename(CONST) },
+    KindEntry { kind: "continue_expression",           handling: KindHandling::Rename(CONTINUE) },
+    KindEntry { kind: "continue_statement",            handling: KindHandling::Rename(CONTINUE) },
+    // Tree-sitter leaf for the `crate` keyword (e.g. inside a use path
+    // segment). Kept as a marker token in our semantic vocabulary.
+    KindEntry { kind: "crate",                         handling: KindHandling::PassThrough },
+    KindEntry { kind: "declaration_list",              handling: KindHandling::Flatten },
+    KindEntry { kind: "doc_comment",                   handling: KindHandling::Custom },
+    KindEntry { kind: "dynamic_type",                  handling: KindHandling::RenameWithMarker(TYPE, DYNAMIC) },
+    KindEntry { kind: "else_clause",                   handling: KindHandling::Rename(ELSE) },
+    KindEntry { kind: "enum_item",                     handling: KindHandling::CustomThenRename(ENUM) },
+    KindEntry { kind: "enum_variant",                  handling: KindHandling::Rename(VARIANT) },
+    KindEntry { kind: "enum_variant_list",             handling: KindHandling::Flatten },
+    KindEntry { kind: "escape_sequence",               handling: KindHandling::Flatten },
+    KindEntry { kind: "expression_statement",          handling: KindHandling::Flatten },
+    KindEntry { kind: "field_declaration",             handling: KindHandling::Rename(FIELD) },
+    KindEntry { kind: "field_declaration_list",        handling: KindHandling::Flatten },
+    KindEntry { kind: "field_expression",              handling: KindHandling::Rename(FIELD) },
+    KindEntry { kind: "field_identifier",              handling: KindHandling::Custom },
+    KindEntry { kind: "field_initializer",             handling: KindHandling::Rename(FIELD) },
+    KindEntry { kind: "field_initializer_list",        handling: KindHandling::Flatten },
+    KindEntry { kind: "field_pattern",                 handling: KindHandling::RenameWithMarker(PATTERN, FIELD) },
+    KindEntry { kind: "float_literal",                 handling: KindHandling::Rename(FLOAT) },
+    KindEntry { kind: "for_expression",                handling: KindHandling::Rename(FOR) },
+    KindEntry { kind: "function_item",                 handling: KindHandling::CustomThenRename(FUNCTION) },
+    KindEntry { kind: "function_modifiers",            handling: KindHandling::Rename(MODIFIERS) },
+    KindEntry { kind: "function_signature_item",       handling: KindHandling::Rename(SIGNATURE) },
+    KindEntry { kind: "function_type",                 handling: KindHandling::RenameWithMarker(TYPE, FUNCTION) },
+    KindEntry { kind: "generic_function",              handling: KindHandling::RenameWithMarker(CALL, GENERIC) },
+    KindEntry { kind: "generic_type",                  handling: KindHandling::Custom },
+    KindEntry { kind: "identifier",                    handling: KindHandling::Custom },
+    KindEntry { kind: "if_expression",                 handling: KindHandling::Rename(IF) },
+    KindEntry { kind: "impl_item",                     handling: KindHandling::Rename(IMPL) },
+    KindEntry { kind: "index_expression",              handling: KindHandling::Rename(INDEX) },
+    KindEntry { kind: "inner_attribute_item",          handling: KindHandling::Custom },
+    KindEntry { kind: "inner_doc_comment_marker",      handling: KindHandling::Flatten },
+    KindEntry { kind: "integer_literal",               handling: KindHandling::Rename(INT) },
+    // Loop label like `'outer:` — leaf already named `label`, matches
+    // our semantic vocabulary, passes through.
+    KindEntry { kind: "label",                         handling: KindHandling::PassThrough },
+    KindEntry { kind: "let_condition",                 handling: KindHandling::Flatten },
+    KindEntry { kind: "let_declaration",               handling: KindHandling::Custom },
+    KindEntry { kind: "lifetime",                      handling: KindHandling::Rename(LIFETIME) },
+    KindEntry { kind: "lifetime_parameter",            handling: KindHandling::Rename(LIFETIME) },
+    KindEntry { kind: "line_comment",                  handling: KindHandling::Custom },
+    KindEntry { kind: "loop_expression",               handling: KindHandling::Rename(LOOP) },
+    KindEntry { kind: "macro_invocation",              handling: KindHandling::Rename(MACRO) },
+    KindEntry { kind: "match_arm",                     handling: KindHandling::Rename(ARM) },
+    KindEntry { kind: "match_block",                   handling: KindHandling::Flatten },
+    KindEntry { kind: "match_expression",              handling: KindHandling::Rename(MATCH) },
+    KindEntry { kind: "match_pattern",                 handling: KindHandling::Custom },
+    KindEntry { kind: "method_call_expression",        handling: KindHandling::RenameWithMarker(CALL, METHOD) },
+    KindEntry { kind: "mod_item",                      handling: KindHandling::CustomThenRename(MOD) },
+    KindEntry { kind: "mut_pattern",                   handling: KindHandling::RenameWithMarker(PATTERN, MUT) },
+    KindEntry { kind: "mutable_specifier",             handling: KindHandling::Flatten },
+    KindEntry { kind: "never_type",                    handling: KindHandling::RenameWithMarker(TYPE, NEVER) },
+    KindEntry { kind: "or_pattern",                    handling: KindHandling::RenameWithMarker(PATTERN, OR) },
+    KindEntry { kind: "ordered_field_declaration_list", handling: KindHandling::Flatten },
+    KindEntry { kind: "outer_doc_comment_marker",      handling: KindHandling::Flatten },
+    KindEntry { kind: "parameter",                     handling: KindHandling::Rename(PARAMETER) },
+    KindEntry { kind: "parameters",                    handling: KindHandling::Flatten },
+    KindEntry { kind: "parenthesized_expression",      handling: KindHandling::Flatten },
+    KindEntry { kind: "pointer_type",                  handling: KindHandling::RenameWithMarker(TYPE, POINTER) },
+    KindEntry { kind: "primitive_type",                handling: KindHandling::Custom },
+    KindEntry { kind: "qualified_type",                handling: KindHandling::Flatten },
+    KindEntry { kind: "range_expression",              handling: KindHandling::Rename(RANGE) },
+    KindEntry { kind: "range_pattern",                 handling: KindHandling::Rename(RANGE) },
+    KindEntry { kind: "raw_string_literal",            handling: KindHandling::Custom },
+    KindEntry { kind: "raw_string_literal_content",    handling: KindHandling::Flatten },
+    KindEntry { kind: "ref_pattern",                   handling: KindHandling::RenameWithMarker(PATTERN, REF) },
+    KindEntry { kind: "reference_expression",          handling: KindHandling::Rename(REF) },
+    KindEntry { kind: "reference_type",                handling: KindHandling::Custom },
+    KindEntry { kind: "return_expression",             handling: KindHandling::Rename(RETURN) },
+    KindEntry { kind: "scoped_identifier",             handling: KindHandling::Rename(PATH) },
+    KindEntry { kind: "scoped_type_identifier",        handling: KindHandling::Rename(PATH) },
+    KindEntry { kind: "scoped_use_list",               handling: KindHandling::Flatten },
+    // `self` / `super` keyword leaves inside paths — already match our
+    // semantic vocabulary as marker tokens; pass through.
+    KindEntry { kind: "self",                          handling: KindHandling::PassThrough },
+    KindEntry { kind: "self_parameter",                handling: KindHandling::Rename(SELF) },
+    KindEntry { kind: "send_statement",                handling: KindHandling::Rename(SEND) },
+    KindEntry { kind: "shorthand_field_identifier",    handling: KindHandling::Custom },
+    KindEntry { kind: "shorthand_field_initializer",   handling: KindHandling::Rename(FIELD) },
+    KindEntry { kind: "slice_type",                    handling: KindHandling::RenameWithMarker(TYPE, SLICE) },
+    KindEntry { kind: "source_file",                   handling: KindHandling::Rename(FILE) },
+    KindEntry { kind: "spread_element",                handling: KindHandling::Flatten },
+    KindEntry { kind: "static_item",                   handling: KindHandling::CustomThenRename(STATIC) },
+    KindEntry { kind: "string_content",                handling: KindHandling::Flatten },
+    KindEntry { kind: "string_literal",                handling: KindHandling::Rename(STRING) },
+    KindEntry { kind: "struct_expression",             handling: KindHandling::Custom },
+    KindEntry { kind: "struct_item",                   handling: KindHandling::CustomThenRename(STRUCT) },
+    KindEntry { kind: "struct_pattern",                handling: KindHandling::RenameWithMarker(PATTERN, STRUCT) },
+    KindEntry { kind: "super",                         handling: KindHandling::PassThrough },
+    KindEntry { kind: "token_tree",                    handling: KindHandling::Flatten },
+    KindEntry { kind: "trait_bounds",                  handling: KindHandling::Rename(BOUNDS) },
+    KindEntry { kind: "trait_item",                    handling: KindHandling::CustomThenRename(TRAIT) },
+    KindEntry { kind: "trait_type",                    handling: KindHandling::RenameWithMarker(TYPE, TRAIT) },
+    KindEntry { kind: "try_block",                     handling: KindHandling::RenameWithMarker(BLOCK, TRY) },
+    KindEntry { kind: "try_expression",                handling: KindHandling::Rename(TRY) },
+    KindEntry { kind: "tuple_expression",              handling: KindHandling::Rename(TUPLE) },
+    KindEntry { kind: "tuple_struct_pattern",          handling: KindHandling::Flatten },
+    KindEntry { kind: "tuple_type",                    handling: KindHandling::RenameWithMarker(TYPE, TUPLE) },
+    KindEntry { kind: "type_arguments",                handling: KindHandling::Flatten },
+    KindEntry { kind: "type_binding",                  handling: KindHandling::Flatten },
+    KindEntry { kind: "type_cast_expression",          handling: KindHandling::Rename(CAST) },
+    KindEntry { kind: "type_identifier",               handling: KindHandling::Custom },
+    KindEntry { kind: "type_item",                     handling: KindHandling::CustomThenRename(ALIAS) },
+    KindEntry { kind: "type_parameter",                handling: KindHandling::Custom },
+    KindEntry { kind: "type_parameters",               handling: KindHandling::Flatten },
+    KindEntry { kind: "unary_expression",              handling: KindHandling::CustomThenRename(UNARY) },
+    KindEntry { kind: "unit_type",                     handling: KindHandling::RenameWithMarker(TYPE, UNIT) },
+    KindEntry { kind: "unsafe_block",                  handling: KindHandling::Rename(UNSAFE) },
+    KindEntry { kind: "use_as_clause",                 handling: KindHandling::Flatten },
+    KindEntry { kind: "use_declaration",               handling: KindHandling::Rename(USE) },
+    KindEntry { kind: "use_list",                      handling: KindHandling::Flatten },
+    KindEntry { kind: "use_wildcard",                  handling: KindHandling::Flatten },
+    KindEntry { kind: "visibility_modifier",           handling: KindHandling::Custom },
+    KindEntry { kind: "where_clause",                  handling: KindHandling::Rename(WHERE) },
+    KindEntry { kind: "where_predicate",               handling: KindHandling::Rename(BOUND) },
+    KindEntry { kind: "while_expression",              handling: KindHandling::Rename(WHILE) },
+];
+
+/// Look up the rename target for a tree-sitter `kind` in this
+/// language's catalogue. Used by `transform::map_element_name`.
+pub fn rename_target(kind: &str) -> Option<(&'static str, Option<&'static str>)> {
+    KINDS.iter().find(|k| k.kind == kind).and_then(|k| match k.handling {
+        KindHandling::Rename(s) | KindHandling::CustomThenRename(s) => Some((s, None)),
+        KindHandling::RenameWithMarker(s, m)
+        | KindHandling::CustomThenRenameWithMarker(s, m) => Some((s, Some(m))),
+        _ => None,
+    })
+}
 
 pub fn spec(name: &str) -> Option<&'static NodeSpec> {
     NODES.iter().find(|n| n.name == name)
