@@ -44,6 +44,15 @@ impl CommentClassifier {
     /// Returns `TransformAction::Done` — the caller should NOT recurse
     /// into a comment, and the dispatch arm has already done the rename.
     /// Consumed siblings are detached internally.
+    ///
+    /// As a normalising step, the comment's children are collapsed into
+    /// a single text node carrying the original source text. Some
+    /// grammars (notably tree-sitter rust's doc comments) expose an
+    /// inner shape — `outer_doc_comment_marker`, `doc_comment` —
+    /// that we don't want once the node has been promoted to the
+    /// shared `<comment>` vocabulary. Flattening here gives every
+    /// language a uniform leaf-with-text shape and keeps the
+    /// classification + grouping logic simple.
     pub fn classify_and_group(
         &self,
         xot: &mut Xot,
@@ -55,6 +64,10 @@ impl CommentClassifier {
         if xot.parent(node).is_none() {
             return Ok(TransformAction::Done);
         }
+
+        // Collapse any child structure into a flat text leaf. After
+        // this, `get_text_content` returns the full source text.
+        flatten_to_text(xot, node)?;
 
         // Trailing comments are attached to the previous sibling — no grouping
         if is_inline_node(xot, node) {
@@ -107,11 +120,19 @@ impl CommentClassifier {
             return Ok(Vec::new());
         }
 
-        let mut end_line = match get_line(xot, node, "end_line") {
+        // `end_line`: the line on which this comment's CONTENT ends.
+        // Used for adjacency comparison against a sibling's start line.
+        let mut end_line = match content_end_line(xot, node) {
             Some(l) => l,
             None => return Ok(Vec::new()),
         };
-        let mut end_column = get_attr(xot, node, "end_column")
+        // `raw_end_*`: the tree-sitter end position to write back onto
+        // the merged node. We keep tree-sitter's representation (which
+        // may extend into column 1 of the next line for line comments)
+        // so subsequent calls to content_end_line normalise consistently.
+        let mut raw_end_line = get_attr(xot, node, "end_line")
+            .unwrap_or_else(|| end_line.to_string());
+        let mut raw_end_column = get_attr(xot, node, "end_column")
             .unwrap_or_else(|| "1".to_string());
 
         let mut consumed: Vec<XotNode> = Vec::new();
@@ -131,10 +152,15 @@ impl CommentClassifier {
                 break;
             }
 
-            let sibling_text = match get_text_content(xot, sibling) {
-                Some(t) => t,
-                None => break,
-            };
+            // Use descendant_text so structured comments (e.g. Rust doc
+            // comments with `outer_doc_comment_marker` + `doc_comment`
+            // children) merge their full source text rather than only
+            // the line-comment introducer they happen to expose as a
+            // direct text child.
+            let sibling_text = descendant_text(xot, sibling);
+            if sibling_text.is_empty() {
+                break;
+            }
 
             // Must also be a line comment of the same family
             if !self.is_line_comment_text(&sibling_text) {
@@ -155,10 +181,14 @@ impl CommentClassifier {
             merged_text.push('\n');
             merged_text.push_str(&sibling_text);
 
-            // Update end line to the consumed sibling's end
-            end_line = get_line(xot, sibling, "end_line").unwrap_or(end_line + 1);
-            end_column = get_attr(xot, sibling, "end_column")
-                .unwrap_or_else(|| end_column.clone());
+            // Advance both the content end-line (for the next adjacency
+            // check inside this loop) and the raw end position (for the
+            // attribute write-back below).
+            end_line = content_end_line(xot, sibling).unwrap_or(end_line + 1);
+            raw_end_line = get_attr(xot, sibling, "end_line")
+                .unwrap_or_else(|| raw_end_line.clone());
+            raw_end_column = get_attr(xot, sibling, "end_column")
+                .unwrap_or_else(|| raw_end_column.clone());
 
             consumed.push(sibling);
         }
@@ -174,9 +204,12 @@ impl CommentClassifier {
             let new_text = xot.new_text(&merged_text);
             xot.append(node, new_text)?;
 
-            // Update end attribute to reflect the last consumed comment
-            set_attr(xot, node, "end_line", &end_line.to_string());
-            set_attr(xot, node, "end_column", &end_column);
+            // Update end attribute to reflect the last consumed comment.
+            // We store the RAW tree-sitter end position so that
+            // `content_end_line` continues to normalise correctly on
+            // subsequent reads.
+            set_attr(xot, node, "end_line", &raw_end_line);
+            set_attr(xot, node, "end_column", &raw_end_column);
         }
 
         Ok(consumed)
@@ -185,13 +218,13 @@ impl CommentClassifier {
 
 /// True iff a comment (or merged comment block) immediately precedes a
 /// non-comment sibling. "Immediately" means the next non-comment element
-/// sibling starts on the line right after this comment ends, with no
-/// blank-line gap.
+/// sibling starts on the line right after this comment's content ends,
+/// with no blank-line gap.
 ///
 /// Shared across languages — comment kind detection covers tree-sitter's
 /// `comment`, `line_comment`, `block_comment`, and Rust's `doc_comment`.
 fn is_leading_comment(xot: &Xot, node: XotNode) -> bool {
-    let comment_end_line = match get_line(xot, node, "end_line") {
+    let comment_end_line = match content_end_line(xot, node) {
         Some(l) => l,
         None => return false,
     };
@@ -214,7 +247,45 @@ fn is_leading_comment(xot: &Xot, node: XotNode) -> bool {
     }
 }
 
+/// The line on which the node's CONTENT ends, normalising tree-sitter's
+/// quirk of reporting `end_line = N+1, end_column = 1` when a token's
+/// production includes the trailing newline (notably Rust's
+/// `///` / `//!` doc-comment line_comments). Treating that as "ends on
+/// line N" makes adjacency / blank-line checks work uniformly across
+/// languages.
+fn content_end_line(xot: &Xot, node: XotNode) -> Option<usize> {
+    let end_line = get_line(xot, node, "end_line")?;
+    let end_col = get_attr(xot, node, "end_column")
+        .and_then(|s| s.parse::<usize>().ok())
+        .unwrap_or(usize::MAX);
+    if end_col == 1 && end_line > 1 {
+        Some(end_line - 1)
+    } else {
+        Some(end_line)
+    }
+}
+
 /// Tree-sitter comment kinds across all supported languages.
 fn is_comment_kind(kind: &str) -> bool {
     matches!(kind, "comment" | "line_comment" | "block_comment" | "doc_comment")
+}
+
+/// Detach every child of `node` and replace them with a single text
+/// node carrying the full source text of the original subtree. Used to
+/// normalise comments that some grammars expose with internal structure
+/// (e.g. tree-sitter rust's doc comments) to a flat leaf form.
+///
+/// Idempotent: a comment that already has only a single text child is
+/// rebuilt with the same content (no-op semantically).
+fn flatten_to_text(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
+    let text = descendant_text(xot, node);
+    let children: Vec<XotNode> = xot.children(node).collect();
+    for child in children {
+        xot.detach(child)?;
+    }
+    if !text.is_empty() {
+        let text_node = xot.new_text(&text);
+        xot.append(node, text_node)?;
+    }
+    Ok(())
 }

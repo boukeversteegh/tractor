@@ -1,6 +1,5 @@
 file/
-  ├─ comment/comment
-  ├─ comment/comment
+  ├─ comment[leading]
   ├─ attribute[inner]/
   │   ├─ name
   │   ├─ name
@@ -62,7 +61,7 @@ file/
   │               ├─ pub/in
   │               ├─ name
   │               └─ body
-  ├─ comment/comment
+  ├─ comment[leading]
   ├─ attribute/
   │   ├─ name
   │   ├─ name
@@ -90,16 +89,16 @@ file/
   │           └─ type[borrowed]/
   │               ├─ lifetime/name
   │               └─ type/name
-  ├─ comment/comment
+  ├─ comment[leading]
   ├─ struct[pub]/
   │   ├─ name
   │   ├─ generic/name
   │   └─ body[pub]/
   │       ├─ type/name
   │       └─ type/name
-  ├─ comment/comment
+  ├─ comment[leading]
   ├─ struct[pub]/name
-  ├─ comment/comment
+  ├─ comment[leading]
   ├─ attribute/
   │   ├─ name
   │   └─ name

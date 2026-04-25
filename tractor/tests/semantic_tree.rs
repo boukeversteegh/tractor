@@ -522,18 +522,31 @@ class X:
     }
 
     /// Rust has 4 comment kinds: `//`, `/* */`, doc `///`, inner doc
-    /// `//!`. All collapse to `<comment>`.
+    /// `//!`. All collapse to `<comment>` and go through the same
+    /// trailing / leading / floating classifier as C# / Java.
     #[test]
     fn rust() {
         let mut tree = parse_src(
             "rust",
             r#"
                 //! crate-level inner doc
-                /// outer doc
+
+                /// outer doc line one
+                /// outer doc line two
                 fn x() {}
+
                 // line
                 /* block */
                 fn y() {}
+
+                struct S {
+                    a: i32, // trailing single
+                    b: i32,
+                }
+
+                // floating
+
+                fn z() {}
             "#,
         );
 
@@ -551,6 +564,22 @@ class X:
 
         claim("no raw tree-sitter `line_comment` / `block_comment` / `doc_comment` leaks",
             &mut tree, "//line_comment | //block_comment | //doc_comment", 0);
+
+        claim("`//` after `,` on same line is trailing",
+            &mut tree, "//comment[trailing][.='// trailing single']", 1);
+
+        claim("two adjacent `///` doc lines merge into one <comment>",
+            &mut tree, &multi_xpath("
+                //comment[leading]
+                    [contains(., 'outer doc line one')]
+                    [contains(., 'outer doc line two')]
+            "), 1);
+
+        claim("blank-line break: floating `// floating` has no marker",
+            &mut tree, "//comment[.='// floating'][not(leading) and not(trailing)]", 1);
+
+        claim("trailing and leading are mutually exclusive",
+            &mut tree, "//comment[trailing and leading]", 0);
     }
 }
 

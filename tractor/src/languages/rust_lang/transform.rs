@@ -271,24 +271,23 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // Tree-sitter uses distinct node kinds for type positions
         // (type_identifier, primitive_type, etc.), so bare identifiers
         // never need a heuristic — they are never types.
-        // Tree-sitter Rust emits `line_comment` and `block_comment`;
-        // normalise to the shared `<comment>` vocabulary.
-        "line_comment" | "block_comment" => {
+        // Tree-sitter Rust emits `line_comment`, `block_comment`, and
+        // `doc_comment` (the `///` / `//!` kinds). All collapse to the
+        // shared `<comment>` vocabulary, then go through the shared
+        // classifier (trailing / leading / floating + line-comment
+        // grouping). Doc comments group naturally because they share
+        // the `//` prefix family.
+        "line_comment" | "block_comment" | "doc_comment" => {
             rename(xot, node, COMMENT);
-            Ok(TransformAction::Continue)
+            static CLASSIFIER: crate::languages::comments::CommentClassifier =
+                crate::languages::comments::CommentClassifier { line_prefixes: &["//"] };
+            CLASSIFIER.classify_and_group(xot, node, TRAILING, LEADING)
         }
 
         // String internals — grammar wrappers with no semantic
         // beyond their text value (Principle #12).
         "string_content" | "escape_sequence" | "raw_string_literal_content" => {
             Ok(TransformAction::Flatten)
-        }
-
-        // `doc_comment` is tree-sitter rust's `///` / `//!` kind —
-        // semantically still a comment.
-        "doc_comment" => {
-            rename(xot, node, COMMENT);
-            Ok(TransformAction::Continue)
         }
 
         // Qualified types, enum variants, tuple_struct patterns — all
