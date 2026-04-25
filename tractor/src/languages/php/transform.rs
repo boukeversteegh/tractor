@@ -18,11 +18,94 @@ use crate::output::syntax_highlight::SyntaxCategory;
 use super::semantic::*;
 
 
-/// Transform a PHP AST node
+/// Transform a PHP AST node.
+///
+/// Dispatch is split in two:
+///   1. If the node carries a `kind` attribute (set by the builder from
+///      the original tree-sitter kind), match on that — it never changes
+///      mid-walk, so an arm like `"identifier"` always wins.
+///   2. Otherwise the node is a builder-inserted wrapper (e.g. the
+///      `<name>` field wrapper) — match on the element name for the
+///      few wrappers we need to handle.
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    let kind = match get_element_name(xot, node) {
+    let kind = match get_kind(xot, node) {
         Some(k) => k,
-        None => return Ok(TransformAction::Continue),
+        None => {
+            // Builder-inserted wrapper (no `kind` attribute).
+            let name = get_element_name(xot, node).unwrap_or_default();
+            return match name.as_str() {
+                // PHP emits `name` directly on identifiers — our field
+                // wrappings already produce <name>foo</name>, so nothing
+                // to rewrite here except collapsing wrappers that sit
+                // inside a <name> field wrapper:
+                // `<name><name>foo</name></name>` (from field+identifier
+                // double-wrapping) and `<name><variable>$foo</variable></name>`
+                // (from field-on-variable_name — tree-sitter tags `$foo`
+                // as a `variable_name` kind, but in any field slot it's
+                // still just the bound name, so the outer <name> should
+                // be the text leaf).
+                //
+                // Multi-segment qualified names (`App\Blueprint`) are
+                // flattened — each segment becomes a direct sibling of
+                // the enclosing namespace / use / etc. (Principle #12).
+                // This matches C#'s qualified_name handling.
+                "name" => {
+                    let children: Vec<_> = xot.children(node).collect();
+                    let element_children: Vec<_> = children
+                        .iter()
+                        .copied()
+                        .filter(|&c| xot.element(c).is_some())
+                        .collect();
+                    if element_children.len() == 1 {
+                        let child = element_children[0];
+                        // Match on the original tree-sitter kind (stable
+                        // across walk order) and on post-rename element
+                        // names for the `<name><name>…</name></name>` case.
+                        let ts_kind = get_kind(xot, child);
+                        let el_name = get_element_name(xot, child);
+                        // If the single child is a `namespace_name` /
+                        // `qualified_name`, that child will flatten into
+                        // multiple segments + "\\" separators. Flattening
+                        // the outer wrapper now hoists the segments to
+                        // the enclosing namespace/use so each becomes a
+                        // direct `<name>` sibling.
+                        if matches!(
+                            ts_kind.as_deref(),
+                            Some("namespace_name") | Some("qualified_name"),
+                        ) {
+                            return Ok(TransformAction::Flatten);
+                        }
+                        let inlineable = matches!(
+                            ts_kind.as_deref(),
+                            Some("name") | Some("variable_name"),
+                        ) || matches!(
+                            el_name.as_deref(),
+                            Some("name") | Some("variable"),
+                        );
+                        if inlineable {
+                            let text = descendant_text(xot, child);
+                            let trimmed = text.trim().to_string();
+                            if !trimmed.is_empty() {
+                                for c in children {
+                                    xot.detach(c)?;
+                                }
+                                let text_node = xot.new_text(&trimmed);
+                                xot.append(node, text_node)?;
+                                return Ok(TransformAction::Done);
+                            }
+                        }
+                    } else if element_children.len() > 1 {
+                        // Multiple element children — this is a qualified
+                        // name that flattened into segments + separators.
+                        // Flatten the outer <name> wrapper so each segment
+                        // becomes a direct child of the enclosing node.
+                        return Ok(TransformAction::Flatten);
+                    }
+                    Ok(TransformAction::Continue)
+                }
+                _ => Ok(TransformAction::Continue),
+            };
+        }
     };
 
     match kind.as_str() {
@@ -130,7 +213,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             distribute_field_to_children(xot, node, "parameters");
             Ok(TransformAction::Flatten)
         }
-        "arguments" if has_kind(xot, node) => {
+        "arguments" => {
             distribute_field_to_children(xot, node, "arguments");
             Ok(TransformAction::Flatten)
         }
@@ -165,73 +248,6 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         }
         "class_interface_clause" => {
             rename(xot, node, IMPLEMENTS);
-            Ok(TransformAction::Continue)
-        }
-
-        // PHP emits `name` directly on identifiers — our field
-        // wrappings already produce <name>foo</name>, so nothing to
-        // rewrite here except collapsing wrappers that sit inside a
-        // <name> field wrapper: `<name><name>foo</name></name>` (from
-        // field+identifier double-wrapping) and `<name><variable>$foo</variable></name>`
-        // (from field-on-variable_name — tree-sitter tags `$foo` as a
-        // `variable_name` kind, but in any field slot it's still just
-        // the bound name, so the outer <name> should be the text leaf).
-        //
-        // Multi-segment qualified names (`App\Blueprint`) are flattened
-        // — each segment becomes a direct sibling of the enclosing
-        // namespace / use / etc. (Principle #12). This matches C#'s
-        // qualified_name handling.
-        "name" => {
-            let children: Vec<_> = xot.children(node).collect();
-            let element_children: Vec<_> = children
-                .iter()
-                .copied()
-                .filter(|&c| xot.element(c).is_some())
-                .collect();
-            if element_children.len() == 1 {
-                let child = element_children[0];
-                // Match on the original tree-sitter kind (stable across
-                // the walk order) and on post-rename element names for
-                // the `<name><name>…</name></name>` case.
-                let ts_kind = get_kind(xot, child);
-                let el_name = get_element_name(xot, child);
-                // If the single child is a `namespace_name` / `qualified_name`,
-                // that child will flatten into multiple segments + "\"
-                // separators. Flattening the outer wrapper now hoists the
-                // segments to the enclosing namespace/use so each becomes a
-                // direct `<name>` sibling.
-                if matches!(
-                    ts_kind.as_deref(),
-                    Some("namespace_name") | Some("qualified_name"),
-                ) {
-                    return Ok(TransformAction::Flatten);
-                }
-                let inlineable = matches!(
-                    ts_kind.as_deref(),
-                    Some("name") | Some("variable_name"),
-                ) || matches!(
-                    el_name.as_deref(),
-                    Some("name") | Some("variable"),
-                );
-                if inlineable {
-                    let text = descendant_text(xot, child);
-                    let trimmed = text.trim().to_string();
-                    if !trimmed.is_empty() {
-                        for c in children {
-                            xot.detach(c)?;
-                        }
-                        let text_node = xot.new_text(&trimmed);
-                        xot.append(node, text_node)?;
-                        return Ok(TransformAction::Done);
-                    }
-                }
-            } else if element_children.len() > 1 {
-                // Multiple element children — this is a qualified name
-                // that flattened into segments + separators. Flatten
-                // the outer <name> wrapper so each segment becomes a
-                // direct child of the enclosing node.
-                return Ok(TransformAction::Flatten);
-            }
             Ok(TransformAction::Continue)
         }
 
@@ -290,10 +306,6 @@ fn apply_rename(xot: &mut Xot, node: XotNode, kind: &str) -> Result<(), xot::Err
         }
     }
     Ok(())
-}
-
-fn has_kind(xot: &Xot, node: XotNode) -> bool {
-    get_kind(xot, node).is_some()
 }
 
 fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
