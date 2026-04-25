@@ -98,7 +98,10 @@ const FEATURE_FIXTURES: &[(&str, &str, u32, bool)] = &[
     ("tests/integration/features/where-clause/where-clause.cs", "//class[name='Repo']", 4, false),
 
     // — Rust —
-    ("tests/integration/languages/rust/blueprint.rs", "//file", 0, false),
+    // Blueprint snapshot uses shape projection: tree structure +
+    // queryable markers, no source text. Text preservation enforced
+    // by `tests/text_preservation.rs`.
+    ("tests/integration/languages/rust/blueprint.rs", "//file", 0, true),
     ("tests/integration/features/conditionals/conditionals.rs", "//if", 3, false),
     ("tests/integration/features/flat-lists/flat-lists.rs", "//function[name='first']", 4, false),
     ("tests/integration/features/match-expression/match-expression.rs", "//match", 3, false),
