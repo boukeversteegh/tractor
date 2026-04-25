@@ -2130,6 +2130,33 @@ mod interpolation_shape {
 //   - XPath strings span multiple lines under `multi_xpath()` (drops
 //     whitespace OUTSIDE string literals; quote-aware so spaces inside
 //     `[.='…']` predicates are preserved).
+//   - **Indent so the path mirrors the tree.** Two styles work — pick
+//     whichever reads better for a given assertion:
+//
+//     **a) Path style** (counts the leaf node):
+//     ```
+//     //class
+//         /body
+//             /comment[trailing]
+//                 [.='// instance counter']
+//     ```
+//
+//     **b) Bracket-predicate style** (counts the root; nesting is the
+//     `[…]` predicate, which carries the hierarchy without separate
+//     indentation columns):
+//     ```
+//     //class[
+//         body[
+//             comment[trailing]
+//                 [.='// instance counter']
+//         ]
+//     ]
+//     ```
+//
+//   The two return different node sets (path returns `<comment>`,
+//   bracket returns `<class>`), so the `expected` count differs
+//   accordingly — but both prove the same shape exists.
+//
 //   - Assertions are claims about the post-transform tree's shape.
 // ===========================================================================
 
@@ -2183,9 +2210,9 @@ mod comments {
             &mut tree,
             &multi_xpath("
                 //class
-                  /body
-                  /comment[trailing]
-                  [.='// instance counter']
+                    /body
+                        /comment[trailing]
+                            [.='// instance counter']
             "),
             1,
             "single-line comment after `;` on the same line is <trailing/>",
@@ -2197,10 +2224,10 @@ mod comments {
             &mut tree,
             &multi_xpath("
                 //class
-                  /body
-                  /comment[leading]
-                  [contains(., 'Configuration settings')]
-                  [contains(., 'loaded from environment')]
+                    /body
+                        /comment[leading]
+                            [contains(., 'Configuration settings')]
+                            [contains(., 'loaded from environment')]
             "),
             1,
             "adjacent // line comments merge; the merged block is <leading/>",
@@ -2211,9 +2238,9 @@ mod comments {
             &mut tree,
             &multi_xpath("
                 //class
-                  /body
-                  /comment[leading]
-                  [.='/* block comment */']
+                    /body
+                        /comment[leading]
+                            [.='/* block comment */']
             "),
             1,
             "block comment immediately preceding a declaration is <leading/>",
@@ -2232,16 +2259,21 @@ mod comments {
                 }
             "#,
         );
-        // A floating comment (blank line breaks the leading-attachment
-        // window) carries neither <leading/> nor <trailing/>.
+        // Bracket-predicate style — counts the <class> that contains
+        // exactly one floating <comment> (blank line breaks the
+        // leading-attachment window, so neither marker should fire).
         assert_count(
             &mut tree,
             &multi_xpath("
-                //class
-                  /body
-                  /comment
-                  [not(leading)]
-                  [not(trailing)]
+                //class[
+                    body[
+                        comment[
+                            not(leading)
+                        ][
+                            not(trailing)
+                        ]
+                    ]
+                ]
             "),
             1,
             "floating comments have no attachment marker",
