@@ -10,11 +10,32 @@ use crate::output::syntax_highlight::SyntaxCategory;
 use super::semantic::*;
 
 
-/// Transform a Java AST node
+/// Transform a Java AST node.
+///
+/// Dispatch is split in two:
+///   1. If the node carries a `kind` attribute (set by the builder from
+///      the original tree-sitter kind), match on that — it never changes
+///      mid-walk, so an arm like `"identifier"` always wins.
+///   2. Otherwise the node is a builder-inserted wrapper (e.g. the
+///      `<name>` field wrapper) — match on the element name for the
+///      few wrappers we need to handle.
 pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    let kind = match get_element_name(xot, node) {
+    let kind = match get_kind(xot, node) {
         Some(k) => k,
-        None => return Ok(TransformAction::Continue),
+        None => {
+            // Builder-inserted wrapper (no `kind` attribute).
+            let name = get_element_name(xot, node).unwrap_or_default();
+            return match name.as_str() {
+                // Name wrappers created by the builder for field="name".
+                // Inline the single identifier child as text:
+                //   <name><identifier>foo</identifier></name> -> <name>foo</name>
+                "name" => {
+                    inline_single_identifier(xot, node)?;
+                    Ok(TransformAction::Continue)
+                }
+                _ => Ok(TransformAction::Continue),
+            };
+        }
     };
 
     match kind.as_str() {
@@ -76,16 +97,6 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         // ---------------------------------------------------------------------
         "generic_type" => {
             rewrite_generic_type(xot, node, &["type_identifier", "scoped_type_identifier"])?;
-            Ok(TransformAction::Continue)
-        }
-
-        // ---------------------------------------------------------------------
-        // Name wrappers created by the builder for field="name".
-        // Inline the single identifier child as text:
-        //   <name><identifier>foo</identifier></name> -> <name>foo</name>
-        // ---------------------------------------------------------------------
-        "name" => {
-            inline_single_identifier(xot, node)?;
             Ok(TransformAction::Continue)
         }
 
