@@ -499,6 +499,58 @@ class X:
             &mut tree, "//class//string[contains(., 'docstring')]", 1);
     }
 
+    /// Go has both `//` and `/* */` (single tree-sitter `comment`
+    /// kind). Same trailing / leading / floating classification +
+    /// `//` line-comment grouping.
+    #[test]
+    fn go() {
+        let mut tree = parse_src(
+            "go",
+            r#"
+                package main
+
+                // floating one
+
+                // before func
+                // also before func
+                func A() int {
+                    return 1
+                }
+
+                /* block before B */
+                func B() int {
+                    x := 1 // trailing single
+                    return x
+                }
+            "#,
+        );
+
+        claim("`//` line comment becomes <comment>",
+            &mut tree, "//comment[.='// floating one']", 1);
+
+        claim("`/* */` block becomes <comment>",
+            &mut tree, "//comment[.='/* block before B */']", 1);
+
+        claim("inline `//` after `:=` is trailing",
+            &mut tree, "//comment[trailing][.='// trailing single']", 1);
+
+        claim("two adjacent `//` comments before func A merge into one <comment>",
+            &mut tree, &multi_xpath("
+                //comment[leading]
+                    [contains(., 'before func')]
+                    [contains(., 'also before func')]
+            "), 1);
+
+        claim("block `/* */` immediately before a decl is leading",
+            &mut tree, "//comment[leading][.='/* block before B */']", 1);
+
+        claim("blank-line break: floating comment has no marker",
+            &mut tree, "//comment[.='// floating one'][not(leading) and not(trailing)]", 1);
+
+        claim("trailing and leading are mutually exclusive",
+            &mut tree, "//comment[trailing and leading]", 0);
+    }
+
     /// Java mirrors C# (both `//` and `/* */`). Same trailing /
     /// leading / floating classification + line-comment grouping.
     #[test]

@@ -1,8 +1,5 @@
 file/
-  ├─ comment
-  ├─ comment
-  ├─ comment
-  ├─ comment
+  ├─ comment[leading]
   ├─ package/name
   ├─ import/string
   ├─ import/

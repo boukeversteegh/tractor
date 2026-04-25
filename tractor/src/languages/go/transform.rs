@@ -231,6 +231,17 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
 
+        // Comments — tree-sitter go uses a single `comment` kind for both
+        // `//` line comments and `/* */` block comments. Normalise to
+        // <comment> and run the shared trailing / leading / floating
+        // classifier (with `//` line-comment grouping).
+        "comment" => {
+            rename(xot, node, COMMENT);
+            static CLASSIFIER: crate::languages::comments::CommentClassifier =
+                crate::languages::comments::CommentClassifier { line_prefixes: &["//"] };
+            CLASSIFIER.classify_and_group(xot, node, TRAILING, LEADING)
+        }
+
         _ => {
             apply_rename(xot, node, &kind)?;
             Ok(TransformAction::Continue)

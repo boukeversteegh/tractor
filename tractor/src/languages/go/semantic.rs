@@ -81,6 +81,10 @@ pub const NAME: &str = "name";
 pub const COMMENT: &str = "comment";
 pub const OP: &str = "op";
 
+// Comment markers — emitted by the shared CommentClassifier.
+pub const TRAILING: &str = "trailing";
+pub const LEADING: &str = "leading";
+
 pub const IOTA: &str = "iota";
 pub const ELSE_IF: &str = "else_if";
 
@@ -176,6 +180,10 @@ pub const NODES: &[NodeSpec] = &[
     NodeSpec { name: NAME,    marker: false, container: true, syntax: Identifier },
     NodeSpec { name: COMMENT, marker: false, container: true, syntax: Comment },
     NodeSpec { name: OP,      marker: false, container: true, syntax: Operator },
+
+    // Comment markers
+    NodeSpec { name: TRAILING, marker: true, container: false, syntax: Default },
+    NodeSpec { name: LEADING,  marker: true, container: false, syntax: Default },
 
     // Marker-only
     NodeSpec { name: RAW,        marker: true, container: false, syntax: Default },
