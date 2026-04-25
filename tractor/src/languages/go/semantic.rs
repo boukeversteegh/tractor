@@ -2,7 +2,7 @@
 /// These are the names that appear in tractor's output. The tree-sitter
 /// kind strings (left side of `match` arms, arguments to `get_kind`)
 /// are external vocabulary and stay as bare strings.
-use crate::languages::NodeSpec;
+use crate::languages::{KindEntry, KindHandling, NodeSpec};
 use crate::output::syntax_highlight::SyntaxCategory;
 
 // Named constants retained for use by the transform code. The NODES
@@ -193,6 +193,124 @@ pub const NODES: &[NodeSpec] = &[
     NodeSpec { name: NEGATED,    marker: true, container: false, syntax: Default },
     NodeSpec { name: GENERIC,    marker: true, container: false, syntax: Default },
 ];
+
+/// Tree-sitter kind catalogue — single source of truth for every
+/// kind the Go transform handles. Sorted alphabetically by kind name.
+/// See `KindHandling` for variants.
+pub const KINDS: &[KindEntry] = &[
+    KindEntry { kind: "argument_list",                 handling: KindHandling::Flatten },
+    KindEntry { kind: "array_type",                    handling: KindHandling::PassThrough },
+    KindEntry { kind: "assignment_statement",          handling: KindHandling::Rename(ASSIGN) },
+    KindEntry { kind: "binary_expression",             handling: KindHandling::CustomThenRename(BINARY) },
+    KindEntry { kind: "blank_identifier",              handling: KindHandling::Rename(NAME) },
+    KindEntry { kind: "block",                         handling: KindHandling::Flatten },
+    KindEntry { kind: "break_statement",               handling: KindHandling::Rename(BREAK) },
+    KindEntry { kind: "call_expression",               handling: KindHandling::Rename(CALL) },
+    KindEntry { kind: "case_clause",                   handling: KindHandling::Rename(CASE) },
+    KindEntry { kind: "channel_type",                  handling: KindHandling::Rename(CHAN) },
+    KindEntry { kind: "comment",                       handling: KindHandling::Custom },
+    KindEntry { kind: "communication_case",            handling: KindHandling::Rename(CASE) },
+    KindEntry { kind: "composite_literal",             handling: KindHandling::Rename(LITERAL) },
+    KindEntry { kind: "const_declaration",             handling: KindHandling::Rename(CONST) },
+    KindEntry { kind: "const_spec",                    handling: KindHandling::Flatten },
+    KindEntry { kind: "continue_statement",            handling: KindHandling::Rename(CONTINUE) },
+    KindEntry { kind: "dec_statement",                 handling: KindHandling::Rename(UNARY) },
+    KindEntry { kind: "default_case",                  handling: KindHandling::Rename(DEFAULT) },
+    KindEntry { kind: "defer_statement",               handling: KindHandling::Rename(DEFER) },
+    // `import . "pkg"` — tree-sitter emits a `dot` leaf token. Pass through.
+    KindEntry { kind: "dot",                           handling: KindHandling::PassThrough },
+    KindEntry { kind: "else_clause",                   handling: KindHandling::Rename(ELSE) },
+    KindEntry { kind: "escape_sequence",               handling: KindHandling::Flatten },
+    KindEntry { kind: "expression_list",               handling: KindHandling::Flatten },
+    KindEntry { kind: "expression_statement",          handling: KindHandling::Flatten },
+    KindEntry { kind: "expression_switch_statement",   handling: KindHandling::Rename(SWITCH) },
+    KindEntry { kind: "false",                         handling: KindHandling::Rename(FALSE) },
+    KindEntry { kind: "field_declaration",             handling: KindHandling::CustomThenRename(FIELD) },
+    KindEntry { kind: "field_declaration_list",        handling: KindHandling::Flatten },
+    KindEntry { kind: "field_identifier",              handling: KindHandling::Rename(NAME) },
+    KindEntry { kind: "float_literal",                 handling: KindHandling::Rename(FLOAT) },
+    KindEntry { kind: "for_clause",                    handling: KindHandling::Flatten },
+    KindEntry { kind: "for_statement",                 handling: KindHandling::Rename(FOR) },
+    KindEntry { kind: "func_literal",                  handling: KindHandling::Rename(CLOSURE) },
+    KindEntry { kind: "function_declaration",          handling: KindHandling::CustomThenRename(FUNCTION) },
+    KindEntry { kind: "function_type",                 handling: KindHandling::RenameWithMarker(TYPE, FUNCTION) },
+    KindEntry { kind: "generic_type",                  handling: KindHandling::RenameWithMarker(TYPE, GENERIC) },
+    KindEntry { kind: "go_statement",                  handling: KindHandling::Rename(GO) },
+    KindEntry { kind: "goto_statement",                handling: KindHandling::Rename(GOTO) },
+    KindEntry { kind: "identifier",                    handling: KindHandling::Custom },
+    KindEntry { kind: "if_statement",                  handling: KindHandling::Custom },
+    KindEntry { kind: "import_declaration",            handling: KindHandling::Rename(IMPORT) },
+    KindEntry { kind: "import_spec",                   handling: KindHandling::Flatten },
+    KindEntry { kind: "import_spec_list",              handling: KindHandling::Flatten },
+    KindEntry { kind: "inc_statement",                 handling: KindHandling::Rename(UNARY) },
+    KindEntry { kind: "index_expression",              handling: KindHandling::Rename(INDEX) },
+    KindEntry { kind: "int_literal",                   handling: KindHandling::Rename(INT) },
+    KindEntry { kind: "interface_type",                handling: KindHandling::Rename(INTERFACE) },
+    KindEntry { kind: "interpreted_string_literal",    handling: KindHandling::Rename(STRING) },
+    KindEntry { kind: "interpreted_string_literal_content", handling: KindHandling::Flatten },
+    // Tree-sitter leaf for the `iota` constant. Already matches our
+    // semantic vocabulary; pass through.
+    KindEntry { kind: "iota",                          handling: KindHandling::PassThrough },
+    KindEntry { kind: "keyed_element",                 handling: KindHandling::Flatten },
+    KindEntry { kind: "label_name",                    handling: KindHandling::Rename(LABEL) },
+    KindEntry { kind: "labeled_statement",             handling: KindHandling::Rename(LABELED) },
+    KindEntry { kind: "literal_element",               handling: KindHandling::Flatten },
+    KindEntry { kind: "literal_value",                 handling: KindHandling::Flatten },
+    KindEntry { kind: "map_type",                      handling: KindHandling::Rename(MAP) },
+    KindEntry { kind: "method_declaration",            handling: KindHandling::CustomThenRename(METHOD) },
+    KindEntry { kind: "method_elem",                   handling: KindHandling::Rename(METHOD) },
+    KindEntry { kind: "negated_type",                  handling: KindHandling::RenameWithMarker(TYPE, NEGATED) },
+    KindEntry { kind: "nil",                           handling: KindHandling::Rename(NIL) },
+    KindEntry { kind: "package_clause",                handling: KindHandling::Rename(PACKAGE) },
+    KindEntry { kind: "package_identifier",            handling: KindHandling::Rename(NAME) },
+    KindEntry { kind: "parameter_declaration",         handling: KindHandling::Rename(PARAMETER) },
+    KindEntry { kind: "parameter_list",                handling: KindHandling::Custom },
+    KindEntry { kind: "pointer_type",                  handling: KindHandling::Rename(POINTER) },
+    KindEntry { kind: "qualified_type",                handling: KindHandling::Flatten },
+    KindEntry { kind: "range_clause",                  handling: KindHandling::Rename(RANGE) },
+    KindEntry { kind: "raw_string_literal",            handling: KindHandling::Custom },
+    KindEntry { kind: "raw_string_literal_content",    handling: KindHandling::Flatten },
+    KindEntry { kind: "receive_statement",             handling: KindHandling::Rename(RECEIVE) },
+    KindEntry { kind: "return_statement",              handling: KindHandling::Rename(RETURN) },
+    KindEntry { kind: "rune_literal",                  handling: KindHandling::Rename(CHAR) },
+    KindEntry { kind: "select_statement",              handling: KindHandling::Rename(SELECT) },
+    KindEntry { kind: "selector_expression",           handling: KindHandling::Rename(MEMBER) },
+    KindEntry { kind: "send_statement",                handling: KindHandling::Rename(SEND) },
+    KindEntry { kind: "short_var_declaration",         handling: KindHandling::Custom },
+    KindEntry { kind: "slice_type",                    handling: KindHandling::Rename(SLICE) },
+    KindEntry { kind: "source_file",                   handling: KindHandling::Rename(FILE) },
+    KindEntry { kind: "struct_type",                   handling: KindHandling::Rename(STRUCT) },
+    KindEntry { kind: "switch_statement",              handling: KindHandling::Rename(SWITCH) },
+    KindEntry { kind: "true",                          handling: KindHandling::Rename(TRUE) },
+    KindEntry { kind: "type_alias",                    handling: KindHandling::Custom },
+    KindEntry { kind: "type_arguments",                handling: KindHandling::Rename(ARGUMENTS) },
+    KindEntry { kind: "type_assertion_expression",     handling: KindHandling::Rename(ASSERT) },
+    KindEntry { kind: "type_case",                     handling: KindHandling::Flatten },
+    KindEntry { kind: "type_constraint",               handling: KindHandling::Flatten },
+    KindEntry { kind: "type_declaration",              handling: KindHandling::Custom },
+    KindEntry { kind: "type_elem",                     handling: KindHandling::Flatten },
+    KindEntry { kind: "type_identifier",               handling: KindHandling::Custom },
+    KindEntry { kind: "type_parameter_declaration",    handling: KindHandling::Flatten },
+    KindEntry { kind: "type_parameter_list",           handling: KindHandling::Flatten },
+    KindEntry { kind: "type_spec",                     handling: KindHandling::Custom },
+    KindEntry { kind: "type_switch_statement",         handling: KindHandling::RenameWithMarker(SWITCH, TYPE) },
+    KindEntry { kind: "unary_expression",              handling: KindHandling::CustomThenRename(UNARY) },
+    KindEntry { kind: "var_declaration",               handling: KindHandling::Rename(VAR) },
+    KindEntry { kind: "var_spec",                      handling: KindHandling::Flatten },
+    KindEntry { kind: "var_spec_list",                 handling: KindHandling::Flatten },
+    KindEntry { kind: "variadic_parameter_declaration", handling: KindHandling::Rename(PARAMETER) },
+];
+
+/// Look up the rename target for a tree-sitter `kind` in this
+/// language's catalogue. Used by `transform::map_element_name`.
+pub fn rename_target(kind: &str) -> Option<(&'static str, Option<&'static str>)> {
+    KINDS.iter().find(|k| k.kind == kind).and_then(|k| match k.handling {
+        KindHandling::Rename(s) | KindHandling::CustomThenRename(s) => Some((s, None)),
+        KindHandling::RenameWithMarker(s, m)
+        | KindHandling::CustomThenRenameWithMarker(s, m) => Some((s, Some(m))),
+        _ => None,
+    })
+}
 
 pub fn spec(name: &str) -> Option<&'static NodeSpec> {
     NODES.iter().find(|n| n.name == name)

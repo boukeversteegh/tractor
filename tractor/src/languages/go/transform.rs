@@ -361,96 +361,10 @@ fn get_export_marker(xot: &Xot, node: XotNode) -> &'static str {
 
 /// Map tree-sitter node kinds to semantic element names.
 ///
-/// The second tuple element is an optional disambiguation marker
-/// for kinds that otherwise collapse (e.g. `type_switch_statement`
-/// and `switch_statement` both → `<switch>`, distinguished by the
-/// `<type/>` marker child on the former).
+/// Derived from `semantic::KINDS` — the catalogue is the single source
+/// of truth, this is just the rename projection.
 fn map_element_name(kind: &str) -> Option<(&'static str, Option<&'static str>)> {
-    match kind {
-        "source_file" => Some((FILE, None)),
-        "package_clause" => Some((PACKAGE, None)),
-        "function_declaration" => Some((FUNCTION, None)),
-        "method_declaration" => Some((METHOD, None)),
-        // type_declaration is flattened in the match above.
-        "type_spec" => Some((TYPE, None)),
-        "struct_type" => Some((STRUCT, None)),
-        "interface_type" => Some((INTERFACE, None)),
-        "const_declaration" => Some((CONST, None)),
-        "var_declaration" => Some((VAR, None)),
-        "import_declaration" => Some((IMPORT, None)),
-        // parameter_list is flattened via Principle #12 above
-        "parameter_declaration" => Some((PARAMETER, None)),
-        "method_elem" => Some((METHOD, None)),
-        "field_declaration" => Some((FIELD, None)),
-        "pointer_type" => Some((POINTER, None)),
-        "slice_type" => Some((SLICE, None)),
-        "map_type" => Some((MAP, None)),
-        "channel_type" => Some((CHAN, None)),
-        "return_statement" => Some((RETURN, None)),
-        "if_statement" => Some((IF, None)),
-        "else_clause" => Some((ELSE, None)),
-        "for_statement" => Some((FOR, None)),
-        "range_clause" => Some((RANGE, None)),
-        // Tree-sitter-go emits `expression_switch_statement` for a
-        // plain switch; `switch_statement` appears in older grammars.
-        "switch_statement" => Some((SWITCH, None)),
-        "expression_switch_statement" => Some((SWITCH, None)),
-        "case_clause" => Some((CASE, None)),
-        "default_case" => Some((DEFAULT, None)),
-        "defer_statement" => Some((DEFER, None)),
-        "go_statement" => Some((GO, None)),
-        "select_statement" => Some((SELECT, None)),
-        "call_expression" => Some((CALL, None)),
-        "selector_expression" => Some((MEMBER, None)),
-        "index_expression" => Some((INDEX, None)),
-        "composite_literal" => Some((LITERAL, None)),
-        "binary_expression" => Some((BINARY, None)),
-        "unary_expression" => Some((UNARY, None)),
-        "interpreted_string_literal" => Some((STRING, None)),
-        // raw_string_literal is handled in the match above (rename + prepend <raw/>)
-        "int_literal" => Some((INT, None)),
-        "float_literal" => Some((FLOAT, None)),
-        "assignment_statement" => Some((ASSIGN, None)),
-        "inc_statement" => Some((UNARY, None)),
-        "dec_statement" => Some((UNARY, None)),
-        "labeled_statement" => Some((LABELED, None)),
-        "label_name" => Some((LABEL, None)),
-        "send_statement" => Some((SEND, None)),
-        "communication_case" => Some((CASE, None)),
-        "receive_statement" => Some((RECEIVE, None)),
-        // Function types get a <function/> marker, negated types get
-        // <negated/> (interface constraints: `~int`). Keeps the tree
-        // reads as a single <type> with the shape annotated via marker.
-        "function_type" => Some((TYPE, Some(FUNCTION))),
-        "negated_type" => Some((TYPE, Some(NEGATED))),
-        "func_literal" => Some((CLOSURE, None)),
-        "continue_statement" => Some((CONTINUE, None)),
-        "variadic_parameter_declaration" => Some((PARAMETER, None)),
-        // `switch x.(type) { … }` — distinguished from a regular switch
-        // by a <type/> marker so `//switch[type]` finds every type switch.
-        "type_switch_statement" => Some((SWITCH, Some(TYPE))),
-        "type_assertion_expression" => Some((ASSERT, None)),
-        "type_arguments" => Some((ARGUMENTS, None)),
-        "break_statement" => Some((BREAK, None)),
-        "true" => Some((TRUE, None)),
-        "false" => Some((FALSE, None)),
-        "nil" => Some((NIL, None)),
-        // `field_identifier` is a leaf — either the name of a struct field
-        // or the method/field being accessed in a selector. Treat it as
-        // `<name>` in both contexts (role inferred from tree position).
-        "field_identifier" => Some((NAME, None)),
-        "package_identifier" => Some((NAME, None)),
-        // `_` — Go's discard identifier. Still a name slot semantically.
-        "blank_identifier" => Some((NAME, None)),
-        // `'a'` — Go rune literal; collapse to <char> (uniform with Rust).
-        "rune_literal" => Some((CHAR, None)),
-        // `goto LABEL` — rename.
-        "goto_statement" => Some((GOTO, None)),
-        // `generic_type` — `Foo[int]` generic type reference. Rename to
-        // <type><generic/> so it joins the collapsed type vocabulary.
-        "generic_type" => Some((TYPE, Some(GENERIC))),
-        _ => None,
-    }
+    super::semantic::rename_target(kind)
 }
 
 fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
