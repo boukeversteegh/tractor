@@ -54,48 +54,48 @@ const FEATURE_FIXTURES: &[(&str, &str, u32)] = &[
     // Feature fixtures: minimal construct that demonstrates the
     // invariant. Depth cap hides deep internals where noise doesn't
     // help — the blueprint covers the deep view.
-    ("tests/integration/languages/typescript/accessors.ts", "//method[get]", 0),
-    ("tests/integration/languages/typescript/async-generator.ts", "//function[async][generator]", 0),
-    ("tests/integration/languages/typescript/conditionals.ts", "//if", 3),
-    ("tests/integration/languages/typescript/flat-lists.ts", "//function[name='first']", 0),
-    ("tests/integration/languages/typescript/parameter-marking.ts", "//function[name='call']", 0),
-    ("tests/integration/languages/typescript/type-vocabulary.ts", "//class[name='Dog']", 0),
+    ("tests/integration/features/accessors/accessors.ts", "//method[get]", 0),
+    ("tests/integration/features/async-generator/async-generator.ts", "//function[async][generator]", 0),
+    ("tests/integration/features/conditionals/conditionals.ts", "//if", 3),
+    ("tests/integration/features/flat-lists/flat-lists.ts", "//function[name='first']", 0),
+    ("tests/integration/features/parameter-marking/parameter-marking.ts", "//function[name='call']", 0),
+    ("tests/integration/features/type-vocabulary/type-vocabulary.ts", "//class[name='Dog']", 0),
 
     // — Java —
     // Blueprint: kitchen-sink fixture rendered at full depth so
     // every transform change shows up as a visible snapshot diff.
     ("tests/integration/languages/java/blueprint.java", "//program", 0),
-    ("tests/integration/languages/java/conditionals.java", "//if", 3),
-    ("tests/integration/languages/java/constructor-rename.java", "//constructor[1]", 0),
-    ("tests/integration/languages/java/flat-lists.java", "//method[1]", 0),
-    ("tests/integration/languages/java/interface-public.java", "//interface/body", 3),
-    ("tests/integration/languages/java/modifiers.java", "//class/body", 3),
-    ("tests/integration/languages/java/type-vocabulary.java", "//class[name='Dog']", 3),
+    ("tests/integration/features/conditionals/conditionals.java", "//if", 3),
+    ("tests/integration/features/constructor-rename/constructor-rename.java", "//constructor[1]", 0),
+    ("tests/integration/features/flat-lists/flat-lists.java", "//method[1]", 0),
+    ("tests/integration/features/interface-public/interface-public.java", "//interface/body", 3),
+    ("tests/integration/features/modifiers/modifiers.java", "//class/body", 3),
+    ("tests/integration/features/type-vocabulary/type-vocabulary.java", "//class[name='Dog']", 3),
 
     // — C# —
     ("tests/integration/languages/csharp/blueprint.cs", "//unit", 0),
-    ("tests/integration/languages/csharp/accessor-flattening.cs", "//property[name='Manual']", 0),
-    ("tests/integration/languages/csharp/comments.cs", "//class[name='Demo']", 3),
-    ("tests/integration/languages/csharp/conditionals.cs", "//if", 3),
-    ("tests/integration/languages/csharp/flat-lists.cs", "//method[1]", 0),
-    ("tests/integration/languages/csharp/interface-public.cs", "//interface/body/method[public][1]", 0),
-    ("tests/integration/languages/csharp/type-vocabulary.cs", "//class[name='Dog']", 0),
+    ("tests/integration/features/accessor-flattening/accessor-flattening.cs", "//property[name='Manual']", 0),
+    ("tests/integration/features/comments/comments.cs", "//class[name='Demo']", 3),
+    ("tests/integration/features/conditionals/conditionals.cs", "//if", 3),
+    ("tests/integration/features/flat-lists/flat-lists.cs", "//method[1]", 0),
+    ("tests/integration/features/interface-public/interface-public.cs", "//interface/body/method[public][1]", 0),
+    ("tests/integration/features/type-vocabulary/type-vocabulary.cs", "//class[name='Dog']", 0),
     // Use name-qualified query; bare `//class` trips a tree-rendering
     // bug in `-p tree --single` that truncates to just the element
     // header. TODO: fix the renderer, then revert to `//class`.
-    ("tests/integration/languages/csharp/where-clause.cs", "//class[name='Repo']", 4),
+    ("tests/integration/features/where-clause/where-clause.cs", "//class[name='Repo']", 4),
 
     // — Rust —
     ("tests/integration/languages/rust/blueprint.rs", "//file", 0),
-    ("tests/integration/languages/rust/conditionals.rs", "//if", 3),
-    ("tests/integration/languages/rust/flat-lists.rs", "//function[name='first']", 0),
-    ("tests/integration/languages/rust/match-expression.rs", "//match", 3),
-    ("tests/integration/languages/rust/method-call.rs", "//call[1]", 0),
-    ("tests/integration/languages/rust/reference-type.rs", "//param[type[borrowed]][1]", 0),
-    ("tests/integration/languages/rust/struct-expression.rs", "//literal[name='Point']", 0),
-    ("tests/integration/languages/rust/type-vocabulary.rs", "//struct[name='Dog']", 3),
-    ("tests/integration/languages/rust/typedef.rs", "//alias[1]", 0),
-    ("tests/integration/languages/rust/visibility.rs", "//function[pub][1]", 0),
+    ("tests/integration/features/conditionals/conditionals.rs", "//if", 3),
+    ("tests/integration/features/flat-lists/flat-lists.rs", "//function[name='first']", 0),
+    ("tests/integration/features/match-expression/match-expression.rs", "//match", 3),
+    ("tests/integration/features/method-call/method-call.rs", "//call[1]", 0),
+    ("tests/integration/features/reference-type/reference-type.rs", "//param[type[borrowed]][1]", 0),
+    ("tests/integration/features/struct-expression/struct-expression.rs", "//literal[name='Point']", 0),
+    ("tests/integration/features/type-vocabulary/type-vocabulary.rs", "//struct[name='Dog']", 3),
+    ("tests/integration/features/typedef/typedef.rs", "//alias[1]", 0),
+    ("tests/integration/features/visibility/visibility.rs", "//function[pub][1]", 0),
 
     // — Python —
     ("tests/integration/languages/python/blueprint.py", "//module", 0),
@@ -105,29 +105,29 @@ const FEATURE_FIXTURES: &[(&str, &str, u32)] = &[
     // operator produces the same <assign><op>…</op> shape. Matching
     // a single <assign> with --single would only surface the first
     // case (`+=`).
-    ("tests/integration/languages/python/augmented-assign.py", "//function[name='ops']", 0),
-    ("tests/integration/languages/python/collection-markers.py", "//list[comprehension]", 0),
-    ("tests/integration/languages/python/conditionals.py", "//if", 3),
-    ("tests/integration/languages/python/expression-list.py", "//return[1]", 0),
-    ("tests/integration/languages/python/f-strings.py", "//string[interpolation]", 0),
+    ("tests/integration/features/augmented-assign/augmented-assign.py", "//function[name='ops']", 0),
+    ("tests/integration/features/collection-markers/collection-markers.py", "//list[comprehension]", 0),
+    ("tests/integration/features/conditionals/conditionals.py", "//if", 3),
+    ("tests/integration/features/expression-list/expression-list.py", "//return[1]", 0),
+    ("tests/integration/features/f-strings/f-strings.py", "//string[interpolation]", 0),
 
     // — Go —
     ("tests/integration/languages/go/blueprint.go", "//file", 0),
-    ("tests/integration/languages/go/conditionals.go", "//if", 3),
-    ("tests/integration/languages/go/defined-type-vs-alias.go", "//alias", 0),
-    ("tests/integration/languages/go/flat-lists.go", "//function", 0),
-    ("tests/integration/languages/go/strings.go", "//file", 5),
-    ("tests/integration/languages/go/struct-interface-hoist.go", "//struct", 0),
-    ("tests/integration/languages/go/type-declaration.go", "//interface", 0),
+    ("tests/integration/features/conditionals/conditionals.go", "//if", 3),
+    ("tests/integration/features/defined-type-vs-alias/defined-type-vs-alias.go", "//alias", 0),
+    ("tests/integration/features/flat-lists/flat-lists.go", "//function", 0),
+    ("tests/integration/features/strings/strings.go", "//file", 5),
+    ("tests/integration/features/struct-interface-hoist/struct-interface-hoist.go", "//struct", 0),
+    ("tests/integration/features/type-declaration/type-declaration.go", "//interface", 0),
 
     // — PHP —
     ("tests/integration/languages/php/blueprint.php", "//program", 0),
 
     // — Ruby —
     ("tests/integration/languages/ruby/blueprint.rb", "//program", 0),
-    ("tests/integration/languages/ruby/conditionals.rb", "//if", 3),
+    ("tests/integration/features/conditionals/conditionals.rb", "//if", 3),
 
-    ("tests/integration/languages/ruby/name-inlining.rb", "//class", 0),
+    ("tests/integration/features/name-inlining/name-inlining.rb", "//class", 0),
 ];
 
 /// Output-format snapshot cases: (relative path under formats/, tractor args).
@@ -172,10 +172,10 @@ const OUTPUT_FORMAT_CASES: &[(&str, &[&str])] = &[
         "--meta", "--depth", "1",
     ]),
     ("text/explore-tree-source.txt", &[
-        "tests/integration/languages/csharp/comments.cs", "-v", "tree,source", "--depth", "2",
+        "tests/integration/features/comments/comments.cs", "-v", "tree,source", "--depth", "2",
     ]),
     ("text/explore-tree-source-color.txt", &[
-        "tests/integration/languages/csharp/comments.cs", "-v", "tree,source",
+        "tests/integration/features/comments/comments.cs", "-v", "tree,source",
         "--color", "always", "--depth", "2",
     ]),
     // -f gcc
