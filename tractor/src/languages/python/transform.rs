@@ -315,6 +315,17 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
 
+        // Comments — Python only has `#` line comments (block strings
+        // are <string>, not <comment>; see python::docstring tests).
+        // Rename and run the shared trailing / leading / floating
+        // classifier with a `#` line-comment prefix.
+        "comment" => {
+            rename(xot, node, COMMENT);
+            static CLASSIFIER: crate::languages::comments::CommentClassifier =
+                crate::languages::comments::CommentClassifier { line_prefixes: &["#"] };
+            CLASSIFIER.classify_and_group(xot, node, TRAILING, LEADING)
+        }
+
         _ => {
             apply_rename(xot, node, &kind)?;
             Ok(TransformAction::Continue)

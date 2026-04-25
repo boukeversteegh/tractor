@@ -471,23 +471,30 @@ mod comments {
     }
 
     /// Python `#` comments. Tree-sitter calls them `comment`; tractor
-    /// renames to `<comment>` uniformly.
+    /// renames to `<comment>` uniformly and runs the shared trailing /
+    /// leading / floating classifier (with `#` as the line-comment
+    /// prefix).
     #[test]
     fn python() {
         let mut tree = parse_src(
             "python",
             r#"
-# module-level
+# floating
+
 class X:
     """docstring stays a string, not a comment"""
     x = 1  # inline
     # before y
+    # also before y
     y = 2
+
+    # leading on z
+    z = 3
 "#,
         );
 
         claim("`#` line comment becomes <comment>",
-            &mut tree, "//comment[.='# module-level']", 1);
+            &mut tree, "//comment[.='# floating']", 1);
 
         claim("inline `#` after code is still <comment>",
             &mut tree, "//comment[.='# inline']", 1);
@@ -497,6 +504,25 @@ class X:
 
         claim("docstring lives as a <string> child of <class>",
             &mut tree, "//class//string[contains(., 'docstring')]", 1);
+
+        claim("inline `#` after `x = 1` is trailing",
+            &mut tree, "//comment[trailing][.='# inline']", 1);
+
+        claim("two adjacent `#` comments before y merge into one <comment>",
+            &mut tree, &multi_xpath("
+                //comment[leading]
+                    [contains(., 'before y')]
+                    [contains(., 'also before y')]
+            "), 1);
+
+        claim("`# leading on z` is leading on the assignment",
+            &mut tree, "//comment[leading][.='# leading on z']", 1);
+
+        claim("blank-line break: floating `# floating` has no marker",
+            &mut tree, "//comment[.='# floating'][not(leading) and not(trailing)]", 1);
+
+        claim("trailing and leading are mutually exclusive",
+            &mut tree, "//comment[trailing and leading]", 0);
     }
 
     /// Go has both `//` and `/* */` (single tree-sitter `comment`
