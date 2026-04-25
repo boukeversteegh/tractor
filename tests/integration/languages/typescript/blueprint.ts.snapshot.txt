@@ -1,1251 +1,592 @@
 program/
-  ├─ comment = "// blueprint.ts — TypeScript kitchen-sink fixture."
-  ├─ comment = "// Rendered by tractor's snapshot system so design-principle changes"
-  ├─ comment = "// to the TypeScript transform show up as visible snapshot diffs."
-  ├─ comment = "// Covers most major TS constructs: classes, interfaces, generics,"
-  ├─ comment = "// unions, conditional/mapped types, async/generators, decorators of syntax."
+  ├─ comment
+  ├─ comment
+  ├─ comment
+  ├─ comment
+  ├─ comment
   ├─ import/
-  │   ├─ "import"
   │   ├─ clause/
-  │   │   ├─ name = "defaultExport"
-  │   │   ├─ ","
+  │   │   ├─ name
   │   │   └─ imports/
-  │   │       ├─ "{"
-  │   │       ├─ spec/name = "namedA"
-  │   │       ├─ ","
-  │   │       ├─ spec/
-  │   │       │   ├─ name = "namedB"
-  │   │       │   ├─ "as"
-  │   │       │   └─ name = "aliasedB"
-  │   │       └─ "}"
-  │   ├─ "from"
-  │   ├─ string = "\"./barrel\""
-  │   └─ ";"
+  │   │       ├─ spec/name
+  │   │       └─ spec/
+  │   │           ├─ name
+  │   │           └─ name
+  │   └─ string
   ├─ import/
-  │   ├─ "import"
-  │   ├─ clause/namespace/
-  │   │   ├─ "* as"
-  │   │   └─ name = "ns"
-  │   ├─ "from"
-  │   ├─ string = "\"./namespace\""
-  │   └─ ";"
+  │   ├─ clause/namespace/name
+  │   └─ string
   ├─ import/
-  │   ├─ "import type"
-  │   ├─ clause/imports/
-  │   │   ├─ "{"
-  │   │   ├─ spec/name = "OnlyAtCompileTime"
-  │   │   └─ "}"
-  │   ├─ "from"
-  │   ├─ string = "\"./types\""
-  │   └─ ";"
+  │   ├─ clause/imports/spec/name
+  │   └─ string
   ├─ export/
-  │   ├─ "export {"
-  │   ├─ spec/name = "namedA"
-  │   ├─ "} from"
-  │   ├─ string = "\"./barrel\""
-  │   └─ ";"
-  ├─ export/
-  │   ├─ "export"
-  │   └─ alias/
-  │       ├─ "type"
-  │       ├─ name = "Re"
-  │       ├─ generics/
-  │       │   ├─ "<"
-  │       │   ├─ generic/name = "T"
-  │       │   └─ ">"
-  │       ├─ "="
-  │       ├─ type[conditional]/
-  │       │   ├─ left/type/name = "T"
-  │       │   ├─ "extends"
-  │       │   ├─ right/type[generic]/
-  │       │   │   ├─ name = "Array"
-  │       │   │   ├─ "<"
-  │       │   │   ├─ type[infer]/
-  │       │   │   │   ├─ "infer"
-  │       │   │   │   └─ type/name = "U"
-  │       │   │   └─ ">"
-  │       │   ├─ "?"
-  │       │   ├─ then/type/name = "U"
-  │       │   ├─ ":"
-  │       │   └─ type/name = "never"
-  │       └─ ";"
-  ├─ comment = "/** A shape with an optional label and readonly id. */"
-  ├─ export/
-  │   ├─ "export"
-  │   └─ interface/
-  │       ├─ "interface"
-  │       ├─ name = "Shape"
-  │       ├─ generics/
-  │       │   ├─ "<"
-  │       │   ├─ generic/
-  │       │   │   ├─ name = "T"
-  │       │   │   └─ value/type[default]/
-  │       │   │       ├─ "="
-  │       │   │       └─ type/name = "number"
-  │       │   └─ ">"
-  │       └─ body/
-  │           ├─ "{"
-  │           ├─ property/
-  │           │   ├─ "readonly"
-  │           │   ├─ name = "id"
-  │           │   ├─ ":"
-  │           │   └─ type/name = "string"
-  │           ├─ ";"
-  │           ├─ property/
-  │           │   ├─ name = "label"
-  │           │   ├─ "?:"
-  │           │   └─ type/name = "string"
-  │           ├─ ";"
-  │           ├─ property/
-  │           │   ├─ name = "value"
-  │           │   ├─ ":"
-  │           │   └─ type/name = "T"
-  │           ├─ ";"
-  │           ├─ method/
-  │           │   ├─ name = "describe"
-  │           │   ├─ "("
-  │           │   ├─ parameter[required]/
-  │           │   │   ├─ name = "prefix"
-  │           │   │   ├─ ":"
-  │           │   │   └─ type/name = "string"
-  │           │   ├─ ")"
-  │           │   └─ returns/
-  │           │       ├─ ":"
-  │           │       └─ type/name = "string"
-  │           └─ ";\n}"
-  ├─ export/
-  │   ├─ "export"
-  │   └─ alias/
-  │       ├─ "type"
-  │       ├─ name = "Point"
-  │       ├─ "="
-  │       ├─ type[object]/
-  │       │   ├─ "{"
-  │       │   ├─ property/
-  │       │   │   ├─ name = "x"
-  │       │   │   ├─ ":"
-  │       │   │   └─ type/name = "number"
-  │       │   ├─ ";"
-  │       │   ├─ property/
-  │       │   │   ├─ name = "y"
-  │       │   │   ├─ ":"
-  │       │   │   └─ type/name = "number"
-  │       │   └─ "}"
-  │       └─ ";"
-  ├─ export/
-  │   ├─ "export"
-  │   └─ alias/
-  │       ├─ "type"
-  │       ├─ name = "Pair"
-  │       ├─ "="
-  │       ├─ type[tuple]/
-  │       │   ├─ "["
-  │       │   ├─ type/name = "string"
-  │       │   ├─ ","
-  │       │   ├─ type/name = "number"
-  │       │   └─ "]"
-  │       └─ ";"
-  ├─ export/
-  │   ├─ "export"
-  │   └─ alias/
-  │       ├─ "type"
-  │       ├─ name = "Status"
-  │       ├─ "="
+  │   ├─ spec/name
+  │   └─ string
+  ├─ export/alias/
+  │   ├─ name
+  │   ├─ generics/generic/name
+  │   └─ type[conditional]/
+  │       ├─ left/type/name
+  │       ├─ right/type[generic]/
+  │       │   ├─ name
+  │       │   └─ type[infer]/type/name
+  │       ├─ then/type/name
+  │       └─ type/name
+  ├─ comment
+  ├─ export/interface/
+  │   ├─ name
+  │   ├─ generics/generic/
+  │   │   ├─ name
+  │   │   └─ value/type[default]/type/name
+  │   └─ body/
+  │       ├─ property/
+  │       │   ├─ name
+  │       │   └─ type/name
+  │       ├─ property/
+  │       │   ├─ name
+  │       │   └─ type/name
+  │       ├─ property/
+  │       │   ├─ name
+  │       │   └─ type/name
+  │       └─ method/
+  │           ├─ name
+  │           ├─ parameter[required]/
+  │           │   ├─ name
+  │           │   └─ type/name
+  │           └─ returns/type/name
+  ├─ export/alias/
+  │   ├─ name
+  │   └─ type[object]/
+  │       ├─ property/
+  │       │   ├─ name
+  │       │   └─ type/name
+  │       └─ property/
+  │           ├─ name
+  │           └─ type/name
+  ├─ export/alias/
+  │   ├─ name
+  │   └─ type[tuple]/
+  │       ├─ type/name
+  │       └─ type/name
+  ├─ export/alias/
+  │   ├─ name
+  │   └─ type[union]/
   │       ├─ type[union]/
   │       │   ├─ type[union]/
-  │       │   │   ├─ type[union]/
-  │       │   │   │   ├─ type[literal]/string = "\"idle\""
-  │       │   │   │   ├─ "|"
-  │       │   │   │   └─ type[literal]/string = "\"loading\""
-  │       │   │   ├─ "|"
-  │       │   │   └─ type[literal]/string = "\"ready\""
-  │       │   ├─ "|"
-  │       │   └─ type[literal]/string = "\"error\""
-  │       └─ ";"
-  ├─ export/
-  │   ├─ "export"
-  │   └─ alias/
-  │       ├─ "type"
-  │       ├─ name = "Mapper"
-  │       ├─ generics/
-  │       │   ├─ "<"
-  │       │   ├─ generic/name = "T"
-  │       │   └─ ">"
-  │       ├─ "="
-  │       ├─ type[function]/
-  │       │   ├─ "("
+  │       │   │   ├─ type[literal]/string
+  │       │   │   └─ type[literal]/string
+  │       │   └─ type[literal]/string
+  │       └─ type[literal]/string
+  ├─ export/alias/
+  │   ├─ name
+  │   ├─ generics/generic/name
+  │   └─ type[function]/
+  │       ├─ parameter[required]/
+  │       │   ├─ name
+  │       │   └─ type/name
+  │       └─ returns/type/name
+  ├─ export/alias/
+  │   ├─ name
+  │   ├─ generics/generic/name
+  │   └─ type[object]/indexer/
+  │       ├─ name
+  │       ├─ type[keyof]/type/name
+  │       └─ annotation/type[lookup]/
+  │           ├─ type/name
+  │           └─ type/name
+  ├─ export/alias/
+  │   ├─ name
+  │   └─ type[template]/type[template]/type/name
+  ├─ export/enum/
+  │   ├─ name
+  │   └─ body/
+  │       ├─ constant/
+  │       │   ├─ name
+  │       │   └─ value/string
+  │       ├─ constant/
+  │       │   ├─ name
+  │       │   └─ value/string
+  │       └─ constant/
+  │           ├─ name
+  │           └─ value/string
+  ├─ comment
+  ├─ export/class[abstract]/
+  │   ├─ name
+  │   ├─ generics/generic/
+  │   │   ├─ name
+  │   │   └─ constraint/type/name
+  │   └─ body/
+  │       ├─ field[public]/
+  │       │   ├─ name
+  │       │   ├─ type/name
+  │       │   └─ value/string
+  │       ├─ field[protected]/
+  │       │   ├─ name
+  │       │   ├─ type/name
+  │       │   └─ value/call/callee/member/
+  │       │       ├─ object/name
+  │       │       └─ property/name
+  │       ├─ field[private]/
+  │       │   ├─ name
+  │       │   ├─ type[generic]/
+  │       │   │   ├─ name
+  │       │   │   ├─ type/name
+  │       │   │   └─ type/name
+  │       │   └─ value/new/name
+  │       ├─ method[public]/
+  │       │   ├─ name
+  │       │   ├─ parameter[required and public]/
+  │       │   │   ├─ name
+  │       │   │   └─ type/name
+  │       │   ├─ parameter[optional and private]/
+  │       │   │   ├─ name
+  │       │   │   └─ type/name
+  │       │   └─ body/block
+  │       ├─ method[abstract and public]/
+  │       │   ├─ name
+  │       │   └─ returns/type/name
+  │       ├─ method[public and get]/
+  │       │   ├─ name
+  │       │   ├─ returns/type/name
+  │       │   └─ body/block/return/member/
+  │       │       ├─ object/member/
+  │       │       │   ├─ object/this
+  │       │       │   └─ property/name
+  │       │       └─ property/name
+  │       ├─ method[public and set]/
+  │       │   ├─ name
   │       │   ├─ parameter[required]/
-  │       │   │   ├─ name = "input"
-  │       │   │   ├─ ":"
-  │       │   │   └─ type/name = "T"
-  │       │   ├─ ") =>"
-  │       │   └─ returns/type/name = "T"
-  │       └─ ";"
-  ├─ export/
-  │   ├─ "export"
-  │   └─ alias/
-  │       ├─ "type"
-  │       ├─ name = "Partialized"
-  │       ├─ generics/
-  │       │   ├─ "<"
-  │       │   ├─ generic/name = "T"
-  │       │   └─ ">"
-  │       ├─ "="
-  │       ├─ type[object]/
-  │       │   ├─ "{"
-  │       │   ├─ indexer/
-  │       │   │   ├─ "["
-  │       │   │   ├─ name = "K"
-  │       │   │   ├─ "in"
-  │       │   │   ├─ type[keyof]/
-  │       │   │   │   ├─ "keyof"
-  │       │   │   │   └─ type/name = "T"
-  │       │   │   ├─ "]"
-  │       │   │   └─ annotation/
-  │       │   │       ├─ "?:"
-  │       │   │       └─ type[lookup]/
-  │       │   │           ├─ type/name = "T"
-  │       │   │           ├─ "["
-  │       │   │           ├─ type/name = "K"
-  │       │   │           └─ "]"
-  │       │   └─ "}"
-  │       └─ ";"
-  ├─ export/
-  │   ├─ "export"
-  │   └─ alias/
-  │       ├─ "type"
-  │       ├─ name = "Greeting"
-  │       ├─ "="
-  │       ├─ type[template]/
-  │       │   ├─ "`hello,"
-  │       │   ├─ type[template]/
-  │       │   │   ├─ "${"
-  │       │   │   ├─ type/name = "string"
-  │       │   │   └─ "}"
-  │       │   └─ "`"
-  │       └─ ";"
-  ├─ export/
-  │   ├─ "export"
-  │   └─ enum/
-  │       ├─ "enum"
-  │       ├─ name = "Color"
-  │       └─ body/
-  │           ├─ "{"
-  │           ├─ constant/
-  │           │   ├─ name = "Red"
-  │           │   ├─ "="
-  │           │   └─ value/string = "\"RED\""
-  │           ├─ ","
-  │           ├─ constant/
-  │           │   ├─ name = "Green"
-  │           │   ├─ "="
-  │           │   └─ value/string = "\"GREEN\""
-  │           ├─ ","
-  │           ├─ constant/
-  │           │   ├─ name = "Blue"
-  │           │   ├─ "="
-  │           │   └─ value/string = "\"BLUE\""
-  │           └─ ",\n}"
-  ├─ comment = "/** Abstract base using visibility + readonly + static. */"
-  ├─ export/
-  │   ├─ "export"
-  │   └─ class[abstract]/
-  │       ├─ "abstract class"
-  │       ├─ name = "Base"
-  │       ├─ generics/
-  │       │   ├─ "<"
-  │       │   ├─ generic/
-  │       │   │   ├─ name = "T"
-  │       │   │   └─ constraint/
-  │       │   │       ├─ "extends"
-  │       │   │       └─ type/name = "Shape"
-  │       │   └─ ">"
-  │       └─ body/
-  │           ├─ "{"
-  │           ├─ field[public]/
-  │           │   ├─ "public static"
-  │           │   ├─ name = "kind"
-  │           │   ├─ ":"
-  │           │   ├─ type/name = "string"
-  │           │   ├─ "="
-  │           │   └─ value/string = "\"base\""
-  │           ├─ ";"
-  │           ├─ field[protected]/
-  │           │   ├─ "protected readonly"
-  │           │   ├─ name = "createdAt"
-  │           │   ├─ ":"
-  │           │   ├─ type/name = "number"
-  │           │   ├─ "="
-  │           │   └─ value/call/
-  │           │       ├─ callee/member/
-  │           │       │   ├─ object/name = "Date"
-  │           │       │   ├─ "."
-  │           │       │   └─ property/name = "now"
-  │           │       └─ "()"
-  │           ├─ ";"
-  │           ├─ field[private]/
-  │           │   ├─ "private"
-  │           │   ├─ name = "_cache"
-  │           │   ├─ ":"
-  │           │   ├─ type[generic]/
-  │           │   │   ├─ name = "Map"
-  │           │   │   ├─ "<"
-  │           │   │   ├─ type/name = "string"
-  │           │   │   ├─ ","
-  │           │   │   ├─ type/name = "T"
-  │           │   │   └─ ">"
-  │           │   ├─ "="
-  │           │   └─ value/new/
-  │           │       ├─ "new"
-  │           │       ├─ name = "Map"
-  │           │       └─ "()"
-  │           ├─ ";"
-  │           ├─ method[public]/
-  │           │   ├─ name = "constructor"
-  │           │   ├─ "("
-  │           │   ├─ parameter[required and public]/
-  │           │   │   ├─ "public"
-  │           │   │   ├─ name = "name"
-  │           │   │   ├─ ":"
-  │           │   │   └─ type/name = "string"
-  │           │   ├─ ","
-  │           │   ├─ parameter[optional and private]/
-  │           │   │   ├─ "private readonly"
-  │           │   │   ├─ name = "seed"
-  │           │   │   ├─ "?:"
-  │           │   │   └─ type/name = "number"
-  │           │   ├─ ")"
-  │           │   └─ body/block = "{}"
-  │           ├─ method[abstract and public]/
-  │           │   ├─ "abstract"
-  │           │   ├─ name = "render"
-  │           │   ├─ "()"
-  │           │   └─ returns/
-  │           │       ├─ ":"
-  │           │       └─ type/name = "string"
-  │           ├─ ";"
-  │           ├─ method[public and get]/
-  │           │   ├─ "get"
-  │           │   ├─ name = "cacheSize"
-  │           │   ├─ "()"
-  │           │   ├─ returns/
-  │           │   │   ├─ ":"
-  │           │   │   └─ type/name = "number"
-  │           │   └─ body/block/
-  │           │       ├─ "{"
-  │           │       ├─ return/
-  │           │       │   ├─ "return"
-  │           │       │   ├─ member/
-  │           │       │   │   ├─ object/member/
-  │           │       │   │   │   ├─ object/this = "this"
-  │           │       │   │   │   ├─ "."
-  │           │       │   │   │   └─ property/name = "_cache"
-  │           │       │   │   ├─ "."
-  │           │       │   │   └─ property/name = "size"
-  │           │       │   └─ ";"
-  │           │       └─ "}"
-  │           ├─ method[public and set]/
-  │           │   ├─ "set"
-  │           │   ├─ name = "primary"
-  │           │   ├─ "("
-  │           │   ├─ parameter[required]/
-  │           │   │   ├─ name = "value"
-  │           │   │   ├─ ":"
-  │           │   │   └─ type/name = "T"
-  │           │   ├─ ")"
-  │           │   └─ body/block/
-  │           │       ├─ "{"
-  │           │       ├─ call/
-  │           │       │   ├─ callee/member/
-  │           │       │   │   ├─ object/member/
-  │           │       │   │   │   ├─ object/this = "this"
-  │           │       │   │   │   ├─ "."
-  │           │       │   │   │   └─ property/name = "_cache"
-  │           │       │   │   ├─ "."
-  │           │       │   │   └─ property/name = "set"
-  │           │       │   ├─ "("
-  │           │       │   ├─ string = "\"primary\""
-  │           │       │   ├─ ","
-  │           │       │   ├─ name = "value"
-  │           │       │   └─ ")"
-  │           │       └─ "; }"
-  │           ├─ method[public]/
-  │           │   ├─ "public"
-  │           │   ├─ name = "store"
-  │           │   ├─ "("
-  │           │   ├─ parameter[required]/
-  │           │   │   ├─ name = "key"
-  │           │   │   ├─ ":"
-  │           │   │   └─ type/name = "string"
-  │           │   ├─ ","
-  │           │   ├─ parameter[required]/
-  │           │   │   ├─ name = "value"
-  │           │   │   ├─ ":"
-  │           │   │   └─ type/name = "T"
-  │           │   ├─ ")"
-  │           │   ├─ returns/
-  │           │   │   ├─ ":"
-  │           │   │   └─ type/name = "void"
-  │           │   └─ body/block/
-  │           │       ├─ "{"
-  │           │       ├─ call/
-  │           │       │   ├─ callee/member/
-  │           │       │   │   ├─ object/member/
-  │           │       │   │   │   ├─ object/this = "this"
-  │           │       │   │   │   ├─ "."
-  │           │       │   │   │   └─ property/name = "_cache"
-  │           │       │   │   ├─ "."
-  │           │       │   │   └─ property/name = "set"
-  │           │       │   ├─ "("
-  │           │       │   ├─ name = "key"
-  │           │       │   ├─ ","
-  │           │       │   ├─ name = "value"
-  │           │       │   └─ ")"
-  │           │       └─ ";\n    }"
-  │           └─ "}"
-  ├─ export/
-  │   ├─ "export"
-  │   └─ class/
-  │       ├─ "class"
-  │       ├─ name = "Widget"
-  │       ├─ generics/
-  │       │   ├─ "<"
-  │       │   ├─ generic/
-  │       │   │   ├─ name = "T"
-  │       │   │   ├─ constraint/
-  │       │   │   │   ├─ "extends"
-  │       │   │   │   └─ type/name = "Shape"
-  │       │   │   └─ value/type[default]/
-  │       │   │       ├─ "="
-  │       │   │       └─ type[generic]/
-  │       │   │           ├─ name = "Shape"
-  │       │   │           ├─ "<"
-  │       │   │           ├─ type/name = "number"
-  │       │   │           └─ ">"
-  │       │   └─ ">"
-  │       ├─ extends/
-  │       │   ├─ "extends"
-  │       │   ├─ type/name = "Base"
-  │       │   ├─ "<"
-  │       │   ├─ type/name = "T"
-  │       │   └─ ">"
-  │       └─ body/
-  │           ├─ "{"
-  │           ├─ field[private and public]/
-  │           │   ├─ "static"
-  │           │   ├─ name = "counter"
-  │           │   ├─ "="
-  │           │   └─ value/number = "0"
-  │           ├─ ";"
-  │           ├─ method[public]/
-  │           │   ├─ name = "constructor"
-  │           │   ├─ "("
-  │           │   ├─ parameter[required]/
-  │           │   │   ├─ name = "name"
-  │           │   │   ├─ ":"
-  │           │   │   └─ type/name = "string"
-  │           │   ├─ ","
-  │           │   ├─ parameter[required and private]/
-  │           │   │   ├─ "private"
-  │           │   │   ├─ name = "items"
-  │           │   │   ├─ ":"
-  │           │   │   ├─ type[array]/
-  │           │   │   │   ├─ type/name = "T"
-  │           │   │   │   └─ "[]"
-  │           │   │   ├─ "="
-  │           │   │   └─ value/array = "[]"
-  │           │   ├─ ")"
-  │           │   └─ body/block/
-  │           │       ├─ "{"
-  │           │       ├─ call/
-  │           │       │   ├─ callee/super = "super"
-  │           │       │   ├─ "("
-  │           │       │   ├─ name = "name"
-  │           │       │   └─ ")"
-  │           │       ├─ ";"
-  │           │       ├─ unary/
-  │           │       │   ├─ member/
-  │           │       │   │   ├─ object/name = "Widget"
-  │           │       │   │   ├─ "."
-  │           │       │   │   └─ property/name = "#counter"
-  │           │       │   └─ op[increment] = "++"
-  │           │       └─ ";\n    }"
-  │           ├─ method[public and override]/
-  │           │   ├─ "override"
-  │           │   ├─ name = "render"
-  │           │   ├─ "()"
-  │           │   ├─ returns/
-  │           │   │   ├─ ":"
-  │           │   │   └─ type/name = "string"
-  │           │   └─ body/block/
-  │           │       ├─ "{"
-  │           │       ├─ variable[const]/
-  │           │       │   ├─ "const"
-  │           │       │   ├─ name = "first"
-  │           │       │   ├─ "="
-  │           │       │   ├─ value/binary/
-  │           │       │   │   ├─ left/member/
-  │           │       │   │   │   ├─ object/index/
-  │           │       │   │   │   │   ├─ object/member/
-  │           │       │   │   │   │   │   ├─ object/this = "this"
-  │           │       │   │   │   │   │   ├─ "."
-  │           │       │   │   │   │   │   └─ property/name = "items"
-  │           │       │   │   │   │   ├─ "["
-  │           │       │   │   │   │   ├─ number = "0"
-  │           │       │   │   │   │   └─ "]"
-  │           │       │   │   │   ├─ member[optional] = "?."
-  │           │       │   │   │   └─ property/name = "label"
-  │           │       │   │   ├─ op[nullish-coalescing] = "??"
-  │           │       │   │   └─ right/string = "\"unnamed\""
-  │           │       │   └─ ";"
-  │           │       ├─ return/
-  │           │       │   ├─ "return"
-  │           │       │   ├─ template/
-  │           │       │   │   ├─ "`Widget<"
-  │           │       │   │   ├─ interpolation/
-  │           │       │   │   │   ├─ "${"
-  │           │       │   │   │   ├─ unary/
-  │           │       │   │   │   │   ├─ name = "first"
-  │           │       │   │   │   │   └─ "!"
-  │           │       │   │   │   └─ "}"
-  │           │       │   │   └─ ">`"
-  │           │       │   └─ ";"
-  │           │       └─ "}"
-  │           ├─ method[public and generator]/
-  │           │   ├─ "*"
-  │           │   ├─ name = "entries"
-  │           │   ├─ "()"
-  │           │   ├─ returns/
-  │           │   │   ├─ ":"
-  │           │   │   └─ type[generic]/
-  │           │   │       ├─ name = "Generator"
-  │           │   │       ├─ "<"
-  │           │   │       ├─ type[tuple]/
-  │           │   │       │   ├─ "["
-  │           │   │       │   ├─ type/name = "number"
-  │           │   │       │   ├─ ","
-  │           │   │       │   ├─ type/name = "T"
-  │           │   │       │   └─ "]"
-  │           │   │       └─ ">"
-  │           │   └─ body/block/
-  │           │       ├─ "{"
-  │           │       ├─ for/
-  │           │       │   ├─ "for ("
-  │           │       │   ├─ variable[let]/
-  │           │       │   │   ├─ "let"
-  │           │       │   │   ├─ name = "i"
-  │           │       │   │   ├─ "="
-  │           │       │   │   ├─ value/number = "0"
-  │           │       │   │   └─ ";"
-  │           │       │   ├─ condition/binary/
-  │           │       │   │   ├─ left/name = "i"
-  │           │       │   │   ├─ op/
-  │           │       │   │   │   ├─ compare[less]
-  │           │       │   │   │   └─ "<"
-  │           │       │   │   └─ right/member/
-  │           │       │   │       ├─ object/member/
-  │           │       │   │       │   ├─ object/this = "this"
-  │           │       │   │       │   ├─ "."
-  │           │       │   │       │   └─ property/name = "items"
-  │           │       │   │       ├─ "."
-  │           │       │   │       └─ property/name = "length"
-  │           │       │   ├─ ";"
-  │           │       │   ├─ unary/
-  │           │       │   │   ├─ name = "i"
-  │           │       │   │   └─ op[increment] = "++"
-  │           │       │   ├─ ")"
-  │           │       │   └─ body/
-  │           │       │       ├─ yield/
-  │           │       │       │   ├─ "yield"
-  │           │       │       │   └─ array/
-  │           │       │       │       ├─ "["
-  │           │       │       │       ├─ name = "i"
-  │           │       │       │       ├─ ","
-  │           │       │       │       ├─ index/
-  │           │       │       │       │   ├─ object/member/
-  │           │       │       │       │   │   ├─ object/this = "this"
-  │           │       │       │       │   │   ├─ "."
-  │           │       │       │       │   │   └─ property/name = "items"
-  │           │       │       │       │   ├─ "["
-  │           │       │       │       │   ├─ name = "i"
-  │           │       │       │       │   └─ "]"
-  │           │       │       │       └─ "]"
-  │           │       │       └─ ";"
-  │           │       └─ "}"
-  │           ├─ method[public and async]/
-  │           │   ├─ "async"
-  │           │   ├─ name = "loadAll"
-  │           │   ├─ "("
-  │           │   ├─ parameter[required]/
-  │           │   │   ├─ name = "urls"
-  │           │   │   ├─ ":"
-  │           │   │   └─ type[array]/
-  │           │   │       ├─ type/name = "string"
-  │           │   │       └─ "[]"
-  │           │   ├─ ","
-  │           │   ├─ parameter[required]/
-  │           │   │   ├─ rest/
-  │           │   │   │   ├─ "..."
-  │           │   │   │   └─ name = "extra"
-  │           │   │   ├─ ":"
-  │           │   │   └─ type[array]/
-  │           │   │       ├─ type/name = "string"
-  │           │   │       └─ "[]"
-  │           │   ├─ ")"
-  │           │   ├─ returns/
-  │           │   │   ├─ ":"
-  │           │   │   └─ type[generic]/
-  │           │   │       ├─ name = "Promise"
-  │           │   │       ├─ "<"
-  │           │   │       ├─ type[array]/
-  │           │   │       │   ├─ type/name = "T"
-  │           │   │       │   └─ "[]"
-  │           │   │       └─ ">"
-  │           │   └─ body/block/
-  │           │       ├─ "{"
-  │           │       ├─ try/
-  │           │       │   ├─ "try"
-  │           │       │   ├─ body/block/
-  │           │       │   │   ├─ "{"
-  │           │       │   │   ├─ variable[const]/
-  │           │       │   │   │   ├─ "const"
-  │           │       │   │   │   ├─ name = "merged"
-  │           │       │   │   │   ├─ "="
-  │           │       │   │   │   ├─ value/array/
-  │           │       │   │   │   │   ├─ "["
-  │           │       │   │   │   │   ├─ spread/
-  │           │       │   │   │   │   │   ├─ "..."
-  │           │       │   │   │   │   │   └─ name = "urls"
-  │           │       │   │   │   │   ├─ ","
-  │           │       │   │   │   │   ├─ spread/
-  │           │       │   │   │   │   │   ├─ "..."
-  │           │       │   │   │   │   │   └─ name = "extra"
-  │           │       │   │   │   │   └─ "]"
-  │           │       │   │   │   └─ ";"
-  │           │       │   │   ├─ for/
-  │           │       │   │   │   ├─ "for (const"
-  │           │       │   │   │   ├─ left/name = "u"
-  │           │       │   │   │   ├─ "of"
-  │           │       │   │   │   ├─ right/name = "merged"
-  │           │       │   │   │   ├─ ")"
-  │           │       │   │   │   └─ body/block/
-  │           │       │   │   │       ├─ "{"
-  │           │       │   │   │       ├─ await/
-  │           │       │   │   │       │   ├─ "await"
-  │           │       │   │   │       │   └─ call/
-  │           │       │   │   │       │       ├─ callee/name = "fetch"
-  │           │       │   │   │       │       ├─ "("
-  │           │       │   │   │       │       ├─ name = "u"
-  │           │       │   │   │       │       └─ ")"
-  │           │       │   │   │       └─ "; }"
-  │           │       │   │   ├─ return/
-  │           │       │   │   │   ├─ "return"
-  │           │       │   │   │   ├─ member/
-  │           │       │   │   │   │   ├─ object/this = "this"
-  │           │       │   │   │   │   ├─ "."
-  │           │       │   │   │   │   └─ property/name = "items"
-  │           │       │   │   │   └─ ";"
-  │           │       │   │   └─ "}"
-  │           │       │   ├─ catch/
-  │           │       │   │   ├─ "catch ("
-  │           │       │   │   ├─ name = "e"
-  │           │       │   │   ├─ ")"
-  │           │       │   │   └─ body/block/
-  │           │       │   │       ├─ "{"
-  │           │       │   │       ├─ throw/
-  │           │       │   │       │   ├─ "throw"
-  │           │       │   │       │   ├─ as/
-  │           │       │   │       │   │   ├─ name = "e"
-  │           │       │   │       │   │   ├─ "as"
-  │           │       │   │       │   │   └─ type/name = "Error"
-  │           │       │   │       │   └─ ";"
-  │           │       │   │       └─ "}"
-  │           │       │   └─ finally/
-  │           │       │       ├─ "finally"
-  │           │       │       └─ body/block/
-  │           │       │           ├─ "{"
-  │           │       │           ├─ member/
-  │           │       │           │   ├─ object/member/
-  │           │       │           │   │   ├─ object/this = "this"
-  │           │       │           │   │   ├─ "."
-  │           │       │           │   │   └─ property/name = "items"
-  │           │       │           │   ├─ "."
-  │           │       │           │   └─ property/name = "length"
-  │           │       │           └─ ";\n        }"
-  │           │       └─ "}"
-  │           └─ "}"
+  │       │   │   ├─ name
+  │       │   │   └─ type/name
+  │       │   └─ body/block/call/
+  │       │       ├─ callee/member/
+  │       │       │   ├─ object/member/
+  │       │       │   │   ├─ object/this
+  │       │       │   │   └─ property/name
+  │       │       │   └─ property/name
+  │       │       ├─ string
+  │       │       └─ name
+  │       └─ method[public]/
+  │           ├─ name
+  │           ├─ parameter[required]/
+  │           │   ├─ name
+  │           │   └─ type/name
+  │           ├─ parameter[required]/
+  │           │   ├─ name
+  │           │   └─ type/name
+  │           ├─ returns/type/name
+  │           └─ body/block/call/
+  │               ├─ callee/member/
+  │               │   ├─ object/member/
+  │               │   │   ├─ object/this
+  │               │   │   └─ property/name
+  │               │   └─ property/name
+  │               ├─ name
+  │               └─ name
+  ├─ export/class/
+  │   ├─ name
+  │   ├─ generics/generic/
+  │   │   ├─ name
+  │   │   ├─ constraint/type/name
+  │   │   └─ value/type[default]/type[generic]/
+  │   │       ├─ name
+  │   │       └─ type/name
+  │   ├─ extends/
+  │   │   ├─ type/name
+  │   │   └─ type/name
+  │   └─ body/
+  │       ├─ field[private and public]/
+  │       │   ├─ name
+  │       │   └─ value/number
+  │       ├─ method[public]/
+  │       │   ├─ name
+  │       │   ├─ parameter[required]/
+  │       │   │   ├─ name
+  │       │   │   └─ type/name
+  │       │   ├─ parameter[required and private]/
+  │       │   │   ├─ name
+  │       │   │   ├─ type[array]/type/name
+  │       │   │   └─ value/array
+  │       │   └─ body/block/
+  │       │       ├─ call/
+  │       │       │   ├─ callee/super
+  │       │       │   └─ name
+  │       │       └─ unary/
+  │       │           ├─ member/
+  │       │           │   ├─ object/name
+  │       │           │   └─ property/name
+  │       │           └─ op[increment]
+  │       ├─ method[public and override]/
+  │       │   ├─ name
+  │       │   ├─ returns/type/name
+  │       │   └─ body/block/
+  │       │       ├─ variable[const]/
+  │       │       │   ├─ name
+  │       │       │   └─ value/binary/
+  │       │       │       ├─ left/member/
+  │       │       │       │   ├─ object/index/
+  │       │       │       │   │   ├─ object/member/
+  │       │       │       │   │   │   ├─ object/this
+  │       │       │       │   │   │   └─ property/name
+  │       │       │       │   │   └─ number
+  │       │       │       │   ├─ member[optional]
+  │       │       │       │   └─ property/name
+  │       │       │       ├─ op[nullish-coalescing]
+  │       │       │       └─ right/string
+  │       │       └─ return/template/interpolation/unary/name
+  │       ├─ method[public and generator]/
+  │       │   ├─ name
+  │       │   ├─ returns/type[generic]/
+  │       │   │   ├─ name
+  │       │   │   └─ type[tuple]/
+  │       │   │       ├─ type/name
+  │       │   │       └─ type/name
+  │       │   └─ body/block/for/
+  │       │       ├─ variable[let]/
+  │       │       │   ├─ name
+  │       │       │   └─ value/number
+  │       │       ├─ condition/binary/
+  │       │       │   ├─ left/name
+  │       │       │   ├─ op/compare[less]
+  │       │       │   └─ right/member/
+  │       │       │       ├─ object/member/
+  │       │       │       │   ├─ object/this
+  │       │       │       │   └─ property/name
+  │       │       │       └─ property/name
+  │       │       ├─ unary/
+  │       │       │   ├─ name
+  │       │       │   └─ op[increment]
+  │       │       └─ body/yield/array/
+  │       │           ├─ name
+  │       │           └─ index/
+  │       │               ├─ object/member/
+  │       │               │   ├─ object/this
+  │       │               │   └─ property/name
+  │       │               └─ name
+  │       └─ method[public and async]/
+  │           ├─ name
+  │           ├─ parameter[required]/
+  │           │   ├─ name
+  │           │   └─ type[array]/type/name
+  │           ├─ parameter[required]/
+  │           │   ├─ rest/name
+  │           │   └─ type[array]/type/name
+  │           ├─ returns/type[generic]/
+  │           │   ├─ name
+  │           │   └─ type[array]/type/name
+  │           └─ body/block/try/
+  │               ├─ body/block/
+  │               │   ├─ variable[const]/
+  │               │   │   ├─ name
+  │               │   │   └─ value/array/
+  │               │   │       ├─ spread/name
+  │               │   │       └─ spread/name
+  │               │   ├─ for/
+  │               │   │   ├─ left/name
+  │               │   │   ├─ right/name
+  │               │   │   └─ body/block/await/call/
+  │               │   │       ├─ callee/name
+  │               │   │       └─ name
+  │               │   └─ return/member/
+  │               │       ├─ object/this
+  │               │       └─ property/name
+  │               ├─ catch/
+  │               │   ├─ name
+  │               │   └─ body/block/throw/as/
+  │               │       ├─ name
+  │               │       └─ type/name
+  │               └─ finally/body/block/member/
+  │                   ├─ object/member/
+  │                   │   ├─ object/this
+  │                   │   └─ property/name
+  │                   └─ property/name
   ├─ function/
-  │   ├─ "function"
-  │   ├─ name = "isShape"
-  │   ├─ "("
+  │   ├─ name
   │   ├─ parameter[required]/
-  │   │   ├─ name = "v"
-  │   │   ├─ ":"
-  │   │   └─ type/name = "unknown"
-  │   ├─ ")"
-  │   ├─ returns/predicate/
-  │   │   ├─ ":"
-  │   │   └─ predicate/
-  │   │       ├─ name = "v"
-  │   │       ├─ "is"
-  │   │       └─ type/name = "Shape"
-  │   └─ body/block/
-  │       ├─ "{"
-  │       ├─ return/
-  │       │   ├─ "return"
-  │       │   ├─ binary/
-  │       │   │   ├─ left/binary/
-  │       │   │   │   ├─ left/binary/
-  │       │   │   │   │   ├─ left/unary/
-  │       │   │   │   │   │   ├─ op = "typeof"
-  │       │   │   │   │   │   └─ name = "v"
-  │       │   │   │   │   ├─ op/
-  │       │   │   │   │   │   ├─ equals[strict]
-  │       │   │   │   │   │   └─ "==="
-  │       │   │   │   │   └─ right/string = "\"object\""
-  │       │   │   │   ├─ op/
-  │       │   │   │   │   ├─ logical[and]
-  │       │   │   │   │   └─ "&&"
-  │       │   │   │   └─ right/binary/
-  │       │   │   │       ├─ left/name = "v"
-  │       │   │   │       ├─ op/
-  │       │   │   │       │   ├─ not-equals[strict]
-  │       │   │   │       │   └─ "!=="
-  │       │   │   │       └─ right/null = "null"
-  │       │   │   ├─ op/
-  │       │   │   │   ├─ logical[and]
-  │       │   │   │   └─ "&&"
-  │       │   │   └─ right/binary/
-  │       │   │       ├─ left/string = "\"id\""
-  │       │   │       ├─ op[contains] = "in"
-  │       │   │       └─ right/name = "v"
-  │       │   └─ ";"
-  │       └─ "}"
+  │   │   ├─ name
+  │   │   └─ type/name
+  │   ├─ returns/predicate/predicate/
+  │   │   ├─ name
+  │   │   └─ type/name
+  │   └─ body/block/return/binary/
+  │       ├─ left/binary/
+  │       │   ├─ left/binary/
+  │       │   │   ├─ left/unary/
+  │       │   │   │   ├─ op
+  │       │   │   │   └─ name
+  │       │   │   ├─ op/equals[strict]
+  │       │   │   └─ right/string
+  │       │   ├─ op/logical[and]
+  │       │   └─ right/binary/
+  │       │       ├─ left/name
+  │       │       ├─ op/not-equals[strict]
+  │       │       └─ right/null
+  │       ├─ op/logical[and]
+  │       └─ right/binary/
+  │           ├─ left/string
+  │           ├─ op[contains]
+  │           └─ right/name
   ├─ variable[const]/
-  │   ├─ "const"
-  │   ├─ name = "tag"
-  │   ├─ "="
-  │   ├─ value/arrow/
-  │   │   ├─ "("
-  │   │   ├─ parameter[required]/
-  │   │   │   ├─ name = "parts"
-  │   │   │   ├─ ":"
-  │   │   │   └─ type/name = "TemplateStringsArray"
-  │   │   ├─ ","
-  │   │   ├─ parameter[required]/
-  │   │   │   ├─ rest/
-  │   │   │   │   ├─ "..."
-  │   │   │   │   └─ name = "vals"
-  │   │   │   ├─ ":"
-  │   │   │   └─ type[array]/
-  │   │   │       ├─ type/name = "unknown"
-  │   │   │       └─ "[]"
-  │   │   ├─ ") =>"
-  │   │   └─ body/call/
-  │   │       ├─ callee/member/
-  │   │       │   ├─ object/name = "parts"
-  │   │       │   ├─ "."
-  │   │       │   └─ property/name = "reduce"
-  │   │       ├─ "<"
-  │   │       ├─ type/name = "string"
-  │   │       ├─ ">("
-  │   │       ├─ arrow/
-  │   │       │   ├─ "("
-  │   │       │   ├─ parameter[required]/name = "acc"
-  │   │       │   ├─ ","
-  │   │       │   ├─ parameter[required]/name = "p"
-  │   │       │   ├─ ","
-  │   │       │   ├─ parameter[required]/name = "i"
-  │   │       │   ├─ ") =>"
-  │   │       │   └─ body/binary/
-  │   │       │       ├─ left/binary/
-  │   │       │       │   ├─ left/name = "acc"
-  │   │       │       │   ├─ op[plus] = "+"
-  │   │       │       │   └─ right/name = "p"
-  │   │       │       ├─ op[plus] = "+"
-  │   │       │       └─ right/
-  │   │       │           ├─ "("
-  │   │       │           ├─ binary/
-  │   │       │           │   ├─ left/index/
-  │   │       │           │   │   ├─ object/name = "vals"
-  │   │       │           │   │   ├─ "["
-  │   │       │           │   │   ├─ name = "i"
-  │   │       │           │   │   └─ "]"
-  │   │       │           │   ├─ op[nullish-coalescing] = "??"
-  │   │       │           │   └─ right/string = "\"\""
-  │   │       │           └─ ")"
-  │   │       ├─ ","
-  │   │       ├─ string = "\"\""
-  │   │       └─ ")"
-  │   └─ ";"
+  │   ├─ name
+  │   └─ value/arrow/
+  │       ├─ parameter[required]/
+  │       │   ├─ name
+  │       │   └─ type/name
+  │       ├─ parameter[required]/
+  │       │   ├─ rest/name
+  │       │   └─ type[array]/type/name
+  │       └─ body/call/
+  │           ├─ callee/member/
+  │           │   ├─ object/name
+  │           │   └─ property/name
+  │           ├─ type/name
+  │           ├─ arrow/
+  │           │   ├─ parameter[required]/name
+  │           │   ├─ parameter[required]/name
+  │           │   ├─ parameter[required]/name
+  │           │   └─ body/binary/
+  │           │       ├─ left/binary/
+  │           │       │   ├─ left/name
+  │           │       │   ├─ op[plus]
+  │           │       │   └─ right/name
+  │           │       ├─ op[plus]
+  │           │       └─ right/binary/
+  │           │           ├─ left/index/
+  │           │           │   ├─ object/name
+  │           │           │   └─ name
+  │           │           ├─ op[nullish-coalescing]
+  │           │           └─ right/string
+  │           └─ string
   ├─ function[async]/
-  │   ├─ "async function"
-  │   ├─ name = "compute"
-  │   ├─ generics/
-  │   │   ├─ "<"
-  │   │   ├─ generic/
-  │   │   │   ├─ name = "T"
-  │   │   │   └─ constraint/
-  │   │   │       ├─ "extends"
-  │   │   │       └─ type[union]/
-  │   │   │           ├─ type/name = "number"
-  │   │   │           ├─ "|"
-  │   │   │           └─ type/name = "string"
-  │   │   └─ ">"
-  │   ├─ "("
+  │   ├─ name
+  │   ├─ generics/generic/
+  │   │   ├─ name
+  │   │   └─ constraint/type[union]/
+  │   │       ├─ type/name
+  │   │       └─ type/name
   │   ├─ parameter[required]/
-  │   │   ├─ name = "input"
-  │   │   ├─ ":"
-  │   │   └─ type/name = "T"
-  │   ├─ ","
+  │   │   ├─ name
+  │   │   └─ type/name
   │   ├─ parameter[required]/
   │   │   ├─ pattern[object]/
-  │   │   │   ├─ "{"
   │   │   │   ├─ pattern[default]/
-  │   │   │   │   ├─ left/name = "scale"
-  │   │   │   │   ├─ "="
-  │   │   │   │   └─ right/number = "1"
-  │   │   │   ├─ ","
-  │   │   │   ├─ name = "label"
-  │   │   │   └─ "}"
-  │   │   ├─ ":"
+  │   │   │   │   ├─ left/name
+  │   │   │   │   └─ right/number
+  │   │   │   └─ name
   │   │   ├─ type[object]/
-  │   │   │   ├─ "{"
   │   │   │   ├─ property/
-  │   │   │   │   ├─ name = "scale"
-  │   │   │   │   ├─ "?:"
-  │   │   │   │   └─ type/name = "number"
-  │   │   │   ├─ ";"
-  │   │   │   ├─ property/
-  │   │   │   │   ├─ name = "label"
-  │   │   │   │   ├─ "?:"
-  │   │   │   │   └─ type/name = "string"
-  │   │   │   └─ "}"
-  │   │   ├─ "="
-  │   │   └─ value/object = "{}"
-  │   ├─ ",\n)"
-  │   ├─ returns/
-  │   │   ├─ ":"
-  │   │   └─ type[generic]/
-  │   │       ├─ name = "Promise"
-  │   │       ├─ "<"
-  │   │       ├─ type/name = "Greeting"
-  │   │       └─ ">"
+  │   │   │   │   ├─ name
+  │   │   │   │   └─ type/name
+  │   │   │   └─ property/
+  │   │   │       ├─ name
+  │   │   │       └─ type/name
+  │   │   └─ value/object
+  │   ├─ returns/type[generic]/
+  │   │   ├─ name
+  │   │   └─ type/name
   │   └─ body/block/
-  │       ├─ "{"
   │       ├─ variable[const]/
-  │       │   ├─ "const"
   │       │   ├─ pattern[array]/
-  │       │   │   ├─ "["
-  │       │   │   ├─ name = "head"
-  │       │   │   ├─ ","
-  │       │   │   ├─ rest/
-  │       │   │   │   ├─ "..."
-  │       │   │   │   └─ name = "rest"
-  │       │   │   └─ "]"
-  │       │   ├─ "="
-  │       │   ├─ value/call/
+  │       │   │   ├─ name
+  │       │   │   └─ rest/name
+  │       │   └─ value/call/
+  │       │       ├─ callee/member/
+  │       │       │   ├─ object/call/
+  │       │       │   │   ├─ callee/name
+  │       │       │   │   └─ name
+  │       │       │   └─ property/name
+  │       │       └─ string
+  │       ├─ comment
+  │       ├─ variable[const]/
+  │       │   ├─ name
+  │       │   └─ value/object/
+  │       │       ├─ spread/object/name
+  │       │       ├─ name
+  │       │       ├─ name
+  │       │       └─ name
+  │       ├─ variable[const]/
+  │       │   ├─ name
+  │       │   └─ value/as/
+  │       │       ├─ call/
+  │       │       │   ├─ callee/name
+  │       │       │   └─ template/
+  │       │       │       ├─ interpolation/binary/
+  │       │       │       │   ├─ left/name
+  │       │       │       │   ├─ op[nullish-coalescing]
+  │       │       │       │   └─ right/string
+  │       │       │       └─ interpolation/member/
+  │       │       │           ├─ object/name
+  │       │       │           └─ property/name
+  │       │       └─ type/name
+  │       └─ return/satisfies/
+  │           ├─ name
+  │           └─ type/name
+  ├─ comment
+  ├─ export/function/
+  │   ├─ name
+  │   ├─ parameter[required]/
+  │   │   ├─ name
+  │   │   └─ type/name
+  │   ├─ returns/type/name
+  │   └─ body/block/
+  │       ├─ variable[let]/
+  │       │   ├─ name
+  │       │   ├─ type/name
+  │       │   └─ value/string
+  │       ├─ if/
+  │       │   ├─ condition/binary/
+  │       │   │   ├─ left/name
+  │       │   │   ├─ op/compare[less]
+  │       │   │   └─ right/number
+  │       │   ├─ then/assign/
+  │       │   │   ├─ left/name
+  │       │   │   ├─ op
+  │       │   │   └─ right/string
+  │       │   ├─ else_if/
+  │       │   │   ├─ condition/binary/
+  │       │   │   │   ├─ left/name
+  │       │   │   │   ├─ op/equals[strict]
+  │       │   │   │   └─ right/number
+  │       │   │   └─ then/assign/
+  │       │   │       ├─ left/name
+  │       │   │       ├─ op
+  │       │   │       └─ right/string
+  │       │   ├─ else_if/
+  │       │   │   ├─ condition/binary/
+  │       │   │   │   ├─ left/name
+  │       │   │   │   ├─ op/compare[less]
+  │       │   │   │   └─ right/number
+  │       │   │   └─ then/assign/
+  │       │   │       ├─ left/name
+  │       │   │       ├─ op
+  │       │   │       └─ right/string
+  │       │   └─ else/assign/
+  │       │       ├─ left/name
+  │       │       ├─ op
+  │       │       └─ right/string
+  │       ├─ switch/
+  │       │   ├─ value/name
+  │       │   └─ body/body/
+  │       │       ├─ case/
+  │       │       │   ├─ value/string
+  │       │       │   └─ body/break
+  │       │       ├─ case/
+  │       │       │   ├─ value/string
+  │       │       │   └─ body/throw/new/
+  │       │       │       ├─ name
+  │       │       │       └─ string
+  │       │       └─ default/
+  │       │           ├─ comment
+  │       │           └─ body/break
+  │       ├─ variable[const]/
+  │       │   ├─ name
+  │       │   ├─ type[generic]/
+  │       │   │   ├─ name
+  │       │   │   ├─ type/name
+  │       │   │   └─ type/name
+  │       │   └─ value/object/
+  │       │       ├─ pair/
+  │       │       │   ├─ name
+  │       │       │   └─ value/number
+  │       │       └─ pair/
+  │       │           ├─ name
+  │       │           └─ value/number
+  │       ├─ for/
+  │       │   ├─ left/name
+  │       │   ├─ right/name
+  │       │   └─ body/block/assign/
+  │       │       ├─ left/unary/index/
+  │       │       │   ├─ object/name
+  │       │       │   └─ name
+  │       │       ├─ op/assign[plus]
+  │       │       └─ right/number
+  │       ├─ for/
+  │       │   ├─ left/pattern[array]/name
+  │       │   ├─ right/call/
   │       │   │   ├─ callee/member/
-  │       │   │   │   ├─ object/call/
-  │       │   │   │   │   ├─ callee/name = "String"
-  │       │   │   │   │   ├─ "("
-  │       │   │   │   │   ├─ name = "input"
-  │       │   │   │   │   └─ ")"
-  │       │   │   │   ├─ "."
-  │       │   │   │   └─ property/name = "split"
-  │       │   │   ├─ "("
-  │       │   │   ├─ string = "\"\""
-  │       │   │   └─ ")"
-  │       │   └─ ";"
-  │       ├─ comment = "// array destructure + rest"
-  │       ├─ variable[const]/
-  │       │   ├─ "const"
-  │       │   ├─ name = "spread"
-  │       │   ├─ "="
-  │       │   ├─ value/object/
-  │       │   │   ├─ "{"
-  │       │   │   ├─ spread/
-  │       │   │   │   ├─ "..."
-  │       │   │   │   └─ object/
-  │       │   │   │       ├─ "{"
-  │       │   │   │       ├─ name = "scale"
-  │       │   │   │       └─ "}"
-  │       │   │   ├─ ","
-  │       │   │   ├─ name = "label"
-  │       │   │   ├─ ","
-  │       │   │   ├─ name = "head"
-  │       │   │   ├─ ","
-  │       │   │   ├─ name = "rest"
-  │       │   │   └─ "}"
-  │       │   └─ ";"
-  │       ├─ variable[const]/
-  │       │   ├─ "const"
-  │       │   ├─ name = "msg"
-  │       │   ├─ "="
-  │       │   ├─ value/as/
-  │       │   │   ├─ call/
-  │       │   │   │   ├─ callee/name = "tag"
-  │       │   │   │   └─ template/
-  │       │   │   │       ├─ "`hello,"
-  │       │   │   │       ├─ interpolation/
-  │       │   │   │       │   ├─ "${"
-  │       │   │   │       │   ├─ binary/
-  │       │   │   │       │   │   ├─ left/name = "label"
-  │       │   │   │       │   │   ├─ op[nullish-coalescing] = "??"
-  │       │   │   │       │   │   └─ right/string = "\"world\""
-  │       │   │   │       │   └─ "}"
-  │       │   │   │       ├─ "("
-  │       │   │   │       ├─ interpolation/
-  │       │   │   │       │   ├─ "${"
-  │       │   │   │       │   ├─ member/
-  │       │   │   │       │   │   ├─ object/name = "spread"
-  │       │   │   │       │   │   ├─ "."
-  │       │   │   │       │   │   └─ property/name = "scale"
-  │       │   │   │       │   └─ "}"
-  │       │   │   │       └─ ")`"
-  │       │   │   ├─ "as"
-  │       │   │   └─ type/name = "Greeting"
-  │       │   └─ ";"
-  │       ├─ return/
-  │       │   ├─ "return"
-  │       │   ├─ satisfies/
-  │       │   │   ├─ name = "msg"
-  │       │   │   ├─ "satisfies"
-  │       │   │   └─ type/name = "Greeting"
-  │       │   └─ ";"
-  │       └─ "}"
-  ├─ comment = "/* A block comment describing control flow demos. */"
-  ├─ export/
-  │   ├─ "export"
-  │   └─ function/
-  │       ├─ "function"
-  │       ├─ name = "controlFlow"
-  │       ├─ "("
+  │       │   │   │   ├─ object/name
+  │       │   │   │   └─ property/name
+  │       │   │   └─ name
+  │       │   └─ body/block/unary/
+  │       │       ├─ op
+  │       │       └─ name
+  │       ├─ while/
+  │       │   ├─ condition/bool
+  │       │   └─ body/block/comment
+  │       └─ return/ternary/
+  │           ├─ condition/binary/
+  │           │   ├─ left/name
+  │           │   ├─ op/compare[greater]
+  │           │   └─ right/number
+  │           ├─ then/name
+  │           └─ else/string
+  ├─ variable[const]/
+  │   ├─ name
+  │   └─ value/arrow/
+  │       ├─ generics/generic/name
   │       ├─ parameter[required]/
-  │       │   ├─ name = "n"
-  │       │   ├─ ":"
-  │       │   └─ type/name = "number"
-  │       ├─ ")"
-  │       ├─ returns/
-  │       │   ├─ ":"
-  │       │   └─ type/name = "Status"
-  │       └─ body/block/
-  │           ├─ "{"
-  │           ├─ variable[let]/
-  │           │   ├─ "let"
-  │           │   ├─ name = "status"
-  │           │   ├─ ":"
-  │           │   ├─ type/name = "Status"
-  │           │   ├─ "="
-  │           │   ├─ value/string = "\"idle\""
-  │           │   └─ ";"
-  │           ├─ if/
-  │           │   ├─ "if"
-  │           │   ├─ condition/
-  │           │   │   ├─ "("
-  │           │   │   ├─ binary/
-  │           │   │   │   ├─ left/name = "n"
-  │           │   │   │   ├─ op/
-  │           │   │   │   │   ├─ compare[less]
-  │           │   │   │   │   └─ "<"
-  │           │   │   │   └─ right/number = "0"
-  │           │   │   └─ ")"
-  │           │   ├─ then/
-  │           │   │   ├─ assign/
-  │           │   │   │   ├─ left/name = "status"
-  │           │   │   │   ├─ op = "="
-  │           │   │   │   └─ right/string = "\"error\""
-  │           │   │   └─ ";"
-  │           │   ├─ else_if/
-  │           │   │   ├─ "else if"
-  │           │   │   ├─ condition/
-  │           │   │   │   ├─ "("
-  │           │   │   │   ├─ binary/
-  │           │   │   │   │   ├─ left/name = "n"
-  │           │   │   │   │   ├─ op/
-  │           │   │   │   │   │   ├─ equals[strict]
-  │           │   │   │   │   │   └─ "==="
-  │           │   │   │   │   └─ right/number = "0"
-  │           │   │   │   └─ ")"
-  │           │   │   └─ then/
-  │           │   │       ├─ assign/
-  │           │   │       │   ├─ left/name = "status"
-  │           │   │       │   ├─ op = "="
-  │           │   │       │   └─ right/string = "\"idle\""
-  │           │   │       └─ ";"
-  │           │   ├─ else_if/
-  │           │   │   ├─ "else if"
-  │           │   │   ├─ condition/
-  │           │   │   │   ├─ "("
-  │           │   │   │   ├─ binary/
-  │           │   │   │   │   ├─ left/name = "n"
-  │           │   │   │   │   ├─ op/
-  │           │   │   │   │   │   ├─ compare[less]
-  │           │   │   │   │   │   └─ "<"
-  │           │   │   │   │   └─ right/number = "10"
-  │           │   │   │   └─ ")"
-  │           │   │   └─ then/
-  │           │   │       ├─ assign/
-  │           │   │       │   ├─ left/name = "status"
-  │           │   │       │   ├─ op = "="
-  │           │   │       │   └─ right/string = "\"loading\""
-  │           │   │       └─ ";"
-  │           │   └─ else/
-  │           │       ├─ "else"
-  │           │       ├─ assign/
-  │           │       │   ├─ left/name = "status"
-  │           │       │   ├─ op = "="
-  │           │       │   └─ right/string = "\"ready\""
-  │           │       └─ ";"
-  │           ├─ switch/
-  │           │   ├─ "switch"
-  │           │   ├─ value/
-  │           │   │   ├─ "("
-  │           │   │   ├─ name = "status"
-  │           │   │   └─ ")"
-  │           │   └─ body/body/
-  │           │       ├─ "{"
-  │           │       ├─ case/
-  │           │       │   ├─ "case"
-  │           │       │   ├─ value/string = "\"ready\""
-  │           │       │   ├─ ":"
-  │           │       │   └─ body/break = "break;"
-  │           │       ├─ case/
-  │           │       │   ├─ "case"
-  │           │       │   ├─ value/string = "\"error\""
-  │           │       │   ├─ ":"
-  │           │       │   └─ body/throw/
-  │           │       │       ├─ "throw"
-  │           │       │       ├─ new/
-  │           │       │       │   ├─ "new"
-  │           │       │       │   ├─ name = "Error"
-  │           │       │       │   ├─ "("
-  │           │       │       │   ├─ string = "\"bad\""
-  │           │       │       │   └─ ")"
-  │           │       │       └─ ";"
-  │           │       ├─ default/
-  │           │       │   ├─ "default:"
-  │           │       │   ├─ comment = "/* fallthrough */"
-  │           │       │   └─ body/break = "break;"
-  │           │       └─ "}"
-  │           ├─ variable[const]/
-  │           │   ├─ "const"
-  │           │   ├─ name = "obj"
-  │           │   ├─ ":"
-  │           │   ├─ type[generic]/
-  │           │   │   ├─ name = "Record"
-  │           │   │   ├─ "<"
-  │           │   │   ├─ type/name = "string"
-  │           │   │   ├─ ","
-  │           │   │   ├─ type/name = "number"
-  │           │   │   └─ ">"
-  │           │   ├─ "="
-  │           │   ├─ value/object/
-  │           │   │   ├─ "{"
-  │           │   │   ├─ pair/
-  │           │   │   │   ├─ name = "a"
-  │           │   │   │   ├─ ":"
-  │           │   │   │   └─ value/number = "1"
-  │           │   │   ├─ ","
-  │           │   │   ├─ pair/
-  │           │   │   │   ├─ name = "b"
-  │           │   │   │   ├─ ":"
-  │           │   │   │   └─ value/number = "2"
-  │           │   │   └─ "}"
-  │           │   └─ ";"
-  │           ├─ for/
-  │           │   ├─ "for (const"
-  │           │   ├─ left/name = "k"
-  │           │   ├─ "in"
-  │           │   ├─ right/name = "obj"
-  │           │   ├─ ")"
-  │           │   └─ body/block/
-  │           │       ├─ "{"
-  │           │       ├─ assign/
-  │           │       │   ├─ left/unary/
-  │           │       │   │   ├─ index/
-  │           │       │   │   │   ├─ object/name = "obj"
-  │           │       │   │   │   ├─ "["
-  │           │       │   │   │   ├─ name = "k"
-  │           │       │   │   │   └─ "]"
-  │           │       │   │   └─ "!"
-  │           │       │   ├─ op/
-  │           │       │   │   ├─ assign[plus]
-  │           │       │   │   └─ "+="
-  │           │       │   └─ right/number = "1"
-  │           │       └─ "; }"
-  │           ├─ for/
-  │           │   ├─ "for (const"
-  │           │   ├─ left/pattern[array]/
-  │           │   │   ├─ "[,"
-  │           │   │   ├─ name = "v"
-  │           │   │   └─ "]"
-  │           │   ├─ "of"
-  │           │   ├─ right/call/
-  │           │   │   ├─ callee/member/
-  │           │   │   │   ├─ object/name = "Object"
-  │           │   │   │   ├─ "."
-  │           │   │   │   └─ property/name = "entries"
-  │           │   │   ├─ "("
-  │           │   │   ├─ name = "obj"
-  │           │   │   └─ ")"
-  │           │   ├─ ")"
-  │           │   └─ body/block/
-  │           │       ├─ "{"
-  │           │       ├─ unary/
-  │           │       │   ├─ op = "void"
-  │           │       │   └─ name = "v"
-  │           │       └─ "; }"
-  │           ├─ while/
-  │           │   ├─ "while"
-  │           │   ├─ condition/
-  │           │   │   ├─ "("
-  │           │   │   ├─ bool = "false"
-  │           │   │   └─ ")"
-  │           │   └─ body/block/
-  │           │       ├─ "{"
-  │           │       ├─ comment = "/* never */"
-  │           │       └─ "}"
-  │           ├─ return/
-  │           │   ├─ "return"
-  │           │   ├─ ternary/
-  │           │   │   ├─ condition/binary/
-  │           │   │   │   ├─ left/name = "n"
-  │           │   │   │   ├─ op/
-  │           │   │   │   │   ├─ compare[greater]
-  │           │   │   │   │   └─ ">"
-  │           │   │   │   └─ right/number = "0"
-  │           │   │   ├─ "?"
-  │           │   │   ├─ then/name = "status"
-  │           │   │   ├─ ":"
-  │           │   │   └─ else/string = "\"idle\""
-  │           │   └─ ";"
-  │           └─ "}"
+  │       │   ├─ name
+  │       │   └─ type[array]/type/name
+  │       ├─ returns/type[union]/
+  │       │   ├─ type/name
+  │       │   └─ type[literal]/undefined
+  │       └─ body/index/
+  │           ├─ object/name
+  │           └─ number
   ├─ variable[const]/
-  │   ├─ "const"
-  │   ├─ name = "arrow"
-  │   ├─ "="
-  │   ├─ value/arrow/
-  │   │   ├─ generics/
-  │   │   │   ├─ "<"
-  │   │   │   ├─ generic/name = "U"
-  │   │   │   └─ ",>"
-  │   │   ├─ "("
-  │   │   ├─ parameter[required]/
-  │   │   │   ├─ name = "xs"
-  │   │   │   ├─ ":"
-  │   │   │   └─ type[array]/
-  │   │   │       ├─ type/name = "U"
-  │   │   │       └─ "[]"
-  │   │   ├─ ")"
-  │   │   ├─ returns/
-  │   │   │   ├─ ":"
-  │   │   │   └─ type[union]/
-  │   │   │       ├─ type/name = "U"
-  │   │   │       ├─ "|"
-  │   │   │       └─ type[literal]/undefined = "undefined"
-  │   │   ├─ "=>"
-  │   │   └─ body/index/
-  │   │       ├─ object/name = "xs"
-  │   │       ├─ "["
-  │   │       ├─ number = "0"
-  │   │       └─ "]"
-  │   └─ ";"
+  │   ├─ name
+  │   ├─ type[array]/type/name
+  │   └─ value/call/
+  │       ├─ callee/member/
+  │       │   ├─ object/array/
+  │       │   │   ├─ number
+  │       │   │   ├─ number
+  │       │   │   └─ number
+  │       │   └─ property/name
+  │       └─ arrow/
+  │           ├─ parameter[required]/name
+  │           ├─ returns/type/name
+  │           └─ body/binary/
+  │               ├─ left/name
+  │               ├─ op[multiply]
+  │               └─ right/number
   ├─ variable[const]/
-  │   ├─ "const"
-  │   ├─ name = "doubled"
-  │   ├─ ":"
-  │   ├─ type[array]/
-  │   │   ├─ type/name = "number"
-  │   │   └─ "[]"
-  │   ├─ "="
-  │   ├─ value/call/
-  │   │   ├─ callee/member/
-  │   │   │   ├─ object/array/
-  │   │   │   │   ├─ "["
-  │   │   │   │   ├─ number = "1"
-  │   │   │   │   ├─ ","
-  │   │   │   │   ├─ number = "2"
-  │   │   │   │   ├─ ","
-  │   │   │   │   ├─ number = "3"
-  │   │   │   │   └─ "]"
-  │   │   │   ├─ "."
-  │   │   │   └─ property/name = "map"
-  │   │   ├─ "("
-  │   │   ├─ arrow/
-  │   │   │   ├─ "("
-  │   │   │   ├─ parameter[required]/name = "x"
-  │   │   │   ├─ ")"
-  │   │   │   ├─ returns/
-  │   │   │   │   ├─ ":"
-  │   │   │   │   └─ type/name = "number"
-  │   │   │   ├─ "=>"
-  │   │   │   └─ body/binary/
-  │   │   │       ├─ left/name = "x"
-  │   │   │       ├─ op[multiply] = "*"
-  │   │   │       └─ right/number = "2"
-  │   │   └─ ")"
-  │   └─ ";"
-  ├─ variable[const]/
-  │   ├─ "const"
-  │   ├─ name = "maybe"
-  │   ├─ ":"
+  │   ├─ name
   │   ├─ type[union]/
-  │   │   ├─ type/name = "string"
-  │   │   ├─ "|"
-  │   │   └─ type[literal]/null = "null"
-  │   ├─ "="
-  │   ├─ value/null = "null"
-  │   └─ ";"
+  │   │   ├─ type/name
+  │   │   └─ type[literal]/null
+  │   └─ value/null
   ├─ variable[const]/
-  │   ├─ "const"
-  │   ├─ name = "fallback"
-  │   ├─ "="
-  │   ├─ value/binary/
-  │   │   ├─ left/name = "maybe"
-  │   │   ├─ op[nullish-coalescing] = "??"
-  │   │   └─ right/string = "\"default\""
-  │   └─ ";"
+  │   ├─ name
+  │   └─ value/binary/
+  │       ├─ left/name
+  │       ├─ op[nullish-coalescing]
+  │       └─ right/string
   ├─ variable[const]/
-  │   ├─ "const"
-  │   ├─ name = "nonNull"
-  │   ├─ "="
-  │   ├─ value/unary/
-  │   │   ├─ "("
-  │   │   ├─ as/
-  │   │   │   ├─ name = "maybe"
-  │   │   │   ├─ "as"
-  │   │   │   └─ type[union]/
-  │   │   │       ├─ type/name = "string"
-  │   │   │       ├─ "|"
-  │   │   │       └─ type[literal]/null = "null"
-  │   │   └─ ")!"
-  │   └─ ";"
+  │   ├─ name
+  │   └─ value/unary/as/
+  │       ├─ name
+  │       └─ type[union]/
+  │           ├─ type/name
+  │           └─ type[literal]/null
   ├─ unary/
-  │   ├─ op = "void"
-  │   └─ name = "arrow"
-  ├─ ";"
+  │   ├─ op
+  │   └─ name
   ├─ unary/
-  │   ├─ op = "void"
-  │   └─ name = "doubled"
-  ├─ ";"
+  │   ├─ op
+  │   └─ name
   ├─ unary/
-  │   ├─ op = "void"
-  │   └─ name = "fallback"
-  ├─ ";"
+  │   ├─ op
+  │   └─ name
   ├─ unary/
-  │   ├─ op = "void"
-  │   └─ name = "nonNull"
-  ├─ ";"
+  │   ├─ op
+  │   └─ name
   ├─ unary/
-  │   ├─ op = "void"
-  │   └─ name = "ns"
-  ├─ ";"
+  │   ├─ op
+  │   └─ name
   ├─ unary/
-  │   ├─ op = "void"
-  │   └─ name = "defaultExport"
-  ├─ ";"
-  ├─ unary/
-  │   ├─ op = "void"
-  │   └─ name = "aliasedB"
-  └─ ";"
+  │   ├─ op
+  │   └─ name
+  └─ unary/
+      ├─ op
+      └─ name

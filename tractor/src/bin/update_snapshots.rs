@@ -58,7 +58,7 @@ const FEATURE_FIXTURES: &[(&str, &str, u32, bool)] = &[
     // — TypeScript —
     // Blueprint: kitchen-sink fixture rendered at full depth so
     // every transform change shows up as a visible snapshot diff.
-    ("tests/integration/languages/typescript/blueprint.ts", "//program", 0, false),
+    ("tests/integration/languages/typescript/blueprint.ts", "//program", 0, true),
     // Feature fixtures: minimal construct that demonstrates the
     // invariant. Depth cap hides deep internals where noise doesn't
     // help — the blueprint covers the deep view.
@@ -72,7 +72,7 @@ const FEATURE_FIXTURES: &[(&str, &str, u32, bool)] = &[
     // — Java —
     // Blueprint: kitchen-sink fixture rendered at full depth so
     // every transform change shows up as a visible snapshot diff.
-    ("tests/integration/languages/java/blueprint.java", "//program", 0, false),
+    ("tests/integration/languages/java/blueprint.java", "//program", 0, true),
     ("tests/integration/features/conditionals/conditionals.java", "//if", 3, false),
     ("tests/integration/features/constructor-rename/constructor-rename.java", "//constructor[1]", 3, false),
     ("tests/integration/features/flat-lists/flat-lists.java", "//method[1]", 4, false),
@@ -113,7 +113,7 @@ const FEATURE_FIXTURES: &[(&str, &str, u32, bool)] = &[
     ("tests/integration/features/visibility/visibility.rs", "//function[pub][1]", 3, false),
 
     // — Python —
-    ("tests/integration/languages/python/blueprint.py", "//module", 0, false),
+    ("tests/integration/languages/python/blueprint.py", "//module", 0, true),
     // Match the enclosing <function> so the snapshot shows every
     // augmented-assignment variant as siblings in the body — the
     // fixture's purpose is to demonstrate that every compound
@@ -127,7 +127,7 @@ const FEATURE_FIXTURES: &[(&str, &str, u32, bool)] = &[
     ("tests/integration/features/f-strings/f-strings.py", "//string[interpolation]", 3, false),
 
     // — Go —
-    ("tests/integration/languages/go/blueprint.go", "//file", 0, false),
+    ("tests/integration/languages/go/blueprint.go", "//file", 0, true),
     ("tests/integration/features/conditionals/conditionals.go", "//if", 3, false),
     ("tests/integration/features/defined-type-vs-alias/defined-type-vs-alias.go", "//alias", 3, false),
     ("tests/integration/features/flat-lists/flat-lists.go", "//function", 4, false),
@@ -136,10 +136,10 @@ const FEATURE_FIXTURES: &[(&str, &str, u32, bool)] = &[
     ("tests/integration/features/type-declaration/type-declaration.go", "//interface", 4, false),
 
     // — PHP —
-    ("tests/integration/languages/php/blueprint.php", "//program", 0, false),
+    ("tests/integration/languages/php/blueprint.php", "//program", 0, true),
 
     // — Ruby —
-    ("tests/integration/languages/ruby/blueprint.rb", "//program", 0, false),
+    ("tests/integration/languages/ruby/blueprint.rb", "//program", 0, true),
     ("tests/integration/features/conditionals/conditionals.rb", "//if", 3, false),
 
     ("tests/integration/features/name-inlining/name-inlining.rb", "//class", 4, false),
