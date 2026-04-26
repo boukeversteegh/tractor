@@ -188,3 +188,17 @@ statement-form ones: a nested `else_clause` wrapping another
 See the cross-cutting "Conditional shape" convention in the index
 [`transformations.md`](../transformations.md).
 
+## Comments
+
+Rust uses the shared `CommentClassifier`
+(`tractor/src/languages/comments.rs`) with `["//"]` as the line
+prefix. `line_comment` / `block_comment` rename to `<comment>` and
+get a `<trailing/>` or `<leading/>` marker per the cross-cutting
+rules (see [`transformations.md`](../transformations.md) —
+*Comments*). Adjacent `//` comments — including doc comments
+(`///`, `//!`) — merge into a single `<comment>` and the merged
+node is classified as a unit. Doc-comment internal structure
+(`@param`-style tags, markdown sections) is intentionally left as
+opaque text; structuring it is held for a separate doc-comment
+cycle.
+

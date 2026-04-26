@@ -221,3 +221,16 @@ only child is another `if_statement` for `else if`. The transform:
 
 See the cross-cutting "Conditional shape" convention in the index
 [`transformations.md`](../transformations.md).
+
+## Comments
+
+TypeScript and JavaScript use the shared `CommentClassifier`
+(`tractor/src/languages/comments.rs`) with `["//"]` as the line
+prefix. Tree-sitter emits a single `comment` kind for both `//`
+and `/* */` forms; the classifier inspects content to decide
+grouping. Comments rename to `<comment>` and get a `<trailing/>`
+or `<leading/>` marker per the cross-cutting rules (see
+[`transformations.md`](../transformations.md) — *Comments*).
+Adjacent `//` comments merge; JSDoc blocks (`/** */`) stay as
+single comments — structuring their internal tags is held for a
+separate doc-comment cycle.

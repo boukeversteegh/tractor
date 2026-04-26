@@ -183,11 +183,14 @@ field-wrapping pass handles the `<returns>` wrapper automatically.
 
 ### Comment attachment
 
-C# has custom logic for comment classification and grouping —
-line comments adjacent to declarations become `<leading/>`,
-inline comments on the same line as a statement become
-`<trailing/>`, and consecutive `//` comments on adjacent lines
-are merged into a single `<comment>` with the grouped text.
+C# uses the shared `CommentClassifier`
+(`tractor/src/languages/comments.rs`) — line comments adjacent to
+declarations become `<leading/>`, inline comments on the same line
+as a statement become `<trailing/>`, and consecutive `//` comments
+on adjacent lines merge into a single `<comment>`. C# was the
+original template for this pass; the helper was extracted into a
+shared module and is now applied uniformly across all languages.
+See [`transformations.md`](../transformations.md) — *Comments*.
 
 ## Language-specific decisions
 

@@ -15,6 +15,18 @@ interpolated strings (`"hi $name"` wraps interpolated expressions
 in `<interpolation>`), and the `use` statement family which is
 flagged below as an open design question.
 
+## Comments
+
+PHP uses the shared `CommentClassifier`
+(`tractor/src/languages/comments.rs`) with `["//", "#"]` as the
+line prefixes (PHP accepts both). `comment` renames to
+`<comment>` and gets a `<trailing/>` or `<leading/>` marker per
+the cross-cutting rules (see
+[`transformations.md`](../transformations.md) — *Comments*).
+Adjacent line comments with the same prefix merge into a single
+`<comment>`; mixing `//` and `#` across consecutive lines does
+not group (different prefix).
+
 ## Open questions / flagged items
 
 ### Use statements — structural meaning lost in name soup

@@ -178,33 +178,12 @@ says `else if`). The transform reuses the shared machinery:
 See the cross-cutting "Conditional shape" convention in the index
 [`transformations.md`](../transformations.md).
 
-## Open questions / flagged items
+## Comments
 
-### Comments — `<leading/>` / `<trailing/>` markers
-
-C# already lifts comment attachment to markers (see
-`transformations/csharp.md` — `<trailing/>` for a comment on the
-same line as the previous sibling's end, `<leading/>` for a block
-comment immediately preceding a declaration, no marker for free-
-floating / standalone comments). Java currently has none of this:
-every `line_comment` / `block_comment` renames to `<comment>` with
-no attachment classification, so queries can't distinguish
-`int x; // trailing` from `// leading\nint x;` from a detached
-section divider.
-
-**TODO:** port the C# pass (`is_inline_node` / `is_leading_comment`
-/ `group_line_comments`) to Java:
-
-1. Trailing comments (same line as previous sibling's end) get a
-   `<trailing/>` empty-marker child.
-2. Block comments immediately followed by a declaration get a
-   `<leading/>` marker.
-3. Consecutive `//` line comments on adjacent lines merge into a
-   single `<comment>` with the joined text content (matches C#).
-4. Add a semantic-tree test pinning the three shapes.
-
-Add the two marker names to `java::semantic::NODES` with
-`marker: true, container: false` (they never carry content).
-
-See `tractor/src/languages/csharp.rs` — `"comment"` handler — for
-the exact implementation to lift.
+Java uses the shared `CommentClassifier`
+(`tractor/src/languages/comments.rs`) with `["//"]` as the line
+prefix. `line_comment` / `block_comment` rename to `<comment>` and
+get a `<trailing/>` or `<leading/>` marker per the cross-cutting
+rules (see [`transformations.md`](../transformations.md) —
+*Comments*). Adjacent `//` comments merge into a single
+`<comment>`.

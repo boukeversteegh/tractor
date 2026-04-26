@@ -18,6 +18,77 @@ Tracks design decisions for the semantic tree. Each entry has:
 
 ## Still open
 
+### Comment family — adoption + multi-line shape
+
+Three connected proposals on top of the now-landed leading /
+trailing classification (see
+[`transformations.md`](../specs/tractor-parse/semantic-tree/transformations.md) —
+*Comments*).
+
+**Trailing-comment adoption.** `<comment trailing>` currently
+lives as a sibling of its predecessor:
+
+```
+<method public><name>perimeter</name>"();"</method>
+<comment trailing>// implicitly public</comment>
+```
+
+Adopting it as a final child of the predecessor would make
+`//method[public]/comment` find trailing comments without
+sibling-index gymnastics:
+
+```
+<method public>
+  <name>perimeter</name>
+  "();"
+  <comment trailing>// implicitly public</comment>
+</method>
+```
+
+**Why deferred.** The leading-comment counterpart raises a harder
+question: does a `<comment leading>` become the *first child* of
+the next declaration? If yes, the structural home of comments is
+consistently "child of the related code"; if no, leading and
+trailing are structurally asymmetric. Either choice has
+follow-on consequences for round-tripping and for what
+`//method/text()` / `//method/comment` mean. Need to explore
+whether leading-anchor adoption can be made consistent before
+committing.
+
+**Multi-line `<line>` children** (variant A — always wrap).
+Approved in concept but blocked on the adoption decision so the
+two evolve together. Single-line `<comment>` becomes
+`<comment>"// "<line>only one</line></comment>`; multi-line keeps
+prefix text between `<line>` siblings. JSON serialises as
+`{comment: {lines: [...]}}` via `field="lines"`.
+
+**Doc-comment internal shape** — `///` (Rust), `/** */` (Java,
+JSDoc, C# `///`) carry parameter / return / example tags that
+are currently opaque text. Structuring them is its own dedicated
+cycle per language; defer until the simpler shape questions are
+settled.
+
+### Import / binding grouping
+
+Go `import (...)`, Go `const (...)`, Go `var (...)`, PHP `use ...`
+all currently flatten into name-soup that loses pairing
+information (which path goes with which alias, which name
+inherits `iota`, which is the leaf vs the namespace path). See
+the per-language design discussions:
+
+- Go imports / const / var:
+  [`transformations/go.md`](../specs/tractor-parse/semantic-tree/transformations/go.md) —
+  *Open questions*.
+- PHP `use`:
+  [`transformations/php.md`](../specs/tractor-parse/semantic-tree/transformations/php.md) —
+  *Open questions*.
+
+**Cross-cutting question (D4):** if these all gain a grouping
+wrapper, do they share a single `<spec>` element name across
+languages, or do they get distinct wrappers per family
+(`<spec>`, `<binding>`, `<part>`)? Decide once the per-language
+shapes are settled.
+
 ### Ruby — method-call shape
 
 ```ruby

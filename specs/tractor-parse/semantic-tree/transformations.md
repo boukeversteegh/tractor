@@ -181,150 +181,85 @@ one such wrapper), Principle #1 (use language keywords — `else`).
   condition and then-branch are lifted as an `<else_if>` sibling
   of the outer `<if>`, recursively.
 
-### Return types
+### Comments — classification and grouping
 
-### Trailing comments — adopt into predecessor (proposed)
+Comments live as siblings of the code they relate to. Three
+structural concerns apply uniformly across programming languages.
 
-Tree-sitter emits every comment as a top-level sibling of its
-enclosing block. For free-floating / leading comments this is
-correct — the comment precedes the thing it annotates and a
-sibling is the right structural position.
+**Leading / trailing classification (landed).** Each `<comment>`
+may carry one of two attachment markers:
 
-**Trailing** comments (those on the same line as the end of the
-preceding statement / declaration) are different: they annotate
-the statement that comes *before*, and the reader thinks of them
-as "attached" to that statement. The current structural shape
-leaves them as a sibling, which forces queries that care about
-the attached comment to rely on sibling-position scans.
+- `<trailing/>` — the comment sits on the same line as the end of
+  the preceding sibling. It annotates that statement.
+- `<leading/>` — the comment (or a merged group of line comments)
+  is immediately followed by a non-comment sibling on the very
+  next line. It annotates the next declaration.
+- (no marker) — free-floating / standalone comment.
 
-**Current shape**:
+```xml
+<field><type>int</type><name>x</name></field>
+<comment trailing>// trailing</comment>
 
-```
-<method public>
-  <returns><type>…</type></returns>
-  <name>perimeter</name>
-  "();"
-</method>
-<comment>// implicitly public</comment>
-```
+<comment leading>// describes Foo
+// continued</comment>
+<class><name>Foo</name>…</class>
 
-**Proposed**: classify a comment as `<trailing/>` (same-line-as-
-predecessor, which C# already does) AND *adopt it into the
-predecessor element as a final child*:
-
-```
-<method public>
-  <returns><type>…</type></returns>
-  <name>perimeter</name>
-  "();"
-  <comment trailing>// implicitly public</comment>
-</method>
+<comment>// floating section divider</comment>
 ```
 
-Benefits:
+**Adjacent line-comment grouping (landed).** Consecutive line
+comments (same prefix, no blank-line gap between them) merge into
+a single `<comment>` element with multiline text content; the
+merged node is then classified as a single unit.
 
-- `//method[@public]/comment` reliably finds every trailing
-  comment on a public method, with no sibling-index gymnastics.
-- A statement's XPath string-value round-trips the trailing
-  comment as part of the statement's own text.
-- Aligns visual code layout with structural layout — readers
-  think of the comment as part of the statement, so the tree
-  mirrors that mental model.
+Implementation: shared `CommentClassifier` in
+`tractor/src/languages/comments.rs`, parameterised by line-comment
+prefix list (`["//"]`, `["#"]`, or both for PHP). Each language's
+`transform.rs` delegates. Coverage: C#, Java, TypeScript / JS,
+Rust, Go, Python, Ruby, PHP. tsql inherits when comments become
+relevant.
 
-Open questions for implementation:
+**Trailing comment adoption — deferred.** Even with the marker, a
+trailing comment lives as a *sibling* of its predecessor, not a
+child. Adopting it into the predecessor as a final child would
+make `//method[public]/comment` find trailing comments without
+sibling-index gymnastics, but raises an unsettled question for the
+leading counterpart (does a leading comment become the first child
+of the next declaration?). Held until the leading-anchor question
+is explored. See [`semantic-tree-open-questions.md`](../../../todo/semantic-tree-open-questions.md).
 
-- **Leading block comments** that precede a declaration — stay as
-  a preceding sibling (current C# behaviour) or adopt into the
-  declaration as the first child? The two forms are distinguishable
-  via `<leading/>` markers, but the structural home of the comment
-  is another decision.
-- **Floating comments** (separator comments, no adjacent code):
-  stay as siblings under the enclosing block. Nowhere else
-  sensible to put them.
-- **Multi-line trailing**: a line comment followed by more line
-  comments on the next lines — the C# grouping pass already merges
-  adjacent `//` comments; the adopted trailing form inherits that
-  merging.
-- **Grouping scope**: "predecessor" means immediately-preceding
-  element sibling under the same parent. If the preceding sibling
-  is a text token (e.g. `;`), adoption happens into the element
-  that owns that text.
+**Multi-line `<line>` children — deferred.** A merged group is
+currently one `<comment>` with multiline text (prefixes embedded).
+A future evolution would split the prefix-stripped body into
+`<line>` children with prefix text preserved as siblings, so JSON
+serialises as `{"comment": {"lines": [...]}}`. Held until trailing
+adoption is decided so the two evolve together.
 
-Cross-cutting — applies to every programming language once
-implemented. C#'s `is_inline_node` / `is_leading_comment` helpers
-already compute the classification; the adoption step is
-additional.
+### Tree-sitter kind catalogue
 
-### Multi-line comment grouping — prefix-stripped `<line>` children (proposed)
+Each language exposes `KINDS: &[KindEntry]` in its `semantic`
+module — the authoritative list of every tree-sitter kind the
+transform recognises and how it is handled. `KindHandling`
+variants:
 
-C#'s current grouping pass merges consecutive `//` line comments
-on adjacent lines into one `<comment>` element, with the joined
-text as a single string (prefixes included):
+| Variant | Meaning |
+|---|---|
+| `Rename(target)` | Pure rename: kind X → semantic name Y, no marker. |
+| `RenameWithMarker(target, marker)` | Rename + prepend `<marker/>`. |
+| `Custom` | Imperative dispatch arm in `transform.rs` (structural transform, conditional logic). |
+| `CustomThenRename(target)` / `CustomThenRenameWithMarker(t, m)` | Imperative work followed by a deferred rename via the catalogue. |
+| `Flatten` | Wrapper dropped, children promoted to siblings (Principle #12). |
+| `PassThrough` | Kind passes through unchanged. |
 
-```
-<comment>// first line
-// second line
-// third line</comment>
-```
+Per-language `map_element_name(kind)` is a 3-line delegate that
+reads back from `KINDS` — the catalogue is the single source of
+truth, no duplication between catalogue and dispatcher.
 
-That preserves source text but the consumer has to strip the
-`//` prefixes themselves and split on newlines to recover the
-comment body as structured data. JSON serialisation produces a
-single blob string rather than an array of lines.
-
-**Proposed**: keep the `//` / `#` / `--` prefixes as dangling text
-between `<line>` element children. Each `<line>` holds the
-prefix-stripped text for one line.
-
-```
-<comment>
-  "// "
-  <line field="lines">first line</line>
-  "// "
-  <line field="lines">second line</line>
-  "// "
-  <line field="lines">third line</line>
-</comment>
-```
-
-- Source reconstruction: concatenating all descendant text still
-  yields `// first line\n// second line\n// third line` — the
-  prefix text stays in place, the `<line>` element's string value
-  is its inner text, no characters lost.
-- Query: `//comment/line` returns the clean line bodies directly,
-  no per-language prefix knowledge required. `//comment[line[.='TODO']]`
-  finds every block with a line equal to `TODO`.
-- JSON: `field="lines"` on each `<line>` promotes to an array
-  under the comment: `{"comment": {"lines": ["first line", "second line", ...]}}`.
-- Single-line comments: one `<line>` child (consistent shape —
-  readers don't need to special-case one-versus-many).
-
-Cross-language coverage:
-
-- `//` — JavaScript, TypeScript, Rust, Go, Java, C#, PHP, Swift.
-- `#` — Python, Ruby, PHP (rare), shell.
-- `--` — SQL (including T-SQL), Lua.
-
-Each language's prefix is known; the grouping pass strips it
-uniformly. Block comments (`/* ... */`, `"""…"""`) don't get
-split into lines — they stay as one text leaf or one `<line>`
-since the reader already sees them as a unit.
-
-Open questions:
-
-- **Docstring-flavoured block comments** (Rust `///`, Java `/**`)
-  carry structure (parameter tags, return tags) inside. Keeping
-  them as one `<line>` leaves that structure hidden. Defer —
-  treat as a separate "doc-comment shape" cycle.
-- **Interaction with trailing-comment adoption** — a multi-line
-  trailing comment adopted into its predecessor still has the
-  `<line>` children; nothing special. A single-line trailing
-  comment (most common) is `<comment trailing><line>…</line></comment>`.
-- **Grouping window** — current C# pass only merges when lines
-  are strictly adjacent (no blank line between). Keep that rule.
-
-Cross-cutting, post-dates the trailing-comment adoption work so
-the adopted form inherits the `<line>` substructure automatically.
+The lint test `tractor/tests/kind_catalogue.rs` parses each
+blueprint fixture, walks the raw tree-sitter parse, and asserts
+every distinct kind appears in the catalogue. Tree-sitter grammar
+upgrades that introduce new kinds fail this lint with a clear
+pointer to the language's `semantic.rs`.
 
 ## Relationship to `transform-rules/`
 

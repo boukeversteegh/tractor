@@ -378,3 +378,13 @@ Option A is more queryable (every value has exactly one name
 sibling) but loses the syntactic grouping. Option B preserves the
 Go source shape but requires sibling-position indexing to recover
 the pairing. Pick when the redesign lands.
+
+## Comments
+
+Go uses the shared `CommentClassifier`
+(`tractor/src/languages/comments.rs`) with `["//"]` as the line
+prefix. `comment` (Go's tree-sitter emits a single kind for both
+`//` and `/* */`) renames to `<comment>` and gets a `<trailing/>`
+or `<leading/>` marker per the cross-cutting rules (see
+[`transformations.md`](../transformations.md) — *Comments*).
+Adjacent `//` comments merge into a single `<comment>`.
