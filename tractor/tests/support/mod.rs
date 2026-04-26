@@ -6,6 +6,8 @@
 //! keeps the same layers: suite structure, command capture, assertion parsing,
 //! and execution.
 
+pub mod semantic;
+
 use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
