@@ -10,6 +10,27 @@
 use crate::support::semantic::*;
 
 #[test]
+fn csharp() {
+    claim("C# extension-method this parameter keeps this as an empty modifier marker",
+        &mut parse_src("csharp", r#"
+            public static class Mapper {
+                public static UserDto Map(this User user) { return new UserDto(); }
+            }
+        "#),
+        &multi_xpath(r#"
+            //method[name='Map']
+                [public]
+                [static]
+                [parameter
+                    [this]
+                    [contains(., 'this')]
+                    [type/name='User']
+                    [name='user']]
+        "#),
+        1);
+}
+
+#[test]
 fn java() {
     let mut tree = parse_src("java", r#"
         public abstract static class Modifiers {

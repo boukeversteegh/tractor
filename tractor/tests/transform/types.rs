@@ -39,13 +39,15 @@ fn csharp_vocabulary() {
                     [type[name='Animal']]
                     [type[name='IBarker']]]
                 [body/field
-                    [variable/declarator/name='Owner']
-                    [variable/type[name='T']]]
+                    [declarator/name='Owner']
+                    [type[name='T']]
+                    [not(variable)]]
                 [body/field
-                    [variable/declarator/name='Tags']
-                    [variable/type[name='List']
+                    [declarator/name='Tags']
+                    [type[name='List']
                         [generic]
-                        [type[name='string']]]]
+                        [type[name='string']]]
+                    [not(variable)]]
         "#),
         1);
 }
@@ -284,14 +286,17 @@ fn csharp_markers() {
         &multi_xpath(r#"
             //class[name='X']/body
                 [field
-                    [variable/declarator/name='a']
-                    [variable/type[array]]]
+                    [declarator/name='a']
+                    [type[array]]
+                    [not(variable)]]
                 [field
-                    [variable/declarator/name='t']
-                    [variable/type[tuple]]]
+                    [declarator/name='t']
+                    [type[tuple]]
+                    [not(variable)]]
                 [field
-                    [variable/declarator/name='n']
-                    [variable/type[nullable]]]
+                    [declarator/name='n']
+                    [type[nullable]]
+                    [not(variable)]]
         "#),
         1);
 }

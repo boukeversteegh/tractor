@@ -88,7 +88,7 @@ renderer share a single source of truth:
 | `conditional_expression` | `<ternary>` | Language concept. |
 | `lambda_expression` | `<lambda>` | Matches other languages. |
 | `await_expression` | `<await>` | Language keyword. |
-| `variable_declaration` | `<variable>` | Consistent. |
+| `variable_declaration` | `<variable>` | Local variable declaration; flattened inside fields. |
 | `variable_declarator` | `<declarator>` | C#-specific multi-declarator support. |
 | `local_declaration_statement` | flattened | Purely structural. |
 | `arrow_expression_clause` | flattened | The `=>` expression-body form. |
@@ -111,6 +111,10 @@ renderer share a single source of truth:
 - `local_declaration_statement` — wraps `type name = value;` inside
   a method body; the inner `variable_declaration` already becomes
   `<variable>`.
+- `variable_declaration` under `field_declaration` — purely
+  structural. The enclosing `<field>` is the semantic declaration, so
+  its `<type>` and `<declarator>` children are lifted directly under
+  `<field>` rather than wrapped in `<variable>`.
 - `arrow_expression_clause` — the `=>` body form; children become
   body content directly.
 

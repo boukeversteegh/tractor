@@ -12,7 +12,7 @@
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 
-use tractor::languages::{KindEntry, KindHandling};
+use tractor::languages::{KindEntry, KindHandling, NodeSpec};
 use tractor::raw_kinds;
 
 struct Lang {
@@ -28,6 +28,8 @@ struct Lang {
     catalogue_path: &'static str,
     /// The catalogue itself.
     kinds: &'static [KindEntry],
+    /// Semantic node metadata emitted by the language transform.
+    nodes: &'static [NodeSpec],
 }
 
 const LANGUAGES: &[Lang] = &[
@@ -37,6 +39,7 @@ const LANGUAGES: &[Lang] = &[
         fixture_dir: "csharp",
         catalogue_path: "tractor/src/languages/csharp/semantic.rs",
         kinds: tractor::languages::csharp::semantic::KINDS,
+        nodes: tractor::languages::csharp::semantic::NODES,
     },
     Lang {
         id: "java",
@@ -44,6 +47,7 @@ const LANGUAGES: &[Lang] = &[
         fixture_dir: "java",
         catalogue_path: "tractor/src/languages/java/semantic.rs",
         kinds: tractor::languages::java::semantic::KINDS,
+        nodes: tractor::languages::java::semantic::NODES,
     },
     Lang {
         id: "rust",
@@ -51,6 +55,7 @@ const LANGUAGES: &[Lang] = &[
         fixture_dir: "rust",
         catalogue_path: "tractor/src/languages/rust_lang/semantic.rs",
         kinds: tractor::languages::rust_lang::semantic::KINDS,
+        nodes: tractor::languages::rust_lang::semantic::NODES,
     },
     Lang {
         id: "typescript",
@@ -58,6 +63,7 @@ const LANGUAGES: &[Lang] = &[
         fixture_dir: "typescript",
         catalogue_path: "tractor/src/languages/typescript/semantic.rs",
         kinds: tractor::languages::typescript::semantic::KINDS,
+        nodes: tractor::languages::typescript::semantic::NODES,
     },
     Lang {
         id: "python",
@@ -65,6 +71,7 @@ const LANGUAGES: &[Lang] = &[
         fixture_dir: "python",
         catalogue_path: "tractor/src/languages/python/semantic.rs",
         kinds: tractor::languages::python::semantic::KINDS,
+        nodes: tractor::languages::python::semantic::NODES,
     },
     Lang {
         id: "go",
@@ -72,6 +79,7 @@ const LANGUAGES: &[Lang] = &[
         fixture_dir: "go",
         catalogue_path: "tractor/src/languages/go/semantic.rs",
         kinds: tractor::languages::go::semantic::KINDS,
+        nodes: tractor::languages::go::semantic::NODES,
     },
     Lang {
         id: "ruby",
@@ -79,6 +87,7 @@ const LANGUAGES: &[Lang] = &[
         fixture_dir: "ruby",
         catalogue_path: "tractor/src/languages/ruby/semantic.rs",
         kinds: tractor::languages::ruby::semantic::KINDS,
+        nodes: tractor::languages::ruby::semantic::NODES,
     },
     Lang {
         id: "php",
@@ -86,6 +95,7 @@ const LANGUAGES: &[Lang] = &[
         fixture_dir: "php",
         catalogue_path: "tractor/src/languages/php/semantic.rs",
         kinds: tractor::languages::php::semantic::KINDS,
+        nodes: tractor::languages::php::semantic::NODES,
     },
     Lang {
         // No blueprint.sql exists yet — sample.sql is the largest fixture.
@@ -94,6 +104,7 @@ const LANGUAGES: &[Lang] = &[
         fixture_dir: "tsql",
         catalogue_path: "tractor/src/languages/tsql/semantic.rs",
         kinds: tractor::languages::tsql::semantic::KINDS,
+        nodes: tractor::languages::tsql::semantic::NODES,
     },
 ];
 
@@ -141,6 +152,28 @@ fn check_lang(lang: &Lang) {
         missing.iter().map(|k| format!("  - {}", k)).collect::<Vec<_>>().join("\n"),
         lang.catalogue_path,
     );
+}
+
+fn check_node_names(lang: &Lang) {
+    let mut names: Vec<&str> = lang.nodes.iter().map(|n| n.name).collect();
+    names.sort();
+    let total = names.len();
+    names.dedup();
+    assert_eq!(
+        names.len(),
+        total,
+        "{} contains duplicate node names",
+        lang.catalogue_path
+    );
+
+    for node in lang.nodes {
+        assert!(
+            node.marker || node.container,
+            "{}: <{}> is neither marker nor container",
+            lang.catalogue_path,
+            node.name
+        );
+    }
 }
 
 #[test]
@@ -213,5 +246,15 @@ fn rename_targets_are_non_empty() {
                 _ => {}
             }
         }
+    }
+}
+
+/// Semantic node names should be unique and each node must have at
+/// least one role. This belongs with the catalogue checks rather
+/// than inside a language transform module.
+#[test]
+fn node_metadata_is_well_formed() {
+    for lang in LANGUAGES {
+        check_node_names(lang);
     }
 }

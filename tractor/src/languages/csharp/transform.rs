@@ -6,7 +6,7 @@
 
 use xot::{Xot, Node as XotNode};
 use crate::transform::{TransformAction, helpers::*};
-use crate::transform::operators::{prepend_op_element, is_operator_marker};
+use crate::transform::operators::prepend_op_element;
 use crate::output::syntax_highlight::SyntaxCategory;
 
 use super::semantic::*;
@@ -397,6 +397,20 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             Ok(TransformAction::Continue)
         }
 
+        // Field declarations already provide the semantic <field>
+        // container. The grammar's inner variable_declaration is a
+        // structural wrapper there; keep <variable> for local
+        // declarations, where it is the declaration node itself.
+        "variable_declaration" => {
+            let parent_kind = get_parent(xot, node).and_then(|parent| get_kind(xot, parent));
+            if parent_kind.as_deref() == Some("field_declaration") {
+                Ok(TransformAction::Flatten)
+            } else {
+                apply_rename(xot, node, &kind)?;
+                Ok(TransformAction::Continue)
+            }
+        }
+
         // ---------------------------------------------------------------------
         // Comments - detect attachment and group adjacent line comments
         //
@@ -618,213 +632,10 @@ fn is_in_namespace_context(xot: &Xot, node: XotNode) -> bool {
     false
 }
 
-/// Map a transformed element name to a syntax category for highlighting
-/// This is called by the highlighter to determine what color to use.
-///
-/// Consults the per-name NODES table first (one source of truth);
-/// falls back to cross-cutting rules (operator markers, builder
-/// wrappers / raw tree-sitter kinds) for names not in NODES.
+/// Adapter for the language registry. The per-node metadata in
+/// `semantic::NODES` is the source of truth.
 pub fn syntax_category(element: &str) -> SyntaxCategory {
-    if let Some(spec) = super::semantic::spec(element) {
-        return spec.syntax;
-    }
-    match element {
-        // Names not in NODES — raw tree-sitter kinds / builder wrappers:
-        "implicit_type" => SyntaxCategory::Type, // var keyword in C#
-        "case" | "default" => SyntaxCategory::Keyword,
-        "goto" | "yield" => SyntaxCategory::Keyword,
-        "lock" | "volatile" => SyntaxCategory::Keyword,
-        "base" => SyntaxCategory::Keyword,
-        _ if is_operator_marker(element) => SyntaxCategory::Operator,
-        _ => SyntaxCategory::Default,
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::parser::{parse_string_to_xee, parse_string_to_xot};
-    use crate::output::{render_document, RenderOptions};
-    use crate::XPathEngine;
-    use crate::languages::csharp::semantic::NODES;
-
-    #[test]
-    fn no_duplicate_node_names() {
-        let mut names: Vec<&str> = NODES.iter().map(|n| n.name).collect();
-        names.sort();
-        let total = names.len();
-        names.dedup();
-        assert_eq!(names.len(), total, "duplicate NODES entry");
-    }
-
-    #[test]
-    fn no_unused_role() {
-        for n in NODES {
-            assert!(
-                n.marker || n.container,
-                "<{}> is neither marker nor container — dead entry?",
-                n.name,
-            );
-        }
-    }
-
-    #[test]
-    fn test_csharp_transform() {
-        let source = r#"
-public class Foo {
-    public void Bar() { }
-}
-"#;
-        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), None).unwrap();
-
-        let options = RenderOptions::default();
-        let xml = render_document(&result.xot, result.root, &options);
-
-        // Check transforms applied
-        assert!(xml.contains("<class"), "class_declaration should be renamed");
-        assert!(xml.contains("<method"), "method_declaration should be renamed");
-        assert!(xml.contains("<public"), "public modifier should be extracted");
-    }
-
-    // =========================================================================
-    // Comment attachment tests
-    // =========================================================================
-
-    #[test]
-    fn test_trailing_comment() {
-        let source = "public class Foo {\n    int x; // trailing\n}\n";
-        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), None).unwrap();
-        let xml = render_document(&result.xot, result.root, &RenderOptions::default());
-        assert!(
-            xml.contains("<trailing/>"),
-            "same-line comment should get <trailing/> marker, got:\n{}", xml
-        );
-    }
-
-    #[test]
-    fn test_leading_comment() {
-        let source = "public class Foo {\n    // describes y\n    int y;\n}\n";
-        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), None).unwrap();
-        let xml = render_document(&result.xot, result.root, &RenderOptions::default());
-        assert!(
-            xml.contains("<leading/>"),
-            "comment above declaration should get <leading/> marker, got:\n{}", xml
-        );
-    }
-
-    #[test]
-    fn test_floating_comment() {
-        // Comment with blank line before next declaration = floating (no marker)
-        let source = "public class Foo {\n    // floating\n\n    int y;\n}\n";
-        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), None).unwrap();
-        let xml = render_document(&result.xot, result.root, &RenderOptions::default());
-        assert!(
-            !xml.contains("<trailing/>") && !xml.contains("<leading/>"),
-            "floating comment should have no marker, got:\n{}", xml
-        );
-        assert!(xml.contains("<comment>"), "comment should still be present");
-    }
-
-    #[test]
-    fn test_comment_block_grouping() {
-        let source = "public class Foo {\n    // line 1\n    // line 2\n    // line 3\n    int y;\n}\n";
-        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), None).unwrap();
-        let xml = render_document(&result.xot, result.root, &RenderOptions::default());
-        // Should be grouped into a single comment
-        let comment_count = xml.matches("<comment>").count() + xml.matches("<comment ").count();
-        assert_eq!(
-            comment_count, 1,
-            "three adjacent // comments should be grouped into one, got {} comments in:\n{}", comment_count, xml
-        );
-        // Should contain all lines
-        assert!(xml.contains("// line 1"), "merged comment should contain line 1");
-        assert!(xml.contains("// line 3"), "merged comment should contain line 3");
-        // Should be leading (immediately before int y)
-        assert!(xml.contains("<leading/>"), "grouped comment block should be leading");
-
-        let mut parsed = parse_string_to_xee(source, "csharp", "<test>".to_string(), None).unwrap();
-        let engine = XPathEngine::new();
-        let matches = engine.query_documents(
-            &mut parsed.documents,
-            parsed.doc_handle,
-            "//comment",
-            parsed.source_lines.clone(),
-            "<test>",
-        ).unwrap();
-        assert_eq!(matches.len(), 1, "grouped comments should query as a single match");
-        assert_eq!(
-            matches[0].extract_source_snippet(),
-            "// line 1\n    // line 2\n    // line 3".to_string(),
-            "grouped comment should extract the full merged source span"
-        );
-    }
-
-    #[test]
-    fn test_trailing_not_grouped_with_following() {
-        // Trailing comment should NOT absorb the following line comments
-        let source = "public class Foo {\n    int x; // trailing\n    // block 1\n    // block 2\n    int y;\n}\n";
-        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), None).unwrap();
-        let xml = render_document(&result.xot, result.root, &RenderOptions::default());
-        // Should have 2 comments: one trailing, one grouped leading block
-        let comment_count = xml.matches("<comment>").count() + xml.matches("<comment ").count();
-        assert_eq!(
-            comment_count, 2,
-            "should have trailing + grouped block = 2 comments, got {} in:\n{}", comment_count, xml
-        );
-        assert!(xml.contains("<trailing/>"), "first comment should be trailing");
-        assert!(xml.contains("<leading/>"), "block comment should be leading");
-        // Block should contain both lines
-        assert!(xml.contains("// block 1"), "block should contain line 1");
-        assert!(xml.contains("// block 2"), "block should contain line 2");
-    }
-
-    #[test]
-    fn test_block_comment_not_grouped() {
-        // /* */ style comments should NOT be grouped with // comments
-        let source = "public class Foo {\n    /* block */\n    // line\n    int y;\n}\n";
-        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), None).unwrap();
-        let xml = render_document(&result.xot, result.root, &RenderOptions::default());
-        let comment_count = xml.matches("<comment>").count() + xml.matches("<comment ").count();
-        assert!(
-            comment_count >= 2,
-            "/* */ and // comments should not be grouped, got {} comments in:\n{}", comment_count, xml
-        );
-    }
-
-    #[test]
-    fn test_leading_comment_at_unit_level() {
-        // Comment at compilation_unit level, before a class
-        let source = "// describes Foo\npublic class Foo { }\n";
-        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), None).unwrap();
-        let xml = render_document(&result.xot, result.root, &RenderOptions::default());
-        assert!(
-            xml.contains("<leading/>"),
-            "top-level comment before class should be leading, got:\n{}", xml
-        );
-    }
-
-    // =========================================================================
-
-    #[test]
-    fn test_extension_method_this_modifier() {
-        let source = r#"
-public static class Mapper {
-    public static UserDto Map(this User user) { return new UserDto(); }
-}
-"#;
-        let result = parse_string_to_xot(source, "csharp", "<test>".to_string(), None).unwrap();
-
-        let options = RenderOptions::default();
-        let xml = render_document(&result.xot, result.root, &options);
-
-        // Empty marker with the source keyword kept as a dangling
-        // sibling text node so `-v value` preserves "this" in the
-        // enclosing declaration's XPath string-value. The marker
-        // itself stays empty (Principle #7).
-        assert!(
-            xml.contains("<this/>this"),
-            "this modifier should be converted to <this/> marker with source keyword as sibling, got: {}",
-            xml
-        );
-        assert!(!xml.contains("<modifier>this</modifier>"), "this should not remain as <modifier>this</modifier>");
-    }
+    super::semantic::spec(element)
+        .map(|spec| spec.syntax)
+        .unwrap_or(SyntaxCategory::Default)
 }

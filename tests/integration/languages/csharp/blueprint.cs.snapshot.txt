@@ -194,12 +194,12 @@ unit/
   │       │   │   └─ argument/bool
   │       │   ├─ name
   │       │   └─ body/
-  │       │       ├─ field[public and const]/variable/
+  │       │       ├─ field[public and const]/
   │       │       │   ├─ type/name
   │       │       │   └─ declarator/
   │       │       │       ├─ name
   │       │       │       └─ int
-  │       │       ├─ field[protected and internal and static and readonly]/variable/
+  │       │       ├─ field[protected and internal and static and readonly]/
   │       │       │   ├─ type/name
   │       │       │   └─ declarator/
   │       │       │       ├─ name
@@ -207,7 +207,7 @@ unit/
   │       │       │           ├─ argument/int
   │       │       │           ├─ argument/int
   │       │       │           └─ argument/int
-  │       │       ├─ field[private]/variable/
+  │       │       ├─ field[private]/
   │       │       │   ├─ type/name
   │       │       │   └─ declarator/name
   │       │       ├─ property[public]/

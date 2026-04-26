@@ -284,7 +284,7 @@ fn render_field(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderEr
     let attrs = render_attributes(node, opts)?;
     let mods = modifiers_str(node);
 
-    // Type — fields may have type as a child element or as a variable/declarator structure
+    // Type: transformed fields expose <type> directly.
     let type_str = if let Some(type_node) = get_child(node, TYPE) {
         render_type(type_node)?
     } else {
@@ -294,7 +294,8 @@ fn render_field(node: &XmlNode, opts: &RenderOptions) -> Result<String, RenderEr
         });
     };
 
-    // Name — may be in <name> directly or in a <variable><declarator><name>
+    // Name: current field shape uses <declarator><name>; keep the
+    // legacy <variable> fallback for older serialized trees.
     let name = get_child_text(node, NAME)
         .or_else(|| {
             get_child(node, VARIABLE)

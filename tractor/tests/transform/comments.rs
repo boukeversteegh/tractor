@@ -58,6 +58,72 @@ fn csharp() {
         &mut tree, "//comment[trailing and leading]", 0);
 }
 
+#[test]
+fn csharp_comment_edges() {
+    let mut adjacent = parse_src("csharp", r#"
+        class Foo {
+            int x; // trailing
+            // block 1
+            // block 2
+            int y;
+        }
+    "#);
+
+    claim("C# trailing comment does not absorb the following leading line-comment group",
+        &mut adjacent,
+        &multi_xpath(r#"
+            //class[name='Foo']/body
+                [count(comment)=2]
+                [field[.//name='x']]
+                [comment[.='// trailing']
+                    [trailing]]
+                [comment[contains(., 'block 1')]
+                    [contains(., 'block 2')]
+                    [leading]]
+                [field[.//name='y']]
+        "#),
+        1);
+
+    claim("C# merged line-comment group preserves the full source span",
+        &mut adjacent,
+        "//comment[contains(., 'block 1') and contains(., 'block 2')]",
+        1);
+    assert_eq!(
+        query(&mut adjacent, "//comment[contains(., 'block 1')]")[0].extract_source_snippet(),
+        "// block 1\n            // block 2"
+    );
+
+    claim("C# block comments do not group with adjacent line comments",
+        &mut parse_src("csharp", r#"
+            class Foo {
+                /* block */
+                // line
+                int y;
+            }
+        "#),
+        &multi_xpath(r#"
+            //class[name='Foo']/body
+                [count(comment)=2]
+                [comment[.='/* block */']
+                    [not(leading)]
+                    [not(trailing)]]
+                [comment[.='// line']
+                    [leading]]
+                [field[.//name='y']]
+        "#),
+        1);
+
+    claim("C# top-level comment immediately before a class is leading",
+        &mut parse_src("csharp", "// describes Foo\npublic class Foo { }\n"),
+        &multi_xpath(r#"
+            //unit
+                [comment[.='// describes Foo']
+                    [leading]]
+                [class[name='Foo']]
+        "#),
+        1);
+}
+
 /// TypeScript (and JS) share C#'s trailing / leading / floating
 /// classifier — `//` and `/* */` are both tree-sitter `comment`
 /// nodes; the shared classifier handles them uniformly.
