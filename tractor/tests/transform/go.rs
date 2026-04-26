@@ -1,6 +1,6 @@
 //! Go-specific transformation tests.
 
-pub mod spec_flattening;
-pub mod struct_interface_hoist;
-pub mod switch_markers;
-pub mod type_declaration;
+#[path = "go/spec_flattening.rs"]        pub mod spec_flattening;
+#[path = "go/struct_interface_hoist.rs"] pub mod struct_interface_hoist;
+#[path = "go/switch_markers.rs"]         pub mod switch_markers;
+#[path = "go/type_declaration.rs"]       pub mod type_declaration;

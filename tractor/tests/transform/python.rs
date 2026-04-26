@@ -1,3 +1,3 @@
 //! Python-specific transformation tests.
 
-pub mod expression_list;
+#[path = "python/expression_list.rs"] pub mod expression_list;

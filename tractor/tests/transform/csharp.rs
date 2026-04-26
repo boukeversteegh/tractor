@@ -1,3 +1,3 @@
 //! C#-specific transformation tests.
 
-pub mod expression_statement;
+#[path = "csharp/expression_statement.rs"] pub mod expression_statement;

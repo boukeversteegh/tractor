@@ -1,3 +1,3 @@
 //! Ruby-specific transformation tests.
 
-pub mod name_inlining;
+#[path = "ruby/name_inlining.rs"] pub mod name_inlining;

@@ -21,6 +21,10 @@
 //!   - Language-specific quirks live under
 //!     `transform/<language>/<construct>.rs`.
 //!
+//! Each `mod` declaration uses an explicit `#[path]` so submodules
+//! resolve to `tests/transform/<name>.rs` rather than the default
+//! `tests/<name>.rs` integration-test placement.
+//!
 //! Style notes for shape claims (carried over from the previous
 //! single-file layout):
 //!
@@ -60,24 +64,24 @@ mod support;
 
 // ----- Cross-language categories ------------------------------------------
 
-mod collections;
-mod comments;
-mod decorators;
-mod flat_lists;
-mod functions;
-mod if_else;
-mod modifiers;
-mod patterns;
-mod strings;
-mod types;
-mod variables;
-mod visibility;
+#[path = "transform/collections.rs"] mod collections;
+#[path = "transform/comments.rs"]    mod comments;
+#[path = "transform/decorators.rs"]  mod decorators;
+#[path = "transform/flat_lists.rs"]  mod flat_lists;
+#[path = "transform/functions.rs"]   mod functions;
+#[path = "transform/if_else.rs"]     mod if_else;
+#[path = "transform/modifiers.rs"]   mod modifiers;
+#[path = "transform/patterns.rs"]    mod patterns;
+#[path = "transform/strings.rs"]     mod strings;
+#[path = "transform/types.rs"]       mod types;
+#[path = "transform/variables.rs"]   mod variables;
+#[path = "transform/visibility.rs"]  mod visibility;
 
 // ----- Language-specific quirks -------------------------------------------
 
-mod csharp;
-mod go;
-mod java;
-mod python;
-mod ruby;
-mod rust;
+#[path = "transform/csharp.rs"] mod csharp;
+#[path = "transform/go.rs"]     mod go;
+#[path = "transform/java.rs"]   mod java;
+#[path = "transform/python.rs"] mod python;
+#[path = "transform/ruby.rs"]   mod ruby;
+#[path = "transform/rust.rs"]   mod rust;

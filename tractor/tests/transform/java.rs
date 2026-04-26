@@ -1,3 +1,3 @@
 //! Java-specific transformation tests.
 
-pub mod parenthesized_expression;
+#[path = "java/parenthesized_expression.rs"] pub mod parenthesized_expression;
