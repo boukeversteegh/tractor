@@ -5,6 +5,7 @@
 
 use xot::{Xot, Node as XotNode};
 use crate::transform::{TransformAction, helpers::*};
+use crate::transform::operators::{prepend_op_element, is_operator_marker};
 use crate::output::syntax_highlight::SyntaxCategory;
 
 use super::semantic::*;

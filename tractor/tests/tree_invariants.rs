@@ -460,7 +460,7 @@ fn markers_stay_empty() {
 // Invariant 6: `<op>` marker matches its text.
 //
 // The canonical cross-language `OPERATOR_MARKERS` table
-// (`tractor::transform::helpers::OPERATOR_MARKERS`) is the single
+// (`tractor::transform::operators::OPERATOR_MARKERS`) is the single
 // source of truth for operator → marker mapping. Every language's
 // `extract_operator` routes through `prepend_op_element`, which
 // consults this table. The invariant:
@@ -480,7 +480,7 @@ fn markers_stay_empty() {
 
 #[test]
 fn op_marker_matches_text() {
-    use tractor::transform::helpers::lookup_operator_spec;
+    use tractor::transform::operators::lookup_operator_spec;
 
     let mut report = Report::default();
     for fixture in iter_fixtures() {
@@ -562,7 +562,7 @@ const ASSERT_ALL_NAMES_MEMBERSHIP: bool = true;
 #[test]
 fn all_names_declared_in_semantic_module() {
     use tractor::languages::{has_semantic_vocabulary, is_declared_name, is_field_wrapper_name};
-    use tractor::transform::helpers::is_operator_marker_name;
+    use tractor::transform::operators::is_operator_marker_name;
 
     let mut report = Report::default();
     for fixture in iter_fixtures() {
