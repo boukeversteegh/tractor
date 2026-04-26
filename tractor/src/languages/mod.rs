@@ -484,7 +484,7 @@ fn append_constraint_to_generic(
 /// the flat conditional shape (see the cross-cutting convention in
 /// `specs/tractor-parse/semantic-tree/transformations.md`).
 fn collapse_conditionals(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
-    use crate::transform::helpers::*;
+    use crate::transform::conditionals::collapse_else_if_chain;
     // Collect all <if> nodes first (we mutate the tree as we go).
     let mut if_nodes: Vec<XotNode> = Vec::new();
     collect_if_nodes(xot, root, &mut if_nodes);
