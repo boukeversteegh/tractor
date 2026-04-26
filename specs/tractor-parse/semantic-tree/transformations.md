@@ -219,7 +219,7 @@ make `//method[public]/comment` find trailing comments without
 sibling-index gymnastics, but raises an unsettled question for
 the leading counterpart (does a leading comment become the first
 child of the next declaration?). Held until the leading-anchor
-question is explored. See [`semantic-tree-open-questions.md`](../../../todo/semantic-tree-open-questions.md).
+question is explored. See [`32-semantic-tree-open-questions.md`](../../../todo/32-semantic-tree-open-questions.md).
 
 **Multi-line `<line>` children — deferred.** A merged group is
 currently one `<comment>` with multiline text (prefixes embedded).
