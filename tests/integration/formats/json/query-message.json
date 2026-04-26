@@ -8,7 +8,7 @@
         "public": true,
         "name": "Foo",
         "body": {
-          "$truncated": 17
+          "$truncated": 15
         }
       },
       "message": "tests/integration/formats/sample.cs:1"

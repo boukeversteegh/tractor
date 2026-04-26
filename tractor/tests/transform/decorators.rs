@@ -12,18 +12,16 @@ use crate::support::semantic::*;
 #[test]
 fn python_decorator_is_direct_child() {
     let mut tree = parse_src("python", "@dataclass\nclass X: pass\n");
-    assert_count(
+    claim("Python class shape has direct decorator child",
         &mut tree,
-        "//class/decorator[name='dataclass']",
-        1,
-        "Python decorator is a direct child of the decorated <class>",
-    );
-    assert_count(
-        &mut tree,
-        "//decorated",
-        0,
-        "no <decorated> wrapper — topology matches Java/C#/Rust",
-    );
+        &multi_xpath(r#"
+            //class[name='X']
+                [decorator[name='dataclass']]
+        "#),
+        1);
+
+    claim("no <decorated> wrapper — topology matches Java/C#/Rust",
+        &mut tree, "//decorated", 0);
 }
 
 #[test]
@@ -32,12 +30,13 @@ fn java_annotation_is_direct_child() {
         "java",
         "class X { @Override public void f() {} }",
     );
-    assert_count(
+    claim("Java method shape has direct annotation child",
         &mut tree,
-        "//method/annotation[name='Override']",
-        1,
-        "Java annotation is a direct child of the annotated <method>",
-    );
+        &multi_xpath(r#"
+            //method[name='f']
+                [annotation[name='Override']]
+        "#),
+        1);
 }
 
 #[test]
@@ -47,11 +46,17 @@ fn csharp_attribute_is_direct_child() {
         "class X { [Obsolete] [MaxLength(50)] public string Name; }",
     );
 
-    claim("C# attribute is a direct child of the attributed declaration",
-        &mut tree, "//field/attribute[name='Obsolete']", 1);
-
-    claim("attribute with arguments still has exactly one <name> child",
-        &mut tree, "//attribute[name='MaxLength']/name", 1);
+    claim("C# field shape has direct attributes with flat name and argument shape",
+        &mut tree,
+        &multi_xpath(r#"
+            //field
+                [attribute[name='Obsolete']]
+                [attribute[name='MaxLength']
+                    [name]
+                    [argument/int='50']
+                ]
+        "#),
+        1);
 
     claim("attribute <name> holds the identifier as text (no nested <name>)",
         &mut tree, "//attribute[name='MaxLength']/name/*", 0);
@@ -62,21 +67,18 @@ fn rust_attribute_is_flat() {
     let mut tree = parse_src("rust", "#[derive(Debug)] struct S;\n");
     // #[derive] surfaces as a sibling `<attribute>` at the file
     // level — `attribute_item` wrapper was flattened.
-    assert_count(
-        &mut tree,
-        "//attribute[name='derive']",
-        1,
-        "Rust attribute flattens: <attribute> with <name> child, not nested",
-    );
+    claim("Rust outer attribute flattens to attribute with name",
+        &mut tree, "//attribute[name='derive']", 1);
     // Inner attributes (`#![…]`) carry an <inner/> marker to
     // distinguish from outer (`#[…]`) attributes.
     let mut inner = parse_src("rust", "#![allow(dead_code)]\nfn f() {}\n");
-    assert_count(
+    claim("Rust inner attribute carries inner marker",
         &mut inner,
-        "//attribute[inner][name='allow']",
-        1,
-        "Rust inner attribute carries <inner/> marker",
-    );
+        &multi_xpath(r#"
+            //attribute[name='allow']
+                [inner]
+        "#),
+        1);
 }
 
 #[test]
@@ -85,10 +87,11 @@ fn php_attribute_is_direct_child() {
         "php",
         "<?php #[Deprecated] class X {}\n",
     );
-    assert_count(
+    claim("PHP class shape has direct attribute child",
         &mut tree,
-        "//class/attribute[name='Deprecated']",
-        1,
-        "PHP attribute is a direct child of the attributed <class>",
-    );
+        &multi_xpath(r#"
+            //class[name='X']
+                [attribute[name='Deprecated']]
+        "#),
+        1);
 }

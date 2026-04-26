@@ -14,12 +14,13 @@ use crate::support::semantic::*;
 #[test]
 fn python_interpolation() {
     let mut tree = parse_src("python", "x = f\"hi {name}!\"\n");
-    assert_count(
+    claim("Python f-string assignment wraps interpolation expression",
         &mut tree,
-        "//string/interpolation/name[.='name']",
-        1,
-        "Python f-string interpolation wraps the expression",
-    );
+        &multi_xpath(r#"
+            //assign[left/name='x']
+                [right/string/interpolation/name='name']
+        "#),
+        1);
 }
 
 #[test]
@@ -28,12 +29,13 @@ fn typescript_template() {
         "typescript",
         "const s = `hello ${name}!`;\n",
     );
-    assert_count(
+    claim("TypeScript template assignment wraps interpolation expression",
         &mut tree,
-        "//template/interpolation/name[.='name']",
-        1,
-        "TypeScript template interpolation wraps the expression",
-    );
+        &multi_xpath(r#"
+            //variable[name='s']
+                [value/template/interpolation/name='name']
+        "#),
+        1);
 }
 
 #[test]
@@ -42,12 +44,13 @@ fn ruby_double_quote() {
         "ruby",
         "s = \"hi #{name}!\"\n",
     );
-    assert_count(
+    claim("Ruby double-quote assignment wraps interpolation expression",
         &mut tree,
-        "//string/interpolation/name[.='name']",
-        1,
-        "Ruby double-quote interpolation wraps the expression",
-    );
+        &multi_xpath(r#"
+            //assign[left/name='s']
+                [right/string/interpolation/name='name']
+        "#),
+        1);
 }
 
 #[test]
@@ -56,12 +59,13 @@ fn csharp_interpolated_string() {
         "csharp",
         "class X { string s = $\"hi {Name}!\"; }",
     );
-    assert_count(
+    claim("C# field initializer wraps interpolated expression",
         &mut tree,
-        "//string/interpolation/name[.='Name']",
-        1,
-        "C# interpolated string wraps the expression",
-    );
+        &multi_xpath(r#"
+            //field[.//name='s']
+                [.//string/interpolation/name='Name']
+        "#),
+        1);
 }
 
 #[test]
@@ -70,12 +74,13 @@ fn php_variable_interpolation() {
         "php",
         "<?php $s = \"hi $name!\";\n",
     );
-    assert_count(
+    claim("PHP string assignment wraps variable interpolation",
         &mut tree,
-        "//string/interpolation/variable/name[.='name']",
-        1,
-        "PHP variable interpolation wraps the expression",
-    );
+        &multi_xpath(r#"
+            //assign[left/variable/name='s']
+                [right/string/interpolation/variable/name='name']
+        "#),
+        1);
 }
 
 #[test]
@@ -84,12 +89,13 @@ fn php_complex_interpolation() {
         "php",
         "<?php $s = \"x {$obj->method()}\";\n",
     );
-    assert_count(
+    claim("PHP string assignment wraps complex call interpolation",
         &mut tree,
-        "//string/interpolation/call",
-        1,
-        "PHP complex interpolation wraps the expression",
-    );
+        &multi_xpath(r#"
+            //assign[left/variable/name='s']
+                [right/string/interpolation/call]
+        "#),
+        1);
 }
 
 /// Go strings: interpreted (double-quoted, escapes) and raw
@@ -105,14 +111,19 @@ fn go() {
         const pattern = `^\d+$`
     "#);
 
-    claim("3 strings total — bare //string catches both forms",
-        &mut tree, "//string", 3);
-
-    claim("interpreted string has no <raw/> marker",
-        &mut tree, "//string[not(raw)]", 1);
-
-    claim("two backtick strings carry <raw/>",
-        &mut tree, "//string[raw]", 2);
+    claim("Go const shapes distinguish interpreted and raw strings",
+        &mut tree,
+        &multi_xpath(r#"
+            //file
+                [const[name='normal']
+                    [value/string[not(raw)]]]
+                [const[name='raw']
+                    [value/string[raw]]]
+                [const[name='pattern']
+                    [value/string[raw]]]
+                [count(.//string)=3]
+        "#),
+        1);
 
     claim("raw and not-raw partition the strings",
         &mut tree, "//string[raw and not(raw)]", 0);
@@ -129,11 +140,15 @@ fn rust() {
         }
     "#);
 
-    claim("raw string carries <raw/> marker",
-        &mut tree, "//string[raw]", 1);
-
-    claim("both raw and normal strings use <string>",
-        &mut tree, "//string", 2);
+    claim("Rust let string values distinguish raw and normal strings",
+        &mut tree,
+        &multi_xpath(r#"
+            //function[name='f']/body
+                [let[value/string[raw]]]
+                [let[value/string[not(raw)]]]
+                [count(.//string)=2]
+        "#),
+        1);
 }
 
 /// F-strings render as <string> with <interpolation> children
@@ -148,21 +163,24 @@ greeting = f"hello {name}"
 status = f"hello {name}, you are {age}"
 "#);
 
-    claim("3 strings total",
-        &mut tree, "//string", 3);
-
-    claim("plain string has no <interpolation> child",
-        &mut tree, "//string[not(interpolation)]", 1);
-
-    claim("two f-strings carry interpolations",
-        &mut tree, "//string[interpolation]", 2);
-
-    claim("interpolation wraps a <name>",
-        &mut tree, "//string/interpolation/name='name'", 1);
-
-    claim("`status` f-string has 2 interpolations",
-        &mut tree, "//string[count(interpolation)=2]", 1);
-
-    claim("interpolation can match by interpolated name",
-        &mut tree, "//string/interpolation[name='age']", 1);
+    claim("Python string assignments distinguish plain and f-string interpolation shapes",
+        &mut tree,
+        &multi_xpath(r#"
+            //module
+                [assign
+                    [left/name='plain']
+                    [right/string[not(interpolation)]]]
+                [assign
+                    [left/name='greeting']
+                    [right/string/interpolation/name='name']]
+                [assign[left/name='status']
+                    [right/string
+                        [interpolation/name='name']
+                        [interpolation/name='age']
+                        [count(interpolation)=2]
+                    ]
+                ]
+                [count(.//string)=3]
+        "#),
+        1);
 }

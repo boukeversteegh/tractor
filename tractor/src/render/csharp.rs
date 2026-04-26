@@ -195,19 +195,44 @@ fn render_single_attribute(node: &XmlNode) -> Result<String, RenderError> {
 // ---------------------------------------------------------------------------
 
 fn render_accessors(node: &XmlNode) -> Result<String, RenderError> {
-    let accessors_node = match get_child(node, ACCESSORS) {
-        Some(n) => n,
-        None => return Ok(String::new()),
+    let direct_accessors = match node {
+        XmlNode::Element { children, .. } => children
+            .iter()
+            .filter(|child| {
+                matches!(
+                    child,
+                    XmlNode::Element { name, .. }
+                        if matches!(name.as_str(), GET | SET | INIT | ADD | REMOVE)
+                )
+            })
+            .collect::<Vec<_>>(),
+        _ => Vec::new(),
     };
 
-    let accessors: Vec<String> = get_children(accessors_node, ACCESSOR)
-        .iter()
-        .filter_map(|a| {
-            let text = text_content(a)?;
-            let trimmed = text.trim().trim_end_matches(';').trim().to_string();
-            Some(format!("{};", trimmed))
-        })
-        .collect();
+    let accessors: Vec<String> = if direct_accessors.is_empty() {
+        // Backward-compatible support for older hand-written renderer
+        // fixtures that still use <accessors><accessor>get;</accessor>...
+        get_child(node, ACCESSORS)
+            .map(|accessors_node| {
+                get_children(accessors_node, ACCESSOR)
+                    .iter()
+                    .filter_map(|a| {
+                        let text = text_content(a)?;
+                        let trimmed = text.trim().trim_end_matches(';').trim().to_string();
+                        Some(format!("{};", trimmed))
+                    })
+                    .collect()
+            })
+            .unwrap_or_default()
+    } else {
+        direct_accessors
+            .iter()
+            .filter_map(|a| match a {
+                XmlNode::Element { name, .. } => Some(format!("{};", name)),
+                _ => None,
+            })
+            .collect()
+    };
 
     if accessors.is_empty() {
         Ok(String::new())
@@ -486,7 +511,7 @@ mod tests {
 
     #[test]
     fn test_render_simple_property() {
-        let xml = r#"<property><public/><type>string</type><name>Name</name><accessors><accessor>get;</accessor><accessor>set;</accessor></accessors></property>"#;
+        let xml = r#"<property><public/><type>string</type><name>Name</name><get>get;</get><set>set;</set></property>"#;
         let node = parse_xml(xml).unwrap();
         let result = render_node(&node, &RenderOptions::default()).unwrap();
         assert_eq!(result, "public string Name { get; set; }");
@@ -494,7 +519,7 @@ mod tests {
 
     #[test]
     fn test_render_nullable_property() {
-        let xml = r#"<property><public/><type>Guid<nullable/></type><name>UserId</name><accessors><accessor>get;</accessor><accessor>set;</accessor></accessors></property>"#;
+        let xml = r#"<property><public/><type>Guid<nullable/></type><name>UserId</name><get>get;</get><set>set;</set></property>"#;
         let node = parse_xml(xml).unwrap();
         let result = render_node(&node, &RenderOptions::default()).unwrap();
         assert_eq!(result, "public Guid? UserId { get; set; }");
@@ -502,7 +527,7 @@ mod tests {
 
     #[test]
     fn test_render_property_with_attribute() {
-        let xml = r#"<property><attributes><attribute><name>Required</name></attribute></attributes><public/><type>string</type><name>Name</name><accessors><accessor>get;</accessor><accessor>set;</accessor></accessors></property>"#;
+        let xml = r#"<property><attributes><attribute><name>Required</name></attribute></attributes><public/><type>string</type><name>Name</name><get>get;</get><set>set;</set></property>"#;
         let node = parse_xml(xml).unwrap();
         let result = render_node(&node, &RenderOptions::default()).unwrap();
         assert_eq!(result, "[Required]\npublic string Name { get; set; }");
@@ -527,7 +552,7 @@ mod tests {
 
     #[test]
     fn test_render_class_with_members() {
-        let xml = r#"<class><public/><name>User</name><body><property><public/><type>string</type><name>Name</name><accessors><accessor>get;</accessor><accessor>set;</accessor></accessors></property><field><private/><readonly/><type>int</type><name>_id</name></field></body></class>"#;
+        let xml = r#"<class><public/><name>User</name><body><property><public/><type>string</type><name>Name</name><get>get;</get><set>set;</set></property><field><private/><readonly/><type>int</type><name>_id</name></field></body></class>"#;
         let node = parse_xml(xml).unwrap();
         let result = render_node(&node, &RenderOptions::default()).unwrap();
         let expected = "public class User\n{\n    public string Name { get; set; }\n\n    private readonly int _id;\n}";
@@ -536,7 +561,7 @@ mod tests {
 
     #[test]
     fn test_render_generic_type_property() {
-        let xml = r#"<property><public/><type><generic/>List<arguments><type>string</type></arguments></type><name>Items</name><accessors><accessor>get;</accessor><accessor>set;</accessor></accessors></property>"#;
+        let xml = r#"<property><public/><type><generic/>List<arguments><type>string</type></arguments></type><name>Items</name><get>get;</get><set>set;</set></property>"#;
         let node = parse_xml(xml).unwrap();
         let result = render_node(&node, &RenderOptions::default()).unwrap();
         assert_eq!(result, "public List<string> Items { get; set; }");
@@ -544,7 +569,7 @@ mod tests {
 
     #[test]
     fn test_render_nested_generic_type() {
-        let xml = r#"<property><public/><type><generic/>Dictionary<arguments><type>string</type><type>int</type></arguments></type><name>Map</name><accessors><accessor>get;</accessor><accessor>set;</accessor></accessors></property>"#;
+        let xml = r#"<property><public/><type><generic/>Dictionary<arguments><type>string</type><type>int</type></arguments></type><name>Map</name><get>get;</get><set>set;</set></property>"#;
         let node = parse_xml(xml).unwrap();
         let result = render_node(&node, &RenderOptions::default()).unwrap();
         assert_eq!(result, "public Dictionary<string, int> Map { get; set; }");
@@ -552,7 +577,7 @@ mod tests {
 
     #[test]
     fn test_render_property_with_indentation() {
-        let xml = r#"<property><public/><type>string</type><name>Name</name><accessors><accessor>get;</accessor><accessor>set;</accessor></accessors></property>"#;
+        let xml = r#"<property><public/><type>string</type><name>Name</name><get>get;</get><set>set;</set></property>"#;
         let node = parse_xml(xml).unwrap();
         let opts = RenderOptions {
             indent_level: 1,

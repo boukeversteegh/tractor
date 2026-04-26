@@ -34,7 +34,7 @@ renderer share a single source of truth:
 | Structural | `<unit>`, `<namespace>`, `<import>`, `<body>` |
 | Type decls | `<class>`, `<struct>`, `<interface>`, `<enum>`, `<record>` |
 | Members | `<method>`, `<constructor>`, `<property>`, `<field>`, `<comment>`, `<constant>` (for enum members) |
-| Shared children | `<name>`, `<type>`, `<accessors>`, `<accessor>`, `<attributes>`, `<attribute>`, `<arguments>`, `<argument>`, `<parameters>`, `<parameter>`, `<variable>`, `<declarator>` |
+| Shared children | `<name>`, `<type>`, `<get>`, `<set>`, `<init>`, `<add>`, `<remove>`, `<attributes>`, `<attribute>`, `<arguments>`, `<argument>`, `<parameters>`, `<parameter>`, `<variable>`, `<declarator>` |
 | Type markers | `<nullable/>`, `<generic/>` |
 | Comment markers | `<trailing/>`, `<leading/>` |
 
@@ -64,7 +64,7 @@ renderer share a single source of truth:
 | `attribute_list` | flattened with `field="attributes"` | Flat list. |
 | `attribute` | `<attribute>` | Full word. |
 | `accessor_list` | flattened with `field="accessors"` | Flat list. |
-| `accessor_declaration` | `<accessor>` | Short. |
+| `accessor_declaration` | `<get>`, `<set>`, `<init>`, `<add>`, or `<remove>` | Specific node name; avoids encoding accessor kind as a wrapper-plus-marker hierarchy. |
 | `using_directive` | `<import>` | Developer mental model — "import" is more universal than "using". |
 | `generic_name` | rewritten — see below | Structural, not a rename. |
 | `nullable_type` | rewritten — see below | Structural. |
@@ -238,4 +238,3 @@ the flat shape shared across all programming languages:
 
 See the cross-cutting "Conditional shape" convention in the index
 [`transformations.md`](../transformations.md).
-

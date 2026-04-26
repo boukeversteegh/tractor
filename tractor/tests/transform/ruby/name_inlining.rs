@@ -24,27 +24,28 @@ fn ruby() {
         end
     "#);
 
-    claim("class name is inlined text on <name>",
-        &mut tree, "//class/name='Calculator'", 1);
+    claim("Ruby declarations inline names while expression identifiers still render as <name>",
+        &mut tree,
+        &multi_xpath(r#"
+            //program
+                [class
+                    [name='Calculator']
+                    [body/method
+                        [name='add']
+                        [name='a']
+                        [name='b']
+                        [body//binary
+                            [left/name='a']
+                            [right/name='b']]]]
+                [module
+                    [name='Utils']
+                    [.//method
+                        [name='greet']
+                        [singleton]
+                        [name='name']]]
+        "#),
+        1);
 
-    claim("class <name> has no <identifier> child",
-        &mut tree, "//class/name/identifier", 0);
-
-    claim("class <name> has no nested <constant> child",
-        &mut tree, "//class/name/constant", 0);
-
-    claim("module name is inlined text on <name>",
-        &mut tree, "//module/name='Utils'", 1);
-
-    claim("method name `add` is inlined text on <name>",
-        &mut tree, "//method/name='add'", 1);
-
-    claim("singleton method `self.greet` carries [singleton] marker",
-        &mut tree, "//method[singleton][name='greet']", 1);
-
-    claim("method parameters are <name> elements (identifier renamed)",
-        &mut tree, "//method[name='add']/name[. ='a' or .='b']", 2);
-
-    claim("identifiers in expressions render as <name>",
-        &mut tree, "//binary/left/name[.='a']", 1);
+    claim("inlined declaration names do not retain nested parser-name wrappers",
+        &mut tree, "//class/name/identifier | //class/name/constant | //module/name/identifier", 0);
 }

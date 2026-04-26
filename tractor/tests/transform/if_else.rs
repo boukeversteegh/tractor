@@ -27,17 +27,20 @@ fn csharp() {
         }
     "#);
 
-    claim("one <if> at the chain root",
-        &mut tree, "//if", 1);
-
-    claim("two <else_if> siblings flattened under <if>",
-        &mut tree, "//if/else_if", 2);
-
-    claim("one trailing <else> sibling under <if>",
-        &mut tree, "//if/else", 1);
-
-    claim("ternary surgically wraps then/else",
-        &mut tree, "//ternary[then and else]", 1);
+    claim("C# methods show flattened if-chain and wrapped ternary shapes",
+        &mut tree,
+        &multi_xpath(r#"
+            //class[name='Conditionals']/body
+                [method[name='Classify']//if
+                    [count(else_if)=2]
+                    [count(else)=1]
+                ]
+                [method[name='Label']//ternary
+                    [then]
+                    [else]
+                ]
+        "#),
+        1);
 }
 
 #[test]
@@ -50,17 +53,18 @@ fn go() {
         }
     "#);
 
-    claim("one <if> at the chain root",
-        &mut tree, "//if", 1);
+    claim("Go function shape has flattened if-chain and no ternary node",
+        &mut tree,
+        &multi_xpath(r#"
+            //function[name='Classify']
+                [.//if
+                    [count(else_if)=2]
+                    [count(else)=1]
+                ]
+                [not(.//ternary)]
+        "#),
+        1);
 
-    claim("two flat <else_if> siblings",
-        &mut tree, "//if/else_if", 2);
-
-    claim("one <else> sibling",
-        &mut tree, "//if/else", 1);
-
-    claim("Go has no <ternary> (no ternary in the language)",
-        &mut tree, "//ternary", 0);
 }
 
 #[test]
@@ -80,11 +84,20 @@ fn java() {
         }
     "#);
 
-    claim("one <if> + 2 <else_if> + 1 <else>",
-        &mut tree, "//if[count(else_if)=2 and count(else)=1]", 1);
-
-    claim("ternary has <then> and <else> via surgical wrap",
-        &mut tree, "//ternary[then and else]", 1);
+    claim("Java methods show flattened if-chain and wrapped ternary shapes",
+        &mut tree,
+        &multi_xpath(r#"
+            //class[name='Conditionals']/body
+                [method[name='classify']//if
+                    [count(else_if)=2]
+                    [count(else)=1]
+                ]
+                [method[name='label']//ternary
+                    [then]
+                    [else]
+                ]
+        "#),
+        1);
 }
 
 #[test]
@@ -105,20 +118,23 @@ def label(n):
     return "positive" if n > 0 else "non-positive"
 "#);
 
-    claim("one <if> at the chain root",
-        &mut tree, "//if", 1);
-
-    claim("`elif` becomes <else_if> (underscore naming)",
-        &mut tree, "//if/else_if", 2);
+    claim("Python functions show flattened elif-chain and flat ternary shape",
+        &mut tree,
+        &multi_xpath(r#"
+            //module
+                [function[name='classify']//if
+                    [count(else_if)=2]
+                    [count(else)=1]
+                ]
+                [function[name='label']//ternary
+                    [not(then)]
+                    [not(else)]
+                ]
+        "#),
+        1);
 
     claim("no `elif` raw element leaks",
         &mut tree, "//elif", 0);
-
-    claim("Python ternary is FLAT (no then/else wrappers)",
-        &mut tree, "//ternary[then or else]", 0);
-
-    claim("Python ternary still produces a <ternary> node",
-        &mut tree, "//ternary", 1);
 }
 
 #[test]
@@ -141,14 +157,17 @@ fn ruby() {
         end
     "#);
 
-    claim("one <if> with 2 flat <else_if> siblings",
-        &mut tree, "//if[count(else_if)=2]", 1);
-
-    claim("`elsif` renames to <else_if>",
-        &mut tree, "//if/else_if", 2);
-
-    claim("Ruby ternary uses <conditional> (not <ternary>)",
-        &mut tree, "//conditional", 1);
+    claim("Ruby methods show flattened elsif-chain and conditional ternary shape",
+        &mut tree,
+        &multi_xpath(r#"
+            //program
+                [method[name='classify']//if
+                    [count(else_if)=2]
+                    [count(else)=1]
+                ]
+                [method[name='label']//conditional]
+        "#),
+        1);
 }
 
 #[test]
@@ -166,11 +185,20 @@ fn rust() {
         }
     "#);
 
-    claim("classify: one <if> with 2 <else_if> + 1 <else>",
-        &mut tree, "//function[name='classify']/body/if[count(else_if)=2 and count(else)=1]", 1);
-
-    claim("label: if-expression as ternary keeps <then>/<else>",
-        &mut tree, "//function[name='label']//if[then and else]", 1);
+    claim("Rust functions show flattened if-chain and expression-if then/else shape",
+        &mut tree,
+        &multi_xpath(r#"
+            //file
+                [function[name='classify']//if
+                    [count(else_if)=2]
+                    [count(else)=1]
+                ]
+                [function[name='label']//if
+                    [then]
+                    [else]
+                ]
+        "#),
+        1);
 }
 
 #[test]
@@ -186,9 +214,18 @@ fn typescript() {
         const label = (n: number) => n > 0 ? "positive" : "non-positive";
     "#);
 
-    claim("one <if> + 2 <else_if> + 1 <else>",
-        &mut tree, "//if[count(else_if)=2 and count(else)=1]", 1);
-
-    claim("ternary surgically wraps then/else",
-        &mut tree, "//ternary[then and else]", 1);
+    claim("TypeScript function and arrow shapes show flattened if-chain and wrapped ternary",
+        &mut tree,
+        &multi_xpath(r#"
+            //program
+                [function[name='classify']//if
+                    [count(else_if)=2]
+                    [count(else)=1]
+                ]
+                [variable[name='label']//ternary
+                    [then]
+                    [else]
+                ]
+        "#),
+        1);
 }

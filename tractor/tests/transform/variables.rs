@@ -15,8 +15,20 @@ fn java() {
         }
     "#);
 
-    claim("each declarator in a multi-variable declaration is its own <declarator>",
-        &mut tree, "//variable/declarator", 2);
+    claim("multi-variable declaration shape has one variable with two declarators",
+        &mut tree,
+        &multi_xpath(r#"
+            //method[name='f']/body/variable
+                [type/name='int']
+                [declarator[name='x']
+                    [value/int='1']
+                ]
+                [declarator[name='y']
+                    [value/int='2']
+                ]
+                [count(declarator)=2]
+        "#),
+        1);
 }
 
 /// Goal #5: augmented_assignment unifies with plain assignment
@@ -39,27 +51,24 @@ def ops():
     x >>= 1
 "#);
 
-    claim("11 statement-level assignments (1 plain + 10 compound)",
-        &mut tree, "//body/assign", 11);
-
-    claim("plain `=` is the only top-level assign without an <op>",
-        &mut tree, "//body/assign[not(op)]", 1);
-
-    claim("10 compound assignments carry an <op> child",
-        &mut tree, "//body/assign/op", 10);
-
-    claim("`+=` carries assign[plus] marker",
-        &mut tree, "//assign/op/assign[plus]", 1);
-
-    claim("`-=` carries assign[minus] marker",
-        &mut tree, "//assign/op/assign[minus]", 1);
-
-    claim("`**=` carries assign[power] marker",
-        &mut tree, "//assign/op/assign[power]", 1);
-
-    claim("bitwise compound ops carry assign/bitwise[*] markers",
-        &mut tree, "//assign/op/assign/bitwise[and] | //assign/op/assign/bitwise[or] | //assign/op/assign/bitwise[xor]", 3);
-
-    claim("shift compound ops carry assign/shift[*] markers",
-        &mut tree, "//assign/op/assign/shift[left] | //assign/op/assign/shift[right]", 2);
+    claim("ops body has one plain assignment and compound assignment operator shapes",
+        &mut tree,
+        &multi_xpath(r#"
+            //function[name='ops']/body
+                [assign[left/name='x']
+                    [right/int='0']
+                    [not(op)]
+                ]
+                [assign[op/assign[plus]]]
+                [assign[op/assign[minus]]]
+                [assign[op/assign[power]]]
+                [assign[op/assign/bitwise[and]]]
+                [assign[op/assign/bitwise[or]]]
+                [assign[op/assign/bitwise[xor]]]
+                [assign[op/assign/shift[left]]]
+                [assign[op/assign/shift[right]]]
+                [count(assign)=11]
+                [count(assign/op)=10]
+        "#),
+        1);
 }

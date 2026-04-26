@@ -16,9 +16,16 @@ fn go() {
         var y = 2
     "#);
 
-    claim("const's name is a direct child, not buried under const_spec",
-        &mut tree, "//const[name='x']", 1);
-
-    claim("var's name is a direct child, not buried under var_spec",
-        &mut tree, "//var[name='y']", 1);
+    claim("Go const/var specs flatten to named declarations with direct values",
+        &mut tree,
+        &multi_xpath(r#"
+            //file
+                [const
+                    [name='x']
+                    [value/int='1']]
+                [var
+                    [name='y']
+                    [value/int='2']]
+        "#),
+        1);
 }

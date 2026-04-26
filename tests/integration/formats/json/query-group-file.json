@@ -11,7 +11,7 @@
             "public": true,
             "name": "Foo",
             "body": {
-              "$truncated": 17
+              "$truncated": 15
             }
           }
         },
@@ -36,7 +36,7 @@
             "public": true,
             "name": "Alpha",
             "body": {
-              "$truncated": 9
+              "$truncated": 7
             }
           }
         }

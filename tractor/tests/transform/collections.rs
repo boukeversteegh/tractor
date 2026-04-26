@@ -20,26 +20,33 @@ uniq_sq = {x * x for x in nums}
 gen = (x for x in nums)
 "#);
 
-    claim("list literal carries <literal/>",
-        &mut tree, "//list[literal]", 1);
-
-    claim("list comprehension carries <comprehension/>",
-        &mut tree, "//list[comprehension]", 1);
-
-    claim("dict literal carries <literal/>",
-        &mut tree, "//dict[literal]", 1);
-
-    claim("dict comprehension carries <comprehension/>",
-        &mut tree, "//dict[comprehension]", 1);
-
-    claim("set literal carries <literal/>",
-        &mut tree, "//set[literal]", 1);
-
-    claim("set comprehension carries <comprehension/>",
-        &mut tree, "//set[comprehension]", 1);
-
-    claim("generator expression renders as <generator>",
-        &mut tree, "//generator", 1);
+    claim("collection assignment shapes distinguish literal and comprehension forms",
+        &mut tree,
+        &multi_xpath(r#"
+            //module
+                [assign[left/name='nums']
+                    [right/list[literal]]
+                ]
+                [assign[left/name='squares']
+                    [right/list[comprehension]]
+                ]
+                [assign[left/name='pairs']
+                    [right/dict[literal]]
+                ]
+                [assign[left/name='inverted']
+                    [right/dict[comprehension]]
+                ]
+                [assign[left/name='unique']
+                    [right/set[literal]]
+                ]
+                [assign[left/name='uniq_sq']
+                    [right/set[comprehension]]
+                ]
+                [assign[left/name='gen']
+                    [right/generator]
+                ]
+        "#),
+        1);
 
     claim("literal and comprehension are mutually exclusive on collections",
         &mut tree, "//*[literal and comprehension]", 0);
@@ -56,14 +63,22 @@ fn ruby() {
         C = [1, 2]
     "#);
 
-    claim("%w[…] carries <string/>",
-        &mut tree, "//array[string]", 1);
-
-    claim("%i[…] carries <symbol/>",
-        &mut tree, "//array[symbol]", 1);
-
-    claim("all three forms collapse to <array>",
-        &mut tree, "//array", 3);
+    claim("Ruby array assignment shapes preserve percent-literal flavors",
+        &mut tree,
+        &multi_xpath(r#"
+            //program
+                [assign[left/constant='A']
+                    [right/array[string]]
+                ]
+                [assign[left/constant='B']
+                    [right/array[symbol]]
+                ]
+                [assign[left/constant='C']
+                    [right/array[not(string)][not(symbol)]]
+                ]
+                [count(assign/right/array)=3]
+        "#),
+        1);
 }
 
 /// `*args` and `**kwargs` collapse to <spread> but carry a
@@ -79,9 +94,20 @@ g(*xs, **kw)
 {**a, **b}
 "#);
 
-    claim("`*args`, `g(*xs)`, `[*a]`, `[*b]` all carry spread[list]",
-        &mut tree, "//spread[list]", 4);
-
-    claim("`**kwargs`, `g(**kw)`, `{**a}`, `{**b}` all carry spread[dict]",
-        &mut tree, "//spread[dict]", 4);
+    claim("spread shapes cover parameter, call, list, and dict contexts",
+        &mut tree,
+        &multi_xpath(r#"
+            //module
+                [function[name='f']
+                    [spread[list][name='args']]
+                    [spread[dict][name='kwargs']]
+                ]
+                [call
+                    [spread[list][name='xs']]
+                    [spread[dict][name='kw']]
+                ]
+                [list[spread[list][name='a']][spread[list][name='b']]]
+                [dict[spread[dict][name='a']][spread[dict][name='b']]]
+        "#),
+        1);
 }

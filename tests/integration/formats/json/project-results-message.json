@@ -16,14 +16,8 @@
             },
             "name": "Bar",
             "accessors": [
-              {
-                "get": true,
-                "text": "get;"
-              },
-              {
-                "set": true,
-                "text": "set;"
-              }
+              "get;",
+              "set;"
             ]
           },
           {

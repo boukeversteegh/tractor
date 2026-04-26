@@ -25,23 +25,28 @@ fn rust() {
         pub const PUB: i32 = 2;
     "#);
 
-    claim("4 functions total, every one has visibility info",
-        &mut tree, "//function[private or pub]", 4);
-
-    claim("plain `pub` produces a <pub/> marker (no restriction)",
-        &mut tree, "//function[pub][name='public_fn']", 1);
-
-    claim("`pub(crate)` exposes <pub><crate/></pub>",
-        &mut tree, "//function/pub[crate]", 1);
-
-    claim("`pub(super)` exposes <pub><super/></pub>",
-        &mut tree, "//function/pub[super]", 1);
-
-    claim("private struct carries <private/>",
-        &mut tree, "//struct[private][name='PrivateStruct']", 1);
-
-    claim("private const carries <private/>",
-        &mut tree, "//const[private][name='PRIV']", 1);
+    claim("Rust file shape has exhaustive visibility on functions, structs, and consts",
+        &mut tree,
+        &multi_xpath(r#"
+            //file
+                [function[name='private_fn']
+                    [private]]
+                [function[name='public_fn']
+                    [pub]]
+                [function[name='crate_fn']
+                    [pub[crate]]]
+                [function[name='super_fn']
+                    [pub[super]]]
+                [struct[name='PrivateStruct']
+                    [private]]
+                [struct[name='PublicStruct']
+                    [pub]]
+                [const[name='PRIV']
+                    [private]]
+                [const[name='PUB']
+                    [pub]]
+        "#),
+        1);
 }
 
 /// TypeScript class members carry an exhaustive visibility marker:
@@ -62,20 +67,26 @@ fn typescript() {
         }
     "#);
 
-    claim("implicit default and explicit public both carry <public/> on methods",
-        &mut tree, "//method[public]", 2);
-
-    claim("explicit private method carries <private/>",
-        &mut tree, "//method[private]", 1);
-
-    claim("explicit protected method carries <protected/>",
-        &mut tree, "//method[protected]", 1);
-
-    claim("unmarked field defaults to <public/>",
-        &mut tree, "//field[public]", 1);
-
-    claim("explicit private field carries <private/>",
-        &mut tree, "//field[private]", 1);
+    claim("TypeScript class member shapes carry explicit or default visibility",
+        &mut tree,
+        &multi_xpath(r#"
+            //class[name='X']
+                [body
+                    [method[name='foo']
+                        [public]]
+                    [method[name='bar']
+                        [private]]
+                    [method[name='baz']
+                        [protected]]
+                    [method[name='qux']
+                        [public]]
+                    [field[name='x']
+                        [public]]
+                    [field[name='y']
+                        [private]]
+                ]
+        "#),
+        1);
 }
 
 /// PHP class members carry an exhaustive visibility marker:
@@ -97,20 +108,28 @@ fn php() {
         }
     "#);
 
-    claim("implicit default and explicit public both carry <public/> on methods",
-        &mut tree, "//method[public]", 2);
-
-    claim("explicit private method carries <private/>",
-        &mut tree, "//method[private]", 1);
-
-    claim("explicit protected method carries <protected/>",
-        &mut tree, "//method[protected]", 1);
-
-    claim("explicit and implicit public properties both carry <public/>",
-        &mut tree, "//field[public]", 2);
-
-    claim("explicit private property carries <private/>",
-        &mut tree, "//field[private]", 1);
+    claim("PHP class member shapes carry explicit or default visibility",
+        &mut tree,
+        &multi_xpath(r#"
+            //class[name='X']
+                [body
+                    [method[name='foo']
+                        [public]]
+                    [method[name='bar']
+                        [private]]
+                    [method[name='baz']
+                        [protected]]
+                    [method[name='qux']
+                        [public]]
+                    [field[name='$a']
+                        [public]]
+                    [field[name='$b']
+                        [public]]
+                    [field[name='$c']
+                        [private]]
+                ]
+        "#),
+        1);
 }
 
 /// Python visibility uses naming convention: bare → public,
@@ -128,25 +147,30 @@ class X:
     def __init__(self): pass
 "#);
 
-    claim("bare name and dunder both count as public",
-        &mut class_tree, "//function[public]", 2);
-
-    claim("single-underscore prefix means protected",
-        &mut class_tree, "//function[protected]", 1);
-
-    claim("double-underscore prefix means private",
-        &mut class_tree, "//function[private]", 1);
+    claim("Python class member visibility follows naming convention",
+        &mut class_tree,
+        &multi_xpath(r#"
+            //class[name='X']
+                [body
+                    [function[name='foo']
+                        [public]]
+                    [function[name='_bar']
+                        [protected]]
+                    [function[name='__baz']
+                        [private]]
+                    [function[name='__init__']
+                        [public]]
+                ]
+        "#),
+        1);
 
     let mut module_tree = parse_src("python", r#"
 def foo(): pass
 def _bar(): pass
 "#);
 
-    claim("module-level functions skip the visibility injection (no public)",
-        &mut module_tree, "//function[public]", 0);
-
-    claim("module-level functions skip the visibility injection (no protected)",
-        &mut module_tree, "//function[protected]", 0);
+    claim("module-level Python functions skip visibility injection",
+        &mut module_tree, "//function[public or protected or private]", 0);
 }
 
 /// Go uses Go's name-capitalization export rule for visibility:
@@ -170,26 +194,29 @@ fn go() {
         }
     "#);
 
-    claim("exported function carries <exported/>",
-        &mut tree, "//function[exported]", 1);
+    claim("Go file shape applies exported/unexported markers to functions, types, and fields",
+        &mut tree,
+        &multi_xpath(r#"
+            //file
+                [function[name='Public']
+                    [exported]]
+                [function[name='private']
+                    [unexported]]
+                [type[name='Exported']
+                    [exported]]
+                [type[name='unexported']
+                    [unexported]]
+                [struct[name='T']
+                    [field[name='Public']
+                        [exported]]
+                    [field[name='private']
+                        [unexported]]
+                ]
+        "#),
+        1);
 
-    claim("unexported function carries <unexported/>",
-        &mut tree, "//function[unexported]", 1);
-
-    claim("every function carries one of the two markers",
+    claim("every Go function carries one of the two visibility markers",
         &mut tree, "//function[not(exported) and not(unexported)]", 0);
-
-    claim("exported type carries <exported/>",
-        &mut tree, "//type[exported]", 1);
-
-    claim("unexported type carries <unexported/>",
-        &mut tree, "//type[unexported]", 1);
-
-    claim("capitalised struct field carries <exported/>",
-        &mut tree, "//field[exported]", 1);
-
-    claim("lower-case struct field carries <unexported/>",
-        &mut tree, "//field[unexported]", 1);
 }
 
 // ---- interface_public -----------------------------------------------------
@@ -210,11 +237,20 @@ fn csharp_interface() {
         }
     "#);
 
-    claim("3 interface methods all carry <public/>",
-        &mut tree, "//interface/body/method[public]", 3);
-
-    claim("expression-bodied property carries <public/>",
-        &mut tree, "//interface/body/property[public]", 1);
+    claim("C# interface body defaults methods and property to public",
+        &mut tree,
+        &multi_xpath(r#"
+            //interface[name='IShape']/body
+                [method[name='Area']
+                    [public]]
+                [method[name='Perimeter']
+                    [public]]
+                [property[name='Name']
+                    [public]]
+                [method[name='Stroke']
+                    [public]]
+        "#),
+        1);
 
     claim("no interface member is missing visibility",
         &mut tree, "//interface/body/*[(self::method or self::property) and not(public)]", 0);
@@ -236,12 +272,28 @@ fn java_interface() {
         }
     "#);
 
-    claim("implicit-public abstract methods carry <public/>",
-        &mut tree, "//interface/body/method[public][not(body)]", 3);
-
-    claim("explicit `public` method `stroke` also carries <public/>",
-        &mut tree, "//interface/body/method[public][name='stroke']", 1);
+    claim("Java interface body marks abstract and explicit-public methods as public",
+        &mut tree,
+        &multi_xpath(r#"
+            //interface[name='Shape']/body
+                [method[name='area']
+                    [public]
+                    [not(body)]]
+                [method[name='perimeter']
+                    [public]
+                    [not(body)]]
+                [method[name='stroke']
+                    [public]]
+                [method[name='name']
+                    [package]]
+        "#),
+        1);
 
     claim("`default` method is not classified as <public/> (current behaviour)",
-        &mut tree, "//interface/body/method[name='name'][public]", 0);
+        &mut tree,
+        &multi_xpath(r#"
+            //interface/body/method[name='name']
+                [public]
+        "#),
+        0);
 }

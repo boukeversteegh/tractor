@@ -64,6 +64,7 @@ mod support;
 
 // ----- Cross-language categories ------------------------------------------
 
+#[path = "transform/accessors.rs"]   mod accessors;
 #[path = "transform/collections.rs"] mod collections;
 #[path = "transform/comments.rs"]    mod comments;
 #[path = "transform/decorators.rs"]  mod decorators;

@@ -6,7 +6,7 @@ results:
     public: true
     name: Foo
     body:
-      $truncated: 17
+      $truncated: 15
 - file: tests/integration/formats/sample.cs
   line: 7
   tree:

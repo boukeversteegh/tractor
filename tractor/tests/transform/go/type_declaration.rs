@@ -22,12 +22,25 @@ fn go() {
         }
     "#);
 
-    claim("plain `type ID uint64` renders as <type>",
-        &mut tree, "//file/type[name='ID']", 1);
+    claim("Go file shape exposes plain, struct, and interface type declarations directly",
+        &mut tree,
+        &multi_xpath(r#"
+            //file
+                [type[name='ID']
+                    [type[name='uint64']]]
+                [struct[name='User']
+                    [field
+                        [name='Name']
+                        [type[name='string']]]
+                    [field
+                        [name='Age']
+                        [type[name='int']]]]
+                [interface[name='Greeter']
+                    [method[name='Greet']
+                        [returns/type[name='string']]]]
+        "#),
+        1);
 
     claim("struct/interface forms do NOT also produce a <type> wrapper",
         &mut tree, "//file/type[name='User'] | //file/type[name='Greeter']", 0);
-
-    claim("inner referenced type of `type ID uint64`",
-        &mut tree, "//type[name='ID']/type[name='uint64']", 1);
 }

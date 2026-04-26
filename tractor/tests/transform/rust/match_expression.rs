@@ -18,18 +18,26 @@ fn rust() {
         }
     "#);
 
-    claim("4 arms as siblings under <match>/<body>",
-        &mut tree, "//match/body/arm", 4);
-
-    claim("arm with literal pattern `0`",
-        &mut tree, "//arm[pattern/int='0']", 1);
-
-    claim("guard arm carries a <condition> child inside <pattern>",
-        &mut tree, "//arm/pattern/condition", 1);
-
-    claim("or-pattern uses pattern[or] markers (left-associative nesting)",
-        &mut tree, "//arm/pattern/pattern[or]", 1);
-
-    claim("each arm has a <pattern> and a <value>",
-        &mut tree, "//arm[pattern and value]", 4);
+    claim("Rust match body exposes arms directly with literal, or-pattern, guard, and fallback shapes",
+        &mut tree,
+        &multi_xpath(r#"
+            //match
+                [value/name='n']
+                [body
+                    [count(arm)=4]
+                    [arm
+                        [pattern/int='0']
+                        [value]]
+                    [arm
+                        [pattern/pattern[or]]
+                        [value]]
+                    [arm
+                        [pattern
+                            [condition]]
+                        [value]]
+                    [arm
+                        [pattern]
+                        [value]]]
+        "#),
+        1);
 }

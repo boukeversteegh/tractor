@@ -4,7 +4,7 @@ class[public]/
   └─ body/
       ├─ "{"
       ├─ property[public]/
-      │   └─ ... (8 children)
+      │   └─ ... (6 children)
       ├─ method[public]/
       │   └─ ... (7 children)
       └─ "}"

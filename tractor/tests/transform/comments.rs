@@ -29,21 +29,30 @@ fn csharp() {
         "#,
     );
 
-    claim("single-line `//` after `;` on same line is trailing",
-        &mut tree, "//comment[trailing][.='// trailing single']", 1);
-
-    claim("adjacent `//` comments merge into one <comment>",
-        &mut tree, &multi_xpath("
-            //comment[leading]
-                [contains(., 'leading first')]
-                [contains(., 'leading second')]
-        "), 1);
-
-    claim("block `/* */` immediately before a decl is leading",
-        &mut tree, "//comment[leading][.='/* leading block */']", 1);
-
-    claim("blank-line break: floating comment has no marker",
-        &mut tree, "//comment[.='// floating'][not(leading) and not(trailing)]", 1);
+    claim("Demo body has trailing, merged leading, block-leading, and floating comments",
+        &mut tree,
+        &multi_xpath(r#"
+            //class[name='Demo']/body
+                [field[.//name='_count']]
+                [comment[.='// trailing single']
+                    [trailing]
+                ]
+                [comment[contains(., 'leading first')]
+                    [contains(., 'leading second')]
+                    [leading]
+                ]
+                [property[name='Config']]
+                [comment[.='/* leading block */']
+                    [leading]
+                ]
+                [method[name='Run']]
+                [comment[.='// floating']
+                    [not(leading)]
+                    [not(trailing)]
+                ]
+                [method[name='Solo']]
+        "#),
+        1);
 
     claim("trailing and leading are mutually exclusive",
         &mut tree, "//comment[trailing and leading]", 0);
@@ -72,34 +81,39 @@ fn typescript() {
         "#,
     );
 
-    claim("`//` line comment becomes <comment>",
-        &mut tree, "//comment[.='// floating one']", 1);
+    claim("X body has trailing, merged leading, block-leading, and JSDoc-leading comments",
+        &mut tree,
+        &multi_xpath(r#"
+            //class[name='X']/body
+                [field[name='x']]
+                [comment[.='// inline']
+                    [trailing]
+                ]
+                [comment[contains(., 'before y')]
+                    [contains(., 'also before y')]
+                    [leading]
+                ]
+                [field[name='y']]
+                [comment[.='/* block */']
+                    [leading]
+                ]
+                [field[name='z']]
+                [comment[starts-with(., '/**')]
+                    [contains(., 'JSDoc')]
+                    [leading]
+                ]
+                [method[name='method']]
+        "#),
+        1);
 
-    claim("`/* */` block becomes <comment>",
-        &mut tree, "//comment[.='/* block */']", 1);
-
-    claim("JSDoc `/** */` becomes <comment>",
-        &mut tree, "//comment[starts-with(., '/**')][contains(., 'JSDoc')]", 1);
-
-
-    claim("inline `//` after `;` is trailing",
-        &mut tree, "//comment[trailing][.='// inline']", 1);
-
-    claim("two adjacent `//` comments before `y` merge into one <comment>",
-        &mut tree, &multi_xpath("
-            //comment[leading]
-                [contains(., 'before y')]
-                [contains(., 'also before y')]
-        "), 1);
-
-    claim("block comment `/* block */` is leading on `z`",
-        &mut tree, "//comment[leading][.='/* block */']", 1);
-
-    claim("JSDoc is leading on the method",
-        &mut tree, "//comment[leading][starts-with(., '/**')]", 1);
-
-    claim("blank-line break: `// floating one` carries no marker",
-        &mut tree, "//comment[.='// floating one'][not(leading) and not(trailing)]", 1);
+    claim("blank-line break leaves the top-level TS comment floating",
+        &mut tree,
+        &multi_xpath(r#"
+            //comment[.='// floating one']
+                [not(leading)]
+                [not(trailing)]
+        "#),
+        1);
 
     claim("trailing and leading are mutually exclusive",
         &mut tree, "//comment[trailing and leading]", 0);
@@ -128,33 +142,35 @@ class X:
 "#,
     );
 
-    claim("`#` line comment becomes <comment>",
-        &mut tree, "//comment[.='# floating']", 1);
+    claim("class X keeps docstring as string and class-body comments classified",
+        &mut tree,
+        &multi_xpath(r#"
+            //class[name='X']
+                [.//string[contains(., 'docstring')]]
+                [.//comment[.='# inline']
+                    [trailing]
+                ]
+                [.//comment[contains(., 'before y')]
+                    [contains(., 'also before y')]
+                    [leading]
+                ]
+                [.//comment[.='# leading on z']
+                    [leading]
+                ]
+        "#),
+        1);
 
-    claim("inline `#` after code is still <comment>",
-        &mut tree, "//comment[.='# inline']", 1);
-
-    claim("docstring is a <string>, NOT a <comment>",
+    claim("docstring is not classified as a comment",
         &mut tree, "//comment[contains(., 'docstring')]", 0);
 
-    claim("docstring lives as a <string> child of <class>",
-        &mut tree, "//class//string[contains(., 'docstring')]", 1);
-
-    claim("inline `#` after `x = 1` is trailing",
-        &mut tree, "//comment[trailing][.='# inline']", 1);
-
-    claim("two adjacent `#` comments before y merge into one <comment>",
-        &mut tree, &multi_xpath("
-            //comment[leading]
-                [contains(., 'before y')]
-                [contains(., 'also before y')]
-        "), 1);
-
-    claim("`# leading on z` is leading on the assignment",
-        &mut tree, "//comment[leading][.='# leading on z']", 1);
-
-    claim("blank-line break: floating `# floating` has no marker",
-        &mut tree, "//comment[.='# floating'][not(leading) and not(trailing)]", 1);
+    claim("blank-line break leaves the module-level Python comment floating",
+        &mut tree,
+        &multi_xpath(r#"
+            //comment[.='# floating']
+                [not(leading)]
+                [not(trailing)]
+        "#),
+        1);
 
     claim("trailing and leading are mutually exclusive",
         &mut tree, "//comment[trailing and leading]", 0);
@@ -186,27 +202,34 @@ fn go() {
         "#,
     );
 
-    claim("`//` line comment becomes <comment>",
-        &mut tree, "//comment[.='// floating one']", 1);
+    claim("Go file shape has merged leading func comment, block-leading comment, and trailing local comment",
+        &mut tree,
+        &multi_xpath(r#"
+            //file
+                [comment[contains(., 'before func')]
+                    [contains(., 'also before func')]
+                    [leading]
+                ]
+                [function[name='A']]
+                [comment[.='/* block before B */']
+                    [leading]
+                ]
+                [function[name='B']
+                    [.//comment[.='// trailing single']
+                        [trailing]
+                    ]
+                ]
+        "#),
+        1);
 
-    claim("`/* */` block becomes <comment>",
-        &mut tree, "//comment[.='/* block before B */']", 1);
-
-    claim("inline `//` after `:=` is trailing",
-        &mut tree, "//comment[trailing][.='// trailing single']", 1);
-
-    claim("two adjacent `//` comments before func A merge into one <comment>",
-        &mut tree, &multi_xpath("
-            //comment[leading]
-                [contains(., 'before func')]
-                [contains(., 'also before func')]
-        "), 1);
-
-    claim("block `/* */` immediately before a decl is leading",
-        &mut tree, "//comment[leading][.='/* block before B */']", 1);
-
-    claim("blank-line break: floating comment has no marker",
-        &mut tree, "//comment[.='// floating one'][not(leading) and not(trailing)]", 1);
+    claim("blank-line break leaves the top-level Go comment floating",
+        &mut tree,
+        &multi_xpath(r#"
+            //comment[.='// floating one']
+                [not(leading)]
+                [not(trailing)]
+        "#),
+        1);
 
     claim("trailing and leading are mutually exclusive",
         &mut tree, "//comment[trailing and leading]", 0);
@@ -238,34 +261,39 @@ class C {}
 "#,
     );
 
-    claim("`//` line comment becomes <comment>",
-        &mut tree, "//comment[.='// floating one']", 1);
+    claim("PHP file shape covers // grouping, # grouping, block leading, and trailing property comment",
+        &mut tree,
+        &multi_xpath(r#"
+            //program
+                [comment[contains(., 'before A')]
+                    [contains(., 'also before A')]
+                    [leading]
+                ]
+                [class[name='A']
+                    [.//comment[.='// trailing single']
+                        [trailing]
+                    ]
+                ]
+                [comment[contains(., 'before B')]
+                    [contains(., 'also before B')]
+                    [leading]
+                ]
+                [class[name='B']]
+                [comment[.='/* leading block */']
+                    [leading]
+                ]
+                [class[name='C']]
+        "#),
+        1);
 
-    claim("`/* */` block becomes <comment>",
-        &mut tree, "//comment[.='/* leading block */']", 1);
-
-    claim("inline `//` after `;` is trailing",
-        &mut tree, "//comment[trailing][.='// trailing single']", 1);
-
-    claim("two adjacent `//` comments merge into one <comment>",
-        &mut tree, &multi_xpath("
-            //comment[leading]
-                [contains(., 'before A')]
-                [contains(., 'also before A')]
-        "), 1);
-
-    claim("two adjacent `#` comments merge into one <comment>",
-        &mut tree, &multi_xpath("
-            //comment[leading]
-                [contains(., 'before B')]
-                [contains(., 'also before B')]
-        "), 1);
-
-    claim("block `/* */` immediately before a decl is leading",
-        &mut tree, "//comment[leading][.='/* leading block */']", 1);
-
-    claim("blank-line break: floating comment has no marker",
-        &mut tree, "//comment[.='// floating one'][not(leading) and not(trailing)]", 1);
+    claim("blank-line break leaves the top-level PHP comment floating",
+        &mut tree,
+        &multi_xpath(r#"
+            //comment[.='// floating one']
+                [not(leading)]
+                [not(trailing)]
+        "#),
+        1);
 
     claim("trailing and leading are mutually exclusive",
         &mut tree, "//comment[trailing and leading]", 0);
@@ -292,24 +320,34 @@ x = 1
 "#,
     );
 
-    claim("`#` line comment becomes <comment>",
-        &mut tree, "//comment[.='# floating one']", 1);
+    claim("Ruby file shape has class-leading group, trailing attr comment, and leading assignment comment",
+        &mut tree,
+        &multi_xpath(r#"
+            //program
+                [comment[contains(., 'leading one')]
+                    [contains(., 'leading two')]
+                    [leading]
+                ]
+                [class[name='Demo']
+                    [.//comment[.='# trailing single']
+                        [trailing]
+                    ]
+                ]
+                [comment[.='# leading on bare']
+                    [leading]
+                ]
+                [assign]
+        "#),
+        1);
 
-    claim("inline `#` after code is trailing",
-        &mut tree, "//comment[trailing][.='# trailing single']", 1);
-
-    claim("two adjacent `#` comments merge into one <comment>",
-        &mut tree, &multi_xpath("
-            //comment[leading]
-                [contains(., 'leading one')]
-                [contains(., 'leading two')]
-        "), 1);
-
-    claim("`# leading on bare` is leading on the assignment",
-        &mut tree, "//comment[leading][.='# leading on bare']", 1);
-
-    claim("blank-line break: floating comment has no marker",
-        &mut tree, "//comment[.='# floating one'][not(leading) and not(trailing)]", 1);
+    claim("blank-line break leaves the top-level Ruby comment floating",
+        &mut tree,
+        &multi_xpath(r#"
+            //comment[.='# floating one']
+                [not(leading)]
+                [not(trailing)]
+        "#),
+        1);
 
     claim("trailing and leading are mutually exclusive",
         &mut tree, "//comment[trailing and leading]", 0);
@@ -339,21 +377,30 @@ fn java() {
         "#,
     );
 
-    claim("single-line `//` after `;` on same line is trailing",
-        &mut tree, "//comment[trailing][.='// trailing single']", 1);
-
-    claim("adjacent `//` comments merge into one <comment>",
-        &mut tree, &multi_xpath("
-            //comment[leading]
-                [contains(., 'leading first')]
-                [contains(., 'leading second')]
-        "), 1);
-
-    claim("block `/* */` immediately before a decl is leading",
-        &mut tree, "//comment[leading][.='/* leading block */']", 1);
-
-    claim("blank-line break: floating comment has no marker",
-        &mut tree, "//comment[.='// floating'][not(leading) and not(trailing)]", 1);
+    claim("Demo body has trailing, merged leading, block-leading, and floating Java comments",
+        &mut tree,
+        &multi_xpath(r#"
+            //class[name='Demo']/body
+                [field[declarator/name='count']]
+                [comment[.='// trailing single']
+                    [trailing]
+                ]
+                [comment[contains(., 'leading first')]
+                    [contains(., 'leading second')]
+                    [leading]
+                ]
+                [field[declarator/name='name']]
+                [comment[.='/* leading block */']
+                    [leading]
+                ]
+                [method[name='run']]
+                [comment[.='// floating']
+                    [not(leading)]
+                    [not(trailing)]
+                ]
+                [method[name='solo']]
+        "#),
+        1);
 
     claim("trailing and leading are mutually exclusive",
         &mut tree, "//comment[trailing and leading]", 0);
@@ -388,30 +435,39 @@ fn rust() {
         "#,
     );
 
-    claim("`//` line comment becomes <comment>",
-        &mut tree, "//comment[.='// line']", 1);
-
-    claim("`/* */` block becomes <comment>",
-        &mut tree, "//comment[.='/* block */']", 1);
-
-    claim("`///` outer doc becomes <comment>",
-        &mut tree, "//comment[starts-with(., '///')]", 1);
-
-    claim("`//!` inner doc becomes <comment>",
-        &mut tree, "//comment[starts-with(., '//!')]", 1);
-
-    claim("`//` after `,` on same line is trailing",
-        &mut tree, "//comment[trailing][.='// trailing single']", 1);
-
-    claim("two adjacent `///` doc lines merge into one <comment>",
-        &mut tree, &multi_xpath("
-            //comment[leading]
-                [contains(., 'outer doc line one')]
-                [contains(., 'outer doc line two')]
-        "), 1);
-
-    claim("blank-line break: floating `// floating` has no marker",
-        &mut tree, "//comment[.='// floating'][not(leading) and not(trailing)]", 1);
+    claim("Rust file shape covers inner doc, merged outer doc, block-leading, trailing, and floating comments",
+        &mut tree,
+        &multi_xpath(r#"
+            //file
+                [comment[starts-with(., '//!')]
+                    [not(leading)]
+                    [not(trailing)]
+                ]
+                [comment[contains(., 'outer doc line one')]
+                    [contains(., 'outer doc line two')]
+                    [leading]
+                ]
+                [function[name='x']]
+                [comment[.='// line']
+                    [not(leading)]
+                    [not(trailing)]
+                ]
+                [comment[.='/* block */']
+                    [leading]
+                ]
+                [function[name='y']]
+                [struct[name='S']
+                    [.//comment[.='// trailing single']
+                        [trailing]
+                    ]
+                ]
+                [comment[.='// floating']
+                    [not(leading)]
+                    [not(trailing)]
+                ]
+                [function[name='z']]
+        "#),
+        1);
 
     claim("trailing and leading are mutually exclusive",
         &mut tree, "//comment[trailing and leading]", 0);

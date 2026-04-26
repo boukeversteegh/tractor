@@ -20,12 +20,21 @@ def unpack():
     return a + b
 "#);
 
-    claim("`return 1, 2` puts both ints as direct children of <return>",
-        &mut tree, "//return[int='1' and int='2']", 1);
-
-    claim("`return \"a\", \"b\", \"c\"` flattens 3 strings under <return>",
-        &mut tree, "//return[count(string)=3]", 1);
-
-    claim("tuple unpack `a, b = pair()` exposes both names directly under <assign>/left",
-        &mut tree, "//assign/left[name='a' and name='b']", 1);
+    claim("Python expression lists flatten directly under returns and assignment sides",
+        &mut tree,
+        &multi_xpath(r#"
+            //module
+                [function[name='pair']
+                    [body/return
+                        [int='1']
+                        [int='2']]]
+                [function[name='triple']
+                    [body/return
+                        [count(string)=3]]]
+                [function[name='unpack']
+                    [body/assign/left
+                        [name='a']
+                        [name='b']]]
+        "#),
+        1);
 }

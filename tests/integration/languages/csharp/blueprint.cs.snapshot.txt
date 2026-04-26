@@ -83,12 +83,12 @@ unit/
   │       │       ├─ property[public]/
   │       │       │   ├─ type/name
   │       │       │   ├─ name
-  │       │       │   ├─ accessor[get]
+  │       │       │   ├─ get
   │       │       │   └─ value/name
   │       │       ├─ property[public]/
   │       │       │   ├─ type/name
   │       │       │   ├─ name
-  │       │       │   ├─ accessor[get]
+  │       │       │   ├─ get
   │       │       │   └─ value/name
   │       │       ├─ operator[public and static]/
   │       │       │   ├─ type/name
@@ -213,19 +213,19 @@ unit/
   │       │       ├─ property[public]/
   │       │       │   ├─ type/name
   │       │       │   ├─ name
-  │       │       │   ├─ accessor[get]
-  │       │       │   └─ accessor[init]
+  │       │       │   ├─ get
+  │       │       │   └─ init
   │       │       ├─ property[public]/
   │       │       │   ├─ type/name
   │       │       │   ├─ name
-  │       │       │   ├─ accessor[get]
-  │       │       │   ├─ accessor[set]
+  │       │       │   ├─ get
+  │       │       │   ├─ set
   │       │       │   └─ value/string
   │       │       ├─ property[public and virtual]/
   │       │       │   ├─ type/name
   │       │       │   ├─ name
-  │       │       │   ├─ accessor[get]
-  │       │       │   ├─ accessor[set and protected]
+  │       │       │   ├─ get
+  │       │       │   ├─ set[protected]
   │       │       │   └─ value/member[instance]/
   │       │       │       ├─ name
   │       │       │       └─ name
@@ -302,8 +302,8 @@ unit/
   │       │       ├─ property[public and override]/
   │       │       │   ├─ type/name
   │       │       │   ├─ name
-  │       │       │   ├─ accessor[get]/body/member[instance]/name
-  │       │       │   └─ accessor[set and protected]/body/assign/
+  │       │       │   ├─ get/body/member[instance]/name
+  │       │       │   └─ set[protected]/body/assign/
   │       │       │       ├─ left/member[instance]/name
   │       │       │       ├─ op
   │       │       │       └─ right/name

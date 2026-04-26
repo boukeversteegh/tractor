@@ -203,10 +203,10 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
             distribute_field_to_children(xot, node, "accessors");
             Ok(TransformAction::Flatten)
         }
-        // Accessor declarations carry their kind (get / set / init / add /
-        // remove) as a text token. Lift it to an empty marker element so
-        // queries can predicate on the kind uniformly across the auto-form
-        // (`{ get; set; }`) and the bodied form (`get { … }`).
+        // Accessor declarations are specific semantic nodes: <get>,
+        // <set>, <init>, <add>, <remove>. Do not encode them as
+        // <accessor><get/></accessor>; Principle #11 says the specific
+        // name should be the node itself.
         "accessor_declaration" => {
             const KINDS: &[&str] = &["get", "set", "init", "add", "remove"];
             let children: Vec<_> = xot.children(node).collect();
@@ -216,17 +216,15 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
                     None => continue,
                 };
                 let stripped = raw.trim().trim_end_matches(';').trim();
-                if let Some(&kind) = KINDS.iter().find(|&&k| k == stripped) {
-                    // Prepend an empty marker so `//accessor[get]`
-                    // matches uniformly across auto-form and bodied
-                    // form. The original `get;` / `set;` / `get`
-                    // text token is left untouched on the accessor,
-                    // so its XPath string-value is source-accurate.
-                    prepend_empty_element(xot, node, kind)?;
-                    break;
+                if let Some(&accessor_kind) = KINDS.iter().find(|&&k| k == stripped) {
+                    // Keep the original `get;` / `set;` / `get` text
+                    // inside the accessor node so string-value remains
+                    // source-accurate for renderability.
+                    rename(xot, node, accessor_kind);
+                    return Ok(TransformAction::Continue);
                 }
             }
-            apply_rename(xot, node, &kind)?;
+            rename(xot, node, ACCESSOR);
             Ok(TransformAction::Continue)
         }
         "type_parameter_list" => {

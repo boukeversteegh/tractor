@@ -22,23 +22,32 @@ fn java() {
         }
     "#);
 
-    claim("public static final field marks all 3 modifiers",
-        &mut tree, "//field[public and static and final][declarator/name='PUB']", 1);
-
-    claim("private field carries <private/>",
-        &mut tree, "//field[private]", 1);
-
-    claim("protected field carries <protected/>",
-        &mut tree, "//field[protected]", 1);
-
-    claim("implicit package-private surfaces as <package/>",
-        &mut tree, "//field[package]", 1);
-
-    claim("synchronized method also marks public",
-        &mut tree, "//method[public and synchronized][name='sync']", 1);
-
-    claim("nested class composes public + abstract + static markers",
-        &mut tree, "//class[public and abstract and static][name='AbsStatic']", 1);
+    claim("Modifiers body composes field, method, and nested-class modifier shapes",
+        &mut tree,
+        &multi_xpath(r#"
+            //class[name='Modifiers']/body
+                [field[declarator/name='PUB']
+                    [public]
+                    [static]
+                    [final]
+                ]
+                [field[declarator/name='priv']
+                    [private]]
+                [field[declarator/name='prot']
+                    [protected]]
+                [field[declarator/name='pkg']
+                    [package]]
+                [method[name='sync']
+                    [public]
+                    [synchronized]
+                ]
+                [class[name='AbsStatic']
+                    [public]
+                    [abstract]
+                    [static]
+                ]
+        "#),
+        1);
 
     claim("first marker on outer class is <public/> (source order)",
         &mut tree, "//class[name='Modifiers']/*[1][self::public]", 1);
@@ -50,5 +59,10 @@ fn java() {
         &mut tree, "//class[name='Modifiers']/*[3][self::static]", 1);
 
     claim("source keywords preserved as dangling text (source-reversibility)",
-        &mut tree, "//class[name='Modifiers'][contains(., 'public abstract static')]", 1);
+        &mut tree,
+        &multi_xpath(r#"
+            //class[name='Modifiers']
+                [contains(., 'public abstract static')]
+        "#),
+        1);
 }

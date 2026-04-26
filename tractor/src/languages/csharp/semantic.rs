@@ -180,7 +180,8 @@ pub const UNSAFE: &str = "unsafe";
 // and a modifier marker — dual-use, see NODES below.
 pub const THIS: &str = "this";
 
-// Accessor kind markers.
+// Accessor declarations. These are containers when emitted from C#
+// property/event accessor declarations.
 pub const GET: &str = "get";
 pub const SET: &str = "set";
 pub const INIT: &str = "init";
@@ -373,12 +374,12 @@ pub const NODES: &[NodeSpec] = &[
     NodeSpec { name: UNSAFE,   marker: true, container: false, syntax: Keyword },
     NodeSpec { name: THIS,     marker: true, container: false, syntax: Keyword },
 
-    // Accessor kind markers.
-    NodeSpec { name: GET,    marker: true, container: false, syntax: Default },
-    NodeSpec { name: SET,    marker: true, container: false, syntax: Default },
-    NodeSpec { name: INIT,   marker: true, container: false, syntax: Default },
-    NodeSpec { name: ADD,    marker: true, container: false, syntax: Default },
-    NodeSpec { name: REMOVE, marker: true, container: false, syntax: Default },
+    // Accessor declarations.
+    NodeSpec { name: GET,    marker: false, container: true, syntax: Keyword },
+    NodeSpec { name: SET,    marker: false, container: true, syntax: Keyword },
+    NodeSpec { name: INIT,   marker: false, container: true, syntax: Keyword },
+    NodeSpec { name: ADD,    marker: false, container: true, syntax: Keyword },
+    NodeSpec { name: REMOVE, marker: false, container: true, syntax: Keyword },
 
     // Generic-constraint markers.
     NodeSpec { name: NOTNULL,   marker: true, container: false, syntax: Default },
@@ -401,7 +402,7 @@ pub const NODES: &[NodeSpec] = &[
 ///   - `PassThrough`: kind appears with no semantic transform — text
 ///     leaves carry their `kind=` attribute through unchanged.
 pub const KINDS: &[KindEntry] = &[
-    KindEntry { kind: "accessor_declaration",          handling: KindHandling::CustomThenRename(ACCESSOR) },
+    KindEntry { kind: "accessor_declaration",          handling: KindHandling::Custom },
     KindEntry { kind: "accessor_list",                 handling: KindHandling::Flatten },
     KindEntry { kind: "alias_qualified_name",          handling: KindHandling::PassThrough },
     KindEntry { kind: "argument",                      handling: KindHandling::Rename(ARGUMENT) },

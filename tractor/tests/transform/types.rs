@@ -29,17 +29,25 @@ fn csharp_vocabulary() {
     claim("every <type> has a <name> child (no bare-text types)",
         &mut tree, "//type[not(name)]", 0);
 
-    claim("Dog declares one <generic> type parameter",
-        &mut tree, "//class[name='Dog']/generic[name='T']", 1);
-
-    claim("generic T with where-clause `: Animal` exposes <extends><type>",
-        &mut tree, "//class[name='Dog']/generic[name='T']/extends/type[name='Animal']", 1);
-
-    claim("class extends list combines base + interface as siblings",
-        &mut tree, "//class[name='Dog']/extends/type[name='Animal' or name='IBarker']", 2);
-
-    claim("List<string> field uses generic type with inner <type>",
-        &mut tree, "//field//type[generic][name='List']/type[name='string']", 1);
+    claim("Dog class shape keeps generics, bounds, inheritance, and field types visible",
+        &mut tree,
+        &multi_xpath(r#"
+            //class[name='Dog']
+                [generic[name='T']
+                    [extends/type[name='Animal']]]
+                [extends
+                    [type[name='Animal']]
+                    [type[name='IBarker']]]
+                [body/field
+                    [variable/declarator/name='Owner']
+                    [variable/type[name='T']]]
+                [body/field
+                    [variable/declarator/name='Tags']
+                    [variable/type[name='List']
+                        [generic]
+                        [type[name='string']]]]
+        "#),
+        1);
 }
 
 #[test]
@@ -68,32 +76,41 @@ fn java_vocabulary() {
     claim("every <type> has a <name> child",
         &mut tree, "//type[not(name)]", 0);
 
-    claim("type parameter T has an <extends> bound on Animal",
-        &mut tree, "//class[name='Dog']/generic[name='T']/extends/type[name='Animal']", 1);
-
-    claim("extends list points to <type[name='Animal']>",
-        &mut tree, "//class[name='Dog']/extends/type[name='Animal']", 1);
-
-    claim("implements list has 2 <type> entries",
-        &mut tree, "//class[name='Dog']/implements/type", 2);
-
-    claim("List<String> field uses generic type with inner <type>",
-        &mut tree, "//field//type[generic][name='List']/type[name='String']", 1);
-
-    claim("primitive `int` carries name as text",
-        &mut tree, "//type[name='int']", 1);
-
-    claim("primitive `double` carries name as text",
-        &mut tree, "//type[name='double']", 1);
-
-    claim("primitive `boolean` carries name as text",
-        &mut tree, "//type[name='boolean']", 1);
-
-    claim("user-defined type `Foo` carries name as text",
-        &mut tree, "//type[name='Foo']", 1);
-
-    claim("built-in capitalized type `List` carries name as text (bare + generic forms)",
-        &mut tree, "//type[name='List']", 2);
+    claim("Dog class shape keeps bounds, inheritance, implementations, and field vocabulary",
+        &mut tree,
+        &multi_xpath(r#"
+            //class[name='Dog']
+                [generic[name='T']
+                    [extends/type[name='Animal']]]
+                [extends/type[name='Animal']]
+                [implements
+                    [type[name='Barker']]
+                    [type[name='Runner']]]
+                [body/field
+                    [declarator/name='a']
+                    [type[name='int']]]
+                [body/field
+                    [declarator/name='b']
+                    [type[name='double']]]
+                [body/field
+                    [declarator/name='c']
+                    [type[name='boolean']]]
+                [body/field
+                    [declarator/name='e']
+                    [type[name='Foo']]]
+                [body/field
+                    [declarator/name='l']
+                    [type[name='List']]]
+                [body/field
+                    [declarator/name='owner']
+                    [type[name='T']]]
+                [body/field
+                    [declarator/name='tags']
+                    [type[name='List']
+                        [generic]
+                        [type[name='String']]]]
+        "#),
+        1);
 }
 
 #[test]
@@ -116,23 +133,44 @@ fn rust_vocabulary() {
     claim("every <type> has a <name> child",
         &mut tree, "//type[not(name)]", 0);
 
-    claim("Dog declares <generic> with a `: Barker` bound",
-        &mut tree, "//struct[name='Dog']/generic[name='T']/bounds/type[name='Barker']", 1);
+    claim("Dog struct shape keeps generic bounds and nested generic field types",
+        &mut tree,
+        &multi_xpath(r#"
+            //struct[name='Dog']
+                [generic[name='T']
+                    [bounds/type[name='Barker']]]
+                [body/field[name='owner']
+                    [type[name='T']]]
+                [body/field[name='tags']
+                    [type[name='Vec']
+                        [generic]
+                        [type[name='String']]]]
+                [body/field[name='scores']
+                    [type[name='HashMap']
+                        [generic]
+                        [type[name='String']]
+                        [type[name='i32']]]]
+                [body/field[name='parent']
+                    [type[name='Option']
+                        [generic]
+                        [type[name='Box']
+                            [generic]
+                            [type[name='Dog']
+                                [generic]
+                                [type[name='T']]]]]]
+        "#),
+        1);
 
-    claim("Vec<String>: generic with inner <type>",
-        &mut tree, "//field[name='tags']/type[generic][name='Vec']/type[name='String']", 1);
-
-    claim("HashMap<String, i32>: generic with two inner <type> children",
-        &mut tree, "//field[name='scores']/type[generic][name='HashMap']/type", 2);
-
-    claim("Option<Box<Dog<T>>> nests 3 levels of <type[generic]>",
-        &mut tree, "//field[name='parent']/type[generic]/type[generic]/type[generic]", 1);
-
-    claim("parameter type wraps name in <name>",
-        &mut tree, "//parameter/type[name='i32']", 1);
-
-    claim("return type wraps name in <name>",
-        &mut tree, "//returns/type[name='String']", 1);
+    claim("make() keeps parameter and return type names",
+        &mut tree,
+        &multi_xpath(r#"
+            //function[name='make']
+                [parameter
+                    [name='x']
+                    [type[name='i32']]]
+                [returns/type[name='String']]
+        "#),
+        1);
 }
 
 #[test]
@@ -154,23 +192,30 @@ fn typescript_vocabulary() {
     claim("only <type[function]> may lack a <name> (it's defined by signature)",
         &mut tree, "//type[not(name) and not(function)]", 0);
 
-    claim("plain alias points at a single <type>",
-        &mut tree, "//alias[name='Id']/type[name='number']", 1);
-
-    claim("function-type alias carries <type[function]>",
-        &mut tree, "//alias[name='Handler']/type[function]", 1);
-
-    claim("generic alias carries a <generic> child via <generics> wrapper",
-        &mut tree, "//alias[name='Box']/generics/generic[name='T']", 1);
-
-    claim("Dog extends and implements both wrap base types",
-        &mut tree, "//class[name='Dog']/extends/type[name='Animal'] | //class[name='Dog']/implements/type[name='Barker']", 2);
-
-    claim("function declaration's parameter type wraps name in <name>",
-        &mut tree, "//function[name='f']/parameter/type[name='number']", 1);
-
-    claim("function declaration's return type wraps name in <name>",
-        &mut tree, "//function[name='f']/returns/type[name='string']", 1);
+    claim("TypeScript program shape keeps aliases, class relations, and function types visible",
+        &mut tree,
+        &multi_xpath(r#"
+            //program
+                [alias[name='Id']
+                    [type[name='number']]]
+                [alias[name='Handler']
+                    [type
+                        [function]]]
+                [alias[name='Box']
+                    [generics/generic[name='T']]
+                    [type[name='Array']
+                        [generic]
+                        [type[name='T']]]]
+                [class[name='Dog']
+                    [extends/type[name='Animal']]
+                    [implements/type[name='Barker']]]
+                [function[name='f']
+                    [parameter
+                        [name='x']
+                        [type[name='number']]]
+                    [returns/type[name='string']]]
+        "#),
+        1);
 
     claim("generic-alias type parameter has <name> child holding T (not nested type)",
         &mut tree, "//generic[name='T']", 1);
@@ -194,26 +239,33 @@ fn rust_markers() {
         fn h(d: &dyn Drawable) {}
     "#);
 
-    claim("fn type carries <function/>",
-        &mut tree, "//type[function]", 1);
-
-    claim("tuple type carries <tuple/>",
-        &mut tree, "//type[tuple]", 1);
-
-    claim("array type carries <array/>",
-        &mut tree, "//type[array]", 1);
-
-    claim("pointer type carries <pointer/>",
-        &mut tree, "//type[pointer]", 1);
-
-    claim("never type carries <never/>",
-        &mut tree, "//type[never]", 1);
-
-    claim("unit type carries <unit/>",
-        &mut tree, "//type[unit]", 1);
-
-    claim("dyn trait object carries <dynamic/>",
-        &mut tree, "//type[dynamic]", 1);
+    claim("Rust type marker shapes stay attached to their containing signatures",
+        &mut tree,
+        &multi_xpath(r#"
+            //file
+                [function[name='f']
+                    [parameter
+                        [name='cb']
+                        [type[function]]]
+                    [parameter
+                        [name='t']
+                        [type[tuple]]]
+                    [parameter
+                        [name='a']
+                        [type[array]]]
+                    [parameter
+                        [name='p']
+                        [type[pointer]]]
+                    [returns/type[never]]]
+                [function[name='g']
+                    [returns/type[unit]]]
+                [function[name='h']
+                    [parameter
+                        [name='d']
+                        [type[borrowed]
+                            [type[dynamic]]]]]
+        "#),
+        1);
 }
 
 /// C# type flavors — array/tuple/nullable — all collapse to
@@ -230,14 +282,21 @@ fn csharp_markers() {
         }
     "#);
 
-    claim("array type carries <array/>",
-        &mut tree, "//type[array]", 1);
-
-    claim("tuple type carries <tuple/>",
-        &mut tree, "//type[tuple]", 1);
-
-    claim("nullable type carries <nullable/>",
-        &mut tree, "//type[nullable]", 1);
+    claim("C# type marker shapes stay attached to their field declarations",
+        &mut tree,
+        &multi_xpath(r#"
+            //class[name='X']/body
+                [field
+                    [variable/declarator/name='a']
+                    [variable/type[array]]]
+                [field
+                    [variable/declarator/name='t']
+                    [variable/type[tuple]]]
+                [field
+                    [variable/declarator/name='n']
+                    [variable/type[nullable]]]
+        "#),
+        1);
 }
 
 /// TypeScript type flavors all collapse to <type> with a shape
@@ -256,30 +315,29 @@ fn typescript_markers() {
         type H = readonly number[];
     "#);
 
-    claim("union type carries <union/>",
-        &mut tree, "//type[union]", 1);
-
-    claim("intersection type carries <intersection/>",
-        &mut tree, "//type[intersection]", 1);
-
-    claim("tuple type carries <tuple/>",
-        &mut tree, "//type[tuple]", 1);
-
-    // `number[]` is array_type; `readonly number[]` wraps in readonly_type.
-    claim("array types carry <array/> (number[] + readonly number[])",
-        &mut tree, "//type[array]", 2);
-
-    claim("literal type carries <literal/>",
-        &mut tree, "//type[literal]", 1);
-
-    claim("function type carries <function/>",
-        &mut tree, "//type[function]", 1);
-
-    claim("object type carries <object/>",
-        &mut tree, "//type[object]", 1);
-
-    claim("readonly type carries <readonly/>",
-        &mut tree, "//type[readonly]", 1);
+    claim("TypeScript type marker shapes stay attached to aliases",
+        &mut tree,
+        &multi_xpath(r#"
+            //program
+                [alias[name='A']
+                    [type[union]]]
+                [alias[name='B']
+                    [type[intersection]]]
+                [alias[name='C']
+                    [type[tuple]]]
+                [alias[name='D']
+                    [type[array]]]
+                [alias[name='E']
+                    [type[literal]]]
+                [alias[name='F']
+                    [type[function]]]
+                [alias[name='G']
+                    [type[object]]]
+                [alias[name='H']
+                    [type[readonly]
+                        [type[array]]]]
+        "#),
+        1);
 }
 
 /// Java `void` carries an additional <void/> marker on top of the
@@ -295,14 +353,18 @@ fn java_markers() {
         }
     "#);
 
-    claim("void type has both <void/> marker AND <name>void</name>",
-        &mut tree, "//type[void][name='void']", 1);
-
-    claim("exactly one void type in the source",
-        &mut tree, "//type[void]", 1);
-
-    claim("non-void types have no <void/> marker",
-        &mut tree, "//type[not(void)]", 1);
+    claim("Java method return types distinguish void marker from named primitive",
+        &mut tree,
+        &multi_xpath(r#"
+            //class[name='X']/body
+                [method[name='f']
+                    [returns/type[name='void']
+                        [void]]]
+                [method[name='g']
+                    [returns/type[name='int']
+                        [not(void)]]]
+        "#),
+        1);
 }
 
 // ---- reference_type -------------------------------------------------------
@@ -318,20 +380,31 @@ fn rust_reference() {
         fn static_ref() -> &'static str { "" }
     "#);
 
-    claim("4 reference types: 2x &str (param + return) + &mut Vec<u8> + &'static str",
-        &mut tree, "//type[borrowed]", 4);
-
-    claim("only the &mut Vec<u8> carries the mut marker",
-        &mut tree, "//type[borrowed and mut]", 1);
-
-    claim("borrowed type wraps the referenced type as a nested <type>",
-        &mut tree, "//type[borrowed]/type", 4);
-
-    claim("`&'static` exposes a <lifetime> child",
-        &mut tree, "//type[borrowed]/lifetime[name='static']", 1);
-
-    claim("inner type of &mut is the generic Vec<u8>",
-        &mut tree, "//type[borrowed and mut]/type[generic][name='Vec']", 1);
+    claim("Rust borrowed type shape keeps mutability, lifetime, and nested referent types",
+        &mut tree,
+        &multi_xpath(r#"
+            //file
+                [function[name='read']
+                    [parameter
+                        [name='s']
+                        [type[borrowed]
+                            [type[name='str']]]]
+                    [returns/type[borrowed]
+                        [type[name='str']]]]
+                [function[name='write']
+                    [parameter
+                        [name='buf']
+                        [type[borrowed]
+                            [mut]
+                            [type[name='Vec']
+                                [generic]
+                                [type[name='u8']]]]]]
+                [function[name='static_ref']
+                    [returns/type[borrowed]
+                        [lifetime[name='static']]
+                        [type[name='str']]]]
+        "#),
+        1);
 
     claim("no legacy <ref> element",
         &mut tree, "//ref", 0);
@@ -348,17 +421,22 @@ fn rust_typedef() {
         type Mapping<T> = std::collections::HashMap<String, T>;
     "#);
 
-    claim("two aliases declared",
-        &mut tree, "//alias", 2);
-
-    claim("aliases default to <private/>",
-        &mut tree, "//alias[private]", 2);
-
-    claim("simple alias resolves to <type>",
-        &mut tree, "//alias[name='Id']/type[name='u32']", 1);
-
-    claim("generic alias declares a <generic> parameter",
-        &mut tree, "//alias[name='Mapping']/generic[name='T']", 1);
+    claim("Rust aliases expose visibility, names, generic parameters, and target types",
+        &mut tree,
+        &multi_xpath(r#"
+            //file
+                [alias[name='Id']
+                    [private]
+                    [type[name='u32']]]
+                [alias[name='Mapping']
+                    [private]
+                    [generic[name='T']]
+                    [type[name='std::collections::HashMap']
+                        [generic]
+                        [type[name='String']]
+                        [type[name='T']]]]
+        "#),
+        1);
 
     claim("no legacy <typedef> element",
         &mut tree, "//typedef", 0);
@@ -378,14 +456,16 @@ fn go_defined_vs_alias() {
         type Color = int
     "#);
 
-    claim("defined type renders as <type>",
-        &mut tree, "//type[name='MyInt']", 1);
-
-    claim("alias renders as <alias>",
-        &mut tree, "//alias[name='Color']", 1);
-
-    claim("alias inner refers to underlying <type>",
-        &mut tree, "//alias[name='Color']/type[name='int']", 1);
+    claim("Go file shape distinguishes defined types from aliases",
+        &mut tree,
+        &multi_xpath(r#"
+            //file
+                [type[name='MyInt']
+                    [type[name='int']]]
+                [alias[name='Color']
+                    [type[name='int']]]
+        "#),
+        1);
 
     claim("alias does NOT also render as <type> at the top level",
         &mut tree, "//file/type[name='Color']", 0);
@@ -410,21 +490,21 @@ fn csharp_where() {
         }
     "#);
 
-    claim("3 generics declared on Repo (T, U, V)",
-        &mut tree, "//class[name='Repo']/generic", 3);
-
-    claim("T composes class + new shape markers",
-        &mut tree, "//generic[class and new][name='T']", 1);
-
-    claim("U has the struct constraint",
-        &mut tree, "//generic[struct][name='U']", 1);
-
-    claim("V has the notnull constraint",
-        &mut tree, "//generic[notnull][name='V']", 1);
-
-    claim("T's IComparable<T> bound wraps in <extends><type>...",
-        &mut tree, "//generic[name='T']/extends/type[name='IComparable']", 1);
-
-    claim("U has no <extends> bound",
-        &mut tree, "//generic[name='U']/extends", 0);
+    claim("C# where constraints attach to the matching generic parameters",
+        &mut tree,
+        &multi_xpath(r#"
+            //class[name='Repo']
+                [generic[name='T']
+                    [class]
+                    [new]
+                    [extends/type[name='IComparable']
+                        [generic]
+                        [type[name='T']]]]
+                [generic[name='U']
+                    [struct]
+                    [not(extends)]]
+                [generic[name='V']
+                    [notnull]]
+        "#),
+        1);
 }

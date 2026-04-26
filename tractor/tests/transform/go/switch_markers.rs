@@ -16,9 +16,18 @@ fn go() {
         }
     "#);
 
-    claim("type switch carries <type/> marker",
-        &mut tree, "//switch[type]", 1);
-
-    claim("both regular and type switch collapse to <switch>",
-        &mut tree, "//switch", 2);
+    claim("Go function body keeps both switches flat and marks only the type switch",
+        &mut tree,
+        &multi_xpath(r#"
+            //function[name='f']/body
+                [switch
+                    [type]
+                    [value/name='x']
+                    [type/name='int']]
+                [switch
+                    [not(type)]
+                    [value/name='x']
+                    [expression_case/value/int='1']]
+        "#),
+        1);
 }

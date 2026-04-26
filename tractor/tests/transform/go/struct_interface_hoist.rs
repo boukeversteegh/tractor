@@ -22,17 +22,24 @@ fn go() {
         }
     "#);
 
-    claim("struct hoists to top level (no enclosing <type>)",
-        &mut tree, "//file/struct[name='Config']", 1);
-
-    claim("interface hoists to top level (no enclosing <type>)",
-        &mut tree, "//file/interface[name='Greeter']", 1);
-
-    claim("uppercase struct name carries <exported/>",
-        &mut tree, "//struct[exported][name='Config']", 1);
-
-    claim("uppercase interface name carries <exported/>",
-        &mut tree, "//interface[exported][name='Greeter']", 1);
+    claim("Go struct and interface declarations hoist to top-level semantic nodes",
+        &mut tree,
+        &multi_xpath(r#"
+            //file
+                [struct[name='Config']
+                    [exported]
+                    [field
+                        [name='Host']
+                        [type[name='string']]]
+                    [field
+                        [name='Port']
+                        [type[name='int']]]]
+                [interface[name='Greeter']
+                    [exported]
+                    [method[name='Greet']
+                        [returns/type[name='string']]]]
+        "#),
+        1);
 
     claim("the `type` wrapper does NOT also surface a <type> for the struct",
         &mut tree, "//file/type[name='Config']", 0);

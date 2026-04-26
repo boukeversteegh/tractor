@@ -24,23 +24,23 @@ fn csharp() {
         }
     "#);
 
-    claim("no parameter-list wrapper element",
-        &mut tree, "//parameter_list | //parameters", 0);
+    claim("C# method and property shapes use flat parameter, generic, and accessor siblings",
+        &mut tree,
+        &multi_xpath(r#"
+            //class[name='FlatLists']/body
+                [method[name='First']
+                    [count(parameter)=3]
+                    [count(generic)=2]
+                ]
+                [property[name='Count']
+                    [get]
+                    [set]
+                ]
+        "#),
+        1);
 
-    claim("no argument-list wrapper element",
-        &mut tree, "//argument_list | //arguments", 0);
-
-    claim("no accessor-list wrapper element",
-        &mut tree, "//accessor_list", 0);
-
-    claim("First has 3 parameters as direct siblings",
-        &mut tree, "//method[name='First']/parameter", 3);
-
-    claim("First has 2 generics as direct siblings",
-        &mut tree, "//method[name='First']/generic", 2);
-
-    claim("Property accessors are direct siblings of <property>",
-        &mut tree, "//property[name='Count']/accessor", 2);
+    claim("C# flat-list grammar wrappers do not leak",
+        &mut tree, "//parameter_list | //parameters | //argument_list | //arguments | //accessor_list", 0);
 }
 
 #[test]
@@ -55,23 +55,22 @@ fn go() {
         type Config struct { Host string; Port int; Tls bool }
     "#);
 
-    claim("no parameter-list wrapper",
-        &mut tree, "//parameter_list | //parameters", 0);
+    claim("Go function, call, and struct shapes use flat parameter, argument, and field siblings",
+        &mut tree,
+        &multi_xpath(r#"
+            //file
+                [function[name='First']
+                    [count(parameter)=3]]
+                [function[name='Caller']//call
+                    [count(string|int|true)=3]
+                ]
+                [struct[name='Config']
+                    [count(field)=3]]
+        "#),
+        1);
 
-    claim("no argument-list wrapper",
-        &mut tree, "//argument_list | //arguments", 0);
-
-    claim("no field-list wrapper around struct fields",
-        &mut tree, "//field_declaration_list | //field_list", 0);
-
-    claim("First has 3 parameters as direct siblings",
-        &mut tree, "//function[name='First']/parameter", 3);
-
-    claim("Caller's call has 3 argument siblings (not wrapped)",
-        &mut tree, "//function[name='Caller']//call/*[self::string or self::int or self::true]", 3);
-
-    claim("Config struct has 3 fields",
-        &mut tree, "//struct[name='Config']/field", 3);
+    claim("Go flat-list grammar wrappers do not leak",
+        &mut tree, "//parameter_list | //parameters | //argument_list | //arguments | //field_declaration_list | //field_list", 0);
 }
 
 #[test]
@@ -84,20 +83,17 @@ fn java() {
         }
     "#);
 
-    claim("no parameter-list wrapper",
-        &mut tree, "//parameter_list | //parameters", 0);
+    claim("Java generic method shape uses flat parameter and generic siblings",
+        &mut tree,
+        &multi_xpath(r#"
+            //method[name='first']
+                [count(parameter)=3]
+                [count(generic)=2]
+        "#),
+        1);
 
-    claim("no type-parameter wrapper",
-        &mut tree, "//type_parameters", 0);
-
-    claim("no argument-list wrapper",
-        &mut tree, "//argument_list | //arguments", 0);
-
-    claim("first has 3 parameters as direct siblings",
-        &mut tree, "//method[name='first']/parameter", 3);
-
-    claim("first has 2 generics as direct siblings",
-        &mut tree, "//method[name='first']/generic", 2);
+    claim("Java flat-list grammar wrappers do not leak",
+        &mut tree, "//parameter_list | //parameters | //type_parameters | //argument_list | //arguments", 0);
 }
 
 #[test]
@@ -110,20 +106,17 @@ fn rust() {
         }
     "#);
 
-    claim("no parameter-list wrapper",
-        &mut tree, "//parameters | //parameter_list", 0);
+    claim("Rust generic function shape uses flat parameter and generic siblings",
+        &mut tree,
+        &multi_xpath(r#"
+            //function[name='first']
+                [count(parameter)=3]
+                [count(generic)=2]
+        "#),
+        1);
 
-    claim("no type-parameter wrapper",
-        &mut tree, "//type_parameters", 0);
-
-    claim("no argument-list wrapper",
-        &mut tree, "//argument_list | //arguments", 0);
-
-    claim("first has 3 parameters as direct siblings",
-        &mut tree, "//function[name='first']/parameter", 3);
-
-    claim("first has 2 generics as direct siblings",
-        &mut tree, "//function[name='first']/generic", 2);
+    claim("Rust flat-list grammar wrappers do not leak",
+        &mut tree, "//parameters | //parameter_list | //type_parameters | //argument_list | //arguments", 0);
 }
 
 /// TypeScript currently retains a thin <generics> grouping
@@ -136,15 +129,15 @@ fn typescript() {
         first<string, number>("x", 1, 2);
     "#);
 
-    claim("no parameter-list wrapper",
-        &mut tree, "//parameters | //parameter_list", 0);
+    claim("TypeScript function shape flattens parameters but keeps generics wrapper",
+        &mut tree,
+        &multi_xpath(r#"
+            //function[name='first']
+                [count(parameter)=3]
+                [generics[count(generic)=2]]
+        "#),
+        1);
 
-    claim("no argument-list wrapper",
-        &mut tree, "//argument_list | //arguments", 0);
-
-    claim("first has 3 parameters as direct siblings",
-        &mut tree, "//function[name='first']/parameter", 3);
-
-    claim("TS keeps a thin <generics> wrapper for type parameters",
-        &mut tree, "//function[name='first']/generics/generic", 2);
+    claim("TypeScript parameter and argument grammar wrappers do not leak",
+        &mut tree, "//parameters | //parameter_list | //argument_list | //arguments", 0);
 }

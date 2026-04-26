@@ -18,18 +18,36 @@ fn rust() {
         }
     "#);
 
-    claim("two Point construction sites",
-        &mut tree, "//literal[name='Point']", 2);
+    claim("Rust struct literals keep constructor name, field values, and update base flat",
+        &mut tree,
+        &multi_xpath(r#"
+            //function[name='make']/body
+                [let
+                    [name='p']
+                    [value/literal
+                        [name='Point']
+                        [body
+                            [field
+                                [name='x']
+                                [value/int='1']]
+                            [field
+                                [name='y']
+                                [value/int='2']]
+                            [not(field[base])]]]]
+                [let
+                    [name='q']
+                    [value/literal
+                        [name='Point']
+                        [body
+                            [field
+                                [name='x']
+                                [value/int='0']]
+                            [field
+                                [base]
+                                [name='p']]]]]
+        "#),
+        1);
 
-    claim("struct name lives as <name> on <literal> (NOT a <type>)",
+    claim("struct literal names do not render as type references",
         &mut tree, "//literal/type", 0);
-
-    claim("first construction has 2 plain fields, no [base]",
-        &mut tree, "//literal[name='Point'][not(body/field[base])]/body/field", 2);
-
-    claim("second construction has a [base] field for `..p`",
-        &mut tree, "//literal/body/field[base][name='p']", 1);
-
-    claim("field initializers carry <value> children",
-        &mut tree, "//literal/body/field[name='x']/value/int", 2);
 }

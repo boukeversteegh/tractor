@@ -13,11 +13,18 @@ match seq:
     case 'yes' | 'y': pass
 "#);
 
-    claim("`*rest` destructure pattern carries <splat/>",
-        &mut tree, "//pattern[splat]", 1);
-
-    claim("`'yes' | 'y'` union pattern carries <union/>",
-        &mut tree, "//pattern[union]", 1);
+    claim("Python match arms show list-splat and union pattern shapes",
+        &mut tree,
+        &multi_xpath(r#"
+            //match[name='seq']/body
+                [arm/pattern//pattern[splat][name='rest']]
+                [arm/pattern//pattern[union]
+                    [string="'yes'"]
+                    [string="'y'"]
+                ]
+                [count(arm)=2]
+        "#),
+        1);
 }
 
 /// C# pattern flavors all collapse to <pattern> but carry a
@@ -33,11 +40,14 @@ fn csharp() {
         }
     "#);
 
-    claim("`o is T name` — declaration pattern carries <declaration/>",
-        &mut tree, "//pattern[declaration]", 1);
-
-    claim("`o is null` — constant pattern carries <constant/>",
-        &mut tree, "//pattern[constant]", 1);
+    claim("C# is-pattern conditions show declaration and constant pattern shapes",
+        &mut tree,
+        &multi_xpath(r#"
+            //method[name='F']/body/block
+                [if[condition//pattern[declaration]]]
+                [if[condition//pattern[constant]]]
+        "#),
+        1);
 }
 
 /// TypeScript destructuring patterns collapse to <pattern> but
@@ -50,11 +60,28 @@ fn typescript() {
         const { x, y } = pt;
     "#);
 
-    claim("array destructuring pattern carries <array/>",
-        &mut tree, "//pattern[array]", 1);
-
-    claim("object destructuring pattern carries <object/>",
-        &mut tree, "//pattern[object]", 1);
+    claim("TypeScript destructuring variables carry array and object pattern shapes",
+        &mut tree,
+        &multi_xpath(r#"
+            //program
+                [variable
+                    [const]
+                    [pattern
+                        [array]
+                        [name='a']
+                        [name='b']]
+                    [value/name='xs']
+                ]
+                [variable
+                    [const]
+                    [pattern
+                        [object]
+                        [name='x']
+                        [name='y']]
+                    [value/name='pt']
+                ]
+        "#),
+        1);
 }
 
 /// Rust match arm patterns collapse to <pattern> but carry
@@ -72,12 +99,16 @@ fn rust() {
         }
     "#);
 
-    claim("alternative pattern (`A | B`) carries <or/>",
-        &mut tree, "//pattern[or]", 1);
-
-    claim("struct destructure pattern carries <struct/>",
-        &mut tree, "//pattern[struct]", 1);
-
-    claim("each struct field in pattern carries <field/>",
-        &mut tree, "//pattern[field]", 2);
+    claim("Rust match arms show or-pattern, struct pattern, and field pattern shapes",
+        &mut tree,
+        &multi_xpath(r#"
+            //match/body
+                [arm/pattern//pattern[or]]
+                [arm/pattern//pattern[struct]
+                    [pattern[field][name='w']]
+                    [pattern[field][name='h']]
+                ]
+                [count(arm)=3]
+        "#),
+        1);
 }
