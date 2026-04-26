@@ -148,7 +148,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         is_programming: true,
         supports_data_tree: false,
         data_transforms: None,
-        singleton_wrappers: crate::transform::helpers::DEFAULT_SINGLETON_WRAPPERS,
+        singleton_wrappers: crate::transform::singletons::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
         ids: &["csharp", "cs"],
@@ -160,7 +160,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         is_programming: true,
         supports_data_tree: false,
         data_transforms: None,
-        singleton_wrappers: crate::transform::helpers::DEFAULT_SINGLETON_WRAPPERS,
+        singleton_wrappers: crate::transform::singletons::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
         ids: &["python", "py"],
@@ -172,7 +172,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         is_programming: true,
         supports_data_tree: false,
         data_transforms: None,
-        singleton_wrappers: crate::transform::helpers::DEFAULT_SINGLETON_WRAPPERS,
+        singleton_wrappers: crate::transform::singletons::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
         ids: &["go"],
@@ -184,7 +184,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         is_programming: true,
         supports_data_tree: false,
         data_transforms: None,
-        singleton_wrappers: crate::transform::helpers::DEFAULT_SINGLETON_WRAPPERS,
+        singleton_wrappers: crate::transform::singletons::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
         ids: &["rust", "rs"],
@@ -196,7 +196,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         is_programming: true,
         supports_data_tree: false,
         data_transforms: None,
-        singleton_wrappers: crate::transform::helpers::DEFAULT_SINGLETON_WRAPPERS,
+        singleton_wrappers: crate::transform::singletons::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
         ids: &["java"],
@@ -208,7 +208,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         is_programming: true,
         supports_data_tree: false,
         data_transforms: None,
-        singleton_wrappers: crate::transform::helpers::DEFAULT_SINGLETON_WRAPPERS,
+        singleton_wrappers: crate::transform::singletons::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
         ids: &["ruby", "rb"],
@@ -220,7 +220,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         is_programming: true,
         supports_data_tree: false,
         data_transforms: None,
-        singleton_wrappers: crate::transform::helpers::DEFAULT_SINGLETON_WRAPPERS,
+        singleton_wrappers: crate::transform::singletons::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
         ids: &["php"],
@@ -232,7 +232,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         is_programming: true,
         supports_data_tree: false,
         data_transforms: None,
-        singleton_wrappers: crate::transform::helpers::DEFAULT_SINGLETON_WRAPPERS,
+        singleton_wrappers: crate::transform::singletons::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
         ids: &["tsql", "mssql", "sql"],
@@ -244,7 +244,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         is_programming: true,
         supports_data_tree: false,
         data_transforms: None,
-        singleton_wrappers: crate::transform::helpers::DEFAULT_SINGLETON_WRAPPERS,
+        singleton_wrappers: crate::transform::singletons::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
         ids: &["json"],
