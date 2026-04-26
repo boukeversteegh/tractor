@@ -7,8 +7,8 @@ pub mod ast;
 
 use wasm_bindgen::prelude::*;
 use ast::{SerializedNode, ParseRequest, ParseResponse};
-use crate::xot_builder::XotBuilder;
-use crate::xot_transform::walk_transform;
+use crate::transform::builder::XotBuilder;
+use crate::transform::walk_transform;
 use crate::languages::get_transform;
 use crate::output::RenderOptions;
 use crate::tree_mode::TreeMode;
@@ -113,7 +113,7 @@ fn parse_ast_to_xml(
     // Apply transforms based on tree mode
     if resolved != TreeMode::Raw {
         let wrappings = crate::languages::get_field_wrappings(language);
-        crate::xot_transform::apply_field_wrappings(&mut xot, root, wrappings)
+        crate::transform::apply_field_wrappings(&mut xot, root, wrappings)
             .map_err(|e| format!("Field wrapping failed: {}", e))?;
         let transform_fn = get_transform(language);
         walk_transform(&mut xot, root, transform_fn)
@@ -172,7 +172,7 @@ pub fn get_schema_tree(
     // Apply transforms based on tree mode
     if resolved != TreeMode::Raw {
         let wrappings = crate::languages::get_field_wrappings(language);
-        crate::xot_transform::apply_field_wrappings(&mut xot, root, wrappings)
+        crate::transform::apply_field_wrappings(&mut xot, root, wrappings)
             .map_err(|e| JsValue::from_str(&format!("Field wrapping failed: {}", e)))?;
         let transform_fn = get_transform(language);
         walk_transform(&mut xot, root, transform_fn)

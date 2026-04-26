@@ -24,8 +24,8 @@
 
 use xot::{Xot, Node as XotNode};
 
-use crate::xot_transform::TransformAction;
-use crate::xot_transform::helpers::*;
+use crate::transform::TransformAction;
+use crate::transform::helpers::*;
 
 /// Per-language configuration: which token(s) introduce a line comment.
 ///

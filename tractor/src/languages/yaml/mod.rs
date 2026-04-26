@@ -23,7 +23,7 @@ pub mod syntax;
 pub mod data;
 
 use xot::{Xot, Node as XotNode};
-use crate::xot_transform::TransformAction;
+use crate::transform::TransformAction;
 use crate::output::syntax_highlight::SyntaxCategory;
 
 pub use syntax::syntax_transform;

@@ -12,7 +12,7 @@
 //! work uniformly. Refine as blueprint snapshots surface specifics.
 
 use xot::{Xot, Node as XotNode};
-use crate::xot_transform::{TransformAction, helpers::*};
+use crate::transform::{TransformAction, helpers::*};
 use crate::output::syntax_highlight::SyntaxCategory;
 
 use super::semantic::*;

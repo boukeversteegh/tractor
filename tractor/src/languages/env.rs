@@ -24,7 +24,7 @@
 //! Queryable as: `//DB_HOST[.='localhost']`
 
 use xot::{Xot, Node as XotNode};
-use crate::xot_transform::{TransformAction, helpers::*};
+use crate::transform::{TransformAction, helpers::*};
 use crate::output::syntax_highlight::SyntaxCategory;
 
 /// Transform a bash AST node into an env-file-oriented XML tree

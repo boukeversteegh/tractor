@@ -527,7 +527,7 @@ impl XeeBuilder {
                 let doc_node = self.documents.document_node(doc_handle)
                     .ok_or_else(|| xot::Error::Io("Failed to get document node".to_string()))?;
                 let wrappings = crate::languages::get_field_wrappings(lang);
-                crate::xot_transform::apply_field_wrappings(
+                crate::transform::apply_field_wrappings(
                     self.documents.xot_mut(),
                     doc_node,
                     wrappings,
@@ -538,7 +538,7 @@ impl XeeBuilder {
                 } else {
                     crate::languages::get_transform(lang)
                 };
-                crate::xot_transform::walk_transform(self.documents.xot_mut(), doc_node, transform_fn)?;
+                crate::transform::walk_transform(self.documents.xot_mut(), doc_node, transform_fn)?;
                 if let Some(post_fn) = crate::languages::get_post_transform(lang) {
                     post_fn(self.documents.xot_mut(), doc_node)?;
                 }
@@ -548,14 +548,14 @@ impl XeeBuilder {
                 let doc_node = self.documents.document_node(doc_handle)
                     .ok_or_else(|| xot::Error::Io("Failed to get document node".to_string()))?;
                 let wrappings = crate::languages::get_field_wrappings(lang);
-                crate::xot_transform::apply_field_wrappings(
+                crate::transform::apply_field_wrappings(
                     self.documents.xot_mut(),
                     doc_node,
                     wrappings,
                 )?;
                 let (_, data_fn) = crate::languages::get_data_transforms(lang)
                     .expect("Data mode requires a data-aware language");
-                crate::xot_transform::walk_transform(self.documents.xot_mut(), doc_node, data_fn)?;
+                crate::transform::walk_transform(self.documents.xot_mut(), doc_node, data_fn)?;
             }
         }
         let t2 = Instant::now();
@@ -695,10 +695,10 @@ impl XeeBuilder {
         xot.append(data_el, data_content)?;
 
         // Apply syntax transform (content_root is now child of <syntax>)
-        crate::xot_transform::walk_transform_node(xot, content_root, syntax_transform)?;
+        crate::transform::walk_transform_node(xot, content_root, syntax_transform)?;
 
         // Apply data transform (data_content is now child of <data>)
-        crate::xot_transform::walk_transform_node(xot, data_content, data_transform)?;
+        crate::transform::walk_transform_node(xot, data_content, data_transform)?;
 
         // Flatten single <document> in data branch.
         // For single-doc files (JSON, single YAML), <document> is unnecessary

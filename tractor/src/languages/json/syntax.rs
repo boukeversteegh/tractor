@@ -12,7 +12,7 @@
 //! ```
 
 use xot::{Xot, Node as XotNode};
-use crate::xot_transform::{TransformAction, helpers::*};
+use crate::transform::{TransformAction, helpers::*};
 use super::extract_string_content;
 
 // /specs/tractor-parse/dual-view/syntax-branch/vocabulary.md: Unified Syntax Vocabulary

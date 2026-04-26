@@ -20,7 +20,7 @@
 //! Queryable as: `//database/host[.='localhost']`
 
 use xot::{Xot, Node as XotNode};
-use crate::xot_transform::{TransformAction, helpers::*};
+use crate::transform::{TransformAction, helpers::*};
 use crate::output::syntax_highlight::SyntaxCategory;
 
 /// Transform an INI AST node into a data-structure-oriented XML tree

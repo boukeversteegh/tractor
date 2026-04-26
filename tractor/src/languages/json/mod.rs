@@ -10,14 +10,14 @@ pub mod syntax;
 pub mod data;
 
 use xot::{Xot, Node as XotNode};
-use crate::xot_transform::helpers::*;
+use crate::transform::helpers::*;
 use crate::output::syntax_highlight::SyntaxCategory;
 
 pub use syntax::syntax_transform;
 pub use data::data_transform;
 
 /// Backwards-compatible alias for the syntax transform
-pub fn ast_transform(xot: &mut Xot, node: XotNode) -> Result<crate::xot_transform::TransformAction, xot::Error> {
+pub fn ast_transform(xot: &mut Xot, node: XotNode) -> Result<crate::transform::TransformAction, xot::Error> {
     syntax_transform(xot, node)
 }
 

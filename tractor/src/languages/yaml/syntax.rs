@@ -4,7 +4,7 @@
 //! vocabulary as JSON: object/array/property/key/value/string/number/bool/null.
 
 use xot::{Xot, Node as XotNode};
-use crate::xot_transform::{TransformAction, helpers::*};
+use crate::transform::{TransformAction, helpers::*};
 use super::{strip_quotes_from_node, normalize_block_scalar};
 
 // /specs/tractor-parse/dual-view/syntax-branch/vocabulary.md: Unified Syntax Vocabulary

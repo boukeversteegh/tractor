@@ -1,7 +1,7 @@
 //! Language-specific transform modules and metadata.
 //!
 //! Each language owns its complete transform logic.
-//! The shared infrastructure (xot_transform) provides only the walker and helpers.
+//! The shared infrastructure (crate::transform) provides only the walker and helpers.
 
 pub mod info;
 pub mod comments;
@@ -22,7 +22,7 @@ pub mod markdown;
 pub mod tsql;
 
 use xot::{Xot, Node as XotNode};
-use crate::xot_transform::TransformAction;
+use crate::transform::TransformAction;
 use crate::output::syntax_highlight::SyntaxCategory;
 
 /// Per-name metadata for a language's semantic vocabulary.
@@ -148,7 +148,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         is_programming: true,
         supports_data_tree: false,
         data_transforms: None,
-        singleton_wrappers: crate::xot_transform::helpers::DEFAULT_SINGLETON_WRAPPERS,
+        singleton_wrappers: crate::transform::helpers::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
         ids: &["csharp", "cs"],
@@ -160,7 +160,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         is_programming: true,
         supports_data_tree: false,
         data_transforms: None,
-        singleton_wrappers: crate::xot_transform::helpers::DEFAULT_SINGLETON_WRAPPERS,
+        singleton_wrappers: crate::transform::helpers::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
         ids: &["python", "py"],
@@ -172,7 +172,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         is_programming: true,
         supports_data_tree: false,
         data_transforms: None,
-        singleton_wrappers: crate::xot_transform::helpers::DEFAULT_SINGLETON_WRAPPERS,
+        singleton_wrappers: crate::transform::helpers::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
         ids: &["go"],
@@ -184,7 +184,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         is_programming: true,
         supports_data_tree: false,
         data_transforms: None,
-        singleton_wrappers: crate::xot_transform::helpers::DEFAULT_SINGLETON_WRAPPERS,
+        singleton_wrappers: crate::transform::helpers::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
         ids: &["rust", "rs"],
@@ -196,7 +196,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         is_programming: true,
         supports_data_tree: false,
         data_transforms: None,
-        singleton_wrappers: crate::xot_transform::helpers::DEFAULT_SINGLETON_WRAPPERS,
+        singleton_wrappers: crate::transform::helpers::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
         ids: &["java"],
@@ -208,7 +208,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         is_programming: true,
         supports_data_tree: false,
         data_transforms: None,
-        singleton_wrappers: crate::xot_transform::helpers::DEFAULT_SINGLETON_WRAPPERS,
+        singleton_wrappers: crate::transform::helpers::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
         ids: &["ruby", "rb"],
@@ -220,7 +220,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         is_programming: true,
         supports_data_tree: false,
         data_transforms: None,
-        singleton_wrappers: crate::xot_transform::helpers::DEFAULT_SINGLETON_WRAPPERS,
+        singleton_wrappers: crate::transform::helpers::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
         ids: &["php"],
@@ -232,7 +232,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         is_programming: true,
         supports_data_tree: false,
         data_transforms: None,
-        singleton_wrappers: crate::xot_transform::helpers::DEFAULT_SINGLETON_WRAPPERS,
+        singleton_wrappers: crate::transform::helpers::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
         ids: &["tsql", "mssql", "sql"],
@@ -244,7 +244,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         is_programming: true,
         supports_data_tree: false,
         data_transforms: None,
-        singleton_wrappers: crate::xot_transform::helpers::DEFAULT_SINGLETON_WRAPPERS,
+        singleton_wrappers: crate::transform::helpers::DEFAULT_SINGLETON_WRAPPERS,
     },
     LanguageOps {
         ids: &["json"],
@@ -363,11 +363,11 @@ fn csharp_post_transform(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
 /// a `<type>` for type bounds. See
 /// `specs/tractor-parse/semantic-tree/transformations/csharp.md`.
 fn attach_where_clause_constraints(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
-    use crate::xot_transform::helpers::*;
+    use crate::transform::helpers::*;
 
     // Collect all clause nodes (mutate later).
     fn collect(xot: &Xot, node: XotNode, out: &mut Vec<XotNode>) {
-        use crate::xot_transform::helpers::*;
+        use crate::transform::helpers::*;
         if xot.element(node).is_some()
             && get_kind(xot, node).as_deref() == Some("type_parameter_constraints_clause")
         {
@@ -442,7 +442,7 @@ fn append_constraint_to_generic(
     constraint: XotNode,
     generic: XotNode,
 ) -> Result<(), xot::Error> {
-    use crate::xot_transform::helpers::*;
+    use crate::transform::helpers::*;
 
     // `constructor_constraint` → <new/> (the literal text is "new()")
     let has_ctor_ctor = xot.children(constraint)
@@ -484,7 +484,7 @@ fn append_constraint_to_generic(
 /// the flat conditional shape (see the cross-cutting convention in
 /// `specs/tractor-parse/semantic-tree/transformations.md`).
 fn collapse_conditionals(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error> {
-    use crate::xot_transform::helpers::*;
+    use crate::transform::helpers::*;
     // Collect all <if> nodes first (we mutate the tree as we go).
     let mut if_nodes: Vec<XotNode> = Vec::new();
     collect_if_nodes(xot, root, &mut if_nodes);
@@ -506,7 +506,7 @@ fn collapse_conditionals(xot: &mut Xot, root: XotNode) -> Result<(), xot::Error>
 }
 
 fn collect_if_nodes(xot: &Xot, node: XotNode, out: &mut Vec<XotNode>) {
-    use crate::xot_transform::helpers::*;
+    use crate::transform::helpers::*;
     if xot.element(node).is_some() && get_element_name(xot, node).as_deref() == Some("if") {
         out.push(node);
     }

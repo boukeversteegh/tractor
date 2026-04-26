@@ -289,7 +289,7 @@ pub fn get_language_abi_versions() -> Vec<LanguageAbiInfo> {
 // ============================================================================
 
 use crate::language_info::get_all_languages_for_extension;
-use crate::xot_builder::{XotBuilder, XeeBuilder};
+use crate::transform::builder::{XotBuilder, XeeBuilder};
 use xee_xpath::{Documents, DocumentHandle};
 
 /// Check if a file extension is ambiguous (multiple languages claim it).
@@ -373,11 +373,11 @@ pub fn parse_string_to_xot_with_options(
         // Per-language field wrapping (turns `<identifier field="name">` into
         // `<name><identifier field="identifier"></identifier></name>` etc.)
         let wrappings = languages::get_field_wrappings(lang);
-        crate::xot_transform::apply_field_wrappings(&mut xot, root, wrappings)
+        crate::transform::apply_field_wrappings(&mut xot, root, wrappings)
             .map_err(|e| ParseError::Parse(e.to_string()))?;
 
         let transform_fn = languages::get_transform(lang);
-        crate::xot_transform::walk_transform(&mut xot, root, transform_fn)
+        crate::transform::walk_transform(&mut xot, root, transform_fn)
             .map_err(|e| ParseError::Parse(e.to_string()))?;
 
         // Post-walk structural rewrites (e.g. flat conditional shape).

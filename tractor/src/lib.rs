@@ -13,7 +13,7 @@
 // Parsing & tree construction
 #[cfg(feature = "native")]
 pub mod parser;
-pub mod xot;
+pub mod transform;
 pub mod languages;
 
 // Querying
@@ -42,10 +42,6 @@ pub mod wasm;
 // These preserve all existing `crate::` and `tractor::` import paths so that
 // consumers (the binary crate, tests, etc.) don't need import changes.
 // ---------------------------------------------------------------------------
-
-// xot/ modules
-pub use xot::builder as xot_builder;
-pub use xot::transform as xot_transform;
 
 // languages/ additions
 pub use languages::info as language_info;
@@ -100,7 +96,7 @@ pub use rule::{Rule, RuleSet};
 pub use rule::{GlobMatcher, GlobError, CompiledRule, compile_ruleset};
 #[cfg(feature = "native")]
 pub use files::{expand_globs, expand_globs_checked, GlobExpansion, GlobExpansionError};
-pub use xot_builder::{XotBuilder, XeeBuilder};
+pub use transform::builder::{XotBuilder, XeeBuilder};
 pub use normalized_xpath::NormalizedXpath;
 pub use normalized_path::NormalizedPath;
 pub use glob_pattern::GlobPattern;

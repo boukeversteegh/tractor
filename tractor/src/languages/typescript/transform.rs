@@ -4,7 +4,7 @@
 //! No assumptions about other languages - this is self-contained.
 
 use xot::{Xot, Node as XotNode};
-use crate::xot_transform::{TransformAction, helpers::*};
+use crate::transform::{TransformAction, helpers::*};
 use crate::output::syntax_highlight::SyntaxCategory;
 
 use super::semantic::*;

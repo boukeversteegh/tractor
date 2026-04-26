@@ -8,6 +8,8 @@
 //! AST → build_raw() → xot tree → apply_field_wrappings → walk_transform(lang_fn) → transformed tree
 //! ```
 
+pub mod builder;
+
 use xot::{Xot, Node as XotNode, NameId};
 
 // =============================================================================
