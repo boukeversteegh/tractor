@@ -180,10 +180,6 @@ See the cross-cutting "Conditional shape" convention in the index
 
 ## Comments
 
-Java uses the shared `CommentClassifier`
-(`tractor/src/languages/comments.rs`) with `["//"]` as the line
-prefix. `line_comment` / `block_comment` rename to `<comment>` and
-get a `<trailing/>` or `<leading/>` marker per the cross-cutting
-rules (see [`transformations.md`](../transformations.md) —
-*Comments*). Adjacent `//` comments merge into a single
-`<comment>`.
+Java follows the cross-language rules — see
+[`transformations.md`](../transformations.md) — *Comments*. Line
+prefix is `//`.

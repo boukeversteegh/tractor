@@ -17,15 +17,11 @@ flagged below as an open design question.
 
 ## Comments
 
-PHP uses the shared `CommentClassifier`
-(`tractor/src/languages/comments.rs`) with `["//", "#"]` as the
-line prefixes (PHP accepts both). `comment` renames to
-`<comment>` and gets a `<trailing/>` or `<leading/>` marker per
-the cross-cutting rules (see
-[`transformations.md`](../transformations.md) — *Comments*).
-Adjacent line comments with the same prefix merge into a single
-`<comment>`; mixing `//` and `#` across consecutive lines does
-not group (different prefix).
+PHP follows the cross-language rules — see
+[`transformations.md`](../transformations.md) — *Comments*. Line
+prefixes are `//` and `#` (PHP accepts both); grouping requires
+the same prefix on consecutive lines, so a `//` line followed by
+a `#` line does not merge.
 
 ## Open questions / flagged items
 

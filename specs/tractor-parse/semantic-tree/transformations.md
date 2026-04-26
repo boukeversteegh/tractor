@@ -183,11 +183,11 @@ one such wrapper), Principle #1 (use language keywords — `else`).
 
 ### Comments — classification and grouping
 
-Comments live as siblings of the code they relate to. Three
+Comments live as siblings of the code they relate to. Two
 structural concerns apply uniformly across programming languages.
 
-**Leading / trailing classification (landed).** Each `<comment>`
-may carry one of two attachment markers:
+**Leading / trailing classification.** Each `<comment>` may carry
+one of two attachment markers:
 
 - `<trailing/>` — the comment sits on the same line as the end of
   the preceding sibling. It annotates that statement.
@@ -207,26 +207,19 @@ may carry one of two attachment markers:
 <comment>// floating section divider</comment>
 ```
 
-**Adjacent line-comment grouping (landed).** Consecutive line
-comments (same prefix, no blank-line gap between them) merge into
-a single `<comment>` element with multiline text content; the
-merged node is then classified as a single unit.
+**Adjacent line-comment grouping.** Consecutive line comments
+(same prefix, no blank-line gap between them) merge into a single
+`<comment>` element with multiline text content; the merged node
+is then classified as a single unit.
 
-Implementation: shared `CommentClassifier` in
-`tractor/src/languages/comments.rs`, parameterised by line-comment
-prefix list (`["//"]`, `["#"]`, or both for PHP). Each language's
-`transform.rs` delegates. Coverage: C#, Java, TypeScript / JS,
-Rust, Go, Python, Ruby, PHP. tsql inherits when comments become
-relevant.
-
-**Trailing comment adoption — deferred.** Even with the marker, a
-trailing comment lives as a *sibling* of its predecessor, not a
+**Trailing comment adoption — deferred.** Even with the marker,
+a trailing comment lives as a *sibling* of its predecessor, not a
 child. Adopting it into the predecessor as a final child would
 make `//method[public]/comment` find trailing comments without
-sibling-index gymnastics, but raises an unsettled question for the
-leading counterpart (does a leading comment become the first child
-of the next declaration?). Held until the leading-anchor question
-is explored. See [`semantic-tree-open-questions.md`](../../../todo/semantic-tree-open-questions.md).
+sibling-index gymnastics, but raises an unsettled question for
+the leading counterpart (does a leading comment become the first
+child of the next declaration?). Held until the leading-anchor
+question is explored. See [`semantic-tree-open-questions.md`](../../../todo/semantic-tree-open-questions.md).
 
 **Multi-line `<line>` children — deferred.** A merged group is
 currently one `<comment>` with multiline text (prefixes embedded).
@@ -234,32 +227,6 @@ A future evolution would split the prefix-stripped body into
 `<line>` children with prefix text preserved as siblings, so JSON
 serialises as `{"comment": {"lines": [...]}}`. Held until trailing
 adoption is decided so the two evolve together.
-
-### Tree-sitter kind catalogue
-
-Each language exposes `KINDS: &[KindEntry]` in its `semantic`
-module — the authoritative list of every tree-sitter kind the
-transform recognises and how it is handled. `KindHandling`
-variants:
-
-| Variant | Meaning |
-|---|---|
-| `Rename(target)` | Pure rename: kind X → semantic name Y, no marker. |
-| `RenameWithMarker(target, marker)` | Rename + prepend `<marker/>`. |
-| `Custom` | Imperative dispatch arm in `transform.rs` (structural transform, conditional logic). |
-| `CustomThenRename(target)` / `CustomThenRenameWithMarker(t, m)` | Imperative work followed by a deferred rename via the catalogue. |
-| `Flatten` | Wrapper dropped, children promoted to siblings (Principle #12). |
-| `PassThrough` | Kind passes through unchanged. |
-
-Per-language `map_element_name(kind)` is a 3-line delegate that
-reads back from `KINDS` — the catalogue is the single source of
-truth, no duplication between catalogue and dispatcher.
-
-The lint test `tractor/tests/kind_catalogue.rs` parses each
-blueprint fixture, walks the raw tree-sitter parse, and asserts
-every distinct kind appears in the catalogue. Tree-sitter grammar
-upgrades that introduce new kinds fail this lint with a clear
-pointer to the language's `semantic.rs`.
 
 ## Relationship to `transform-rules/`
 

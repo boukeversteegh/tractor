@@ -110,11 +110,7 @@ See the cross-cutting "Conditional shape" convention in the index
 
 ## Comments
 
-Ruby uses the shared `CommentClassifier`
-(`tractor/src/languages/comments.rs`) with `["#"]` as the line
-prefix. `comment` renames to `<comment>` and gets a `<trailing/>`
-or `<leading/>` marker per the cross-cutting rules (see
-[`transformations.md`](../transformations.md) — *Comments*).
-Adjacent `#` comments merge into a single `<comment>`.
-Multi-line `=begin…=end` block comments are rare and stay as
-single comments — no special handling.
+Ruby follows the cross-language rules — see
+[`transformations.md`](../transformations.md) — *Comments*. Line
+prefix is `#`. `=begin…=end` block comments stay as a single
+comment with no internal structuring.

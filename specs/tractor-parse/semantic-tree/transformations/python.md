@@ -201,13 +201,8 @@ See the cross-cutting "Conditional shape" convention in the index
 
 ## Comments
 
-Python uses the shared `CommentClassifier`
-(`tractor/src/languages/comments.rs`) with `["#"]` as the line
-prefix. `comment` renames to `<comment>` and gets a `<trailing/>`
-or `<leading/>` marker per the cross-cutting rules (see
-[`transformations.md`](../transformations.md) — *Comments*).
-Adjacent `#` comments merge into a single `<comment>`. Triple-
-quoted string-form docstrings (`"""…"""` as the first statement
-of a function/class) are tree-sitter `string` nodes, not
-comments, and stay as such — structuring them as docstrings is
-out of scope for this pass.
+Python follows the cross-language rules — see
+[`transformations.md`](../transformations.md) — *Comments*. Line
+prefix is `#`. Triple-quoted string-form docstrings (`"""…"""`)
+are `<string>` nodes, not comments, and are unaffected by the
+classifier.
