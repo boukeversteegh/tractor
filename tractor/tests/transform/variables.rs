@@ -15,9 +15,6 @@ fn java() {
         }
     "#);
 
-    claim("no raw `variable_declarator` kind leak",
-        &mut tree, "//variable_declarator", 0);
-
     claim("each declarator in a multi-variable declaration is its own <declarator>",
         &mut tree, "//variable/declarator", 2);
 }

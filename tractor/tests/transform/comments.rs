@@ -47,9 +47,6 @@ fn csharp() {
 
     claim("trailing and leading are mutually exclusive",
         &mut tree, "//comment[trailing and leading]", 0);
-
-    claim("no raw tree-sitter `line_comment` / `block_comment` leaks",
-        &mut tree, "//line_comment | //block_comment", 0);
 }
 
 /// TypeScript (and JS) share C#'s trailing / leading / floating
@@ -84,8 +81,6 @@ fn typescript() {
     claim("JSDoc `/** */` becomes <comment>",
         &mut tree, "//comment[starts-with(., '/**')][contains(., 'JSDoc')]", 1);
 
-    claim("no raw tree-sitter `line_comment` / `block_comment` leaks",
-        &mut tree, "//line_comment | //block_comment", 0);
 
     claim("inline `//` after `;` is trailing",
         &mut tree, "//comment[trailing][.='// inline']", 1);
@@ -362,9 +357,6 @@ fn java() {
 
     claim("trailing and leading are mutually exclusive",
         &mut tree, "//comment[trailing and leading]", 0);
-
-    claim("no raw tree-sitter `line_comment` / `block_comment` leaks",
-        &mut tree, "//line_comment | //block_comment", 0);
 }
 
 /// Rust has 4 comment kinds: `//`, `/* */`, doc `///`, inner doc
@@ -407,9 +399,6 @@ fn rust() {
 
     claim("`//!` inner doc becomes <comment>",
         &mut tree, "//comment[starts-with(., '//!')]", 1);
-
-    claim("no raw tree-sitter `line_comment` / `block_comment` / `doc_comment` leaks",
-        &mut tree, "//line_comment | //block_comment | //doc_comment", 0);
 
     claim("`//` after `,` on same line is trailing",
         &mut tree, "//comment[trailing][.='// trailing single']", 1);

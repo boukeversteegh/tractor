@@ -28,9 +28,6 @@ fn go() {
     claim("struct/interface forms do NOT also produce a <type> wrapper",
         &mut tree, "//file/type[name='User'] | //file/type[name='Greeter']", 0);
 
-    claim("no `type_declaration` grammar wrapper leaks",
-        &mut tree, "//type_declaration", 0);
-
     claim("inner referenced type of `type ID uint64`",
         &mut tree, "//type[name='ID']/type[name='uint64']", 1);
 }

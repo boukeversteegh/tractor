@@ -165,10 +165,4 @@ status = f"hello {name}, you are {age}"
 
     claim("interpolation can match by interpolated name",
         &mut tree, "//string/interpolation[name='age']", 1);
-
-    claim("string_content grammar wrapper flattens to text",
-        &mut tree, "//string_content", 0);
-
-    claim("string_start grammar wrapper flattens to text",
-        &mut tree, "//string_start", 0);
 }

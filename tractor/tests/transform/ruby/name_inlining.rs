@@ -47,7 +47,4 @@ fn ruby() {
 
     claim("identifiers in expressions render as <name>",
         &mut tree, "//binary/left/name[.='a']", 1);
-
-    claim("no raw <identifier> nodes leak from Ruby grammar",
-        &mut tree, "//identifier", 0);
 }

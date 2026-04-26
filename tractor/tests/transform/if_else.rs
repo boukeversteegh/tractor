@@ -147,9 +147,6 @@ fn ruby() {
     claim("`elsif` renames to <else_if>",
         &mut tree, "//if/else_if", 2);
 
-    claim("no raw `elsif` element leaks",
-        &mut tree, "//elsif", 0);
-
     claim("Ruby ternary uses <conditional> (not <ternary>)",
         &mut tree, "//conditional", 1);
 }

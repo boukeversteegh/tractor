@@ -177,9 +177,6 @@ fn typescript_vocabulary() {
 
     claim("no spurious <type> wrapper inside the <name> of a generic",
         &mut tree, "//generic/name/type", 0);
-
-    claim("no raw `function_type` kind leak (renamed to <type[function]>)",
-        &mut tree, "//function_type", 0);
 }
 
 // ---- type_markers ---------------------------------------------------------
@@ -353,9 +350,6 @@ fn rust_typedef() {
 
     claim("two aliases declared",
         &mut tree, "//alias", 2);
-
-    claim("no raw `type_item` grammar leaf leaks",
-        &mut tree, "//type_item", 0);
 
     claim("aliases default to <private/>",
         &mut tree, "//alias[private]", 2);

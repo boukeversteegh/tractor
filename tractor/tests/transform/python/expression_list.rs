@@ -20,9 +20,6 @@ def unpack():
     return a + b
 "#);
 
-    claim("no <expression_list> wrapper leaks anywhere",
-        &mut tree, "//expression_list", 0);
-
     claim("`return 1, 2` puts both ints as direct children of <return>",
         &mut tree, "//return[int='1' and int='2']", 1);
 

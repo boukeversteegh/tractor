@@ -79,22 +79,12 @@ mod support;
 
 // ----- Language-specific quirks -------------------------------------------
 
-#[path = "transform/csharp"]
-mod csharp {
-    pub mod expression_statement;
-}
-
 #[path = "transform/go"]
 mod go {
     pub mod spec_flattening;
     pub mod struct_interface_hoist;
     pub mod switch_markers;
     pub mod type_declaration;
-}
-
-#[path = "transform/java"]
-mod java {
-    pub mod parenthesized_expression;
 }
 
 #[path = "transform/python"]

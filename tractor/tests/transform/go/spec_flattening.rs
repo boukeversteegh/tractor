@@ -16,12 +16,9 @@ fn go() {
         var y = 2
     "#);
 
-    claim("no <const_spec> wrapper",
-        &mut tree, "//const_spec", 0);
-
-    claim("no <var_spec> wrapper",
-        &mut tree, "//var_spec", 0);
-
     claim("const's name is a direct child, not buried under const_spec",
         &mut tree, "//const[name='x']", 1);
+
+    claim("var's name is a direct child, not buried under var_spec",
+        &mut tree, "//var[name='y']", 1);
 }

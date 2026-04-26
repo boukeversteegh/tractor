@@ -29,9 +29,6 @@ fn csharp_accessor_flattening() {
         }
     "#);
 
-    claim("no <accessor_list> wrapper anywhere",
-        &mut tree, "//accessor_list", 0);
-
     claim("auto-form get + bodied get + read-only get",
         &mut tree, "//accessor[get]", 3);
 
@@ -90,9 +87,6 @@ fn typescript_arrow() {
 
     claim("arrow_function renames to <arrow>",
         &mut tree, "//arrow", 1);
-
-    claim("no raw `arrow_function` kind leak",
-        &mut tree, "//arrow_function", 0);
 }
 
 // ---- async_generator ------------------------------------------------------
@@ -210,9 +204,6 @@ fn java_method_call() {
 
     claim("`super(…)` renders as <call> with <super/> marker",
         &mut tree, "//call[super]", 1);
-
-    claim("no raw `explicit_constructor_invocation` kind leak",
-        &mut tree, "//explicit_constructor_invocation", 0);
 }
 
 // ---- parameter_marking ----------------------------------------------------

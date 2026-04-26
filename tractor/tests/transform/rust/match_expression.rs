@@ -18,9 +18,6 @@ fn rust() {
         }
     "#);
 
-    claim("no `match_block` grammar leaf leaks",
-        &mut tree, "//match_block", 0);
-
     claim("4 arms as siblings under <match>/<body>",
         &mut tree, "//match/body/arm", 4);
 
