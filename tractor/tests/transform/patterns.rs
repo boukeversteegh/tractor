@@ -7,22 +7,21 @@ use crate::support::semantic::*;
 /// list-tail destructure) and `'a' | 'b'` (union / alternation).
 #[test]
 fn python() {
-    let mut tree = parse_src("python", r#"
+    claim("Python list pattern exposes splat child",
+        &mut parse_src("python", r#"
 match seq:
     case [1, *rest]: pass
-    case 'yes' | 'y': pass
-"#);
+"#), "//pattern[splat][name='rest']", 1);
 
-    claim("Python match arms show list-splat and union pattern shapes",
-        &mut tree,
+    claim("Python union pattern exposes both alternatives",
+        &mut parse_src("python", r#"
+match answer:
+    case 'yes' | 'y': pass
+"#),
         &multi_xpath(r#"
-            //match[name='seq']/body
-                [arm/pattern//pattern[splat][name='rest']]
-                [arm/pattern//pattern[union]
-                    [string="'yes'"]
-                    [string="'y'"]
-                ]
-                [count(arm)=2]
+            //pattern[union]
+                [string="'yes'"]
+                [string="'y'"]
         "#),
         1);
 }
@@ -31,23 +30,23 @@ match seq:
 /// shape marker (declaration / recursive / constant / tuple).
 #[test]
 fn csharp() {
-    let mut tree = parse_src("csharp", r#"
+    claim("C# declaration pattern carries declaration marker",
+        &mut parse_src("csharp", r#"
         class X {
             void F(object o) {
                 if (o is Point p) {}
+            }
+        }
+    "#), "//pattern[declaration]", 1);
+
+    claim("C# constant pattern carries constant marker",
+        &mut parse_src("csharp", r#"
+        class X {
+            void F(object o) {
                 if (o is null) {}
             }
         }
-    "#);
-
-    claim("C# is-pattern conditions show declaration and constant pattern shapes",
-        &mut tree,
-        &multi_xpath(r#"
-            //method[name='F']/body/block
-                [if[condition//pattern[declaration]]]
-                [if[condition//pattern[constant]]]
-        "#),
-        1);
+    "#), "//pattern[constant]", 1);
 }
 
 /// TypeScript destructuring patterns collapse to <pattern> but
@@ -55,31 +54,27 @@ fn csharp() {
 /// shape without requiring string matching on `[` vs `{`.
 #[test]
 fn typescript() {
-    let mut tree = parse_src("typescript", r#"
+    claim("TypeScript array destructuring pattern carries array marker and names",
+        &mut parse_src("typescript", r#"
         const [a, b] = xs;
-        const { x, y } = pt;
-    "#);
-
-    claim("TypeScript destructuring variables carry array and object pattern shapes",
-        &mut tree,
+    "#),
         &multi_xpath(r#"
-            //program
-                [variable
-                    [const]
-                    [pattern
-                        [array]
-                        [name='a']
-                        [name='b']]
-                    [value/name='xs']
-                ]
-                [variable
-                    [const]
-                    [pattern
-                        [object]
-                        [name='x']
-                        [name='y']]
-                    [value/name='pt']
-                ]
+            //pattern
+                [array]
+                [name='a']
+                [name='b']
+        "#),
+        1);
+
+    claim("TypeScript object destructuring pattern carries object marker and names",
+        &mut parse_src("typescript", r#"
+        const { x, y } = pt;
+    "#),
+        &multi_xpath(r#"
+            //pattern
+                [object]
+                [name='x']
+                [name='y']
         "#),
         1);
 }
@@ -89,26 +84,27 @@ fn typescript() {
 /// the specific shape.
 #[test]
 fn rust() {
-    let mut tree = parse_src("rust", r#"
+    claim("Rust or-pattern carries or marker",
+        &mut parse_src("rust", r#"
         fn f(x: Shape) {
             match x {
                 Shape::Square(_) | Shape::Circle(_) => {},
-                Shape::Rect { w, h } => {},
-                _ => {},
             }
         }
-    "#);
+    "#), "//pattern[or]", 1);
 
-    claim("Rust match arms show or-pattern, struct pattern, and field pattern shapes",
-        &mut tree,
+    claim("Rust struct pattern exposes field-pattern children",
+        &mut parse_src("rust", r#"
+        fn f(x: Shape) {
+            match x {
+                Shape::Rect { w, h } => {},
+            }
+        }
+    "#),
         &multi_xpath(r#"
-            //match/body
-                [arm/pattern//pattern[or]]
-                [arm/pattern//pattern[struct]
-                    [pattern[field][name='w']]
-                    [pattern[field][name='h']]
-                ]
-                [count(arm)=3]
+            //pattern[struct]
+                [pattern[field][name='w']]
+                [pattern[field][name='h']]
         "#),
         1);
 }

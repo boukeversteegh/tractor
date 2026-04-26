@@ -192,28 +192,34 @@ fn typescript_vocabulary() {
     claim("only <type[function]> may lack a <name> (it's defined by signature)",
         &mut tree, "//type[not(name) and not(function)]", 0);
 
-    claim("TypeScript program shape keeps aliases, class relations, and function types visible",
+    claim("TypeScript plain alias points at a single named type",
+        &mut tree, "//alias[name='Id']/type[name='number']", 1);
+
+    claim("TypeScript function-type alias carries function marker",
+        &mut tree, "//alias[name='Handler']/type[function]", 1);
+
+    claim("TypeScript generic alias keeps generic parameter and target type arguments",
         &mut tree,
         &multi_xpath(r#"
-            //program
-                [alias[name='Id']
+            //alias[name='Box']
+                [generics/generic[name='T']]
+                [type[name='Array']
+                    [generic]
+                    [type[name='T']]]
+        "#),
+        1);
+
+    claim("TypeScript class relation wrappers expose base types",
+        &mut tree, "//class[name='Dog'][extends/type[name='Animal']][implements/type[name='Barker']]", 1);
+
+    claim("TypeScript function signature wraps parameter and return types",
+        &mut tree,
+        &multi_xpath(r#"
+            //function[name='f']
+                [parameter
+                    [name='x']
                     [type[name='number']]]
-                [alias[name='Handler']
-                    [type
-                        [function]]]
-                [alias[name='Box']
-                    [generics/generic[name='T']]
-                    [type[name='Array']
-                        [generic]
-                        [type[name='T']]]]
-                [class[name='Dog']
-                    [extends/type[name='Animal']]
-                    [implements/type[name='Barker']]]
-                [function[name='f']
-                    [parameter
-                        [name='x']
-                        [type[name='number']]]
-                    [returns/type[name='string']]]
+                [returns/type[name='string']]
         "#),
         1);
 
@@ -239,33 +245,26 @@ fn rust_markers() {
         fn h(d: &dyn Drawable) {}
     "#);
 
-    claim("Rust type marker shapes stay attached to their containing signatures",
-        &mut tree,
-        &multi_xpath(r#"
-            //file
-                [function[name='f']
-                    [parameter
-                        [name='cb']
-                        [type[function]]]
-                    [parameter
-                        [name='t']
-                        [type[tuple]]]
-                    [parameter
-                        [name='a']
-                        [type[array]]]
-                    [parameter
-                        [name='p']
-                        [type[pointer]]]
-                    [returns/type[never]]]
-                [function[name='g']
-                    [returns/type[unit]]]
-                [function[name='h']
-                    [parameter
-                        [name='d']
-                        [type[borrowed]
-                            [type[dynamic]]]]]
-        "#),
-        1);
+    claim("Rust function type carries function marker",
+        &mut tree, "//parameter[name='cb']/type[function]", 1);
+
+    claim("Rust tuple type carries tuple marker",
+        &mut tree, "//parameter[name='t']/type[tuple]", 1);
+
+    claim("Rust array type carries array marker",
+        &mut tree, "//parameter[name='a']/type[array]", 1);
+
+    claim("Rust pointer type carries pointer marker",
+        &mut tree, "//parameter[name='p']/type[pointer]", 1);
+
+    claim("Rust never return type carries never marker",
+        &mut tree, "//returns/type[never]", 1);
+
+    claim("Rust unit return type carries unit marker",
+        &mut tree, "//returns/type[unit]", 1);
+
+    claim("Rust dyn trait object carries dynamic marker inside borrowed type",
+        &mut tree, "//type[borrowed]/type[dynamic]", 1);
 }
 
 /// C# type flavors — array/tuple/nullable — all collapse to
@@ -274,16 +273,14 @@ fn rust_markers() {
 /// end shape is the same.
 #[test]
 fn csharp_markers() {
-    let mut tree = parse_src("csharp", r#"
+    claim("C# type marker shapes stay attached to their field declarations",
+        &mut parse_src("csharp", r#"
         class X {
             int[] a;
             (int, string) t;
             int? n;
         }
-    "#);
-
-    claim("C# type marker shapes stay attached to their field declarations",
-        &mut tree,
+    "#),
         &multi_xpath(r#"
             //class[name='X']/body
                 [field
@@ -315,29 +312,29 @@ fn typescript_markers() {
         type H = readonly number[];
     "#);
 
-    claim("TypeScript type marker shapes stay attached to aliases",
-        &mut tree,
-        &multi_xpath(r#"
-            //program
-                [alias[name='A']
-                    [type[union]]]
-                [alias[name='B']
-                    [type[intersection]]]
-                [alias[name='C']
-                    [type[tuple]]]
-                [alias[name='D']
-                    [type[array]]]
-                [alias[name='E']
-                    [type[literal]]]
-                [alias[name='F']
-                    [type[function]]]
-                [alias[name='G']
-                    [type[object]]]
-                [alias[name='H']
-                    [type[readonly]
-                        [type[array]]]]
-        "#),
-        1);
+    claim("TypeScript union type carries union marker",
+        &mut tree, "//alias[name='A']/type[union]", 1);
+
+    claim("TypeScript intersection type carries intersection marker",
+        &mut tree, "//alias[name='B']/type[intersection]", 1);
+
+    claim("TypeScript tuple type carries tuple marker",
+        &mut tree, "//alias[name='C']/type[tuple]", 1);
+
+    claim("TypeScript array type carries array marker",
+        &mut tree, "//alias[name='D']/type[array]", 1);
+
+    claim("TypeScript literal type carries literal marker",
+        &mut tree, "//alias[name='E']/type[literal]", 1);
+
+    claim("TypeScript function type carries function marker",
+        &mut tree, "//alias[name='F']/type[function]", 1);
+
+    claim("TypeScript object type carries object marker",
+        &mut tree, "//alias[name='G']/type[object]", 1);
+
+    claim("TypeScript readonly array carries readonly marker outside array marker",
+        &mut tree, "//alias[name='H']/type[readonly]/type[array]", 1);
 }
 
 /// Java `void` carries an additional <void/> marker on top of the
@@ -346,15 +343,13 @@ fn typescript_markers() {
 /// name child.
 #[test]
 fn java_markers() {
-    let mut tree = parse_src("java", r#"
+    claim("Java method return types distinguish void marker from named primitive",
+        &mut parse_src("java", r#"
         class X {
             void f() {}
             int g() { return 0; }
         }
-    "#);
-
-    claim("Java method return types distinguish void marker from named primitive",
-        &mut tree,
+    "#),
         &multi_xpath(r#"
             //class[name='X']/body
                 [method[name='f']
@@ -380,31 +375,25 @@ fn rust_reference() {
         fn static_ref() -> &'static str { "" }
     "#);
 
-    claim("Rust borrowed type shape keeps mutability, lifetime, and nested referent types",
+    claim("Rust borrowed parameter wraps referenced type",
+        &mut tree, "//parameter[name='s']/type[borrowed]/type[name='str']", 1);
+
+    claim("Rust borrowed return wraps referenced type",
+        &mut tree, "//returns/type[borrowed]/type[name='str']", 2);
+
+    claim("Rust mutable borrow carries mut marker and generic referent type",
         &mut tree,
         &multi_xpath(r#"
-            //file
-                [function[name='read']
-                    [parameter
-                        [name='s']
-                        [type[borrowed]
-                            [type[name='str']]]]
-                    [returns/type[borrowed]
-                        [type[name='str']]]]
-                [function[name='write']
-                    [parameter
-                        [name='buf']
-                        [type[borrowed]
-                            [mut]
-                            [type[name='Vec']
-                                [generic]
-                                [type[name='u8']]]]]]
-                [function[name='static_ref']
-                    [returns/type[borrowed]
-                        [lifetime[name='static']]
-                        [type[name='str']]]]
+            //parameter[name='buf']/type[borrowed]
+                [mut]
+                [type[name='Vec']
+                    [generic]
+                    [type[name='u8']]]
         "#),
         1);
+
+    claim("Rust lifetime borrow exposes lifetime child",
+        &mut tree, "//type[borrowed][lifetime/name='static'][type/name='str']", 1);
 
     claim("no legacy <ref> element",
         &mut tree, "//ref", 0);
@@ -421,20 +410,19 @@ fn rust_typedef() {
         type Mapping<T> = std::collections::HashMap<String, T>;
     "#);
 
-    claim("Rust aliases expose visibility, names, generic parameters, and target types",
+    claim("Rust simple alias exposes visibility and target type",
+        &mut tree, "//alias[name='Id'][private][type/name='u32']", 1);
+
+    claim("Rust generic alias exposes generic parameter and target type arguments",
         &mut tree,
         &multi_xpath(r#"
-            //file
-                [alias[name='Id']
-                    [private]
-                    [type[name='u32']]]
-                [alias[name='Mapping']
-                    [private]
-                    [generic[name='T']]
-                    [type[name='std::collections::HashMap']
-                        [generic]
-                        [type[name='String']]
-                        [type[name='T']]]]
+            //alias[name='Mapping']
+                [private]
+                [generic[name='T']]
+                [type[name='std::collections::HashMap']
+                    [generic]
+                    [type[name='String']]
+                    [type[name='T']]]
         "#),
         1);
 
@@ -456,16 +444,11 @@ fn go_defined_vs_alias() {
         type Color = int
     "#);
 
-    claim("Go file shape distinguishes defined types from aliases",
-        &mut tree,
-        &multi_xpath(r#"
-            //file
-                [type[name='MyInt']
-                    [type[name='int']]]
-                [alias[name='Color']
-                    [type[name='int']]]
-        "#),
-        1);
+    claim("Go defined type renders as type declaration",
+        &mut tree, "//type[name='MyInt']/type[name='int']", 1);
+
+    claim("Go type alias renders as alias declaration",
+        &mut tree, "//alias[name='Color']/type[name='int']", 1);
 
     claim("alias does NOT also render as <type> at the top level",
         &mut tree, "//file/type[name='Color']", 0);
@@ -479,7 +462,8 @@ fn go_defined_vs_alias() {
 /// compose; type bounds wrap in <extends><type>…</type></extends>.
 #[test]
 fn csharp_where() {
-    let mut tree = parse_src("csharp", r#"
+    claim("C# where constraints attach to the matching generic parameters",
+        &mut parse_src("csharp", r#"
         using System;
 
         class Repo<T, U, V>
@@ -488,10 +472,7 @@ fn csharp_where() {
             where V : notnull
         {
         }
-    "#);
-
-    claim("C# where constraints attach to the matching generic parameters",
-        &mut tree,
+    "#),
         &multi_xpath(r#"
             //class[name='Repo']
                 [generic[name='T']

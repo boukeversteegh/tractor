@@ -7,40 +7,52 @@ use crate::support::semantic::*;
 /// declarations so //type queries find every declared type.
 #[test]
 fn go() {
-    let mut tree = parse_src("go", r#"
+    claim("Go plain type declaration exposes the declared type directly",
+        &mut parse_src("go", r#"
         package main
 
         type ID uint64
+    "#),
+        &multi_xpath(r#"
+            //type[name='ID']
+                [type[name='uint64']]
+        "#),
+        1);
+
+    claim("Go struct type declaration exposes struct directly",
+        &mut parse_src("go", r#"
+        package main
 
         type User struct {
             Name string
             Age  int
         }
+    "#),
+        &multi_xpath(r#"
+            //struct[name='User']
+                [field
+                    [name='Name']
+                    [type[name='string']]]
+                [field
+                    [name='Age']
+                    [type[name='int']]]
+                [not(../type[name='User'])]
+        "#),
+        1);
+
+    claim("Go interface type declaration exposes interface directly",
+        &mut parse_src("go", r#"
+        package main
 
         type Greeter interface {
             Greet() string
         }
-    "#);
-
-    claim("Go file shape exposes plain, struct, and interface type declarations directly",
-        &mut tree,
+    "#),
         &multi_xpath(r#"
-            //file
-                [type[name='ID']
-                    [type[name='uint64']]]
-                [struct[name='User']
-                    [field
-                        [name='Name']
-                        [type[name='string']]]
-                    [field
-                        [name='Age']
-                        [type[name='int']]]]
-                [interface[name='Greeter']
-                    [method[name='Greet']
-                        [returns/type[name='string']]]]
+            //interface[name='Greeter']
+                [method[name='Greet']
+                    [returns/type[name='string']]]
+                [not(../type[name='Greeter'])]
         "#),
         1);
-
-    claim("struct/interface forms do NOT also produce a <type> wrapper",
-        &mut tree, "//file/type[name='User'] | //file/type[name='Greeter']", 0);
 }

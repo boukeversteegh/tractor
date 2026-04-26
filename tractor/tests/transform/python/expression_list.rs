@@ -8,33 +8,32 @@ use crate::support::semantic::*;
 /// <return>/<yield>/<assign>.
 #[test]
 fn python() {
-    let mut tree = parse_src("python", r#"
+    claim("Python return expression list flattens directly under return",
+        &mut parse_src("python", r#"
 def pair():
     return 1, 2
+"#),
+        &multi_xpath(r#"
+            //return
+                [int='1']
+                [int='2']
+        "#),
+        1);
 
+    claim("Python string expression list flattens directly under return",
+        &mut parse_src("python", r#"
 def triple():
     return "a", "b", "c"
+"#),
+        "//return[count(string)=3]",
+        1);
 
-def unpack():
-    a, b = pair()
-    return a + b
-"#);
-
-    claim("Python expression lists flatten directly under returns and assignment sides",
-        &mut tree,
+    claim("Python assignment target expression list flattens directly under left",
+        &mut parse_src("python", "a, b = pair()\n"),
         &multi_xpath(r#"
-            //module
-                [function[name='pair']
-                    [body/return
-                        [int='1']
-                        [int='2']]]
-                [function[name='triple']
-                    [body/return
-                        [count(string)=3]]]
-                [function[name='unpack']
-                    [body/assign/left
-                        [name='a']
-                        [name='b']]]
+            //assign/left
+                [name='a']
+                [name='b']
         "#),
         1);
 }

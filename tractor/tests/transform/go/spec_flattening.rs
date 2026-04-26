@@ -9,23 +9,29 @@ use crate::support::semantic::*;
 /// element.
 #[test]
 fn go() {
-    let mut tree = parse_src("go", r#"
+    claim("Go const spec flattens to named declaration with direct value",
+        &mut parse_src("go", r#"
         package main
 
         const x = 1
-        var y = 2
-    "#);
-
-    claim("Go const/var specs flatten to named declarations with direct values",
-        &mut tree,
+    "#),
         &multi_xpath(r#"
-            //file
-                [const
-                    [name='x']
-                    [value/int='1']]
-                [var
-                    [name='y']
-                    [value/int='2']]
+            //const
+                [name='x']
+                [value/int='1']
+        "#),
+        1);
+
+    claim("Go var spec flattens to named declaration with direct value",
+        &mut parse_src("go", r#"
+        package main
+
+        var y = 2
+    "#),
+        &multi_xpath(r#"
+            //var
+                [name='y']
+                [value/int='2']
         "#),
         1);
 }

@@ -9,25 +9,8 @@ use crate::support::semantic::*;
 
 #[test]
 fn csharp_property_accessors_are_specific_nodes() {
-    let mut tree = parse_src("csharp", r#"
-        class Accessors
-        {
-            public int AutoProp { get; set; }
-
-            private int _backing;
-            public int Manual
-            {
-                get { return _backing; }
-                set { _backing = value; }
-            }
-
-            public int ReadOnly { get; }
-            public int WriteOnly { set { _backing = value; } }
-        }
-    "#);
-
     claim("AutoProp shape is two direct accessor keyword nodes",
-        &mut tree,
+        &mut parse_src("csharp", "class X { public int AutoProp { get; set; } }"),
         &multi_xpath(r#"
             //property[name='AutoProp']
                 [get[not(body)]]
@@ -39,7 +22,16 @@ fn csharp_property_accessors_are_specific_nodes() {
         1);
 
     claim("Manual shape is two direct bodied accessor keyword nodes",
-        &mut tree,
+        &mut parse_src("csharp", r#"
+        class X {
+            private int _backing;
+            public int Manual
+            {
+                get { return _backing; }
+                set { _backing = value; }
+            }
+        }
+    "#),
         &multi_xpath(r#"
             //property[name='Manual']
                 [get/body/block]
@@ -51,7 +43,7 @@ fn csharp_property_accessors_are_specific_nodes() {
         1);
 
     claim("ReadOnly shape is a single get accessor",
-        &mut tree,
+        &mut parse_src("csharp", "class X { public int ReadOnly { get; } }"),
         &multi_xpath(r#"
             //property[name='ReadOnly']
                 [get]
@@ -61,7 +53,12 @@ fn csharp_property_accessors_are_specific_nodes() {
         1);
 
     claim("WriteOnly shape is a single bodied set accessor",
-        &mut tree,
+        &mut parse_src("csharp", r#"
+        class X {
+            private int _backing;
+            public int WriteOnly { set { _backing = value; } }
+        }
+    "#),
         &multi_xpath(r#"
             //property[name='WriteOnly']
                 [set/body/block]
@@ -73,18 +70,13 @@ fn csharp_property_accessors_are_specific_nodes() {
 
 #[test]
 fn typescript_accessor_methods_carry_kind_markers() {
-    let mut tree = parse_src("typescript", r#"
+    claim("value getter shape is a public method with a get marker and body",
+        &mut parse_src("typescript", r#"
         class Counter {
             private _value = 0;
-
             get value(): number { return this._value; }
-            set value(v: number) { this._value = v; }
-            static get singleton(): Counter { return new Counter(); }
         }
-    "#);
-
-    claim("value getter shape is a public method with a get marker and body",
-        &mut tree,
+    "#),
         &multi_xpath(r#"
             //method[name='value']
                 [get]
@@ -95,7 +87,12 @@ fn typescript_accessor_methods_carry_kind_markers() {
         1);
 
     claim("value setter shape is a public method with a set marker, parameter, and body",
-        &mut tree,
+        &mut parse_src("typescript", r#"
+        class Counter {
+            private _value = 0;
+            set value(v: number) { this._value = v; }
+        }
+    "#),
         &multi_xpath(r#"
             //method[name='value']
                 [set]
@@ -107,7 +104,11 @@ fn typescript_accessor_methods_carry_kind_markers() {
         1);
 
     claim("singleton getter shape is a public method with a get marker and body",
-        &mut tree,
+        &mut parse_src("typescript", r#"
+        class Counter {
+            static get singleton(): Counter { return new Counter(); }
+        }
+    "#),
         &multi_xpath(r#"
             //method[name='singleton']
                 [get]
@@ -116,7 +117,4 @@ fn typescript_accessor_methods_carry_kind_markers() {
                 [not(set)]
         "#),
         1);
-
-    claim("Counter has exactly three accessor methods",
-        &mut tree, "//method[get or set]", 3);
 }

@@ -9,38 +9,42 @@ use crate::support::semantic::*;
 /// `<type>` wrapper.
 #[test]
 fn go() {
-    let mut tree = parse_src("go", r#"
+    claim("Go struct declaration hoists to top-level struct node",
+        &mut parse_src("go", r#"
         package main
 
         type Config struct {
             Host string
             Port int
         }
+    "#),
+        &multi_xpath(r#"
+            //struct[name='Config']
+                [exported]
+                [field
+                    [name='Host']
+                    [type[name='string']]]
+                [field
+                    [name='Port']
+                    [type[name='int']]]
+                [not(../type[name='Config'])]
+        "#),
+        1);
+
+    claim("Go interface declaration hoists to top-level interface node",
+        &mut parse_src("go", r#"
+        package main
 
         type Greeter interface {
             Greet() string
         }
-    "#);
-
-    claim("Go struct and interface declarations hoist to top-level semantic nodes",
-        &mut tree,
+    "#),
         &multi_xpath(r#"
-            //file
-                [struct[name='Config']
-                    [exported]
-                    [field
-                        [name='Host']
-                        [type[name='string']]]
-                    [field
-                        [name='Port']
-                        [type[name='int']]]]
-                [interface[name='Greeter']
-                    [exported]
-                    [method[name='Greet']
-                        [returns/type[name='string']]]]
+            //interface[name='Greeter']
+                [exported]
+                [method[name='Greet']
+                    [returns/type[name='string']]]
+                [not(../type[name='Greeter'])]
         "#),
         1);
-
-    claim("the `type` wrapper does NOT also surface a <type> for the struct",
-        &mut tree, "//file/type[name='Config']", 0);
 }

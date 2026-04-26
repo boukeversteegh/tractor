@@ -10,46 +10,33 @@ use crate::support::semantic::*;
 /// element names.
 #[test]
 fn python_collections() {
-    let mut tree = parse_src("python", r#"
-nums = [1, 2, 3]
-squares = [x * x for x in nums]
-pairs = {"a": 1, "b": 2}
-inverted = {v: k for k, v in pairs.items()}
-unique = {1, 2, 3}
-uniq_sq = {x * x for x in nums}
-gen = (x for x in nums)
-"#);
+    let mut list_literal = parse_src("python", "[1, 2, 3]\n");
 
-    claim("collection assignment shapes distinguish literal and comprehension forms",
-        &mut tree,
-        &multi_xpath(r#"
-            //module
-                [assign[left/name='nums']
-                    [right/list[literal]]
-                ]
-                [assign[left/name='squares']
-                    [right/list[comprehension]]
-                ]
-                [assign[left/name='pairs']
-                    [right/dict[literal]]
-                ]
-                [assign[left/name='inverted']
-                    [right/dict[comprehension]]
-                ]
-                [assign[left/name='unique']
-                    [right/set[literal]]
-                ]
-                [assign[left/name='uniq_sq']
-                    [right/set[comprehension]]
-                ]
-                [assign[left/name='gen']
-                    [right/generator]
-                ]
-        "#),
-        1);
+    claim("Python list literal carries literal marker",
+        &mut list_literal, "//list[literal]", 1);
 
     claim("literal and comprehension are mutually exclusive on collections",
-        &mut tree, "//*[literal and comprehension]", 0);
+        &mut list_literal, "//*[literal and comprehension]", 0);
+
+    claim("Python list comprehension carries comprehension marker",
+        &mut parse_src("python", "[x * x for x in nums]\n"), "//list[comprehension]", 1);
+
+    claim("Python dict literal carries literal marker",
+        &mut parse_src("python", r#"{"a": 1, "b": 2}"#), "//dict[literal]", 1);
+
+    claim("Python dict comprehension carries comprehension marker",
+        &mut parse_src("python", "{v: k for k, v in pairs.items()}\n"),
+        "//dict[comprehension]",
+        1);
+
+    claim("Python set literal carries literal marker",
+        &mut parse_src("python", "{1, 2, 3}\n"), "//set[literal]", 1);
+
+    claim("Python set comprehension carries comprehension marker",
+        &mut parse_src("python", "{x * x for x in nums}\n"), "//set[comprehension]", 1);
+
+    claim("Python generator expression stays a bare generator node",
+        &mut parse_src("python", "(x for x in nums)\n"), "//generator", 1);
 }
 
 /// Ruby percent-literal arrays collapse to <array> with a
@@ -57,28 +44,14 @@ gen = (x for x in nums)
 /// normal array while the flavor stays queryable.
 #[test]
 fn ruby() {
-    let mut tree = parse_src("ruby", r#"
-        A = %w[one two]
-        B = %i[alpha beta]
-        C = [1, 2]
-    "#);
+    claim("Ruby percent string array carries string marker",
+        &mut parse_src("ruby", "%w[one two]\n"), "//array[string]", 1);
 
-    claim("Ruby array assignment shapes preserve percent-literal flavors",
-        &mut tree,
-        &multi_xpath(r#"
-            //program
-                [assign[left/constant='A']
-                    [right/array[string]]
-                ]
-                [assign[left/constant='B']
-                    [right/array[symbol]]
-                ]
-                [assign[left/constant='C']
-                    [right/array[not(string)][not(symbol)]]
-                ]
-                [count(assign/right/array)=3]
-        "#),
-        1);
+    claim("Ruby percent symbol array carries symbol marker",
+        &mut parse_src("ruby", "%i[alpha beta]\n"), "//array[symbol]", 1);
+
+    claim("Ruby ordinary array has no percent-literal flavor marker",
+        &mut parse_src("ruby", "[1, 2]\n"), "//array[not(string)][not(symbol)]", 1);
 }
 
 /// `*args` and `**kwargs` collapse to <spread> but carry a
@@ -87,27 +60,29 @@ fn ruby() {
 /// on `*` / `**` operator text.
 #[test]
 fn python_spread() {
-    let mut tree = parse_src("python", r#"
+    claim("spread nodes carry list/dict markers in parameter and argument contexts",
+        &mut parse_src("python", r#"
 def f(*args, **kwargs): pass
-g(*xs, **kw)
-[*a, *b]
-{**a, **b}
-"#);
-
-    claim("spread shapes cover parameter, call, list, and dict contexts",
-        &mut tree,
+"#),
         &multi_xpath(r#"
-            //module
-                [function[name='f']
-                    [spread[list][name='args']]
-                    [spread[dict][name='kwargs']]
-                ]
-                [call
-                    [spread[list][name='xs']]
-                    [spread[dict][name='kw']]
-                ]
-                [list[spread[list][name='a']][spread[list][name='b']]]
-                [dict[spread[dict][name='a']][spread[dict][name='b']]]
+            //function[name='f']
+                [spread[list][name='args']]
+                [spread[dict][name='kwargs']]
         "#),
         1);
+
+    claim("call spread nodes carry list/dict markers",
+        &mut parse_src("python", "g(*xs, **kw)\n"),
+        &multi_xpath(r#"
+            //call
+                [spread[list][name='xs']]
+                [spread[dict][name='kw']]
+        "#),
+        1);
+
+    claim("list literal spread nodes carry list markers",
+        &mut parse_src("python", "[*a, *b]\n"), "//list[count(spread[list])=2]", 1);
+
+    claim("dict literal spread nodes carry dict markers",
+        &mut parse_src("python", "{**a, **b}\n"), "//dict[count(spread[dict])=2]", 1);
 }

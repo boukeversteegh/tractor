@@ -10,42 +10,44 @@ use crate::support::semantic::*;
 /// <method><name><identifier>foo</identifier></name>….
 #[test]
 fn ruby() {
-    let mut tree = parse_src("ruby", r#"
+    claim("Ruby class and method declarations inline declaration names",
+        &mut parse_src("ruby", r#"
         class Calculator
           def add(a, b)
             a + b
           end
         end
-
-        module Utils
-          def self.greet(name)
-            "hi, #{name}"
-          end
-        end
-    "#);
-
-    claim("Ruby declarations inline names while expression identifiers still render as <name>",
-        &mut tree,
+    "#),
         &multi_xpath(r#"
-            //program
-                [class
-                    [name='Calculator']
-                    [body/method
-                        [name='add']
-                        [name='a']
-                        [name='b']
-                        [body//binary
-                            [left/name='a']
-                            [right/name='b']]]]
-                [module
-                    [name='Utils']
-                    [.//method
-                        [name='greet']
-                        [singleton]
-                        [name='name']]]
+            //class
+                [name='Calculator']
+                [body/method
+                    [name='add']
+                    [name='a']
+                    [name='b']
+                    [body//binary
+                        [left/name='a']
+                        [right/name='b']]]
+                [not(name/identifier | name/constant)]
         "#),
         1);
 
-    claim("inlined declaration names do not retain nested parser-name wrappers",
-        &mut tree, "//class/name/identifier | //class/name/constant | //module/name/identifier", 0);
+    claim("Ruby singleton method declaration carries singleton marker",
+        &mut parse_src("ruby", r#"
+        module Utils
+          def self.greet(name)
+            "hi"
+          end
+        end
+    "#),
+        &multi_xpath(r#"
+            //module
+                [name='Utils']
+                [.//method
+                    [name='greet']
+                    [singleton]
+                    [name='name']]
+                [not(name/identifier)]
+        "#),
+        1);
 }

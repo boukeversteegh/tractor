@@ -7,7 +7,8 @@ use crate::support::semantic::*;
 /// direct siblings of <match> via <body>.
 #[test]
 fn rust() {
-    let mut tree = parse_src("rust", r#"
+    claim("Rust match body exposes arms directly with literal, or-pattern, guard, and fallback shapes",
+        &mut parse_src("rust", r#"
         fn classify(n: i32) -> &'static str {
             match n {
                 0 => "zero",
@@ -16,10 +17,7 @@ fn rust() {
                 _ => "other",
             }
         }
-    "#);
-
-    claim("Rust match body exposes arms directly with literal, or-pattern, guard, and fallback shapes",
-        &mut tree,
+    "#),
         &multi_xpath(r#"
             //match
                 [value/name='n']

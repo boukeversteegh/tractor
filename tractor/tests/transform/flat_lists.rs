@@ -24,18 +24,21 @@ fn csharp() {
         }
     "#);
 
-    claim("C# method and property shapes use flat parameter, generic, and accessor siblings",
+    claim("C# method uses flat parameter and generic siblings",
         &mut tree,
         &multi_xpath(r#"
-            //class[name='FlatLists']/body
-                [method[name='First']
-                    [count(parameter)=3]
-                    [count(generic)=2]
-                ]
-                [property[name='Count']
-                    [get]
-                    [set]
-                ]
+            //method[name='First']
+                [count(parameter)=3]
+                [count(generic)=2]
+        "#),
+        1);
+
+    claim("C# property uses flat accessor siblings",
+        &mut tree,
+        &multi_xpath(r#"
+            //property[name='Count']
+                [get]
+                [set]
         "#),
         1);
 
@@ -55,19 +58,19 @@ fn go() {
         type Config struct { Host string; Port int; Tls bool }
     "#);
 
-    claim("Go function, call, and struct shapes use flat parameter, argument, and field siblings",
+    claim("Go function uses flat parameter siblings",
         &mut tree,
         &multi_xpath(r#"
-            //file
-                [function[name='First']
-                    [count(parameter)=3]]
-                [function[name='Caller']//call
-                    [count(string|int|true)=3]
-                ]
-                [struct[name='Config']
-                    [count(field)=3]]
+            //function[name='First']
+                [count(parameter)=3]
         "#),
         1);
+
+    claim("Go call uses flat argument siblings",
+        &mut tree, "//call[count(string|int|true)=3]", 1);
+
+    claim("Go struct uses flat field siblings",
+        &mut tree, "//struct[name='Config'][count(field)=3]", 1);
 
     claim("Go flat-list grammar wrappers do not leak",
         &mut tree, "//parameter_list | //parameters | //argument_list | //arguments | //field_declaration_list | //field_list", 0);

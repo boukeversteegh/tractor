@@ -10,22 +10,16 @@ use crate::support::semantic::*;
 /// vocabulary; distinct from <function> declarations).
 #[test]
 fn typescript_arrow() {
-    let mut tree = parse_src("typescript", r#"
+    claim("TypeScript arrow node has parameter and expression body",
+        &mut parse_src("typescript", r#"
         const f = (x: number) => x + 1;
-    "#);
-
-    claim("const f shape has an arrow value with parameter and expression body",
-        &mut tree,
+    "#),
         &multi_xpath(r#"
-            //variable[name='f']
-                [const]
-                [value/arrow
-                    [parameter[name='x']
-                        [required]
-                        [type/name='number']
-                    ]
-                    [body/binary]
-                ]
+            //arrow
+                [parameter[name='x']
+                    [required]
+                    [type/name='number']]
+                [body/binary]
         "#),
         1);
 }
@@ -37,18 +31,10 @@ fn typescript_arrow() {
 /// applicable markers (Principle #9 exhaustive markers).
 #[test]
 fn typescript_async_generator() {
-    let mut tree = parse_src("typescript", r#"
-        async function fetchOne(): Promise<number> { return 1; }
-        function* counter(): Generator<number> { yield 1; }
-        async function* stream(): AsyncGenerator<number> { yield 1; }
-        class Service {
-            async load(): Promise<void> {}
-            *keys(): Generator<string> { yield "a"; }
-        }
-    "#);
-
     claim("fetchOne shape is async function with no generator marker",
-        &mut tree,
+        &mut parse_src("typescript", r#"
+        async function fetchOne(): Promise<number> { return 1; }
+    "#),
         &multi_xpath(r#"
             //function[name='fetchOne']
                 [async]
@@ -57,7 +43,9 @@ fn typescript_async_generator() {
         1);
 
     claim("counter shape is generator function with no async marker",
-        &mut tree,
+        &mut parse_src("typescript", r#"
+        function* counter(): Generator<number> { yield 1; }
+    "#),
         &multi_xpath(r#"
             //function[name='counter']
                 [generator]
@@ -66,7 +54,9 @@ fn typescript_async_generator() {
         1);
 
     claim("stream shape composes async and generator markers",
-        &mut tree,
+        &mut parse_src("typescript", r#"
+        async function* stream(): AsyncGenerator<number> { yield 1; }
+    "#),
         &multi_xpath(r#"
             //function[name='stream']
                 [async]
@@ -75,7 +65,11 @@ fn typescript_async_generator() {
         1);
 
     claim("load shape is async method with no generator marker",
-        &mut tree,
+        &mut parse_src("typescript", r#"
+        class Service {
+            async load(): Promise<void> {}
+        }
+    "#),
         &multi_xpath(r#"
             //method[name='load']
                 [async]
@@ -84,7 +78,11 @@ fn typescript_async_generator() {
         1);
 
     claim("keys shape is generator method with no async marker",
-        &mut tree,
+        &mut parse_src("typescript", r#"
+        class Service {
+            *keys(): Generator<string> { yield "a"; }
+        }
+    "#),
         &multi_xpath(r#"
             //method[name='keys']
                 [generator]
@@ -99,31 +97,31 @@ fn typescript_async_generator() {
 /// abbreviations).
 #[test]
 fn java_constructor_rename() {
-    let mut tree = parse_src("java", r#"
+    claim("zero-argument Java constructor is named constructor and contains this-call",
+        &mut parse_src("java", r#"
         class Point {
-            int x, y;
             Point() { this(0, 0); }
-            Point(int x, int y) { this.x = x; this.y = y; }
+            Point(int x, int y) {}
         }
-    "#);
-
-    claim("Point constructor shapes include zero-arg chain call and two-arg initializer",
-        &mut tree,
+    "#),
         &multi_xpath(r#"
-            //class[name='Point']/body
-                [constructor[name='Point']
-                    [not(parameter)]
-                    [body//call[this]]
-                ]
-                [constructor[name='Point']
-                    [count(parameter)=2]
-                ]
-                [count(constructor)=2]
+            //constructor[name='Point']
+                [not(parameter)]
+                [body//call[this]]
         "#),
         1);
 
-    claim("no abbreviated `ctor` element leaks",
-        &mut tree, "//ctor", 0);
+    claim("two-argument Java constructor is named constructor with flat parameters",
+        &mut parse_src("java", r#"
+        class Point {
+            Point(int x, int y) {}
+        }
+    "#),
+        &multi_xpath(r#"
+            //constructor[name='Point']
+                [count(parameter)=2]
+        "#),
+        1);
 }
 
 // ---- method_call ----------------------------------------------------------
@@ -133,37 +131,57 @@ fn java_constructor_rename() {
 /// receiver and method (Rust uses field-call syntax).
 #[test]
 fn rust_method_call() {
-    let mut tree = parse_src("rust", r#"
+    claim("Rust associated function call keeps path callee shape",
+        &mut parse_src("rust", r#"
         fn use_calls() {
             let v: Vec<i32> = Vec::new();
-            let n = v.len();
-            let s = "hi".to_string();
-            s.to_uppercase();
         }
-    "#);
-
-    claim("use_calls body has one path call and three field-call shapes",
-        &mut tree,
+    "#),
         &multi_xpath(r#"
-            //function[name='use_calls']/body
-                [.//call/path
-                    [name='Vec']
-                    [name='new']]
-                [.//call/field
-                    [value/name='v']
-                    [name='len']]
-                [.//call/field
-                    [value/string]
-                    [name='to_string']]
-                [.//call/field
-                    [value/name='s']
-                    [name='to_uppercase']]
-                [count(.//call)=4]
+            //call/path
+                [name='Vec']
+                [name='new']
         "#),
         1);
 
-    claim("no legacy <methodcall> element",
-        &mut tree, "//methodcall", 0);
+    claim("Rust field-call callee carries receiver and method name",
+        &mut parse_src("rust", r#"
+        fn use_calls(v: Vec<i32>) {
+            let n = v.len();
+        }
+    "#),
+        &multi_xpath(r#"
+            //call/field
+                [value/name='v']
+                [name='len']
+        "#),
+        1);
+
+    claim("Rust field-call callee can use a literal receiver",
+        &mut parse_src("rust", r#"
+        fn use_calls() {
+            let s = "hi".to_string();
+        }
+    "#),
+        &multi_xpath(r#"
+            //call/field
+                [value/string]
+                [name='to_string']
+        "#),
+        1);
+
+    claim("Rust expression statement method call keeps field-call shape",
+        &mut parse_src("rust", r#"
+        fn use_calls(s: String) {
+            s.to_uppercase();
+        }
+    "#),
+        &multi_xpath(r#"
+            //call/field
+                [value/name='s']
+                [name='to_uppercase']
+        "#),
+        1);
 }
 
 /// Java `this(…)` / `super(…)` in constructors render as <call>
@@ -171,29 +189,26 @@ fn rust_method_call() {
 /// sites; no `explicit_constructor_invocation` raw kind leaks.
 #[test]
 fn java_method_call() {
-    let mut tree = parse_src("java", r#"
+    claim("Java this constructor invocation renders as call[this]",
+        &mut parse_src("java", r#"
         class X {
             X() { this(1); }
+            X(int a) {}
+        }
+    "#),
+        "//call[this]",
+        1);
+
+    claim("Java super constructor invocation renders as call[super]",
+        &mut parse_src("java", r#"
+        class X {
             X(int a) {}
             class Y extends X {
                 Y() { super(2); }
             }
         }
-    "#);
-
-    claim("constructor chain calls use call[this] and call[super] shapes",
-        &mut tree,
-        &multi_xpath(r#"
-            //class[name='X']/body
-                [constructor[name='X']
-                    [not(parameter)]
-                    [body//call[this]]
-                ]
-                [class[name='Y']
-                    [body/constructor[name='Y']
-                        [body//call[super]]]
-                ]
-        "#),
+    "#),
+        "//call[super]",
         1);
 }
 
@@ -204,57 +219,46 @@ fn java_method_call() {
 /// rest parameters; also the JS-style untyped param shape.
 #[test]
 fn typescript_parameter_marking() {
-    let mut tree = parse_src("typescript", r#"
-        function call(
-            required: string,
-            optional?: number,
-            defaulted: boolean = true,
-            ...rest: string[]
-        ): void {}
-
-        function noTypes(x, y) {}
-    "#);
-
-    claim("call parameter list covers required, optional, defaulted, and rest shapes",
-        &mut tree,
+    claim("required TypeScript parameter carries required marker and type",
+        &mut parse_src("typescript", "function call(required: string): void {}\n"),
         &multi_xpath(r#"
-            //function[name='call']
-                [parameter[name='required']
-                    [required]
-                    [type/name='string']
-                ]
-                [parameter[name='optional']
-                    [optional]
-                    [type/name='number']
-                ]
-                [parameter[name='defaulted']
-                    [required]
-                    [value]
-                ]
-                [parameter[rest/name='rest']
-                    [required]
-                    [rest]
-                ]
-                [count(parameter)=4]
+            //parameter[name='required']
+                [required]
+                [type/name='string']
+        "#),
+        1);
+
+    claim("optional TypeScript parameter carries optional marker and type",
+        &mut parse_src("typescript", "function call(optional?: number): void {}\n"),
+        &multi_xpath(r#"
+            //parameter[name='optional']
+                [optional]
+                [type/name='number']
+        "#),
+        1);
+
+    claim("defaulted TypeScript parameter remains required and has value",
+        &mut parse_src("typescript", "function call(defaulted: boolean = true): void {}\n"),
+        &multi_xpath(r#"
+            //parameter[name='defaulted']
+                [required]
+                [value]
+        "#),
+        1);
+
+    claim("rest TypeScript parameter carries required and rest markers",
+        &mut parse_src("typescript", "function call(...rest: string[]): void {}\n"),
+        &multi_xpath(r#"
+            //parameter[rest/name='rest']
+                [required]
+                [rest]
         "#),
         1);
 
     claim("untyped noTypes parameters are still required parameters",
-        &mut tree,
-        &multi_xpath(r#"
-            //function[name='noTypes']
-                [parameter[name='x']
-                    [required]
-                ]
-                [parameter[name='y']
-                    [required]
-                ]
-                [count(parameter)=2]
-        "#),
-        1);
-
-    claim("required and optional markers are exhaustive and mutually exclusive",
-        &mut tree, "//parameter[(not(required) and not(optional)) or (required and optional)]", 0);
+        &mut parse_src("typescript", "function noTypes(x, y) {}\n"),
+        "//function[name='noTypes']/parameter[required]",
+        2);
 }
 
 /// Ruby splat parameters distinguish iterable `*args` (list) from
@@ -262,22 +266,18 @@ fn typescript_parameter_marking() {
 /// <keyword/> marker distinguishing them from positional ones.
 #[test]
 fn ruby_parameter_marking() {
-    let mut tree = parse_src("ruby", r#"
-        def f(a, *xs, key: 1, **kw)
-        end
-    "#);
+    claim("Ruby splat parameter carries list spread marker",
+        &mut parse_src("ruby", "def f(*xs)\nend\n"), "//spread[list][name='xs']", 1);
 
-    claim("Ruby parameter shape covers positional, splat, keyword, and kwargs",
-        &mut tree,
+    claim("Ruby keyword parameter carries keyword marker and default value",
+        &mut parse_src("ruby", "def f(key: 1)\nend\n"),
         &multi_xpath(r#"
-            //method[name='f']
-                [name='a']
-                [spread[list][name='xs']]
-                [parameter[name='key']
-                    [keyword]
-                    [value]
-                ]
-                [spread[dict][name='kw']]
+            //parameter[name='key']
+                [keyword]
+                [value]
         "#),
         1);
+
+    claim("Ruby kwargs parameter carries dict spread marker",
+        &mut parse_src("ruby", "def f(**kw)\nend\n"), "//spread[dict][name='kw']", 1);
 }

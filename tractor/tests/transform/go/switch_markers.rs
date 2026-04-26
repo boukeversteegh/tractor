@@ -7,27 +7,35 @@ use crate::support::semantic::*;
 /// marker so `//switch[type]` picks out every type switch.
 #[test]
 fn go() {
-    let mut tree = parse_src("go", r#"
+    claim("Go type switch carries type marker and switched value",
+        &mut parse_src("go", r#"
         package main
 
         func f(x interface{}) {
             switch x.(type) { case int: }
+        }
+    "#),
+        &multi_xpath(r#"
+            //switch
+                [type]
+                [value/name='x']
+                [type/name='int']
+        "#),
+        1);
+
+    claim("Go regular switch has no type marker",
+        &mut parse_src("go", r#"
+        package main
+
+        func f(x int) {
             switch x { case 1: }
         }
-    "#);
-
-    claim("Go function body keeps both switches flat and marks only the type switch",
-        &mut tree,
+    "#),
         &multi_xpath(r#"
-            //function[name='f']/body
-                [switch
-                    [type]
-                    [value/name='x']
-                    [type/name='int']]
-                [switch
-                    [not(type)]
-                    [value/name='x']
-                    [expression_case/value/int='1']]
+            //switch
+                [not(type)]
+                [value/name='x']
+                [expression_case/value/int='1']
         "#),
         1);
 }
