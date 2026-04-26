@@ -79,9 +79,36 @@ mod support;
 
 // ----- Language-specific quirks -------------------------------------------
 
-#[path = "transform/csharp.rs"] mod csharp;
-#[path = "transform/go.rs"]     mod go;
-#[path = "transform/java.rs"]   mod java;
-#[path = "transform/python.rs"] mod python;
-#[path = "transform/ruby.rs"]   mod ruby;
-#[path = "transform/rust.rs"]   mod rust;
+#[path = "transform/csharp"]
+mod csharp {
+    pub mod expression_statement;
+}
+
+#[path = "transform/go"]
+mod go {
+    pub mod spec_flattening;
+    pub mod struct_interface_hoist;
+    pub mod switch_markers;
+    pub mod type_declaration;
+}
+
+#[path = "transform/java"]
+mod java {
+    pub mod parenthesized_expression;
+}
+
+#[path = "transform/python"]
+mod python {
+    pub mod expression_list;
+}
+
+#[path = "transform/ruby"]
+mod ruby {
+    pub mod name_inlining;
+}
+
+#[path = "transform/rust"]
+mod rust {
+    pub mod match_expression;
+    pub mod struct_expression;
+}
