@@ -65,13 +65,22 @@ mod support;
 // ----- Cross-language categories ------------------------------------------
 
 #[path = "transform/accessors.rs"]   mod accessors;
+#[path = "transform/calls.rs"]       mod calls;
 #[path = "transform/collections.rs"] mod collections;
 #[path = "transform/comments.rs"]    mod comments;
 #[path = "transform/decorators.rs"]  mod decorators;
+#[path = "transform/errors.rs"]      mod errors;
 #[path = "transform/flat_lists.rs"]  mod flat_lists;
 #[path = "transform/functions.rs"]   mod functions;
+#[path = "transform/generics.rs"]    mod generics;
 #[path = "transform/if_else.rs"]     mod if_else;
+#[path = "transform/imports.rs"]     mod imports;
+#[path = "transform/literals.rs"]    mod literals;
+#[path = "transform/loops.rs"]       mod loops;
+#[path = "transform/members.rs"]     mod members;
 #[path = "transform/modifiers.rs"]   mod modifiers;
+#[path = "transform/operators.rs"]   mod operators;
+#[path = "transform/parameters.rs"]  mod parameters;
 #[path = "transform/patterns.rs"]    mod patterns;
 #[path = "transform/strings.rs"]     mod strings;
 #[path = "transform/types.rs"]       mod types;

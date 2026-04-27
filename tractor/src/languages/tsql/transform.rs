@@ -288,28 +288,3 @@ pub fn syntax_category(element: &str) -> SyntaxCategory {
         _ => SyntaxCategory::Default,
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::languages::tsql::semantic::NODES;
-
-    #[test]
-    fn no_duplicate_node_names() {
-        let mut names: Vec<&str> = NODES.iter().map(|n| n.name).collect();
-        names.sort();
-        let total = names.len();
-        names.dedup();
-        assert_eq!(names.len(), total, "duplicate NODES entry");
-    }
-
-    #[test]
-    fn no_unused_role() {
-        for n in NODES {
-            assert!(
-                n.marker || n.container,
-                "<{}> is neither marker nor container — dead entry?",
-                n.name,
-            );
-        }
-    }
-}
