@@ -703,12 +703,12 @@ fn project_totals_single_is_a_noop_with_warning() {
 fn set_snapshot_text_default() {
     cli_case!({
         tractor set "sample.yaml" -x "//database/host" --value "db.example.com";
-        expect => stdout_snapshot "formats/set/set.txt";
+        expect => stdout_snapshot "cli/set/set.snapshot.txt";
     })
-    .in_fixture("formats/set")
+    .in_fixture("cli/set")
     .temp_fixture()
     .strip_temp_prefix()
-    .replace_output("sample.yaml", "tests/integration/formats/set/sample.yaml")
+    .replace_output("sample.yaml", "tests/integration/cli/set/sample.yaml")
     .run();
 }
 
@@ -716,12 +716,12 @@ fn set_snapshot_text_default() {
 fn set_snapshot_text_unchanged() {
     cli_case!({
         tractor set "sample.yaml" -x "//database/host" --value "localhost";
-        expect => stdout_snapshot "formats/set/set-unchanged.txt";
+        expect => stdout_snapshot "cli/set/set-unchanged.snapshot.txt";
     })
-    .in_fixture("formats/set")
+    .in_fixture("cli/set")
     .temp_fixture()
     .strip_temp_prefix()
-    .replace_output("sample.yaml", "tests/integration/formats/set/sample.yaml")
+    .replace_output("sample.yaml", "tests/integration/cli/set/sample.yaml")
     .run();
 }
 
@@ -729,11 +729,11 @@ fn set_snapshot_text_unchanged() {
 fn set_snapshot_text_declarative_mode() {
     cli_case!({
         tractor set "sample.yaml" "database[host='db.example.com']";
-        expect => stdout_snapshot "formats/set/set-declarative.txt";
+        expect => stdout_snapshot "cli/set/set-declarative.snapshot.txt";
     })
-    .in_fixture("formats/set")
+    .in_fixture("cli/set")
     .temp_fixture()
-    .replace_output("sample.yaml", "tests/integration/formats/set/sample.yaml")
+    .replace_output("sample.yaml", "tests/integration/cli/set/sample.yaml")
     .run();
 }
 
@@ -741,9 +741,9 @@ fn set_snapshot_text_declarative_mode() {
 fn set_snapshot_stdout_mode() {
     cli_case!({
         tractor set "sample.yaml" -x "//database/host" --value "db.example.com" --stdout;
-        expect => stdout_snapshot "formats/set/set-stdout.txt";
+        expect => stdout_snapshot "cli/set/set-stdout.snapshot.txt";
     })
-    .in_fixture("formats/set")
+    .in_fixture("cli/set")
     .temp_fixture()
     .run();
 }
@@ -752,7 +752,7 @@ fn set_snapshot_stdout_mode() {
 fn set_snapshot_stdout_mode_from_stdin() {
     cli_case!({
         tractor set -l "yaml" "database[host='db.example.com']" --stdout;
-        expect => stdout_snapshot "formats/set/set-stdin-stdout.txt";
+        expect => stdout_snapshot "cli/set/set-stdin-stdout.snapshot.txt";
     })
     .stdin("database:\n  host: localhost\n  port: 5432\n")
     .run();
@@ -762,14 +762,14 @@ fn set_snapshot_stdout_mode_from_stdin() {
 fn set_snapshot_stdout_mode_multiple_files() {
     cli_case!({
         tractor set "sample-a.yaml" "sample-b.yaml" -x "//database/host" --value "db.example.com" --stdout;
-        expect => stdout_snapshot "formats/set/set-stdout-multi.txt";
+        expect => stdout_snapshot "cli/set/set-stdout-multi.snapshot.txt";
     })
-    .in_fixture("formats/set")
+    .in_fixture("cli/set")
     .temp_fixture()
     .seed_file("sample-a.yaml", "database:\n  host: localhost\n  port: 5432\n")
     .seed_file("sample-b.yaml", "database:\n  host: localhost\n  port: 5432\n")
-    .replace_output("sample-a.yaml", "tests/integration/formats/set/sample-a.yaml")
-    .replace_output("sample-b.yaml", "tests/integration/formats/set/sample-b.yaml")
+    .replace_output("sample-a.yaml", "tests/integration/cli/set/sample-a.yaml")
+    .replace_output("sample-b.yaml", "tests/integration/cli/set/sample-b.yaml")
     .run();
 }
 
@@ -777,24 +777,24 @@ fn set_snapshot_stdout_mode_multiple_files() {
 fn set_snapshot_json() {
     cli_case!({
         tractor set "sample.yaml" -x "//database/host" --value "db.example.com" -f "json";
-        expect => stdout_snapshot "formats/set/set.json";
+        expect => stdout_snapshot "cli/set/set.snapshot.json";
     })
-    .in_fixture("formats/set")
+    .in_fixture("cli/set")
     .temp_fixture()
-    .replace_output("sample.yaml", "tests/integration/formats/set/sample.yaml")
+    .replace_output("sample.yaml", "tests/integration/cli/set/sample.yaml")
     .run();
 }
 
 #[test]
 fn set_snapshot_xml() {
     cli_case!({
-        tractor run --config "set-config.yaml" -f "xml";
-        expect => stdout_snapshot "formats/set/set.xml";
+        tractor run --config "set.config.yaml" -f "xml";
+        expect => stdout_snapshot "cli/set/set.snapshot.xml";
     })
-    .in_fixture("formats/set")
+    .in_fixture("cli/set")
     .temp_fixture()
     .strip_temp_prefix()
-    .replace_output("sample.yaml", "tests/integration/formats/set/sample.yaml")
+    .replace_output("sample.yaml", "tests/integration/cli/set/sample.yaml")
     .run();
 }
 
@@ -802,44 +802,44 @@ fn set_snapshot_xml() {
 fn set_snapshot_stdout_xml() {
     cli_case!({
         tractor set "sample.yaml" -x "//database/host" --value "db.example.com" --stdout -f "xml";
-        expect => stdout_snapshot "formats/set/set-stdout.xml";
+        expect => stdout_snapshot "cli/set/set-stdout.snapshot.xml";
     })
-    .in_fixture("formats/set")
+    .in_fixture("cli/set")
     .temp_fixture()
-    .replace_output("sample.yaml", "tests/integration/formats/set/sample.yaml")
+    .replace_output("sample.yaml", "tests/integration/cli/set/sample.yaml")
     .run();
 }
 
 #[test]
 fn run_set_capture_duplicate_file_outputs_stay_rooted() {
     cli_case!({
-        tractor run --config "set-capture-duplicate.config.yaml" -f "xml";
-        expect => stdout_snapshot "formats/set/set-stdout-duplicate.xml";
+        tractor run --config "set-stdout-duplicate.config.yaml" -f "xml";
+        expect => stdout_snapshot "cli/set/set-stdout-duplicate.snapshot.xml";
     })
-    .in_fixture("formats/set")
-    .fixture_prefix("tests/integration/formats/set")
+    .in_fixture("cli/set")
+    .fixture_prefix("tests/integration/cli/set")
     .run();
 }
 
 #[test]
 fn run_set_capture_duplicate_file_outputs_stay_rooted_json() {
     cli_case!({
-        tractor run --config "set-capture-duplicate.config.yaml" -f "json";
-        expect => stdout_snapshot "formats/set/set-stdout-duplicate.json";
+        tractor run --config "set-stdout-duplicate.config.yaml" -f "json";
+        expect => stdout_snapshot "cli/set/set-stdout-duplicate.snapshot.json";
     })
-    .in_fixture("formats/set")
-    .fixture_prefix("tests/integration/formats/set")
+    .in_fixture("cli/set")
+    .fixture_prefix("tests/integration/cli/set")
     .run();
 }
 
 #[test]
 fn run_set_capture_duplicate_file_outputs_stay_rooted_yaml() {
     cli_case!({
-        tractor run --config "set-capture-duplicate.config.yaml" -f "yaml";
-        expect => stdout_snapshot "formats/set/set-stdout-duplicate.yaml";
+        tractor run --config "set-stdout-duplicate.config.yaml" -f "yaml";
+        expect => stdout_snapshot "cli/set/set-stdout-duplicate.snapshot.yaml";
     })
-    .in_fixture("formats/set")
-    .fixture_prefix("tests/integration/formats/set")
+    .in_fixture("cli/set")
+    .fixture_prefix("tests/integration/cli/set")
     .run();
 }
 
@@ -847,11 +847,11 @@ fn run_set_capture_duplicate_file_outputs_stay_rooted_yaml() {
 fn set_snapshot_stdout_json() {
     cli_case!({
         tractor set "sample.yaml" -x "//database/host" --value "db.example.com" --stdout -f "json";
-        expect => stdout_snapshot "formats/set/set-stdout.json";
+        expect => stdout_snapshot "cli/set/set-stdout.snapshot.json";
     })
-    .in_fixture("formats/set")
+    .in_fixture("cli/set")
     .temp_fixture()
-    .replace_output("sample.yaml", "tests/integration/formats/set/sample.yaml")
+    .replace_output("sample.yaml", "tests/integration/cli/set/sample.yaml")
     .run();
 }
 
@@ -859,11 +859,11 @@ fn set_snapshot_stdout_json() {
 fn set_snapshot_stdout_yaml() {
     cli_case!({
         tractor set "sample.yaml" -x "//database/host" --value "db.example.com" --stdout -f "yaml";
-        expect => stdout_snapshot "formats/set/set-stdout.yaml";
+        expect => stdout_snapshot "cli/set/set-stdout.snapshot.yaml";
     })
-    .in_fixture("formats/set")
+    .in_fixture("cli/set")
     .temp_fixture()
-    .replace_output("sample.yaml", "tests/integration/formats/set/sample.yaml")
+    .replace_output("sample.yaml", "tests/integration/cli/set/sample.yaml")
     .run();
 }
 

@@ -1,8 +1,0 @@
-tests/integration/formats/set/sample-a.yaml
-database:
-  host: db.example.com
-  port: 5432
-tests/integration/formats/set/sample-b.yaml
-database:
-  host: db.example.com
-  port: 5432

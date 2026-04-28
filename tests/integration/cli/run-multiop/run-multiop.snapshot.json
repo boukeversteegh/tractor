@@ -1,0 +1,95 @@
+{
+  "summary": {
+    "success": false,
+    "totals": {
+      "results": 5,
+      "files": 1,
+      "errors": 2,
+      "warnings": 1
+    }
+  },
+  "group": "command",
+  "results": [
+    {
+      "command": "check",
+      "group": "file",
+      "results": [
+        {
+          "file": "tests/integration/cli/run-multiop/../../sample.cs",
+          "results": [
+            {
+              "reason": "class declaration found",
+              "severity": "error",
+              "lines": [
+                "public class Calculator",
+                "{",
+                "    public int Add(int a, int b) { return a + b; }",
+                "    public int Subtract(int a, int b) { return a - b; }",
+                "    public int Multiply(int a, int b) { return a * b; }",
+                "}"
+              ],
+              "value": "public class Calculator\n{\n    public int Add(int a, int b) { return a + b; }\n    public int Subtract(int a, int b) { return a - b; }\n    public int Multiply(int a, int b) { return a * b; }\n}",
+              "rule_id": "no-class"
+            },
+            {
+              "reason": "class declaration found",
+              "severity": "error",
+              "lines": [
+                "public class Greeter",
+                "{",
+                "    public string Hello(string name) { return \"Hello, \" + name; }",
+                "    public string Goodbye(string name) { return \"Goodbye, \" + name; }",
+                "    public void Reset() { }",
+                "}"
+              ],
+              "value": "public class Greeter\n{\n    public string Hello(string name) { return \"Hello, \" + name; }\n    public string Goodbye(string name) { return \"Goodbye, \" + name; }\n    public void Reset() { }\n}",
+              "rule_id": "no-class"
+            },
+            {
+              "reason": "void method found",
+              "severity": "warning",
+              "lines": [
+                "    public void Reset() { }"
+              ],
+              "value": "public void Reset() { }",
+              "rule_id": "no-void-method"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "command": "test",
+      "group": "file",
+      "results": [
+        {
+          "file": "tests/integration/cli/run-multiop/../../sample.cs",
+          "results": [
+            {
+              "lines": [
+                "public class Calculator",
+                "{",
+                "    public int Add(int a, int b) { return a + b; }",
+                "    public int Subtract(int a, int b) { return a - b; }",
+                "    public int Multiply(int a, int b) { return a * b; }",
+                "}"
+              ],
+              "value": "public class Calculator\n{\n    public int Add(int a, int b) { return a + b; }\n    public int Subtract(int a, int b) { return a - b; }\n    public int Multiply(int a, int b) { return a * b; }\n}"
+            },
+            {
+              "lines": [
+                "public class Greeter",
+                "{",
+                "    public string Hello(string name) { return \"Hello, \" + name; }",
+                "    public string Goodbye(string name) { return \"Goodbye, \" + name; }",
+                "    public void Reset() { }",
+                "}"
+              ],
+              "value": "public class Greeter\n{\n    public string Hello(string name) { return \"Hello, \" + name; }\n    public string Goodbye(string name) { return \"Goodbye, \" + name; }\n    public void Reset() { }\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
