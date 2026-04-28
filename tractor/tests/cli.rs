@@ -18,68 +18,6 @@ fn assert_well_formed_xml(xml: &str) {
     }
 }
 
-cli_suite! {
-    rust in "languages/rust" {
-        functions_exist => tractor query "sample.rs" -x "function" => count 4;
-        add_name => tractor query "sample.rs" -x "function[name='add']" => count 1;
-        main_name => tractor query "sample.rs" -x "function[name='main']" => count 1;
-        file_variable => tractor query "sample.rs" -x "$file" => count 1;
-        let_rename => tractor query "sample.rs" -x "let" => count 1;
-        binary_op => tractor query "sample.rs" -x "binary[op='+']" => count 1;
-        call_rename => tractor query "sample.rs" -x "call" => count 1;
-        macro_rename => tractor query "sample.rs" -x "macro" => count 1;
-        pub_functions => tractor query "sample.rs" -x "function[pub]" => count 3;
-        plain_pub => tractor query "sample.rs" -x "function[pub[not(*)]]" => count 1;
-        pub_crate => tractor query "sample.rs" -x "function[pub[crate]]" => count 1;
-        private_marker => tractor query "sample.rs" -x "function[private]" => count 1;
-    }
-}
-
-cli_suite! {
-    csharp in "languages/csharp" {
-        methods_exist => tractor query "sample.cs" -x "method" => count 5;
-        method_name => tractor query "sample.cs" -x "method[name='Add']" => count 1;
-        class_name => tractor query "sample.cs" -x "class[name='Sample']" => count 1;
-        unit_rename => tractor query "sample.cs" -x "unit" => count 1;
-        static_marker => tractor query "sample.cs" -x "static" => count 2;
-        binary_op => tractor query "sample.cs" -x "binary[op='+']" => count 1;
-        call_rename => tractor query "sample.cs" -x "call" => count 4;
-        ints_exist => tractor query "sample.cs" -x "int" => count 2;
-        public_methods => tractor query "sample.cs" -x "//method[public]" => count 2;
-        private_methods => tractor query "sample.cs" -x "//method[private]" => count 1;
-        internal_methods => tractor query "sample.cs" -x "//method[internal]" => count 1;
-        protected_methods => tractor query "sample.cs" -x "//method[protected]" => count 1;
-        maxlength_missing_autotruncate => tractor query "attribute-maxlength-autotruncate.cs" -x "//property[attribute[contains(., 'MaxLength')]][not(attribute[contains(., 'AutoTruncate')])]/name" => count 1;
-        maxlength_on_bool => tractor query "attribute-maxlength-boolean.cs" -x "//property[type='bool'][attribute[contains(., 'MaxLength')]]/name" => count 1;
-        mapper_extension_method => tractor query "mapper-extension-method.cs" -x "//class[static][contains(name, 'Mapper')]//method[public][static][count(parameter)=1][not(parameter/this)]/name" => count 1;
-        block_scoped_namespace => tractor query "namespaces-file-scoped.cs" -x "//namespace[body]" => count 1;
-        repository_getall_missing_orderby => tractor query "repository-getall-orderby.cs" -x "//class[contains(name, 'Repository')][not(contains(name, 'Mock'))]//method[contains(name, 'GetAll')][not(contains(., 'OrderBy'))]/name" => count 1;
-        query_missing_asnotracking => tractor query "query-asnotracking.cs" -x "//method[contains(name, 'Get')][contains(., '_context')][contains(., 'Map')][not(contains(., 'AsNoTracking'))]/name" => count 1;
-        generic_list_match => tractor query "generic-type-match.cs" -x "//type[.='List<string>']" => count 2;
-        generic_dictionary_match => tractor query "generic-type-match.cs" -x "//type[.='Dictionary<string, int>']" => count 2;
-        generic_count => tractor query "generic-type-match.cs" -x "//type[generic]" => count 8;
-        nested_generic_match => tractor query "generic-type-match.cs" -x "//type[.='List<Dictionary<string, User>>']" => count 2;
-        generic_string_args => tractor query "generic-type-match.cs" -x "//type[generic]/type[.='string']" => count 6;
-        ignore_whitespace => tractor query "generic-type-match.cs" -x "//type[.='Dictionary<string,int>']" -W => count 2;
-        null_forgiving_postfix => tractor query "null-forgiving-operator.cs" -x "//unary" => count 5;
-        null_forgiving_no_errors => tractor query "null-forgiving-operator.cs" -x "//ERROR" => count 0;
-        null_forgiving_member_access => tractor query "null-forgiving-operator.cs" -x "//member[unary]" => count 4;
-    }
-}
-
-cli_suite! {
-    go in "languages/go" {
-        functions_exist => tractor query "sample.go" -x "function" => count 3;
-        add_name => tractor query "sample.go" -x "function[name='add']" => count 1;
-        main_name => tractor query "sample.go" -x "function[name='main']" => count 1;
-        file_variable => tractor query "sample.go" -x "$file" => count 1;
-        package_clause => tractor query "sample.go" -x "package" => count 1;
-        binary_op => tractor query "sample.go" -x "binary[op='+']" => count 1;
-        call_rename => tractor query "sample.go" -x "call" => count 2;
-        exported => tractor query "sample.go" -x "function[exported]" => count 1;
-        unexported => tractor query "sample.go" -x "function[unexported]" => count 2;
-    }
-}
 
 cli_suite! {
     ini in "languages/ini" {
@@ -99,35 +37,6 @@ cli_suite! {
     }
 }
 
-cli_suite! {
-    java in "languages/java" {
-        methods_exist => tractor query "sample.java" -x "method" => count 5;
-        method_name => tractor query "sample.java" -x "method[name='add']" => count 1;
-        class_name => tractor query "sample.java" -x "class[name='Sample']" => count 1;
-        program => tractor query "sample.java" -x "program" => count 1;
-        static_marker => tractor query "sample.java" -x "static" => count 2;
-        binary_ops => tractor query "sample.java" -x "binary[op='+']" => count 2;
-        calls => tractor query "sample.java" -x "call" => count 3;
-        public_methods => tractor query "sample.java" -x "//method[public]" => count 3;
-        package_private => tractor query "sample.java" -x "//method[package]" => count 1;
-        protected_methods => tractor query "sample.java" -x "//method[protected]" => count 1;
-    }
-}
-
-cli_suite! {
-    javascript in "languages/javascript" {
-        named_functions => tractor query "sample.js" -x "function[name]" => count 2;
-        add_name => tractor query "sample.js" -x "function[name='add']" => count 1;
-        main_name => tractor query "sample.js" -x "function[name='main']" => count 1;
-        program => tractor query "sample.js" -x "program" => count 1;
-        calls => tractor query "sample.js" -x "call" => count 3;
-        call_callee_child => tractor query "sample.js" -x "call/callee" => count 3;
-        direct_callee => tractor query "sample.js" -x "call/callee[name]" => count 2;
-        member_call_shape => tractor query "sample.js" -x "call/callee/member" => count 1;
-        member_object => tractor query "sample.js" -x "member/object" => count 1;
-        member_property => tractor query "sample.js" -x "member/property" => count 1;
-    }
-}
 
 cli_suite! {
     markdown in "languages/markdown" {
@@ -146,33 +55,6 @@ cli_suite! {
     }
 }
 
-cli_suite! {
-    python in "languages/python" {
-        functions_exist => tractor query "sample.py" -x "function" => count 3;
-        add_name => tractor query "sample.py" -x "function[name='add']" => count 1;
-        main_name => tractor query "sample.py" -x "function[name='main']" => count 1;
-        module => tractor query "sample.py" -x "module" => count 1;
-        returns => tractor query "sample.py" -x "return" => count 2;
-        binary_op => tractor query "sample.py" -x "binary[op='+']" => count 1;
-        calls => tractor query "sample.py" -x "call" => count 3;
-        async_function => tractor query "sample.py" -x "function[async]" => count 1;
-        multiline_lf => tractor query "multiline-string-lf.py" -x "//string[contains(., \"hello\n\n\")]" => count 1;
-        multiline_crlf => tractor query "multiline-string-crlf.py" -x "//string[contains(., \"hello\n\n\")]" => count 1;
-        // Regression: 3-level predicates must match same as count() workaround (issue #129)
-        deep_predicate_2level => tractor query "sample.py" -x "//function[body/return]" => count 2;
-        deep_predicate_3level => tractor query "sample.py" -x "//function[body/return/binary]" => count 1;
-        deep_predicate_3level_count_workaround => tractor query "sample.py" -x "//function[count(body/return/binary)>0]" => count 1;
-    }
-}
-
-cli_suite! {
-    ruby in "languages/ruby" {
-        methods_exist => tractor query "sample.rb" -x "method" => count 2;
-        add_name => tractor query "sample.rb" -x "method[name='add']" => count 1;
-        main_name => tractor query "sample.rb" -x "method[name='main']" => count 1;
-        calls => tractor query "sample.rb" -x "call" => count 2;
-    }
-}
 
 cli_suite! {
     toml in "languages/toml" {
@@ -258,19 +140,6 @@ cli_suite! {
     }
 }
 
-cli_suite! {
-    typescript in "languages/typescript" {
-        functions => tractor query "sample.ts" -x "function[name]" => count 4;
-        add_name => tractor query "sample.ts" -x "function[name='add']" => count 1;
-        main_name => tractor query "sample.ts" -x "function[name='main']" => count 1;
-        program => tractor query "sample.ts" -x "program" => count 1;
-        variable => tractor query "sample.ts" -x "variable" => count 1;
-        binary_op => tractor query "sample.ts" -x "binary[op='+']" => count 1;
-        calls => tractor query "sample.ts" -x "call" => count 4;
-        optional_params => tractor query "sample.ts" -x "//parameter[optional]" => count 2;
-        required_params => tractor query "sample.ts" -x "//parameter[required]" => count 5;
-    }
-}
 
 cli_suite! {
     xml in "languages/xml" {

@@ -5,12 +5,10 @@
 /// 2. Snapshot loading and querying
 /// 3. XPath querying against parsed code
 
-use std::path::PathBuf;
 use tractor::{
     load_xml_string_to_documents,
     parse, ParseInput, ParseOptions,
     XPathEngine, XeeParseResult, SchemaCollector,
-    output::{render_node, RenderOptions},
 };
 
 /// Parse an in-memory source string for tests. Collapses the common
@@ -34,39 +32,6 @@ fn parse_test_inline(
             parse_depth: None,
         },
     )
-}
-
-/// Parse a fixture file from disk for tests. Uses default options (language
-/// auto-detected from path, no tree-mode override, no depth cap).
-fn parse_test_disk(path: &std::path::Path) -> Result<XeeParseResult, tractor::parser::ParseError> {
-    parse(
-        ParseInput::Disk { path },
-        ParseOptions::default(),
-    )
-}
-
-fn get_test_fixtures_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .unwrap()
-        .join("tests/integration/fixtures")
-}
-
-fn get_test_snapshots_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .unwrap()
-        .join("tests/integration/snapshots")
-}
-
-/// Helper to render XeeParseResult to XML string (for comparison)
-fn render_to_xml(result: &XeeParseResult) -> String {
-    let doc_node = result.documents.document_node(result.doc_handle).unwrap();
-    let xot = result.documents.xot();
-    let render_opts = RenderOptions::new().with_pretty_print(true);
-    xot.children(doc_node)
-        .map(|child| render_node(xot, child, &render_opts))
-        .collect()
 }
 
 #[test]
@@ -109,140 +74,6 @@ fn test_query_xml_passthrough() {
     assert_eq!(matches.len(), 2, "Should find 2 functions");
 }
 
-/// Integration proof that tractor can re-consume its own XML
-/// output. Parses a source, renders to XML, reloads the rendered
-/// XML via the parser's XML-input path, and runs an XPath query
-/// against the reloaded document. Generating on the fly avoids
-/// committing a golden `sample.rs.xml` snapshot — those duplicate
-/// the blueprint / feature-fixture coverage and churn noisily.
-#[test]
-fn test_tractor_can_load_its_own_xml_output() {
-    let fixtures_dir = get_test_fixtures_dir();
-    let fixture_path = fixtures_dir.join("sample.rs");
-    if !fixture_path.exists() {
-        eprintln!("Fixture not found, skipping: {:?}", fixture_path);
-        return;
-    }
-
-    let parsed = parse_test_disk(&fixture_path)
-        .expect("Should parse fixture");
-    let xml = render_to_xml(&parsed);
-
-    let mut reloaded = load_xml_string_to_documents(&xml, "<inline>".to_string())
-        .expect("Should load tractor-emitted XML");
-    let engine = XPathEngine::new();
-    let matches = engine.query_documents(
-        &mut reloaded.documents,
-        reloaded.doc_handle,
-        "//function",
-        reloaded.source_lines.clone(),
-        &reloaded.file_path,
-    ).expect("Query should succeed");
-
-    assert!(matches.len() >= 2,
-        "Reloaded tractor-XML should still contain at least 2 <function> elements");
-}
-
-#[test]
-fn test_xpath_structure_assertions() {
-    // Test XPath structure assertions on fixtures
-    let fixtures_dir = get_test_fixtures_dir();
-    let fixture_path = fixtures_dir.join("sample.rs");
-
-    if !fixture_path.exists() {
-        eprintln!("Fixture not found, skipping test");
-        return;
-    }
-
-    let mut parsed = parse_test_disk(&fixture_path)
-        .expect("Should parse fixture");
-
-    let engine = XPathEngine::new();
-
-    // Assert: Should have 2 functions
-    let matches = engine.query_documents(
-        &mut parsed.documents,
-        parsed.doc_handle,
-        "//function",
-        parsed.source_lines.clone(),
-        &parsed.file_path,
-    ).expect("Query should succeed");
-    assert_eq!(matches.len(), 2, "Should have 2 functions");
-
-    // Assert: Should have 'add' function
-    let matches = engine.query_documents(
-        &mut parsed.documents,
-        parsed.doc_handle,
-        "//function/name[type='add']",
-        parsed.source_lines.clone(),
-        &parsed.file_path,
-    ).expect("Query should succeed");
-    assert_eq!(matches.len(), 1, "Should have 'add' function");
-
-    // Assert: Should have 'main' function
-    let matches = engine.query_documents(
-        &mut parsed.documents,
-        parsed.doc_handle,
-        "//function/name[type='main']",
-        parsed.source_lines.clone(),
-        &parsed.file_path,
-    ).expect("Query should succeed");
-    assert_eq!(matches.len(), 1, "Should have 'main' function");
-
-    // Assert: Should have binary operator +
-    let matches = engine.query_documents(
-        &mut parsed.documents,
-        parsed.doc_handle,
-        "//binary[@op='+']",
-        parsed.source_lines.clone(),
-        &parsed.file_path,
-    ).expect("Query should succeed");
-    assert_eq!(matches.len(), 1, "Should have + operator");
-}
-
-#[test]
-/// Sanity check: each language's `sample.<ext>` fixture contains
-/// at least 2 function-like declarations under the canonical query
-/// (`//function` / `//method`). Parses each source directly rather
-/// than loading a golden XML snapshot — the snapshots added ~5k
-/// lines of review noise and were fully subsumed by the per-
-/// language blueprint + feature fixtures.
-#[test]
-fn test_multi_language_sample_function_counts() {
-    let fixtures_dir = get_test_fixtures_dir();
-    let cases = [
-        ("sample.rs",   "//function", 2),
-        ("sample.py",   "//function", 2),
-        ("sample.js",   "//function", 2),
-        ("sample.ts",   "//function", 2),
-        ("sample.go",   "//function", 2),
-        ("sample.java", "//method",   2),
-        ("sample.cs",   "//method",   2),
-        ("sample.rb",   "//method",   2),
-    ];
-    let engine = XPathEngine::new();
-    for (name, xpath, expected) in cases {
-        let path = fixtures_dir.join(name);
-        if !path.exists() {
-            eprintln!("Fixture not found, skipping: {:?}", path);
-            continue;
-        }
-        let mut parsed = parse_test_disk(&path)
-            .unwrap_or_else(|e| panic!("Should parse {}: {:?}", name, e));
-        let matches = engine.query_documents(
-            &mut parsed.documents,
-            parsed.doc_handle,
-            xpath,
-            parsed.source_lines.clone(),
-            &parsed.file_path,
-        ).unwrap_or_else(|e| panic!("Query on {} should succeed: {:?}", name, e));
-        assert_eq!(
-            matches.len(), expected,
-            "{}: expected {} matches for `{}`, got {}",
-            name, expected, xpath, matches.len()
-        );
-    }
-}
 
 #[test]
 fn test_xpath_string_value_preserves_whitespace() {

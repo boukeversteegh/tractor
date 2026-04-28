@@ -18,7 +18,7 @@
 //! printed so we can see the damage without blocking CI. Flip the
 //! `ASSERT_INVARIANT` constant to `true` to make this a hard gate.
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use tractor::{parse, ParseInput, ParseOptions, TreeMode};
 use xot::{Xot, Node};
 
