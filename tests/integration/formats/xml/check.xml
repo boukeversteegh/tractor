@@ -10,23 +10,29 @@
   </summary>
   <group-by>file</group-by>
   <results>
-    <group file="tests/integration/formats/sample.cs">
-      <match line="1" column="1" end_line="5" end_column="2">
+    <group file="tests/integration/sample.cs">
+      <match line="2" column="1" end_line="7" end_column="2">
         <reason>class found</reason>
         <severity>error</severity>
         <lines>
-          <line>public class Foo</line>
+          <line>public class Calculator</line>
           <line>{</line>
-          <line>    public int Bar { get; set; }</line>
-          <line>    public void Baz() { }</line>
+          <line>    public int Add(int a, int b) { return a + b; }</line>
+          <line>    public int Subtract(int a, int b) { return a - b; }</line>
+          <line>    public int Multiply(int a, int b) { return a * b; }</line>
           <line>}</line>
         </lines>
       </match>
-      <match line="7" column="1" end_line="7" end_column="21">
+      <match line="9" column="1" end_line="14" end_column="2">
         <reason>class found</reason>
         <severity>error</severity>
         <lines>
-          <line>public class Qux { }</line>
+          <line>public class Greeter</line>
+          <line>{</line>
+          <line>    public string Hello(string name) { return "Hello, " + name; }</line>
+          <line>    public string Goodbye(string name) { return "Goodbye, " + name; }</line>
+          <line>    public void Reset() { }</line>
+          <line>}</line>
         </lines>
       </match>
     </group>

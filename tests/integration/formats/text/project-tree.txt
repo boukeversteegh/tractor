@@ -19,4 +19,6 @@ class[public]/
       │   └─ ... (19 children)
       ├─ method[public]/
       │   └─ ... (19 children)
+      ├─ method[public]/
+      │   └─ ... (7 children)
       └─ "}"

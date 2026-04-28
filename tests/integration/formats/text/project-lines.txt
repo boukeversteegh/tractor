@@ -1,6 +1,6 @@
-1 | public class Calculator
+2 | public class Calculator
                  ^~~~~~~~~~
 
-8 | public class Greeter
+9 | public class Greeter
                  ^~~~~~~
 

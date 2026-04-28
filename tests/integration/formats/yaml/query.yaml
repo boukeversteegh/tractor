@@ -1,16 +1,17 @@
 results:
-- file: tests/integration/formats/sample.cs
-  line: 1
+- file: tests/integration/sample.cs
+  line: 2
   tree:
     $type: class
     public: true
-    name: Foo
+    name: Calculator
     body:
-      $truncated: 15
-- file: tests/integration/formats/sample.cs
-  line: 7
+      $truncated: 72
+- file: tests/integration/sample.cs
+  line: 9
   tree:
     $type: class
     public: true
-    name: Qux
-    body: '{ }'
+    name: Greeter
+    body:
+      $truncated: 48

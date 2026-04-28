@@ -12,7 +12,7 @@
     "public": true,
     "name": "Greeter",
     "body": {
-      "$truncated": 40
+      "$truncated": 48
     }
   }
 ]

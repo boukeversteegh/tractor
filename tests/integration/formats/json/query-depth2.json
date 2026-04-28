@@ -4,9 +4,9 @@
       "tree": {
         "$type": "class",
         "public": true,
-        "name": "Foo",
+        "name": "Calculator",
         "body": {
-          "$truncated": 15
+          "$truncated": 72
         }
       }
     },
@@ -14,8 +14,10 @@
       "tree": {
         "$type": "class",
         "public": true,
-        "name": "Qux",
-        "body": "{ }"
+        "name": "Greeter",
+        "body": {
+          "$truncated": 48
+        }
       }
     }
   ]

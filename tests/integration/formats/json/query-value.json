@@ -1,10 +1,10 @@
 {
   "results": [
     {
-      "value": "public class Foo\n{\n    public int Bar { get; set; }\n    public void Baz() { }\n}"
+      "value": "public class Calculator\n{\n    public int Add(int a, int b) { return a + b; }\n    public int Subtract(int a, int b) { return a - b; }\n    public int Multiply(int a, int b) { return a * b; }\n}"
     },
     {
-      "value": "public class Qux { }"
+      "value": "public class Greeter\n{\n    public string Hello(string name) { return \"Hello, \" + name; }\n    public string Goodbye(string name) { return \"Goodbye, \" + name; }\n    public void Reset() { }\n}"
     }
   ]
 }

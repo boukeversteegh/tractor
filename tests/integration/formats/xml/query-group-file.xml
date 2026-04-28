@@ -2,18 +2,43 @@
 <report>
   <group-by>file</group-by>
   <results>
-    <group file="tests/integration/formats/sample.cs">
-      <match line="1" column="1" end_line="5" end_column="2">
+    <group file="tests/integration/sample.cs">
+      <match line="2" column="1" end_line="7" end_column="2">
         <tree>
           <class>
             <public/>
             public class
-            <name>Foo</name>
+            <name>Calculator</name>
             <body>
               {
-              <property>
-                <!-- ... (6 children) -->
-              </property>
+              <method>
+                <!-- ... (23 children) -->
+              </method>
+              <method>
+                <!-- ... (23 children) -->
+              </method>
+              <method>
+                <!-- ... (23 children) -->
+              </method>
+              }
+            </body>
+          </class>
+        </tree>
+      </match>
+      <match line="9" column="1" end_line="14" end_column="2">
+        <tree>
+          <class>
+            <public/>
+            public class
+            <name>Greeter</name>
+            <body>
+              {
+              <method>
+                <!-- ... (19 children) -->
+              </method>
+              <method>
+                <!-- ... (19 children) -->
+              </method>
               <method>
                 <!-- ... (7 children) -->
               </method>
@@ -22,18 +47,8 @@
           </class>
         </tree>
       </match>
-      <match line="7" column="1" end_line="7" end_column="21">
-        <tree>
-          <class>
-            <public/>
-            public class
-            <name>Qux</name>
-            <body>{ }</body>
-          </class>
-        </tree>
-      </match>
     </group>
-    <group file="tests/integration/formats/sample2.cs">
+    <group file="tests/integration/sample2.cs">
       <match line="1" column="1" end_line="4" end_column="2">
         <tree>
           <class>

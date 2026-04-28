@@ -1,18 +1,28 @@
 class[public]/
   ├─ "public class"
-  ├─ name = "Foo"
+  ├─ name = "Calculator"
   └─ body/
       ├─ "{"
-      ├─ property[public]/
-      │   └─ ... (6 children)
       ├─ method[public]/
-      │   └─ ... (7 children)
+      │   └─ ... (23 children)
+      ├─ method[public]/
+      │   └─ ... (23 children)
+      ├─ method[public]/
+      │   └─ ... (23 children)
       └─ "}"
 error: class found
 
 class[public]/
   ├─ "public class"
-  ├─ name = "Qux"
-  └─ body = "{ }"
+  ├─ name = "Greeter"
+  └─ body/
+      ├─ "{"
+      ├─ method[public]/
+      │   └─ ... (19 children)
+      ├─ method[public]/
+      │   └─ ... (19 children)
+      ├─ method[public]/
+      │   └─ ... (7 children)
+      └─ "}"
 error: class found
 2 errors in 1 file

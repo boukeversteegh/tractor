@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <report>
   <results>
-    <match file="tests/integration/formats/sample-classes.cs" line="1" column="1">
+    <match file="tests/integration/sample.cs" line="1" column="1">
       <tree>
         {
           "classes": [
@@ -17,7 +17,8 @@
               "name": "Greeter",
               "methods": [
                 "Hello",
-                "Goodbye"
+                "Goodbye",
+                "Reset"
               ]
             }
           ]

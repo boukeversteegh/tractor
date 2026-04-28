@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<match file="tests/integration/formats/sample-classes.cs" line="1" column="14" end_line="1" end_column="24">
+<match file="tests/integration/sample.cs" line="2" column="14" end_line="2" end_column="24">
   <value>Calculator</value>
 </match>

@@ -1,12 +1,13 @@
-tests/integration/formats/sample.cs:1
+tests/integration/sample.cs:2
 class[public]/
   ├─ "public class"
-  ├─ name = "Foo"
+  ├─ name = "Calculator"
   └─ body/
-      └─ ... (15 children)
+      └─ ... (72 children)
 
-tests/integration/formats/sample.cs:7
+tests/integration/sample.cs:9
 class[public]/
   ├─ "public class"
-  ├─ name = "Qux"
-  └─ body = "{ }"
+  ├─ name = "Greeter"
+  └─ body/
+      └─ ... (48 children)

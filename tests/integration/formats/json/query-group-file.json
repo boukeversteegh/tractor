@@ -2,32 +2,34 @@
   "group": "file",
   "results": [
     {
-      "file": "tests/integration/formats/sample.cs",
+      "file": "tests/integration/sample.cs",
       "results": [
         {
-          "line": 1,
+          "line": 2,
           "tree": {
             "$type": "class",
             "public": true,
-            "name": "Foo",
+            "name": "Calculator",
             "body": {
-              "$truncated": 15
+              "$truncated": 72
             }
           }
         },
         {
-          "line": 7,
+          "line": 9,
           "tree": {
             "$type": "class",
             "public": true,
-            "name": "Qux",
-            "body": "{ }"
+            "name": "Greeter",
+            "body": {
+              "$truncated": 48
+            }
           }
         }
       ]
     },
     {
-      "file": "tests/integration/formats/sample2.cs",
+      "file": "tests/integration/sample2.cs",
       "results": [
         {
           "line": 1,

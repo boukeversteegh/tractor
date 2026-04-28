@@ -1,24 +1,265 @@
 [
   {
-    "file": "tests/integration/formats/sample.cs",
-    "line": 1,
+    "file": "tests/integration/sample.cs",
+    "line": 2,
     "tree": {
       "$type": "class",
       "public": true,
-      "name": "Foo",
+      "name": "Calculator",
       "body": {
         "children": [
           {
-            "$type": "property",
+            "$type": "method",
             "public": true,
-            "type": {
-              "name": "int"
+            "returns": {
+              "type": {
+                "name": "int"
+              }
             },
-            "name": "Bar",
-            "accessors": [
-              "get;",
-              "set;"
-            ]
+            "name": "Add",
+            "parameters": [
+              {
+                "type": {
+                  "name": "int"
+                },
+                "name": "a"
+              },
+              {
+                "type": {
+                  "name": "int"
+                },
+                "name": "b"
+              }
+            ],
+            "body": {
+              "block": {
+                "children": [
+                  {
+                    "$type": "return",
+                    "children": [
+                      {
+                        "$type": "binary",
+                        "left": {
+                          "name": "a"
+                        },
+                        "right": {
+                          "name": "b"
+                        },
+                        "children": [
+                          {
+                            "$type": "op",
+                            "plus": true,
+                            "text": "+"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "$type": "method",
+            "public": true,
+            "returns": {
+              "type": {
+                "name": "int"
+              }
+            },
+            "name": "Subtract",
+            "parameters": [
+              {
+                "type": {
+                  "name": "int"
+                },
+                "name": "a"
+              },
+              {
+                "type": {
+                  "name": "int"
+                },
+                "name": "b"
+              }
+            ],
+            "body": {
+              "block": {
+                "children": [
+                  {
+                    "$type": "return",
+                    "children": [
+                      {
+                        "$type": "binary",
+                        "left": {
+                          "name": "a"
+                        },
+                        "right": {
+                          "name": "b"
+                        },
+                        "children": [
+                          {
+                            "$type": "op",
+                            "minus": true,
+                            "text": "-"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "$type": "method",
+            "public": true,
+            "returns": {
+              "type": {
+                "name": "int"
+              }
+            },
+            "name": "Multiply",
+            "parameters": [
+              {
+                "type": {
+                  "name": "int"
+                },
+                "name": "a"
+              },
+              {
+                "type": {
+                  "name": "int"
+                },
+                "name": "b"
+              }
+            ],
+            "body": {
+              "block": {
+                "children": [
+                  {
+                    "$type": "return",
+                    "children": [
+                      {
+                        "$type": "binary",
+                        "left": {
+                          "name": "a"
+                        },
+                        "right": {
+                          "name": "b"
+                        },
+                        "children": [
+                          {
+                            "$type": "op",
+                            "multiply": true,
+                            "text": "*"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "message": "hit"
+  },
+  {
+    "file": "tests/integration/sample.cs",
+    "line": 9,
+    "tree": {
+      "$type": "class",
+      "public": true,
+      "name": "Greeter",
+      "body": {
+        "children": [
+          {
+            "$type": "method",
+            "public": true,
+            "returns": {
+              "type": {
+                "name": "string"
+              }
+            },
+            "name": "Hello",
+            "parameters": {
+              "type": {
+                "name": "string"
+              },
+              "name": "name"
+            },
+            "body": {
+              "block": {
+                "children": [
+                  {
+                    "$type": "return",
+                    "children": [
+                      {
+                        "$type": "binary",
+                        "left": {
+                          "string": "\"Hello, \""
+                        },
+                        "right": {
+                          "name": "name"
+                        },
+                        "children": [
+                          {
+                            "$type": "op",
+                            "plus": true,
+                            "text": "+"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "$type": "method",
+            "public": true,
+            "returns": {
+              "type": {
+                "name": "string"
+              }
+            },
+            "name": "Goodbye",
+            "parameters": {
+              "type": {
+                "name": "string"
+              },
+              "name": "name"
+            },
+            "body": {
+              "block": {
+                "children": [
+                  {
+                    "$type": "return",
+                    "children": [
+                      {
+                        "$type": "binary",
+                        "left": {
+                          "string": "\"Goodbye, \""
+                        },
+                        "right": {
+                          "name": "name"
+                        },
+                        "children": [
+                          {
+                            "$type": "op",
+                            "plus": true,
+                            "text": "+"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
           },
           {
             "$type": "method",
@@ -28,24 +269,13 @@
                 "name": "void"
               }
             },
-            "name": "Baz",
+            "name": "Reset",
             "body": {
               "block": "{ }"
             }
           }
         ]
       }
-    },
-    "message": "hit"
-  },
-  {
-    "file": "tests/integration/formats/sample.cs",
-    "line": 7,
-    "tree": {
-      "$type": "class",
-      "public": true,
-      "name": "Qux",
-      "body": "{ }"
     },
     "message": "hit"
   }

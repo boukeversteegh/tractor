@@ -1,2 +1,2 @@
-tests/integration/formats/sample.cs:1
-tests/integration/formats/sample.cs:7
+tests/integration/sample.cs:2
+tests/integration/sample.cs:9

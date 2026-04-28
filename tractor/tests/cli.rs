@@ -517,7 +517,7 @@ fn project_results_preserves_grouping_in_json() {
     let result = cli_case!({
         tractor query "sample.cs" "sample2.cs" -x "//class/name" -v "file,value" -g "file" -p "results" -f "json";
     })
-    .in_fixture("formats")
+    .in_fixture("")
     .run();
     let json: Value = serde_json::from_str(&result.stdout).expect("grouped results projection should be json");
     let groups = json.as_array().expect("results projection should stay a sequence");
@@ -1549,7 +1549,7 @@ fn view_modifier_can_drop_lines_in_gcc_output() {
         "gcc",
         "-v=-lines",
     ])
-    .in_fixture("formats")
+    .in_fixture("")
     .capture();
 
     assert_eq!(1, result.status);
@@ -1573,28 +1573,28 @@ fn view_modifier_can_drop_lines_in_gcc_output() {
 fn view_modifier_can_add_source_and_remove_tree() {
     let without_tree = query_command("sample.cs", "//class/name")
         .arg("-v=-tree")
-        .in_fixture("formats")
+        .in_fixture("")
         .capture();
     assert_eq!(0, without_tree.status);
     assert!(!without_tree.stdout.contains('<'));
 
     let with_source = query_command("sample.cs", "//class/name")
         .arg("-v=+source")
-        .in_fixture("formats")
+        .in_fixture("")
         .capture();
     assert_eq!(0, with_source.status);
-    assert!(with_source.stdout.contains("public class Foo"));
-    assert!(with_source.stdout.contains("public class Qux"));
+    assert!(with_source.stdout.contains("public class Calculator"));
+    assert!(with_source.stdout.contains("public class Greeter"));
 }
 
 #[test]
 fn view_modifier_is_idempotent_for_existing_fields() {
     let default_out = query_command("sample.cs", "//class/name")
-        .in_fixture("formats")
+        .in_fixture("")
         .capture();
     let modified_out = query_command("sample.cs", "//class/name")
         .arg("-v=+tree")
-        .in_fixture("formats")
+        .in_fixture("")
         .capture();
 
     assert_eq!(0, default_out.status);
@@ -1605,7 +1605,7 @@ fn view_modifier_is_idempotent_for_existing_fields() {
 #[test]
 fn view_modifier_rejects_invalid_combinations() {
     command(["query", "sample.cs", "-x", "//class", "-v=tree,+source"])
-        .in_fixture("formats")
+        .in_fixture("")
         .assert_exit(1)
         .run();
 
@@ -1616,12 +1616,12 @@ fn view_modifier_rejects_invalid_combinations() {
         "//class/name",
         "-v=-file,-line,-tree",
     ])
-    .in_fixture("formats")
+    .in_fixture("")
     .assert_exit(1)
     .run();
 
     command(["query", "sample.cs", "-x", "//class", "-v=-nosuchfield"])
-        .in_fixture("formats")
+        .in_fixture("")
         .assert_exit(1)
         .run();
 }

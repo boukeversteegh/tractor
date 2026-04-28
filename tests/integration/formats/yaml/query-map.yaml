@@ -1,5 +1,5 @@
 results:
-- file: tests/integration/formats/sample-classes.cs
+- file: tests/integration/sample.cs
   line: 1
   tree:
     classes:
@@ -12,3 +12,4 @@ results:
       methods:
       - Hello
       - Goodbye
+      - Reset

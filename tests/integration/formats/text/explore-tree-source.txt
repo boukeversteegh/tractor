@@ -1,33 +1,24 @@
-unit/                                                                                 ┤    │ 
-  ├─ comment[leading] = "// Application entry point\n// Handles startup configuration"┤  1 ├ // Application entry point
-  │                                                                                   │  2 ├ // Handles startup configuration
-  ├─ import/                                                                          ┤    │ 
-  │   ├─ "using"                                                                      ┤  3 ├ using System;
-  │   ├─ name = "System"                                                              ┤    │ 
-  │   └─ ";"                                                                          ┤    │ 
-  └─ namespace/                                                                       ┤    │ 
-      │                                                                               │  4 │ 
-      ├─ "namespace"                                                                  ┤  5 ├ namespace Comments
-      ├─ name = "Comments"                                                            ┤    │ 
-      └─ body/                                                                        ┤    │ 
-          └─ ... (38 children)                                                        ┤    │ 
-                                                                                      │  6 ├ {
-                                                                                      │  7 ├     /// <summary>
-                                                                                      │  8 ├     /// Sample class demonstrating comment patterns
-                                                                                      │  9 ├     /// </summary>
-                                                                                      │ 10 ├     public class Demo
-                                                                                      │ 11 ├     {
-                                                                                      │ 12 ├         private int _count; // instance counter
-                                                                                      │ 13 │ 
-                                                                                      │ 14 ├         // Configuration settings
-                                                                                      │ 15 ├         // loaded from environment
-                                                                                      │ 16 ├         public string Config { get; set; }
-                                                                                      │ 17 │ 
-                                                                                      │ 18 ├         /* block comment */
-                                                                                      │ 19 ├         public void Run()
-                                                                                      │ 20 ├         {
-                                                                                      │ 21 ├             _count++;
-                                                                                      │ 22 ├         }
-                                                                                      │ 23 ├     }
-                                                                                      │ 24 ├ }
-                                                                                      │ 25 │ 
+unit/                                                                                        ┤    │ 
+  ├─ comment[leading] = "// Calculator and Greeter — shared sample for tractor format demos."┤  1 ├ // Calculator and Greeter — shared sample for tractor format demos.
+  ├─ class[public]/                                                                          ┤    │ 
+  │   ├─ "public class"                                                                      ┤  2 ├ public class Calculator
+  │   ├─ name = "Calculator"                                                                 ┤    │ 
+  │   └─ body/                                                                               ┤    │ 
+  │       └─ ... (72 children)                                                               ┤    │ 
+  └─ class[public]/                                                                          ┤    │ 
+      │                                                                                      │  3 ├ {
+      │                                                                                      │  4 ├     public int Add(int a, int b) { return a + b; }
+      │                                                                                      │  5 ├     public int Subtract(int a, int b) { return a - b; }
+      │                                                                                      │  6 ├     public int Multiply(int a, int b) { return a * b; }
+      │                                                                                      │  7 ├ }
+      │                                                                                      │  8 │ 
+      ├─ "public class"                                                                      ┤  9 ├ public class Greeter
+      ├─ name = "Greeter"                                                                    ┤    │ 
+      └─ body/                                                                               ┤    │ 
+          └─ ... (48 children)                                                               ┤    │ 
+                                                                                             │ 10 ├ {
+                                                                                             │ 11 ├     public string Hello(string name) { return "Hello, " + name; }
+                                                                                             │ 12 ├     public string Goodbye(string name) { return "Goodbye, " + name; }
+                                                                                             │ 13 ├     public void Reset() { }
+                                                                                             │ 14 ├ }
+                                                                                             │ 15 │ 

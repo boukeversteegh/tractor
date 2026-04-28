@@ -6,17 +6,23 @@ summary:
     errors: 2
 group: file
 results:
-- file: tests/integration/formats/sample.cs
+- file: tests/integration/sample.cs
   results:
   - reason: class found
     severity: error
     lines:
-    - public class Foo
+    - public class Calculator
     - '{'
-    - '    public int Bar { get; set; }'
-    - '    public void Baz() { }'
+    - '    public int Add(int a, int b) { return a + b; }'
+    - '    public int Subtract(int a, int b) { return a - b; }'
+    - '    public int Multiply(int a, int b) { return a * b; }'
     - '}'
   - reason: class found
     severity: error
     lines:
-    - public class Qux { }
+    - public class Greeter
+    - '{'
+    - '    public string Hello(string name) { return "Hello, " + name; }'
+    - '    public string Goodbye(string name) { return "Goodbye, " + name; }'
+    - '    public void Reset() { }'
+    - '}'

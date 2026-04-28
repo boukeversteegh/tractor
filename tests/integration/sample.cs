@@ -1,3 +1,4 @@
+// Calculator and Greeter — shared sample for tractor format demos.
 public class Calculator
 {
     public int Add(int a, int b) { return a + b; }
@@ -9,4 +10,5 @@ public class Greeter
 {
     public string Hello(string name) { return "Hello, " + name; }
     public string Goodbye(string name) { return "Goodbye, " + name; }
+    public void Reset() { }
 }

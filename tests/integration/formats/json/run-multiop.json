@@ -15,38 +15,44 @@
       "group": "file",
       "results": [
         {
-          "file": "tests/integration/formats/sample.cs",
+          "file": "tests/integration/sample.cs",
           "results": [
             {
               "reason": "class declaration found",
               "severity": "error",
               "lines": [
-                "public class Foo",
+                "public class Calculator",
                 "{",
-                "    public int Bar { get; set; }",
-                "    public void Baz() { }",
+                "    public int Add(int a, int b) { return a + b; }",
+                "    public int Subtract(int a, int b) { return a - b; }",
+                "    public int Multiply(int a, int b) { return a * b; }",
                 "}"
               ],
-              "value": "public class Foo\n{\n    public int Bar { get; set; }\n    public void Baz() { }\n}",
+              "value": "public class Calculator\n{\n    public int Add(int a, int b) { return a + b; }\n    public int Subtract(int a, int b) { return a - b; }\n    public int Multiply(int a, int b) { return a * b; }\n}",
+              "rule_id": "no-class"
+            },
+            {
+              "reason": "class declaration found",
+              "severity": "error",
+              "lines": [
+                "public class Greeter",
+                "{",
+                "    public string Hello(string name) { return \"Hello, \" + name; }",
+                "    public string Goodbye(string name) { return \"Goodbye, \" + name; }",
+                "    public void Reset() { }",
+                "}"
+              ],
+              "value": "public class Greeter\n{\n    public string Hello(string name) { return \"Hello, \" + name; }\n    public string Goodbye(string name) { return \"Goodbye, \" + name; }\n    public void Reset() { }\n}",
               "rule_id": "no-class"
             },
             {
               "reason": "void method found",
               "severity": "warning",
               "lines": [
-                "    public void Baz() { }"
+                "    public void Reset() { }"
               ],
-              "value": "public void Baz() { }",
+              "value": "public void Reset() { }",
               "rule_id": "no-void-method"
-            },
-            {
-              "reason": "class declaration found",
-              "severity": "error",
-              "lines": [
-                "public class Qux { }"
-              ],
-              "value": "public class Qux { }",
-              "rule_id": "no-class"
             }
           ]
         }
@@ -57,23 +63,29 @@
       "group": "file",
       "results": [
         {
-          "file": "tests/integration/formats/sample.cs",
+          "file": "tests/integration/sample.cs",
           "results": [
             {
               "lines": [
-                "public class Foo",
+                "public class Calculator",
                 "{",
-                "    public int Bar { get; set; }",
-                "    public void Baz() { }",
+                "    public int Add(int a, int b) { return a + b; }",
+                "    public int Subtract(int a, int b) { return a - b; }",
+                "    public int Multiply(int a, int b) { return a * b; }",
                 "}"
               ],
-              "value": "public class Foo\n{\n    public int Bar { get; set; }\n    public void Baz() { }\n}"
+              "value": "public class Calculator\n{\n    public int Add(int a, int b) { return a + b; }\n    public int Subtract(int a, int b) { return a - b; }\n    public int Multiply(int a, int b) { return a * b; }\n}"
             },
             {
               "lines": [
-                "public class Qux { }"
+                "public class Greeter",
+                "{",
+                "    public string Hello(string name) { return \"Hello, \" + name; }",
+                "    public string Goodbye(string name) { return \"Goodbye, \" + name; }",
+                "    public void Reset() { }",
+                "}"
               ],
-              "value": "public class Qux { }"
+              "value": "public class Greeter\n{\n    public string Hello(string name) { return \"Hello, \" + name; }\n    public string Goodbye(string name) { return \"Goodbye, \" + name; }\n    public void Reset() { }\n}"
             }
           ]
         }

@@ -1,2 +1,2 @@
-tests/integration/formats/sample-classes.cs
+tests/integration/sample.cs
 Calculator

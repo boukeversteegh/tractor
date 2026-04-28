@@ -1,28 +1,30 @@
 {
   "results": [
     {
-      "file": "tests/integration/formats/sample.cs",
-      "line": 1,
+      "file": "tests/integration/sample.cs",
+      "line": 2,
       "tree": {
         "$type": "class",
         "public": true,
-        "name": "Foo",
+        "name": "Calculator",
         "body": {
-          "$truncated": 15
+          "$truncated": 72
         }
       },
-      "message": "tests/integration/formats/sample.cs:1"
+      "message": "tests/integration/sample.cs:2"
     },
     {
-      "file": "tests/integration/formats/sample.cs",
-      "line": 7,
+      "file": "tests/integration/sample.cs",
+      "line": 9,
       "tree": {
         "$type": "class",
         "public": true,
-        "name": "Qux",
-        "body": "{ }"
+        "name": "Greeter",
+        "body": {
+          "$truncated": 48
+        }
       },
-      "message": "tests/integration/formats/sample.cs:7"
+      "message": "tests/integration/sample.cs:9"
     }
   ]
 }
