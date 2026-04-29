@@ -169,7 +169,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         post_transform: None,
         syntax_category: python::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
-        node_spec: Some(python::semantic::spec),
+        node_spec: Some(python::output::spec),
         is_programming: true,
         supports_data_tree: false,
         data_transforms: None,

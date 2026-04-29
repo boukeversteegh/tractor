@@ -10,7 +10,7 @@
 use crate::languages::rule::Rule;
 
 use super::input::PyKind;
-use super::semantic::*;
+use super::output::*;
 use super::transformations;
 
 pub fn rule(k: PyKind) -> Rule {

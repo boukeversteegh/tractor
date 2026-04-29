@@ -14,7 +14,7 @@ use crate::transform::{TransformAction, helpers::*};
 use crate::transform::generic_type::rewrite_generic_type;
 
 use super::input::PyKind;
-use super::semantic::*;
+use super::output::*;
 
 /// Kinds whose name happens to match our semantic vocabulary already
 /// (`interpolation`, `pair`, `tuple`) or grammar supertypes.
