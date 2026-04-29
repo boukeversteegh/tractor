@@ -281,7 +281,7 @@ fn rust_catalogue_covers_blueprint() {
 
 #[test]
 fn rust_node_metadata_is_well_formed() {
-    use tractor::languages::rust_lang::semantic::NODES;
+    use tractor::languages::rust_lang::output::NODES;
     let mut names: Vec<&str> = NODES.iter().map(|n| n.name).collect();
     names.sort();
     let total = names.len();
@@ -289,12 +289,12 @@ fn rust_node_metadata_is_well_formed() {
     assert_eq!(
         names.len(),
         total,
-        "tractor/src/languages/rust_lang/semantic.rs contains duplicate node names"
+        "tractor/src/languages/rust_lang/output.rs contains duplicate node names"
     );
     for node in NODES {
         assert!(
             node.marker || node.container,
-            "tractor/src/languages/rust_lang/semantic.rs: <{}> is neither marker nor container",
+            "tractor/src/languages/rust_lang/output.rs: <{}> is neither marker nor container",
             node.name
         );
     }

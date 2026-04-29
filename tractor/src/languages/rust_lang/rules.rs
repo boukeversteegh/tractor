@@ -9,7 +9,7 @@
 use crate::languages::rule::Rule;
 
 use super::input::RustKind;
-use super::semantic::*;
+use super::output::*;
 use super::transformations;
 
 /// Shorthand for the `default-access-then-rename` shape used by all 8

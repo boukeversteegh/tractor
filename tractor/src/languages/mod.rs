@@ -193,7 +193,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         post_transform: Some(collapse_conditionals),
         syntax_category: rust_lang::syntax_category,
         field_wrappings: RUST_FIELD_WRAPPINGS,
-        node_spec: Some(rust_lang::semantic::spec),
+        node_spec: Some(rust_lang::output::spec),
         is_programming: true,
         supports_data_tree: false,
         data_transforms: None,
