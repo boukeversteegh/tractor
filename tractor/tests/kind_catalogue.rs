@@ -33,18 +33,10 @@ struct Lang {
 }
 
 const LANGUAGES: &[Lang] = &[
-    // C#, Go, Java, PHP, Python, and Rust have migrated to the typed-enum +
-    // rule() shape — no `KindEntry` catalogue. Their blueprint coverage is
-    // checked by `<lang>_catalogue_covers_blueprint` below using
+    // C#, Go, Java, PHP, Python, Rust, and TypeScript have migrated to the
+    // typed-enum + rule() shape — no `KindEntry` catalogue. Their blueprint
+    // coverage is checked by `<lang>_catalogue_covers_blueprint` below using
     // `<Lang>Kind::from_str`.
-    Lang {
-        id: "typescript",
-        fixture: "blueprint.ts",
-        fixture_dir: "typescript",
-        catalogue_path: "tractor/src/languages/typescript/semantic.rs",
-        kinds: tractor::languages::typescript::semantic::KINDS,
-        nodes: tractor::languages::typescript::semantic::NODES,
-    },
     Lang {
         id: "ruby",
         fixture: "blueprint.rb",
@@ -131,11 +123,6 @@ fn check_node_names(lang: &Lang) {
     }
 }
 
-#[test]
-fn typescript_catalogue_covers_blueprint() {
-    check_lang(&LANGUAGES[0]);
-}
-
 /// Go-specific blueprint coverage check. Go has migrated to the
 /// typed-enum + rule() dispatcher, so coverage is asserted via
 /// `GoKind::from_str` rather than against a `KINDS` table.
@@ -199,12 +186,12 @@ fn go_node_metadata_is_well_formed() {
 
 #[test]
 fn ruby_catalogue_covers_blueprint() {
-    check_lang(&LANGUAGES[1]);
+    check_lang(&LANGUAGES[0]);
 }
 
 #[test]
 fn tsql_catalogue_covers_blueprint() {
-    check_lang(&LANGUAGES[2]);
+    check_lang(&LANGUAGES[1]);
 }
 
 /// Sanity check that every catalogue entry's `Rename` / `RenameWithMarker`
@@ -246,26 +233,56 @@ fn rename_targets_are_non_empty() {
 // `rule(CsKind) -> Rule` being exhaustive over the typed enum
 // (compile-time).
 
-/// Validate that every `KindEntry` in TypeScript's `KINDS` is a real
-/// grammar kind (`TsKind` variant). Catches dead entries.
+/// TypeScript-specific blueprint coverage check via `TsKind::from_str`.
 #[test]
-fn typescript_catalogue_entries_are_real_grammar_kinds() {
+fn typescript_catalogue_covers_blueprint() {
     use tractor::languages::typescript::input::TsKind;
-    use tractor::languages::typescript::semantic::KINDS;
+    use tractor::raw_kinds;
 
-    let mut dead: Vec<&str> = Vec::new();
-    for entry in KINDS {
-        if TsKind::from_str(entry.kind).is_none() {
-            dead.push(entry.kind);
+    let path = fixture_path("typescript", "blueprint.ts");
+    let source = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("failed to read fixture {}: {}", path.display(), e));
+
+    let kinds = raw_kinds("typescript", &source).expect("raw_kinds");
+    let mut missing: Vec<String> = Vec::new();
+    for k in &kinds {
+        if TsKind::from_str(k).is_none() {
+            missing.push(k.clone());
         }
     }
     assert!(
-        dead.is_empty(),
-        "typescript catalogue has {} dead entries (not in `TsKind`):\n{}\n\n\
-         Remove these from tractor/src/languages/typescript/semantic.rs::KINDS.",
-        dead.len(),
-        dead.iter().map(|k| format!("  - {}", k)).collect::<Vec<_>>().join("\n"),
+        missing.is_empty(),
+        "tree-sitter typescript emitted {} kind(s) not in `TsKind`:\n{}\n\n\
+         Regenerate `tractor/src/languages/typescript/input.rs` via \
+         `task gen:kinds` so the typed enum reflects the current grammar.",
+        missing.len(),
+        missing
+            .iter()
+            .map(|k| format!("  - {}", k))
+            .collect::<Vec<_>>()
+            .join("\n"),
     );
+}
+
+#[test]
+fn typescript_node_metadata_is_well_formed() {
+    use tractor::languages::typescript::semantic::NODES;
+    let mut names: Vec<&str> = NODES.iter().map(|n| n.name).collect();
+    names.sort();
+    let total = names.len();
+    names.dedup();
+    assert_eq!(
+        names.len(),
+        total,
+        "tractor/src/languages/typescript/semantic.rs contains duplicate node names"
+    );
+    for node in NODES {
+        assert!(
+            node.marker || node.container,
+            "tractor/src/languages/typescript/semantic.rs: <{}> is neither marker nor container",
+            node.name
+        );
+    }
 }
 
 /// Rust-specific blueprint coverage check. Rust has migrated to the
