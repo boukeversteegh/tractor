@@ -206,7 +206,6 @@ pub const KINDS: &[KindEntry] = &[
     KindEntry { kind: "block",                         handling: KindHandling::Flatten },
     KindEntry { kind: "break_statement",               handling: KindHandling::Rename(BREAK) },
     KindEntry { kind: "call_expression",               handling: KindHandling::Rename(CALL) },
-    KindEntry { kind: "case_clause",                   handling: KindHandling::Rename(CASE) },
     KindEntry { kind: "channel_type",                  handling: KindHandling::Rename(CHAN) },
     KindEntry { kind: "comment",                       handling: KindHandling::Custom },
     KindEntry { kind: "communication_case",            handling: KindHandling::Rename(CASE) },
@@ -219,7 +218,6 @@ pub const KINDS: &[KindEntry] = &[
     KindEntry { kind: "defer_statement",               handling: KindHandling::Rename(DEFER) },
     // `import . "pkg"` — tree-sitter emits a `dot` leaf token. Pass through.
     KindEntry { kind: "dot",                           handling: KindHandling::PassThrough },
-    KindEntry { kind: "else_clause",                   handling: KindHandling::Rename(ELSE) },
     KindEntry { kind: "escape_sequence",               handling: KindHandling::Flatten },
     KindEntry { kind: "expression_list",               handling: KindHandling::Flatten },
     KindEntry { kind: "expression_statement",          handling: KindHandling::Flatten },
@@ -280,7 +278,6 @@ pub const KINDS: &[KindEntry] = &[
     KindEntry { kind: "slice_type",                    handling: KindHandling::Rename(SLICE) },
     KindEntry { kind: "source_file",                   handling: KindHandling::Rename(FILE) },
     KindEntry { kind: "struct_type",                   handling: KindHandling::Rename(STRUCT) },
-    KindEntry { kind: "switch_statement",              handling: KindHandling::Rename(SWITCH) },
     KindEntry { kind: "true",                          handling: KindHandling::Rename(TRUE) },
     KindEntry { kind: "type_alias",                    handling: KindHandling::Custom },
     KindEntry { kind: "type_arguments",                handling: KindHandling::Rename(ARGUMENTS) },

@@ -248,6 +248,34 @@ fn rename_targets_are_non_empty() {
     }
 }
 
+/// Every entry in Go's catalogue must reference a kind the grammar
+/// actually emits, validated against the generated `GoKind` enum.
+/// Catches dead catalogue entries — kinds that the grammar has
+/// renamed or removed but that still sit in the catalogue.
+///
+/// This is the inverse of `go_catalogue_covers_blueprint` (which
+/// asserts every blueprint-emitted kind is in the catalogue).
+#[test]
+fn go_catalogue_entries_are_real_grammar_kinds() {
+    use tractor::languages::go::kind::GoKind;
+    use tractor::languages::go::semantic::KINDS;
+
+    let mut unknown: Vec<&str> = Vec::new();
+    for entry in KINDS {
+        if GoKind::from_str(entry.kind).is_none() {
+            unknown.push(entry.kind);
+        }
+    }
+    assert!(
+        unknown.is_empty(),
+        "Go catalogue references {} kind(s) the grammar doesn't emit:\n{}\n\n\
+         Either remove these entries from KINDS or regenerate \
+         `tractor/src/languages/go/kind.rs` if the grammar changed.",
+        unknown.len(),
+        unknown.iter().map(|k| format!("  - {}", k)).collect::<Vec<_>>().join("\n"),
+    );
+}
+
 /// Semantic node names should be unique and each node must have at
 /// least one role. This belongs with the catalogue checks rather
 /// than inside a language transform module.
