@@ -58,6 +58,30 @@ fn csharp_attribute_is_direct_child() {
         &mut tree, "//attribute[name='MaxLength']/name/*", 0);
 }
 
+/// C# attribute attachment is identical for fields and auto-properties:
+/// both forms place `<attribute>` as direct children of the declaration.
+/// Multi-line attribute groups (`[A]\n[B]`) attach to the same
+/// declaration as flat siblings — there is no per-line wrapper.
+#[test]
+fn csharp_attribute_on_property_and_multiline() {
+    claim("C# multi-line attributes on an auto-property attach as flat property children",
+        &mut parse_src("csharp", r#"
+            class UserRecord
+            {
+                [MaxLength(100)]
+                [AutoTruncate]
+                public string Name { get; set; }
+            }
+        "#),
+        &multi_xpath(r#"
+            //property[name='Name']
+                [count(attribute)=2]
+                [attribute[name='MaxLength'][argument/int='100']]
+                [attribute[name='AutoTruncate']]
+        "#),
+        1);
+}
+
 #[test]
 fn rust_attribute_is_flat() {
     // #[derive] surfaces as a sibling `<attribute>` at the file

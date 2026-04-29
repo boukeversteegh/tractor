@@ -124,6 +124,63 @@ fn python_unary() {
         1);
 }
 
+/// C#'s null-forgiving operator (`name!`) is a postfix unary that
+/// asserts a nullable expression is non-null at runtime. It MUST
+/// parse without an `<ERROR>` node and surface as `<unary>` so
+/// queries can find every site (e.g. for a "no null-forgiving"
+/// rule). The operator survives chained member access, method-call
+/// arguments, and binary expressions.
+#[test]
+fn csharp_null_forgiving_postfix_unary() {
+    let mut tree = parse_src("csharp", r#"
+        class T {
+            void M() {
+                var simple = nullable!.Length;
+                var chained = nullable!.ToUpper().Length;
+                Process(nullable!);
+                var combined = first!.Length + second!.Length;
+            }
+        }
+    "#);
+
+    claim("null-forgiving never produces an <ERROR> node",
+        &mut tree, "//ERROR", 0);
+
+    claim("each `name!` site renders as <unary> — five total in this body",
+        &mut tree, "//unary", 5);
+
+    claim("simple `name!.Length` exposes <member[unary]>",
+        &mut tree,
+        &multi_xpath(r#"
+            //variable[declarator/name='simple']
+                /declarator/member
+                    [unary/name='nullable']
+                    [name='Length']
+        "#),
+        1);
+
+    claim("chained `name!.A().B` keeps <unary> on the innermost member access",
+        &mut tree,
+        &multi_xpath(r#"
+            //variable[declarator/name='chained']
+                /declarator/member
+                    [call/member/unary/name='nullable']
+                    [name='Length']
+        "#),
+        1);
+
+    claim("binary `first!.Length + second!.Length` carries <unary> under both operands",
+        &mut tree,
+        &multi_xpath(r#"
+            //variable[declarator/name='combined']
+                /declarator/binary
+                    [op[plus]]
+                    [left/member[unary/name='first'][name='Length']]
+                    [right/member[unary/name='second'][name='Length']]
+        "#),
+        1);
+}
+
 // ---- compare --------------------------------------------------------------
 
 /// Python comparisons render as <compare> (a distinct element from
