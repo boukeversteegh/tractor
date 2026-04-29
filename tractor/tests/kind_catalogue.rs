@@ -300,6 +300,30 @@ fn rename_targets_are_non_empty() {
 // `rule(CsKind) -> Rule` being exhaustive over the typed enum
 // (compile-time).
 
+/// Validate that every `KindEntry` in Java's `KINDS` is a real
+/// grammar kind (`JavaKind` variant). Catches dead entries from
+/// historical grammar changes; will be removed once Java migrates
+/// to the typed-enum + rule() shape (Step 5).
+#[test]
+fn java_catalogue_entries_are_real_grammar_kinds() {
+    use tractor::languages::java::input::JavaKind;
+    use tractor::languages::java::semantic::KINDS;
+
+    let mut dead: Vec<&str> = Vec::new();
+    for entry in KINDS {
+        if JavaKind::from_str(entry.kind).is_none() {
+            dead.push(entry.kind);
+        }
+    }
+    assert!(
+        dead.is_empty(),
+        "java catalogue has {} dead entries (not in `JavaKind`):\n{}\n\n\
+         Remove these from tractor/src/languages/java/semantic.rs::KINDS.",
+        dead.len(),
+        dead.iter().map(|k| format!("  - {}", k)).collect::<Vec<_>>().join("\n"),
+    );
+}
+
 /// C#-specific blueprint coverage check. C# has migrated to the
 /// typed-enum + rule() dispatcher, so coverage is asserted via
 /// `CsKind::from_str` rather than against a `KINDS` table.
