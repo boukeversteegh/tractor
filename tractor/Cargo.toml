@@ -17,6 +17,11 @@ name = "update-snapshots"
 path = "src/bin/update_snapshots.rs"
 required-features = ["native"]
 
+[[bin]]
+name = "gen-kinds"
+path = "src/bin/gen_kinds.rs"
+required-features = ["native"]
+
 [features]
 default = ["native"]
 native = [
