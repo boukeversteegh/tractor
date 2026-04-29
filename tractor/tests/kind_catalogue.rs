@@ -73,14 +73,9 @@ const LANGUAGES: &[Lang] = &[
         kinds: tractor::languages::python::semantic::KINDS,
         nodes: tractor::languages::python::semantic::NODES,
     },
-    Lang {
-        id: "go",
-        fixture: "blueprint.go",
-        fixture_dir: "go",
-        catalogue_path: "tractor/src/languages/go/semantic.rs",
-        kinds: tractor::languages::go::semantic::KINDS,
-        nodes: tractor::languages::go::semantic::NODES,
-    },
+    // Go has migrated to the typed-enum + rule() shape — no `KindEntry`
+    // catalogue. Its blueprint coverage is checked by
+    // `go_catalogue_covers_blueprint` below using `GoKind::from_str`.
     Lang {
         id: "ruby",
         fixture: "blueprint.rb",
@@ -200,24 +195,80 @@ fn python_catalogue_covers_blueprint() {
     check_lang(&LANGUAGES[4]);
 }
 
+/// Go-specific blueprint coverage check. Go has migrated to the
+/// typed-enum + rule() dispatcher, so coverage is asserted via
+/// `GoKind::from_str` rather than against a `KINDS` table.
+///
+/// In the new shape, kind drift is caught at compile time (the
+/// exhaustive `rule(GoKind) -> Rule` match fails to build when
+/// `kind.rs` is regenerated with new variants). This runtime check
+/// adds the inverse guard: every kind tree-sitter actually emits when
+/// parsing the blueprint must be a known `GoKind` variant — i.e.
+/// `kind.rs` is up to date with the grammar.
 #[test]
 fn go_catalogue_covers_blueprint() {
-    check_lang(&LANGUAGES[5]);
+    use tractor::languages::go::kind::GoKind;
+    use tractor::raw_kinds;
+
+    let path = fixture_path("go", "blueprint.go");
+    let source = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("failed to read fixture {}: {}", path.display(), e));
+
+    let kinds = raw_kinds("go", &source).expect("raw_kinds");
+    let mut missing: Vec<String> = Vec::new();
+    for k in &kinds {
+        if GoKind::from_str(k).is_none() {
+            missing.push(k.clone());
+        }
+    }
+    assert!(
+        missing.is_empty(),
+        "tree-sitter go emitted {} kind(s) not in `GoKind`:\n{}\n\n\
+         Regenerate `tractor/src/languages/go/kind.rs` via \
+         `task gen:kinds` so the typed enum reflects the current grammar.",
+        missing.len(),
+        missing
+            .iter()
+            .map(|k| format!("  - {}", k))
+            .collect::<Vec<_>>()
+            .join("\n"),
+    );
+}
+
+#[test]
+fn go_node_metadata_is_well_formed() {
+    use tractor::languages::go::semantic::NODES;
+    let mut names: Vec<&str> = NODES.iter().map(|n| n.name).collect();
+    names.sort();
+    let total = names.len();
+    names.dedup();
+    assert_eq!(
+        names.len(),
+        total,
+        "tractor/src/languages/go/semantic.rs contains duplicate node names"
+    );
+    for node in NODES {
+        assert!(
+            node.marker || node.container,
+            "tractor/src/languages/go/semantic.rs: <{}> is neither marker nor container",
+            node.name
+        );
+    }
 }
 
 #[test]
 fn ruby_catalogue_covers_blueprint() {
-    check_lang(&LANGUAGES[6]);
+    check_lang(&LANGUAGES[5]);
 }
 
 #[test]
 fn php_catalogue_covers_blueprint() {
-    check_lang(&LANGUAGES[7]);
+    check_lang(&LANGUAGES[6]);
 }
 
 #[test]
 fn tsql_catalogue_covers_blueprint() {
-    check_lang(&LANGUAGES[8]);
+    check_lang(&LANGUAGES[7]);
 }
 
 /// Sanity check that every catalogue entry's `Rename` / `RenameWithMarker`
@@ -248,33 +299,10 @@ fn rename_targets_are_non_empty() {
     }
 }
 
-/// Every entry in Go's catalogue must reference a kind the grammar
-/// actually emits, validated against the generated `GoKind` enum.
-/// Catches dead catalogue entries — kinds that the grammar has
-/// renamed or removed but that still sit in the catalogue.
-///
-/// This is the inverse of `go_catalogue_covers_blueprint` (which
-/// asserts every blueprint-emitted kind is in the catalogue).
-#[test]
-fn go_catalogue_entries_are_real_grammar_kinds() {
-    use tractor::languages::go::kind::GoKind;
-    use tractor::languages::go::semantic::KINDS;
-
-    let mut unknown: Vec<&str> = Vec::new();
-    for entry in KINDS {
-        if GoKind::from_str(entry.kind).is_none() {
-            unknown.push(entry.kind);
-        }
-    }
-    assert!(
-        unknown.is_empty(),
-        "Go catalogue references {} kind(s) the grammar doesn't emit:\n{}\n\n\
-         Either remove these entries from KINDS or regenerate \
-         `tractor/src/languages/go/kind.rs` if the grammar changed.",
-        unknown.len(),
-        unknown.iter().map(|k| format!("  - {}", k)).collect::<Vec<_>>().join("\n"),
-    );
-}
+// Removed: `go_catalogue_entries_are_real_grammar_kinds`. That test
+// validated the old `KINDS` array against `GoKind`; with `KINDS`
+// gone, the equivalent guarantee comes from `rule(GoKind) -> Rule`
+// being exhaustive over the typed enum (compile-time).
 
 /// Semantic node names should be unique and each node must have at
 /// least one role. This belongs with the catalogue checks rather
