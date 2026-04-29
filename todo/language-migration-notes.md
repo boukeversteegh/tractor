@@ -101,8 +101,50 @@ TODO commit needed.
   The Custom `method_declaration` handler does default-access +
   return-type wrapping + rename.
 
-### PHP
-(not started)
+### PHP — COMPLETE
+
+Commits (chronological):
+
+- `49a1ce1` — Step 1: generate PhpKind enum (159 kinds).
+- `b278333` — Step 2: validate catalogue against PhpKind, drop 6
+  dead entries (`anonymous_function_creation_expression`,
+  `class_modifier`, `elseif_clause`, `exit_intrinsic`,
+  `formal_parameter`, `type_cast_expression`).
+- `9de906f` — Step 3: rules.rs + transformations.rs (uses
+  promoted `Rule::DefaultAccessThenRename` for method + property,
+  PHP's class members default to public).
+- `5ef3dbe` — Step 4: swap dispatcher to rule()-driven (deletes
+  292 lines from transform.rs).
+- `4c91b40` — Step 5: drop KINDS / rename_target.
+- `07f7e9f` — Step 6: rename semantic.rs → output.rs.
+
+Step 7 TODOs were inlined into rules.rs during Step 3 (10+
+groupings: nullsafe operators, heredoc/nowdoc, intersection-types,
+anonymous-class, update/augmented assignment, special-statements,
+php-specific values like error_suppression / shell_command,
+declaration variants, cast-type / dynamic-variable / text,
+traits-use clauses, property-hooks).
+
+#### PHP-specific notes
+
+- **PHP grammar exposes `PHP_NODE_TYPES`** (not `NODE_TYPES`) at
+  the crate root since the crate ships two grammars (PHP and
+  PHP_only). The `LangCodegen` struct already takes any
+  `&'static str`, so no infrastructure change needed.
+- **PHP's `default_access_for_declaration` is the simplest of the
+  three users so far** (C#, Java, PHP): always returns
+  `Some(PUBLIC)` when no visibility marker is present. Class
+  members default to public regardless of enclosing scope.
+- **PHP's `name_wrapper` is more involved than other languages**:
+  variable_name (`$foo`) and qualified_name (`App\Hello\Greeter`)
+  need distinct inlining/flattening logic. Single-element child
+  with namespace_name / qualified_name kind triggers Flatten so
+  segments hoist to the enclosing namespace/use. Multiple element
+  children also Flatten (qualified-name segments + separators).
+- **PHP has many TODO passthroughs** (~50) — the grammar has lots
+  of niche kinds (heredoc/nowdoc, anonymous class, nullsafe
+  operators, property hooks, error suppression, shell command,
+  intersection types, etc.). Each is a small isolated PR.
 
 ### Python
 (not started)
