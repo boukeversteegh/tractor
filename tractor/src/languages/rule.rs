@@ -48,6 +48,20 @@ pub enum Rule {
     /// Used by binary / unary / assignment expressions across several
     /// languages.
     ExtractOpThenRename(&'static str),
+    /// If the node lacks an explicit access modifier (per the language-
+    /// specific `default_access` resolver), prepend a default-access
+    /// marker. Then rename to `to`. Used for declaration kinds (class,
+    /// interface, method, field, …) where languages have implicit
+    /// access defaults.
+    ///
+    /// `default_access(xot, node)` returns:
+    ///   - `Some(marker_name)` if the node lacks an access modifier
+    ///     and should get the given default marker
+    ///   - `None` if the node already has an access modifier
+    DefaultAccessThenRename {
+        to: &'static str,
+        default_access: fn(&Xot, XotNode) -> Option<&'static str>,
+    },
     /// Run the given handler. The function owns the renaming, child
     /// reshaping, and `TransformAction` choice.
     Custom(fn(&mut Xot, XotNode) -> Result<TransformAction, xot::Error>),
@@ -78,6 +92,13 @@ pub fn dispatch(
         }
         Rule::ExtractOpThenRename(to) => {
             extract_operator(xot, node)?;
+            rename(xot, node, to);
+            Ok(TransformAction::Continue)
+        }
+        Rule::DefaultAccessThenRename { to, default_access } => {
+            if let Some(marker) = default_access(xot, node) {
+                prepend_empty_element(xot, node, marker)?;
+            }
             rename(xot, node, to);
             Ok(TransformAction::Continue)
         }

@@ -291,80 +291,33 @@ pub fn postfix_unary_expression(
 }
 
 // ---------------------------------------------------------------------
-// Declaration handlers — all share the "prepend default access marker
-// if none present, then rename" shape but pick a different rename
-// target. The default-access logic itself depends on parent kind
-// (interface members → public; class/struct/record members → private;
-// top-level types → internal), see `default_access_modifier`.
-//
-// Could be promoted to a shared `Rule::DefaultAccessThenRename`
-// variant once Java migrates and exhibits the same pattern with
-// language-specific defaults. Until then keep the per-kind functions.
+// Default-access resolver consumed by `Rule::DefaultAccessThenRename`.
+// All 9 C# declaration kinds (class / struct / interface / enum /
+// record / method / constructor / property / field) use this shape via
+// the shared rule variant; the language-specific bit lives here.
 // ---------------------------------------------------------------------
 
-pub fn class_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    default_access_then_rename(xot, node, CLASS)
-}
-
-pub fn struct_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    default_access_then_rename(xot, node, STRUCT)
-}
-
-pub fn interface_declaration(
-    xot: &mut Xot,
+/// Returns `Some(marker_name)` when the declaration node has no
+/// explicit access modifier and should receive a default marker;
+/// `None` when an access modifier is already present.
+///
+/// The default depends on enclosing scope (interface members → public;
+/// class/struct/record members → private; top-level types → internal),
+/// see `default_access_modifier`.
+pub fn default_access_for_declaration(
+    xot: &Xot,
     node: XotNode,
-) -> Result<TransformAction, xot::Error> {
-    default_access_then_rename(xot, node, INTERFACE)
-}
-
-pub fn enum_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    default_access_then_rename(xot, node, ENUM)
-}
-
-pub fn record_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    default_access_then_rename(xot, node, RECORD)
-}
-
-pub fn method_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    default_access_then_rename(xot, node, METHOD)
-}
-
-pub fn constructor_declaration(
-    xot: &mut Xot,
-    node: XotNode,
-) -> Result<TransformAction, xot::Error> {
-    default_access_then_rename(xot, node, CONSTRUCTOR)
-}
-
-pub fn property_declaration(
-    xot: &mut Xot,
-    node: XotNode,
-) -> Result<TransformAction, xot::Error> {
-    default_access_then_rename(xot, node, PROPERTY)
-}
-
-pub fn field_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    default_access_then_rename(xot, node, FIELD)
-}
-
-// ---------------------------------------------------------------------
-// Local helpers — used by the handlers above. Mirror the same helpers
-// in `transform.rs`; once the dispatcher swap lands and the match-
-// based path is gone, the originals there can be deleted.
-// ---------------------------------------------------------------------
-
-fn default_access_then_rename(
-    xot: &mut Xot,
-    node: XotNode,
-    to: &'static str,
-) -> Result<TransformAction, xot::Error> {
-    if !has_access_modifier_child(xot, node) {
-        let default = default_access_modifier(xot, node);
-        prepend_empty_element(xot, node, default)?;
+) -> Option<&'static str> {
+    if has_access_modifier_child(xot, node) {
+        None
+    } else {
+        Some(default_access_modifier(xot, node))
     }
-    rename(xot, node, to);
-    Ok(TransformAction::Continue)
 }
+
+// ---------------------------------------------------------------------
+// Local helpers used by `default_access_for_declaration`.
+// ---------------------------------------------------------------------
 
 fn is_named_declaration(kind: &str) -> bool {
     matches!(

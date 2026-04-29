@@ -21,6 +21,16 @@ use super::input::CsKind;
 use super::output::*;
 use super::transformations;
 
+/// Shorthand for the `default-access-then-rename` shape used by all 9
+/// C# declaration kinds. Bakes in C#'s default-access resolver so the
+/// rule arms read as data.
+fn da(to: &'static str) -> Rule {
+    Rule::DefaultAccessThenRename {
+        to,
+        default_access: transformations::default_access_for_declaration,
+    }
+}
+
 pub fn rule(k: CsKind) -> Rule {
     use Rule::*;
     match k {
@@ -71,28 +81,31 @@ pub fn rule(k: CsKind) -> Rule {
         | CsKind::StringContent
         | CsKind::StringLiteralContent => Flatten { distribute_field: None },
 
+        // ---- DefaultAccessThenRename — declarations with implicit
+        //      access modifier (see `transformations::default_access_for_declaration`).
+        CsKind::ClassDeclaration       => da(CLASS),
+        CsKind::ConstructorDeclaration => da(CONSTRUCTOR),
+        CsKind::EnumDeclaration        => da(ENUM),
+        CsKind::FieldDeclaration       => da(FIELD),
+        CsKind::InterfaceDeclaration   => da(INTERFACE),
+        CsKind::MethodDeclaration      => da(METHOD),
+        CsKind::PropertyDeclaration    => da(PROPERTY),
+        CsKind::RecordDeclaration      => da(RECORD),
+        CsKind::StructDeclaration      => da(STRUCT),
+
         // ---- Custom (language-specific logic in transformations.rs) ---
         CsKind::AccessorDeclaration           => Custom(transformations::accessor_declaration),
-        CsKind::ClassDeclaration              => Custom(transformations::class_declaration),
         CsKind::Comment                       => Custom(transformations::comment),
         CsKind::ConditionalExpression         => Custom(transformations::conditional_expression),
-        CsKind::ConstructorDeclaration        => Custom(transformations::constructor_declaration),
-        CsKind::EnumDeclaration               => Custom(transformations::enum_declaration),
-        CsKind::FieldDeclaration              => Custom(transformations::field_declaration),
         CsKind::GenericName                   => Custom(transformations::generic_name),
         CsKind::Identifier                    => Custom(transformations::identifier),
         CsKind::IfStatement                   => Custom(transformations::if_statement),
         CsKind::ImplicitType                  => Custom(transformations::implicit_type),
-        CsKind::InterfaceDeclaration          => Custom(transformations::interface_declaration),
         CsKind::InterpolatedStringExpression  => Custom(transformations::interpolated_string_expression),
-        CsKind::MethodDeclaration             => Custom(transformations::method_declaration),
         CsKind::Modifier                      => Custom(transformations::modifier),
         CsKind::NullableType                  => Custom(transformations::nullable_type),
         CsKind::PostfixUnaryExpression        => Custom(transformations::postfix_unary_expression),
         CsKind::PredefinedType                => Custom(transformations::predefined_type),
-        CsKind::PropertyDeclaration           => Custom(transformations::property_declaration),
-        CsKind::RecordDeclaration             => Custom(transformations::record_declaration),
-        CsKind::StructDeclaration             => Custom(transformations::struct_declaration),
         CsKind::VariableDeclaration           => Custom(transformations::variable_declaration),
 
         // `where T : new()` / constraint-clause kinds — consumed by the
