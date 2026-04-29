@@ -14,52 +14,67 @@ use serde_json::Value;
 
 struct LangCodegen {
     enum_name: &'static str,
-    node_types: &'static str,
+    /// One or more `node-types.json` source strings. Multiple sources
+    /// are unioned — used by tree-sitter crates that ship sibling
+    /// grammars (e.g. typescript + tsx) so the typed enum covers
+    /// every kind any flavor can emit.
+    node_types_sources: &'static [&'static str],
     output_path: &'static str,
 }
 
 const LANGUAGES: &[LangCodegen] = &[
     LangCodegen {
         enum_name: "GoKind",
-        node_types: tree_sitter_go::NODE_TYPES,
+        node_types_sources: &[tree_sitter_go::NODE_TYPES],
         output_path: "tractor/src/languages/go/input.rs",
     },
     LangCodegen {
         enum_name: "CsKind",
-        node_types: tree_sitter_c_sharp::NODE_TYPES,
+        node_types_sources: &[tree_sitter_c_sharp::NODE_TYPES],
         output_path: "tractor/src/languages/csharp/input.rs",
     },
     LangCodegen {
         enum_name: "JavaKind",
-        node_types: tree_sitter_java::NODE_TYPES,
+        node_types_sources: &[tree_sitter_java::NODE_TYPES],
         output_path: "tractor/src/languages/java/input.rs",
     },
     LangCodegen {
         enum_name: "PhpKind",
-        node_types: tree_sitter_php::PHP_NODE_TYPES,
+        node_types_sources: &[tree_sitter_php::PHP_NODE_TYPES],
         output_path: "tractor/src/languages/php/input.rs",
     },
     LangCodegen {
         enum_name: "PyKind",
-        node_types: tree_sitter_python::NODE_TYPES,
+        node_types_sources: &[tree_sitter_python::NODE_TYPES],
         output_path: "tractor/src/languages/python/input.rs",
     },
     LangCodegen {
         enum_name: "RustKind",
-        node_types: tree_sitter_rust::NODE_TYPES,
+        node_types_sources: &[tree_sitter_rust::NODE_TYPES],
         output_path: "tractor/src/languages/rust_lang/input.rs",
     },
     LangCodegen {
         enum_name: "TsKind",
-        node_types: tree_sitter_typescript::TYPESCRIPT_NODE_TYPES,
+        // Union of the typescript + tsx grammars so JSX kinds are
+        // covered too (e.g. `jsx_element`, `jsx_attribute`). Both
+        // dispatch through the same `typescript::transform`.
+        node_types_sources: &[
+            tree_sitter_typescript::TYPESCRIPT_NODE_TYPES,
+            tree_sitter_typescript::TSX_NODE_TYPES,
+        ],
         output_path: "tractor/src/languages/typescript/input.rs",
     },
 ];
 
 fn main() -> Result<()> {
     for lang in LANGUAGES {
-        let kinds = collect_named_kinds(lang.node_types)
-            .with_context(|| format!("parsing node-types.json for {}", lang.enum_name))?;
+        let mut union = BTreeSet::new();
+        for src in lang.node_types_sources {
+            let part = collect_named_kinds(src)
+                .with_context(|| format!("parsing node-types.json for {}", lang.enum_name))?;
+            union.extend(part);
+        }
+        let kinds: Vec<String> = union.into_iter().collect();
         let source = render_enum(lang.enum_name, &kinds);
         write_if_changed(lang.output_path, &source)?;
         println!("{} ({} kinds)", lang.output_path, kinds.len());
