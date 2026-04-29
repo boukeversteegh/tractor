@@ -229,7 +229,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         post_transform: Some(collapse_conditionals),
         syntax_category: php::syntax_category,
         field_wrappings: COMMON_FIELD_WRAPPINGS,
-        node_spec: Some(php::semantic::spec),
+        node_spec: Some(php::output::spec),
         is_programming: true,
         supports_data_tree: false,
         data_transforms: None,

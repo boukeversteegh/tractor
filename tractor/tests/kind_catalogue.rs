@@ -309,7 +309,7 @@ fn php_catalogue_covers_blueprint() {
 
 #[test]
 fn php_node_metadata_is_well_formed() {
-    use tractor::languages::php::semantic::NODES;
+    use tractor::languages::php::output::NODES;
     let mut names: Vec<&str> = NODES.iter().map(|n| n.name).collect();
     names.sort();
     let total = names.len();
@@ -317,12 +317,12 @@ fn php_node_metadata_is_well_formed() {
     assert_eq!(
         names.len(),
         total,
-        "tractor/src/languages/php/semantic.rs contains duplicate node names"
+        "tractor/src/languages/php/output.rs contains duplicate node names"
     );
     for node in NODES {
         assert!(
             node.marker || node.container,
-            "tractor/src/languages/php/semantic.rs: <{}> is neither marker nor container",
+            "tractor/src/languages/php/output.rs: <{}> is neither marker nor container",
             node.name
         );
     }

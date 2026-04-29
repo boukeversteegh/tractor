@@ -18,7 +18,7 @@
 use crate::languages::rule::Rule;
 
 use super::input::PhpKind;
-use super::semantic::*;
+use super::output::*;
 use super::transformations;
 
 /// Shorthand for the `default-access-then-rename` shape used by the 2
