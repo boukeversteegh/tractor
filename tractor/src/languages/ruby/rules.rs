@@ -9,7 +9,7 @@
 use crate::languages::rule::Rule;
 
 use super::input::RubyKind;
-use super::semantic::*;
+use super::output::*;
 use super::transformations;
 
 pub fn rule(k: RubyKind) -> Rule {

@@ -217,7 +217,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         post_transform: Some(collapse_conditionals),
         syntax_category: ruby::syntax_category,
         field_wrappings: RUBY_FIELD_WRAPPINGS,
-        node_spec: Some(ruby::semantic::spec),
+        node_spec: Some(ruby::output::spec),
         is_programming: true,
         supports_data_tree: false,
         data_transforms: None,

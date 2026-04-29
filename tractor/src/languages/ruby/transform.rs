@@ -36,7 +36,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 
 /// Map a transformed element name to a syntax category for highlighting.
 pub fn syntax_category(element: &str) -> SyntaxCategory {
-    if let Some(spec) = super::semantic::spec(element) {
+    if let Some(spec) = super::output::spec(element) {
         return spec.syntax;
     }
     match element {
