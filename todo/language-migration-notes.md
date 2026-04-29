@@ -61,8 +61,45 @@ Custom helpers and revisit during the next language.
 
 ## Per-language progress log
 
-### Java
-(not started)
+### Java — COMPLETE
+
+Commits (chronological):
+
+- `0e74ad5` — Step 1: generate JavaKind enum (147 kinds).
+- `0dce0ea` — Step 2: validate catalogue against JavaKind, drop 2
+  dead entries (`else_clause`, `field_declaration_list`).
+- `f7aeea5` — **Promotion**: add `Rule::DefaultAccessThenRename`
+  variant, refactor C# to use it (replaces 9 per-kind Custom stubs
+  with `da(XXX)` shorthand).
+- `118cec8` — Step 3: rules.rs + transformations.rs.
+- `34f2fad` — Step 4: swap dispatcher to rule()-driven (deletes
+  401 lines from transform.rs).
+- `833bd55` — Step 5: drop KINDS / rename_target.
+- `5c98ee8` — Step 6: rename semantic.rs → output.rs.
+
+Step 7 (TODO follow-up): TODOs were inlined into rules.rs during
+Step 3 commit, grouped by theme (modules, annotation-types,
+patterns, special-statements, try-with-resources, casts,
+instanceof, update_expression, literal-not-yet-renamed, dimensions,
+template-strings, annotated-types, misc structural). No separate
+TODO commit needed.
+
+#### Java-specific notes
+
+- Java's `Modifiers` kind is a single text-bearing wrapper (vs
+  C#'s individual `Modifier` nodes). The transformation walks the
+  text content, splits on whitespace, and lifts known keywords as
+  empty markers — same idea as C# but a different shape.
+- Java's `default_access_for_declaration` resolver returns
+  `Some(PUBLIC)` inside an interface declaration, `Some(PACKAGE)`
+  otherwise — but only if the node has no `<modifiers>` child.
+  When a `<modifiers>` child IS present, the modifiers handler
+  itself inserts `<package/>` if no access keyword appeared.
+- Method declarations don't fit the variant cleanly — Java's
+  grammar tags the return type with `field="type"` (same as
+  parameter types), so the builder can't wrap it generically.
+  The Custom `method_declaration` handler does default-access +
+  return-type wrapping + rename.
 
 ### PHP
 (not started)
