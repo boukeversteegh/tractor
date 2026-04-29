@@ -64,6 +64,11 @@ const LANGUAGES: &[LangCodegen] = &[
         ],
         output_path: "tractor/src/languages/typescript/input.rs",
     },
+    LangCodegen {
+        enum_name: "RubyKind",
+        node_types_sources: &[tree_sitter_ruby::NODE_TYPES],
+        output_path: "tractor/src/languages/ruby/input.rs",
+    },
 ];
 
 fn main() -> Result<()> {
