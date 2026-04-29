@@ -607,7 +607,6 @@ use super::kind::CsKind;
 use crate::languages::rule::Rule;
 use super::transformations;
 
-#[allow(dead_code)] // wired up in step 4 (dispatcher swap)
 pub fn rule(k: CsKind) -> Rule {
     use Rule::*;
     match k {
