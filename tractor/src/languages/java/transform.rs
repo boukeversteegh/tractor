@@ -53,7 +53,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 /// Consults the per-name NODES table first (one source of truth);
 /// falls back to cross-cutting rules for names not in NODES.
 pub fn syntax_category(element: &str) -> SyntaxCategory {
-    if let Some(spec) = super::semantic::spec(element) {
+    if let Some(spec) = super::output::spec(element) {
         return spec.syntax;
     }
     match element {

@@ -329,7 +329,7 @@ fn java_catalogue_covers_blueprint() {
 
 #[test]
 fn java_node_metadata_is_well_formed() {
-    use tractor::languages::java::semantic::NODES;
+    use tractor::languages::java::output::NODES;
     let mut names: Vec<&str> = NODES.iter().map(|n| n.name).collect();
     names.sort();
     let total = names.len();
@@ -337,12 +337,12 @@ fn java_node_metadata_is_well_formed() {
     assert_eq!(
         names.len(),
         total,
-        "tractor/src/languages/java/semantic.rs contains duplicate node names"
+        "tractor/src/languages/java/output.rs contains duplicate node names"
     );
     for node in NODES {
         assert!(
             node.marker || node.container,
-            "tractor/src/languages/java/semantic.rs: <{}> is neither marker nor container",
+            "tractor/src/languages/java/output.rs: <{}> is neither marker nor container",
             node.name
         );
     }

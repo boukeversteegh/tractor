@@ -1,4 +1,8 @@
-/// Semantic element names — tractor's Java XML vocabulary after transform.
+/// Output element names — tractor's Java XML vocabulary after transform.
+/// These are the names that appear in tractor's output. The tree-sitter
+/// kind strings are external vocabulary, surfaced as the typed
+/// [`super::input::JavaKind`] enum. The kind→output table lives in
+/// [`super::rules::rule`].
 use crate::languages::NodeSpec;
 use crate::output::syntax_highlight::SyntaxCategory;
 

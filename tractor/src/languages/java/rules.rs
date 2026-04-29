@@ -18,7 +18,7 @@
 use crate::languages::rule::Rule;
 
 use super::input::JavaKind;
-use super::semantic::*;
+use super::output::*;
 use super::transformations;
 
 /// Shorthand for the `default-access-then-rename` shape used by 5 of
