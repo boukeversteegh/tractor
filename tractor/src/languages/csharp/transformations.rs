@@ -24,6 +24,62 @@ pub fn passthrough(_xot: &mut Xot, _node: XotNode) -> Result<TransformAction, xo
     Ok(TransformAction::Continue)
 }
 
+/// `<name>` field wrapper inserted by the builder for nodes with a
+/// `field=name` attribute. Inline the single identifier child as text:
+///   `<name><identifier>Foo</identifier></name>`    →  `<name>Foo</name>`
+///   `<name><type_identifier>Foo</type_identifier>` →  `<name>Foo</name>`
+///   `<name><name>Foo</name></name>`                →  `<name>Foo</name>`
+///
+/// For qualified / scoped names (`System.Text`, etc.) concat descendant
+/// text so the outer `<name>` holds the full dotted path as a single
+/// text leaf — Principle #14.
+///
+/// Called from the dispatcher's wrapper branch, not from the rule
+/// table — the node has no `kind=` attribute since it was synthesised
+/// by the builder, not emitted by tree-sitter.
+pub fn name_wrapper(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    let children: Vec<_> = xot.children(node).collect();
+    let element_children: Vec<_> = children
+        .iter()
+        .copied()
+        .filter(|&c| xot.element(c).is_some())
+        .collect();
+    if element_children.len() == 1 {
+        let child = element_children[0];
+        let child_kind = get_kind(xot, child);
+        let is_identifier = matches!(
+            child_kind.as_deref(),
+            Some("identifier") | Some("type_identifier") | Some("property_identifier")
+        );
+        let is_inlined_name = get_element_name(xot, child).as_deref() == Some("name");
+        let is_qualified = matches!(
+            child_kind.as_deref(),
+            Some("qualified_name") | Some("generic_name") | Some("alias_qualified_name")
+        );
+        if is_identifier || is_inlined_name {
+            if let Some(text) = get_text_content(xot, child) {
+                for c in children {
+                    xot.detach(c)?;
+                }
+                let text_node = xot.new_text(&text);
+                xot.append(node, text_node)?;
+                return Ok(TransformAction::Done);
+            }
+        } else if is_qualified {
+            let text = descendant_text(xot, child);
+            if !text.is_empty() {
+                for c in children {
+                    xot.detach(c)?;
+                }
+                let text_node = xot.new_text(&text);
+                xot.append(node, text_node)?;
+                return Ok(TransformAction::Done);
+            }
+        }
+    }
+    Ok(TransformAction::Continue)
+}
+
 /// `comment` — normalise to `<comment>` and run the shared
 /// trailing/leading/floating classifier with `//` line-comment
 /// grouping.

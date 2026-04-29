@@ -156,6 +156,50 @@ pub fn type_identifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, 
     Ok(TransformAction::Continue)
 }
 
+/// `<name>` field wrapper inserted by the builder for nodes with a
+/// `field=name` attribute. Inline the single identifier-like child
+/// as text:
+///   `<name><identifier>foo</identifier></name>` → `<name>foo</name>`
+///
+/// Also accepts:
+///   - `package_identifier` (Go import alias `myio "io"`),
+///   - already-renamed `<name>` (walk-order race),
+///   - `dot` (Go's `import . "pkg"`),
+///   - `blank_identifier` (Go's `_`).
+///
+/// Called from the dispatcher's wrapper branch, not from the rule
+/// table — the node has no `kind=` attribute since it was synthesised
+/// by the builder, not emitted by tree-sitter.
+pub fn name_wrapper(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
+    let children: Vec<_> = xot.children(node).collect();
+    for child in children {
+        let child_name = match get_element_name(xot, child) {
+            Some(n) => n,
+            None => continue,
+        };
+        if !matches!(
+            child_name.as_str(),
+            "identifier" | "type_identifier" | "field_identifier"
+                | "package_identifier"
+                | "name" | "dot" | "blank_identifier",
+        ) {
+            continue;
+        }
+        let text = match get_text_content(xot, child) {
+            Some(t) => t,
+            None => continue,
+        };
+        let all_children: Vec<_> = xot.children(node).collect();
+        for c in all_children {
+            xot.detach(c)?;
+        }
+        let text_node = xot.new_text(&text);
+        xot.append(node, text_node)?;
+        break;
+    }
+    Ok(TransformAction::Continue)
+}
+
 /// `comment` — normalise to `<comment>` and run the shared
 /// trailing/leading/floating classifier with `//` line-comment
 /// grouping.

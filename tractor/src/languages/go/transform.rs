@@ -28,16 +28,11 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
     let kind_str = match get_kind(xot, node) {
         Some(k) => k,
         None => {
-            // Builder-inserted wrapper (no `kind` attribute).
+            // Builder-inserted wrapper (no `kind` attribute) — dispatch
+            // by element name to a transformation by the same name.
             let name = get_element_name(xot, node).unwrap_or_default();
             return match name.as_str() {
-                // Name wrappers created by the builder for field="name".
-                // Inline the single identifier/type_identifier child as text:
-                //   <name><identifier>foo</identifier></name> -> <name>foo</name>
-                "name" => {
-                    inline_single_identifier(xot, node)?;
-                    Ok(TransformAction::Continue)
-                }
+                "name" => super::transformations::name_wrapper(xot, node),
                 _ => Ok(TransformAction::Continue),
             };
         }
@@ -52,49 +47,6 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
     };
 
     crate::languages::rule::dispatch(xot, node, super::semantic::rule(kind))
-}
-
-/// If `node` contains a single identifier child, replace the node's
-/// children with that identifier's text. Used to flatten builder-
-/// created wrappers like `<name><identifier>foo</identifier></name>`
-/// → `<name>foo</name>`.
-fn inline_single_identifier(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
-    let children: Vec<_> = xot.children(node).collect();
-    for child in children {
-        let child_name = match get_element_name(xot, child) {
-            Some(n) => n,
-            None => continue,
-        };
-        // Also accept:
-        //   - `package_identifier` — Go's import alias name (`myio "io"`);
-        //     raw tree-sitter kind, pre-rename.
-        //   - `name` — walk order may have already renamed an inner
-        //     identifier (package_identifier / field_identifier), so
-        //     the outer field wrapper sees `<name><name>…</name></name>`
-        //   - `dot` — Go's `import . "pkg"` uses a `.` token; tree-sitter
-        //     tags it as `dot`. It's the "name" for import purposes.
-        //   - `blank_identifier` — Go's `_` discard; still fills a name slot.
-        if !matches!(
-            child_name.as_str(),
-            "identifier" | "type_identifier" | "field_identifier"
-                | "package_identifier"
-                | "name" | "dot" | "blank_identifier",
-        ) {
-            continue;
-        }
-        let text = match get_text_content(xot, child) {
-            Some(t) => t,
-            None => continue,
-        };
-        let all_children: Vec<_> = xot.children(node).collect();
-        for c in all_children {
-            xot.detach(c)?;
-        }
-        let text_node = xot.new_text(&text);
-        xot.append(node, text_node)?;
-        return Ok(());
-    }
-    Ok(())
 }
 
 /// Map a transformed element name to a syntax category for highlighting.
