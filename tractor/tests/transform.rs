@@ -87,6 +87,16 @@ mod support;
 #[path = "transform/variables.rs"]   mod variables;
 #[path = "transform/visibility.rs"]  mod visibility;
 
+// ----- Data languages (one file per language; no shared topics) ----------
+
+#[path = "transform/ini.rs"]         mod ini;
+#[path = "transform/markdown.rs"]    mod markdown;
+#[path = "transform/toml.rs"]        mod toml;
+#[path = "transform/tsql.rs"]        mod tsql;
+#[path = "transform/tsx.rs"]         mod tsx;
+#[path = "transform/xml.rs"]         mod xml;
+#[path = "transform/yaml.rs"]        mod yaml;
+
 // ----- Language-specific quirks -------------------------------------------
 
 #[path = "transform/go"]

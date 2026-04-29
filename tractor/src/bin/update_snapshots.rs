@@ -37,6 +37,7 @@ const BLUEPRINTS: &[(&str, &str, u32, bool)] = &[
     ("tests/integration/languages/go/blueprint.go",         "//file",    0, true),
     ("tests/integration/languages/php/blueprint.php",       "//program", 0, true),
     ("tests/integration/languages/ruby/blueprint.rb",       "//program", 0, true),
+    ("tests/integration/languages/tsql/blueprint.sql",      "//file",    0, true),
 ];
 
 /// CLI snapshot cases: (relative path under cli/, tractor args).

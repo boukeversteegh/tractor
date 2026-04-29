@@ -98,9 +98,8 @@ const LANGUAGES: &[Lang] = &[
         nodes: tractor::languages::php::semantic::NODES,
     },
     Lang {
-        // No blueprint.sql exists yet — sample.sql is the largest fixture.
         id: "tsql",
-        fixture: "sample.sql",
+        fixture: "blueprint.sql",
         fixture_dir: "tsql",
         catalogue_path: "tractor/src/languages/tsql/semantic.rs",
         kinds: tractor::languages::tsql::semantic::KINDS,

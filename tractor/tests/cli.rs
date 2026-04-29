@@ -19,169 +19,11 @@ fn assert_well_formed_xml(xml: &str) {
 }
 
 
-cli_suite! {
-    ini in "languages/ini" {
-        global_name => tractor query "sample.ini" -x "//name[.='my-app']" => count 1;
-        version => tractor query "sample.ini" -x "//version[.='1.0.0']" => count 1;
-        host => tractor query "sample.ini" -x "//database/host[.='localhost']" => count 1;
-        port => tractor query "sample.ini" -x "//database/port[.='5432']" => count 1;
-        enabled => tractor query "sample.ini" -x "//database/enabled[.='true']" => count 1;
-        dotted_section_user => tractor query "sample.ini" -x "//database.credentials/username[.='admin']" => count 1;
-        dotted_section_password => tractor query "sample.ini" -x "//database.credentials/password[.='secret']" => count 1;
-        servers_count => tractor query "sample.ini" -x "//servers/count[.='2']" => count 1;
-        home_path => tractor query "sample.ini" -x "//paths/home[.='/usr/local']" => count 1;
-        temp_path => tractor query "sample.ini" -x "//paths/temp[.='/tmp']" => count 1;
-        comments => tractor query "sample.ini" -x "//comment" => count 2;
-        comment_text => tractor query "sample.ini" -x "//comment[.='Global settings']" => count 1;
-        document_root => tractor query "sample.ini" -x "//document" => count 1;
-    }
-}
 
 
-cli_suite! {
-    markdown in "languages/markdown" {
-        headings => tractor query "sample.md" -x "//heading" => count 2;
-        h1 => tractor query "sample.md" -x "//heading[h1]" => count 1;
-        h2 => tractor query "sample.md" -x "//heading[h2]" => count 1;
-        ordered_list => tractor query "sample.md" -x "//list[ordered]" => count 1;
-        unordered_list => tractor query "sample.md" -x "//list[unordered]" => count 1;
-        items => tractor query "sample.md" -x "//item" => count 5;
-        blockquote => tractor query "sample.md" -x "//blockquote" => count 1;
-        code_blocks => tractor query "sample.md" -x "//code_block" => count 3;
-        python_block => tractor query "sample.md" -x "//code_block[language='python']" => count 1;
-        javascript_block => tractor query "sample.md" -x "//code_block[language='javascript']" => count 1;
-        unlabeled_block => tractor query "sample.md" -x "//code_block[not(language)]" => count 1;
-        hr => tractor query "sample.md" -x "//hr" => count 1;
-    }
-}
 
 
-cli_suite! {
-    toml in "languages/toml" {
-        title => tractor query "sample.toml" -x "//title[.='My App']" => count 1;
-        version => tractor query "sample.toml" -x "//version[.='1.0.0']" => count 1;
-        host => tractor query "sample.toml" -x "//database/host[.='localhost']" => count 1;
-        port => tractor query "sample.toml" -x "//database/port[.='5432']" => count 1;
-        enabled => tractor query "sample.toml" -x "//database/enabled[.='true']" => count 1;
-        dotted_user => tractor query "sample.toml" -x "//database/credentials/username" => count 1;
-        dotted_password => tractor query "sample.toml" -x "//database/credentials/password[.='secret']" => count 1;
-        servers => tractor query "sample.toml" -x "//servers/item" => count 2;
-        server_web1 => tractor query "sample.toml" -x "//servers/item[name='web-1']" => count 1;
-        server_web1_port => tractor query "sample.toml" -x "//servers/item[name='web-1']/port[.='8080']" => count 1;
-        features => tractor query "sample.toml" -x "//features/item" => count 3;
-        feature_auth => tractor query "sample.toml" -x "//features/item[.='auth']" => count 1;
-        inline_x => tractor query "sample.toml" -x "//inline/x[.='1']" => count 1;
-        inline_y => tractor query "sample.toml" -x "//inline/y[.='2']" => count 1;
-        quoted => tractor query "sample.toml" -x "//quoted[.='hello world']" => count 1;
-        sanitized_key => tractor query "sample.toml" -x "//first_name" => count 1;
-        original_key => tractor query "sample.toml" -x "//*[@key='first name']" => count 1;
-        deep_nested => tractor query "sample.toml" -x "//nested/level1/level2/value[.='deep']" => count 1;
-        document_root => tractor query "sample.toml" -x "//document" => count 1;
-    }
-}
 
-cli_suite! {
-    tsql in "languages/tsql" {
-        file_root => tractor query "sample.sql" -x "file" --lang "tsql" => count 1;
-        statements => tractor query "sample.sql" -x "statement" --lang "tsql" => count 24;
-        selects => tractor query "sample.sql" -x "select" --lang "tsql" => count 17;
-        inserts => tractor query "sample.sql" -x "insert" --lang "tsql" => count 1;
-        deletes => tractor query "sample.sql" -x "delete" --lang "tsql" => count 1;
-        updates => tractor query "sample.sql" -x "update" --lang "tsql" => count 3;
-        where_clauses => tractor query "sample.sql" -x "where" --lang "tsql" => count 14;
-        order_by => tractor query "sample.sql" -x "order" --lang "tsql" => count 3;
-        group_by => tractor query "sample.sql" -x "group" --lang "tsql" => count 1;
-        having => tractor query "sample.sql" -x "having" --lang "tsql" => count 1;
-        joins => tractor query "sample.sql" -x "join" --lang "tsql" => count 2;
-        subqueries => tractor query "sample.sql" -x "subquery" --lang "tsql" => count 2;
-        exists_predicate => tractor query "sample.sql" -x "exists" --lang "tsql" => count 1;
-        cte => tractor query "sample.sql" -x "cte" --lang "tsql" => count 1;
-        union_all => tractor query "sample.sql" -x "union" --lang "tsql" => count 1;
-        case_expr => tractor query "sample.sql" -x "case" --lang "tsql" => count 1;
-        between_expr => tractor query "sample.sql" -x "between" --lang "tsql" => count 1;
-        compare_gt => tractor query "sample.sql" -x "compare[op='>']" --lang "tsql" => count 4;
-        compare_gte => tractor query "sample.sql" -x "compare[op='>=']" --lang "tsql" => count 1;
-        calls => tractor query "sample.sql" -x "call" --lang "tsql" => count 9;
-        cast_expr => tractor query "sample.sql" -x "cast" --lang "tsql" => count 1;
-        window => tractor query "sample.sql" -x "window" --lang "tsql" => count 1;
-        partition_by => tractor query "sample.sql" -x "partition" --lang "tsql" => count 1;
-        star => tractor query "sample.sql" -x "star" --lang "tsql" => count 2;
-        aliases => tractor query "sample.sql" -x "alias" --lang "tsql" => count 17;
-        schema_refs => tractor query "sample.sql" -x "schema" --lang "tsql" => count 4;
-        variables => tractor query "sample.sql" -x "var" --lang "tsql" => count 6;
-        temp_table => tractor query "sample.sql" -x "temp" --lang "tsql" => count 1;
-        direction => tractor query "sample.sql" -x "direction" --lang "tsql" => count 2;
-        create_table => tractor query "sample.sql" -x "create" --lang "tsql" => count 1;
-        column_defs => tractor query "sample.sql" -x "definition" --lang "tsql" => count 3;
-        create_function => tractor query "sample.sql" -x "function" --lang "tsql" => count 1;
-        assignments => tractor query "sample.sql" -x "assign" --lang "tsql" => count 4;
-        merge_when => tractor query "sample.sql" -x "when" --lang "tsql" => count 2;
-        transaction => tractor query "sample.sql" -x "transaction" --lang "tsql" => count 1;
-        set_stmt => tractor query "sample.sql" -x "set" --lang "tsql" => count 1;
-        go_separator => tractor query "sample.sql" -x "go" --lang "tsql" => count 1;
-        exec => tractor query "sample.sql" -x "exec" --lang "tsql" => count 1;
-        comments => tractor query "sample.sql" -x "comment" --lang "tsql" => count 20;
-    }
-}
-
-cli_suite! {
-    tsx in "languages/tsx" {
-        program => tractor query "sample.tsx" -x "program" => count 1;
-        functions => tractor query "sample.tsx" -x "function[name]" => count 1;
-        component_name => tractor query "sample.tsx" -x "function[name='Greeting']" => count 1;
-        interface => tractor query "sample.tsx" -x "interface" => count 1;
-        variable => tractor query "sample.tsx" -x "variable" => count 1;
-        jsx_elements => tractor query "sample.tsx" -x "//element" => count 4;
-        jsx_opening => tractor query "sample.tsx" -x "//opening" => count 4;
-        jsx_closing => tractor query "sample.tsx" -x "//closing" => count 4;
-        jsx_attributes => tractor query "sample.tsx" -x "//prop" => count 2;
-        jsx_expressions => tractor query "sample.tsx" -x "//value" => count 7;
-        jsx_text => tractor query "sample.tsx" -x "//text" => count 5;
-    }
-}
-
-
-cli_suite! {
-    xml in "languages/xml" {
-        items => tractor query "sample.xml" -x "item" => count 3;
-        feature_items => tractor query "sample.xml" -x "item[@type='feature']" => count 2;
-        bug_items => tractor query "sample.xml" -x "item[@type='bug']" => count 1;
-        settings => tractor query "sample.xml" -x "setting" => count 2;
-        complete_items => tractor query "sample.xml" -x "item[status='complete']" => count 1;
-        attributes => tractor query "sample.xml" -x "project/@name" => count 1;
-        names => tractor query "sample.xml" -x "name" => count 3;
-        value_view => tractor query "sample.xml" -x "item/name" -v "value" => count some;
-    }
-}
-
-cli_suite! {
-    yaml in "languages/yaml" {
-        top_level_scalar => tractor query "sample.yaml" -x "//name[.='my-app']" => count 1;
-        nested_host => tractor query "sample.yaml" -x "//database/host[.='localhost']" => count 1;
-        nested_port => tractor query "sample.yaml" -x "//database/port[.='5432']" => count 1;
-        deep_mapping => tractor query "sample.yaml" -x "//database/credentials/username" => count 1;
-        repeated_servers => tractor query "sample.yaml" -x "//servers" => count 2;
-        server_mapping => tractor query "sample.yaml" -x "//servers[name='web-1']" => count 1;
-        server_port => tractor query "sample.yaml" -x "//servers[name='web-1']/port[.='8080']" => count 1;
-        features => tractor query "sample.yaml" -x "//features" => count 3;
-        feature_auth => tractor query "sample.yaml" -x "//features[.='auth']" => count 1;
-        deep_nested => tractor query "sample.yaml" -x "//nested/level1/level2/value[.='deep']" => count 1;
-        flow_map => tractor query "sample.yaml" -x "//flow_map/x[.='1']" => count 1;
-        flow_list => tractor query "sample.yaml" -x "//flow_list" => count 3;
-        quoted => tractor query "sample.yaml" -x "//quoted[.='hello world']" => count 1;
-        multiline => tractor query "sample.yaml" -x "//multiline[contains(.,'line one')]" => count 1;
-        sanitized_key => tractor query "sample.yaml" -x "//first_name" => count 1;
-        original_key => tractor query "sample.yaml" -x "//*[@key='first name']" => count 1;
-        sanitized_text => tractor query "sample.yaml" -x "//first_name[text()='Alice']" => count 1;
-        multi_doc_root => tractor query "multi.yaml" -x "//document" => count 3;
-        multi_doc_first => tractor query "multi.yaml" -x "//document[1]/name[.='doc1']" => count 1;
-        multi_doc_second => tractor query "multi.yaml" -x "//document[2]/name[.='doc2']" => count 1;
-        multi_doc_third => tractor query "multi.yaml" -x "//document[3]/value[.='three']" => count 1;
-        multi_doc_descendants => tractor query "multi.yaml" -x "//name" => count 3;
-        structure_root => tractor query "sample.yaml" -x "//document/object" -t "structure" => count 1;
-        structure_vocab => tractor query "sample.yaml" -x "//property[key/string='name']/value/string[.='my-app']" -t "structure" => count 1;
-    }
-}
 
 cli_suite! {
     string_input in "string-input" {
@@ -230,25 +72,31 @@ cli_suite! {
     }
 }
 
+/// Round-trip: extract a fenced JavaScript code block from a
+/// markdown source via `-s`, pipe the extracted code to a second
+/// tractor invocation parsing it as JavaScript, and confirm it
+/// finds the function. Exercises stdin handoff, value extraction,
+/// and multi-language parsing in one go.
 #[test]
 fn markdown_round_trip_extracts_javascript_block() {
-    let extracted = query_command("sample.md", "//code_block[language='javascript']/code")
-        .arg("-v")
-        .arg("value")
-        .in_fixture("languages/markdown")
-        .capture();
+    let md_source = "```javascript\nfunction greet(name) { return name; }\n```\n";
+
+    let extracted = command([
+        "query",
+        "-s", md_source,
+        "-l", "markdown",
+        "-x", "//code_block[language='javascript']/code",
+        "-v", "value",
+    ])
+    .capture();
     assert_eq!(0, extracted.status);
 
     let parsed = command([
         "query",
-        "-l",
-        "javascript",
-        "-x",
-        "//function[name]",
-        "-v",
-        "count",
-        "-p",
-        "count",
+        "-l", "javascript",
+        "-x", "//function[name]",
+        "-v", "count",
+        "-p", "count",
     ])
     .stdin(format!("{}\n", extracted.stdout))
     .capture();

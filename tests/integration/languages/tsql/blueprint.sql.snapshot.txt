@@ -1,0 +1,358 @@
+file/
+  ├─ comment
+  ├─ statement/
+  │   ├─ select/
+  │   │   ├─ column/
+  │   │   │   ├─ ref/name
+  │   │   │   └─ name
+  │   │   └─ column/
+  │   │       ├─ ref/name
+  │   │       └─ name
+  │   └─ from/
+  │       ├─ relation/
+  │       │   ├─ ref/name
+  │       │   └─ alias
+  │       ├─ where/compare/
+  │       │   ├─ column/
+  │       │   │   ├─ ref/name
+  │       │   │   └─ name
+  │       │   ├─ op/compare[greater]
+  │       │   └─ literal
+  │       └─ order/target/column/
+  │           ├─ ref/name
+  │           └─ name
+  ├─ statement/insert/
+  │   ├─ ref/name
+  │   ├─ list/
+  │   │   ├─ col/name
+  │   │   └─ col/name
+  │   └─ list/
+  │       ├─ literal
+  │       └─ call/ref/name
+  ├─ statement[delete]/from/
+  │   ├─ ref/name
+  │   └─ where/compare/
+  │       ├─ column/name
+  │       ├─ op/compare[less]
+  │       └─ literal
+  ├─ comment
+  ├─ statement/
+  │   ├─ select/
+  │   │   ├─ column/
+  │   │   │   ├─ ref/
+  │   │   │   │   ├─ schema
+  │   │   │   │   └─ name
+  │   │   │   └─ name
+  │   │   ├─ alias
+  │   │   └─ column/var
+  │   └─ from/
+  │       ├─ relation/ref/
+  │       │   ├─ schema
+  │       │   └─ name
+  │       └─ where/between/
+  │           ├─ column/name
+  │           ├─ literal
+  │           └─ literal
+  ├─ comment
+  ├─ statement/update/
+  │   ├─ relation/ref/
+  │   │   ├─ schema
+  │   │   └─ name
+  │   ├─ assign/
+  │   │   ├─ column/name
+  │   │   ├─ op
+  │   │   └─ column/var
+  │   └─ where/compare/
+  │       ├─ column/name
+  │       ├─ op
+  │       └─ column/var
+  ├─ comment
+  ├─ statement/
+  │   ├─ select/
+  │   │   ├─ column/
+  │   │   │   ├─ ref/name
+  │   │   │   └─ name
+  │   │   ├─ column/
+  │   │   │   ├─ ref/name
+  │   │   │   └─ name
+  │   │   └─ column/
+  │   │       ├─ ref/name
+  │   │       └─ name
+  │   └─ from/
+  │       ├─ relation/
+  │       │   ├─ ref/name
+  │       │   └─ alias
+  │       ├─ join/
+  │       │   ├─ relation/
+  │       │   │   ├─ ref/name
+  │       │   │   └─ alias
+  │       │   └─ compare/
+  │       │       ├─ column/
+  │       │       │   ├─ ref/name
+  │       │       │   └─ name
+  │       │       ├─ op
+  │       │       └─ column/
+  │       │           ├─ ref/name
+  │       │           └─ name
+  │       ├─ join/
+  │       │   ├─ relation/
+  │       │   │   ├─ ref/name
+  │       │   │   └─ alias
+  │       │   └─ compare/
+  │       │       ├─ column/
+  │       │       │   ├─ ref/name
+  │       │       │   └─ name
+  │       │       ├─ op
+  │       │       └─ column/
+  │       │           ├─ ref/name
+  │       │           └─ name
+  │       └─ where/compare/
+  │           ├─ column/
+  │           │   ├─ ref/name
+  │           │   └─ name
+  │           ├─ op/compare[greater]
+  │           └─ literal
+  ├─ comment
+  ├─ statement/
+  │   ├─ select/column/name
+  │   └─ from/
+  │       ├─ relation/ref/name
+  │       └─ where/compare/
+  │           ├─ column/name
+  │           └─ subquery/
+  │               ├─ select/column/name
+  │               └─ from/
+  │                   ├─ relation/ref/name
+  │                   └─ where/compare/
+  │                       ├─ column/name
+  │                       ├─ op/compare[greater]
+  │                       └─ literal
+  ├─ comment
+  ├─ statement/
+  │   ├─ select/column/
+  │   │   ├─ ref/name
+  │   │   └─ name
+  │   └─ from/
+  │       ├─ relation/
+  │       │   ├─ ref/name
+  │       │   └─ alias
+  │       └─ where/exists/subquery/
+  │           ├─ select/literal
+  │           └─ from/
+  │               ├─ relation/
+  │               │   ├─ ref/name
+  │               │   └─ alias
+  │               └─ where/compare/
+  │                   ├─ column/
+  │                   │   ├─ ref/name
+  │                   │   └─ name
+  │                   ├─ op
+  │                   └─ column/
+  │                       ├─ ref/name
+  │                       └─ name
+  ├─ comment
+  ├─ statement/
+  │   ├─ select/
+  │   │   ├─ column/name
+  │   │   ├─ call/
+  │   │   │   ├─ ref/name
+  │   │   │   └─ star
+  │   │   ├─ alias
+  │   │   ├─ call/
+  │   │   │   ├─ ref/name
+  │   │   │   └─ column/name
+  │   │   └─ alias
+  │   └─ from/
+  │       ├─ relation/ref/name
+  │       ├─ group/column/name
+  │       └─ having/compare/
+  │           ├─ call/
+  │           │   ├─ ref/name
+  │           │   └─ star
+  │           ├─ op/compare[greater]
+  │           └─ literal
+  ├─ comment
+  ├─ statement/
+  │   ├─ select/
+  │   │   ├─ column/name
+  │   │   ├─ case/
+  │   │   │   ├─ compare/
+  │   │   │   │   ├─ column/name
+  │   │   │   │   ├─ op/compare[greater and or-equal]
+  │   │   │   │   └─ literal
+  │   │   │   ├─ literal
+  │   │   │   └─ literal
+  │   │   └─ alias
+  │   └─ from/relation/ref/name
+  ├─ comment
+  ├─ statement/
+  │   ├─ cte/
+  │   │   ├─ name
+  │   │   └─ statement/
+  │   │       ├─ select/
+  │   │       │   ├─ column/name
+  │   │       │   └─ column/name
+  │   │       └─ from/
+  │   │           ├─ relation/ref/name
+  │   │           └─ where/compare/
+  │   │               ├─ column/name
+  │   │               ├─ op
+  │   │               └─ literal
+  │   ├─ select/column/name
+  │   └─ from/relation/ref/name
+  ├─ comment
+  ├─ statement/union/
+  │   ├─ select/
+  │   │   ├─ column/name
+  │   │   ├─ literal
+  │   │   └─ alias
+  │   ├─ from/relation/ref/name
+  │   ├─ select/
+  │   │   ├─ column/name
+  │   │   ├─ literal
+  │   │   └─ alias
+  │   └─ from/relation/ref/name
+  ├─ comment
+  ├─ statement/
+  │   ├─ select/
+  │   │   ├─ column/name
+  │   │   ├─ window/
+  │   │   │   ├─ call/ref/name
+  │   │   │   └─ over/
+  │   │   │       ├─ partition/column/name
+  │   │   │       └─ order/target[direction]/column/name
+  │   │   └─ alias
+  │   └─ from/relation/ref/name
+  ├─ comment
+  ├─ statement/
+  │   ├─ select/
+  │   │   ├─ call/
+  │   │   │   ├─ ref/name
+  │   │   │   ├─ column/name
+  │   │   │   └─ column/name
+  │   │   ├─ alias
+  │   │   ├─ cast[name]/
+  │   │   │   ├─ column/name
+  │   │   │   └─ varchar/literal
+  │   │   └─ alias
+  │   └─ from/
+  │       ├─ relation/ref/name
+  │       └─ where/compare/
+  │           ├─ compare/
+  │           │   ├─ compare/
+  │           │   │   ├─ column/name
+  │           │   │   └─ literal
+  │           │   └─ compare[literal]/column/name
+  │           └─ compare/
+  │               ├─ column/name
+  │               └─ list/
+  │                   ├─ literal
+  │                   └─ literal
+  ├─ comment
+  ├─ statement/
+  │   ├─ select/column/name
+  │   └─ from/
+  │       ├─ relation/ref/name
+  │       └─ order/target[direction]/column/name
+  ├─ comment
+  ├─ statement/create/
+  │   ├─ ref/name
+  │   └─ columns/
+  │       ├─ definition[int]/name
+  │       ├─ definition/
+  │       │   ├─ name
+  │       │   └─ nvarchar/literal
+  │       └─ definition/
+  │           ├─ name
+  │           └─ call/ref/name
+  ├─ comment
+  ├─ statement/
+  │   ├─ ref/name
+  │   ├─ alias
+  │   ├─ ref/name
+  │   ├─ alias
+  │   ├─ compare/
+  │   │   ├─ column/
+  │   │   │   ├─ ref/name
+  │   │   │   └─ name
+  │   │   ├─ op
+  │   │   └─ column/
+  │   │       ├─ ref/name
+  │   │       └─ name
+  │   ├─ when/assign/
+  │   │   ├─ column/
+  │   │   │   ├─ ref/name
+  │   │   │   └─ name
+  │   │   ├─ op
+  │   │   └─ column/
+  │   │       ├─ ref/name
+  │   │       └─ name
+  │   └─ when/
+  │       ├─ list/
+  │       │   ├─ col/name
+  │       │   └─ col/name
+  │       └─ list/
+  │           ├─ column/
+  │           │   ├─ ref/name
+  │           │   └─ name
+  │           └─ column/
+  │               ├─ ref/name
+  │               └─ name
+  ├─ comment
+  ├─ statement/
+  │   ├─ select/
+  │   │   ├─ column/name
+  │   │   └─ column/name
+  │   ├─ temp
+  │   └─ from/
+  │       ├─ relation/ref/name
+  │       └─ where/compare/
+  │           ├─ column/name
+  │           ├─ op
+  │           └─ literal
+  ├─ comment
+  ├─ transaction/
+  │   ├─ statement/update/
+  │   │   ├─ relation/ref/name
+  │   │   ├─ assign/
+  │   │   │   ├─ column/name
+  │   │   │   ├─ op
+  │   │   │   └─ compare/
+  │   │   │       ├─ column/name
+  │   │   │       ├─ op[minus]
+  │   │   │       └─ literal
+  │   │   └─ where/compare/
+  │   │       ├─ column/name
+  │   │       ├─ op
+  │   │       └─ literal
+  │   └─ statement/update/
+  │       ├─ relation/ref/name
+  │       ├─ assign/
+  │       │   ├─ column/name
+  │       │   ├─ op
+  │       │   └─ compare/
+  │       │       ├─ column/name
+  │       │       ├─ op[plus]
+  │       │       └─ literal
+  │       └─ where/compare/
+  │           ├─ column/name
+  │           ├─ op
+  │           └─ literal
+  ├─ comment
+  ├─ statement/set/
+  │   ├─ ref/var
+  │   └─ literal
+  ├─ comment
+  ├─ statement/function[int]/
+  │   ├─ ref/
+  │   │   ├─ schema
+  │   │   └─ name
+  │   ├─ arg/arg/var
+  │   └─ body/call/
+  │       ├─ ref/name
+  │       ├─ column/name
+  │       ├─ column/var
+  │       └─ call/ref/name
+  ├─ go
+  ├─ comment
+  └─ statement/exec/ref/name

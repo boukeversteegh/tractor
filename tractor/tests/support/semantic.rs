@@ -6,14 +6,21 @@
 //! messages.
 
 use std::sync::Arc;
-use tractor::{parse, Match, ParseInput, ParseOptions, XPathEngine, XeeParseResult};
+use tractor::{parse, Match, ParseInput, ParseOptions, TreeMode, XPathEngine, XeeParseResult};
 
 pub fn parse_src(lang: &str, source: &str) -> XeeParseResult {
+    parse_src_with_mode(lang, source, None)
+}
+
+/// Parse with an explicit tree-mode override — for the rare
+/// structure-mode YAML/JSON tests where the default `Data` mode's
+/// projection collapses the structural vocabulary.
+pub fn parse_src_with_mode(lang: &str, source: &str, tree_mode: Option<TreeMode>) -> XeeParseResult {
     parse(
         ParseInput::Inline { content: source, file_label: "<semantic_tree_test>" },
         ParseOptions {
             language: Some(lang),
-            tree_mode: None,
+            tree_mode,
             ignore_whitespace: false,
             parse_depth: None,
         },
