@@ -195,8 +195,45 @@ Commits (chronological):
 ### Rust (`rust_lang`)
 (not started)
 
-### Rust (`rust_lang`)
-(not started)
+### Rust (`rust_lang`) — COMPLETE
+
+Commits (chronological):
+
+- `70701f0` — Step 1: generate RustKind enum (163 kinds). Includes
+  codegen sanitizer for the `Self` keyword conflict (Rust grammar
+  emits `self` kind → would PascalCase to `Self`, a reserved keyword;
+  resolved by suffixing with `_` → `RustKind::Self_`).
+- `dc72a34` — Step 2: validate catalogue, drop 8 dead entries
+  (break_statement, continue_statement, method_call_expression,
+  raw_string_literal_content, send_statement, slice_type,
+  spread_element, trait_type — all renamed/removed in current
+  grammar).
+- `308ac42` — Step 3: rules.rs + transformations.rs.
+- `1bdddf2` — Step 4: swap dispatcher (deletes 407 lines).
+- `f8b2929` — Step 5: drop KINDS / rename_target.
+- (Step 6) — Rename semantic.rs → output.rs.
+
+#### Rust-specific notes
+
+- **Codegen sanitizer for `Self` keyword**: tree-sitter Rust emits
+  `self` as a kind. Snake-to-pascal would produce `Self`, which is
+  a reserved Rust keyword and cannot be used as an enum variant
+  identifier (raw identifiers `r#Self` are also reserved). Added
+  a sanitizer that suffixes `Self` with `_`. Variant compiles as
+  `RustKind::Self_`.
+- **`Rule::DefaultAccessThenRename` for 8 declarations** (function,
+  struct, enum, trait, const, static, type, mod) — Rust's default
+  access is always `private` (no `pub` modifier means item-private).
+  Simplest of the four users so far (C#, Java, PHP, Rust).
+- **`visibility_modifier` is a complex Custom**: rebuilds the
+  `<pub>` element with `<crate/>` / `<super/>` / `<in path>`
+  restriction marker children, dangles the original source token
+  as a sibling so string-value stays source-accurate.
+- **`reference_type` Custom**: hoists `mut` from `mutable_specifier`
+  child to a marker, prepends `<borrowed/>`, renames TYPE.
+- **`name_wrapper` handles `lifetime` specially**: inlines lifetime's
+  descendant text directly so `<name><lifetime>'a</lifetime></name>`
+  becomes `<name>'a</name>` rather than triple-wrapping.
 
 ### TypeScript
 (not started)
