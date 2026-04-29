@@ -233,6 +233,28 @@ fn rename_targets_are_non_empty() {
 // `rule(CsKind) -> Rule` being exhaustive over the typed enum
 // (compile-time).
 
+/// Validate that every `KindEntry` in Ruby's `KINDS` is a real
+/// grammar kind (`RubyKind` variant). Catches dead entries.
+#[test]
+fn ruby_catalogue_entries_are_real_grammar_kinds() {
+    use tractor::languages::ruby::input::RubyKind;
+    use tractor::languages::ruby::semantic::KINDS;
+
+    let mut dead: Vec<&str> = Vec::new();
+    for entry in KINDS {
+        if RubyKind::from_str(entry.kind).is_none() {
+            dead.push(entry.kind);
+        }
+    }
+    assert!(
+        dead.is_empty(),
+        "ruby catalogue has {} dead entries (not in `RubyKind`):\n{}\n\n\
+         Remove these from tractor/src/languages/ruby/semantic.rs::KINDS.",
+        dead.len(),
+        dead.iter().map(|k| format!("  - {}", k)).collect::<Vec<_>>().join("\n"),
+    );
+}
+
 /// TypeScript-specific blueprint coverage check via `TsKind::from_str`.
 #[test]
 fn typescript_catalogue_covers_blueprint() {
