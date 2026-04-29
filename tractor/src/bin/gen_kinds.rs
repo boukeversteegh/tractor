@@ -80,6 +80,26 @@ fn collect_from_entry(v: &Value, out: &mut BTreeSet<String>) {
             collect_from_entry(s, out);
         }
     }
+    // Some kinds appear only in field/children type lists (e.g. Python's
+    // `as_pattern_target` is referenced as an `as_pattern.fields.alias`
+    // type rather than declared at the top level). Recurse into those
+    // lists so the typed enum covers everything the parser can emit.
+    if let Some(fields) = obj.get("fields").and_then(|x| x.as_object()) {
+        for (_, field) in fields {
+            if let Some(types) = field.get("types").and_then(|x| x.as_array()) {
+                for t in types {
+                    collect_from_entry(t, out);
+                }
+            }
+        }
+    }
+    if let Some(children) = obj.get("children") {
+        if let Some(types) = children.get("types").and_then(|x| x.as_array()) {
+            for t in types {
+                collect_from_entry(t, out);
+            }
+        }
+    }
 }
 
 fn snake_to_pascal(s: &str) -> String {
