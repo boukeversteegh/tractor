@@ -1,6 +1,7 @@
 //! rust_lang language transform — split into semantic vocabulary
 //! and transform logic.
 
+pub mod input;
 pub mod semantic;
 pub mod transform;
 

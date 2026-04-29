@@ -44,6 +44,11 @@ const LANGUAGES: &[LangCodegen] = &[
         node_types: tree_sitter_python::NODE_TYPES,
         output_path: "tractor/src/languages/python/input.rs",
     },
+    LangCodegen {
+        enum_name: "RustKind",
+        node_types: tree_sitter_rust::NODE_TYPES,
+        output_path: "tractor/src/languages/rust_lang/input.rs",
+    },
 ];
 
 fn main() -> Result<()> {
@@ -103,7 +108,8 @@ fn collect_from_entry(v: &Value, out: &mut BTreeSet<String>) {
 }
 
 fn snake_to_pascal(s: &str) -> String {
-    s.split('_')
+    let result: String = s
+        .split('_')
         .filter(|p| !p.is_empty())
         .map(|p| {
             let mut chars = p.chars();
@@ -112,7 +118,15 @@ fn snake_to_pascal(s: &str) -> String {
                 Some(first) => first.to_uppercase().chain(chars).collect(),
             }
         })
-        .collect()
+        .collect();
+    // `Self` is a Rust keyword and cannot be used as an enum variant name
+    // (raw identifiers `r#Self` are also reserved). Suffix with `_` so the
+    // variant compiles. (Tree-sitter Rust emits `self` for `self` expressions
+    // — RustKind::Self_ is the resulting variant.)
+    if result == "Self" {
+        return format!("{}_", result);
+    }
+    result
 }
 
 fn render_enum(enum_name: &str, kinds: &[String]) -> String {
