@@ -131,7 +131,10 @@ pub fn rule(k: TsKind) -> Rule {
         TsKind::Null                      => Rename(NULL),
         TsKind::Number                    => Rename(NUMBER),
         TsKind::OptingTypeAnnotation      => Rename(ANNOTATION),
-        TsKind::PredefinedType            => Rename(TYPE),
+        // `predefined_type` renames to TYPE but must also wrap its text
+        // in `<name>` (Principle #14: every named type reference carries
+        // its name in a <name> child). Reuses the type_identifier handler.
+        TsKind::PredefinedType            => Custom(transformations::type_identifier),
         TsKind::PrivatePropertyIdentifier => Rename(NAME),
         TsKind::Program                   => Rename(PROGRAM),
         TsKind::PropertySignature         => Rename(PROPERTY),
