@@ -1,28 +1,26 @@
-//! C# transform logic — thin dispatcher driven by `semantic::rule`.
+//! C# transform logic — thin dispatcher driven by `rules::rule`.
 //!
 //! The per-kind logic is split:
 //!   - Pure rename / flatten / shared compositions live as data in
-//!     [`super::semantic::rule`].
+//!     [`super::rules::rule`].
 //!   - Language-specific custom logic lives as named functions in
 //!     [`super::transformations`].
 //!
 //! This file's job is just to look up the kind and execute its rule.
-//! The only code that stays inline is the wrapper branch — handling
-//! builder-inserted elements that have no `kind=` attribute.
 
 use xot::{Xot, Node as XotNode};
 use crate::transform::{TransformAction, helpers::*};
 use crate::output::syntax_highlight::SyntaxCategory;
 
-use super::kind::CsKind;
-use super::semantic::*;
+use super::input::CsKind;
+use super::output::*;
 
 /// Transform a C# AST node.
 ///
 /// Dispatch is split in two:
 ///   1. If the node carries a `kind` attribute (set by the builder
 ///      from the original tree-sitter kind), look it up in `CsKind`,
-///      fetch its `Rule` from `semantic::rule`, and execute via the
+///      fetch its `Rule` from `rules::rule`, and execute via the
 ///      shared [`crate::languages::rule::dispatch`].
 ///   2. Otherwise the node is a builder-inserted wrapper (e.g. the
 ///      `<name>` field wrapper) — handle inline.
@@ -63,7 +61,7 @@ pub const OTHER_MODIFIERS: &[&str] = &[
 
 /// Map a transformed element name to a syntax category for highlighting.
 pub fn syntax_category(element: &str) -> SyntaxCategory {
-    super::semantic::spec(element)
+    super::output::spec(element)
         .map(|spec| spec.syntax)
         .unwrap_or(SyntaxCategory::Default)
 }

@@ -115,7 +115,7 @@ tasks:
     desc: Regenerate Kind enums and verify there is no diff (CI check)
     cmds:
       - task: gen:kinds
-      - git diff --exit-code -- tractor/src/languages/*/kind.rs
+      - git diff --exit-code -- tractor/src/languages/*/input.rs
 
   test:snapshots:
     desc: Check that XML snapshots match current tractor output

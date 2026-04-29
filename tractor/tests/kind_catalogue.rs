@@ -194,10 +194,10 @@ fn python_catalogue_covers_blueprint() {
 /// `kind.rs` is regenerated with new variants). This runtime check
 /// adds the inverse guard: every kind tree-sitter actually emits when
 /// parsing the blueprint must be a known `GoKind` variant — i.e.
-/// `kind.rs` is up to date with the grammar.
+/// `input.rs` is up to date with the grammar.
 #[test]
 fn go_catalogue_covers_blueprint() {
-    use tractor::languages::go::kind::GoKind;
+    use tractor::languages::go::input::GoKind;
     use tractor::raw_kinds;
 
     let path = fixture_path("go", "blueprint.go");
@@ -214,7 +214,7 @@ fn go_catalogue_covers_blueprint() {
     assert!(
         missing.is_empty(),
         "tree-sitter go emitted {} kind(s) not in `GoKind`:\n{}\n\n\
-         Regenerate `tractor/src/languages/go/kind.rs` via \
+         Regenerate `tractor/src/languages/go/input.rs` via \
          `task gen:kinds` so the typed enum reflects the current grammar.",
         missing.len(),
         missing
@@ -227,7 +227,7 @@ fn go_catalogue_covers_blueprint() {
 
 #[test]
 fn go_node_metadata_is_well_formed() {
-    use tractor::languages::go::semantic::NODES;
+    use tractor::languages::go::output::NODES;
     let mut names: Vec<&str> = NODES.iter().map(|n| n.name).collect();
     names.sort();
     let total = names.len();
@@ -235,12 +235,12 @@ fn go_node_metadata_is_well_formed() {
     assert_eq!(
         names.len(),
         total,
-        "tractor/src/languages/go/semantic.rs contains duplicate node names"
+        "tractor/src/languages/go/output.rs contains duplicate node names"
     );
     for node in NODES {
         assert!(
             node.marker || node.container,
-            "tractor/src/languages/go/semantic.rs: <{}> is neither marker nor container",
+            "tractor/src/languages/go/output.rs: <{}> is neither marker nor container",
             node.name
         );
     }
@@ -306,13 +306,13 @@ fn rename_targets_are_non_empty() {
 ///
 /// In the new shape, kind drift is caught at compile time (the
 /// exhaustive `rule(CsKind) -> Rule` match fails to build when
-/// `kind.rs` is regenerated with new variants). This runtime check
+/// `input.rs` is regenerated with new variants). This runtime check
 /// adds the inverse guard: every kind tree-sitter actually emits when
 /// parsing the blueprint must be a known `CsKind` variant — i.e.
-/// `kind.rs` is up to date with the grammar.
+/// `input.rs` is up to date with the grammar.
 #[test]
 fn csharp_catalogue_covers_blueprint() {
-    use tractor::languages::csharp::kind::CsKind;
+    use tractor::languages::csharp::input::CsKind;
     use tractor::raw_kinds;
 
     let path = fixture_path("csharp", "blueprint.cs");
@@ -329,7 +329,7 @@ fn csharp_catalogue_covers_blueprint() {
     assert!(
         missing.is_empty(),
         "tree-sitter csharp emitted {} kind(s) not in `CsKind`:\n{}\n\n\
-         Regenerate `tractor/src/languages/csharp/kind.rs` via \
+         Regenerate `tractor/src/languages/csharp/input.rs` via \
          `task gen:kinds` so the typed enum reflects the current grammar.",
         missing.len(),
         missing
@@ -342,7 +342,7 @@ fn csharp_catalogue_covers_blueprint() {
 
 #[test]
 fn csharp_node_metadata_is_well_formed() {
-    use tractor::languages::csharp::semantic::NODES;
+    use tractor::languages::csharp::output::NODES;
     let mut names: Vec<&str> = NODES.iter().map(|n| n.name).collect();
     names.sort();
     let total = names.len();
@@ -350,12 +350,12 @@ fn csharp_node_metadata_is_well_formed() {
     assert_eq!(
         names.len(),
         total,
-        "tractor/src/languages/csharp/semantic.rs contains duplicate node names"
+        "tractor/src/languages/csharp/output.rs contains duplicate node names"
     );
     for node in NODES {
         assert!(
             node.marker || node.container,
-            "tractor/src/languages/csharp/semantic.rs: <{}> is neither marker nor container",
+            "tractor/src/languages/csharp/output.rs: <{}> is neither marker nor container",
             node.name
         );
     }

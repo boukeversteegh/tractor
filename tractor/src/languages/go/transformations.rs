@@ -12,7 +12,7 @@ use xot::{Xot, Node as XotNode};
 
 use crate::transform::{TransformAction, helpers::*};
 
-use super::semantic::*;
+use super::output::*;
 
 /// Kinds whose name happens to match our semantic vocabulary already
 /// (`iota`, `dot`, `array_type`, …) — leave them unchanged.

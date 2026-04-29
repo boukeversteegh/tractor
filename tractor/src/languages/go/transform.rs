@@ -1,10 +1,10 @@
-//! Go transform logic — thin dispatcher driven by `semantic::rule`.
+//! Go transform logic — thin dispatcher driven by `rules::rule`.
 //!
 //! The per-kind logic is split:
 //!   - Pure rename / flatten / shared compositions live as data in
-//!     [`super::semantic::rule`].
+//!     [`super::rules::rule`].
 //!   - Language-specific custom logic lives as named functions in
-//!     [`super::handlers`].
+//!     [`super::transformations`].
 //!
 //! This file's job is just to look up the kind and execute its rule.
 
@@ -13,14 +13,14 @@ use crate::transform::{TransformAction, helpers::*};
 use crate::transform::operators::is_operator_marker;
 use crate::output::syntax_highlight::SyntaxCategory;
 
-use super::kind::GoKind;
+use super::input::GoKind;
 
 /// Transform a Go AST node.
 ///
 /// Dispatch is split in two:
 ///   1. If the node carries a `kind` attribute (set by the builder
 ///      from the original tree-sitter kind), look it up in `GoKind`,
-///      fetch its `Rule` from `semantic::rule`, and execute via the
+///      fetch its `Rule` from `rules::rule`, and execute via the
 ///      shared [`crate::languages::rule::dispatch`].
 ///   2. Otherwise the node is a builder-inserted wrapper (e.g. the
 ///      `<name>` field wrapper) — handle inline.
@@ -54,7 +54,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
 /// Consults the per-name NODES table first (one source of truth);
 /// falls back to cross-cutting rules for names not in NODES.
 pub fn syntax_category(element: &str) -> SyntaxCategory {
-    if let Some(spec) = super::semantic::spec(element) {
+    if let Some(spec) = super::output::spec(element) {
         return spec.syntax;
     }
     match element {

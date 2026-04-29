@@ -1,9 +1,19 @@
-//! go language transform — split into semantic vocabulary
-//! and transform logic.
+//! Go language transform pipeline.
+//!
+//!   - [`input`]    — generated `GoKind` enum (the input vocabulary).
+//!   - [`output`]   — semantic-name constants and `NODES` (the output
+//!                    vocabulary).
+//!   - [`rules`]    — `rule(GoKind) -> Rule`, the input→output table.
+//!   - [`transformations`] — named functions referenced by
+//!                    `Rule::Custom` arms in `rules`.
+//!   - [`transform`]      — orchestrator: dispatch each AST node
+//!                    through `rules::rule` (or by element name for
+//!                    builder-inserted wrappers) to the shared
+//!                    [`crate::languages::rule::dispatch`] helper.
 
-pub mod kind;
+pub mod input;
+pub mod output;
 pub mod rules;
-pub mod semantic;
 pub mod transform;
 pub mod transformations;
 

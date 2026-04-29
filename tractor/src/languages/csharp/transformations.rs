@@ -13,7 +13,7 @@ use xot::{Xot, Node as XotNode};
 use crate::transform::{TransformAction, helpers::*};
 use crate::transform::operators::extract_operator;
 
-use super::semantic::*;
+use super::output::*;
 
 /// Kinds whose name happens to match our semantic vocabulary already
 /// (`discard`, `subpattern`, `interpolation`, `alias_qualified_name`)

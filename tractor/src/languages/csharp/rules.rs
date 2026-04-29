@@ -2,11 +2,11 @@
 //!
 //! Read this file to find the rule for a specific kind. Read
 //! [`super::transformations`] for the body of any `Rule::Custom`
-//! handler the rule references by name. Read [`super::semantic`] for
+//! handler the rule references by name. Read [`super::output`] for
 //! the output vocabulary (semantic names + NodeSpec metadata).
 //!
 //! Exhaustive over `CsKind` — the compiler enforces coverage. When
-//! the grammar ships a new kind, regenerating `kind.rs` adds a
+//! the grammar ships a new kind, regenerating `input.rs` adds a
 //! variant and this match fails to build until the new kind is
 //! classified.
 //!
@@ -17,8 +17,8 @@
 
 use crate::languages::rule::Rule;
 
-use super::kind::CsKind;
-use super::semantic::*;
+use super::input::CsKind;
+use super::output::*;
 use super::transformations;
 
 pub fn rule(k: CsKind) -> Rule {
