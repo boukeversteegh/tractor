@@ -6,8 +6,8 @@ use crate::languages::rule::Rule;
 use crate::languages::NodeSpec;
 use crate::output::syntax_highlight::SyntaxCategory;
 
-use super::handlers;
 use super::kind::GoKind;
+use super::transformations;
 
 // Named constants retained for use by the transform code. The NODES
 // table below is the source of truth for marker/container role and
@@ -271,19 +271,19 @@ pub fn rule(k: GoKind) -> Rule {
         | GoKind::EscapeSequence => Flatten { distribute_field: None },
 
         // ---- Custom (language-specific logic in handlers.rs) ----------
-        GoKind::ExpressionStatement   => Custom(handlers::expression_statement),
-        GoKind::ParameterList         => Custom(handlers::parameter_list),
-        GoKind::TypeDeclaration       => Custom(handlers::type_declaration),
-        GoKind::RawStringLiteral      => Custom(handlers::raw_string_literal),
-        GoKind::ShortVarDeclaration   => Custom(handlers::short_var_declaration),
-        GoKind::FunctionDeclaration   => Custom(handlers::function_declaration),
-        GoKind::MethodDeclaration     => Custom(handlers::method_declaration),
-        GoKind::FieldDeclaration      => Custom(handlers::field_declaration),
-        GoKind::TypeSpec              => Custom(handlers::type_spec),
-        GoKind::TypeAlias             => Custom(handlers::type_alias),
-        GoKind::IfStatement           => Custom(handlers::if_statement),
-        GoKind::TypeIdentifier        => Custom(handlers::type_identifier),
-        GoKind::Comment               => Custom(handlers::comment),
+        GoKind::ExpressionStatement   => Custom(transformations::expression_statement),
+        GoKind::ParameterList         => Custom(transformations::parameter_list),
+        GoKind::TypeDeclaration       => Custom(transformations::type_declaration),
+        GoKind::RawStringLiteral      => Custom(transformations::raw_string_literal),
+        GoKind::ShortVarDeclaration   => Custom(transformations::short_var_declaration),
+        GoKind::FunctionDeclaration   => Custom(transformations::function_declaration),
+        GoKind::MethodDeclaration     => Custom(transformations::method_declaration),
+        GoKind::FieldDeclaration      => Custom(transformations::field_declaration),
+        GoKind::TypeSpec              => Custom(transformations::type_spec),
+        GoKind::TypeAlias             => Custom(transformations::type_alias),
+        GoKind::IfStatement           => Custom(transformations::if_statement),
+        GoKind::TypeIdentifier        => Custom(transformations::type_identifier),
+        GoKind::Comment               => Custom(transformations::comment),
 
         // ---- Pure Rename ----------------------------------------------
         GoKind::Identifier               => Rename(NAME),
@@ -341,7 +341,7 @@ pub fn rule(k: GoKind) -> Rule {
         // ---- Passthrough (kind name already matches our vocabulary) ---
         GoKind::ArrayType
         | GoKind::Dot
-        | GoKind::Iota => Custom(handlers::passthrough),
+        | GoKind::Iota => Custom(transformations::passthrough),
 
         // ---- Kinds the grammar emits but the previous catalogue didn't
         //      classify. Old behavior: `_` arm called `apply_rename`
@@ -359,6 +359,6 @@ pub fn rule(k: GoKind) -> Rule {
         | GoKind::SliceExpression
         | GoKind::TypeConversionExpression
         | GoKind::TypeInstantiationExpression
-        | GoKind::VariadicArgument => Custom(handlers::passthrough),
+        | GoKind::VariadicArgument => Custom(transformations::passthrough),
     }
 }

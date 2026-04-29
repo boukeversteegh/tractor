@@ -1,9 +1,9 @@
-//! Per-kind custom handlers for Go.
+//! Per-kind transformations for Go.
 //!
 //! Each function is a `Rule::Custom` target — `rule(GoKind) -> Rule`
-//! references these by name. Handlers own the renaming, child
-//! reshaping, and `TransformAction` choice for kinds that don't fit a
-//! shared `Rule` variant.
+//! references these by name. A transformation owns the renaming,
+//! child reshaping, and `TransformAction` choice for kinds that don't
+//! fit a shared `Rule` variant.
 //!
 //! Simple flattens / pure renames / `extract op + rename` patterns
 //! live as data in `rule()` (see `semantic.rs`), not here.
