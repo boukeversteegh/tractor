@@ -252,8 +252,6 @@ pub const KINDS: &[KindEntry] = &[
     KindEntry { kind: "as_pattern_target",             handling: KindHandling::Flatten },
     KindEntry { kind: "assert_statement",              handling: KindHandling::Rename(ASSERT) },
     KindEntry { kind: "assignment",                    handling: KindHandling::Rename(ASSIGN) },
-    KindEntry { kind: "async_function_definition",     handling: KindHandling::Custom },
-    KindEntry { kind: "async_if_clause",               handling: KindHandling::Flatten },
     KindEntry { kind: "attribute",                     handling: KindHandling::Rename(MEMBER) },
     KindEntry { kind: "augmented_assignment",          handling: KindHandling::CustomThenRename(ASSIGN) },
     // Tree-sitter leaf for the `await` keyword expression.
