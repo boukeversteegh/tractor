@@ -304,6 +304,36 @@ fn rename_targets_are_non_empty() {
 // gone, the equivalent guarantee comes from `rule(GoKind) -> Rule`
 // being exhaustive over the typed enum (compile-time).
 
+/// Every entry in C#'s catalogue must reference a kind the grammar
+/// actually emits, validated against the generated `CsKind` enum.
+/// Catches dead catalogue entries — kinds that the grammar has
+/// renamed or removed but that still sit in the catalogue.
+///
+/// This is the inverse of `csharp_catalogue_covers_blueprint` (which
+/// asserts every blueprint-emitted kind is in the catalogue). It will
+/// be removed once C# migrates to the rule()-driven dispatcher and
+/// drops `KINDS`, the same way the Go variant was removed.
+#[test]
+fn csharp_catalogue_entries_are_real_grammar_kinds() {
+    use tractor::languages::csharp::kind::CsKind;
+    use tractor::languages::csharp::semantic::KINDS;
+
+    let mut unknown: Vec<&str> = Vec::new();
+    for entry in KINDS {
+        if CsKind::from_str(entry.kind).is_none() {
+            unknown.push(entry.kind);
+        }
+    }
+    assert!(
+        unknown.is_empty(),
+        "C# catalogue references {} kind(s) the grammar doesn't emit:\n{}\n\n\
+         Either remove these entries from KINDS or regenerate \
+         `tractor/src/languages/csharp/kind.rs` if the grammar changed.",
+        unknown.len(),
+        unknown.iter().map(|k| format!("  - {}", k)).collect::<Vec<_>>().join("\n"),
+    );
+}
+
 /// Semantic node names should be unique and each node must have at
 /// least one role. This belongs with the catalogue checks rather
 /// than inside a language transform module.
