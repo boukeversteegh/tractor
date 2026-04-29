@@ -33,18 +33,11 @@ struct Lang {
 }
 
 const LANGUAGES: &[Lang] = &[
-    // C#, Go, Java, PHP, Python, Rust, and TypeScript have migrated to the
-    // typed-enum + rule() shape — no `KindEntry` catalogue. Their blueprint
-    // coverage is checked by `<lang>_catalogue_covers_blueprint` below using
-    // `<Lang>Kind::from_str`.
-    Lang {
-        id: "ruby",
-        fixture: "blueprint.rb",
-        fixture_dir: "ruby",
-        catalogue_path: "tractor/src/languages/ruby/semantic.rs",
-        kinds: tractor::languages::ruby::semantic::KINDS,
-        nodes: tractor::languages::ruby::semantic::NODES,
-    },
+    // All programming languages (C#, Go, Java, PHP, Python, Rust, TypeScript,
+    // Ruby) have migrated to the typed-enum + rule() shape — no `KindEntry`
+    // catalogue. Their blueprint coverage is checked by
+    // `<lang>_catalogue_covers_blueprint` below using `<Lang>Kind::from_str`.
+    // tsql is the lone remaining catalogue-driven language (data-only).
     Lang {
         id: "tsql",
         fixture: "blueprint.sql",
@@ -185,13 +178,8 @@ fn go_node_metadata_is_well_formed() {
 }
 
 #[test]
-fn ruby_catalogue_covers_blueprint() {
-    check_lang(&LANGUAGES[0]);
-}
-
-#[test]
 fn tsql_catalogue_covers_blueprint() {
-    check_lang(&LANGUAGES[1]);
+    check_lang(&LANGUAGES[0]);
 }
 
 /// Sanity check that every catalogue entry's `Rename` / `RenameWithMarker`
@@ -233,26 +221,56 @@ fn rename_targets_are_non_empty() {
 // `rule(CsKind) -> Rule` being exhaustive over the typed enum
 // (compile-time).
 
-/// Validate that every `KindEntry` in Ruby's `KINDS` is a real
-/// grammar kind (`RubyKind` variant). Catches dead entries.
+/// Ruby-specific blueprint coverage check via `RubyKind::from_str`.
 #[test]
-fn ruby_catalogue_entries_are_real_grammar_kinds() {
+fn ruby_catalogue_covers_blueprint() {
     use tractor::languages::ruby::input::RubyKind;
-    use tractor::languages::ruby::semantic::KINDS;
+    use tractor::raw_kinds;
 
-    let mut dead: Vec<&str> = Vec::new();
-    for entry in KINDS {
-        if RubyKind::from_str(entry.kind).is_none() {
-            dead.push(entry.kind);
+    let path = fixture_path("ruby", "blueprint.rb");
+    let source = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("failed to read fixture {}: {}", path.display(), e));
+
+    let kinds = raw_kinds("ruby", &source).expect("raw_kinds");
+    let mut missing: Vec<String> = Vec::new();
+    for k in &kinds {
+        if RubyKind::from_str(k).is_none() {
+            missing.push(k.clone());
         }
     }
     assert!(
-        dead.is_empty(),
-        "ruby catalogue has {} dead entries (not in `RubyKind`):\n{}\n\n\
-         Remove these from tractor/src/languages/ruby/semantic.rs::KINDS.",
-        dead.len(),
-        dead.iter().map(|k| format!("  - {}", k)).collect::<Vec<_>>().join("\n"),
+        missing.is_empty(),
+        "tree-sitter ruby emitted {} kind(s) not in `RubyKind`:\n{}\n\n\
+         Regenerate `tractor/src/languages/ruby/input.rs` via \
+         `task gen:kinds` so the typed enum reflects the current grammar.",
+        missing.len(),
+        missing
+            .iter()
+            .map(|k| format!("  - {}", k))
+            .collect::<Vec<_>>()
+            .join("\n"),
     );
+}
+
+#[test]
+fn ruby_node_metadata_is_well_formed() {
+    use tractor::languages::ruby::semantic::NODES;
+    let mut names: Vec<&str> = NODES.iter().map(|n| n.name).collect();
+    names.sort();
+    let total = names.len();
+    names.dedup();
+    assert_eq!(
+        names.len(),
+        total,
+        "tractor/src/languages/ruby/semantic.rs contains duplicate node names"
+    );
+    for node in NODES {
+        assert!(
+            node.marker || node.container,
+            "tractor/src/languages/ruby/semantic.rs: <{}> is neither marker nor container",
+            node.name
+        );
+    }
 }
 
 /// TypeScript-specific blueprint coverage check via `TsKind::from_str`.

@@ -1,7 +1,5 @@
 /// Semantic element names — tractor's Ruby XML vocabulary after transform.
-/// Tree-sitter kind strings (left side of `match` arms) stay as bare
-/// literals — they are external vocabulary.
-use crate::languages::{KindEntry, KindHandling, NodeSpec};
+use crate::languages::NodeSpec;
 use crate::output::syntax_highlight::SyntaxCategory;
 
 // Named constants retained for use by the transform code. The NODES
@@ -219,119 +217,6 @@ pub const NODES: &[NodeSpec] = &[
     // Dual-use: block container + `<parameter><block/>` marker.
     NodeSpec { name: BLOCK, marker: true, container: true, syntax: Default },
 ];
-
-/// Tree-sitter kind catalogue — single source of truth for every
-/// kind the Ruby transform handles. Sorted alphabetically by kind
-/// name. See `KindHandling` for variants.
-pub const KINDS: &[KindEntry] = &[
-    KindEntry { kind: "argument_list",                 handling: KindHandling::Flatten },
-    KindEntry { kind: "array",                         handling: KindHandling::Rename(ARRAY) },
-    KindEntry { kind: "assignment",                    handling: KindHandling::Rename(ASSIGN) },
-    KindEntry { kind: "bare_string",                   handling: KindHandling::Flatten },
-    KindEntry { kind: "bare_symbol",                   handling: KindHandling::Flatten },
-    KindEntry { kind: "begin",                         handling: KindHandling::Rename(BEGIN) },
-    KindEntry { kind: "begin_block",                   handling: KindHandling::RenameWithMarker(BLOCK, BEGIN) },
-    KindEntry { kind: "binary",                        handling: KindHandling::Rename(BINARY) },
-    KindEntry { kind: "block",                         handling: KindHandling::PassThrough },
-    KindEntry { kind: "block_body",                    handling: KindHandling::Flatten },
-    KindEntry { kind: "block_parameter",               handling: KindHandling::RenameWithMarker(PARAMETER, BLOCK) },
-    KindEntry { kind: "block_parameters",              handling: KindHandling::Flatten },
-    KindEntry { kind: "body_statement",                handling: KindHandling::Flatten },
-    // Tree-sitter leaves — keyword tokens that already match our
-    // semantic vocabulary as marker/leaf tokens; pass through.
-    KindEntry { kind: "break",                         handling: KindHandling::PassThrough },
-    KindEntry { kind: "call",                          handling: KindHandling::Rename(CALL) },
-    KindEntry { kind: "case",                          handling: KindHandling::Rename(CASE) },
-    KindEntry { kind: "class",                         handling: KindHandling::Rename(CLASS) },
-    KindEntry { kind: "comment",                       handling: KindHandling::Custom },
-    KindEntry { kind: "conditional",                   handling: KindHandling::PassThrough },
-    KindEntry { kind: "constant",                      handling: KindHandling::PassThrough },
-    KindEntry { kind: "delimited_symbol",              handling: KindHandling::RenameWithMarker(SYMBOL, DELIMITED) },
-    KindEntry { kind: "do",                            handling: KindHandling::PassThrough },
-    KindEntry { kind: "do_block",                      handling: KindHandling::RenameWithMarker(BLOCK, DO) },
-    KindEntry { kind: "else",                          handling: KindHandling::Rename(ELSE) },
-    KindEntry { kind: "elsif",                         handling: KindHandling::Rename(ELSE_IF) },
-    KindEntry { kind: "ensure",                        handling: KindHandling::Rename(ENSURE) },
-    KindEntry { kind: "escape_sequence",               handling: KindHandling::Flatten },
-    KindEntry { kind: "exception_variable",            handling: KindHandling::Rename(VARIABLE) },
-    KindEntry { kind: "exceptions",                    handling: KindHandling::PassThrough },
-    KindEntry { kind: "false",                         handling: KindHandling::PassThrough },
-    KindEntry { kind: "for",                           handling: KindHandling::Rename(FOR) },
-    KindEntry { kind: "global_variable",               handling: KindHandling::Custom },
-    KindEntry { kind: "hash",                          handling: KindHandling::Rename(HASH) },
-    KindEntry { kind: "hash_key_symbol",               handling: KindHandling::Flatten },
-    KindEntry { kind: "hash_splat_argument",           handling: KindHandling::RenameWithMarker(SPREAD, DICT) },
-    KindEntry { kind: "hash_splat_parameter",          handling: KindHandling::RenameWithMarker(SPREAD, DICT) },
-    KindEntry { kind: "heredoc_beginning",             handling: KindHandling::Flatten },
-    KindEntry { kind: "heredoc_body",                  handling: KindHandling::Flatten },
-    KindEntry { kind: "heredoc_content",               handling: KindHandling::Flatten },
-    KindEntry { kind: "heredoc_end",                   handling: KindHandling::Flatten },
-    KindEntry { kind: "identifier",                    handling: KindHandling::Custom },
-    KindEntry { kind: "if",                            handling: KindHandling::Rename(IF) },
-    KindEntry { kind: "if_modifier",                   handling: KindHandling::Custom },
-    KindEntry { kind: "in",                            handling: KindHandling::PassThrough },
-    KindEntry { kind: "instance_variable",             handling: KindHandling::Custom },
-    KindEntry { kind: "class_variable",                handling: KindHandling::Custom },
-    KindEntry { kind: "integer",                       handling: KindHandling::Rename(INT) },
-    // f-string-style interpolation `#{…}` — already named `interpolation`.
-    KindEntry { kind: "interpolation",                 handling: KindHandling::PassThrough },
-    KindEntry { kind: "keyword_parameter",             handling: KindHandling::RenameWithMarker(PARAMETER, KEYWORD) },
-    KindEntry { kind: "lambda",                        handling: KindHandling::PassThrough },
-    KindEntry { kind: "lambda_parameters",             handling: KindHandling::Flatten },
-    KindEntry { kind: "left_assignment_list",          handling: KindHandling::Rename(LEFT) },
-    KindEntry { kind: "method",                        handling: KindHandling::Rename(METHOD) },
-    KindEntry { kind: "method_parameters",             handling: KindHandling::Flatten },
-    KindEntry { kind: "module",                        handling: KindHandling::Rename(MODULE) },
-    KindEntry { kind: "next",                          handling: KindHandling::PassThrough },
-    KindEntry { kind: "nil",                           handling: KindHandling::PassThrough },
-    KindEntry { kind: "operator",                      handling: KindHandling::PassThrough },
-    KindEntry { kind: "operator_assignment",           handling: KindHandling::Rename(ASSIGN) },
-    KindEntry { kind: "optional_parameter",            handling: KindHandling::RenameWithMarker(PARAMETER, DEFAULT) },
-    // `{ a: 1 }` entry — already named `pair`, matches semantic vocabulary.
-    KindEntry { kind: "pair",                          handling: KindHandling::PassThrough },
-    KindEntry { kind: "parenthesized_statements",      handling: KindHandling::Flatten },
-    KindEntry { kind: "pattern",                       handling: KindHandling::PassThrough },
-    KindEntry { kind: "program",                       handling: KindHandling::Rename(PROGRAM) },
-    KindEntry { kind: "range",                         handling: KindHandling::PassThrough },
-    KindEntry { kind: "redo",                          handling: KindHandling::PassThrough },
-    KindEntry { kind: "regex",                         handling: KindHandling::PassThrough },
-    KindEntry { kind: "rescue",                        handling: KindHandling::Rename(RESCUE) },
-    KindEntry { kind: "rest_assignment",               handling: KindHandling::Rename(SPREAD) },
-    KindEntry { kind: "retry",                         handling: KindHandling::PassThrough },
-    KindEntry { kind: "self",                          handling: KindHandling::PassThrough },
-    KindEntry { kind: "simple_symbol",                 handling: KindHandling::Flatten },
-    KindEntry { kind: "singleton_class",               handling: KindHandling::RenameWithMarker(CLASS, SINGLETON) },
-    KindEntry { kind: "singleton_method",              handling: KindHandling::RenameWithMarker(METHOD, SINGLETON) },
-    KindEntry { kind: "splat_argument",                handling: KindHandling::RenameWithMarker(SPREAD, LIST) },
-    KindEntry { kind: "splat_parameter",               handling: KindHandling::RenameWithMarker(SPREAD, LIST) },
-    KindEntry { kind: "string",                        handling: KindHandling::Rename(STRING) },
-    KindEntry { kind: "string_array",                  handling: KindHandling::RenameWithMarker(ARRAY, STRING) },
-    KindEntry { kind: "string_content",                handling: KindHandling::Flatten },
-    KindEntry { kind: "superclass",                    handling: KindHandling::PassThrough },
-    KindEntry { kind: "symbol_array",                  handling: KindHandling::RenameWithMarker(ARRAY, SYMBOL) },
-    KindEntry { kind: "then",                          handling: KindHandling::PassThrough },
-    KindEntry { kind: "true",                          handling: KindHandling::PassThrough },
-    KindEntry { kind: "unary",                         handling: KindHandling::PassThrough },
-    KindEntry { kind: "unless",                        handling: KindHandling::Rename(UNLESS) },
-    KindEntry { kind: "unless_modifier",               handling: KindHandling::Custom },
-    KindEntry { kind: "until",                         handling: KindHandling::Rename(UNTIL) },
-    KindEntry { kind: "until_modifier",                handling: KindHandling::Custom },
-    KindEntry { kind: "when",                          handling: KindHandling::PassThrough },
-    KindEntry { kind: "while",                         handling: KindHandling::Rename(WHILE) },
-    KindEntry { kind: "while_modifier",                handling: KindHandling::Custom },
-    KindEntry { kind: "yield",                         handling: KindHandling::PassThrough },
-];
-
-/// Look up the rename target for a tree-sitter `kind` in this
-/// language's catalogue. Used by `transform::map_element_name`.
-pub fn rename_target(kind: &str) -> Option<(&'static str, Option<&'static str>)> {
-    KINDS.iter().find(|k| k.kind == kind).and_then(|k| match k.handling {
-        KindHandling::Rename(s) | KindHandling::CustomThenRename(s) => Some((s, None)),
-        KindHandling::RenameWithMarker(s, m)
-        | KindHandling::CustomThenRenameWithMarker(s, m) => Some((s, Some(m))),
-        _ => None,
-    })
-}
 
 pub fn spec(name: &str) -> Option<&'static NodeSpec> {
     NODES.iter().find(|n| n.name == name)
