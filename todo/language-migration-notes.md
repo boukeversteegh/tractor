@@ -235,8 +235,56 @@ Commits (chronological):
   descendant text directly so `<name><lifetime>'a</lifetime></name>`
   becomes `<name>'a</name>` rather than triple-wrapping.
 
-### TypeScript
-(not started)
+### TypeScript — COMPLETE
+
+Commits (chronological):
+
+- `aeee159` — Step 1: generate TsKind enum (initially 183 kinds
+  from TYPESCRIPT_NODE_TYPES only).
+- `a6761fc` — **gen-kinds multi-source extension**: change
+  `node_types` (single string) to `node_types_sources` (slice of
+  strings) so a language can union multiple grammars. TsKind
+  grows to 192 kinds (covers TYPESCRIPT + TSX).
+- `3d5ad30` — Step 2: validate catalogue, drop 4 dead entries
+  (field_definition, readonly_modifier, string_start, string_end).
+- `dfd9b1f` — Step 3: rules.rs + transformations.rs.
+- `6dd9640` — Step 4: swap dispatcher. Caught a behavior
+  divergence: `predefined_type` was `Rename(TYPE)` in catalogue
+  but the old catch-all also wrapped TYPE-renamed text in
+  `<name>` (Principle #14). Fixed by switching PredefinedType to
+  `Custom(type_identifier)` in same commit.
+- `229900e` — Step 5: drop KINDS / rename_target.
+- `6fcb3b3` — Step 6: rename semantic.rs → output.rs.
+
+#### TypeScript-specific notes
+
+- **Multi-source grammar support** (gen-kinds): the typescript
+  crate ships TYPESCRIPT_NODE_TYPES + TSX_NODE_TYPES grammars.
+  Both dispatch through the same `typescript::transform`. Codegen
+  now unions both so `TsKind::from_str` recognises every JSX
+  kind too (jsx_element, jsx_attribute, etc.).
+- **No `Rule::DefaultAccessThenRename` use** — TypeScript's
+  class-member visibility default-public is encoded inside Custom
+  handlers (method_definition, public_field_definition,
+  abstract_method_signature) along with other extraction logic
+  (async/star/get/set markers). Promoting wouldn't simplify since
+  these handlers do multi-step work beyond just the access marker.
+- **`name_wrapper` flattens for destructuring patterns**:
+  array_pattern / object_pattern as the single child means it's
+  not really a name — flatten so the pattern surfaces directly
+  under the declarator.
+- **`private_property_identifier` (`#foo`)**: the leading `#` is
+  stripped, and a `<private/>` marker is lifted onto the enclosing
+  field/property by the name_wrapper inline logic.
+- **Behavior parity: predefined_type**: caught by the
+  `functions::typescript_arrow` / `parameters::typescript` /
+  `generics::typescript_vocabulary` transform tests during Step 4
+  — the original catch-all wrapped TYPE-renamed text in `<name>`
+  when no marker was present. The pure `Rule::Rename(TYPE)`
+  doesn't do this. Fix: route PredefinedType through Custom
+  (transformations::type_identifier) which does both rename + wrap.
+  Lesson: snapshot byte-identity is the load-bearing assertion
+  — it caught the issue immediately.
 
 ### Ruby
 (not started)
