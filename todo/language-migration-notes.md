@@ -146,7 +146,53 @@ traits-use clauses, property-hooks).
   operators, property hooks, error suppression, shell command,
   intersection types, etc.). Each is a small isolated PR.
 
-### Python
+### Python — COMPLETE
+
+Commits (chronological):
+
+- `acd6729` — Step 1: generate PyKind enum (127 kinds initially).
+- `d51f8f5` — **gen-kinds improvement**: also recurse into
+  `fields.*.types` and `children.types`. PyKind grew to 128
+  (added `as_pattern_target`, which only appears in
+  `as_pattern.fields.alias.types`).
+- `5e8cb4c` — Step 2: validate catalogue, drop 2 dead entries
+  (`async_function_definition`, `async_if_clause` — both absorbed
+  into the regular function/if kinds with text-level async).
+- `51a4101` — Step 3: rules.rs + transformations.rs.
+- `8b8b516` — Step 4: swap dispatcher (deletes 486 lines from
+  transform.rs).
+- `a07b341` — Step 5: drop KINDS / rename_target.
+- `7f7d698` — Step 6: rename semantic.rs → output.rs.
+
+#### Python-specific notes
+
+- **Codegen needed extension** to also recurse into
+  `fields.*.types` and `children.types` arrays. Some kinds (like
+  Python's `as_pattern_target`) appear only in those nested type
+  lists — never declared at the top level or in `subtypes`.
+  Without this, the typed enum misses kinds the parser actually
+  emits, and the new dispatcher's `<Lang>Kind::from_str` returns
+  None for them. The fix benefits all future languages too;
+  Go/C#/Java/PHP unchanged.
+- **No `Rule::DefaultAccessThenRename` use** — Python uses
+  underscore convention for visibility (encoded into the
+  `function_definition` Custom handler, not declarative). Class
+  members still get `<public/>` / `<protected/>` / `<private/>`
+  markers via the function_definition handler walking
+  `is_inside_class_body`.
+- **Decorated_definition is a Custom handler** that hoists
+  `@decorator` children INTO the inner class/function so the
+  cross-language topology (`<class><decorator/>...`) holds. Then
+  the wrapper flattens.
+- **Collection construction is exhaustive (Principle #9)**:
+  `<list>` always has `<literal/>` or `<comprehension/>`;
+  same for `<dict>` and `<set>`. The handlers prepend the marker
+  before any rename.
+- **f-string interpolation kinds are passthrough TODO** —
+  `format_expression`, `escape_interpolation`, etc. The catalogue
+  didn't handle them either; they survive as raw kind names.
+
+### Rust (`rust_lang`)
 (not started)
 
 ### Rust (`rust_lang`)
