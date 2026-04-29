@@ -339,26 +339,79 @@ pub fn rule(k: GoKind) -> Rule {
         GoKind::VariadicParameterDeclaration => Rename(PARAMETER),
 
         // ---- Passthrough (kind name already matches our vocabulary) ---
-        GoKind::ArrayType
-        | GoKind::Dot
-        | GoKind::Iota => Custom(transformations::passthrough),
 
-        // ---- Kinds the grammar emits but the previous catalogue didn't
-        //      classify. Old behavior: `_` arm called `apply_rename`
-        //      which returned `None` — net effect: no rename, raw kind
-        //      survives as the element name. Preserve via passthrough.
-        //      A future commit can promote any of these to real
-        //      semantic names.
-        GoKind::EmptyStatement
-        | GoKind::ExpressionCase
-        | GoKind::FallthroughStatement
-        | GoKind::ImaginaryLiteral
-        | GoKind::ImplicitLengthArrayType
-        | GoKind::ParenthesizedExpression
-        | GoKind::ParenthesizedType
-        | GoKind::SliceExpression
-        | GoKind::TypeConversionExpression
-        | GoKind::TypeInstantiationExpression
-        | GoKind::VariadicArgument => Custom(transformations::passthrough),
+        // `iota` — already in NODES, intentionally a leaf. Correct.
+        GoKind::Iota => Custom(transformations::passthrough),
+
+        // TODO: `array_type` should be `Rename(ARRAY)` (new semantic
+        // constant) for consistency with sibling type kinds:
+        //   slice_type   → SLICE
+        //   map_type     → MAP
+        //   pointer_type → POINTER
+        //   channel_type → CHAN
+        // Also fold `implicit_length_array_type` into the same target.
+        // Currently `<array_type>` survives as a raw kind name — not in
+        // NODES, only avoided in invariant tests because no fixture
+        // exercises it.
+        GoKind::ArrayType
+        | GoKind::ImplicitLengthArrayType => Custom(transformations::passthrough),
+
+        // TODO: `dot` (the `.` in `import . "pkg"`) is a name placeholder.
+        // Likely should be `Rename(NAME)` like other identifier-like
+        // leaves (`blank_identifier`, `field_identifier`).
+        GoKind::Dot => Custom(transformations::passthrough),
+
+        // TODO: `expression_case` should be `Rename(CASE)` for
+        // consistency — its sibling kinds already do this:
+        //   communication_case → CASE
+        //   default_case       → DEFAULT
+        //   expression_case    → ??  ← currently `<expression_case>` (passthrough)
+        // Test impact: `tests/transform/go/switch_markers.rs` queries
+        // `expression_case/value/int='1'` — would update to
+        // `case/value/int='1'`. No snapshot impact (blueprint doesn't
+        // exercise expression switches).
+        GoKind::ExpressionCase => Custom(transformations::passthrough),
+
+        // TODO: `parenthesized_expression` and `parenthesized_type`
+        // should be `Flatten { distribute_field: None }` — parens are
+        // pure grammar grouping with no semantic content. Other
+        // languages already flatten this kind (csharp, typescript, etc.).
+        GoKind::ParenthesizedExpression
+        | GoKind::ParenthesizedType => Custom(transformations::passthrough),
+
+        // TODO: `empty_statement` (a bare `;`) carries no semantic
+        // content; either `Flatten` or skip it entirely.
+        GoKind::EmptyStatement => Custom(transformations::passthrough),
+
+        // TODO: `fallthrough_statement` is a real Go control-flow
+        // construct. Likely wants its own semantic name (FALLTHROUGH)
+        // alongside BREAK / CONTINUE / GOTO, with a corresponding
+        // NodeSpec entry.
+        GoKind::FallthroughStatement => Custom(transformations::passthrough),
+
+        // TODO: `imaginary_literal` (`1i`) is a number-shaped literal.
+        // Likely `Rename(FLOAT)` (or a new IMAG semantic) — currently
+        // `<imaginary_literal>` survives as raw kind.
+        GoKind::ImaginaryLiteral => Custom(transformations::passthrough),
+
+        // TODO: `slice_expression` (`s[i:j]`) is structurally similar
+        // to `index_expression` (`s[i]`). Either reuse `Rename(INDEX)`
+        // with a `<slice/>` marker, or introduce a SLICE_OP semantic.
+        GoKind::SliceExpression => Custom(transformations::passthrough),
+
+        // TODO: `type_conversion_expression` (`T(x)`) is semantically
+        // a call. Likely `Rename(CALL)` with a `<type/>` marker, so
+        // `//call[type]` matches every type conversion uniformly.
+        GoKind::TypeConversionExpression => Custom(transformations::passthrough),
+
+        // TODO: `type_instantiation_expression` (`Foo[T]`) is generic
+        // application. Could share the `<type><generic/>...` shape
+        // already used for `generic_type`, or get its own semantic.
+        GoKind::TypeInstantiationExpression => Custom(transformations::passthrough),
+
+        // TODO: `variadic_argument` (`args...`) is an argument variant.
+        // Likely `Rename(ARGUMENT)` with a `<variadic/>` marker so
+        // `//argument[variadic]` picks them out.
+        GoKind::VariadicArgument => Custom(transformations::passthrough),
     }
 }
