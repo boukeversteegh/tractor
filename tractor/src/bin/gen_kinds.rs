@@ -29,6 +29,11 @@ const LANGUAGES: &[LangCodegen] = &[
         node_types: tree_sitter_c_sharp::NODE_TYPES,
         output_path: "tractor/src/languages/csharp/input.rs",
     },
+    LangCodegen {
+        enum_name: "JavaKind",
+        node_types: tree_sitter_java::NODE_TYPES,
+        output_path: "tractor/src/languages/java/input.rs",
+    },
 ];
 
 fn main() -> Result<()> {
