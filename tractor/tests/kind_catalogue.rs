@@ -33,14 +33,9 @@ struct Lang {
 }
 
 const LANGUAGES: &[Lang] = &[
-    Lang {
-        id: "csharp",
-        fixture: "blueprint.cs",
-        fixture_dir: "csharp",
-        catalogue_path: "tractor/src/languages/csharp/semantic.rs",
-        kinds: tractor::languages::csharp::semantic::KINDS,
-        nodes: tractor::languages::csharp::semantic::NODES,
-    },
+    // C# has migrated to the typed-enum + rule() shape — no `KindEntry`
+    // catalogue. Its blueprint coverage is checked by
+    // `csharp_catalogue_covers_blueprint` below using `CsKind::from_str`.
     Lang {
         id: "java",
         fixture: "blueprint.java",
@@ -171,28 +166,23 @@ fn check_node_names(lang: &Lang) {
 }
 
 #[test]
-fn csharp_catalogue_covers_blueprint() {
+fn java_catalogue_covers_blueprint() {
     check_lang(&LANGUAGES[0]);
 }
 
 #[test]
-fn java_catalogue_covers_blueprint() {
+fn rust_catalogue_covers_blueprint() {
     check_lang(&LANGUAGES[1]);
 }
 
 #[test]
-fn rust_catalogue_covers_blueprint() {
+fn typescript_catalogue_covers_blueprint() {
     check_lang(&LANGUAGES[2]);
 }
 
 #[test]
-fn typescript_catalogue_covers_blueprint() {
-    check_lang(&LANGUAGES[3]);
-}
-
-#[test]
 fn python_catalogue_covers_blueprint() {
-    check_lang(&LANGUAGES[4]);
+    check_lang(&LANGUAGES[3]);
 }
 
 /// Go-specific blueprint coverage check. Go has migrated to the
@@ -258,17 +248,17 @@ fn go_node_metadata_is_well_formed() {
 
 #[test]
 fn ruby_catalogue_covers_blueprint() {
-    check_lang(&LANGUAGES[5]);
+    check_lang(&LANGUAGES[4]);
 }
 
 #[test]
 fn php_catalogue_covers_blueprint() {
-    check_lang(&LANGUAGES[6]);
+    check_lang(&LANGUAGES[5]);
 }
 
 #[test]
 fn tsql_catalogue_covers_blueprint() {
-    check_lang(&LANGUAGES[7]);
+    check_lang(&LANGUAGES[6]);
 }
 
 /// Sanity check that every catalogue entry's `Rename` / `RenameWithMarker`
@@ -304,34 +294,71 @@ fn rename_targets_are_non_empty() {
 // gone, the equivalent guarantee comes from `rule(GoKind) -> Rule`
 // being exhaustive over the typed enum (compile-time).
 
-/// Every entry in C#'s catalogue must reference a kind the grammar
-/// actually emits, validated against the generated `CsKind` enum.
-/// Catches dead catalogue entries — kinds that the grammar has
-/// renamed or removed but that still sit in the catalogue.
-///
-/// This is the inverse of `csharp_catalogue_covers_blueprint` (which
-/// asserts every blueprint-emitted kind is in the catalogue). It will
-/// be removed once C# migrates to the rule()-driven dispatcher and
-/// drops `KINDS`, the same way the Go variant was removed.
-#[test]
-fn csharp_catalogue_entries_are_real_grammar_kinds() {
-    use tractor::languages::csharp::kind::CsKind;
-    use tractor::languages::csharp::semantic::KINDS;
+// Removed: `csharp_catalogue_entries_are_real_grammar_kinds`. That
+// test validated the old `KINDS` array against `CsKind`; with
+// `KINDS` gone, the equivalent guarantee comes from
+// `rule(CsKind) -> Rule` being exhaustive over the typed enum
+// (compile-time).
 
-    let mut unknown: Vec<&str> = Vec::new();
-    for entry in KINDS {
-        if CsKind::from_str(entry.kind).is_none() {
-            unknown.push(entry.kind);
+/// C#-specific blueprint coverage check. C# has migrated to the
+/// typed-enum + rule() dispatcher, so coverage is asserted via
+/// `CsKind::from_str` rather than against a `KINDS` table.
+///
+/// In the new shape, kind drift is caught at compile time (the
+/// exhaustive `rule(CsKind) -> Rule` match fails to build when
+/// `kind.rs` is regenerated with new variants). This runtime check
+/// adds the inverse guard: every kind tree-sitter actually emits when
+/// parsing the blueprint must be a known `CsKind` variant — i.e.
+/// `kind.rs` is up to date with the grammar.
+#[test]
+fn csharp_catalogue_covers_blueprint() {
+    use tractor::languages::csharp::kind::CsKind;
+    use tractor::raw_kinds;
+
+    let path = fixture_path("csharp", "blueprint.cs");
+    let source = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("failed to read fixture {}: {}", path.display(), e));
+
+    let kinds = raw_kinds("csharp", &source).expect("raw_kinds");
+    let mut missing: Vec<String> = Vec::new();
+    for k in &kinds {
+        if CsKind::from_str(k).is_none() {
+            missing.push(k.clone());
         }
     }
     assert!(
-        unknown.is_empty(),
-        "C# catalogue references {} kind(s) the grammar doesn't emit:\n{}\n\n\
-         Either remove these entries from KINDS or regenerate \
-         `tractor/src/languages/csharp/kind.rs` if the grammar changed.",
-        unknown.len(),
-        unknown.iter().map(|k| format!("  - {}", k)).collect::<Vec<_>>().join("\n"),
+        missing.is_empty(),
+        "tree-sitter csharp emitted {} kind(s) not in `CsKind`:\n{}\n\n\
+         Regenerate `tractor/src/languages/csharp/kind.rs` via \
+         `task gen:kinds` so the typed enum reflects the current grammar.",
+        missing.len(),
+        missing
+            .iter()
+            .map(|k| format!("  - {}", k))
+            .collect::<Vec<_>>()
+            .join("\n"),
     );
+}
+
+#[test]
+fn csharp_node_metadata_is_well_formed() {
+    use tractor::languages::csharp::semantic::NODES;
+    let mut names: Vec<&str> = NODES.iter().map(|n| n.name).collect();
+    names.sort();
+    let total = names.len();
+    names.dedup();
+    assert_eq!(
+        names.len(),
+        total,
+        "tractor/src/languages/csharp/semantic.rs contains duplicate node names"
+    );
+    for node in NODES {
+        assert!(
+            node.marker || node.container,
+            "tractor/src/languages/csharp/semantic.rs: <{}> is neither marker nor container",
+            node.name
+        );
+    }
 }
 
 /// Semantic node names should be unique and each node must have at
