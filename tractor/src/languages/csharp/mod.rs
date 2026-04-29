@@ -2,6 +2,7 @@
 //! and transform logic.
 
 pub mod kind;
+pub mod rules;
 pub mod semantic;
 pub mod transform;
 pub mod transformations;

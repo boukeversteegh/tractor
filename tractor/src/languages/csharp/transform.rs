@@ -48,7 +48,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         None => return Ok(TransformAction::Continue),
     };
 
-    crate::languages::rule::dispatch(xot, node, super::semantic::rule(kind))
+    crate::languages::rule::dispatch(xot, node, super::rules::rule(kind))
 }
 
 /// C# access modifiers in canonical declaration order. Public so that

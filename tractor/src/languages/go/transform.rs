@@ -46,7 +46,7 @@ pub fn transform(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::E
         None => return Ok(TransformAction::Continue),
     };
 
-    crate::languages::rule::dispatch(xot, node, super::semantic::rule(kind))
+    crate::languages::rule::dispatch(xot, node, super::rules::rule(kind))
 }
 
 /// Map a transformed element name to a syntax category for highlighting.
