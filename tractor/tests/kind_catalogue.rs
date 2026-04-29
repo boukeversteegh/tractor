@@ -33,8 +33,8 @@ struct Lang {
 }
 
 const LANGUAGES: &[Lang] = &[
-    // C#, Go, Java, and PHP have migrated to the typed-enum + rule() shape —
-    // no `KindEntry` catalogue. Their blueprint coverage is checked by
+    // C#, Go, Java, PHP, and Python have migrated to the typed-enum + rule()
+    // shape — no `KindEntry` catalogue. Their blueprint coverage is checked by
     // `<lang>_catalogue_covers_blueprint` below using `<Lang>Kind::from_str`.
     Lang {
         id: "rust",
@@ -52,17 +52,6 @@ const LANGUAGES: &[Lang] = &[
         kinds: tractor::languages::typescript::semantic::KINDS,
         nodes: tractor::languages::typescript::semantic::NODES,
     },
-    Lang {
-        id: "python",
-        fixture: "blueprint.py",
-        fixture_dir: "python",
-        catalogue_path: "tractor/src/languages/python/semantic.rs",
-        kinds: tractor::languages::python::semantic::KINDS,
-        nodes: tractor::languages::python::semantic::NODES,
-    },
-    // Go has migrated to the typed-enum + rule() shape — no `KindEntry`
-    // catalogue. Its blueprint coverage is checked by
-    // `go_catalogue_covers_blueprint` below using `GoKind::from_str`.
     Lang {
         id: "ruby",
         fixture: "blueprint.rb",
@@ -159,11 +148,6 @@ fn typescript_catalogue_covers_blueprint() {
     check_lang(&LANGUAGES[1]);
 }
 
-#[test]
-fn python_catalogue_covers_blueprint() {
-    check_lang(&LANGUAGES[2]);
-}
-
 /// Go-specific blueprint coverage check. Go has migrated to the
 /// typed-enum + rule() dispatcher, so coverage is asserted via
 /// `GoKind::from_str` rather than against a `KINDS` table.
@@ -227,12 +211,12 @@ fn go_node_metadata_is_well_formed() {
 
 #[test]
 fn ruby_catalogue_covers_blueprint() {
-    check_lang(&LANGUAGES[3]);
+    check_lang(&LANGUAGES[2]);
 }
 
 #[test]
 fn tsql_catalogue_covers_blueprint() {
-    check_lang(&LANGUAGES[4]);
+    check_lang(&LANGUAGES[3]);
 }
 
 /// Sanity check that every catalogue entry's `Rename` / `RenameWithMarker`
@@ -274,28 +258,58 @@ fn rename_targets_are_non_empty() {
 // `rule(CsKind) -> Rule` being exhaustive over the typed enum
 // (compile-time).
 
-/// Validate that every `KindEntry` in Python's `KINDS` is a real
-/// grammar kind (`PyKind` variant). Catches dead entries from
-/// historical grammar changes; will be removed once Python migrates
-/// to the typed-enum + rule() shape (Step 5).
+/// Python-specific blueprint coverage check. Python has migrated to
+/// the typed-enum + rule() dispatcher; coverage is asserted via
+/// `PyKind::from_str` rather than against a `KINDS` table.
 #[test]
-fn python_catalogue_entries_are_real_grammar_kinds() {
+fn python_catalogue_covers_blueprint() {
     use tractor::languages::python::input::PyKind;
-    use tractor::languages::python::semantic::KINDS;
+    use tractor::raw_kinds;
 
-    let mut dead: Vec<&str> = Vec::new();
-    for entry in KINDS {
-        if PyKind::from_str(entry.kind).is_none() {
-            dead.push(entry.kind);
+    let path = fixture_path("python", "blueprint.py");
+    let source = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("failed to read fixture {}: {}", path.display(), e));
+
+    let kinds = raw_kinds("python", &source).expect("raw_kinds");
+    let mut missing: Vec<String> = Vec::new();
+    for k in &kinds {
+        if PyKind::from_str(k).is_none() {
+            missing.push(k.clone());
         }
     }
     assert!(
-        dead.is_empty(),
-        "python catalogue has {} dead entries (not in `PyKind`):\n{}\n\n\
-         Remove these from tractor/src/languages/python/semantic.rs::KINDS.",
-        dead.len(),
-        dead.iter().map(|k| format!("  - {}", k)).collect::<Vec<_>>().join("\n"),
+        missing.is_empty(),
+        "tree-sitter python emitted {} kind(s) not in `PyKind`:\n{}\n\n\
+         Regenerate `tractor/src/languages/python/input.rs` via \
+         `task gen:kinds` so the typed enum reflects the current grammar.",
+        missing.len(),
+        missing
+            .iter()
+            .map(|k| format!("  - {}", k))
+            .collect::<Vec<_>>()
+            .join("\n"),
     );
+}
+
+#[test]
+fn python_node_metadata_is_well_formed() {
+    use tractor::languages::python::semantic::NODES;
+    let mut names: Vec<&str> = NODES.iter().map(|n| n.name).collect();
+    names.sort();
+    let total = names.len();
+    names.dedup();
+    assert_eq!(
+        names.len(),
+        total,
+        "tractor/src/languages/python/semantic.rs contains duplicate node names"
+    );
+    for node in NODES {
+        assert!(
+            node.marker || node.container,
+            "tractor/src/languages/python/semantic.rs: <{}> is neither marker nor container",
+            node.name
+        );
+    }
 }
 
 /// PHP-specific blueprint coverage check. PHP has migrated to the
