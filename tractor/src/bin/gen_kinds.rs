@@ -24,6 +24,11 @@ const LANGUAGES: &[LangCodegen] = &[
         node_types: tree_sitter_go::NODE_TYPES,
         output_path: "tractor/src/languages/go/kind.rs",
     },
+    LangCodegen {
+        enum_name: "CsKind",
+        node_types: tree_sitter_c_sharp::NODE_TYPES,
+        output_path: "tractor/src/languages/csharp/kind.rs",
+    },
 ];
 
 fn main() -> Result<()> {
