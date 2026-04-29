@@ -33,17 +33,9 @@ struct Lang {
 }
 
 const LANGUAGES: &[Lang] = &[
-    // C# has migrated to the typed-enum + rule() shape — no `KindEntry`
-    // catalogue. Its blueprint coverage is checked by
-    // `csharp_catalogue_covers_blueprint` below using `CsKind::from_str`.
-    Lang {
-        id: "java",
-        fixture: "blueprint.java",
-        fixture_dir: "java",
-        catalogue_path: "tractor/src/languages/java/semantic.rs",
-        kinds: tractor::languages::java::semantic::KINDS,
-        nodes: tractor::languages::java::semantic::NODES,
-    },
+    // C#, Go, and Java have migrated to the typed-enum + rule() shape —
+    // no `KindEntry` catalogue. Their blueprint coverage is checked by
+    // `<lang>_catalogue_covers_blueprint` below using `<Lang>Kind::from_str`.
     Lang {
         id: "rust",
         fixture: "blueprint.rs",
@@ -166,23 +158,18 @@ fn check_node_names(lang: &Lang) {
 }
 
 #[test]
-fn java_catalogue_covers_blueprint() {
+fn rust_catalogue_covers_blueprint() {
     check_lang(&LANGUAGES[0]);
 }
 
 #[test]
-fn rust_catalogue_covers_blueprint() {
+fn typescript_catalogue_covers_blueprint() {
     check_lang(&LANGUAGES[1]);
 }
 
 #[test]
-fn typescript_catalogue_covers_blueprint() {
-    check_lang(&LANGUAGES[2]);
-}
-
-#[test]
 fn python_catalogue_covers_blueprint() {
-    check_lang(&LANGUAGES[3]);
+    check_lang(&LANGUAGES[2]);
 }
 
 /// Go-specific blueprint coverage check. Go has migrated to the
@@ -248,17 +235,17 @@ fn go_node_metadata_is_well_formed() {
 
 #[test]
 fn ruby_catalogue_covers_blueprint() {
-    check_lang(&LANGUAGES[4]);
+    check_lang(&LANGUAGES[3]);
 }
 
 #[test]
 fn php_catalogue_covers_blueprint() {
-    check_lang(&LANGUAGES[5]);
+    check_lang(&LANGUAGES[4]);
 }
 
 #[test]
 fn tsql_catalogue_covers_blueprint() {
-    check_lang(&LANGUAGES[6]);
+    check_lang(&LANGUAGES[5]);
 }
 
 /// Sanity check that every catalogue entry's `Rename` / `RenameWithMarker`
@@ -300,28 +287,65 @@ fn rename_targets_are_non_empty() {
 // `rule(CsKind) -> Rule` being exhaustive over the typed enum
 // (compile-time).
 
-/// Validate that every `KindEntry` in Java's `KINDS` is a real
-/// grammar kind (`JavaKind` variant). Catches dead entries from
-/// historical grammar changes; will be removed once Java migrates
-/// to the typed-enum + rule() shape (Step 5).
+/// Java-specific blueprint coverage check. Java has migrated to the
+/// typed-enum + rule() dispatcher, so coverage is asserted via
+/// `JavaKind::from_str` rather than against a `KINDS` table.
+///
+/// In the new shape, kind drift is caught at compile time (the
+/// exhaustive `rule(JavaKind) -> Rule` match fails to build when
+/// `input.rs` is regenerated with new variants). This runtime check
+/// adds the inverse guard: every kind tree-sitter actually emits when
+/// parsing the blueprint must be a known `JavaKind` variant — i.e.
+/// `input.rs` is up to date with the grammar.
 #[test]
-fn java_catalogue_entries_are_real_grammar_kinds() {
+fn java_catalogue_covers_blueprint() {
     use tractor::languages::java::input::JavaKind;
-    use tractor::languages::java::semantic::KINDS;
+    use tractor::raw_kinds;
 
-    let mut dead: Vec<&str> = Vec::new();
-    for entry in KINDS {
-        if JavaKind::from_str(entry.kind).is_none() {
-            dead.push(entry.kind);
+    let path = fixture_path("java", "blueprint.java");
+    let source = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("failed to read fixture {}: {}", path.display(), e));
+
+    let kinds = raw_kinds("java", &source).expect("raw_kinds");
+    let mut missing: Vec<String> = Vec::new();
+    for k in &kinds {
+        if JavaKind::from_str(k).is_none() {
+            missing.push(k.clone());
         }
     }
     assert!(
-        dead.is_empty(),
-        "java catalogue has {} dead entries (not in `JavaKind`):\n{}\n\n\
-         Remove these from tractor/src/languages/java/semantic.rs::KINDS.",
-        dead.len(),
-        dead.iter().map(|k| format!("  - {}", k)).collect::<Vec<_>>().join("\n"),
+        missing.is_empty(),
+        "tree-sitter java emitted {} kind(s) not in `JavaKind`:\n{}\n\n\
+         Regenerate `tractor/src/languages/java/input.rs` via \
+         `task gen:kinds` so the typed enum reflects the current grammar.",
+        missing.len(),
+        missing
+            .iter()
+            .map(|k| format!("  - {}", k))
+            .collect::<Vec<_>>()
+            .join("\n"),
     );
+}
+
+#[test]
+fn java_node_metadata_is_well_formed() {
+    use tractor::languages::java::semantic::NODES;
+    let mut names: Vec<&str> = NODES.iter().map(|n| n.name).collect();
+    names.sort();
+    let total = names.len();
+    names.dedup();
+    assert_eq!(
+        names.len(),
+        total,
+        "tractor/src/languages/java/semantic.rs contains duplicate node names"
+    );
+    for node in NODES {
+        assert!(
+            node.marker || node.container,
+            "tractor/src/languages/java/semantic.rs: <{}> is neither marker nor container",
+            node.name
+        );
+    }
 }
 
 /// C#-specific blueprint coverage check. C# has migrated to the

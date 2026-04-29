@@ -1,5 +1,5 @@
 /// Semantic element names — tractor's Java XML vocabulary after transform.
-use crate::languages::{KindEntry, KindHandling, NodeSpec};
+use crate::languages::NodeSpec;
 use crate::output::syntax_highlight::SyntaxCategory;
 
 // Named constants retained for use by the transform code. The NODES
@@ -225,122 +225,6 @@ pub const NODES: &[NodeSpec] = &[
     NodeSpec { name: VARIADIC, marker: true, container: false, syntax: Default },
     NodeSpec { name: COMPACT,  marker: true, container: false, syntax: Default },
 ];
-
-/// Tree-sitter kind catalogue — single source of truth for every
-/// kind the Java transform handles. Sorted alphabetically by kind name.
-/// See `KindHandling` for variant semantics.
-pub const KINDS: &[KindEntry] = &[
-    KindEntry { kind: "annotation",                    handling: KindHandling::Rename(ANNOTATION) },
-    KindEntry { kind: "annotation_argument_list",      handling: KindHandling::Flatten },
-    KindEntry { kind: "argument_list",                 handling: KindHandling::Flatten },
-    KindEntry { kind: "array_access",                  handling: KindHandling::Rename(INDEX) },
-    KindEntry { kind: "array_type",                    handling: KindHandling::RenameWithMarker(TYPE, ARRAY) },
-    KindEntry { kind: "assignment_expression",         handling: KindHandling::CustomThenRename(ASSIGN) },
-    KindEntry { kind: "binary_expression",             handling: KindHandling::CustomThenRename(BINARY) },
-    KindEntry { kind: "binary_integer_literal",        handling: KindHandling::Rename(INT) },
-    KindEntry { kind: "block",                         handling: KindHandling::Flatten },
-    KindEntry { kind: "block_comment",                 handling: KindHandling::Custom },
-    KindEntry { kind: "boolean_type",                  handling: KindHandling::Custom },
-    KindEntry { kind: "catch_clause",                  handling: KindHandling::Rename(CATCH) },
-    KindEntry { kind: "class_body",                    handling: KindHandling::Flatten },
-    KindEntry { kind: "class_declaration",             handling: KindHandling::CustomThenRename(CLASS) },
-    KindEntry { kind: "compact_constructor_declaration", handling: KindHandling::RenameWithMarker(CONSTRUCTOR, COMPACT) },
-    KindEntry { kind: "constructor_body",              handling: KindHandling::Flatten },
-    KindEntry { kind: "constructor_declaration",       handling: KindHandling::CustomThenRename(CONSTRUCTOR) },
-    KindEntry { kind: "decimal_floating_point_literal", handling: KindHandling::Rename(FLOAT) },
-    KindEntry { kind: "decimal_integer_literal",       handling: KindHandling::Rename(INT) },
-    KindEntry { kind: "enhanced_for_statement",        handling: KindHandling::Rename(FOREACH) },
-    KindEntry { kind: "enum_body",                     handling: KindHandling::Flatten },
-    KindEntry { kind: "enum_body_declarations",        handling: KindHandling::Flatten },
-    KindEntry { kind: "enum_constant",                 handling: KindHandling::Rename(CONSTANT) },
-    KindEntry { kind: "enum_declaration",              handling: KindHandling::CustomThenRename(ENUM) },
-    KindEntry { kind: "explicit_constructor_invocation", handling: KindHandling::Custom },
-    KindEntry { kind: "expression_statement",          handling: KindHandling::Flatten },
-    KindEntry { kind: "false",                         handling: KindHandling::Rename(FALSE) },
-    KindEntry { kind: "field_access",                  handling: KindHandling::Rename(MEMBER) },
-    KindEntry { kind: "field_declaration",             handling: KindHandling::CustomThenRename(FIELD) },
-    KindEntry { kind: "finally_clause",                handling: KindHandling::Rename(FINALLY) },
-    KindEntry { kind: "floating_point_type",           handling: KindHandling::Custom },
-    KindEntry { kind: "for_statement",                 handling: KindHandling::Rename(FOR) },
-    KindEntry { kind: "formal_parameter",              handling: KindHandling::Rename(PARAMETER) },
-    KindEntry { kind: "formal_parameters",             handling: KindHandling::Flatten },
-    KindEntry { kind: "generic_type",                  handling: KindHandling::Custom },
-    // `case L when COND ->` — the guard expression. Tree-sitter emits
-    // `guard`, which already matches our semantic vocabulary — pass through.
-    KindEntry { kind: "guard",                         handling: KindHandling::PassThrough },
-    KindEntry { kind: "hex_integer_literal",           handling: KindHandling::Rename(INT) },
-    KindEntry { kind: "identifier",                    handling: KindHandling::Custom },
-    KindEntry { kind: "if_statement",                  handling: KindHandling::Custom },
-    KindEntry { kind: "import_declaration",            handling: KindHandling::Rename(IMPORT) },
-    KindEntry { kind: "integral_type",                 handling: KindHandling::Custom },
-    KindEntry { kind: "interface_body",                handling: KindHandling::Flatten },
-    KindEntry { kind: "interface_declaration",         handling: KindHandling::CustomThenRename(INTERFACE) },
-    KindEntry { kind: "lambda_expression",             handling: KindHandling::Rename(LAMBDA) },
-    KindEntry { kind: "line_comment",                  handling: KindHandling::Custom },
-    KindEntry { kind: "local_variable_declaration",    handling: KindHandling::Rename(VARIABLE) },
-    KindEntry { kind: "marker_annotation",             handling: KindHandling::Rename(ANNOTATION) },
-    KindEntry { kind: "method_declaration",            handling: KindHandling::CustomThenRename(METHOD) },
-    KindEntry { kind: "method_invocation",             handling: KindHandling::Rename(CALL) },
-    KindEntry { kind: "modifiers",                     handling: KindHandling::Custom },
-    KindEntry { kind: "null_literal",                  handling: KindHandling::Rename(NULL) },
-    KindEntry { kind: "object_creation_expression",    handling: KindHandling::Rename(NEW) },
-    KindEntry { kind: "octal_integer_literal",         handling: KindHandling::Rename(INT) },
-    KindEntry { kind: "package_declaration",           handling: KindHandling::Rename(PACKAGE) },
-    KindEntry { kind: "parenthesized_expression",      handling: KindHandling::Flatten },
-    // `case L when COND ->` — the matched pattern. Tree-sitter emits
-    // `pattern`, which already matches our semantic vocabulary — pass through.
-    KindEntry { kind: "pattern",                       handling: KindHandling::PassThrough },
-    KindEntry { kind: "program",                       handling: KindHandling::Rename(PROGRAM) },
-    KindEntry { kind: "record_declaration",            handling: KindHandling::Rename(RECORD) },
-    KindEntry { kind: "record_pattern",                handling: KindHandling::RenameWithMarker(PATTERN, RECORD) },
-    KindEntry { kind: "return_statement",              handling: KindHandling::Rename(RETURN) },
-    KindEntry { kind: "scoped_identifier",             handling: KindHandling::Rename(PATH) },
-    KindEntry { kind: "scoped_type_identifier",        handling: KindHandling::Rename(PATH) },
-    KindEntry { kind: "spread_parameter",              handling: KindHandling::RenameWithMarker(PARAMETER, VARIADIC) },
-    KindEntry { kind: "string_fragment",               handling: KindHandling::Flatten },
-    KindEntry { kind: "string_literal",                handling: KindHandling::Rename(STRING) },
-    // Tree-sitter leafs for the `super` and `this` keywords inside an
-    // `explicit_constructor_invocation`. The dispatcher arm for that
-    // wrapper consumes them; if they appear elsewhere they pass through.
-    KindEntry { kind: "super",                         handling: KindHandling::PassThrough },
-    KindEntry { kind: "super_interfaces",              handling: KindHandling::Rename(IMPLEMENTS) },
-    KindEntry { kind: "superclass",                    handling: KindHandling::Rename(EXTENDS) },
-    KindEntry { kind: "switch_block",                  handling: KindHandling::Rename(BODY) },
-    KindEntry { kind: "switch_block_statement_group",  handling: KindHandling::Rename(CASE) },
-    KindEntry { kind: "switch_expression",             handling: KindHandling::Rename(SWITCH) },
-    KindEntry { kind: "switch_label",                  handling: KindHandling::Rename(LABEL) },
-    KindEntry { kind: "switch_rule",                   handling: KindHandling::Rename(ARM) },
-    KindEntry { kind: "ternary_expression",            handling: KindHandling::Custom },
-    KindEntry { kind: "this",                          handling: KindHandling::PassThrough },
-    KindEntry { kind: "throw_statement",               handling: KindHandling::Rename(THROW) },
-    // `throws E1, E2` — list of declared exceptions on a method header.
-    // Already named `throws`, matches our vocabulary; pass through.
-    KindEntry { kind: "throws",                        handling: KindHandling::PassThrough },
-    KindEntry { kind: "true",                          handling: KindHandling::Rename(TRUE) },
-    KindEntry { kind: "try_statement",                 handling: KindHandling::Rename(TRY) },
-    KindEntry { kind: "type_arguments",                handling: KindHandling::Flatten },
-    KindEntry { kind: "type_bound",                    handling: KindHandling::Rename(EXTENDS) },
-    KindEntry { kind: "type_identifier",               handling: KindHandling::Custom },
-    KindEntry { kind: "type_list",                     handling: KindHandling::Flatten },
-    KindEntry { kind: "type_parameter",                handling: KindHandling::Custom },
-    KindEntry { kind: "type_parameters",               handling: KindHandling::Flatten },
-    KindEntry { kind: "type_pattern",                  handling: KindHandling::RenameWithMarker(PATTERN, TYPE) },
-    KindEntry { kind: "unary_expression",              handling: KindHandling::CustomThenRename(UNARY) },
-    KindEntry { kind: "variable_declarator",           handling: KindHandling::Rename(DECLARATOR) },
-    KindEntry { kind: "void_type",                     handling: KindHandling::Custom },
-    KindEntry { kind: "while_statement",               handling: KindHandling::Rename(WHILE) },
-];
-
-/// Look up the rename target for a tree-sitter `kind` in this
-/// language's catalogue. Used by `transform::map_element_name`.
-pub fn rename_target(kind: &str) -> Option<(&'static str, Option<&'static str>)> {
-    KINDS.iter().find(|k| k.kind == kind).and_then(|k| match k.handling {
-        KindHandling::Rename(s) | KindHandling::CustomThenRename(s) => Some((s, None)),
-        KindHandling::RenameWithMarker(s, m)
-        | KindHandling::CustomThenRenameWithMarker(s, m) => Some((s, Some(m))),
-        _ => None,
-    })
-}
 
 pub fn spec(name: &str) -> Option<&'static NodeSpec> {
     NODES.iter().find(|n| n.name == name)
