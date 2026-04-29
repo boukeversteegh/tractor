@@ -366,7 +366,6 @@ pub const KINDS: &[KindEntry] = &[
     KindEntry { kind: "extends_clause",                handling: KindHandling::Custom },
     // Boolean and null leaf kinds.
     KindEntry { kind: "false",                         handling: KindHandling::Rename(BOOL) },
-    KindEntry { kind: "field_definition",              handling: KindHandling::CustomThenRename(FIELD) },
     KindEntry { kind: "finally_clause",                handling: KindHandling::Rename(FINALLY) },
     KindEntry { kind: "for_in_statement",              handling: KindHandling::Rename(FOR) },
     KindEntry { kind: "for_statement",                 handling: KindHandling::Rename(FOR) },
@@ -428,7 +427,6 @@ pub const KINDS: &[KindEntry] = &[
     KindEntry { kind: "property_identifier",           handling: KindHandling::Custom },
     KindEntry { kind: "property_signature",            handling: KindHandling::Rename(PROPERTY) },
     KindEntry { kind: "public_field_definition",       handling: KindHandling::CustomThenRename(FIELD) },
-    KindEntry { kind: "readonly_modifier",             handling: KindHandling::Custom },
     KindEntry { kind: "readonly_type",                 handling: KindHandling::RenameWithMarker(TYPE, READONLY) },
     KindEntry { kind: "required_parameter",            handling: KindHandling::Custom },
     KindEntry { kind: "rest_pattern",                  handling: KindHandling::Rename(REST) },
@@ -439,9 +437,7 @@ pub const KINDS: &[KindEntry] = &[
     KindEntry { kind: "spread_element",                handling: KindHandling::Rename(SPREAD) },
     KindEntry { kind: "statement_block",               handling: KindHandling::Rename(BLOCK) },
     KindEntry { kind: "string",                        handling: KindHandling::Rename(STRING) },
-    KindEntry { kind: "string_end",                    handling: KindHandling::Flatten },
     KindEntry { kind: "string_fragment",               handling: KindHandling::Flatten },
-    KindEntry { kind: "string_start",                  handling: KindHandling::Flatten },
     KindEntry { kind: "subscript_expression",          handling: KindHandling::Rename(INDEX) },
     // Tree-sitter leaf for the `super` and `this` keywords. Pass through.
     KindEntry { kind: "super",                         handling: KindHandling::PassThrough },

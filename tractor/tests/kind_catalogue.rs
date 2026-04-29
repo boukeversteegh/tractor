@@ -246,6 +246,28 @@ fn rename_targets_are_non_empty() {
 // `rule(CsKind) -> Rule` being exhaustive over the typed enum
 // (compile-time).
 
+/// Validate that every `KindEntry` in TypeScript's `KINDS` is a real
+/// grammar kind (`TsKind` variant). Catches dead entries.
+#[test]
+fn typescript_catalogue_entries_are_real_grammar_kinds() {
+    use tractor::languages::typescript::input::TsKind;
+    use tractor::languages::typescript::semantic::KINDS;
+
+    let mut dead: Vec<&str> = Vec::new();
+    for entry in KINDS {
+        if TsKind::from_str(entry.kind).is_none() {
+            dead.push(entry.kind);
+        }
+    }
+    assert!(
+        dead.is_empty(),
+        "typescript catalogue has {} dead entries (not in `TsKind`):\n{}\n\n\
+         Remove these from tractor/src/languages/typescript/semantic.rs::KINDS.",
+        dead.len(),
+        dead.iter().map(|k| format!("  - {}", k)).collect::<Vec<_>>().join("\n"),
+    );
+}
+
 /// Rust-specific blueprint coverage check. Rust has migrated to the
 /// typed-enum + rule() dispatcher; coverage is asserted via
 /// `RustKind::from_str` rather than against a `KINDS` table.
