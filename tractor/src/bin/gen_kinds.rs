@@ -49,6 +49,11 @@ const LANGUAGES: &[LangCodegen] = &[
         node_types: tree_sitter_rust::NODE_TYPES,
         output_path: "tractor/src/languages/rust_lang/input.rs",
     },
+    LangCodegen {
+        enum_name: "TsKind",
+        node_types: tree_sitter_typescript::TYPESCRIPT_NODE_TYPES,
+        output_path: "tractor/src/languages/typescript/input.rs",
+    },
 ];
 
 fn main() -> Result<()> {
