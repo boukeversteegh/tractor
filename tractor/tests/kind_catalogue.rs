@@ -258,6 +258,30 @@ fn rename_targets_are_non_empty() {
 // `rule(CsKind) -> Rule` being exhaustive over the typed enum
 // (compile-time).
 
+/// Validate that every `KindEntry` in Rust's `KINDS` is a real
+/// grammar kind (`RustKind` variant). Catches dead entries from
+/// historical grammar changes; will be removed once Rust migrates
+/// to the typed-enum + rule() shape (Step 5).
+#[test]
+fn rust_catalogue_entries_are_real_grammar_kinds() {
+    use tractor::languages::rust_lang::input::RustKind;
+    use tractor::languages::rust_lang::semantic::KINDS;
+
+    let mut dead: Vec<&str> = Vec::new();
+    for entry in KINDS {
+        if RustKind::from_str(entry.kind).is_none() {
+            dead.push(entry.kind);
+        }
+    }
+    assert!(
+        dead.is_empty(),
+        "rust catalogue has {} dead entries (not in `RustKind`):\n{}\n\n\
+         Remove these from tractor/src/languages/rust_lang/semantic.rs::KINDS.",
+        dead.len(),
+        dead.iter().map(|k| format!("  - {}", k)).collect::<Vec<_>>().join("\n"),
+    );
+}
+
 /// Python-specific blueprint coverage check. Python has migrated to
 /// the typed-enum + rule() dispatcher; coverage is asserted via
 /// `PyKind::from_str` rather than against a `KINDS` table.
