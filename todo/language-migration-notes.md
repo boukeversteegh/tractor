@@ -286,5 +286,51 @@ Commits (chronological):
   Lesson: snapshot byte-identity is the load-bearing assertion
   — it caught the issue immediately.
 
-### Ruby
-(not started)
+### Ruby — COMPLETE (final programming language)
+
+Commits (chronological):
+
+- `3b5487f` — Step 1: generate RubyKind enum (134 kinds; uses
+  Self_ sanitizer since Ruby has a `self` kind too).
+- `8a3ae61` — Step 2: validate catalogue, drop 5 dead entries
+  (break_statement, continue_statement, next_statement —
+  superseded by `break`/`next`; method_call collapsed into `call`;
+  `symbol` replaced by simple_symbol/delimited_symbol).
+- `5d6a34d` — Step 3: rules.rs + transformations.rs.
+- `b073fda` — Step 4: swap dispatcher (deletes 165 lines).
+- `49465ec` — Step 5: drop KINDS / rename_target.
+- `6941ff1` — Step 6: rename semantic.rs → output.rs.
+
+#### Ruby-specific notes
+
+- **Smallest Custom set** — only `comment`, `passthrough`, and
+  `name_wrapper`. Most arms are pure Rename or Flatten.
+- **No `Rule::DefaultAccessThenRename`** — Ruby's class/method
+  visibility (`private`/`protected` keywords) appears as separate
+  expression statements in source rather than declaration prefixes,
+  so there's no implicit access marker pattern.
+- **`Self_` keyword sanitizer reused** — the codegen sanitizer
+  added in commit `70701f0` (Rust migration) handled Ruby's `self`
+  kind as well, with no further changes.
+- **Many already-matching passthrough kinds** (26): block, break,
+  conditional, constant, do, false, in, lambda, nil, etc. Ruby's
+  grammar uses lowercase keyword names that happen to match our
+  semantic vocabulary, so passthrough is the correct rule.
+- **`identifier` / `instance_variable` / `class_variable` /
+  `global_variable` all rename to NAME** — Ruby's grammar tags
+  variable references by sigil but at the semantic layer they're
+  all "variable references" → `<name>`. The leading sigil
+  (`@`, `@@`, `$`) survives as text.
+
+## Final state
+
+All 8 programming languages migrated:
+  Go, C#, Java, PHP, Python, Rust, TypeScript, Ruby.
+
+Only tsql (data-only) remains on the catalogue path. The plan's
+final cleanup step — removing KindEntry/KindHandling from
+`languages/mod.rs` — is pending tsql migration.
+
+Total commits in this session: ~50, accumulated across the seven
+languages migrated after Go and C#. 790+ tests pass throughout;
+140 snapshot fixtures byte-identical at every commit.
