@@ -599,53 +599,124 @@ pub fn rule(k: CsKind) -> Rule {
         | CsKind::Interpolation
         | CsKind::Subpattern => Custom(transformations::passthrough),
 
-        // Unhandled in the previous dispatcher — survive as raw kind names.
+        // ---- Unhandled in the previous dispatcher — survive as raw
+        //      kind names. Most are TODO candidates for real semantics.
+
+        // TODO: pattern combinators sit alongside pattern variants
+        // already in the rule table. Each should rename to PATTERN
+        // with a marker — sibling shapes:
+        //   constant_pattern    → RenameWithMarker(PATTERN, CONSTANT)
+        //   declaration_pattern → RenameWithMarker(PATTERN, DECLARATION)
+        //   recursive_pattern   → RenameWithMarker(PATTERN, RECURSIVE)
+        // Likely targets:
+        //   and_pattern      → RenameWithMarker(PATTERN, AND)        (new marker)
+        //   or_pattern       → RenameWithMarker(PATTERN, OR)         (new marker)
+        //   negated_pattern  → RenameWithMarker(PATTERN, NEGATED)    (new marker)
+        //   list_pattern     → RenameWithMarker(PATTERN, LIST)       (new marker)
+        //   var_pattern      → RenameWithMarker(PATTERN, VAR)        (new marker)
+        //   type_pattern     → RenameWithMarker(PATTERN, TYPE)       (TYPE exists)
+        //   parenthesized_pattern → Flatten { distribute_field: None }
+        // Test impact: none in current snapshots; would change new
+        // pattern fixtures.
         CsKind::AndPattern
-        | CsKind::AnonymousMethodExpression
-        | CsKind::AnonymousObjectCreationExpression
-        | CsKind::ArrayCreationExpression
-        | CsKind::ArrayRankSpecifier
-        | CsKind::AsExpression
+        | CsKind::OrPattern
+        | CsKind::NegatedPattern
+        | CsKind::ListPattern
+        | CsKind::VarPattern
+        | CsKind::TypePattern
+        | CsKind::ParenthesizedPattern => Custom(transformations::passthrough),
+
+        // TODO: `as_expression` (`x as Foo`) is the conversion sibling
+        // of `is_pattern_expression` (which renames to IS). Either
+        // share the IS rename with a marker, or introduce a new AS
+        // semantic. Same applies to `is_expression` (the older `obj
+        // is Foo` form before patterns).
+        CsKind::AsExpression
+        | CsKind::IsExpression => Custom(transformations::passthrough),
+
+        // TODO: `cast_expression` (`(int)x`) and `default_expression`
+        // (`default(T)`) are call-shaped operations. Could each get
+        // their own semantic (CAST / DEFAULT) or share `Rename(CALL)`
+        // with a marker. `throw_expression` (the expression form of
+        // `throw e`) is the sibling of `throw_statement` → THROW; pick
+        // one shared shape.
+        CsKind::CastExpression
+        | CsKind::DefaultExpression
+        | CsKind::ThrowExpression => Custom(transformations::passthrough),
+
+        // TODO: `element_access_expression` (`x[i]`) is the call-site
+        // counterpart of `indexer_declaration` → INDEXER. Probably
+        // `Rename(INDEX)` (already used by `element_binding_expression`).
+        CsKind::ElementAccessExpression => Custom(transformations::passthrough),
+
+        // TODO: `anonymous_method_expression` is functionally a lambda
+        // (older `delegate { … }` syntax). Likely `Rename(LAMBDA)`.
+        // `anonymous_object_creation_expression` (`new { X = 1 }`) is
+        // a literal/object-creation shape — could share `Rename(NEW)`
+        // with a marker.
+        CsKind::AnonymousMethodExpression
+        | CsKind::AnonymousObjectCreationExpression => Custom(transformations::passthrough),
+
+        // TODO: array creations are siblings of
+        // `object_creation_expression` → NEW. Likely `Rename(NEW)`
+        // with an ARRAY marker.
+        CsKind::ArrayCreationExpression
+        | CsKind::ImplicitArrayCreationExpression
+        | CsKind::ImplicitStackallocExpression => Custom(transformations::passthrough),
+
+        // TODO: special-statement forms — `lock`, `fixed`, `unsafe`,
+        // `checked`, `goto`, `yield`, `empty` (`;`), `labeled`. Each
+        // currently survives as its grammar kind. Most should `Rename`
+        // to a new keyword constant; `empty_statement` should likely
+        // be `Flatten` or skipped entirely.
+        CsKind::CheckedStatement
+        | CsKind::EmptyStatement
+        | CsKind::FixedStatement
+        | CsKind::GotoStatement
+        | CsKind::LabeledStatement
+        | CsKind::LockStatement
+        | CsKind::UnsafeStatement
+        | CsKind::YieldStatement => Custom(transformations::passthrough),
+
+        // TODO: `with_expression` (`record with { X = 1 }`) and
+        // `with_initializer` are record-update shapes. Either get a
+        // dedicated WITH semantic or share Rename(NEW) with a marker.
+        CsKind::WithExpression
+        | CsKind::WithInitializer => Custom(transformations::passthrough),
+
+        // TODO: `event_declaration` is the property-shaped event form
+        // (with accessors); pairs with `event_field_declaration` which
+        // already renames to EVENT. Should also `Rename(EVENT)`.
+        // `conversion_operator_declaration` is a sibling of
+        // `operator_declaration` → OPERATOR; likely the same.
+        CsKind::EventDeclaration
+        | CsKind::ConversionOperatorDeclaration => Custom(transformations::passthrough),
+
+        // ---- Truly unhandled (preprocessor, lvalue/rvalue wrappers,
+        //      C++/CLI ref types, raw structural supertypes, etc.) ---
+        CsKind::ArrayRankSpecifier
         | CsKind::AttributeTargetSpecifier
         | CsKind::BracketedArgumentList
         | CsKind::CallingConvention
-        | CsKind::CastExpression
         | CsKind::CharacterLiteral
         | CsKind::CharacterLiteralContent
         | CsKind::CheckedExpression
-        | CsKind::CheckedStatement
-        | CsKind::ConversionOperatorDeclaration
         | CsKind::Declaration
         | CsKind::DeclarationExpression
-        | CsKind::DefaultExpression
-        | CsKind::ElementAccessExpression
-        | CsKind::EmptyStatement
-        | CsKind::EventDeclaration
         | CsKind::ExplicitInterfaceSpecifier
         | CsKind::Expression
         | CsKind::ExternAliasDirective
-        | CsKind::FixedStatement
         | CsKind::FunctionPointerParameter
         | CsKind::GlobalAttribute
         | CsKind::GlobalStatement
-        | CsKind::GotoStatement
-        | CsKind::ImplicitArrayCreationExpression
-        | CsKind::ImplicitStackallocExpression
         | CsKind::InterpolationAlignmentClause
         | CsKind::InterpolationFormatClause
         | CsKind::InterpolationQuote
-        | CsKind::IsExpression
         | CsKind::JoinIntoClause
-        | CsKind::LabeledStatement
-        | CsKind::ListPattern
         | CsKind::Literal
-        | CsKind::LockStatement
         | CsKind::LvalueExpression
         | CsKind::MakerefExpression
-        | CsKind::NegatedPattern
         | CsKind::NonLvalueExpression
-        | CsKind::OrPattern
-        | CsKind::ParenthesizedPattern
         | CsKind::ParenthesizedVariableDesignation
         | CsKind::Pattern
         | CsKind::PositionalPatternClause
@@ -673,15 +744,8 @@ pub fn rule(k: CsKind) -> Rule {
         | CsKind::StackallocExpression
         | CsKind::Statement
         | CsKind::StringLiteralEncoding
-        | CsKind::ThrowExpression
         | CsKind::Type
         | CsKind::TypeDeclaration
-        | CsKind::TypePattern
-        | CsKind::TypeofExpression
-        | CsKind::UnsafeStatement
-        | CsKind::VarPattern
-        | CsKind::WithExpression
-        | CsKind::WithInitializer
-        | CsKind::YieldStatement => Custom(transformations::passthrough),
+        | CsKind::TypeofExpression => Custom(transformations::passthrough),
     }
 }
