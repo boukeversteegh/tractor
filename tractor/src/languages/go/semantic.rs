@@ -2,8 +2,12 @@
 /// These are the names that appear in tractor's output. The tree-sitter
 /// kind strings (left side of `match` arms, arguments to `get_kind`)
 /// are external vocabulary and stay as bare strings.
+use crate::languages::rule::Rule;
 use crate::languages::{KindEntry, KindHandling, NodeSpec};
 use crate::output::syntax_highlight::SyntaxCategory;
+
+use super::handlers;
+use super::kind::GoKind;
 
 // Named constants retained for use by the transform code. The NODES
 // table below is the source of truth for marker/container role and
@@ -323,4 +327,147 @@ pub fn is_marker_only(name: &str) -> bool {
 
 pub fn is_declared(name: &str) -> bool {
     spec(name).is_some()
+}
+
+/// Per-kind transformation rule for Go.
+///
+/// Exhaustive over `GoKind` — the compiler enforces coverage. When
+/// the grammar ships a new kind, regenerating `kind.rs` adds a
+/// variant and this match fails to build until the new kind is
+/// classified.
+///
+/// Pure data variants (`Rename`, `RenameWithMarker`, `Flatten`,
+/// `ExtractOpThenRename`) are executed by the shared
+/// [`crate::languages::rule::dispatch`] helper. Custom logic lives in
+/// [`super::handlers`].
+pub fn rule(k: GoKind) -> Rule {
+    use Rule::*;
+    match k {
+        // ---- ExtractOpThenRename ---------------------------------------
+        GoKind::BinaryExpression => ExtractOpThenRename(BINARY),
+        GoKind::UnaryExpression  => ExtractOpThenRename(UNARY),
+
+        // ---- RenameWithMarker -----------------------------------------
+        GoKind::FunctionType        => RenameWithMarker(TYPE, FUNCTION),
+        GoKind::GenericType         => RenameWithMarker(TYPE, GENERIC),
+        GoKind::NegatedType         => RenameWithMarker(TYPE, NEGATED),
+        GoKind::TypeSwitchStatement => RenameWithMarker(SWITCH, TYPE),
+
+        // ---- Flatten with field distribution --------------------------
+        GoKind::ArgumentList => Flatten { distribute_field: Some("arguments") },
+
+        // ---- Pure Flatten ---------------------------------------------
+        GoKind::Block
+        | GoKind::FieldDeclarationList
+        | GoKind::ExpressionList
+        | GoKind::ImportSpec
+        | GoKind::ConstSpec
+        | GoKind::VarSpec
+        | GoKind::LiteralElement
+        | GoKind::KeyedElement
+        | GoKind::LiteralValue
+        | GoKind::VarSpecList
+        | GoKind::ImportSpecList
+        | GoKind::ForClause
+        | GoKind::TypeParameterList
+        | GoKind::TypeParameterDeclaration
+        | GoKind::TypeElem
+        | GoKind::TypeConstraint
+        | GoKind::QualifiedType
+        | GoKind::TypeCase
+        | GoKind::InterpretedStringLiteralContent
+        | GoKind::RawStringLiteralContent
+        | GoKind::EscapeSequence => Flatten { distribute_field: None },
+
+        // ---- Custom (language-specific logic in handlers.rs) ----------
+        GoKind::ExpressionStatement   => Custom(handlers::expression_statement),
+        GoKind::ParameterList         => Custom(handlers::parameter_list),
+        GoKind::TypeDeclaration       => Custom(handlers::type_declaration),
+        GoKind::RawStringLiteral      => Custom(handlers::raw_string_literal),
+        GoKind::ShortVarDeclaration   => Custom(handlers::short_var_declaration),
+        GoKind::FunctionDeclaration   => Custom(handlers::function_declaration),
+        GoKind::MethodDeclaration     => Custom(handlers::method_declaration),
+        GoKind::FieldDeclaration      => Custom(handlers::field_declaration),
+        GoKind::TypeSpec              => Custom(handlers::type_spec),
+        GoKind::TypeAlias             => Custom(handlers::type_alias),
+        GoKind::IfStatement           => Custom(handlers::if_statement),
+        GoKind::TypeIdentifier        => Custom(handlers::type_identifier),
+        GoKind::Comment               => Custom(handlers::comment),
+
+        // ---- Pure Rename ----------------------------------------------
+        GoKind::Identifier               => Rename(NAME),
+        GoKind::AssignmentStatement      => Rename(ASSIGN),
+        GoKind::BlankIdentifier          => Rename(NAME),
+        GoKind::BreakStatement           => Rename(BREAK),
+        GoKind::CallExpression           => Rename(CALL),
+        GoKind::ChannelType              => Rename(CHAN),
+        GoKind::CommunicationCase        => Rename(CASE),
+        GoKind::CompositeLiteral         => Rename(LITERAL),
+        GoKind::ConstDeclaration         => Rename(CONST),
+        GoKind::ContinueStatement        => Rename(CONTINUE),
+        GoKind::DecStatement             => Rename(UNARY),
+        GoKind::DefaultCase              => Rename(DEFAULT),
+        GoKind::DeferStatement           => Rename(DEFER),
+        GoKind::ExpressionCase           => Rename(CASE),
+        GoKind::ExpressionSwitchStatement => Rename(SWITCH),
+        GoKind::False                    => Rename(FALSE),
+        GoKind::FieldIdentifier          => Rename(NAME),
+        GoKind::FloatLiteral             => Rename(FLOAT),
+        GoKind::ForStatement             => Rename(FOR),
+        GoKind::FuncLiteral              => Rename(CLOSURE),
+        GoKind::GoStatement              => Rename(GO),
+        GoKind::GotoStatement            => Rename(GOTO),
+        GoKind::ImportDeclaration        => Rename(IMPORT),
+        GoKind::IncStatement             => Rename(UNARY),
+        GoKind::IndexExpression          => Rename(INDEX),
+        GoKind::InterfaceType            => Rename(INTERFACE),
+        GoKind::InterpretedStringLiteral => Rename(STRING),
+        GoKind::IntLiteral               => Rename(INT),
+        GoKind::LabelName                => Rename(LABEL),
+        GoKind::LabeledStatement         => Rename(LABELED),
+        GoKind::MapType                  => Rename(MAP),
+        GoKind::MethodElem               => Rename(METHOD),
+        GoKind::Nil                      => Rename(NIL),
+        GoKind::PackageClause            => Rename(PACKAGE),
+        GoKind::PackageIdentifier        => Rename(NAME),
+        GoKind::ParameterDeclaration     => Rename(PARAMETER),
+        GoKind::PointerType              => Rename(POINTER),
+        GoKind::RangeClause              => Rename(RANGE),
+        GoKind::ReceiveStatement         => Rename(RECEIVE),
+        GoKind::ReturnStatement          => Rename(RETURN),
+        GoKind::RuneLiteral              => Rename(CHAR),
+        GoKind::SelectStatement          => Rename(SELECT),
+        GoKind::SelectorExpression       => Rename(MEMBER),
+        GoKind::SendStatement            => Rename(SEND),
+        GoKind::SliceType                => Rename(SLICE),
+        GoKind::SourceFile               => Rename(FILE),
+        GoKind::StructType               => Rename(STRUCT),
+        GoKind::True                     => Rename(TRUE),
+        GoKind::TypeArguments            => Rename(ARGUMENTS),
+        GoKind::TypeAssertionExpression  => Rename(ASSERT),
+        GoKind::VarDeclaration           => Rename(VAR),
+        GoKind::VariadicParameterDeclaration => Rename(PARAMETER),
+
+        // ---- Passthrough (kind name already matches our vocabulary) ---
+        GoKind::ArrayType
+        | GoKind::Dot
+        | GoKind::Iota => Custom(handlers::passthrough),
+
+        // ---- Kinds the grammar emits but the previous catalogue didn't
+        //      classify. Old behavior: `_` arm called `apply_rename`
+        //      which returned `None` — net effect: no rename, raw kind
+        //      survives as the element name. Preserve via passthrough.
+        //      A future commit can promote any of these to real
+        //      semantic names.
+        GoKind::EmptyStatement
+        | GoKind::FallthroughStatement
+        | GoKind::ImaginaryLiteral
+        | GoKind::ImplicitLengthArrayType
+        | GoKind::ParenthesizedExpression
+        | GoKind::ParenthesizedType
+        | GoKind::SliceExpression
+        | GoKind::TypeConversionExpression
+        | GoKind::TypeInstantiationExpression
+        | GoKind::VariadicArgument => Custom(handlers::passthrough),
+    }
 }
