@@ -33,7 +33,7 @@ struct Lang {
 }
 
 const LANGUAGES: &[Lang] = &[
-    // C#, Go, and Java have migrated to the typed-enum + rule() shape —
+    // C#, Go, Java, and PHP have migrated to the typed-enum + rule() shape —
     // no `KindEntry` catalogue. Their blueprint coverage is checked by
     // `<lang>_catalogue_covers_blueprint` below using `<Lang>Kind::from_str`.
     Lang {
@@ -70,14 +70,6 @@ const LANGUAGES: &[Lang] = &[
         catalogue_path: "tractor/src/languages/ruby/semantic.rs",
         kinds: tractor::languages::ruby::semantic::KINDS,
         nodes: tractor::languages::ruby::semantic::NODES,
-    },
-    Lang {
-        id: "php",
-        fixture: "blueprint.php",
-        fixture_dir: "php",
-        catalogue_path: "tractor/src/languages/php/semantic.rs",
-        kinds: tractor::languages::php::semantic::KINDS,
-        nodes: tractor::languages::php::semantic::NODES,
     },
     Lang {
         id: "tsql",
@@ -239,13 +231,8 @@ fn ruby_catalogue_covers_blueprint() {
 }
 
 #[test]
-fn php_catalogue_covers_blueprint() {
-    check_lang(&LANGUAGES[4]);
-}
-
-#[test]
 fn tsql_catalogue_covers_blueprint() {
-    check_lang(&LANGUAGES[5]);
+    check_lang(&LANGUAGES[4]);
 }
 
 /// Sanity check that every catalogue entry's `Rename` / `RenameWithMarker`
@@ -287,28 +274,58 @@ fn rename_targets_are_non_empty() {
 // `rule(CsKind) -> Rule` being exhaustive over the typed enum
 // (compile-time).
 
-/// Validate that every `KindEntry` in PHP's `KINDS` is a real
-/// grammar kind (`PhpKind` variant). Catches dead entries from
-/// historical grammar changes; will be removed once PHP migrates
-/// to the typed-enum + rule() shape (Step 5).
+/// PHP-specific blueprint coverage check. PHP has migrated to the
+/// typed-enum + rule() dispatcher, so coverage is asserted via
+/// `PhpKind::from_str` rather than against a `KINDS` table.
 #[test]
-fn php_catalogue_entries_are_real_grammar_kinds() {
+fn php_catalogue_covers_blueprint() {
     use tractor::languages::php::input::PhpKind;
-    use tractor::languages::php::semantic::KINDS;
+    use tractor::raw_kinds;
 
-    let mut dead: Vec<&str> = Vec::new();
-    for entry in KINDS {
-        if PhpKind::from_str(entry.kind).is_none() {
-            dead.push(entry.kind);
+    let path = fixture_path("php", "blueprint.php");
+    let source = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("failed to read fixture {}: {}", path.display(), e));
+
+    let kinds = raw_kinds("php", &source).expect("raw_kinds");
+    let mut missing: Vec<String> = Vec::new();
+    for k in &kinds {
+        if PhpKind::from_str(k).is_none() {
+            missing.push(k.clone());
         }
     }
     assert!(
-        dead.is_empty(),
-        "php catalogue has {} dead entries (not in `PhpKind`):\n{}\n\n\
-         Remove these from tractor/src/languages/php/semantic.rs::KINDS.",
-        dead.len(),
-        dead.iter().map(|k| format!("  - {}", k)).collect::<Vec<_>>().join("\n"),
+        missing.is_empty(),
+        "tree-sitter php emitted {} kind(s) not in `PhpKind`:\n{}\n\n\
+         Regenerate `tractor/src/languages/php/input.rs` via \
+         `task gen:kinds` so the typed enum reflects the current grammar.",
+        missing.len(),
+        missing
+            .iter()
+            .map(|k| format!("  - {}", k))
+            .collect::<Vec<_>>()
+            .join("\n"),
     );
+}
+
+#[test]
+fn php_node_metadata_is_well_formed() {
+    use tractor::languages::php::semantic::NODES;
+    let mut names: Vec<&str> = NODES.iter().map(|n| n.name).collect();
+    names.sort();
+    let total = names.len();
+    names.dedup();
+    assert_eq!(
+        names.len(),
+        total,
+        "tractor/src/languages/php/semantic.rs contains duplicate node names"
+    );
+    for node in NODES {
+        assert!(
+            node.marker || node.container,
+            "tractor/src/languages/php/semantic.rs: <{}> is neither marker nor container",
+            node.name
+        );
+    }
 }
 
 /// Java-specific blueprint coverage check. Java has migrated to the
