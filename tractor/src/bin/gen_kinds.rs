@@ -34,6 +34,11 @@ const LANGUAGES: &[LangCodegen] = &[
         node_types: tree_sitter_java::NODE_TYPES,
         output_path: "tractor/src/languages/java/input.rs",
     },
+    LangCodegen {
+        enum_name: "PhpKind",
+        node_types: tree_sitter_php::PHP_NODE_TYPES,
+        output_path: "tractor/src/languages/php/input.rs",
+    },
 ];
 
 fn main() -> Result<()> {
