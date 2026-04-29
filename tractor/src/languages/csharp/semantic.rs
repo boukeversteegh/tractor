@@ -588,3 +588,277 @@ pub fn is_marker_only(name: &str) -> bool {
 pub fn is_declared(name: &str) -> bool {
     spec(name).is_some()
 }
+
+// ---------------------------------------------------------------------
+// Rule-driven dispatch (in-progress migration).
+//
+// `rule(CsKind) -> Rule` is the typed-enum replacement for the
+// stringly-typed match in `transform::transform`. Until the dispatcher
+// swap commit, this function exists side-by-side with `KINDS` /
+// `rename_target` / the giant match arm; the compiler enforces
+// exhaustiveness over `CsKind`, catching grammar drift the moment
+// `kind.rs` is regenerated with new variants.
+//
+// Once the swap lands, `KINDS` / `KindEntry` / `rename_target` go away
+// and this function becomes the single source of truth.
+// ---------------------------------------------------------------------
+
+use super::kind::CsKind;
+use crate::languages::rule::Rule;
+use super::transformations;
+
+#[allow(dead_code)] // wired up in step 4 (dispatcher swap)
+pub fn rule(k: CsKind) -> Rule {
+    use Rule::*;
+    match k {
+        // ---- ExtractOpThenRename ---------------------------------------
+        CsKind::BinaryExpression     => ExtractOpThenRename(BINARY),
+        CsKind::UnaryExpression      => ExtractOpThenRename(UNARY),
+        CsKind::AssignmentExpression => ExtractOpThenRename(ASSIGN),
+
+        // ---- RenameWithMarker ------------------------------------------
+        CsKind::ArrayType                   => RenameWithMarker(TYPE, ARRAY),
+        CsKind::ConditionalAccessExpression => RenameWithMarker(MEMBER, CONDITIONAL),
+        CsKind::ConstantPattern             => RenameWithMarker(PATTERN, CONSTANT),
+        CsKind::DeclarationPattern          => RenameWithMarker(PATTERN, DECLARATION),
+        CsKind::FunctionPointerType         => RenameWithMarker(TYPE, FUNCTION),
+        CsKind::MemberAccessExpression      => RenameWithMarker(MEMBER, INSTANCE),
+        CsKind::MemberBindingExpression     => RenameWithMarker(MEMBER, CONDITIONAL),
+        CsKind::PointerType                 => RenameWithMarker(TYPE, POINTER),
+        CsKind::PrefixUnaryExpression       => RenameWithMarker(UNARY, PREFIX),
+        CsKind::RecursivePattern            => RenameWithMarker(PATTERN, RECURSIVE),
+        CsKind::RefType                     => RenameWithMarker(TYPE, REF),
+        CsKind::RelationalPattern           => RenameWithMarker(PATTERN, RELATIONAL),
+        CsKind::TuplePattern                => RenameWithMarker(PATTERN, TUPLE),
+        CsKind::TupleType                   => RenameWithMarker(TYPE, TUPLE),
+
+        // ---- Flatten with field distribution ---------------------------
+        CsKind::AccessorList          => Flatten { distribute_field: Some("accessors") },
+        CsKind::ArgumentList          => Flatten { distribute_field: Some("arguments") },
+        CsKind::AttributeArgumentList => Flatten { distribute_field: Some("arguments") },
+        CsKind::AttributeList         => Flatten { distribute_field: Some("attributes") },
+        CsKind::BracketedParameterList => Flatten { distribute_field: Some("parameters") },
+        CsKind::ParameterList         => Flatten { distribute_field: Some("parameters") },
+        CsKind::TypeArgumentList      => Flatten { distribute_field: Some("arguments") },
+        CsKind::TypeParameterList     => Flatten { distribute_field: Some("generics") },
+
+        // ---- Pure Flatten ----------------------------------------------
+        CsKind::ArrowExpressionClause
+        | CsKind::DeclarationList
+        | CsKind::EnumMemberDeclarationList
+        | CsKind::EscapeSequence
+        | CsKind::InterpolationBrace
+        | CsKind::InterpolationStart
+        | CsKind::LocalDeclarationStatement
+        | CsKind::ParenthesizedExpression
+        | CsKind::QualifiedName
+        | CsKind::RawStringContent
+        | CsKind::RawStringEnd
+        | CsKind::RawStringStart
+        | CsKind::StringContent
+        | CsKind::StringLiteralContent => Flatten { distribute_field: None },
+
+        // ---- Custom (language-specific logic in transformations.rs) ---
+        CsKind::AccessorDeclaration           => Custom(transformations::accessor_declaration),
+        CsKind::ClassDeclaration              => Custom(transformations::class_declaration),
+        CsKind::Comment                       => Custom(transformations::comment),
+        CsKind::ConditionalExpression         => Custom(transformations::conditional_expression),
+        CsKind::ConstructorDeclaration        => Custom(transformations::constructor_declaration),
+        CsKind::EnumDeclaration               => Custom(transformations::enum_declaration),
+        CsKind::FieldDeclaration              => Custom(transformations::field_declaration),
+        CsKind::GenericName                   => Custom(transformations::generic_name),
+        CsKind::Identifier                    => Custom(transformations::identifier),
+        CsKind::IfStatement                   => Custom(transformations::if_statement),
+        CsKind::ImplicitType                  => Custom(transformations::implicit_type),
+        CsKind::InterfaceDeclaration          => Custom(transformations::interface_declaration),
+        CsKind::InterpolatedStringExpression  => Custom(transformations::interpolated_string_expression),
+        CsKind::MethodDeclaration             => Custom(transformations::method_declaration),
+        CsKind::Modifier                      => Custom(transformations::modifier),
+        CsKind::NullableType                  => Custom(transformations::nullable_type),
+        CsKind::PostfixUnaryExpression        => Custom(transformations::postfix_unary_expression),
+        CsKind::PredefinedType                => Custom(transformations::predefined_type),
+        CsKind::PropertyDeclaration           => Custom(transformations::property_declaration),
+        CsKind::RecordDeclaration             => Custom(transformations::record_declaration),
+        CsKind::StructDeclaration             => Custom(transformations::struct_declaration),
+        CsKind::VariableDeclaration           => Custom(transformations::variable_declaration),
+
+        // `where T : new()` / constraint-clause kinds — consumed by the
+        // shared `attach_where_clause_constraints` post-transform; they
+        // never reach the dispatcher in practice. Passthrough is the
+        // safe noop.
+        CsKind::ConstructorConstraint            => Custom(transformations::passthrough),
+        CsKind::TypeParameterConstraint          => Custom(transformations::passthrough),
+        CsKind::TypeParameterConstraintsClause   => Custom(transformations::passthrough),
+
+        // ---- Pure Rename -----------------------------------------------
+        CsKind::Argument                       => Rename(ARGUMENT),
+        CsKind::Attribute                      => Rename(ATTRIBUTE),
+        CsKind::AttributeArgument              => Rename(ARGUMENT),
+        CsKind::AwaitExpression                => Rename(AWAIT),
+        CsKind::BaseList                       => Rename(EXTENDS),
+        CsKind::Block                          => Rename(BLOCK),
+        CsKind::BooleanLiteral                 => Rename(BOOL),
+        CsKind::BreakStatement                 => Rename(BREAK),
+        CsKind::CatchClause                    => Rename(CATCH),
+        CsKind::CatchDeclaration               => Rename(DECLARATION),
+        CsKind::CatchFilterClause              => Rename(FILTER),
+        CsKind::CompilationUnit                => Rename(UNIT),
+        CsKind::ConstructorInitializer         => Rename(CHAIN),
+        CsKind::ContinueStatement              => Rename(CONTINUE),
+        CsKind::DelegateDeclaration            => Rename(DELEGATE),
+        CsKind::DestructorDeclaration          => Rename(DESTRUCTOR),
+        CsKind::DoStatement                    => Rename(DO),
+        CsKind::ElementBindingExpression       => Rename(INDEX),
+        CsKind::EnumMemberDeclaration          => Rename(CONSTANT),
+        CsKind::EventFieldDeclaration          => Rename(EVENT),
+        CsKind::ExpressionStatement            => Rename(EXPRESSION),
+        CsKind::FileScopedNamespaceDeclaration => Rename(NAMESPACE),
+        CsKind::FinallyClause                  => Rename(FINALLY),
+        CsKind::ForStatement                   => Rename(FOR),
+        CsKind::ForeachStatement               => Rename(FOREACH),
+        CsKind::FromClause                     => Rename(FROM),
+        CsKind::GroupClause                    => Rename(GROUP),
+        CsKind::ImplicitObjectCreationExpression => Rename(NEW),
+        CsKind::ImplicitParameter              => Rename(PARAMETER),
+        CsKind::IndexerDeclaration             => Rename(INDEXER),
+        CsKind::InitializerExpression          => Rename(LITERAL),
+        CsKind::IntegerLiteral                 => Rename(INT),
+        CsKind::InvocationExpression           => Rename(CALL),
+        CsKind::IsPatternExpression            => Rename(IS),
+        CsKind::JoinClause                     => Rename(JOIN),
+        CsKind::LambdaExpression               => Rename(LAMBDA),
+        CsKind::LetClause                      => Rename(LET),
+        CsKind::LocalFunctionStatement         => Rename(METHOD),
+        CsKind::NamespaceDeclaration           => Rename(NAMESPACE),
+        CsKind::NullLiteral                    => Rename(NULL),
+        CsKind::ObjectCreationExpression       => Rename(NEW),
+        CsKind::OperatorDeclaration            => Rename(OPERATOR),
+        CsKind::OrderByClause                  => Rename(ORDER),
+        CsKind::Parameter                      => Rename(PARAMETER),
+        CsKind::PropertyPatternClause          => Rename(PROPERTIES),
+        CsKind::QueryExpression                => Rename(QUERY),
+        CsKind::RangeExpression                => Rename(RANGE),
+        CsKind::RawStringLiteral               => Rename(STRING),
+        CsKind::RealLiteral                    => Rename(FLOAT),
+        CsKind::ReturnStatement                => Rename(RETURN),
+        CsKind::SelectClause                   => Rename(SELECT),
+        CsKind::StringLiteral                  => Rename(STRING),
+        CsKind::SwitchBody                     => Rename(BODY),
+        CsKind::SwitchExpression               => Rename(SWITCH),
+        CsKind::SwitchExpressionArm            => Rename(ARM),
+        CsKind::SwitchSection                  => Rename(SECTION),
+        CsKind::SwitchStatement                => Rename(SWITCH),
+        CsKind::ThrowStatement                 => Rename(THROW),
+        CsKind::TryStatement                   => Rename(TRY),
+        CsKind::TupleElement                   => Rename(ELEMENT),
+        CsKind::TupleExpression                => Rename(TUPLE),
+        CsKind::TypeParameter                  => Rename(GENERIC),
+        CsKind::UsingDirective                 => Rename(IMPORT),
+        CsKind::UsingStatement                 => Rename(USING),
+        CsKind::VariableDeclarator             => Rename(DECLARATOR),
+        CsKind::VerbatimStringLiteral          => Rename(STRING),
+        CsKind::WhenClause                     => Rename(WHEN),
+        CsKind::WhereClause                    => Rename(WHERE),
+        CsKind::WhileStatement                 => Rename(WHILE),
+
+        // ---- Passthrough — kind name already matches the vocabulary,
+        //      OR the kind is unhandled and the dispatcher leaves it as
+        //      its raw grammar name (the previous behavior of the
+        //      catch-all `_` arm when `apply_rename` returned `None`).
+        //
+        // Many of these are TODO candidates for real semantic upgrades —
+        // see the propagation plan. For now, preserve old behavior so
+        // snapshots stay byte-identical.
+
+        // Already matches our vocabulary.
+        CsKind::AliasQualifiedName
+        | CsKind::Discard
+        | CsKind::Interpolation
+        | CsKind::Subpattern => Custom(transformations::passthrough),
+
+        // Unhandled in the previous dispatcher — survive as raw kind names.
+        CsKind::AndPattern
+        | CsKind::AnonymousMethodExpression
+        | CsKind::AnonymousObjectCreationExpression
+        | CsKind::ArrayCreationExpression
+        | CsKind::ArrayRankSpecifier
+        | CsKind::AsExpression
+        | CsKind::AttributeTargetSpecifier
+        | CsKind::BracketedArgumentList
+        | CsKind::CallingConvention
+        | CsKind::CastExpression
+        | CsKind::CharacterLiteral
+        | CsKind::CharacterLiteralContent
+        | CsKind::CheckedExpression
+        | CsKind::CheckedStatement
+        | CsKind::ConversionOperatorDeclaration
+        | CsKind::Declaration
+        | CsKind::DeclarationExpression
+        | CsKind::DefaultExpression
+        | CsKind::ElementAccessExpression
+        | CsKind::EmptyStatement
+        | CsKind::EventDeclaration
+        | CsKind::ExplicitInterfaceSpecifier
+        | CsKind::Expression
+        | CsKind::ExternAliasDirective
+        | CsKind::FixedStatement
+        | CsKind::FunctionPointerParameter
+        | CsKind::GlobalAttribute
+        | CsKind::GlobalStatement
+        | CsKind::GotoStatement
+        | CsKind::ImplicitArrayCreationExpression
+        | CsKind::ImplicitStackallocExpression
+        | CsKind::InterpolationAlignmentClause
+        | CsKind::InterpolationFormatClause
+        | CsKind::InterpolationQuote
+        | CsKind::IsExpression
+        | CsKind::JoinIntoClause
+        | CsKind::LabeledStatement
+        | CsKind::ListPattern
+        | CsKind::Literal
+        | CsKind::LockStatement
+        | CsKind::LvalueExpression
+        | CsKind::MakerefExpression
+        | CsKind::NegatedPattern
+        | CsKind::NonLvalueExpression
+        | CsKind::OrPattern
+        | CsKind::ParenthesizedPattern
+        | CsKind::ParenthesizedVariableDesignation
+        | CsKind::Pattern
+        | CsKind::PositionalPatternClause
+        | CsKind::PreprocArg
+        | CsKind::PreprocDefine
+        | CsKind::PreprocElif
+        | CsKind::PreprocElse
+        | CsKind::PreprocEndregion
+        | CsKind::PreprocError
+        | CsKind::PreprocIf
+        | CsKind::PreprocIfInAttributeList
+        | CsKind::PreprocLine
+        | CsKind::PreprocNullable
+        | CsKind::PreprocPragma
+        | CsKind::PreprocRegion
+        | CsKind::PreprocUndef
+        | CsKind::PreprocWarning
+        | CsKind::PrimaryConstructorBaseType
+        | CsKind::RefExpression
+        | CsKind::ReftypeExpression
+        | CsKind::RefvalueExpression
+        | CsKind::ScopedType
+        | CsKind::ShebangDirective
+        | CsKind::SizeofExpression
+        | CsKind::StackallocExpression
+        | CsKind::Statement
+        | CsKind::StringLiteralEncoding
+        | CsKind::ThrowExpression
+        | CsKind::Type
+        | CsKind::TypeDeclaration
+        | CsKind::TypePattern
+        | CsKind::TypeofExpression
+        | CsKind::UnsafeStatement
+        | CsKind::VarPattern
+        | CsKind::WithExpression
+        | CsKind::WithInitializer
+        | CsKind::YieldStatement => Custom(transformations::passthrough),
+    }
+}
