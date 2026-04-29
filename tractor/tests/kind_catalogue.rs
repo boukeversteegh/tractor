@@ -266,7 +266,7 @@ fn typescript_catalogue_covers_blueprint() {
 
 #[test]
 fn typescript_node_metadata_is_well_formed() {
-    use tractor::languages::typescript::semantic::NODES;
+    use tractor::languages::typescript::output::NODES;
     let mut names: Vec<&str> = NODES.iter().map(|n| n.name).collect();
     names.sort();
     let total = names.len();
@@ -274,12 +274,12 @@ fn typescript_node_metadata_is_well_formed() {
     assert_eq!(
         names.len(),
         total,
-        "tractor/src/languages/typescript/semantic.rs contains duplicate node names"
+        "tractor/src/languages/typescript/output.rs contains duplicate node names"
     );
     for node in NODES {
         assert!(
             node.marker || node.container,
-            "tractor/src/languages/typescript/semantic.rs: <{}> is neither marker nor container",
+            "tractor/src/languages/typescript/output.rs: <{}> is neither marker nor container",
             node.name
         );
     }

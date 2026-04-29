@@ -10,7 +10,7 @@ use xot::{Xot, Node as XotNode};
 use crate::transform::{TransformAction, helpers::*};
 use crate::transform::generic_type::rewrite_generic_type;
 
-use super::semantic::*;
+use super::output::*;
 
 /// Kinds whose name happens to match our semantic vocabulary already
 /// (`array`, `constraint`, `object`, `pair`, `super`, `this`,

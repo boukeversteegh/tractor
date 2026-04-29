@@ -145,7 +145,7 @@ pub const LANGUAGES: &[LanguageOps] = &[
         post_transform: Some(collapse_conditionals),
         syntax_category: typescript::syntax_category,
         field_wrappings: TS_FIELD_WRAPPINGS,
-        node_spec: Some(typescript::semantic::spec),
+        node_spec: Some(typescript::output::spec),
         is_programming: true,
         supports_data_tree: false,
         data_transforms: None,

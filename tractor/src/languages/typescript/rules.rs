@@ -12,7 +12,7 @@
 use crate::languages::rule::Rule;
 
 use super::input::TsKind;
-use super::semantic::*;
+use super::output::*;
 use super::transformations;
 
 pub fn rule(k: TsKind) -> Rule {
