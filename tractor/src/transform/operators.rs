@@ -264,3 +264,22 @@ pub fn is_operator_marker(name: &str) -> bool {
         | "contains" | "identity" | "not" | "and" | "or"
     )
 }
+
+/// Find the operator text inside a binary/unary expression node (the
+/// first non-pure-punctuation text child) and prepend an `<op>` element
+/// for it. No-op if no operator-like text exists.
+///
+/// Identical to the per-language `extract_operator` helpers — pulled
+/// here so `Rule::ExtractOpThenRename` can call it without forcing
+/// language-specific function pointers through the rule table.
+pub fn extract_operator(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
+    use super::helpers::get_text_children;
+    let texts = get_text_children(xot, node);
+    let operator = texts.iter().find(|t| {
+        !t.chars().all(|c| matches!(c, '(' | ')' | ',' | ';' | '{' | '}' | '[' | ']'))
+    });
+    if let Some(op) = operator {
+        prepend_op_element(xot, node, op)?;
+    }
+    Ok(())
+}

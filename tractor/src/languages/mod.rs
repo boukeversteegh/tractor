@@ -5,6 +5,7 @@
 
 pub mod info;
 pub mod comments;
+pub mod rule;
 pub mod typescript;
 pub mod csharp;
 pub mod python;
