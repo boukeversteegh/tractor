@@ -408,7 +408,6 @@ pub fn rule(k: GoKind) -> Rule {
         GoKind::DecStatement             => Rename(UNARY),
         GoKind::DefaultCase              => Rename(DEFAULT),
         GoKind::DeferStatement           => Rename(DEFER),
-        GoKind::ExpressionCase           => Rename(CASE),
         GoKind::ExpressionSwitchStatement => Rename(SWITCH),
         GoKind::False                    => Rename(FALSE),
         GoKind::FieldIdentifier          => Rename(NAME),
@@ -460,6 +459,7 @@ pub fn rule(k: GoKind) -> Rule {
         //      A future commit can promote any of these to real
         //      semantic names.
         GoKind::EmptyStatement
+        | GoKind::ExpressionCase
         | GoKind::FallthroughStatement
         | GoKind::ImaginaryLiteral
         | GoKind::ImplicitLengthArrayType
