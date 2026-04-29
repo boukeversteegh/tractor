@@ -36,6 +36,32 @@ fn csharp_using_renames_to_import() {
         0);
 }
 
+/// C# namespace declarations come in two syntactic forms — a
+/// classic block-scoped form (`namespace Foo { ... }`) and the
+/// C# 10+ file-scoped form (`namespace Foo;` with the declarations
+/// at the top level). Both render as `<namespace>` with a `<name>`
+/// child; only the block-scoped form carries a `<body>` wrapper —
+/// file-scoped declarations are flat siblings under `<unit>`.
+#[test]
+fn csharp_namespace_block_vs_file_scoped() {
+    claim("C# block-scoped namespace wraps declarations in a <body>",
+        &mut parse_src("csharp", "namespace Block { class A {} }\n"),
+        "//namespace[name='Block']/body/class[name='A']",
+        1);
+
+    let mut file_scoped = parse_src("csharp", "namespace File;\nclass A {}\n");
+
+    claim("C# file-scoped namespace has a name but no <body>",
+        &mut file_scoped,
+        "//namespace[name='File'][not(body)]",
+        1);
+
+    claim("C# file-scoped declarations are flat siblings of the namespace",
+        &mut file_scoped,
+        "//unit[namespace[name='File']][class[name='A']]",
+        1);
+}
+
 #[test]
 fn python_plain_import() {
     claim("Python plain import renders as <import> with the module name as a child",
