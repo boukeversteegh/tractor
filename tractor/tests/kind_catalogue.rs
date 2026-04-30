@@ -237,8 +237,8 @@ fn typescript_catalogue_covers_blueprint() {
 
 #[test]
 fn typescript_node_metadata_is_well_formed() {
-    use tractor::languages::typescript::output::NODES;
-    check_node_metadata(NODES, "tractor/src/languages/typescript/output.rs");
+    use tractor::languages::typescript::output;
+    check_node_metadata(output::nodes(), "tractor/src/languages/typescript/output.rs");
 }
 
 #[test]

@@ -10,7 +10,12 @@ use xot::{Xot, Node as XotNode};
 use crate::transform::{TransformAction, helpers::*};
 use crate::transform::generic_type::rewrite_generic_type;
 
-use super::output::*;
+use super::output::TsName::{
+    self, Abstract, Alias, Annotation, Arrow, Async, Comment as CommentName, Const, Default, Else,
+    Export, Extends, Field, Function, Generator, Generic, Generics, Get, Leading, Let, Method, Name,
+    Optional, Parameter, Private, Property, Protected, Public, Required, Set, Ternary, Trailing,
+    Type, Var, Variable,
+};
 
 /// Kinds whose name happens to match our semantic vocabulary already
 /// (`array`, `constraint`, `object`, `pair`, `super`, `this`,
@@ -55,23 +60,23 @@ pub fn name_wrapper(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot
 /// for `//` and `/* */`. Rename to `<comment>` and run the shared
 /// trailing/leading/floating classifier.
 pub fn comment(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, COMMENT);
+    rename(xot, node, CommentName);
     static CLASSIFIER: crate::languages::comments::CommentClassifier =
         crate::languages::comments::CommentClassifier { line_prefixes: &["//"] };
-    CLASSIFIER.classify_and_group(xot, node, TRAILING, LEADING)
+    CLASSIFIER.classify_and_group(xot, node, Trailing.as_str(), Leading.as_str())
 }
 
 /// `identifier` / `property_identifier` — always names. TypeScript uses
 /// `type_identifier` for type positions, so bare identifiers are never
 /// types.
 pub fn identifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, NAME);
+    rename(xot, node, Name);
     Ok(TransformAction::Continue)
 }
 
 /// `type_identifier` — type reference. `<type><name>Foo</name></type>`.
 pub fn type_identifier(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    rename(xot, node, TYPE);
+    rename(xot, node, Type);
     wrap_text_in_name(xot, node)?;
     Ok(TransformAction::Continue)
 }
@@ -108,7 +113,7 @@ pub fn formal_parameters(
 /// the uniform namespace vocabulary.
 pub fn extends_clause(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     retag_value_as_type(xot, node)?;
-    rename(xot, node, EXTENDS);
+    rename(xot, node, Extends);
     Ok(TransformAction::Continue)
 }
 
@@ -125,7 +130,7 @@ pub fn type_alias_declaration(
     if let Some(v) = value_child {
         flatten_node(xot, v)?;
     }
-    rename(xot, node, ALIAS);
+    rename(xot, node, Alias);
     Ok(TransformAction::Continue)
 }
 
@@ -137,8 +142,8 @@ pub fn ternary_expression(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
-    wrap_field_child(xot, node, "alternative", ELSE)?;
-    rename(xot, node, TERNARY);
+    wrap_field_child(xot, node, "alternative", Else)?;
+    rename(xot, node, Ternary);
     Ok(TransformAction::Continue)
 }
 
@@ -158,7 +163,7 @@ pub fn variable_declaration(
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
     extract_keyword_modifiers(xot, node)?;
-    rename(xot, node, VARIABLE);
+    rename(xot, node, Variable);
     Ok(TransformAction::Continue)
 }
 
@@ -168,8 +173,8 @@ pub fn optional_parameter(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
-    prepend_empty_element(xot, node, OPTIONAL)?;
-    rename(xot, node, PARAMETER);
+    prepend_empty_element(xot, node, Optional)?;
+    rename(xot, node, Parameter);
     Ok(TransformAction::Continue)
 }
 
@@ -179,8 +184,8 @@ pub fn required_parameter(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
-    prepend_empty_element(xot, node, REQUIRED)?;
-    rename(xot, node, PARAMETER);
+    prepend_empty_element(xot, node, Required)?;
+    rename(xot, node, Parameter);
     Ok(TransformAction::Continue)
 }
 
@@ -191,7 +196,7 @@ pub fn required_parameter(
 fn function_with_markers(
     xot: &mut Xot,
     node: XotNode,
-    to: &'static str,
+    to: TsName,
 ) -> Result<TransformAction, xot::Error> {
     extract_function_markers(xot, node)?;
     rename(xot, node, to);
@@ -199,26 +204,26 @@ fn function_with_markers(
 }
 
 pub fn function_declaration(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    function_with_markers(xot, node, FUNCTION)
+    function_with_markers(xot, node, Function)
 }
 
 pub fn function_expression(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    function_with_markers(xot, node, FUNCTION)
+    function_with_markers(xot, node, Function)
 }
 
 pub fn arrow_function(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    function_with_markers(xot, node, ARROW)
+    function_with_markers(xot, node, Arrow)
 }
 
 pub fn generator_function(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
-    function_with_markers(xot, node, FUNCTION)
+    function_with_markers(xot, node, Function)
 }
 
 pub fn generator_function_declaration(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
-    function_with_markers(xot, node, FUNCTION)
+    function_with_markers(xot, node, Function)
 }
 
 /// `method_definition` — class method. Extract markers, default
@@ -226,9 +231,9 @@ pub fn generator_function_declaration(
 pub fn method_definition(xot: &mut Xot, node: XotNode) -> Result<TransformAction, xot::Error> {
     extract_function_markers(xot, node)?;
     if !has_visibility_marker(xot, node) {
-        prepend_empty_element(xot, node, PUBLIC)?;
+        prepend_empty_element(xot, node, Public)?;
     }
-    rename(xot, node, METHOD);
+    rename(xot, node, Method);
     Ok(TransformAction::Continue)
 }
 
@@ -240,10 +245,10 @@ pub fn abstract_method_signature(
 ) -> Result<TransformAction, xot::Error> {
     extract_function_markers(xot, node)?;
     if !has_visibility_marker(xot, node) {
-        prepend_empty_element(xot, node, PUBLIC)?;
+        prepend_empty_element(xot, node, Public)?;
     }
-    rename(xot, node, METHOD);
-    prepend_empty_element(xot, node, ABSTRACT)?;
+    rename(xot, node, Method);
+    prepend_empty_element(xot, node, Abstract)?;
     Ok(TransformAction::Continue)
 }
 
@@ -253,9 +258,9 @@ pub fn public_field_definition(
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
     if !has_visibility_marker(xot, node) {
-        prepend_empty_element(xot, node, PUBLIC)?;
+        prepend_empty_element(xot, node, Public)?;
     }
-    rename(xot, node, FIELD);
+    rename(xot, node, Field);
     Ok(TransformAction::Continue)
 }
 
@@ -267,7 +272,7 @@ fn extract_function_markers(xot: &mut Xot, node: XotNode) -> Result<(), xot::Err
     let texts = get_text_children(xot, node);
     let mut has_async = false;
     let mut has_star = false;
-    let mut accessor_kind: Option<&'static str> = None;
+    let mut accessor_kind: Option<TsName> = None;
     for t in &texts {
         for tok in t.split_whitespace() {
             if tok == "async" {
@@ -277,8 +282,8 @@ fn extract_function_markers(xot: &mut Xot, node: XotNode) -> Result<(), xot::Err
                 has_star = true;
             }
             match tok {
-                "get" => accessor_kind = Some(GET),
-                "set" => accessor_kind = Some(SET),
+                "get" => accessor_kind = Some(Get),
+                "set" => accessor_kind = Some(Set),
                 _ => {}
             }
         }
@@ -287,26 +292,26 @@ fn extract_function_markers(xot: &mut Xot, node: XotNode) -> Result<(), xot::Err
         prepend_empty_element(xot, node, k)?;
     }
     if has_star {
-        prepend_empty_element(xot, node, GENERATOR)?;
+        prepend_empty_element(xot, node, Generator)?;
     }
     if has_async {
-        prepend_empty_element(xot, node, ASYNC)?;
+        prepend_empty_element(xot, node, Async)?;
     }
     Ok(())
 }
 
 fn extract_keyword_modifiers(xot: &mut Xot, node: XotNode) -> Result<(), xot::Error> {
     let texts = get_text_children(xot, node);
-    const MODIFIERS: &[(&str, &str)] = &[
-        ("let", LET),
-        ("const", CONST),
-        ("var", VAR),
-        ("async", ASYNC),
-        ("export", EXPORT),
-        ("default", DEFAULT),
-    ];
-    let found: Vec<&str> = texts.iter()
-        .filter_map(|t| MODIFIERS.iter().find(|(src, _)| *src == t).map(|(_, marker)| *marker))
+    let found: Vec<TsName> = texts.iter()
+        .filter_map(|t| match t.as_str() {
+            "let" => Some(Let),
+            "const" => Some(Const),
+            "var" => Some(Var),
+            "async" => Some(Async),
+            "export" => Some(Export),
+            "default" => Some(Default),
+            _ => None,
+        })
         .collect();
     for modifier in found.into_iter().rev() {
         prepend_empty_element(xot, node, modifier)?;
@@ -322,7 +327,7 @@ fn wrap_bare_identifier_params(xot: &mut Xot, list: XotNode) -> Result<(), xot::
         if get_kind(xot, child).as_deref() != Some("identifier") {
             continue;
         }
-        let param_name = xot.add_name(PARAMETER);
+        let param_name = xot.add_name(Parameter.as_str());
         let param = xot.new_element(param_name);
         copy_source_location(xot, child, param);
         xot.insert_before(child, param)?;
@@ -337,7 +342,7 @@ fn retag_value_as_type(xot: &mut Xot, parent: XotNode) -> Result<(), xot::Error>
         .filter(|&c| xot.element(c).is_some())
         .find(|&c| get_element_name(xot, c).as_deref() == Some("value"));
     if let Some(v) = value_child {
-        rename(xot, v, TYPE);
+        rename(xot, v, Type);
         set_attr(xot, v, "field", "type");
     }
     Ok(())
@@ -351,7 +356,7 @@ fn has_visibility_marker(xot: &Xot, node: XotNode) -> bool {
             return true;
         }
         if let Some(name) = get_element_name(xot, child) {
-            if name == PUBLIC || name == PRIVATE || name == PROTECTED {
+            if name == Public.as_str() || name == Private.as_str() || name == Protected.as_str() {
                 return true;
             }
         }
@@ -391,10 +396,10 @@ fn inline_single_identifier(xot: &mut Xot, node: XotNode) -> Result<(), xot::Err
         if is_private {
             if let Some(parent) = get_parent(xot, node) {
                 let already = xot.children(parent).any(|c| {
-                    get_element_name(xot, c).as_deref() == Some(PRIVATE)
+                    get_element_name(xot, c).as_deref() == Some(Private.as_str())
                 });
                 if !already {
-                    prepend_empty_element(xot, parent, PRIVATE)?;
+                    prepend_empty_element(xot, parent, Private)?;
                 }
             }
         }
