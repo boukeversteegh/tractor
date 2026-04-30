@@ -312,9 +312,7 @@ unit/
   │       │       │   ├─ name = "Describe"
   │       │       │   └─ body/string/
   │       │       │       ├─ interpolation/name = "Id"
-  │       │       │       └─ interpolation/unary/
-  │       │       │           ├─ name = "Name"
-  │       │       │           └─ op/logical[not]
+  │       │       │       └─ interpolation/expression[non_null]/name = "Name"
   │       │       ├─ method[public]/
   │       │       │   ├─ returns/type[nullable] = "Widget"
   │       │       │   ├─ name = "Find"
@@ -458,9 +456,7 @@ unit/
   │                   │   ├─ type/name = "object"
   │                   │   └─ declarator/
   │                   │       ├─ name = "token"
-  │                   │       └─ unary/
-  │                   │           ├─ name = "widget"
-  │                   │           └─ op/logical[not]
+  │                   │       └─ expression[non_null]/name = "widget"
   │                   ├─ switch/
   │                   │   ├─ value/expression/name = "token"
   │                   │   └─ body/body/

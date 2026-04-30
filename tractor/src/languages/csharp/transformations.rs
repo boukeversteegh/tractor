@@ -15,8 +15,9 @@ use crate::transform::operators::extract_operator;
 
 use super::input::CsKind;
 use super::output::TractorNode::{
-    self, Accessor, Await, Else, Expression, Generic, If, Internal, Leading, Name, Nullable,
-    Private, Public, Protected, String as CsString, Ternary, This, Trailing, Type, Unary, Variable,
+    self, Accessor, Await, Else, Expression, Generic, If, Internal, Leading, Name, NonNull,
+    Nullable, Private, Public, Protected, String as CsString, Ternary, This, Trailing, Type, Unary,
+    Variable,
 };
 
 /// Kinds whose name happens to match our semantic vocabulary already
@@ -280,12 +281,33 @@ pub fn variable_declaration(
 /// as a Custom rather than `ExtractOpThenRename` because postfix
 /// operators sit *after* the operand and we want a stable arm name
 /// in case future C# additions need to differentiate.
+/// `postfix_unary_expression` — C#'s tree-sitter conflates two
+/// semantically distinct constructs under one kind:
+///
+/// * `i++` / `i--`: arithmetic / mutation operators. Real unary
+///   expressions; treated as `<unary>` with the operator extracted.
+/// * `s!`: the **null-forgiving operator** (a.k.a. non-null
+///   assertion). Suppresses a nullable-warning at the type-checker
+///   level; doesn't change the value at runtime. Per Principle #15
+///   (stable expression hosts) this is an annotational modifier on
+///   the operand — the operand keeps its identity, the `!` becomes
+///   a `<non_null/>` marker on an `<expression>` host. Mirrors the
+///   TypeScript `non_null_expression` shape.
+///
+/// We dispatch on the operator text to pick the right shape.
 pub fn postfix_unary_expression(
     xot: &mut Xot,
     node: XotNode,
 ) -> Result<TransformAction, xot::Error> {
-    extract_operator(xot, node)?;
-    xot.with_renamed(node, Unary);
+    let texts = get_text_children(xot, node);
+    let is_null_forgiving = texts.iter().any(|t| t.trim() == "!");
+    if is_null_forgiving {
+        xot.with_renamed(node, Expression)
+            .with_appended_empty_element(node, NonNull)?;
+    } else {
+        extract_operator(xot, node)?;
+        xot.with_renamed(node, Unary);
+    }
     Ok(TransformAction::Continue)
 }
 

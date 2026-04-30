@@ -124,11 +124,13 @@ fn python_unary() {
         1);
 }
 
-/// C#'s null-forgiving operator (`name!`) is a postfix unary that
-/// asserts a nullable expression is non-null at runtime. It MUST
-/// parse without an `<ERROR>` node and surface as `<unary>` so
-/// queries can find every site (e.g. for a "no null-forgiving"
-/// rule). The operator survives chained member access, method-call
+/// C#'s null-forgiving operator (`name!`) is a postfix non-null
+/// assertion — it doesn't change the value at runtime, just suppresses
+/// a nullable warning. Per Principle #15 it surfaces as
+/// `<expression>` host with `<non_null/>` marker (NOT as `<unary>` —
+/// that bucket is reserved for `++`/`--` which are real unary
+/// operators sharing tree-sitter's `postfix_unary_expression` kind).
+/// The operator survives chained member access, method-call
 /// arguments, and binary expressions.
 #[test]
 fn csharp_null_forgiving_postfix_unary() {
@@ -146,37 +148,40 @@ fn csharp_null_forgiving_postfix_unary() {
     claim("null-forgiving never produces an <ERROR> node",
         &mut tree, "//ERROR", 0);
 
-    claim("each `name!` site renders as <unary> — five total in this body",
-        &mut tree, "//unary", 5);
+    claim("each `name!` site renders as <expression[non_null]> — five total in this body",
+        &mut tree, "//expression[non_null]", 5);
 
-    claim("simple `name!.Length` exposes <member[unary]>",
+    claim("`name!` is NOT classified as a unary not-operator",
+        &mut tree, "//unary[op[logical[not]]]", 0);
+
+    claim("simple `name!.Length` exposes <member> with non-null host on the receiver",
         &mut tree,
         &multi_xpath(r#"
             //variable[declarator/name='simple']
                 /declarator/member
-                    [unary/name='nullable']
+                    [expression[non_null]/name='nullable']
                     [name='Length']
         "#),
         1);
 
-    claim("chained `name!.A().B` keeps <unary> on the innermost member access",
+    claim("chained `name!.A().B` keeps the non-null marker on the innermost receiver",
         &mut tree,
         &multi_xpath(r#"
             //variable[declarator/name='chained']
                 /declarator/member
-                    [call/member/unary/name='nullable']
+                    [call/member/expression[non_null]/name='nullable']
                     [name='Length']
         "#),
         1);
 
-    claim("binary `first!.Length + second!.Length` carries <unary> under both operands",
+    claim("binary `first!.Length + second!.Length` carries non-null host under both operands",
         &mut tree,
         &multi_xpath(r#"
             //variable[declarator/name='combined']
                 /declarator/binary
                     [op[plus]]
-                    [left/expression/member[unary/name='first'][name='Length']]
-                    [right/expression/member[unary/name='second'][name='Length']]
+                    [left/expression/member[expression[non_null]/name='first'][name='Length']]
+                    [right/expression/member[expression[non_null]/name='second'][name='Length']]
         "#),
         1);
 }

@@ -139,6 +139,26 @@ renderer share a single source of truth:
 <type>Guid<nullable/></type>    <!-- from Guid? -->
 ```
 
+### Null-forgiving postfix `!` rewrite
+
+C#'s tree-sitter conflates two distinct constructs under
+`postfix_unary_expression`:
+
+| Source       | What it means                                  | Tractor shape |
+|---|---|---|
+| `i++` / `i--`| Real arithmetic / mutation unary operators     | `<unary><op[increment]/>...</unary>` (or `[decrement]`) |
+| `name!`      | Null-forgiving / non-null assertion (the value is unchanged at runtime; just suppresses a nullable warning) | `<expression><name>name</name><non_null/></expression>` |
+
+Per Principle #15 (markers in stable, predictable locations): the
+`!` is an annotational modifier on the operand — the operand keeps
+its identity, the `!` becomes a `<non_null/>` marker on an
+`<expression>` host. Mirrors TypeScript's `non_null_expression`.
+
+The transform inspects the operator text inside
+`postfix_unary_expression`; if `!`, it emits the host shape;
+otherwise (`++`/`--`) it falls through to the regular
+`<unary>` + `<op>` pattern.
+
 ### Generic type rewrite
 
 `generic_name` (rewritten specifically for C#) applies the same

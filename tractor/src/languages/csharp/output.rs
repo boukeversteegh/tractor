@@ -38,7 +38,7 @@ pub enum TractorNode {
     Using, Break, Continue, Switch, Block, Expression, Range,
     // Expressions
     Call, Member, New, Assign, Binary, Unary, Lambda, Await, Ternary, Index, Is,
-    Tuple, Literal, Pattern,
+    Tuple, Literal, Pattern, NonNull,
     // Generics (dual-use marker/container)
     Generic,
     // LINQ
@@ -82,6 +82,7 @@ impl TractorNode {
             | Self::Static | Self::Abstract | Self::Virtual | Self::Override | Self::Sealed
             | Self::Readonly | Self::Partial | Self::Async | Self::Extern | Self::Unsafe
             | Self::This | Self::Await                                          => (true, false, Keyword),
+            Self::NonNull                                                       => (true, false, Operator),
             // Type-shape / member-access / pattern markers
             Self::Nullable | Self::Array                                        => (true, false, Type),
             Self::Trailing | Self::Leading

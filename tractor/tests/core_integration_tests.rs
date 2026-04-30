@@ -135,23 +135,35 @@ fn test_xpath_exact_string_match_without_formatting_whitespace() {
 
 #[test]
 fn test_csharp_null_forgiving_operator() {
-    // Test that C# null-forgiving operator (!) is parsed correctly as unary
-    // This was historically broken due to shell escaping issues during testing (! -> \!)
+    // C#'s null-forgiving operator `name!` is a postfix non-null
+    // assertion, not a unary not-operator. Per Principle #15 it
+    // surfaces as `<expression>` host with a `<non_null/>` marker
+    // (analog of TypeScript's `non_null_expression`).
     let source = "class T { void M() { var x = name!.Length; } }";
     let mut result = parse_test_inline(source, "csharp", None)
         .expect("Should parse C#");
 
     let engine = XPathEngine::new();
 
-    // The ! should be parsed as unary, not ERROR
+    // The ! produces an <expression> host with <non_null/> marker.
     let matches = engine.query_documents(
         &mut result.documents,
         result.doc_handle,
-        "//unary",
+        "//expression[non_null]",
         result.source_lines.clone(),
         &result.file_path,
     ).expect("Query should succeed");
-    assert_eq!(matches.len(), 1, "Should find unary for null-forgiving operator");
+    assert_eq!(matches.len(), 1, "Should find expression[non_null] for null-forgiving operator");
+
+    // Sanity: should NOT be classified as a unary not-operator.
+    let bogus = engine.query_documents(
+        &mut result.documents,
+        result.doc_handle,
+        "//unary[op[logical[not]]]",
+        result.source_lines.clone(),
+        &result.file_path,
+    ).expect("Query should succeed");
+    assert_eq!(bogus.len(), 0, "name! must not be classified as a unary not-operator");
 
     // Verify there are no ERROR nodes (which would indicate parsing failure)
     let errors = engine.query_documents(
@@ -163,15 +175,15 @@ fn test_csharp_null_forgiving_operator() {
     ).expect("Query should succeed");
     assert_eq!(errors.len(), 0, "Should have no ERROR nodes - null-forgiving operator should parse correctly");
 
-    // Can query for member access on null-forgiving expression
+    // Can query for member access on null-forgiving expression.
     let matches = engine.query_documents(
         &mut result.documents,
         result.doc_handle,
-        "//member[unary]",
+        "//member[expression[non_null]]",
         result.source_lines.clone(),
         &result.file_path,
     ).expect("Query should succeed");
-    assert_eq!(matches.len(), 1, "Should find member access with unary child");
+    assert_eq!(matches.len(), 1, "Should find member access with non-null host child");
 }
 
 // ============================================================================
